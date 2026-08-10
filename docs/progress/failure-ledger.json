@@ -19,6 +19,23 @@
       ],
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-g06-independent-test-r1",
+      "step_lineage_id": "G-06",
+      "failure_fingerprint": "g06-independent-test:determinism-trace-golden-anchor-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/G-06_TEST_REPORT.md",
+          "sha256": "9B80C65D3DAC88CF0547C83F2F0E1D258974F678F057FB68943EB8E17A0DB42F"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
     }
   ]
 }

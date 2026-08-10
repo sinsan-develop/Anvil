@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "lock_policy": "Owner approval plus old/new hash required for any expected-value change",
+  "cases": [
+    {"case_id": "GC-PY-CLEAN-01", "case_path": "tests/fixtures/golden/cases/GC-PY-CLEAN-01.json"},
+    {"case_id": "GC-PY-DIRTY-01", "case_path": "tests/fixtures/golden/cases/GC-PY-DIRTY-01.json"},
+    {"case_id": "GC-PY-REDFAIL-01", "case_path": "tests/fixtures/golden/cases/GC-PY-REDFAIL-01.json"},
+    {"case_id": "GC-TS-CLEAN-01", "case_path": "tests/fixtures/golden/cases/GC-TS-CLEAN-01.json"},
+    {"case_id": "GC-TS-NOTOOL-01", "case_path": "tests/fixtures/golden/cases/GC-TS-NOTOOL-01.json"},
+    {"case_id": "GC-PROTECTED-01", "case_path": "tests/fixtures/golden/cases/GC-PROTECTED-01.json"},
+    {"case_id": "GC-LARGE-01", "case_path": "tests/fixtures/golden/cases/GC-LARGE-01.json"},
+    {"case_id": "GC-CONFLICT-01", "case_path": "tests/fixtures/golden/cases/GC-CONFLICT-01.json"}
+  ]
+}

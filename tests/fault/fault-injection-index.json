@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "source": "Anvil_테스트계획서_v1.md#10.4",
+  "fault_injections": [
+    {"fault_id": "FI-01", "contract_path": "tests/fault/injections/FI-01.json", "sha256": "6BACB2B905796C28D7E1C6CC52E44C5C7083FF344A30D9F1D33B500906269D2D"},
+    {"fault_id": "FI-02", "contract_path": "tests/fault/injections/FI-02.json", "sha256": "BFEC67EF2D0D4C413DF6187287FBAE7DDB24DA8C320E04CCC1C983F123F28669"},
+    {"fault_id": "FI-03", "contract_path": "tests/fault/injections/FI-03.json", "sha256": "D752D804BDBAFB3F1AA928D13873F48A3ACA6F5D3B32BED1CE47E20B3B8CB33D"},
+    {"fault_id": "FI-04", "contract_path": "tests/fault/injections/FI-04.json", "sha256": "DAED69F4D68CB59320F3212ECAD712F5D4F1AFC73F101BEA10056557C5A7D425"},
+    {"fault_id": "FI-05", "contract_path": "tests/fault/injections/FI-05.json", "sha256": "A0BE2D033DA76AA8D8E48C4B96D755CB88D6C73F78DD6FA92CE59F842A675B21"},
+    {"fault_id": "FI-06", "contract_path": "tests/fault/injections/FI-06.json", "sha256": "04BF5A9FA9760635A88392905EE1C6EBA6AD84DCEFF7F91544B89D4B3B91583B"},
+    {"fault_id": "FI-07", "contract_path": "tests/fault/injections/FI-07.json", "sha256": "9CAE727545FAE59C65DD3039999BE319194EF5E75D0B8ABE2492C7C6C68CF1AF"},
+    {"fault_id": "FI-08", "contract_path": "tests/fault/injections/FI-08.json", "sha256": "9B46A66D3B6E84E1E50C1A1738DB7985976D8993368E8AC0C24340BC2158DAE8"}
+  ]
+}

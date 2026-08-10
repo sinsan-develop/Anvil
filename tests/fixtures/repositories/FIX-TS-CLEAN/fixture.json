@@ -1,0 +1,28 @@
+{
+  "fixture_id": "FIX-TS-CLEAN",
+  "schema_version": "1.0.0",
+  "purpose": "TypeScript 5.9.3 installed strictly from local npm cache and typechecked",
+  "verification_ids": ["AV-GATE-009"],
+  "source_root": "tests/fixtures/repositories/FIX-TS-CLEAN/source",
+  "source_hash": "sha256:C2F9579E4F77811577FF688A19BC960004211C7A0123FFDB16A91687732F283D",
+  "materializer_version": "1.0.0",
+  "materializer_hash": "sha256:9F0C5ACBA0E58238885CDFC368427B00A787C8189C834D3703414C47BEAAF8FB",
+  "git": {"branch": "main", "commit_time": "2000-01-01T00:00:00Z", "commit_message": "fixture baseline"},
+  "tracked_state": "CLEAN_COMMITTED_BEFORE_TOOL_INSTALL",
+  "dirty_state": [],
+  "untracked_state": [],
+  "toolchain": {"kind": "typescript", "version": "5.9.3", "install_command": "npm ci --offline --ignore-scripts", "install_state": "MATERIALIZE_OFFLINE", "local_executable_required": true, "allow_global_fallback": false},
+  "protected_paths": [],
+  "synthetic_secret_rule": {"marker": "NONE", "must_be_obviously_synthetic": true},
+  "source_files": [
+    {"path": "package-lock.json", "bytes": 671, "sha256": "B6640FDED41AA7239ABA23EFAE6EA3B0AC777B8B90FA495C249D01D2A451228F"},
+    {"path": "package.json", "bytes": 187, "sha256": "17B9E5A884161E5067371073ADF192A0CEA01F3EFB3A05D0AC8877DDD7D362F9"},
+    {"path": "src/index.ts", "bytes": 84, "sha256": "A968C8F2BBFA307017A7A4AF8F5FE13762891E3FA754FC495B9C1D80A460F073"},
+    {"path": "tsconfig.json", "bytes": 148, "sha256": "CD6B02A4F2022BD0B8A61FEF90ED116325639C672D82B2E9F41135ECD1167993"}
+  ],
+  "expected_test": {"command": "local node_modules/.bin/tsc --noEmit -p tsconfig.json", "status": "PASS", "version": "Version 5.9.3"},
+  "expected_gate": "LOCAL_TOOLCHAIN_VERIFIED",
+  "reset_cleanup": "delete disposable temp directory including node_modules",
+  "actual_secret_count": 0,
+  "external_systems_allowed": false
+}

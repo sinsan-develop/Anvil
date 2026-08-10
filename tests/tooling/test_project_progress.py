@@ -21,6 +21,8 @@ ALL_EVENT_FIXTURE_PATH = ROOT / "tests" / "fixtures" / "g05" / "progress-events-
 MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "G-05_EVIDENCE_MANIFEST.json"
 R2_MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "G-05_EVIDENCE_MANIFEST_R2.json"
 R2_TEST_REPORT_PATH = ROOT / "docs" / "test_reports" / "G-05_TEST_REPORT_R2.md"
+G06_R3_MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "G-06_EVIDENCE_MANIFEST_R3.json"
+G06_R2_TEST_REPORT_PATH = ROOT / "docs" / "test_reports" / "G-06_TEST_REPORT_R2.md"
 
 
 def _load_checker_or_none():
@@ -36,6 +38,38 @@ def _load_checker_or_none():
 
 
 class ProjectProgressContractTests(unittest.TestCase):
+    def test_package_specific_detached_progress_ref_is_resolved_safely(self) -> None:
+        checker = self.require_checker()
+        self.assertTrue(
+            hasattr(checker, "resolve_detached_digest_path"),
+            "package-specific detached digest resolution is not implemented",
+        )
+        progress = {
+            "current_progress_evidence_ref": {
+                "package_id": "G-06",
+                "path": "docs/progress/progress-handoff-detached-digest-g06.json",
+            }
+        }
+        self.assertEqual(
+            checker.resolve_detached_digest_path(progress),
+            "docs/progress/progress-handoff-detached-digest-g06.json",
+        )
+        progress["current_progress_evidence_ref"]["path"] = "../outside.json"
+        with self.assertRaises(ValueError):
+            checker.resolve_detached_digest_path(progress)
+
+    def test_historical_manifest_validates_its_frozen_rows_not_current_mutable_files(self) -> None:
+        checker = self.require_checker()
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(checker.validate_historical_manifest_raw_checksums(manifest, ROOT), [])
+
+        mutated = copy.deepcopy(manifest)
+        mutated["raw_checksums"][0]["sha256"] = "0" * 64
+        errors = checker.validate_historical_manifest_raw_checksums(mutated, ROOT)
+        self.assertTrue(any("HISTORICAL_MANIFEST_TARGET_MISMATCH" in error for error in errors))
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.checker = _load_checker_or_none()
@@ -287,6 +321,16 @@ class ProjectProgressContractTests(unittest.TestCase):
                 shutil.copy2(source, destination)
             progress_path = temp_root / checker.BUNDLE_PATHS["progress"]
             progress = json.loads(progress_path.read_text(encoding="utf-8"))
+            extra_paths = {
+                checker.resolve_detached_digest_path(progress),
+                progress["current_progress_evidence_ref"]["manifest_path"],
+                "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json",
+            }
+            for relative in extra_paths:
+                source = ROOT / relative
+                destination = temp_root / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
             del progress["next_safe_action"]
             progress_path.write_text(json.dumps(progress, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -310,7 +354,8 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_detached_digest_binds_current_progress_and_handoff_into_manifest_target(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
-        manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        manifest_path = ROOT / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
         self.assertTrue(hasattr(checker, "validate_detached_progress_binding"))
         self.assertTrue(hasattr(checker, "validate_manifest_progress_binding"))
@@ -450,26 +495,32 @@ class ProjectProgressContractTests(unittest.TestCase):
         }
         self.assertIn("EVENT_EFFECT_MISMATCH", checker.validate_bundle(bad_effect))
 
-    def test_main_acceptance_materializes_g05_and_advances_projection(self) -> None:
+    def test_g06_acceptance_advances_projection_to_g07(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
         last_event = bundle["events"]["events"][-1]
 
         self.assertEqual(progress["status"], "READY")
-        self.assertEqual(progress["current_work_package"], "G-06")
-        self.assertIn("G-05", progress["completed_packages"])
+        self.assertEqual(progress["current_work_package"], "G-07")
+        self.assertIn("G-06", progress["completed_packages"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertEqual(
             progress["last_accepted_work_instruction"]["artifact_id"],
-            "WI-G-05-20260810-001",
+            "WI-G-06-20260810-002",
         )
         self.assertEqual(last_event["event_type"], "MAIN_PACKAGE_ACCEPTED")
-        self.assertEqual(last_event["subject_ref"], "G-05")
-        self.assertEqual(last_event["details"]["next_work_package"], "G-06")
+        self.assertEqual(last_event["subject_ref"], "G-06")
+        self.assertEqual(last_event["details"]["next_work_package"], "G-07")
+        self.assertEqual(last_event["details"]["test_report_sha256"], "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
+        self.assertTrue(G06_R3_MANIFEST_PATH.is_file())
+        r3_hash = hashlib.sha256(G06_R3_MANIFEST_PATH.read_bytes()).hexdigest().upper()
+        self.assertEqual(r3_hash, "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0")
+        self.assertEqual(progress["latest_evidence_manifest_ref"], {"path": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json", "sha256": r3_hash})
+        self.assertEqual(hashlib.sha256(G06_R2_TEST_REPORT_PATH.read_bytes()).hexdigest().upper(), "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
         self.assertIn("MAIN_PACKAGE_ACCEPTED", bundle["event_contract"]["event_types"])
 
-    def test_acceptance_uses_immutable_r2_manifest_and_one_way_r3_chain(self) -> None:
+    def test_g05_historical_acceptance_chain_remains_immutable(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
@@ -480,15 +531,8 @@ class ProjectProgressContractTests(unittest.TestCase):
             r2_file_hash,
             "F9A5E7168B9B68B70D74B68DD495211BDC7961223E5E48CFC6F565638B9E69E6",
         )
-        self.assertEqual(
-            bundle["progress"]["latest_evidence_manifest_ref"],
-            {
-                "path": "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json",
-                "sha256": r2_file_hash,
-            },
-        )
-        self.assertTrue(hasattr(checker, "validate_accepted_evidence_chain"))
-        self.assertEqual(checker.validate_accepted_evidence_chain(manifest, bundle), [])
+        self.assertEqual(manifest["supersedes_artifact_ref"]["path"], "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json")
+        self.assertEqual(manifest["supersedes_artifact_ref"]["file_sha256"], r2_file_hash)
         self.assertNotEqual(
             bundle["progress"]["latest_evidence_manifest_ref"]["path"],
             "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json",

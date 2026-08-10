@@ -1,0 +1,28 @@
+{
+  "fixture_id": "FIX-TS-NOTOOL",
+  "schema_version": "1.0.0",
+  "purpose": "TypeScript tool declared but deliberately not installed",
+  "verification_ids": ["AV-GATE-010"],
+  "source_root": "tests/fixtures/repositories/FIX-TS-NOTOOL/source",
+  "source_hash": "sha256:1EF435DC06F9726B329F76FEF1AF37C4DFF301E4A34EB9A6ED2ED6592E996873",
+  "materializer_version": "1.0.0",
+  "materializer_hash": "sha256:9F0C5ACBA0E58238885CDFC368427B00A787C8189C834D3703414C47BEAAF8FB",
+  "git": {"branch": "main", "commit_time": "2000-01-01T00:00:00Z", "commit_message": "fixture baseline"},
+  "tracked_state": "CLEAN_COMMITTED",
+  "dirty_state": [],
+  "untracked_state": [],
+  "toolchain": {"kind": "typescript", "version": "5.9.3", "install_state": "DECLARED_NOT_INSTALLED", "local_executable_required": true, "allow_global_fallback": false},
+  "protected_paths": [],
+  "synthetic_secret_rule": {"marker": "NONE", "must_be_obviously_synthetic": true},
+  "source_files": [
+    {"path": "package-lock.json", "bytes": 673, "sha256": "BDA5C6960636F881F0E8A502CA497B5BD93D5332DC1D906C2F4832042BC7523D"},
+    {"path": "package.json", "bytes": 188, "sha256": "BC9D30B5FAB96F8D879B8C5D19AD8328108C981294645998471B89F27B8394C8"},
+    {"path": "src/index.ts", "bytes": 67, "sha256": "69C26A0D0001F642BC17993B79225D9C2769179992DB53BDEFD6E0537276430A"},
+    {"path": "tsconfig.json", "bytes": 148, "sha256": "CD6B02A4F2022BD0B8A61FEF90ED116325639C672D82B2E9F41135ECD1167993"}
+  ],
+  "expected_test": {"command": "local node_modules/.bin/tsc --version", "status": "BLOCKED", "error_code": "TOOL_NOT_INSTALLED"},
+  "expected_gate": "BLOCKED_TOOL_NOT_INSTALLED",
+  "reset_cleanup": "delete disposable temp directory",
+  "actual_secret_count": 0,
+  "external_systems_allowed": false
+}

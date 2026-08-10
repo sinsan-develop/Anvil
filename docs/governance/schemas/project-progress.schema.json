@@ -11,7 +11,8 @@
     "latest_evidence_refs", "latest_evidence_manifest_ref", "pending_approvals",
     "dir_review", "next_safe_action", "root_human_approval_binding",
     "derived_baseline_binding", "repository", "active_work_instruction",
-    "last_accepted_work_instruction", "reporting_decision", "registry_refs"
+    "last_accepted_work_instruction", "reporting_decision", "registry_refs",
+    "current_progress_evidence_ref"
   ],
   "properties": {
     "schema_version": {"const": "1.0.0"},
@@ -42,6 +43,16 @@
         "decision": {"enum": ["AUTO_CONTINUE", "STOP_AND_REPORT_SCOPE_RISK", "STOP_AND_REPORT_DIR"]},
         "reason_codes": {"type": "array", "items": {"type": "string"}},
         "stop_before_dialogue_report": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "current_progress_evidence_ref": {
+      "type": "object",
+      "required": ["package_id", "path", "manifest_path"],
+      "properties": {
+        "package_id": {"type": "string", "pattern": "^[A-Z]-[0-9]{2}$"},
+        "path": {"type": "string", "pattern": "^docs/progress/progress-handoff-detached-digest-[a-z0-9-]+\\.json$"},
+        "manifest_path": {"type": "string", "pattern": "^docs/evidence/manifests/[A-Za-z0-9_-]+\\.json$"}
       },
       "additionalProperties": false
     }

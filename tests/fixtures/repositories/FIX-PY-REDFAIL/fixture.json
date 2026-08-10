@@ -1,0 +1,26 @@
+{
+  "fixture_id": "FIX-PY-REDFAIL",
+  "schema_version": "1.0.0",
+  "purpose": "Python baseline with a deterministic pre-existing test failure",
+  "verification_ids": ["AV-GATE-007"],
+  "source_root": "tests/fixtures/repositories/FIX-PY-REDFAIL/source",
+  "source_hash": "sha256:7CE285F3B0B89249A0A22F62EE2C62A6D2989308D8A1CF58858FE6C28D5C0E7E",
+  "materializer_version": "1.0.0",
+  "materializer_hash": "sha256:9F0C5ACBA0E58238885CDFC368427B00A787C8189C834D3703414C47BEAAF8FB",
+  "git": {"branch": "main", "commit_time": "2000-01-01T00:00:00Z", "commit_message": "fixture baseline"},
+  "tracked_state": "CLEAN_COMMITTED",
+  "dirty_state": [],
+  "untracked_state": [],
+  "toolchain": {"kind": "python-stdlib", "install_state": "BUILT_IN", "allow_global_fallback": false},
+  "protected_paths": [],
+  "synthetic_secret_rule": {"marker": "NONE", "must_be_obviously_synthetic": true},
+  "source_files": [
+    {"path": "src/calc.py", "bytes": 63, "sha256": "8F85450200DB13108DC37D54ADA5376D715D7C7AFF3BCEB5FFA1F6A75B0C8A03"},
+    {"path": "tests/test_calc.py", "bytes": 219, "sha256": "843BE4D410CA8B56F61D66F3AA8431D628080D5E5B2774F2092E781CD4464D61"}
+  ],
+  "expected_test": {"command": "python -m unittest discover -s tests", "status": "FAIL", "error_code": "BASELINE_TEST_FAILURE", "fingerprint_algorithm": "stable-unittest-failure-v1:test-id+exception-type+message", "output_sha256": "40F10CC2C7400A21D9A8D4A2C555243FD34CDE874348EB828A5824720B322402"},
+  "expected_gate": "BASELINE_FAILURE_RECORDED",
+  "reset_cleanup": "delete disposable temp directory",
+  "actual_secret_count": 0,
+  "external_systems_allowed": false
+}

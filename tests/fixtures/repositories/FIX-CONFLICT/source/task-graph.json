@@ -1,0 +1,7 @@
+{
+  "graph_id": "TG-FIX-CONFLICT-001",
+  "steps": [
+    {"step_id": "STEP-A", "write_paths": ["src/shared.py"]},
+    {"step_id": "STEP-B", "write_paths": ["src/shared.py"]}
+  ]
+}

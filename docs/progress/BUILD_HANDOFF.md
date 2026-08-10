@@ -3,16 +3,16 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 7,
+  "event_sequence": 13,
   "status": "READY",
-  "current_work_package": "G-06",
-  "last_event_id": "evt_g05_main_package_accepted_r2",
+  "current_work_package": "G-07",
+  "last_event_id": "evt_g06_main_package_accepted_r3",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "dir_status": "NOT_REACHED",
-  "repository_head": "a3014da95b34d8fe3a0a22418d78016b0fe57e61",
+  "repository_head": "a70daa4933099b33c76575e0f278f22e15016649",
   "repository_upstream": "origin/main",
-  "next_safe_action": "Main Agent automatically issues the G-06 WorkInstruction under the approved plan",
+  "next_safe_action": "Main Agent may issue the G-07 WorkInstruction under the approved plan; G-07 implementation has not started",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE"
@@ -21,7 +21,7 @@
 
 > 갱신일: 2026-08-10  
 > 현재 상태: `READY`
-> 현재 Phase / Package: `G / G-06`
+> 현재 Phase / Package: `G / G-07`
 
 ## 1. 현재 기준선
 
@@ -43,7 +43,7 @@
 - 최종 승인자: 신산님
 - Main Agent·설계 책임자: 어울
 - Primary Developer Subagent·작업 담당자: `developer-primary`
-- Reviewer/Tester: G-01 PASS, G-02 revision 3 PASS, G-04 revision 2 PASS, G-05 revision 2 PASS
+- Reviewer/Tester: G-01 PASS, G-02 revision 3 PASS, G-04 revision 2 PASS, G-05 revision 2 PASS, G-06 revision 2 PASS
 
 ## 3. 이번 설정에서 완료한 내용
 
@@ -151,10 +151,23 @@
 - 신산님 승인 `APPROVAL-20260810-AUTONOMOUS-EXECUTION-001`: 확정 계획 안의 Package는 자동 진행하며 일반 진행 보고·계속 확인을 하지 않음
 - 신산님 중단 보고 조건: 기능 범위·요구사항·중요 위험 변경 또는 DIR-1·2·3/canonical DIR-X 도달
 - Git origin: `https://github.com/cyhuh7950/anvil.git`
+- G-06 WorkInstruction revision 2: `WI-G-06-20260810-002` / SHA-256 `F8A966191412E3CC4CC29DC752169BC21B9E98CFD702134303F212454924352E`
+- G-06 Developer 결과: `COMPLETED / TEST_REVIEW`; 8 fixture·8 golden·20 scenario·FI-01~08 계약과 Package별 immutable progress detached를 제출
+- G-06 runtime scenario 상태: 전량 `DESIGN_LOCKED / NOT_EXECUTED`; 제품·브라우저·DB·배포 PASS 주장 없음
+- G-06 revision 1 독립 TestReport: `FAILURE_REPORT / REWORK_REQUIRED`, SHA-256 `9B80C65D3DAC88CF0547C83F2F0E1D258974F678F057FB68943EB8E17A0DB42F`; 유효 실패 1회
+- `G06-DEF-001`: REDFAIL fingerprint를 stable test ID·exception type·message만으로 canonicalize하고 32회 단일 hash로 재현
+- `G06-DEF-002`: §49.17의 exact AV·responsible Package set·evidence set을 고정하고 wrong-nonempty trace를 거부
+- `G06-DEF-003`: 8개 golden exact case hash·aggregate·subject candidate를 기존 사람 승인 계보의 Main-authored immutable anchor에 결박하고 coordinated rewrite를 거부
+- G-06 golden anchor: `docs/baselines/G-06_GOLDEN_BASELINE_ANCHOR.md` / SHA-256 `4A3B9FBCC8460D793CA68DB3D88147413F5CE7EC653BA32CF8CFFA3A98AD8351`; 새 승인이 아닌 기존 사람 승인 범위 내 불변 evidence
+- G-06 revision 3 Developer 결과: `COMPLETED / TEST_REVIEW`; 독립 Tester revision 2 재검증 대기
+- G-06 revision 2 독립 TestReport: `PASS / READY_FOR_MAIN_ACCEPTANCE`, SHA-256 `436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546`
+- `G06-DEF-001~003` 독립 `CLOSED`, 신규 차단 finding 0, `AV-GATE-005(fixture 기준)`·`AV-SAFE-010(fixture 준비)` PASS
+- Main Agent 최종 판정: G-06 revision 3 `ACCEPTED`; 검증된 manifest는 `docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json` / SHA-256 `1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0`로 불변 보존
+- current Package는 `G-07 / READY`; G-07 WorkInstruction 발행·구현·commit·push는 시작하지 않음
 
 ## 6. 다음 안전 행동
 
-G-05 revision 2는 독립 Tester PASS와 Main Agent 판정으로 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `a3014da95b34d8fe3a0a22418d78016b0fe57e61`로 일치한다. 현재 G-06은 `READY`이며 active WorkInstruction은 없다. 다음 안전 행동은 승인된 계획에 따라 Main Agent가 G-06 WorkInstruction을 자동 발행하는 것이다. 이 materialization은 G-06 구현을 시작하지 않는다.
+G-05와 G-06은 독립 Tester PASS와 Main Agent 판정으로 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `a70daa4933099b33c76575e0f278f22e15016649`로 일치한다. current Package는 `G-07 / READY`이며 WorkInstruction과 구현은 시작하지 않았다. 다음 안전 행동은 Main Agent가 승인된 계획에 따라 G-07 WorkInstruction을 발행하는 것이다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

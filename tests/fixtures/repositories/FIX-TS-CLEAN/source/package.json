@@ -1,0 +1,7 @@
+{
+  "name": "anvil-fixture-ts-clean",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {"typecheck": "tsc --noEmit -p tsconfig.json"},
+  "devDependencies": {"typescript": "5.9.3"}
+}

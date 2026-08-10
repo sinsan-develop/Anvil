@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0.0",
+  "fixtures": [
+    {"fixture_id": "FIX-PY-CLEAN", "manifest_path": "tests/fixtures/repositories/FIX-PY-CLEAN/fixture.json", "sha256": "0B1A59EE754CB4C193D2FE8190495AF9196866F6895180BA0630631050286616"},
+    {"fixture_id": "FIX-PY-DIRTY", "manifest_path": "tests/fixtures/repositories/FIX-PY-DIRTY/fixture.json", "sha256": "2DA53A66C96F691C8E33EA2BA15E8A0829CC7805F6269F7709ADBD1019FDDE8D"},
+    {"fixture_id": "FIX-PY-REDFAIL", "manifest_path": "tests/fixtures/repositories/FIX-PY-REDFAIL/fixture.json", "sha256": "9BCA89ED4A4C6CA35488D76BF0AF82041ECE3BBC5AD88EF9EEA1CF3906DF342D"},
+    {"fixture_id": "FIX-TS-CLEAN", "manifest_path": "tests/fixtures/repositories/FIX-TS-CLEAN/fixture.json", "sha256": "A92AF061A87179C82A34F8E52E76254251DCFCB8422EF22BBAE98C8AB18001E3"},
+    {"fixture_id": "FIX-TS-NOTOOL", "manifest_path": "tests/fixtures/repositories/FIX-TS-NOTOOL/fixture.json", "sha256": "F0D9F9BBB8274FBC8D82460B61F191FA540B19E49F59DF71F4270ED094E5DFAF"},
+    {"fixture_id": "FIX-PROTECTED", "manifest_path": "tests/fixtures/repositories/FIX-PROTECTED/fixture.json", "sha256": "56EB2070F0E3061C7BAFA267622AE60325A0CAF93ACE6B07611E7ED01355067B"},
+    {"fixture_id": "FIX-LARGE", "manifest_path": "tests/fixtures/repositories/FIX-LARGE/fixture.json", "sha256": "0A060B65C1675379E0F93FA8CABF6D624DFCBFAC1D033C152E3D313CDBB06E5F"},
+    {"fixture_id": "FIX-CONFLICT", "manifest_path": "tests/fixtures/repositories/FIX-CONFLICT/fixture.json", "sha256": "751C553109EAD56769AE4398E7B46C24BE554A8F8D72BF340EA905547FA0CF33"}
+  ]
+}

@@ -1,31 +1,34 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000004",
-  "event_sequence": 7,
-  "snapshot_hash": "08ADEBECFBF81D3A0C737BFA8325C319CA40A0F74D2A521F30CA5D37312B89B5",
-  "updated_at": "2026-08-10T17:30:00+09:00",
-  "last_event_id": "evt_g05_main_package_accepted_r2",
+  "snapshot_id": "snapshot-anvil-build-000007",
+  "event_sequence": 13,
+  "snapshot_hash": "FC58A3B366334F9F17E1153909B859B22BE4835F4C01C2382C3E039F2D9BF34D",
+  "updated_at": "2026-08-10T20:00:00+09:00",
+  "last_event_id": "evt_g06_main_package_accepted_r3",
   "plan_version": "1.4",
   "work_plan_hash": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "G",
-  "current_work_package": "G-06",
+  "current_work_package": "G-07",
   "status": "READY",
-  "completed_packages": ["G-01", "G-02", "G-03", "G-04", "G-05"],
+  "completed_packages": ["G-01", "G-02", "G-03", "G-04", "G-05", "G-06"],
   "active_agent": null,
   "write_lease": null,
   "worker_lease": null,
   "budget_reservations": [],
   "valid_failure_count": 1,
   "latest_evidence_refs": [
-    {"path": "docs/work_orders/G-05_WORK_INSTRUCTION.md", "sha256": "10D54BAC7D6CD87273861AFF2B47B4C09492C7DAEF7B2445B4608603B33B569A"},
-    {"path": "docs/work_orders/G-05_INVOCATION_PROMPT.md", "sha256": "F2F9AD88ECAF41D8753B9C3444F2EACDA33CF6B59F69F4C313DA183C1635CAD2"},
-    {"path": "docs/test_reports/G-05_TEST_REPORT.md", "sha256": "CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E"},
-    {"path": "docs/test_reports/G-05_TEST_REPORT_R2.md", "sha256": "ED0F03496060C84D67DE84C0758611610CD753CF8D854216F9933089F07C758C"}
+    {"path": "docs/work_orders/G-06_WORK_INSTRUCTION.md", "sha256": "F8A966191412E3CC4CC29DC752169BC21B9E98CFD702134303F212454924352E"},
+    {"path": "docs/work_orders/G-06_INVOCATION_PROMPT.md", "sha256": "F2F9B857903B6E63322917E8FE7A920EAF7CF27C90123ACC2D2BA15A48359B1A"},
+    {"path": "docs/test_reports/G-06_TEST_REPORT.md", "sha256": "9B80C65D3DAC88CF0547C83F2F0E1D258974F678F057FB68943EB8E17A0DB42F"},
+    {"path": "docs/baselines/G-06_GOLDEN_BASELINE_ANCHOR.md", "sha256": "4A3B9FBCC8460D793CA68DB3D88147413F5CE7EC653BA32CF8CFFA3A98AD8351"},
+    {"path": "tests/fixtures/golden/golden-baseline-candidate.json", "sha256": "9A1802A39711D64FE571D88912EEF368406E49A9C7835E7145113C2285F28EAF"},
+    {"path": "docs/test_reports/G-06_TEST_REPORT_R2.md", "sha256": "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546"},
+    {"path": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json", "sha256": "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0"}
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json",
-    "sha256": "F9A5E7168B9B68B70D74B68DD495211BDC7961223E5E48CFC6F565638B9E69E6"
+    "path": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json",
+    "sha256": "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -35,7 +38,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Main Agent automatically issues the G-06 WorkInstruction under the approved plan",
+  "next_safe_action": "Main Agent may issue the G-07 WorkInstruction under the approved plan; G-07 implementation has not started",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -51,16 +54,16 @@
   },
   "repository": {
     "branch": "main",
-    "local_head": "a3014da95b34d8fe3a0a22418d78016b0fe57e61",
+    "local_head": "a70daa4933099b33c76575e0f278f22e15016649",
     "upstream": "origin/main",
-    "remote_head": "a3014da95b34d8fe3a0a22418d78016b0fe57e61",
-    "worktree_status": "G-05 accepted; G-06 WorkInstruction not yet issued"
+    "remote_head": "a70daa4933099b33c76575e0f278f22e15016649",
+    "worktree_status": "G-06 ACCEPTED materialization present; G-07 WorkInstruction not issued and implementation not started"
   },
   "active_work_instruction": null,
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-G-05-20260810-001",
-    "path": "docs/work_orders/G-05_WORK_INSTRUCTION.md",
-    "sha256": "10D54BAC7D6CD87273861AFF2B47B4C09492C7DAEF7B2445B4608603B33B569A",
+    "artifact_id": "WI-G-06-20260810-002",
+    "path": "docs/work_orders/G-06_WORK_INSTRUCTION.md",
+    "sha256": "F8A966191412E3CC4CC29DC752169BC21B9E98CFD702134303F212454924352E",
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
@@ -68,11 +71,16 @@
     "reason_codes": ["APPROVED_PLAN_ROUTINE_PROGRESS"],
     "stop_before_dialogue_report": false
   },
+  "current_progress_evidence_ref": {
+    "package_id": "G-06",
+    "path": "docs/progress/progress-handoff-detached-digest-g06.json",
+    "manifest_path": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST.json"
+  },
   "registry_refs": {
-    "failure_ledger": {"path": "docs/progress/failure-ledger.json", "sha256": "A164AF33EDFBD0D8FA83EBB54C6F7A34AC63D04049F84A35171915B0EA9DBA3F"},
+    "failure_ledger": {"path": "docs/progress/failure-ledger.json", "sha256": "EC0209F57DBFEA561C6FE9CF2A6E93934F9BE9C381CF369540DDCEF2ACAAFED8"},
     "non_semantic_revision_bindings": {"path": "docs/progress/non-semantic-revision-bindings.json", "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"},
     "dir_checkpoints": {"path": "docs/progress/dir-checkpoints.json", "sha256": "73147EA0DC940F34A7369E8A58EA7DD738DBA2246DD9F729DE8FB26273E44F4B"},
     "progress_event_contract": {"path": "docs/progress/progress-event-contract.json", "sha256": "EF993F05F327786E84FA2ABEBDB3BCFFA9CF59528ED40E09363FF86363F4539D"},
-    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "4B358C9026027998C8328A311BF962A0B1EC88FCB385B5B494DC38C9AD9F56B9"}
+    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "7A5B49689F2892ED99C9E9668C497A4058795025C1C69A90D18B82CDEA1781E9"}
   }
 }

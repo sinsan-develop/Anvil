@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "source": "Anvil_설계서_v2.md#49.17",
+  "scenarios": [
+    {"scenario_id": "S49-17-01", "scenario_path": "tests/fault/scenarios/S49-17-01.json", "sha256": "B1A1D713A603E7159DF60C6C2E3A424DFEF3CE1448445841373F749372D44C99"},
+    {"scenario_id": "S49-17-02", "scenario_path": "tests/fault/scenarios/S49-17-02.json", "sha256": "0830574502B022916827467E0E8A9443CD5A7503C046641C0B271EBB921F29B7"},
+    {"scenario_id": "S49-17-03", "scenario_path": "tests/fault/scenarios/S49-17-03.json", "sha256": "97A4DC4A6E89078787D62889D17D24139827BE65B99D70DEA76E26BDC0B39C77"},
+    {"scenario_id": "S49-17-04", "scenario_path": "tests/fault/scenarios/S49-17-04.json", "sha256": "B0B88A976A7B1AACF8CA8DF4D6B1AA4C36DB21DA2AAB178D25BCAACD4A7BAB0A"},
+    {"scenario_id": "S49-17-05", "scenario_path": "tests/fault/scenarios/S49-17-05.json", "sha256": "9B2C6C34490E85DAB9ED3C0ABA4401CA4C499E49169095F166546D8791CD979C"},
+    {"scenario_id": "S49-17-06", "scenario_path": "tests/fault/scenarios/S49-17-06.json", "sha256": "69407B71B367634ECC5CF0A9E92AAE85DB63692F84B108AFC78434F427FB1C21"},
+    {"scenario_id": "S49-17-07", "scenario_path": "tests/fault/scenarios/S49-17-07.json", "sha256": "AF6D521DE9F5E8ACE03EBFBD71BA5CD5262835EB984CB48D1CC1F890C3A69333"},
+    {"scenario_id": "S49-17-08", "scenario_path": "tests/fault/scenarios/S49-17-08.json", "sha256": "83864CC0DA70D1AE6CE4B8B90561273FC866D45E600137377426B676010E5B32"},
+    {"scenario_id": "S49-17-09", "scenario_path": "tests/fault/scenarios/S49-17-09.json", "sha256": "4772122C9C14D58EBFFDE2B225B241B4E047A0416D2800F3B7EEC03132491E9D"},
+    {"scenario_id": "S49-17-10", "scenario_path": "tests/fault/scenarios/S49-17-10.json", "sha256": "366F80256BE8357DED2A5DA9C1BEA080224979B2BAAC2A839E67CC95161642D0"},
+    {"scenario_id": "S49-17-11", "scenario_path": "tests/fault/scenarios/S49-17-11.json", "sha256": "9252F4BE3F29F51628C18E299979AC57AC5BED44AD1967B6C75F073716838499"},
+    {"scenario_id": "S49-17-12", "scenario_path": "tests/fault/scenarios/S49-17-12.json", "sha256": "72523194ACA8DFF7EC157D1603D71434F3D8FB88880F88D4007E30B8A7E55E9A"},
+    {"scenario_id": "S49-17-13", "scenario_path": "tests/fault/scenarios/S49-17-13.json", "sha256": "154A7633245580593762CBEFBF32D58DCA8234F94F57807B8D8103208A9CC6E2"},
+    {"scenario_id": "S49-17-14", "scenario_path": "tests/fault/scenarios/S49-17-14.json", "sha256": "A1692142A068109FBF3D57BD64691D23FC30DE76333C6EAE5F38FDCF903E0653"},
+    {"scenario_id": "S49-17-15", "scenario_path": "tests/fault/scenarios/S49-17-15.json", "sha256": "5649E615F0603EE4FE8BA43B82BB86684182CDDCF660D8651048144BBA0E10FE"},
+    {"scenario_id": "S49-17-16", "scenario_path": "tests/fault/scenarios/S49-17-16.json", "sha256": "6D18FF8CFAA9A604CBD28A3348A914A833ECC153381618B975BD62E8F25A2B65"},
+    {"scenario_id": "S49-17-17", "scenario_path": "tests/fault/scenarios/S49-17-17.json", "sha256": "8D522E7232C1D754B93CCA3003D58CF93239A47E5E6893EF0F83C0D92889C4DB"},
+    {"scenario_id": "S49-17-18", "scenario_path": "tests/fault/scenarios/S49-17-18.json", "sha256": "8FA496258F75487129A03F9F8CD18E4A282866789695C0B78DA1AE1B566A9CAB"},
+    {"scenario_id": "S49-17-19", "scenario_path": "tests/fault/scenarios/S49-17-19.json", "sha256": "C885BA80744EBC3FD264FC8C601D6016DC5DA0755EE2B54E24EC95B732F5EF0E"},
+    {"scenario_id": "S49-17-20", "scenario_path": "tests/fault/scenarios/S49-17-20.json", "sha256": "2C2DF451FE9707DAAE4AD03A1A8D1CA763F06C8D5D52F4DC8ECE1A29396F1312"}
+  ]
+}

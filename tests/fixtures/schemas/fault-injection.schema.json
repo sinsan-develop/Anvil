@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/test/fault-injection.schema.json",
+  "title": "Anvil Fault Injection Contract",
+  "type": "object",
+  "required": ["fault_id", "verification_ids", "injection_point", "minimum_repeat_count", "implementation_status", "execution_status"],
+  "properties": {
+    "minimum_repeat_count": {"const": 3},
+    "implementation_status": {"const": "DESIGN_LOCKED"},
+    "execution_status": {"const": "NOT_EXECUTED"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,26 @@
+{
+  "fixture_id": "FIX-CONFLICT",
+  "schema_version": "1.0.0",
+  "purpose": "Two graph steps request the same canonical write path",
+  "verification_ids": ["AV-SAFE-023", "AV-FLOW-006"],
+  "source_root": "tests/fixtures/repositories/FIX-CONFLICT/source",
+  "source_hash": "sha256:07CBDE10EDE51D53F081AB873B9FEBF01FBE2D09C8407C2357532E17C1E8414F",
+  "materializer_version": "1.0.0",
+  "materializer_hash": "sha256:9F0C5ACBA0E58238885CDFC368427B00A787C8189C834D3703414C47BEAAF8FB",
+  "git": {"branch": "main", "commit_time": "2000-01-01T00:00:00Z", "commit_message": "fixture baseline"},
+  "tracked_state": "CLEAN_COMMITTED",
+  "dirty_state": [],
+  "untracked_state": [],
+  "toolchain": {"kind": "none", "install_state": "NOT_REQUIRED", "allow_global_fallback": false},
+  "protected_paths": [],
+  "synthetic_secret_rule": {"marker": "NONE", "must_be_obviously_synthetic": true},
+  "source_files": [
+    {"path": "src/shared.py", "bytes": 19, "sha256": "5CBCB681A7B60CFD47DCBB07B977C320F68893DEB5F89CAD89074D2CB15DEBD7"},
+    {"path": "task-graph.json", "bytes": 179, "sha256": "DCF16DF54E95D4B832046EA9D04DDE4B138EC18DE0795CE1148FC8CC64F01314"}
+  ],
+  "expected_test": {"command": "canonical write path collision check", "status": "BLOCKED", "error_code": "WRITE_PATH_CONFLICT"},
+  "expected_gate": "CONFLICT_DETECTED",
+  "reset_cleanup": "delete disposable temp directory",
+  "actual_secret_count": 0,
+  "external_systems_allowed": false
+}

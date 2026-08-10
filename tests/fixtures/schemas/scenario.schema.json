@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/test/scenario.schema.json",
+  "title": "Anvil Design-Locked Scenario",
+  "type": "object",
+  "required": ["scenario_id", "source_clause", "verification_id", "responsible_package", "gate", "evidence_types", "implementation_status", "execution_status"],
+  "properties": {
+    "implementation_status": {"const": "DESIGN_LOCKED"},
+    "execution_status": {"const": "NOT_EXECUTED"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,30 @@
+{
+  "case_id": "GC-PY-DIRTY-01",
+  "fixture_id": "FIX-PY-DIRTY",
+  "source_requirement": "test plan 6.1 dirty and untracked preservation",
+  "verification_ids": ["AV-SAFE-010", "AV-STAT-021"],
+  "action": "inspect materialized repository without modifying user-owned dirty state",
+  "work_instruction_ref": {"artifact_id": "WI-G-06-20260810-002", "content_hash": "sha256:F8A966191412E3CC4CC29DC752169BC21B9E98CFD702134303F212454924352E"},
+  "precondition": "src/calc.py modified and notes/local-note.txt untracked after baseline commit",
+  "acquisition_mode": "fixture",
+  "expected_result_status": "FIXTURE_EXPECTATION_LOCKED",
+  "expected_changed_paths": [],
+  "forbidden_paths": ["src/calc.py", "notes/local-note.txt"],
+  "expected_diff_hash": "NOT_APPLICABLE:READ_ONLY_INSPECTION",
+  "expected_tests": {"pass": 1, "fail": 0, "skip": 0, "blocked": 0, "reason": "dirty preservation check"},
+  "gate_results": {"DIRTY_PRESERVATION": "PASS", "PRODUCT": "NOT_EXECUTED"},
+  "preserved_paths": [
+    {"path": "src/calc.py", "preserve": ["content", "sha256", "mtime_ns"]},
+    {"path": "notes/local-note.txt", "preserve": ["content", "sha256", "mtime_ns"]}
+  ],
+  "expected_event": "FIXTURE_INSPECTED_READ_ONLY",
+  "expected_blocked_error_code": null,
+  "evidence_manifest_skeleton": {"environment": "ENV-LOCAL", "acquisition_mode": "fixture", "product_pass": false},
+  "forbidden_side_effects": ["dirty file write", "untracked file write", "git clean", "git reset"],
+  "fail_if": ["dirty content, hash, or mtime changes", "untracked file disappears", "SKIPPED or BLOCKED counts as PASS"],
+  "frozen_at": "2026-08-10T18:10:00+09:00",
+  "frozen_by": "main-agent-eoul",
+  "golden_content_hash": "sha256:753162D1CFF138297332BCA0816CB0418706E84060596DE2961A363D123EE49E",
+  "supersedes": null,
+  "owner_approval_ref": "APPROVAL-20260810-INTEGRATED-BASELINE-001"
+}

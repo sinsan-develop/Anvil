@@ -1,0 +1,26 @@
+{
+  "fixture_id": "FIX-PY-CLEAN",
+  "schema_version": "1.0.0",
+  "purpose": "Clean Python baseline with a real passing unit test",
+  "verification_ids": ["AV-GATE-005"],
+  "source_root": "tests/fixtures/repositories/FIX-PY-CLEAN/source",
+  "source_hash": "sha256:8849CA9BF6FA4BB25CD748959958DEEBC20594207E72804CF3EE566DD8B1CCEA",
+  "materializer_version": "1.0.0",
+  "materializer_hash": "sha256:9F0C5ACBA0E58238885CDFC368427B00A787C8189C834D3703414C47BEAAF8FB",
+  "git": {"branch": "main", "commit_time": "2000-01-01T00:00:00Z", "commit_message": "fixture baseline"},
+  "tracked_state": "CLEAN_COMMITTED",
+  "dirty_state": [],
+  "untracked_state": [],
+  "toolchain": {"kind": "python-stdlib", "install_state": "BUILT_IN", "allow_global_fallback": false},
+  "protected_paths": [],
+  "synthetic_secret_rule": {"marker": "NONE", "must_be_obviously_synthetic": true},
+  "source_files": [
+    {"path": "src/calc.py", "bytes": 63, "sha256": "0049214146C09E015865E54237ECC4D15C9E043886CB20D1D9C68659BF744BC9"},
+    {"path": "tests/test_calc.py", "bytes": 214, "sha256": "FFE6CAFEE408463A7B252714CBEF4F5B0A572ABDE7C438C6B5E207D74B91A410"}
+  ],
+  "expected_test": {"command": "python -m unittest discover -s tests", "status": "PASS", "output_sha256": null},
+  "expected_gate": "FIXTURE_READY",
+  "reset_cleanup": "delete disposable temp directory",
+  "actual_secret_count": 0,
+  "external_systems_allowed": false
+}

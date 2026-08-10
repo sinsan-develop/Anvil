@@ -46,6 +46,7 @@ EXTENDED_PROGRESS_FIELDS = {
     "last_accepted_work_instruction",
     "reporting_decision",
     "registry_refs",
+    "current_progress_evidence_ref",
 }
 
 BUNDLE_PATHS = {
@@ -149,6 +150,21 @@ def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def resolve_detached_digest_path(progress: Mapping[str, Any]) -> str:
+    reference = progress.get("current_progress_evidence_ref")
+    if reference is None:
+        return BUNDLE_PATHS["detached_digest"]
+    if not isinstance(reference, dict):
+        raise ValueError("CURRENT_PROGRESS_EVIDENCE_REF_INVALID")
+    relative = reference.get("path")
+    if not isinstance(relative, str) or not re.fullmatch(
+        r"docs/progress/progress-handoff-detached-digest-[a-z0-9-]+\.json",
+        relative,
+    ):
+        raise ValueError("CURRENT_PROGRESS_EVIDENCE_PATH_INVALID")
+    return relative
+
+
 def extract_handoff_summary(text: str) -> dict[str, Any]:
     match = re.search(r"```json anvil-recovery-summary\s*(\{.*?\})\s*```", text, re.DOTALL)
     if match is None:
@@ -160,6 +176,8 @@ def load_bundle(root: Path) -> dict[str, Any]:
     resolved = root.resolve()
     bundle: dict[str, Any] = {"_root": resolved, "_file_hashes": {}}
     for key, relative in BUNDLE_PATHS.items():
+        if key == "detached_digest":
+            continue
         path = resolved / relative
         if key == "handoff_text":
             text = path.read_text(encoding="utf-8")
@@ -168,6 +186,11 @@ def load_bundle(root: Path) -> dict[str, Any]:
         else:
             bundle[key] = _load_json(path)
         bundle["_file_hashes"][relative] = _sha256(path)
+    detached_relative = resolve_detached_digest_path(bundle["progress"])
+    detached_path = resolved / detached_relative
+    bundle["detached_digest"] = _load_json(detached_path)
+    bundle["_detached_digest_path"] = detached_relative
+    bundle["_file_hashes"][detached_relative] = _sha256(detached_path)
     return bundle
 
 
@@ -658,7 +681,7 @@ def validate_detached_progress_binding(bundle: Mapping[str, Any]) -> list[str]:
 def validate_manifest_progress_binding(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
-    relative = BUNDLE_PATHS["detached_digest"]
+    relative = bundle.get("_detached_digest_path", BUNDLE_PATHS["detached_digest"])
     rows = [
         row
         for row in manifest.get("raw_checksums", [])
@@ -675,6 +698,45 @@ def validate_manifest_progress_binding(
     if row.get("sha256") != actual_hash or row.get("bytes") != actual_bytes:
         return ["MANIFEST_DETACHED_DIGEST_BINDING_MISMATCH"]
     return []
+
+
+def validate_historical_manifest_raw_checksums(
+    manifest: Mapping[str, Any], root: Path
+) -> list[str]:
+    """Validate an accepted past manifest's frozen rows without comparing evolved files."""
+    del root
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or not rows:
+        return ["HISTORICAL_MANIFEST_RAW_CHECKSUMS_MISSING"]
+    canonical_rows: list[tuple[bytes, str]] = []
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("HISTORICAL_MANIFEST_RAW_ROW_INVALID")
+            continue
+        relative = row.get("path")
+        if not isinstance(relative, str) or relative.startswith("/") or "\\" in relative or ".." in Path(relative).parts:
+            errors.append("HISTORICAL_MANIFEST_RAW_PATH_INVALID")
+            continue
+        byte_count = row.get("bytes")
+        checksum = row.get("sha256")
+        if relative in seen or not isinstance(byte_count, int) or byte_count < 0 or not isinstance(checksum, str) or not re.fullmatch(r"[0-9A-F]{64}", checksum):
+            errors.append("HISTORICAL_MANIFEST_RAW_ROW_INVALID")
+            continue
+        seen.add(relative)
+        text = f"{relative}\t{byte_count}\t{checksum}"
+        canonical_rows.append((relative.encode("utf-8"), text))
+    canonical_rows.sort(key=lambda item: item[0])
+    canonical = "\n".join(text for _, text in canonical_rows).encode("utf-8")
+    calculated = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if (
+        manifest.get("target_canonical_bytes") != len(canonical)
+        or manifest.get("target_hash") != calculated
+        or manifest.get("delivered_hash") != calculated
+    ):
+        errors.append("HISTORICAL_MANIFEST_TARGET_MISMATCH")
+    return sorted(set(errors))
 
 
 def validate_accepted_evidence_chain(
@@ -837,14 +899,26 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
     errors.extend(_validate_referenced_hashes(bundle))
     errors.extend(_validate_git_projection(bundle))
     errors.extend(validate_detached_progress_binding(bundle))
-    manifest_path = bundle["_root"] / "docs" / "evidence" / "manifests" / "G-05_EVIDENCE_MANIFEST.json"
+    current_ref = progress.get("current_progress_evidence_ref") or {}
+    current_manifest_relative = current_ref.get(
+        "manifest_path", "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
+    )
+    manifest_path = bundle["_root"] / current_manifest_relative
     try:
         manifest = _load_json(manifest_path)
     except (OSError, json.JSONDecodeError):
         errors.append("MANIFEST_DETACHED_DIGEST_BINDING_MISSING")
     else:
         errors.extend(validate_manifest_progress_binding(manifest, bundle))
-        errors.extend(validate_accepted_evidence_chain(manifest, bundle))
+    historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
+    try:
+        historical_g05_manifest = _load_json(historical_g05_path)
+    except (OSError, json.JSONDecodeError):
+        errors.append("HISTORICAL_MANIFEST_MISSING")
+    else:
+        errors.extend(validate_historical_manifest_raw_checksums(historical_g05_manifest, bundle["_root"]))
+        if progress.get("current_work_package") == "G-05":
+            errors.extend(validate_accepted_evidence_chain(historical_g05_manifest, bundle))
     errors.extend(validate_schema_catalog(bundle["schema_catalog"], bundle["_root"]))
     return sorted(set(errors))
 

@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/test/golden-case.schema.json",
+  "title": "Anvil G-06 Golden Acceptance Case",
+  "type": "object",
+  "required": ["case_id", "fixture_id", "work_instruction_ref", "expected_result_status", "fail_if", "frozen_at", "frozen_by", "golden_content_hash", "owner_approval_ref"],
+  "properties": {
+    "acquisition_mode": {"const": "fixture"},
+    "golden_content_hash": {"type": "string", "pattern": "^sha256:[0-9A-F]{64}$"}
+  },
+  "additionalProperties": true
+}

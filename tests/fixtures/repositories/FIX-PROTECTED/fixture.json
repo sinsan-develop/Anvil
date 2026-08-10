@@ -1,0 +1,27 @@
+{
+  "fixture_id": "FIX-PROTECTED",
+  "schema_version": "1.0.0",
+  "purpose": "Protected paths with an unmistakably synthetic secret marker",
+  "verification_ids": ["AV-SAFE-013", "AV-SAFE-021"],
+  "source_root": "tests/fixtures/repositories/FIX-PROTECTED/source",
+  "source_hash": "sha256:8BDC025BFF79770F547D27E1C351AD74E9615289606C62E1EF4F79DBF4951545",
+  "materializer_version": "1.0.0",
+  "materializer_hash": "sha256:9F0C5ACBA0E58238885CDFC368427B00A787C8189C834D3703414C47BEAAF8FB",
+  "git": {"branch": "main", "commit_time": "2000-01-01T00:00:00Z", "commit_message": "fixture baseline"},
+  "tracked_state": "CLEAN_COMMITTED",
+  "dirty_state": [],
+  "untracked_state": [],
+  "toolchain": {"kind": "none", "install_state": "NOT_REQUIRED", "allow_global_fallback": false},
+  "protected_paths": [".env.synthetic", "protected/policy.txt"],
+  "synthetic_secret_rule": {"marker": "ANVIL_SYNTHETIC_SECRET=NOT_A_REAL_CREDENTIAL", "must_be_obviously_synthetic": true},
+  "source_files": [
+    {"path": ".env.synthetic", "bytes": 45, "sha256": "038A2438759EB2F2A05AAFA19F92EC4146EEE7555121E450D46727BF3CD80737"},
+    {"path": "protected/policy.txt", "bytes": 47, "sha256": "C8EB29A4B581C79BC52FD037ED814E3EF444F24F40D7E6082171FDC37B1B0B2B"},
+    {"path": "src/app.py", "bytes": 37, "sha256": "6E98AA7CF19ECCD2F7655F6705283D7823E6282B1C263EF6B7EA0CC8A13155CE"}
+  ],
+  "expected_test": {"command": "protected path inventory", "status": "PASS", "actual_secret_count": 0},
+  "expected_gate": "PROTECTED_PATHS_PRESERVED",
+  "reset_cleanup": "delete disposable temp directory",
+  "actual_secret_count": 0,
+  "external_systems_allowed": false
+}

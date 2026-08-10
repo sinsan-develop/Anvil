@@ -1,0 +1,9 @@
+{
+  "schema_version": "1.0.0",
+  "schemas": [
+    {"path": "tests/fixtures/schemas/fixture-repository.schema.json", "sha256": "4ED86F855231D1FBA4EB07C1F7F771F7FF6FFC34CDA386A98A1C3BBAF29491E4"},
+    {"path": "tests/fixtures/schemas/golden-case.schema.json", "sha256": "524D539963BF43DD780778ED6B7841530DCC482693836CD5E47F7A441ACB0863"},
+    {"path": "tests/fixtures/schemas/scenario.schema.json", "sha256": "ED6868F4D696648EC7A6B8CD0AB815B3F429105715672E41F3452C5DA551C0AA"},
+    {"path": "tests/fixtures/schemas/fault-injection.schema.json", "sha256": "6F35C007F3E1435E4F0D77EBF3EAA1560EBA92B51932023C3B00F6B1CA4EFF9E"}
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "cycle": ["src.modules.module_01", "src.modules.module_02", "src.modules.module_01"],
+  "expected": "EXPLICIT_CYCLE_DETECTED"
+}
