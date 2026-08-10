@@ -3,42 +3,42 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 30,
-  "status": "READY",
+  "event_sequence": 33,
+  "status": "ACTIVE",
   "current_work_package": "A-01",
-  "last_event_id": "evt_a01_precondition_task4_accepted",
+  "last_event_id": "evt_a01_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 3,
   "dir_status": "NOT_REACHED",
-  "repository_head": "853da76458929e007d8a02ab32f7f918ab26d590",
+  "repository_head": "e97c35540c51d812c221469e272f0f87cd667839",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "853da76458929e007d8a02ab32f7f918ab26d590",
+  "repository_remote_head": "e97c35540c51d812c221469e272f0f87cd667839",
   "repository_status": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "853da76458929e007d8a02ab32f7f918ab26d590",
+  "repository_validated_base_commit": "e97c35540c51d812c221469e272f0f87cd667839",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-  "repository_exact_allowed_paths": ["docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json", "scripts/check_g07_baseline.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_project_progress.py"],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+  "repository_exact_allowed_paths": ["docs/evidence/manifests/A-01_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a01-start.json", "docs/work_orders/A-01_INVOCATION_PROMPT.md", "docs/work_orders/A-01_WORK_INSTRUCTION.md", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a01-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-01_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Main may issue the A-01 WorkInstruction under the accepted plan; A-01 implementation remains not started and requires a new valid worker/write lease",
+  "next_safe_action": "developer-primary-a01 may execute only WI-A-01-20260811-001 within the active worker/write lease and must start with the prescribed RED test",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": {"artifact_id": "WI-A-01-20260811-001", "sha256": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A", "package_status": "ACTIVE"},
+  "worker_lease": {"lease_id": "worker-lease-a01-20260811-001", "actor_id": "developer-primary-a01", "execution_fencing_token": "a01-execution-fence-epoch-1-e97c355", "lease_epoch": 1, "expires_at": "2026-08-11T13:35:00+09:00"},
+  "write_lease": {"lease_id": "write-lease-a01-20260811-001", "worker_lease_id": "worker-lease-a01-20260811-001", "write_fencing_token": "a01-write-fence-epoch-1-e97c355", "write_epoch": 1, "expires_at": "2026-08-11T13:35:00+09:00"}
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `READY`
+> 현재 상태: `ACTIVE`
 > 현재 Phase / Package: `A / A-01`
 
 ## 1. 현재 기준선
@@ -212,10 +212,13 @@
 - sequence 30 `REPOSITORY_RECONCILED`는 Task 4 보고서 `9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369`를 수락하고 A-01 사전조건을 `ACCEPTED / READY_FOR_A01_WI`로 투영함
 - active 상태는 A-01 `READY`, active WorkInstruction·worker lease·write lease `null`이며 `AV-FLOW-001`은 계속 `RUNTIME_DEFERRED`임
 - repository projection은 base `853da76458929e007d8a02ab32f7f918ab26d590`와 정확한 9개 tracked path allowlist를 결박하며 final commit SHA 자기참조를 요구하지 않음
+- sequence 31~33은 Main Agent가 `developer-primary-a01`에 worker/write lease를 발급하고 WI-A-01-20260811-001을 `ACTIVE`로 시작한 비소급 착수 기록임
+- historical baseline `7422b07b85bcdcec52031e1b10098ab6ca089170`은 dispatch HEAD `e97c35540c51d812c221469e272f0f87cd667839`의 ancestor이며, dispatch-time local/upstream 일치는 start Event와 current repository projection에 별도 결박함
+- `AV-FLOW-001`은 계속 `RUNTIME_DEFERRED / NOT_EXECUTED`; 기능 범위·요구사항·중요 위험 변경 및 DIR 도달 없음, 보고 결정은 `AUTO_CONTINUE`
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. G Gate checkpoint는 `CLEARED`이고 current Package는 `A-01 / READY`다. Task 4 독립 보고서는 수락됐고 A-01 사전조건은 `ACCEPTED / READY_FOR_A01_WI`다. 현재 repository 기준선은 `853da76458929e007d8a02ab32f7f918ab26d590`이며, final fix wave는 선언된 9개 tracked path만 허용하는 `EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT` 상태다. Main은 승인된 계획 아래 A-01 WorkInstruction을 발행할 수 있으나 아직 WorkInstruction·worker lease·write lease는 없고 구현은 시작되지 않았다.
+G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. G Gate checkpoint는 `CLEARED`이고 current Package는 `A-01 / ACTIVE`다. Task 4 사전조건 수락 이후 Main이 비의미 revision WI와 Invocation을 결박하고 `developer-primary-a01`의 worker/write lease를 발급했다. repository dispatch 기준은 local/upstream이 일치한 `e97c35540c51d812c221469e272f0f87cd667839`이며 착수 evidence descendant는 projection-aware checker/test를 포함한 선언된 13개 tracked path로 제한한다. 다음 안전 행동은 Developer가 활성 lease와 WI 허용 경로 안에서 prescribed RED test부터 시작하는 것이다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

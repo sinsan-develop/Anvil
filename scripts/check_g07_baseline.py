@@ -58,6 +58,10 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_project_progress.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_project_progress.py",
+    "scripts/check_phase_g_gate.py",
+    "tests/tooling/test_phase_g_gate.py",
+    "docs/work_orders/A-01_WORK_INSTRUCTION.md",
+    "docs/work_orders/A-01_INVOCATION_PROMPT.md",
 }
 
 
@@ -648,7 +652,17 @@ def validate_repository(
         for event in events
         if event.get("event_type") in {"GIT_PUSH", "REPOSITORY_RECONCILED"}
     ]
-    reconciliation_event = repository_events[-1] if repository_events else phase_g_checkpoint
+    dispatch_events = [
+        event for event in events
+        if event.get("event_type") == "PACKAGE_STARTED"
+        and isinstance(event.get("details"), dict)
+        and event["details"].get("dispatch_head")
+    ]
+    reconciliation_event = max(
+        repository_events + dispatch_events,
+        key=lambda event: event.get("sequence", 0),
+        default=phase_g_checkpoint,
+    )
     reconciliation = reconciliation_event.get("details", {}) if reconciliation_event else {}
     if not reconciliation_events:
         _error(errors, "PROGRESS_RECONCILIATION_EVENT_MISSING", "docs/progress/progress-events.json", "REPOSITORY_RECONCILED")

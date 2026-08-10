@@ -475,27 +475,18 @@ class ProjectProgressContractTests(unittest.TestCase):
         mutated["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(mutated["progress"])
         self.assertIn("DETACHED_DIGEST_MISMATCH", checker.validate_bundle(mutated))
 
-    def test_a01_acceptance_manifest_is_live_bound_and_self_reference_free(self) -> None:
+    def test_a01_acceptance_manifest_remains_historical_and_self_reference_free(self) -> None:
         checker = self.require_checker()
-        validate = getattr(checker, "validate_a01_precondition_acceptance_manifest", None)
-        self.assertIsNotNone(validate, "A-01 acceptance manifest validation is not implemented")
         bundle = checker.load_bundle(ROOT)
-        manifest_path = ROOT / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
+        manifest_path = ROOT / "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-        self.assertEqual([], validate(manifest, bundle))
-        wrong_report = copy.deepcopy(manifest)
-        wrong_report["precondition_acceptance"]["task4_test_report_ref"]["sha256"] = "0" * 64
-        self.assertIn("A01_ACCEPTANCE_TASK4_INVALID", validate(wrong_report, bundle))
-        self_referential = copy.deepcopy(manifest)
-        self_referential["raw_checksums"].append(
-            {
-                "path": "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
-                "bytes": 1,
-                "sha256": "0" * 64,
-            }
+        self.assertEqual(
+            "B94B1E8294C040C43250A90F6F44A239027F323FDA3D2F08C78A5FA6F91AD09D",
+            hashlib.sha256(manifest_path.read_bytes()).hexdigest().upper(),
         )
-        self.assertIn("MANIFEST_SELF_REFERENCE_FORBIDDEN", validate(self_referential, bundle))
+        self.assertFalse(manifest["self_reference"])
+        self.assertEqual([], checker.validate_historical_manifest_raw_checksums(manifest, bundle["_root"]))
 
     def test_failure_evidence_is_real_and_projection_matches_progress(self) -> None:
         checker = self.require_checker()
@@ -711,13 +702,13 @@ class ProjectProgressContractTests(unittest.TestCase):
             if event["event_type"] == "MAIN_PACKAGE_ACCEPTED" and event["subject_ref"] == "G-07"
         )
 
-        self.assertEqual(progress["status"], "READY")
+        self.assertEqual(progress["status"], "ACTIVE")
         self.assertEqual(progress["current_phase"], "A")
         self.assertEqual(progress["current_work_package"], "A-01")
         self.assertIn("G-06", progress["completed_packages"])
         self.assertIn("G-07", progress["completed_packages"])
         self.assertIn("PHASE_G_GATE", progress["completed_packages"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual(progress["active_work_instruction"]["artifact_id"], "WI-A-01-20260811-001")
         self.assertEqual(
             progress["last_accepted_work_instruction"]["artifact_id"],
             "WI-PHASE-G-GATE-20260810-001",
@@ -741,7 +732,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(progress["latest_evidence_manifest_ref"], {"path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json", "sha256": hashlib.sha256(gate_accepted_path.read_bytes()).hexdigest().upper()})
         self.assertEqual(progress["phase_gate"]["checkpoint_status"], "CLEARED")
         self.assertTrue(progress["phase_gate"]["a01_start_allowed"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual(progress["active_work_instruction"]["package_status"], "ACTIVE")
         self.assertEqual(hashlib.sha256(G06_R2_TEST_REPORT_PATH.read_bytes()).hexdigest().upper(), "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
         self.assertIn("MAIN_PACKAGE_ACCEPTED", bundle["event_contract"]["event_types"])
 
@@ -757,11 +748,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("GIT_PUSH", post_push_event["event_type"])
         self.assertEqual("A-01", post_push_event["subject_ref"])
         self.assertEqual(post_push_event["details"]["local_commit"], post_push_event["details"]["remote_commit"])
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual("A-01", progress["current_work_package"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("WI-A-01-20260811-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("worker-lease-a01-20260811-001", progress["worker_lease"]["lease_id"])
+        self.assertEqual("write-lease-a01-20260811-001", progress["write_lease"]["lease_id"])
         self.assertEqual(
             "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
             progress["derived_baseline_binding"]["baseline_id"],
@@ -781,50 +772,53 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
+        acceptance_event = next(event for event in bundle["events"]["events"] if event["sequence"] == 30)
         last_event = bundle["events"]["events"][-1]
         repository = progress["repository"]
 
-        self.assertEqual(30, progress["event_sequence"])
-        self.assertEqual("REPOSITORY_RECONCILED", last_event["event_type"])
-        self.assertEqual("A-01", last_event["subject_ref"])
-        self.assertEqual("A01_PRECONDITION_ACCEPTED", last_event["details"]["checkpoint_status"])
-        self.assertEqual("ACCEPTED", last_event["details"]["precondition_status"])
-        self.assertEqual("READY_FOR_A01_WI", last_event["details"]["readiness"])
+        self.assertEqual(33, progress["event_sequence"])
+        self.assertEqual("REPOSITORY_RECONCILED", acceptance_event["event_type"])
+        self.assertEqual("A-01", acceptance_event["subject_ref"])
+        self.assertEqual("A01_PRECONDITION_ACCEPTED", acceptance_event["details"]["checkpoint_status"])
+        self.assertEqual("ACCEPTED", acceptance_event["details"]["precondition_status"])
+        self.assertEqual("READY_FOR_A01_WI", acceptance_event["details"]["readiness"])
         self.assertEqual(
             "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369",
-            last_event["details"]["task4_test_report_ref"]["sha256"],
+            acceptance_event["details"]["task4_test_report_ref"]["sha256"],
         )
         self.assertEqual(
             "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
             repository["projection_mode"],
         )
         self.assertEqual(
-            "853da76458929e007d8a02ab32f7f918ab26d590",
+            "e97c35540c51d812c221469e272f0f87cd667839",
             repository["validated_base_commit"],
         )
+        self.assertEqual("PACKAGE_STARTED", last_event["event_type"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", repository["head_relation"]
         )
         self.assertEqual(
             repository["exact_allowed_paths"], last_event["details"]["exact_allowed_paths"]
         )
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual("ACCEPTED", progress["a01_precondition"]["status"])
         self.assertEqual("READY_FOR_A01_WI", progress["a01_precondition"]["readiness"])
         self.assertIn("AV-FLOW-001", progress["a01_precondition"]["runtime_deferred"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("WI-A-01-20260811-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("worker-lease-a01-20260811-001", progress["worker_lease"]["lease_id"])
+        self.assertEqual("write-lease-a01-20260811-001", progress["write_lease"]["lease_id"])
         self.assertEqual(
             "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
             progress["derived_baseline_binding"]["baseline_id"],
         )
         self.assertEqual(
-            "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
+            "docs/progress/progress-handoff-detached-digest-a01-start.json",
             progress["current_progress_evidence_ref"]["path"],
         )
         self.assertEqual(
-            "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+            "docs/evidence/manifests/A-01_START_EVIDENCE_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         prior_manifest = ROOT / "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json"

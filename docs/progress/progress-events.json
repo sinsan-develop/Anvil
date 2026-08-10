@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 30,
+  "last_sequence": 33,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -440,6 +440,101 @@
         "active_work_instruction": null,
         "worker_lease": null,
         "write_lease": null,
+        "runtime_deferred": ["AV-FLOW-001"]
+      }
+    },
+    {
+      "event_id": "evt_a01_worker_lease_issued",
+      "sequence": 31,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T01:35:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-01",
+      "details": {
+        "lease_id": "worker-lease-a01-20260811-001",
+        "fencing_token": "a01-execution-fence-epoch-1-e97c355",
+        "execution_fencing_token": "a01-execution-fence-epoch-1-e97c355",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary-a01",
+        "subject_ref": "A-01",
+        "baseline_hash": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A",
+        "baseline_git_commit": "7422b07b85bcdcec52031e1b10098ab6ca089170",
+        "dispatch_head": "e97c35540c51d812c221469e272f0f87cd667839",
+        "issued_at": "2026-08-11T01:35:00+09:00",
+        "expires_at": "2026-08-11T13:35:00+09:00"
+      }
+    },
+    {
+      "event_id": "evt_a01_write_lease_issued",
+      "sequence": 32,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T01:35:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-01",
+      "details": {
+        "lease_id": "write-lease-a01-20260811-001",
+        "worker_lease_id": "worker-lease-a01-20260811-001",
+        "fencing_token": "a01-write-fence-epoch-1-e97c355",
+        "write_fencing_token": "a01-write-fence-epoch-1-e97c355",
+        "write_epoch": 1,
+        "actor_id": "developer-primary-a01",
+        "subject_ref": "A-01",
+        "baseline_hash": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A",
+        "issued_at": "2026-08-11T01:35:01+09:00",
+        "expires_at": "2026-08-11T13:35:00+09:00",
+        "path_scope": [
+          "docs/architecture/a01/**",
+          "scripts/check_a01_journey.py",
+          "tests/tooling/test_a01_journey.py",
+          "tests/fixtures/a01/**",
+          "docs/validation/A-01_*",
+          "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST.json",
+          "docs/completion_reports/A-01_COMPLETION_REPORT.md",
+          "docs/progress/**"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_a01_package_started",
+      "sequence": 33,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-11T01:35:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-01",
+      "details": {
+        "work_instruction_id": "WI-A-01-20260811-001",
+        "work_instruction_path": "docs/work_orders/A-01_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A",
+        "invocation_path": "docs/work_orders/A-01_INVOCATION_PROMPT.md",
+        "invocation_sha256": "A121AB38AF7928725D75ED71751FF576E1CD9BEC86D2ACCF8A694760613823C8",
+        "package_status": "ACTIVE",
+        "developer_actor": "developer-primary-a01",
+        "worker_lease_id": "worker-lease-a01-20260811-001",
+        "write_lease_id": "write-lease-a01-20260811-001",
+        "dispatch_head": "e97c35540c51d812c221469e272f0f87cd667839",
+        "dispatch_upstream_head": "e97c35540c51d812c221469e272f0f87cd667839",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "e97c35540c51d812c221469e272f0f87cd667839",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-01_START_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a01-start.json",
+          "docs/work_orders/A-01_INVOCATION_PROMPT.md",
+          "docs/work_orders/A-01_WORK_INSTRUCTION.md",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "change_classification": "NON_SEMANTIC",
+        "reporting_decision": "AUTO_CONTINUE",
         "runtime_deferred": ["AV-FLOW-001"]
       }
     }

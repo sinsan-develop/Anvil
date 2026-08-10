@@ -1,0 +1,80 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-01-START-20260811-005",
+  "artifact_type": "package_start_manifest",
+  "project_id": "anvil",
+  "version": 5,
+  "artifact_status": "active_start_recorded",
+  "content_hash": "sha256:E01B9EE5F0B31EA7601F5A9965C9F9F30D60EC03F6CE1B0239D54CDD043DA1F8",
+  "source_artifact_ids": ["EVIDENCE-MANIFEST-A-01-PRECONDITION-ACCEPTANCE-20260811-004", "WI-A-01-20260811-001", "INV-A-01-20260811-001"],
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T01:35:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-01_START_EVIDENCE_MANIFEST.json",
+  "package_id": "A-01",
+  "supersedes_artifact_ref": {
+    "path": "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+    "file_sha256": "B94B1E8294C040C43250A90F6F44A239027F323FDA3D2F08C78A5FA6F91AD09D",
+    "mutation": "FORBIDDEN_HISTORICAL_ACCEPTED_EVIDENCE"
+  },
+  "target_hash": "sha256:E01B9EE5F0B31EA7601F5A9965C9F9F30D60EC03F6CE1B0239D54CDD043DA1F8",
+  "delivered_hash": "sha256:E01B9EE5F0B31EA7601F5A9965C9F9F30D60EC03F6CE1B0239D54CDD043DA1F8",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "path_normalization": "repository-relative POSIX slash",
+    "sort": "UTF-8 byte ordinal ascending by normalized path",
+    "row_separator": "LF (0x0A)",
+    "final_newline": false,
+    "encoding": "UTF-8",
+    "bom": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1434,
+  "target_content_bytes": 273058,
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "e97c35540c51d812c221469e272f0f87cd667839",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "dispatch_observation": {"local_head": "e97c35540c51d812c221469e272f0f87cd667839", "remote_head": "e97c35540c51d812c221469e272f0f87cd667839", "observed_at": "2026-08-11T01:35:02+09:00"},
+    "exact_allowed_paths": ["docs/evidence/manifests/A-01_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a01-start.json", "docs/work_orders/A-01_INVOCATION_PROMPT.md", "docs/work_orders/A-01_WORK_INSTRUCTION.md", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]
+  },
+  "work_instruction_binding": {
+    "path": "docs/work_orders/A-01_WORK_INSTRUCTION.md",
+    "sha256": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A",
+    "previous_revision_sha256": "410D92E5E77ED3CA42C295147C5201A2208E10C8BEF0445C19B567455F776369",
+    "revision_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "invocation_path": "docs/work_orders/A-01_INVOCATION_PROMPT.md",
+    "invocation_sha256": "A121AB38AF7928725D75ED71751FF576E1CD9BEC86D2ACCF8A694760613823C8"
+  },
+  "lease_projection": {
+    "developer_actor": "developer-primary-a01",
+    "worker_lease_id": "worker-lease-a01-20260811-001",
+    "execution_fencing_token": "a01-execution-fence-epoch-1-e97c355",
+    "write_lease_id": "write-lease-a01-20260811-001",
+    "write_fencing_token": "a01-write-fence-epoch-1-e97c355",
+    "event_sequence": 33,
+    "package_status": "ACTIVE"
+  },
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json", "bytes": 5590, "sha256": "B94B1E8294C040C43250A90F6F44A239027F323FDA3D2F08C78A5FA6F91AD09D"},
+    {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 25606, "sha256": "7CBF1A44E2F2257FED9156B00CC539CE2B60A146FD0D3B2B1F311B82D42D9951"},
+    {"path": "docs/progress/build-progress.json", "bytes": 11097, "sha256": "226ED2F50801F99CD7924772CC557CE038B8F659CE5EC5301F1FB80FEA5B5C04"},
+    {"path": "docs/progress/progress-events.json", "bytes": 21905, "sha256": "3168C97DBDBE6CA40E22973D9E8F9DF0145A44F91FC55091642735ADDC8524EF"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a01-start.json", "bytes": 934, "sha256": "9FBFD51DD7349F6E948C376F36617E9382582D1AB4F9C5941D9C8EB2DB6865EC"},
+    {"path": "docs/work_orders/A-01_INVOCATION_PROMPT.md", "bytes": 1143, "sha256": "A121AB38AF7928725D75ED71751FF576E1CD9BEC86D2ACCF8A694760613823C8"},
+    {"path": "docs/work_orders/A-01_WORK_INSTRUCTION.md", "bytes": 13316, "sha256": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A"},
+    {"path": "scripts/check_g07_baseline.py", "bytes": 45638, "sha256": "47386FBC2DF7F5E87D4679D77096BC124C2B2CC2D1AA5D50141676F658934421"},
+    {"path": "scripts/check_phase_g_gate.py", "bytes": 28111, "sha256": "518FFA1B3C0EE911052DDCBA8CD734F0CA4B7892453D25A65C058EE0FDDB9FB7"},
+    {"path": "scripts/check_project_progress.py", "bytes": 53927, "sha256": "BC98AE279A2B2EE4E50C6810E49DEFC62D3659C2E47EAA62646A5CEFAC6230D7"},
+    {"path": "tests/tooling/test_g07_baseline.py", "bytes": 17310, "sha256": "FBA96642A6EC3AB9CC45F401BD57835704739C7BDB88184BE2A83FEC77986A16"},
+    {"path": "tests/tooling/test_phase_g_gate.py", "bytes": 8057, "sha256": "8D9EFCD34D58C2CB18D5FB93E072B937323A605A3E05566AD3BB22329F47AB13"},
+    {"path": "tests/tooling/test_project_progress.py", "bytes": 40424, "sha256": "11CEF87249AE78BDFE9DF202336E0454A423FD35B65E72DA3518A78862D98685"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 30 and all precondition accepted evidence remain byte-immutable",
+  "self_reference": false,
+  "a01_implementation_started": true,
+  "implementation_evidence_present": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This manifest records A-01 dispatch and lease activation only.", "It is not A-01 completion, AV-FLOW-001 runtime PASS, browser PASS, API PASS, DB PASS, deployment PASS, or release evidence."]
+}

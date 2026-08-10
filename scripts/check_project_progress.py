@@ -131,6 +131,10 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_project_progress.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_project_progress.py",
+    "scripts/check_phase_g_gate.py",
+    "tests/tooling/test_phase_g_gate.py",
+    "docs/work_orders/A-01_WORK_INSTRUCTION.md",
+    "docs/work_orders/A-01_INVOCATION_PROMPT.md",
 }
 
 
@@ -550,7 +554,18 @@ def validate_event_stream(
         if isinstance(event, dict)
         and event.get("event_type") in {"GIT_PUSH", "REPOSITORY_RECONCILED"}
     ]
-    current_repository_event = repository_events[-1] if repository_events else None
+    dispatch_events = [
+        event for event in events
+        if isinstance(event, dict)
+        and event.get("event_type") == "PACKAGE_STARTED"
+        and isinstance(event.get("details"), dict)
+        and event["details"].get("dispatch_head")
+    ]
+    current_repository_event = max(
+        repository_events + dispatch_events,
+        key=lambda event: event.get("sequence", 0),
+        default=None,
+    )
     if sequences:
         first = stream.get("first_sequence")
         expected = list(range(first, first + len(sequences))) if isinstance(first, int) else []
@@ -589,6 +604,22 @@ def validate_event_stream(
                 details.get("remote_commit") != repository.get("remote_head")
                 or details.get("local_commit") != repository.get("local_head")
                 or details.get("branch") != repository.get("branch")
+            ):
+                errors.append("EVENT_EFFECT_MISMATCH")
+        if (
+            event is current_repository_event
+            and event_type == "PACKAGE_STARTED"
+            and isinstance(details, dict)
+            and progress is not None
+        ):
+            repository = progress.get("repository", {})
+            if (
+                details.get("dispatch_head") != repository.get("local_head")
+                or details.get("dispatch_upstream_head") != repository.get("remote_head")
+                or details.get("projection_mode") != repository.get("projection_mode")
+                or details.get("validated_base_commit") != repository.get("validated_base_commit")
+                or details.get("head_relation") != repository.get("head_relation")
+                or details.get("exact_allowed_paths") != repository.get("exact_allowed_paths")
             ):
                 errors.append("EVENT_EFFECT_MISMATCH")
         if (
@@ -849,7 +880,12 @@ def validate_a01_precondition_acceptance_manifest(
         "upstream",
         "exact_allowed_paths",
     )
-    if any(manifest_repository.get(field) != repository.get(field) for field in projection_fields):
+    is_current_acceptance = (
+        progress.get("current_progress_evidence_ref", {}).get("manifest_path") == manifest_relative
+    )
+    if is_current_acceptance and any(
+        manifest_repository.get(field) != repository.get(field) for field in projection_fields
+    ):
         errors.append("A01_ACCEPTANCE_REPOSITORY_PROJECTION_MISMATCH")
     acceptance = manifest.get("precondition_acceptance", {})
     progress_acceptance = progress.get("a01_precondition", {})

@@ -385,11 +385,37 @@ def validate_gate(
         "worker_lease": progress.get("worker_lease"),
         "write_lease": progress.get("write_lease"),
     }
-    if progress_projection != {
+    ready_projection = {
         "current_work_package": "A-01", "status": "READY", "next_conditional_package": "A-01",
         "g_gate_status": "ACCEPTED", "gate_checkpoint_status": "CLEARED", "a01_start_allowed": True,
         "active_work_instruction": None, "worker_lease": None, "write_lease": None,
-    }:
+    }
+    start_events = {event.get("event_type"): event for event in events[-3:]}
+    worker_event = start_events.get("WORKER_LEASE_ISSUED", {})
+    write_event = start_events.get("WRITE_LEASE_ISSUED", {})
+    package_event = start_events.get("PACKAGE_STARTED", {})
+    worker = progress_projection.get("worker_lease") or {}
+    write = progress_projection.get("write_lease") or {}
+    active_wi = progress_projection.get("active_work_instruction") or {}
+    active_start_projection = (
+        progress_projection.get("current_work_package") == "A-01"
+        and progress_projection.get("status") == "ACTIVE"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and active_wi.get("artifact_id") == "WI-A-01-20260811-001"
+        and worker_event.get("sequence") == 31
+        and write_event.get("sequence") == 32
+        and package_event.get("sequence") == 33
+        and worker_event.get("actor") == write_event.get("actor") == package_event.get("actor") == "main-agent-eoul"
+        and worker_event.get("details", {}).get("lease_id") == worker.get("lease_id")
+        and write_event.get("details", {}).get("lease_id") == write.get("lease_id")
+        and write_event.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
+        and package_event.get("details", {}).get("work_instruction_sha256") == active_wi.get("sha256")
+        and package_event.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
+        and package_event.get("details", {}).get("write_lease_id") == write.get("lease_id")
+    )
+    if progress_projection != ready_projection and not active_start_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {

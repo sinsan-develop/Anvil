@@ -195,18 +195,18 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("REPOSITORY_RECONCILED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "853da76458929e007d8a02ab32f7f918ab26d590",
+            "e97c35540c51d812c221469e272f0f87cd667839",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
-        self.assertEqual("A01_PRECONDITION_ACCEPTED", reconciliation["checkpoint_status"])
-        self.assertEqual("ACCEPTED", reconciliation["precondition_status"])
-        self.assertEqual("READY_FOR_A01_WI", reconciliation["readiness"])
+        self.assertEqual("WI-A-01-20260811-001", reconciliation["work_instruction_id"])
+        self.assertEqual("ACTIVE", reconciliation["package_status"])
+        self.assertEqual("developer-primary-a01", reconciliation["developer_actor"])
         self.assertEqual("A-01", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(3, report["failure_counts"]["historical_accepted_failure_total"])
@@ -281,6 +281,7 @@ class G07BaselineTests(unittest.TestCase):
         events_path = "docs/progress/progress-events.json"
         progress = json.loads((ROOT / progress_path).read_text(encoding="utf-8"))
         event_stream = json.loads((ROOT / events_path).read_text(encoding="utf-8"))
+        validated_base = progress["repository"]["validated_base_commit"]
         local_head = "1" * 40
         remote_head = "2" * 40
         progress["repository"].update(
@@ -314,14 +315,14 @@ class G07BaselineTests(unittest.TestCase):
             if arguments == (
                 "merge-base",
                 "--is-ancestor",
-                "853da76458929e007d8a02ab32f7f918ab26d590",
+                validated_base,
                 local_head,
             ):
                 return 1, ""
             if arguments == (
                 "diff",
                 "--name-only",
-                f"853da76458929e007d8a02ab32f7f918ab26d590..{local_head}",
+                f"{validated_base}..{local_head}",
             ):
                 return 0, "docs/progress/build-progress.json"
             if arguments[:2] == ("log", "--format=%H"):

@@ -6,7 +6,7 @@
 - artifact_type: `work_instruction`
 - project_id: `anvil`
 - package_id: `A-01`
-- version: `1`
+- version: `1.1`
 - artifact_status: `approved`
 - package_status: `READY`
 - content_hash: `파일 저장 후 SHA-256으로 결박`
@@ -15,6 +15,9 @@
 - created_by: `{ actor_type: agent, actor_id: main-agent-eoul }`
 - created_at: `2026-08-11T00:00:00+09:00`
 - supersedes_artifact_id: `null`
+- revision_classification: `MAIN_RECONFIRMED_NON_SEMANTIC`
+- previous_revision_sha256: `410D92E5E77ED3CA42C295147C5201A2208E10C8BEF0445C19B567455F776369`
+- revision_reason: `historical baseline commit과 dispatch-time repository 관측의 역할을 분리해 self-stale exact-equality 문구를 제거`
 
 ## 승인·기준선 binding
 
@@ -42,7 +45,7 @@
 
 1. `A-01_PRECONDITION_TEST_REPORT.md`가 `PASS / READY_FOR_MAIN_ACCEPTANCE`다.
 2. progress sequence 30이 `A-01 READY`, active WorkInstruction/worker lease/write lease `null`이다.
-3. Git `main`, `origin/main`, 실제 remote main이 `7422b07b85bcdcec52031e1b10098ab6ca089170`으로 일치한다.
+3. 기준선 commit `7422b07b85bcdcec52031e1b10098ab6ca089170`은 현재 dispatch-time `main` HEAD의 ancestor다. 실제 dispatch-time local HEAD와 `origin/main` 일치는 비소급 `WORKER_LEASE_ISSUED`·`WRITE_LEASE_ISSUED`·`PACKAGE_STARTED` Event와 current progress repository projection에 별도로 결박한다.
 4. A-01 역색인은 `AV-UI-005` 단독이며 `AV-FLOW-001`은 A-05·B-03/A Gate에 남아 있다.
 
 ## 필수 산출물
