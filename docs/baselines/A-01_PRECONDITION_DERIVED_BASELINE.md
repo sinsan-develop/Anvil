@@ -1,0 +1,51 @@
+# A-01 Precondition Derived Baseline
+
+- baseline_id: `BASELINE-A-01-PRECONDITION-DERIVED-20260810-001`
+- baseline_type: `DERIVED_PRECONDITION_BASELINE`
+- package_id: `A-01`
+- parent_baseline_id: `BASELINE-G-02-DERIVED-20260810-001`
+- parent_baseline_ref: `docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md`
+- parent_baseline_sha256: `E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B`
+- approval_id: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
+- approval_ref: `docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md`
+- approval_sha256: `9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F`
+- semantic_classification: `HUMAN_APPROVED_RESPONSIBILITY_REALIGNMENT_NO_SCOPE_EXPANSION`
+- affected_responsibility: `A-01 reverse index only`
+- derived_by: `Main Agent 어울`
+- recorded_by: `developer-primary`
+- derived_at: `2026-08-10`
+- status: `ACTIVE_AWAITING_PROJECTION_AND_INDEPENDENT_TESTER`
+
+## 판정
+
+`DERIVED / HUMAN_APPROVED_RESPONSIBILITY_REALIGNMENT` — 신산님이 승인한 대로 A-01 역색인에서만 `AV-FLOW-001`을 제거한다. 기능 범위·요구사항·중요 위험을 확대하지 않으며 설계서 v2.6은 변경하지 않는다.
+
+## Authority successor binding
+
+| Artifact | Old version / SHA-256 | New version / SHA-256 | semantic classification |
+|---|---|---|---|
+| `Anvil_설계서_v2.md` | v2.6 / `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5` | v2.6 / `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5` | `UNCHANGED` |
+| `Anvil_통합검증매트릭스_v1.md` | v1.2 / `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3` | v1.3 / `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A` | `A01_RESPONSIBILITY_REALIGNMENT` |
+| `Anvil_작업계획서_v1.md` | v1.4 / `4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475` | v1.5 / `A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A` | `ACTIVE_REFERENCE_AND_EXECUTION_BOUNDARY_SYNC` |
+| `Anvil_테스트계획서_v1.md` | v1.3 / `870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5` | v1.4 / `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8` | `ACTIVE_REFERENCE_AND_EXECUTION_BOUNDARY_SYNC` |
+| `docs/governance/ANVIL_OPERATING_RULES.md` | v1.5 / `7D5E2AD0F272CBA1052EA8A21622F1E16438ABAB9AA4AAB7A1D34374B4FFB5F3` | v1.6 / `4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E` | `ACTIVE_BASELINE_SYNC` |
+
+## 승인된 책임 변경
+
+| 대상 | Old responsibility | New responsibility | 판정 경계 |
+|---|---|---|---|
+| `A-01` | `AV-UI-005`, `AV-FLOW-001` | `AV-UI-005` | `STATIC_ONLY / RUNTIME_DEFERRED` |
+
+`AV-FLOW-001`은 A-05·B-03의 L4+L7 runtime 책임과 A Gate 회귀에 그대로 남는다. A-01은 screen map·journey·Phase Rail의 정적 연결성만 확인하며 fixture·mock·정적 화면을 runtime PASS로 승격하지 않는다.
+
+## 유지 불변식
+
+- Work Package 97개
+- AV ID 255개, CON 21개, 고유 실행 234개
+- Package 역색인 97개, 미할당 ID 0개
+- A Gate의 `AV-FLOW-001`, A-05의 `AV-FLOW-001`, B-03의 `AV-FLOW-001` 유지
+- historical G-02/G-07/Phase G evidence와 accepted manifest byte 불변
+
+## 후속 결박
+
+Task 3가 이 authority successor와 baseline을 progress/HANDOFF·온보딩 ACK·A-01 precondition EvidenceManifest에 투영한다. 독립 Tester PASS 전에는 A-01 구현 PASS 또는 runtime PASS를 주장하지 않는다.

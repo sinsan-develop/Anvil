@@ -1,14 +1,15 @@
-# Anvil 전체 개발 작업계획서 v1.4
+# Anvil 전체 개발 작업계획서 v1.5
 
-> 문서 상태: 신산님 승인 반영 비의미 기준선 정규화본 / 독립 Tester 재검토 대기  
+> 문서 상태: A-01 책임 정합화 승인 반영 파생 기준선 / 독립 Tester 재검토 대기
 > 작성일: 2026-08-10  
 > 설계 책임자·Main Agent: 어울  
 > 최종 승인자: 신산님  
 > 설계 기준선: `Anvil_설계서_v2.md` v2.6  
 > 설계 기준선 SHA-256: `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`  
 > Subagent 운영 근거: `C:\Users\cyhuh\OneDrive\문서\AI 자료\MoaWorks_Subagent_단계적_적용_권고안.docx` / SHA-256 `0C033D15389AE00DAC27373D028DE7FF375EE2855925714804C55C741AC7B77D` / workspace 외부 read-only source  
-> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.2 / SHA-256 `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3`  
-> 테스트 실행 기준선: `Anvil_테스트계획서_v1.md` v1.3 / SHA-256 `870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5`  
+> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.3 / SHA-256 `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A`
+> 테스트 실행 기준선: `Anvil_테스트계획서_v1.md` v1.4 / SHA-256 `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8`
+> A-01 파생 기준선: `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md` / 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
 
@@ -197,7 +198,7 @@ Main Agent는 구현 종료까지 책임 주체로 남는다. Developer Subagent
 - 결함 재검증은 매트릭스 §7을 canonical 범위로 한다. CRITICAL은 해당 Phase CRITICAL 전량과 결함 Package 할당 ID 전량, MAJOR는 해당 Package와 직접 종속 Package, MINOR는 다음 Package 흡수다.
 - dirty/untracked 변경, secret 노출, 승인 없는 write, PASS 집계 오염, Event-progress 불일치, 검증 hash와 적용 hash 불일치가 발견되면 남은 검증과 다음 Package 예약을 즉시 중단한다. 현재 evidence를 보존하고 `critical_stop_code`와 CRITICAL defect를 기록해 Main Agent와 신산님께 보고한다. 이는 Developer의 `FAILURE_REPORT`가 아니며 3회 인수 횟수에 포함하지 않는다.
 
-통합검증매트릭스 v1.2는 G-01~G-07을 포함한 97개 Package 역색인을 이미 가진다. 따라서 G-01부터 일반 검증 절차를 적용하고 각 Package는 할당 ID와 EvidenceManifest에 대한 독립 Tester PASS 뒤에만 `ACCEPTED`가 된다. G-07은 문서 정규화를 새로 만드는 예외 절차가 아니라 현재 기준선 hash·97개 역색인·255개 ID·§49.17 20개 시나리오의 정합성을 독립 재검증하고 G Gate regression suite를 고정하는 Package다.
+통합검증매트릭스 v1.3은 G-01~G-07을 포함한 97개 Package 역색인을 가진다. 따라서 G-01부터 일반 검증 절차를 적용하고 각 Package는 할당 ID와 EvidenceManifest에 대한 독립 Tester PASS 뒤에만 `ACCEPTED`가 된다. G-07의 historical accepted evidence는 v1.2 기준으로 불변이며, v1.3은 A-01 책임 정합화 승인에 따른 활성 successor다.
 
 ### 4.5 DIR 강제 중단·보고 계약
 
@@ -307,7 +308,7 @@ flowchart LR
 
 | ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
 |---|---|---|---|---|
-| A-01 | 아이디어부터 ReleaseDecision·학습까지 전체 사용자 journey와 Phase Rail 확정 | screen map, journey, decision/approval points | 모든 정상·거부·보완·중단·재개 경로가 연결됨 | G Gate |
+| A-01 | 아이디어부터 ReleaseDecision·학습까지 전체 사용자 journey와 Phase Rail 확정 (`STATIC_ONLY`) | screen map, journey, decision/approval points | 모든 정상·거부·보완·중단·재개 경로가 문서 artifact로 연결되고 runtime은 `RUNTIME_DEFERRED / NOT_EXECUTED`; `AV-FLOW-001` runtime 판정은 A-05·B-03에서 수행 | G Gate |
 | A-02 | 1920×1080·12px 화면 token과 설명 인터페이스 설계 | typography/layout/color/token spec | 본문 12px, 설명은 tooltip/popover, 상시 설명 박스 없음 | A-01 |
 | A-03 | Project Dashboard·등록·Repository onboarding 화면 설계 | wireframe, field/state contract | baseline, dirty/untracked, policy, protected path가 화면에 보임 | A-01~02 |
 | A-04 | Session Workbench·대화·Context Drawer·Phase Rail 화면 설계 | wireframe, interaction spec | Light/Standard/Controlled 전환과 사람 개입 지점 표시 | A-01~02 |
@@ -692,5 +693,11 @@ Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록�
 4. 각 Package 종료 후 progress/HANDOFF와 Completion/Test Report를 갱신하고 매트릭스 할당 ID를 전량 판정한다.
 5. Phase Gate 합격 전에는 다음 Phase의 구현을 시작하지 않는다.
 6. DIR-1·DIR-2·DIR-3 또는 `DIRX-LRN-CRITICAL` DIR-X에 도달하면 canonical DIR 상태로 즉시 중단하고 신산님께 보고한다. `ALIGNED`여도 신산님의 direction Event와 `CLEARED` 전에는 다음 행동을 시작하지 않는다.
+
+### 17.1 v1.5 A-01 책임 정합화 revision
+
+- `[historical]` v1.4 SHA-256은 `4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475`이며 G-02/G-07/Phase G accepted evidence와 함께 불변이다.
+- v1.5는 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`과 `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md`에 binding된다.
+- 의미 변경은 A-01 역색인의 `AV-FLOW-001` 제거뿐이다. Package 97개, A Gate, A-05·B-03 책임, 기능 범위·요구사항·중요 위험은 변경하지 않는다.
 
 이 계획의 목표는 많은 Subagent를 빠르게 띄우는 것이 아니다. Main Agent가 설계 책임을 유지하면서 한 번에 한 역할·한 write lease·한 검증 가능한 결과를 쌓고, 실제로 안정된 절차만 Skill·Hook·Plugin으로 승격하는 것이다.

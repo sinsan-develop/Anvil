@@ -1,12 +1,13 @@
-# Anvil 테스트 계획서 v1.3
+# Anvil 테스트 계획서 v1.4
 
-> 문서 상태: G-02 승인 반영 비의미 정규화본 / 독립 Tester 재검토 대기
+> 문서 상태: A-01 책임 정합화 승인 반영 파생 기준선 / 독립 Tester 재검토 대기
 > 작성일: 2026-08-10
 > 작성 역할: Tester (독립 검증)
 > 최종 승인자: 신산님
 > 설계 기준선: `Anvil_설계서_v2.md` v2.6 / SHA-256 `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-> 계획 기준선: `Anvil_작업계획서_v1.md` v1.4 / 97개 Package
-> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.2 (검증 항목 255건 / 고유 실행 234건)
+> 계획 기준선: `Anvil_작업계획서_v1.md` v1.5 / 97개 Package
+> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.3 / SHA-256 `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A` (검증 항목 255건 / 고유 실행 234건)
+> A-01 파생 기준선: `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md` / 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
 
@@ -17,9 +18,9 @@
 | 문서 | 정의하는 것 |
 |---|---|
 | `Anvil_설계서_v2.md` v2.6 | 제품이 무엇이어야 하는가 (검증 요구의 원천) |
-| `Anvil_작업계획서_v1.md` v1.4 | 무엇을 어떤 순서로 만드는가 (97개 Package·Phase Gate) |
-| `Anvil_통합검증매트릭스_v1.md` v1.2 | **무엇을** 검증하는가 (AV-* ID 255건) |
-| **`Anvil_테스트계획서_v1.md` v1.3** | **어떻게·언제·누가·무슨 증거로** 검증하는가 |
+| `Anvil_작업계획서_v1.md` v1.5 | 무엇을 어떤 순서로 만드는가 (97개 Package·Phase Gate) |
+| `Anvil_통합검증매트릭스_v1.md` v1.3 | **무엇을** 검증하는가 (AV-* ID 255건) |
+| **`Anvil_테스트계획서_v1.md` v1.4** | **어떻게·언제·누가·무슨 증거로** 검증하는가 |
 
 설계서와 충돌하면 설계서가 우선한다. 이 계획의 변경에는 신산님 승인과 revision 갱신이 필요하다.
 
@@ -379,6 +380,8 @@ golden_case:
 3. **AV-UI-010 (same-origin)** — 모든 화면을 순회하며 Network 전체 URL 캡처. 이 검사는 이후 모든 Phase에서 반복한다.
 
 **주의**: Phase A는 mock/prototype 단계다. **mock 결과에 PASS badge를 쓰면 CRITICAL**(AV-GATE-005). 프로토타입이라는 이유로 완화하지 않는다 — 오히려 이 시점의 UI 관용이 이후 전체 제품의 정직성 기준을 결정한다.
+
+**A-01 책임 경계**: A-01은 `AV-UI-005`에 필요한 screen map·journey·Phase Rail의 정상·거부·보완·중단·재개 연결성을 문서 artifact로만 확인하는 `STATIC_ONLY` 단계다. 브라우저 클릭·영속 Event·승인 guard가 아직 없으므로 runtime 결과는 `RUNTIME_DEFERRED / NOT_EXECUTED`로 기록한다. `AV-FLOW-001`의 L4+L7 runtime PASS는 A-05·B-03에서 실제 `E-SHOT`·`E-EVT`로 판정하며 A Gate 회귀에서도 유지한다. fixture·mock·정적 화면을 runtime PASS로 승격하지 않는다.
 
 **DIR-1 강제 중단**: A-15 trace 완료 후 A Gate를 `DIR_HOLD`로 전환한다. Tester 보고와 Owner 방향 지시가 Event로 영속화되어 `CLEARED`가 되기 전에는 B-01 lease를 발급하지 않는다(AV-STAT-041~042).
 
@@ -845,3 +848,4 @@ Phase E 이후 `RS-CRITICAL`이 30분을 초과할 것으로 예상된다. 이�
 - `[historical]` v1.1 SHA-256은 `FE6AEFE4A352A29D61CCD8AC3DD2EB6D6C9B1CDF8E3C095DFDC593C06586D1B8`, v1.2 SHA-256은 `EB1AB1FACABFC9775FDE6F89D598673C40748DE8E01C444282958EBD9F26B80A`다.
 - v1.3은 `APPROVAL-20260810-G02-DECISIONS-001`의 subject hash `E0DEC8651FEA543BDCC08B0A015C89F9D0E7A8F22E964F6025EBA1544BF68A91`를 root human approval로 상속한 `docs/approvals/G-02_MAIN_RECONFIRMED_NON_SEMANTIC.md`에 binding된다. 변경 후 SHA-256은 해당 binding과 EvidenceManifest에서 고정한다.
 - v1.2 content hash의 binding은 content 변경으로 무효화된다. v1.3 변경은 활성 기준선 상태·revision·hash 참조만 정규화하며 테스트 범위·ID·레벨·심각도·종료 기준을 바꾸지 않는다.
+- v1.4는 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`과 `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md`에 binding된다. A-01은 `STATIC_ONLY / RUNTIME_DEFERRED`, A-05·B-03과 A Gate의 `AV-FLOW-001` runtime 책임은 유지한다.

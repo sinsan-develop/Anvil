@@ -100,11 +100,7 @@ class G07BaselineTests(unittest.TestCase):
     def test_flow001_responsibility_guard_rejects_missing_required_owners(self):
         path = "Anvil_통합검증매트릭스_v1.md"
         matrix = (ROOT / path).read_text(encoding="utf-8")
-        corrected = replace_once(
-            matrix,
-            "| A-01 | AV-UI-005, AV-FLOW-001 |",
-            "| A-01 | AV-UI-005 |",
-        )
+        corrected = matrix
 
         wrong_a01 = replace_once(
             corrected,

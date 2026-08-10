@@ -41,6 +41,8 @@
 - Modify: `Anvil_작업계획서_v1.md`
 - Modify: `Anvil_테스트계획서_v1.md`
 - Modify: `docs/governance/ANVIL_OPERATING_RULES.md`
+- Modify: `scripts/check_g07_baseline.py` (active authority version/hash constants only)
+- Modify: `tests/tooling/test_g07_baseline.py` only when the active authority revision assertion must change
 - Create: `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md`
 
 **Interfaces:**

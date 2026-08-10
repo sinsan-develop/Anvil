@@ -1,17 +1,18 @@
-# Anvil 통합 검증 매트릭스 v1.2
+# Anvil 통합 검증 매트릭스 v1.3
 
-> 문서 상태: G-02 승인 반영 비의미 정규화본 / 독립 Tester 재검토 대기
+> 문서 상태: A-01 책임 정합화 승인 반영 파생 기준선 / 독립 Tester 재검토 대기
 > 작성일: 2026-08-10
 > 작성 역할: Tester (독립 검증)
 > 설계 기준선: `Anvil_설계서_v2.md` v2.6 / SHA-256 `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-> 계획 기준선: `Anvil_작업계획서_v1.md` v1.4 / 97개 Work Package
-> 짝 문서: `Anvil_테스트계획서_v1.md` v1.3
+> 계획 기준선: `Anvil_작업계획서_v1.md` v1.5 / 97개 Work Package
+> 짝 문서: `Anvil_테스트계획서_v1.md` v1.4
+> 책임 정합화 승인: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
 
 ## 0. 이 문서를 만든 이유
 
-설계서 v2.6은 48장의 운영 헌법과 49장의 canonical 완성 계약을 포함하고, 작업계획서 v1.4는 이를 **8개 Phase Gate와 97개 Package 완료조건**으로 분해한다. 이 문서는 두 기준선의 검증 요구를 하나의 ID·Package·Gate 체계로 동기화한다.
+설계서 v2.6은 48장의 운영 헌법과 49장의 canonical 완성 계약을 포함하고, 작업계획서 v1.5는 이를 **8개 Phase Gate와 97개 Package 완료조건**으로 분해한다. 이 문서는 두 기준선의 검증 요구를 하나의 ID·Package·Gate 체계로 동기화한다.
 
 - 계획서 13.3과 설계서 34.6은 "중대 미진 시 해당 차수를 다시 검증한다"고 규정하지만, **재검증 대상 집합이 어디에도 열거되어 있지 않다.**
 - 같은 요구가 서로 다른 문장으로 4번까지 반복된다. 예: "SKIPPED/BLOCKED를 PASS로 처리 금지"는 설계서 P11, 22.4, 34.6, 47.18-14, 계획서 A Gate·C-14에 각각 존재한다. 어느 것이 정본인지 정의되지 않았다.
@@ -484,7 +485,7 @@ AV-<도메인>-<3자리>
 | G-05 | AV-STAT-014, 015, 016, 041, 042 |
 | G-06 | AV-GATE-005(fixture 기준), AV-SAFE-010(fixture 준비) |
 | G-07 | AV-GATE-026 |
-| A-01 | AV-UI-005, AV-FLOW-001 |
+| A-01 | AV-UI-005 |
 | A-02 | AV-UI-001, 002 |
 | A-03 | AV-UI-003, 004 |
 | A-04 | AV-UI-004, 005 |
@@ -602,6 +603,12 @@ AV-<도메인>-<3자리>
 - Anvil 자체 테스트 스택과 target repository 검증 도구의 분리는 테스트계획 §2.3과 G-02 DecisionRecord로 관리한다.
 - 승인 만료, 취소 Workspace 보존, formatter drift, baseline failure, build-progress 필드는 각각 기존 AV ID와 Package에 정식 할당되어 더 이상 provisional 항목이 아니다.
 
+### 9.4 v1.3 A-01 책임 정합화 판정
+
+- **판정**: `DERIVED_RESPONSIBILITY_BASELINE`
+- **판단 이유**: 신산님 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`에 따라 A-01 역색인에서만 `AV-FLOW-001`을 제거했다. A-01은 `AV-UI-005`의 정적 journey artifact만 판정하며 `AV-FLOW-001`의 L4+L7 runtime 책임은 A-05·B-03과 A Gate에 그대로 남는다.
+- **조치**: A-01은 `STATIC_ONLY / RUNTIME_DEFERRED`로 실행하고, runtime evidence를 fixture·mock으로 대체해 PASS로 승격하지 않는다. Package 97개, AV ID 255개, 고유 실행 234개, 역색인 97개와 미할당 0건은 유지한다.
+
 ---
 
 ## 10. 매트릭스 통계
@@ -631,3 +638,5 @@ CON 21항은 그 자체가 실행 테스트가 아니라 하위 도메인으로 
 - 설계서 또는 작업계획서의 content hash가 바뀌면 이 매트릭스를 재검토하고 revision을 올린다.
 - 항목 추가·삭제·심각도 변경은 Tester가 제안하고 Main Agent 검토 후 신산님이 승인한다.
 - Phase Gate 판정 결과는 이 문서가 아니라 `docs/test_reports/`에 기록하고, 이 문서는 **기준**만 유지한다.
+- `[historical]` v1.2 SHA-256은 `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3`이며 G-02/G-07/Phase G accepted evidence와 함께 불변이다.
+- v1.3의 유일한 책임 의미 변경은 A-01 역색인의 `AV-FLOW-001` 제거다. A Gate·A-05·B-03 책임과 검증 ID·레벨·심각도·증거 계약은 변경하지 않는다.

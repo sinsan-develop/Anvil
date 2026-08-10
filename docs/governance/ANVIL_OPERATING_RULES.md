@@ -1,6 +1,6 @@
-# Anvil 프로젝트 운영규칙 v1.5
+# Anvil 프로젝트 운영규칙 v1.6
 
-> 상태: v1.5 — 신산님 자동 진행·보고 경계 명시 승인 반영
+> 상태: v1.6 — A-01 책임 정합화 승인과 활성 authority successor 반영
 > 적용 범위: Anvil 설계·개발·검증·학습·배포 전 과정  
 > 설계 책임자: Main Agent 어울  
 > 작업 담당자: Primary Developer Subagent `developer-primary`
@@ -14,10 +14,11 @@
 | 문서 | 현재 기준선 | 변경 처리 |
 |---|---|---|
 | `Anvil_설계서_v2.md` | v2.6 / `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5` | 신산님 승인본에서 P1 정합성 4건을 `MAIN_RECONFIRMED_NON_SEMANTIC`으로 재확정 |
-| `Anvil_작업계획서_v1.md` | v1.4 / 실제 hash는 `build-progress.json`에서 관리 | v2.6의 97개 Package 비의미 기준선 정규화본 |
-| `Anvil_통합검증매트릭스_v1.md` | v1.2 / 실제 hash는 `build-progress.json`에서 관리 | v2.6·v1.4·97개 Package 기준 정규화 |
-| `Anvil_테스트계획서_v1.md` | v1.3 / 실제 hash는 `build-progress.json`에서 관리 | 동일 기준 실행 절차 비의미 정규화 |
-| 이 운영규칙 | v1.5 | 확정 계획 자동 진행, 기능 범위·요구사항·중요 위험 변경 또는 DIR 도달 시 신산님 보고 |
+| `Anvil_작업계획서_v1.md` | v1.5 / `A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A` | A-01 `STATIC_ONLY / RUNTIME_DEFERRED`와 v1.3 매트릭스 활성 참조 |
+| `Anvil_통합검증매트릭스_v1.md` | v1.3 / `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A` | A-01 역색인에서만 `AV-FLOW-001` 제거; A Gate·A-05·B-03 유지 |
+| `Anvil_테스트계획서_v1.md` | v1.4 / `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8` | A-01 정적 판정과 A-05·B-03 runtime 판정 경계 명시 |
+| `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md` | `BASELINE-A-01-PRECONDITION-DERIVED-20260810-001` | `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`의 승인 범위와 old/new authority lineage 결박 |
+| 이 운영규칙 | v1.6 | 확정 계획 자동 진행, 기능 범위·요구사항·중요 위험 변경 또는 DIR 도달 시 신산님 보고 |
 
 운영규칙 자체 hash는 자기참조 순환을 피하기 위해 `docs/progress/build-progress.json`의 `operating_rules_baseline`과 승인 BaselineRecord에서 관리한다. 실행 시점의 실제 hash가 등록 hash와 다르면 자동 수정하지 않고 `WAITING_APPROVAL`로 전환한다.
 
@@ -70,7 +71,9 @@ DRAFT
 8. Tester `PASS` 뒤에만 Main Agent가 `판정→판단 이유→조치`와 최종 `ACCEPTED`를 기록한다.
 9. 합격 시 progress/HANDOFF를 갱신하고 승인된 경계에서 commit·push한다.
 
-검증 매트릭스 v1.2는 G-01~G-07을 포함한 97개 Package 역색인을 가진다. G-01부터 일반 검증 절차를 적용하며 각 Package는 할당 ID와 EvidenceManifest의 독립 Tester PASS 뒤에만 `ACCEPTED`가 된다. G-07은 기준선 hash·역색인·255개 ID·§49.17 시나리오와 G Gate 회귀 집합을 독립 재검증한다.
+검증 매트릭스 v1.3은 G-01~G-07을 포함한 97개 Package 역색인을 가진다. G-01부터 일반 검증 절차를 적용하며 각 Package는 할당 ID와 EvidenceManifest의 독립 Tester PASS 뒤에만 `ACCEPTED`가 된다. historical G-02/G-07/Phase G evidence는 당시 v1.2 기준으로 불변 보존한다.
+
+A-01은 `AV-UI-005`의 screen map·journey·Phase Rail 연결성을 문서 artifact로만 판정하는 `STATIC_ONLY` 단계다. 브라우저 클릭·영속 Event·승인 guard가 없는 A-01 runtime은 `RUNTIME_DEFERRED / NOT_EXECUTED`이며, `AV-FLOW-001`의 L4+L7 runtime 책임은 A-05·B-03과 A Gate에 유지한다. fixture·mock·정적 화면은 runtime PASS 증거가 아니다.
 
 ## 6. 사람 개입과 승인
 
