@@ -3,20 +3,22 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 28,
+  "event_sequence": 29,
   "status": "READY",
   "current_work_package": "A-01",
-  "last_event_id": "evt_a01_responsibility_successor_push_confirmed",
+  "last_event_id": "evt_a01_task4_entry_reconciled",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 3,
   "dir_status": "NOT_REACHED",
-  "repository_head": "355efcbbccf63ae89771923ba09db9b22acc03cb",
+  "repository_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "355efcbbccf63ae89771923ba09db9b22acc03cb",
-  "repository_status": "PUSH_CONFIRMED",
-  "next_safe_action": "Task 4 independent Tester must reproduce the post-push A-01 precondition checkpoint; no A-01 implementation starts before independent PASS, an approved WorkInstruction, and valid worker/write leases",
+  "repository_remote_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
+  "repository_status": "TASK4_ENTRY_READY",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a01-test-entry.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json",
+  "next_safe_action": "Task 4 independent Tester must validate this uncommitted test-entry snapshot and write the Task 4 report; Main then commits both together before any A-01 WorkInstruction or implementation",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -199,10 +201,13 @@
 - Main push 후 local `main`, tracking `origin/main`, remote `refs/heads/main`이 `355efcbbccf63ae89771923ba09db9b22acc03cb`로 일치함을 직접 재확인함
 - sequence 28 `GIT_PUSH`는 A-01 responsibility successor의 실제 push 완료를 현재 projection으로 기록하고 sequence 27 pre-push 관측을 수정하지 않음
 - post-push 상태도 A-01 `READY`, active WorkInstruction·worker lease·write lease `null`, derived baseline active를 유지함
+- Main push 후 local `main`, tracking `origin/main`, actual remote `refs/heads/main`이 `84c47406a8d7e75e63f26cb8fed52b058237df5d`로 일치함을 직접 재확인함
+- sequence 29 `REPOSITORY_RECONCILED`는 seq27/28을 수정하지 않고 독립 Task 4 검증 진입용 현재 projection을 기록함
+- Task4-entry 상태는 A-01 `READY`, active WorkInstruction·worker lease·write lease `null`, derived baseline active이며 신규 detached digest와 test-entry manifest가 current evidence ref임
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. G Gate checkpoint는 `CLEARED`이고 current Package는 `A-01 / READY`다. local `main`, tracking `origin/main`, actual remote는 `355efcbbccf63ae89771923ba09db9b22acc03cb`로 일치한다. 다음 안전 행동은 Task 4 독립 Tester가 post-push precondition checkpoint와 regression을 재현하는 것이다. 독립 PASS, 승인된 WorkInstruction과 유효 worker/write lease 전에는 A-01 구현을 시작하지 않는다.
+G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. G Gate checkpoint는 `CLEARED`이고 current Package는 `A-01 / READY`다. local `main`, tracking `origin/main`, actual remote는 `84c47406a8d7e75e63f26cb8fed52b058237df5d`로 일치한다. 다음 안전 행동은 Task 4 독립 Tester가 이 uncommitted test-entry snapshot을 검증하고 Task 4 보고서를 작성하는 것이다. 이후 Main이 둘을 함께 commit하기 전에는 A-01 WorkInstruction 발행이나 구현을 시작하지 않는다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

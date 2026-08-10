@@ -1,0 +1,83 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-01-PRECONDITION-TEST-ENTRY-20260811-003",
+  "artifact_type": "precondition_test_entry_manifest",
+  "project_id": "anvil",
+  "version": 3,
+  "artifact_status": "materialized_awaiting_independent_tester",
+  "content_hash": "sha256:A12CF5A28273D58E5F6FB9BEADBE9B5583F86D80C03EA5D01B3BC8706D04F2E8",
+  "source_artifact_ids": [
+    "EVIDENCE-MANIFEST-A-01-PRECONDITION-CHECKPOINT-20260811-002",
+    "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001"
+  ],
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary"},
+  "created_at": "2026-08-11T00:17:00+09:00",
+  "artifact_path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json",
+  "package_id": "A-01",
+  "supersedes_artifact_ref": {
+    "path": "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json",
+    "file_sha256": "4296CFA7E36FAB06AB697109FD6775AEE5D6D985E934DF092F474EE8ABDC8640",
+    "mutation": "FORBIDDEN_HISTORICAL_CHECKPOINT"
+  },
+  "target_hash": "sha256:C325B04BEE5003E1E1F2EAD697944BD732A380161C6CE25B7C0EE3F9C4D2DCD6",
+  "delivered_hash": "sha256:C325B04BEE5003E1E1F2EAD697944BD732A380161C6CE25B7C0EE3F9C4D2DCD6",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "path_normalization": "repository-relative POSIX slash",
+    "sort": "UTF-8 byte ordinal ascending by normalized path",
+    "row_separator": "LF (0x0A)",
+    "final_newline": false,
+    "encoding": "UTF-8",
+    "bom": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1175,
+  "target_content_bytes": 175918,
+  "git_checkpoint": {
+    "branch": "main",
+    "local_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
+    "tracking_ref": "origin/main",
+    "tracking_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
+    "remote_ref": "refs/heads/main",
+    "remote_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
+    "event_id": "evt_a01_task4_entry_reconciled",
+    "event_sequence": 29,
+    "status": "TASK4_ENTRY_READY"
+  },
+  "authority_binding": {
+    "approval_id": "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
+    "responsibility": {"A-01": ["AV-UI-005"], "runtime_deferred": ["AV-FLOW-001"], "runtime_owners": ["A-05", "B-03", "A Gate"]}
+  },
+  "projection": {
+    "current_phase": "A",
+    "current_work_package": "A-01",
+    "status": "READY",
+    "active_work_instruction": null,
+    "worker_lease": null,
+    "write_lease": null
+  },
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json", "bytes": 4839, "sha256": "4296CFA7E36FAB06AB697109FD6775AEE5D6D985E934DF092F474EE8ABDC8640"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a01-test-entry.json", "bytes": 902, "sha256": "298520A4BBDF76A241C5C88BBA0CB5AA16C424B85948812919909449277697E3"},
+    {"path": "docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md", "bytes": 1887, "sha256": "9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F"},
+    {"path": "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md", "bytes": 3441, "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"},
+    {"path": "docs/onboarding/developer-primary-ack.md", "bytes": 19534, "sha256": "931ED3D4A4A351F47FB48ED459270565E63889E8049EC4587032E2C640782B90"},
+    {"path": "docs/progress/progress-events.json", "bytes": 15388, "sha256": "EF95CE0A07A22FD88EEC0F90663A66C15606674D77036791B51B2923E1504EE9"},
+    {"path": "scripts/check_project_progress.py", "bytes": 41392, "sha256": "329FA689DFE414A8F68D7C0D53438EF10F32E9FA6583F83DCB2246ACBED11997"},
+    {"path": "scripts/check_g07_baseline.py", "bytes": 40956, "sha256": "91CB8FFB77F6396429A78AF64D029B863F624C4D92DD36E9236F841C01DEF1F7"},
+    {"path": "tests/tooling/test_project_progress.py", "bytes": 33845, "sha256": "2C406A1F7BA31AC0798D376A95D8612DA06599866254D1897BF59F198F748600"},
+    {"path": "tests/tooling/test_g07_baseline.py", "bytes": 13734, "sha256": "EB07029A4A2CCCACA9169FC8496D44A348B3A616FCAEBAD4269DD5A4B3583596"}
+  ],
+  "self_reference": false,
+  "a01_work_instruction_created": false,
+  "a01_implementation_started": false,
+  "independent_tester_status": "NOT_EXECUTED",
+  "pending": ["Task 4 independent Tester"],
+  "blocked": [],
+  "limitations": [
+    "This checkpoint proves current repository and Task 4 test-entry projection materialization only.",
+    "It is not A-01 implementation PASS, AV-FLOW-001 runtime PASS, browser PASS, API PASS, DB PASS, deployment PASS, or release evidence."
+  ]
+}

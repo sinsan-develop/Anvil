@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 28,
+  "last_sequence": 29,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -366,6 +366,34 @@
         "worker_lease": null,
         "write_lease": null,
         "supersedes_projection_event_id": "evt_a01_responsibility_baseline_reconciled"
+      }
+    },
+    {
+      "event_id": "evt_a01_task4_entry_reconciled",
+      "sequence": 29,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-08-11T00:15:00+09:00",
+      "actor": "developer-primary",
+      "subject_ref": "A-01",
+      "details": {
+        "branch": "main",
+        "local_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
+        "remote_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
+        "upstream": "origin/main",
+        "observed_at": "2026-08-11T00:15:00+09:00",
+        "reason": "materialize the final current repository projection for independent Task 4 entry without rewriting sequence 27 or 28",
+        "checkpoint_status": "TASK4_ENTRY_READY",
+        "approval_id": "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+        "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
+        "prior_event_id": "evt_a01_responsibility_successor_push_confirmed",
+        "prior_manifest_ref": {
+          "path": "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json",
+          "sha256": "4296CFA7E36FAB06AB697109FD6775AEE5D6D985E934DF092F474EE8ABDC8640"
+        },
+        "package_status": "READY",
+        "active_work_instruction": null,
+        "worker_lease": null,
+        "write_lease": null
       }
     }
   ]

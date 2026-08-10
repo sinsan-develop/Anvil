@@ -620,14 +620,14 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
-        last_event = bundle["events"]["events"][-1]
-        repository = progress["repository"]
-
-        self.assertEqual("GIT_PUSH", last_event["event_type"])
-        self.assertEqual("A-01", last_event["subject_ref"])
-        self.assertEqual(repository["local_head"], repository["remote_head"])
-        self.assertEqual(last_event["details"]["local_commit"], repository["local_head"])
-        self.assertEqual(last_event["details"]["remote_commit"], repository["remote_head"])
+        post_push_event = next(
+            event
+            for event in bundle["events"]["events"]
+            if event["event_id"] == "evt_a01_responsibility_successor_push_confirmed"
+        )
+        self.assertEqual("GIT_PUSH", post_push_event["event_type"])
+        self.assertEqual("A-01", post_push_event["subject_ref"])
+        self.assertEqual(post_push_event["details"]["local_commit"], post_push_event["details"]["remote_commit"])
         self.assertEqual("READY", progress["status"])
         self.assertEqual("A-01", progress["current_work_package"])
         self.assertIsNone(progress["active_work_instruction"])
@@ -637,18 +637,51 @@ class ProjectProgressContractTests(unittest.TestCase):
             "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
             progress["derived_baseline_binding"]["baseline_id"],
         )
-        self.assertEqual(
-            "docs/progress/progress-handoff-detached-digest-a01-post-push.json",
-            progress["current_progress_evidence_ref"]["path"],
-        )
-        self.assertEqual(
-            "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json",
-            progress["current_progress_evidence_ref"]["manifest_path"],
-        )
         proposal_path = ROOT / "docs/evidence/manifests/A-01_PRECONDITION_EVIDENCE_MANIFEST.json"
         self.assertEqual(
             "A308F7907C10E0E0D67B598674CFBA50ADC34B2F068679EBCD186C75BF786EAC",
             hashlib.sha256(proposal_path.read_bytes()).hexdigest().upper(),
+        )
+        post_push_digest = ROOT / "docs/progress/progress-handoff-detached-digest-a01-post-push.json"
+        self.assertEqual(
+            "10B9648576F6FDE790EB382DCB6FA2DE5732B558A4C12C03C08D03BC276A2079",
+            hashlib.sha256(post_push_digest.read_bytes()).hexdigest().upper(),
+        )
+
+    def test_task4_entry_reconciliation_projects_current_ready_snapshot(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        last_event = bundle["events"]["events"][-1]
+        repository = progress["repository"]
+
+        self.assertEqual(29, progress["event_sequence"])
+        self.assertEqual("REPOSITORY_RECONCILED", last_event["event_type"])
+        self.assertEqual("A-01", last_event["subject_ref"])
+        self.assertEqual("TASK4_ENTRY_READY", last_event["details"]["checkpoint_status"])
+        self.assertEqual(repository["local_head"], repository["remote_head"])
+        self.assertEqual(last_event["details"]["local_head"], repository["local_head"])
+        self.assertEqual(last_event["details"]["remote_head"], repository["remote_head"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(
+            "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
+            progress["derived_baseline_binding"]["baseline_id"],
+        )
+        self.assertEqual(
+            "docs/progress/progress-handoff-detached-digest-a01-test-entry.json",
+            progress["current_progress_evidence_ref"]["path"],
+        )
+        self.assertEqual(
+            "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json",
+            progress["current_progress_evidence_ref"]["manifest_path"],
+        )
+        prior_manifest = ROOT / "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json"
+        self.assertEqual(
+            "4296CFA7E36FAB06AB697109FD6775AEE5D6D985E934DF092F474EE8ABDC8640",
+            hashlib.sha256(prior_manifest.read_bytes()).hexdigest().upper(),
         )
 
     def test_g05_historical_acceptance_chain_remains_immutable(self) -> None:
