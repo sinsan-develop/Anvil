@@ -50,6 +50,15 @@ FINAL_MANIFESTS = {
     "G-05": "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json",
     "G-06": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json",
 }
+VALIDATED_BASE_PROJECTION_MODE = "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT"
+VALIDATED_BASE_PENDING_RELATION = "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT"
+EVIDENCE_ONLY_PATH_PREFIXES = ("docs/evidence/", "docs/progress/", "docs/test_reports/")
+EVIDENCE_ONLY_TOOLING_PATHS = {
+    "scripts/check_g07_baseline.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_g07_baseline.py",
+    "tests/tooling/test_project_progress.py",
+}
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -184,7 +193,31 @@ def _git(root: Path, *args: str) -> tuple[int, str]:
     process = subprocess.run(
         ["git", *args], cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace", check=False,
     )
-    return process.returncode, process.stdout.strip()
+    return process.returncode, process.stdout.rstrip()
+
+
+def _git_name_only(output: str) -> list[str]:
+    return sorted({line.strip().replace("\\", "/") for line in output.splitlines() if line.strip()})
+
+
+def _git_worktree_paths(output: str) -> list[str]:
+    paths: set[str] = set()
+    for line in output.splitlines():
+        if len(line) < 4:
+            continue
+        relative = line[3:].strip().replace("\\", "/")
+        if " -> " in relative:
+            before, after = relative.split(" -> ", 1)
+            paths.update((before, after))
+        elif relative:
+            paths.add(relative)
+    return sorted(paths)
+
+
+def _is_evidence_only_path(relative: str) -> bool:
+    return relative in EVIDENCE_ONLY_TOOLING_PATHS or relative.startswith(
+        EVIDENCE_ONLY_PATH_PREFIXES
+    )
 
 
 def validate_g07_manifest(root: Path | str, *, verify_live_raw: bool = True) -> list[str]:
@@ -637,12 +670,64 @@ def validate_repository(
         ):
             _error(errors, "GIT_PROVENANCE_MISMATCH", ".git", f"branch={branch} head={head} upstream={upstream}")
         repository_projection = progress.get("repository", {})
-        if repository_projection.get("local_head") != head or repository_projection.get("remote_head") != upstream:
-            _error(errors, "PROGRESS_REPOSITORY_STALE", progress_path, f"projected={repository_projection} actual={head}/{upstream}")
-        projected_local = reconciliation.get("local_commit") if is_push_projection else reconciliation.get("local_head")
-        projected_remote = reconciliation.get("remote_commit") if is_push_projection else reconciliation.get("remote_head")
-        if projected_local != head or projected_remote != upstream:
-            _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", f"event={reconciliation} actual={head}/{upstream}")
+        if repository_projection.get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE:
+            base = repository_projection.get("validated_base_commit")
+            allowed = repository_projection.get("exact_allowed_paths")
+            projection_valid = (
+                repository_projection.get("head_relation") == VALIDATED_BASE_PENDING_RELATION
+                and isinstance(base, str)
+                and re.fullmatch(r"[0-9a-f]{40}", base) is not None
+                and isinstance(allowed, list)
+                and bool(allowed)
+                and all(isinstance(path, str) and path for path in allowed)
+                and allowed == sorted(set(allowed))
+            )
+            if not projection_valid:
+                _error(errors, "GIT_DESCENDANT_PROJECTION_INVALID", progress_path, str(repository_projection))
+                allowed = []
+            elif any(not _is_evidence_only_path(path) for path in allowed):
+                _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
+            working_tree_mode = head == base
+            if working_tree_mode:
+                rc_changed, changed_output = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
+                changed_paths = _git_worktree_paths(changed_output)
+                base_is_ancestor = True
+            else:
+                rc_ancestor, _ = _git(root, "merge-base", "--is-ancestor", str(base), head)
+                rc_changed, changed_output = _git(root, "diff", "--name-only", f"{base}..{head}")
+                changed_paths = _git_name_only(changed_output)
+                base_is_ancestor = rc_ancestor == 0
+            git_evidence.update(
+                {
+                    "validated_base_commit": base,
+                    "working_tree_mode": working_tree_mode,
+                    "changed_paths": changed_paths,
+                }
+            )
+            if not base_is_ancestor:
+                _error(errors, "GIT_VALIDATED_BASE_NOT_ANCESTOR", ".git", f"base={base} head={head}")
+            if rc_changed or changed_paths != allowed:
+                _error(errors, "GIT_DESCENDANT_PATH_SET_MISMATCH", ".git", f"allowed={allowed} actual={changed_paths}")
+            expected_remote = base if working_tree_mode else head
+            if upstream != expected_remote:
+                _error(errors, "GIT_DESCENDANT_ORIGIN_MISMATCH", ".git", f"expected={expected_remote} actual={upstream}")
+            projection_fields = (
+                "projection_mode",
+                "validated_base_commit",
+                "head_relation",
+                "exact_allowed_paths",
+                "branch",
+                "upstream",
+            )
+            if any(reconciliation.get(field) != repository_projection.get(field) for field in projection_fields):
+                _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", "validated-base projection fields differ")
+        else:
+            if repository_projection.get("local_head") != head or repository_projection.get("remote_head") != upstream:
+                _error(errors, "PROGRESS_REPOSITORY_STALE", progress_path, f"projected={repository_projection} actual={head}/{upstream}")
+            projected_local = reconciliation.get("local_commit") if is_push_projection else reconciliation.get("local_head")
+            projected_remote = reconciliation.get("remote_commit") if is_push_projection else reconciliation.get("remote_head")
+            if projected_local != head or projected_remote != upstream:
+                _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", f"event={reconciliation} actual={head}/{upstream}")
         for item in provenance:
             rc, commits = _git(root, "log", "--format=%H", "--", item["manifest"])
             if rc or not commits:

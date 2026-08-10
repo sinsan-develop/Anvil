@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 29,
+  "last_sequence": 30,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -394,6 +394,53 @@
         "active_work_instruction": null,
         "worker_lease": null,
         "write_lease": null
+      }
+    },
+    {
+      "event_id": "evt_a01_precondition_task4_accepted",
+      "sequence": 30,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-08-11T01:10:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-01",
+      "details": {
+        "branch": "main",
+        "local_head": "853da76458929e007d8a02ab32f7f918ab26d590",
+        "remote_head": "853da76458929e007d8a02ab32f7f918ab26d590",
+        "upstream": "origin/main",
+        "observed_at": "2026-08-11T01:10:00+09:00",
+        "reason": "accept the independent Task 4 report and bind the final evidence-only fix wave to a validated base without a self-referential final commit hash",
+        "checkpoint_status": "A01_PRECONDITION_ACCEPTED",
+        "precondition_status": "ACCEPTED",
+        "readiness": "READY_FOR_A01_WI",
+        "task4_test_report_ref": {
+          "path": "docs/test_reports/A-01_PRECONDITION_TEST_REPORT.md",
+          "sha256": "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369"
+        },
+        "prior_event_id": "evt_a01_task4_entry_reconciled",
+        "prior_manifest_ref": {
+          "path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json",
+          "sha256": "388F117408CF41F0889C7362807A17289AF2FA73DC3159777B0DEA8827216791"
+        },
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "853da76458929e007d8a02ab32f7f918ab26d590",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "package_status": "READY",
+        "active_work_instruction": null,
+        "worker_lease": null,
+        "write_lease": null,
+        "runtime_deferred": ["AV-FLOW-001"]
       }
     }
   ]

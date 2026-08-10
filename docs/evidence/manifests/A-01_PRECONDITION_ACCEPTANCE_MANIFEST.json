@@ -1,0 +1,105 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-01-PRECONDITION-ACCEPTANCE-20260811-004",
+  "artifact_type": "precondition_acceptance_manifest",
+  "project_id": "anvil",
+  "version": 4,
+  "artifact_status": "accepted_ready_for_work_instruction",
+  "content_hash": "sha256:5EB27015529F8F2E4C5CF34EDC7B75AAC4F2807F1B1EF94D5E90A312F683B0A9",
+  "source_artifact_ids": [
+    "EVIDENCE-MANIFEST-A-01-PRECONDITION-TEST-ENTRY-20260811-003",
+    "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001"
+  ],
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary"},
+  "created_at": "2026-08-11T01:10:00+09:00",
+  "artifact_path": "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+  "package_id": "A-01",
+  "supersedes_artifact_ref": {
+    "path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json",
+    "file_sha256": "388F117408CF41F0889C7362807A17289AF2FA73DC3159777B0DEA8827216791",
+    "mutation": "FORBIDDEN_HISTORICAL_TEST_ENTRY"
+  },
+  "target_hash": "sha256:5EB27015529F8F2E4C5CF34EDC7B75AAC4F2807F1B1EF94D5E90A312F683B0A9",
+  "delivered_hash": "sha256:5EB27015529F8F2E4C5CF34EDC7B75AAC4F2807F1B1EF94D5E90A312F683B0A9",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "path_normalization": "repository-relative POSIX slash",
+    "sort": "UTF-8 byte ordinal ascending by normalized path",
+    "row_separator": "LF (0x0A)",
+    "final_newline": false,
+    "encoding": "UTF-8",
+    "bom": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1194,
+  "target_content_bytes": 186821,
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "853da76458929e007d8a02ab32f7f918ab26d590",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_project_progress.py"
+    ]
+  },
+  "authority_binding": {
+    "approval_id": "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
+    "responsibility": {
+      "A-01": ["AV-UI-005"],
+      "runtime_deferred": ["AV-FLOW-001"],
+      "runtime_owners": ["A-05", "B-03", "A Gate"]
+    }
+  },
+  "precondition_acceptance": {
+    "status": "ACCEPTED",
+    "readiness": "READY_FOR_A01_WI",
+    "event_id": "evt_a01_precondition_task4_accepted",
+    "event_sequence": 30,
+    "task4_test_report_ref": {
+      "path": "docs/test_reports/A-01_PRECONDITION_TEST_REPORT.md",
+      "sha256": "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369"
+    }
+  },
+  "projection": {
+    "current_phase": "A",
+    "current_work_package": "A-01",
+    "status": "READY",
+    "active_work_instruction": null,
+    "worker_lease": null,
+    "write_lease": null
+  },
+  "raw_checksums": [
+    {"path": "docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md", "bytes": 1887, "sha256": "9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F"},
+    {"path": "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md", "bytes": 3441, "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"},
+    {"path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json", "bytes": 4702, "sha256": "388F117408CF41F0889C7362807A17289AF2FA73DC3159777B0DEA8827216791"},
+    {"path": "docs/progress/progress-events.json", "bytes": 17653, "sha256": "96332B46F2688D4A23BA9F2030D26CEB0CB231CEC4C0AB0939B714F0F714EF44"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json", "bytes": 919, "sha256": "041317BF5D28375DCE3BC8CC0F73B256F5863592D6150EE93AEDAF8A8FCD9362"},
+    {"path": "docs/test_reports/A-01_PRECONDITION_TEST_REPORT.md", "bytes": 3023, "sha256": "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369"},
+    {"path": "scripts/check_g07_baseline.py", "bytes": 45162, "sha256": "3F3B022B7B1E8D1CA291B4CBC9123A72B53516C4C2E191F2F8232B0B420448F2"},
+    {"path": "scripts/check_project_progress.py", "bytes": 52368, "sha256": "7E51E10383F20B8E3D55795F1054E5FE50F8C29B436A35DFDD4374DD7E16C111"},
+    {"path": "tests/tooling/test_g07_baseline.py", "bytes": 17294, "sha256": "DA4992697B8059F86EC0B795427EC8A88B739A4C1867142640DCCA30AF7673DB"},
+    {"path": "tests/tooling/test_project_progress.py", "bytes": 40372, "sha256": "B1946963D267653DBFA73B23B191FD038C83DF3339F645F1C5DF7107B116A587"}
+  ],
+  "historical_evidence_policy": "Sequences 27 through 29 and all prior manifests and detached digests remain byte-immutable",
+  "self_reference": false,
+  "a01_work_instruction_created": false,
+  "a01_implementation_started": false,
+  "independent_tester_status": "ACCEPTED",
+  "pending": [],
+  "blocked": [],
+  "limitations": [
+    "This manifest accepts the A-01 precondition and exact evidence-only repository descendant contract only.",
+    "It is not A-01 implementation PASS, AV-FLOW-001 runtime PASS, browser PASS, API PASS, DB PASS, deployment PASS, or release evidence."
+  ]
+}

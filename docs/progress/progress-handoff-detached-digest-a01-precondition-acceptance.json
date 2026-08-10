@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-01-PRECONDITION-PROGRESS-HANDOFF-DIGEST-ACCEPTANCE",
+  "package_id": "A-01",
+  "event_sequence": 30,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 8998,
+    "file_sha256": "FC088626703974BC3016788AE5B6BF1D7763D19DAC97E7CB02A2B16068E7705D",
+    "canonical_json_sha256": "C5BC8F28EE1D5B9861A6133EE83FC1442107A5FA89DA190CC682F5C2B4534E44"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 24326,
+    "file_sha256": "C0D56F42739ED6FC7F6122EF46FB4A7176206D8D14DB801D654F4BBDA63D70B6",
+    "machine_summary_canonical_sha256": "842CE700942C768E40EE3E6F6F1D577703247243F3123630778C74199C978A88"
+  },
+  "created_at": "2026-08-11T01:10:00+09:00",
+  "scope": "A-01 Task 4 acceptance projection; validated base plus exact evidence-only descendant paths avoids final commit SHA self-reference"
+}

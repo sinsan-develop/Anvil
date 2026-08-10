@@ -1,10 +1,10 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000017",
-  "event_sequence": 29,
-  "snapshot_hash": "E111EE4A99CB8D5D5068379623E58811D1D315AEE1729A5AEE9F54D0941182B5",
-  "updated_at": "2026-08-11T00:15:00+09:00",
-  "last_event_id": "evt_a01_task4_entry_reconciled",
+  "snapshot_id": "snapshot-anvil-build-000018",
+  "event_sequence": 30,
+  "snapshot_hash": "BB7696471A066D846B299F407C8F238D8AD8DAA1CDCBBD2116E7E0AB16E31351",
+  "updated_at": "2026-08-11T01:10:00+09:00",
+  "last_event_id": "evt_a01_precondition_task4_accepted",
   "plan_version": "1.5",
   "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
@@ -32,10 +32,12 @@
     {"path": "docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md", "sha256": "9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F"},
     {"path": "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md", "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"},
     {"path": "docs/onboarding/developer-primary-ack.md", "sha256": "931ED3D4A4A351F47FB48ED459270565E63889E8049EC4587032E2C640782B90"},
-    {"path": "scripts/check_project_progress.py", "sha256": "329FA689DFE414A8F68D7C0D53438EF10F32E9FA6583F83DCB2246ACBED11997"},
-    {"path": "tests/tooling/test_project_progress.py", "sha256": "2C406A1F7BA31AC0798D376A95D8612DA06599866254D1897BF59F198F748600"},
-    {"path": "scripts/check_g07_baseline.py", "sha256": "91CB8FFB77F6396429A78AF64D029B863F624C4D92DD36E9236F841C01DEF1F7"},
-    {"path": "tests/tooling/test_g07_baseline.py", "sha256": "EB07029A4A2CCCACA9169FC8496D44A348B3A616FCAEBAD4269DD5A4B3583596"},
+    {"path": "scripts/check_project_progress.py", "sha256": "7E51E10383F20B8E3D55795F1054E5FE50F8C29B436A35DFDD4374DD7E16C111"},
+    {"path": "tests/tooling/test_project_progress.py", "sha256": "B1946963D267653DBFA73B23B191FD038C83DF3339F645F1C5DF7107B116A587"},
+    {"path": "scripts/check_g07_baseline.py", "sha256": "3F3B022B7B1E8D1CA291B4CBC9123A72B53516C4C2E191F2F8232B0B420448F2"},
+    {"path": "tests/tooling/test_g07_baseline.py", "sha256": "DA4992697B8059F86EC0B795427EC8A88B739A4C1867142640DCCA30AF7673DB"},
+    {"path": "docs/test_reports/A-01_PRECONDITION_TEST_REPORT.md", "sha256": "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369"},
+    {"path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json", "sha256": "388F117408CF41F0889C7362807A17289AF2FA73DC3159777B0DEA8827216791"},
     {"path": "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json", "sha256": "4296CFA7E36FAB06AB697109FD6775AEE5D6D985E934DF092F474EE8ABDC8640"},
     {"path": "docs/progress/progress-handoff-detached-digest-a01-post-push.json", "sha256": "10B9648576F6FDE790EB382DCB6FA2DE5732B558A4C12C03C08D03BC276A2079"},
     {"path": "docs/work_orders/PHASE_G_GATE_WORK_INSTRUCTION.md", "sha256": "5F0172B7CADDBBA9086428AE5DD294F67F6D5BADD44573D4730E84E76D1BB7D7"},
@@ -56,7 +58,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Task 4 independent Tester must validate this uncommitted test-entry snapshot and write the Task 4 report; Main then commits both together before any A-01 WorkInstruction or implementation",
+  "next_safe_action": "Main may issue the A-01 WorkInstruction under the accepted plan; A-01 implementation remains not started and requires a new valid worker/write lease",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -81,10 +83,34 @@
   },
   "repository": {
     "branch": "main",
-    "local_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
+    "local_head": "853da76458929e007d8a02ab32f7f918ab26d590",
     "upstream": "origin/main",
-    "remote_head": "84c47406a8d7e75e63f26cb8fed52b058237df5d",
-    "worktree_status": "TASK4_ENTRY_READY: local main, tracking origin/main, and remote refs/heads/main match 84c4740; this final reconciliation snapshot is uncommitted for independent Task 4 testing"
+    "remote_head": "853da76458929e007d8a02ab32f7f918ab26d590",
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "853da76458929e007d8a02ab32f7f918ab26d590",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "worktree_status": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT: validated base 853da76; exact tracked final diff is restricted to the declared nine-path allowlist"
+  },
+  "a01_precondition": {
+    "status": "ACCEPTED",
+    "readiness": "READY_FOR_A01_WI",
+    "accepted_event_id": "evt_a01_precondition_task4_accepted",
+    "task4_test_report_ref": {
+      "path": "docs/test_reports/A-01_PRECONDITION_TEST_REPORT.md",
+      "sha256": "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369"
+    },
+    "runtime_deferred": ["AV-FLOW-001"]
   },
   "active_work_instruction": null,
   "phase_gate": {
@@ -110,14 +136,14 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "A-01",
-    "path": "docs/progress/progress-handoff-detached-digest-a01-test-entry.json",
-    "manifest_path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
+    "manifest_path": "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {"path": "docs/progress/failure-ledger.json", "sha256": "594E7A53CA5E5037AA8E5651FE9EC49E1B0E35E731B6D4D30713BCA26E230EF0"},
     "non_semantic_revision_bindings": {"path": "docs/progress/non-semantic-revision-bindings.json", "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"},
     "dir_checkpoints": {"path": "docs/progress/dir-checkpoints.json", "sha256": "73147EA0DC940F34A7369E8A58EA7DD738DBA2246DD9F729DE8FB26273E44F4B"},
     "progress_event_contract": {"path": "docs/progress/progress-event-contract.json", "sha256": "B60E59C60BA15F984DB2070894F9ED8844498B931546DB55F68F2154FA654F7C"},
-    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "EF95CE0A07A22FD88EEC0F90663A66C15606674D77036791B51B2923E1504EE9"}
+    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "96332B46F2688D4A23BA9F2030D26CEB0CB231CEC4C0AB0939B714F0F714EF44"}
   }
 }

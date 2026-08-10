@@ -119,6 +119,20 @@ CHANGE_CLASSIFICATION_ALIASES = {
     "NON_SEMANTIC": "NON_SEMANTIC",
 }
 
+VALIDATED_BASE_PROJECTION_MODE = "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT"
+VALIDATED_BASE_PENDING_RELATION = "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT"
+EVIDENCE_ONLY_PATH_PREFIXES = (
+    "docs/evidence/",
+    "docs/progress/",
+    "docs/test_reports/",
+)
+EVIDENCE_ONLY_TOOLING_PATHS = {
+    "scripts/check_g07_baseline.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_g07_baseline.py",
+    "tests/tooling/test_project_progress.py",
+}
+
 
 def canonical_json_bytes(value: Any) -> bytes:
     return json.dumps(
@@ -584,10 +598,17 @@ def validate_event_stream(
             and progress is not None
         ):
             repository = progress.get("repository", {})
-            if any(
-                details.get(field) != repository.get(field)
-                for field in ("branch", "local_head", "remote_head", "upstream")
-            ):
+            projection_fields = ["branch", "local_head", "remote_head", "upstream"]
+            if repository.get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE:
+                projection_fields.extend(
+                    [
+                        "projection_mode",
+                        "validated_base_commit",
+                        "head_relation",
+                        "exact_allowed_paths",
+                    ]
+                )
+            if any(details.get(field) != repository.get(field) for field in projection_fields):
                 errors.append("EVENT_EFFECT_MISMATCH")
     return sorted(set(errors))
 
@@ -615,6 +636,16 @@ def _validate_handoff(bundle: Mapping[str, Any]) -> list[str]:
         errors.append("HANDOFF_REPOSITORY_HEAD_MISMATCH")
     if repository.get("upstream") != handoff.get("repository_upstream"):
         errors.append("HANDOFF_REPOSITORY_UPSTREAM_MISMATCH")
+    if repository.get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE:
+        projection_comparisons = {
+            "projection_mode": ("repository_projection_mode", "HANDOFF_REPOSITORY_PROJECTION_MISMATCH"),
+            "validated_base_commit": ("repository_validated_base_commit", "HANDOFF_REPOSITORY_BASE_MISMATCH"),
+            "head_relation": ("repository_head_relation", "HANDOFF_REPOSITORY_RELATION_MISMATCH"),
+            "exact_allowed_paths": ("repository_exact_allowed_paths", "HANDOFF_REPOSITORY_PATH_SET_MISMATCH"),
+        }
+        for repository_field, (handoff_field, reason) in projection_comparisons.items():
+            if repository.get(repository_field) != handoff.get(handoff_field):
+                errors.append(reason)
     reporting = progress.get("reporting_decision", {}).get("decision")
     if reporting != handoff.get("reporting_decision"):
         errors.append("HANDOFF_REPORTING_DECISION_MISMATCH")
@@ -723,6 +754,114 @@ def validate_manifest_progress_binding(
     if row.get("sha256") != actual_hash or row.get("bytes") != actual_bytes:
         return ["MANIFEST_DETACHED_DIGEST_BINDING_MISMATCH"]
     return []
+
+
+def validate_a01_precondition_acceptance_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    manifest_relative = "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json"
+    prior_relative = "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json"
+    report_relative = "docs/test_reports/A-01_PRECONDITION_TEST_REPORT.md"
+    expected_raw_paths = {
+        "docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md",
+        "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md",
+        prior_relative,
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
+        report_relative,
+        "scripts/check_g07_baseline.py",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_g07_baseline.py",
+        "tests/tooling/test_project_progress.py",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A01_ACCEPTANCE_RAW_CHECKSUMS_INVALID"]
+    canonical_rows: list[tuple[bytes, str]] = []
+    seen: set[str] = set()
+    total_bytes = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("A01_ACCEPTANCE_RAW_CHECKSUMS_INVALID")
+            continue
+        relative = row.get("path")
+        if relative == manifest_relative:
+            errors.append("MANIFEST_SELF_REFERENCE_FORBIDDEN")
+        if (
+            not isinstance(relative, str)
+            or relative in seen
+            or relative.startswith("/")
+            or "\\" in relative
+            or ".." in Path(relative).parts
+        ):
+            errors.append("A01_ACCEPTANCE_RAW_CHECKSUMS_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A01_ACCEPTANCE_RAW_CHECKSUMS_INVALID")
+            continue
+        checksum = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != checksum:
+            errors.append("A01_ACCEPTANCE_RAW_CHECKSUMS_INVALID")
+        total_bytes += len(raw)
+        canonical_rows.append(
+            (
+                relative.encode("utf-8"),
+                f"{relative}\t{len(raw)}\t{checksum}",
+            )
+        )
+    if seen != expected_raw_paths:
+        errors.append("A01_ACCEPTANCE_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if (
+        manifest.get("target_canonical_bytes") != len(canonical)
+        or manifest.get("target_content_bytes") != total_bytes
+        or manifest.get("target_hash") != target
+        or manifest.get("delivered_hash") != target
+        or manifest.get("content_hash") != target
+    ):
+        errors.append("A01_ACCEPTANCE_TARGET_MISMATCH")
+    try:
+        prior_hash = _sha256(root / prior_relative)
+        report_hash = _sha256(root / report_relative)
+    except OSError:
+        errors.append("A01_ACCEPTANCE_SOURCE_INVALID")
+    else:
+        prior = manifest.get("supersedes_artifact_ref", {})
+        if prior.get("path") != prior_relative or prior.get("file_sha256") != prior_hash:
+            errors.append("A01_ACCEPTANCE_SOURCE_INVALID")
+        report = manifest.get("precondition_acceptance", {}).get("task4_test_report_ref", {})
+        if report.get("path") != report_relative or report.get("sha256") != report_hash:
+            errors.append("A01_ACCEPTANCE_TASK4_INVALID")
+    progress = bundle["progress"]
+    repository = progress.get("repository", {})
+    manifest_repository = manifest.get("repository_projection", {})
+    projection_fields = (
+        "projection_mode",
+        "validated_base_commit",
+        "head_relation",
+        "branch",
+        "upstream",
+        "exact_allowed_paths",
+    )
+    if any(manifest_repository.get(field) != repository.get(field) for field in projection_fields):
+        errors.append("A01_ACCEPTANCE_REPOSITORY_PROJECTION_MISMATCH")
+    acceptance = manifest.get("precondition_acceptance", {})
+    progress_acceptance = progress.get("a01_precondition", {})
+    if (
+        acceptance.get("status") != "ACCEPTED"
+        or acceptance.get("readiness") != "READY_FOR_A01_WI"
+        or acceptance.get("status") != progress_acceptance.get("status")
+        or acceptance.get("readiness") != progress_acceptance.get("readiness")
+        or manifest.get("self_reference") is not False
+    ):
+        errors.append("A01_ACCEPTANCE_PROJECTION_MISMATCH")
+    return sorted(set(errors))
 
 
 def validate_historical_manifest_raw_checksums(
@@ -863,7 +1002,89 @@ def _git_value(root: Path, *arguments: str) -> str | None:
     )
     if result.returncode != 0:
         return None
-    return result.stdout.strip()
+    return result.stdout.rstrip()
+
+
+def _git_returncode(root: Path, *arguments: str) -> int:
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=root,
+        capture_output=True,
+        check=False,
+        text=True,
+    ).returncode
+
+
+def _split_git_paths(output: str | None) -> list[str]:
+    if not output:
+        return []
+    return sorted({line.strip().replace("\\", "/") for line in output.splitlines() if line.strip()})
+
+
+def _working_tree_paths(output: str | None) -> list[str]:
+    if not output:
+        return []
+    paths: set[str] = set()
+    for line in output.splitlines():
+        if len(line) < 4:
+            continue
+        relative = line[3:].strip().replace("\\", "/")
+        if " -> " in relative:
+            before, after = relative.split(" -> ", 1)
+            paths.update((before, after))
+        elif relative:
+            paths.add(relative)
+    return sorted(paths)
+
+
+def _is_evidence_only_path(relative: str) -> bool:
+    return relative in EVIDENCE_ONLY_TOOLING_PATHS or relative.startswith(
+        EVIDENCE_ONLY_PATH_PREFIXES
+    )
+
+
+def validate_repository_projection(
+    repository: Mapping[str, Any],
+    *,
+    actual_head: str | None,
+    actual_branch: str | None,
+    actual_upstream: str | None,
+    actual_remote_head: str | None,
+    base_is_ancestor: bool,
+    actual_changed_paths: list[str],
+    working_tree_mode: bool,
+) -> list[str]:
+    errors: list[str] = []
+    base = repository.get("validated_base_commit")
+    allowed = repository.get("exact_allowed_paths")
+    if (
+        repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
+        or repository.get("head_relation") != VALIDATED_BASE_PENDING_RELATION
+        or not isinstance(base, str)
+        or not re.fullmatch(r"[0-9a-f]{40}", base)
+        or not isinstance(allowed, list)
+        or not allowed
+        or any(not isinstance(path, str) or not path for path in allowed)
+        or allowed != sorted(set(allowed))
+    ):
+        errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        return errors
+    if any(not _is_evidence_only_path(path) for path in allowed):
+        errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
+    if repository.get("branch") != actual_branch:
+        errors.append("GIT_BRANCH_MISMATCH")
+    if repository.get("upstream") != actual_upstream:
+        errors.append("GIT_UPSTREAM_MISMATCH")
+    if not base_is_ancestor:
+        errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+    if sorted(set(actual_changed_paths)) != allowed:
+        errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+    if working_tree_mode:
+        if actual_head != base or actual_remote_head != base:
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+    elif actual_remote_head != actual_head:
+        errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+    return sorted(set(errors))
 
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
@@ -876,6 +1097,44 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     actual_branch = _git_value(root, "branch", "--show-current")
     actual_upstream = _git_value(root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
     actual_remote_head = _git_value(root, "rev-parse", "@{u}") if actual_upstream else None
+    if repository.get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE:
+        base = repository.get("validated_base_commit")
+        working_tree_mode = actual_head == base
+        if working_tree_mode:
+            changed_paths = _working_tree_paths(
+                _git_value(root, "status", "--porcelain=v1", "--untracked-files=all")
+            )
+            base_is_ancestor = True
+        else:
+            changed_paths = _split_git_paths(
+                _git_value(root, "diff", "--name-only", f"{base}..{actual_head}")
+                if isinstance(base, str) and actual_head
+                else None
+            )
+            base_is_ancestor = bool(
+                isinstance(base, str)
+                and actual_head
+                and _git_returncode(root, "merge-base", "--is-ancestor", base, actual_head) == 0
+            )
+            if _working_tree_paths(
+                _git_value(root, "status", "--porcelain=v1", "--untracked-files=all")
+            ):
+                errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
+        errors.extend(
+            validate_repository_projection(
+                repository,
+                actual_head=actual_head,
+                actual_branch=actual_branch,
+                actual_upstream=actual_upstream,
+                actual_remote_head=actual_remote_head,
+                base_is_ancestor=base_is_ancestor,
+                actual_changed_paths=changed_paths,
+                working_tree_mode=working_tree_mode,
+            )
+        )
+        if not repository.get("worktree_status"):
+            errors.append("GIT_WORKTREE_STATUS_MISSING")
+        return sorted(set(errors))
     if repository.get("local_head") != actual_head:
         errors.append("GIT_LOCAL_HEAD_MISMATCH")
     if repository.get("branch") != actual_branch:
@@ -935,6 +1194,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
         errors.append("MANIFEST_DETACHED_DIGEST_BINDING_MISSING")
     else:
         errors.extend(validate_manifest_progress_binding(manifest, bundle))
+        if current_manifest_relative == "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_a01_precondition_acceptance_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

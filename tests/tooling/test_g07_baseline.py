@@ -196,9 +196,17 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
         self.assertEqual("REPOSITORY_RECONCILED", reconciliation["event_type"])
-        self.assertEqual(report["git"]["head"], reconciliation["local_head"])
-        self.assertEqual(report["git"]["upstream_head"], reconciliation["remote_head"])
-        self.assertEqual("TASK4_ENTRY_READY", reconciliation["checkpoint_status"])
+        self.assertEqual(
+            "853da76458929e007d8a02ab32f7f918ab26d590",
+            reconciliation["validated_base_commit"],
+        )
+        self.assertEqual(
+            "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
+        )
+        self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
+        self.assertEqual("A01_PRECONDITION_ACCEPTED", reconciliation["checkpoint_status"])
+        self.assertEqual("ACCEPTED", reconciliation["precondition_status"])
+        self.assertEqual("READY_FOR_A01_WI", reconciliation["readiness"])
         self.assertEqual("A-01", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(3, report["failure_counts"]["historical_accepted_failure_total"])
@@ -208,6 +216,65 @@ class G07BaselineTests(unittest.TestCase):
             report["g_gate"]["remaining_before_a01"],
         )
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
+
+    def test_repository_projection_accepts_only_exact_evidence_descendant(self):
+        progress_path = "docs/progress/build-progress.json"
+        events_path = "docs/progress/progress-events.json"
+        progress = json.loads((ROOT / progress_path).read_text(encoding="utf-8"))
+        event_stream = json.loads((ROOT / events_path).read_text(encoding="utf-8"))
+        base = "853da76458929e007d8a02ab32f7f918ab26d590"
+        head = "f" * 40
+        allowed = ["docs/progress/build-progress.json"]
+        projection = {
+            "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+            "validated_base_commit": base,
+            "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+            "exact_allowed_paths": allowed,
+            "branch": "main",
+            "upstream": "origin/main",
+        }
+        progress["repository"] = projection
+        event_stream["events"][-1]["details"].update(projection)
+
+        def fake_git(_root, *arguments):
+            responses = {
+                ("rev-parse", "HEAD"): (0, head),
+                ("rev-parse", "@{u}"): (0, head),
+                ("branch", "--show-current"): (0, "main"),
+                ("merge-base", "--is-ancestor", base, head): (0, ""),
+                ("diff", "--name-only", f"{base}..{head}"): (0, "docs/progress/build-progress.json"),
+            }
+            if arguments[:2] == ("log", "--format=%H"):
+                return 0, "f" * 40
+            if arguments in responses:
+                return responses[arguments]
+            raise AssertionError(f"unexpected git arguments: {arguments}")
+
+        with mock.patch.object(self.checker, "_git", side_effect=fake_git):
+            report = self.checker.validate_repository(
+                ROOT,
+                json_overrides={progress_path: progress, events_path: event_stream},
+                verify_git=True,
+            )
+        self.assertNotIn("PROGRESS_REPOSITORY_STALE", self.codes(report))
+        self.assertNotIn("PROGRESS_RECONCILIATION_MISMATCH", self.codes(report))
+        self.assertNotIn("GIT_PROVENANCE_MISMATCH", self.codes(report))
+
+        with mock.patch.object(
+            self.checker,
+            "_git",
+            side_effect=lambda root, *args: (
+                (0, "apps/api/anvil_api/main.py")
+                if args == ("diff", "--name-only", f"{base}..{head}")
+                else fake_git(root, *args)
+            ),
+        ):
+            rejected = self.checker.validate_repository(
+                ROOT,
+                json_overrides={progress_path: progress, events_path: event_stream},
+                verify_git=True,
+            )
+        self.assertIn("GIT_DESCENDANT_PATH_SET_MISMATCH", self.codes(rejected))
 
     def test_latest_git_push_rejects_divergent_local_and_remote_heads(self):
         progress_path = "docs/progress/build-progress.json"
@@ -244,6 +311,19 @@ class G07BaselineTests(unittest.TestCase):
                 return 0, remote_head
             if arguments == ("branch", "--show-current"):
                 return 0, "main"
+            if arguments == (
+                "merge-base",
+                "--is-ancestor",
+                "853da76458929e007d8a02ab32f7f918ab26d590",
+                local_head,
+            ):
+                return 1, ""
+            if arguments == (
+                "diff",
+                "--name-only",
+                f"853da76458929e007d8a02ab32f7f918ab26d590..{local_head}",
+            ):
+                return 0, "docs/progress/build-progress.json"
             if arguments[:2] == ("log", "--format=%H"):
                 return 0, "f" * 40
             raise AssertionError(f"unexpected git arguments: {arguments}")

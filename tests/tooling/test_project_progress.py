@@ -12,6 +12,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -129,8 +130,8 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
 
         mutated = copy.deepcopy(bundle)
-        mutated["progress"]["repository"]["local_head"] = "0" * 40
-        self.assertIn("GIT_LOCAL_HEAD_MISMATCH", checker.validate_bundle(mutated))
+        mutated["progress"]["repository"]["validated_base_commit"] = "0" * 40
+        self.assertIn("GIT_VALIDATED_BASE_NOT_ANCESTOR", checker.validate_bundle(mutated))
 
         mutated = copy.deepcopy(bundle)
         instruction = (
@@ -139,6 +140,105 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         instruction["sha256"] = "0" * 64
         self.assertIn("PRG_REFERENCED_HASH_MISMATCH", checker.validate_bundle(mutated))
+
+    def test_exact_evidence_only_descendant_accepts_committed_and_worktree_states(self) -> None:
+        checker = self.require_checker()
+        validate = getattr(checker, "validate_repository_projection", None)
+        self.assertIsNotNone(validate, "validated-base descendant projection is not implemented")
+        base = "853da76458929e007d8a02ab32f7f918ab26d590"
+        head = "f" * 40
+        allowed = [
+            "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
+            "scripts/check_g07_baseline.py",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_g07_baseline.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        repository = {
+            "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+            "validated_base_commit": base,
+            "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+            "exact_allowed_paths": allowed,
+            "branch": "main",
+            "upstream": "origin/main",
+        }
+
+        self.assertEqual(
+            [],
+            validate(
+                repository,
+                actual_head=head,
+                actual_branch="main",
+                actual_upstream="origin/main",
+                actual_remote_head=head,
+                base_is_ancestor=True,
+                actual_changed_paths=allowed,
+                working_tree_mode=False,
+            ),
+        )
+        self.assertEqual(
+            [],
+            validate(
+                repository,
+                actual_head=base,
+                actual_branch="main",
+                actual_upstream="origin/main",
+                actual_remote_head=base,
+                base_is_ancestor=True,
+                actual_changed_paths=allowed,
+                working_tree_mode=True,
+            ),
+        )
+
+    def test_exact_evidence_only_descendant_rejects_each_provenance_violation(self) -> None:
+        checker = self.require_checker()
+        validate = getattr(checker, "validate_repository_projection", None)
+        self.assertIsNotNone(validate, "validated-base descendant projection is not implemented")
+        base = "853da76458929e007d8a02ab32f7f918ab26d590"
+        head = "f" * 40
+        allowed = ["docs/progress/build-progress.json"]
+        repository = {
+            "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+            "validated_base_commit": base,
+            "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+            "exact_allowed_paths": allowed,
+            "branch": "main",
+            "upstream": "origin/main",
+        }
+        defaults = {
+            "actual_head": head,
+            "actual_branch": "main",
+            "actual_upstream": "origin/main",
+            "actual_remote_head": head,
+            "base_is_ancestor": True,
+            "actual_changed_paths": allowed,
+            "working_tree_mode": False,
+        }
+
+        product = copy.deepcopy(repository)
+        product["exact_allowed_paths"] = ["apps/api/anvil_api/main.py"]
+        self.assertIn(
+            "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN",
+            validate(product, **{**defaults, "actual_changed_paths": product["exact_allowed_paths"]}),
+        )
+        for changed in ([], allowed + ["docs/progress/unlisted.json"]):
+            with self.subTest(changed=changed):
+                self.assertIn(
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                    validate(repository, **{**defaults, "actual_changed_paths": changed}),
+                )
+        self.assertIn(
+            "GIT_VALIDATED_BASE_NOT_ANCESTOR",
+            validate(repository, **{**defaults, "base_is_ancestor": False}),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            validate(repository, **{**defaults, "actual_remote_head": "e" * 40}),
+        )
 
     def test_event_sequence_and_complete_event_contract_are_guarded(self) -> None:
         checker = self.require_checker()
@@ -375,6 +475,28 @@ class ProjectProgressContractTests(unittest.TestCase):
         mutated["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(mutated["progress"])
         self.assertIn("DETACHED_DIGEST_MISMATCH", checker.validate_bundle(mutated))
 
+    def test_a01_acceptance_manifest_is_live_bound_and_self_reference_free(self) -> None:
+        checker = self.require_checker()
+        validate = getattr(checker, "validate_a01_precondition_acceptance_manifest", None)
+        self.assertIsNotNone(validate, "A-01 acceptance manifest validation is not implemented")
+        bundle = checker.load_bundle(ROOT)
+        manifest_path = ROOT / bundle["progress"]["current_progress_evidence_ref"]["manifest_path"]
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+        self.assertEqual([], validate(manifest, bundle))
+        wrong_report = copy.deepcopy(manifest)
+        wrong_report["precondition_acceptance"]["task4_test_report_ref"]["sha256"] = "0" * 64
+        self.assertIn("A01_ACCEPTANCE_TASK4_INVALID", validate(wrong_report, bundle))
+        self_referential = copy.deepcopy(manifest)
+        self_referential["raw_checksums"].append(
+            {
+                "path": "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
+                "bytes": 1,
+                "sha256": "0" * 64,
+            }
+        )
+        self.assertIn("MANIFEST_SELF_REFERENCE_FORBIDDEN", validate(self_referential, bundle))
+
     def test_failure_evidence_is_real_and_projection_matches_progress(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
@@ -514,6 +636,13 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "remote_head": remote_head,
             }
         )
+        for field in (
+            "projection_mode",
+            "validated_base_commit",
+            "head_relation",
+            "exact_allowed_paths",
+        ):
+            bundle["progress"]["repository"].pop(field, None)
         next_sequence = bundle["events"]["last_sequence"] + 1
         bundle["events"]["events"].append(
             {
@@ -648,21 +777,41 @@ class ProjectProgressContractTests(unittest.TestCase):
             hashlib.sha256(post_push_digest.read_bytes()).hexdigest().upper(),
         )
 
-    def test_task4_entry_reconciliation_projects_current_ready_snapshot(self) -> None:
+    def test_task4_acceptance_projects_ready_for_a01_work_instruction(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
         last_event = bundle["events"]["events"][-1]
         repository = progress["repository"]
 
-        self.assertEqual(29, progress["event_sequence"])
+        self.assertEqual(30, progress["event_sequence"])
         self.assertEqual("REPOSITORY_RECONCILED", last_event["event_type"])
         self.assertEqual("A-01", last_event["subject_ref"])
-        self.assertEqual("TASK4_ENTRY_READY", last_event["details"]["checkpoint_status"])
-        self.assertEqual(repository["local_head"], repository["remote_head"])
-        self.assertEqual(last_event["details"]["local_head"], repository["local_head"])
-        self.assertEqual(last_event["details"]["remote_head"], repository["remote_head"])
+        self.assertEqual("A01_PRECONDITION_ACCEPTED", last_event["details"]["checkpoint_status"])
+        self.assertEqual("ACCEPTED", last_event["details"]["precondition_status"])
+        self.assertEqual("READY_FOR_A01_WI", last_event["details"]["readiness"])
+        self.assertEqual(
+            "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369",
+            last_event["details"]["task4_test_report_ref"]["sha256"],
+        )
+        self.assertEqual(
+            "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+            repository["projection_mode"],
+        )
+        self.assertEqual(
+            "853da76458929e007d8a02ab32f7f918ab26d590",
+            repository["validated_base_commit"],
+        )
+        self.assertEqual(
+            "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", repository["head_relation"]
+        )
+        self.assertEqual(
+            repository["exact_allowed_paths"], last_event["details"]["exact_allowed_paths"]
+        )
         self.assertEqual("READY", progress["status"])
+        self.assertEqual("ACCEPTED", progress["a01_precondition"]["status"])
+        self.assertEqual("READY_FOR_A01_WI", progress["a01_precondition"]["readiness"])
+        self.assertIn("AV-FLOW-001", progress["a01_precondition"]["runtime_deferred"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
@@ -671,16 +820,16 @@ class ProjectProgressContractTests(unittest.TestCase):
             progress["derived_baseline_binding"]["baseline_id"],
         )
         self.assertEqual(
-            "docs/progress/progress-handoff-detached-digest-a01-test-entry.json",
+            "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
             progress["current_progress_evidence_ref"]["path"],
         )
         self.assertEqual(
-            "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json",
+            "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
-        prior_manifest = ROOT / "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json"
+        prior_manifest = ROOT / "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json"
         self.assertEqual(
-            "4296CFA7E36FAB06AB697109FD6775AEE5D6D985E934DF092F474EE8ABDC8640",
+            "388F117408CF41F0889C7362807A17289AF2FA73DC3159777B0DEA8827216791",
             hashlib.sha256(prior_manifest.read_bytes()).hexdigest().upper(),
         )
 
