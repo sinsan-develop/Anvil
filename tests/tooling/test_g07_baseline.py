@@ -106,6 +106,16 @@ class G07BaselineTests(unittest.TestCase):
             "| A-01 | AV-UI-005 |",
         )
 
+        wrong_a01 = replace_once(
+            corrected,
+            "| A-01 | AV-UI-005 |",
+            "| A-01 | AV-UI-005, AV-FLOW-001 |",
+        )
+        self.assertIn(
+            "A01_RESPONSIBILITY_MISMATCH",
+            self.codes(self.validate(texts={path: wrong_a01}, verify_hashes=False)),
+        )
+
         missing_a05 = replace_once(corrected, "| A-05 | AV-FLOW-001 |", "| A-05 | AV-UI-005 |")
         self.assertIn(
             "FLOW001_A05_RESPONSIBILITY_MISSING",

@@ -28,6 +28,5 @@
 |---|---|---|---|
 | root human approval | `APPROVAL-20260810-INTEGRATED-BASELINE-001`의 통합검증매트릭스 v1.1 | `E911650466ACAE87599CD8CBBFE29B301F47A9D37B225D2DAD090A6BF13A3904` | historical parent |
 | active derived baseline | `Anvil_통합검증매트릭스_v1.md` v1.2 | `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3` | superseded responsibility projection |
-| next derived baseline | Task 2가 생성할 활성 matrix revision/hash | `PENDING_FINAL_AUTHORITY_HASH` | 이 승인에 결박할 후속 hash |
 
-이 approval은 현재 active matrix hash를 소급 변경하지 않는다. Task 2의 authority revision과 derived baseline이 최종 hash 및 이 approval과의 binding을 기록할 때까지 새 책임 배정은 active baseline이 아니다.
+이 approval은 현재 active matrix hash를 소급 변경하지 않는다. Task 2의 authority revision이 생성할 successor derived baseline hash는 Task 1 시점에 존재하지 않으며, Task 2에서 이 approval과 함께 확정·결박한다. 그 전까지 새 책임 배정은 active baseline이 아니다.
