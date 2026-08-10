@@ -53,6 +53,23 @@
       ],
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a01-independent-test-r1",
+      "step_lineage_id": "A-01",
+      "failure_fingerprint": "a01-independent-test:approval-decision-guard-fail-open-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/A-01_TEST_REPORT.md",
+          "sha256": "53AB8F7F27BBC291FE3A8F338E23552DA14E53629B049A6EE225CA10E353A020"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
     }
   ]
 }

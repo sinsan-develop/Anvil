@@ -439,7 +439,34 @@ def validate_gate(
         and package_completed.get("details", {}).get("package_status") == "TEST_REVIEW"
         and package_completed.get("details", {}).get("accepted") is False
     )
-    if progress_projection != ready_projection and not active_start_projection and not test_review_projection:
+    rework_events = {event.get("event_type"): event for event in events[-3:]}
+    rework_worker = rework_events.get("WORKER_LEASE_ISSUED", {})
+    rework_write = rework_events.get("WRITE_LEASE_ISSUED", {})
+    package_resumed = rework_events.get("PACKAGE_RESUMED", {})
+    active_rework_projection = (
+        progress_projection.get("current_work_package") == "A-01"
+        and progress_projection.get("status") == "ACTIVE"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and active_wi.get("artifact_id") == "WI-A-01-20260811-001"
+        and active_wi.get("package_status") == "ACTIVE"
+        and active_wi.get("rework_attempt") == 1
+        and rework_worker.get("sequence") == 37
+        and rework_write.get("sequence") == 38
+        and package_resumed.get("sequence") == 39
+        and rework_worker.get("actor") == rework_write.get("actor") == package_resumed.get("actor") == "main-agent-eoul"
+        and rework_worker.get("details", {}).get("lease_id") == worker.get("lease_id")
+        and rework_worker.get("details", {}).get("lease_epoch") == worker.get("lease_epoch") == 2
+        and rework_write.get("details", {}).get("lease_id") == write.get("lease_id")
+        and rework_write.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
+        and rework_write.get("details", {}).get("write_epoch") == write.get("write_epoch") == 2
+        and package_resumed.get("details", {}).get("work_instruction_sha256") == active_wi.get("sha256")
+        and package_resumed.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
+        and package_resumed.get("details", {}).get("write_lease_id") == write.get("lease_id")
+        and package_resumed.get("details", {}).get("resume_event_ref", {}).get("finding_id") == "A01-TST-BLK-001"
+    )
+    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {

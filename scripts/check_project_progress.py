@@ -567,7 +567,7 @@ def validate_event_stream(
     projection_events = [
         event for event in events
         if isinstance(event, dict)
-        and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED"}
+        and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED"}
         and isinstance(event.get("details"), dict)
         and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]
@@ -618,7 +618,7 @@ def validate_event_stream(
                 errors.append("EVENT_EFFECT_MISMATCH")
         if (
             event is current_repository_event
-            and event_type in {"PACKAGE_STARTED", "PACKAGE_COMPLETED"}
+            and event_type in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED"}
             and isinstance(details, dict)
             and progress is not None
         ):

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-01-PROGRESS-HANDOFF-DIGEST-REWORK-START-R2",
+  "package_id": "A-01",
+  "event_sequence": 39,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 11567,
+    "file_sha256": "14AC9BFB44C7ACAB2B2A5073FEAFED486E1339AFA651B96050DDE02F33340B22",
+    "canonical_json_sha256": "77DBB81A068F205A8A96F293E84D74538097FCA30C6BE5CD212977860CDDA6DF"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 26770,
+    "file_sha256": "6D8FA54B37BE019A0614E1A112F813FD6E4223B43BFFA99C6DE5CC49B57A0EA3",
+    "machine_summary_canonical_sha256": "06D023593395B8F667EF513C6DAD5554C4BB8C3C751CB1E68F7370662C489E66"
+  },
+  "created_at": "2026-08-11T04:10:02+09:00",
+  "scope": "A-01 first valid independent failure projected to active rework revision 2 with epoch-2 worker and write leases"
+}
