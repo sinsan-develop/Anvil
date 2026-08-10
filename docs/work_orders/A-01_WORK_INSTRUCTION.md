@@ -154,7 +154,9 @@ verification_contract:
   assigned_verification_ids: ["AV-UI-005"]
   required_levels: ["L7"]
   required_evidence: ["E-ART", "E-SHOT", "E-DEC", "E-MAN", "E-TEST"]
-  verification_mode: "STATIC_ONLY"
+  execution_classification: "STATIC_ONLY"
+  runtime_status: "RUNTIME_DEFERRED / NOT_EXECUTED"
+  evidence_acquisition_mode: "STATIC_RENDER"
   evidence_qualifier: "E-SHOT is a static screen-map render, not runtime UI evidence"
   tester_entry_conditions:
     - "5개 정적 journey artifact와 catalog, validator, report, manifest 존재"

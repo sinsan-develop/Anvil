@@ -2,7 +2,7 @@
 
 - invocation_artifact_id: `INV-A-01-20260811-001`
 - work_instruction_artifact_id: `WI-A-01-20260811-001`
-- work_instruction_content_hash: `CF67FB8DF08DF14460A1C304734BE15EEDCB35F4B181F34BA6B7A27064F0B206`
+- work_instruction_content_hash: `410D92E5E77ED3CA42C295147C5201A2208E10C8BEF0445C19B567455F776369`
 - responsibility_approval_id: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 - operating_approval_id: `APPROVAL-20260810-AUTONOMOUS-EXECUTION-001`
 - baseline_git_commit: `7422b07b85bcdcec52031e1b10098ab6ca089170`
