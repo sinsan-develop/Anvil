@@ -627,18 +627,18 @@ def validate_repository(
         rc_upstream, upstream = _git(root, "rev-parse", "@{u}")
         rc_branch, branch = _git(root, "branch", "--show-current")
         git_evidence = {"verified": True, "branch": branch, "head": head, "upstream_head": upstream}
+        is_push_projection = reconciliation_event and reconciliation_event.get("event_type") == "GIT_PUSH"
         if (
             rc_head
             or rc_upstream
             or rc_branch
             or branch != "main"
-            or (reconciliation_event is phase_g_checkpoint and head != upstream)
+            or (is_push_projection and head != upstream)
         ):
             _error(errors, "GIT_PROVENANCE_MISMATCH", ".git", f"branch={branch} head={head} upstream={upstream}")
         repository_projection = progress.get("repository", {})
         if repository_projection.get("local_head") != head or repository_projection.get("remote_head") != upstream:
             _error(errors, "PROGRESS_REPOSITORY_STALE", progress_path, f"projected={repository_projection} actual={head}/{upstream}")
-        is_push_projection = reconciliation_event and reconciliation_event.get("event_type") == "GIT_PUSH"
         projected_local = reconciliation.get("local_commit") if is_push_projection else reconciliation.get("local_head")
         projected_remote = reconciliation.get("remote_commit") if is_push_projection else reconciliation.get("remote_head")
         if projected_local != head or projected_remote != upstream:

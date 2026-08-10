@@ -560,6 +560,10 @@ def validate_event_stream(
             errors.append("EVENT_PAYLOAD_MISSING")
         if not event_contract.get("effect"):
             errors.append("EVENT_EFFECT_CONTRACT_MISSING")
+        if event_type == "GIT_PUSH" and isinstance(details, dict):
+            evidence = details.get("evidence_ref")
+            if not isinstance(evidence, dict) or not evidence.get("path") or not evidence.get("sha256"):
+                errors.append("EVENT_PAYLOAD_MISSING")
         if (
             event is current_repository_event
             and event_type == "GIT_PUSH"
@@ -573,9 +577,6 @@ def validate_event_stream(
                 or details.get("branch") != repository.get("branch")
             ):
                 errors.append("EVENT_EFFECT_MISMATCH")
-            evidence = details.get("evidence_ref")
-            if not isinstance(evidence, dict) or not evidence.get("path") or not evidence.get("sha256"):
-                errors.append("EVENT_PAYLOAD_MISSING")
         if (
             event is current_repository_event
             and event_type == "REPOSITORY_RECONCILED"

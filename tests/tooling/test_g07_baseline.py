@@ -7,6 +7,7 @@ import importlib.util
 import json
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -207,6 +208,54 @@ class G07BaselineTests(unittest.TestCase):
             report["g_gate"]["remaining_before_a01"],
         )
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
+
+    def test_latest_git_push_rejects_divergent_local_and_remote_heads(self):
+        progress_path = "docs/progress/build-progress.json"
+        events_path = "docs/progress/progress-events.json"
+        progress = json.loads((ROOT / progress_path).read_text(encoding="utf-8"))
+        event_stream = json.loads((ROOT / events_path).read_text(encoding="utf-8"))
+        local_head = "1" * 40
+        remote_head = "2" * 40
+        progress["repository"].update(
+            {"branch": "main", "local_head": local_head, "remote_head": remote_head}
+        )
+        event_stream["events"].append(
+            {
+                "event_id": "evt-test-latest-divergent-push",
+                "sequence": event_stream["last_sequence"] + 1,
+                "event_type": "GIT_PUSH",
+                "occurred_at": "2026-08-11T00:01:00+09:00",
+                "actor": "main-agent-eoul",
+                "subject_ref": "main",
+                "details": {
+                    "remote": "origin",
+                    "branch": "main",
+                    "local_commit": local_head,
+                    "remote_commit": remote_head,
+                    "evidence_ref": {"path": "evidence.json", "sha256": "A" * 64},
+                },
+            }
+        )
+
+        def fake_git(_root, *arguments):
+            if arguments == ("rev-parse", "HEAD"):
+                return 0, local_head
+            if arguments == ("rev-parse", "@{u}"):
+                return 0, remote_head
+            if arguments == ("branch", "--show-current"):
+                return 0, "main"
+            if arguments[:2] == ("log", "--format=%H"):
+                return 0, "f" * 40
+            raise AssertionError(f"unexpected git arguments: {arguments}")
+
+        with mock.patch.object(self.checker, "_git", side_effect=fake_git):
+            report = self.checker.validate_repository(
+                ROOT,
+                json_overrides={progress_path: progress, events_path: event_stream},
+                verify_git=True,
+            )
+
+        self.assertIn("GIT_PROVENANCE_MISMATCH", self.codes(report))
 
     def test_evidence_manifest_recomputes_exact_delivered_target(self):
         errors = self.checker.validate_g07_manifest(ROOT, verify_live_raw=False)

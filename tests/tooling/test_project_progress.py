@@ -541,6 +541,22 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         self.assertNotIn("EVENT_EFFECT_MISMATCH", errors)
 
+    def test_historical_git_push_rejects_corrupt_evidence_reference(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        historical_push = next(
+            event
+            for event in bundle["events"]["events"]
+            if event["event_type"] == "GIT_PUSH"
+        )
+        historical_push["details"]["evidence_ref"] = "corrupt"
+
+        errors = checker.validate_event_stream(
+            bundle["events"], bundle["event_contract"], bundle["progress"]
+        )
+
+        self.assertIn("EVENT_PAYLOAD_MISSING", errors)
+
     def test_phase_g_checkpoint_push_projects_a01_ready_without_active_instruction(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
