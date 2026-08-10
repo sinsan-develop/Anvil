@@ -53,6 +53,8 @@ FINAL_MANIFESTS = {
 VALIDATED_BASE_PROJECTION_MODE = "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT"
 VALIDATED_BASE_PENDING_RELATION = "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT"
 EVIDENCE_ONLY_PATH_PREFIXES = ("docs/evidence/", "docs/progress/", "docs/test_reports/")
+A01_COMPLETION_PATH_PREFIXES = ("docs/architecture/a01/", "docs/completion_reports/A-01_", "docs/validation/A-01_", "tests/fixtures/a01/")
+A01_COMPLETION_EXACT_PATHS = {"scripts/check_a01_journey.py", "tests/tooling/test_a01_journey.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -219,8 +221,11 @@ def _git_worktree_paths(output: str) -> list[str]:
 
 
 def _is_evidence_only_path(relative: str) -> bool:
-    return relative in EVIDENCE_ONLY_TOOLING_PATHS or relative.startswith(
-        EVIDENCE_ONLY_PATH_PREFIXES
+    return (
+        relative in EVIDENCE_ONLY_TOOLING_PATHS
+        or relative in A01_COMPLETION_EXACT_PATHS
+        or relative.startswith(EVIDENCE_ONLY_PATH_PREFIXES)
+        or relative.startswith(A01_COMPLETION_PATH_PREFIXES)
     )
 
 
@@ -652,14 +657,14 @@ def validate_repository(
         for event in events
         if event.get("event_type") in {"GIT_PUSH", "REPOSITORY_RECONCILED"}
     ]
-    dispatch_events = [
+    projection_events = [
         event for event in events
-        if event.get("event_type") == "PACKAGE_STARTED"
+        if event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED"}
         and isinstance(event.get("details"), dict)
-        and event["details"].get("dispatch_head")
+        and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]
     reconciliation_event = max(
-        repository_events + dispatch_events,
+        repository_events + projection_events,
         key=lambda event: event.get("sequence", 0),
         default=phase_g_checkpoint,
     )

@@ -1,0 +1,18 @@
+{
+  "fixture_id": "A01-JOURNEY-MUTATIONS",
+  "source_catalog": "docs/architecture/a01/A-01_PATH_CATALOG.json",
+  "mutations": [
+    {"mutation_id": "A01-MUT-001", "description": "required path missing", "expected_error_code": "PATH_SET_MISMATCH"},
+    {"mutation_id": "A01-MUT-002", "description": "edge points to unknown target", "expected_error_code": "EDGE_TARGET_UNKNOWN"},
+    {"mutation_id": "A01-MUT-003", "description": "execution bypasses approval", "expected_error_code": "EXECUTION_APPROVAL_BYPASS"},
+    {"mutation_id": "A01-MUT-004", "description": "rework reuses old hash", "expected_error_code": "REWORK_OLD_HASH_REUSE"},
+    {"mutation_id": "A01-MUT-005", "description": "stop omits checkpoint", "expected_error_code": "STOP_CHECKPOINT_REQUIRED"},
+    {"mutation_id": "A01-MUT-006", "description": "resume allows duplicate execution", "expected_error_code": "RESUME_DUPLICATE_EXECUTION_FORBIDDEN"},
+    {"mutation_id": "A01-MUT-007", "description": "technical pass promotes product validation", "expected_error_code": "TECHNICAL_PASS_PROMOTION"},
+    {"mutation_id": "A01-MUT-008", "description": "non-pass statuses removed", "expected_error_code": "NON_PASS_STATUS_POLICY_MISMATCH"},
+    {"mutation_id": "A01-MUT-009", "description": "AV-FLOW-001 reinserted into A-01", "expected_error_code": "A01_RESPONSIBILITY_MISMATCH"},
+    {"mutation_id": "A01-MUT-010", "description": "decision actor missing", "expected_error_code": "DECISION_ACTOR_MISSING"},
+    {"mutation_id": "A01-MUT-011", "description": "approval subject hash missing", "expected_error_code": "DECISION_SUBJECT_HASH_MISSING"},
+    {"mutation_id": "A01-MUT-012", "description": "document/catalog identifier drift", "expected_error_code": "DOCUMENT_STEP_ALIGNMENT_MISMATCH"}
+  ]
+}

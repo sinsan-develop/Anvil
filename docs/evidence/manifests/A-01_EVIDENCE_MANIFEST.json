@@ -1,0 +1,39 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-01-20260811-001",
+  "artifact_type": "package_evidence_manifest",
+  "project_id": "anvil",
+  "package_id": "A-01",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary-a01"},
+  "created_at": "2026-08-11T03:10:00+09:00",
+  "work_instruction_sha256": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A",
+  "assigned_verification_ids": ["AV-UI-005"],
+  "runtime_deferred_verification_ids": ["AV-FLOW-001"],
+  "execution_classification": "STATIC_ONLY",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI",
+  "target_algorithm": "SHA256(canonical JSON of sorted [{path,sha256}] raw_artifacts)",
+  "target_hash": "EFFA9E26CADB687E50A1E03817B4F48406FC48BB0F6B1A9A76802E0ECDCBAF1F",
+  "delivered_hash": "EFFA9E26CADB687E50A1E03817B4F48406FC48BB0F6B1A9A76802E0ECDCBAF1F",
+  "raw_artifacts": [
+    {"path": "docs/architecture/a01/A-01_USER_JOURNEY.md", "bytes": 3417, "sha256": "AE41B8D1DA599AF55B9ADA9460AFC243FA0D6E2AC96C06BB5A85D46F7C7923F1", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a01/A-01_SCREEN_MAP.md", "bytes": 2396, "sha256": "2A9AFA3ACC1D765BEFEF9DAE195655DCB79662768C65E094F1DFD7DE222D11E9", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a01/A-01_PHASE_RAIL.md", "bytes": 1685, "sha256": "FB01C58B5D6C245D5996764AE68276C7670809D0EAA40F155F2A3DD6E0B1916F", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a01/A-01_DECISION_APPROVAL_MAP.md", "bytes": 1609, "sha256": "6159430C2518A76C7AB1449FB9ADEF68DA8C80B256432D810EE52B1C7CAD67C3", "evidence_type": "E-DEC"},
+    {"path": "docs/architecture/a01/A-01_PATH_CATALOG.json", "bytes": 18334, "sha256": "836DC61E4D1F6B2087B788A3EDA2A30A7BFDA79001A2BA88ED3E6347CE5A1236", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a01/A-01_STATIC_RENDER.svg", "bytes": 3283, "sha256": "267771CFA6B8EE9A6C6FF0E2710317CED79578590133DD4460E02C4D7DA49CA8", "evidence_type": "E-SHOT_STATIC"},
+    {"path": "scripts/check_a01_journey.py", "bytes": 14225, "sha256": "E09866D3659591685EF0B42B931A7237338797E736DBCE0252C7FA41C94F4502", "evidence_type": "E-TEST"},
+    {"path": "tests/tooling/test_a01_journey.py", "bytes": 8467, "sha256": "639EE0A3E4021DFD9330A1048F12BBF4568F77C19FE09E70BE49F41627F38445", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a01/canonical-contract.json", "bytes": 417, "sha256": "73A9ADDA57FB399724B2116F8DCC6A229DFF9DDFD5E3100FD6B5FA055679A75D", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a01/mutation-catalog.json", "bytes": 1760, "sha256": "57B33AF2B4411AD732E0F0E7950C50F3807A918B0F53D985E24468B536BE38DE", "evidence_type": "E-TEST"},
+    {"path": "docs/validation/A-01_JOURNEY_VALIDATION.md", "bytes": 1753, "sha256": "3EF0D90B8D05CE4C85850F227ECE73A296E49905C221BADE90FD92931898F481", "evidence_type": "E-TEST"},
+    {"path": "docs/completion_reports/A-01_COMPLETION_REPORT.md", "bytes": 3531, "sha256": "25D99BA3394C8C470334A62DB842E23B5628F3CACDE1431933F306D412E82485", "evidence_type": "E-ART"}
+  ],
+  "raw_checksums": [],
+  "self_reference": false,
+  "limitations": [
+    "Static artifacts and validators do not prove browser or runtime behavior.",
+    "AV-FLOW-001 remains deferred to A-05, B-03, and A Gate.",
+    "Independent Tester PASS is required before ACCEPTED."
+  ]
+}

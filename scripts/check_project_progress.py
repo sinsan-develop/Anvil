@@ -126,6 +126,16 @@ EVIDENCE_ONLY_PATH_PREFIXES = (
     "docs/progress/",
     "docs/test_reports/",
 )
+A01_COMPLETION_PATH_PREFIXES = (
+    "docs/architecture/a01/",
+    "docs/completion_reports/A-01_",
+    "docs/validation/A-01_",
+    "tests/fixtures/a01/",
+)
+A01_COMPLETION_EXACT_PATHS = {
+    "scripts/check_a01_journey.py",
+    "tests/tooling/test_a01_journey.py",
+}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -554,15 +564,15 @@ def validate_event_stream(
         if isinstance(event, dict)
         and event.get("event_type") in {"GIT_PUSH", "REPOSITORY_RECONCILED"}
     ]
-    dispatch_events = [
+    projection_events = [
         event for event in events
         if isinstance(event, dict)
-        and event.get("event_type") == "PACKAGE_STARTED"
+        and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED"}
         and isinstance(event.get("details"), dict)
-        and event["details"].get("dispatch_head")
+        and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]
     current_repository_event = max(
-        repository_events + dispatch_events,
+        repository_events + projection_events,
         key=lambda event: event.get("sequence", 0),
         default=None,
     )
@@ -608,14 +618,16 @@ def validate_event_stream(
                 errors.append("EVENT_EFFECT_MISMATCH")
         if (
             event is current_repository_event
-            and event_type == "PACKAGE_STARTED"
+            and event_type in {"PACKAGE_STARTED", "PACKAGE_COMPLETED"}
             and isinstance(details, dict)
             and progress is not None
         ):
             repository = progress.get("repository", {})
+            observed_local = details.get("dispatch_head", details.get("completion_head"))
+            observed_remote = details.get("dispatch_upstream_head", details.get("completion_upstream_head"))
             if (
-                details.get("dispatch_head") != repository.get("local_head")
-                or details.get("dispatch_upstream_head") != repository.get("remote_head")
+                observed_local != repository.get("local_head")
+                or observed_remote != repository.get("remote_head")
                 or details.get("projection_mode") != repository.get("projection_mode")
                 or details.get("validated_base_commit") != repository.get("validated_base_commit")
                 or details.get("head_relation") != repository.get("head_relation")
@@ -1074,8 +1086,11 @@ def _working_tree_paths(output: str | None) -> list[str]:
 
 
 def _is_evidence_only_path(relative: str) -> bool:
-    return relative in EVIDENCE_ONLY_TOOLING_PATHS or relative.startswith(
-        EVIDENCE_ONLY_PATH_PREFIXES
+    return (
+        relative in EVIDENCE_ONLY_TOOLING_PATHS
+        or relative in A01_COMPLETION_EXACT_PATHS
+        or relative.startswith(EVIDENCE_ONLY_PATH_PREFIXES)
+        or relative.startswith(A01_COMPLETION_PATH_PREFIXES)
     )
 
 

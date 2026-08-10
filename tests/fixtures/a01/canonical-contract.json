@@ -1,0 +1,10 @@
+{
+  "fixture_id": "A01-JOURNEY-CANONICAL",
+  "source_catalog": "docs/architecture/a01/A-01_PATH_CATALOG.json",
+  "step_count": 14,
+  "path_ids": ["PATH-NORMAL", "PATH-REJECT", "PATH-REVISE", "PATH-STOP", "PATH-RESUME"],
+  "assigned_verification_ids": ["AV-UI-005"],
+  "runtime_deferred_verification_ids": ["AV-FLOW-001"],
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "acquisition_mode": "STATIC_RENDER"
+}

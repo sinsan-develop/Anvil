@@ -243,10 +243,10 @@ def validate_checkpoint_manifest(root: Path | str) -> list[str]:
     ):
         errors.append("GATE_CHECKPOINT_PROJECTION_INVALID")
     current_ref = progress.get("current_progress_evidence_ref", {})
-    accepted_ref = progress.get("latest_evidence_manifest_ref", {})
     if current_ref != {"package_id": "A-01", "path": CHECKPOINT_DETACHED_PATH, "manifest_path": CHECKPOINT_MANIFEST_PATH}:
         errors.append("GATE_CHECKPOINT_PROGRESS_REF_INVALID")
-    if accepted_ref.get("path") != GATE_MANIFEST_PATH or accepted_ref.get("sha256") != "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884":
+    gate_row = next((row for row in manifest.get("raw_checksums", []) if row.get("path") == GATE_MANIFEST_PATH), None)
+    if gate_row is None or gate_row.get("sha256") != "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884":
         errors.append("GATE_ACCEPTED_MANIFEST_REF_INVALID")
     return sorted(set(errors))
 
@@ -415,7 +415,31 @@ def validate_gate(
         and package_event.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
         and package_event.get("details", {}).get("write_lease_id") == write.get("lease_id")
     )
-    if progress_projection != ready_projection and not active_start_projection:
+    completion_events = {event.get("event_type"): event for event in events[-3:]}
+    write_revoked = completion_events.get("WRITE_LEASE_REVOKED", {})
+    worker_revoked = completion_events.get("WORKER_LEASE_REVOKED", {})
+    package_completed = completion_events.get("PACKAGE_COMPLETED", {})
+    test_review_projection = (
+        progress_projection.get("current_work_package") == "A-01"
+        and progress_projection.get("status") == "TEST_REVIEW"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and active_wi.get("artifact_id") == "WI-A-01-20260811-001"
+        and active_wi.get("package_status") == "TEST_REVIEW"
+        and progress_projection.get("worker_lease") is None
+        and progress_projection.get("write_lease") is None
+        and write_revoked.get("sequence") == 34
+        and worker_revoked.get("sequence") == 35
+        and package_completed.get("sequence") == 36
+        and write_revoked.get("actor") == worker_revoked.get("actor") == package_completed.get("actor") == "main-agent-eoul"
+        and write_revoked.get("details", {}).get("lease_id") == "write-lease-a01-20260811-001"
+        and worker_revoked.get("details", {}).get("lease_id") == "worker-lease-a01-20260811-001"
+        and package_completed.get("details", {}).get("result_status") == "COMPLETED"
+        and package_completed.get("details", {}).get("package_status") == "TEST_REVIEW"
+        and package_completed.get("details", {}).get("accepted") is False
+    )
+    if progress_projection != ready_projection and not active_start_projection and not test_review_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {

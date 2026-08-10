@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">Anvil A-01 static Workbench journey map</title>
+  <desc id="desc">Static-only phase rail and decision map. Runtime deferred and not executed.</desc>
+  <rect width="1920" height="1080" fill="#0b1220"/>
+  <rect x="40" y="40" width="1840" height="84" rx="12" fill="#17233a"/>
+  <text x="76" y="92" fill="#f4f7fb" font-family="sans-serif" font-size="16">Anvil Workbench — A-01 Static Journey</text>
+  <text x="1460" y="92" fill="#f5c86b" font-family="sans-serif" font-size="12">RUNTIME_DEFERRED / NOT_EXECUTED</text>
+  <rect x="40" y="148" width="1840" height="92" rx="12" fill="#111c30"/>
+  <g font-family="sans-serif" font-size="12" text-anchor="middle">
+    <text x="150" y="202" fill="#8dd5ff">Idea</text><text x="365" y="202" fill="#8dd5ff">Design</text>
+    <text x="580" y="202" fill="#8dd5ff">Plan</text><text x="795" y="202" fill="#8dd5ff">Execute</text>
+    <text x="1010" y="202" fill="#8dd5ff">Verify</text><text x="1225" y="202" fill="#8dd5ff">Validate</text>
+    <text x="1440" y="202" fill="#8dd5ff">Release</text><text x="1655" y="202" fill="#8dd5ff">Learn</text>
+  </g>
+  <path d="M150 172 H1655" stroke="#4f6f9f" stroke-width="4"/>
+  <g fill="#62c3ff"><circle cx="150" cy="172" r="8"/><circle cx="365" cy="172" r="8"/><circle cx="580" cy="172" r="8"/><circle cx="795" cy="172" r="8"/><circle cx="1010" cy="172" r="8"/><circle cx="1225" cy="172" r="8"/><circle cx="1440" cy="172" r="8"/><circle cx="1655" cy="172" r="8"/></g>
+  <rect x="40" y="264" width="1160" height="756" rx="12" fill="#111c30"/>
+  <text x="76" y="304" fill="#f4f7fb" font-family="sans-serif" font-size="16">Conversation + progressive disclosure panels</text>
+  <g font-family="sans-serif" font-size="12" fill="#d4deed">
+    <text x="76" y="354">Idea Capture → Alternatives → Concept Decision → Design Baseline → Plan → Approval</text>
+    <text x="76" y="394">Execution → Completion → Technical Test → Product Validation → Defect → Release → Learn</text>
+    <text x="76" y="458">PATH-NORMAL · PATH-REJECT · PATH-REVISE · PATH-STOP · PATH-RESUME</text>
+    <text x="76" y="522">Technical PASS ≠ ProductValidation ≠ ReleaseDecision</text>
+    <text x="76" y="586">STOP: checkpoint + completed steps + reason + next safe action</text>
+    <text x="76" y="650">RESUME: same hash + checkpoint; duplicate execution forbidden</text>
+  </g>
+  <rect x="1224" y="264" width="656" height="756" rx="12" fill="#17233a"/>
+  <text x="1260" y="304" fill="#f4f7fb" font-family="sans-serif" font-size="16">Decision / Approval Drawer</text>
+  <g font-family="sans-serif" font-size="12" fill="#d4deed">
+    <text x="1260" y="356">Concept: SELECT / HOLD / REJECT / REVISE</text>
+    <text x="1260" y="410">WorkInstruction: APPROVE / REJECT / REVISE</text>
+    <text x="1260" y="464">ProductValidation: PASS / FAIL / INCOMPLETE</text>
+    <text x="1260" y="518">Release: RELEASE / REWORK / DEFER / REJECT</text>
+    <text x="1260" y="572">Skill·Hook: ACTIVATE / REJECT / ROLLBACK</text>
+  </g>
+  <text x="1260" y="960" fill="#f5c86b" font-family="sans-serif" font-size="10">E-SHOT_STATIC — not browser/runtime evidence</text>
+</svg>

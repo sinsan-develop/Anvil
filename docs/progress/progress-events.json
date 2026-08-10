@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 33,
+  "last_sequence": 36,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -534,6 +534,91 @@
           "tests/tooling/test_project_progress.py"
         ],
         "change_classification": "NON_SEMANTIC",
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-FLOW-001"]
+      }
+    },
+    {
+      "event_id": "evt_a01_write_lease_revoked_for_test_review",
+      "sequence": 34,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-08-11T03:15:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-01",
+      "details": {
+        "lease_id": "write-lease-a01-20260811-001",
+        "worker_lease_id": "worker-lease-a01-20260811-001",
+        "reason": "developer completed A-01 artifacts; revoke product write authority before Main TEST_REVIEW projection",
+        "prior_write_fencing_token": "a01-write-fence-epoch-1-e97c355",
+        "revoked_actor": "developer-primary-a01"
+      }
+    },
+    {
+      "event_id": "evt_a01_worker_lease_revoked_for_test_review",
+      "sequence": 35,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-08-11T03:15:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-01",
+      "details": {
+        "lease_id": "worker-lease-a01-20260811-001",
+        "reason": "developer result frozen as COMPLETED_PENDING_MAIN_PROJECTION; execution ownership released before independent Tester entry",
+        "prior_execution_fencing_token": "a01-execution-fence-epoch-1-e97c355",
+        "revoked_actor": "developer-primary-a01"
+      }
+    },
+    {
+      "event_id": "evt_a01_package_completed_test_review",
+      "sequence": 36,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-11T03:15:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-01",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "developer_actor": "developer-primary-a01",
+        "work_instruction_id": "WI-A-01-20260811-001",
+        "work_instruction_sha256": "D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A",
+        "completion_report_ref": {"path": "docs/completion_reports/A-01_COMPLETION_REPORT.md", "sha256": "25D99BA3394C8C470334A62DB842E23B5628F3CACDE1431933F306D412E82485"},
+        "developer_manifest_ref": {"path": "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST.json", "sha256": "11C7321DF2657879E8B46FE95A2E8B86ADA573BF91C0CD76C115B55ADEF2301B"},
+        "worker_lease": null,
+        "write_lease": null,
+        "independent_tester_status": "PENDING",
+        "completion_head": "16af3f4284245aea4df130c5efa30700743fc6f6",
+        "completion_upstream_head": "16af3f4284245aea4df130c5efa30700743fc6f6",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "16af3f4284245aea4df130c5efa30700743fc6f6",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "exact_allowed_paths": [
+          "docs/architecture/a01/A-01_DECISION_APPROVAL_MAP.md",
+          "docs/architecture/a01/A-01_PATH_CATALOG.json",
+          "docs/architecture/a01/A-01_PHASE_RAIL.md",
+          "docs/architecture/a01/A-01_SCREEN_MAP.md",
+          "docs/architecture/a01/A-01_STATIC_RENDER.svg",
+          "docs/architecture/a01/A-01_USER_JOURNEY.md",
+          "docs/completion_reports/A-01_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/A-01_COMPLETION_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a01-completion-test-review.json",
+          "docs/validation/A-01_JOURNEY_VALIDATION.md",
+          "scripts/check_a01_journey.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/fixtures/a01/canonical-contract.json",
+          "tests/fixtures/a01/mutation-catalog.json",
+          "tests/tooling/test_a01_journey.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
         "reporting_decision": "AUTO_CONTINUE",
         "runtime_deferred": ["AV-FLOW-001"]
       }
