@@ -1,0 +1,22 @@
+{
+  "artifact_id": "__REQUIRED_INVOCATION_ARTIFACT_ID__",
+  "artifact_type": "invocation_prompt",
+  "project_id": "__REQUIRED_PROJECT_ID__",
+  "version": 1,
+  "artifact_status": "draft",
+  "content_hash": "__REQUIRED_SHA256__",
+  "source_artifact_ids": [],
+  "source_evidence_ids": [],
+  "created_by": {"actor_type": "agent", "actor_id": "__REQUIRED_MAIN_AGENT_ID__"},
+  "created_at": "__REQUIRED_RFC3339_TIMESTAMP__",
+  "supersedes_artifact_id": null,
+  "artifact_path": "__REQUIRED_ARTIFACT_PATH__",
+  "invocation_id": "__REQUIRED_INVOCATION_ID__",
+  "work_instruction_ref": {"artifact_id": "__REQUIRED_WORK_INSTRUCTION_ID__", "content_hash": "__REQUIRED_SHA256__"},
+  "approval_subject_hash": "__REQUIRED_SHA256__",
+  "execution_mode": "__REQUIRED_EXECUTION_MODE__",
+  "agent_role": "__REQUIRED_AGENT_ROLE__",
+  "completion_report_template_ref": {"artifact_id": "__REQUIRED_COMPLETION_TEMPLATE_ID__", "content_hash": "__REQUIRED_SHA256__"},
+  "report_path": "__REQUIRED_REPORT_PATH__",
+  "instruction": "참조 WorkInstruction대로 수행하고 구조화된 CompletionReport를 지정 경로에 작성한다. WorkInstruction 본문을 복사하거나 재해석하지 않는다."
+}

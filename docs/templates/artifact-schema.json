@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/artifact-schema-v1.json",
+  "title": "Anvil canonical artifact contracts",
+  "description": "Canonical JSON contracts. Markdown reports are presentation layers and may not remove fields or widen enums.",
+  "$defs": {
+    "required_placeholder": {
+      "type": "string",
+      "pattern": "^__REQUIRED_[A-Z0-9_]+__$"
+    },
+    "actor": {
+      "type": "object",
+      "required": ["actor_type", "actor_id"],
+      "properties": {
+        "actor_type": {"enum": ["human", "agent", "service"]},
+        "actor_id": {"type": "string", "minLength": 1},
+        "role": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "envelope": {
+      "type": "object",
+      "required": [
+        "artifact_id", "artifact_type", "project_id", "version",
+        "artifact_status", "content_hash", "source_artifact_ids",
+        "source_evidence_ids", "created_by", "created_at",
+        "supersedes_artifact_id", "artifact_path"
+      ],
+      "properties": {
+        "artifact_id": {"type": "string", "minLength": 1},
+        "artifact_type": {"type": "string"},
+        "project_id": {"type": "string", "minLength": 1},
+        "version": {"type": "integer", "minimum": 1},
+        "artifact_status": {"enum": ["draft", "proposed", "approved", "superseded", "rejected"]},
+        "content_hash": {"type": "string"},
+        "source_artifact_ids": {"type": "array", "items": {"type": "string"}},
+        "source_evidence_ids": {"type": "array", "items": {"type": "string"}},
+        "created_by": {"$ref": "#/$defs/actor"},
+        "created_at": {"type": "string"},
+        "supersedes_artifact_id": {"type": ["string", "null"]},
+        "artifact_path": {"type": "string", "minLength": 1}
+      }
+    },
+    "verification_contract": {
+      "type": "object",
+      "required": [
+        "matrix_revision", "assigned_verification_ids", "required_levels",
+        "required_evidence", "tester_entry_conditions", "package_exit_conditions",
+        "regression_suite", "fixture_ids", "environment",
+        "immediate_stop_conditions", "evidence_manifest_required",
+        "product_validation_criteria", "blocking_defect_policy",
+        "release_decision_required"
+      ],
+      "properties": {
+        "matrix_revision": {"type": "string"},
+        "assigned_verification_ids": {"type": "array", "items": {"type": "string"}},
+        "required_levels": {"type": "array", "items": {"type": "string"}},
+        "required_evidence": {"type": "array", "items": {"type": "string"}},
+        "tester_entry_conditions": {"type": "array", "items": {"type": "string"}},
+        "package_exit_conditions": {"type": "array", "items": {"type": "string"}},
+        "regression_suite": {"type": "string"},
+        "fixture_ids": {"type": "array", "items": {"type": "string"}},
+        "environment": {"type": "string"},
+        "immediate_stop_conditions": {"type": "array", "items": {"type": "string"}},
+        "evidence_manifest_required": {"type": "boolean"},
+        "product_validation_criteria": {"type": "array", "items": {"type": "string"}},
+        "blocking_defect_policy": {"type": "string"},
+        "release_decision_required": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "reconstruction_contract": {
+      "type": "object",
+      "required": ["contract_version", "projection_fields", "output_shape", "canonicalization", "hash_algorithm"],
+      "properties": {
+        "contract_version": {"const": "1.0.0"},
+        "projection_fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string"}},
+        "output_shape": {"const": "flat_json_object"},
+        "canonicalization": {"type": "object"},
+        "hash_algorithm": {"const": "SHA-256"}
+      },
+      "additionalProperties": false
+    },
+    "work_instruction": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "package_id", "package_status", "revision", "supersedes_work_instruction_id",
+            "design_baseline_ref", "work_plan_ref", "approval_ref", "owner", "executor",
+            "goal", "preconditions", "included_scope", "excluded_scope", "protected_scope",
+            "allowed_paths", "forbidden_paths", "allowed_actions", "forbidden_actions",
+            "rollback_boundary", "completion_conditions", "result_contract",
+            "report_contract", "reconstruction_contract", "verification_contract"
+          ],
+          "properties": {
+            "artifact_type": {"const": "work_instruction"},
+            "package_status": {"enum": ["READY", "ACTIVE", "TEST_REVIEW", "ACCEPTED", "REWORK", "BLOCKED", "CANCELLED"]},
+            "reconstruction_contract": {"$ref": "#/$defs/reconstruction_contract"},
+            "verification_contract": {"$ref": "#/$defs/verification_contract"}
+          }
+        }
+      ]
+    },
+    "invocation_prompt": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "invocation_id", "work_instruction_ref", "approval_subject_hash",
+            "execution_mode", "agent_role", "completion_report_template_ref",
+            "report_path", "instruction"
+          ],
+          "properties": {"artifact_type": {"const": "invocation_prompt"}}
+        }
+      ]
+    },
+    "completion_report": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "package_id", "run_id", "delegation_id", "work_instruction_ref",
+            "result_status", "actor", "target_hash", "delivered_hash",
+            "git_before", "git_after", "changed_paths", "diff_summary", "actions",
+            "commands", "tests", "evidence_refs", "evidence_manifest_ref", "missing",
+            "carryover", "skipped", "blocked", "unverified", "assumptions",
+            "unresolved", "decision_request", "checkpoint", "handoff", "rollback",
+            "started_at", "finished_at"
+          ],
+          "properties": {
+            "artifact_type": {"const": "completion_report"},
+            "result_status": {
+              "anyOf": [
+                {"enum": ["COMPLETED", "FAILURE_REPORT", "INCOMPLETE", "BLOCKED", "CANCELLED"]},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "test_report": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "verification_revision", "design_baseline_ref", "work_instruction_ref",
+            "target_hash", "delivered_hash", "evidence_manifest_hash", "environment",
+            "tester", "entry_criteria", "verifications", "result_counts", "defects",
+            "unverified_scope", "verdict", "judgment_reason", "action", "retest_scope"
+          ],
+          "properties": {
+            "artifact_type": {"const": "test_report"},
+            "verdict": {
+              "anyOf": [
+                {"enum": ["ACCEPT", "REWORK", "BLOCKED", "CARRYOVER", "REJECT"]},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "product_validation": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "product_validation_id", "acceptance_criterion_id", "target_hash",
+            "delivered_hash", "environment", "procedure", "expected", "observed",
+            "evidence_refs", "result", "validated_by", "validated_at"
+          ],
+          "properties": {
+            "artifact_type": {"const": "product_validation"},
+            "result": {
+              "anyOf": [
+                {"enum": ["SUITABLE", "NEEDS_IMPROVEMENT", "UNSUITABLE", "BLOCKED"]},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "defect_assessment": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "defect_id", "summary", "target_hash", "severity", "blocking", "status",
+            "owner", "verification_id", "source_clause", "reason", "reproduction",
+            "evidence_refs", "impact", "action", "retest_scope", "retest_evidence_refs",
+            "carryover_ref", "owner_decision"
+          ],
+          "properties": {
+            "artifact_type": {"const": "defect_assessment"},
+            "severity": {
+              "anyOf": [
+                {"enum": ["CRITICAL", "MAJOR", "MINOR"]},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            },
+            "blocking": {
+              "anyOf": [
+                {"type": "boolean"},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            },
+            "status": {
+              "anyOf": [
+                {"enum": ["OPEN", "ACCEPTED", "FIXING", "READY_FOR_RETEST", "CLOSED", "DEFERRED", "REJECTED"]},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "release_decision": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "release_decision_id", "target_hash", "delivered_hash",
+            "evidence_manifest_hash", "product_validation_refs",
+            "required_product_validations_complete", "blocking_defect_refs",
+            "blocking_defect_count", "decision", "conditions", "proposed_by",
+            "decided_by_human", "decided_at", "reason", "next_transition",
+            "guard_result", "defer_risk", "reconsider_at", "carryover_item_ref"
+          ],
+          "properties": {
+            "artifact_type": {"const": "release_decision"},
+            "required_product_validations_complete": {
+              "anyOf": [
+                {"type": "boolean"},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            },
+            "blocking_defect_count": {
+              "anyOf": [
+                {"type": "integer", "minimum": 0},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            },
+            "decision": {
+              "anyOf": [
+                {"enum": ["RELEASE", "REWORK", "DEFER", "REJECT"]},
+                {"$ref": "#/$defs/required_placeholder"}
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "evidence_manifest": {
+      "allOf": [
+        {"$ref": "#/$defs/envelope"},
+        {
+          "type": "object",
+          "required": [
+            "manifest_id", "design_baseline_ref", "work_plan_ref", "work_instruction_ref",
+            "target_hash", "delivered_hash", "target_algorithm", "target_canonical_bytes", "git_head", "git_status_before",
+            "git_status_after", "image_digest", "db_migration_head",
+            "db_migration_set_hash", "db_profile", "db_version", "config_hash",
+            "policy_hash", "provider_routing_hash", "environment", "toolchain",
+            "commands", "verifications", "actors", "acquisition_mode", "raw_checksums",
+            "skipped", "blocked", "unverified", "started_at", "finished_at",
+            "manifest_creator", "manifest_created_at", "signature", "delivered_target_comparison"
+          ],
+          "properties": {"artifact_type": {"const": "evidence_manifest"}}
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "fixture_id": "G04-NEGATIVE-MUTATIONS-001",
+  "mutations": [
+    "invocation_body_copy",
+    "invocation_work_instruction_hash_missing",
+    "verification_contract_field_missing",
+    "target_or_manifest_binding_missing",
+    "release_non_human_actor",
+    "release_open_blocking_defect",
+    "release_product_validation_incomplete",
+    "defer_contract_missing",
+    "critical_blocking_false",
+    "evidence_identity_mismatch",
+    "artifact_and_package_status_mixed"
+  ]
+}

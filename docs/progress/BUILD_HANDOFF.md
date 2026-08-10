@@ -1,8 +1,8 @@
 # Anvil Build Handoff
 
 > 갱신일: 2026-08-10  
-> 현재 상태: `READY`  
-> 현재 Phase / Package: `G / G-04`
+> 현재 상태: `READY`
+> 현재 Phase / Package: `G / G-05`
 
 ## 1. 현재 기준선
 
@@ -24,7 +24,7 @@
 - 최종 승인자: 신산님
 - Main Agent·설계 책임자: 어울
 - Primary Developer Subagent·작업 담당자: `developer-primary`
-- Reviewer/Tester: G-01 PASS, G-02 revision 1·2 `REWORK` 후 revision 3 `PASS`; 현재 미활성
+- Reviewer/Tester: G-01 PASS, G-02 revision 1·2 `REWORK` 후 revision 3 `PASS`; G-04 독립 Tester 투입 대기
 
 ## 3. 이번 설정에서 완료한 내용
 
@@ -62,13 +62,17 @@
 - G-02 revision 3 canonical target `B01C9BF94B00588DFCEFE35096C0D64A39FACE4D4123D34E314C1A54B07F5F17`, EvidenceManifest SHA-256 `E39688335A0B1877116E34691977F8060E6B698A4D4F8E8A7B42BDBE5A3CD00A` 고정
 - G-02 revision 3 독립 Tester가 `AV-SAFE-033`·`AV-GATE-026`을 모두 `PASS`로 판정하고 Main Agent가 최종 `ACCEPTED`
 - 비차단 `G02-OBS-001`은 다음 비의미 문서 정비 시 표제 명확화로 이관하며 합격 작업을 다시 열지 않음
+- G-04의 8개 canonical JSON artifact template, Draft 2020-12 schema/catalog, 표준 라이브러리 checker를 test-first로 구현
+- G-04 RED 11/11 예상 실패를 관찰한 뒤 GREEN 11/11, G-03 경계검사 포함 전체 회귀 20/20 PASS
+- WorkInstruction fixture 단독 semantic projection과 expected fixture의 Developer diff 0, negative mutation 11종 거부 확인
+- `[historical revision 1]` G-04 target/delivered `857179EF2FF83D491C00A4DFF409808B6DF3446FF238F39EC9BF0BE289F11372`, EvidenceManifest file SHA-256 `009745BBB04BDAA2F2CE5806236FB773A3D2A704BB07033103D7A7878CBCCA2B`
 
 ## 4. 온보딩 판정
 
 - v2.6/v1.4/v1.2/v1.3/운영규칙 v1.4 기준 Developer 재온보딩 `PASS / READ_ONLY_READY`
 - 프로젝트 목적·Phase·역할·승인·복구·실패 3회·Skill/Hook/Plugin 규칙 이해도 10문항 합격
 - 97 Package·255 ID(CON 21·실행 234)·DIR 4종과 G-02→G-03 차단사항을 정확히 설명함
-- 현재 상태: `READ_ONLY_READY / WRITE_BLOCKED_PENDING_G03_WORK_INSTRUCTION`
+- 현재 상태: `WRITE_ENABLED_FOR_G04 / REVISION_2_DEVELOPER_COMPLETE_TEST_REVIEW`
 - 온보딩 증거: `docs/onboarding/developer-primary-ack.md` / SHA-256 `3110F6B21EFC3C7BE61B6CEB71A4586A75A80DC129D79DDC4B0A74AFE0039A69`
 
 ## 5. 승인·결정 상태
@@ -103,10 +107,28 @@
 - G-03 revision 4 독립 TestReport R4: `PASS / READY_FOR_MAIN_ACCEPTANCE`, SHA-256 `D9F25579559865C9369C8913C78AA20A496D06CE3D887F7F87BE3DEA12FA452F`
 - Main Agent fresh 검증: unittest 9/9, checker, manifest target, pycache 0, Git 0 상태 PASS
 - G-03 최종 판정: `ACCEPTED`; `G03-DEF-001`~`006` 실패 계보는 R1~R3에 보존
+- G-04 revision 1 Developer 결과: `COMPLETED / TEST_REVIEW`, 이후 독립 Tester `REWORK`
+- G-04 revision 1 target/delivered: `857179EF2FF83D491C00A4DFF409808B6DF3446FF238F39EC9BF0BE289F11372`
+- G-04 revision 1 EvidenceManifest file SHA-256: `009745BBB04BDAA2F2CE5806236FB773A3D2A704BB07033103D7A7878CBCCA2B`
+- Main fresh 검증: G-04 11 + G-03 회귀 9 = 20/20 PASS, checker 2종·JSON·hash·pycache 0 확인
+- Main 판정: `PRELIMINARY_ACCEPT`; expected 비열람 독립 semantic reconstruction 대기
+- G-04 독립 TestReport: `REWORK / AV-FLOW-003 FAIL`, SHA-256 `E31E3B27BCCB6F34F13EE8C3438F60CCBE618B5CC1E3CA53F3FCECF73DF170B5`
+- `G04-DEF-001`: source WorkInstruction 단독 field/shape 선택 규칙 부재로 독립 projection diff 0 실패
+- `G04-DEF-002`: manifest 선언 target canonicalization 재계산과 등록 target 불일치
+- 현재 WorkInstruction revision 2: `WI-G-04-20260810-002`, SHA-256 `4330D9ED93731B70579D7BD7A590F65238738EFE425D829465DBE5BD75FB6558`
+- revision 2 Developer closure: source `reconstruction_contract`가 projection field 순서·flat output·canonicalization·hash를 자체 기술하고 checker hard-code를 제거
+- revision 2 Developer closure: 구조화 `target_algorithm`과 raw checksum 기반 target 함수로 실제 18개 artifact를 재계산
+- revision 2 target/delivered: `5B5FA32568A7AD293C611BB5E85FCD4C0C0076EA787327CCC4AF1D936042827D`, canonical bytes `2109`, content bytes `85676`
+- revision 2 EvidenceManifest file SHA-256: `F2674994201407532D6E18A9F9A0A94B606BA94385DCD126C03AF7F8264B09C1`
+- revision 2 Developer verification: G-04 14/14, G-03 회귀 포함 23/23 PASS; finding closure는 독립 Tester 확인 전 공식 종료 아님
+- G-04 revision 2 독립 TestReport R2: `PASS / READY_FOR_MAIN_ACCEPTANCE`, SHA-256 `0C5123F32FBD268EA6E91B9592F833F2A8D899119A47528FC5761C895B8D34AF`
+- `G04-DEF-001~002` 독립 `CLOSED`, `AV-FLOW-003 PASS`, open blocking defect 0
+- Main 최종 fresh 검증: 전체 23/23, checker 2종, report hash, JSON, diff-check PASS
+- G-04 최종 판정: `ACCEPTED`
 
 ## 6. 다음 안전 행동
 
-G-03 revision 4는 root·nested beyond-top-level을 slicing 전에 차단하면서 합법적인 `packages.domain` 재진입을 유지했고, R4 독립 Tester와 Main fresh 검증을 모두 통과해 `ACCEPTED`다. 승인 기준선은 Git commit `6fab9aa95811ad09aa2f27a0e9c7f5b73bf12cfd`로 고정했다. 다음 안전 행동은 G-04 WorkInstruction을 발행하는 것이다. 원격 저장소가 없으므로 push는 보류한다.
+G-04 revision 2는 독립 expected 비열람 projection과 target 재계산을 포함해 `AV-FLOW-003 PASS`로 최종 `ACCEPTED`다. 다음 안전 행동은 G-04 산출물을 Git에 커밋한 뒤 G-05 WorkInstruction을 발행하는 것이다. 원격 저장소가 없으므로 push는 보류한다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

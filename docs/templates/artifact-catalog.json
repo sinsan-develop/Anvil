@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "schema_version": "1.0.0",
+  "canonical_schema_path": "docs/templates/artifact-schema.json",
+  "canonicalization": {
+    "encoding": "UTF-8",
+    "line_endings": "LF",
+    "bom": false,
+    "key_order": "lexicographic",
+    "separators": [",", ":"],
+    "hash": "SHA-256 of canonical JSON bytes with content_hash omitted"
+  },
+  "templates": [
+    {
+      "artifact_type": "work_instruction",
+      "artifact_path": "docs/work_orders/templates/work-instruction.template.json",
+      "schema_ref": "#/$defs/work_instruction"
+    },
+    {
+      "artifact_type": "invocation_prompt",
+      "artifact_path": "docs/work_orders/templates/invocation-prompt.template.json",
+      "schema_ref": "#/$defs/invocation_prompt"
+    },
+    {
+      "artifact_type": "completion_report",
+      "artifact_path": "docs/validation/templates/completion-report.template.json",
+      "schema_ref": "#/$defs/completion_report"
+    },
+    {
+      "artifact_type": "test_report",
+      "artifact_path": "docs/validation/templates/test-report.template.json",
+      "schema_ref": "#/$defs/test_report"
+    },
+    {
+      "artifact_type": "product_validation",
+      "artifact_path": "docs/validation/templates/product-validation.template.json",
+      "schema_ref": "#/$defs/product_validation"
+    },
+    {
+      "artifact_type": "defect_assessment",
+      "artifact_path": "docs/release/templates/defect-assessment.template.json",
+      "schema_ref": "#/$defs/defect_assessment"
+    },
+    {
+      "artifact_type": "release_decision",
+      "artifact_path": "docs/release/templates/release-decision.template.json",
+      "schema_ref": "#/$defs/release_decision"
+    },
+    {
+      "artifact_type": "evidence_manifest",
+      "artifact_path": "docs/evidence/templates/evidence-manifest.template.json",
+      "schema_ref": "#/$defs/evidence_manifest"
+    }
+  ]
+}

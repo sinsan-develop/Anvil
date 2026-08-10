@@ -32,13 +32,14 @@
     "sha256": "5313045957E63D3AADA0DF2BFA8EBC2B8F878D59F4F917B3210B5293D4DE6DB6"
   },
   "current_phase": "G",
-  "current_work_package": "G-04",
+  "current_work_package": "G-05",
   "package_total": 97,
   "status": "READY",
   "completed_packages": [
     "G-01",
     "G-02",
-    "G-03"
+    "G-03",
+    "G-04"
   ],
   "active_agents": {
     "main": "어울",
@@ -47,15 +48,15 @@
     "tester": null
   },
   "developer_onboarding": {
-    "status": "READ_ONLY_READY",
+    "status": "WRITE_ENABLED_FOR_G04",
     "evidence_path": "docs/onboarding/developer-primary-ack.md",
     "evidence_sha256": "3110F6B21EFC3C7BE61B6CEB71A4586A75A80DC129D79DDC4B0A74AFE0039A69"
   },
   "current_work_instruction": {
-    "path": "docs/work_orders/G-03_WORK_INSTRUCTION.md",
-    "id": "WI-G-03-20260810-004",
-    "sha256": "F7AB695C6B6D91D47287E12218A39A870E8AC3CADBBE09ED91E46B8E30CC0A3A",
-    "invocation_prompt_sha256": "AEFDE6F164EC1A639E5CE37D3DFC923F2628D51990A6C5D6D280171A3E8F3B31",
+    "path": "docs/work_orders/G-04_WORK_INSTRUCTION.md",
+    "id": "WI-G-04-20260810-002",
+    "sha256": "4330D9ED93731B70579D7BD7A590F65238738EFE425D829465DBE5BD75FB6558",
+    "invocation_prompt_sha256": "981C3DB309F7D4CA0B1B37F51113135FADE1D41170610A0883999D16D2627C56",
     "status": "ACCEPTED"
   },
   "g03_result": {
@@ -66,6 +67,20 @@
     "delivered_hash": "F03EC454E960BCF6A8271D7BE547129CB4220574254DCE9B927F2E12AFBFD6AB",
     "acceptance_status": "ACCEPTED",
     "rework_findings_closed": ["G03-DEF-001", "G03-DEF-002", "G03-DEF-003", "G03-DEF-004", "G03-DEF-005", "G03-DEF-006"],
+    "open_findings": []
+  },
+  "g04_result": {
+    "status": "ACCEPTED",
+    "review_state": "ACCEPTED",
+    "completion_report": "docs/completion_reports/G-04_COMPLETION_REPORT.md",
+    "evidence_manifest": "docs/evidence/manifests/G-04_EVIDENCE_MANIFEST.json",
+    "evidence_manifest_file_sha256": "F2674994201407532D6E18A9F9A0A94B606BA94385DCD126C03AF7F8264B09C1",
+    "target_hash": "5B5FA32568A7AD293C611BB5E85FCD4C0C0076EA787327CCC4AF1D936042827D",
+    "delivered_hash": "5B5FA32568A7AD293C611BB5E85FCD4C0C0076EA787327CCC4AF1D936042827D",
+    "developer_tests": "23/23 PASS (G-04 14 + G-03 regression 9)",
+    "assigned_verification_ids": ["AV-FLOW-003"],
+    "acceptance_status": "ACCEPTED",
+    "developer_closure_claims": ["G04-DEF-001", "G04-DEF-002"],
     "open_findings": []
   },
   "write_lease": null,
@@ -133,6 +148,12 @@
     "docs/test_reports/G-03_TEST_REPORT_R2.md#sha256=AE84877A644C9FDF2420318B52B716475235C97ED036DD0833A47AC7362016D1",
     "docs/test_reports/G-03_TEST_REPORT_R3.md#sha256=F3EE86CD7636CF49A5F8BE510E60D310A558F1528F03CD5D0E60A75486CC20AD",
     "docs/test_reports/G-03_TEST_REPORT_R4.md#sha256=D9F25579559865C9369C8913C78AA20A496D06CE3D887F7F87BE3DEA12FA452F",
+    "docs/work_orders/G-04_WORK_INSTRUCTION.md#sha256=4330D9ED93731B70579D7BD7A590F65238738EFE425D829465DBE5BD75FB6558",
+    "docs/work_orders/G-04_INVOCATION_PROMPT.md#sha256=981C3DB309F7D4CA0B1B37F51113135FADE1D41170610A0883999D16D2627C56",
+    "docs/test_reports/G-04_TEST_REPORT.md#sha256=E31E3B27BCCB6F34F13EE8C3438F60CCBE618B5CC1E3CA53F3FCECF73DF170B5",
+    "docs/test_reports/G-04_TEST_REPORT_R2.md#sha256=0C5123F32FBD268EA6E91B9592F833F2A8D899119A47528FC5761C895B8D34AF",
+    "docs/evidence/manifests/G-04_EVIDENCE_MANIFEST.json#sha256=F2674994201407532D6E18A9F9A0A94B606BA94385DCD126C03AF7F8264B09C1",
+    "docs/completion_reports/G-04_COMPLETION_REPORT.md",
     "docs/agents/developer-primary.md",
     "docs/governance/ANVIL_OPERATING_RULES.md",
     "Anvil_통합검증매트릭스_v1.md",
@@ -148,7 +169,7 @@
     "production_domain": "envil.sinsan.kr",
     "deployment": "Git-only approved commit/tag and ReleaseManifest"
   },
-  "repository_state": "MAIN_INITIAL_BASELINE_COMMITTED_NO_REMOTE",
+  "repository_state": "MAIN_G04_ACCEPTED_COMMITTED_NO_REMOTE",
   "repository_baseline_commit": "6fab9aa95811ad09aa2f27a0e9c7f5b73bf12cfd",
-  "next_safe_action": "Main Agent가 G-04 WorkInstruction을 발행하고 Developer Subagent에 위임"
+  "next_safe_action": "Main Agent가 G-04 ACCEPTED 산출물을 커밋한 뒤 G-05 WorkInstruction을 발행"
 }
