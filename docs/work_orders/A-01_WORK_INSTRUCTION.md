@@ -6,7 +6,7 @@
 - artifact_type: `work_instruction`
 - project_id: `anvil`
 - package_id: `A-01`
-- version: `1.1`
+- version: `2`
 - artifact_status: `approved`
 - package_status: `READY`
 - content_hash: `파일 저장 후 SHA-256으로 결박`
@@ -14,10 +14,27 @@
 - source_evidence_ids: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`, `A-01_PRECONDITION_TEST_REPORT`
 - created_by: `{ actor_type: agent, actor_id: main-agent-eoul }`
 - created_at: `2026-08-11T00:00:00+09:00`
-- supersedes_artifact_id: `null`
+- supersedes_artifact_id: `WI-A-01-20260811-001`
 - revision_classification: `MAIN_RECONFIRMED_NON_SEMANTIC`
 - previous_revision_sha256: `410D92E5E77ED3CA42C295147C5201A2208E10C8BEF0445C19B567455F776369`
 - revision_reason: `historical baseline commit과 dispatch-time repository 관측의 역할을 분리해 self-stale exact-equality 문구를 제거`
+
+## Revision 2 — `A01-TST-BLK-001` 승인 guard·decision 연결 fail-open 보완
+
+- supersedes_work_instruction_sha256: `D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A`
+- source_test_report: `docs/test_reports/A-01_TEST_REPORT.md`
+- source_test_report_sha256: `53AB8F7F27BBC291FE3A8F338E23552DA14E53629B049A6EE225CA10E353A020`
+- finding_id: `A01-TST-BLK-001`
+- change_classification: `INTERNAL_VERIFICATION_HARDENING`
+- semantic_scope: `기능 범위·요구사항·중요 위험 변경 없음`
+
+Revision 2는 다음 exact contract를 추가하며 A-01 산출물 범위를 확장하지 않는다.
+
+1. `approval_boundary.human_approval_required_for`는 순서와 무관하게 정확히 `FUNCTION_SCOPE_CHANGE`, `REQUIREMENT_CHANGE`, `IMPORTANT_RISK_CHANGE` 세 값이어야 한다. `CRITICAL_RISK_CHANGE`는 대체값으로 허용하지 않는다.
+2. canonical decision 5개의 ID·step·actor·subject artifact·subject hash 필요 여부·allowed results·reject/revise target을 fixture의 exact contract와 비교한다.
+3. 모든 reject/revise target은 존재하는 `STEP-*`, `TERMINAL-*` 또는 명시된 비상태 결과여야 하며, Concept/WI/Release의 reject·revise는 대응 edge/path와 연결돼야 한다.
+4. `EDGE-12-REJECT` 삭제, Concept revise unknown target, Concept allowed results 축소, 승인 guard 전체 제거를 각각 stable reason code로 거부한다.
+5. 기존 TestReport와 revision 1 EvidenceManifest는 불변 predecessor로 보존한다. 독립 Tester revision 2 PASS 전 `ACCEPTED`와 A-02 시작을 금지한다.
 
 ## 승인·기준선 binding
 

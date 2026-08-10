@@ -1,8 +1,10 @@
 # A-01 InvocationPrompt
 
-- invocation_artifact_id: `INV-A-01-20260811-001`
+- invocation_artifact_id: `INV-A-01-20260811-002`
+- supersedes_invocation_artifact_id: `INV-A-01-20260811-001`
 - work_instruction_artifact_id: `WI-A-01-20260811-001`
-- work_instruction_content_hash: `D7AE56F3E08A03D97F169933197BECC596C5F89F41DD5F0B14D8DF3A7291D48A`
+- work_instruction_content_hash: `F7F9F1F37320B3A75DB48FBB5DD230D9D2774BB79498DDCA2FF2DB0416CBDF60`
+- rework_test_report_sha256: `53AB8F7F27BBC291FE3A8F338E23552DA14E53629B049A6EE225CA10E353A020`
 - responsibility_approval_id: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 - operating_approval_id: `APPROVAL-20260810-AUTONOMOUS-EXECUTION-001`
 - baseline_git_commit: `7422b07b85bcdcec52031e1b10098ab6ca089170` (`dispatch-time HEAD`의 ancestor로 검증)
