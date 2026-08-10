@@ -3,20 +3,22 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 26,
+  "event_sequence": 27,
   "status": "READY",
   "current_work_package": "A-01",
-  "last_event_id": "evt_phase_g_gate_checkpoint_push_confirmed",
+  "last_event_id": "evt_a01_responsibility_baseline_reconciled",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 3,
   "dir_status": "NOT_REACHED",
-  "repository_head": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
+  "repository_head": "a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd",
   "repository_upstream": "origin/main",
-  "next_safe_action": "Main may issue the A-01 WorkInstruction; no A-01 implementation starts before an approved instruction and valid leases",
+  "repository_remote_head": "57703ffc3521287cdd7d54b07bfd7c9001928388",
+  "repository_status": "PUSH_PENDING_MAIN",
+  "next_safe_action": "PUSH_PENDING_MAIN: Main must commit and push the A-01 responsibility successor, then confirm origin/main before issuing the A-01 WorkInstruction; no implementation starts before an approved instruction and valid leases",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
-  "derived_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
+  "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
@@ -33,11 +35,13 @@
 
 - 설계서: `Anvil_설계서_v2.md` v2.6 — 신산님 승인, P1 계약 정합성 4건 비의미 재확정
 - 설계서 SHA-256: `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-- 작업계획서: `Anvil_작업계획서_v1.md` v1.4 / SHA-256 `4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475`
-- 통합검증매트릭스: `Anvil_통합검증매트릭스_v1.md` v1.2 / SHA-256 `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3`
-- 테스트계획서: `Anvil_테스트계획서_v1.md` v1.3 / SHA-256 `870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5`
-- 검증 문서 상태: v2.6·v1.4·v1.2·v1.3·97개 Package·255개 ID로 비의미 정규화, G-02 독립 Tester PASS 및 Main `ACCEPTED`
-- 운영규칙: `docs/governance/ANVIL_OPERATING_RULES.md` v1.5 / SHA-256 `7D5E2AD0F272CBA1052EA8A21622F1E16438ABAB9AA4AAB7A1D34374B4FFB5F3`
+- 작업계획서: `Anvil_작업계획서_v1.md` v1.5 / SHA-256 `A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A`
+- 통합검증매트릭스: `Anvil_통합검증매트릭스_v1.md` v1.3 / SHA-256 `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A`
+- 테스트계획서: `Anvil_테스트계획서_v1.md` v1.4 / SHA-256 `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8`
+- 검증 문서 상태: v2.6·v1.5·v1.3·v1.4, Package 97·AV 255·고유 실행 234·역색인 97·미할당 0 유지. A-01은 `AV-UI-005`만 `STATIC_ONLY`, `AV-FLOW-001`은 A-05·B-03·A Gate의 `RUNTIME_DEFERRED`
+- 운영규칙: `docs/governance/ANVIL_OPERATING_RULES.md` v1.6 / SHA-256 `4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E`
+- A-01 사람 승인: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001` / SHA-256 `9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F`
+- A-01 파생 기준선: `BASELINE-A-01-PRECONDITION-DERIVED-20260810-001` / SHA-256 `E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008`
 - 비의미 binding: `MAIN_RECONFIRMED_NON_SEMANTIC:G-02-R2-G02-DEF-001` revision 3 / SHA-256 `8332635C9CE92B085AFFDF1B235F48945605DC87FA7294DA5FF88A589C95D03D`
 - canonical parent baseline: `BASELINE-G-01-20260810-001` / `docs/baselines/G-01_BASELINE_RECORD.md` / SHA-256 `8EA9C6DA6E45955D7F7397C208FCFB0EFCC8C01B84851021F239350AC542847B`
 - G-02 derived baseline: `BASELINE-G-02-DERIVED-20260810-001` / `docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md` / SHA-256 `E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B`
@@ -185,10 +189,15 @@
 - Phase G Gate checkpoint commit/push는 `5ca9c1f65a5909e75283b878764509d747d6d2cf`로 local/origin `main` 일치 확인됨
 - sequence 26 `GIT_PUSH` event가 G Gate checkpoint `CLEARED`와 A-01 `READY` 전이를 기록함
 - A-01은 시작 가능 상태지만 active WorkInstruction과 worker/write lease는 아직 `null`이며 구현은 시작하지 않음
+- 신산님 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`에 따라 A-01 역색인은 `AV-UI-005` 단독으로 정합화했고 `AV-FLOW-001` runtime 책임은 A-05·B-03·A Gate에 유지함
+- `developer-primary` successor 재온보딩 ACK는 active authority 전량의 exact bytes/hash를 기록했으며 A-01 제품 구현 권한을 주장하지 않음
+- sequence 27 `REPOSITORY_RECONCILED`는 local `a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd`, upstream `57703ffc3521287cdd7d54b07bfd7c9001928388`을 실제 관측 그대로 비소급 기록함
+- 현재 repository 상태는 `PUSH_PENDING_MAIN`; local/upstream 일치를 꾸미지 않았고 Task 3에서 commit·push를 수행하지 않음
+- active WorkInstruction, worker lease, write lease는 모두 `null`; A-01 상태는 `READY`
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `5ca9c1f65a5909e75283b878764509d747d6d2cf`로 일치하고 G Gate checkpoint는 `CLEARED`다. current Package는 `A-01 / READY`다. Main은 다음 단계에서 A-01 WorkInstruction을 발행할 수 있으나 승인된 지시서와 유효 lease 전에는 구현을 시작하지 않는다.
+G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. G Gate checkpoint는 `CLEARED`이고 current Package는 `A-01 / READY`다. 다만 local `main`은 `a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd`, actual `origin/main`은 `57703ffc3521287cdd7d54b07bfd7c9001928388`로 서로 다르다. 다음 안전 행동은 Main이 A-01 responsibility successor와 Task 3 evidence를 commit·push하고 원격 일치를 재확인하는 것이다. 그 전에는 A-01 WorkInstruction을 발행하지 않으며, 승인된 지시서와 유효 worker/write lease 전에는 구현을 시작하지 않는다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

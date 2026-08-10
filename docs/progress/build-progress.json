@@ -1,12 +1,12 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000014",
-  "event_sequence": 26,
-  "snapshot_hash": "4015AF91C56F7C0DA4A8D87E94BC00259612233B6DA9C46DE4483A41E500BB30",
-  "updated_at": "2026-08-10T23:45:00+09:00",
-  "last_event_id": "evt_phase_g_gate_checkpoint_push_confirmed",
-  "plan_version": "1.4",
-  "work_plan_hash": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475",
+  "snapshot_id": "snapshot-anvil-build-000015",
+  "event_sequence": 27,
+  "snapshot_hash": "649ACC57F2A3A260F35C009205AC872D38A28595CEBF48A86BD68EB7A06A9832",
+  "updated_at": "2026-08-10T23:50:00+09:00",
+  "last_event_id": "evt_a01_responsibility_baseline_reconciled",
+  "plan_version": "1.5",
+  "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "A",
   "current_work_package": "A-01",
@@ -29,6 +29,13 @@
     "PHASE_G_GATE": 1
   },
   "latest_evidence_refs": [
+    {"path": "docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md", "sha256": "9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F"},
+    {"path": "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md", "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"},
+    {"path": "docs/onboarding/developer-primary-ack.md", "sha256": "1FF48FEB7E76FB9AF0A05BCAF4D87EAA4BC9CDEF7713ECA2FBB580DCC467CB6F"},
+    {"path": "scripts/check_project_progress.py", "sha256": "563710E2AA3454C53256C72A3B567F2B8DBC7216AC7CE4A23BE3D85C8FC6A666"},
+    {"path": "tests/tooling/test_project_progress.py", "sha256": "9218AF58656AEF5496F80CE9A511BA51EA016BDCB9D4C2C6909EB398B7ECD860"},
+    {"path": "scripts/check_g07_baseline.py", "sha256": "50EE940B6BDABBE9404B31A2FD5FCD7DFE20BE585FD3EFB98B79BB93A1E90EEA"},
+    {"path": "tests/tooling/test_g07_baseline.py", "sha256": "5D4A6194E95F386E224D8B435873D1A8C774FBE3EC538758165418A5FAC43B13"},
     {"path": "docs/work_orders/PHASE_G_GATE_WORK_INSTRUCTION.md", "sha256": "5F0172B7CADDBBA9086428AE5DD294F67F6D5BADD44573D4730E84E76D1BB7D7"},
     {"path": "docs/work_orders/PHASE_G_GATE_INVOCATION_PROMPT.md", "sha256": "BBD3F49B6E395A6F9BE460488C88B76283FCE1D2E8EBF12229AA811C6B031076"},
     {"path": "docs/test_reports/PHASE_G_GATE_TEST_REPORT_R2.md", "sha256": "1A0A852EAC34450BA1CB815C756096673CF2917B6915118F2BA2B46B9941B6DD"},
@@ -47,7 +54,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Main may issue the A-01 WorkInstruction; no A-01 implementation starts before an approved instruction and valid leases",
+  "next_safe_action": "PUSH_PENDING_MAIN: Main must commit and push the A-01 responsibility successor, then confirm origin/main before issuing the A-01 WorkInstruction; no implementation starts before an approved instruction and valid leases",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -55,18 +62,27 @@
     "sha256": "94A82676DB9BF0EE23B55B0A59CBAC706AF7D8617B61BBB9887357E300FDFDC7"
   },
   "derived_baseline_binding": {
-    "baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
-    "parent_baseline_id": "BASELINE-G-01-20260810-001",
-    "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
-    "path": "docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md",
-    "sha256": "E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B"
+    "baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
+    "parent_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
+    "root_human_approval_id": "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "path": "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md",
+    "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"
+  },
+  "authority_successor_binding": {
+    "approval_id": "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "design": {"version": "2.6", "sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5"},
+    "work_plan": {"version": "1.5", "sha256": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A"},
+    "validation_matrix": {"version": "1.3", "sha256": "982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A"},
+    "test_plan": {"version": "1.4", "sha256": "803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8"},
+    "operating_rules": {"version": "1.6", "sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"},
+    "responsibility": {"A-01": ["AV-UI-005"], "runtime_deferred": ["AV-FLOW-001"], "runtime_owners": ["A-05", "B-03", "A Gate"]}
   },
   "repository": {
     "branch": "main",
-    "local_head": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
+    "local_head": "a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd",
     "upstream": "origin/main",
-    "remote_head": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
-    "worktree_status": "Phase G Gate checkpoint commit/push confirmed at 5ca9c1f; post-push progress transition files are uncommitted"
+    "remote_head": "57703ffc3521287cdd7d54b07bfd7c9001928388",
+    "worktree_status": "PUSH_PENDING_MAIN: local main contains Task 1-2 successor commits through a843ca7 while origin/main remains 57703ff; Task 3 changes are uncommitted and no retroactive push is claimed"
   },
   "active_work_instruction": null,
   "phase_gate": {
@@ -93,13 +109,13 @@
   "current_progress_evidence_ref": {
     "package_id": "A-01",
     "path": "docs/progress/progress-handoff-detached-digest-phase-a-ready.json",
-    "manifest_path": "docs/evidence/manifests/PHASE_G_GATE_CHECKPOINT_MANIFEST.json"
+    "manifest_path": "docs/evidence/manifests/A-01_PRECONDITION_EVIDENCE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {"path": "docs/progress/failure-ledger.json", "sha256": "594E7A53CA5E5037AA8E5651FE9EC49E1B0E35E731B6D4D30713BCA26E230EF0"},
     "non_semantic_revision_bindings": {"path": "docs/progress/non-semantic-revision-bindings.json", "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"},
     "dir_checkpoints": {"path": "docs/progress/dir-checkpoints.json", "sha256": "73147EA0DC940F34A7369E8A58EA7DD738DBA2246DD9F729DE8FB26273E44F4B"},
     "progress_event_contract": {"path": "docs/progress/progress-event-contract.json", "sha256": "B60E59C60BA15F984DB2070894F9ED8844498B931546DB55F68F2154FA654F7C"},
-    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "4621464F944EDCE207BC6B81E9EAB5DAAC92BC467217D8D1C312D4B849D4F60E"}
+    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "C0D0B1C83DE79B5B7D71F00CA5102CF5A50CD3020BA8BA8D9676C21FFFFA278C"}
   }
 }

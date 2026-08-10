@@ -501,11 +501,56 @@ class ProjectProgressContractTests(unittest.TestCase):
         }
         self.assertIn("EVENT_EFFECT_MISMATCH", checker.validate_bundle(bad_effect))
 
+    def test_repository_reconciliation_supersedes_historical_push_projection(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        local_head = "1" * 40
+        remote_head = "2" * 40
+        bundle["progress"]["repository"].update(
+            {
+                "branch": "main",
+                "local_head": local_head,
+                "upstream": "origin/main",
+                "remote_head": remote_head,
+            }
+        )
+        next_sequence = bundle["events"]["last_sequence"] + 1
+        bundle["events"]["events"].append(
+            {
+                "event_id": "evt-test-repository-reconciled",
+                "sequence": next_sequence,
+                "event_type": "REPOSITORY_RECONCILED",
+                "occurred_at": "2026-08-10T23:59:00+09:00",
+                "actor": "developer-primary",
+                "subject_ref": "A-01",
+                "details": {
+                    "branch": "main",
+                    "local_head": local_head,
+                    "remote_head": remote_head,
+                    "upstream": "origin/main",
+                    "observed_at": "2026-08-10T23:59:00+09:00",
+                    "reason": "project the observed repository state without rewriting prior push history",
+                },
+            }
+        )
+        bundle["events"]["last_sequence"] = next_sequence
+
+        errors = checker.validate_event_stream(
+            bundle["events"], bundle["event_contract"], bundle["progress"]
+        )
+
+        self.assertNotIn("EVENT_EFFECT_MISMATCH", errors)
+
     def test_phase_g_checkpoint_push_projects_a01_ready_without_active_instruction(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
         last_event = bundle["events"]["events"][-1]
+        gate_checkpoint_event = next(
+            event
+            for event in bundle["events"]["events"]
+            if event["event_type"] == "GIT_PUSH" and event["subject_ref"] == "PHASE_G_GATE"
+        )
         g06_acceptance = next(
             event
             for event in bundle["events"]["events"]
@@ -533,11 +578,12 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(g07_acceptance["details"]["test_report_sha256"], hashlib.sha256(G07_TEST_REPORT_PATH.read_bytes()).hexdigest().upper())
         self.assertEqual(g07_acceptance["details"]["manifest_sha256"], hashlib.sha256(G07_R2_MANIFEST_PATH.read_bytes()).hexdigest().upper())
         self.assertEqual(g07_acceptance["details"]["next_work_package"], "PHASE_G_GATE")
-        self.assertEqual(last_event["event_type"], "GIT_PUSH")
-        self.assertEqual(last_event["subject_ref"], "PHASE_G_GATE")
-        self.assertEqual(last_event["details"]["checkpoint_status"], "CLEARED")
-        self.assertTrue(last_event["details"]["a01_start_allowed"])
-        self.assertEqual(last_event["details"]["remote_commit"], "5ca9c1f65a5909e75283b878764509d747d6d2cf")
+        self.assertEqual(gate_checkpoint_event["details"]["checkpoint_status"], "CLEARED")
+        self.assertTrue(gate_checkpoint_event["details"]["a01_start_allowed"])
+        self.assertEqual(gate_checkpoint_event["details"]["remote_commit"], "5ca9c1f65a5909e75283b878764509d747d6d2cf")
+        self.assertEqual(last_event["event_type"], "REPOSITORY_RECONCILED")
+        self.assertEqual(last_event["subject_ref"], "A-01")
+        self.assertEqual(last_event["details"]["projection_status"], "PUSH_PENDING_MAIN")
         self.assertTrue(G06_R3_MANIFEST_PATH.is_file())
         r3_hash = hashlib.sha256(G06_R3_MANIFEST_PATH.read_bytes()).hexdigest().upper()
         self.assertEqual(r3_hash, "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0")

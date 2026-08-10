@@ -1,0 +1,89 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-01-PRECONDITION-20260810-001",
+  "artifact_type": "precondition_evidence_manifest",
+  "project_id": "anvil",
+  "version": 1,
+  "artifact_status": "materialized_awaiting_independent_tester",
+  "content_hash": "sha256:AFE9472F870E0E2E54C274F289219C3C952067AB247E797652DF65B17C3C329B",
+  "source_artifact_ids": [
+    "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001"
+  ],
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary"},
+  "created_at": "2026-08-10T23:52:00+09:00",
+  "artifact_path": "docs/evidence/manifests/A-01_PRECONDITION_EVIDENCE_MANIFEST.json",
+  "package_id": "A-01",
+  "target_hash": "sha256:AFE9472F870E0E2E54C274F289219C3C952067AB247E797652DF65B17C3C329B",
+  "delivered_hash": "sha256:AFE9472F870E0E2E54C274F289219C3C952067AB247E797652DF65B17C3C329B",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "path_normalization": "repository-relative POSIX slash",
+    "sort": "UTF-8 byte ordinal ascending by normalized path",
+    "row_separator": "LF (0x0A)",
+    "final_newline": false,
+    "encoding": "UTF-8",
+    "bom": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1732,
+  "target_content_bytes": 687144,
+  "authority_successor": {
+    "design": {"version": "2.6", "sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5"},
+    "work_plan": {"version": "1.5", "sha256": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A"},
+    "validation_matrix": {"version": "1.3", "sha256": "982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A"},
+    "test_plan": {"version": "1.4", "sha256": "803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8"},
+    "operating_rules": {"version": "1.6", "sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"}
+  },
+  "responsibility_boundary": {
+    "A-01": ["AV-UI-005"],
+    "classification": "STATIC_ONLY",
+    "runtime_deferred": ["AV-FLOW-001"],
+    "runtime_owners": ["A-05", "B-03", "A Gate"]
+  },
+  "repository_observation": {
+    "branch": "main",
+    "local_head": "a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd",
+    "upstream": "origin/main",
+    "remote_head": "57703ffc3521287cdd7d54b07bfd7c9001928388",
+    "status": "PUSH_PENDING_MAIN",
+    "retroactive_push_claim": false
+  },
+  "projection": {
+    "current_phase": "A",
+    "current_work_package": "A-01",
+    "status": "READY",
+    "active_work_instruction": null,
+    "worker_lease": null,
+    "write_lease": null
+  },
+  "raw_checksums": [
+    {"path": "AGENTS.md", "bytes": 9445, "sha256": "1E93333379D230EA56058C3395570C96E9AAE98F40D586E6DEA9C1BD920D8246"},
+    {"path": "Anvil_설계서_v2.md", "bytes": 309195, "sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5"},
+    {"path": "Anvil_작업계획서_v1.md", "bytes": 65637, "sha256": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A"},
+    {"path": "Anvil_통합검증매트릭스_v1.md", "bytes": 62821, "sha256": "982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A"},
+    {"path": "Anvil_테스트계획서_v1.md", "bytes": 54846, "sha256": "803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8"},
+    {"path": "docs/governance/ANVIL_OPERATING_RULES.md", "bytes": 19031, "sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"},
+    {"path": "docs/agents/developer-primary.md", "bytes": 4019, "sha256": "DBA19287719B527112F1D4A1505D616259D4D013115ACD0CF7B4A647EE93FE77"},
+    {"path": "docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md", "bytes": 1887, "sha256": "9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F"},
+    {"path": "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md", "bytes": 3441, "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"},
+    {"path": "docs/onboarding/developer-primary-ack.md", "bytes": 19517, "sha256": "1FF48FEB7E76FB9AF0A05BCAF4D87EAA4BC9CDEF7713ECA2FBB580DCC467CB6F"},
+    {"path": "docs/progress/progress-events.json", "bytes": 12953, "sha256": "C0D0B1C83DE79B5B7D71F00CA5102CF5A50CD3020BA8BA8D9676C21FFFFA278C"},
+    {"path": "docs/progress/progress-handoff-detached-digest-phase-a-ready.json", "bytes": 948, "sha256": "DBA58786FDF9A2002176C97C40BD1A39BF31915801BA3FAD64C2E2A8D58D4B9B"},
+    {"path": "scripts/check_project_progress.py", "bytes": 41325, "sha256": "563710E2AA3454C53256C72A3B567F2B8DBC7216AC7CE4A23BE3D85C8FC6A666"},
+    {"path": "tests/tooling/test_project_progress.py", "bytes": 29475, "sha256": "9218AF58656AEF5496F80CE9A511BA51EA016BDCB9D4C2C6909EB398B7ECD860"},
+    {"path": "scripts/check_g07_baseline.py", "bytes": 40980, "sha256": "50EE940B6BDABBE9404B31A2FD5FCD7DFE20BE585FD3EFB98B79BB93A1E90EEA"},
+    {"path": "tests/tooling/test_g07_baseline.py", "bytes": 11624, "sha256": "5D4A6194E95F386E224D8B435873D1A8C774FBE3EC538758165418A5FAC43B13"}
+  ],
+  "historical_evidence_policy": "G-02, G-07, Phase G accepted evidence and PHASE_G_GATE_CHECKPOINT_MANIFEST remain byte-immutable and are not rewritten by this manifest",
+  "self_reference": false,
+  "a01_work_instruction_created": false,
+  "a01_implementation_started": false,
+  "independent_tester_status": "NOT_EXECUTED",
+  "pending": ["Main commit and push", "origin/main equality confirmation", "Task 4 independent Tester"],
+  "blocked": [],
+  "limitations": [
+    "This manifest proves the Task 3 precondition projection and document hashes only.",
+    "It is not A-01 implementation PASS, AV-FLOW-001 runtime PASS, browser PASS, API PASS, DB PASS, deployment PASS, or release evidence."
+  ]
+}

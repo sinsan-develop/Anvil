@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 26,
+  "last_sequence": 27,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -317,6 +317,28 @@
         "owner_report_review_status": "NOT_REPORT_SPECIFIC",
         "a01_start_allowed": true,
         "active_work_instruction": null
+      }
+    },
+    {
+      "event_id": "evt_a01_responsibility_baseline_reconciled",
+      "sequence": 27,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-08-10T23:50:00+09:00",
+      "actor": "developer-primary",
+      "subject_ref": "A-01",
+      "details": {
+        "branch": "main",
+        "local_head": "a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd",
+        "remote_head": "57703ffc3521287cdd7d54b07bfd7c9001928388",
+        "upstream": "origin/main",
+        "observed_at": "2026-08-10T22:49:11.1841724+09:00",
+        "reason": "reconcile the human-approved A-01 responsibility successor and observed local/upstream state without a retroactive push claim",
+        "approval_id": "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+        "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
+        "projection_status": "PUSH_PENDING_MAIN",
+        "active_work_instruction": null,
+        "worker_lease": null,
+        "write_lease": null
       }
     }
   ]

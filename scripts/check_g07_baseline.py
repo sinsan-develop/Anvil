@@ -610,7 +610,12 @@ def validate_repository(
         _error(errors, "HISTORICAL_FAILURE_PROJECTION_MISMATCH", progress_path, f"expected={len(historical_failures)}")
 
     reconciliation_events = [event for event in events if event.get("event_type") == "REPOSITORY_RECONCILED"]
-    reconciliation_event = phase_g_checkpoint or (reconciliation_events[-1] if reconciliation_events else None)
+    repository_events = [
+        event
+        for event in events
+        if event.get("event_type") in {"GIT_PUSH", "REPOSITORY_RECONCILED"}
+    ]
+    reconciliation_event = repository_events[-1] if repository_events else phase_g_checkpoint
     reconciliation = reconciliation_event.get("details", {}) if reconciliation_event else {}
     if not reconciliation_events:
         _error(errors, "PROGRESS_RECONCILIATION_EVENT_MISSING", "docs/progress/progress-events.json", "REPOSITORY_RECONCILED")
@@ -622,13 +627,20 @@ def validate_repository(
         rc_upstream, upstream = _git(root, "rev-parse", "@{u}")
         rc_branch, branch = _git(root, "branch", "--show-current")
         git_evidence = {"verified": True, "branch": branch, "head": head, "upstream_head": upstream}
-        if rc_head or rc_upstream or rc_branch or branch != "main" or head != upstream:
+        if (
+            rc_head
+            or rc_upstream
+            or rc_branch
+            or branch != "main"
+            or (reconciliation_event is phase_g_checkpoint and head != upstream)
+        ):
             _error(errors, "GIT_PROVENANCE_MISMATCH", ".git", f"branch={branch} head={head} upstream={upstream}")
         repository_projection = progress.get("repository", {})
         if repository_projection.get("local_head") != head or repository_projection.get("remote_head") != upstream:
             _error(errors, "PROGRESS_REPOSITORY_STALE", progress_path, f"projected={repository_projection} actual={head}/{upstream}")
-        projected_local = reconciliation.get("local_commit") if phase_g_checkpoint else reconciliation.get("local_head")
-        projected_remote = reconciliation.get("remote_commit") if phase_g_checkpoint else reconciliation.get("remote_head")
+        is_push_projection = reconciliation_event and reconciliation_event.get("event_type") == "GIT_PUSH"
+        projected_local = reconciliation.get("local_commit") if is_push_projection else reconciliation.get("local_head")
+        projected_remote = reconciliation.get("remote_commit") if is_push_projection else reconciliation.get("remote_head")
         if projected_local != head or projected_remote != upstream:
             _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", f"event={reconciliation} actual={head}/{upstream}")
         for item in provenance:

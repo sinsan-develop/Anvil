@@ -530,6 +530,13 @@ def validate_event_stream(
         payload_contracts = {}
     events = stream.get("events", [])
     sequences = [event.get("sequence") for event in events if isinstance(event, dict)]
+    repository_events = [
+        event
+        for event in events
+        if isinstance(event, dict)
+        and event.get("event_type") in {"GIT_PUSH", "REPOSITORY_RECONCILED"}
+    ]
+    current_repository_event = repository_events[-1] if repository_events else None
     if sequences:
         first = stream.get("first_sequence")
         expected = list(range(first, first + len(sequences))) if isinstance(first, int) else []
@@ -553,7 +560,12 @@ def validate_event_stream(
             errors.append("EVENT_PAYLOAD_MISSING")
         if not event_contract.get("effect"):
             errors.append("EVENT_EFFECT_CONTRACT_MISSING")
-        if event_type == "GIT_PUSH" and isinstance(details, dict) and progress is not None:
+        if (
+            event is current_repository_event
+            and event_type == "GIT_PUSH"
+            and isinstance(details, dict)
+            and progress is not None
+        ):
             repository = progress.get("repository", {})
             if (
                 details.get("remote_commit") != repository.get("remote_head")
@@ -564,6 +576,18 @@ def validate_event_stream(
             evidence = details.get("evidence_ref")
             if not isinstance(evidence, dict) or not evidence.get("path") or not evidence.get("sha256"):
                 errors.append("EVENT_PAYLOAD_MISSING")
+        if (
+            event is current_repository_event
+            and event_type == "REPOSITORY_RECONCILED"
+            and isinstance(details, dict)
+            and progress is not None
+        ):
+            repository = progress.get("repository", {})
+            if any(
+                details.get(field) != repository.get(field)
+                for field in ("branch", "local_head", "remote_head", "upstream")
+            ):
+                errors.append("EVENT_EFFECT_MISMATCH")
     return sorted(set(errors))
 
 

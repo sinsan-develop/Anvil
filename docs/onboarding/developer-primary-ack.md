@@ -1,5 +1,36 @@
 # developer-primary 재온보딩 확인서
 
+## 2026-08-10 A-01 책임 정합화 successor 재온보딩
+
+> 판정: `PASS / READ_ONLY_READY / A-01_READY_NO_WORK_INSTRUCTION`
+> 수행 역할: `developer-primary`
+> 적용 범위: 아래 successor 기준선이 이 문서의 이전 온보딩 기준선을 대체한다. 이전 내용은 historical onboarding evidence로 보존한다.
+> 쓰기 경계: 이 재온보딩·projection evidence 작성만 승인된 Task 3 범위다. A-01 제품 구현은 시작하지 않았고 active WorkInstruction·worker lease·write lease는 없다.
+
+### 전체 읽기 및 exact-byte 증거
+
+각 파일은 repository working tree의 raw bytes 전체를 읽고 SHA-256을 계산했다. 줄 수는 UTF-8 text의 LF 기준 전체 범위이며, 모든 active successor hash가 `BASELINE-A-01-PRECONDITION-DERIVED-20260810-001`과 일치한다.
+
+| 문서 | 읽은 범위 | bytes | SHA-256 | 판정 |
+|---|---:|---:|---|---|
+| `AGENTS.md` | 1~146줄 전체 | 9,445 | `1E93333379D230EA56058C3395570C96E9AAE98F40D586E6DEA9C1BD920D8246` | PASS |
+| `Anvil_설계서_v2.md` v2.6 | 1~6,627줄 전체 | 309,195 | `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5` | PASS / unchanged |
+| `Anvil_작업계획서_v1.md` v1.5 | 1~703줄 전체 | 65,637 | `A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A` | PASS |
+| `Anvil_통합검증매트릭스_v1.md` v1.3 | 1~642줄 전체 | 62,821 | `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A` | PASS |
+| `Anvil_테스트계획서_v1.md` v1.4 | 1~851줄 전체 | 54,846 | `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8` | PASS |
+| `docs/governance/ANVIL_OPERATING_RULES.md` v1.6 | 1~226줄 전체 | 19,031 | `4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E` | PASS |
+| `docs/agents/developer-primary.md` | 1~70줄 전체 | 4,019 | `DBA19287719B527112F1D4A1505D616259D4D013115ACD0CF7B4A647EE93FE77` | PASS |
+| `docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md` | 1~32줄 전체 | 1,887 | `9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F` | PASS / human approval |
+| `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md` | 1~51줄 전체 | 3,441 | `E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008` | PASS / active derived baseline |
+
+### 책임·검증·착수 경계 이해
+
+- A-01은 `AV-UI-005`의 screen map·journey·Phase Rail 정적 연결성만 판정한다.
+- `AV-FLOW-001` runtime 책임은 A-05·B-03과 A Gate에 유지되며, A-01의 fixture·mock·정적 화면은 runtime PASS가 아니다.
+- Package 97, AV ID 255, 고유 실행 234, 역색인 97, 미할당 0 계약과 historical G-02/G-07/Phase G accepted evidence의 byte 불변을 유지한다.
+- A-01은 `READY`지만 WorkInstruction과 두 lease가 모두 `null`이므로 제품 구현은 시작할 수 없다.
+- 실제 Git 관측은 local `a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd`, upstream `origin/main` `57703ffc3521287cdd7d54b07bfd7c9001928388`이다. 일치를 꾸미거나 과거 push로 소급하지 않으며 Main의 commit/push 전 `PUSH_PENDING_MAIN`으로 다룬다.
+
 > 판정: `PASS / READ_ONLY_READY`  
 > 재온보딩일: 2026-08-10  
 > 수행 역할: `developer-primary` 독립 read-only Subagent 세션  
