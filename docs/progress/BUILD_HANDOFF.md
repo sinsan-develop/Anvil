@@ -12,7 +12,7 @@
 - 통합검증매트릭스: `Anvil_통합검증매트릭스_v1.md` v1.2 / SHA-256 `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3`
 - 테스트계획서: `Anvil_테스트계획서_v1.md` v1.3 / SHA-256 `870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5`
 - 검증 문서 상태: v2.6·v1.4·v1.2·v1.3·97개 Package·255개 ID로 비의미 정규화, G-02 독립 Tester PASS 및 Main `ACCEPTED`
-- 운영규칙: `docs/governance/ANVIL_OPERATING_RULES.md` v1.4 / SHA-256 `5313045957E63D3AADA0DF2BFA8EBC2B8F878D59F4F917B3210B5293D4DE6DB6`
+- 운영규칙: `docs/governance/ANVIL_OPERATING_RULES.md` v1.5 / SHA-256 `7D5E2AD0F272CBA1052EA8A21622F1E16438ABAB9AA4AAB7A1D34374B4FFB5F3`
 - 비의미 binding: `MAIN_RECONFIRMED_NON_SEMANTIC:G-02-R2-G02-DEF-001` revision 3 / SHA-256 `8332635C9CE92B085AFFDF1B235F48945605DC87FA7294DA5FF88A589C95D03D`
 - canonical parent baseline: `BASELINE-G-01-20260810-001` / `docs/baselines/G-01_BASELINE_RECORD.md` / SHA-256 `8EA9C6DA6E45955D7F7397C208FCFB0EFCC8C01B84851021F239350AC542847B`
 - G-02 derived baseline: `BASELINE-G-02-DERIVED-20260810-001` / `docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md` / SHA-256 `E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B`
@@ -125,10 +125,13 @@
 - `G04-DEF-001~002` 독립 `CLOSED`, `AV-FLOW-003 PASS`, open blocking defect 0
 - Main 최종 fresh 검증: 전체 23/23, checker 2종, report hash, JSON, diff-check PASS
 - G-04 최종 판정: `ACCEPTED`
+- 신산님 승인 `APPROVAL-20260810-AUTONOMOUS-EXECUTION-001`: 확정 계획 안의 Package는 자동 진행하며 일반 진행 보고·계속 확인을 하지 않음
+- 신산님 중단 보고 조건: 기능 범위·요구사항·중요 위험 변경 또는 DIR-1·2·3/canonical DIR-X 도달
+- Git origin: `https://github.com/cyhuh7950/anvil.git`
 
 ## 6. 다음 안전 행동
 
-G-04 revision 2는 독립 expected 비열람 projection과 target 재계산을 포함해 `AV-FLOW-003 PASS`로 최종 `ACCEPTED`다. 다음 안전 행동은 G-04 산출물을 Git에 커밋한 뒤 G-05 WorkInstruction을 발행하는 것이다. 원격 저장소가 없으므로 push는 보류한다.
+G-04 revision 2는 최종 `ACCEPTED`이며 Git origin을 `https://github.com/cyhuh7950/anvil.git`로 등록했다. 다음 안전 행동은 운영규칙 v1.5를 commit·push한 뒤 G-05부터 중간 보고 없이 자동 진행하는 것이다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

@@ -1,6 +1,6 @@
-# Anvil 프로젝트 운영규칙 v1.4
+# Anvil 프로젝트 운영규칙 v1.5
 
-> 상태: G-02 승인 반영 비의미 기준선 정규화본 — 독립 Tester 재검토 대기  
+> 상태: v1.5 — 신산님 자동 진행·보고 경계 명시 승인 반영
 > 적용 범위: Anvil 설계·개발·검증·학습·배포 전 과정  
 > 설계 책임자: Main Agent 어울  
 > 작업 담당자: Primary Developer Subagent `developer-primary`
@@ -17,7 +17,7 @@
 | `Anvil_작업계획서_v1.md` | v1.4 / 실제 hash는 `build-progress.json`에서 관리 | v2.6의 97개 Package 비의미 기준선 정규화본 |
 | `Anvil_통합검증매트릭스_v1.md` | v1.2 / 실제 hash는 `build-progress.json`에서 관리 | v2.6·v1.4·97개 Package 기준 정규화 |
 | `Anvil_테스트계획서_v1.md` | v1.3 / 실제 hash는 `build-progress.json`에서 관리 | 동일 기준 실행 절차 비의미 정규화 |
-| 이 운영규칙 | v1.4 | 기능 범위·요구사항·중요 위험 변경 시 신산님 승인 |
+| 이 운영규칙 | v1.5 | 확정 계획 자동 진행, 기능 범위·요구사항·중요 위험 변경 또는 DIR 도달 시 신산님 보고 |
 
 운영규칙 자체 hash는 자기참조 순환을 피하기 위해 `docs/progress/build-progress.json`의 `operating_rules_baseline`과 승인 BaselineRecord에서 관리한다. 실행 시점의 실제 hash가 등록 hash와 다르면 자동 수정하지 않고 `WAITING_APPROVAL`로 전환한다.
 
@@ -84,6 +84,17 @@ DRAFT
 - Main Agent 재확정은 `MAIN_RECONFIRMED_NON_SEMANTIC` binding으로 기록하며 `parent_baseline_id`, `root_human_approval_id`, old/new hash, semantic diff, 영향·근거·actor·시각을 가진다. 원 승인 범위를 넓힐 수 없다.
 - 승인 요청에는 변경된 기능 범위·요구사항·중요 위험, 선택지, 영향 범위, 미결 위험, 권고안과 subject hash를 포함한다.
 - 파괴적 명령이나 외부 시스템 쓰기에 대해 실행 플랫폼이 요구하는 권한 확인은 프로젝트 변경 승인과 구분되는 안전 절차다.
+
+### 6.1 자동 실행과 보고 제한
+
+- 승인된 설계서·작업계획서 안의 Work Package는 Main Agent가 WorkInstruction 작성→Developer Subagent 실행→독립 Tester 검증→필요한 scoped rework→최종 판정→commit·push 순서로 자동 진행한다.
+- 작업계획서 내용, Package별 시작·완료, 정상적인 테스트 결과, 내부 기술 판단, 비의미 revision은 신산님에게 진행 보고하거나 계속 지시를 요청하지 않는다. 상세 내용은 progress/HANDOFF, EvidenceManifest, TestReport와 Git 이력에만 남긴다.
+- Main Agent가 자동 진행을 중단하고 신산님에게 보고하는 조건은 아래 두 가지다.
+  1. 기능 범위·요구사항·중요 위험 변경으로 신산님의 승인 또는 선택이 필요한 경우
+  2. `DIR-1`·`DIR-2`·`DIR-3` 또는 canonical `DIR-X`에 도달한 경우
+- 동일 단계 동일 실패 3회는 Main Agent가 직접 인수해 계속 해결한다. 3회 도달만으로 신산님에게 보고하지 않으며, 인수 중 위 두 조건이 발생할 때만 중단 보고한다.
+- 기술적 실패·REWORK·독립 Tester 결함은 승인 범위 안에서 해결 가능한 동안 Subagent fix loop로 자동 처리한다.
+- 신산님은 자동 진행 중에도 언제든 `pause`, `steer`, `cancel`, 범위 변경, 직접 인수 또는 Agent 교체를 명시할 수 있고 Main Agent는 즉시 반영한다.
 
 ## 7. write lease와 동시성
 
