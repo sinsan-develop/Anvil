@@ -1,0 +1,66 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "dir-anvil-build-v1",
+  "checkpoints": [
+    {
+      "checkpoint": "DIR-1",
+      "status": "NOT_REACHED",
+      "verdict": null,
+      "subject_hash": null,
+      "evidence_hash": null,
+      "baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+      "trigger_event_id": null,
+      "canonical_trigger": "A-15_ACCEPTED",
+      "report_event_id": null,
+      "report_ref": null,
+      "owner_direction_event_id": null,
+      "lease_released": true,
+      "blocked_next_action": null
+    },
+    {
+      "checkpoint": "DIR-2",
+      "status": "NOT_REACHED",
+      "verdict": null,
+      "subject_hash": null,
+      "evidence_hash": null,
+      "baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+      "trigger_event_id": null,
+      "canonical_trigger": "C-15_ACCEPTED",
+      "report_event_id": null,
+      "report_ref": null,
+      "owner_direction_event_id": null,
+      "lease_released": true,
+      "blocked_next_action": null
+    },
+    {
+      "checkpoint": "DIR-3",
+      "status": "NOT_REACHED",
+      "verdict": null,
+      "subject_hash": null,
+      "evidence_hash": null,
+      "baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+      "trigger_event_id": null,
+      "canonical_trigger": "E-11_ACCEPTED",
+      "report_event_id": null,
+      "report_ref": null,
+      "owner_direction_event_id": null,
+      "lease_released": true,
+      "blocked_next_action": null
+    },
+    {
+      "checkpoint": "DIR-X",
+      "status": "NOT_REACHED",
+      "verdict": null,
+      "subject_hash": null,
+      "evidence_hash": null,
+      "baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+      "trigger_event_id": null,
+      "canonical_trigger": "DIRX-LRN-CRITICAL",
+      "report_event_id": null,
+      "report_ref": null,
+      "owner_direction_event_id": null,
+      "lease_released": true,
+      "blocked_next_action": null
+    }
+  ]
+}

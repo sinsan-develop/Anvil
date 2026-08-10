@@ -1,8 +1,27 @@
 # Anvil Build Handoff
 
+```json anvil-recovery-summary
+{
+  "schema_version": "1.0.0",
+  "event_sequence": 7,
+  "status": "READY",
+  "current_work_package": "G-06",
+  "last_event_id": "evt_g05_main_package_accepted_r2",
+  "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+  "valid_failure_count": 1,
+  "dir_status": "NOT_REACHED",
+  "repository_head": "a3014da95b34d8fe3a0a22418d78016b0fe57e61",
+  "repository_upstream": "origin/main",
+  "next_safe_action": "Main Agent automatically issues the G-06 WorkInstruction under the approved plan",
+  "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
+  "derived_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
+  "reporting_decision": "AUTO_CONTINUE"
+}
+```
+
 > 갱신일: 2026-08-10  
 > 현재 상태: `READY`
-> 현재 Phase / Package: `G / G-05`
+> 현재 Phase / Package: `G / G-06`
 
 ## 1. 현재 기준선
 
@@ -24,7 +43,7 @@
 - 최종 승인자: 신산님
 - Main Agent·설계 책임자: 어울
 - Primary Developer Subagent·작업 담당자: `developer-primary`
-- Reviewer/Tester: G-01 PASS, G-02 revision 1·2 `REWORK` 후 revision 3 `PASS`; G-04 독립 Tester 투입 대기
+- Reviewer/Tester: G-01 PASS, G-02 revision 3 PASS, G-04 revision 2 PASS, G-05 revision 2 PASS
 
 ## 3. 이번 설정에서 완료한 내용
 
@@ -72,7 +91,7 @@
 - v2.6/v1.4/v1.2/v1.3/운영규칙 v1.4 기준 Developer 재온보딩 `PASS / READ_ONLY_READY`
 - 프로젝트 목적·Phase·역할·승인·복구·실패 3회·Skill/Hook/Plugin 규칙 이해도 10문항 합격
 - 97 Package·255 ID(CON 21·실행 234)·DIR 4종과 G-02→G-03 차단사항을 정확히 설명함
-- 현재 상태: `WRITE_ENABLED_FOR_G04 / REVISION_2_DEVELOPER_COMPLETE_TEST_REVIEW`
+- 현재 상태: `G-05_ACCEPTED / G-06_READY_WORK_INSTRUCTION_NOT_ISSUED`
 - 온보딩 증거: `docs/onboarding/developer-primary-ack.md` / SHA-256 `3110F6B21EFC3C7BE61B6CEB71A4586A75A80DC129D79DDC4B0A74AFE0039A69`
 
 ## 5. 승인·결정 상태
@@ -125,13 +144,17 @@
 - `G04-DEF-001~002` 독립 `CLOSED`, `AV-FLOW-003 PASS`, open blocking defect 0
 - Main 최종 fresh 검증: 전체 23/23, checker 2종, report hash, JSON, diff-check PASS
 - G-04 최종 판정: `ACCEPTED`
+- G-05 revision 1 독립 TestReport: `FAILURE_REPORT`, SHA-256 `CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E`; valid failure count 1
+- G-05 revision 2 독립 TestReport: `PASS / READY_FOR_MAIN_ACCEPTANCE`, SHA-256 `ED0F03496060C84D67DE84C0758611610CD753CF8D854216F9933089F07C758C`
+- `G05-DEF-001~006` 독립 `CLOSED`, 신규 차단 finding 0
+- Main Agent 최종 판정: G-05 `ACCEPTED`; 검증된 revision 2 EvidenceManifest는 `docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json` / SHA-256 `F9A5E7168B9B68B70D74B68DD495211BDC7961223E5E48CFC6F565638B9E69E6`로 불변 보존
 - 신산님 승인 `APPROVAL-20260810-AUTONOMOUS-EXECUTION-001`: 확정 계획 안의 Package는 자동 진행하며 일반 진행 보고·계속 확인을 하지 않음
 - 신산님 중단 보고 조건: 기능 범위·요구사항·중요 위험 변경 또는 DIR-1·2·3/canonical DIR-X 도달
 - Git origin: `https://github.com/cyhuh7950/anvil.git`
 
 ## 6. 다음 안전 행동
 
-G-04 revision 2는 최종 `ACCEPTED`이며 Git origin을 `https://github.com/cyhuh7950/anvil.git`로 등록했다. 다음 안전 행동은 운영규칙 v1.5를 commit·push한 뒤 G-05부터 중간 보고 없이 자동 진행하는 것이다.
+G-05 revision 2는 독립 Tester PASS와 Main Agent 판정으로 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `a3014da95b34d8fe3a0a22418d78016b0fe57e61`로 일치한다. 현재 G-06은 `READY`이며 active WorkInstruction은 없다. 다음 안전 행동은 승인된 계획에 따라 Main Agent가 G-06 WorkInstruction을 자동 발행하는 것이다. 이 materialization은 G-06 구현을 시작하지 않는다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

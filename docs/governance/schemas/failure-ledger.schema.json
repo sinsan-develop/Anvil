@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/failure-ledger.schema.json",
+  "title": "Anvil failure lineage ledger",
+  "type": "object",
+  "required": ["schema_version", "ledger_id", "canonical_key", "entries"],
+  "properties": {
+    "canonical_key": {"const": ["step_lineage_id", "failure_fingerprint"]},
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "entry_id", "step_lineage_id", "failure_fingerprint", "result_status",
+          "accepted", "counts_toward_valid_failure", "validator_acceptance",
+          "evidence_refs", "accepted_sequence", "takeover_status"
+        ],
+        "properties": {
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["path", "sha256"],
+              "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "sha256": {"type": "string", "pattern": "^[A-F0-9]{64}$"}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

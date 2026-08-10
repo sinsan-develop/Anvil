@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "registry_id": "nonsemantic-anvil-build-v1",
+  "bindings": [
+    {
+      "binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:G-02-R2-G02-DEF-001",
+      "parent_baseline_id": "BASELINE-G-01-20260810-001",
+      "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
+      "root_approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
+      "artifact_id": "Anvil-WorkPlan-v1.4",
+      "artifact_path": "Anvil_작업계획서_v1.md",
+      "old_hash": "A88FCA548143B4C5208E106EBDF6009E438806547513A7C89F50A9E922C5C335",
+      "new_hash": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475",
+      "semantic_diff_classification": "NON_SEMANTIC",
+      "changed_clauses": ["authority status and baseline lineage normalization"],
+      "impact": "No feature scope, requirement, or important risk change",
+      "rationale": "Independent review required explicit root approval lineage",
+      "reconfirmed_actor": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+      "reconfirmed_at": "2026-08-10T10:30:00+09:00",
+      "root_approval_scope": "설계서 v2.6, 작업계획서 v1.3, 검증문서 v1.1, 운영규칙 v1.3, D1~D10 진행 기준",
+      "derived_scope": ["Anvil_작업계획서_v1.md"]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/progress-handoff-detached-digest.schema.json",
+  "title": "Anvil detached progress and handoff digest",
+  "type": "object",
+  "required": ["schema_version", "digest_id", "event_sequence", "algorithm", "progress", "handoff", "created_at"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "event_sequence": {"type": "integer", "minimum": 0},
+    "algorithm": {"const": "SHA-256"},
+    "progress": {
+      "type": "object",
+      "required": ["path", "bytes", "file_sha256", "canonical_json_sha256"]
+    },
+    "handoff": {
+      "type": "object",
+      "required": ["path", "bytes", "file_sha256", "machine_summary_canonical_sha256"]
+    }
+  },
+  "additionalProperties": false
+}

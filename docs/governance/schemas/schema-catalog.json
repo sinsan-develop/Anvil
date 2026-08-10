@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "schemas": [
+    {"name": "project_progress", "path": "docs/governance/schemas/project-progress.schema.json"},
+    {"name": "progress_event", "path": "docs/governance/schemas/progress-event.schema.json"},
+    {"name": "failure_ledger", "path": "docs/governance/schemas/failure-ledger.schema.json"},
+    {"name": "non_semantic_revision_binding", "path": "docs/governance/schemas/non-semantic-revision-binding.schema.json"},
+    {"name": "dir_checkpoint", "path": "docs/governance/schemas/dir-checkpoint.schema.json"},
+    {"name": "progress_handoff_detached_digest", "path": "docs/governance/schemas/progress-handoff-detached-digest.schema.json"}
+  ]
+}

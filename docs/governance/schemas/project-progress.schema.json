@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/project-progress.schema.json",
+  "title": "Anvil build progress snapshot",
+  "type": "object",
+  "required": [
+    "schema_version", "snapshot_id", "event_sequence", "snapshot_hash", "updated_at",
+    "last_event_id", "plan_version", "work_plan_hash", "design_baseline_hash", "current_phase",
+    "current_work_package", "status", "completed_packages", "active_agent",
+    "write_lease", "worker_lease", "budget_reservations", "valid_failure_count",
+    "latest_evidence_refs", "latest_evidence_manifest_ref", "pending_approvals",
+    "dir_review", "next_safe_action", "root_human_approval_binding",
+    "derived_baseline_binding", "repository", "active_work_instruction",
+    "last_accepted_work_instruction", "reporting_decision", "registry_refs"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "event_sequence": {"type": "integer", "minimum": 0},
+    "snapshot_hash": {"type": "string", "pattern": "^[A-F0-9]{64}$"},
+    "status": {"enum": ["READY", "ACTIVE", "TEST_REVIEW", "WAITING_APPROVAL", "BLOCKED", "INTERRUPTED"]},
+    "valid_failure_count": {"type": "integer", "minimum": 0},
+    "pending_approvals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["approval_id", "change_classification"],
+        "properties": {
+          "change_classification": {
+            "enum": [
+              "FUNCTION_SCOPE_CHANGE", "FUNCTION_SCOPE_CHANGE_REQUIRED", "SCOPE_EXPANSION_REQUIRED",
+              "REQUIREMENT_CHANGE", "REQUIREMENT_CHANGE_REQUIRED",
+              "IMPORTANT_RISK_CHANGE", "IMPORTANT_RISK_CHANGE_REQUIRED", "NON_SEMANTIC"
+            ]
+          }
+        }
+      }
+    },
+    "reporting_decision": {
+      "type": "object",
+      "required": ["decision", "reason_codes", "stop_before_dialogue_report"],
+      "properties": {
+        "decision": {"enum": ["AUTO_CONTINUE", "STOP_AND_REPORT_SCOPE_RISK", "STOP_AND_REPORT_DIR"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}},
+        "stop_before_dialogue_report": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

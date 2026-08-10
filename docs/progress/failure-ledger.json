@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "ledger_id": "failure-ledger-anvil-build-v1",
+  "canonical_key": ["step_lineage_id", "failure_fingerprint"],
+  "entries": [
+    {
+      "entry_id": "failure-g05-independent-test-r1",
+      "step_lineage_id": "G-05",
+      "failure_fingerprint": "g05-independent-test:progress-contract-bypass-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/G-05_TEST_REPORT.md",
+          "sha256": "CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
+    }
+  ]
+}

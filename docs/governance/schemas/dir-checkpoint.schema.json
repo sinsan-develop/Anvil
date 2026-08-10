@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/dir-checkpoint.schema.json",
+  "title": "Anvil design-intent review checkpoint registry",
+  "type": "object",
+  "required": ["schema_version", "registry_id", "checkpoints"],
+  "properties": {
+    "checkpoints": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": [
+          "checkpoint", "status", "verdict", "subject_hash", "evidence_hash",
+          "baseline_hash", "trigger_event_id", "canonical_trigger", "report_event_id", "report_ref",
+          "owner_direction_event_id", "lease_released", "blocked_next_action"
+        ],
+        "properties": {
+          "checkpoint": {"enum": ["DIR-1", "DIR-2", "DIR-3", "DIR-X"]},
+          "status": {"enum": ["NOT_REACHED", "DIR_HOLD", "REPORTING", "WAITING_OWNER_DIRECTION", "CLEARED"]},
+          "verdict": {"type": ["string", "null"], "enum": ["ALIGNED", "DRIFT_MINOR", "DRIFT_MAJOR", "DIVERGED", null]}
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

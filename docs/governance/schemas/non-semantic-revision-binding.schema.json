@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://envil.sinsan.kr/schemas/non-semantic-revision-binding.schema.json",
+  "title": "Anvil non-semantic revision binding registry",
+  "type": "object",
+  "required": ["schema_version", "registry_id", "bindings"],
+  "properties": {
+    "bindings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "binding_id", "parent_baseline_id", "root_human_approval_id", "root_approval_subject_hash", "artifact_id",
+          "artifact_path", "old_hash", "new_hash", "semantic_diff_classification",
+          "changed_clauses", "impact", "rationale", "reconfirmed_actor",
+          "reconfirmed_at", "root_approval_scope", "derived_scope"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

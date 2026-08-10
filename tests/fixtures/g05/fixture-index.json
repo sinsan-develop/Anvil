@@ -1,0 +1,12 @@
+{
+  "schema_version": "1.0.0",
+  "fixture_ids": {
+    "G05-PROGRESS-001": "docs/progress/build-progress.json",
+    "G05-FAILURE-001": "tests/fixtures/g05/failure-ledger.json",
+    "G05-NONSEMANTIC-001": "docs/progress/non-semantic-revision-bindings.json",
+    "G05-DIR-001": "docs/progress/dir-checkpoints.json",
+    "G05-RECOVERY-001": "docs/progress/BUILD_HANDOFF.md",
+    "G05-EVENT-ALL-CATEGORIES-001": "tests/fixtures/g05/progress-events-all-categories.json",
+    "G05-DETACHED-DIGEST-001": "docs/progress/progress-handoff-detached-digest.json"
+  }
+}

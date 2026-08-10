@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0.0",
+  "ledger_id": "fixture-g05-failure-ledger",
+  "canonical_key": ["step_lineage_id", "failure_fingerprint"],
+  "entries": [
+    {
+      "entry_id": "failure-a-1", "step_lineage_id": "lineage-A", "failure_fingerprint": "same-fingerprint",
+      "result_status": "FAILURE_REPORT", "accepted": true, "counts_toward_valid_failure": true,
+      "validator_acceptance": true, "evidence_refs": [{"path": "docs/test_reports/G-05_TEST_REPORT.md", "sha256": "CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E"}], "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a-rejected", "step_lineage_id": "lineage-A", "failure_fingerprint": "same-fingerprint",
+      "result_status": "FAILURE_REPORT", "accepted": false, "counts_toward_valid_failure": false,
+      "validator_acceptance": false, "evidence_refs": [], "accepted_sequence": null,
+      "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a-incomplete", "step_lineage_id": "lineage-A", "failure_fingerprint": "same-fingerprint",
+      "result_status": "INCOMPLETE", "accepted": false, "counts_toward_valid_failure": false,
+      "validator_acceptance": false, "evidence_refs": [{"path": "docs/test_reports/G-05_TEST_REPORT.md", "sha256": "CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E"}], "accepted_sequence": null,
+      "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a-2", "step_lineage_id": "lineage-A", "failure_fingerprint": "same-fingerprint",
+      "result_status": "FAILURE_REPORT", "accepted": true, "counts_toward_valid_failure": true,
+      "validator_acceptance": true, "evidence_refs": [{"path": "docs/test_reports/G-05_TEST_REPORT.md", "sha256": "CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E"}], "accepted_sequence": 2,
+      "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-b-1", "step_lineage_id": "lineage-B", "failure_fingerprint": "same-fingerprint",
+      "result_status": "FAILURE_REPORT", "accepted": true, "counts_toward_valid_failure": true,
+      "validator_acceptance": true, "evidence_refs": [{"path": "docs/test_reports/G-05_TEST_REPORT.md", "sha256": "CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E"}], "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a-3", "step_lineage_id": "lineage-A", "failure_fingerprint": "same-fingerprint",
+      "result_status": "FAILURE_REPORT", "accepted": true, "counts_toward_valid_failure": true,
+      "validator_acceptance": true, "evidence_refs": [{"path": "docs/test_reports/G-05_TEST_REPORT.md", "sha256": "CB03A995BF654964623737C5A347DCBD21ED62BF1268E5A53F5867516C32C26E"}], "accepted_sequence": 3,
+      "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED"
+    }
+  ]
+}
