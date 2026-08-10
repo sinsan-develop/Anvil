@@ -13,6 +13,10 @@
     {"mutation_id": "A01-MUT-009", "description": "AV-FLOW-001 reinserted into A-01", "expected_error_code": "A01_RESPONSIBILITY_MISMATCH"},
     {"mutation_id": "A01-MUT-010", "description": "decision actor missing", "expected_error_code": "DECISION_ACTOR_MISSING"},
     {"mutation_id": "A01-MUT-011", "description": "approval subject hash missing", "expected_error_code": "DECISION_SUBJECT_HASH_MISSING"},
-    {"mutation_id": "A01-MUT-012", "description": "document/catalog identifier drift", "expected_error_code": "DOCUMENT_STEP_ALIGNMENT_MISMATCH"}
+    {"mutation_id": "A01-MUT-012", "description": "document/catalog identifier drift", "expected_error_code": "DOCUMENT_STEP_ALIGNMENT_MISMATCH"},
+    {"mutation_id": "A01-MUT-013", "description": "approval guard removed or narrowed", "expected_error_code": "APPROVAL_BOUNDARY_MISMATCH"},
+    {"mutation_id": "A01-MUT-014", "description": "decision revise target is unknown", "expected_error_code": "DECISION_TARGET_UNKNOWN"},
+    {"mutation_id": "A01-MUT-015", "description": "release reject edge is removed", "expected_error_code": "DECISION_EDGE_MISSING"},
+    {"mutation_id": "A01-MUT-016", "description": "canonical allowed results are narrowed", "expected_error_code": "DECISION_CONTRACT_MISMATCH"}
   ]
 }

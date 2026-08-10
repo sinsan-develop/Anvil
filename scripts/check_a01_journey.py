@@ -34,6 +34,34 @@ EXPECTED_NON_PASS = {
     "CANCELLED",
     "fixture",
 }
+EXPECTED_APPROVAL_CHANGES = {
+    "FUNCTION_SCOPE_CHANGE",
+    "REQUIREMENT_CHANGE",
+    "IMPORTANT_RISK_CHANGE",
+}
+DECISION_CONTRACT_FIELDS = (
+    "decision_id",
+    "step_id",
+    "actor",
+    "subject_artifact",
+    "subject_hash_required",
+    "allowed_results",
+    "reject_result",
+    "revise_result",
+)
+EXPECTED_DECISION_CONTRACTS = [
+    {"decision_id": "DEC-CONCEPT", "step_id": "STEP-03", "actor": "human-owner", "subject_artifact": "ProposalSet", "subject_hash_required": True, "allowed_results": ["SELECT", "HOLD", "REJECT", "REVISE"], "reject_result": "TERMINAL-REJECTED", "revise_result": "STEP-02"},
+    {"decision_id": "DEC-WI-APPROVAL", "step_id": "STEP-06", "actor": "human-owner-or-standing-approved-main", "subject_artifact": "WorkInstruction", "subject_hash_required": True, "allowed_results": ["APPROVE", "REJECT", "REVISE"], "reject_result": "TERMINAL-REJECTED", "revise_result": "STEP-05"},
+    {"decision_id": "DEC-PRODUCT-VALIDATION", "step_id": "STEP-10", "actor": "human-owner", "subject_artifact": "ProductValidation", "subject_hash_required": True, "allowed_results": ["PASS", "FAIL", "INCOMPLETE"], "reject_result": "STEP-11", "revise_result": "STEP-11"},
+    {"decision_id": "DEC-RELEASE", "step_id": "STEP-12", "actor": "human-owner", "subject_artifact": "ReleaseDecision", "subject_hash_required": True, "allowed_results": ["RELEASE", "REWORK", "DEFER", "REJECT"], "reject_result": "TERMINAL-REJECTED", "revise_result": "STEP-04"},
+    {"decision_id": "DEC-ACTIVATION", "step_id": "STEP-14", "actor": "human-owner", "subject_artifact": "SkillOrHookCandidate", "subject_hash_required": True, "allowed_results": ["ACTIVATE", "REJECT", "ROLLBACK"], "reject_result": "candidate_retained_inactive", "revise_result": "STEP-13"},
+]
+EXPECTED_DECISION_EDGE_BINDINGS = {
+    "DEC-CONCEPT": {"reject_edge_id": "EDGE-03-REJECT", "revise_edge_id": "EDGE-03-REVISE", "reject_path_id": "PATH-REJECT", "revise_path_id": "PATH-REVISE"},
+    "DEC-WI-APPROVAL": {"reject_edge_id": "EDGE-06-REJECT", "revise_edge_id": "EDGE-06-REVISE", "reject_path_id": "PATH-REJECT", "revise_path_id": "PATH-REVISE"},
+    "DEC-RELEASE": {"reject_edge_id": "EDGE-12-REJECT", "revise_edge_id": "EDGE-12-REVISE", "reject_path_id": "PATH-REJECT", "revise_path_id": "PATH-REVISE"},
+}
+EXPLICIT_NON_STATE_RESULTS = {"candidate_retained_inactive"}
 EDGE_FIELDS = {
     "edge_id",
     "source_step_id",
@@ -200,6 +228,63 @@ def validate_catalog(catalog: dict[str, Any]) -> list[str]:
         if "reject_result" not in decision or "revise_result" not in decision:
             errors.append("DECISION_OUTCOME_MAPPING_MISSING")
 
+    approval_changes = catalog.get("approval_boundary", {}).get("human_approval_required_for", [])
+    if (
+        not isinstance(approval_changes, list)
+        or len(approval_changes) != len(EXPECTED_APPROVAL_CHANGES)
+        or set(approval_changes) != EXPECTED_APPROVAL_CHANGES
+    ):
+        errors.append("APPROVAL_BOUNDARY_MISMATCH")
+
+    actual_decisions = {
+        str(decision.get("decision_id", "")): {
+            field: decision.get(field) for field in DECISION_CONTRACT_FIELDS
+        }
+        for decision in decisions
+    }
+    expected_decisions = {
+        decision["decision_id"]: decision for decision in EXPECTED_DECISION_CONTRACTS
+    }
+    if actual_decisions != expected_decisions:
+        errors.append("DECISION_CONTRACT_MISMATCH")
+
+    valid_decision_targets = set(step_by_id) | terminal_ids | EXPLICIT_NON_STATE_RESULTS
+    for decision in decisions:
+        if (
+            decision.get("reject_result") not in valid_decision_targets
+            or decision.get("revise_result") not in valid_decision_targets
+        ):
+            errors.append("DECISION_TARGET_UNKNOWN")
+
+    for decision_id, binding in EXPECTED_DECISION_EDGE_BINDINGS.items():
+        decision = actual_decisions.get(decision_id, {})
+        source_step = decision.get("step_id")
+        catalog_decision = next(
+            (item for item in decisions if item.get("decision_id") == decision_id), {}
+        )
+        for outcome in ("reject", "revise"):
+            edge_field = f"{outcome}_edge_id"
+            path_field = f"{outcome}_path_id"
+            result_field = f"{outcome}_result"
+            expected_edge_id = binding[edge_field]
+            expected_path_id = binding[path_field]
+            edge = edge_by_id.get(expected_edge_id)
+            if (
+                catalog_decision.get(edge_field) != expected_edge_id
+                or edge is None
+                or edge.get("source_step_id") != source_step
+                or edge.get("target_step_id") != decision.get(result_field)
+            ):
+                errors.append("DECISION_EDGE_MISSING")
+            path = path_by_id.get(expected_path_id, {})
+            bound_edges = set(path.get("edge_ids", [])) | set(path.get("outcome_edge_ids", []))
+            if (
+                catalog_decision.get(path_field) != expected_path_id
+                or expected_edge_id not in bound_edges
+                or edge is None
+            ):
+                errors.append("DECISION_PATH_BINDING_MISSING")
+
     presentation = catalog.get("presentation_contract", {})
     expected_presentation = {
         "viewport": "1920x1080",
@@ -217,6 +302,24 @@ def validate_catalog(catalog: dict[str, Any]) -> list[str]:
         errors.append("PRESENTATION_CONTRACT_MISMATCH")
 
     return list(dict.fromkeys(errors))
+
+
+def validate_fixture_contract(root: Path) -> list[str]:
+    """Keep the independent fixture exact contract aligned with checker literals."""
+    path = root / "tests/fixtures/a01/canonical-contract.json"
+    try:
+        fixture = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ["FIXTURE_DECISION_CONTRACT_MISSING"]
+    errors: list[str] = []
+    approval = fixture.get("human_approval_required_for", [])
+    if len(approval) != 3 or set(approval) != EXPECTED_APPROVAL_CHANGES:
+        errors.append("FIXTURE_APPROVAL_BOUNDARY_MISMATCH")
+    if fixture.get("decision_contracts") != EXPECTED_DECISION_CONTRACTS:
+        errors.append("FIXTURE_DECISION_CONTRACT_MISMATCH")
+    if fixture.get("decision_edge_bindings") != EXPECTED_DECISION_EDGE_BINDINGS:
+        errors.append("FIXTURE_DECISION_EDGE_BINDING_MISMATCH")
+    return errors
 
 
 def validate_document_alignment(root: Path, catalog: dict[str, Any]) -> list[str]:
@@ -305,6 +408,7 @@ def validate_bundle(root: Path) -> list[str]:
     except json.JSONDecodeError:
         return ["CATALOG_JSON_INVALID"]
     errors = validate_catalog(catalog)
+    errors.extend(validate_fixture_contract(root))
     errors.extend(validate_document_alignment(root, catalog))
     render = root / STATIC_RENDER_REL
     if not render.is_file():

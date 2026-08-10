@@ -1,0 +1,44 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-01-20260811-002",
+  "artifact_type": "package_evidence_manifest",
+  "project_id": "anvil",
+  "package_id": "A-01",
+  "artifact_status": "developer_rework_completed_pending_independent_test",
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary-a01"},
+  "created_at": "2026-08-11T04:40:00+09:00",
+  "work_instruction_sha256": "F7F9F1F37320B3A75DB48FBB5DD230D9D2774BB79498DDCA2FF2DB0416CBDF60",
+  "source_test_report_sha256": "53AB8F7F27BBC291FE3A8F338E23552DA14E53629B049A6EE225CA10E353A020",
+  "finding_id": "A01-TST-BLK-001",
+  "supersedes_artifact_ref": {
+    "path": "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST.json",
+    "sha256": "11C7321DF2657879E8B46FE95A2E8B86ADA573BF91C0CD76C115B55ADEF2301B",
+    "mutation": "FORBIDDEN_HISTORICAL_EVIDENCE"
+  },
+  "assigned_verification_ids": ["AV-UI-005"],
+  "runtime_deferred_verification_ids": ["AV-FLOW-001"],
+  "execution_classification": "STATIC_ONLY",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI",
+  "target_algorithm": "SHA256(canonical JSON of sorted [{path,sha256}] raw_artifacts)",
+  "target_hash": "FED10096AE42BEFFD0BB20DB5362A17B4946BBB85DA22CFE24C5331D6B4D170E",
+  "delivered_hash": "FED10096AE42BEFFD0BB20DB5362A17B4946BBB85DA22CFE24C5331D6B4D170E",
+  "raw_artifacts": [
+    {"path": "docs/architecture/a01/A-01_PATH_CATALOG.json", "bytes": 19947, "sha256": "FC3A503E5038C86BFD841DA5F93826A3FC85B5EB2A020E1196385247C2B7DD69", "evidence_type": "E-ART"},
+    {"path": "scripts/check_a01_journey.py", "bytes": 19991, "sha256": "8621809E9E35D694B7A17CEAA9CAA652999FA11A7119839AF56FE3136596971B", "evidence_type": "E-TEST"},
+    {"path": "tests/tooling/test_a01_journey.py", "bytes": 11170, "sha256": "2C562B8A3C1A8ECB109DD3E2948C91C3A823CE27A927750BFB0C0A2CCE9F1BF1", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a01/canonical-contract.json", "bytes": 2484, "sha256": "B6162DB9B1D0B74BE9BC7C9AFE7FEB4459E572F59E30353D8236BA9DAB53C594", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a01/mutation-catalog.json", "bytes": 2319, "sha256": "6BA052D9EF827D1FD21F61F115B413A01256178E74FAA3F6344FF9BCA96EBA00", "evidence_type": "E-TEST"},
+    {"path": "docs/validation/A-01_JOURNEY_VALIDATION.md", "bytes": 3023, "sha256": "CF7611FF78B34CC6AAA81B07B768B4118FA2510147E48471009895CA762A5D52", "evidence_type": "E-TEST"},
+    {"path": "docs/completion_reports/A-01_COMPLETION_REPORT.md", "bytes": 3756, "sha256": "BFC1311A2E871266E52B76645C7173956992D173EB16E5C039D6D83F0CB7AB45", "evidence_type": "E-ART"},
+    {"path": "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST.json", "bytes": 3419, "sha256": "11C7321DF2657879E8B46FE95A2E8B86ADA573BF91C0CD76C115B55ADEF2301B", "evidence_type": "E-MAN"},
+    {"path": "docs/test_reports/A-01_TEST_REPORT.md", "bytes": 7373, "sha256": "53AB8F7F27BBC291FE3A8F338E23552DA14E53629B049A6EE225CA10E353A020", "evidence_type": "E-TEST"},
+    {"path": "docs/work_orders/A-01_WORK_INSTRUCTION.md", "bytes": 14906, "sha256": "F7F9F1F37320B3A75DB48FBB5DD230D9D2774BB79498DDCA2FF2DB0416CBDF60", "evidence_type": "E-DEC"}
+  ],
+  "self_reference": false,
+  "limitations": [
+    "Revision 2 hardens static approval and decision connectivity only.",
+    "Static artifacts and validators do not prove browser or runtime behavior.",
+    "AV-FLOW-001 remains deferred to A-05, B-03, and A Gate.",
+    "Independent Tester revision 2 PASS is required before ACCEPTED."
+  ]
+}

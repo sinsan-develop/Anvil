@@ -6,5 +6,18 @@
   "assigned_verification_ids": ["AV-UI-005"],
   "runtime_deferred_verification_ids": ["AV-FLOW-001"],
   "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
-  "acquisition_mode": "STATIC_RENDER"
+  "acquisition_mode": "STATIC_RENDER",
+  "human_approval_required_for": ["FUNCTION_SCOPE_CHANGE", "REQUIREMENT_CHANGE", "IMPORTANT_RISK_CHANGE"],
+  "decision_contracts": [
+    {"decision_id": "DEC-CONCEPT", "step_id": "STEP-03", "actor": "human-owner", "subject_artifact": "ProposalSet", "subject_hash_required": true, "allowed_results": ["SELECT", "HOLD", "REJECT", "REVISE"], "reject_result": "TERMINAL-REJECTED", "revise_result": "STEP-02"},
+    {"decision_id": "DEC-WI-APPROVAL", "step_id": "STEP-06", "actor": "human-owner-or-standing-approved-main", "subject_artifact": "WorkInstruction", "subject_hash_required": true, "allowed_results": ["APPROVE", "REJECT", "REVISE"], "reject_result": "TERMINAL-REJECTED", "revise_result": "STEP-05"},
+    {"decision_id": "DEC-PRODUCT-VALIDATION", "step_id": "STEP-10", "actor": "human-owner", "subject_artifact": "ProductValidation", "subject_hash_required": true, "allowed_results": ["PASS", "FAIL", "INCOMPLETE"], "reject_result": "STEP-11", "revise_result": "STEP-11"},
+    {"decision_id": "DEC-RELEASE", "step_id": "STEP-12", "actor": "human-owner", "subject_artifact": "ReleaseDecision", "subject_hash_required": true, "allowed_results": ["RELEASE", "REWORK", "DEFER", "REJECT"], "reject_result": "TERMINAL-REJECTED", "revise_result": "STEP-04"},
+    {"decision_id": "DEC-ACTIVATION", "step_id": "STEP-14", "actor": "human-owner", "subject_artifact": "SkillOrHookCandidate", "subject_hash_required": true, "allowed_results": ["ACTIVATE", "REJECT", "ROLLBACK"], "reject_result": "candidate_retained_inactive", "revise_result": "STEP-13"}
+  ],
+  "decision_edge_bindings": {
+    "DEC-CONCEPT": {"reject_edge_id": "EDGE-03-REJECT", "revise_edge_id": "EDGE-03-REVISE", "reject_path_id": "PATH-REJECT", "revise_path_id": "PATH-REVISE"},
+    "DEC-WI-APPROVAL": {"reject_edge_id": "EDGE-06-REJECT", "revise_edge_id": "EDGE-06-REVISE", "reject_path_id": "PATH-REJECT", "revise_path_id": "PATH-REVISE"},
+    "DEC-RELEASE": {"reject_edge_id": "EDGE-12-REJECT", "revise_edge_id": "EDGE-12-REVISE", "reject_path_id": "PATH-REJECT", "revise_path_id": "PATH-REVISE"}
+  }
 }

@@ -94,16 +94,17 @@ class PhaseGGateTests(unittest.TestCase):
             self.codes(self.validate(texts={wi_path: wi}, verify_hashes=False)),
         )
 
-    def test_gate_checkpoint_allows_a01_rework_after_bound_resume_events(self):
+    def test_gate_checkpoint_allows_a01_rework_completion_pending_retest(self):
         report = self.validate()
         self.assertEqual("A-01", report["progress"]["current_work_package"])
-        self.assertEqual("ACTIVE", report["progress"]["status"])
+        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
         self.assertEqual("A-01", report["progress"]["next_conditional_package"])
         self.assertTrue(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
         self.assertEqual("WI-A-01-20260811-001", report["progress"]["active_work_instruction"]["artifact_id"])
-        self.assertEqual("worker-lease-a01-rework-20260811-002", report["progress"]["worker_lease"]["lease_id"])
-        self.assertEqual("write-lease-a01-rework-20260811-002", report["progress"]["write_lease"]["lease_id"])
+        self.assertIsNone(report["progress"]["worker_lease"])
+        self.assertIsNone(report["progress"]["write_lease"])
+        self.assertEqual(2, report["progress"]["active_work_instruction"]["rework_revision"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
         self.assertEqual("STANDING_AUTONOMOUS_APPROVAL_APPLIED", decision["approval_mode"])

@@ -195,9 +195,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_RESUMED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
         self.assertEqual(
-            "d13b94a11b5f4151cccdd37a03c7ce61bf6409eb",
+            "0162169cdbbf65c5f6b27c4625a82f5f16383bb6",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
@@ -205,8 +205,10 @@ class G07BaselineTests(unittest.TestCase):
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
         self.assertEqual("WI-A-01-20260811-001", reconciliation["work_instruction_id"])
-        self.assertEqual("ACTIVE", reconciliation["package_status"])
-        self.assertEqual(1, reconciliation["rework_attempt"])
+        self.assertEqual("COMPLETED", reconciliation["result_status"])
+        self.assertEqual("TEST_REVIEW", reconciliation["package_status"])
+        self.assertEqual(2, reconciliation["rework_revision"])
+        self.assertFalse(reconciliation["accepted"])
         self.assertEqual("developer-primary-a01", reconciliation["developer_actor"])
         self.assertEqual("A-01", report["failure_counts"]["active_lineage"])
         self.assertEqual(1, report["failure_counts"]["active_lineage_valid_failure_count"])

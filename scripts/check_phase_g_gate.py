@@ -466,7 +466,35 @@ def validate_gate(
         and package_resumed.get("details", {}).get("write_lease_id") == write.get("lease_id")
         and package_resumed.get("details", {}).get("resume_event_ref", {}).get("finding_id") == "A01-TST-BLK-001"
     )
-    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection:
+    rework_completion_events = {event.get("event_type"): event for event in events[-3:]}
+    rework_write_revoked = rework_completion_events.get("WRITE_LEASE_REVOKED", {})
+    rework_worker_revoked = rework_completion_events.get("WORKER_LEASE_REVOKED", {})
+    rework_completed = rework_completion_events.get("PACKAGE_COMPLETED", {})
+    rework_test_review_projection = (
+        progress_projection.get("current_work_package") == "A-01"
+        and progress_projection.get("status") == "TEST_REVIEW"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and active_wi.get("artifact_id") == "WI-A-01-20260811-001"
+        and active_wi.get("package_status") == "TEST_REVIEW"
+        and active_wi.get("rework_revision") == 2
+        and active_wi.get("independent_tester_status") == "R2_PENDING"
+        and progress_projection.get("worker_lease") is None
+        and progress_projection.get("write_lease") is None
+        and rework_write_revoked.get("sequence") == 40
+        and rework_worker_revoked.get("sequence") == 41
+        and rework_completed.get("sequence") == 42
+        and rework_write_revoked.get("actor") == rework_worker_revoked.get("actor") == rework_completed.get("actor") == "main-agent-eoul"
+        and rework_write_revoked.get("details", {}).get("lease_id") == "write-lease-a01-rework-20260811-002"
+        and rework_worker_revoked.get("details", {}).get("lease_id") == "worker-lease-a01-rework-20260811-002"
+        and rework_completed.get("details", {}).get("result_status") == "COMPLETED"
+        and rework_completed.get("details", {}).get("package_status") == "TEST_REVIEW"
+        and rework_completed.get("details", {}).get("accepted") is False
+        and rework_completed.get("details", {}).get("rework_revision") == 2
+        and rework_completed.get("details", {}).get("finding_status") == "FIXED_AWAITING_INDEPENDENT_RETEST"
+    )
+    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {

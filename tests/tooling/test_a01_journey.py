@@ -13,7 +13,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER_PATH = ROOT / "scripts" / "check_a01_journey.py"
 CATALOG_PATH = ROOT / "docs" / "architecture" / "a01" / "A-01_PATH_CATALOG.json"
-MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "A-01_EVIDENCE_MANIFEST.json"
+MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "A-01_EVIDENCE_MANIFEST_R2.json"
+PREDECESSOR_MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "A-01_EVIDENCE_MANIFEST.json"
 VALIDATION_PATH = ROOT / "docs" / "validation" / "A-01_JOURNEY_VALIDATION.md"
 COMPLETION_PATH = ROOT / "docs" / "completion_reports" / "A-01_COMPLETION_REPORT.md"
 FIXTURE_CONTRACT = ROOT / "tests" / "fixtures" / "a01" / "canonical-contract.json"
@@ -160,6 +161,40 @@ class A01JourneyContractTests(unittest.TestCase):
             "RUNTIME_DEFERRED / NOT_EXECUTED",
         )
 
+    def test_approval_boundary_rejects_missing_or_narrowed_important_risk_guard(self) -> None:
+        mutated = copy.deepcopy(self.canonical)
+        mutated["approval_boundary"]["human_approval_required_for"] = []
+        self.assertIn("APPROVAL_BOUNDARY_MISMATCH", self.checker.validate_catalog(mutated))
+
+        narrowed = copy.deepcopy(self.canonical)
+        narrowed["approval_boundary"]["human_approval_required_for"] = [
+            "FUNCTION_SCOPE_CHANGE",
+            "REQUIREMENT_CHANGE",
+            "CRITICAL_RISK_CHANGE",
+        ]
+        self.assertIn("APPROVAL_BOUNDARY_MISMATCH", self.checker.validate_catalog(narrowed))
+
+    def test_decision_revise_target_must_exist_and_match_canonical_contract(self) -> None:
+        mutated = copy.deepcopy(self.canonical)
+        concept = next(item for item in mutated["decisions"] if item["decision_id"] == "DEC-CONCEPT")
+        concept["revise_result"] = "TERMINAL-NONEXISTENT"
+        errors = self.checker.validate_catalog(mutated)
+        self.assertIn("DECISION_TARGET_UNKNOWN", errors)
+        self.assertIn("DECISION_CONTRACT_MISMATCH", errors)
+
+    def test_release_reject_requires_its_machine_readable_edge_and_path_binding(self) -> None:
+        mutated = copy.deepcopy(self.canonical)
+        mutated["edges"] = [edge for edge in mutated["edges"] if edge["edge_id"] != "EDGE-12-REJECT"]
+        errors = self.checker.validate_catalog(mutated)
+        self.assertIn("DECISION_EDGE_MISSING", errors)
+        self.assertIn("DECISION_PATH_BINDING_MISSING", errors)
+
+    def test_decision_allowed_results_are_exact_not_merely_nonempty(self) -> None:
+        mutated = copy.deepcopy(self.canonical)
+        concept = next(item for item in mutated["decisions"] if item["decision_id"] == "DEC-CONCEPT")
+        concept["allowed_results"] = ["SELECT"]
+        self.assertIn("DECISION_CONTRACT_MISMATCH", self.checker.validate_catalog(mutated))
+
     def test_fixture_contract_declares_canonical_and_adversarial_sets(self) -> None:
         contract = json.loads(FIXTURE_CONTRACT.read_text(encoding="utf-8"))
         mutations = json.loads(MUTATION_CATALOG.read_text(encoding="utf-8"))
@@ -167,7 +202,7 @@ class A01JourneyContractTests(unittest.TestCase):
         self.assertEqual(contract["step_count"], 14)
         self.assertEqual(set(contract["path_ids"]), {p["path_id"] for p in self.canonical["paths"]})
         self.assertEqual(mutations["fixture_id"], "A01-JOURNEY-MUTATIONS")
-        self.assertGreaterEqual(len(mutations["mutations"]), 10)
+        self.assertGreaterEqual(len(mutations["mutations"]), 16)
         self.assertTrue(all(item["expected_error_code"] for item in mutations["mutations"]))
 
     def test_manifest_binds_every_delivered_raw_artifact_and_static_qualifier(self) -> None:
@@ -178,6 +213,22 @@ class A01JourneyContractTests(unittest.TestCase):
         self.assertEqual(manifest["assigned_verification_ids"], ["AV-UI-005"])
         self.assertEqual(manifest["runtime_deferred_verification_ids"], ["AV-FLOW-001"])
         self.assertEqual(manifest["evidence_qualifier"], "E-SHOT_STATIC_NOT_RUNTIME_UI")
+        self.assertEqual(
+            manifest["work_instruction_sha256"],
+            "F7F9F1F37320B3A75DB48FBB5DD230D9D2774BB79498DDCA2FF2DB0416CBDF60",
+        )
+        self.assertEqual(
+            manifest["supersedes_artifact_ref"],
+            {
+                "path": "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST.json",
+                "sha256": "11C7321DF2657879E8B46FE95A2E8B86ADA573BF91C0CD76C115B55ADEF2301B",
+                "mutation": "FORBIDDEN_HISTORICAL_EVIDENCE",
+            },
+        )
+        self.assertEqual(
+            self.checker._sha256(PREDECESSOR_MANIFEST_PATH),
+            "11C7321DF2657879E8B46FE95A2E8B86ADA573BF91C0CD76C115B55ADEF2301B",
+        )
 
         mutated = copy.deepcopy(manifest)
         mutated["raw_artifacts"][0]["sha256"] = "0" * 64
