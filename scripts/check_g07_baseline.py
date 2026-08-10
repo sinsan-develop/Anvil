@@ -659,7 +659,7 @@ def validate_repository(
     ]
     projection_events = [
         event for event in events
-        if event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED"}
+        if event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED"}
         and isinstance(event.get("details"), dict)
         and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]

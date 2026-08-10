@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-01-PROGRESS-HANDOFF-DIGEST-MAIN-ACCEPTED",
+  "package_id": "A-01",
+  "event_sequence": 43,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 10243, "file_sha256": "FB2A109B67979D125150CD018BD1D1AEADEEA5F6ECFF51218CE573B07FE26434", "canonical_json_sha256": "52C39C5142B2B2E6B3C61FBA221ED4785E50AD1C535A666B5280A4807D443D38"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 27376, "file_sha256": "A33AC9D2BF4F119799E908EB6C089D831BAC5677D1B5B40631BE799DE53CD54F", "machine_summary_canonical_sha256": "F324EBDCB360430389F159A05E917EA91C7AAF210685B6C2F41DB7B524D5B44C"},
+  "created_at": "2026-08-11T05:30:00+09:00",
+  "scope": "Main accepted A-01 revision 2 after independent Tester R2 PASS; A-02 projected READY without active instruction or leases"
+}

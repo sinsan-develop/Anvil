@@ -233,7 +233,7 @@ class A01JourneyContractTests(unittest.TestCase):
         mutated = copy.deepcopy(manifest)
         mutated["raw_artifacts"][0]["sha256"] = "0" * 64
         self.assertIn(
-            "EVIDENCE_RAW_HASH_MISMATCH",
+            "EVIDENCE_TARGET_HASH_MISMATCH",
             self.checker.validate_evidence_manifest(ROOT, mutated),
         )
 

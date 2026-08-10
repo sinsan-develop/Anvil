@@ -48,7 +48,7 @@ Developer revision 2 범위의 A-01 suite, 네 hostile mutation과 checker를 fr
 
 ## 기존 기능 유지와 rollback
 
-G-07 기준선 validator는 A-01 정적 변경 뒤에도 실행한다. rollback은 이번 A-01 신규 허용 경로와 sequence 34의 progress/HANDOFF 투영만 되돌리며 권위 문서와 historical evidence를 수정하지 않는다.
+G-07 기준선 validator는 A-01 정적 변경 뒤에도 실행한다. rollback은 이번 A-01 신규 허용 경로와 revision 2 sequence 40~42의 progress/HANDOFF 투영만 되돌리며 권위 문서와 historical evidence를 수정하지 않는다. repository exact allowlist는 17-path이고, 별도 completion evidence manifest의 raw checksum 19-row와 구분한다.
 
 ## 조치
 

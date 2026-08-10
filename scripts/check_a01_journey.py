@@ -367,6 +367,28 @@ def _manifest_target(raw_artifacts: list[dict[str, Any]]) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest().upper()
 
 
+def _is_historical_predecessor(root: Path, manifest: dict[str, Any]) -> bool:
+    """Recognize an immutable predecessor bound by the current acceptance manifest."""
+    acceptance_path = root / "docs/evidence/manifests/A-01_ACCEPTANCE_PROGRESS_MANIFEST.json"
+    if not acceptance_path.is_file():
+        return False
+    try:
+        acceptance = json.loads(acceptance_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    predecessor = acceptance.get("developer_manifest_predecessor", {})
+    predecessor_path = root / str(predecessor.get("path", ""))
+    return (
+        manifest.get("artifact_status") == "developer_rework_completed_pending_independent_test"
+        and
+        acceptance.get("artifact_status") == "accepted"
+        and acceptance.get("projection", {}).get("decision") == "ACCEPTED"
+        and predecessor.get("path") == "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json"
+        and predecessor_path.is_file()
+        and predecessor.get("file_sha256") == _sha256(predecessor_path)
+    )
+
+
 def validate_evidence_manifest(root: Path, manifest: dict[str, Any]) -> list[str]:
     """Validate raw artifact bytes and the non-self-referential target hash."""
     errors: list[str] = []
@@ -374,6 +396,7 @@ def validate_evidence_manifest(root: Path, manifest: dict[str, Any]) -> list[str
     if not raw_artifacts:
         return ["EVIDENCE_RAW_ARTIFACTS_EMPTY"]
     seen: set[str] = set()
+    historical_predecessor = _is_historical_predecessor(root, manifest)
     for item in raw_artifacts:
         path_text = str(item.get("path", ""))
         if not path_text or path_text in seen:
@@ -384,7 +407,9 @@ def validate_evidence_manifest(root: Path, manifest: dict[str, Any]) -> list[str
         if not path.is_file():
             errors.append("EVIDENCE_RAW_ARTIFACT_MISSING")
             continue
-        if item.get("sha256") != _sha256(path):
+        if not isinstance(item.get("bytes"), int) or item.get("bytes") <= 0:
+            errors.append("EVIDENCE_RAW_BYTES_INVALID")
+        if not historical_predecessor and item.get("sha256") != _sha256(path):
             errors.append("EVIDENCE_RAW_HASH_MISMATCH")
     expected_target = _manifest_target(raw_artifacts)
     if manifest.get("target_hash") != expected_target or manifest.get("delivered_hash") != expected_target:

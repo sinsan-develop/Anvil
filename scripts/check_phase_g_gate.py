@@ -377,7 +377,7 @@ def validate_gate(
     progress_projection = {
         "current_work_package": progress.get("current_work_package"),
         "status": progress.get("status"),
-        "next_conditional_package": "A-01" if "A-01" in progress.get("next_safe_action", "") and "A-01" in handoff else None,
+        "next_conditional_package": next((package for package in ("A-02", "A-01") if package in progress.get("next_safe_action", "") and package in handoff), None),
         "g_gate_status": progress.get("phase_gate", {}).get("decision", manifest.get("g_gate_status", "NOT_DECIDED")),
         "gate_checkpoint_status": progress.get("phase_gate", {}).get("checkpoint_status"),
         "a01_start_allowed": progress.get("phase_gate", {}).get("a01_start_allowed", False),
@@ -494,7 +494,26 @@ def validate_gate(
         and rework_completed.get("details", {}).get("rework_revision") == 2
         and rework_completed.get("details", {}).get("finding_status") == "FIXED_AWAITING_INDEPENDENT_RETEST"
     )
-    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection:
+    acceptance_event = events[-1] if events else {}
+    a02_ready_projection = (
+        progress_projection.get("current_work_package") == "A-02"
+        and progress_projection.get("status") == "READY"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and progress_projection.get("active_work_instruction") is None
+        and progress_projection.get("worker_lease") is None
+        and progress_projection.get("write_lease") is None
+        and acceptance_event.get("sequence") == 43
+        and acceptance_event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+        and acceptance_event.get("actor") == "main-agent-eoul"
+        and acceptance_event.get("subject_ref") == "A-01"
+        and acceptance_event.get("details", {}).get("decision") == "ACCEPTED"
+        and acceptance_event.get("details", {}).get("blocking_findings") == 0
+        and acceptance_event.get("details", {}).get("next_work_package") == "A-02"
+        and acceptance_event.get("details", {}).get("next_package_status") == "READY"
+    )
+    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection and not a02_ready_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {

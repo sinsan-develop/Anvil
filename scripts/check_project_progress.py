@@ -567,7 +567,7 @@ def validate_event_stream(
     projection_events = [
         event for event in events
         if isinstance(event, dict)
-        and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED"}
+        and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED"}
         and isinstance(event.get("details"), dict)
         and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]
@@ -618,13 +618,13 @@ def validate_event_stream(
                 errors.append("EVENT_EFFECT_MISMATCH")
         if (
             event is current_repository_event
-            and event_type in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED"}
+            and event_type in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED"}
             and isinstance(details, dict)
             and progress is not None
         ):
             repository = progress.get("repository", {})
-            observed_local = details.get("dispatch_head", details.get("completion_head"))
-            observed_remote = details.get("dispatch_upstream_head", details.get("completion_upstream_head"))
+            observed_local = details.get("dispatch_head", details.get("completion_head", details.get("acceptance_head")))
+            observed_remote = details.get("dispatch_upstream_head", details.get("completion_upstream_head", details.get("acceptance_upstream_head")))
             if (
                 observed_local != repository.get("local_head")
                 or observed_remote != repository.get("remote_head")
