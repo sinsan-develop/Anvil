@@ -1,0 +1,3 @@
+# G-03 reserves the local compose artifact without defining a runtime service.
+name: anvil
+services: {}

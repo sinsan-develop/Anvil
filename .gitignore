@@ -1,0 +1,13 @@
+# Historical and review artifacts are preserved locally and never tracked.
+/Backup/
+/.anvil_review/
+/.codex_qa/
+/.tmp_subagent_review/
+
+# Local runtime artifacts are intentionally outside the G-03 scaffold.
+/data/*
+!/data/.gitkeep
+__pycache__/
+*.py[cod]
+.env
+node_modules/

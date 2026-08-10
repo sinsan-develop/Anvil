@@ -1,0 +1,24 @@
+{
+  "inventory_id": "G-03-PRE-SCAFFOLD-INVENTORY-20260810-001",
+  "captured_at": "2026-08-10T12:00:00+09:00",
+  "algorithm": "SHA-256",
+  "representation": {
+    "file": "sha256 is the file digest",
+    "recursive_tree": "sha256 is the digest of UTF-8 records sorted by relative path, each record formatted as path + tab + bytes + tab + file SHA-256; this records every file beneath the listed path without modifying protected artifacts."
+  },
+  "entries": [
+    {"path": ".anvil_review/", "kind": "recursive_tree", "file_count": 0, "bytes": 0, "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855", "protected": true},
+    {"path": ".codex_qa/", "kind": "recursive_tree", "file_count": 7, "bytes": 1857259, "sha256": "C7AFA61DE61F2B790A169BBB4501A8D971FCD6F9C043676516BDEC9770235F79", "protected": true},
+    {"path": ".tmp_subagent_review/", "kind": "recursive_tree", "file_count": 0, "bytes": 0, "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855", "protected": true},
+    {"path": "AGENTS.md", "kind": "file", "file_count": 1, "bytes": 8332, "sha256": "BFF4DB0D1C17EF0794666A56A3156C92A53E1EE1D54ADFFFEB462571AAEEE3EA", "protected": true},
+    {"path": "Anvil_설계서_v2.md", "kind": "file", "file_count": 1, "bytes": 309195, "sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5", "protected": true},
+    {"path": "Anvil_작업계획서_v1.md", "kind": "file", "file_count": 1, "bytes": 64945, "sha256": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475", "protected": true},
+    {"path": "Anvil_테스트계획서_v1.md", "kind": "file", "file_count": 1, "bytes": 53818, "sha256": "870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5", "protected": true},
+    {"path": "Anvil_통합검증매트릭스_v1.md", "kind": "file", "file_count": 1, "bytes": 61741, "sha256": "0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3", "protected": true},
+    {"path": "Backup/", "kind": "recursive_tree", "file_count": 3409, "bytes": 179063586, "sha256": "84529FED7F4187F344CC02E427E9F7B0351CD7185953145895F49EE2D7C8FD68", "protected": true},
+    {"path": "docs/", "kind": "recursive_tree", "file_count": 27, "bytes": 166785, "sha256": "7F3CBAC5D671260CD045F56D22AB731EAA3662117A77FB57C90226B6C61E23AF", "protected": true, "authorized_mutations": ["docs/baselines/G-03_PRE_SCAFFOLD_INVENTORY.json", "docs/evidence/manifests/G-03_EVIDENCE_MANIFEST.json", "docs/completion_reports/G-03_COMPLETION_REPORT.md", "docs/progress/build-progress.json", "docs/progress/BUILD_HANDOFF.md"], "authorized_mutation_baselines": [{"path": "docs/progress/build-progress.json", "bytes": 6761, "sha256": "6D11EEA98BA07E021994191D95F19E5F6ECEAEEE7566F651501958B11641A9A2"}, {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 8980, "sha256": "2C0F71303DC553C12BE11A8FF97D8AA7A200C02C72A74E53E7728FA1660A1608"}]}
+  ],
+  "pre_scaffold_file_count": 3448,
+  "pre_scaffold_bytes": 181585661,
+  "preservation_rule": "All protected entries must remain present and match this inventory. The docs tree may differ only at authorized_mutations; their pre-change values remain represented by the captured docs tree digest."
+}

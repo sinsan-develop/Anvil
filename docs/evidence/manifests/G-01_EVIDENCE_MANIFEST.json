@@ -1,0 +1,82 @@
+{
+  "schema_version": "1.0",
+  "manifest_id": "EVIDENCE-MANIFEST-G-01-20260810-001",
+  "package_id": "G-01",
+  "target_hash": "6E16BB405D58296CECDC1EE057A2DDE0A6FA601F6D289257CBBAE78E3C30A38C",
+  "delivered_hash": "6E16BB405D58296CECDC1EE057A2DDE0A6FA601F6D289257CBBAE78E3C30A38C",
+  "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
+  "work_instruction_id": "WI-G-01-20260810-001",
+  "environment": {
+    "name": "local-document-workspace",
+    "repository_state": "NOT_INITIALIZED",
+    "git_commit": null,
+    "image_digest": null,
+    "db_migration_head": null,
+    "config_revision": null,
+    "provider_routing_snapshot": null
+  },
+  "artifacts": [
+    {
+      "path": "docs/approvals/APPROVAL-20260810-INTEGRATED-BASELINE-001.md",
+      "sha256": "94A82676DB9BF0EE23B55B0A59CBAC706AF7D8617B61BBB9887357E300FDFDC7",
+      "bytes": 1966
+    },
+    {
+      "path": "docs/work_orders/G-01_WORK_INSTRUCTION.md",
+      "sha256": "EC8314A2B957AB2AB490DED4A856862DD70E05A3458E50C234DB4530B70299DB",
+      "bytes": 2459
+    },
+    {
+      "path": "docs/work_orders/G-01_INVOCATION_PROMPT.md",
+      "sha256": "0BD97DF7B630B55522F87EF36CEE20DA990936A7EA89A49615A8780F02BB47DD",
+      "bytes": 369
+    },
+    {
+      "path": "docs/baselines/G-01_BASELINE_RECORD.md",
+      "sha256": "8EA9C6DA6E45955D7F7397C208FCFB0EFCC8C01B84851021F239350AC542847B",
+      "bytes": 5312
+    },
+    {
+      "path": "docs/baselines/G-01_SOURCE_INVENTORY.md",
+      "sha256": "52CB7120E4726AB4B37555AB8439A01CA16A6387DF932402E9FB66D081745DEC",
+      "bytes": 6693
+    }
+  ],
+  "validation": [
+    {
+      "validation_id": "AV-CON-016",
+      "method": "RV",
+      "result": "PRELIMINARY_PASS_CANDIDATE",
+      "evidence_refs": [
+        "docs/baselines/G-01_BASELINE_RECORD.md#section=4",
+        "docs/baselines/G-01_SOURCE_INVENTORY.md"
+      ]
+    },
+    {
+      "validation_id": "G01-SOURCE-URL-AUDIT",
+      "method": "HTTP_METADATA_READ_ONLY",
+      "result": "18_OF_18_HTTP_200",
+      "producer": "/root/g01_reference_audit",
+      "evidence_refs": [
+        "docs/baselines/G-01_SOURCE_INVENTORY.md#section=4"
+      ]
+    }
+  ],
+  "acquisition": {
+    "actor": "Main Agent 어울",
+    "started_at": "2026-08-10T10:44:16+09:00",
+    "completed_at": "2026-08-10T10:55:00+09:00",
+    "methods": [
+      "SHA-256 local file read",
+      "git read-only HEAD/tree/status inspection of Backup references",
+      "official URL HTTP metadata read-only audit"
+    ]
+  },
+  "limitations": [
+    "Anvil root has no Git commit because G-01 forbids Git initialization",
+    "official pages without public revision markers are bound by URL and capture date",
+    "reference repository dirty worktrees are excluded; only HEAD tree is identified",
+    "no server, database, browser, deployment, build or product-code test was executed"
+  ],
+  "status": "AWAITING_INDEPENDENT_TESTER"
+}

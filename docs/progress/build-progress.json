@@ -1,0 +1,153 @@
+{
+  "schema_version": "1.1",
+  "plan_version": "1.4",
+  "design_baseline": {
+    "path": "Anvil_설계서_v2.md",
+    "version": "2.6",
+    "sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+    "approval_status": "HUMAN_APPROVED_WITH_NON_SEMANTIC_RECONFIRMATION",
+    "approved_at": "2026-08-10",
+    "non_semantic_binding": "MAIN_RECONFIRMED_NON_SEMANTIC:P1-contract-consistency-4"
+  },
+  "work_plan_baseline": {
+    "path": "Anvil_작업계획서_v1.md",
+    "version": "1.4",
+    "sha256": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475"
+  },
+  "validation_matrix_baseline": {
+    "path": "Anvil_통합검증매트릭스_v1.md",
+    "version": "1.2",
+    "sha256": "0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3",
+    "status": "HUMAN_APPROVED_WITH_NON_SEMANTIC_RECONFIRMATION"
+  },
+  "test_plan_baseline": {
+    "path": "Anvil_테스트계획서_v1.md",
+    "version": "1.3",
+    "sha256": "870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5",
+    "status": "HUMAN_APPROVED_WITH_NON_SEMANTIC_RECONFIRMATION"
+  },
+  "operating_rules_baseline": {
+    "path": "docs/governance/ANVIL_OPERATING_RULES.md",
+    "version": "1.4",
+    "sha256": "5313045957E63D3AADA0DF2BFA8EBC2B8F878D59F4F917B3210B5293D4DE6DB6"
+  },
+  "current_phase": "G",
+  "current_work_package": "G-04",
+  "package_total": 97,
+  "status": "READY",
+  "completed_packages": [
+    "G-01",
+    "G-02",
+    "G-03"
+  ],
+  "active_agents": {
+    "main": "어울",
+    "developer": null,
+    "reviewer": null,
+    "tester": null
+  },
+  "developer_onboarding": {
+    "status": "READ_ONLY_READY",
+    "evidence_path": "docs/onboarding/developer-primary-ack.md",
+    "evidence_sha256": "3110F6B21EFC3C7BE61B6CEB71A4586A75A80DC129D79DDC4B0A74AFE0039A69"
+  },
+  "current_work_instruction": {
+    "path": "docs/work_orders/G-03_WORK_INSTRUCTION.md",
+    "id": "WI-G-03-20260810-004",
+    "sha256": "F7AB695C6B6D91D47287E12218A39A870E8AC3CADBBE09ED91E46B8E30CC0A3A",
+    "invocation_prompt_sha256": "AEFDE6F164EC1A639E5CE37D3DFC923F2628D51990A6C5D6D280171A3E8F3B31",
+    "status": "ACCEPTED"
+  },
+  "g03_result": {
+    "status": "ACCEPTED",
+    "completion_report": "docs/completion_reports/G-03_COMPLETION_REPORT.md",
+    "evidence_manifest": "docs/evidence/manifests/G-03_EVIDENCE_MANIFEST.json",
+    "target_hash": "F03EC454E960BCF6A8271D7BE547129CB4220574254DCE9B927F2E12AFBFD6AB",
+    "delivered_hash": "F03EC454E960BCF6A8271D7BE547129CB4220574254DCE9B927F2E12AFBFD6AB",
+    "acceptance_status": "ACCEPTED",
+    "rework_findings_closed": ["G03-DEF-001", "G03-DEF-002", "G03-DEF-003", "G03-DEF-004", "G03-DEF-005", "G03-DEF-006"],
+    "open_findings": []
+  },
+  "write_lease": null,
+  "valid_failure_count": 0,
+  "failure_key": null,
+  "dir_review": {
+    "status": "NOT_REACHED",
+    "current_checkpoint": null,
+    "mandatory_checkpoints": [
+      {
+        "id": "DIR-1",
+        "after_package": "A-15",
+        "before_gate": "A",
+        "cumulative_packages": 22,
+        "resume_authority": "신산님"
+      },
+      {
+        "id": "DIR-2",
+        "after_package": "C-15",
+        "before_gate": "C",
+        "cumulative_packages": 49,
+        "resume_authority": "신산님"
+      },
+      {
+        "id": "DIR-3",
+        "after_package": "E-11",
+        "before_gate": "E",
+        "cumulative_packages": 73,
+        "resume_authority": "신산님"
+      }
+    ],
+    "conditional_checkpoint": "DIR-X after D Gate only when DIRX-LRN-CRITICAL is confirmed for the same target hash",
+    "report_path": null,
+    "owner_reported_at": null,
+    "continue_instruction_ref": null
+  },
+  "latest_evidence_refs": [
+    "docs/evidence/manifests/G-01_EVIDENCE_MANIFEST.json#sha256=3C68E04B123C3961023F02EA9E6768F7DF5F8E621A0F15237BC4EEB990284D4B",
+    "docs/completion_reports/G-01_COMPLETION_REPORT.md#sha256=C5F76BA3424F243A355E1AA902A58598FA088382B29607A6800D8DBCE760DF09",
+    "docs/test_reports/G-01_TEST_REPORT.md#sha256=E6471B535EB6A749F96E8C08A155F53E4BC2F90FFEFD00BD057C98351161C71A",
+    "docs/baselines/G-01_BASELINE_RECORD.md#sha256=8EA9C6DA6E45955D7F7397C208FCFB0EFCC8C01B84851021F239350AC542847B",
+    "docs/approvals/G-02_MAIN_RECONFIRMED_NON_SEMANTIC.md#sha256=8332635C9CE92B085AFFDF1B235F48945605DC87FA7294DA5FF88A589C95D03D",
+    "docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md#sha256=E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B",
+    "Anvil_작업계획서_v1.md#sha256=4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475",
+    "Anvil_통합검증매트릭스_v1.md#sha256=0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3",
+    "Anvil_테스트계획서_v1.md#sha256=870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5",
+    "docs/governance/ANVIL_OPERATING_RULES.md#sha256=5313045957E63D3AADA0DF2BFA8EBC2B8F878D59F4F917B3210B5293D4DE6DB6",
+    "docs/onboarding/developer-primary-ack.md#sha256=3110F6B21EFC3C7BE61B6CEB71A4586A75A80DC129D79DDC4B0A74AFE0039A69",
+    "docs/decisions/G-02_DECISION_RECORD.md#sha256=BFD2996BD54237B595BAC971BE5122302434A8EF5A14A128CBB85167B5C8C878",
+    "docs/decisions/G-02_VALIDATION_ALLOCATION.md#sha256=B120543831125F1697011E40E2668D711ED77AD70104491F0CE8AD1BCD0862D4",
+    "docs/evidence/manifests/G-02_EVIDENCE_MANIFEST.json#sha256=E39688335A0B1877116E34691977F8060E6B698A4D4F8E8A7B42BDBE5A3CD00A",
+    "docs/completion_reports/G-02_COMPLETION_REPORT.md#sha256=A21274C712871C801FA838E72F81EC9BA2ED99A08C0A90A1C8B29219CBEC8519",
+    "docs/test_reports/G-02_TEST_REPORT.md#sha256=4B853057C4C370470C075B14384EB9FA2B881E2684AAB00E5D83CF2AEE274BF2",
+    "docs/test_reports/G-02_TEST_REPORT_R2.md#sha256=680232DEB4F232D858C3EB70EAEA875A9895BCCF5A0B9D867A66C76B633A565B",
+    "docs/test_reports/G-02_TEST_REPORT_R3.md#sha256=F191B95AF36181715E71815081DE45673FE4D2A91AE1DB643597DB3917451D35",
+    "docs/work_orders/G-03_WORK_INSTRUCTION.md#sha256=F7AB695C6B6D91D47287E12218A39A870E8AC3CADBBE09ED91E46B8E30CC0A3A",
+    "docs/approvals/APPROVAL-20260810-G02-DECISIONS-001.md#sha256=40D01092F1DBEA6BB3860A154630FE2AF5CF9DEBD0C6F5BC531EE8FDC43C2DB6",
+    "docs/work_orders/G-02_WORK_INSTRUCTION.md#sha256=FB21506565A1D0FBF5CAE2DEB9593C3A811E29DAA9B18954D591CFA80E19F1A4",
+    "docs/approvals/APPROVAL-20260810-INTEGRATED-BASELINE-001.md#sha256=94A82676DB9BF0EE23B55B0A59CBAC706AF7D8617B61BBB9887357E300FDFDC7",
+    "docs/work_orders/G-01_WORK_INSTRUCTION.md#sha256=EC8314A2B957AB2AB490DED4A856862DD70E05A3458E50C234DB4530B70299DB",
+    "docs/baselines/G-03_PRE_SCAFFOLD_INVENTORY.json#sha256=FA5CFC588078CD699619DC39E91686B88377DDC177018745BF095D86DF921638",
+    "docs/evidence/manifests/G-03_EVIDENCE_MANIFEST.json#sha256=A089B389B21DBDADD7CBC6D18EC9C2374F858D4E92DD7BC75EF1580DA5D1388F",
+    "docs/completion_reports/G-03_COMPLETION_REPORT.md",
+    "docs/test_reports/G-03_TEST_REPORT.md#sha256=91BCFC383C8D4970355F7A3366924181096F0AB92691AB94E36EB26C3FF1107E",
+    "docs/test_reports/G-03_TEST_REPORT_R2.md#sha256=AE84877A644C9FDF2420318B52B716475235C97ED036DD0833A47AC7362016D1",
+    "docs/test_reports/G-03_TEST_REPORT_R3.md#sha256=F3EE86CD7636CF49A5F8BE510E60D310A558F1528F03CD5D0E60A75486CC20AD",
+    "docs/test_reports/G-03_TEST_REPORT_R4.md#sha256=D9F25579559865C9369C8913C78AA20A496D06CE3D887F7F87BE3DEA12FA452F",
+    "docs/agents/developer-primary.md",
+    "docs/governance/ANVIL_OPERATING_RULES.md",
+    "Anvil_통합검증매트릭스_v1.md",
+    "Anvil_테스트계획서_v1.md"
+  ],
+  "pending_approvals": [],
+  "pending_decisions_for_g02": [],
+  "environment_contract": {
+    "development": "local processes with WSL-server PostgreSQL 15 Anvil DB",
+    "release_candidate_db": "isolated PostgreSQL 18 on WSL-server",
+    "test_staging": "WSL-server",
+    "production": "ysna-server",
+    "production_domain": "envil.sinsan.kr",
+    "deployment": "Git-only approved commit/tag and ReleaseManifest"
+  },
+  "repository_state": "INITIALIZED_MAIN_NO_COMMITS_NO_REMOTES",
+  "next_safe_action": "Main Agent가 G-03 ACCEPTED 기준선을 Git에 커밋한 뒤 G-04 WorkInstruction을 발행"
+}

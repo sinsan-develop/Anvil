@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.2",
+  "manifest_id": "EVIDENCE-MANIFEST-G-03-20260810-REV4",
+  "package_id": "G-03",
+  "work_instruction_id": "WI-G-03-20260810-004",
+  "work_instruction_revision": 4,
+  "work_instruction_sha256": "F7AB695C6B6D91D47287E12218A39A870E8AC3CADBBE09ED91E46B8E30CC0A3A",
+  "prior_test_reports": [
+    {"path": "docs/test_reports/G-03_TEST_REPORT.md", "sha256": "91BCFC383C8D4970355F7A3366924181096F0AB92691AB94E36EB26C3FF1107E"},
+    {"path": "docs/test_reports/G-03_TEST_REPORT_R2.md", "sha256": "AE84877A644C9FDF2420318B52B716475235C97ED036DD0833A47AC7362016D1"},
+    {"path": "docs/test_reports/G-03_TEST_REPORT_R3.md", "sha256": "F3EE86CD7636CF49A5F8BE510E60D310A558F1528F03CD5D0E60A75486CC20AD"}
+  ],
+  "parent_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
+  "target_hash": "F03EC454E960BCF6A8271D7BE547129CB4220574254DCE9B927F2E12AFBFD6AB",
+  "delivered_hash": "F03EC454E960BCF6A8271D7BE547129CB4220574254DCE9B927F2E12AFBFD6AB",
+  "canonicalization": "artifact order; each line is path + TAB + bytes + TAB + UPPERCASE_SHA256; UTF-8; LF separator; no final LF",
+  "canonical_bytes": 881,
+  "artifacts": [
+    {"path": "docs/work_orders/G-03_WORK_INSTRUCTION.md", "bytes": 11400, "sha256": "F7AB695C6B6D91D47287E12218A39A870E8AC3CADBBE09ED91E46B8E30CC0A3A"},
+    {"path": "docs/work_orders/G-03_INVOCATION_PROMPT.md", "bytes": 469, "sha256": "AEFDE6F164EC1A639E5CE37D3DFC923F2628D51990A6C5D6D280171A3E8F3B31"},
+    {"path": "docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md", "bytes": 4201, "sha256": "E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B"},
+    {"path": "docs/baselines/G-03_PRE_SCAFFOLD_INVENTORY.json", "bytes": 3201, "sha256": "FA5CFC588078CD699619DC39E91686B88377DDC177018745BF095D86DF921638"},
+    {"path": "docs/test_reports/G-03_TEST_REPORT.md", "bytes": 15589, "sha256": "91BCFC383C8D4970355F7A3366924181096F0AB92691AB94E36EB26C3FF1107E"},
+    {"path": "docs/test_reports/G-03_TEST_REPORT_R2.md", "bytes": 13897, "sha256": "AE84877A644C9FDF2420318B52B716475235C97ED036DD0833A47AC7362016D1"},
+    {"path": "docs/test_reports/G-03_TEST_REPORT_R3.md", "bytes": 11255, "sha256": "F3EE86CD7636CF49A5F8BE510E60D310A558F1528F03CD5D0E60A75486CC20AD"},
+    {"path": "G-03-delivery-tree", "kind": "virtual_tree", "bytes": 4254, "sha256": "EDCD2A041E095B6232D022DA14BFDB87936F7478A4808316D7F835D0DBBCB914", "file_count": 45, "content_bytes": 15901, "include_paths": [".env.example", ".editorconfig", ".gitattributes", ".gitignore", "README.md", "pyproject.toml", "package.json", "DECISIONS.md", "CODEX_WORK_LOG.md", "docker-compose.local.yml", "apps/**", "packages/**", "migrations/**", "deploy/**", "data/.gitkeep", "docs/architecture/README.md", "scripts/check_dependency_boundaries.py", "tests/tooling/test_dependency_boundaries.py"]}
+  ],
+  "validation": [
+    {"validation_id": "AV-SAFE-010", "method": "AN+E-GIT+E-DIFF", "result": "DEVELOPER_PASS_AWAITING_INDEPENDENT_TESTER", "evidence_refs": ["docs/baselines/G-03_PRE_SCAFFOLD_INVENTORY.json", "git status --short"]},
+    {"validation_id": "AV-CON-002", "method": "AN+E-GIT+E-DIFF", "result": "DEVELOPER_PASS_AWAITING_INDEPENDENT_TESTER", "evidence_refs": ["docs/baselines/G-03_PRE_SCAFFOLD_INVENTORY.json", "docs/completion_reports/G-03_COMPLETION_REPORT.md"]}
+  ],
+  "environment": {"name": "local-document-workspace", "repository_state": "INITIALIZED_NO_COMMITS", "branch": "main", "remote_count": 0, "commit_count": 0},
+  "limitations": ["Developer tooling tests cover the dependency checker and directory scaffold only.", "No product API, UI, browser, database, Docker service, server, or deployment validation was run.", "Independent Tester review is still required; this manifest does not declare ACCEPTED."],
+  "status": "TEST_REVIEW"
+}

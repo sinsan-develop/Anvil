@@ -1,0 +1,173 @@
+{
+  "schema_version": "1.2",
+  "manifest_id": "EVIDENCE-MANIFEST-G-02-20260810-REV3",
+  "package_id": "G-02",
+  "work_instruction_revision": 3,
+  "rework_finding": "G02-DEF-002",
+  "previous_target_hash": "6C440ED0FC95DDF5F65642649995F1554917E908AC44DF11AE76BDC3006473D9",
+  "target_hash": "B01C9BF94B00588DFCEFE35096C0D64A39FACE4D4123D34E314C1A54B07F5F17",
+  "delivered_hash": "B01C9BF94B00588DFCEFE35096C0D64A39FACE4D4123D34E314C1A54B07F5F17",
+  "canonicalization": "manifest artifact order; each line path=UPPERCASE_SHA256; UTF-8; LF separator; no final LF",
+  "canonical_bytes": 1718,
+  "parent_baseline_id": "BASELINE-G-01-20260810-001",
+  "derived_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
+  "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
+  "root_human_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
+  "decision_approval_id": "APPROVAL-20260810-G02-DECISIONS-001",
+  "approval_subject_hash": "E0DEC8651FEA543BDCC08B0A015C89F9D0E7A8F22E964F6025EBA1544BF68A91",
+  "approval_mode": "MAIN_RECONFIRMED_NON_SEMANTIC",
+  "non_semantic_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:G-02-R2-G02-DEF-001",
+  "work_instruction_id": "WI-G-02-20260810-001",
+  "environment": {
+    "name": "local-document-workspace",
+    "repository_state": "NOT_INITIALIZED",
+    "git_commit": null,
+    "image_digest": null,
+    "db_migration_head": null,
+    "config_revision": null,
+    "provider_routing_snapshot": null
+  },
+  "artifacts": [
+    {
+      "path": "docs/baselines/G-01_BASELINE_RECORD.md",
+      "sha256": "8EA9C6DA6E45955D7F7397C208FCFB0EFCC8C01B84851021F239350AC542847B",
+      "bytes": 5312
+    },
+    {
+      "path": "docs/approvals/APPROVAL-20260810-INTEGRATED-BASELINE-001.md",
+      "sha256": "94A82676DB9BF0EE23B55B0A59CBAC706AF7D8617B61BBB9887357E300FDFDC7",
+      "bytes": 1966
+    },
+    {
+      "path": "docs/approvals/APPROVAL-20260810-G02-DECISIONS-001.md",
+      "sha256": "40D01092F1DBEA6BB3860A154630FE2AF5CF9DEBD0C6F5BC531EE8FDC43C2DB6",
+      "bytes": 2271
+    },
+    {
+      "path": "docs/work_orders/G-02_WORK_INSTRUCTION.md",
+      "sha256": "FB21506565A1D0FBF5CAE2DEB9593C3A811E29DAA9B18954D591CFA80E19F1A4",
+      "bytes": 6741
+    },
+    {
+      "path": "docs/work_orders/G-02_INVOCATION_PROMPT.md",
+      "sha256": "143CE907518F3608AF8752792BFB2BFEF53AEE0B65F3EFFF97CCE94FB5FFAD93",
+      "bytes": 440
+    },
+    {
+      "path": "docs/test_reports/G-02_TEST_REPORT.md",
+      "sha256": "4B853057C4C370470C075B14384EB9FA2B881E2684AAB00E5D83CF2AEE274BF2",
+      "bytes": 10427
+    },
+    {
+      "path": "docs/test_reports/G-02_TEST_REPORT_R2.md",
+      "sha256": "680232DEB4F232D858C3EB70EAEA875A9895BCCF5A0B9D867A66C76B633A565B",
+      "bytes": 11624
+    },
+    {
+      "path": "docs/approvals/G-02_MAIN_RECONFIRMED_NON_SEMANTIC.md",
+      "sha256": "8332635C9CE92B085AFFDF1B235F48945605DC87FA7294DA5FF88A589C95D03D",
+      "bytes": 4337
+    },
+    {
+      "path": "docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md",
+      "sha256": "E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B",
+      "bytes": 4201
+    },
+    {
+      "path": "Anvil_작업계획서_v1.md",
+      "sha256": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475",
+      "bytes": 64945
+    },
+    {
+      "path": "Anvil_통합검증매트릭스_v1.md",
+      "sha256": "0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3",
+      "bytes": 61741
+    },
+    {
+      "path": "Anvil_테스트계획서_v1.md",
+      "sha256": "870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5",
+      "bytes": 53818
+    },
+    {
+      "path": "docs/governance/ANVIL_OPERATING_RULES.md",
+      "sha256": "5313045957E63D3AADA0DF2BFA8EBC2B8F878D59F4F917B3210B5293D4DE6DB6",
+      "bytes": 16886
+    },
+    {
+      "path": "docs/onboarding/developer-primary-ack.md",
+      "sha256": "3110F6B21EFC3C7BE61B6CEB71A4586A75A80DC129D79DDC4B0A74AFE0039A69",
+      "bytes": 16416
+    },
+    {
+      "path": "docs/decisions/G-02_DECISION_RECORD.md",
+      "sha256": "BFD2996BD54237B595BAC971BE5122302434A8EF5A14A128CBB85167B5C8C878",
+      "bytes": 5487
+    },
+    {
+      "path": "docs/decisions/G-02_VALIDATION_ALLOCATION.md",
+      "sha256": "B120543831125F1697011E40E2668D711ED77AD70104491F0CE8AD1BCD0862D4",
+      "bytes": 2902
+    }
+  ],
+  "validation": [
+    {
+      "validation_id": "AV-SAFE-033",
+      "method": "AN",
+      "result": "REVISION_3_CORRECTED_AWAITING_INDEPENDENT_TESTER",
+      "evidence_refs": [
+        "docs/baselines/G-01_BASELINE_RECORD.md",
+        "docs/approvals/G-02_MAIN_RECONFIRMED_NON_SEMANTIC.md",
+        "docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md",
+        "docs/decisions/G-02_DECISION_RECORD.md"
+      ]
+    },
+    {
+      "validation_id": "AV-GATE-026",
+      "method": "AU+RV",
+      "result": "REVISION_2_PASS_AWAITING_REVISION_3_REGRESSION",
+      "evidence_refs": [
+        "docs/test_reports/G-02_TEST_REPORT_R2.md",
+        "docs/decisions/G-02_VALIDATION_ALLOCATION.md"
+      ]
+    }
+  ],
+  "mechanical_checks": {
+    "parent_baseline_id_match": true,
+    "root_human_approval_id_match": true,
+    "derived_baseline_id_match": true,
+    "root_human_approval_lineage_match": true,
+    "g02_approval_subject_hash_match": true,
+    "non_semantic_diff": "NONE",
+    "revision_2_authority_hash_mismatches": 0,
+    "developer_ack_hash_mismatches": 0,
+    "failure_reports_preserved": 2,
+    "plan_package_count": 97,
+    "matrix_av_row_count": 255,
+    "matrix_unique_av_count": 255,
+    "con_invariant_count": 21,
+    "executable_av_count": 234,
+    "unassigned_executable_rows": 0,
+    "reverse_index_missing_executable_ids": 0,
+    "reverse_package_count": 97,
+    "missing_package_reverse_index": 0,
+    "extra_package_reverse_index": 0,
+    "dir_contract_count": 4
+  },
+  "acquisition": {
+    "actor": "governance-decision-writer Subagent",
+    "completed_at": "2026-08-10T12:37:43.4923155+09:00",
+    "methods": [
+      "SHA-256 local file read",
+      "canonical parent/root/derived baseline field inspection",
+      "canonical approval subject SHA-256 recomputation",
+      "PowerShell package, AV ID, assignment, reverse-index and DIR inspection",
+      "revision 2 protected authority and Developer ACK hash comparison"
+    ]
+  },
+  "limitations": [
+    "revision 3 independent Tester has not yet reproduced the parent-child lineage and target checks",
+    "G-02 does not execute product code, browser, server, database, deployment, build or runtime tests",
+    "repository state is recorded from canonical progress; Git operations remain forbidden for G-02"
+  ],
+  "status": "AWAITING_REVISION_3_INDEPENDENT_TESTER"
+}

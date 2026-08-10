@@ -1,0 +1,9 @@
+[project]
+name = "anvil"
+version = "0.0.0"
+description = "Anvil repository scaffold; runtime dependencies are introduced only by approved work packages."
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.anvil]
+dependency_boundary_checker = "scripts/check_dependency_boundaries.py"
