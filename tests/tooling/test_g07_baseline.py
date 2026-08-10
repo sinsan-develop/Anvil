@@ -89,6 +89,41 @@ class G07BaselineTests(unittest.TestCase):
         reverse_duplicate = replace_once(matrix, "| P-04 | AV-PLG-007 |", "| P-03 | AV-PLG-007 |")
         self.assertIn("REVERSE_PACKAGE_DUPLICATE", self.codes(self.validate(texts={path: reverse_duplicate}, verify_hashes=False)))
 
+    def test_a01_flow001_responsibility_is_removed_without_losing_required_owners(self):
+        report = self.validate(verify_hashes=False)
+
+        self.assertEqual(["AV-UI-005"], report["package_assignments"]["A-01"])
+        self.assertIn("AV-FLOW-001", report["package_assignments"]["A-05"])
+        self.assertIn("AV-FLOW-001", report["package_assignments"]["B-03"])
+        self.assertIn("A Gate", report["responsibility_guard"]["AV-FLOW-001"]["gates"])
+
+    def test_flow001_responsibility_guard_rejects_missing_required_owners(self):
+        path = "Anvil_통합검증매트릭스_v1.md"
+        matrix = (ROOT / path).read_text(encoding="utf-8")
+        corrected = replace_once(
+            matrix,
+            "| A-01 | AV-UI-005, AV-FLOW-001 |",
+            "| A-01 | AV-UI-005 |",
+        )
+
+        missing_a05 = replace_once(corrected, "| A-05 | AV-FLOW-001 |", "| A-05 | AV-UI-005 |")
+        self.assertIn(
+            "FLOW001_A05_RESPONSIBILITY_MISSING",
+            self.codes(self.validate(texts={path: missing_a05}, verify_hashes=False)),
+        )
+
+        missing_b03 = replace_once(corrected, "| B-03 | AV-FLOW-001, 002 |", "| B-03 | AV-FLOW-002 |")
+        self.assertIn(
+            "FLOW001_B03_RESPONSIBILITY_MISSING",
+            self.codes(self.validate(texts={path: missing_b03}, verify_hashes=False)),
+        )
+
+        missing_a_gate = replace_once(corrected, "AV-FLOW-001, AV-STAT", "AV-STAT")
+        self.assertIn(
+            "FLOW001_A_GATE_MEMBERSHIP_MISSING",
+            self.codes(self.validate(texts={path: missing_a_gate}, verify_hashes=False)),
+        )
+
     def test_scenario_wrong_nonempty_av_package_gate_and_evidence_are_rejected(self):
         scenario_path = "tests/fault/scenarios/S49-17-01.json"
         scenario = json.loads((ROOT / scenario_path).read_text(encoding="utf-8"))

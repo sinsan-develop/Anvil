@@ -409,6 +409,28 @@ def validate_repository(
             if av_id not in av_by_id:
                 _error(errors, "REVERSE_UNKNOWN_AV", matrix_path, f"{package}:{av_id}")
 
+    a01_expected = ["AV-UI-005"]
+    a01_actual = package_assignments.get("A-01", [])
+    flow001_required_packages = ["A-05", "B-03"]
+    flow001_actual_packages = sorted(direct_assignments.get("AV-FLOW-001", set()))
+    flow001_gates = sorted(gate_memberships.get("AV-FLOW-001", set()))
+    responsibility_guard = {
+        "A-01": {"expected": a01_expected, "actual": a01_actual},
+        "AV-FLOW-001": {
+            "required_packages": flow001_required_packages,
+            "actual_packages": flow001_actual_packages,
+            "gates": flow001_gates,
+        },
+    }
+    if a01_actual != a01_expected:
+        _error(errors, "A01_RESPONSIBILITY_MISMATCH", matrix_path, f"expected={a01_expected} actual={a01_actual}")
+    if "A-05" not in flow001_actual_packages:
+        _error(errors, "FLOW001_A05_RESPONSIBILITY_MISSING", matrix_path, "AV-FLOW-001 must remain assigned to A-05")
+    if "B-03" not in flow001_actual_packages:
+        _error(errors, "FLOW001_B03_RESPONSIBILITY_MISSING", matrix_path, "AV-FLOW-001 must remain assigned to B-03")
+    if "A Gate" not in flow001_gates:
+        _error(errors, "FLOW001_A_GATE_MEMBERSHIP_MISSING", matrix_path, "AV-FLOW-001 must remain in A Gate")
+
     uncovered_av: list[str] = []
     for row in av_rows:
         if row["domain"] != "CON":
@@ -648,6 +670,7 @@ def validate_repository(
         "domain_counts": dict(sorted(domain_counts.items())),
         "mapping_hash": _canonical_hash(mapping_material),
         "package_assignments": package_assignments,
+        "responsibility_guard": responsibility_guard,
         "scenario_traces": scenario_traces,
         "dir_contract": dir_contract,
         "prior_acceptance_provenance": provenance,
