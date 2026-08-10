@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "PHASE-G-GATE-PROGRESS-HANDOFF-DIGEST-ACCEPTANCE-R3",
+  "package_id": "PHASE_G_GATE",
+  "event_sequence": 25,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 4904,
+    "file_sha256": "6736A47D7D87BC2B14B506945AD58BC5C4A67AE6A74F146D8D36D4D92D15107F",
+    "canonical_json_sha256": "528EF43A6892B67746DBEC6118FF7DBEFE423B6E9A5922BE0A07BD57B7100455"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 19935,
+    "file_sha256": "3C97A2657613D7D51F368F8006794C0F5F0BE8A4A307F28D58936B7B43B77585",
+    "machine_summary_canonical_sha256": "67DD2814101BAC7B32545D3F80F45215F89D2990AE3EF9336E086F1B9EE4A54C"
+  },
+  "created_at": "2026-08-10T23:31:00+09:00",
+  "scope": "Phase G Gate ACCEPTED; Git checkpoint pending push and A-01 blocked"
+}

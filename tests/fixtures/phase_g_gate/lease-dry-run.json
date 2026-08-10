@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.0.0",
+  "operations": [
+    {"action": "worker_claim", "actor": "gate-worker-1", "occurred_at": "2026-08-10T22:10:01+09:00", "path_scope": "gate-dry-run", "lease_id": "worker-gate-1", "execution_token": "exec-epoch-1", "worker_epoch": 1, "expected": "ALLOWED", "reason": "CANONICAL_WORKER_FREE"},
+    {"action": "write_claim", "actor": "gate-worker-1", "occurred_at": "2026-08-10T22:10:02+09:00", "path_scope": "gate-dry-run", "lease_id": "write-gate-1", "worker_lease_id": "worker-gate-1", "execution_token": "exec-epoch-1", "worker_epoch": 1, "write_token": "write-epoch-1", "write_epoch": 1, "expected": "ALLOWED", "reason": "CONFLICT_SCOPE_FREE"},
+    {"action": "write_claim", "actor": "gate-worker-2", "occurred_at": "2026-08-10T22:10:03+09:00", "path_scope": "gate-dry-run", "lease_id": "write-gate-2", "worker_lease_id": "worker-gate-1", "execution_token": "exec-epoch-1", "worker_epoch": 1, "write_token": "write-epoch-2", "write_epoch": 2, "expected": "REJECTED", "reason": "ACTIVE_WRITE_LEASE_EXISTS"},
+    {"action": "commit", "actor": "gate-worker-stale", "occurred_at": "2026-08-10T22:10:04+09:00", "path_scope": "gate-dry-run", "execution_token": "stale-exec-token", "worker_epoch": 0, "write_token": "write-epoch-1", "write_epoch": 1, "expected": "REJECTED", "reason": "STALE_EXECUTION_TOKEN"},
+    {"action": "commit", "actor": "gate-worker-1", "occurred_at": "2026-08-10T22:10:05+09:00", "path_scope": "gate-dry-run", "execution_token": "exec-epoch-1", "worker_epoch": 1, "write_token": "write-epoch-1", "write_epoch": 1, "expected": "ALLOWED", "reason": "CURRENT_FENCING_TOKENS"},
+    {"action": "commit", "actor": "gate-worker-1", "occurred_at": "2026-08-10T22:10:06+09:00", "path_scope": "gate-dry-run", "execution_token": "exec-epoch-1", "worker_epoch": 1, "write_token": "stale-write-token", "write_epoch": 0, "expected": "REJECTED", "reason": "STALE_WRITE_TOKEN"},
+    {"action": "write_revoke", "actor": "main-agent-eoul", "occurred_at": "2026-08-10T22:10:07+09:00", "path_scope": "gate-dry-run", "lease_id": "write-gate-1", "execution_token": "exec-epoch-1", "worker_epoch": 1, "write_token": "write-epoch-1", "write_epoch": 1, "expected": "ALLOWED", "reason": "GATE_DRY_RUN_COMPLETE"},
+    {"action": "worker_revoke", "actor": "main-agent-eoul", "occurred_at": "2026-08-10T22:10:08+09:00", "path_scope": "gate-dry-run", "lease_id": "worker-gate-1", "execution_token": "exec-epoch-1", "worker_epoch": 1, "expected": "ALLOWED", "reason": "GATE_DRY_RUN_COMPLETE"}
+  ],
+  "final_state": {"worker_lease": null, "write_lease": null}
+}

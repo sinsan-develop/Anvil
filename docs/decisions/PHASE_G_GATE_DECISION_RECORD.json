@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "decision_record_id": "PHASE-G-GATE-DECISION-20260810-001",
+  "gate": "G Gate",
+  "decided_at": "2026-08-10T23:30:00+09:00",
+  "approval_mode": "STANDING_AUTONOMOUS_APPROVAL_APPLIED",
+  "approval_ref": "APPROVAL-20260810-AUTONOMOUS-EXECUTION-001",
+  "approval_scope_match": true,
+  "owner_report_review_status": "NOT_REPORT_SPECIFIC",
+  "decided_by": "main-agent-eoul",
+  "decision": "ACCEPTED",
+  "reason": "all Gate contracts and independent evidence passed",
+  "action": "close Phase G and permit Git gate checkpoint",
+  "evidence_target_hash": "090C669F5E66A6BB67577693C7CF1601727E12F5E173E0AA98D4BAF4D96B2091",
+  "independent_test_report": {
+    "path": "docs/test_reports/PHASE_G_GATE_TEST_REPORT_R2.md",
+    "sha256": "1A0A852EAC34450BA1CB815C756096673CF2917B6915118F2BA2B46B9941B6DD"
+  },
+  "proposal_manifest": {
+    "path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST_R2.json",
+    "sha256": "C6A7CBC5FCD8B37DC9CE5DE48268DC45FEC13DE5401B4B44F08DB9016C1E9A3A"
+  },
+  "main_fresh_regression": {"passed": 92, "failed": 0},
+  "blocking_findings": 0,
+  "git_checkpoint_status": "PENDING_COMMIT_PUSH",
+  "a01_start_allowed": false
+}

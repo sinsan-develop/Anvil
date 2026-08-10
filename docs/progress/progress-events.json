@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 13,
+  "last_sequence": 25,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -133,6 +133,164 @@
         "manifest_ref": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json",
         "manifest_sha256": "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0",
         "next_work_package": "G-07"
+      }
+    },
+    {
+      "event_id": "evt_g07_repository_reconciled_start",
+      "sequence": 14,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-08-10T20:30:00+09:00",
+      "actor": "developer-primary-g07",
+      "subject_ref": "G-07",
+      "details": {
+        "branch": "main",
+        "local_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+        "remote_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+        "upstream": "origin/main",
+        "observed_at": "2026-08-10T20:30:00+09:00",
+        "reason": "reconcile stale a70daa4 progress and HANDOFF projection to observed HEAD/upstream; not a retroactive push claim"
+      }
+    },
+    {
+      "event_id": "evt_g07_package_started",
+      "sequence": 15,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-10T20:31:00+09:00",
+      "actor": "developer-primary-g07",
+      "subject_ref": "G-07",
+      "details": {
+        "work_instruction_id": "WI-G-07-20260810-001",
+        "package_status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_g07_developer_completed",
+      "sequence": 16,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-10T21:10:00+09:00",
+      "actor": "developer-primary-g07",
+      "subject_ref": "G-07",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false
+      }
+    },
+    {
+      "event_id": "evt_g07_package_resumed_r2",
+      "sequence": 17,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-08-10T21:20:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "G-07",
+      "details": {
+        "resume_event_ref": "evt_g07_developer_completed"
+      }
+    },
+    {
+      "event_id": "evt_g07_developer_completed_r2",
+      "sequence": 18,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-10T21:40:00+09:00",
+      "actor": "developer-primary-g07",
+      "subject_ref": "G-07",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false
+      }
+    },
+    {
+      "event_id": "evt_g07_main_package_accepted_r2",
+      "sequence": 19,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "occurred_at": "2026-08-10T22:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "G-07",
+      "details": {
+        "decision": "ACCEPTED",
+        "test_report_ref": "docs/test_reports/G-07_TEST_REPORT.md",
+        "test_report_sha256": "8F3C8CF31FA31DA7908F308953BFDDC9141327AB46D70AD4909CEFD540270DAF",
+        "manifest_ref": "docs/evidence/manifests/G-07_EVIDENCE_MANIFEST_R2.json",
+        "manifest_sha256": "7967674B6CBDA114ADF530C98B94BFB062888278F05AF7A9A775EA64EBE46320",
+        "next_work_package": "PHASE_G_GATE"
+      }
+    },
+    {
+      "event_id": "evt_phase_g_gate_started",
+      "sequence": 20,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-10T22:10:00+09:00",
+      "actor": "developer-primary-g07",
+      "subject_ref": "PHASE_G_GATE",
+      "details": {
+        "work_instruction_id": "WI-PHASE-G-GATE-20260810-001",
+        "package_status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_phase_g_gate_developer_completed",
+      "sequence": 21,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-10T22:30:00+09:00",
+      "actor": "developer-primary-g07",
+      "subject_ref": "PHASE_G_GATE",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false
+      }
+    },
+    {
+      "event_id": "evt_phase_g_gate_failure_report_accepted_r1",
+      "sequence": 22,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-08-10T22:45:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_G_GATE",
+      "details": {
+        "entry_id": "failure-phase-g-gate-independent-test-r1",
+        "evidence_ref": "docs/test_reports/PHASE_G_GATE_TEST_REPORT.md",
+        "valid_failure_count": 1
+      }
+    },
+    {
+      "event_id": "evt_phase_g_gate_resumed_r2",
+      "sequence": 23,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-08-10T22:46:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_G_GATE",
+      "details": {"resume_event_ref": "evt_phase_g_gate_failure_report_accepted_r1"}
+    },
+    {
+      "event_id": "evt_phase_g_gate_developer_completed_r2",
+      "sequence": 24,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-10T23:00:00+09:00",
+      "actor": "developer-primary-g07",
+      "subject_ref": "PHASE_G_GATE",
+      "details": {"result_status": "COMPLETED", "package_status": "TEST_REVIEW", "accepted": false}
+    },
+    {
+      "event_id": "evt_phase_g_gate_decided_accepted",
+      "sequence": 25,
+      "event_type": "PHASE_GATE_DECIDED",
+      "occurred_at": "2026-08-10T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "G Gate",
+      "details": {
+        "gate": "G Gate",
+        "verdict": "ACCEPTED",
+        "evidence_ref": "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json",
+        "approval_mode": "STANDING_AUTONOMOUS_APPROVAL_APPLIED",
+        "approval_ref": "APPROVAL-20260810-AUTONOMOUS-EXECUTION-001",
+        "approval_scope_match": true,
+        "owner_report_review_status": "NOT_REPORT_SPECIFIC",
+        "reason": "all Gate contracts and independent evidence passed",
+        "action": "close Phase G and permit Git gate checkpoint",
+        "evidence_target_hash": "090C669F5E66A6BB67577693C7CF1601727E12F5E173E0AA98D4BAF4D96B2091",
+        "a01_start_allowed": false
       }
     }
   ]

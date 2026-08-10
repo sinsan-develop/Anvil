@@ -36,6 +36,23 @@
       ],
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-phase-g-gate-independent-test-r1",
+      "step_lineage_id": "PHASE_G_GATE",
+      "failure_fingerprint": "phase-g-gate:reconstruction-accepted-packages-forgery-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/PHASE_G_GATE_TEST_REPORT.md",
+          "sha256": "CEC22DA268505597042FD3C2113484FB805C6A0A4EAFFE2B9DADDB9FA63FD253"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
     }
   ]
 }

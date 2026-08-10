@@ -23,6 +23,8 @@ R2_MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "G-05_EVIDENCE_MAN
 R2_TEST_REPORT_PATH = ROOT / "docs" / "test_reports" / "G-05_TEST_REPORT_R2.md"
 G06_R3_MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "G-06_EVIDENCE_MANIFEST_R3.json"
 G06_R2_TEST_REPORT_PATH = ROOT / "docs" / "test_reports" / "G-06_TEST_REPORT_R2.md"
+G07_R2_MANIFEST_PATH = ROOT / "docs" / "evidence" / "manifests" / "G-07_EVIDENCE_MANIFEST_R2.json"
+G07_TEST_REPORT_PATH = ROOT / "docs" / "test_reports" / "G-07_TEST_REPORT.md"
 
 
 def _load_checker_or_none():
@@ -166,7 +168,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         cases = (
             ("event_sequence", 999, "HANDOFF_SEQUENCE_MISMATCH"),
-            ("status", "TEST_REVIEW", "HANDOFF_STATUS_MISMATCH"),
+            (
+                "status",
+                "ACTIVE" if bundle["progress"]["status"] != "ACTIVE" else "READY",
+                "HANDOFF_STATUS_MISMATCH",
+            ),
             ("next_safe_action", "wrong action", "HANDOFF_NEXT_ACTION_MISMATCH"),
         )
         for field, value, reason in cases:
@@ -495,28 +501,47 @@ class ProjectProgressContractTests(unittest.TestCase):
         }
         self.assertIn("EVENT_EFFECT_MISMATCH", checker.validate_bundle(bad_effect))
 
-    def test_g06_acceptance_advances_projection_to_g07(self) -> None:
+    def test_g07_acceptance_is_preserved_when_phase_g_gate_is_accepted(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
         last_event = bundle["events"]["events"][-1]
+        g06_acceptance = next(
+            event
+            for event in bundle["events"]["events"]
+            if event["event_type"] == "MAIN_PACKAGE_ACCEPTED" and event["subject_ref"] == "G-06"
+        )
+        g07_acceptance = next(
+            event
+            for event in bundle["events"]["events"]
+            if event["event_type"] == "MAIN_PACKAGE_ACCEPTED" and event["subject_ref"] == "G-07"
+        )
 
-        self.assertEqual(progress["status"], "READY")
-        self.assertEqual(progress["current_work_package"], "G-07")
+        self.assertEqual(progress["status"], "GATE_CHECKPOINT_PENDING_PUSH")
+        self.assertIsNone(progress["current_work_package"])
         self.assertIn("G-06", progress["completed_packages"])
+        self.assertIn("G-07", progress["completed_packages"])
+        self.assertIn("PHASE_G_GATE", progress["completed_packages"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertEqual(
             progress["last_accepted_work_instruction"]["artifact_id"],
-            "WI-G-06-20260810-002",
+            "WI-PHASE-G-GATE-20260810-001",
         )
-        self.assertEqual(last_event["event_type"], "MAIN_PACKAGE_ACCEPTED")
-        self.assertEqual(last_event["subject_ref"], "G-06")
-        self.assertEqual(last_event["details"]["next_work_package"], "G-07")
-        self.assertEqual(last_event["details"]["test_report_sha256"], "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
+        self.assertEqual(g06_acceptance["details"]["next_work_package"], "G-07")
+        self.assertEqual(g06_acceptance["details"]["test_report_sha256"], "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
+        self.assertEqual(g07_acceptance["details"]["test_report_sha256"], hashlib.sha256(G07_TEST_REPORT_PATH.read_bytes()).hexdigest().upper())
+        self.assertEqual(g07_acceptance["details"]["manifest_sha256"], hashlib.sha256(G07_R2_MANIFEST_PATH.read_bytes()).hexdigest().upper())
+        self.assertEqual(g07_acceptance["details"]["next_work_package"], "PHASE_G_GATE")
+        self.assertEqual(last_event["event_type"], "PHASE_GATE_DECIDED")
+        self.assertEqual(last_event["subject_ref"], "G Gate")
+        self.assertEqual(last_event["details"]["verdict"], "ACCEPTED")
+        self.assertEqual(last_event["details"]["approval_mode"], "STANDING_AUTONOMOUS_APPROVAL_APPLIED")
         self.assertTrue(G06_R3_MANIFEST_PATH.is_file())
         r3_hash = hashlib.sha256(G06_R3_MANIFEST_PATH.read_bytes()).hexdigest().upper()
         self.assertEqual(r3_hash, "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0")
-        self.assertEqual(progress["latest_evidence_manifest_ref"], {"path": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json", "sha256": r3_hash})
+        g07_r2_hash = hashlib.sha256(G07_R2_MANIFEST_PATH.read_bytes()).hexdigest().upper()
+        gate_r2_path = ROOT / "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST_R2.json"
+        self.assertEqual(progress["latest_evidence_manifest_ref"], {"path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST_R2.json", "sha256": hashlib.sha256(gate_r2_path.read_bytes()).hexdigest().upper()})
         self.assertEqual(hashlib.sha256(G06_R2_TEST_REPORT_PATH.read_bytes()).hexdigest().upper(), "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
         self.assertIn("MAIN_PACKAGE_ACCEPTED", bundle["event_contract"]["event_types"])
 

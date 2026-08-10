@@ -1,0 +1,93 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-G-07-20260810-003",
+  "artifact_type": "evidence_manifest",
+  "project_id": "anvil",
+  "version": 3,
+  "artifact_status": "approved",
+  "content_hash": "sha256:3311A11F268B38812EDE185D54EDE7E50EAAB21023CFF5EEECE5DD86823F7BFC",
+  "source_artifact_ids": ["EVIDENCE-MANIFEST-G-07-20260810-002", "WI-G-07-20260810-002", "BASELINE-G-02-DERIVED-20260810-001", "Anvil-WorkPlan-v1.4"],
+  "source_evidence_ids": ["G-07_TEST_REPORT", "AV-GATE-026"],
+  "source_evidence_refs": [
+    {"evidence_id": "G-07_TEST_REPORT", "path": "docs/test_reports/G-07_TEST_REPORT.md", "sha256": "8F3C8CF31FA31DA7908F308953BFDDC9141327AB46D70AD4909CEFD540270DAF"}
+  ],
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary-g07"},
+  "created_at": "2026-08-10T22:02:00+09:00",
+  "supersedes_artifact_id": "EVIDENCE-MANIFEST-G-07-20260810-002",
+  "supersedes_artifact_ref": {
+    "artifact_id": "EVIDENCE-MANIFEST-G-07-20260810-002",
+    "path": "docs/evidence/manifests/G-07_EVIDENCE_MANIFEST_R2.json",
+    "file_sha256": "7967674B6CBDA114ADF530C98B94BFB062888278F05AF7A9A775EA64EBE46320",
+    "content_hash": "sha256:CBC89E3C270038688ACDD7DCCB66CC533F6AEA048D0C6358BDBFD08393737BEA"
+  },
+  "artifact_path": "docs/evidence/manifests/G-07_EVIDENCE_MANIFEST.json",
+  "manifest_id": "EVIDENCE-MANIFEST-G-07-20260810-003",
+  "package_id": "G-07",
+  "design_baseline_ref": {"artifact_id": "BASELINE-G-02-DERIVED-20260810-001", "content_hash": "sha256:E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B"},
+  "work_plan_ref": {"artifact_id": "Anvil-WorkPlan-v1.4", "content_hash": "sha256:4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475"},
+  "work_instruction_ref": {"artifact_id": "WI-G-07-20260810-002", "content_hash": "sha256:1D51FBBB450BB677BDAD3BFB30DF04BBAB44C9F6472404735B08858A27C3B0FA"},
+  "target_hash": "sha256:14878640F0F6C2A814222254B7FC0629A48A9CE51197060BF7D3A8629F53A607",
+  "delivered_hash": "sha256:14878640F0F6C2A814222254B7FC0629A48A9CE51197060BF7D3A8629F53A607",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "path_normalization": "repository-relative POSIX slash",
+    "sort": "UTF-8 byte ordinal ascending by normalized path",
+    "row_separator": "LF (0x0A)",
+    "final_newline": false,
+    "encoding": "UTF-8",
+    "bom": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1371,
+  "target_content_bytes": 138578,
+  "git_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+  "git_upstream": "origin/main",
+  "git_upstream_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+  "environment": "ENV-LOCAL",
+  "toolchain": ["Windows PowerShell", "Python 3.13.9 stdlib", "Git"],
+  "commands": [
+    {"command": "python -m unittest three G-07 acceptance materialization tests", "phase": "ACCEPTANCE_RED", "exit_code": 1, "observed": "missing G-07 acceptance event, stale Gate readiness, and non-accepted manifest state reproduced"},
+    {"command": "python -m unittest three G-07 acceptance materialization tests", "phase": "ACCEPTANCE_GREEN", "exit_code": 0, "observed": "acceptance event, immutable R2 chain, and Gate boundary passed"},
+    {"command": "python -m unittest tests.tooling.test_g07_baseline tests.tooling.test_g06_test_assets tests.tooling.test_project_progress tests.tooling.test_artifact_templates tests.tooling.test_dependency_boundaries", "phase": "ACCEPTANCE_FULL_REGRESSION", "exit_code": 0, "observed": "83 tests passed"}
+  ],
+  "verifications": [
+    {"verification_id": "AV-GATE-026", "level": "L2", "result": "PASS", "evidence_ref": "docs/test_reports/G-07_TEST_REPORT.md"},
+    {"verification_id": "PHASE-G-GATE", "level": "GATE", "result": "NOT_DECIDED", "evidence_ref": null}
+  ],
+  "actors": [
+    {"actor_type": "agent", "actor_id": "independent-tester-g07", "role": "tester"},
+    {"actor_type": "agent", "actor_id": "main-agent-eoul", "role": "main_agent"}
+  ],
+  "acquisition_mode": "main_acceptance_materialization_after_independent_tester_pass",
+  "raw_checksums": [
+    {"path": "docs/completion_reports/G-07_COMPLETION_REPORT.md", "bytes": 7384, "sha256": "4E5CCC59594920E1C78798082459067F83EB059E7437933AF662F9EBB55DEA25"},
+    {"path": "docs/evidence/manifests/G-07_EVIDENCE_MANIFEST_R2.json", "bytes": 7757, "sha256": "7967674B6CBDA114ADF530C98B94BFB062888278F05AF7A9A775EA64EBE46320"},
+    {"path": "docs/progress/progress-events.json", "bytes": 8074, "sha256": "613F5C18515AC5FF1828D04E5C1704010C303C93708C0EF6A6279F8E1229C9DB"},
+    {"path": "docs/progress/progress-handoff-detached-digest-g07.json", "bytes": 873, "sha256": "6A7FB626A40DBA205ADEFAA47B687A0BBE6F25593440159880AA22CA40C8DA03"},
+    {"path": "docs/test_reports/G-07_TEST_REPORT.md", "bytes": 5063, "sha256": "8F3C8CF31FA31DA7908F308953BFDDC9141327AB46D70AD4909CEFD540270DAF"},
+    {"path": "docs/validation/G-07_BASELINE_VERIFICATION_REPORT.json", "bytes": 22727, "sha256": "FBD00109B414E11DDCB8B734A4BAE25E32D4A0EBA20473390A091E0A77F12BDE"},
+    {"path": "docs/validation/G-07_BASELINE_VERIFICATION_REPORT.md", "bytes": 2322, "sha256": "83D6A85A8D10C0264A76C680770CA9C2D0EF4C6E5B8F41C3C8EBA6A39930C61C"},
+    {"path": "docs/work_orders/G-07_INVOCATION_PROMPT.md", "bytes": 940, "sha256": "504C747A5A078D8D7E06DE736FB01F187948B78868B4ABD11A13D0C3F4A8A873"},
+    {"path": "docs/work_orders/G-07_WORK_INSTRUCTION.md", "bytes": 9429, "sha256": "1D51FBBB450BB677BDAD3BFB30DF04BBAB44C9F6472404735B08858A27C3B0FA"},
+    {"path": "scripts/check_g07_baseline.py", "bytes": 37511, "sha256": "9E5F098BA0893EC8863D190FC204E24FC7F17ED8DF4140D5AEDDE524E8C8D77C"},
+    {"path": "tests/tooling/test_g07_baseline.py", "bytes": 9709, "sha256": "EC4C13D3EE191007EB3C370C9E473088AF201D67EA00D3D956A0493164975538"},
+    {"path": "tests/tooling/test_project_progress.py", "bytes": 26789, "sha256": "CE19AB427A834E6723B60D9B0FE35829866C9D97A81A2AD89029E35604CD67A3"}
+  ],
+  "skipped": [],
+  "blocked": [],
+  "unverified": ["Separate Phase G regression and Gate TestReport", "PHASE_GATE_DECIDED record", "All 20 section 49.17 runtime scenarios", "FI-01 through FI-08 runtime injection", "Product API/UI/browser/DB/Docker/WSL/production/deployment/release"],
+  "active_failure_lineage_valid_count": 0,
+  "historical_accepted_failure_count": 2,
+  "repository_reconciliation_event": "evt_g07_repository_reconciled_start",
+  "acceptance_event": "evt_g07_main_package_accepted_r2",
+  "g_gate_status": "NOT_DECIDED",
+  "a01_start_allowed": false,
+  "started_at": "2026-08-10T20:31:00+09:00",
+  "finished_at": "2026-08-10T22:00:00+09:00",
+  "manifest_creator": {"actor_type": "agent", "actor_id": "developer-primary-g07", "role": "developer"},
+  "manifest_created_at": "2026-08-10T22:02:00+09:00",
+  "signature": "UNSIGNED:main-acceptance-materialization;phase-g-gate-pending",
+  "delivered_target_comparison": "MATCH",
+  "limitations": ["The immutable R2 manifest is the independent Tester's verified evidence reference.", "The detached digest binds accepted progress and HANDOFF without reverse self-reference.", "G-07 acceptance is not Phase G Gate completion or A-01 authorization."],
+  "package_status": "ACCEPTED"
+}

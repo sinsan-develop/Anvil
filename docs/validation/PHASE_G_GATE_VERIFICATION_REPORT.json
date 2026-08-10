@@ -1,0 +1,257 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "PHASE_G_GATE",
+  "status": "PASS",
+  "accepted_packages": [
+    "G-01",
+    "G-02",
+    "G-03",
+    "G-04",
+    "G-05",
+    "G-06",
+    "G-07"
+  ],
+  "decisions": {
+    "D1": "HUMAN_CONFIRMED",
+    "D2": "HUMAN_CONFIRMED",
+    "D3": "HUMAN_CONFIRMED",
+    "D4": "HUMAN_CONFIRMED",
+    "D5": "HUMAN_CONFIRMED",
+    "D6": "HUMAN_CONFIRMED",
+    "D7": "HUMAN_CONFIRMED",
+    "D8": "HUMAN_CONFIRMED",
+    "D9": "BENCHMARK_POLICY_CONFIRMED",
+    "D10": "HUMAN_CONFIRMED"
+  },
+  "decision_chain": {
+    "root_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
+    "root_approval_ref": "docs/approvals/APPROVAL-20260810-INTEGRATED-BASELINE-001.md",
+    "root_approval_sha256": "94A82676DB9BF0EE23B55B0A59CBAC706AF7D8617B61BBB9887357E300FDFDC7",
+    "g02_r3_test_report_ref": "docs/test_reports/G-02_TEST_REPORT_R3.md",
+    "g02_r3_test_report_sha256": "F191B95AF36181715E71815081DE45673FE4D2A91AE1DB643597DB3917451D35",
+    "acceptance_event_id": "evt_g05_legacy_migration",
+    "standing_approval_gate_application": "STANDING_AUTONOMOUS_APPROVAL_APPLIED",
+    "application_actor": "main-agent-eoul",
+    "application_approval_ref": "APPROVAL-20260810-AUTONOMOUS-EXECUTION-001"
+  },
+  "counts": {
+    "package": 97,
+    "av": 255,
+    "reverse": 97,
+    "scenario": 20,
+    "sync": 7
+  },
+  "lease_dry_run": {
+    "status": "PASS",
+    "results": [
+      {
+        "action": "worker_claim",
+        "actor": "gate-worker-1",
+        "occurred_at": "2026-08-10T22:10:01+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 1,
+        "write_epoch": null,
+        "execution_token": "exec-epoch-1",
+        "write_token": null,
+        "status": "ALLOWED",
+        "reason": "CANONICAL_WORKER_FREE",
+        "expected": "ALLOWED",
+        "expected_reason": "CANONICAL_WORKER_FREE"
+      },
+      {
+        "action": "write_claim",
+        "actor": "gate-worker-1",
+        "occurred_at": "2026-08-10T22:10:02+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 1,
+        "write_epoch": 1,
+        "execution_token": "exec-epoch-1",
+        "write_token": "write-epoch-1",
+        "status": "ALLOWED",
+        "reason": "CONFLICT_SCOPE_FREE",
+        "expected": "ALLOWED",
+        "expected_reason": "CONFLICT_SCOPE_FREE"
+      },
+      {
+        "action": "write_claim",
+        "actor": "gate-worker-2",
+        "occurred_at": "2026-08-10T22:10:03+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 1,
+        "write_epoch": 2,
+        "execution_token": "exec-epoch-1",
+        "write_token": "write-epoch-2",
+        "status": "REJECTED",
+        "reason": "ACTIVE_WRITE_LEASE_EXISTS",
+        "expected": "REJECTED",
+        "expected_reason": "ACTIVE_WRITE_LEASE_EXISTS"
+      },
+      {
+        "action": "commit",
+        "actor": "gate-worker-stale",
+        "occurred_at": "2026-08-10T22:10:04+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 0,
+        "write_epoch": 1,
+        "execution_token": "stale-exec-token",
+        "write_token": "write-epoch-1",
+        "status": "REJECTED",
+        "reason": "STALE_EXECUTION_TOKEN",
+        "expected": "REJECTED",
+        "expected_reason": "STALE_EXECUTION_TOKEN"
+      },
+      {
+        "action": "commit",
+        "actor": "gate-worker-1",
+        "occurred_at": "2026-08-10T22:10:05+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 1,
+        "write_epoch": 1,
+        "execution_token": "exec-epoch-1",
+        "write_token": "write-epoch-1",
+        "status": "ALLOWED",
+        "reason": "CURRENT_FENCING_TOKENS",
+        "expected": "ALLOWED",
+        "expected_reason": "CURRENT_FENCING_TOKENS"
+      },
+      {
+        "action": "commit",
+        "actor": "gate-worker-1",
+        "occurred_at": "2026-08-10T22:10:06+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 1,
+        "write_epoch": 0,
+        "execution_token": "exec-epoch-1",
+        "write_token": "stale-write-token",
+        "status": "REJECTED",
+        "reason": "STALE_WRITE_TOKEN",
+        "expected": "REJECTED",
+        "expected_reason": "STALE_WRITE_TOKEN"
+      },
+      {
+        "action": "write_revoke",
+        "actor": "main-agent-eoul",
+        "occurred_at": "2026-08-10T22:10:07+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 1,
+        "write_epoch": 1,
+        "execution_token": "exec-epoch-1",
+        "write_token": "write-epoch-1",
+        "status": "ALLOWED",
+        "reason": "GATE_DRY_RUN_COMPLETE",
+        "expected": "ALLOWED",
+        "expected_reason": "GATE_DRY_RUN_COMPLETE"
+      },
+      {
+        "action": "worker_revoke",
+        "actor": "main-agent-eoul",
+        "occurred_at": "2026-08-10T22:10:08+09:00",
+        "path_scope": "gate-dry-run",
+        "worker_epoch": 1,
+        "write_epoch": null,
+        "execution_token": "exec-epoch-1",
+        "write_token": null,
+        "status": "ALLOWED",
+        "reason": "GATE_DRY_RUN_COMPLETE",
+        "expected": "ALLOWED",
+        "expected_reason": "GATE_DRY_RUN_COMPLETE"
+      }
+    ],
+    "final_state": {
+      "worker_lease": null,
+      "write_lease": null
+    }
+  },
+  "reconstruction": {
+    "status": "PASS",
+    "exit_projection": {
+      "current_work_package": "PHASE_G_GATE",
+      "status": "TEST_REVIEW",
+      "next_conditional_package": "A-01",
+      "next_safe_action": "Independent Tester verifies Phase G Gate evidence; Main may decide the Gate only after PASS",
+      "g_gate_status": "NOT_DECIDED",
+      "a01_start_allowed": false
+    }
+  },
+  "sync_targets": [
+    "Anvil_작업계획서_v1.md",
+    "Anvil_통합검증매트릭스_v1.md",
+    "Anvil_테스트계획서_v1.md",
+    "AGENTS.md",
+    "docs/governance/ANVIL_OPERATING_RULES.md",
+    "docs/progress/build-progress.json",
+    "Developer 재온보딩 증거"
+  ],
+  "key_verifications": {
+    "AV-FLOW-003": {
+      "verification_id": "AV-FLOW-003",
+      "source_package": "G-04",
+      "test_report_ref": "docs/test_reports/G-04_TEST_REPORT_R2.md",
+      "test_report_sha256": "0C5123F32FBD268EA6E91B9592F833F2A8D899119A47528FC5761C895B8D34AF",
+      "manifest_ref": "docs/evidence/manifests/G-04_EVIDENCE_MANIFEST.json",
+      "manifest_sha256": "F2674994201407532D6E18A9F9A0A94B606BA94385DCD126C03AF7F8264B09C1",
+      "target_hash": "sha256:5B5FA32568A7AD293C611BB5E85FCD4C0C0076EA787327CCC4AF1D936042827D",
+      "result": "PASS",
+      "method_level": "L2 / E-ART",
+      "reviewing_actor": "independent-tester-g04"
+    },
+    "AV-STAT-015": {
+      "verification_id": "AV-STAT-015",
+      "source_package": "G-05",
+      "test_report_ref": "docs/test_reports/G-05_TEST_REPORT_R2.md",
+      "test_report_sha256": "ED0F03496060C84D67DE84C0758611610CD753CF8D854216F9933089F07C758C",
+      "manifest_ref": "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json",
+      "manifest_sha256": "F9A5E7168B9B68B70D74B68DD495211BDC7961223E5E48CFC6F565638B9E69E6",
+      "target_hash": "sha256:186A07DC8EFFA422BDC310697C5D9E92BCDC875F063B09F1ECF7D1C197EAE646",
+      "result": "PASS",
+      "method_level": "L2 / AU",
+      "reviewing_actor": "independent-tester-g05"
+    },
+    "AV-STAT-016": {
+      "verification_id": "AV-STAT-016",
+      "source_package": "G-05",
+      "test_report_ref": "docs/test_reports/G-05_TEST_REPORT_R2.md",
+      "test_report_sha256": "ED0F03496060C84D67DE84C0758611610CD753CF8D854216F9933089F07C758C",
+      "manifest_ref": "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json",
+      "manifest_sha256": "F9A5E7168B9B68B70D74B68DD495211BDC7961223E5E48CFC6F565638B9E69E6",
+      "target_hash": "sha256:186A07DC8EFFA422BDC310697C5D9E92BCDC875F063B09F1ECF7D1C197EAE646",
+      "result": "PASS",
+      "method_level": "L3 / MI",
+      "reviewing_actor": "independent-tester-g05"
+    },
+    "AV-GATE-026": {
+      "verification_id": "AV-GATE-026",
+      "source_package": "G-07",
+      "test_report_ref": "docs/test_reports/G-07_TEST_REPORT.md",
+      "test_report_sha256": "8F3C8CF31FA31DA7908F308953BFDDC9141327AB46D70AD4909CEFD540270DAF",
+      "manifest_ref": "docs/evidence/manifests/G-07_EVIDENCE_MANIFEST_R2.json",
+      "manifest_sha256": "7967674B6CBDA114ADF530C98B94BFB062888278F05AF7A9A775EA64EBE46320",
+      "target_hash": "sha256:836E618A3F3784C06DE7002B8572AD4B1453314B85807D6B1AB29EBBCBA89D7A",
+      "result": "PASS",
+      "method_level": "L2 / AU+RV",
+      "reviewing_actor": "independent-tester-g07"
+    },
+    "AV-CON-016(RV)": {
+      "verification_id": "AV-CON-016(RV)",
+      "source_package": "G-01",
+      "test_report_ref": "docs/test_reports/G-01_TEST_REPORT.md",
+      "test_report_sha256": "E6471B535EB6A749F96E8C08A155F53E4BC2F90FFEFD00BD057C98351161C71A",
+      "manifest_ref": "docs/evidence/manifests/G-01_EVIDENCE_MANIFEST.json",
+      "manifest_sha256": "3C68E04B123C3961023F02EA9E6768F7DF5F8E621A0F15237BC4EEB990284D4B",
+      "target_hash": "6E16BB405D58296CECDC1EE057A2DDE0A6FA601F6D289257CBBAE78E3C30A38C",
+      "result": "PASS",
+      "method_level": "RV / design review",
+      "reviewing_actor": "independent-tester-g01"
+    }
+  },
+  "scenario_runtime_status": "DESIGN_LOCKED / NOT_EXECUTED",
+  "progress": {
+    "current_work_package": null,
+    "status": "GATE_CHECKPOINT_PENDING_PUSH",
+    "next_conditional_package": "A-01",
+    "g_gate_status": "ACCEPTED",
+    "a01_start_allowed": false
+  },
+  "mapping_hash": "AE9838B35B430703E16255B6C34C084B7F917B063171BD98F61460F8CFA8F8AF",
+  "errors": []
+}

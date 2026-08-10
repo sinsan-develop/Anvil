@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "G-07-PROGRESS-HANDOFF-DIGEST-R3-ACCEPTANCE",
+  "package_id": "G-07",
+  "event_sequence": 19,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 4945,
+    "file_sha256": "58B1806B78133D77F439CC226D6DFEDC41728CBADBF6ADECB1992BA34ECBC071",
+    "canonical_json_sha256": "5D69DBF44A2A7E66BFFE8768D43E28EE08076F5A3E7BDCF7C4AEEB928919C293"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 18729,
+    "file_sha256": "1AD7DD90F9AC9503D763C48FD1EF0D4F5BE522C62CA953AFE4D4563F04B1EF6A",
+    "machine_summary_canonical_sha256": "B4D52833D17B4D03244C99B4077A7EF54E471D233455E4C2814842C25A5F697F"
+  },
+  "created_at": "2026-08-10T22:01:00+09:00",
+  "scope": "G-07 ACCEPTED projection awaiting separate Phase G Gate; no Gate decision, push, or A-01 claim"
+}

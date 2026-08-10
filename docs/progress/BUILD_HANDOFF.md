@@ -3,16 +3,18 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 13,
-  "status": "READY",
-  "current_work_package": "G-07",
-  "last_event_id": "evt_g06_main_package_accepted_r3",
+  "event_sequence": 25,
+  "status": "GATE_CHECKPOINT_PENDING_PUSH",
+  "current_work_package": null,
+  "last_event_id": "evt_phase_g_gate_decided_accepted",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
+  "active_lineage_valid_failure_count": 0,
+  "historical_accepted_failure_count": 3,
   "dir_status": "NOT_REACHED",
-  "repository_head": "a70daa4933099b33c76575e0f278f22e15016649",
+  "repository_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
   "repository_upstream": "origin/main",
-  "next_safe_action": "Main Agent may issue the G-07 WorkInstruction under the approved plan; G-07 implementation has not started",
+  "next_safe_action": "Main creates the Phase G Git gate checkpoint commit and push; A-01 remains blocked until checkpoint evidence is recorded",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE"
@@ -20,8 +22,8 @@
 ```
 
 > 갱신일: 2026-08-10  
-> 현재 상태: `READY`
-> 현재 Phase / Package: `G / G-07`
+> 현재 상태: `GATE_CHECKPOINT_PENDING_PUSH`
+> 현재 Phase / Package: `G / current package 없음`
 
 ## 1. 현재 기준선
 
@@ -163,11 +165,23 @@
 - G-06 revision 2 독립 TestReport: `PASS / READY_FOR_MAIN_ACCEPTANCE`, SHA-256 `436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546`
 - `G06-DEF-001~003` 독립 `CLOSED`, 신규 차단 finding 0, `AV-GATE-005(fixture 기준)`·`AV-SAFE-010(fixture 준비)` PASS
 - Main Agent 최종 판정: G-06 revision 3 `ACCEPTED`; 검증된 manifest는 `docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json` / SHA-256 `1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0`로 불변 보존
-- current Package는 `G-07 / READY`; G-07 WorkInstruction 발행·구현·commit·push는 시작하지 않음
+- G-07 WorkInstruction revision 2 `WI-G-07-20260810-002` / SHA-256 `1D51FBBB450BB677BDAD3BFB30DF04BBAB44C9F6472404735B08858A27C3B0FA`를 비의미 재결박하고, projection-aware 회귀 3건을 허용 범위 안에서 최소 수정함
+- observed Git `main` HEAD와 `origin/main`은 `23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8`로 일치하며, stale `a70daa4` progress/HANDOFF 투영을 sequence 14 `REPOSITORY_RECONCILED` Event로 현재 관측값에 정합화함. 과거 push 시점으로 소급하지 않음
+- G-07 active lineage의 valid failure count는 `0`; historical accepted failure는 G-05 1회·G-06 1회로 합계 `2`를 별도 보존함
+- G-07 독립 TestReport: `PASS / AV-GATE-026 PASS / blocking finding 0`, SHA-256 `8F3C8CF31FA31DA7908F308953BFDDC9141327AB46D70AD4909CEFD540270DAF`
+- Main Agent 최종 판정: G-07 revision 2 `ACCEPTED`; verified manifest는 `docs/evidence/manifests/G-07_EVIDENCE_MANIFEST_R2.json` / SHA-256 `7967674B6CBDA114ADF530C98B94BFB062888278F05AF7A9A775EA64EBE46320`로 불변 보존
+- 별도 Phase G regression·독립 Gate TestReport·`PHASE_GATE_DECIDED` record 전에는 G Gate 완료 또는 A-01 READY로 승격하지 않음
+- Phase G Gate Developer dry-run은 8단계 worker/write fencing 시나리오를 실행하고 `COMPLETED / TEST_REVIEW`로 제출함. standing approval은 Gate TestReport 이후 actor·approval_ref와 함께 적용하며 현재 적용하지 않음
+- Phase G Gate 독립 TestReport revision 1은 `FAIL / REWORK`, `PGATE-DEF-001` 1건, SHA-256 `CEC22DA268505597042FD3C2113484FB805C6A0A4EAFFE2B9DADDB9FA63FD253`; Main이 정식 failure 1회로 수락함
+- revision 2는 reconstruction `accepted_packages`를 canonical `G-01..G-07`과 exact 비교해 `G-07→G-99` wrong-but-nonempty 위조를 `GATE_RECONSTRUCTION_CONTRACT_MISMATCH`로 거부함
+- Phase G Gate 독립 TestReport revision 2는 `PASS`, blocking 0, SHA-256 `1A0A852EAC34450BA1CB815C756096673CF2917B6915118F2BA2B46B9941B6DD`
+- Main Agent는 standing approval `APPROVAL-20260810-AUTONOMOUS-EXECUTION-001`의 범위 일치를 확인하고 `owner_report_review_status=NOT_REPORT_SPECIFIC`으로 G Gate를 `ACCEPTED` 판정함
+- 검증된 proposal manifest revision 2는 `docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST_R2.json` / SHA-256 `C6A7CBC5FCD8B37DC9CE5DE48268DC45FEC13DE5401B4B44F08DB9016C1E9A3A`로 byte 불변 보존함
+- 현재 상태는 Phase G Gate checkpoint commit/push 대기이며 A-01 WorkInstruction·구현은 아직 시작할 수 없음
 
 ## 6. 다음 안전 행동
 
-G-05와 G-06은 독립 Tester PASS와 Main Agent 판정으로 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `a70daa4933099b33c76575e0f278f22e15016649`로 일치한다. current Package는 `G-07 / READY`이며 WorkInstruction과 구현은 시작하지 않았다. 다음 안전 행동은 Main Agent가 승인된 계획에 따라 G-07 WorkInstruction을 발행하는 것이다.
+G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8`로 일치한다. current Package는 없고 상태는 `GATE_CHECKPOINT_PENDING_PUSH`다. Main이 Git gate checkpoint commit/push evidence를 기록하기 전 A-01 WorkInstruction·구현을 시작하지 않는다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

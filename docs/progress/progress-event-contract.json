@@ -41,6 +41,7 @@
     "RELEASE_MANIFEST_INVALIDATED",
     "GIT_COMMIT",
     "GIT_PUSH",
+    "REPOSITORY_RECONCILED",
     "DEPLOYMENT_STARTED",
     "DEPLOYMENT_COMPLETED",
     "MONITORING_BOUNDARY_RECORDED"
@@ -83,6 +84,7 @@
     "RELEASE_MANIFEST_INVALIDATED": {"required_details": ["manifest_ref", "reason"], "effect": "release_manifest_invalidated"},
     "GIT_COMMIT": {"required_details": ["branch", "commit", "evidence_ref"], "effect": "repository_local_head_updated"},
     "GIT_PUSH": {"required_details": ["remote", "branch", "local_commit", "remote_commit", "evidence_ref"], "effect": "repository_remote_head_updated"},
+    "REPOSITORY_RECONCILED": {"required_details": ["branch", "local_head", "remote_head", "upstream", "observed_at", "reason"], "effect": "repository_projection_reconciled_without_retroactive_push_claim"},
     "DEPLOYMENT_STARTED": {"required_details": ["environment", "release_manifest_ref", "commit"], "effect": "deployment_active"},
     "DEPLOYMENT_COMPLETED": {"required_details": ["environment", "release_manifest_ref", "commit", "evidence_ref"], "effect": "deployment_complete"},
     "MONITORING_BOUNDARY_RECORDED": {"required_details": ["environment", "window", "evidence_ref"], "effect": "monitoring_boundary_complete"}

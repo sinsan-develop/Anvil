@@ -1,0 +1,1023 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "G-07",
+  "authority_inventory": [
+    {
+      "path": "Anvil_설계서_v2.md",
+      "version": "v2.6",
+      "sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5"
+    },
+    {
+      "path": "Anvil_작업계획서_v1.md",
+      "version": "v1.4",
+      "sha256": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475"
+    },
+    {
+      "path": "Anvil_통합검증매트릭스_v1.md",
+      "version": "v1.2",
+      "sha256": "0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3"
+    },
+    {
+      "path": "Anvil_테스트계획서_v1.md",
+      "version": "v1.3",
+      "sha256": "870BC8CAC3A7E5BAEBB711E3822C88EB01F18467654DCF170C689B3195114DC5"
+    },
+    {
+      "path": "docs/governance/ANVIL_OPERATING_RULES.md",
+      "version": "v1.5",
+      "sha256": "7D5E2AD0F272CBA1052EA8A21622F1E16438ABAB9AA4AAB7A1D34374B4FFB5F3"
+    }
+  ],
+  "counts": {
+    "package_total": 97,
+    "unique_package_total": 97,
+    "reverse_package_total": 97,
+    "av_total": 255,
+    "unique_av_total": 255,
+    "executable_av_total": 234,
+    "constitutional_av_total": 21,
+    "uncovered_av_total": 0,
+    "scenario_total": 20
+  },
+  "domain_counts": {
+    "AGT": 38,
+    "CON": 21,
+    "FLOW": 25,
+    "GATE": 26,
+    "LRN": 28,
+    "OPS": 25,
+    "PLG": 7,
+    "SAFE": 30,
+    "STAT": 39,
+    "UI": 16
+  },
+  "mapping_hash": "AE9838B35B430703E16255B6C34C084B7F917B063171BD98F61460F8CFA8F8AF",
+  "package_assignments": {
+    "G-01": [
+      "AV-CON-016"
+    ],
+    "G-02": [
+      "AV-SAFE-033",
+      "AV-GATE-026"
+    ],
+    "G-03": [
+      "AV-SAFE-010",
+      "AV-CON-002"
+    ],
+    "G-04": [
+      "AV-FLOW-003"
+    ],
+    "G-05": [
+      "AV-STAT-014",
+      "AV-STAT-015",
+      "AV-STAT-016",
+      "AV-STAT-041",
+      "AV-STAT-042"
+    ],
+    "G-06": [
+      "AV-GATE-005",
+      "AV-SAFE-010"
+    ],
+    "G-07": [
+      "AV-GATE-026"
+    ],
+    "A-01": [
+      "AV-UI-005",
+      "AV-FLOW-001"
+    ],
+    "A-02": [
+      "AV-UI-001",
+      "AV-UI-002"
+    ],
+    "A-03": [
+      "AV-UI-003",
+      "AV-UI-004"
+    ],
+    "A-04": [
+      "AV-UI-004",
+      "AV-UI-005"
+    ],
+    "A-05": [
+      "AV-FLOW-001"
+    ],
+    "A-06": [
+      "AV-SAFE-005",
+      "AV-FLOW-003"
+    ],
+    "A-07": [
+      "AV-AGT-029"
+    ],
+    "A-08": [
+      "AV-UI-008",
+      "AV-UI-009",
+      "AV-FLOW-025"
+    ],
+    "A-09": [
+      "AV-LRN-018",
+      "AV-LRN-024"
+    ],
+    "A-10": [
+      "AV-OPS-010",
+      "AV-LRN-028"
+    ],
+    "A-11": [
+      "AV-OPS-002"
+    ],
+    "A-12": [
+      "AV-UI-006",
+      "AV-UI-007",
+      "AV-GATE-005"
+    ],
+    "A-13": [
+      "AV-SAFE-010",
+      "AV-SAFE-012"
+    ],
+    "A-14": [
+      "AV-UI-004",
+      "AV-UI-010",
+      "AV-GATE-005"
+    ],
+    "A-15": [
+      "AV-UI-015",
+      "AV-STAT-041",
+      "AV-STAT-042"
+    ],
+    "B-01": [
+      "AV-STAT-001",
+      "AV-STAT-002",
+      "AV-STAT-003"
+    ],
+    "B-02": [
+      "AV-OPS-009"
+    ],
+    "B-03": [
+      "AV-FLOW-001",
+      "AV-FLOW-002"
+    ],
+    "B-04": [
+      "AV-SAFE-002",
+      "AV-SAFE-003",
+      "AV-SAFE-004",
+      "AV-SAFE-005",
+      "AV-SAFE-033",
+      "AV-STAT-002",
+      "AV-FLOW-012"
+    ],
+    "B-05": [
+      "AV-STAT-008"
+    ],
+    "B-06": [
+      "AV-STAT-004",
+      "AV-STAT-005",
+      "AV-STAT-006",
+      "AV-STAT-020"
+    ],
+    "B-07": [
+      "AV-STAT-010"
+    ],
+    "B-08": [
+      "AV-STAT-009",
+      "AV-STAT-011",
+      "AV-STAT-012",
+      "AV-STAT-013"
+    ],
+    "B-09": [
+      "AV-STAT-026",
+      "AV-STAT-027",
+      "AV-STAT-043",
+      "AV-SAFE-028"
+    ],
+    "B-10": [
+      "AV-SAFE-003",
+      "AV-SAFE-025",
+      "AV-STAT-030",
+      "AV-STAT-031",
+      "AV-STAT-032",
+      "AV-STAT-033",
+      "AV-STAT-037",
+      "AV-AGT-006"
+    ],
+    "B-11": [
+      "AV-STAT-007",
+      "AV-UI-011",
+      "AV-UI-012",
+      "AV-UI-016",
+      "AV-SAFE-029"
+    ],
+    "B-12": [
+      "AV-STAT-014",
+      "AV-STAT-034",
+      "AV-STAT-035",
+      "AV-STAT-036",
+      "AV-STAT-038",
+      "AV-STAT-039",
+      "AV-OPS-005",
+      "AV-SAFE-031",
+      "AV-FLOW-010",
+      "AV-FLOW-011"
+    ],
+    "C-01": [
+      "AV-AGT-002",
+      "AV-AGT-003",
+      "AV-OPS-011"
+    ],
+    "C-02": [
+      "AV-AGT-001",
+      "AV-SAFE-022"
+    ],
+    "C-03": [
+      "AV-AGT-004"
+    ],
+    "C-04": [
+      "AV-AGT-005",
+      "AV-AGT-006",
+      "AV-AGT-029"
+    ],
+    "C-05": [
+      "AV-AGT-007",
+      "AV-AGT-012",
+      "AV-AGT-026"
+    ],
+    "C-06": [
+      "AV-AGT-008",
+      "AV-AGT-009",
+      "AV-AGT-010",
+      "AV-AGT-011"
+    ],
+    "C-07": [
+      "AV-AGT-013",
+      "AV-AGT-014",
+      "AV-AGT-015",
+      "AV-AGT-016",
+      "AV-AGT-017",
+      "AV-STAT-009"
+    ],
+    "C-08": [
+      "AV-GATE-006",
+      "AV-GATE-009",
+      "AV-GATE-023"
+    ],
+    "C-09": [
+      "AV-SAFE-010",
+      "AV-SAFE-011",
+      "AV-STAT-021"
+    ],
+    "C-10": [
+      "AV-SAFE-006",
+      "AV-SAFE-013",
+      "AV-SAFE-014",
+      "AV-SAFE-016",
+      "AV-SAFE-018",
+      "AV-STAT-020"
+    ],
+    "C-11": [
+      "AV-SAFE-001",
+      "AV-SAFE-019",
+      "AV-AGT-024",
+      "AV-AGT-028",
+      "AV-FLOW-016"
+    ],
+    "C-12": [
+      "AV-AGT-018",
+      "AV-AGT-019"
+    ],
+    "C-13": [
+      "AV-SAFE-024",
+      "AV-AGT-020",
+      "AV-AGT-021",
+      "AV-AGT-022",
+      "AV-AGT-023",
+      "AV-AGT-025"
+    ],
+    "C-14": [
+      "AV-GATE-001",
+      "AV-GATE-002",
+      "AV-GATE-003",
+      "AV-GATE-006",
+      "AV-GATE-007",
+      "AV-GATE-008",
+      "AV-GATE-009",
+      "AV-GATE-010",
+      "AV-GATE-011",
+      "AV-GATE-012",
+      "AV-GATE-013",
+      "AV-GATE-014",
+      "AV-GATE-015",
+      "AV-GATE-020",
+      "AV-GATE-021",
+      "AV-GATE-022",
+      "AV-SAFE-017",
+      "AV-STAT-022",
+      "AV-FLOW-013"
+    ],
+    "C-15": [
+      "AV-AGT-031",
+      "AV-FLOW-004",
+      "AV-FLOW-021",
+      "AV-STAT-041",
+      "AV-STAT-042"
+    ],
+    "D-01": [
+      "AV-LRN-001"
+    ],
+    "D-02": [
+      "AV-LRN-002",
+      "AV-LRN-003"
+    ],
+    "D-03": [
+      "AV-LRN-006",
+      "AV-LRN-007",
+      "AV-LRN-009",
+      "AV-LRN-027"
+    ],
+    "D-04": [
+      "AV-LRN-008",
+      "AV-LRN-009"
+    ],
+    "D-05": [
+      "AV-LRN-010",
+      "AV-LRN-011"
+    ],
+    "D-06": [
+      "AV-LRN-004",
+      "AV-LRN-005",
+      "AV-LRN-012",
+      "AV-LRN-014",
+      "AV-LRN-027"
+    ],
+    "D-07": [
+      "AV-LRN-015",
+      "AV-LRN-016",
+      "AV-STAT-040"
+    ],
+    "D-08": [
+      "AV-LRN-017"
+    ],
+    "D-09": [
+      "AV-LRN-019",
+      "AV-LRN-021",
+      "AV-LRN-023",
+      "AV-SAFE-026"
+    ],
+    "D-10": [
+      "AV-LRN-020",
+      "AV-LRN-022",
+      "AV-SAFE-027",
+      "AV-STAT-040"
+    ],
+    "D-11": [
+      "AV-LRN-026",
+      "AV-LRN-028"
+    ],
+    "D-12": [
+      "AV-LRN-018",
+      "AV-LRN-024"
+    ],
+    "D-13": [
+      "AV-LRN-013",
+      "AV-LRN-025",
+      "AV-FLOW-018",
+      "AV-FLOW-022",
+      "AV-STAT-042"
+    ],
+    "E-01": [
+      "AV-AGT-030",
+      "AV-SAFE-022"
+    ],
+    "E-02": [
+      "AV-AGT-026",
+      "AV-AGT-027",
+      "AV-FLOW-017"
+    ],
+    "E-03": [
+      "AV-AGT-002",
+      "AV-AGT-027",
+      "AV-OPS-011"
+    ],
+    "E-04": [
+      "AV-AGT-033",
+      "AV-AGT-037"
+    ],
+    "E-05": [
+      "AV-AGT-032",
+      "AV-FLOW-005"
+    ],
+    "E-06": [
+      "AV-SAFE-023",
+      "AV-FLOW-006"
+    ],
+    "E-07": [
+      "AV-SAFE-020",
+      "AV-AGT-035",
+      "AV-AGT-036",
+      "AV-FLOW-007",
+      "AV-FLOW-008"
+    ],
+    "E-08": [
+      "AV-STAT-024",
+      "AV-STAT-025",
+      "AV-STAT-028",
+      "AV-STAT-036",
+      "AV-OPS-012",
+      "AV-OPS-019",
+      "AV-AGT-038",
+      "AV-FLOW-009"
+    ],
+    "E-09": [
+      "AV-GATE-004",
+      "AV-GATE-016",
+      "AV-GATE-017",
+      "AV-GATE-018",
+      "AV-GATE-019",
+      "AV-GATE-023",
+      "AV-GATE-024",
+      "AV-GATE-025",
+      "AV-STAT-023",
+      "AV-UI-013",
+      "AV-UI-014",
+      "AV-FLOW-014",
+      "AV-FLOW-015",
+      "AV-FLOW-024",
+      "AV-FLOW-025"
+    ],
+    "E-10": [
+      "AV-SAFE-015"
+    ],
+    "E-11": [
+      "AV-AGT-034",
+      "AV-FLOW-023",
+      "AV-STAT-041",
+      "AV-STAT-042"
+    ],
+    "F-01": [
+      "AV-SAFE-021",
+      "AV-SAFE-030",
+      "AV-SAFE-031",
+      "AV-SAFE-032",
+      "AV-OPS-010"
+    ],
+    "F-02": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-LRN-028",
+      "AV-FLOW-019"
+    ],
+    "F-03": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-04": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-05": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-06": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-07": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-08": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-09": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-10": [
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-11": [
+      "AV-SAFE-030",
+      "AV-OPS-010",
+      "AV-OPS-011",
+      "AV-FLOW-019"
+    ],
+    "F-12": [
+      "AV-UI-003",
+      "AV-OPS-010",
+      "AV-FLOW-019"
+    ],
+    "F-13": [
+      "AV-OPS-001",
+      "AV-OPS-002",
+      "AV-OPS-003",
+      "AV-OPS-004",
+      "AV-OPS-005",
+      "AV-OPS-006"
+    ],
+    "F-14": [
+      "AV-OPS-007",
+      "AV-OPS-008",
+      "AV-OPS-009",
+      "AV-OPS-022"
+    ],
+    "F-15": [
+      "AV-OPS-014",
+      "AV-SAFE-029",
+      "AV-UI-010",
+      "AV-UI-012"
+    ],
+    "F-16": [
+      "AV-OPS-013",
+      "AV-OPS-015",
+      "AV-OPS-021"
+    ],
+    "F-17": [
+      "AV-OPS-015",
+      "AV-OPS-025"
+    ],
+    "F-18": [
+      "AV-OPS-013",
+      "AV-OPS-016",
+      "AV-OPS-020",
+      "AV-OPS-021"
+    ],
+    "F-19": [
+      "AV-OPS-017",
+      "AV-FLOW-020"
+    ],
+    "F-20": [
+      "AV-OPS-017",
+      "AV-OPS-018",
+      "AV-OPS-022",
+      "AV-OPS-023",
+      "AV-OPS-024",
+      "AV-OPS-025",
+      "AV-GATE-025",
+      "AV-UI-010",
+      "AV-FLOW-020"
+    ],
+    "P-01": [
+      "AV-PLG-001",
+      "AV-PLG-002"
+    ],
+    "P-02": [
+      "AV-PLG-003",
+      "AV-PLG-004"
+    ],
+    "P-03": [
+      "AV-PLG-005",
+      "AV-PLG-006"
+    ],
+    "P-04": [
+      "AV-PLG-007"
+    ]
+  },
+  "scenario_traces": [
+    {
+      "scenario_id": "S49-17-01",
+      "source_clause": "49.17-1",
+      "verification_id": "AV-STAT-041",
+      "packages": [
+        "A-15",
+        "C-15",
+        "E-11"
+      ],
+      "gate": "A/C/E pre-Gate DIR checkpoint",
+      "evidence": [
+        "E-EVT",
+        "E-PRG"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-02",
+      "source_clause": "49.17-2",
+      "verification_id": "AV-STAT-042",
+      "packages": [
+        "A-15",
+        "C-15",
+        "D-13",
+        "E-11"
+      ],
+      "gate": "DIR owner-direction Gate",
+      "evidence": [
+        "E-DEC",
+        "E-EVT",
+        "E-PRG"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-03",
+      "source_clause": "49.17-3",
+      "verification_id": "AV-FLOW-024",
+      "packages": [
+        "E-09"
+      ],
+      "gate": "E Gate",
+      "evidence": [
+        "E-API",
+        "E-AUD"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-04",
+      "source_clause": "49.17-4",
+      "verification_id": "AV-FLOW-025",
+      "packages": [
+        "E-09"
+      ],
+      "gate": "E Gate",
+      "evidence": [
+        "E-DEC",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-05",
+      "source_clause": "49.17-5",
+      "verification_id": "AV-STAT-043",
+      "packages": [
+        "B-09"
+      ],
+      "gate": "B Gate",
+      "evidence": [
+        "E-AUD",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-06",
+      "source_clause": "49.17-6",
+      "verification_id": "AV-SAFE-028",
+      "packages": [
+        "B-09",
+        "E-06"
+      ],
+      "gate": "B/E Gate",
+      "evidence": [
+        "E-AUD",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-07",
+      "source_clause": "49.17-7",
+      "verification_id": "AV-AGT-038",
+      "packages": [
+        "E-08"
+      ],
+      "gate": "E Gate",
+      "evidence": [
+        "E-API",
+        "E-AUD",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-08",
+      "source_clause": "49.17-8",
+      "verification_id": "AV-OPS-019",
+      "packages": [
+        "E-08"
+      ],
+      "gate": "E Gate",
+      "evidence": [
+        "E-API",
+        "E-AUD",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-09",
+      "source_clause": "49.17-9",
+      "verification_id": "AV-SAFE-029",
+      "packages": [
+        "B-11",
+        "F-15"
+      ],
+      "gate": "B/F Gate",
+      "evidence": [
+        "E-API",
+        "E-AUD"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-10",
+      "source_clause": "49.17-10",
+      "verification_id": "AV-SAFE-030",
+      "packages": [
+        "F-01",
+        "F-11"
+      ],
+      "gate": "F Gate",
+      "evidence": [
+        "E-AUD",
+        "E-NET"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-11",
+      "source_clause": "49.17-11",
+      "verification_id": "AV-SAFE-031",
+      "packages": [
+        "B-12",
+        "F-01"
+      ],
+      "gate": "B/F Gate",
+      "evidence": [
+        "E-AUD",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-12",
+      "source_clause": "49.17-12",
+      "verification_id": "AV-SAFE-032",
+      "packages": [
+        "F-01",
+        "F-02"
+      ],
+      "gate": "F Gate",
+      "evidence": [
+        "E-AUD",
+        "E-NET"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-13",
+      "source_clause": "49.17-13",
+      "verification_id": "AV-LRN-027",
+      "packages": [
+        "D-03",
+        "D-06"
+      ],
+      "gate": "D-Learning Gate",
+      "evidence": [
+        "E-AUD",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-14",
+      "source_clause": "49.17-14",
+      "verification_id": "AV-LRN-028",
+      "packages": [
+        "D-11",
+        "F-02"
+      ],
+      "gate": "D-Hook/F Gate",
+      "evidence": [
+        "E-AUD",
+        "E-TEST"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-15",
+      "source_clause": "49.17-15",
+      "verification_id": "AV-GATE-025",
+      "packages": [
+        "E-09",
+        "F-20"
+      ],
+      "gate": "E/F Gate",
+      "evidence": [
+        "E-AUD",
+        "E-MAN"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-16",
+      "source_clause": "49.17-16",
+      "verification_id": "AV-OPS-020",
+      "packages": [
+        "F-18"
+      ],
+      "gate": "F Gate",
+      "evidence": [
+        "E-AUD",
+        "E-GIT",
+        "E-MAN"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-17",
+      "source_clause": "49.17-17",
+      "verification_id": "AV-OPS-021",
+      "packages": [
+        "F-16",
+        "F-18"
+      ],
+      "gate": "F Gate",
+      "evidence": [
+        "E-AUD",
+        "E-CMD",
+        "E-GIT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-18",
+      "source_clause": "49.17-18",
+      "verification_id": "AV-OPS-022",
+      "packages": [
+        "F-14",
+        "F-20"
+      ],
+      "gate": "F Gate",
+      "evidence": [
+        "E-DEC",
+        "E-EVT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-19",
+      "source_clause": "49.17-19",
+      "verification_id": "AV-OPS-023",
+      "packages": [
+        "F-20"
+      ],
+      "gate": "F Gate",
+      "evidence": [
+        "E-NET",
+        "E-SHOT"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    },
+    {
+      "scenario_id": "S49-17-20",
+      "source_clause": "49.17-20",
+      "verification_id": "AV-OPS-024",
+      "packages": [
+        "F-20"
+      ],
+      "gate": "F Gate",
+      "evidence": [
+        "E-DEC",
+        "E-EVT",
+        "E-MAN"
+      ],
+      "execution_status": "NOT_EXECUTED"
+    }
+  ],
+  "dir_contract": {
+    "DIR-1": {
+      "package": "A-15",
+      "calculated_cumulative": 22,
+      "declared_cumulative": 22
+    },
+    "DIR-2": {
+      "package": "C-15",
+      "calculated_cumulative": 49,
+      "declared_cumulative": 49
+    },
+    "DIR-3": {
+      "package": "E-11",
+      "calculated_cumulative": 73,
+      "declared_cumulative": 73
+    },
+    "DIR-X": {
+      "conditional_trigger": "DIRX-LRN-CRITICAL",
+      "preserves": "DIR-3"
+    }
+  },
+  "prior_acceptance_provenance": [
+    {
+      "package_id": "G-01",
+      "test_report": "docs/test_reports/G-01_TEST_REPORT.md",
+      "test_report_sha256": "E6471B535EB6A749F96E8C08A155F53E4BC2F90FFEFD00BD057C98351161C71A",
+      "manifest": "docs/evidence/manifests/G-01_EVIDENCE_MANIFEST.json",
+      "manifest_sha256": "3C68E04B123C3961023F02EA9E6768F7DF5F8E621A0F15237BC4EEB990284D4B",
+      "target_hash": "6E16BB405D58296CECDC1EE057A2DDE0A6FA601F6D289257CBBAE78E3C30A38C"
+    },
+    {
+      "package_id": "G-02",
+      "test_report": "docs/test_reports/G-02_TEST_REPORT_R3.md",
+      "test_report_sha256": "F191B95AF36181715E71815081DE45673FE4D2A91AE1DB643597DB3917451D35",
+      "manifest": "docs/evidence/manifests/G-02_EVIDENCE_MANIFEST.json",
+      "manifest_sha256": "E39688335A0B1877116E34691977F8060E6B698A4D4F8E8A7B42BDBE5A3CD00A",
+      "target_hash": "B01C9BF94B00588DFCEFE35096C0D64A39FACE4D4123D34E314C1A54B07F5F17"
+    },
+    {
+      "package_id": "G-03",
+      "test_report": "docs/test_reports/G-03_TEST_REPORT_R4.md",
+      "test_report_sha256": "D9F25579559865C9369C8913C78AA20A496D06CE3D887F7F87BE3DEA12FA452F",
+      "manifest": "docs/evidence/manifests/G-03_EVIDENCE_MANIFEST.json",
+      "manifest_sha256": "A089B389B21DBDADD7CBC6D18EC9C2374F858D4E92DD7BC75EF1580DA5D1388F",
+      "target_hash": "F03EC454E960BCF6A8271D7BE547129CB4220574254DCE9B927F2E12AFBFD6AB"
+    },
+    {
+      "package_id": "G-04",
+      "test_report": "docs/test_reports/G-04_TEST_REPORT_R2.md",
+      "test_report_sha256": "0C5123F32FBD268EA6E91B9592F833F2A8D899119A47528FC5761C895B8D34AF",
+      "manifest": "docs/evidence/manifests/G-04_EVIDENCE_MANIFEST.json",
+      "manifest_sha256": "F2674994201407532D6E18A9F9A0A94B606BA94385DCD126C03AF7F8264B09C1",
+      "target_hash": "5B5FA32568A7AD293C611BB5E85FCD4C0C0076EA787327CCC4AF1D936042827D"
+    },
+    {
+      "package_id": "G-05",
+      "test_report": "docs/test_reports/G-05_TEST_REPORT_R2.md",
+      "test_report_sha256": "ED0F03496060C84D67DE84C0758611610CD753CF8D854216F9933089F07C758C",
+      "manifest": "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST_R2.json",
+      "manifest_sha256": "F9A5E7168B9B68B70D74B68DD495211BDC7961223E5E48CFC6F565638B9E69E6",
+      "target_hash": "186A07DC8EFFA422BDC310697C5D9E92BCDC875F063B09F1ECF7D1C197EAE646"
+    },
+    {
+      "package_id": "G-06",
+      "test_report": "docs/test_reports/G-06_TEST_REPORT_R2.md",
+      "test_report_sha256": "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546",
+      "manifest": "docs/evidence/manifests/G-06_EVIDENCE_MANIFEST_R3.json",
+      "manifest_sha256": "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0",
+      "target_hash": "E3B29F23CDFF5FFA3AE26B88A5F63343D2DA8253B5A73C5FB10E28AA0A0074B1"
+    }
+  ],
+  "git": {
+    "verified": true,
+    "branch": "main",
+    "head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+    "upstream_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8"
+  },
+  "g_gate": {
+    "regression": {
+      "AV-FLOW-003": {
+        "package": "G-04",
+        "status": "PASS",
+        "source": "docs/test_reports/G-04_TEST_REPORT_R2.md"
+      },
+      "AV-STAT-015": {
+        "package": "G-05",
+        "status": "PASS",
+        "source": "docs/test_reports/G-05_TEST_REPORT_R2.md"
+      },
+      "AV-STAT-016": {
+        "package": "G-05",
+        "status": "PASS",
+        "source": "docs/test_reports/G-05_TEST_REPORT_R2.md"
+      },
+      "AV-CON-016(RV)": {
+        "package": "G-01",
+        "status": "PASS",
+        "source": "docs/test_reports/G-01_TEST_REPORT.md"
+      },
+      "AV-GATE-026": {
+        "package": "G-07",
+        "status": "PASS",
+        "source": "docs/test_reports/G-07_TEST_REPORT.md"
+      }
+    },
+    "readiness": "ACCEPTED_AWAITING_PHASE_G_GATE",
+    "developer_may_mark_gate_complete": false,
+    "a01_start_allowed": false,
+    "remaining_before_a01": [
+      "PHASE_G_GATE_RECORD"
+    ]
+  },
+  "progress_reconciliation": {
+    "event_type": "REPOSITORY_RECONCILED",
+    "branch": "main",
+    "local_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+    "remote_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+    "upstream": "origin/main",
+    "observed_at": "2026-08-10T20:30:00+09:00",
+    "reason": "reconcile stale a70daa4 progress and HANDOFF projection to observed HEAD/upstream; not a retroactive push claim"
+  },
+  "failure_counts": {
+    "active_lineage": "G-07",
+    "active_lineage_valid_failure_count": 0,
+    "historical_accepted_failure_total": 2,
+    "historical_by_lineage": {
+      "G-05": 1,
+      "G-06": 1
+    }
+  },
+  "unverified": [
+    "runtime_scenarios_20",
+    "fault_injections_8",
+    "product_api_ui_db_wsl_production",
+    "g_gate_completion"
+  ],
+  "errors": [],
+  "status": "PASS"
+}
