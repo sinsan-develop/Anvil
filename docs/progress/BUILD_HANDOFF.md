@@ -16,7 +16,7 @@
 - 비의미 binding: `MAIN_RECONFIRMED_NON_SEMANTIC:G-02-R2-G02-DEF-001` revision 3 / SHA-256 `8332635C9CE92B085AFFDF1B235F48945605DC87FA7294DA5FF88A589C95D03D`
 - canonical parent baseline: `BASELINE-G-01-20260810-001` / `docs/baselines/G-01_BASELINE_RECORD.md` / SHA-256 `8EA9C6DA6E45955D7F7397C208FCFB0EFCC8C01B84851021F239350AC542847B`
 - G-02 derived baseline: `BASELINE-G-02-DERIVED-20260810-001` / `docs/baselines/G-02_DERIVED_DESIGN_BASELINE.md` / SHA-256 `E11EAB020485395FE68049EF8F335D65A25F93AB65837901204554E570E8916B`
-- Git: `main` 초기화 완료, commit 0개, remote 0개
+- Git: `main` 초기 기준선 commit `6fab9aa95811ad09aa2f27a0e9c7f5b73bf12cfd`, remote 0개
 - 제품 코드: 아직 없음; G-03은 directory scaffold와 tooling checker만 생성
 
 ## 2. 역할
@@ -106,7 +106,7 @@
 
 ## 6. 다음 안전 행동
 
-G-03 revision 4는 root·nested beyond-top-level을 slicing 전에 차단하면서 합법적인 `packages.domain` 재진입을 유지했고, R4 독립 Tester와 Main fresh 검증을 모두 통과해 `ACCEPTED`다. 다음 안전 행동은 이 승인 기준선을 Git에 최초 커밋한 뒤 G-04 WorkInstruction을 발행하는 것이다. 원격 저장소가 없으므로 push는 보류한다.
+G-03 revision 4는 root·nested beyond-top-level을 slicing 전에 차단하면서 합법적인 `packages.domain` 재진입을 유지했고, R4 독립 Tester와 Main fresh 검증을 모두 통과해 `ACCEPTED`다. 승인 기준선은 Git commit `6fab9aa95811ad09aa2f27a0e9c7f5b73bf12cfd`로 고정했다. 다음 안전 행동은 G-04 WorkInstruction을 발행하는 것이다. 원격 저장소가 없으므로 push는 보류한다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

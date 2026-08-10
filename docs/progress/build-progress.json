@@ -148,6 +148,7 @@
     "production_domain": "envil.sinsan.kr",
     "deployment": "Git-only approved commit/tag and ReleaseManifest"
   },
-  "repository_state": "INITIALIZED_MAIN_NO_COMMITS_NO_REMOTES",
-  "next_safe_action": "Main Agent가 G-03 ACCEPTED 기준선을 Git에 커밋한 뒤 G-04 WorkInstruction을 발행"
+  "repository_state": "MAIN_INITIAL_BASELINE_COMMITTED_NO_REMOTE",
+  "repository_baseline_commit": "6fab9aa95811ad09aa2f27a0e9c7f5b73bf12cfd",
+  "next_safe_action": "Main Agent가 G-04 WorkInstruction을 발행하고 Developer Subagent에 위임"
 }
