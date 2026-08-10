@@ -1,16 +1,16 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000013",
-  "event_sequence": 25,
-  "snapshot_hash": "A7F1D2C092B1E11D6CF647356D52F196E003BBD30E4B59A6CA60CFD2EDD500F4",
-  "updated_at": "2026-08-10T23:30:00+09:00",
-  "last_event_id": "evt_phase_g_gate_decided_accepted",
+  "snapshot_id": "snapshot-anvil-build-000014",
+  "event_sequence": 26,
+  "snapshot_hash": "4015AF91C56F7C0DA4A8D87E94BC00259612233B6DA9C46DE4483A41E500BB30",
+  "updated_at": "2026-08-10T23:45:00+09:00",
+  "last_event_id": "evt_phase_g_gate_checkpoint_push_confirmed",
   "plan_version": "1.4",
   "work_plan_hash": "4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "current_phase": "G",
-  "current_work_package": null,
-  "status": "GATE_CHECKPOINT_PENDING_PUSH",
+  "current_phase": "A",
+  "current_work_package": "A-01",
+  "status": "READY",
   "completed_packages": ["G-01", "G-02", "G-03", "G-04", "G-05", "G-06", "G-07", "PHASE_G_GATE"],
   "active_agent": null,
   "write_lease": null,
@@ -18,7 +18,7 @@
   "budget_reservations": [],
   "valid_failure_count": 1,
   "active_failure_lineage": {
-    "step_lineage_id": "PHASE_G_GATE_ACCEPTED",
+    "step_lineage_id": "A-01",
     "valid_failure_count": 0,
     "takeover_status": "NOT_REQUIRED"
   },
@@ -32,11 +32,12 @@
     {"path": "docs/work_orders/PHASE_G_GATE_WORK_INSTRUCTION.md", "sha256": "5F0172B7CADDBBA9086428AE5DD294F67F6D5BADD44573D4730E84E76D1BB7D7"},
     {"path": "docs/work_orders/PHASE_G_GATE_INVOCATION_PROMPT.md", "sha256": "BBD3F49B6E395A6F9BE460488C88B76283FCE1D2E8EBF12229AA811C6B031076"},
     {"path": "docs/test_reports/PHASE_G_GATE_TEST_REPORT_R2.md", "sha256": "1A0A852EAC34450BA1CB815C756096673CF2917B6915118F2BA2B46B9941B6DD"},
-    {"path": "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json", "sha256": "525EEDBAFE79E14795AFB26290EA0C4C58EA8C10A9579AFA110B4E3F46DDB9FD"}
+    {"path": "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json", "sha256": "525EEDBAFE79E14795AFB26290EA0C4C58EA8C10A9579AFA110B4E3F46DDB9FD"},
+    {"path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json", "sha256": "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884"}
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST_R2.json",
-    "sha256": "C6A7CBC5FCD8B37DC9CE5DE48268DC45FEC13DE5401B4B44F08DB9016C1E9A3A"
+    "path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json",
+    "sha256": "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -46,7 +47,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Main creates the Phase G Git gate checkpoint commit and push; A-01 remains blocked until checkpoint evidence is recorded",
+  "next_safe_action": "Main may issue the A-01 WorkInstruction; no A-01 implementation starts before an approved instruction and valid leases",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -62,12 +63,22 @@
   },
   "repository": {
     "branch": "main",
-    "local_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+    "local_head": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
     "upstream": "origin/main",
-    "remote_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
-    "worktree_status": "G-07 WorkInstruction plus allowed implementation/evidence paths are uncommitted; observed HEAD and origin/main reconcile at 23bc001; no retroactive push claim"
+    "remote_head": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
+    "worktree_status": "Phase G Gate checkpoint commit/push confirmed at 5ca9c1f; post-push progress transition files are uncommitted"
   },
   "active_work_instruction": null,
+  "phase_gate": {
+    "gate": "G Gate",
+    "decision": "ACCEPTED",
+    "checkpoint_status": "CLEARED",
+    "decision_ref": "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json",
+    "approval_mode": "STANDING_AUTONOMOUS_APPROVAL_APPLIED",
+    "approval_ref": "APPROVAL-20260810-AUTONOMOUS-EXECUTION-001",
+    "owner_report_review_status": "NOT_REPORT_SPECIFIC",
+    "a01_start_allowed": true
+  },
   "last_accepted_work_instruction": {
     "artifact_id": "WI-PHASE-G-GATE-20260810-001",
     "path": "docs/work_orders/PHASE_G_GATE_WORK_INSTRUCTION.md",
@@ -80,15 +91,15 @@
     "stop_before_dialogue_report": false
   },
   "current_progress_evidence_ref": {
-    "package_id": "PHASE_G_GATE",
-    "path": "docs/progress/progress-handoff-detached-digest-phase-g-gate.json",
-    "manifest_path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json"
+    "package_id": "A-01",
+    "path": "docs/progress/progress-handoff-detached-digest-phase-a-ready.json",
+    "manifest_path": "docs/evidence/manifests/PHASE_G_GATE_CHECKPOINT_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {"path": "docs/progress/failure-ledger.json", "sha256": "594E7A53CA5E5037AA8E5651FE9EC49E1B0E35E731B6D4D30713BCA26E230EF0"},
     "non_semantic_revision_bindings": {"path": "docs/progress/non-semantic-revision-bindings.json", "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"},
     "dir_checkpoints": {"path": "docs/progress/dir-checkpoints.json", "sha256": "73147EA0DC940F34A7369E8A58EA7DD738DBA2246DD9F729DE8FB26273E44F4B"},
     "progress_event_contract": {"path": "docs/progress/progress-event-contract.json", "sha256": "B60E59C60BA15F984DB2070894F9ED8844498B931546DB55F68F2154FA654F7C"},
-    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "7652E15EF6A0701EE080C20F9243CEE6EC45EAB6BEB45FBB12A6D3F0D606465C"}
+    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "4621464F944EDCE207BC6B81E9EAB5DAAC92BC467217D8D1C312D4B849D4F60E"}
   }
 }

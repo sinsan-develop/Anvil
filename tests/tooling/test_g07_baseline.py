@@ -55,7 +55,7 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(255, report["counts"]["unique_av_total"])
         self.assertEqual(0, report["counts"]["uncovered_av_total"])
         self.assertEqual(20, report["counts"]["scenario_total"])
-        self.assertEqual("PHASE_G_GATE_ACCEPTED_CHECKPOINT_PENDING", report["g_gate"]["readiness"])
+        self.assertEqual("A01_READY", report["g_gate"]["readiness"])
 
     def test_authority_hash_and_version_drift_are_rejected(self):
         design = (ROOT / "Anvil_설계서_v2.md").read_text(encoding="utf-8")
@@ -153,18 +153,18 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("REPOSITORY_RECONCILED", reconciliation["event_type"])
-        self.assertEqual(report["git"]["head"], reconciliation["local_head"])
-        self.assertEqual(report["git"]["upstream_head"], reconciliation["remote_head"])
-        self.assertEqual("PHASE_G_GATE_ACCEPTED", report["failure_counts"]["active_lineage"])
+        self.assertEqual("GIT_PUSH", reconciliation["event_type"])
+        self.assertEqual(report["git"]["head"], reconciliation["local_commit"])
+        self.assertEqual(report["git"]["upstream_head"], reconciliation["remote_commit"])
+        self.assertEqual("A-01", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(3, report["failure_counts"]["historical_accepted_failure_total"])
-        self.assertFalse(report["g_gate"]["a01_start_allowed"])
+        self.assertTrue(report["g_gate"]["a01_start_allowed"])
         self.assertEqual(
-            ["GIT_GATE_CHECKPOINT"],
+            [],
             report["g_gate"]["remaining_before_a01"],
         )
-        self.assertEqual("PHASE_G_GATE_ACCEPTED_CHECKPOINT_PENDING", report["g_gate"]["readiness"])
+        self.assertEqual("A01_READY", report["g_gate"]["readiness"])
 
     def test_evidence_manifest_recomputes_exact_delivered_target(self):
         errors = self.checker.validate_g07_manifest(ROOT, verify_live_raw=False)

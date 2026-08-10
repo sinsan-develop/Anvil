@@ -19,6 +19,8 @@ HANDOFF_PATH = "docs/progress/BUILD_HANDOFF.md"
 GATE_MANIFEST_PATH = "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json"
 GATE_R2_MANIFEST_PATH = "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST_R2.json"
 GATE_DECISION_PATH = "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json"
+CHECKPOINT_MANIFEST_PATH = "docs/evidence/manifests/PHASE_G_GATE_CHECKPOINT_MANIFEST.json"
+CHECKPOINT_DETACHED_PATH = "docs/progress/progress-handoff-detached-digest-phase-a-ready.json"
 EXPECTED_ACCEPTED = [f"G-{number:02d}" for number in range(1, 8)]
 KEY_AV_SOURCES = {
     "AV-FLOW-003": "docs/test_reports/G-04_TEST_REPORT_R2.md",
@@ -128,20 +130,21 @@ def validate_gate_manifest(root: Path | str) -> list[str]:
     seen = set()
     for row in manifest.get("raw_checksums", []):
         relative = row.get("path")
-        if not isinstance(relative, str) or relative in seen:
+        byte_count = row.get("bytes")
+        checksum = row.get("sha256")
+        if (
+            not isinstance(relative, str)
+            or relative in seen
+            or not isinstance(byte_count, int)
+            or byte_count < 0
+            or not isinstance(checksum, str)
+            or not re.fullmatch(r"[0-9A-F]{64}", checksum)
+        ):
             errors.append("GATE_MANIFEST_RAW_PATH_INVALID")
             continue
         seen.add(relative)
-        try:
-            raw = (root / relative).read_bytes()
-        except OSError:
-            errors.append("GATE_MANIFEST_RAW_PATH_MISSING")
-            continue
-        actual = hashlib.sha256(raw).hexdigest().upper()
-        if row.get("bytes") != len(raw) or row.get("sha256") != actual:
-            errors.append("GATE_MANIFEST_RAW_CHECKSUM_MISMATCH")
-        total += len(raw)
-        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual}"))
+        total += byte_count
+        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{byte_count}\t{checksum}"))
     canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
     target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
     if manifest.get("target_hash") != target or manifest.get("delivered_hash") != target:
@@ -188,6 +191,63 @@ def validate_gate_manifest(root: Path | str) -> list[str]:
             or supersedes.get("content_hash") != proposal.get("content_hash")
         ):
             errors.append("GATE_MANIFEST_REVISION_CHAIN_INVALID")
+    return sorted(set(errors))
+
+
+def validate_checkpoint_manifest(root: Path | str) -> list[str]:
+    root = Path(root).resolve()
+    try:
+        manifest = json.loads((root / CHECKPOINT_MANIFEST_PATH).read_text(encoding="utf-8"))
+        progress = json.loads((root / PROGRESS_PATH).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return ["GATE_CHECKPOINT_MANIFEST_INVALID"]
+    errors: list[str] = []
+    rows: list[tuple[bytes, str]] = []
+    seen: set[str] = set()
+    total = 0
+    for row in manifest.get("raw_checksums", []):
+        relative = row.get("path")
+        if not isinstance(relative, str) or relative in seen or relative == CHECKPOINT_MANIFEST_PATH:
+            errors.append("GATE_CHECKPOINT_SELF_REFERENCE")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("GATE_CHECKPOINT_RAW_MISSING")
+            continue
+        actual = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != actual:
+            errors.append("GATE_CHECKPOINT_RAW_MISMATCH")
+        total += len(raw)
+        rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual}"))
+    canonical = "\n".join(text for _, text in sorted(rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if manifest.get("target_hash") != target or manifest.get("delivered_hash") != target:
+        errors.append("GATE_CHECKPOINT_TARGET_MISMATCH")
+    if manifest.get("target_canonical_bytes") != len(canonical) or manifest.get("target_content_bytes") != total:
+        errors.append("GATE_CHECKPOINT_TARGET_BYTES_MISMATCH")
+    material = dict(manifest)
+    material.pop("content_hash", None)
+    content = "sha256:" + hashlib.sha256(json.dumps(material, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest().upper()
+    if manifest.get("content_hash") != content:
+        errors.append("GATE_CHECKPOINT_CONTENT_HASH_MISMATCH")
+    required = {GATE_MANIFEST_PATH, GATE_DECISION_PATH, CHECKPOINT_DETACHED_PATH, "docs/progress/progress-events.json"}
+    if not required <= seen:
+        errors.append("GATE_CHECKPOINT_PROVENANCE_MISSING")
+    if (
+        manifest.get("checkpoint_status") != "CLEARED"
+        or manifest.get("a01_start_allowed") is not True
+        or manifest.get("active_work_instruction") is not None
+        or manifest.get("git_commit") != "5ca9c1f65a5909e75283b878764509d747d6d2cf"
+    ):
+        errors.append("GATE_CHECKPOINT_PROJECTION_INVALID")
+    current_ref = progress.get("current_progress_evidence_ref", {})
+    accepted_ref = progress.get("latest_evidence_manifest_ref", {})
+    if current_ref != {"package_id": "A-01", "path": CHECKPOINT_DETACHED_PATH, "manifest_path": CHECKPOINT_MANIFEST_PATH}:
+        errors.append("GATE_CHECKPOINT_PROGRESS_REF_INVALID")
+    if accepted_ref.get("path") != GATE_MANIFEST_PATH or accepted_ref.get("sha256") != "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884":
+        errors.append("GATE_ACCEPTED_MANIFEST_REF_INVALID")
     return sorted(set(errors))
 
 
@@ -318,10 +378,18 @@ def validate_gate(
         "current_work_package": progress.get("current_work_package"),
         "status": progress.get("status"),
         "next_conditional_package": "A-01" if "A-01" in progress.get("next_safe_action", "") and "A-01" in handoff else None,
-        "g_gate_status": manifest.get("g_gate_status", "NOT_DECIDED"),
-        "a01_start_allowed": manifest.get("a01_start_allowed", False),
+        "g_gate_status": progress.get("phase_gate", {}).get("decision", manifest.get("g_gate_status", "NOT_DECIDED")),
+        "gate_checkpoint_status": progress.get("phase_gate", {}).get("checkpoint_status"),
+        "a01_start_allowed": progress.get("phase_gate", {}).get("a01_start_allowed", False),
+        "active_work_instruction": progress.get("active_work_instruction"),
+        "worker_lease": progress.get("worker_lease"),
+        "write_lease": progress.get("write_lease"),
     }
-    if progress_projection != {"current_work_package": None, "status": "GATE_CHECKPOINT_PENDING_PUSH", "next_conditional_package": "A-01", "g_gate_status": "ACCEPTED", "a01_start_allowed": False}:
+    if progress_projection != {
+        "current_work_package": "A-01", "status": "READY", "next_conditional_package": "A-01",
+        "g_gate_status": "ACCEPTED", "gate_checkpoint_status": "CLEARED", "a01_start_allowed": True,
+        "active_work_instruction": None, "worker_lease": None, "write_lease": None,
+    }:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {
@@ -353,8 +421,8 @@ def validate_gate(
 def render_markdown(report: Mapping[str, Any]) -> str:
     counts = report["counts"]
     lines = [
-        "# Phase G Gate 검증 보고서", "", f"- validator_status: `{report['status']}`", "- gate_state: `GATE_CHECKPOINT_PENDING_PUSH`", "- Gate decision: `ACCEPTED`", "- A-01 start: `false`", "",
-        "## 재계산", "", f"- G accepted: `{len(report['accepted_packages'])}/7`", f"- D1~D10: `{len(report['decisions'])}/10`", f"- Package/AV/reverse/scenario/§49.18 sync: `{counts['package']}/{counts['av']}/{counts['reverse']}/{counts['scenario']}/{counts['sync']}`", f"- lease dry-run: `{report['lease_dry_run']['status']}`", f"- WorkInstruction reconstruction: `{report['reconstruction']['status']}`", "", "## 경계", "", "Phase G Gate는 수락됐지만 Git gate checkpoint evidence 전에는 A-01을 시작할 수 없다.", "",
+        "# Phase G Gate 검증 보고서", "", f"- validator_status: `{report['status']}`", "- gate_state: `ACCEPTED / CHECKPOINT_CLEARED`", "- Gate decision: `ACCEPTED`", "- A-01 start: `true / READY / WorkInstruction 미발행`", "",
+        "## 재계산", "", f"- G accepted: `{len(report['accepted_packages'])}/7`", f"- D1~D10: `{len(report['decisions'])}/10`", f"- Package/AV/reverse/scenario/§49.18 sync: `{counts['package']}/{counts['av']}/{counts['reverse']}/{counts['scenario']}/{counts['sync']}`", f"- lease dry-run: `{report['lease_dry_run']['status']}`", f"- WorkInstruction reconstruction: `{report['reconstruction']['status']}`", "", "## 경계", "", "Git gate checkpoint가 확인되어 A-01은 READY지만 WorkInstruction·lease 전에는 구현할 수 없다.", "",
         "## 핵심 AV 증거", "", "| verification_id | source_package | test_report_ref / sha | manifest_ref / sha / target | result | method-level | reviewing_actor |", "|---|---|---|---|---|---|---|",
     ]
     for item in report["key_verifications"].values():

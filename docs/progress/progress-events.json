@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 25,
+  "last_sequence": 26,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -291,6 +291,32 @@
         "action": "close Phase G and permit Git gate checkpoint",
         "evidence_target_hash": "090C669F5E66A6BB67577693C7CF1601727E12F5E173E0AA98D4BAF4D96B2091",
         "a01_start_allowed": false
+      }
+    },
+    {
+      "event_id": "evt_phase_g_gate_checkpoint_push_confirmed",
+      "sequence": 26,
+      "event_type": "GIT_PUSH",
+      "occurred_at": "2026-08-10T23:45:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_G_GATE",
+      "details": {
+        "remote": "origin",
+        "branch": "main",
+        "local_commit": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
+        "remote_commit": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
+        "evidence_ref": {
+          "path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json",
+          "sha256": "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884"
+        },
+        "gate": "G Gate",
+        "gate_decision": "ACCEPTED",
+        "checkpoint_status": "CLEARED",
+        "approval_mode": "STANDING_AUTONOMOUS_APPROVAL_APPLIED",
+        "approval_ref": "APPROVAL-20260810-AUTONOMOUS-EXECUTION-001",
+        "owner_report_review_status": "NOT_REPORT_SPECIFIC",
+        "a01_start_allowed": true,
+        "active_work_instruction": null
       }
     }
   ]

@@ -552,6 +552,16 @@ def validate_repository(
         and event.get("details", {}).get("verdict") == "ACCEPTED"
         for event in events
     )
+    phase_g_checkpoint = next(
+        (
+            event for event in reversed(events)
+            if event.get("event_type") == "GIT_PUSH"
+            and event.get("subject_ref") == "PHASE_G_GATE"
+            and event.get("details", {}).get("checkpoint_status") == "CLEARED"
+            and event.get("details", {}).get("a01_start_allowed") is True
+        ),
+        None,
+    )
     if not {"G-05", "G-06", "G-07"} <= accepted_events:
         _error(errors, "PRIOR_ACCEPTANCE_EVENT_MISSING", "docs/progress/progress-events.json", f"actual={sorted(accepted_events)}")
 
@@ -578,10 +588,11 @@ def validate_repository(
         _error(errors, "HISTORICAL_FAILURE_PROJECTION_MISMATCH", progress_path, f"expected={len(historical_failures)}")
 
     reconciliation_events = [event for event in events if event.get("event_type") == "REPOSITORY_RECONCILED"]
-    reconciliation = reconciliation_events[-1].get("details", {}) if reconciliation_events else {}
+    reconciliation_event = phase_g_checkpoint or (reconciliation_events[-1] if reconciliation_events else None)
+    reconciliation = reconciliation_event.get("details", {}) if reconciliation_event else {}
     if not reconciliation_events:
         _error(errors, "PROGRESS_RECONCILIATION_EVENT_MISSING", "docs/progress/progress-events.json", "REPOSITORY_RECONCILED")
-    progress_reconciliation = {"event_type": "REPOSITORY_RECONCILED", **reconciliation}
+    progress_reconciliation = {"event_type": reconciliation_event.get("event_type") if reconciliation_event else None, **reconciliation}
 
     git_evidence: dict[str, Any] = {"verified": False}
     if verify_git:
@@ -594,7 +605,9 @@ def validate_repository(
         repository_projection = progress.get("repository", {})
         if repository_projection.get("local_head") != head or repository_projection.get("remote_head") != upstream:
             _error(errors, "PROGRESS_REPOSITORY_STALE", progress_path, f"projected={repository_projection} actual={head}/{upstream}")
-        if reconciliation.get("local_head") != head or reconciliation.get("remote_head") != upstream:
+        projected_local = reconciliation.get("local_commit") if phase_g_checkpoint else reconciliation.get("local_head")
+        projected_remote = reconciliation.get("remote_commit") if phase_g_checkpoint else reconciliation.get("remote_head")
+        if projected_local != head or projected_remote != upstream:
             _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", f"event={reconciliation} actual={head}/{upstream}")
         for item in provenance:
             rc, commits = _git(root, "log", "--format=%H", "--", item["manifest"])
@@ -641,10 +654,10 @@ def validate_repository(
         "git": git_evidence,
         "g_gate": {
             "regression": regression,
-            "readiness": "PHASE_G_GATE_ACCEPTED_CHECKPOINT_PENDING" if phase_g_gate_accepted else "ACCEPTED_AWAITING_PHASE_G_GATE",
+            "readiness": "A01_READY" if phase_g_checkpoint else ("PHASE_G_GATE_ACCEPTED_CHECKPOINT_PENDING" if phase_g_gate_accepted else "ACCEPTED_AWAITING_PHASE_G_GATE"),
             "developer_may_mark_gate_complete": False,
-            "a01_start_allowed": False,
-            "remaining_before_a01": ["GIT_GATE_CHECKPOINT"] if phase_g_gate_accepted else ["PHASE_G_GATE_RECORD"],
+            "a01_start_allowed": bool(phase_g_checkpoint),
+            "remaining_before_a01": [] if phase_g_checkpoint else (["GIT_GATE_CHECKPOINT"] if phase_g_gate_accepted else ["PHASE_G_GATE_RECORD"]),
         },
         "progress_reconciliation": progress_reconciliation,
         "failure_counts": failure_counts,

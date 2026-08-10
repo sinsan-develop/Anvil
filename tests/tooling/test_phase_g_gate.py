@@ -94,12 +94,12 @@ class PhaseGGateTests(unittest.TestCase):
             self.codes(self.validate(texts={wi_path: wi}, verify_hashes=False)),
         )
 
-    def test_gate_acceptance_materializes_standing_approval_without_opening_a01(self):
+    def test_gate_checkpoint_opens_a01_readiness_without_issuing_work_instruction(self):
         report = self.validate()
-        self.assertIsNone(report["progress"]["current_work_package"])
-        self.assertEqual("GATE_CHECKPOINT_PENDING_PUSH", report["progress"]["status"])
+        self.assertEqual("A-01", report["progress"]["current_work_package"])
+        self.assertEqual("READY", report["progress"]["status"])
         self.assertEqual("A-01", report["progress"]["next_conditional_package"])
-        self.assertFalse(report["progress"]["a01_start_allowed"])
+        self.assertTrue(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
@@ -120,15 +120,18 @@ class PhaseGGateTests(unittest.TestCase):
         report = (ROOT / report_path).read_text(encoding="utf-8").replace("`AV-GATE-026`: **PASS", "`AV-GATE-026`: **SKIPPED", 1)
         self.assertIn("GATE_KEY_AV_EVIDENCE_MISSING", self.codes(self.validate(texts={report_path: report}, verify_hashes=False)))
 
-    def test_gate_and_a01_false_claims_are_rejected(self):
+    def test_advancement_beyond_a01_ready_is_rejected(self):
         progress_path = "docs/progress/build-progress.json"
         progress = json.loads((ROOT / progress_path).read_text(encoding="utf-8"))
-        progress["status"] = "READY"
-        progress["current_work_package"] = "A-01"
+        progress["status"] = "ACTIVE"
+        progress["current_work_package"] = "A-02"
         self.assertIn("GATE_FALSE_ADVANCEMENT", self.codes(self.validate(json_docs={progress_path: progress}, verify_hashes=False)))
 
     def test_gate_manifest_recomputes_actual_bytes_and_preserves_gate_boundary(self):
         self.assertEqual([], self.checker.validate_gate_manifest(ROOT))
+
+    def test_checkpoint_manifest_binds_current_detached_without_self_reference(self):
+        self.assertEqual([], self.checker.validate_checkpoint_manifest(ROOT))
 
 
 if __name__ == "__main__":

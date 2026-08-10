@@ -246,11 +246,15 @@
   },
   "scenario_runtime_status": "DESIGN_LOCKED / NOT_EXECUTED",
   "progress": {
-    "current_work_package": null,
-    "status": "GATE_CHECKPOINT_PENDING_PUSH",
+    "current_work_package": "A-01",
+    "status": "READY",
     "next_conditional_package": "A-01",
     "g_gate_status": "ACCEPTED",
-    "a01_start_allowed": false
+    "gate_checkpoint_status": "CLEARED",
+    "a01_start_allowed": true,
+    "active_work_instruction": null,
+    "worker_lease": null,
+    "write_lease": null
   },
   "mapping_hash": "AE9838B35B430703E16255B6C34C084B7F917B063171BD98F61460F8CFA8F8AF",
   "errors": []

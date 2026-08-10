@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "PHASE-A-READY-PROGRESS-HANDOFF-DIGEST-POST-GATE-CHECKPOINT",
+  "package_id": "A-01",
+  "event_sequence": 26,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 5366,
+    "file_sha256": "319EE7F49A9D08341907B954B3413A7DC319B5F4595E00DC7470D0823B4AC872",
+    "canonical_json_sha256": "117514A8A556D62085F4E3F2BCB0AB94C204D5E3F1F5064000F6F9E14EE536A9"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 20405,
+    "file_sha256": "96E14DFB67B410440CBA75B16F3BB1F7CA119AC72CE9955A883FF791A31CF3B3",
+    "machine_summary_canonical_sha256": "367BC5DA36F0401A167DB447A7C068A0EB84883D1A14FAC79FC42C613D8F5E01"
+  },
+  "created_at": "2026-08-10T23:46:00+09:00",
+  "scope": "G Gate checkpoint CLEARED; A-01 READY with no active WorkInstruction or lease"
+}

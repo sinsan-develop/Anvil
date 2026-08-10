@@ -3,27 +3,31 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 25,
-  "status": "GATE_CHECKPOINT_PENDING_PUSH",
-  "current_work_package": null,
-  "last_event_id": "evt_phase_g_gate_decided_accepted",
+  "event_sequence": 26,
+  "status": "READY",
+  "current_work_package": "A-01",
+  "last_event_id": "evt_phase_g_gate_checkpoint_push_confirmed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 3,
   "dir_status": "NOT_REACHED",
-  "repository_head": "23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8",
+  "repository_head": "5ca9c1f65a5909e75283b878764509d747d6d2cf",
   "repository_upstream": "origin/main",
-  "next_safe_action": "Main creates the Phase G Git gate checkpoint commit and push; A-01 remains blocked until checkpoint evidence is recorded",
+  "next_safe_action": "Main may issue the A-01 WorkInstruction; no A-01 implementation starts before an approved instruction and valid leases",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-G-02-DERIVED-20260810-001",
-  "reporting_decision": "AUTO_CONTINUE"
+  "reporting_decision": "AUTO_CONTINUE",
+  "g_gate_status": "ACCEPTED",
+  "g_gate_checkpoint_status": "CLEARED",
+  "a01_start_allowed": true,
+  "active_work_instruction": null
 }
 ```
 
 > 갱신일: 2026-08-10  
-> 현재 상태: `GATE_CHECKPOINT_PENDING_PUSH`
-> 현재 Phase / Package: `G / current package 없음`
+> 현재 상태: `READY`
+> 현재 Phase / Package: `A / A-01`
 
 ## 1. 현재 기준선
 
@@ -178,10 +182,13 @@
 - Main Agent는 standing approval `APPROVAL-20260810-AUTONOMOUS-EXECUTION-001`의 범위 일치를 확인하고 `owner_report_review_status=NOT_REPORT_SPECIFIC`으로 G Gate를 `ACCEPTED` 판정함
 - 검증된 proposal manifest revision 2는 `docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST_R2.json` / SHA-256 `C6A7CBC5FCD8B37DC9CE5DE48268DC45FEC13DE5401B4B44F08DB9016C1E9A3A`로 byte 불변 보존함
 - 현재 상태는 Phase G Gate checkpoint commit/push 대기이며 A-01 WorkInstruction·구현은 아직 시작할 수 없음
+- Phase G Gate checkpoint commit/push는 `5ca9c1f65a5909e75283b878764509d747d6d2cf`로 local/origin `main` 일치 확인됨
+- sequence 26 `GIT_PUSH` event가 G Gate checkpoint `CLEARED`와 A-01 `READY` 전이를 기록함
+- A-01은 시작 가능 상태지만 active WorkInstruction과 worker/write lease는 아직 `null`이며 구현은 시작하지 않음
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `23bc0019aeba0d6ae2b04c52fad6c778d8b7b6e8`로 일치한다. current Package는 없고 상태는 `GATE_CHECKPOINT_PENDING_PUSH`다. Main이 Git gate checkpoint commit/push evidence를 기록하기 전 A-01 WorkInstruction·구현을 시작하지 않는다.
+G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. Git origin `main`과 local `main`은 `5ca9c1f65a5909e75283b878764509d747d6d2cf`로 일치하고 G Gate checkpoint는 `CLEARED`다. current Package는 `A-01 / READY`다. Main은 다음 단계에서 A-01 WorkInstruction을 발행할 수 있으나 승인된 지시서와 유효 lease 전에는 구현을 시작하지 않는다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

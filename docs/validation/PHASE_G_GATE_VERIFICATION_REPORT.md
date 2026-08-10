@@ -1,9 +1,9 @@
 # Phase G Gate 검증 보고서
 
 - validator_status: `PASS`
-- gate_state: `GATE_CHECKPOINT_PENDING_PUSH`
+- gate_state: `ACCEPTED / CHECKPOINT_CLEARED`
 - Gate decision: `ACCEPTED`
-- A-01 start: `false`
+- A-01 start: `true / READY / WorkInstruction 미발행`
 
 ## 재계산
 
@@ -15,7 +15,7 @@
 
 ## 경계
 
-Phase G Gate는 수락됐지만 Git gate checkpoint evidence 전에는 A-01을 시작할 수 없다.
+Git gate checkpoint가 확인되어 A-01은 READY지만 WorkInstruction·lease 전에는 구현할 수 없다.
 
 ## 핵심 AV 증거
 
