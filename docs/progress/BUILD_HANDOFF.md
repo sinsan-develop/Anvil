@@ -3,31 +3,33 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 27,
+  "event_sequence": 28,
   "status": "READY",
   "current_work_package": "A-01",
-  "last_event_id": "evt_a01_responsibility_baseline_reconciled",
+  "last_event_id": "evt_a01_responsibility_successor_push_confirmed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 3,
   "dir_status": "NOT_REACHED",
-  "repository_head": "a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd",
+  "repository_head": "355efcbbccf63ae89771923ba09db9b22acc03cb",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "57703ffc3521287cdd7d54b07bfd7c9001928388",
-  "repository_status": "PUSH_PENDING_MAIN",
-  "next_safe_action": "PUSH_PENDING_MAIN: Main must commit and push the A-01 responsibility successor, then confirm origin/main before issuing the A-01 WorkInstruction; no implementation starts before an approved instruction and valid leases",
+  "repository_remote_head": "355efcbbccf63ae89771923ba09db9b22acc03cb",
+  "repository_status": "PUSH_CONFIRMED",
+  "next_safe_action": "Task 4 independent Tester must reproduce the post-push A-01 precondition checkpoint; no A-01 implementation starts before independent PASS, an approved WorkInstruction, and valid worker/write leases",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": null
+  "active_work_instruction": null,
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 
-> 갱신일: 2026-08-10  
+> 갱신일: 2026-08-11
 > 현재 상태: `READY`
 > 현재 Phase / Package: `A / A-01`
 
@@ -194,10 +196,13 @@
 - sequence 27 `REPOSITORY_RECONCILED`는 local `a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd`, upstream `57703ffc3521287cdd7d54b07bfd7c9001928388`을 실제 관측 그대로 비소급 기록함
 - 현재 repository 상태는 `PUSH_PENDING_MAIN`; local/upstream 일치를 꾸미지 않았고 Task 3에서 commit·push를 수행하지 않음
 - active WorkInstruction, worker lease, write lease는 모두 `null`; A-01 상태는 `READY`
+- Main push 후 local `main`, tracking `origin/main`, remote `refs/heads/main`이 `355efcbbccf63ae89771923ba09db9b22acc03cb`로 일치함을 직접 재확인함
+- sequence 28 `GIT_PUSH`는 A-01 responsibility successor의 실제 push 완료를 현재 projection으로 기록하고 sequence 27 pre-push 관측을 수정하지 않음
+- post-push 상태도 A-01 `READY`, active WorkInstruction·worker lease·write lease `null`, derived baseline active를 유지함
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. G Gate checkpoint는 `CLEARED`이고 current Package는 `A-01 / READY`다. 다만 local `main`은 `a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd`, actual `origin/main`은 `57703ffc3521287cdd7d54b07bfd7c9001928388`로 서로 다르다. 다음 안전 행동은 Main이 A-01 responsibility successor와 Task 3 evidence를 commit·push하고 원격 일치를 재확인하는 것이다. 그 전에는 A-01 WorkInstruction을 발행하지 않으며, 승인된 지시서와 유효 worker/write lease 전에는 구현을 시작하지 않는다.
+G-05, G-06, G-07과 Phase G Gate는 최종 `ACCEPTED`다. G Gate checkpoint는 `CLEARED`이고 current Package는 `A-01 / READY`다. local `main`, tracking `origin/main`, actual remote는 `355efcbbccf63ae89771923ba09db9b22acc03cb`로 일치한다. 다음 안전 행동은 Task 4 독립 Tester가 post-push precondition checkpoint와 regression을 재현하는 것이다. 독립 PASS, 승인된 WorkInstruction과 유효 worker/write lease 전에는 A-01 구현을 시작하지 않는다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

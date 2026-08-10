@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-01-PRECONDITION-PROGRESS-HANDOFF-DIGEST-POST-PUSH",
+  "package_id": "A-01",
+  "event_sequence": 28,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 7313,
+    "file_sha256": "6D2AA85F112281DBB70CC27AD31A6FFB8DA34BD57675FAFFF069452F0B107AC7",
+    "canonical_json_sha256": "B5D57CA14BC9A1521C931BEF60FDBB56068AFFF2B5A84EDC294D106C99DFAEF3"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 22402,
+    "file_sha256": "9117B96E8A561C9366896370F5E8FFF8AAB10E17F3B7B66EBC5037AF06E59B60",
+    "machine_summary_canonical_sha256": "B446EA3B3E9941C499BAF8D30BADC0AB71559465A2346C332D973B1606701DC2"
+  },
+  "created_at": "2026-08-11T00:06:00+09:00",
+  "scope": "A-01 responsibility successor post-push current projection; READY with no active WorkInstruction or worker/write lease"
+}

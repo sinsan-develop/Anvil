@@ -561,7 +561,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
-        last_event = bundle["events"]["events"][-1]
+        a01_reconciliation_event = next(
+            event
+            for event in bundle["events"]["events"]
+            if event["event_id"] == "evt_a01_responsibility_baseline_reconciled"
+        )
         gate_checkpoint_event = next(
             event
             for event in bundle["events"]["events"]
@@ -597,9 +601,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(gate_checkpoint_event["details"]["checkpoint_status"], "CLEARED")
         self.assertTrue(gate_checkpoint_event["details"]["a01_start_allowed"])
         self.assertEqual(gate_checkpoint_event["details"]["remote_commit"], "5ca9c1f65a5909e75283b878764509d747d6d2cf")
-        self.assertEqual(last_event["event_type"], "REPOSITORY_RECONCILED")
-        self.assertEqual(last_event["subject_ref"], "A-01")
-        self.assertEqual(last_event["details"]["projection_status"], "PUSH_PENDING_MAIN")
+        self.assertEqual(a01_reconciliation_event["event_type"], "REPOSITORY_RECONCILED")
+        self.assertEqual(a01_reconciliation_event["subject_ref"], "A-01")
+        self.assertEqual(a01_reconciliation_event["details"]["projection_status"], "PUSH_PENDING_MAIN")
         self.assertTrue(G06_R3_MANIFEST_PATH.is_file())
         r3_hash = hashlib.sha256(G06_R3_MANIFEST_PATH.read_bytes()).hexdigest().upper()
         self.assertEqual(r3_hash, "1A61DA524064A0422E23F2C98B0179CD144E83470773FFFE1E4EAD58EA5D82F0")
@@ -611,6 +615,41 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIsNone(progress["active_work_instruction"])
         self.assertEqual(hashlib.sha256(G06_R2_TEST_REPORT_PATH.read_bytes()).hexdigest().upper(), "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
         self.assertIn("MAIN_PACKAGE_ACCEPTED", bundle["event_contract"]["event_types"])
+
+    def test_a01_post_push_materialization_projects_current_ready_checkpoint(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        last_event = bundle["events"]["events"][-1]
+        repository = progress["repository"]
+
+        self.assertEqual("GIT_PUSH", last_event["event_type"])
+        self.assertEqual("A-01", last_event["subject_ref"])
+        self.assertEqual(repository["local_head"], repository["remote_head"])
+        self.assertEqual(last_event["details"]["local_commit"], repository["local_head"])
+        self.assertEqual(last_event["details"]["remote_commit"], repository["remote_head"])
+        self.assertEqual("READY", progress["status"])
+        self.assertEqual("A-01", progress["current_work_package"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(
+            "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
+            progress["derived_baseline_binding"]["baseline_id"],
+        )
+        self.assertEqual(
+            "docs/progress/progress-handoff-detached-digest-a01-post-push.json",
+            progress["current_progress_evidence_ref"]["path"],
+        )
+        self.assertEqual(
+            "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json",
+            progress["current_progress_evidence_ref"]["manifest_path"],
+        )
+        proposal_path = ROOT / "docs/evidence/manifests/A-01_PRECONDITION_EVIDENCE_MANIFEST.json"
+        self.assertEqual(
+            "A308F7907C10E0E0D67B598674CFBA50ADC34B2F068679EBCD186C75BF786EAC",
+            hashlib.sha256(proposal_path.read_bytes()).hexdigest().upper(),
+        )
 
     def test_g05_historical_acceptance_chain_remains_immutable(self) -> None:
         checker = self.require_checker()

@@ -29,7 +29,7 @@
 - `AV-FLOW-001` runtime 책임은 A-05·B-03과 A Gate에 유지되며, A-01의 fixture·mock·정적 화면은 runtime PASS가 아니다.
 - Package 97, AV ID 255, 고유 실행 234, 역색인 97, 미할당 0 계약과 historical G-02/G-07/Phase G accepted evidence의 byte 불변을 유지한다.
 - A-01은 `READY`지만 WorkInstruction과 두 lease가 모두 `null`이므로 제품 구현은 시작할 수 없다.
-- 실제 Git 관측은 local `a843ca71c5c3cb3bb5cc9ca85901a9bd320f6cfd`, upstream `origin/main` `57703ffc3521287cdd7d54b07bfd7c9001928388`이다. 일치를 꾸미거나 과거 push로 소급하지 않으며 Main의 commit/push 전 `PUSH_PENDING_MAIN`으로 다룬다.
+- post-push 실제 Git 관측은 local `main`, tracking `origin/main`, remote `refs/heads/main` 모두 `355efcbbccf63ae89771923ba09db9b22acc03cb`로 일치한다. sequence 27의 pre-push 관측은 역사로 보존하고 새 checkpoint Event에서만 현재 projection을 갱신한다.
 
 > 판정: `PASS / READ_ONLY_READY`  
 > 재온보딩일: 2026-08-10  
