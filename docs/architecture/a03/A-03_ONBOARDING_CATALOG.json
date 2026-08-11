@@ -1,0 +1,130 @@
+{
+  "artifact_id": "A-03-ONBOARDING-CATALOG-20260811-001",
+  "artifact_type": "static_project_onboarding_contract",
+  "package_id": "A-03",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "predecessor_contract": {
+    "a02_catalog_path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json",
+    "a02_catalog_sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207"
+  },
+  "presentation": {
+    "viewport": {"width_px": 1920, "height_px": 1080},
+    "typography": {"body_form_px": 12, "small_description_px": 10, "auxiliary_px": 9, "sidebar_title_px": 14, "screen_title_px": 16},
+    "layout": {"sidebar_expanded_px": 224, "sidebar_collapsed_px": 56, "header_px": 48, "context_drawer_px": 360, "context_drawer_mode": "ON_DEMAND", "base_padding_px": 16, "card_gap_px": 12},
+    "explanation_interface": {"entry_point": "i-icon", "short_content_surface": "tooltip", "complex_content_surface": "popover", "required_content": ["reason", "next_action"], "persistent_explanation_box_allowed": false, "hover_only_allowed": false, "focus_path_required": true, "keyboard_access_required": true, "escape_closes": true, "focus_returns_to_trigger": true},
+    "status_presentation": {"color_only_allowed": false, "required_parts": ["icon", "status_label", "short_description"], "explanation_binding": "i-tooltip-popover"},
+    "semantic_colors": {"canvas": "#0B1220", "surface": "#142033", "surface-raised": "#1B2A42", "text-primary": "#F7F9FC", "text-muted": "#B8C4D8", "border": "#60738F", "interactive": "#7DB4FF", "focus": "#F8D66D", "success": "#5EE3A1", "warning": "#FFD166", "danger": "#FF7B86", "blocked": "#C4A7FF", "info": "#74D7FF", "neutral": "#B8C4D8"}
+  },
+  "screens": [
+    {
+      "screen_id": "PROJECT_DASHBOARD",
+      "title": "Project Dashboard",
+      "fields": ["project_filter", "environment_filter", "period_filter", "last_refreshed_at", "health_cards", "operations_cards", "success_rate", "next_actions", "critical_alerts"],
+      "states": ["LOADING", "READY", "EMPTY", "ERROR", "BLOCKED", "PERMISSION_DENIED"],
+      "actions": ["refresh", "open_health_detail", "open_next_action_deep_link", "acknowledge_alert"]
+    },
+    {
+      "screen_id": "PROJECT_REGISTER",
+      "title": "Project Register",
+      "fields": ["project_name", "project_slug", "description", "repository_source_type", "local_path", "remote_url", "default_branch"],
+      "conditional_fields": {"local": ["local_path"], "git": ["remote_url"]},
+      "states": ["IDLE", "VALIDATING", "SUBMITTING", "ERROR", "PERMISSION_DENIED"],
+      "actions": ["submit_read_only_scan", "cancel"]
+    },
+    {
+      "screen_id": "REPOSITORY_ONBOARDING",
+      "title": "Repository Onboarding",
+      "fields": ["repository_kind", "canonical_root", "remote", "branch", "head_commit", "baseline_commit", "tracked_dirty", "tracked_dirty_count", "tracked_dirty_paths", "untracked_count", "untracked_paths", "manifests", "languages", "frameworks", "package_managers", "runtimes", "discovered_commands", "file_classification", "project_rules", "protected_paths", "allowed_environments", "secret_candidates_masked", "scan_step", "last_scan_at", "mutation_count", "uncertainty", "next_action"],
+      "scan_steps": ["PATH_POLICY", "GIT_STATUS", "MANIFESTS", "TOOLCHAIN", "FILE_CLASSIFICATION", "PROJECT_RULES", "PROTECTED_PATHS", "PROFILE"],
+      "states": ["QUEUED", "SCANNING_READ_ONLY", "REVIEW_REQUIRED", "READY_TO_REGISTER", "ERROR", "BLOCKED"],
+      "actions": ["cancel_scan", "open_review"]
+    },
+    {
+      "screen_id": "ONBOARDING_REVIEW",
+      "title": "Onboarding Review",
+      "fields": ["default_branch", "protected_paths", "project_rules", "allowed_environments", "baseline_id", "baseline_branch", "baseline_commit", "tracked_dirty", "tracked_dirty_count", "untracked_count", "baseline_created_at", "evidence_link", "isolation_status", "uncertainty", "next_action"],
+      "states": ["REVIEW_REQUIRED", "CONFIRMATION_REQUIRED", "READY_TO_REGISTER", "BASELINE_CONFLICT", "BLOCKED", "PERMISSION_DENIED"],
+      "actions": ["confirm_registration", "return_to_scan"]
+    },
+    {
+      "screen_id": "PROJECT_DETAIL",
+      "title": "Project Detail",
+      "fields": ["overview", "repositories", "baselines", "rules", "toolchain", "environments", "members", "repository_status", "branch", "head_commit", "tracked_dirty", "tracked_dirty_count", "untracked_count", "last_scan_at", "read_only_rescan"],
+      "states": ["LOADING", "READY", "ERROR", "BLOCKED", "PERMISSION_DENIED"],
+      "actions": ["open_tab", "read_only_rescan"]
+    }
+  ],
+  "state_contract": {
+    "form": ["IDLE", "VALIDATING", "SUBMITTING"],
+    "scan": ["QUEUED", "SCANNING_READ_ONLY", "REVIEW_REQUIRED", "READY_TO_REGISTER", "ERROR", "BLOCKED"],
+    "repository": ["PENDING", "READY", "ERROR"],
+    "baseline": ["CLEAN", "DIRTY", "CONFLICT", "NOT_CREATED", "UNKNOWN", "ISOLATION_DEGRADED"],
+    "policy": ["LOADED", "CONFIRMATION_REQUIRED"],
+    "health": ["NORMAL", "WARNING", "ERROR"]
+  },
+  "reason_codes": ["ROOT_OUTSIDE_ALLOWED", "PATH_NOT_FOUND", "PERMISSION_DENIED", "NON_GIT_REVIEW_REQUIRED", "DIRTY_TRACKED_PRESENT", "UNTRACKED_PRESENT", "BASELINE_CONFLICT", "PROTECTED_PATH_POLICY_INVALID", "SCAN_MUTATION_DETECTED"],
+  "registration_errors": [
+    {"http_status": 409, "code": "PROJECT_SLUG_EXISTS", "surface": "field:project_slug", "next_action": "choose_unique_slug"},
+    {"http_status": 403, "code": "REPOSITORY_PATH_DENIED", "surface": "field:local_path", "next_action": "select_allowed_root_or_request_access"},
+    {"http_status": 422, "code": "REPOSITORY_NOT_FOUND", "surface": "global", "next_action": "correct_repository_source"}
+  ],
+  "transitions": [
+    {"from": "IDLE", "event": "VALID_REGISTER_SUBMIT", "to": "QUEUED", "effect": "CREATE_PROJECT_REPOSITORY_RECORD_AND_QUEUE_READ_ONLY_SCAN"},
+    {"from": "QUEUED", "event": "WORKER_START", "to": "SCANNING_READ_ONLY", "effect": "READ_ONLY_EIGHT_STEP_SCAN"},
+    {"from": "SCANNING_READ_ONLY", "event": "DIRTY_OR_UNTRACKED_OR_NON_GIT_OR_UNKNOWN", "to": "REVIEW_REQUIRED", "effect": "PRESERVE_SOURCE_AND_REQUIRE_REVIEW"},
+    {"from": "SCANNING_READ_ONLY", "event": "OUTSIDE_ROOT_OR_PERMISSION_OR_MUTATION", "to": "BLOCKED", "effect": "STOP_WITH_REASON_AND_NEXT_ACTION"},
+    {"from": "SCANNING_READ_ONLY", "event": "CLEAN_AND_POLICY_VALID", "to": "READY_TO_REGISTER", "effect": "OPEN_ONBOARDING_REVIEW"},
+    {"from": "READY_TO_REGISTER", "event": "MANAGER_CONFIRM", "to": "REGISTERED", "effect": "CREATE_BASELINE_AND_PROFILE_ARTIFACT"},
+    {"from": "REGISTERED", "event": "READ_ONLY_RESCAN", "to": "REVIEW_REQUIRED", "effect": "CREATE_NEW_PROFILE_AND_BASELINE_CANDIDATE_WITHOUT_SOURCE_MUTATION"}
+  ],
+  "preservation_contract": {
+    "scan_mode": "READ_ONLY",
+    "source_write_allowed": false,
+    "install_allowed": false,
+    "format_allowed": false,
+    "git_mutation_allowed": false,
+    "automatic_cleanup_allowed": false,
+    "tracked_dirty_and_untracked_separate": true,
+    "user_owned_source_preserved": true,
+    "unknown_fail_closed": true
+  },
+  "permission_contract": {
+    "capabilities": ["PROJECT_VIEW", "PROJECT_MANAGE", "REPOSITORY_MANAGE"],
+    "view_manage_separated": true,
+    "unauthorized_actions_disabled": true,
+    "disabled_reason_visible": true,
+    "next_action_visible": true,
+    "credential_display": "REFERENCE_OR_MASKED_ONLY",
+    "unauthorized_local_full_path_visible": false
+  },
+  "dashboard_contract": {
+    "health_cards": ["DATABASE", "QUEUE", "WORKER", "LLM_PROVIDERS", "EXECUTION_BACKENDS", "ARTIFACT_STORE"],
+    "health_card_fields": ["icon", "status_label", "short_description", "last_checked_at", "error_count", "detail_link"],
+    "operations_cards": ["RUNNING", "APPROVAL_PENDING", "BLOCKED", "REQUIRED_GATE_MISSING", "COST_OVERRUN", "BASELINE_CONFLICT"],
+    "success_rate_fields": ["period", "sample_count", "pass_count", "skipped_count"],
+    "skipped_counts_as_success": false,
+    "next_action_fields": ["priority", "target", "reason", "elapsed", "deep_link"],
+    "critical_alert_fields": ["code", "source", "occurred_at", "owner", "acknowledge_action"]
+  },
+  "static_renders": [
+    {"path": "docs/architecture/a03/A-03_DASHBOARD_STATIC_RENDER.svg", "screen_ids": ["PROJECT_DASHBOARD"]},
+    {"path": "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg", "screen_ids": ["PROJECT_REGISTER", "REPOSITORY_ONBOARDING"]},
+    {"path": "docs/architecture/a03/A-03_REPOSITORY_STATE_STATIC_RENDER.svg", "screen_ids": ["ONBOARDING_REVIEW", "PROJECT_DETAIL"]}
+  ],
+  "matrix_contract": [
+    {"verification_id": "AV-UI-003", "level": "L7", "method": "MX", "evidence": "E-SHOT", "severity": "MAJOR"},
+    {"verification_id": "AV-UI-004", "level": "L7", "method": "MX", "evidence": "E-DEC", "severity": "MAJOR"}
+  ],
+  "verification_contract": {
+    "assigned_verification_ids": ["AV-UI-003", "AV-UI-004"],
+    "required_levels": ["L7"],
+    "required_methods": ["MX"],
+    "required_evidence": ["E-SHOT", "E-DEC", "E-ART", "E-MAN", "E-TEST"],
+    "execution_classification": "STATIC_ONLY",
+    "package_verdict": "STATIC_CONTRACT_PASS",
+    "canonical_runtime_verdict": "RUNTIME_DEFERRED / NOT_EXECUTED",
+    "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED",
+    "runtime_owners": {"AV-UI-003": ["F-01", "F-12", "F Gate"], "AV-UI-004": ["A-04", "A-14", "A Gate"]},
+    "environment": "ENV-LOCAL"
+  }
+}

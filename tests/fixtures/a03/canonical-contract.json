@@ -1,0 +1,7 @@
+{
+  "fixture_id": "A03-ONBOARDING-CANONICAL",
+  "catalog_path": "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json",
+  "catalog_sha256": "25914E07800E0E2D1E28BD0ABBC07554C36A41A6D39D2C991C5D190FCB02629D",
+  "expected_package_verdict": "STATIC_CONTRACT_PASS",
+  "expected_runtime_verdict": "RUNTIME_DEFERRED / NOT_EXECUTED"
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-03-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "A-03",
+  "event_sequence": 63,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 12899,
+    "file_sha256": "8A7578204A801294EF084FE1A962CDE68422A01F08FF4A1076087BE8126CFCE5",
+    "canonical_json_sha256": "D094766A3B6C6CADA0619B47F0E63CAE675C7FBFE285CE027967E4DD75A16F89"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 32306,
+    "file_sha256": "B4C3E7BF7ADA9EEEF8D5B7364D2D9447048FC4E2569EC957F436DD0442000491",
+    "machine_summary_canonical_sha256": "384EC50E1844458501BE9255CB67334BD09F873785E89A5588FDD29A7176C394"
+  },
+  "created_at": "2026-08-11T14:30:02+09:00",
+  "scope": "A-03 non-retroactive Developer completion to TEST_REVIEW projection; leases revoked, Developer 14-path evidence frozen, A-04 blocked"
+}

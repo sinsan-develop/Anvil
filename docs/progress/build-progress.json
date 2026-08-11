@@ -1,40 +1,20 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000029",
-  "event_sequence": 60,
-  "snapshot_hash": "63FCC8141A2D388957C367ACA9D86B3866B3613F2A8BF0A055EB117F741C0D88",
-  "updated_at": "2026-08-11T12:50:02+09:00",
-  "last_event_id": "evt_a03_package_started",
+  "snapshot_id": "snapshot-anvil-build-000030",
+  "event_sequence": 63,
+  "snapshot_hash": "09F366DEF3167EFA8904DF86BF2600C053E59E37DCF43D4967AC8D8F41F79CA9",
+  "updated_at": "2026-08-11T14:30:02+09:00",
+  "last_event_id": "evt_a03_package_completed_test_review",
   "plan_version": "1.5",
   "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "A",
   "current_work_package": "A-03",
-  "status": "ACTIVE",
+  "status": "TEST_REVIEW",
   "completed_packages": ["G-01", "G-02", "G-03", "G-04", "G-05", "G-06", "G-07", "PHASE_G_GATE", "A-01", "A-02"],
-  "active_agent": "developer-primary-a03",
-  "write_lease": {
-    "lease_id": "write-lease-a03-20260811-001",
-    "worker_lease_id": "worker-lease-a03-20260811-001",
-    "actor_id": "developer-primary-a03",
-    "subject_ref": "A-03",
-    "baseline_hash": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F",
-    "write_fencing_token": "a03-write-fence-epoch-1-39af6aa",
-    "write_epoch": 1,
-    "issued_at": "2026-08-11T12:50:01+09:00",
-    "expires_at": "2026-08-11T23:50:00+09:00",
-    "path_scope": ["docs/architecture/a03/**", "scripts/check_a03_onboarding.py", "tests/tooling/test_a03_onboarding.py", "tests/fixtures/a03/**", "docs/validation/A-03_*", "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST*.json", "docs/completion_reports/A-03_COMPLETION_REPORT.md"]
-  },
-  "worker_lease": {
-    "lease_id": "worker-lease-a03-20260811-001",
-    "actor_id": "developer-primary-a03",
-    "subject_ref": "A-03",
-    "baseline_hash": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F",
-    "execution_fencing_token": "a03-execution-fence-epoch-1-39af6aa",
-    "lease_epoch": 1,
-    "issued_at": "2026-08-11T12:50:00+09:00",
-    "expires_at": "2026-08-11T23:50:00+09:00"
-  },
+  "active_agent": null,
+  "write_lease": null,
+  "worker_lease": null,
   "budget_reservations": [],
   "valid_failure_count": 0,
   "active_failure_lineage": {
@@ -56,12 +36,12 @@
     {"path": "docs/onboarding/developer-primary-ack.md", "sha256": "931ED3D4A4A351F47FB48ED459270565E63889E8049EC4587032E2C640782B90"},
     {"path": "scripts/check_a01_journey.py", "sha256": "EB6B9DA5581869E53B1E24D1FB82A5286B78DA7C9C062611FF6DD7BE4AAF3C45"},
     {"path": "tests/tooling/test_a01_journey.py", "sha256": "0BCF68618F3BEF75B5BECF9BF8733F454AD98C54E0E16DF09A57C3B04CF5A82D"},
-    {"path": "scripts/check_project_progress.py", "sha256": "5EF5808CA5CC9490AB487F7697105D6D6B840277E9BE9A214E6B2A4343914F77"},
-    {"path": "tests/tooling/test_project_progress.py", "sha256": "D893F698CA326EF6D9594B4D5972944CE72A4E795E2799568569B3C142C54AD1"},
-    {"path": "scripts/check_g07_baseline.py", "sha256": "229EF58B295008C1FDFCE4D7B41599ED244E0F77589E84C2F10BB9E7B9FD66F4"},
-    {"path": "tests/tooling/test_g07_baseline.py", "sha256": "A757DCC311F3BB52EA9AF6DD249A676D33C9EF933206E17D782FAE2DDCE65047"},
-    {"path": "scripts/check_phase_g_gate.py", "sha256": "5DA36D0E503ACB9875F94FEA14A17A3DC3E4AB691E413FF332BC9C788654409F"},
-    {"path": "tests/tooling/test_phase_g_gate.py", "sha256": "9F76C4E44716F474EAB7392075879C31D9F306A8B5E8A9D2E5B50153B0D5A818"},
+    {"path": "scripts/check_project_progress.py", "sha256": "F0B83BF13FD716A68BA67C04BB1BEE1B42354CEBAE901F1D002465341E8CD4DD"},
+    {"path": "tests/tooling/test_project_progress.py", "sha256": "7D8C336649972BC28760A5B35F5748BCE9FBF56EC5D6383F036BA3F61D233702"},
+    {"path": "scripts/check_g07_baseline.py", "sha256": "34508CF3F7A527388BBA36B4C48CE3EDCAF4E93ABFBEFF6414B03F7C763166EE"},
+    {"path": "tests/tooling/test_g07_baseline.py", "sha256": "3E5B94304C9323C5FE3E2822444EE9855676144B8721FD317F0892891225F622"},
+    {"path": "scripts/check_phase_g_gate.py", "sha256": "222379A7E17D9A08C18300BCEFE7DDF434F94523F1B00151EEA8DF7DE86F0E4C"},
+    {"path": "tests/tooling/test_phase_g_gate.py", "sha256": "7DC250B8C6DBC48E27E7605D080F1E2FEB1601BC3D86B04412AE8CCB0367DF57"},
     {"path": "scripts/check_a02_tokens.py", "sha256": "F063221B5B500FF22FFA475097A47DE070015322DBE391696F3EF3F2E917C5AA"},
     {"path": "tests/tooling/test_a02_tokens.py", "sha256": "8C4A96E53423740E96B921E5E41F3DDCD19AF71B3A73889772B558350128CA82"},
     {"path": "docs/completion_reports/A-02_COMPLETION_REPORT.md", "sha256": "CE92C4A06F4E130D61B024ADAA09DA62B63ADAAF57405D232878B0090120FFF6"},
@@ -80,11 +60,13 @@
     {"path": "docs/work_orders/PHASE_G_GATE_INVOCATION_PROMPT.md", "sha256": "BBD3F49B6E395A6F9BE460488C88B76283FCE1D2E8EBF12229AA811C6B031076"},
     {"path": "docs/test_reports/PHASE_G_GATE_TEST_REPORT_R2.md", "sha256": "1A0A852EAC34450BA1CB815C756096673CF2917B6915118F2BA2B46B9941B6DD"},
     {"path": "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json", "sha256": "525EEDBAFE79E14795AFB26290EA0C4C58EA8C10A9579AFA110B4E3F46DDB9FD"},
-    {"path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json", "sha256": "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884"}
+    {"path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json", "sha256": "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884"},
+    {"path": "docs/completion_reports/A-03_COMPLETION_REPORT.md", "sha256": "8617DF38F3C55FF8CDE35338FA0ECCEB089A8C6658B7C35602EDB71B85F3FB6D"},
+    {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"}
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json",
-    "sha256": "779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168"
+    "path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
+    "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -94,7 +76,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "developer-primary-a03 executes WI-A-03-20260811-001 within active worker/write fencing; Main does not write Developer product paths",
+  "next_safe_action": "Dispatch an implementation-conversation-separated independent Tester for A-03; A-04 remains blocked until Tester PASS and Main acceptance",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -119,27 +101,42 @@
   },
   "repository": {
     "branch": "main",
-    "local_head": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+    "local_head": "dc2ba63e1d923663724d1291cbcec007e4e7e7fe",
     "upstream": "origin/main",
-    "remote_head": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+    "remote_head": "dc2ba63e1d923663724d1291cbcec007e4e7e7fe",
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+    "validated_base_commit": "dc2ba63e1d923663724d1291cbcec007e4e7e7fe",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-    "push_status": "START_PROJECTION_PENDING_MAIN_COMMIT",
+    "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/A-03_START_EVIDENCE_MANIFEST.json",
+      "docs/architecture/a03/A-03_DASHBOARD_STATIC_RENDER.svg",
+      "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json",
+      "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg",
+      "docs/architecture/a03/A-03_PROJECT_DASHBOARD.md",
+      "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md",
+      "docs/architecture/a03/A-03_REPOSITORY_ONBOARDING.md",
+      "docs/architecture/a03/A-03_REPOSITORY_STATE_STATIC_RENDER.svg",
+      "docs/completion_reports/A-03_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-a03-start.json",
+      "docs/progress/progress-handoff-detached-digest-a03-completion-test-review.json",
+      "docs/validation/A-03_ONBOARDING_VALIDATION.md",
+      "scripts/check_a03_onboarding.py",
+      "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
+      "tests/fixtures/a03/canonical-contract.json",
+      "tests/fixtures/a03/mutation-catalog.json",
+      "tests/tooling/test_a03_onboarding.py",
       "tests/tooling/test_g07_baseline.py",
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-11T12:50:02+09:00",
-    "worktree_status": "START_PROJECTION_PENDING_MAIN_COMMIT: dispatch observed clean local HEAD=origin/main 39af6aa; exact 10-path A-03 start projection"
+    "observed_at": "2026-08-11T14:30:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: local HEAD=origin/main dc2ba63; exact 25-path A-03 Developer completion/TEST_REVIEW projection"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -157,7 +154,12 @@
     "sha256": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F",
     "invocation_path": "docs/work_orders/A-03_INVOCATION_PROMPT.md",
     "invocation_sha256": "2B4A2D04D99D79FD5B840528B607DF63AD46161A378B2CDFF59F371622C94184",
-    "package_status": "ACTIVE"
+    "package_status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "accepted": false,
+    "independent_tester_status": "PENDING",
+    "developer_manifest_ref": {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"},
+    "developer_target_hash": "18DED6D1F1034044F7A8B55864AF35F507789BF08FE9B60C70806A6C190093CA"
   },
   "phase_gate": {
     "gate": "G Gate",
@@ -182,14 +184,14 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "A-03",
-    "path": "docs/progress/progress-handoff-detached-digest-a03-start.json",
-    "manifest_path": "docs/evidence/manifests/A-03_START_EVIDENCE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-a03-completion-test-review.json",
+    "manifest_path": "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {"path": "docs/progress/failure-ledger.json", "sha256": "1F07162AE815BFB2805FB740578C15161435BB32B145D0C0846BE501580B55FD"},
     "non_semantic_revision_bindings": {"path": "docs/progress/non-semantic-revision-bindings.json", "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"},
     "dir_checkpoints": {"path": "docs/progress/dir-checkpoints.json", "sha256": "73147EA0DC940F34A7369E8A58EA7DD738DBA2246DD9F729DE8FB26273E44F4B"},
     "progress_event_contract": {"path": "docs/progress/progress-event-contract.json", "sha256": "B60E59C60BA15F984DB2070894F9ED8844498B931546DB55F68F2154FA654F7C"},
-    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "62A5290DE78832AF70FEB75F3B47AB912F45F110D85E5CFA7E65FA063AA43D65"}
+    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "83812C5CD7A79934794422CE6D8783FA0131591B92EF9C82848BA26E7125AE9D"}
   }
 }

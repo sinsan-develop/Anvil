@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-screen-ids="ONBOARDING_REVIEW|PROJECT_DETAIL">
+  <title>A-03 Onboarding Review and Project Detail static contract</title>
+  <desc>E-SHOT_STATIC_NOT_RUNTIME_UI | E-DEC_NOT_EXECUTED | RUNTIME_DEFERRED / NOT_EXECUTED | body/form 12px | screen title 16px | i-icon tooltip popover reason next_action | icon + status_label + short_description</desc>
+  <rect width="1920" height="1080" fill="#0B1220"/>
+  <rect x="0" y="0" width="224" height="1080" fill="#142033"/>
+  <text x="248" y="36" fill="#F7F9FC" font-size="16">Onboarding Review · Project Detail</text>
+  <rect x="248" y="72" width="760" height="850" rx="8" fill="#142033" stroke="#60738F"/>
+  <text x="272" y="112" fill="#FFD166" font-size="14">▲ REVIEW_REQUIRED · DIRTY</text>
+  <text x="272" y="150" fill="#B8C4D8" font-size="12">branch main · baseline commit abc123</text>
+  <text x="272" y="182" fill="#FFD166" font-size="12">tracked dirty 3 · user-owned · preserved</text>
+  <text x="272" y="214" fill="#C4A7FF" font-size="12">untracked 2 · separate · no cleanup</text>
+  <text x="272" y="262" fill="#FF7B86" font-size="12">BASELINE_CONFLICT · choose baseline action</text>
+  <text x="272" y="310" fill="#74D7FF" font-size="12">rules · protected paths · allowed environments</text>
+  <rect x="1040" y="72" width="788" height="850" rx="8" fill="#142033" stroke="#60738F"/>
+  <text x="1064" y="112" fill="#F7F9FC" font-size="14">Project Detail</text>
+  <text x="1064" y="150" fill="#7DB4FF" font-size="12">Overview · Repositories · Baselines · Rules</text>
+  <text x="1064" y="182" fill="#7DB4FF" font-size="12">Toolchain · Environments · Members</text>
+  <text x="1064" y="230" fill="#5EE3A1" font-size="12">● READY · last scan · read-only rescan</text>
+  <text x="1064" y="278" fill="#B8C4D8" font-size="12">new profile/baseline candidate · source unchanged</text>
+  <text x="248" y="1038" fill="#B8C4D8" font-size="9">STATIC_ONLY · i-icon (focus) opens tooltip/popover with reason + next_action</text>
+</svg>

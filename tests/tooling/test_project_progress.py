@@ -868,19 +868,37 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
             [event["event_type"] for event in start_events],
         )
-        self.assertEqual("A-03", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-A-03-20260811-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("worker-lease-a03-20260811-001", progress["worker_lease"]["lease_id"])
-        self.assertEqual("write-lease-a03-20260811-001", progress["write_lease"]["lease_id"])
-        self.assertEqual(
-            progress["worker_lease"]["lease_id"],
-            progress["write_lease"]["worker_lease_id"],
-        )
+        self.assertEqual("A-03", start_events[-1]["subject_ref"])
+        self.assertEqual("ACTIVE", start_events[-1]["details"]["package_status"])
+        self.assertEqual("WI-A-03-20260811-001", start_events[-1]["details"]["work_instruction_id"])
+        self.assertEqual("worker-lease-a03-20260811-001", start_events[0]["details"]["lease_id"])
+        self.assertEqual("write-lease-a03-20260811-001", start_events[1]["details"]["lease_id"])
+        self.assertEqual(start_events[0]["details"]["lease_id"], start_events[1]["details"]["worker_lease_id"])
         self.assertEqual("39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599", start_events[-1]["details"]["dispatch_head"])
         self.assertEqual(start_events[-1]["details"]["dispatch_head"], start_events[-1]["details"]["dispatch_upstream_head"])
+        self.assertEqual([], checker.validate_bundle(bundle))
+
+    def test_a03_completion_projection_revokes_leases_before_test_review(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = bundle["events"]["events"]
+        completion_events = [event for event in events if 61 <= event["sequence"] <= 63]
+
         self.assertEqual(
-            "docs/evidence/manifests/A-03_START_EVIDENCE_MANIFEST.json",
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [event["event_type"] for event in completion_events],
+        )
+        self.assertEqual("A-03", progress["current_work_package"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("TEST_REVIEW", progress["active_work_instruction"]["package_status"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertFalse(progress["active_work_instruction"]["accepted"])
+        self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual(
+            "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual([], checker.validate_bundle(bundle))

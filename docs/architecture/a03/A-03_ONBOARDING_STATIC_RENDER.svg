@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-screen-ids="PROJECT_REGISTER|REPOSITORY_ONBOARDING">
+  <title>A-03 Project Registration and Repository Onboarding static contract</title>
+  <desc>E-SHOT_STATIC_NOT_RUNTIME_UI | E-DEC_NOT_EXECUTED | RUNTIME_DEFERRED / NOT_EXECUTED | body/form 12px | screen title 16px | i-icon tooltip popover reason next_action | icon + status_label + short_description</desc>
+  <rect width="1920" height="1080" fill="#0B1220"/>
+  <rect x="0" y="0" width="224" height="1080" fill="#142033"/>
+  <text x="248" y="36" fill="#F7F9FC" font-size="16">Project Register → Repository Onboarding</text>
+  <rect x="248" y="72" width="570" height="850" rx="8" fill="#142033" stroke="#60738F"/>
+  <text x="272" y="110" fill="#F7F9FC" font-size="14">Register · local / git</text>
+  <text x="272" y="148" fill="#B8C4D8" font-size="12">project_name · project_slug · default_branch</text>
+  <text x="272" y="180" fill="#B8C4D8" font-size="12">local_path XOR remote_url · credential masked</text>
+  <rect x="272" y="220" width="250" height="36" fill="#1B2A42" stroke="#7DB4FF"/>
+  <text x="288" y="243" fill="#7DB4FF" font-size="12">Queue read-only scan</text>
+  <rect x="850" y="72" width="978" height="850" rx="8" fill="#142033" stroke="#60738F"/>
+  <text x="874" y="110" fill="#F7F9FC" font-size="14">SCANNING_READ_ONLY · 8 steps</text>
+  <text x="874" y="148" fill="#74D7FF" font-size="12">PATH_POLICY → GIT_STATUS → MANIFESTS → TOOLCHAIN</text>
+  <text x="874" y="180" fill="#74D7FF" font-size="12">FILE_CLASSIFICATION → PROJECT_RULES → PROTECTED_PATHS → PROFILE</text>
+  <text x="874" y="230" fill="#FFD166" font-size="12">▲ DIRTY_TRACKED_PRESENT · tracked_dirty_count 3</text>
+  <text x="874" y="262" fill="#C4A7FF" font-size="12">■ UNTRACKED_PRESENT · untracked_count 2 · REVIEW_REQUIRED</text>
+  <text x="874" y="310" fill="#5EE3A1" font-size="12">mutation_count 0 · source preserved</text>
+  <text x="874" y="358" fill="#FF7B86" font-size="12">BLOCKED: outside-root / permission / mutation</text>
+  <text x="248" y="1038" fill="#B8C4D8" font-size="9">STATIC_ONLY · i-icon (focus) opens tooltip/popover with reason + next_action</text>
+</svg>

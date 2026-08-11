@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-screen-ids="PROJECT_DASHBOARD">
+  <title>A-03 Project Dashboard static contract</title>
+  <desc>E-SHOT_STATIC_NOT_RUNTIME_UI | E-DEC_NOT_EXECUTED | RUNTIME_DEFERRED / NOT_EXECUTED | body/form 12px | screen title 16px | i-icon tooltip popover reason next_action | icon + status_label + short_description</desc>
+  <rect width="1920" height="1080" fill="#0B1220"/>
+  <rect x="0" y="0" width="224" height="1080" fill="#142033"/>
+  <rect x="224" y="0" width="1696" height="48" fill="#1B2A42"/>
+  <text x="248" y="32" fill="#F7F9FC" font-size="16">Project Dashboard</text>
+  <text x="248" y="74" fill="#B8C4D8" font-size="12">Project · Environment · period · sample_count · PASS / SKIPPED</text>
+  <g fill="#142033" stroke="#60738F">
+    <rect x="248" y="96" width="250" height="120"/><rect x="514" y="96" width="250" height="120"/><rect x="780" y="96" width="250" height="120"/><rect x="1046" y="96" width="250" height="120"/><rect x="1312" y="96" width="250" height="120"/><rect x="1578" y="96" width="250" height="120"/>
+  </g>
+  <text x="264" y="126" fill="#74D7FF" font-size="12">● DATABASE · NORMAL</text>
+  <text x="530" y="126" fill="#5EE3A1" font-size="12">● QUEUE · NORMAL</text>
+  <text x="796" y="126" fill="#FFD166" font-size="12">▲ WORKER · WARNING</text>
+  <text x="1062" y="126" fill="#C4A7FF" font-size="12">■ LLM_PROVIDERS</text>
+  <text x="1328" y="126" fill="#7DB4FF" font-size="12">● EXECUTION_BACKENDS</text>
+  <text x="1594" y="126" fill="#FF7B86" font-size="12">! ARTIFACT_STORE</text>
+  <rect x="248" y="240" width="780" height="360" fill="#142033" stroke="#60738F"/>
+  <text x="264" y="272" fill="#F7F9FC" font-size="14">Operations: RUNNING · APPROVAL_PENDING · BLOCKED</text>
+  <text x="264" y="302" fill="#B8C4D8" font-size="12">REQUIRED_GATE_MISSING · COST_OVERRUN · BASELINE_CONFLICT</text>
+  <rect x="1046" y="240" width="782" height="360" fill="#142033" stroke="#60738F"/>
+  <text x="1062" y="272" fill="#F7F9FC" font-size="14">Next Actions</text>
+  <text x="1062" y="302" fill="#7DB4FF" font-size="12">priority · target · reason · elapsed · deep_link →</text>
+  <rect x="248" y="624" width="1580" height="280" fill="#142033" stroke="#60738F"/>
+  <text x="264" y="656" fill="#F7F9FC" font-size="14">Critical Alerts · code · source · occurred_at · owner · acknowledge</text>
+  <text x="248" y="1038" fill="#B8C4D8" font-size="9">STATIC_ONLY · i-icon (focus) opens tooltip/popover with reason + next_action</text>
+</svg>

@@ -1,0 +1,33 @@
+{
+  "fixture_id": "A03-ONBOARDING-HOSTILE-MUTATIONS",
+  "mutations": [
+    {"mutation_id": "M01_VIEWPORT", "path": "presentation.viewport.width_px", "operation": "replace", "value": 1440, "expected_error_code": "A02_PRESENTATION_TOKEN_DRIFT"},
+    {"mutation_id": "M02_SCREEN_REMOVE", "path": "screens.4", "operation": "remove", "expected_error_code": "SCREEN_SET_MISMATCH"},
+    {"mutation_id": "M03_BASELINE_FIELD", "path": "screens.2.fields.5", "operation": "remove", "expected_error_code": "SCREEN_FIELD_CONTRACT_MISMATCH"},
+    {"mutation_id": "M04_DIRTY_FIELD", "path": "screens.2.fields.6", "operation": "remove", "expected_error_code": "SCREEN_FIELD_CONTRACT_MISMATCH"},
+    {"mutation_id": "M05_UNTRACKED_FIELD", "path": "screens.2.fields.8", "operation": "remove", "expected_error_code": "SCREEN_FIELD_CONTRACT_MISMATCH"},
+    {"mutation_id": "M06_SOURCE_CONDITIONAL", "path": "screens.1.conditional_fields.local.0", "operation": "replace", "value": "remote_url", "expected_error_code": "SOURCE_CONDITIONAL_FIELD_MISMATCH"},
+    {"mutation_id": "M07_SCAN_STEP", "path": "screens.2.scan_steps.6", "operation": "remove", "expected_error_code": "READ_ONLY_SCAN_STEP_MISMATCH"},
+    {"mutation_id": "M08_UNKNOWN_STATE", "path": "state_contract.baseline.4", "operation": "replace", "value": "CLEAN", "expected_error_code": "STATE_CONTRACT_MISMATCH"},
+    {"mutation_id": "M09_REASON_CODE", "path": "reason_codes.8", "operation": "remove", "expected_error_code": "REASON_CODE_CONTRACT_MISMATCH"},
+    {"mutation_id": "M10_HTTP_409", "path": "registration_errors.0.code", "operation": "replace", "value": "REPOSITORY_NOT_FOUND", "expected_error_code": "REGISTRATION_ERROR_CONTRACT_MISMATCH"},
+    {"mutation_id": "M11_SOURCE_WRITE", "path": "preservation_contract.source_write_allowed", "operation": "replace", "value": true, "expected_error_code": "SOURCE_PRESERVATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M12_INSTALL", "path": "preservation_contract.install_allowed", "operation": "replace", "value": true, "expected_error_code": "SOURCE_PRESERVATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M13_FORMAT", "path": "preservation_contract.format_allowed", "operation": "replace", "value": true, "expected_error_code": "SOURCE_PRESERVATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M14_GIT_MUTATION", "path": "preservation_contract.git_mutation_allowed", "operation": "replace", "value": true, "expected_error_code": "SOURCE_PRESERVATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M15_AUTO_CLEANUP", "path": "preservation_contract.automatic_cleanup_allowed", "operation": "replace", "value": true, "expected_error_code": "SOURCE_PRESERVATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M16_DIRTY_MERGE", "path": "preservation_contract.tracked_dirty_and_untracked_separate", "operation": "replace", "value": false, "expected_error_code": "SOURCE_PRESERVATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M17_UNKNOWN_FAIL_OPEN", "path": "preservation_contract.unknown_fail_closed", "operation": "replace", "value": false, "expected_error_code": "SOURCE_PRESERVATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M18_PERMISSION_MERGE", "path": "permission_contract.view_manage_separated", "operation": "replace", "value": false, "expected_error_code": "PERMISSION_BOUNDARY_MISMATCH"},
+    {"mutation_id": "M19_CREDENTIAL_LITERAL", "path": "permission_contract.credential_display", "operation": "replace", "value": "LITERAL", "expected_error_code": "PERMISSION_BOUNDARY_MISMATCH"},
+    {"mutation_id": "M20_HEALTH_CARD", "path": "dashboard_contract.health_cards.5", "operation": "remove", "expected_error_code": "DASHBOARD_HEALTH_CARD_SET_MISMATCH"},
+    {"mutation_id": "M21_OPERATION_CARD", "path": "dashboard_contract.operations_cards.5", "operation": "remove", "expected_error_code": "DASHBOARD_OPERATION_CARD_SET_MISMATCH"},
+    {"mutation_id": "M22_SKIPPED_SUCCESS", "path": "dashboard_contract.skipped_counts_as_success", "operation": "replace", "value": true, "expected_error_code": "SUCCESS_RATE_COMPOSITION_MISMATCH"},
+    {"mutation_id": "M23_DEEP_LINK", "path": "dashboard_contract.next_action_fields.4", "operation": "remove", "expected_error_code": "NEXT_ACTION_DEEP_LINK_MISSING"},
+    {"mutation_id": "M24_FAIL_OPEN_TRANSITION", "path": "transitions.2.to", "operation": "replace", "value": "READY_TO_REGISTER", "expected_error_code": "FAIL_CLOSED_TRANSITION_MISMATCH"},
+    {"mutation_id": "M25_MATRIX_OWNER", "path": "matrix_contract.0.level", "operation": "replace", "value": "L4", "expected_error_code": "MATRIX_CONTRACT_MISMATCH"},
+    {"mutation_id": "M26_RUNTIME_OWNER", "path": "verification_contract.runtime_owners.AV-UI-003.0", "operation": "replace", "value": "A-03", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M27_RUNTIME_PASS", "path": "verification_contract.canonical_runtime_verdict", "operation": "replace", "value": "PASS", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M28_STATIC_QUALIFIER", "path": "verification_contract.evidence_qualifier", "operation": "replace", "value": "E-SHOT", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"}
+  ]
+}

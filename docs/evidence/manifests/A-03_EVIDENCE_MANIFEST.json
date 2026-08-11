@@ -1,0 +1,42 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-03-20260811-001",
+  "artifact_type": "package_evidence_manifest",
+  "project_id": "anvil",
+  "package_id": "A-03",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary-a03"},
+  "created_at": "2026-08-11T14:23:01+09:00",
+  "work_instruction_sha256": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F",
+  "assigned_verification_ids": ["AV-UI-003", "AV-UI-004"],
+  "execution_classification": "STATIC_ONLY",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED",
+  "target_algorithm": "SHA256(canonical JSON of sorted [{path,sha256}] raw_artifacts)",
+  "target_canonical_bytes": 2018,
+  "target_content_bytes": 75324,
+  "target_hash": "18DED6D1F1034044F7A8B55864AF35F507789BF08FE9B60C70806A6C190093CA",
+  "delivered_hash": "18DED6D1F1034044F7A8B55864AF35F507789BF08FE9B60C70806A6C190093CA",
+  "raw_artifacts": [
+    {"path": "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json", "bytes": 9343, "sha256": "25914E07800E0E2D1E28BD0ABBC07554C36A41A6D39D2C991C5D190FCB02629D", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a03/A-03_PROJECT_DASHBOARD.md", "bytes": 1443, "sha256": "BE63A98470650F70148FA5FCF69569CAAD0F8C9FC5D60733F0535CCD4CAB3239", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md", "bytes": 1427, "sha256": "DA311D29671FDC3E82C51CAFC6730B3F7A8774F8D47BF7315DE387FC6F139CAB", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a03/A-03_REPOSITORY_ONBOARDING.md", "bytes": 1832, "sha256": "2BD24A6675096CC914780C57B29BA9991BF130FA98D2C1E0A2D82AF7AB4D4CC3", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a03/A-03_DASHBOARD_STATIC_RENDER.svg", "bytes": 2574, "sha256": "5D67545EA8A28A9DA21EBA79BCB6B9F5F7BF05E308DBC86918EFAEB241FB9ED5", "evidence_type": "E-SHOT_STATIC_NOT_RUNTIME_UI"},
+    {"path": "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg", "bytes": 2241, "sha256": "5F579248C8CB65EA6112C5EA387DF673B23AE6DF6A339055B48F176139F71F67", "evidence_type": "E-SHOT_STATIC_NOT_RUNTIME_UI"},
+    {"path": "docs/architecture/a03/A-03_REPOSITORY_STATE_STATIC_RENDER.svg", "bytes": 2086, "sha256": "038CE63552A79B7032BA105ED9D113B4C98101806DAFDF5F19564C613840CCB1", "evidence_type": "E-SHOT_STATIC_NOT_RUNTIME_UI"},
+    {"path": "scripts/check_a03_onboarding.py", "bytes": 20637, "sha256": "DDDE3D1028A38E8CD942DA6B90591D6E6A316A717C2DECD198C2FE97DC09A823", "evidence_type": "E-TEST"},
+    {"path": "tests/tooling/test_a03_onboarding.py", "bytes": 5891, "sha256": "FD87782FD9AA94AB47B8B6B5B75F281F01319197814FB013AF61EF649B3935E9", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a03/canonical-contract.json", "bytes": 326, "sha256": "A389DBB64E87142F0C9BF578E6CA0036B7AE9FDDE83DD5D99A810B495B8FF8F3", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a03/mutation-catalog.json", "bytes": 5145, "sha256": "2A217C41F6809E1DD8C8E6499A325B8F5C6FD04B3F4FA13BAE33F81A5D0D4878", "evidence_type": "E-TEST"},
+    {"path": "docs/validation/A-03_ONBOARDING_VALIDATION.md", "bytes": 3171, "sha256": "CCBDCBA38BBBA4D438B6CA5769E502B1D13249335E15ED46318562206C5BDB82", "evidence_type": "E-TEST"},
+    {"path": "docs/completion_reports/A-03_COMPLETION_REPORT.md", "bytes": 4791, "sha256": "8617DF38F3C55FF8CDE35338FA0ECCEB089A8C6658B7C35602EDB71B85F3FB6D", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json", "bytes": 4168, "sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207", "evidence_type": "E-ART_PREDECESSOR"},
+    {"path": "docs/work_orders/A-03_WORK_INSTRUCTION.md", "bytes": 10249, "sha256": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F", "evidence_type": "E-DEC"}
+  ],
+  "self_reference": false,
+  "limitations": [
+    "Static SVGs are not browser, Playwright, API, DB, Network, Docker, deployment, or release evidence.",
+    "Canonical L7 remains RUNTIME_DEFERRED / NOT_EXECUTED under its later runtime owners.",
+    "Independent Tester PASS and Main ACCEPTED are still required before A-04."
+  ]
+}

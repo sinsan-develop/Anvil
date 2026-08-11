@@ -146,6 +146,16 @@ A02_COMPLETION_EXACT_PATHS = {
     "scripts/check_a02_tokens.py",
     "tests/tooling/test_a02_tokens.py",
 }
+A03_COMPLETION_PATH_PREFIXES = (
+    "docs/architecture/a03/",
+    "docs/completion_reports/A-03_",
+    "docs/validation/A-03_",
+    "tests/fixtures/a03/",
+)
+A03_COMPLETION_EXACT_PATHS = {
+    "scripts/check_a03_onboarding.py",
+    "tests/tooling/test_a03_onboarding.py",
+}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -1169,6 +1179,88 @@ def validate_a02_completion_manifest(
     return sorted(set(errors))
 
 
+def validate_a03_completion_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Recompute A-03 completion projection and frozen Developer evidence."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_paths = {
+        "docs/completion_reports/A-03_COMPLETION_REPORT.md",
+        "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
+        "docs/evidence/manifests/A-03_START_EVIDENCE_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-a03-completion-test-review.json",
+        "docs/work_orders/A-03_WORK_INSTRUCTION.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A03_COMPLETION_RAW_CHECKSUMS_INVALID"]
+    seen: set[str] = set()
+    canonical_rows: list[tuple[bytes, str]] = []
+    total_bytes = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("A03_COMPLETION_RAW_CHECKSUMS_INVALID")
+            continue
+        relative = row.get("path")
+        if not isinstance(relative, str) or relative in seen:
+            errors.append("A03_COMPLETION_RAW_CHECKSUMS_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A03_COMPLETION_RAW_CHECKSUMS_INVALID")
+            continue
+        actual = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != actual:
+            errors.append("A03_COMPLETION_RAW_CHECKSUMS_INVALID")
+        total_bytes += len(raw)
+        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual}"))
+    if seen != expected_paths:
+        errors.append("A03_COMPLETION_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if (
+        manifest.get("target_canonical_bytes") != len(canonical)
+        or manifest.get("target_content_bytes") != total_bytes
+        or manifest.get("target_hash") != target
+        or manifest.get("delivered_hash") != target
+        or manifest.get("content_hash") != target
+    ):
+        errors.append("A03_COMPLETION_TARGET_MISMATCH")
+    repository = progress.get("repository", {})
+    projection = manifest.get("repository_projection", {})
+    fields = (
+        "projection_mode", "validated_base_commit", "head_relation", "branch",
+        "upstream", "remote_head", "push_status", "exact_allowed_paths",
+    )
+    if any(projection.get(field) != repository.get(field) for field in fields):
+        errors.append("A03_COMPLETION_REPOSITORY_PROJECTION_MISMATCH")
+    wi = progress.get("active_work_instruction") or {}
+    developer = manifest.get("developer_evidence", {})
+    if (
+        manifest.get("package_id") != "A-03"
+        or manifest.get("self_reference") is not False
+        or progress.get("event_sequence") != 63
+        or progress.get("status") != "TEST_REVIEW"
+        or progress.get("active_agent") is not None
+        or progress.get("worker_lease") is not None
+        or progress.get("write_lease") is not None
+        or wi.get("artifact_id") != "WI-A-03-20260811-001"
+        or wi.get("package_status") != "TEST_REVIEW"
+        or wi.get("result_status") != "COMPLETED"
+        or wi.get("accepted") is not False
+        or wi.get("independent_tester_status") != "PENDING"
+        or developer.get("manifest_sha256") != "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"
+        or developer.get("target_hash") != "18DED6D1F1034044F7A8B55864AF35F507789BF08FE9B60C70806A6C190093CA"
+        or developer.get("mutation") != "FORBIDDEN_FROZEN_PREDECESSOR"
+    ):
+        errors.append("A03_COMPLETION_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -1540,9 +1632,11 @@ def _is_evidence_only_path(relative: str) -> bool:
         relative in EVIDENCE_ONLY_TOOLING_PATHS
         or relative in A01_COMPLETION_EXACT_PATHS
         or relative in A02_COMPLETION_EXACT_PATHS
+        or relative in A03_COMPLETION_EXACT_PATHS
         or relative.startswith(EVIDENCE_ONLY_PATH_PREFIXES)
         or relative.startswith(A01_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A02_COMPLETION_PATH_PREFIXES)
+        or relative.startswith(A03_COMPLETION_PATH_PREFIXES)
     )
 
 
@@ -1718,6 +1812,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a02_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-03_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_a03_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a03_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
