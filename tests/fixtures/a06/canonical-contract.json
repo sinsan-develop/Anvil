@@ -1,0 +1,6 @@
+{
+  "catalog_sha256": "D5489BA89CD094C07A4BFE5417DAFA1E11C78826331A0C1F54BAB56F54B2C67E",
+  "expected_package_verdict": "STATIC_CONTRACT_PASS",
+  "expected_runtime_verdict": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "assigned_verification_ids": ["AV-SAFE-005", "AV-FLOW-003"]
+}

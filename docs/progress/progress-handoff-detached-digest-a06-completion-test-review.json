@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-06-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "A-06",
+  "event_sequence": 91,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 16282, "file_sha256": "E58C4CC7D13535A1EF41C01C6144B1F309AF8A06850376EFB0DFC4057BECC310", "canonical_json_sha256": "DECD52178C46B3BA34C713F66CB5DE66A55F1B9BDF54F2CE345FD09984F5C4A4"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 39136, "file_sha256": "0C4219B1C3685C9EF9F6596F4BB0FA2E674E31F39D585B34351B6F8306321C2C", "machine_summary_canonical_sha256": "2404B5BB45096749E32B8164707D03CEEDCDDB1A8A2FB2EA1DA6AC33CCB465BA"},
+  "created_at": "2026-08-12T01:00:02+09:00",
+  "scope": "A-06 Developer completion projected to TEST_REVIEW after ordered write then worker lease revocation; independent Tester pending"
+}

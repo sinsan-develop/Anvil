@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="WORK_INSTRUCTION_REVIEW|INVOCATION_PREVIEW">
+  <rect width="1920" height="1080" fill="#0B1220"/><rect x="40" y="40" width="1840" height="1000" rx="20" fill="#142033"/>
+  <text x="80" y="105" fill="#F7F9FC" font-size="16">WorkInstruction Review · Invocation Preview</text>
+  <text x="80" y="140" fill="#7DB4FF" font-size="12">STATIC_ONLY · RUNTIME_DEFERRED / NOT_EXECUTED · E-API NOT_EXECUTED · E-AUD NOT_EXECUTED</text>
+  <rect x="80" y="180" width="1120" height="780" rx="16" fill="#1B2A42"/><text x="110" y="225" fill="#F8D66D" font-size="14">G-04 exact template</text>
+  <text x="110" y="265" fill="#B8C4D8" font-size="12">allowed / forbidden · rollback · completion · result / report</text>
+  <text x="110" y="300" fill="#B8C4D8" font-size="12">reconstruction · verification · immutable after approval</text>
+  <rect x="1240" y="180" width="560" height="780" rx="16" fill="#1B2A42"/><text x="1270" y="225" fill="#5EE3A1" font-size="14">Invocation</text>
+  <text x="1270" y="265" fill="#B8C4D8" font-size="12">Reference only · duplicated sections: 0</text>
+  <text x="1270" y="305" fill="#FF7B86" font-size="12">Hash mismatch: STALE / BLOCKED</text>
+</svg>
+

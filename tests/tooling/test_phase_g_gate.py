@@ -125,14 +125,14 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual(worker["details"]["lease_id"], write["details"]["worker_lease_id"])
         self.assertEqual(write["details"]["lease_id"], start["details"]["write_lease_id"])
 
-    def test_gate_checkpoint_allows_a06_fenced_active_start(self):
+    def test_gate_checkpoint_allows_a06_leaseless_test_review(self):
         report = self.validate()
         self.assertEqual([], report["errors"])
         self.assertEqual("A-06", report["progress"]["current_work_package"])
-        self.assertEqual("ACTIVE", report["progress"]["status"])
+        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
         self.assertEqual("WI-A-06-20260812-001", report["progress"]["active_work_instruction"]["artifact_id"])
-        self.assertEqual(1, report["progress"]["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, report["progress"]["write_lease"]["write_epoch"])
+        self.assertIsNone(report["progress"]["worker_lease"])
+        self.assertIsNone(report["progress"]["write_lease"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
         design_path = "Anvil_설계서_v2.md"

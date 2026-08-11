@@ -1,0 +1,86 @@
+{
+  "artifact_id": "A-06-PLANNING-APPROVAL-CATALOG-001",
+  "package_id": "A-06",
+  "version": 1,
+  "status": "STATIC_CONTRACT_PASS",
+  "predecessor_contract": {
+    "a01": {"path": "docs/architecture/a01/A-01_PATH_CATALOG.json", "sha256": "FC3A503E5038C86BFD841DA5F93826A3FC85B5EB2A020E1196385247C2B7DD69"},
+    "a02": {"path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json", "sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207"},
+    "a03": {"path": "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json", "sha256": "464F785FB0A72C3E5571D30755EE3A107259D641A6035830B18343E5A0922093"},
+    "a04": {"path": "docs/architecture/a04/A-04_WORKBENCH_CATALOG.json", "sha256": "230E32C99256F80904660735BA8B4A8BF95F9068164D8906E9E872EEE96AFE73"},
+    "a05": {"path": "docs/architecture/a05/A-05_DESIGN_DECISION_CATALOG.json", "sha256": "83A8987AED3C1442FBAFF4D2237185FC3BCAEEDC2C352C2F794B91091A4F138B"}
+  },
+  "work_plan_contract": {
+    "fields": ["artifact_id", "version", "status", "content_hash", "baseline_ref", "objective", "roles", "included_scope", "excluded_scope", "protected_scope", "dependency_graph", "iterations", "preconditions", "deliverables", "completion_conditions", "verification_contract", "risks", "budget", "approval_ref"],
+    "states": ["DRAFT", "REVIEW_REQUIRED", "APPROVAL_REQUIRED", "APPROVED", "INVALIDATED", "SUPERSEDED"],
+    "hash_bound_required": true,
+    "approved_immutable": true,
+    "required_graph_properties": {"acyclic": true, "all_iterations_reachable": true, "predecessors_exist": true}
+  },
+  "iteration_contract": {
+    "fields": ["iteration_id", "parent_plan_ref", "parent_plan_hash", "sequence", "status", "included_scope", "excluded_scope", "preconditions", "deliverables", "completion_conditions", "verification_contract", "risks", "carryover", "dependencies"],
+    "states": ["DRAFT", "READY", "ACTIVE", "BLOCKED", "COMPLETED", "CANCELLED"],
+    "parent_scope_subset_required": true,
+    "parent_hash_exact_required": true,
+    "sequence_unique_required": true,
+    "carryover_requires_target_iteration": true
+  },
+  "work_instruction_contract": {
+    "g04_template_sha256": "6E6663FC339D3FA60DE5DAA8326721A247287096991A020958736670AE789177",
+    "template_fields": ["artifact_id", "artifact_type", "project_id", "version", "artifact_status", "content_hash", "source_artifact_ids", "source_evidence_ids", "created_by", "created_at", "supersedes_artifact_id", "artifact_path", "package_id", "package_status", "revision", "supersedes_work_instruction_id", "design_baseline_ref", "work_plan_ref", "approval_ref", "owner", "executor", "goal", "preconditions", "included_scope", "excluded_scope", "protected_scope", "allowed_paths", "forbidden_paths", "allowed_actions", "forbidden_actions", "rollback_boundary", "completion_conditions", "result_contract", "report_contract", "reconstruction_contract", "verification_contract"],
+    "allowed_forbidden_disjoint_required": true,
+    "rollback_required": true,
+    "completion_required": true,
+    "result_report_required": true,
+    "reconstruction_and_verification_required": true,
+    "sample_allowed_paths": ["docs/architecture/a06/**", "tests/fixtures/a06/**"],
+    "sample_forbidden_paths": ["Anvil_설계서_v2.md", "docs/progress/**"]
+  },
+  "invocation_contract": {
+    "fields": ["invocation_id", "work_instruction_id", "work_instruction_sha256", "approval_subject_hash", "execution_mode", "agent_role", "completion_report_path", "instruction"],
+    "reference_only": true,
+    "duplicated_work_instruction_sections": [],
+    "duplicated_section_count": 0,
+    "work_instruction_hash_change_marks_stale": true,
+    "approval_subject_hash_change_marks_stale": true,
+    "stale_blocks_execution": true,
+    "sample_status": "CURRENT"
+  },
+  "approval_contract": {
+    "types": ["PLAN", "SCOPE_CHANGE", "APPLY", "DEPLOY", "DESTRUCTIVE"],
+    "record_fields": ["approval_id", "approval_type", "subject_artifact_id", "subject_hash", "scope", "requested_by", "decided_by", "decision", "reason", "requested_at", "decided_at", "expires_at", "invalidated_at", "supersedes_approval_id"],
+    "independent_lanes": true,
+    "cross_substitution_forbidden": true,
+    "cross_record_reuse_forbidden": true,
+    "expiry_blocks": true,
+    "artifact_hash_change_invalidates": true,
+    "baseline_hash_change_invalidates": true,
+    "work_instruction_hash_change_invalidates": true,
+    "approval_triggers_execution": false,
+    "sample_records": [
+      {"approval_id":"APR-PLAN-001","approval_type":"PLAN","subject_artifact_id":"PLAN-001","subject_hash":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA","scope":["plan"],"requested_by":"main-agent","decided_by":"owner","decision":"APPROVED","reason":"계획 승인","requested_at":"2026-08-12T00:00:00+09:00","decided_at":"2026-08-12T00:01:00+09:00","expires_at":"2026-08-13T00:00:00+09:00","invalidated_at":null,"supersedes_approval_id":null},
+      {"approval_id":"APR-SCOPE-001","approval_type":"SCOPE_CHANGE","subject_artifact_id":"SCOPE-001","subject_hash":"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB","scope":["scope-change"],"requested_by":"main-agent","decided_by":"owner","decision":"APPROVED","reason":"범위 변경 승인","requested_at":"2026-08-12T00:00:00+09:00","decided_at":"2026-08-12T00:01:00+09:00","expires_at":"2026-08-13T00:00:00+09:00","invalidated_at":null,"supersedes_approval_id":null},
+      {"approval_id":"APR-APPLY-001","approval_type":"APPLY","subject_artifact_id":"APPLY-001","subject_hash":"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC","scope":["apply"],"requested_by":"main-agent","decided_by":"owner","decision":"PENDING","reason":"적용 대기","requested_at":"2026-08-12T00:00:00+09:00","decided_at":null,"expires_at":"2026-08-13T00:00:00+09:00","invalidated_at":null,"supersedes_approval_id":null},
+      {"approval_id":"APR-DEPLOY-001","approval_type":"DEPLOY","subject_artifact_id":"DEPLOY-001","subject_hash":"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD","scope":["deploy"],"requested_by":"main-agent","decided_by":"owner","decision":"PENDING","reason":"배포 대기","requested_at":"2026-08-12T00:00:00+09:00","decided_at":null,"expires_at":"2026-08-13T00:00:00+09:00","invalidated_at":null,"supersedes_approval_id":null},
+      {"approval_id":"APR-DESTRUCTIVE-001","approval_type":"DESTRUCTIVE","subject_artifact_id":"DESTRUCTIVE-001","subject_hash":"EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE","scope":["destructive"],"requested_by":"main-agent","decided_by":"owner","decision":"PENDING","reason":"파괴 작업 대기","requested_at":"2026-08-12T00:00:00+09:00","decided_at":null,"expires_at":"2026-08-13T00:00:00+09:00","invalidated_at":null,"supersedes_approval_id":null}
+    ]
+  },
+  "nonsemantic_baseline_contract": {
+    "fields": ["binding_id", "parent_baseline_id", "root_human_approval_id", "old_hash", "new_hash", "semantic_diff", "impact", "rationale", "actor", "recorded_at", "scope_before", "scope_after", "scope_expanded"],
+    "root_and_parent_chain_required": true,
+    "old_new_hash_required": true,
+    "scope_nonexpansion_required": true,
+    "material_change_requires_human_approval": true,
+    "main_reconfirm_cannot_replace_human_material_approval": true,
+    "sample_binding": {"binding_id":"NS-001","parent_baseline_id":"BASELINE-PARENT-001","root_human_approval_id":"APPROVAL-ROOT-001","old_hash":"1111111111111111111111111111111111111111111111111111111111111111","new_hash":"2222222222222222222222222222222222222222222222222222222222222222","semantic_diff":"NONE","impact":["wording"],"rationale":"비의미 정규화","actor":"main-agent","recorded_at":"2026-08-12T00:00:00+09:00","scope_before":["A-06"],"scope_after":["A-06"],"scope_expanded":false}
+  },
+  "permission_contract": {
+    "capabilities": ["PROJECT_VIEW", "PLAN_EDIT", "PLAN_APPROVE", "ITERATION_MANAGE", "WI_EDIT", "WI_APPROVE", "APPROVAL_DECIDE", "NON_SEMANTIC_RECONFIRM", "APPLY_DECIDE", "DEPLOY_DECIDE", "DESTRUCTIVE_DECIDE"],
+    "capabilities_separated": true,
+    "unauthorized_action_disabled": true,
+    "reason_and_next_action_visible": true
+  },
+  "execution_guard": {"apply_open_in_a06": false, "deploy_open_in_a06": false, "destructive_open_in_a06": false, "approval_auto_runs": false, "static_review_only": true},
+  "disclosure_contract": {"secret_visible": false, "raw_internal_endpoint_visible": false, "loopback_endpoint_visible": false, "unauthorized_full_path_visible": false, "masked_reference_allowed": true},
+  "verification_contract": {"assigned_verification_ids":["AV-SAFE-005","AV-FLOW-003"],"execution_classification":"STATIC_ONLY","package_verdict":"STATIC_CONTRACT_PASS","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED","required_evidence":["E-ART"],"not_executed_evidence":["E-API","E-AUD","E-SHOT","E-EVT"],"runtime_owners":["B-04","C-14"],"environment":"ENV-LOCAL"}
+}

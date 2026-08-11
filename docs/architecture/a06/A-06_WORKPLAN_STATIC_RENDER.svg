@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="WORKPLAN_OVERVIEW|ITERATION_BOARD">
+  <rect width="1920" height="1080" fill="#0B1220"/><rect x="40" y="40" width="1840" height="1000" rx="20" fill="#142033"/>
+  <text x="80" y="105" fill="#F7F9FC" font-size="16">WorkPlan Overview · Iteration Board</text>
+  <text x="80" y="140" fill="#7DB4FF" font-size="12">STATIC_ONLY · RUNTIME_DEFERRED / NOT_EXECUTED · E-API NOT_EXECUTED · E-AUD NOT_EXECUTED</text>
+  <rect x="80" y="180" width="860" height="780" rx="16" fill="#1B2A42"/><text x="110" y="225" fill="#F8D66D" font-size="14">WorkPlan</text>
+  <text x="110" y="265" fill="#B8C4D8" font-size="12">Baseline/hash · objective · roles · scopes · graph · iterations</text>
+  <text x="110" y="300" fill="#B8C4D8" font-size="12">Prerequisites · deliverables · done · verification · risk · budget · approval</text>
+  <rect x="980" y="180" width="820" height="780" rx="16" fill="#1B2A42"/><text x="1010" y="225" fill="#5EE3A1" font-size="14">Iteration Board</text>
+  <text x="1010" y="265" fill="#B8C4D8" font-size="12">Parent id/hash · sequence · status · scope subset · carryover</text>
+  <text x="1010" y="305" fill="#FF7B86" font-size="12">Scope expansion: BLOCKED</text>
+</svg>
+

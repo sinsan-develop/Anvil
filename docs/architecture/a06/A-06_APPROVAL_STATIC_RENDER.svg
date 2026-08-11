@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="APPROVAL_CENTER|NONSEMANTIC_BASELINE">
+  <rect width="1920" height="1080" fill="#0B1220"/><rect x="40" y="40" width="1840" height="1000" rx="20" fill="#142033"/>
+  <text x="80" y="105" fill="#F7F9FC" font-size="16">Approval Center · Non-semantic Baseline</text>
+  <text x="80" y="140" fill="#7DB4FF" font-size="12">STATIC_ONLY · RUNTIME_DEFERRED / NOT_EXECUTED · E-API NOT_EXECUTED · E-AUD NOT_EXECUTED</text>
+  <rect x="80" y="180" width="1040" height="780" rx="16" fill="#1B2A42"/><text x="110" y="225" fill="#F8D66D" font-size="14">Independent approval lanes</text>
+  <text x="110" y="270" fill="#B8C4D8" font-size="12">PLAN · SCOPE_CHANGE · APPLY · DEPLOY · DESTRUCTIVE</text>
+  <text x="110" y="310" fill="#FF7B86" font-size="12">No substitution · no reuse · expiry/hash invalidates · no auto-run</text>
+  <rect x="1160" y="180" width="640" height="780" rx="16" fill="#1B2A42"/><text x="1190" y="225" fill="#5EE3A1" font-size="14">Derived baseline</text>
+  <text x="1190" y="270" fill="#B8C4D8" font-size="12">Root · parent · old/new · diff · impact · actor/time</text>
+  <text x="1190" y="310" fill="#5EE3A1" font-size="12">scope_expanded=false</text>
+</svg>
