@@ -1136,7 +1136,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["actual_runtime_status"])
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["dir_status"])
         self.assertIn("A-09", progress["completed_packages"])
-        self.assertEqual("A-10", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual("A-11", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         a10_start = [event for event in bundle["events"]["events"] if 114 <= event["sequence"] <= 116]
         self.assertEqual(
@@ -1165,17 +1165,25 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("BLOCKED_PENDING_A10_ACCEPTANCE", completed_a10["next_package_status"])
         for field in ("actual_provider_status", "actual_secret_status", "actual_egress_status", "actual_api_status", "actual_db_status", "actual_event_status", "actual_browser_status", "actual_network_status", "actual_runtime_status", "dir_status"):
             self.assertEqual("NOT_EXECUTED", completed_a10[field])
-        self.assertEqual(119, progress["event_sequence"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("A-10", progress["current_work_package"])
+        accepted_a10 = next(event for event in bundle["events"]["events"] if event["sequence"] == 120)
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", accepted_a10["event_type"])
+        self.assertEqual("ACCEPTED", accepted_a10["details"]["decision"])
+        self.assertEqual(0, accepted_a10["details"]["blocking_findings"])
+        self.assertEqual("B1B51F68561805B3C12355D6A7A939063EA1AB77EF45553C22E036F4D1682045", accepted_a10["details"]["test_report_sha256"])
+        self.assertEqual("A-11", accepted_a10["details"]["next_work_package"])
+        self.assertEqual("READY", accepted_a10["details"]["next_package_status"])
+        for field in ("actual_provider_status", "actual_secret_status", "actual_egress_status", "actual_api_status", "actual_db_status", "actual_event_status", "actual_browser_status", "actual_network_status", "actual_runtime_status", "dir_status"):
+            self.assertEqual("NOT_EXECUTED", accepted_a10["details"][field])
+        self.assertEqual(120, progress["event_sequence"])
+        self.assertEqual("READY", progress["status"])
+        self.assertEqual("A-11", progress["current_work_package"])
+        self.assertIn("A-10", progress["completed_packages"])
+        self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["active_agent"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
-        self.assertEqual("TEST_REVIEW", progress["active_work_instruction"]["package_status"])
-        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
-        self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
         self.assertEqual(
-            "docs/evidence/manifests/A-10_COMPLETION_PROGRESS_MANIFEST.json",
+            "docs/evidence/manifests/A-10_ACCEPTANCE_PROGRESS_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual([], checker.validate_bundle(bundle))

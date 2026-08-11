@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-10-PROGRESS-HANDOFF-DIGEST-ACCEPTED",
+  "package_id": "A-10",
+  "event_sequence": 120,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 18707, "file_sha256": "007A95C046F0C51B548E27F58C75610782A135A601A1E2A7AE267834248DBC63", "canonical_json_sha256": "1E6FC895FD8B6B648340E418D40AA7775ADDA08FA5604E692881E9DAAAF10361"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 46081, "file_sha256": "B39411F71EABD64EC20181277F8F0AE3E5DCC20C45D3F761FE2F0DFBCB76C5EF", "machine_summary_canonical_sha256": "C4FB69956240CF47EC4E3E6336E1C8DE5A55D0F7A183CF4312278CCB27474701"},
+  "created_at": "2026-08-12T07:30:00+09:00",
+  "scope": "A-10 Main acceptance and A-11 READY projection; Provider, Secret, Egress, API, DB, Event, browser, network, runtime, and DIR NOT_EXECUTED"
+}

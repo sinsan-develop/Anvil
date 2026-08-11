@@ -2184,6 +2184,29 @@ def validate_a10_completion_manifest(manifest: Mapping[str, Any], bundle: Mappin
     return sorted(set(errors))
 
 
+def validate_a10_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[];expected={"docs/evidence/manifests/A-10_COMPLETION_PROGRESS_MANIFEST.json","docs/evidence/manifests/A-10_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-a10-accepted.json","docs/test_reports/A-10_TEST_REPORT.md","docs/work_orders/A-10_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["A10_ACCEPTANCE_RAW_CHECKSUMS_INVALID"]
+    for row in rows:
+        rel=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(rel,str) or rel in seen: errors.append("A10_ACCEPTANCE_RAW_CHECKSUMS_INVALID");continue
+        seen.add(rel)
+        try: raw=(root/rel).read_bytes()
+        except OSError: errors.append("A10_ACCEPTANCE_RAW_CHECKSUMS_INVALID");continue
+        actual=hashlib.sha256(raw).hexdigest().upper();total+=len(raw);canonical.append((rel.encode(),f"{rel}\t{len(raw)}\t{actual}"))
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=actual: errors.append("A10_ACCEPTANCE_RAW_CHECKSUMS_INVALID")
+    if seen!=expected: errors.append("A10_ACCEPTANCE_RAW_SET_INVALID")
+    can="\n".join(v for _,v in sorted(canonical)).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_hash")!=target,manifest.get("content_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total)): errors.append("A10_ACCEPTANCE_TARGET_MISMATCH")
+    fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths");mp=manifest.get("repository_projection") or {};rp=progress.get("repository") or {}
+    if any(mp.get(f)!=rp.get(f) for f in fields): errors.append("A10_ACCEPTANCE_REPOSITORY_PROJECTION_MISMATCH")
+    tester=manifest.get("tester_evidence") or {};developer=manifest.get("developer_evidence") or {}
+    statuses=("actual_provider_status","actual_secret_status","actual_egress_status","actual_api_status","actual_db_status","actual_event_status","actual_browser_status","actual_network_status","actual_runtime_status","actual_dir_status")
+    if (progress.get("event_sequence")!=120 or progress.get("current_work_package")!="A-11" or progress.get("status")!="READY" or "A-10" not in progress.get("completed_packages",[]) or progress.get("active_work_instruction") is not None or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or progress.get("active_failure_lineage",{}).get("step_lineage_id")!="A-11" or tester.get("sha256")!="B1B51F68561805B3C12355D6A7A939063EA1AB77EF45553C22E036F4D1682045" or tester.get("verdict")!="PASS_STATIC_CONTRACT / READY_FOR_MAIN_ACCEPTANCE" or tester.get("blocking_defects")!=0 or developer.get("sha256")!="C9667081B8BEA555C32F8833D7F28BCF3528882324814CCE08CAAEAA27DE6A84" or developer.get("target_hash")!="C179BA2371401BB57CAA02B5148D96A58B094092BE52088E85C6BA9882CFA64A" or developer.get("mutation")!="FORBIDDEN_FROZEN_PREDECESSOR" or any(manifest.get(k)!="NOT_EXECUTED" for k in statuses) or manifest.get("self_reference") is not False): errors.append("A10_ACCEPTANCE_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -2797,6 +2820,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a10_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-10_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_a10_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-10_ACCEPTANCE_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a10_acceptance_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
