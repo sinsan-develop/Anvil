@@ -1,0 +1,1 @@
+{"package_id":"A-11","catalog_sha256":"8EC87BDDB3107F572EF73AA534D6119D783CB408E22F4192477D25FB270DC109","expected_package_verdict":"STATIC_CONTRACT_PASS","execution_classification":"STATIC_ONLY","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED"}

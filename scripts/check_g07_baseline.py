@@ -726,7 +726,7 @@ def validate_repository(
             completion_subject = reconciliation_event.get("subject_ref")
             if (
                 reconciliation_event.get("event_type") == "PACKAGE_COMPLETED"
-                and completion_subject in {"A-06", "A-07", "A-08", "A-09", "A-10"}
+                and completion_subject in {"A-06", "A-07", "A-08", "A-09", "A-10", "A-11"}
             ):
                 manifest_relative = f"docs/evidence/manifests/{completion_subject}_EVIDENCE_MANIFEST.json"
                 try:
