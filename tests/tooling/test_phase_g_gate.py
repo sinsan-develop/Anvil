@@ -96,14 +96,14 @@ class PhaseGGateTests(unittest.TestCase):
 
     def test_gate_checkpoint_allows_a02_active_after_fenced_start(self):
         report = self.validate()
-        self.assertEqual("A-02", report["progress"]["current_work_package"])
-        self.assertEqual("ACTIVE", report["progress"]["status"])
-        self.assertEqual("A-02", report["progress"]["next_conditional_package"])
+        events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+        start = next(event for event in events if event["event_id"] == "evt_a02_package_started")
+        self.assertEqual(46, start["sequence"])
+        self.assertEqual("A-02", start["subject_ref"])
+        self.assertEqual("ACTIVE", start["details"]["package_status"])
         self.assertTrue(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
-        self.assertEqual("WI-A-02-20260811-001", report["progress"]["active_work_instruction"]["artifact_id"])
-        self.assertEqual("worker-lease-a02-20260811-001", report["progress"]["worker_lease"]["lease_id"])
-        self.assertEqual("write-lease-a02-20260811-001", report["progress"]["write_lease"]["lease_id"])
+        self.assertEqual("WI-A-02-20260811-001", start["details"]["work_instruction_id"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
         self.assertEqual("STANDING_AUTONOMOUS_APPROVAL_APPLIED", decision["approval_mode"])
@@ -117,11 +117,22 @@ class PhaseGGateTests(unittest.TestCase):
     def test_gate_checkpoint_allows_fenced_a02_active_start(self):
         report = self.validate()
         self.assertEqual([], report["errors"])
-        self.assertEqual("A-02", report["progress"]["current_work_package"])
-        self.assertEqual("ACTIVE", report["progress"]["status"])
-        self.assertEqual("WI-A-02-20260811-001", report["progress"]["active_work_instruction"]["artifact_id"])
-        self.assertEqual("worker-lease-a02-20260811-001", report["progress"]["worker_lease"]["lease_id"])
-        self.assertEqual("write-lease-a02-20260811-001", report["progress"]["write_lease"]["lease_id"])
+        events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+        worker = next(event for event in events if event["event_id"] == "evt_a02_worker_lease_issued")
+        write = next(event for event in events if event["event_id"] == "evt_a02_write_lease_issued")
+        start = next(event for event in events if event["event_id"] == "evt_a02_package_started")
+        self.assertEqual([44, 45, 46], [worker["sequence"], write["sequence"], start["sequence"]])
+        self.assertEqual(worker["details"]["lease_id"], write["details"]["worker_lease_id"])
+        self.assertEqual(write["details"]["lease_id"], start["details"]["write_lease_id"])
+
+    def test_gate_checkpoint_allows_a03_ready_after_a02_acceptance(self):
+        report = self.validate()
+        self.assertEqual([], report["errors"])
+        self.assertEqual("A-03", report["progress"]["current_work_package"])
+        self.assertEqual("READY", report["progress"]["status"])
+        self.assertIsNone(report["progress"]["active_work_instruction"])
+        self.assertIsNone(report["progress"]["worker_lease"])
+        self.assertIsNone(report["progress"]["write_lease"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
         design_path = "Anvil_설계서_v2.md"

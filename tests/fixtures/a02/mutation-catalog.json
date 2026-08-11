@@ -1,0 +1,40 @@
+{
+  "fixture_id": "A02-TOKEN-MUTATIONS",
+  "mutations": [
+    {"mutation_id": "M01", "path": "viewport.width_px", "operation": "replace", "value": 1919, "expected_error_code": "VIEWPORT_CONTRACT_MISMATCH"},
+    {"mutation_id": "M02", "path": "viewport.height_px", "operation": "replace", "value": 1079, "expected_error_code": "VIEWPORT_CONTRACT_MISMATCH"},
+    {"mutation_id": "M03", "path": "typography.body_form_px", "operation": "replace", "value": 14, "expected_error_code": "TYPOGRAPHY_CONTRACT_MISMATCH"},
+    {"mutation_id": "M04", "path": "typography.small_description_px", "operation": "replace", "value": 11, "expected_error_code": "TYPOGRAPHY_CONTRACT_MISMATCH"},
+    {"mutation_id": "M05", "path": "layout.base_padding_px", "operation": "replace", "value": 12, "expected_error_code": "LAYOUT_CONTRACT_MISMATCH"},
+    {"mutation_id": "M06", "path": "layout.context_drawer_mode", "operation": "replace", "value": "ALWAYS_OPEN", "expected_error_code": "LAYOUT_CONTRACT_MISMATCH"},
+    {"mutation_id": "M07", "path": "explanation_interface.persistent_explanation_box_allowed", "operation": "replace", "value": true, "expected_error_code": "PERSISTENT_EXPLANATION_BOX_FORBIDDEN"},
+    {"mutation_id": "M08", "path": "explanation_interface.keyboard_access_required", "operation": "replace", "value": false, "expected_error_code": "EXPLANATION_KEYBOARD_PATH_REQUIRED"},
+    {"mutation_id": "M09", "path": "explanation_interface.required_content.0", "operation": "remove", "expected_error_code": "EXPLANATION_INTERFACE_MISMATCH"},
+    {"mutation_id": "M10", "path": "status_presentation.color_only_allowed", "operation": "replace", "value": true, "expected_error_code": "STATUS_PRESENTATION_MISMATCH"},
+    {"mutation_id": "M11", "path": "semantic_colors.13", "operation": "remove", "expected_error_code": "SEMANTIC_COLOR_ROLE_MISMATCH"},
+    {"mutation_id": "M12", "path": "semantic_colors", "operation": "append", "value": {"role": "canvas", "value": "#0B1220", "usage": "duplicate"}, "expected_error_code": "SEMANTIC_COLOR_ROLE_DUPLICATE"},
+    {"mutation_id": "M13", "path": "semantic_colors", "operation": "append", "value": {"role": "unknown", "value": "#F7F9FC", "usage": "forbidden"}, "expected_error_code": "SEMANTIC_COLOR_ROLE_UNKNOWN"},
+    {"mutation_id": "M14", "path": "additional_raw_colors", "operation": "replace", "value": ["#F7F9FC"], "expected_error_code": "RAW_COLOR_BYPASS"},
+    {"mutation_id": "M15", "path": "verification_contract.evidence_qualifier", "operation": "replace", "value": "E-SHOT", "expected_error_code": "STATIC_QUALIFIER_MISMATCH"},
+    {"mutation_id": "M16", "path": "verification_contract.assigned_verification_ids", "operation": "replace", "value": ["AV-UI-001"], "expected_error_code": "VERIFICATION_RESPONSIBILITY_MISMATCH"},
+    {"mutation_id": "M17", "path": "matrix_contract.0.severity", "operation": "replace", "value": "MINOR", "expected_error_code": "MATRIX_CONTRACT_MISMATCH"},
+    {"mutation_id": "M18", "path": "path_policy.dependency_mutation_forbidden", "operation": "replace", "value": false, "expected_error_code": "PATH_POLICY_MISMATCH"},
+    {"mutation_id": "M19", "path": "contrast_pairs.0.minimum_ratio", "operation": "replace", "value": 22.0, "expected_error_code": "TEXT_CONTRAST_BELOW_4_5"},
+    {"mutation_id": "M20", "path": "semantic_colors.4.value", "operation": "replace", "value": "#60738F", "expected_error_code": "TEXT_CONTRAST_BELOW_4_5"},
+    {"mutation_id": "M21", "path": "explanation_interface.hover_only_allowed", "operation": "replace", "value": true, "expected_error_code": "EXPLANATION_INTERFACE_MISMATCH"},
+    {"mutation_id": "M22", "path": "verification_contract.canonical_runtime_verdict", "operation": "replace", "value": "PASS", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"}
+  ],
+  "manifest_mutations": [
+    {"mutation_id": "EM01", "field": "self_reference", "mutation": true, "expected_error_code": "EVIDENCE_SELF_REFERENCE_FORBIDDEN"},
+    {"mutation_id": "EM02", "field": "target_canonical_bytes", "mutation": 0, "expected_error_code": "EVIDENCE_CANONICAL_BYTES_MISMATCH"},
+    {"mutation_id": "EM03", "field": "target_content_bytes", "mutation": 0, "expected_error_code": "EVIDENCE_CONTENT_BYTES_MISMATCH"},
+    {"mutation_id": "EM04", "field": "raw_artifacts", "mutation": "append AGENTS.md and recompute target", "expected_error_code": "EVIDENCE_RAW_PATH_SET_MISMATCH"},
+    {"mutation_id": "EM05", "field": "raw_artifacts[0].bytes", "mutation": "+1", "expected_error_code": "EVIDENCE_RAW_BYTES_MISMATCH"},
+    {"mutation_id": "EM06", "field": "raw_artifacts[0].sha256", "mutation": "zero hash", "expected_error_code": "EVIDENCE_RAW_HASH_MISMATCH"},
+    {"mutation_id": "EM07", "field": "target_hash/delivered_hash", "mutation": "zero hash", "expected_error_code": "EVIDENCE_TARGET_HASH_MISMATCH"}
+  ],
+  "document_mutations": [
+    {"mutation_id": "DM01", "field": "body/form", "mutation": "12px to 16px", "expected_error_code": "DOCUMENT_SCREEN_TOKEN_BINDING_MISMATCH"},
+    {"mutation_id": "DM02", "field": "sidebar expanded/collapsed", "mutation": "224px / 56px to 56px / 224px", "expected_error_code": "DOCUMENT_SCREEN_TOKEN_BINDING_MISMATCH"}
+  ]
+}

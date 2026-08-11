@@ -70,6 +70,26 @@
       ],
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a02-independent-test-r1",
+      "step_lineage_id": "A-02",
+      "failure_fingerprint": "a02-independent-test:evidence-manifest-and-markdown-semantic-binding-fail-open-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": ["DEF-A02-001", "DEF-A02-002"],
+      "blocking_severity": "MAJOR",
+      "blocking_defect_count": 2,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/A-02_TEST_REPORT.md",
+          "sha256": "1732C036F79FBE05DF9EBF1BB59B67E621DAE8CC40259D30585714C01F73FAF8"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
     }
   ]
 }

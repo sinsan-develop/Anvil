@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-02-PROGRESS-HANDOFF-DIGEST-REWORK-START-R2",
+  "package_id": "A-02",
+  "event_sequence": 53,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 14214,
+    "file_sha256": "7CB150C3F251589975934438EEE10546B85F8151456F4306541629144B1FF14C",
+    "canonical_json_sha256": "F09516B72FF9BB46C3F13E1709CB9A4628E488A25529A2193C1D5853584AA04C"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 32393,
+    "file_sha256": "445F484801101E441BF451B917B1A981CACE8C9A5BAB6533F3D0B0DBFB6869F4",
+    "machine_summary_canonical_sha256": "BB6B178BFFFB603010636BC8EE7E55408E8F09E5254D96FEC00B73CBDF51C39E"
+  },
+  "created_at": "2026-08-11T11:20:03+09:00",
+  "scope": "A-02 Tester FAILURE_REPORT acceptance and non-retroactive revision-2 rework start; epoch-2 leases active, predecessor evidence immutable, A-03 blocked"
+}

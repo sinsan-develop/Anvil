@@ -55,6 +55,8 @@ VALIDATED_BASE_PENDING_RELATION = "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT"
 EVIDENCE_ONLY_PATH_PREFIXES = ("docs/evidence/", "docs/progress/", "docs/test_reports/")
 A01_COMPLETION_PATH_PREFIXES = ("docs/architecture/a01/", "docs/completion_reports/A-01_", "docs/validation/A-01_", "tests/fixtures/a01/")
 A01_COMPLETION_EXACT_PATHS = {"scripts/check_a01_journey.py", "tests/tooling/test_a01_journey.py"}
+A02_COMPLETION_PATH_PREFIXES = ("docs/architecture/a02/", "docs/completion_reports/A-02_", "docs/validation/A-02_", "tests/fixtures/a02/")
+A02_COMPLETION_EXACT_PATHS = {"scripts/check_a02_tokens.py", "tests/tooling/test_a02_tokens.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -224,8 +226,10 @@ def _is_evidence_only_path(relative: str) -> bool:
     return (
         relative in EVIDENCE_ONLY_TOOLING_PATHS
         or relative in A01_COMPLETION_EXACT_PATHS
+        or relative in A02_COMPLETION_EXACT_PATHS
         or relative.startswith(EVIDENCE_ONLY_PATH_PREFIXES)
         or relative.startswith(A01_COMPLETION_PATH_PREFIXES)
+        or relative.startswith(A02_COMPLETION_PATH_PREFIXES)
     )
 
 
@@ -727,7 +731,15 @@ def validate_repository(
                 _error(errors, "GIT_VALIDATED_BASE_NOT_ANCESTOR", ".git", f"base={base} head={head}")
             if rc_changed or changed_paths != allowed:
                 _error(errors, "GIT_DESCENDANT_PATH_SET_MISMATCH", ".git", f"allowed={allowed} actual={changed_paths}")
-            expected_remote = base if working_tree_mode else head
+            remote_lag_declared = (
+                working_tree_mode
+                and repository_projection.get("push_status") == "PUSH_PENDING_MAIN"
+                and repository_projection.get("remote_head") == upstream
+                and isinstance(upstream, str)
+                and re.fullmatch(r"[0-9a-f]{40}", upstream) is not None
+                and upstream != base
+            )
+            expected_remote = upstream if remote_lag_declared else (base if working_tree_mode else head)
             if upstream != expected_remote:
                 _error(errors, "GIT_DESCENDANT_ORIGIN_MISMATCH", ".git", f"expected={expected_remote} actual={upstream}")
             projection_fields = (
@@ -737,6 +749,8 @@ def validate_repository(
                 "exact_allowed_paths",
                 "branch",
                 "upstream",
+                "remote_head",
+                "push_status",
             )
             if any(reconciliation.get(field) != repository_projection.get(field) for field in projection_fields):
                 _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", "validated-base projection fields differ")

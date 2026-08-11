@@ -1,0 +1,29 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-02-REWORK-COMPLETION-20260811-002",
+  "artifact_type": "progress_transition_manifest",
+  "project_id": "anvil",
+  "package_id": "A-02",
+  "artifact_status": "revision_2_test_review_pending_independent_retest",
+  "content_hash": "sha256:FA30D9994161A184784182B06E145DD0D9B2CD34B3EF24019F4C19ACA1411F14",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T11:50:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-02_REWORK_COMPLETION_PROGRESS_MANIFEST.json",
+  "target_hash": "sha256:FA30D9994161A184784182B06E145DD0D9B2CD34B3EF24019F4C19ACA1411F14",
+  "delivered_hash": "sha256:FA30D9994161A184784182B06E145DD0D9B2CD34B3EF24019F4C19ACA1411F14",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 622,
+  "target_content_bytes": 26528,
+  "projection": {"event_sequence": 56, "status": "TEST_REVIEW", "result_status": "COMPLETED", "accepted": false, "rework_revision": 2, "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST", "independent_tester_status": "R2_PENDING", "worker_lease": null, "write_lease": null, "next_package": "A-03", "next_package_status": "BLOCKED_PENDING_A02_ACCEPTANCE"},
+  "developer_evidence": {"manifest_path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json", "manifest_sha256": "779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168", "target_hash": "5600CF11BED593D1187C454B54CA5CD218E149724EC0A7955C512E0520839CFD", "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST.json", "bytes": 3585, "sha256": "FC2D3BD61BA7014CB74635D96AF68C3CCEE970E9FEAC52327A020570A52E5269"},
+    {"path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json", "bytes": 4480, "sha256": "779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a02-rework-completion-test-review.json", "bytes": 896, "sha256": "9AEFF131179E04760FCEA03E15549916823C94644DE1110F27F690F028597DE7"},
+    {"path": "docs/test_reports/A-02_TEST_REPORT.md", "bytes": 10119, "sha256": "1732C036F79FBE05DF9EBF1BB59B67E621DAE8CC40259D30585714C01F73FAF8"},
+    {"path": "docs/work_orders/A-02_WORK_INSTRUCTION.md", "bytes": 7448, "sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 53, predecessor manifest, and Tester report remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This is TEST_REVIEW, not A-02 acceptance.", "Runtime, browser, API, DB, deployment, and release remain NOT_EXECUTED."]
+}

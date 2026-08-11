@@ -197,18 +197,17 @@ class G07BaselineTests(unittest.TestCase):
         reconciliation = report["progress_reconciliation"]
         self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
         self.assertEqual(
-            "1ace56384d55cbe11d34f2532e9f602d389a9512",
+            "2bd88123e93550db5874b479c82d78d4733fd53f",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
-        self.assertEqual("ACTIVE", reconciliation["package_status"])
-        self.assertEqual("WI-A-02-20260811-001", reconciliation["work_instruction_id"])
-        self.assertEqual("A-02", report["failure_counts"]["active_lineage"])
+        self.assertEqual("READY", reconciliation["next_package_status"])
+        self.assertEqual("A-03", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
-        self.assertEqual(4, report["failure_counts"]["historical_accepted_failure_total"])
+        self.assertEqual(5, report["failure_counts"]["historical_accepted_failure_total"])
         self.assertTrue(report["g_gate"]["a01_start_allowed"])
         self.assertEqual(
             [],
@@ -217,12 +216,22 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
 
     def test_a02_start_is_the_latest_nonretroactive_repository_projection(self):
+        events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+        projection = next(event for event in events if event["sequence"] == 46)
+        self.assertEqual("PACKAGE_STARTED", projection["event_type"])
+        self.assertEqual("1ace56384d55cbe11d34f2532e9f602d389a9512", projection["details"]["validated_base_commit"])
+        self.assertEqual("ACTIVE", projection["details"]["package_status"])
+
+    def test_a02_acceptance_projection_preserves_remote_lag_and_exact_worktree(self):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         projection = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_STARTED", projection["event_type"])
-        self.assertEqual("1ace56384d55cbe11d34f2532e9f602d389a9512", projection["validated_base_commit"])
-        self.assertEqual("ACTIVE", projection["package_status"])
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", projection["event_type"])
+        self.assertEqual("READY", projection["next_package_status"])
+        self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
+        self.assertEqual("2bd88123e93550db5874b479c82d78d4733fd53f", projection["validated_base_commit"])
+        self.assertEqual("1ace56384d55cbe11d34f2532e9f602d389a9512", report["git"]["upstream_head"])
+        self.assertEqual("PUSH_PENDING_MAIN", projection["push_status"])
         self.assertEqual(report["git"]["changed_paths"], projection["exact_allowed_paths"])
 
     def test_repository_projection_accepts_only_exact_evidence_descendant(self):
@@ -240,6 +249,8 @@ class G07BaselineTests(unittest.TestCase):
             "exact_allowed_paths": allowed,
             "branch": "main",
             "upstream": "origin/main",
+            "remote_head": head,
+            "push_status": "PUSHED",
         }
         progress["repository"] = projection
         event_stream["events"][-1]["details"].update(projection)

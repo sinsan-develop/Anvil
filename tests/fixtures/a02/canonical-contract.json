@@ -1,0 +1,10 @@
+{
+  "fixture_id": "A02-TOKEN-CANONICAL",
+  "package_id": "A-02",
+  "catalog_path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json",
+  "catalog_sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207",
+  "assigned_verification_ids": ["AV-UI-001", "AV-UI-002"],
+  "execution_classification": "STATIC_ONLY",
+  "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED"
+}

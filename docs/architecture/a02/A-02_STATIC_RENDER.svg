@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc">
+  <title id="title">A-02 1920×1080 static screen-token render</title>
+  <desc id="desc">E-SHOT_STATIC_NOT_RUNTIME_UI; RUNTIME_DEFERRED / NOT_EXECUTED; not browser or Playwright evidence.</desc>
+  <rect width="1920" height="1080" fill="#0B1220"/>
+  <rect x="0" y="0" width="224" height="1080" fill="#142033"/>
+  <rect x="224" y="0" width="1696" height="48" fill="#1B2A42"/>
+  <text x="24" y="34" fill="#F7F9FC" font-size="14">Anvil · sidebar title 14px</text>
+  <text x="248" y="31" fill="#B8C4D8" font-size="12">Header 48px · canvas #0B1220 · surface #142033 · surface-raised #1B2A42</text>
+
+  <text x="248" y="92" fill="#F7F9FC" font-size="16">A-02 Screen Tokens · screen title 16px</text>
+  <text x="248" y="116" fill="#B8C4D8" font-size="10">STATIC_ONLY · E-SHOT_STATIC_NOT_RUNTIME_UI · RUNTIME_DEFERRED / NOT_EXECUTED</text>
+
+  <rect x="248" y="140" width="620" height="300" rx="8" fill="#142033" stroke="#60738F"/>
+  <text x="264" y="172" fill="#F7F9FC" font-size="16">Typography &amp; layout</text>
+  <text x="264" y="202" fill="#F7F9FC" font-size="12">body/form 12px · small 10px · auxiliary 9px</text>
+  <text x="264" y="228" fill="#B8C4D8" font-size="12">sidebar 224px / collapsed 56px</text>
+  <text x="264" y="254" fill="#B8C4D8" font-size="12">header 48px · context drawer 360px ON_DEMAND</text>
+  <text x="264" y="280" fill="#B8C4D8" font-size="12">base padding 16px · card gap 12px</text>
+  <text x="264" y="316" fill="#7DB4FF" font-size="12">interactive #7DB4FF</text>
+  <rect x="260" y="338" width="300" height="52" rx="6" fill="#1B2A42" stroke="#F8D66D" stroke-width="3"/>
+  <text x="276" y="369" fill="#F7F9FC" font-size="12">keyboard focus #F8D66D</text>
+  <text x="264" y="418" fill="#60738F" font-size="9">border #60738F · auxiliary 9px</text>
+
+  <rect x="880" y="140" width="792" height="300" rx="8" fill="#142033" stroke="#60738F"/>
+  <text x="896" y="172" fill="#F7F9FC" font-size="16">Status presentation</text>
+  <text x="896" y="204" fill="#5EE3A1" font-size="12">✓ SUCCESS · icon + status_label + short_description · #5EE3A1</text>
+  <text x="896" y="234" fill="#FFD166" font-size="12">⚠ WARNING · 확인이 필요한 상태 · #FFD166</text>
+  <text x="896" y="264" fill="#FF7B86" font-size="12">✕ DANGER · 오류가 발생한 상태 · #FF7B86</text>
+  <text x="896" y="294" fill="#C4A7FF" font-size="12">⛔ BLOCKED · 선행조건이 필요한 상태 · #C4A7FF</text>
+  <text x="896" y="324" fill="#74D7FF" font-size="12">ⓘ INFO · 참고 정보 · #74D7FF</text>
+  <text x="896" y="354" fill="#B8C4D8" font-size="12">○ NEUTRAL · 중립 상태 · #B8C4D8</text>
+  <text x="896" y="398" fill="#F7F9FC" font-size="12">Color-only status is forbidden.</text>
+
+  <rect x="248" y="452" width="1424" height="420" rx="8" fill="#142033" stroke="#60738F"/>
+  <text x="264" y="486" fill="#F7F9FC" font-size="16">Explanation interface</text>
+  <circle cx="282" cy="528" r="14" fill="#7DB4FF"/>
+  <text x="278" y="533" fill="#0B1220" font-size="12">i</text>
+  <text x="310" y="533" fill="#F7F9FC" font-size="12">i-icon · pointer + focus + keyboard</text>
+
+  <rect x="310" y="556" width="500" height="70" rx="6" fill="#1B2A42" stroke="#60738F"/>
+  <text x="326" y="582" fill="#F7F9FC" font-size="12">tooltip · short content</text>
+  <text x="326" y="606" fill="#B8C4D8" font-size="10">reason + next_action</text>
+
+  <rect x="840" y="556" width="760" height="210" rx="8" fill="#1B2A42" stroke="#F8D66D" stroke-width="3"/>
+  <text x="864" y="590" fill="#F7F9FC" font-size="16">popover · complex content / decision / evidence</text>
+  <text x="864" y="626" fill="#F7F9FC" font-size="12">reason: why this state occurred</text>
+  <text x="864" y="654" fill="#7DB4FF" font-size="12">next_action: what the operator can do</text>
+  <text x="864" y="694" fill="#B8C4D8" font-size="10">Enter/Space opens · Escape closes · focus returns to trigger</text>
+  <text x="864" y="726" fill="#FF7B86" font-size="12">persistent explanation box: forbidden</text>
+
+  <text x="264" y="820" fill="#F7F9FC" font-size="12">AV-UI-001 L4/AE/E-SHOT/MAJOR · AV-UI-002 L4/MI/E-SHOT/MINOR</text>
+  <text x="248" y="920" fill="#B8C4D8" font-size="12">Semantic roles: canvas · surface · surface-raised · text-primary · text-muted · border · interactive · focus</text>
+  <text x="248" y="946" fill="#B8C4D8" font-size="12">Status roles: success · warning · danger · blocked · info · neutral</text>
+  <text x="248" y="1018" fill="#F7F9FC" font-size="12">STATIC RENDER ONLY — no runtime UI, browser, API, DB, Network, Docker, deploy or release claim</text>
+</svg>

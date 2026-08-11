@@ -1,0 +1,40 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-02-20260811-001",
+  "artifact_type": "package_evidence_manifest",
+  "project_id": "anvil",
+  "package_id": "A-02",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary-a02"},
+  "created_at": "2026-08-11T11:00:00+09:00",
+  "work_instruction_sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0",
+  "assigned_verification_ids": ["AV-UI-001", "AV-UI-002"],
+  "execution_classification": "STATIC_ONLY",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI",
+  "target_algorithm": "SHA256(canonical JSON of sorted [{path,sha256}] raw_artifacts)",
+  "target_canonical_bytes": 1559,
+  "target_content_bytes": 75135,
+  "target_hash": "D4CFB774263C4BEC16294155C8603B18CA6A677B389D9390B1644173B59029F0",
+  "delivered_hash": "D4CFB774263C4BEC16294155C8603B18CA6A677B389D9390B1644173B59029F0",
+  "raw_artifacts": [
+    {"path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json", "bytes": 4168, "sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a02/A-02_SCREEN_TOKEN_SPEC.md", "bytes": 1603, "sha256": "AB6B200161E6F72458D138EC6A8D88D5E90675D9077DCFCC88DB1A75D29328EC", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a02/A-02_EXPLANATION_INTERFACE.md", "bytes": 1022, "sha256": "A6893B3B7468C03A6DBACB10C4E4916DAEA958EA7EBA35F01A6DBFC80F6B32A2", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a02/A-02_STATIC_RENDER.svg", "bytes": 4727, "sha256": "32438307241930528114B17CC40A07F60FC357DF2A3808AABB4F4987C335E485", "evidence_type": "E-SHOT_STATIC_NOT_RUNTIME_UI"},
+    {"path": "scripts/check_a02_tokens.py", "bytes": 17085, "sha256": "FFA14A619EB2E6C03AD359343BAE33758EFD2887ABF191A11EF81AFAFE0C9F2F", "evidence_type": "E-TEST"},
+    {"path": "tests/tooling/test_a02_tokens.py", "bytes": 9013, "sha256": "C56DF6F8E9CE0B4E653279276C71D4701F93110716B74890F07FC5A61B4E85F1", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a02/canonical-contract.json", "bytes": 436, "sha256": "1419F455222F9FCEA4B54627DF0FD749D06C39DA46D7958A98271B5DF46582B9", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a02/mutation-catalog.json", "bytes": 3784, "sha256": "DE360660B8EF518D7A9B1109A6EB3F887E58C8848084A3973CC64AB2C359E60C", "evidence_type": "E-TEST"},
+    {"path": "docs/validation/A-02_TOKEN_VALIDATION.md", "bytes": 2608, "sha256": "022605D036E0FF7824D1C74591FFE4412F2E3B79C77CBA0E9B06AB60D544B92E", "evidence_type": "E-TEST"},
+    {"path": "docs/completion_reports/A-02_COMPLETION_REPORT.md", "bytes": 3294, "sha256": "5CAA3F7ECF50E48B38773B8D6E89080CC69AD74373E94D13C79D9CA74EC65BFB", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a01/A-01_PATH_CATALOG.json", "bytes": 19947, "sha256": "FC3A503E5038C86BFD841DA5F93826A3FC85B5EB2A020E1196385247C2B7DD69", "evidence_type": "E-ART_PREDECESSOR"},
+    {"path": "docs/work_orders/A-02_WORK_INSTRUCTION.md", "bytes": 7448, "sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0", "evidence_type": "E-DEC"}
+  ],
+  "self_reference": false,
+  "limitations": [
+    "This package validates a static token and explanation-interface contract only.",
+    "The SVG is not browser, Playwright, API, DB, Network, Docker, deployment, or release evidence.",
+    "Canonical L4 runtime verification remains deferred to A-14 and A Gate.",
+    "Independent Tester PASS and Main ACCEPTED are still required."
+  ]
+}

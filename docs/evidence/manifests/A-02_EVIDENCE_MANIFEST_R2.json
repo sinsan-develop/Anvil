@@ -1,0 +1,52 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-02-20260811-002",
+  "artifact_type": "package_evidence_manifest",
+  "project_id": "anvil",
+  "package_id": "A-02",
+  "artifact_status": "developer_rework_completed_pending_independent_retest",
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary-a02"},
+  "created_at": "2026-08-11T11:40:00+09:00",
+  "work_instruction_sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0",
+  "supersedes_artifact_ref": {
+    "path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST.json",
+    "sha256": "FC2D3BD61BA7014CB74635D96AF68C3CCEE970E9FEAC52327A020570A52E5269"
+  },
+  "source_test_report_ref": {
+    "path": "docs/test_reports/A-02_TEST_REPORT.md",
+    "sha256": "1732C036F79FBE05DF9EBF1BB59B67E621DAE8CC40259D30585714C01F73FAF8"
+  },
+  "finding_closure_claims": ["DEF-A02-001", "DEF-A02-002"],
+  "assigned_verification_ids": ["AV-UI-001", "AV-UI-002"],
+  "execution_classification": "STATIC_ONLY",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI",
+  "target_algorithm": "SHA256(canonical JSON of sorted [{path,sha256}] raw_artifacts)",
+  "target_canonical_bytes": 1823,
+  "target_content_bytes": 105205,
+  "target_hash": "5600CF11BED593D1187C454B54CA5CD218E149724EC0A7955C512E0520839CFD",
+  "delivered_hash": "5600CF11BED593D1187C454B54CA5CD218E149724EC0A7955C512E0520839CFD",
+  "raw_artifacts": [
+    {"path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json", "bytes": 4168, "sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a02/A-02_SCREEN_TOKEN_SPEC.md", "bytes": 1603, "sha256": "AB6B200161E6F72458D138EC6A8D88D5E90675D9077DCFCC88DB1A75D29328EC", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a02/A-02_EXPLANATION_INTERFACE.md", "bytes": 1081, "sha256": "8C18AC572AACF24C4F3B224482C34D2F7CDBD9CAA2F5116E83CB40D062C90A09", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a02/A-02_STATIC_RENDER.svg", "bytes": 4727, "sha256": "32438307241930528114B17CC40A07F60FC357DF2A3808AABB4F4987C335E485", "evidence_type": "E-SHOT_STATIC_NOT_RUNTIME_UI"},
+    {"path": "scripts/check_a02_tokens.py", "bytes": 24072, "sha256": "F063221B5B500FF22FFA475097A47DE070015322DBE391696F3EF3F2E917C5AA", "evidence_type": "E-TEST"},
+    {"path": "tests/tooling/test_a02_tokens.py", "bytes": 14221, "sha256": "8C4A96E53423740E96B921E5E41F3DDCD19AF71B3A73889772B558350128CA82", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a02/canonical-contract.json", "bytes": 436, "sha256": "1419F455222F9FCEA4B54627DF0FD749D06C39DA46D7958A98271B5DF46582B9", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a02/mutation-catalog.json", "bytes": 5166, "sha256": "05C5CDA9AA19AEA31FDF2A71739E4464962ED2FA7427516E96C4C14DF6324FD1", "evidence_type": "E-TEST"},
+    {"path": "docs/validation/A-02_TOKEN_VALIDATION.md", "bytes": 4118, "sha256": "2FE4AE954377628B8102866C8FE4E850DB01E39C61AD6EE3CCD92F92CA3B7469", "evidence_type": "E-TEST"},
+    {"path": "docs/completion_reports/A-02_COMPLETION_REPORT.md", "bytes": 4514, "sha256": "CE92C4A06F4E130D61B024ADAA09DA62B63ADAAF57405D232878B0090120FFF6", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a01/A-01_PATH_CATALOG.json", "bytes": 19947, "sha256": "FC3A503E5038C86BFD841DA5F93826A3FC85B5EB2A020E1196385247C2B7DD69", "evidence_type": "E-ART_PREDECESSOR"},
+    {"path": "docs/work_orders/A-02_WORK_INSTRUCTION.md", "bytes": 7448, "sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0", "evidence_type": "E-DEC"},
+    {"path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST.json", "bytes": 3585, "sha256": "FC2D3BD61BA7014CB74635D96AF68C3CCEE970E9FEAC52327A020570A52E5269", "evidence_type": "E-MAN_PREDECESSOR"},
+    {"path": "docs/test_reports/A-02_TEST_REPORT.md", "bytes": 10119, "sha256": "1732C036F79FBE05DF9EBF1BB59B67E621DAE8CC40259D30585714C01F73FAF8", "evidence_type": "E-TEST_PREDECESSOR"}
+  ],
+  "self_reference": false,
+  "limitations": [
+    "Revision 2 closes fail-closed static evidence and semantic document binding only.",
+    "The predecessor manifest and independent TestReport remain byte-immutable.",
+    "The SVG is not browser, Playwright, API, DB, Network, Docker, deployment, or release evidence.",
+    "Canonical L4 runtime remains deferred to A-14 and A Gate.",
+    "Independent Tester revision 2 PASS and Main ACCEPTED are still required."
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "artifact_id": "A-02-TOKEN-CATALOG-20260811-001",
+  "artifact_type": "static_screen_token_contract",
+  "package_id": "A-02",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "viewport": {"width_px": 1920, "height_px": 1080},
+  "typography": {
+    "body_form_px": 12,
+    "small_description_px": 10,
+    "auxiliary_px": 9,
+    "sidebar_title_px": 14,
+    "screen_title_px": 16
+  },
+  "layout": {
+    "sidebar_expanded_px": 224,
+    "sidebar_collapsed_px": 56,
+    "header_px": 48,
+    "context_drawer_px": 360,
+    "context_drawer_mode": "ON_DEMAND",
+    "base_padding_px": 16,
+    "card_gap_px": 12
+  },
+  "semantic_colors": [
+    {"role": "canvas", "value": "#0B1220", "usage": "application background"},
+    {"role": "surface", "value": "#142033", "usage": "primary panels"},
+    {"role": "surface-raised", "value": "#1B2A42", "usage": "raised cards and popovers"},
+    {"role": "text-primary", "value": "#F7F9FC", "usage": "primary text"},
+    {"role": "text-muted", "value": "#B8C4D8", "usage": "secondary text"},
+    {"role": "border", "value": "#60738F", "usage": "boundaries"},
+    {"role": "interactive", "value": "#7DB4FF", "usage": "interactive controls"},
+    {"role": "focus", "value": "#F8D66D", "usage": "keyboard focus ring"},
+    {"role": "success", "value": "#5EE3A1", "usage": "successful status accent"},
+    {"role": "warning", "value": "#FFD166", "usage": "warning status accent"},
+    {"role": "danger", "value": "#FF7B86", "usage": "error status accent"},
+    {"role": "blocked", "value": "#C4A7FF", "usage": "blocked status accent"},
+    {"role": "info", "value": "#74D7FF", "usage": "informational status accent"},
+    {"role": "neutral", "value": "#B8C4D8", "usage": "neutral status accent"}
+  ],
+  "contrast_pairs": [
+    {"foreground_role": "text-primary", "background_role": "canvas", "minimum_ratio": 4.5},
+    {"foreground_role": "text-primary", "background_role": "surface", "minimum_ratio": 4.5},
+    {"foreground_role": "text-muted", "background_role": "surface", "minimum_ratio": 4.5},
+    {"foreground_role": "interactive", "background_role": "surface", "minimum_ratio": 4.5},
+    {"foreground_role": "focus", "background_role": "canvas", "minimum_ratio": 3.0},
+    {"foreground_role": "border", "background_role": "canvas", "minimum_ratio": 3.0}
+  ],
+  "explanation_interface": {
+    "entry_point": "i-icon",
+    "short_content_surface": "tooltip",
+    "complex_content_surface": "popover",
+    "required_content": ["reason", "next_action"],
+    "persistent_explanation_box_allowed": false,
+    "hover_only_allowed": false,
+    "focus_path_required": true,
+    "keyboard_access_required": true,
+    "escape_closes": true,
+    "focus_returns_to_trigger": true
+  },
+  "status_presentation": {
+    "color_only_allowed": false,
+    "required_parts": ["icon", "status_label", "short_description"],
+    "explanation_binding": "i-tooltip-popover"
+  },
+  "matrix_contract": [
+    {"verification_id": "AV-UI-001", "level": "L4", "method": "AE", "evidence": "E-SHOT", "severity": "MAJOR"},
+    {"verification_id": "AV-UI-002", "level": "L4", "method": "MI", "evidence": "E-SHOT", "severity": "MINOR"}
+  ],
+  "verification_contract": {
+    "assigned_verification_ids": ["AV-UI-001", "AV-UI-002"],
+    "required_levels": ["L4"],
+    "required_methods": ["AE", "MI"],
+    "required_evidence": ["E-SHOT", "E-ART", "E-MAN", "E-TEST"],
+    "execution_classification": "STATIC_ONLY",
+    "package_verdict": "STATIC_CONTRACT_PASS",
+    "canonical_runtime_verdict": "RUNTIME_DEFERRED / NOT_EXECUTED",
+    "evidence_acquisition_mode": "STATIC_RENDER",
+    "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI",
+    "canonical_runtime_owner": ["A-14", "A Gate"]
+  },
+  "path_policy": {
+    "product_scope": [
+      "docs/architecture/a02/**",
+      "scripts/check_a02_tokens.py",
+      "tests/tooling/test_a02_tokens.py",
+      "tests/fixtures/a02/**",
+      "docs/validation/A-02_*",
+      "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST*.json",
+      "docs/completion_reports/A-02_COMPLETION_REPORT.md"
+    ],
+    "runtime_product_paths_forbidden": ["apps/**", "packages/**"],
+    "dependency_mutation_forbidden": true
+  }
+}
