@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-10-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "A-10",
+  "event_sequence": 116,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 19883, "file_sha256": "B0624781FB164F9D1C6D699B8C69BCF9B019F12C2DEBF82DDB2799DC777079A5", "canonical_json_sha256": "B1F3651EACDBDAFFA06DF5CFFE36B20078D137EB746B315DF93B08CD5C5DE74F"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 45613, "file_sha256": "F1E3E2B1732FD1B7C3DDC1BCFD061B9BAA49F86BB55F0C32A271176A2FCFCFA4", "machine_summary_canonical_sha256": "F5B45FED89131F85219DF961B5AE3C3D13D3C29D705003BFC7631D819604A6AD"},
+  "created_at": "2026-08-12T06:30:02+09:00",
+  "scope": "A-10 fenced start projection on clean equal HEAD; Provider, Secret, Egress, runtime, and DIR NOT_EXECUTED"
+}
