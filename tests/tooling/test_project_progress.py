@@ -899,7 +899,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIsNone(completed["write_lease"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
-    def test_a04_acceptance_history_and_a05_start_are_fenced(self) -> None:
+    def test_a04_acceptance_history_and_a05_completion_are_fenced(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
@@ -964,16 +964,28 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(1, start_events[0]["details"]["lease_epoch"])
         self.assertEqual(1, start_events[1]["details"]["write_epoch"])
         self.assertEqual(start_events[0]["details"]["lease_id"], start_events[1]["details"]["worker_lease_id"])
-        self.assertEqual("ACTIVE", progress["status"])
+        completion_events = [event for event in bundle["events"]["events"] if 82 <= event["sequence"] <= 84]
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [event["event_type"] for event in completion_events],
+        )
+        completed_a05 = completion_events[-1]["details"]
+        self.assertEqual("TEST_REVIEW", completed_a05["package_status"])
+        self.assertEqual("COMPLETED", completed_a05["result_status"])
+        self.assertFalse(completed_a05["accepted"])
+        self.assertEqual("PENDING", completed_a05["independent_tester_status"])
+        self.assertEqual("BLOCKED_PENDING_A05_ACCEPTANCE", completed_a05["next_package_status"])
+        self.assertEqual("90C6AA195FC1DB6AB48D02B4A6403BBE242488177045F393C05E17EAF76085F1", completed_a05["developer_manifest_ref"]["sha256"])
+        self.assertEqual("974045F91F01FFDD342099BAA6CC2788C525FE8D74C7C8F5D0BDD31679E22266", completed_a05["developer_target_hash"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual("A-05", progress["current_work_package"])
         self.assertIn("A-03", progress["completed_packages"])
         self.assertIn("A-04", progress["completed_packages"])
-        self.assertEqual("developer-primary-a05", progress["active_agent"])
-        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, progress["write_lease"]["write_epoch"])
-        self.assertEqual(progress["worker_lease"]["lease_id"], progress["write_lease"]["worker_lease_id"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual("WI-A-05-20260811-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("ACTIVE", progress["active_work_instruction"]["package_status"])
+        self.assertEqual("TEST_REVIEW", progress["active_work_instruction"]["package_status"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("A-05", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
@@ -991,7 +1003,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             completed["developer_manifest_ref"]["sha256"],
         )
         self.assertEqual(
-            "docs/evidence/manifests/A-05_START_EVIDENCE_MANIFEST.json",
+            "docs/evidence/manifests/A-05_COMPLETION_PROGRESS_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual([], checker.validate_bundle(bundle))

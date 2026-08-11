@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="PROPOSAL_COMPARE|CONTEXT_DRAWER">
+  <rect width="1920" height="1080" fill="#0B1220"/>
+  <rect x="0" y="0" width="224" height="1080" fill="#142033"/><text x="24" y="48" fill="#F7F9FC" font-size="14">Anvil · Design</text>
+  <text x="256" y="52" fill="#F7F9FC" font-size="16">Proposal Compare · STATIC_ONLY</text>
+  <text x="256" y="78" fill="#B8C4D8" font-size="12">STATIC_CONTRACT_PASS · RUNTIME_DEFERRED / NOT_EXECUTED · E-SHOT_STATIC_NOT_RUNTIME_UI · E-EVT_NOT_EXECUTED</text>
+  <rect x="256" y="112" width="620" height="760" rx="8" fill="#142033" stroke="#60738F"/><text x="280" y="148" fill="#74D7FF" font-size="14">균형형 · evidence valid</text>
+  <text x="280" y="184" fill="#F7F9FC" font-size="12">Pros · 위험 격리 / 증거 축적</text><text x="280" y="212" fill="#B8C4D8" font-size="10">Cons · 초기 속도 제한 · cost MEDIUM · uncertainty LOW</text>
+  <rect x="900" y="112" width="620" height="760" rx="8" fill="#142033" stroke="#60738F"/><text x="924" y="148" fill="#74D7FF" font-size="14">신속형 · evidence valid</text>
+  <text x="924" y="184" fill="#F7F9FC" font-size="12">Pros · 짧은 설계 시간</text><text x="924" y="212" fill="#B8C4D8" font-size="10">Cons · 재검토 비용 · cost LOW · uncertainty MEDIUM</text>
+  <rect x="1544" y="112" width="360" height="760" rx="8" fill="#1B2A42" stroke="#60738F"/><text x="1568" y="148" fill="#F8D66D" font-size="14">i-icon · ON_DEMAND</text>
+  <text x="1568" y="180" fill="#F7F9FC" font-size="12">tooltip / popover</text><text x="1568" y="208" fill="#B8C4D8" font-size="10">reason · next_action · evidence · hash</text>
+  <rect x="256" y="908" width="300" height="48" rx="6" fill="#7DB4FF"/><text x="304" y="938" fill="#0B1220" font-size="12">SELECT → Design refinement only</text>
+  <rect x="568" y="908" width="220" height="48" rx="6" fill="#1B2A42" stroke="#FFD166"/><text x="610" y="938" fill="#FFD166" font-size="12">REQUEST_REVISION</text>
+  <rect x="800" y="908" width="140" height="48" rx="6" fill="#1B2A42" stroke="#C4A7FF"/><text x="850" y="938" fill="#C4A7FF" font-size="12">HOLD</text>
+  <text x="256" y="1010" fill="#FF7B86" font-size="12">Agent recommendation ≠ selected ≠ approved · Execute closed · NOT_EXECUTED</text>
+</svg>

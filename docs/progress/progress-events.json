@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 81,
+  "last_sequence": 84,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -1970,6 +1970,40 @@
           "tests/tooling/test_phase_g_gate.py",
           "tests/tooling/test_project_progress.py"
         ],
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-FLOW-001"],
+        "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED"
+      }
+    },
+    {"event_id": "evt_a05_write_lease_revoked_for_test_review", "sequence": 82, "event_type": "WRITE_LEASE_REVOKED", "occurred_at": "2026-08-11T23:41:04+09:00", "actor": "main-agent-eoul", "subject_ref": "A-05", "details": {"lease_id": "write-lease-a05-20260811-001", "worker_lease_id": "worker-lease-a05-20260811-001", "prior_write_fencing_token": "a05-write-fence-epoch-1-c8629be", "write_epoch": 1, "reason": "Developer A-05 evidence frozen before independent test"}},
+    {"event_id": "evt_a05_worker_lease_revoked_for_test_review", "sequence": 83, "event_type": "WORKER_LEASE_REVOKED", "occurred_at": "2026-08-11T23:41:05+09:00", "actor": "main-agent-eoul", "subject_ref": "A-05", "details": {"lease_id": "worker-lease-a05-20260811-001", "prior_execution_fencing_token": "a05-execution-fence-epoch-1-c8629be", "lease_epoch": 1, "reason": "Developer A-05 result handed off to independent test"}},
+    {
+      "event_id": "evt_a05_package_completed_test_review",
+      "sequence": 84,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-11T23:41:06+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-05",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "independent_tester_status": "PENDING",
+        "work_instruction_id": "WI-A-05-20260811-001",
+        "work_instruction_sha256": "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C",
+        "developer_manifest_ref": {"path": "docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json", "sha256": "90C6AA195FC1DB6AB48D02B4A6403BBE242488177045F393C05E17EAF76085F1"},
+        "developer_target_hash": "974045F91F01FFDD342099BAA6CC2788C525FE8D74C7C8F5D0BDD31679E22266",
+        "worker_lease": null,
+        "write_lease": null,
+        "next_work_package": "A-06",
+        "next_package_status": "BLOCKED_PENDING_A05_ACCEPTANCE",
+        "completion_head": "c47ed7c176243a8cdb72c3f26d3b325a66ff9040",
+        "completion_upstream_head": "c47ed7c176243a8cdb72c3f26d3b325a66ff9040",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "c47ed7c176243a8cdb72c3f26d3b325a66ff9040",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main", "upstream": "origin/main", "remote_head": "c47ed7c176243a8cdb72c3f26d3b325a66ff9040", "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": ["docs/architecture/a05/A-05_DECISION_BOARD.md", "docs/architecture/a05/A-05_DECISION_STATIC_RENDER.svg", "docs/architecture/a05/A-05_DESIGN_BASELINE.md", "docs/architecture/a05/A-05_DESIGN_DECISION_CATALOG.json", "docs/architecture/a05/A-05_PROPOSAL_COMPARE.md", "docs/architecture/a05/A-05_PROPOSAL_STATIC_RENDER.svg", "docs/completion_reports/A-05_COMPLETION_REPORT.md", "docs/evidence/manifests/A-05_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a05-completion-test-review.json", "docs/validation/A-05_DESIGN_DECISION_VALIDATION.md", "scripts/check_a05_design_decisions.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/fixtures/a05/canonical-contract.json", "tests/fixtures/a05/mutation-catalog.json", "tests/tooling/test_a05_design_decisions.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
         "reporting_decision": "AUTO_CONTINUE",
         "runtime_deferred": ["AV-FLOW-001"],
         "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED"

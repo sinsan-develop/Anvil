@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "A-05",
+  "predecessor_contract": {
+    "a01_catalog_path": "docs/architecture/a01/A-01_PATH_CATALOG.json",
+    "a01_catalog_sha256": "FC3A503E5038C86BFD841DA5F93826A3FC85B5EB2A020E1196385247C2B7DD69",
+    "a01_manifest_sha256": "BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4",
+    "a02_catalog_path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json",
+    "a02_catalog_sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207",
+    "a02_manifest_sha256": "779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168",
+    "a03_catalog_path": "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json",
+    "a03_catalog_sha256": "464F785FB0A72C3E5571D30755EE3A107259D641A6035830B18343E5A0922093",
+    "a03_manifest_sha256": "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE",
+    "a04_catalog_path": "docs/architecture/a04/A-04_WORKBENCH_CATALOG.json",
+    "a04_catalog_sha256": "230E32C99256F80904660735BA8B4A8BF95F9068164D8906E9E872EEE96AFE73",
+    "a04_manifest_sha256": "C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB"
+  },
+  "presentation": {
+    "viewport": {"width_px": 1920, "height_px": 1080},
+    "typography": {"body_form_px": 12, "small_description_px": 10, "auxiliary_px": 9, "sidebar_title_px": 14, "screen_title_px": 16},
+    "context_drawer": {"width_px": 360, "mode": "ON_DEMAND", "entry_point": "i-icon", "short_surface": "tooltip", "complex_surface": "popover", "persistent_explanation_box_allowed": false, "hover_only_allowed": false, "keyboard_access_required": true, "focus_path_required": true, "escape_closes": true, "focus_returns_to_trigger": true},
+    "semantic_colors": {"canvas": "#0B1220", "surface": "#142033", "surface-raised": "#1B2A42", "text-primary": "#F7F9FC", "text-muted": "#B8C4D8", "border": "#60738F", "interactive": "#7DB4FF", "focus": "#F8D66D", "success": "#5EE3A1", "warning": "#FFD166", "danger": "#FF7B86", "blocked": "#C4A7FF", "info": "#74D7FF", "neutral": "#B8C4D8"}
+  },
+  "proposal_contract": {
+    "proposal_set_fields": ["proposal_set_id", "version", "status", "subject_hash", "source_intent_ref"],
+    "states": ["DRAFT", "GENERATING", "READY", "REVISION_REQUIRED", "HELD", "ERROR", "BLOCKED", "PERMISSION_DENIED"],
+    "minimum_proposals": 2,
+    "proposal_fields": ["proposal_id", "title", "summary", "pros", "cons", "fit_conditions", "cost", "uncertainty", "risks", "evidence_refs", "assumptions"],
+    "actions": ["SELECT", "REQUEST_REVISION", "HOLD", "REQUEST_DIFFERENT_APPROACH", "VIEW_EVIDENCE"],
+    "readiness_guard": {"minimum_count_enforced": true, "all_fields_required": true, "evidence_refs_required": true, "subject_hash_required": true},
+    "agent_recommendation": {"proposal_id": "proposal-balanced", "reason": "승인 범위와 운영 증거를 함께 만족하는 균형안", "is_selected": false, "is_approved": false},
+    "sample_proposals": [
+      {"proposal_id": "proposal-balanced", "title": "균형형", "summary": "검증 가능한 최소 범위부터 확장", "pros": ["위험 격리", "증거 축적"], "cons": ["초기 속도 제한"], "fit_conditions": ["운영 안전 우선"], "cost": {"relative": "MEDIUM"}, "uncertainty": {"level": "LOW", "reason": "선행 계약 존재"}, "risks": ["후속 범위 증가"], "evidence_refs": ["docs/architecture/a04/A-04_WORKBENCH_CATALOG.json"], "assumptions": ["선행 baseline 유효"]},
+      {"proposal_id": "proposal-fast", "title": "신속형", "summary": "확정 부분을 한 번에 정제", "pros": ["짧은 설계 시간"], "cons": ["재검토 비용"], "fit_conditions": ["요구사항 변동 낮음"], "cost": {"relative": "LOW"}, "uncertainty": {"level": "MEDIUM", "reason": "사람 선택 전"}, "risks": ["미결정 누락"], "evidence_refs": ["docs/architecture/a03/A-03_ONBOARDING_CATALOG.json"], "assumptions": ["필수 결정이 명시됨"]}
+    ]
+  },
+  "decision_contract": {
+    "states": ["DECISION_REQUIRED", "CONFIRMED", "HOLD", "FUTURE_EXTENSION", "REVIEW", "SUPERSEDED"],
+    "fields": ["decision_id", "required", "subject_ref", "subject_hash", "question", "input", "options", "selected_option", "reason", "evidence_refs", "impact", "actor_id", "actor_role", "status", "decided_at", "supersedes_id", "lineage", "next_action"],
+    "confirmation_guard": {"authenticated_human_required": true, "exact_subject_hash_required": true, "selected_option_required": true, "reason_required": true, "agent_can_confirm": false},
+    "carryover_contract": {"required_for_hold_and_future_extension": true, "fields": ["carryover_id", "source_decision_id", "status", "reason", "risk", "target_revision", "review_at", "next_action"], "statuses": ["HOLD", "FUTURE_EXTENSION"]},
+    "lineage_contract": {"acyclic_required": true, "superseded_preserved": true, "subject_hash_continuity_required": true, "carryover_target_must_exist": true}
+  },
+  "design_baseline_contract": {
+    "specification_fields": ["specification_id", "version", "status", "content_hash", "source_decision_refs", "scope", "out_of_scope", "screen_flow", "operational_flow", "testable_completion_conditions", "unresolved_required_decisions", "source_evidence_valid"],
+    "baseline_fields": ["baseline_id", "version", "baseline_hash", "specification_id", "specification_hash", "approved_by", "approved_at", "invalidated_at"],
+    "states": ["PROPOSED", "REFINING", "REVIEW_READY", "APPROVAL_BLOCKED", "APPROVED", "REJECTED", "INVALIDATED"],
+    "approval_guard": {"unresolved_required_decisions": 0, "source_evidence_valid_required": true, "authenticated_human_required": true, "exact_spec_hash_required": true, "reason_and_next_action_when_disabled": true},
+    "immutability_contract": {"approved_baseline_immutable": true, "spec_change_invalidates_approval": true, "hash_change_invalidates_approval": true, "new_revision_and_approval_required": true, "historical_baseline_preserved": true}
+  },
+  "context_drawer_contract": {"source": "A-04", "width_px": 360, "mode": "ON_DEMAND", "fields": ["impact", "source", "evidence", "hash", "decision_history", "reason", "next_action"], "persistent_box_allowed": false},
+  "edge_contract": {
+    "edges": ["INTENT_TO_PROPOSAL", "ALTERNATIVES_TO_HUMAN_DECISION", "SELECT_TO_DESIGN_REFINEMENT", "HOLD_TO_CARRYOVER", "REVISION_TO_NEW_SET", "DIFFERENT_APPROACH_TO_NEW_SET", "EXACT_HUMAN_APPROVAL_TO_BASELINE", "SPEC_CHANGE_TO_INVALIDATION"],
+    "hold_revision_different_keep_execute_closed": true,
+    "unresolved_or_invalid_evidence_blocks_approval": true
+  },
+  "execution_guard": {"execute_open_in_a05": false, "human_select_opens_design_refinement_only": true, "selection_is_not_apply_approval": true, "unresolved_decision_blocks_execute": true},
+  "permission_contract": {"capabilities": ["PROJECT_VIEW", "PROPOSAL_REVIEW", "DECISION_DECIDE", "DESIGN_EDIT", "DESIGN_APPROVE"], "capabilities_separated": true, "project_view_does_not_imply_decision_or_approval": true, "unauthorized_action_disabled": true, "reason_and_next_action_visible": true},
+  "error_contract": {"stable_reason_codes": ["PROPOSAL_SET_NOT_READY", "PROPOSAL_MINIMUM_NOT_MET", "PROPOSAL_FIELD_MISSING", "PROPOSAL_EVIDENCE_MISSING", "RECOMMENDATION_DECISION_CONTAMINATION", "SOURCE_EVIDENCE_INVALID", "REQUIRED_DECISION_UNRESOLVED", "HUMAN_ACTOR_REQUIRED", "SUBJECT_HASH_MISMATCH", "DECISION_LINEAGE_INVALID", "CARRYOVER_MISSING", "DESIGN_SPECIFICATION_HASH_MISMATCH", "DESIGN_APPROVAL_BLOCKED", "APPROVAL_INVALIDATED", "APPROVED_BASELINE_MUTATION", "STALE_STATE_VERSION", "PERMISSION_DENIED"]},
+  "disclosure_contract": {"secret_value_visible": false, "raw_internal_endpoint_visible": false, "loopback_endpoint_visible": false, "unauthorized_full_path_visible": false, "masked_evidence_reference_allowed": true},
+  "verification_contract": {"assigned_verification_ids": ["AV-FLOW-001"], "execution_classification": "STATIC_ONLY", "package_verdict": "STATIC_CONTRACT_PASS", "canonical_runtime_verdict": "RUNTIME_DEFERRED / NOT_EXECUTED", "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI / E-EVT_NOT_EXECUTED", "runtime_owners": ["B-03", "A-14", "A Gate"], "environment": "ENV-LOCAL"}
+}

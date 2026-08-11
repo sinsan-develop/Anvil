@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="DECISION_BOARD|DESIGN_BASELINE">
+  <rect width="1920" height="1080" fill="#0B1220"/><text x="32" y="52" fill="#F7F9FC" font-size="16">Decision Board &amp; Design Baseline · STATIC_ONLY</text>
+  <text x="32" y="78" fill="#B8C4D8" font-size="12">RUNTIME_DEFERRED / NOT_EXECUTED · E-SHOT_STATIC_NOT_RUNTIME_UI · E-EVT_NOT_EXECUTED</text>
+  <g font-size="12"><rect x="32" y="112" width="290" height="600" rx="8" fill="#142033" stroke="#FFD166"/><text x="52" y="148" fill="#FFD166">DECISION_REQUIRED</text>
+  <rect x="338" y="112" width="290" height="600" rx="8" fill="#142033" stroke="#5EE3A1"/><text x="358" y="148" fill="#5EE3A1">CONFIRMED · human + exact hash</text>
+  <rect x="644" y="112" width="290" height="600" rx="8" fill="#142033" stroke="#C4A7FF"/><text x="664" y="148" fill="#C4A7FF">HOLD · CarryoverItem</text>
+  <rect x="950" y="112" width="290" height="600" rx="8" fill="#142033" stroke="#74D7FF"/><text x="970" y="148" fill="#74D7FF">FUTURE_EXTENSION</text>
+  <rect x="1256" y="112" width="290" height="600" rx="8" fill="#142033" stroke="#60738F"/><text x="1276" y="148" fill="#B8C4D8">REVIEW / SUPERSEDED</text></g>
+  <rect x="1560" y="112" width="328" height="600" rx="8" fill="#1B2A42" stroke="#60738F"/><text x="1584" y="148" fill="#F8D66D" font-size="14">i-icon · tooltip / popover</text><text x="1584" y="180" fill="#F7F9FC" font-size="12">impact · evidence · hash</text><text x="1584" y="208" fill="#B8C4D8" font-size="10">decision_history · reason · next_action</text>
+  <rect x="32" y="748" width="1856" height="220" rx="8" fill="#142033" stroke="#60738F"/><text x="56" y="790" fill="#F7F9FC" font-size="14">Design Baseline</text>
+  <text x="56" y="826" fill="#B8C4D8" font-size="12">APPROVAL_BLOCKED when unresolved required decision or invalid evidence</text><text x="56" y="858" fill="#5EE3A1" font-size="12">APPROVED requires authenticated human + exact spec hash</text><text x="56" y="890" fill="#FF7B86" font-size="12">immutable · spec/hash change → INVALIDATED + new revision/approval · Execute NOT_EXECUTED</text>
+</svg>
