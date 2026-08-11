@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-08-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "A-08",
+  "event_sequence": 102,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 17824, "file_sha256": "9959AC2870979F5C5B5D697BB299BB674ACD601E118B9D299F3AE56AD063E7B0", "canonical_json_sha256": "59AF556223371FA4A6E2728CBD88CBAB8E420D6D282AA354BB98F7D9ABA7F95A"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 41803, "file_sha256": "9932D7FB86DC9DC20346CD7DD1B75CF7DDFA75B2FC299FF7138DA5F906F9B646", "machine_summary_canonical_sha256": "AC4A496B0F3CA90D8D80582140941D192776914FCA1121AF5EFD6FEFED31B294"},
+  "created_at": "2026-08-12T03:30:02+09:00",
+  "scope": "A-08 fenced start projection on clean equal HEAD; product validation, release, DIR, and runtime NOT_EXECUTED"
+}
