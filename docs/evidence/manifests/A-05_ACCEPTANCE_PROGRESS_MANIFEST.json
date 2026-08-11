@@ -1,0 +1,78 @@
+{
+    "artifact_id": "EVIDENCE-MANIFEST-A-05-ACCEPTANCE-20260812-001",
+    "artifact_type": "main_acceptance_projection_manifest",
+    "project_id": "anvil",
+    "package_id": "A-05",
+    "artifact_status": "accepted_a06_ready",
+    "content_hash": "sha256:9294666B727EB407E971E5C59B385923D6650BC69E2FB22FF06EB651AB8B589A",
+    "created_at": "2026-08-12T00:00:00+09:00",
+    "target_hash": "sha256:9294666B727EB407E971E5C59B385923D6650BC69E2FB22FF06EB651AB8B589A",
+    "delivered_hash": "sha256:9294666B727EB407E971E5C59B385923D6650BC69E2FB22FF06EB651AB8B589A",
+    "target_canonical_bytes": 608,
+    "target_content_bytes": 20008,
+    "projection": {
+        "event_sequence": 85,
+        "decision": "ACCEPTED",
+        "completed_package": "A-05",
+        "current_work_package": "A-06",
+        "status": "READY"
+    },
+    "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED",
+    "tester_evidence": {
+        "path": "docs/test_reports/A-05_TEST_REPORT.md",
+        "sha256": "AA36A92E883DC8DA39ED01B2F5DF8E9855B166183386986B63B93BF0D79165BA",
+        "verdict": "PASS_STATIC_CONTRACT / READY_FOR_MAIN_ACCEPTANCE",
+        "blocking_defects": 0
+    },
+    "repository_projection": {
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "596fff00aada8d0827b2c2a711df2baf3fa6838c",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "596fff00aada8d0827b2c2a711df2baf3fa6838c",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+            "docs/evidence/manifests/A-05_ACCEPTANCE_PROGRESS_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-a05-accepted.json",
+            "docs/test_reports/A-05_TEST_REPORT.md",
+            "scripts/check_phase_g_gate.py",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_g07_baseline.py",
+            "tests/tooling/test_phase_g_gate.py",
+            "tests/tooling/test_project_progress.py"
+        ]
+    },
+    "raw_checksums": [
+        {
+            "path": "docs/evidence/manifests/A-05_COMPLETION_PROGRESS_MANIFEST.json",
+            "bytes": 3874,
+            "sha256": "77FB8184F20FD353090E6E5A9DA882D24EC827221759638B9EB29F101CAA194F"
+        },
+        {
+            "path": "docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json",
+            "bytes": 2524,
+            "sha256": "90C6AA195FC1DB6AB48D02B4A6403BBE242488177045F393C05E17EAF76085F1"
+        },
+        {
+            "path": "docs/progress/progress-handoff-detached-digest-a05-accepted.json",
+            "bytes": 758,
+            "sha256": "847BA90549EC72E3A8F15C6D4556C89EE1272D3A57D0DEA03B83671FDE208E77"
+        },
+        {
+            "path": "docs/test_reports/A-05_TEST_REPORT.md",
+            "bytes": 7542,
+            "sha256": "AA36A92E883DC8DA39ED01B2F5DF8E9855B166183386986B63B93BF0D79165BA"
+        },
+        {
+            "path": "docs/work_orders/A-05_WORK_INSTRUCTION.md",
+            "bytes": 5310,
+            "sha256": "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C"
+        }
+    ],
+    "self_reference": false,
+    "reporting_decision": "AUTO_CONTINUE"
+}
