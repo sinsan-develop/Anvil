@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="product-validation,defect-board,evidence-drawer">
+  <rect width="1920" height="1080" fill="#0B1220"/><rect x="32" y="28" width="1856" height="1024" rx="16" fill="#142033"/>
+  <text x="64" y="78" fill="#F7F9FC" font-size="16">ProductValidation &amp; Defect</text><text x="64" y="108" fill="#B8C4D8" font-size="12">STATIC_ONLY · RUNTIME_DEFERRED / NOT_EXECUTED · ProductValidation NOT_EXECUTED · Release NOT_EXECUTED</text>
+  <rect x="64" y="142" width="1110" height="420" rx="12" fill="#1B2A42"/><text x="88" y="180" fill="#7DB4FF" font-size="14">Required criterion</text>
+  <text x="88" y="226" fill="#5EE3A1" font-size="12">SUITABLE</text><text x="224" y="226" fill="#F8D66D" font-size="12">NEEDS_IMPROVEMENT</text><text x="430" y="226" fill="#FF7B86" font-size="12">UNSUITABLE</text><text x="570" y="226" fill="#FFD166" font-size="12">BLOCKED</text>
+  <text x="88" y="278" fill="#F7F9FC" font-size="12">target hash = delivered hash · fresh evidence · actor · reason · next_action</text>
+  <rect x="1200" y="142" width="656" height="420" rx="12" fill="#1B2A42"/><text x="1224" y="180" fill="#74D7FF" font-size="14">Evidence Drawer</text><text x="1224" y="226" fill="#B8C4D8" font-size="12">hash · source · time · actor · classification</text>
+  <rect x="64" y="590" width="1792" height="418" rx="12" fill="#1B2A42"/><text x="88" y="630" fill="#7DB4FF" font-size="14">Defect lifecycle · AV-UI-008 · AV-UI-009 · AV-FLOW-025</text>
+  <text x="88" y="684" fill="#F7F9FC" font-size="12">OPEN → ACCEPTED → FIXING → READY_FOR_RETEST → CLOSED</text><text x="88" y="730" fill="#FFD166" font-size="12">Independent same-target retest required; Developer cannot close.</text><text x="88" y="776" fill="#B8C4D8" font-size="10">Package ACCEPTED is not RELEASE</text>
+</svg>

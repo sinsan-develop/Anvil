@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="release-decision,release-guards,apply-deploy">
+  <rect width="1920" height="1080" fill="#0B1220"/><rect x="32" y="28" width="1856" height="1024" rx="16" fill="#142033"/>
+  <text x="64" y="78" fill="#F7F9FC" font-size="16">Authenticated Human ReleaseDecision</text><text x="64" y="108" fill="#B8C4D8" font-size="12">STATIC_ONLY · RUNTIME_DEFERRED / NOT_EXECUTED · ProductValidation NOT_EXECUTED · Release NOT_EXECUTED</text>
+  <rect x="64" y="142" width="1792" height="224" rx="12" fill="#1B2A42"/><text x="88" y="182" fill="#7DB4FF" font-size="14">Decision</text>
+  <text x="88" y="236" fill="#5EE3A1" font-size="12">RELEASE</text><text x="240" y="236" fill="#F8D66D" font-size="12">REWORK</text><text x="392" y="236" fill="#FFD166" font-size="12">DEFER</text><text x="544" y="236" fill="#FF7B86" font-size="12">REJECT</text><text x="88" y="290" fill="#B8C4D8" font-size="10">Package ACCEPTED is not RELEASE</text>
+  <rect x="64" y="394" width="1792" height="326" rx="12" fill="#1B2A42"/><text x="88" y="434" fill="#74D7FF" font-size="14">Fail-closed guards · AV-UI-008 · AV-UI-009 · AV-FLOW-025</text>
+  <text x="88" y="484" fill="#F7F9FC" font-size="12">All required PV complete · none BLOCKED/UNSUITABLE · no blocking defect · hashes current · human actor</text>
+  <text x="88" y="532" fill="#FFD166" font-size="12">Any guard failure disables RELEASE + Apply + Deploy with reason and next_action.</text>
+  <rect x="64" y="748" width="1792" height="260" rx="12" fill="#1B2A42"/><text x="88" y="790" fill="#7DB4FF" font-size="14">Hash invalidation</text><text x="88" y="838" fill="#F7F9FC" font-size="12">Changed target invalidates evidence, PV, retest, acceptance, release, Apply and Deploy eligibility.</text>
+</svg>

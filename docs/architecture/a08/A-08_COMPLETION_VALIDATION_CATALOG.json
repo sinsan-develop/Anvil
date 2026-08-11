@@ -1,0 +1,71 @@
+{
+  "artifact_id": "A-08-COMPLETION-VALIDATION-CATALOG-001",
+  "package_id": "A-08",
+  "predecessor_bindings": [
+    {"package_id":"G-04","path":"docs/evidence/manifests/G-04_EVIDENCE_MANIFEST.json","sha256":"F2674994201407532D6E18A9F9A0A94B606BA94385DCD126C03AF7F8264B09C1","status":"ACCEPTED"},
+    {"package_id":"A-01","path":"docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json","sha256":"BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4","status":"ACCEPTED"},
+    {"package_id":"A-02","path":"docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json","sha256":"779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168","status":"ACCEPTED"},
+    {"package_id":"A-03","path":"docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json","sha256":"772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE","status":"ACCEPTED"},
+    {"package_id":"A-04","path":"docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json","sha256":"C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB","status":"ACCEPTED"},
+    {"package_id":"A-05","path":"docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json","sha256":"90C6AA195FC1DB6AB48D02B4A6403BBE242488177045F393C05E17EAF76085F1","status":"ACCEPTED"},
+    {"package_id":"A-06","path":"docs/evidence/manifests/A-06_EVIDENCE_MANIFEST.json","sha256":"A6F2B8B2E866A4F4AF6E2BAD8BAA2D005217071E263BA52FE63F35C935844449","status":"ACCEPTED"},
+    {"package_id":"A-07","path":"docs/evidence/manifests/A-07_EVIDENCE_MANIFEST.json","sha256":"796B40512FBB0D6EAA596409B3464190455E772246FF361F6EC056D701DEA3E7","status":"ACCEPTED"}
+  ],
+  "completion": {
+    "plan_actual_fields": ["plan_item_id","planned_scope","actual_scope","status","difference","reason","impact","evidence_refs","next_action"],
+    "result_layers": ["DEVELOPER_RESULT","MAIN_PRELIMINARY_ACCEPT","INDEPENDENT_TECHNICAL_VERIFICATION","PRODUCT_VALIDATION","DEFECT_ASSESSMENT","HUMAN_RELEASE_DECISION","APPLY_DEPLOY_ELIGIBILITY"],
+    "package_accepted_means_release": false,
+    "differences_never_hidden": true
+  },
+  "technical_test": {
+    "results": ["PASS","FAIL","SKIPPED","BLOCKED","ERROR"],
+    "static_mock_build_never_functional_pass": true,
+    "non_executed_never_pass": true,
+    "skipped_blocked_error_have_reason": true
+  },
+  "product_validation": {
+    "verdicts": ["SUITABLE","NEEDS_IMPROVEMENT","UNSUITABLE","BLOCKED"],
+    "criterion_fields": ["criterion_id","required","target_hash","delivered_hash","verdict","evidence_refs","validator_actor","validated_at","reason","next_action"],
+    "all_required_criteria_required": true,
+    "target_and_delivered_hash_must_match": true,
+    "criterion_omission_fail_closed": true,
+    "actual_pv_executed_in_a08": false
+  },
+  "defect": {
+    "lifecycle": ["OPEN","ACCEPTED","FIXING","READY_FOR_RETEST","CLOSED"],
+    "developer_close_forbidden": true,
+    "independent_retest_required": true,
+    "same_target_hash_required": true,
+    "severity_downgrade_owner_only": true,
+    "deferred_rejected_owner_only": true,
+    "invalid_transition_rejected": true
+  },
+  "release_decision": {
+    "decisions": ["RELEASE","REWORK","DEFER","REJECT"],
+    "authenticated_human_actor_required": true,
+    "developer_decision_forbidden": true,
+    "actual_release_executed_in_a08": false,
+    "guards": {
+      "release": ["ALL_REQUIRED_PV_COMPLETE","NO_REQUIRED_PV_BLOCKED","NO_REQUIRED_PV_UNSUITABLE","NO_BLOCKING_DEFECT","TARGET_DELIVERED_HASH_MATCH","EVIDENCE_HASH_CURRENT","AUTHENTICATED_HUMAN_DECISION"],
+      "apply": ["ALL_REQUIRED_PV_COMPLETE","NO_REQUIRED_PV_BLOCKED","NO_REQUIRED_PV_UNSUITABLE","NO_BLOCKING_DEFECT","TARGET_DELIVERED_HASH_MATCH","EVIDENCE_HASH_CURRENT","AUTHENTICATED_HUMAN_DECISION"],
+      "deploy": ["ALL_REQUIRED_PV_COMPLETE","NO_REQUIRED_PV_BLOCKED","NO_REQUIRED_PV_UNSUITABLE","NO_BLOCKING_DEFECT","TARGET_DELIVERED_HASH_MATCH","EVIDENCE_HASH_CURRENT","AUTHENTICATED_HUMAN_DECISION"]
+    },
+    "effects": {
+      "REWORK": {"pause_successor":true,"wi_revision_required":true,"fresh_validation_required":true},
+      "DEFER": {"reason_required":true,"risk_required":true,"review_at_required":true,"carryover_required":true,"downstream_disabled":true},
+      "REJECT": {"downstream_disabled":true,"apply_forbidden":true,"deploy_forbidden":true,"new_human_decision_required":true}
+    }
+  },
+  "hash_invalidation": {
+    "invalidated_objects": ["TECHNICAL_EVIDENCE","PRODUCT_VALIDATION","DEFECT_RETEST","MAIN_ACCEPTANCE","RELEASE_DECISION","APPLY_ELIGIBILITY","DEPLOY_ELIGIBILITY"],
+    "fail_closed_until_fresh_evidence": true,
+    "hash_reuse_allowed": false
+  },
+  "permission_contract": {"view_completion":true,"record_technical_result":true,"record_product_validation":false,"developer_close_defect":false,"developer_release_decision":false,"authenticated_human_release_decision":true,"unauthorized_actions_disabled":true,"reason_and_next_action_visible":true},
+  "disclosure_contract": {"secret_visible":false,"credential_literal_visible":false,"raw_internal_endpoint_visible":false,"loopback_endpoint_visible":false,"masked_reference_allowed":true},
+  "verification_contracts": [
+    {"assigned_id":"AV-UI-008","level":"L4","method":"MI","evidence":"E-SHOT","severity":"CRITICAL","execution_classification":"STATIC_ONLY","package_verdict":"STATIC_CONTRACT_PASS","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED"},
+    {"assigned_id":"AV-UI-009","level":"L4","method":"AE","evidence":"E-SHOT","severity":"MAJOR","execution_classification":"STATIC_ONLY","package_verdict":"STATIC_CONTRACT_PASS","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED"},
+    {"assigned_id":"AV-FLOW-025","level":"L5+L7","method":"E-EVT+E-DEC","evidence":"E-EVT,E-DEC","severity":"CRITICAL","execution_classification":"STATIC_ONLY","package_verdict":"STATIC_CONTRACT_PASS","runtime_owner":"E-09","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED"}
+  ]
+}

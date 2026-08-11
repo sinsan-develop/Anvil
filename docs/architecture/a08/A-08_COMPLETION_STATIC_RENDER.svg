@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="completion-summary,plan-actual,technical-test">
+  <rect width="1920" height="1080" fill="#0B1220"/><rect x="32" y="28" width="1856" height="1024" rx="16" fill="#142033"/>
+  <text x="64" y="78" fill="#F7F9FC" font-size="16">A-08 Completion Summary</text><text x="64" y="108" fill="#B8C4D8" font-size="12">STATIC_ONLY · RUNTIME_DEFERRED / NOT_EXECUTED · ProductValidation NOT_EXECUTED · Release NOT_EXECUTED</text>
+  <rect x="64" y="142" width="1792" height="220" rx="12" fill="#1B2A42"/><text x="88" y="178" fill="#7DB4FF" font-size="14">Plan vs Actual</text>
+  <text x="88" y="216" fill="#F7F9FC" font-size="12">Plan item · planned scope · actual scope · difference · reason · impact · evidence · next_action</text>
+  <text x="88" y="256" fill="#FFD166" font-size="12">Difference: visible and never collapsed</text><text x="88" y="294" fill="#B8C4D8" font-size="10">Package ACCEPTED is not RELEASE</text>
+  <rect x="64" y="390" width="1792" height="290" rx="12" fill="#1B2A42"/><text x="88" y="426" fill="#7DB4FF" font-size="14">Technical Test</text>
+  <text x="88" y="470" fill="#5EE3A1" font-size="12">PASS</text><text x="200" y="470" fill="#FF7B86" font-size="12">FAIL</text><text x="312" y="470" fill="#F8D66D" font-size="12">SKIPPED</text><text x="456" y="470" fill="#FFD166" font-size="12">BLOCKED</text><text x="610" y="470" fill="#C4A7FF" font-size="12">ERROR</text>
+  <text x="88" y="520" fill="#B8C4D8" font-size="12">Static / mock / build / NOT_EXECUTED never becomes functional PASS.</text>
+  <rect x="64" y="708" width="1792" height="300" rx="12" fill="#1B2A42"/><text x="88" y="744" fill="#74D7FF" font-size="14">Result layers · AV-UI-008 · AV-UI-009 · AV-FLOW-025</text>
+  <text x="88" y="790" fill="#F7F9FC" font-size="12">Developer → Main preliminary → Independent technical → ProductValidation → Defect → Human Release → Apply/Deploy</text>
+</svg>

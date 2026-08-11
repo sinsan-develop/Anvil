@@ -172,6 +172,8 @@ A06_COMPLETION_PATH_PREFIXES = ("docs/architecture/a06/", "docs/completion_repor
 A06_COMPLETION_EXACT_PATHS = {"scripts/check_a06_planning_approvals.py", "tests/tooling/test_a06_planning_approvals.py"}
 A07_COMPLETION_PATH_PREFIXES = ("docs/architecture/a07/", "docs/completion_reports/A-07_", "docs/validation/A-07_", "tests/fixtures/a07/")
 A07_COMPLETION_EXACT_PATHS = {"scripts/check_a07_execution_control.py", "tests/tooling/test_a07_execution_control.py"}
+A08_COMPLETION_PATH_PREFIXES = ("docs/architecture/a08/", "docs/completion_reports/A-08_", "docs/validation/A-08_", "tests/fixtures/a08/")
+A08_COMPLETION_EXACT_PATHS = {"scripts/check_a08_completion_validation.py", "tests/tooling/test_a08_completion_validation.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -2023,6 +2025,28 @@ def validate_a08_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str
     return sorted(set(errors))
 
 
+def validate_a08_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[];expected={"docs/completion_reports/A-08_COMPLETION_REPORT.md","docs/evidence/manifests/A-08_EVIDENCE_MANIFEST.json","docs/evidence/manifests/A-08_START_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-a08-completion-test-review.json","docs/work_orders/A-08_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["A08_COMPLETION_RAW_CHECKSUMS_INVALID"]
+    for row in rows:
+        rel=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(rel,str) or rel in seen: errors.append("A08_COMPLETION_RAW_CHECKSUMS_INVALID");continue
+        seen.add(rel)
+        try: raw=(root/rel).read_bytes()
+        except OSError: errors.append("A08_COMPLETION_RAW_CHECKSUMS_INVALID");continue
+        actual=hashlib.sha256(raw).hexdigest().upper();total+=len(raw);canonical.append((rel.encode(),f"{rel}\t{len(raw)}\t{actual}"))
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=actual: errors.append("A08_COMPLETION_RAW_CHECKSUMS_INVALID")
+    if seen!=expected: errors.append("A08_COMPLETION_RAW_SET_INVALID")
+    can="\n".join(v for _,v in sorted(canonical)).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_hash")!=target,manifest.get("content_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total)): errors.append("A08_COMPLETION_TARGET_MISMATCH")
+    fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths");mp=manifest.get("repository_projection") or {};rp=progress.get("repository") or {}
+    if any(mp.get(f)!=rp.get(f) for f in fields): errors.append("A08_COMPLETION_REPOSITORY_PROJECTION_MISMATCH")
+    wi=progress.get("active_work_instruction") or {};developer=manifest.get("developer_evidence") or {}
+    if (progress.get("event_sequence")!=105 or progress.get("current_work_package")!="A-08" or progress.get("status")!="TEST_REVIEW" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or wi.get("artifact_id")!="WI-A-08-20260812-001" or wi.get("package_status")!="TEST_REVIEW" or wi.get("result_status")!="COMPLETED" or wi.get("accepted") is not False or wi.get("independent_tester_status")!="PENDING" or developer.get("manifest_sha256")!="73CC3936D3AF55674412C746B1CB95D53F08B3C8BDA927765286F3E60BE6C9A5" or developer.get("target_hash")!="0C10A4F557B2AAF6D90B5BA8C9320CFD694B4DCBF42C9FF3495E3B5D431DE52C" or developer.get("mutation")!="FORBIDDEN_FROZEN_PREDECESSOR" or manifest.get("canonical_l4")!="RUNTIME_DEFERRED / NOT_EXECUTED" or manifest.get("actual_product_validation_status")!="NOT_EXECUTED" or manifest.get("actual_release_status")!="NOT_EXECUTED" or manifest.get("actual_dir_status")!="NOT_EXECUTED" or manifest.get("self_reference") is not False): errors.append("A08_COMPLETION_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -2399,6 +2423,7 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative in A05_COMPLETION_EXACT_PATHS
         or relative in A06_COMPLETION_EXACT_PATHS
         or relative in A07_COMPLETION_EXACT_PATHS
+        or relative in A08_COMPLETION_EXACT_PATHS
         or relative.startswith(EVIDENCE_ONLY_PATH_PREFIXES)
         or relative.startswith(A01_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A02_COMPLETION_PATH_PREFIXES)
@@ -2407,6 +2432,7 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative.startswith(A05_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A06_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A07_COMPLETION_PATH_PREFIXES)
+        or relative.startswith(A08_COMPLETION_PATH_PREFIXES)
     )
 
 
@@ -2616,6 +2642,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a07_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-08_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_a08_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-08_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a08_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
