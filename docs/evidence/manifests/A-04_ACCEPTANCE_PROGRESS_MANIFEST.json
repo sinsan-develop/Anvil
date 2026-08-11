@@ -1,0 +1,40 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-04-ACCEPTANCE-20260811-001",
+  "artifact_type": "main_acceptance_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-04",
+  "artifact_status": "accepted_a05_ready",
+  "content_hash": "sha256:E8BB521019C9CDC5567C8C38A8E933842E7AA6B9A339CEF71DD355572B90A841",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T17:55:14+09:00",
+  "artifact_path": "docs/evidence/manifests/A-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
+  "target_hash": "sha256:E8BB521019C9CDC5567C8C38A8E933842E7AA6B9A339CEF71DD355572B90A841",
+  "delivered_hash": "sha256:E8BB521019C9CDC5567C8C38A8E933842E7AA6B9A339CEF71DD355572B90A841",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 608,
+  "target_content_bytes": 22763,
+  "projection": {"event_sequence": 78, "decision": "ACCEPTED", "completed_package": "A-04", "current_work_package": "A-05", "status": "READY", "active_work_instruction": null, "active_agent": null, "worker_lease": null, "write_lease": null, "a04_historical_valid_failure_count": 0, "a05_active_valid_failure_count": 0},
+  "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "tester_evidence": {"path": "docs/test_reports/A-04_TEST_REPORT.md", "sha256": "3C809FF5F8C31ABB349A19CAFE5151F403437A9757D0C6FC4BA5BC4A1BC4C1B3", "verdict": "PASS_STATIC_CONTRACT / READY_FOR_MAIN_ACCEPTANCE", "blocking_defects": 0},
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "a5c60edff8ddfa4e8d06b315d728698ce7a06ef9",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "a5c60edff8ddfa4e8d06b315d728698ce7a06ef9",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": ["docs/evidence/manifests/A-04_ACCEPTANCE_PROGRESS_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a04-accepted.json", "docs/test_reports/A-04_TEST_REPORT.md", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]
+  },
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-04_COMPLETION_PROGRESS_MANIFEST.json", "bytes": 4484, "sha256": "59EE07ABDA513FE9F56A4EC38B0CF7730EA21D85F7F42C6FCE34B99F48A55B12"},
+    {"path": "docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json", "bytes": 2520, "sha256": "C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a04-accepted.json", "bytes": 867, "sha256": "27AD8E49286968CDC71277CEDB9CADD47D982FD2E9D34FA9E22C26C4DA56BBF5"},
+    {"path": "docs/test_reports/A-04_TEST_REPORT.md", "bytes": 7842, "sha256": "3C809FF5F8C31ABB349A19CAFE5151F403437A9757D0C6FC4BA5BC4A1BC4C1B3"},
+    {"path": "docs/work_orders/A-04_WORK_INSTRUCTION.md", "bytes": 7050, "sha256": "1B8CE8809EC6546ED483D0E48294CC547F0767A5D0D31D120B08787290ED753E"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 77 and all A-01 through A-04 predecessor evidence remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["A-05 is READY but not dispatched or implemented.", "Canonical L7 runtime, browser, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}

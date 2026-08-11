@@ -815,7 +815,26 @@ def validate_gate(
         and a04_completed.get("details", {}).get("accepted") is False
         and a04_completed.get("details", {}).get("next_package_status") == "BLOCKED_PENDING_A04_ACCEPTANCE"
     )
-    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection and not a02_ready_projection and not a02_active_projection and not a02_test_review_projection and not a02_rework_projection and not a02_r2_test_review_projection and not a03_ready_projection and not a03_active_projection and not a03_test_review_projection and not a03_rework_projection and not a03_r2_test_review_projection and not a04_ready_projection and not a04_active_projection and not a04_test_review_projection:
+    a04_acceptance = events[-1] if events else {}
+    a05_ready_projection = (
+        progress_projection.get("current_work_package") == "A-05"
+        and progress_projection.get("status") == "READY"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and progress_projection.get("active_work_instruction") is None
+        and progress_projection.get("worker_lease") is None
+        and progress_projection.get("write_lease") is None
+        and a04_acceptance.get("sequence") == 78
+        and a04_acceptance.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+        and a04_acceptance.get("subject_ref") == "A-04"
+        and a04_acceptance.get("details", {}).get("decision") == "ACCEPTED"
+        and a04_acceptance.get("details", {}).get("blocking_findings") == 0
+        and a04_acceptance.get("details", {}).get("next_work_package") == "A-05"
+        and a04_acceptance.get("details", {}).get("next_package_status") == "READY"
+        and a04_acceptance.get("details", {}).get("canonical_l7") == "RUNTIME_DEFERRED / NOT_EXECUTED"
+    )
+    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection and not a02_ready_projection and not a02_active_projection and not a02_test_review_projection and not a02_rework_projection and not a02_r2_test_review_projection and not a03_ready_projection and not a03_active_projection and not a03_test_review_projection and not a03_rework_projection and not a03_r2_test_review_projection and not a04_ready_projection and not a04_active_projection and not a04_test_review_projection and not a05_ready_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {
