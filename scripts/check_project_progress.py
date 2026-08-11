@@ -1007,6 +1007,89 @@ def validate_a02_start_manifest(
     return sorted(set(errors))
 
 
+def validate_a03_start_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Recompute the A-03 start record and require clean dispatch fencing."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_paths = {
+        "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json",
+        "docs/progress/progress-handoff-detached-digest-a03-start.json",
+        "docs/test_reports/A-02_TEST_REPORT_R2.md",
+        "docs/work_orders/A-03_INVOCATION_PROMPT.md",
+        "docs/work_orders/A-03_WORK_INSTRUCTION.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A03_START_RAW_CHECKSUMS_INVALID"]
+    seen: set[str] = set()
+    canonical_rows: list[tuple[bytes, str]] = []
+    total_bytes = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("A03_START_RAW_CHECKSUMS_INVALID")
+            continue
+        relative = row.get("path")
+        if not isinstance(relative, str) or relative in seen:
+            errors.append("A03_START_RAW_CHECKSUMS_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A03_START_RAW_CHECKSUMS_INVALID")
+            continue
+        actual_hash = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != actual_hash:
+            errors.append("A03_START_RAW_CHECKSUMS_INVALID")
+        total_bytes += len(raw)
+        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual_hash}"))
+    if seen != expected_paths:
+        errors.append("A03_START_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if (
+        manifest.get("target_canonical_bytes") != len(canonical)
+        or manifest.get("target_content_bytes") != total_bytes
+        or manifest.get("target_hash") != target
+        or manifest.get("delivered_hash") != target
+        or manifest.get("content_hash") != target
+    ):
+        errors.append("A03_START_TARGET_MISMATCH")
+    repository = progress.get("repository", {})
+    projection = manifest.get("repository_projection", {})
+    for field in ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "exact_allowed_paths"):
+        if projection.get(field) != repository.get(field):
+            errors.append("A03_START_REPOSITORY_PROJECTION_MISMATCH")
+    dispatch = projection.get("dispatch_observation", {})
+    active_wi = progress.get("active_work_instruction") or {}
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    lease = manifest.get("lease_projection", {})
+    if (
+        manifest.get("package_id") != "A-03"
+        or manifest.get("self_reference") is not False
+        or progress.get("event_sequence") != 60
+        or progress.get("status") != "ACTIVE"
+        or active_wi.get("artifact_id") != "WI-A-03-20260811-001"
+        or active_wi.get("sha256") != "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F"
+        or worker.get("lease_id") != "worker-lease-a03-20260811-001"
+        or write.get("lease_id") != "write-lease-a03-20260811-001"
+        or write.get("worker_lease_id") != worker.get("lease_id")
+        or lease.get("execution_fencing_token") != worker.get("execution_fencing_token")
+        or lease.get("write_fencing_token") != write.get("write_fencing_token")
+        or dispatch.get("local_head") != "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599"
+        or dispatch.get("remote_head") != dispatch.get("local_head")
+        or dispatch.get("worktree_status") != "CLEAN"
+    ):
+        errors.append("A03_START_FENCING_PROJECTION_MISMATCH")
+    if manifest.get("implementation_evidence_present") is not False:
+        errors.append("A03_START_IMPLEMENTATION_EVIDENCE_INVALID")
+    return sorted(set(errors))
+
+
 def validate_a02_completion_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -1633,6 +1716,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a02_rework_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-02_ACCEPTANCE_PROGRESS_MANIFEST.json":
             errors.extend(validate_a02_acceptance_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-03_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_a03_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

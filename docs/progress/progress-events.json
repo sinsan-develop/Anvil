@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 57,
+  "last_sequence": 60,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -1185,6 +1185,101 @@
         "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "2bd88123e93550db5874b479c82d78d4733fd53f", "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", "branch": "main", "upstream": "origin/main", "remote_head": "1ace56384d55cbe11d34f2532e9f602d389a9512", "push_status": "PUSH_PENDING_MAIN",
         "exact_allowed_paths": ["docs/architecture/a02/A-02_EXPLANATION_INTERFACE.md", "docs/architecture/a02/A-02_SCREEN_TOKEN_SPEC.md", "docs/architecture/a02/A-02_STATIC_RENDER.svg", "docs/architecture/a02/A-02_TOKEN_CATALOG.json", "docs/completion_reports/A-02_COMPLETION_REPORT.md", "docs/evidence/manifests/A-02_ACCEPTANCE_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-02_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json", "docs/evidence/manifests/A-02_REWORK_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-02_REWORK_START_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/failure-ledger.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a02-accepted.json", "docs/progress/progress-handoff-detached-digest-a02-completion-test-review.json", "docs/progress/progress-handoff-detached-digest-a02-rework-completion-test-review.json", "docs/progress/progress-handoff-detached-digest-a02-rework-start.json", "docs/test_reports/A-02_TEST_REPORT.md", "docs/test_reports/A-02_TEST_REPORT_R2.md", "docs/validation/A-02_TOKEN_VALIDATION.md", "scripts/check_a02_tokens.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/fixtures/a02/canonical-contract.json", "tests/fixtures/a02/mutation-catalog.json", "tests/tooling/test_a02_tokens.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
         "reporting_decision": "AUTO_CONTINUE", "runtime_deferred": ["AV-UI-001", "AV-UI-002"]
+      }
+    },
+    {
+      "event_id": "evt_a03_worker_lease_issued",
+      "sequence": 58,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T12:50:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "lease_id": "worker-lease-a03-20260811-001",
+        "fencing_token": "a03-execution-fence-epoch-1-39af6aa",
+        "execution_fencing_token": "a03-execution-fence-epoch-1-39af6aa",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary-a03",
+        "subject_ref": "A-03",
+        "baseline_hash": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F",
+        "baseline_git_commit": "a150a13fbc9874dcf18df7e7f0c713f7ca5d67ab",
+        "dispatch_head": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+        "issued_at": "2026-08-11T12:50:00+09:00",
+        "expires_at": "2026-08-11T23:50:00+09:00"
+      }
+    },
+    {
+      "event_id": "evt_a03_write_lease_issued",
+      "sequence": 59,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T12:50:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "lease_id": "write-lease-a03-20260811-001",
+        "worker_lease_id": "worker-lease-a03-20260811-001",
+        "fencing_token": "a03-write-fence-epoch-1-39af6aa",
+        "write_fencing_token": "a03-write-fence-epoch-1-39af6aa",
+        "write_epoch": 1,
+        "actor_id": "developer-primary-a03",
+        "subject_ref": "A-03",
+        "baseline_hash": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F",
+        "issued_at": "2026-08-11T12:50:01+09:00",
+        "expires_at": "2026-08-11T23:50:00+09:00",
+        "path_scope": [
+          "docs/architecture/a03/**",
+          "scripts/check_a03_onboarding.py",
+          "tests/tooling/test_a03_onboarding.py",
+          "tests/fixtures/a03/**",
+          "docs/validation/A-03_*",
+          "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST*.json",
+          "docs/completion_reports/A-03_COMPLETION_REPORT.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_a03_package_started",
+      "sequence": 60,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-11T12:50:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "work_instruction_id": "WI-A-03-20260811-001",
+        "work_instruction_path": "docs/work_orders/A-03_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F",
+        "invocation_path": "docs/work_orders/A-03_INVOCATION_PROMPT.md",
+        "invocation_sha256": "2B4A2D04D99D79FD5B840528B607DF63AD46161A378B2CDFF59F371622C94184",
+        "package_status": "ACTIVE",
+        "developer_actor": "developer-primary-a03",
+        "worker_lease_id": "worker-lease-a03-20260811-001",
+        "write_lease_id": "write-lease-a03-20260811-001",
+        "dispatch_head": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+        "dispatch_upstream_head": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+        "dispatch_worktree_status": "CLEAN",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "39af6aa58670f8ed1eb72fb4b5e4b13e9abb6599",
+        "push_status": "START_PROJECTION_PENDING_MAIN_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-03_START_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a03-start.json",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "change_classification": "NON_SEMANTIC",
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-UI-003", "AV-UI-004"],
+        "runtime_verdict": "CANONICAL_L7_RUNTIME_DEFERRED_NOT_EXECUTED"
       }
     }
   ]
