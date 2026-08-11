@@ -6,10 +6,12 @@ contract_screen_id: `PROJECT_REGISTER`
 
 ## 입력과 조건
 
-- 공통: `project_name`, `project_slug`, description, `repository_source_type`, default_branch
+- 공통: `project_name`, `project_slug`, description, `repository_source_type`, default_branch, `environment`, `backend_policy_profile`, `operational_environment_connection_state`
 - source `local`: `local_path`만 필수
 - source `git`: `remote_url`만 필수
 - credential·secret은 reference 또는 masked 상태만 표시하고 literal이나 무권한 local full path는 노출하지 않는다.
+
+`environment`는 등록 대상 환경, `backend_policy_profile`은 실행 backend와 정책 profile의 선택값, `operational_environment_connection_state`는 운영환경 연결 상태의 화면 표시값이다. 연결 credential·secret·내부 주소는 표시하지 않는다.
 
 Submit은 Project/Repository record를 만들고 read-only scan을 queue할 뿐 등록 완료가 아니다. 상태는 IDLE → VALIDATING → SUBMITTING이며 scan은 QUEUED로 시작한다.
 

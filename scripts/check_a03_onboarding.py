@@ -15,6 +15,7 @@ from typing import Any
 CATALOG_REL = Path("docs/architecture/a03/A-03_ONBOARDING_CATALOG.json")
 A02_REL = Path("docs/architecture/a02/A-02_TOKEN_CATALOG.json")
 MANIFEST_REL = Path("docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json")
+MANIFEST_R2_REL = Path("docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json")
 DOCUMENTS = {
     "PROJECT_DASHBOARD": Path("docs/architecture/a03/A-03_PROJECT_DASHBOARD.md"),
     "PROJECT_REGISTER": Path("docs/architecture/a03/A-03_PROJECT_REGISTRATION.md"),
@@ -37,7 +38,7 @@ EXPECTED_PRESENTATION = {
 }
 EXPECTED_SCREEN_FIELDS = {
     "PROJECT_DASHBOARD": {"project_filter", "environment_filter", "period_filter", "last_refreshed_at", "health_cards", "operations_cards", "success_rate", "next_actions", "critical_alerts"},
-    "PROJECT_REGISTER": {"project_name", "project_slug", "description", "repository_source_type", "local_path", "remote_url", "default_branch"},
+    "PROJECT_REGISTER": {"project_name", "project_slug", "description", "repository_source_type", "local_path", "remote_url", "default_branch", "environment", "backend_policy_profile", "operational_environment_connection_state"},
     "REPOSITORY_ONBOARDING": {"repository_kind", "canonical_root", "remote", "branch", "head_commit", "baseline_commit", "tracked_dirty", "tracked_dirty_count", "tracked_dirty_paths", "untracked_count", "untracked_paths", "manifests", "languages", "frameworks", "package_managers", "runtimes", "discovered_commands", "file_classification", "project_rules", "protected_paths", "allowed_environments", "secret_candidates_masked", "scan_step", "last_scan_at", "mutation_count", "uncertainty", "next_action"},
     "ONBOARDING_REVIEW": {"default_branch", "protected_paths", "project_rules", "allowed_environments", "baseline_id", "baseline_branch", "baseline_commit", "tracked_dirty", "tracked_dirty_count", "untracked_count", "baseline_created_at", "evidence_link", "isolation_status", "uncertainty", "next_action"},
     "PROJECT_DETAIL": {"overview", "repositories", "baselines", "rules", "toolchain", "environments", "members", "repository_status", "branch", "head_commit", "tracked_dirty", "tracked_dirty_count", "untracked_count", "last_scan_at", "read_only_rescan"},
@@ -49,6 +50,11 @@ EXPECTED_STATES = {
     "baseline": ["CLEAN", "DIRTY", "CONFLICT", "NOT_CREATED", "UNKNOWN", "ISOLATION_DEGRADED"],
     "policy": ["LOADED", "CONFIRMATION_REQUIRED"],
     "health": ["NORMAL", "WARNING", "ERROR"],
+}
+EXPECTED_PROJECT_REGISTER_OPERATIONAL_FIELDS = {
+    "environment",
+    "backend_policy_profile",
+    "operational_environment_connection_state",
 }
 EXPECTED_REASONS = ["ROOT_OUTSIDE_ALLOWED", "PATH_NOT_FOUND", "PERMISSION_DENIED", "NON_GIT_REVIEW_REQUIRED", "DIRTY_TRACKED_PRESENT", "UNTRACKED_PRESENT", "BASELINE_CONFLICT", "PROTECTED_PATH_POLICY_INVALID", "SCAN_MUTATION_DETECTED"]
 EXPECTED_ERRORS = [
@@ -82,6 +88,23 @@ EXPECTED_RAW_PATHS = {
     "docs/architecture/a02/A-02_TOKEN_CATALOG.json",
     "docs/work_orders/A-03_WORK_INSTRUCTION.md",
 }
+EXPECTED_R2_RAW_PATHS = {
+    "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json",
+    "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md",
+    "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg",
+    "scripts/check_a03_onboarding.py",
+    "tests/tooling/test_a03_onboarding.py",
+    "tests/fixtures/a03/canonical-contract.json",
+    "tests/fixtures/a03/mutation-catalog.json",
+    "docs/validation/A-03_ONBOARDING_VALIDATION.md",
+    "docs/completion_reports/A-03_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
+    "docs/test_reports/A-03_TEST_REPORT.md",
+    "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
+}
+EXPECTED_R1_MANIFEST_SHA256 = "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"
+EXPECTED_TEST_REPORT_SHA256 = "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"
+EXPECTED_R2_WI_SHA256 = "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED"
 
 
 def sha256_file(path: Path) -> str:
@@ -115,6 +138,8 @@ def validate_catalog(catalog: dict[str, Any]) -> list[str]:
             errors.append("SCREEN_FIELD_CONTRACT_MISMATCH")
 
     register = screens.get("PROJECT_REGISTER", {})
+    if not EXPECTED_PROJECT_REGISTER_OPERATIONAL_FIELDS.issubset(set(register.get("fields", []))):
+        errors.append("PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH")
     if register.get("conditional_fields") != {"local": ["local_path"], "git": ["remote_url"]}:
         errors.append("SOURCE_CONDITIONAL_FIELD_MISMATCH")
     onboarding = screens.get("REPOSITORY_ONBOARDING", {})
@@ -178,7 +203,7 @@ def validate_documents(root: Path, catalog: dict[str, Any]) -> list[str]:
     common = ["STATIC_ONLY", "STATIC_CONTRACT_PASS", "RUNTIME_DEFERRED / NOT_EXECUTED", "E-SHOT_STATIC_NOT_RUNTIME_UI", "E-DEC_NOT_EXECUTED", "i-icon", "tooltip", "popover", "reason", "next_action"]
     per_doc = {
         "PROJECT_DASHBOARD": EXPECTED_HEALTH + EXPECTED_OPERATIONS + ["period", "sample_count", "pass_count", "skipped_count", "deep_link"],
-        "PROJECT_REGISTER": ["project_name", "project_slug", "repository_source_type", "local_path", "remote_url", "PROJECT_SLUG_EXISTS", "REPOSITORY_PATH_DENIED", "REPOSITORY_NOT_FOUND", "PROJECT_VIEW", "PROJECT_MANAGE", "REPOSITORY_MANAGE"],
+        "PROJECT_REGISTER": ["project_name", "project_slug", "repository_source_type", "local_path", "remote_url", "environment", "backend_policy_profile", "operational_environment_connection_state", "PROJECT_SLUG_EXISTS", "REPOSITORY_PATH_DENIED", "REPOSITORY_NOT_FOUND", "PROJECT_VIEW", "PROJECT_MANAGE", "REPOSITORY_MANAGE"],
         "REPOSITORY_ONBOARDING": ["SCANNING_READ_ONLY", "tracked_dirty_count", "untracked_count", "user-owned", "automatic cleanup forbidden", "source write forbidden", "install forbidden", "format forbidden", "Git mutation forbidden", "ROOT_OUTSIDE_ALLOWED", "SCAN_MUTATION_DETECTED", "protected_paths", "allowed_environments"],
     }
     for doc_id, path in DOCUMENTS.items():
@@ -204,6 +229,10 @@ def validate_renders(root: Path, catalog: dict[str, Any]) -> list[str]:
         required = ['width="1920"', 'height="1080"', 'viewBox="0 0 1920 1080"', f'data-screen-ids="{screen_ids}"', "E-SHOT_STATIC_NOT_RUNTIME_UI", "E-DEC_NOT_EXECUTED", "RUNTIME_DEFERRED / NOT_EXECUTED", "i-icon", "tooltip", "popover", "reason", "next_action", "icon + status_label + short_description", "body/form 12px", "screen title 16px"]
         if any(item not in text for item in required):
             errors.append("STATIC_RENDER_SEMANTIC_BINDING_MISMATCH")
+        if path == RENDERS["PROJECT_REGISTER|REPOSITORY_ONBOARDING"] and any(
+            item not in text for item in EXPECTED_PROJECT_REGISTER_OPERATIONAL_FIELDS
+        ):
+            errors.append("PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH")
         found_colors = {match.upper() for match in re.findall(r"#[0-9A-Fa-f]{6}\b", text)}
         if found_colors - allowed_colors:
             errors.append("STATIC_RENDER_RAW_COLOR_BYPASS")
@@ -266,6 +295,8 @@ def validate_evidence_manifest(root: Path, manifest: dict[str, Any]) -> list[str
         return ["EVIDENCE_RAW_ARTIFACTS_EMPTY"]
     if manifest.get("self_reference") is not False:
         errors.append("EVIDENCE_SELF_REFERENCE_FORBIDDEN")
+    is_r2 = manifest.get("artifact_id") == "EVIDENCE-MANIFEST-A-03-20260811-002"
+    expected_paths = EXPECTED_R2_RAW_PATHS if is_r2 else EXPECTED_RAW_PATHS
     paths: set[str] = set()
     content_bytes = 0
     for item in raw:
@@ -283,7 +314,7 @@ def validate_evidence_manifest(root: Path, manifest: dict[str, Any]) -> list[str
             errors.append("EVIDENCE_RAW_BYTES_MISMATCH")
         if item.get("sha256") != sha256_file(path):
             errors.append("EVIDENCE_RAW_HASH_MISMATCH")
-    if paths != EXPECTED_RAW_PATHS:
+    if paths != expected_paths:
         errors.append("EVIDENCE_RAW_PATH_SET_MISMATCH")
     projection = _manifest_projection(raw)
     target = manifest_target(raw)
@@ -296,6 +327,19 @@ def validate_evidence_manifest(root: Path, manifest: dict[str, Any]) -> list[str
     expected_static = {"assigned_verification_ids": ["AV-UI-003", "AV-UI-004"], "execution_classification": "STATIC_ONLY", "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED", "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED"}
     if any(manifest.get(key) != value for key, value in expected_static.items()):
         errors.append("EVIDENCE_RUNTIME_QUALIFIER_MISMATCH")
+    if is_r2:
+        if manifest.get("work_instruction_sha256") != EXPECTED_R2_WI_SHA256:
+            errors.append("EVIDENCE_REWORK_WI_BINDING_MISMATCH")
+        if manifest.get("supersedes_artifact_ref") != {
+            "path": str(MANIFEST_REL).replace("\\", "/"),
+            "sha256": EXPECTED_R1_MANIFEST_SHA256,
+        }:
+            errors.append("EVIDENCE_PREDECESSOR_BINDING_MISMATCH")
+        if manifest.get("source_test_report_ref") != {
+            "path": "docs/test_reports/A-03_TEST_REPORT.md",
+            "sha256": EXPECTED_TEST_REPORT_SHA256,
+        }:
+            errors.append("EVIDENCE_TEST_REPORT_BINDING_MISMATCH")
     return _dedupe(errors)
 
 
@@ -311,7 +355,8 @@ def validate_bundle(root: Path, require_manifest: bool = True) -> list[str]:
     errors += validate_renders(root, catalog)
     if require_manifest:
         try:
-            manifest = json.loads((root / MANIFEST_REL).read_text(encoding="utf-8"))
+            manifest_path = MANIFEST_R2_REL if (root / MANIFEST_R2_REL).is_file() else MANIFEST_REL
+            manifest = json.loads((root / manifest_path).read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             errors.append("EVIDENCE_MANIFEST_MISSING_OR_INVALID")
         else:

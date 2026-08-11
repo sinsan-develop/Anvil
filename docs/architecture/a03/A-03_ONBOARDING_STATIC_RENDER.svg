@@ -8,8 +8,10 @@
   <text x="272" y="110" fill="#F7F9FC" font-size="14">Register · local / git</text>
   <text x="272" y="148" fill="#B8C4D8" font-size="12">project_name · project_slug · default_branch</text>
   <text x="272" y="180" fill="#B8C4D8" font-size="12">local_path XOR remote_url · credential masked</text>
-  <rect x="272" y="220" width="250" height="36" fill="#1B2A42" stroke="#7DB4FF"/>
-  <text x="288" y="243" fill="#7DB4FF" font-size="12">Queue read-only scan</text>
+  <text x="272" y="204" fill="#B8C4D8" font-size="12">environment · backend_policy_profile</text>
+  <text x="272" y="228" fill="#74D7FF" font-size="12">operational_environment_connection_state · masked only</text>
+  <rect x="272" y="260" width="250" height="36" fill="#1B2A42" stroke="#7DB4FF"/>
+  <text x="288" y="283" fill="#7DB4FF" font-size="12">Queue read-only scan</text>
   <rect x="850" y="72" width="978" height="850" rx="8" fill="#142033" stroke="#60738F"/>
   <text x="874" y="110" fill="#F7F9FC" font-size="14">SCANNING_READ_ONLY · 8 steps</text>
   <text x="874" y="148" fill="#74D7FF" font-size="12">PATH_POLICY → GIT_STATUS → MANIFESTS → TOOLCHAIN</text>

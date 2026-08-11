@@ -28,6 +28,9 @@
     {"mutation_id": "M25_MATRIX_OWNER", "path": "matrix_contract.0.level", "operation": "replace", "value": "L4", "expected_error_code": "MATRIX_CONTRACT_MISMATCH"},
     {"mutation_id": "M26_RUNTIME_OWNER", "path": "verification_contract.runtime_owners.AV-UI-003.0", "operation": "replace", "value": "A-03", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"},
     {"mutation_id": "M27_RUNTIME_PASS", "path": "verification_contract.canonical_runtime_verdict", "operation": "replace", "value": "PASS", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"},
-    {"mutation_id": "M28_STATIC_QUALIFIER", "path": "verification_contract.evidence_qualifier", "operation": "replace", "value": "E-SHOT", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"}
+    {"mutation_id": "M28_STATIC_QUALIFIER", "path": "verification_contract.evidence_qualifier", "operation": "replace", "value": "E-SHOT", "expected_error_code": "VERIFICATION_CONTRACT_MISMATCH"},
+    {"mutation_id": "M29_REGISTER_ENVIRONMENT", "path": "screens.1.fields.7", "operation": "remove", "expected_error_code": "PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH"},
+    {"mutation_id": "M30_REGISTER_BACKEND_POLICY", "path": "screens.1.fields.8", "operation": "remove", "expected_error_code": "PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH"},
+    {"mutation_id": "M31_REGISTER_OPERATIONAL_CONNECTION", "path": "screens.1.fields.9", "operation": "remove", "expected_error_code": "PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH"}
   ]
 }

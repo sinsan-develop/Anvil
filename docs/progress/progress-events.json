@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 67,
+  "last_sequence": 70,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -1499,6 +1499,93 @@
         "runtime_deferred": ["AV-UI-003", "AV-UI-004"],
         "next_work_package": "A-04",
         "next_package_status": "BLOCKED_PENDING_A03_ACCEPTANCE"
+      }
+    },
+    {
+      "event_id": "evt_a03_rework_write_lease_revoked_for_retest",
+      "sequence": 68,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-08-11T16:01:10+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "lease_id": "write-lease-a03-rework-20260811-002",
+        "worker_lease_id": "worker-lease-a03-rework-20260811-002",
+        "prior_write_fencing_token": "a03-rework-write-fence-epoch-2-f8b52a5",
+        "write_epoch": 2,
+        "reason": "revision 2 Developer evidence frozen before independent retest"
+      }
+    },
+    {
+      "event_id": "evt_a03_rework_worker_lease_revoked_for_retest",
+      "sequence": 69,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-08-11T16:01:11+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "lease_id": "worker-lease-a03-rework-20260811-002",
+        "prior_execution_fencing_token": "a03-rework-execution-fence-epoch-2-f8b52a5",
+        "lease_epoch": 2,
+        "reason": "revision 2 Developer result frozen as COMPLETED pending independent retest"
+      }
+    },
+    {
+      "event_id": "evt_a03_rework_revision2_completed_test_review",
+      "sequence": 70,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-11T16:01:12+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "rework_revision": 2,
+        "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
+        "independent_tester_status": "R2_PENDING",
+        "work_instruction_id": "WI-A-03-20260811-002",
+        "work_instruction_sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED",
+        "developer_manifest_ref": {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json", "sha256": "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE"},
+        "developer_target_hash": "7D089D2EAC2ADF5899F041B6234B0A1393EA1256F2AC8395789CBE1EBF2CEA2A",
+        "source_test_report_ref": {"path": "docs/test_reports/A-03_TEST_REPORT.md", "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"},
+        "worker_lease": null,
+        "write_lease": null,
+        "next_work_package": "A-04",
+        "next_package_status": "BLOCKED_PENDING_A03_ACCEPTANCE",
+        "completion_head": "ed9225206edd1f075898a49f68c4db344e74cc1a",
+        "completion_upstream_head": "ed9225206edd1f075898a49f68c4db344e74cc1a",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "ed9225206edd1f075898a49f68c4db344e74cc1a",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "ed9225206edd1f075898a49f68c4db344e74cc1a",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json",
+          "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg",
+          "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md",
+          "docs/completion_reports/A-03_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json",
+          "docs/evidence/manifests/A-03_REWORK_COMPLETION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a03-rework-completion-test-review.json",
+          "docs/validation/A-03_ONBOARDING_VALIDATION.md",
+          "scripts/check_a03_onboarding.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/fixtures/a03/canonical-contract.json",
+          "tests/fixtures/a03/mutation-catalog.json",
+          "tests/tooling/test_a03_onboarding.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-UI-003", "AV-UI-004"]
       }
     }
   ]

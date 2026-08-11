@@ -1,0 +1,47 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-03-20260811-002",
+  "artifact_type": "package_evidence_manifest",
+  "project_id": "anvil",
+  "package_id": "A-03",
+  "artifact_status": "developer_rework_completed_pending_independent_retest",
+  "created_by": {"actor_type": "agent", "actor_id": "developer-primary-a03"},
+  "created_at": "2026-08-11T15:30:00+09:00",
+  "work_instruction_sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED",
+  "supersedes_artifact_ref": {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"},
+  "source_test_report_ref": {"path": "docs/test_reports/A-03_TEST_REPORT.md", "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"},
+  "finding_closure_claims": [
+    {"finding_id": "A03-TST-BLK-001", "mode": "DEVELOPER_PRODUCT_REWORK"},
+    {"finding_id": "A03-TST-BLK-002", "mode": "MAIN_PROJECTION_REGRESSION_VERIFICATION_ONLY"}
+  ],
+  "assigned_verification_ids": ["AV-UI-003", "AV-UI-004"],
+  "execution_classification": "STATIC_ONLY",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED",
+  "target_algorithm": "SHA256(canonical JSON of sorted [{path,sha256}] raw_artifacts)",
+  "target_canonical_bytes": 1594,
+  "target_content_bytes": 81048,
+  "target_hash": "7D089D2EAC2ADF5899F041B6234B0A1393EA1256F2AC8395789CBE1EBF2CEA2A",
+  "delivered_hash": "7D089D2EAC2ADF5899F041B6234B0A1393EA1256F2AC8395789CBE1EBF2CEA2A",
+  "raw_artifacts": [
+    {"path": "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json", "bytes": 9428, "sha256": "464F785FB0A72C3E5571D30755EE3A107259D641A6035830B18343E5A0922093", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md", "bytes": 1795, "sha256": "E4B944A4535EECD088B9EF076A07490A99201E7CA9046645567E9695822AB214", "evidence_type": "E-ART"},
+    {"path": "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg", "bytes": 2457, "sha256": "BBB51523BAF658D23B5C248DB92E0B7FF14DA741E967CB878E90484388D09EB8", "evidence_type": "E-SHOT_STATIC_NOT_RUNTIME_UI"},
+    {"path": "scripts/check_a03_onboarding.py", "bytes": 23296, "sha256": "CA0437B15E6565F5EC47F743B33C0114D46F3822D820913796CAE97FD1AE0CC2", "evidence_type": "E-TEST"},
+    {"path": "tests/tooling/test_a03_onboarding.py", "bytes": 8452, "sha256": "B6C026531DAEF8B5D76C5AE8AEF1B0E2976D7A70ED49A258B441DAE050D05227", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a03/canonical-contract.json", "bytes": 326, "sha256": "495565649EDDF5980F942AA49540960EFD20A46BCF9F7957A541A6C792AD0473", "evidence_type": "E-TEST"},
+    {"path": "tests/fixtures/a03/mutation-catalog.json", "bytes": 5675, "sha256": "42C4A666B5A29D4CEF83CE70FADC902FBDA88D6E7DAE3A426440EA81A48A647C", "evidence_type": "E-TEST"},
+    {"path": "docs/validation/A-03_ONBOARDING_VALIDATION.md", "bytes": 5756, "sha256": "869DE9319A1852E93C5DEEC226DFCD997C4C15860C5386CCC99FAF110DAE9C72", "evidence_type": "E-TEST"},
+    {"path": "docs/completion_reports/A-03_COMPLETION_REPORT.md", "bytes": 7203, "sha256": "E6514469EDBE0A631E5B43420E48C4CD6A3C4279A355E65A0BD553106DD73B72", "evidence_type": "E-ART"},
+    {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "bytes": 4203, "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC", "evidence_type": "E-MAN_PREDECESSOR"},
+    {"path": "docs/test_reports/A-03_TEST_REPORT.md", "bytes": 8257, "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6", "evidence_type": "E-TEST_PREDECESSOR"},
+    {"path": "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md", "bytes": 4200, "sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED", "evidence_type": "E-DEC"}
+  ],
+  "self_reference": false,
+  "limitations": [
+    "Revision 2 closes the approved operational registration field omission only.",
+    "A03-TST-BLK-002 is verified through Main projection regression without Developer product changes.",
+    "Static SVG is not browser, API, DB, Network, Docker, deployment, or release evidence.",
+    "Canonical L7 remains RUNTIME_DEFERRED / NOT_EXECUTED.",
+    "Independent Tester revision 2 PASS and Main acceptance remain required."
+  ]
+}

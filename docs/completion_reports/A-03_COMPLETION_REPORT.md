@@ -76,3 +76,26 @@ Main이 아직 commit하지 않은 위 A-03 Developer 제품 경로만 제거하
 ## 조치
 
 manifest와 fresh verification을 동결한 뒤 Main에게 lease 회수, `TEST_REVIEW` projection, 독립 Tester 진입을 이관한다.
+
+## Revision 2 rework
+
+- R2 WI: `6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED`
+- invocation: `6B97D0A0773F396BD9C2AD1AED2FF406555A116BE03B643485A8DF5C8692886A`
+- source Tester report: `DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6`
+- epoch-2 worker token: `a03-rework-execution-fence-epoch-2-f8b52a5`
+- epoch-2 write token: `a03-rework-write-fence-epoch-2-f8b52a5`
+- dispatch/current base: `main = origin/main = ed9225206edd1f075898a49f68c4db344e74cc1a`, clean.
+- A03-TST-BLK-001: `environment`, `backend_policy_profile`, `operational_environment_connection_state`를 catalog·문서·SVG·checker·test/fixture에 exact 반영한다.
+- RED: 3개 test, `7 failures`, exit `1`; 누락과 fail-open을 실제 관찰했다.
+- hostile M29~M31은 각 field 삭제를 stable `PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH`로 거부한다.
+- A03-TST-BLK-002: Main projection test에 이미 반영돼 제품 파일은 수정하지 않으며 fresh regression으로만 확인한다.
+- successor manifest: `docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json`.
+- R1 manifest, Tester report, original WI, progress는 수정하지 않는다.
+- runtime/browser/API/DB/Network/Docker/deploy/release는 계속 `NOT_EXECUTED`다.
+- 최종 검증 결과는 successor manifest 동결 전 반영하고, 동결 뒤 동일 focused/regression을 fresh 실행한다.
+- pre-freeze focused: `13/13 PASS`, A-03 checker `PASS`.
+- required integration: 첫 실행 timeout은 미판정; 재실행 `Ran 88`, failure `4`, exit `1`. 실패는 Developer diff의 `GIT_DESCENDANT_WORKTREE_DIRTY`와 R2 기록 전 Main progress의 R1 report hash 참조에 따른 `PRG_REFERENCED_HASH_MISMATCH`뿐이다. Main completion projection 후 fresh 재실행이 필요하다.
+- A03-TST-BLK-002 successor test `test_a03_completion_history_and_current_upstream_are_separate`: `1/1 PASS`, exit `0`.
+- manifest 동결 후 A-03 `13/13`, A-02 `10/10`, A03-TST-BLK-002 전용 `1/1`, A-03/G-07/Phase-G checker, JSON/SVG/diff는 PASS다.
+- post-freeze full integration은 `Ran 88 tests in 76.312s`, failures `4`, exit `1`; 네 실패 모두 project-progress의 `GIT_DESCENDANT_WORKTREE_DIRTY` + `PRG_REFERENCED_HASH_MISMATCH`로 동일하다. Main completion projection 후 full exit 0 재검증이 필요하다.
+- Developer 결과 상태는 `COMPLETED_PENDING_INDEPENDENT_RETEST`; 전체 ACCEPTED를 주장하지 않는다.

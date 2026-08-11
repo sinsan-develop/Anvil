@@ -1,0 +1,39 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-03-REWORK-COMPLETION-20260811-002",
+  "artifact_type": "progress_transition_manifest",
+  "project_id": "anvil",
+  "package_id": "A-03",
+  "artifact_status": "revision_2_test_review_pending_independent_retest",
+  "content_hash": "sha256:F8388A774E33BD79C5236809BDAC991DA72AE7C3BA0A448DFD3F91E814B4DA53",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T16:01:12+09:00",
+  "artifact_path": "docs/evidence/manifests/A-03_REWORK_COMPLETION_PROGRESS_MANIFEST.json",
+  "target_hash": "sha256:F8388A774E33BD79C5236809BDAC991DA72AE7C3BA0A448DFD3F91E814B4DA53",
+  "delivered_hash": "sha256:F8388A774E33BD79C5236809BDAC991DA72AE7C3BA0A448DFD3F91E814B4DA53",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 631,
+  "target_content_bytes": 21878,
+  "projection": {"event_sequence": 70, "status": "TEST_REVIEW", "result_status": "COMPLETED", "accepted": false, "rework_revision": 2, "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST", "independent_tester_status": "R2_PENDING", "worker_lease": null, "write_lease": null, "next_package": "A-04", "next_package_status": "BLOCKED_PENDING_A03_ACCEPTANCE"},
+  "developer_evidence": {"manifest_path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json", "manifest_sha256": "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE", "target_hash": "7D089D2EAC2ADF5899F041B6234B0A1393EA1256F2AC8395789CBE1EBF2CEA2A", "mutation": "FORBIDDEN_FROZEN_DEVELOPER_REVISION_2"},
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "ed9225206edd1f075898a49f68c4db344e74cc1a",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "ed9225206edd1f075898a49f68c4db344e74cc1a",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": ["docs/architecture/a03/A-03_ONBOARDING_CATALOG.json", "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg", "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md", "docs/completion_reports/A-03_COMPLETION_REPORT.md", "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json", "docs/evidence/manifests/A-03_REWORK_COMPLETION_PROGRESS_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a03-rework-completion-test-review.json", "docs/validation/A-03_ONBOARDING_VALIDATION.md", "scripts/check_a03_onboarding.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/fixtures/a03/canonical-contract.json", "tests/fixtures/a03/mutation-catalog.json", "tests/tooling/test_a03_onboarding.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]
+  },
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "bytes": 4203, "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"},
+    {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json", "bytes": 4282, "sha256": "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a03-rework-completion-test-review.json", "bytes": 936, "sha256": "8E830ABADE04DA7D58E53E12A2E7D674B1D9620D87C7AD191AD5BFA25D5AE9C6"},
+    {"path": "docs/test_reports/A-03_TEST_REPORT.md", "bytes": 8257, "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"},
+    {"path": "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md", "bytes": 4200, "sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 67, predecessor manifests, and Tester report remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This is TEST_REVIEW, not A-03 acceptance.", "Canonical L7 runtime, browser, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}

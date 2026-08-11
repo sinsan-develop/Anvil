@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-03-PROGRESS-HANDOFF-DIGEST-REWORK-COMPLETION-TEST-REVIEW",
+  "package_id": "A-03",
+  "event_sequence": 70,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 13670,
+    "file_sha256": "36178B9E30D3D269E8B99E6C73E9F297A59D8195C86918EC19AC4A6B6118B076",
+    "canonical_json_sha256": "6B90B41B866F86A4DD02BEF4045C63867B4E6A5E08C0FADE763FA5020E9E349F"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 33956,
+    "file_sha256": "58352D0EE0F033DFB775967AE4CDA6E1D19543F6CF52160537604C22E2213F9F",
+    "machine_summary_canonical_sha256": "AAEA4F18E7E6F5A6F8C7C25326F465F87942D20F129D755C62FB8E754EB1E216"
+  },
+  "created_at": "2026-08-11T16:01:12+09:00",
+  "scope": "A-03 revision 2 Developer completion to TEST_REVIEW; epoch-2 leases revoked, R2 evidence frozen, independent Tester R2 pending, A-04 blocked"
+}

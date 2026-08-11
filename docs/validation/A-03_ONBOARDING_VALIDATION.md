@@ -57,3 +57,29 @@
 - 첫 manifest target mismatch는 PowerShell과 Python canonical JSON serializer의 byte 차이가 원인이었다. checker의 Python canonicalization으로 target을 재계산해 단일 값으로 교정했다.
 
 이 기록을 raw artifact로 다시 동결한 후 동일 full suite와 regression을 fresh 재실행한다.
+
+## Revision 2 — A03-TST-BLK-001
+
+- source TestReport: `DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6`
+- R2 WI: `6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED`
+- RED: operational field 3종을 검사하는 3개 test를 실행해 `7 failures`, exit `1`을 관찰했다. catalog field 누락 1건, 문서/SVG 누락 subtest 3건, checker stable reason fail-open subtest 3건이다.
+- root cause: catalog와 checker가 동일한 불완전한 7-field 집합을 정본으로 삼아 승인 spec의 `environment`, `backend_policy_profile`, `operational_environment_connection_state`를 모두 놓쳤다.
+- 최소 GREEN: 세 field를 catalog·registration doc·onboarding SVG·checker·test에 동일 이름으로 결박하고, field 제거 3건을 `PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH`로 거부한다.
+- hostile catalog는 M29~M31을 추가해 총 31건이다.
+- A03-TST-BLK-002 제품 변경 없음. Main projection의 historical base/current upstream 분리 회귀를 fresh 확인한다.
+- R1 manifest와 Tester report는 byte immutable predecessor로 유지한다.
+
+### Revision 2 pre-freeze 검증
+
+- focused: `13/13 PASS`, exit `0`; A-03 checker `PASS`, errors `[]`, exit `0`.
+- required integration 첫 실행은 60초 제한에서 timeout되어 결과로 승격하지 않았다.
+- 동일 명령 재실행: `Ran 88 tests`, failures `4`, exit `1`.
+- 네 실패는 project-progress bundle의 `GIT_DESCENDANT_WORKTREE_DIRTY`와 `PRG_REFERENCED_HASH_MISMATCH` 조합이다. 전자는 commit 전 Developer product diff, 후자는 progress가 R1 CompletionReport hash를 참조하는 동안 R2 기록으로 현재 파일 hash가 달라진 Main projection 이전 상태다. Main completion projection 후 재실행해야 한다.
+- A03-TST-BLK-002 전용 successor test `test_a03_completion_history_and_current_upstream_are_separate`: `1/1 PASS`, exit `0`. historical completion base와 current upstream이 분리됐다.
+
+### Revision 2 post-freeze 재검증
+
+- A-03 focused `13/13 PASS`, A-02 `10/10 PASS`, A-03/G-07/Phase-G checker PASS, JSON 4개·SVG 1개 parse PASS, `git diff --check` PASS.
+- project checker만 `GIT_DESCENDANT_WORKTREE_DIRTY`, `PRG_REFERENCED_HASH_MISMATCH`로 exit `1`.
+- full integration 재실행: `Ran 88 tests in 76.312s`, failures `4`, exit `1`; 네 실패는 모두 위 두 Main projection reason의 동일 집합이다.
+- 제품 finding인 A03-TST-BLK-001과 Main successor test인 A03-TST-BLK-002에는 남은 focused failure가 없다. 전체 exit 0 판정은 Main completion projection 뒤에만 가능하다.

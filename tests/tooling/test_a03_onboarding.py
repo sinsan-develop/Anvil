@@ -13,6 +13,9 @@ CHECKER_PATH = ROOT / "scripts/check_a03_onboarding.py"
 CATALOG_PATH = ROOT / "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json"
 CANONICAL_PATH = ROOT / "tests/fixtures/a03/canonical-contract.json"
 MUTATION_PATH = ROOT / "tests/fixtures/a03/mutation-catalog.json"
+R1_MANIFEST_PATH = ROOT / "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json"
+R2_MANIFEST_PATH = ROOT / "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json"
+EXPECTED_R1_MANIFEST_SHA256 = "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"
 
 
 def _load_checker():
@@ -69,13 +72,64 @@ class A03OnboardingContractTests(unittest.TestCase):
         self.assertFalse(dashboard["skipped_counts_as_success"])
         self.assertIn("deep_link", dashboard["next_action_fields"])
 
+    def test_project_register_operational_fields_are_exact(self) -> None:
+        register = next(
+            item for item in self.catalog["screens"] if item["screen_id"] == "PROJECT_REGISTER"
+        )
+        required = {
+            "environment",
+            "backend_policy_profile",
+            "operational_environment_connection_state",
+        }
+        self.assertTrue(required.issubset(set(register["fields"])))
+
+    def test_project_register_operational_fields_bind_document_and_svg(self) -> None:
+        document = (ROOT / "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md").read_text(
+            encoding="utf-8"
+        )
+        render = (ROOT / "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg").read_text(
+            encoding="utf-8"
+        )
+        for field in (
+            "environment",
+            "backend_policy_profile",
+            "operational_environment_connection_state",
+        ):
+            with self.subTest(field=field):
+                self.assertIn(field, document)
+                self.assertIn(field, render)
+
+    def test_project_register_operational_field_removal_is_fail_closed(self) -> None:
+        for field in (
+            "environment",
+            "backend_policy_profile",
+            "operational_environment_connection_state",
+        ):
+            mutated = copy.deepcopy(self.catalog)
+            register = next(
+                item for item in mutated["screens"] if item["screen_id"] == "PROJECT_REGISTER"
+            )
+            for required in (
+                "environment",
+                "backend_policy_profile",
+                "operational_environment_connection_state",
+            ):
+                if required not in register["fields"]:
+                    register["fields"].append(required)
+            register["fields"].remove(field)
+            with self.subTest(field=field):
+                self.assertIn(
+                    "PROJECT_REGISTER_OPERATIONAL_FIELD_MISMATCH",
+                    checker.validate_catalog(mutated),
+                )
+
     def test_documents_and_three_renders_are_semantically_bound(self) -> None:
         self.assertEqual(checker.validate_documents(ROOT, self.catalog), [])
         self.assertEqual(checker.validate_renders(ROOT, self.catalog), [])
 
     def test_hostile_mutations_all_emit_declared_stable_reason(self) -> None:
         fixture = json.loads(MUTATION_PATH.read_text(encoding="utf-8"))
-        self.assertGreaterEqual(len(fixture["mutations"]), 28)
+        self.assertGreaterEqual(len(fixture["mutations"]), 31)
         self.assertEqual(checker.validate_mutation_fixture(self.catalog, fixture), [])
 
     def test_runtime_pass_and_static_qualifier_forgery_are_rejected(self) -> None:
@@ -87,14 +141,18 @@ class A03OnboardingContractTests(unittest.TestCase):
         self.assertIn("VERIFICATION_CONTRACT_MISMATCH", checker.validate_catalog(wrong_owner))
 
     def test_manifest_binds_exact_raw_bytes_and_static_boundary(self) -> None:
-        path = ROOT / "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json"
-        manifest = json.loads(path.read_text(encoding="utf-8"))
+        self.assertTrue(R2_MANIFEST_PATH.is_file(), "A-03 revision 2 manifest is required")
+        manifest = json.loads(R2_MANIFEST_PATH.read_text(encoding="utf-8"))
         self.assertEqual(checker.validate_evidence_manifest(ROOT, manifest), [])
         self.assertEqual(manifest["runtime_status"], "RUNTIME_DEFERRED / NOT_EXECUTED")
         self.assertEqual(manifest["evidence_qualifier"], "E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED")
         mutated = copy.deepcopy(manifest)
         mutated["raw_artifacts"][0]["sha256"] = "0" * 64
         self.assertIn("EVIDENCE_RAW_HASH_MISMATCH", checker.validate_evidence_manifest(ROOT, mutated))
+
+    def test_revision_one_evidence_remains_immutable(self) -> None:
+        self.assertEqual(checker.sha256_file(R1_MANIFEST_PATH), EXPECTED_R1_MANIFEST_SHA256)
+        self.assertNotIn(R1_MANIFEST_PATH, [R2_MANIFEST_PATH])
 
     def test_bundle_cli_contract_is_fail_closed(self) -> None:
         self.assertEqual(checker.validate_bundle(ROOT), [])

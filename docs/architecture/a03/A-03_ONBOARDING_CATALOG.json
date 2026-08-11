@@ -26,7 +26,7 @@
     {
       "screen_id": "PROJECT_REGISTER",
       "title": "Project Register",
-      "fields": ["project_name", "project_slug", "description", "repository_source_type", "local_path", "remote_url", "default_branch"],
+      "fields": ["project_name", "project_slug", "description", "repository_source_type", "local_path", "remote_url", "default_branch", "environment", "backend_policy_profile", "operational_environment_connection_state"],
       "conditional_fields": {"local": ["local_path"], "git": ["remote_url"]},
       "states": ["IDLE", "VALIDATING", "SUBMITTING", "ERROR", "PERMISSION_DENIED"],
       "actions": ["submit_read_only_scan", "cancel"]

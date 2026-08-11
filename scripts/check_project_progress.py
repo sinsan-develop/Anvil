@@ -1348,6 +1348,84 @@ def validate_a03_rework_start_manifest(
     return sorted(set(errors))
 
 
+def validate_a03_rework_completion_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_paths = {
+        "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
+        "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json",
+        "docs/progress/progress-handoff-detached-digest-a03-rework-completion-test-review.json",
+        "docs/test_reports/A-03_TEST_REPORT.md",
+        "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A03_REWORK_COMPLETION_RAW_CHECKSUMS_INVALID"]
+    seen: set[str] = set()
+    canonical_rows: list[tuple[bytes, str]] = []
+    total_bytes = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen:
+            errors.append("A03_REWORK_COMPLETION_RAW_CHECKSUMS_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A03_REWORK_COMPLETION_RAW_CHECKSUMS_INVALID")
+            continue
+        actual = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != actual:
+            errors.append("A03_REWORK_COMPLETION_RAW_CHECKSUMS_INVALID")
+        total_bytes += len(raw)
+        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual}"))
+    if seen != expected_paths:
+        errors.append("A03_REWORK_COMPLETION_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if any((
+        manifest.get("target_canonical_bytes") != len(canonical),
+        manifest.get("target_content_bytes") != total_bytes,
+        manifest.get("target_hash") != target,
+        manifest.get("delivered_hash") != target,
+        manifest.get("content_hash") != target,
+    )):
+        errors.append("A03_REWORK_COMPLETION_TARGET_MISMATCH")
+    repository = progress.get("repository", {})
+    projection = manifest.get("repository_projection", {})
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths")
+    if any(projection.get(field) != repository.get(field) for field in fields):
+        errors.append("A03_REWORK_COMPLETION_REPOSITORY_PROJECTION_MISMATCH")
+    wi = progress.get("active_work_instruction") or {}
+    developer = manifest.get("developer_evidence") or {}
+    if (
+        manifest.get("package_id") != "A-03"
+        or manifest.get("self_reference") is not False
+        or progress.get("event_sequence") != 70
+        or progress.get("status") != "TEST_REVIEW"
+        or progress.get("active_agent") is not None
+        or progress.get("worker_lease") is not None
+        or progress.get("write_lease") is not None
+        or wi.get("artifact_id") != "WI-A-03-20260811-002"
+        or wi.get("result_status") != "COMPLETED"
+        or wi.get("accepted") is not False
+        or wi.get("rework_revision") != 2
+        or wi.get("finding_status") != "FIXED_AWAITING_INDEPENDENT_RETEST"
+        or wi.get("independent_tester_status") != "R2_PENDING"
+        or wi.get("developer_manifest_sha256") != "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE"
+        or wi.get("developer_target_hash") != "7D089D2EAC2ADF5899F041B6234B0A1393EA1256F2AC8395789CBE1EBF2CEA2A"
+        or developer.get("manifest_sha256") != "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE"
+        or developer.get("target_hash") != "7D089D2EAC2ADF5899F041B6234B0A1393EA1256F2AC8395789CBE1EBF2CEA2A"
+        or developer.get("mutation") != "FORBIDDEN_FROZEN_DEVELOPER_REVISION_2"
+    ):
+        errors.append("A03_REWORK_COMPLETION_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -1903,6 +1981,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a03_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json":
             errors.extend(validate_a03_rework_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-03_REWORK_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a03_rework_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
