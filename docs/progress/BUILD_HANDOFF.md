@@ -3,36 +3,36 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 95, "status": "ACTIVE", "current_work_package": "A-07", "last_event_id": "evt_a07_package_started",
+  "event_sequence": 98, "status": "TEST_REVIEW", "current_work_package": "A-07", "last_event_id": "evt_a07_package_completed_test_review",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 6,
   "dir_status": "NOT_REACHED",
-  "repository_head": "e46e098cb3439b91e71f14c1eedd20145de2e93a",
+  "repository_head": "7627d74dba65b08ad53494f232af836b46f7f120",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "e46e098cb3439b91e71f14c1eedd20145de2e93a",
+  "repository_remote_head": "7627d74dba65b08ad53494f232af836b46f7f120",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "e46e098cb3439b91e71f14c1eedd20145de2e93a",
+  "repository_validated_base_commit": "7627d74dba65b08ad53494f232af836b46f7f120",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-  "repository_exact_allowed_paths": ["docs/evidence/manifests/A-07_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a07-start.json", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a07-start.json", "current_progress_manifest_path": "docs/evidence/manifests/A-07_START_EVIDENCE_MANIFEST.json",
+  "repository_exact_allowed_paths": ["docs/architecture/a07/A-07_AGENT_EXCEPTION.md", "docs/architecture/a07/A-07_AGENT_RECOVERY_STATIC_RENDER.svg", "docs/architecture/a07/A-07_EXECUTION_CONTROL_CATALOG.json", "docs/architecture/a07/A-07_EXECUTION_STATIC_RENDER.svg", "docs/architecture/a07/A-07_EXECUTION_TASK_GRAPH.md", "docs/architecture/a07/A-07_RECOVERY_FENCING_BUDGET.md", "docs/architecture/a07/A-07_TAKEOVER_DIR.md", "docs/architecture/a07/A-07_TAKEOVER_DIR_STATIC_RENDER.svg", "docs/completion_reports/A-07_COMPLETION_REPORT.md", "docs/evidence/manifests/A-07_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-07_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a07-completion-test-review.json", "docs/validation/A-07_EXECUTION_CONTROL_VALIDATION.md", "scripts/check_a07_execution_control.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/fixtures/a07/canonical-contract.json", "tests/fixtures/a07/mutation-catalog.json", "tests/tooling/test_a07_execution_control.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a07-completion-test-review.json", "current_progress_manifest_path": "docs/evidence/manifests/A-07_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer may implement only A-07 within the active epoch-1 worker/write leases; do not start A-08 or materialize out-of-scope paths",
+  "next_safe_action": "Independent Tester must validate frozen A-07 evidence; A-08 remains blocked until Main acceptance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": {"artifact_id":"WI-A-07-20260812-001","sha256":"240371EB038AECE4F2613E83613871A737D4831B5FE9A832CB6534A558730799","invocation_sha256":"1F6476D9F0B0D6EC571FA7456744160BC5CE04A4DBDB7A089A8E092289ABCD8F"}, "worker_lease": {"lease_id":"worker-lease-a07-20260812-001","lease_epoch":1,"execution_fencing_token":"a07-execution-fence-epoch-1-e46e098"}, "write_lease": {"lease_id":"write-lease-a07-20260812-001","write_epoch":1,"write_fencing_token":"a07-write-fence-epoch-1-e46e098"}
+  "active_work_instruction": {"artifact_id":"WI-A-07-20260812-001","sha256":"240371EB038AECE4F2613E83613871A737D4831B5FE9A832CB6534A558730799","package_status":"TEST_REVIEW","result_status":"COMPLETED","accepted":false,"independent_tester_status":"PENDING","actual_dir_status":"NOT_EXECUTED"}, "worker_lease": null, "write_lease": null
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-06 ACCEPTED / A-07 ACTIVE / IN_PROGRESS`
+> 현재 상태: `A-06 ACCEPTED / A-07 TEST_REVIEW / COMPLETED / accepted=false`
 > 현재 Phase / Package: `A / A-06`
 
 ## 1. 현재 기준선
@@ -280,10 +280,13 @@
 - A-07 WorkInstruction SHA-256 `240371EB038AECE4F2613E83613871A737D4831B5FE9A832CB6534A558730799`, Invocation SHA-256 `1F6476D9F0B0D6EC571FA7456744160BC5CE04A4DBDB7A089A8E092289ABCD8F`를 clean dispatch 기준으로 결박함
 - sequence 93~95는 `developer-primary-a07`에 epoch-1 worker/write lease를 발급하고 `WI-A-07-20260812-001`을 `ACTIVE / IN_PROGRESS`로 시작한 비소급 기록임
 - dispatch 기준 local `main` = `origin/main` = `e46e098cb3439b91e71f14c1eedd20145de2e93a`; exact 10-path Main start projection이며 Developer 제품 산출물은 아직 생성하지 않음. canonical L4는 `RUNTIME_DEFERRED / NOT_EXECUTED`, DIR 미도달임
+- Developer는 A-07 exact 15-path 산출물을 동결했고 EvidenceManifest SHA-256 `796B40512FBB0D6EAA596409B3464190455E772246FF361F6EC056D701DEA3E7`, target `45633F09FF8690D56499B75C813D6F5000FF4EB0323742CB6C1AF820396ECB9B`를 제출함
+- sequence 96·97은 epoch-1 write/worker lease를 순서대로 회수하고 sequence 98은 `COMPLETED / TEST_REVIEW / accepted=false / independent_tester_status=PENDING`을 비소급 투영함. A-08은 `BLOCKED_PENDING_A07_ACCEPTANCE`임
+- completion 기준 local `main` = `origin/main` = `7627d74dba65b08ad53494f232af836b46f7f120`; exact 26-path Developer+Main completion projection이며 canonical L4는 계속 `RUNTIME_DEFERRED / NOT_EXECUTED`, 실제 DIR은 `NOT_EXECUTED`임
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07, Phase G Gate와 A-01~A-06은 최종 `ACCEPTED`다. current Package는 `A-07 / ACTIVE / IN_PROGRESS / accepted=false`다. 다음 안전 행동은 유효한 epoch-1 worker/write fencing token을 가진 Developer의 A-07 범위 구현이며 A-08은 차단된다.
+G-05, G-06, G-07, Phase G Gate와 A-01~A-06은 최종 `ACCEPTED`다. current Package는 `A-07 / TEST_REVIEW / COMPLETED / accepted=false`다. 다음 안전 행동은 독립 Tester 검증이며 A-08은 A-07 Main acceptance 전까지 차단된다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

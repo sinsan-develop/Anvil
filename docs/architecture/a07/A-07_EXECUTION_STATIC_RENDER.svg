@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="execution-control,task-graph">
+ <rect width="1920" height="1080" fill="#0B1220"/><rect x="32" y="28" width="1856" height="92" rx="12" fill="#142033"/>
+ <text x="56" y="64" fill="#F7F9FC" font-size="16">Execution Control · STATIC_ONLY · AV-AGT-029</text><text x="56" y="92" fill="#B8C4D8" font-size="12">RUNTIME_DEFERRED / NOT_EXECUTED · actual DIR NOT_EXECUTED</text>
+ <rect x="32" y="144" width="720" height="880" rx="12" fill="#142033"/><text x="56" y="184" fill="#7DB4FF" font-size="14">Run control</text>
+ <text x="56" y="224" fill="#F7F9FC" font-size="12">Run RUNNING · Phase A · Single Worker</text><text x="56" y="254" fill="#B8C4D8" font-size="12">Hashes guarded · checkpoint #95 · event 95</text>
+ <rect x="56" y="290" width="310" height="66" rx="8" fill="#1B2A42"/><text x="76" y="330" fill="#F8D66D" font-size="12">Budget reserved before request</text>
+ <rect x="390" y="290" width="310" height="66" rx="8" fill="#1B2A42"/><text x="410" y="330" fill="#FF7B86" font-size="12">SAFE STOP · reason required</text>
+ <rect x="784" y="144" width="1104" height="880" rx="12" fill="#142033"/><text x="808" y="184" fill="#7DB4FF" font-size="14">Task Graph</text>
+ <g fill="#1B2A42" stroke="#60738F"><rect x="824" y="260" width="250" height="110" rx="8"/><rect x="1210" y="260" width="250" height="110" rx="8"/><rect x="1210" y="520" width="250" height="110" rx="8"/><rect x="1590" y="390" width="250" height="110" rx="8"/></g>
+ <g fill="#F7F9FC" font-size="12"><text x="850" y="308">S-01 COMPLETED</text><text x="1236" y="308">S-02 RUNNING</text><text x="1236" y="568">S-03 BLOCKED_DEPENDENCY</text><text x="1616" y="438">S-04 READY</text></g>
+ <g stroke="#74D7FF" stroke-width="3"><line x1="1074" y1="315" x2="1210" y2="315"/><line x1="1335" y1="370" x2="1335" y2="520"/><line x1="1460" y1="445" x2="1590" y2="445"/></g>
+</svg>

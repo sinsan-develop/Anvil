@@ -1,0 +1,33 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-07-COMPLETION-20260812-001",
+  "artifact_type": "package_completion_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-07",
+  "artifact_status": "test_review",
+  "content_hash": "sha256:131681C6DF3A810FC2F5C148A65A3B48B2C0003922249F4A47F89A4A9C0B98DF",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-12T02:00:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-07_COMPLETION_PROGRESS_MANIFEST.json",
+  "target_hash": "sha256:131681C6DF3A810FC2F5C148A65A3B48B2C0003922249F4A47F89A4A9C0B98DF",
+  "delivered_hash": "sha256:131681C6DF3A810FC2F5C148A65A3B48B2C0003922249F4A47F89A4A9C0B98DF",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 629,
+  "target_content_bytes": 12723,
+  "projection": {"event_sequence": 98, "status": "TEST_REVIEW", "result_status": "COMPLETED", "accepted": false, "current_work_package": "A-07", "active_agent": null, "valid_failure_count": 0, "independent_tester_status": "PENDING", "next_work_package": "A-08", "next_package_status": "BLOCKED_PENDING_A07_ACCEPTANCE"},
+  "canonical_l4": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "actual_dir_status": "NOT_EXECUTED",
+  "lease_projection": {"worker_lease": null, "write_lease": null, "write_revoked_sequence": 96, "worker_revoked_sequence": 97},
+  "developer_evidence": {"path": "docs/evidence/manifests/A-07_EVIDENCE_MANIFEST.json", "manifest_sha256": "796B40512FBB0D6EAA596409B3464190455E772246FF361F6EC056D701DEA3E7", "target_hash": "45633F09FF8690D56499B75C813D6F5000FF4EB0323742CB6C1AF820396ECB9B", "artifact_count": 15, "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"},
+  "repository_projection": {"projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "7627d74dba65b08ad53494f232af836b46f7f120", "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", "branch": "main", "upstream": "origin/main", "remote_head": "7627d74dba65b08ad53494f232af836b46f7f120", "push_status": "PUSH_PENDING_MAIN", "exact_allowed_paths": ["docs/architecture/a07/A-07_AGENT_EXCEPTION.md", "docs/architecture/a07/A-07_AGENT_RECOVERY_STATIC_RENDER.svg", "docs/architecture/a07/A-07_EXECUTION_CONTROL_CATALOG.json", "docs/architecture/a07/A-07_EXECUTION_STATIC_RENDER.svg", "docs/architecture/a07/A-07_EXECUTION_TASK_GRAPH.md", "docs/architecture/a07/A-07_RECOVERY_FENCING_BUDGET.md", "docs/architecture/a07/A-07_TAKEOVER_DIR.md", "docs/architecture/a07/A-07_TAKEOVER_DIR_STATIC_RENDER.svg", "docs/completion_reports/A-07_COMPLETION_REPORT.md", "docs/evidence/manifests/A-07_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-07_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a07-completion-test-review.json", "docs/validation/A-07_EXECUTION_CONTROL_VALIDATION.md", "scripts/check_a07_execution_control.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/fixtures/a07/canonical-contract.json", "tests/fixtures/a07/mutation-catalog.json", "tests/tooling/test_a07_execution_control.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]},
+  "raw_checksums": [
+    {"path": "docs/completion_reports/A-07_COMPLETION_REPORT.md", "bytes": 2289, "sha256": "286DD6DBA62B41535340FD3F65AEB9327FFFB9857DCED2D4A84DB987C866DE7A"},
+    {"path": "docs/evidence/manifests/A-07_EVIDENCE_MANIFEST.json", "bytes": 2862, "sha256": "796B40512FBB0D6EAA596409B3464190455E772246FF361F6EC056D701DEA3E7"},
+    {"path": "docs/evidence/manifests/A-07_START_EVIDENCE_MANIFEST.json", "bytes": 4088, "sha256": "D627513FA4D2F8547D702570BDA7856FA404949491A8ED388C3CDFA723C84450"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a07-completion-test-review.json", "bytes": 876, "sha256": "1602A8C03E8F10F1C16469AFCD46487118CB73B9AC9740F8C135D7B518E55D5E"},
+    {"path": "docs/work_orders/A-07_WORK_INSTRUCTION.md", "bytes": 2608, "sha256": "240371EB038AECE4F2613E83613871A737D4831B5FE9A832CB6534A558730799"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 95 and all A-01 through A-06 accepted evidence plus A-07 Developer evidence remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This is TEST_REVIEW, not Main acceptance.", "Independent Tester evidence is pending.", "Actual DIR review was NOT_EXECUTED.", "Canonical L4 runtime, browser, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}

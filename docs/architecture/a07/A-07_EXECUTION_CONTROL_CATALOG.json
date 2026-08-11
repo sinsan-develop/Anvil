@@ -1,0 +1,86 @@
+{
+  "artifact_id": "A-07-EXECUTION-CONTROL-CATALOG-001",
+  "package_id": "A-07",
+  "predecessor_bindings": [
+    {"package_id":"G-04","path":"docs/evidence/manifests/G-04_EVIDENCE_MANIFEST.json","sha256":"F2674994201407532D6E18A9F9A0A94B606BA94385DCD126C03AF7F8264B09C1","status":"ACCEPTED"},
+    {"package_id":"A-01","path":"docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json","sha256":"BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4","status":"ACCEPTED"},
+    {"package_id":"A-02","path":"docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json","sha256":"779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168","status":"ACCEPTED"},
+    {"package_id":"A-03","path":"docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json","sha256":"772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE","status":"ACCEPTED"},
+    {"package_id":"A-04","path":"docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json","sha256":"C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB","status":"ACCEPTED"},
+    {"package_id":"A-05","path":"docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json","sha256":"90C6AA195FC1DB6AB48D02B4A6403BBE242488177045F393C05E17EAF76085F1","status":"ACCEPTED"},
+    {"package_id":"A-06","path":"docs/evidence/manifests/A-06_EVIDENCE_MANIFEST.json","sha256":"A6F2B8B2E866A4F4AF6E2BAD8BAA2D005217071E263BA52FE63F35C935844449","status":"ACCEPTED"}
+  ],
+  "execution_control": {
+    "run_states": ["PLANNED","RUNNING","PAUSED_QUOTA","BLOCKED","COMPLETED","CANCELLED"],
+    "run_step_state_separation": true,
+    "hash_guards_required": true,
+    "display_fields": ["run_id","work_instruction_hash","plan_hash","memory_snapshot_hash","phase","run_status","execution_strategy","failure_policy","concurrency","budget_reserved","budget_consumed","budget_forecast","checkpoint","event_sequence"],
+    "safe_controls": ["SAFE_STOP","REDUCE_CONCURRENCY","REQUEST_BUDGET_CHANGE","REVIEW_FAILURES"]
+  },
+  "task_graph": {
+    "step_states": ["PLANNED","READY","RUNNING","REPORTING","COMPLETED","FAILED","BLOCKED_DEPENDENCY","CANCELLED"],
+    "node_fields": ["step_id","delegation_id","dependencies","input_hash","output_hash","path_scope","capabilities","worker_lease","write_lease","budget_reservation","result_contract"],
+    "dag_cycle_rejected": true,
+    "failed_dependency_blocks_run": true,
+    "independent_failure_allows_overall_success": false,
+    "dependency_and_artifact_hash_guard_required": true
+  },
+  "agent_drawer": {
+    "fields": ["agent_id","role","scope","permissions","provider","model","token_usage","cost","status","current_action","heartbeat","worker_lease","write_lease","checkpoint","evidence","authorized_stop"],
+    "unauthorized_stop_disabled": true,
+    "stop_reason_and_next_action_visible": true,
+    "stop_blocks_new_action": true,
+    "heartbeat_statuses": ["HEALTHY","LATE","EXPIRED"],
+    "lease_values_masked": true
+  },
+  "exception_inbox": {
+    "fields": ["exception_id","class","severity","step_lineage_id","failure_fingerprint","valid_failure_count","dependents","evidence","default_transition","retry_allowed","reason","next_action"],
+    "failure_classes": ["VALID_FAILURE_REPORT","INCOMPLETE","BLOCKED","QUOTA","ENVIRONMENT","TOOL_INTERRUPTION","CANCELLED"],
+    "excluded_from_valid_count": ["INCOMPLETE","BLOCKED","QUOTA","ENVIRONMENT","TOOL_INTERRUPTION","CANCELLED"],
+    "same_lineage_and_fingerprint_required": true,
+    "success_pollution_forbidden": true
+  },
+  "recovery_center": {
+    "reconciliation_dimensions": ["checkpoint","artifact_hashes","event_sequence","workspace","worker_lease","write_lease","side_effects"],
+    "side_effect_states": ["CONFIRMED_SUCCESS","SAFE_RETRY","MANUAL_REVIEW"],
+    "exact_checkpoint_hash_required": true,
+    "side_effect_classification_required": true,
+    "duplicate_execution_forbidden": true,
+    "resume_after_stop_without_reconcile": false,
+    "resume_actions": ["SAFE_RESUME","REPLAN_FROM_NEW_BASELINE","PRESERVE_AND_DISCARD_RUN"]
+  },
+  "fencing_budget": {
+    "worker_and_write_required_for_mutation": true,
+    "stale_token_commit_rejected": true,
+    "path_alias_conflict_rejected": true,
+    "heartbeat_expiry_blocks_execution": true,
+    "tokens_masked": true,
+    "conflict_key": ["repository_identity","canonical_relative_path","case_policy"],
+    "budget": {
+      "sequence": ["RESERVE","PROVIDER_REQUEST","USAGE_RECORD","RECONCILE","RELEASE_REMAINDER"],
+      "hard_limit_blocks": true,
+      "usage_must_reconcile": true,
+      "provider_request_before_reservation": false
+    }
+  },
+  "takeover": {
+    "automatic_trigger_valid_failure_count": 3,
+    "same_lineage_and_fingerprint_required": true,
+    "human_override_record_required": true,
+    "leases_and_tools_revoked_before_actor_change": true,
+    "packet_fields": ["step_lineage_id","failure_fingerprint","valid_failure_count","diff","tests","checkpoint","evidence","remaining_work","revoked_worker_lease","revoked_write_lease","next_actor"]
+  },
+  "dir_panel": {
+    "lifecycle_states": ["DIR_HOLD","REPORTING","WAITING_OWNER_DIRECTION","CLEARED"],
+    "verdicts": ["ALIGNED","DRIFT_MINOR","DRIFT_MAJOR","DIVERGED"],
+    "state_and_verdict_separate": true,
+    "owner_direction_required_to_clear": true,
+    "auto_clear_allowed": false,
+    "actual_dir_reached_in_a07": false,
+    "a07_display_only": true,
+    "canonical_triggers": ["A-15_ACCEPTED","C-15_ACCEPTED","E-11_ACCEPTED","DIRX-LRN-CRITICAL"]
+  },
+  "permission_contract": {"view_execution":true,"manage_execution":false,"unauthorized_actions_disabled":true,"reason_and_next_action_visible":true,"permissions_never_widen_parent":true},
+  "disclosure_contract": {"secret_visible":false,"raw_fencing_token_visible":false,"raw_internal_endpoint_visible":false,"loopback_endpoint_visible":false,"masked_reference_allowed":true},
+  "verification_contract": {"assigned_id":"AV-AGT-029","level":"L4","method":"AE","evidence":"E-SHOT","severity":"MAJOR","execution_classification":"STATIC_ONLY","package_verdict":"STATIC_CONTRACT_PASS","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED","runtime_evidence_status":"E-SHOT NOT_EXECUTED"}
+}

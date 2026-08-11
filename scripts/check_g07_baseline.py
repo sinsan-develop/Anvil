@@ -722,23 +722,25 @@ def validate_repository(
             if not projection_valid:
                 _error(errors, "GIT_DESCENDANT_PROJECTION_INVALID", progress_path, str(repository_projection))
                 allowed = []
-            a06_developer_paths: set[str] = set()
+            completion_developer_paths: set[str] = set()
+            completion_subject = reconciliation_event.get("subject_ref")
             if (
                 reconciliation_event.get("event_type") == "PACKAGE_COMPLETED"
-                and reconciliation_event.get("subject_ref") == "A-06"
+                and completion_subject in {"A-06", "A-07"}
             ):
+                manifest_relative = f"docs/evidence/manifests/{completion_subject}_EVIDENCE_MANIFEST.json"
                 try:
-                    a06_manifest = json.loads((root / "docs/evidence/manifests/A-06_EVIDENCE_MANIFEST.json").read_text(encoding="utf-8"))
+                    completion_manifest = json.loads((root / manifest_relative).read_text(encoding="utf-8"))
                 except (OSError, json.JSONDecodeError):
-                    a06_manifest = {}
-                a06_developer_paths = {
+                    completion_manifest = {}
+                completion_developer_paths = {
                     row.get("path")
-                    for row in a06_manifest.get("raw_artifacts", [])
+                    for row in completion_manifest.get("raw_artifacts", [])
                     if isinstance(row, dict) and isinstance(row.get("path"), str)
                 }
-                a06_developer_paths.add("docs/evidence/manifests/A-06_EVIDENCE_MANIFEST.json")
+                completion_developer_paths.add(manifest_relative)
             non_evidence_paths = {path for path in allowed if not _is_evidence_only_path(path)}
-            if non_evidence_paths and not non_evidence_paths <= a06_developer_paths:
+            if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
             if working_tree_mode:
