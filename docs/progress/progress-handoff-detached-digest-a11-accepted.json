@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0.0","digest_id":"A-11-PROGRESS-HANDOFF-DIGEST-ACCEPTED","package_id":"A-11","event_sequence":127,"algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":19696,"file_sha256":"B0AE4252841BEFFA46B253B5DFA7407168C7856E34834B83E29B3EE9CA3DAB83","canonical_json_sha256":"EA0CA5E6BB136629A548D43E5F0EBF56B7BE0916FA7A4BA1D44B92B491E698C0"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":48042,"file_sha256":"0BD0DA6DA20F38AC079485A4E60CA6616781374E3CC1C174477D0ADBF13F2E50","machine_summary_canonical_sha256":"49670A2B289877C64B845AD9B353D680FC0F1CD40E071DCF556451B7D25F13FD"},
+  "created_at":"2026-08-12T09:00:00+09:00","scope":"A-11 Main acceptance and A-12 READY projection; Tester MINOR path-count note bound; runtime and DIR NOT_EXECUTED"
+}

@@ -1136,7 +1136,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["actual_runtime_status"])
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["dir_status"])
         self.assertIn("A-09", progress["completed_packages"])
-        self.assertEqual("A-11", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual("A-12", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         a10_start = [event for event in bundle["events"]["events"] if 114 <= event["sequence"] <= 116]
         self.assertEqual(
@@ -1174,16 +1174,16 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("READY", accepted_a10["details"]["next_package_status"])
         for field in ("actual_provider_status", "actual_secret_status", "actual_egress_status", "actual_api_status", "actual_db_status", "actual_event_status", "actual_browser_status", "actual_network_status", "actual_runtime_status", "dir_status"):
             self.assertEqual("NOT_EXECUTED", accepted_a10["details"][field])
-        self.assertEqual(126, progress["event_sequence"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("A-11", progress["current_work_package"])
+        self.assertEqual(127, progress["event_sequence"])
+        self.assertEqual("READY", progress["status"])
+        self.assertEqual("A-12", progress["current_work_package"])
         self.assertIn("A-10", progress["completed_packages"])
-        self.assertEqual("WI-A-11-20260812-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["active_agent"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
         self.assertEqual(
-            "docs/evidence/manifests/A-11_COMPLETION_PROGRESS_MANIFEST.json",
+            "docs/evidence/manifests/A-11_ACCEPTANCE_PROGRESS_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         a11_start = [event for event in bundle["events"]["events"] if 121 <= event["sequence"] <= 123]
@@ -1192,11 +1192,11 @@ class ProjectProgressContractTests(unittest.TestCase):
             [event["event_type"] for event in a11_start],
         )
         self.assertIsNone(progress["active_agent"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual(126, progress["event_sequence"])
+        self.assertEqual("READY", progress["status"])
+        self.assertEqual(127, progress["event_sequence"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
-        self.assertEqual("docs/evidence/manifests/A-11_COMPLETION_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
+        self.assertEqual("docs/evidence/manifests/A-11_ACCEPTANCE_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
         a11_completion = [event for event in bundle["events"]["events"] if 124 <= event["sequence"] <= 126]
         self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in a11_completion])
         completed_a11 = a11_completion[-1]["details"]
@@ -1206,12 +1206,24 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("PENDING", completed_a11["independent_tester_status"])
         self.assertEqual("23280C4FD8EA6C3FCEF814D8D429A4BA45FA0BE940E88E8237008B60FDBADFC0", completed_a11["developer_manifest_ref"]["sha256"])
         self.assertEqual("911C537607FD64112782A6E6506EAAFF4877EBE3C37B46CE8085D0C4C9C40654", completed_a11["developer_target_hash"])
-        self.assertEqual(126, progress["event_sequence"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual(127, progress["event_sequence"])
+        self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_agent"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
-        self.assertEqual("docs/evidence/manifests/A-11_COMPLETION_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
+        self.assertEqual("docs/evidence/manifests/A-11_ACCEPTANCE_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
+        accepted_a11 = next(event for event in bundle["events"]["events"] if event["sequence"] == 127)
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", accepted_a11["event_type"])
+        self.assertEqual("ACCEPTED", accepted_a11["details"]["decision"])
+        self.assertEqual(0, accepted_a11["details"]["blocking_findings"])
+        self.assertEqual("MINOR / non-blocking evidence-accounting inconsistency", accepted_a11["details"]["path_count_note"])
+        self.assertEqual("A-12", accepted_a11["details"]["next_work_package"])
+        self.assertEqual("READY", accepted_a11["details"]["next_package_status"])
+        self.assertEqual(127, progress["event_sequence"])
+        self.assertEqual("A-12", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual("docs/evidence/manifests/A-11_ACCEPTANCE_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
 
