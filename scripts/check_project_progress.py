@@ -176,6 +176,8 @@ A08_COMPLETION_PATH_PREFIXES = ("docs/architecture/a08/", "docs/completion_repor
 A08_COMPLETION_EXACT_PATHS = {"scripts/check_a08_completion_validation.py", "tests/tooling/test_a08_completion_validation.py"}
 A09_COMPLETION_PATH_PREFIXES = ("docs/architecture/a09/", "docs/completion_reports/A-09_", "docs/validation/A-09_", "tests/fixtures/a09/")
 A09_COMPLETION_EXACT_PATHS = {"scripts/check_a09_learning_automation.py", "tests/tooling/test_a09_learning_automation.py"}
+A10_COMPLETION_PATH_PREFIXES = ("docs/architecture/a10/", "docs/completion_reports/A-10_", "docs/validation/A-10_", "tests/fixtures/a10/")
+A10_COMPLETION_EXACT_PATHS = {"scripts/check_a10_provider_routing.py", "tests/tooling/test_a10_provider_routing.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -2159,6 +2161,29 @@ def validate_a10_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str
     return sorted(set(errors))
 
 
+def validate_a10_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[];expected={"docs/completion_reports/A-10_COMPLETION_REPORT.md","docs/evidence/manifests/A-10_EVIDENCE_MANIFEST.json","docs/evidence/manifests/A-10_START_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-a10-completion-test-review.json","docs/work_orders/A-10_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["A10_COMPLETION_RAW_CHECKSUMS_INVALID"]
+    for row in rows:
+        rel=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(rel,str) or rel in seen: errors.append("A10_COMPLETION_RAW_CHECKSUMS_INVALID");continue
+        seen.add(rel)
+        try: raw=(root/rel).read_bytes()
+        except OSError: errors.append("A10_COMPLETION_RAW_CHECKSUMS_INVALID");continue
+        actual=hashlib.sha256(raw).hexdigest().upper();total+=len(raw);canonical.append((rel.encode(),f"{rel}\t{len(raw)}\t{actual}"))
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=actual: errors.append("A10_COMPLETION_RAW_CHECKSUMS_INVALID")
+    if seen!=expected: errors.append("A10_COMPLETION_RAW_SET_INVALID")
+    can="\n".join(v for _,v in sorted(canonical)).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_hash")!=target,manifest.get("content_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total)): errors.append("A10_COMPLETION_TARGET_MISMATCH")
+    fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths");mp=manifest.get("repository_projection") or {};rp=progress.get("repository") or {}
+    if any(mp.get(f)!=rp.get(f) for f in fields): errors.append("A10_COMPLETION_REPOSITORY_PROJECTION_MISMATCH")
+    wi=progress.get("active_work_instruction") or {};developer=manifest.get("developer_evidence") or {}
+    statuses=("actual_provider_status","actual_secret_status","actual_egress_status","actual_api_status","actual_db_status","actual_event_status","actual_browser_status","actual_network_status","actual_runtime_status","actual_dir_status")
+    if (progress.get("event_sequence")!=119 or progress.get("current_work_package")!="A-10" or progress.get("status")!="TEST_REVIEW" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or wi.get("artifact_id")!="WI-A-10-20260812-001" or wi.get("package_status")!="TEST_REVIEW" or wi.get("result_status")!="COMPLETED" or wi.get("accepted") is not False or wi.get("independent_tester_status")!="PENDING" or developer.get("manifest_sha256")!="C9667081B8BEA555C32F8833D7F28BCF3528882324814CCE08CAAEAA27DE6A84" or developer.get("target_hash")!="C179BA2371401BB57CAA02B5148D96A58B094092BE52088E85C6BA9882CFA64A" or developer.get("mutation")!="FORBIDDEN_FROZEN_PREDECESSOR" or any(manifest.get(k)!="NOT_EXECUTED" for k in statuses) or manifest.get("self_reference") is not False): errors.append("A10_COMPLETION_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -2537,6 +2562,7 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative in A07_COMPLETION_EXACT_PATHS
         or relative in A08_COMPLETION_EXACT_PATHS
         or relative in A09_COMPLETION_EXACT_PATHS
+        or relative in A10_COMPLETION_EXACT_PATHS
         or relative.startswith(EVIDENCE_ONLY_PATH_PREFIXES)
         or relative.startswith(A01_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A02_COMPLETION_PATH_PREFIXES)
@@ -2547,6 +2573,7 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative.startswith(A07_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A08_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A09_COMPLETION_PATH_PREFIXES)
+        or relative.startswith(A10_COMPLETION_PATH_PREFIXES)
     )
 
 
@@ -2768,6 +2795,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a09_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-10_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_a10_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-10_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a10_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

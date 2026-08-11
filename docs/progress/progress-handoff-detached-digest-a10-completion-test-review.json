@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0.0","digest_id":"A-10-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW","package_id":"A-10","event_sequence":119,"algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":20565,"file_sha256":"A925EE69CBB0C2558E164644874C1FD473ABE283CFFE5F6052F2056827F042E9","canonical_json_sha256":"29CB3511EA1C8FE761AF3DD1BA18095FEF1B0E6319F008426B07AD0D420E470C"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":47065,"file_sha256":"45073D112041CAAC567C1D6FCA06C861B74B4A323615684500944077BBA9D8DD","machine_summary_canonical_sha256":"5D09AC64A5AB69CFE7CB3783199559911CFA65E9385FDE998EB50B98471B53BD"},
+  "created_at":"2026-08-12T07:00:02+09:00","scope":"A-10 completion to TEST_REVIEW after ordered lease revocation; Provider, Secret, Egress, API, DB, Event, browser, network, runtime, and DIR NOT_EXECUTED"
+}

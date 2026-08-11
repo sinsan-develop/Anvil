@@ -1,0 +1,106 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-10-20260812-001",
+  "package_id": "A-10",
+  "work_instruction_sha256": "A7D527B3AA9B50F30589526EDC1D790B75A778D96C47A959B7C966418BFECCF5",
+  "assigned_verification_ids": [
+    "AV-OPS-010",
+    "AV-LRN-028"
+  ],
+  "execution_classification": "STATIC_ONLY",
+  "runtime_status": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "not_executed_evidence": [
+    "L3",
+    "L5",
+    "AI",
+    "AN",
+    "E-AUD",
+    "E-TEST",
+    "ACTUAL_PROVIDER",
+    "ACTUAL_SECRET",
+    "ACTUAL_EGRESS",
+    "RUNTIME",
+    "ACTUAL_DIR"
+  ],
+  "self_reference": false,
+  "raw_artifacts": [
+    {
+      "path": "docs/architecture/a10/A-10_PROVIDER_ROUTING_CATALOG.json",
+      "bytes": 6650,
+      "sha256": "90C4A7C410FB73ED916890FC4736540537BF3B7C55D9D2BF692E5E1331081DEF"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_PROVIDER_CATALOG.md",
+      "bytes": 758,
+      "sha256": "1A9D78C4FD6F0C7E4050FE4C70BA2687EDDFA99C54B128317D91CDDA9923D618"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_PROVIDER_MODEL_DETAIL.md",
+      "bytes": 710,
+      "sha256": "35841152730C697649D6FF78BFCD7374BEFD07508A66404A291183948B8D5092"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_CREDENTIAL_EGRESS.md",
+      "bytes": 819,
+      "sha256": "EAFD3A6C896F330D5A4D0F57CFDC842F38DD5A5206D94EB6C50DF7C973EBCF7D"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_ROLE_ROUTING.md",
+      "bytes": 806,
+      "sha256": "3AFF2C525D0F512E26F505A313177CB3511D52DC03DBB967586940D51756E2D2"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_CAPABILITY_EVIDENCE.md",
+      "bytes": 861,
+      "sha256": "8A4D6DB2E303EC790796E81EF1ABE8BDEC84F5D6AEE178506C2CE631DE853680"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_PROVIDER_STATIC_RENDER.svg",
+      "bytes": 1481,
+      "sha256": "DEA63E8B605D00F4722FD6F6262FB5661880C74982DAF32E2A9705C12EEAD8E6"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_ROUTING_STATIC_RENDER.svg",
+      "bytes": 1394,
+      "sha256": "9072AE809269B9AC937B3C65EFED63602F952ECE3466982951FC1C4A851B075E"
+    },
+    {
+      "path": "docs/architecture/a10/A-10_EVIDENCE_STATIC_RENDER.svg",
+      "bytes": 1136,
+      "sha256": "5467E9191A3BBDFAF78FCB636B94C797D868224BE57F7943B55CC284A85BB0A8"
+    },
+    {
+      "path": "scripts/check_a10_provider_routing.py",
+      "bytes": 17104,
+      "sha256": "7122264EF4497D35630F5A230D23C509A856BA752CB3C3BB82A2DE79B7954BE0"
+    },
+    {
+      "path": "tests/tooling/test_a10_provider_routing.py",
+      "bytes": 7618,
+      "sha256": "1774198F5C67AFED753D813938E3CB3B0874739F911D01A15E585649ECFE5D6C"
+    },
+    {
+      "path": "tests/fixtures/a10/canonical-contract.json",
+      "bytes": 248,
+      "sha256": "E11CFAE2104F14F505C4047C994F84B9BB268C3A516789446C055AD1AD8B35C0"
+    },
+    {
+      "path": "tests/fixtures/a10/mutation-catalog.json",
+      "bytes": 3260,
+      "sha256": "65671F148A3002E2C536770E7DDA9A63EE9A96983E7CE93B20E2AF03C4F1A69F"
+    },
+    {
+      "path": "docs/validation/A-10_PROVIDER_ROUTING_VALIDATION.md",
+      "bytes": 808,
+      "sha256": "4709447B7CE568E0651FA7CF97E143832A015A206425798722237D095036FD2E"
+    },
+    {
+      "path": "docs/completion_reports/A-10_COMPLETION_REPORT.md",
+      "bytes": 2238,
+      "sha256": "86B180E916E04352D945A9077E11C283C9D01DC7C7159964C7FE27546469C196"
+    }
+  ],
+  "target_canonical_bytes": 2031,
+  "target_content_bytes": 45891,
+  "target_hash": "C179BA2371401BB57CAA02B5148D96A58B094092BE52088E85C6BA9882CFA64A",
+  "delivered_hash": "C179BA2371401BB57CAA02B5148D96A58B094092BE52088E85C6BA9882CFA64A"
+}

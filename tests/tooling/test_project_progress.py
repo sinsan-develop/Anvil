@@ -1149,17 +1149,33 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("0278141b9af2f94833f21997dddec52a5102fb3e", a10_start[-1]["details"]["dispatch_head"])
         self.assertEqual(a10_start[-1]["details"]["dispatch_head"], a10_start[-1]["details"]["dispatch_upstream_head"])
         self.assertEqual("CLEAN", a10_start[-1]["details"]["dispatch_worktree_status"])
-        self.assertEqual(116, progress["event_sequence"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("A-10", progress["current_work_package"])
-        self.assertEqual("developer-primary-a10", progress["active_agent"])
-        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, progress["write_lease"]["write_epoch"])
-        self.assertEqual(progress["worker_lease"]["lease_id"], progress["write_lease"]["worker_lease_id"])
-        self.assertEqual("WI-A-10-20260812-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("ACTIVE", progress["active_work_instruction"]["package_status"])
+        a10_completion = [event for event in bundle["events"]["events"] if 117 <= event["sequence"] <= 119]
         self.assertEqual(
-            "docs/evidence/manifests/A-10_START_EVIDENCE_MANIFEST.json",
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [event["event_type"] for event in a10_completion],
+        )
+        completed_a10 = a10_completion[-1]["details"]
+        self.assertEqual("TEST_REVIEW", completed_a10["package_status"])
+        self.assertEqual("COMPLETED", completed_a10["result_status"])
+        self.assertFalse(completed_a10["accepted"])
+        self.assertEqual("PENDING", completed_a10["independent_tester_status"])
+        self.assertEqual("C9667081B8BEA555C32F8833D7F28BCF3528882324814CCE08CAAEAA27DE6A84", completed_a10["developer_manifest_ref"]["sha256"])
+        self.assertEqual("C179BA2371401BB57CAA02B5148D96A58B094092BE52088E85C6BA9882CFA64A", completed_a10["developer_target_hash"])
+        self.assertEqual("A-11", completed_a10["next_work_package"])
+        self.assertEqual("BLOCKED_PENDING_A10_ACCEPTANCE", completed_a10["next_package_status"])
+        for field in ("actual_provider_status", "actual_secret_status", "actual_egress_status", "actual_api_status", "actual_db_status", "actual_event_status", "actual_browser_status", "actual_network_status", "actual_runtime_status", "dir_status"):
+            self.assertEqual("NOT_EXECUTED", completed_a10[field])
+        self.assertEqual(119, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual("A-10", progress["current_work_package"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("TEST_REVIEW", progress["active_work_instruction"]["package_status"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual(
+            "docs/evidence/manifests/A-10_COMPLETION_PROGRESS_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual([], checker.validate_bundle(bundle))
