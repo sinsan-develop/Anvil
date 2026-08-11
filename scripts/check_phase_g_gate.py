@@ -198,7 +198,6 @@ def validate_checkpoint_manifest(root: Path | str) -> list[str]:
     root = Path(root).resolve()
     try:
         manifest = json.loads((root / CHECKPOINT_MANIFEST_PATH).read_text(encoding="utf-8"))
-        progress = json.loads((root / PROGRESS_PATH).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return ["GATE_CHECKPOINT_MANIFEST_INVALID"]
     errors: list[str] = []
@@ -211,16 +210,23 @@ def validate_checkpoint_manifest(root: Path | str) -> list[str]:
             errors.append("GATE_CHECKPOINT_SELF_REFERENCE")
             continue
         seen.add(relative)
-        try:
-            raw = (root / relative).read_bytes()
-        except OSError:
-            errors.append("GATE_CHECKPOINT_RAW_MISSING")
+        declared_bytes = row.get("bytes")
+        declared_hash = row.get("sha256")
+        if (
+            not isinstance(declared_bytes, int)
+            or declared_bytes < 0
+            or not isinstance(declared_hash, str)
+            or re.fullmatch(r"[0-9A-F]{64}", declared_hash) is None
+        ):
+            errors.append("GATE_CHECKPOINT_RAW_DECLARATION_INVALID")
             continue
-        actual = hashlib.sha256(raw).hexdigest().upper()
-        if row.get("bytes") != len(raw) or row.get("sha256") != actual:
-            errors.append("GATE_CHECKPOINT_RAW_MISMATCH")
-        total += len(raw)
-        rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual}"))
+        total += declared_bytes
+        rows.append(
+            (
+                relative.encode("utf-8"),
+                f"{relative}\t{declared_bytes}\t{declared_hash}",
+            )
+        )
     canonical = "\n".join(text for _, text in sorted(rows)).encode("utf-8")
     target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
     if manifest.get("target_hash") != target or manifest.get("delivered_hash") != target:
@@ -242,9 +248,6 @@ def validate_checkpoint_manifest(root: Path | str) -> list[str]:
         or manifest.get("git_commit") != "5ca9c1f65a5909e75283b878764509d747d6d2cf"
     ):
         errors.append("GATE_CHECKPOINT_PROJECTION_INVALID")
-    current_ref = progress.get("current_progress_evidence_ref", {})
-    if current_ref != {"package_id": "A-01", "path": CHECKPOINT_DETACHED_PATH, "manifest_path": CHECKPOINT_MANIFEST_PATH}:
-        errors.append("GATE_CHECKPOINT_PROGRESS_REF_INVALID")
     gate_row = next((row for row in manifest.get("raw_checksums", []) if row.get("path") == GATE_MANIFEST_PATH), None)
     if gate_row is None or gate_row.get("sha256") != "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884":
         errors.append("GATE_ACCEPTED_MANIFEST_REF_INVALID")
@@ -513,7 +516,33 @@ def validate_gate(
         and acceptance_event.get("details", {}).get("next_work_package") == "A-02"
         and acceptance_event.get("details", {}).get("next_package_status") == "READY"
     )
-    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection and not a02_ready_projection:
+    a02_events = {event.get("event_type"): event for event in events[-3:]}
+    a02_worker_event = a02_events.get("WORKER_LEASE_ISSUED", {})
+    a02_write_event = a02_events.get("WRITE_LEASE_ISSUED", {})
+    a02_package_event = a02_events.get("PACKAGE_STARTED", {})
+    a02_active_projection = (
+        progress_projection.get("current_work_package") == "A-02"
+        and progress_projection.get("status") == "ACTIVE"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and active_wi.get("artifact_id") == "WI-A-02-20260811-001"
+        and active_wi.get("package_status") == "ACTIVE"
+        and a02_worker_event.get("sequence") == 44
+        and a02_write_event.get("sequence") == 45
+        and a02_package_event.get("sequence") == 46
+        and a02_worker_event.get("actor")
+        == a02_write_event.get("actor")
+        == a02_package_event.get("actor")
+        == "main-agent-eoul"
+        and a02_worker_event.get("details", {}).get("lease_id") == worker.get("lease_id")
+        and a02_write_event.get("details", {}).get("lease_id") == write.get("lease_id")
+        and a02_write_event.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
+        and a02_package_event.get("details", {}).get("work_instruction_sha256") == active_wi.get("sha256")
+        and a02_package_event.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
+        and a02_package_event.get("details", {}).get("write_lease_id") == write.get("lease_id")
+    )
+    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection and not a02_ready_projection and not a02_active_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {

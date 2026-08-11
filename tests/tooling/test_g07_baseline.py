@@ -197,15 +197,15 @@ class G07BaselineTests(unittest.TestCase):
         reconciliation = report["progress_reconciliation"]
         self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
         self.assertEqual(
-            "50ff3c39f890d50230e1432101f2a22f5606f74f",
+            "1ace56384d55cbe11d34f2532e9f602d389a9512",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
-        self.assertEqual("ACCEPTED", reconciliation["decision"])
-        self.assertEqual("A-02", reconciliation["next_work_package"])
+        self.assertEqual("ACTIVE", reconciliation["package_status"])
+        self.assertEqual("WI-A-02-20260811-001", reconciliation["work_instruction_id"])
         self.assertEqual("A-02", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(4, report["failure_counts"]["historical_accepted_failure_total"])
@@ -215,6 +215,15 @@ class G07BaselineTests(unittest.TestCase):
             report["g_gate"]["remaining_before_a01"],
         )
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
+
+    def test_a02_start_is_the_latest_nonretroactive_repository_projection(self):
+        report = self.checker.validate_repository(ROOT, verify_git=True)
+        self.assertEqual([], report["errors"])
+        projection = report["progress_reconciliation"]
+        self.assertEqual("PACKAGE_STARTED", projection["event_type"])
+        self.assertEqual("1ace56384d55cbe11d34f2532e9f602d389a9512", projection["validated_base_commit"])
+        self.assertEqual("ACTIVE", projection["package_status"])
+        self.assertEqual(report["git"]["changed_paths"], projection["exact_allowed_paths"])
 
     def test_repository_projection_accepts_only_exact_evidence_descendant(self):
         progress_path = "docs/progress/build-progress.json"

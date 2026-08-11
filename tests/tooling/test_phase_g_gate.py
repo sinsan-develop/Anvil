@@ -94,16 +94,16 @@ class PhaseGGateTests(unittest.TestCase):
             self.codes(self.validate(texts={wi_path: wi}, verify_hashes=False)),
         )
 
-    def test_gate_checkpoint_allows_a02_ready_after_a01_acceptance(self):
+    def test_gate_checkpoint_allows_a02_active_after_fenced_start(self):
         report = self.validate()
         self.assertEqual("A-02", report["progress"]["current_work_package"])
-        self.assertEqual("READY", report["progress"]["status"])
+        self.assertEqual("ACTIVE", report["progress"]["status"])
         self.assertEqual("A-02", report["progress"]["next_conditional_package"])
         self.assertTrue(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
-        self.assertIsNone(report["progress"]["active_work_instruction"])
-        self.assertIsNone(report["progress"]["worker_lease"])
-        self.assertIsNone(report["progress"]["write_lease"])
+        self.assertEqual("WI-A-02-20260811-001", report["progress"]["active_work_instruction"]["artifact_id"])
+        self.assertEqual("worker-lease-a02-20260811-001", report["progress"]["worker_lease"]["lease_id"])
+        self.assertEqual("write-lease-a02-20260811-001", report["progress"]["write_lease"]["lease_id"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
         self.assertEqual("STANDING_AUTONOMOUS_APPROVAL_APPLIED", decision["approval_mode"])
@@ -114,6 +114,15 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual("ACCEPTED", decision["decision"])
         self.assertEqual("090C669F5E66A6BB67577693C7CF1601727E12F5E173E0AA98D4BAF4D96B2091", decision["evidence_target_hash"])
 
+    def test_gate_checkpoint_allows_fenced_a02_active_start(self):
+        report = self.validate()
+        self.assertEqual([], report["errors"])
+        self.assertEqual("A-02", report["progress"]["current_work_package"])
+        self.assertEqual("ACTIVE", report["progress"]["status"])
+        self.assertEqual("WI-A-02-20260811-001", report["progress"]["active_work_instruction"]["artifact_id"])
+        self.assertEqual("worker-lease-a02-20260811-001", report["progress"]["worker_lease"]["lease_id"])
+        self.assertEqual("write-lease-a02-20260811-001", report["progress"]["write_lease"]["lease_id"])
+
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
         design_path = "Anvil_설계서_v2.md"
         design = (ROOT / design_path).read_text(encoding="utf-8").replace("7. Developer 재온보딩 증거", "7. 임의 대체 증거", 1)
@@ -123,17 +132,19 @@ class PhaseGGateTests(unittest.TestCase):
         report = (ROOT / report_path).read_text(encoding="utf-8").replace("`AV-GATE-026`: **PASS", "`AV-GATE-026`: **SKIPPED", 1)
         self.assertIn("GATE_KEY_AV_EVIDENCE_MISSING", self.codes(self.validate(texts={report_path: report}, verify_hashes=False)))
 
-    def test_advancement_beyond_a01_ready_is_rejected(self):
+    def test_unfenced_a02_active_is_rejected(self):
         progress_path = "docs/progress/build-progress.json"
         progress = json.loads((ROOT / progress_path).read_text(encoding="utf-8"))
         progress["status"] = "ACTIVE"
         progress["current_work_package"] = "A-02"
+        progress["worker_lease"] = None
+        progress["write_lease"] = None
         self.assertIn("GATE_FALSE_ADVANCEMENT", self.codes(self.validate(json_docs={progress_path: progress}, verify_hashes=False)))
 
     def test_gate_manifest_recomputes_actual_bytes_and_preserves_gate_boundary(self):
         self.assertEqual([], self.checker.validate_gate_manifest(ROOT))
 
-    def test_checkpoint_manifest_binds_current_detached_without_self_reference(self):
+    def test_checkpoint_manifest_preserves_frozen_rows_without_self_reference(self):
         self.assertEqual([], self.checker.validate_checkpoint_manifest(ROOT))
 
 

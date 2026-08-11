@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 43,
+  "last_sequence": 46,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -431,7 +431,6 @@
           "docs/progress/build-progress.json",
           "docs/progress/progress-events.json",
           "docs/progress/progress-handoff-detached-digest-a01-precondition-acceptance.json",
-          "scripts/check_g07_baseline.py",
           "scripts/check_project_progress.py",
           "tests/tooling/test_g07_baseline.py",
           "tests/tooling/test_project_progress.py"
@@ -852,6 +851,97 @@
         ],
         "reporting_decision": "AUTO_CONTINUE",
         "runtime_deferred": ["AV-FLOW-001"]
+      }
+    },
+    {
+      "event_id": "evt_a02_worker_lease_issued",
+      "sequence": 44,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T10:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-02",
+      "details": {
+        "lease_id": "worker-lease-a02-20260811-001",
+        "fencing_token": "a02-execution-fence-epoch-1-1ace563",
+        "execution_fencing_token": "a02-execution-fence-epoch-1-1ace563",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary-a02",
+        "subject_ref": "A-02",
+        "baseline_hash": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0",
+        "baseline_git_commit": "00adf34e8ed9393d1c22c2fa9da825bcacc79abc",
+        "dispatch_head": "1ace56384d55cbe11d34f2532e9f602d389a9512",
+        "issued_at": "2026-08-11T10:30:00+09:00",
+        "expires_at": "2026-08-11T22:30:00+09:00"
+      }
+    },
+    {
+      "event_id": "evt_a02_write_lease_issued",
+      "sequence": 45,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T10:30:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-02",
+      "details": {
+        "lease_id": "write-lease-a02-20260811-001",
+        "worker_lease_id": "worker-lease-a02-20260811-001",
+        "fencing_token": "a02-write-fence-epoch-1-1ace563",
+        "write_fencing_token": "a02-write-fence-epoch-1-1ace563",
+        "write_epoch": 1,
+        "actor_id": "developer-primary-a02",
+        "subject_ref": "A-02",
+        "baseline_hash": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0",
+        "issued_at": "2026-08-11T10:30:01+09:00",
+        "expires_at": "2026-08-11T22:30:00+09:00",
+        "path_scope": [
+          "docs/architecture/a02/**",
+          "scripts/check_a02_tokens.py",
+          "tests/tooling/test_a02_tokens.py",
+          "tests/fixtures/a02/**",
+          "docs/validation/A-02_*",
+          "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST*.json",
+          "docs/completion_reports/A-02_COMPLETION_REPORT.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_a02_package_started",
+      "sequence": 46,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-11T10:30:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-02",
+      "details": {
+        "work_instruction_id": "WI-A-02-20260811-001",
+        "work_instruction_path": "docs/work_orders/A-02_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0",
+        "invocation_path": "docs/work_orders/A-02_INVOCATION_PROMPT.md",
+        "invocation_sha256": "1644769B1ED65EDE6C8366B76CD617CC1F39CFD0DC0225AD3DA62C34820AF493",
+        "package_status": "ACTIVE",
+        "developer_actor": "developer-primary-a02",
+        "worker_lease_id": "worker-lease-a02-20260811-001",
+        "write_lease_id": "write-lease-a02-20260811-001",
+        "dispatch_head": "1ace56384d55cbe11d34f2532e9f602d389a9512",
+        "dispatch_upstream_head": "1ace56384d55cbe11d34f2532e9f602d389a9512",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "1ace56384d55cbe11d34f2532e9f602d389a9512",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-02_START_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a02-start.json",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "change_classification": "NON_SEMANTIC",
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-UI-001", "AV-UI-002"]
       }
     }
   ]

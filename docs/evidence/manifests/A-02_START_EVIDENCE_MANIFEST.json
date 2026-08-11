@@ -1,0 +1,67 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-02-START-20260811-001",
+  "artifact_type": "package_start_manifest",
+  "project_id": "anvil",
+  "version": 1,
+  "artifact_status": "active_start_recorded",
+  "content_hash": "sha256:7F976483C2F85979C073760CD9E51342045533F2711EE71D963BB215852DA289",
+  "source_artifact_ids": ["EVIDENCE-MANIFEST-A-01-20260811-002", "WI-A-02-20260811-001", "INV-A-02-20260811-001"],
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T10:30:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-02_START_EVIDENCE_MANIFEST.json",
+  "package_id": "A-02",
+  "target_hash": "sha256:7F976483C2F85979C073760CD9E51342045533F2711EE71D963BB215852DA289",
+  "delivered_hash": "sha256:7F976483C2F85979C073760CD9E51342045533F2711EE71D963BB215852DA289",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "path_normalization": "repository-relative POSIX slash",
+    "sort": "UTF-8 byte ordinal ascending by normalized path",
+    "row_separator": "LF (0x0A)",
+    "final_newline": false,
+    "encoding": "UTF-8",
+    "bom": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 590,
+  "target_content_bytes": 19770,
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "1ace56384d55cbe11d34f2532e9f602d389a9512",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "dispatch_observation": {"local_head": "1ace56384d55cbe11d34f2532e9f602d389a9512", "remote_head": "1ace56384d55cbe11d34f2532e9f602d389a9512", "observed_at": "2026-08-11T10:30:02+09:00"},
+    "exact_allowed_paths": ["docs/evidence/manifests/A-02_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a02-start.json", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]
+  },
+  "work_instruction_binding": {
+    "path": "docs/work_orders/A-02_WORK_INSTRUCTION.md",
+    "sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0",
+    "invocation_path": "docs/work_orders/A-02_INVOCATION_PROMPT.md",
+    "invocation_sha256": "1644769B1ED65EDE6C8366B76CD617CC1F39CFD0DC0225AD3DA62C34820AF493"
+  },
+  "lease_projection": {
+    "developer_actor": "developer-primary-a02",
+    "worker_lease_id": "worker-lease-a02-20260811-001",
+    "execution_fencing_token": "a02-execution-fence-epoch-1-1ace563",
+    "worker_expires_at": "2026-08-11T22:30:00+09:00",
+    "write_lease_id": "write-lease-a02-20260811-001",
+    "write_fencing_token": "a02-write-fence-epoch-1-1ace563",
+    "write_expires_at": "2026-08-11T22:30:00+09:00",
+    "event_sequence": 46,
+    "package_status": "ACTIVE"
+  },
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json", "bytes": 3489, "sha256": "BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a02-start.json", "bytes": 934, "sha256": "B14D96D1D3A6BEB083D2B71C92D03CB6E146D4CE096452FA4B71D62C3556977C"},
+    {"path": "docs/test_reports/A-01_TEST_REPORT_R2.md", "bytes": 6914, "sha256": "9DD0EE2626800E28420DB5AC3597BE3D3717586632E7441938904E946EBCF620"},
+    {"path": "docs/work_orders/A-02_INVOCATION_PROMPT.md", "bytes": 985, "sha256": "1644769B1ED65EDE6C8366B76CD617CC1F39CFD0DC0225AD3DA62C34820AF493"},
+    {"path": "docs/work_orders/A-02_WORK_INSTRUCTION.md", "bytes": 7448, "sha256": "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 43 and all accepted A-01 evidence remain byte-immutable",
+  "self_reference": false,
+  "a02_implementation_started": true,
+  "implementation_evidence_present": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This manifest records A-02 dispatch and lease activation only.", "It is not A-02 completion, browser PASS, API PASS, DB PASS, deployment PASS, or release evidence."]
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-02-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "A-02",
+  "event_sequence": 46,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 11909,
+    "file_sha256": "572AF87E3950F982E31C2AEEECCF0CE158B9903118FC117F647DD509EA752361",
+    "canonical_json_sha256": "81523C0C877453BA816CC4D41D4736C127DA1AEBFA40BA412350E641595BF6B7"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 29517,
+    "file_sha256": "2341C1CCFE304A83992B5EE2D77FAB65186E55A751DF6D3CAA88CF9C4522229E",
+    "machine_summary_canonical_sha256": "4A4A8DDCBF57EE4BCE2C0F427357CE7D8BA25A1F8E1664FDE3F76E64805B1107"
+  },
+  "created_at": "2026-08-11T10:30:02+09:00",
+  "scope": "A-02 non-retroactive start projection; active WorkInstruction and dependent worker/write leases bound to dispatch base 1ace563 without final commit self-reference"
+}

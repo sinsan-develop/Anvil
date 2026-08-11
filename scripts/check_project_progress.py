@@ -912,6 +912,93 @@ def validate_a01_precondition_acceptance_manifest(
     return sorted(set(errors))
 
 
+def validate_a02_start_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Recompute the current A-02 start manifest and its fenced projection."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_paths = {
+        "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json",
+        "docs/progress/progress-handoff-detached-digest-a02-start.json",
+        "docs/test_reports/A-01_TEST_REPORT_R2.md",
+        "docs/work_orders/A-02_INVOCATION_PROMPT.md",
+        "docs/work_orders/A-02_WORK_INSTRUCTION.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A02_START_RAW_CHECKSUMS_INVALID"]
+    seen: set[str] = set()
+    canonical_rows: list[tuple[bytes, str]] = []
+    total_bytes = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("A02_START_RAW_CHECKSUMS_INVALID")
+            continue
+        relative = row.get("path")
+        if not isinstance(relative, str) or relative in seen:
+            errors.append("A02_START_RAW_CHECKSUMS_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A02_START_RAW_CHECKSUMS_INVALID")
+            continue
+        actual_hash = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != actual_hash:
+            errors.append("A02_START_RAW_CHECKSUMS_INVALID")
+        total_bytes += len(raw)
+        canonical_rows.append(
+            (relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual_hash}")
+        )
+    if seen != expected_paths:
+        errors.append("A02_START_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if (
+        manifest.get("target_canonical_bytes") != len(canonical)
+        or manifest.get("target_content_bytes") != total_bytes
+        or manifest.get("target_hash") != target
+        or manifest.get("delivered_hash") != target
+        or manifest.get("content_hash") != target
+    ):
+        errors.append("A02_START_TARGET_MISMATCH")
+    repository = progress.get("repository", {})
+    manifest_repository = manifest.get("repository_projection", {})
+    fields = (
+        "projection_mode",
+        "validated_base_commit",
+        "head_relation",
+        "branch",
+        "upstream",
+        "exact_allowed_paths",
+    )
+    if any(manifest_repository.get(field) != repository.get(field) for field in fields):
+        errors.append("A02_START_REPOSITORY_PROJECTION_MISMATCH")
+    active_wi = progress.get("active_work_instruction") or {}
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    lease_projection = manifest.get("lease_projection", {})
+    if (
+        manifest.get("package_id") != "A-02"
+        or manifest.get("self_reference") is not False
+        or progress.get("event_sequence") != 46
+        or progress.get("status") != "ACTIVE"
+        or active_wi.get("artifact_id") != "WI-A-02-20260811-001"
+        or active_wi.get("sha256") != "E98C59E23CA907993B250C663E69F9DCF93BA79DAD17BDADDD0EFF76429381F0"
+        or worker.get("lease_id") != "worker-lease-a02-20260811-001"
+        or write.get("lease_id") != "write-lease-a02-20260811-001"
+        or write.get("worker_lease_id") != worker.get("lease_id")
+        or lease_projection.get("execution_fencing_token")
+        != worker.get("execution_fencing_token")
+        or lease_projection.get("write_fencing_token") != write.get("write_fencing_token")
+    ):
+        errors.append("A02_START_FENCING_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_historical_manifest_raw_checksums(
     manifest: Mapping[str, Any], root: Path
 ) -> list[str]:
@@ -1247,6 +1334,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
         errors.extend(validate_manifest_progress_binding(manifest, bundle))
         if current_manifest_relative == "docs/evidence/manifests/A-01_PRECONDITION_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_a01_precondition_acceptance_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-02_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_a02_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
