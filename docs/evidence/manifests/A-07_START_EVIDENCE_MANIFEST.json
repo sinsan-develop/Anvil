@@ -1,0 +1,32 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-07-START-20260812-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-07",
+  "artifact_status": "active_start",
+  "content_hash": "sha256:B07664260FFDC770C7E60998AA467140776F31F9CDA7501B1CFD4415D0E1BDA1",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-12T02:00:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-07_START_EVIDENCE_MANIFEST.json",
+  "target_hash": "sha256:B07664260FFDC770C7E60998AA467140776F31F9CDA7501B1CFD4415D0E1BDA1",
+  "delivered_hash": "sha256:B07664260FFDC770C7E60998AA467140776F31F9CDA7501B1CFD4415D0E1BDA1",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 595,
+  "target_content_bytes": 14987,
+  "projection": {"event_sequence": 95, "status": "ACTIVE", "result_status": "IN_PROGRESS", "accepted": false, "current_work_package": "A-07", "active_agent": "developer-primary-a07", "valid_failure_count": 0},
+  "canonical_l4": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "lease_projection": {"worker_lease_id": "worker-lease-a07-20260812-001", "execution_fencing_token": "a07-execution-fence-epoch-1-e46e098", "worker_lease_epoch": 1, "worker_expires_at": "2026-08-12T14:00:00+09:00", "write_lease_id": "write-lease-a07-20260812-001", "write_fencing_token": "a07-write-fence-epoch-1-e46e098", "write_epoch": 1, "write_expires_at": "2026-08-12T14:00:01+09:00"},
+  "repository_projection": {"projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "e46e098cb3439b91e71f14c1eedd20145de2e93a", "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", "branch": "main", "upstream": "origin/main", "remote_head": "e46e098cb3439b91e71f14c1eedd20145de2e93a", "push_status": "PUSH_PENDING_MAIN", "exact_allowed_paths": ["docs/evidence/manifests/A-07_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a07-start.json", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]},
+  "developer_scope": {"product_artifacts_materialized": false, "path_scope": ["docs/architecture/a07/**", "scripts/check_a07_execution_control.py", "tests/tooling/test_a07_execution_control.py", "tests/fixtures/a07/**", "docs/validation/A-07_*", "docs/evidence/manifests/A-07_EVIDENCE_MANIFEST*.json", "docs/completion_reports/A-07_COMPLETION_REPORT.md"]},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-06_ACCEPTANCE_PROGRESS_MANIFEST.json", "bytes": 3961, "sha256": "A1A665C071A7D374CD088B67901C6F7C81CA348782A2C75E4F8766860925B176"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a07-start.json", "bytes": 862, "sha256": "5E2F7E14C2F4E5BC0629D6E9C3E4D54B58366E9540941374411B4C96711842BA"},
+    {"path": "docs/test_reports/A-06_TEST_REPORT.md", "bytes": 6871, "sha256": "F27D15DA8068117710CE3551FAF839F3A4BA28AE9F3EF186DD39641F5E1CC560"},
+    {"path": "docs/work_orders/A-07_INVOCATION_PROMPT.md", "bytes": 685, "sha256": "1F6476D9F0B0D6EC571FA7456744160BC5CE04A4DBDB7A089A8E092289ABCD8F"},
+    {"path": "docs/work_orders/A-07_WORK_INSTRUCTION.md", "bytes": 2608, "sha256": "240371EB038AECE4F2613E83613871A737D4831B5FE9A832CB6534A558730799"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 92 and all A-01 through A-06 accepted evidence remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This starts A-07 and is not completion or acceptance.", "No Developer product artifact exists at this projection.", "Canonical L4 runtime, browser, Agent runtime, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}

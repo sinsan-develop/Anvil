@@ -195,16 +195,16 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "d358e04c795a4c02018c44b8d7a8fb32a23814cc",
+            "e46e098cb3439b91e71f14c1eedd20145de2e93a",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
-        self.assertEqual("READY", reconciliation["next_package_status"])
+        self.assertEqual("ACTIVE", reconciliation["package_status"])
         self.assertEqual("A-07", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(6, report["failure_counts"]["historical_accepted_failure_total"])
