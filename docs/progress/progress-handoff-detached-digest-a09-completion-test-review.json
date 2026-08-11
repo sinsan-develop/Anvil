@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-09-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "A-09",
+  "event_sequence": 112,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 19424, "file_sha256": "950F379E7DD8DB3E40E16FC2ED29DD483E37B20A8F3D70DFF49E680C5EA642C4", "canonical_json_sha256": "4D71B127C2E9F55AB851E3C57C158DA3553D73292F7065E2E8CF0CF464118647"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 45251, "file_sha256": "6DAA8F9B11526DF467848F0AAF37F999380DBEB4A43A014A1FFE3D275EC77660", "machine_summary_canonical_sha256": "698A9869DA9D19B8F08B3056136A360C66A8D260E3B11DDDABA2B48AEDA80CE5"},
+  "created_at": "2026-08-12T05:30:02+09:00",
+  "scope": "A-09 completion to TEST_REVIEW after ordered lease revocation; Skill activation, Hook activation, runtime, and DIR NOT_EXECUTED"
+}

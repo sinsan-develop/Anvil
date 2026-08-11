@@ -1,0 +1,85 @@
+{
+  "artifact_id": "A-09-LEARNING-AUTOMATION-CATALOG-001",
+  "package_id": "A-09",
+  "authority_hashes": {
+    "design": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+    "work_plan": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
+    "validation_matrix": "982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A",
+    "test_plan": "803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8",
+    "operating_rules": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"
+  },
+  "predecessor_bindings": [
+    {"package_id":"A-01","path":"docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json","sha256":"BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4","status":"ACCEPTED"},
+    {"package_id":"A-02","path":"docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json","sha256":"779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168","status":"ACCEPTED"},
+    {"package_id":"A-03","path":"docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json","sha256":"772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE","status":"ACCEPTED"},
+    {"package_id":"A-04","path":"docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json","sha256":"C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB","status":"ACCEPTED"},
+    {"package_id":"A-05","path":"docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json","sha256":"90C6AA195FC1DB6AB48D02B4A6403BBE242488177045F393C05E17EAF76085F1","status":"ACCEPTED"},
+    {"package_id":"A-06","path":"docs/evidence/manifests/A-06_EVIDENCE_MANIFEST.json","sha256":"A6F2B8B2E866A4F4AF6E2BAD8BAA2D005217071E263BA52FE63F35C935844449","status":"ACCEPTED"},
+    {"package_id":"A-07","path":"docs/evidence/manifests/A-07_EVIDENCE_MANIFEST.json","sha256":"796B40512FBB0D6EAA596409B3464190455E772246FF361F6EC056D701DEA3E7","status":"ACCEPTED"},
+    {"package_id":"A-08","path":"docs/evidence/manifests/A-08_EVIDENCE_MANIFEST.json","sha256":"73CC3936D3AF55674412C746B1CB95D53F08B3C8BDA927765286F3E60BE6C9A5","status":"ACCEPTED"}
+  ],
+  "learning_source": {
+    "required_fields": ["source_id","locator","content_hash","provenance","license","confidentiality","exclusions","security_scan","status"],
+    "unverified_positive_exemplar_forbidden": true,
+    "revoked_blocks_new_use": true,
+    "affected_runs_isolated_and_reported": true,
+    "derived_artifacts_quarantined": true
+  },
+  "learning_lifecycle": {
+    "states": ["SOURCE_CAPTURED","CANDIDATE","EVALUATED","APPROVED","ACTIVE","APPLIED","ROLLED_BACK","REVOKED"],
+    "candidate_fields": ["candidate_id","source_refs","diff","reason","scope","risk","evaluation_ref","approval_ref","trust_ref","no_change_reason"],
+    "activation_binding": ["candidate_id","version","content_hash","approval_id","applies_from_snapshot"],
+    "candidate_evaluated_approved_active_applied_distinct": true,
+    "current_run_snapshot_immutable": true,
+    "rollback_preserves_lineage": true
+  },
+  "skill_contract": {
+    "lifecycle": ["DRAFT","PILOT","ACTIVE","DEPRECATED","ARCHIVED"],
+    "minimum_representative_pilots": 3,
+    "reproducibility_required": true,
+    "human_approval_required_for_new_skill": true,
+    "selection_trace_fields": ["run_id","matched_evidence","selected_skill_version","selection_reason","rejected_candidates","loaded_resources","precondition_results","result"],
+    "progressive_disclosure": ["L0_CATALOG_MATCH","L1_FULL_SKILL_AFTER_SELECTION","L2_REFERENCE_ON_DEMAND"],
+    "unselected_skill_not_loaded": true,
+    "precondition_failure_blocks_execution": true
+  },
+  "hook_contract": {
+    "contract": ["EVENT","MATCHER","PROGRAM","RESULT_OR_FAULT_POLICY"],
+    "lifecycle": ["OBSERVED","DRAFT","STATIC_VALIDATED","SHADOW","PILOT","TRUST_REVIEW","ACTIVE","QUARANTINED","RETIRED"],
+    "trust_binding": ["hook_version_id","definition_hash","principal_id"],
+    "program_trust_binding": ["program_version_id","program_hash","permission_profile_id","principal_id"],
+    "changed_hash_invalidates_trust": true,
+    "shadow_side_effect_forbidden": true,
+    "pilot_replay_required": true,
+    "decision_precedence": ["DENY","ASK","MODIFY","ALLOW"],
+    "safety": {
+      "timeout_policies": ["FAIL_OPEN","FAIL_CLOSED"],
+      "timeout_policy_visible_in_ui_and_audit": true,
+      "permission_profile_hash_bound": true,
+      "recursion_guard_required": true,
+      "recursion_max_depth": 1,
+      "modify_conflict_blocks_without_merge": true,
+      "all_matching_hooks_execute": true,
+      "hook_subagent_spawn_forbidden": true
+    }
+  },
+  "agent_definition": {
+    "definition_instance_separated": true,
+    "permission_mode": "inherit_and_narrow",
+    "permission_expansion_forbidden": true,
+    "persistent_memory_default": "none",
+    "hook_subagent_spawn_forbidden": true,
+    "effective_permission_diff_visible": true
+  },
+  "disclosure_contract": {
+    "secret_visible": false,
+    "credential_literal_visible": false,
+    "raw_internal_endpoint_visible": false,
+    "loopback_endpoint_visible": false,
+    "masked_reference_allowed": true
+  },
+  "verification_contracts": [
+    {"assigned_id":"AV-LRN-018","level":"L4","method":"AE","evidence":"E-SHOT","severity":"MAJOR","execution_classification":"STATIC_ONLY","package_verdict":"STATIC_CONTRACT_PASS","runtime_owner":"D-12","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED"},
+    {"assigned_id":"AV-LRN-024","level":"L4","method":"MX","evidence":"E-SHOT,E-AUD","severity":"MAJOR","execution_classification":"STATIC_ONLY","package_verdict":"STATIC_CONTRACT_PASS","runtime_owner":"D-12","runtime_status":"RUNTIME_DEFERRED / NOT_EXECUTED"}
+  ]
+}
