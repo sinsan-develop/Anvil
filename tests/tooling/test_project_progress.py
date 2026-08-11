@@ -1087,23 +1087,36 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("NOT_EXECUTED", accepted_a08["details"]["actual_product_validation_status"])
         self.assertEqual("NOT_EXECUTED", accepted_a08["details"]["actual_release_status"])
         self.assertEqual("NOT_EXECUTED", accepted_a08["details"]["dir_status"])
-        self.assertEqual(106, progress["event_sequence"])
-        self.assertEqual("READY", progress["status"])
+        a09_start = [event for event in bundle["events"]["events"] if 107 <= event["sequence"] <= 109]
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [event["event_type"] for event in a09_start],
+        )
+        self.assertEqual(1, a09_start[0]["details"]["lease_epoch"])
+        self.assertEqual(1, a09_start[1]["details"]["write_epoch"])
+        self.assertEqual(a09_start[0]["details"]["lease_id"], a09_start[1]["details"]["worker_lease_id"])
+        self.assertEqual("1bed9e88d962bebe9e4f6ad806b67d92c027fdcf", a09_start[-1]["details"]["dispatch_head"])
+        self.assertEqual(a09_start[-1]["details"]["dispatch_head"], a09_start[-1]["details"]["dispatch_upstream_head"])
+        self.assertEqual("CLEAN", a09_start[-1]["details"]["dispatch_worktree_status"])
+        self.assertEqual(109, progress["event_sequence"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual("A-09", progress["current_work_package"])
         self.assertIn("A-03", progress["completed_packages"])
         self.assertIn("A-04", progress["completed_packages"])
         self.assertIn("A-06", progress["completed_packages"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual("developer-primary-a09", progress["active_agent"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual(progress["worker_lease"]["lease_id"], progress["write_lease"]["worker_lease_id"])
+        self.assertEqual("WI-A-09-20260812-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("ACTIVE", progress["active_work_instruction"]["package_status"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("A-09", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         self.assertEqual(0, progress["historical_failure_counts_by_lineage"].get("A-04", 0))
         self.assertEqual(1, progress["historical_failure_counts_by_lineage"]["A-03"])
         self.assertEqual(
-            "docs/evidence/manifests/A-08_ACCEPTANCE_PROGRESS_MANIFEST.json",
+            "docs/evidence/manifests/A-09_START_EVIDENCE_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual([], checker.validate_bundle(bundle))
