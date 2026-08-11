@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-12-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "A-12",
+  "event_sequence": 130,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 21843, "file_sha256": "5ED127177B8CF9989AD06591A19813007B19B2058BA64D498F4C8B6526304484", "canonical_json_sha256": "E51986970D754E5524483D29ABB5F8E4E30B1E87A0C28C40263074200836FE21"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 48735, "file_sha256": "B3B2BB7D03471425A399801E9736436D24B602862D1D4378C4A7A4A84F56A669", "machine_summary_canonical_sha256": "89793F9C3D6EF1DE81C3AD54175174BA1479AD844A27A89BC9B84EBA0050196D"},
+  "created_at": "2026-08-12T09:30:02+09:00",
+  "scope": "A-12 fenced start projection on clean equal HEAD; browser, API, SSE, runtime, and DIR NOT_EXECUTED"
+}
