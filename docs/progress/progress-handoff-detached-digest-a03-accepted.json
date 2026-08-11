@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-03-PROGRESS-HANDOFF-DIGEST-ACCEPTED",
+  "package_id": "A-03",
+  "event_sequence": 71,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 12309, "file_sha256": "9885506A42DB9C9D9828C5D325402B83622615944A0D114D55DF15E6637DD74A", "canonical_json_sha256": "EC5676205C966589922855EE094BF54A6E82A9AB82D1759ABE8EB5F47B8DC06B"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 33490, "file_sha256": "300E0CACE601E8A311A83AF8B65F229E9996371115FA3F1F2C14182111FF6FEA", "machine_summary_canonical_sha256": "DC173F843308754A2538043370A2325A25DB5EDA95C9FFBE621B6E03AB9EF96F"},
+  "created_at": "2026-08-11T16:30:26+09:00",
+  "scope": "A-03 revision 2 Main acceptance; Tester R2 PASS bound, A-04 READY without dispatch, canonical L7 remains RUNTIME_DEFERRED NOT_EXECUTED"
+}

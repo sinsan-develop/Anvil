@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 70,
+  "last_sequence": 71,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -1586,6 +1586,55 @@
         ],
         "reporting_decision": "AUTO_CONTINUE",
         "runtime_deferred": ["AV-UI-003", "AV-UI-004"]
+      }
+    },
+    {
+      "event_id": "evt_a03_revision2_main_accepted",
+      "sequence": 71,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "occurred_at": "2026-08-11T16:30:26+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "decision": "ACCEPTED",
+        "blocking_findings": 0,
+        "test_report_ref": {"path": "docs/test_reports/A-03_TEST_REPORT_R2.md", "sha256": "0D16D409B87B161F96811E9297A2F3877398B5124FA5D9D20D648C0235C07C2F"},
+        "test_report_sha256": "0D16D409B87B161F96811E9297A2F3877398B5124FA5D9D20D648C0235C07C2F",
+        "manifest_ref": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json",
+        "manifest_sha256": "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE",
+        "completion_manifest_ref": {"path": "docs/evidence/manifests/A-03_REWORK_COMPLETION_PROGRESS_MANIFEST.json", "sha256": "EEC14A31DD13D63DFA906D71926F0C2BCD2927C75B8E42EB8D076187F17D079A"},
+        "finding_status": {"A03-TST-BLK-001": "CLOSED", "A03-TST-BLK-002": "CLOSED"},
+        "next_work_package": "A-04",
+        "next_package_status": "READY",
+        "active_work_instruction": null,
+        "active_agent": null,
+        "worker_lease": null,
+        "write_lease": null,
+        "acceptance_head": "82b40d8e99c49d03741542dda7cceea0262b8270",
+        "acceptance_upstream_head": "82b40d8e99c49d03741542dda7cceea0262b8270",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "82b40d8e99c49d03741542dda7cceea0262b8270",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "82b40d8e99c49d03741542dda7cceea0262b8270",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-03_ACCEPTANCE_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a03-accepted.json",
+          "docs/test_reports/A-03_TEST_REPORT_R2.md",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-UI-003", "AV-UI-004"],
+        "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED"
       }
     }
   ]
