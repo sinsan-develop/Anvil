@@ -1,0 +1,11 @@
+{
+  "schema_version":"1.0.0",
+  "digest_id":"A-08-PROGRESS-HANDOFF-DIGEST-ACCEPTED",
+  "package_id":"A-08",
+  "event_sequence":106,
+  "algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":17021,"file_sha256":"70E8215F1719A8DC14914256C04374C7B00AD32E6086682DDEA8CE33A6BAF8B9","canonical_json_sha256":"A335C9E0044A9C6B3CC51B5BE0114B1D2A9928E5212301A11427EFBEED4D8490"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":42647,"file_sha256":"6C721DAB007C7ADDE8552AEE3294E709199F37794EB321BFC464B66232A9DA31","machine_summary_canonical_sha256":"850CE27C3EDB58653553A3487ED2222069494A80B7D2CEEA58B6C67883364707"},
+  "created_at":"2026-08-12T04:30:00+09:00",
+  "scope":"A-08 Main acceptance after independent static-contract PASS; A-09 READY; ProductValidation, Release, DIR, and runtime NOT_EXECUTED"
+}
