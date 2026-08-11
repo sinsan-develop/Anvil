@@ -165,6 +165,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "tests/tooling/test_phase_g_gate.py",
     "docs/work_orders/A-01_WORK_INSTRUCTION.md",
     "docs/work_orders/A-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
 }
 
 
@@ -337,7 +339,11 @@ def _validate_failure_ledger(ledger: Mapping[str, Any], root: Path | None = None
 def _validate_failure_projection(bundle: Mapping[str, Any]) -> list[str]:
     projection = failure_projection(bundle["failure_ledger"])
     active_lineage = bundle["progress"].get("active_failure_lineage", {}).get("step_lineage_id")
-    expected = projection.get(active_lineage, {}).get("valid_failure_count", 0)
+    expected = sum(
+        item.get("valid_failure_count", 0)
+        for key, item in projection.items()
+        if key.split("|", 1)[0] == active_lineage
+    )
     if bundle["progress"].get("valid_failure_count") != expected:
         return ["FAILURE_PROJECTION_MISMATCH"]
     return []
@@ -1261,6 +1267,87 @@ def validate_a03_completion_manifest(
     return sorted(set(errors))
 
 
+def validate_a03_rework_start_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_paths = {
+        "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json",
+        "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-a03-rework-start.json",
+        "docs/test_reports/A-03_TEST_REPORT.md",
+        "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A03_REWORK_RAW_CHECKSUMS_INVALID"]
+    seen: set[str] = set()
+    canonical_rows: list[tuple[bytes, str]] = []
+    total_bytes = 0
+    for row in rows:
+        if not isinstance(row, dict):
+            errors.append("A03_REWORK_RAW_CHECKSUMS_INVALID")
+            continue
+        relative = row.get("path")
+        if not isinstance(relative, str) or relative in seen:
+            errors.append("A03_REWORK_RAW_CHECKSUMS_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A03_REWORK_RAW_CHECKSUMS_INVALID")
+            continue
+        actual = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != actual:
+            errors.append("A03_REWORK_RAW_CHECKSUMS_INVALID")
+        total_bytes += len(raw)
+        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual}"))
+    if seen != expected_paths:
+        errors.append("A03_REWORK_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if (
+        manifest.get("target_canonical_bytes") != len(canonical)
+        or manifest.get("target_content_bytes") != total_bytes
+        or manifest.get("target_hash") != target
+        or manifest.get("delivered_hash") != target
+        or manifest.get("content_hash") != target
+    ):
+        errors.append("A03_REWORK_TARGET_MISMATCH")
+    repository = progress.get("repository", {})
+    projection = manifest.get("repository_projection", {})
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths")
+    if any(projection.get(field) != repository.get(field) for field in fields):
+        errors.append("A03_REWORK_REPOSITORY_PROJECTION_MISMATCH")
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    wi = progress.get("active_work_instruction") or {}
+    lease = manifest.get("lease_projection", {})
+    source = manifest.get("failure_source", {})
+    if (
+        manifest.get("package_id") != "A-03"
+        or manifest.get("self_reference") is not False
+        or progress.get("event_sequence") != 67
+        or progress.get("status") != "ACTIVE"
+        or progress.get("valid_failure_count") != 1
+        or wi.get("artifact_id") != "WI-A-03-20260811-002"
+        or wi.get("result_status") != "REWORK_IN_PROGRESS"
+        or wi.get("independent_tester_status") != "RETEST_REQUIRED"
+        or worker.get("lease_epoch") != 2
+        or write.get("write_epoch") != 2
+        or write.get("worker_lease_id") != worker.get("lease_id")
+        or lease.get("execution_fencing_token") != worker.get("execution_fencing_token")
+        or lease.get("write_fencing_token") != write.get("write_fencing_token")
+        or source.get("test_report_sha256") != "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"
+        or source.get("finding_ids") != ["A03-TST-BLK-001", "A03-TST-BLK-002"]
+    ):
+        errors.append("A03_REWORK_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -1814,6 +1901,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a03_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_a03_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json":
+            errors.extend(validate_a03_rework_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

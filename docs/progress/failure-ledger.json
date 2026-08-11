@@ -90,6 +90,26 @@
       ],
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a03-independent-test-r1",
+      "step_lineage_id": "A-03",
+      "failure_fingerprint": "a03-independent-test:project-register-operational-fields-and-stale-upstream-regression-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": ["A03-TST-BLK-001", "A03-TST-BLK-002"],
+      "blocking_severity": "MAJOR",
+      "blocking_defect_count": 2,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/A-03_TEST_REPORT.md",
+          "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
     }
   ]
 }

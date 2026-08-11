@@ -3,42 +3,42 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 63,
-  "status": "TEST_REVIEW",
+  "event_sequence": 67,
+  "status": "ACTIVE",
   "current_work_package": "A-03",
-  "last_event_id": "evt_a03_package_completed_test_review",
+  "last_event_id": "evt_a03_package_resumed_rework_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 0,
-  "active_lineage_valid_failure_count": 0,
+  "valid_failure_count": 1,
+  "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 5,
   "dir_status": "NOT_REACHED",
-  "repository_head": "dc2ba63e1d923663724d1291cbcec007e4e7e7fe",
+  "repository_head": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "dc2ba63e1d923663724d1291cbcec007e4e7e7fe",
+  "repository_remote_head": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "dc2ba63e1d923663724d1291cbcec007e4e7e7fe",
+  "repository_validated_base_commit": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-  "repository_exact_allowed_paths": ["docs/architecture/a03/A-03_DASHBOARD_STATIC_RENDER.svg", "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json", "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg", "docs/architecture/a03/A-03_PROJECT_DASHBOARD.md", "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md", "docs/architecture/a03/A-03_REPOSITORY_ONBOARDING.md", "docs/architecture/a03/A-03_REPOSITORY_STATE_STATIC_RENDER.svg", "docs/completion_reports/A-03_COMPLETION_REPORT.md", "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a03-completion-test-review.json", "docs/validation/A-03_ONBOARDING_VALIDATION.md", "scripts/check_a03_onboarding.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/fixtures/a03/canonical-contract.json", "tests/fixtures/a03/mutation-catalog.json", "tests/tooling/test_a03_onboarding.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a03-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json",
+  "repository_exact_allowed_paths": ["docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/failure-ledger.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a03-rework-start.json", "docs/test_reports/A-03_TEST_REPORT.md", "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md", "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a03-rework-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch an implementation-conversation-separated independent Tester for A-03; A-04 remains blocked until Tester PASS and Main acceptance",
+  "next_safe_action": "developer-primary-a03 executes WI-A-03-20260811-002 only for A03-TST-BLK-001/002 within active epoch-2 fencing; A-04 remains blocked",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": {"artifact_id": "WI-A-03-20260811-001", "sha256": "E85FD1D62A70C77E2A4A87AAFA9B727B94CBF428BAA52736975B1FEA572C079F", "package_status": "TEST_REVIEW", "result_status": "COMPLETED", "accepted": false, "independent_tester_status": "PENDING"},
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": {"artifact_id": "WI-A-03-20260811-002", "sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED", "package_status": "ACTIVE", "result_status": "REWORK_IN_PROGRESS", "accepted": false, "rework_revision": 2, "independent_tester_status": "RETEST_REQUIRED"},
+  "worker_lease": {"lease_id": "worker-lease-a03-rework-20260811-002", "execution_fencing_token": "a03-rework-execution-fence-epoch-2-f8b52a5", "lease_epoch": 2},
+  "write_lease": {"lease_id": "write-lease-a03-rework-20260811-002", "worker_lease_id": "worker-lease-a03-rework-20260811-002", "write_fencing_token": "a03-rework-write-fence-epoch-2-f8b52a5", "write_epoch": 2}
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-02 ACCEPTED / A-03 TEST_REVIEW`
+> 현재 상태: `A-02 ACCEPTED / A-03 ACTIVE REWORK REVISION 2`
 > 현재 Phase / Package: `A / A-03`
 
 ## 1. 현재 기준선
@@ -249,10 +249,14 @@
 - sequence 61·62는 write/worker lease를 순서대로 회수하고, sequence 63은 `COMPLETED / TEST_REVIEW / accepted=false / independent Tester PENDING`으로 비소급 투영함
 - completion 기준 local `main` = `origin/main` = `dc2ba63e1d923663724d1291cbcec007e4e7e7fe`; exact 25-path Developer completion/TEST_REVIEW projection이며 A-04는 `BLOCKED_PENDING_A03_ACCEPTANCE`임
 - A-03 static 계약만 제출됐으며 canonical L7, Browser/API/DB/Network/Docker/배포는 계속 `RUNTIME_DEFERRED / NOT_EXECUTED`; DIR 미도달임
+- 독립 Tester는 `A03-TST-BLK-001`(Project Register의 environment/backend-policy/operational connection state 누락)과 `A03-TST-BLK-002`(completion-era upstream hardcoding) MAJOR 2건으로 첫 유효 `FAILURE_REPORT`를 제출했고 TestReport SHA-256은 `DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6`임
+- Main은 sequence 64로 valid failure count 1을 수락하고 successor `WI-A-03-20260811-002`를 `MAIN_RECONFIRMED_NON_SEMANTIC`으로 발행함. original WI와 revision 1 evidence는 불변 predecessor임
+- sequence 65~67은 epoch-2 worker/write lease를 발급하고 A-03을 `ACTIVE / REWORK_IN_PROGRESS / RETEST_REQUIRED`로 재개함. A-04는 계속 `BLOCKED_PENDING_A03_ACCEPTANCE`임
+- rework dispatch 기준 local `main` = `origin/main` = `f8b52a5a3b3acfa2776b06bd178e0911c1ead582`; exact 15-path Main rework-start projection이며 Developer write scope는 finding closure 10개 경로로 제한함
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07, Phase G Gate, A-01과 A-02는 최종 `ACCEPTED`다. current Package는 `A-03 / TEST_REVIEW`이며 active lineage valid failure count는 0이다. A-02 유효 실패 1회는 historical lineage로 보존한다. 다음 안전 행동은 구현 대화와 분리된 독립 Tester를 dispatch하는 것이며, Tester PASS와 Main acceptance 전 A-04는 차단한다.
+G-05, G-06, G-07, Phase G Gate, A-01과 A-02는 최종 `ACCEPTED`다. current Package는 `A-03 / ACTIVE / REWORK_IN_PROGRESS`이며 active lineage valid failure count는 1이다. A-02 유효 실패 1회는 historical lineage로 보존한다. 다음 안전 행동은 `developer-primary-a03`이 epoch-2 fencing 안에서 `A03-TST-BLK-001/002`만 보완하는 것이며 A-04는 차단한다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 

@@ -855,7 +855,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("A-02", acceptance["subject_ref"])
         self.assertEqual("A-03", acceptance["details"]["next_work_package"])
         self.assertEqual("READY", acceptance["details"]["next_package_status"])
-        self.assertEqual(0, progress["valid_failure_count"])
+        self.assertEqual(0, acceptance["details"]["blocking_findings"])
 
     def test_a03_start_projection_binds_clean_dispatch_and_fencing(self) -> None:
         checker = self.require_checker()
@@ -889,16 +889,34 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
             [event["event_type"] for event in completion_events],
         )
-        self.assertEqual("A-03", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertEqual("TEST_REVIEW", progress["active_work_instruction"]["package_status"])
-        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
-        self.assertFalse(progress["active_work_instruction"]["accepted"])
-        self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        completed = completion_events[-1]["details"]
+        self.assertEqual("TEST_REVIEW", completed["package_status"])
+        self.assertEqual("COMPLETED", completed["result_status"])
+        self.assertFalse(completed["accepted"])
+        self.assertEqual("PENDING", completed["independent_tester_status"])
+        self.assertIsNone(completed["worker_lease"])
+        self.assertIsNone(completed["write_lease"])
+        self.assertEqual([], checker.validate_bundle(bundle))
+
+    def test_a03_failure_acceptance_and_rework_start_are_fenced(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 64 <= event["sequence"] <= 67]
+
         self.assertEqual(
-            "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json",
+            ["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
+            [event["event_type"] for event in events],
+        )
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual(1, progress["valid_failure_count"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual(progress["worker_lease"]["lease_id"], progress["write_lease"]["worker_lease_id"])
+        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("RETEST_REQUIRED", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual(
+            "docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual([], checker.validate_bundle(bundle))

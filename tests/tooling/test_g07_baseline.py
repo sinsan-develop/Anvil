@@ -195,18 +195,18 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_RESUMED", reconciliation["event_type"])
         self.assertEqual(
-            "dc2ba63e1d923663724d1291cbcec007e4e7e7fe",
+            "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
-        self.assertEqual("TEST_REVIEW", reconciliation["package_status"])
+        self.assertEqual("ACTIVE", reconciliation["package_status"])
         self.assertEqual("A-03", report["failure_counts"]["active_lineage"])
-        self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
+        self.assertEqual(1, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(5, report["failure_counts"]["historical_accepted_failure_total"])
         self.assertTrue(report["g_gate"]["a01_start_allowed"])
         self.assertEqual(
@@ -222,17 +222,18 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual("1ace56384d55cbe11d34f2532e9f602d389a9512", projection["details"]["validated_base_commit"])
         self.assertEqual("ACTIVE", projection["details"]["package_status"])
 
-    def test_a03_completion_projection_preserves_exact_worktree(self):
+    def test_a03_completion_history_and_current_upstream_are_separate(self):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
-        projection = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_COMPLETED", projection["event_type"])
-        self.assertEqual("TEST_REVIEW", projection["package_status"])
-        self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
-        self.assertEqual("dc2ba63e1d923663724d1291cbcec007e4e7e7fe", projection["validated_base_commit"])
-        self.assertEqual("dc2ba63e1d923663724d1291cbcec007e4e7e7fe", report["git"]["upstream_head"])
-        self.assertEqual("PUSH_PENDING_MAIN", projection["push_status"])
-        self.assertEqual(report["git"]["changed_paths"], projection["exact_allowed_paths"])
+        events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+        completion = next(event for event in events if event["sequence"] == 63)["details"]
+        self.assertEqual("TEST_REVIEW", completion["package_status"])
+        self.assertEqual(1, report["failure_counts"]["active_lineage_valid_failure_count"])
+        self.assertEqual("dc2ba63e1d923663724d1291cbcec007e4e7e7fe", completion["validated_base_commit"])
+        rc, current_upstream = self.checker._git(ROOT, "rev-parse", "@{u}")
+        self.assertEqual(0, rc)
+        self.assertEqual(current_upstream, report["git"]["upstream_head"])
+        self.assertNotEqual(completion["validated_base_commit"], current_upstream)
 
     def test_repository_projection_accepts_only_exact_evidence_descendant(self):
         progress_path = "docs/progress/build-progress.json"

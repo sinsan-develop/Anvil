@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 63,
+  "last_sequence": 67,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -1370,6 +1370,135 @@
         "reporting_decision": "AUTO_CONTINUE",
         "runtime_deferred": ["AV-UI-003", "AV-UI-004"],
         "runtime_verdict": "CANONICAL_L7_RUNTIME_DEFERRED_NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_a03_failure_report_accepted_r1",
+      "sequence": 64,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-08-11T15:10:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "entry_id": "failure-a03-independent-test-r1",
+        "evidence_ref": {"path": "docs/test_reports/A-03_TEST_REPORT.md", "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"},
+        "valid_failure_count": 1,
+        "finding_ids": ["A03-TST-BLK-001", "A03-TST-BLK-002"],
+        "blocking_defect_count": 2,
+        "blocking_severity": "MAJOR",
+        "failure_fingerprint": "a03-independent-test:project-register-operational-fields-and-stale-upstream-regression-r1"
+      }
+    },
+    {
+      "event_id": "evt_a03_rework_worker_lease_issued",
+      "sequence": 65,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T15:10:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "lease_id": "worker-lease-a03-rework-20260811-002",
+        "fencing_token": "a03-rework-execution-fence-epoch-2-f8b52a5",
+        "execution_fencing_token": "a03-rework-execution-fence-epoch-2-f8b52a5",
+        "lease_epoch": 2,
+        "actor_id": "developer-primary-a03",
+        "subject_ref": "A-03",
+        "baseline_hash": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED",
+        "dispatch_head": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
+        "issued_at": "2026-08-11T15:10:01+09:00",
+        "expires_at": "2026-08-12T03:10:01+09:00",
+        "rework_finding_ids": ["A03-TST-BLK-001", "A03-TST-BLK-002"]
+      }
+    },
+    {
+      "event_id": "evt_a03_rework_write_lease_issued",
+      "sequence": 66,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T15:10:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "lease_id": "write-lease-a03-rework-20260811-002",
+        "worker_lease_id": "worker-lease-a03-rework-20260811-002",
+        "fencing_token": "a03-rework-write-fence-epoch-2-f8b52a5",
+        "write_fencing_token": "a03-rework-write-fence-epoch-2-f8b52a5",
+        "write_epoch": 2,
+        "actor_id": "developer-primary-a03",
+        "subject_ref": "A-03",
+        "baseline_hash": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED",
+        "issued_at": "2026-08-11T15:10:02+09:00",
+        "expires_at": "2026-08-12T03:10:02+09:00",
+        "path_scope": [
+          "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json",
+          "docs/architecture/a03/A-03_PROJECT_REGISTRATION.md",
+          "docs/architecture/a03/A-03_ONBOARDING_STATIC_RENDER.svg",
+          "scripts/check_a03_onboarding.py",
+          "tests/tooling/test_a03_onboarding.py",
+          "tests/fixtures/a03/canonical-contract.json",
+          "tests/fixtures/a03/mutation-catalog.json",
+          "docs/validation/A-03_ONBOARDING_VALIDATION.md",
+          "docs/completion_reports/A-03_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json"
+        ],
+        "immutable_predecessors": [
+          "docs/work_orders/A-03_WORK_INSTRUCTION.md",
+          "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
+          "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json",
+          "docs/test_reports/A-03_TEST_REPORT.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_a03_package_resumed_rework_r2",
+      "sequence": 67,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-08-11T15:10:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-03",
+      "details": {
+        "resume_event_ref": {"path": "docs/test_reports/A-03_TEST_REPORT.md", "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6", "finding_ids": ["A03-TST-BLK-001", "A03-TST-BLK-002"]},
+        "work_instruction_id": "WI-A-03-20260811-002",
+        "work_instruction_path": "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
+        "work_instruction_sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED",
+        "invocation_path": "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
+        "invocation_sha256": "6B97D0A0773F396BD9C2AD1AED2FF406555A116BE03B643485A8DF5C8692886A",
+        "package_status": "ACTIVE",
+        "result_status": "REWORK_IN_PROGRESS",
+        "developer_actor": "developer-primary-a03",
+        "worker_lease_id": "worker-lease-a03-rework-20260811-002",
+        "write_lease_id": "write-lease-a03-rework-20260811-002",
+        "rework_attempt": 1,
+        "dispatch_head": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
+        "dispatch_upstream_head": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/failure-ledger.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a03-rework-start.json",
+          "docs/test_reports/A-03_TEST_REPORT.md",
+          "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
+          "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "change_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-UI-003", "AV-UI-004"],
+        "next_work_package": "A-04",
+        "next_package_status": "BLOCKED_PENDING_A03_ACCEPTANCE"
       }
     }
   ]

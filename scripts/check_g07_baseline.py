@@ -68,6 +68,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "tests/tooling/test_phase_g_gate.py",
     "docs/work_orders/A-01_WORK_INSTRUCTION.md",
     "docs/work_orders/A-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
 }
 
 

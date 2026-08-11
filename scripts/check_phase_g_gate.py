@@ -689,7 +689,35 @@ def validate_gate(
         and a03_completed.get("details", {}).get("accepted") is False
         and a03_completed.get("details", {}).get("next_package_status") == "BLOCKED_PENDING_A03_ACCEPTANCE"
     )
-    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection and not a02_ready_projection and not a02_active_projection and not a02_test_review_projection and not a02_rework_projection and not a02_r2_test_review_projection and not a03_ready_projection and not a03_active_projection and not a03_test_review_projection:
+    a03_rework_events = {event.get("event_type"): event for event in events[-4:]}
+    a03_failure = a03_rework_events.get("FAILURE_REPORT_ACCEPTED", {})
+    a03_rework_worker = a03_rework_events.get("WORKER_LEASE_ISSUED", {})
+    a03_rework_write = a03_rework_events.get("WRITE_LEASE_ISSUED", {})
+    a03_resumed = a03_rework_events.get("PACKAGE_RESUMED", {})
+    a03_rework_projection = (
+        progress_projection.get("current_work_package") == "A-03"
+        and progress_projection.get("status") == "ACTIVE"
+        and progress_projection.get("g_gate_status") == "ACCEPTED"
+        and progress_projection.get("gate_checkpoint_status") == "CLEARED"
+        and progress_projection.get("a01_start_allowed") is True
+        and active_wi.get("artifact_id") == "WI-A-03-20260811-002"
+        and active_wi.get("package_status") == "ACTIVE"
+        and active_wi.get("result_status") == "REWORK_IN_PROGRESS"
+        and active_wi.get("independent_tester_status") == "RETEST_REQUIRED"
+        and worker.get("lease_epoch") == 2
+        and write.get("write_epoch") == 2
+        and write.get("worker_lease_id") == worker.get("lease_id")
+        and a03_failure.get("sequence") == 64
+        and a03_rework_worker.get("sequence") == 65
+        and a03_rework_write.get("sequence") == 66
+        and a03_resumed.get("sequence") == 67
+        and a03_failure.get("details", {}).get("valid_failure_count") == 1
+        and a03_rework_worker.get("details", {}).get("lease_id") == worker.get("lease_id")
+        and a03_rework_write.get("details", {}).get("lease_id") == write.get("lease_id")
+        and a03_resumed.get("details", {}).get("worker_lease_id") == worker.get("lease_id")
+        and a03_resumed.get("details", {}).get("write_lease_id") == write.get("lease_id")
+    )
+    if progress_projection != ready_projection and not active_start_projection and not test_review_projection and not active_rework_projection and not rework_test_review_projection and not a02_ready_projection and not a02_active_projection and not a02_test_review_projection and not a02_rework_projection and not a02_r2_test_review_projection and not a03_ready_projection and not a03_active_projection and not a03_test_review_projection and not a03_rework_projection:
         _error(errors, "GATE_FALSE_ADVANCEMENT", PROGRESS_PATH, repr(progress_projection))
 
     counts = {

@@ -1,0 +1,41 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-03-REWORK-START-20260811-001",
+  "artifact_type": "rework_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-03",
+  "artifact_status": "active_rework_revision_2",
+  "content_hash": "sha256:8A90918D541A3BA51E660CD37D97F05D9C7E822D3E3CDA49C5E0EF9B6FC83CE1",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T15:10:03+09:00",
+  "artifact_path": "docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json",
+  "target_hash": "sha256:8A90918D541A3BA51E660CD37D97F05D9C7E822D3E3CDA49C5E0EF9B6FC83CE1",
+  "delivered_hash": "sha256:8A90918D541A3BA51E660CD37D97F05D9C7E822D3E3CDA49C5E0EF9B6FC83CE1",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 622,
+  "target_content_bytes": 22099,
+  "projection": {"event_sequence": 67, "status": "ACTIVE", "result_status": "REWORK_IN_PROGRESS", "accepted": false, "valid_failure_count": 1, "independent_tester_status": "RETEST_REQUIRED", "next_package": "A-04", "next_package_status": "BLOCKED_PENDING_A03_ACCEPTANCE"},
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "f8b52a5a3b3acfa2776b06bd178e0911c1ead582",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": ["docs/evidence/manifests/A-03_REWORK_START_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/failure-ledger.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a03-rework-start.json", "docs/test_reports/A-03_TEST_REPORT.md", "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md", "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]
+  },
+  "failure_source": {"test_report_path": "docs/test_reports/A-03_TEST_REPORT.md", "test_report_sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6", "finding_ids": ["A03-TST-BLK-001", "A03-TST-BLK-002"], "blocking_severity": "MAJOR", "blocking_defect_count": 2},
+  "lease_projection": {"worker_lease_id": "worker-lease-a03-rework-20260811-002", "execution_fencing_token": "a03-rework-execution-fence-epoch-2-f8b52a5", "worker_lease_epoch": 2, "worker_expires_at": "2026-08-12T03:10:01+09:00", "write_lease_id": "write-lease-a03-rework-20260811-002", "write_fencing_token": "a03-rework-write-fence-epoch-2-f8b52a5", "write_epoch": 2, "write_expires_at": "2026-08-12T03:10:02+09:00"},
+  "predecessor_evidence": {"developer_manifest_path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "developer_manifest_sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC", "developer_target_hash": "18DED6D1F1034044F7A8B55864AF35F507789BF08FE9B60C70806A6C190093CA", "completion_manifest_path": "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json", "completion_manifest_sha256": "9C7319A06605598243C3E9D03E278AB8293683341A1261A090540EB6B1B806D5", "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-03_COMPLETION_PROGRESS_MANIFEST.json", "bytes": 4507, "sha256": "9C7319A06605598243C3E9D03E278AB8293683341A1261A090540EB6B1B806D5"},
+    {"path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json", "bytes": 4203, "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a03-rework-start.json", "bytes": 932, "sha256": "9F82F60EAB6512E0A2F05B4F8B4B50422D61A251BC04DC294743DF3DA11CE982"},
+    {"path": "docs/test_reports/A-03_TEST_REPORT.md", "bytes": 8257, "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"},
+    {"path": "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md", "bytes": 4200, "sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 63, Tester report, original WorkInstruction, Developer manifest, and completion progress manifest remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This starts revision-2 rework and is not A-03 acceptance.", "Canonical L7 runtime, browser, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}
