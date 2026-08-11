@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-07-PROGRESS-HANDOFF-DIGEST-ACCEPTED",
+  "package_id": "A-07",
+  "event_sequence": 99,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 16031, "file_sha256": "ABC8D07D48692060BC13FB0F15F9C89E01BF51D837CA2ADC9E3FA307A8CD9977", "canonical_json_sha256": "E93651B9FFF2E7314684BECD0F6166A98D7D125B6819E763B215F95FD8E233C3"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 40536, "file_sha256": "4E68946DDF5914C996A47C4C47FE9111B1938AB7EFBE2E5895A239E6C7C5C15B", "machine_summary_canonical_sha256": "01F61C151D998C3E65417EF58BB058DC6B53FC5137E64A9F487D65C46535EE96"},
+  "created_at": "2026-08-12T03:00:00+09:00",
+  "scope": "A-07 Main acceptance after independent static-contract PASS; A-08 READY with no active WorkInstruction or leases; actual DIR NOT_EXECUTED"
+}
