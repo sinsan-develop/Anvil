@@ -1,0 +1,32 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-05-START-20260811-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-05",
+  "artifact_status": "active_start",
+  "content_hash": "sha256:160B626D8C738CE5E499496A22DA3B5CD8944DF60CB9443F983797F5F2582104",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T23:18:52+09:00",
+  "artifact_path": "docs/evidence/manifests/A-05_START_EVIDENCE_MANIFEST.json",
+  "target_hash": "sha256:160B626D8C738CE5E499496A22DA3B5CD8944DF60CB9443F983797F5F2582104",
+  "delivered_hash": "sha256:160B626D8C738CE5E499496A22DA3B5CD8944DF60CB9443F983797F5F2582104",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 595,
+  "target_content_bytes": 18646,
+  "projection": {"event_sequence": 81, "status": "ACTIVE", "result_status": "IN_PROGRESS", "accepted": false, "current_work_package": "A-05", "active_agent": "developer-primary-a05", "valid_failure_count": 0},
+  "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "lease_projection": {"worker_lease_id": "worker-lease-a05-20260811-001", "execution_fencing_token": "a05-execution-fence-epoch-1-c8629be", "worker_lease_epoch": 1, "worker_expires_at": "2026-08-12T11:18:50+09:00", "write_lease_id": "write-lease-a05-20260811-001", "write_fencing_token": "a05-write-fence-epoch-1-c8629be", "write_epoch": 1, "write_expires_at": "2026-08-12T11:18:51+09:00"},
+  "repository_projection": {"projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "c8629bea60d60a5dd158c3026e384a85af8178da", "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", "branch": "main", "upstream": "origin/main", "remote_head": "c8629bea60d60a5dd158c3026e384a85af8178da", "push_status": "PUSH_PENDING_MAIN", "exact_allowed_paths": ["docs/evidence/manifests/A-05_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a05-start.json", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]},
+  "developer_scope": {"artifact_count": 13, "product_artifacts_materialized": false, "path_scope": ["docs/architecture/a05/A-05_DESIGN_DECISION_CATALOG.json", "docs/architecture/a05/A-05_PROPOSAL_COMPARE.md", "docs/architecture/a05/A-05_DECISION_BOARD.md", "docs/architecture/a05/A-05_DESIGN_BASELINE.md", "docs/architecture/a05/A-05_PROPOSAL_STATIC_RENDER.svg", "docs/architecture/a05/A-05_DECISION_STATIC_RENDER.svg", "scripts/check_a05_design_decisions.py", "tests/tooling/test_a05_design_decisions.py", "tests/fixtures/a05/canonical-contract.json", "tests/fixtures/a05/mutation-catalog.json", "docs/validation/A-05_DESIGN_DECISION_VALIDATION.md", "docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json", "docs/completion_reports/A-05_COMPLETION_REPORT.md"]},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-04_ACCEPTANCE_PROGRESS_MANIFEST.json", "bytes": 3724, "sha256": "ABA44856604A1989EB9110B44A8A38E56BC6005D85C01FE525DA76A40593317F"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a05-start.json", "bytes": 862, "sha256": "03A3B5EA6C5245B87B62C316FDECDAF1C339E548EEA2CC59190EDE0EA3D7396E"},
+    {"path": "docs/test_reports/A-04_TEST_REPORT.md", "bytes": 7842, "sha256": "3C809FF5F8C31ABB349A19CAFE5151F403437A9757D0C6FC4BA5BC4A1BC4C1B3"},
+    {"path": "docs/work_orders/A-05_INVOCATION_PROMPT.md", "bytes": 908, "sha256": "68FC8350B726DE793A8F5DC8B6A988730A09E7B8C214579D49176D342B3C9F29"},
+    {"path": "docs/work_orders/A-05_WORK_INSTRUCTION.md", "bytes": 5310, "sha256": "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 78 and all A-01 through A-04 accepted evidence remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This starts A-05 and is not completion or acceptance.", "No Developer product artifact exists at this projection.", "Canonical L7 runtime, browser, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}

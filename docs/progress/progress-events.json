@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 78,
+  "last_sequence": 81,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -1872,6 +1872,106 @@
         ],
         "reporting_decision": "AUTO_CONTINUE",
         "runtime_deferred": ["AV-UI-004", "AV-UI-005"],
+        "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_a05_worker_lease_issued",
+      "sequence": 79,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T23:18:50+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-05",
+      "details": {
+        "lease_id": "worker-lease-a05-20260811-001",
+        "fencing_token": "a05-execution-fence-epoch-1-c8629be",
+        "execution_fencing_token": "a05-execution-fence-epoch-1-c8629be",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary-a05",
+        "subject_ref": "A-05",
+        "baseline_hash": "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C",
+        "dispatch_head": "c8629bea60d60a5dd158c3026e384a85af8178da",
+        "issued_at": "2026-08-11T23:18:50+09:00",
+        "expires_at": "2026-08-12T11:18:50+09:00"
+      }
+    },
+    {
+      "event_id": "evt_a05_write_lease_issued",
+      "sequence": 80,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-11T23:18:51+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-05",
+      "details": {
+        "lease_id": "write-lease-a05-20260811-001",
+        "worker_lease_id": "worker-lease-a05-20260811-001",
+        "fencing_token": "a05-write-fence-epoch-1-c8629be",
+        "write_fencing_token": "a05-write-fence-epoch-1-c8629be",
+        "write_epoch": 1,
+        "actor_id": "developer-primary-a05",
+        "subject_ref": "A-05",
+        "baseline_hash": "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C",
+        "issued_at": "2026-08-11T23:18:51+09:00",
+        "expires_at": "2026-08-12T11:18:51+09:00",
+        "path_scope": [
+          "docs/architecture/a05/A-05_DESIGN_DECISION_CATALOG.json",
+          "docs/architecture/a05/A-05_PROPOSAL_COMPARE.md",
+          "docs/architecture/a05/A-05_DECISION_BOARD.md",
+          "docs/architecture/a05/A-05_DESIGN_BASELINE.md",
+          "docs/architecture/a05/A-05_PROPOSAL_STATIC_RENDER.svg",
+          "docs/architecture/a05/A-05_DECISION_STATIC_RENDER.svg",
+          "scripts/check_a05_design_decisions.py",
+          "tests/tooling/test_a05_design_decisions.py",
+          "tests/fixtures/a05/canonical-contract.json",
+          "tests/fixtures/a05/mutation-catalog.json",
+          "docs/validation/A-05_DESIGN_DECISION_VALIDATION.md",
+          "docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json",
+          "docs/completion_reports/A-05_COMPLETION_REPORT.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_a05_package_started",
+      "sequence": 81,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-11T23:18:52+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-05",
+      "details": {
+        "work_instruction_id": "WI-A-05-20260811-001",
+        "work_instruction_path": "docs/work_orders/A-05_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C",
+        "invocation_path": "docs/work_orders/A-05_INVOCATION_PROMPT.md",
+        "invocation_sha256": "68FC8350B726DE793A8F5DC8B6A988730A09E7B8C214579D49176D342B3C9F29",
+        "package_status": "ACTIVE",
+        "result_status": "IN_PROGRESS",
+        "developer_actor": "developer-primary-a05",
+        "worker_lease_id": "worker-lease-a05-20260811-001",
+        "write_lease_id": "write-lease-a05-20260811-001",
+        "dispatch_head": "c8629bea60d60a5dd158c3026e384a85af8178da",
+        "dispatch_upstream_head": "c8629bea60d60a5dd158c3026e384a85af8178da",
+        "dispatch_worktree_status": "CLEAN",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "c8629bea60d60a5dd158c3026e384a85af8178da",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "c8629bea60d60a5dd158c3026e384a85af8178da",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-05_START_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a05-start.json",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "reporting_decision": "AUTO_CONTINUE",
+        "runtime_deferred": ["AV-FLOW-001"],
         "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED"
       }
     }

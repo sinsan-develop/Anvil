@@ -1737,6 +1737,79 @@ def validate_a04_acceptance_manifest(
     return sorted(set(errors))
 
 
+def validate_a05_start_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_paths = {
+        "docs/evidence/manifests/A-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-a05-start.json",
+        "docs/test_reports/A-04_TEST_REPORT.md",
+        "docs/work_orders/A-05_INVOCATION_PROMPT.md",
+        "docs/work_orders/A-05_WORK_INSTRUCTION.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A05_START_RAW_CHECKSUMS_INVALID"]
+    seen: set[str] = set()
+    canonical_rows: list[tuple[bytes, str]] = []
+    total_bytes = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen:
+            errors.append("A05_START_RAW_CHECKSUMS_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A05_START_RAW_CHECKSUMS_INVALID")
+            continue
+        actual = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != actual:
+            errors.append("A05_START_RAW_CHECKSUMS_INVALID")
+        total_bytes += len(raw)
+        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{actual}"))
+    if seen != expected_paths:
+        errors.append("A05_START_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes") != len(canonical), manifest.get("target_content_bytes") != total_bytes, manifest.get("target_hash") != target, manifest.get("delivered_hash") != target, manifest.get("content_hash") != target)):
+        errors.append("A05_START_TARGET_MISMATCH")
+    repository = progress.get("repository", {})
+    projection = manifest.get("repository_projection", {})
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths")
+    if any(projection.get(field) != repository.get(field) for field in fields):
+        errors.append("A05_START_REPOSITORY_PROJECTION_MISMATCH")
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    wi = progress.get("active_work_instruction") or {}
+    lease = manifest.get("lease_projection") or {}
+    if (
+        manifest.get("package_id") != "A-05"
+        or manifest.get("self_reference") is not False
+        or progress.get("event_sequence") != 81
+        or progress.get("current_work_package") != "A-05"
+        or progress.get("status") != "ACTIVE"
+        or progress.get("active_agent") != "developer-primary-a05"
+        or progress.get("valid_failure_count") != 0
+        or wi.get("artifact_id") != "WI-A-05-20260811-001"
+        or wi.get("sha256") != "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C"
+        or wi.get("invocation_sha256") != "68FC8350B726DE793A8F5DC8B6A988730A09E7B8C214579D49176D342B3C9F29"
+        or wi.get("package_status") != "ACTIVE"
+        or worker.get("lease_epoch") != 1
+        or write.get("write_epoch") != 1
+        or write.get("worker_lease_id") != worker.get("lease_id")
+        or lease.get("execution_fencing_token") != worker.get("execution_fencing_token")
+        or lease.get("write_fencing_token") != write.get("write_fencing_token")
+        or manifest.get("canonical_l7") != "RUNTIME_DEFERRED / NOT_EXECUTED"
+    ):
+        errors.append("A05_START_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -2304,6 +2377,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a04_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-04_ACCEPTANCE_PROGRESS_MANIFEST.json":
             errors.extend(validate_a04_acceptance_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-05_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_a05_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

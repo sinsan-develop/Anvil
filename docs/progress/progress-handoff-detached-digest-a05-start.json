@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-05-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "A-05",
+  "event_sequence": 81,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 15378, "file_sha256": "D0F718017D7747137BFDDFF01E94C827F401E61A4B9AC06D8A1B51516B4D9B56", "canonical_json_sha256": "AC897CF468B179E3DEC16E25E7BB82A6EC09D1D5EA197D874DF1555DE5A7E27C"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 36715, "file_sha256": "47357E61CB147546133F0F441321A7A755E185A4E7E1338039187BDDF0E964ED", "machine_summary_canonical_sha256": "6D70D202E509F63577641D29A7BFB8E9648A3784D1BFA874E8806D74464168CB"},
+  "created_at": "2026-08-11T23:18:52+09:00",
+  "scope": "A-05 non-retroactive start; clean equal dispatch bound, epoch-1 worker and write leases active, no Developer product artifacts yet"
+}
