@@ -1,0 +1,32 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-04-START-20260811-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-04",
+  "artifact_status": "active_start",
+  "content_hash": "sha256:D792EBCE58E84718689F63DA6409B792F27C1880F63DD70BDF6B045E58081E68",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T16:57:57+09:00",
+  "artifact_path": "docs/evidence/manifests/A-04_START_EVIDENCE_MANIFEST.json",
+  "target_hash": "sha256:D792EBCE58E84718689F63DA6409B792F27C1880F63DD70BDF6B045E58081E68",
+  "delivered_hash": "sha256:D792EBCE58E84718689F63DA6409B792F27C1880F63DD70BDF6B045E58081E68",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 598,
+  "target_content_bytes": 19535,
+  "projection": {"event_sequence": 74, "status": "ACTIVE", "result_status": "IN_PROGRESS", "accepted": false, "current_work_package": "A-04", "active_agent": "developer-primary-a04", "valid_failure_count": 0},
+  "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "lease_projection": {"worker_lease_id": "worker-lease-a04-20260811-001", "execution_fencing_token": "a04-execution-fence-epoch-1-dd52c6a", "worker_lease_epoch": 1, "worker_expires_at": "2026-08-12T04:57:55+09:00", "write_lease_id": "write-lease-a04-20260811-001", "write_fencing_token": "a04-write-fence-epoch-1-dd52c6a", "write_epoch": 1, "write_expires_at": "2026-08-12T04:57:56+09:00"},
+  "repository_projection": {"projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "dd52c6abe1932d31db725e8f85bef2d3dd23143f", "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", "branch": "main", "upstream": "origin/main", "remote_head": "dd52c6abe1932d31db725e8f85bef2d3dd23143f", "push_status": "PUSH_PENDING_MAIN", "exact_allowed_paths": ["docs/evidence/manifests/A-04_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a04-start.json", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]},
+  "developer_scope": {"artifact_count": 13, "product_artifacts_materialized": false, "path_scope": ["docs/architecture/a04/A-04_WORKBENCH_CATALOG.json", "docs/architecture/a04/A-04_SESSION_WORKBENCH.md", "docs/architecture/a04/A-04_CONVERSATION_CONTEXT.md", "docs/architecture/a04/A-04_PHASE_RAIL_CONTROL.md", "docs/architecture/a04/A-04_WORKBENCH_STATIC_RENDER.svg", "docs/architecture/a04/A-04_CONTROL_STATIC_RENDER.svg", "scripts/check_a04_workbench.py", "tests/tooling/test_a04_workbench.py", "tests/fixtures/a04/canonical-contract.json", "tests/fixtures/a04/mutation-catalog.json", "docs/validation/A-04_WORKBENCH_VALIDATION.md", "docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json", "docs/completion_reports/A-04_COMPLETION_REPORT.md"]},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-03_ACCEPTANCE_PROGRESS_MANIFEST.json", "bytes": 3799, "sha256": "6F5BA43D70E910CDA7D4F1A375C7C5AD0B801F2807B1D0468CB2661D4F768B22"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a04-start.json", "bytes": 862, "sha256": "809496256A71082236BDB1E25FCC883434C43A346FA56D16E57409C9BEE09912"},
+    {"path": "docs/test_reports/A-03_TEST_REPORT_R2.md", "bytes": 6847, "sha256": "0D16D409B87B161F96811E9297A2F3877398B5124FA5D9D20D648C0235C07C2F"},
+    {"path": "docs/work_orders/A-04_INVOCATION_PROMPT.md", "bytes": 977, "sha256": "DE5A605C7CDB3F84725C4792F612B0455AC00E5C669E8509C1FFF6F0A3F62CDB"},
+    {"path": "docs/work_orders/A-04_WORK_INSTRUCTION.md", "bytes": 7050, "sha256": "1B8CE8809EC6546ED483D0E48294CC547F0767A5D0D31D120B08787290ED753E"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 71 and all A-01 through A-03 accepted evidence remain byte-immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This starts A-04 and is not completion or acceptance.", "No Developer product artifact exists at this projection.", "Canonical L7 runtime, browser, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}
