@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000051", "event_sequence": 120, "snapshot_hash": "D2D3A9C5F6E6E74D9B4DB9A48889AF7DFEFE8EFC2C103287DE03DCA06FCB9F4A", "updated_at": "2026-08-12T07:30:00+09:00", "last_event_id": "evt_a10_main_accepted",
+  "snapshot_id": "snapshot-anvil-build-000052", "event_sequence": 123, "snapshot_hash": "A99F1213BC7D93A42CAD63A5C1C416232B7BEB31D97A143DF878970E706806D4", "updated_at": "2026-08-12T08:00:02+09:00", "last_event_id": "evt_a11_package_started",
   "plan_version": "1.5",
   "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "A",
-  "current_work_package": "A-11", "status": "READY",
+  "current_work_package": "A-11", "status": "ACTIVE",
   "completed_packages": ["G-01", "G-02", "G-03", "G-04", "G-05", "G-06", "G-07", "PHASE_G_GATE", "A-01", "A-02", "A-03", "A-04", "A-05", "A-06", "A-07", "A-08", "A-09", "A-10"],
-  "active_agent": null,
-  "write_lease": null,
-  "worker_lease": null,
+  "active_agent": "developer-primary-a11",
+  "write_lease": {"lease_id":"write-lease-a11-20260812-001","worker_lease_id":"worker-lease-a11-20260812-001","write_fencing_token":"a11-write-fence-epoch-1-7983e21","write_epoch":1,"actor_id":"developer-primary-a11","subject_ref":"A-11","baseline_hash":"CDDBF40709CCE174F79EBDF64408783AEFAC4F0F471238782A2A5637BF9C65F0","issued_at":"2026-08-12T08:00:01+09:00","expires_at":"2026-08-12T20:00:01+09:00","path_scope":["docs/architecture/a11/**","scripts/check_a11_operations_monitoring.py","tests/tooling/test_a11_operations_monitoring.py","tests/fixtures/a11/**","docs/validation/A-11_OPERATIONS_MONITORING_VALIDATION.md","docs/evidence/manifests/A-11_EVIDENCE_MANIFEST*.json","docs/completion_reports/A-11_COMPLETION_REPORT.md"]},
+  "worker_lease": {"lease_id":"worker-lease-a11-20260812-001","execution_fencing_token":"a11-execution-fence-epoch-1-7983e21","lease_epoch":1,"actor_id":"developer-primary-a11","subject_ref":"A-11","baseline_hash":"CDDBF40709CCE174F79EBDF64408783AEFAC4F0F471238782A2A5637BF9C65F0","dispatch_head":"7983e21b1bb59b28af814ed457e56d82e392e496","issued_at":"2026-08-12T08:00:00+09:00","expires_at":"2026-08-12T20:00:00+09:00"},
   "budget_reservations": [],
   "valid_failure_count": 0,
   "active_failure_lineage": {
@@ -32,12 +32,12 @@
     {"path": "docs/onboarding/developer-primary-ack.md", "sha256": "931ED3D4A4A351F47FB48ED459270565E63889E8049EC4587032E2C640782B90"},
     {"path": "scripts/check_a01_journey.py", "sha256": "EB6B9DA5581869E53B1E24D1FB82A5286B78DA7C9C062611FF6DD7BE4AAF3C45"},
     {"path": "tests/tooling/test_a01_journey.py", "sha256": "0BCF68618F3BEF75B5BECF9BF8733F454AD98C54E0E16DF09A57C3B04CF5A82D"},
-    {"path": "scripts/check_project_progress.py", "sha256": "3CBF1A43673ABA6BBD746A9C253C2CA69EA0014D9B8CA1F2284142598B2CCEE8"},
-    {"path": "tests/tooling/test_project_progress.py", "sha256": "FF0CBD8ED4A2305381395D7DF1AB70ECCAF3D7A0EC6611459E25BFF1C773552C"},
+    {"path": "scripts/check_project_progress.py", "sha256": "C6AF07798F464D539FE72766BE2CE291B75F9973BE2DF4098F06B2E83E97B425"},
+    {"path": "tests/tooling/test_project_progress.py", "sha256": "311651F2E42848596667201B706DED12CB5D2D7F218E8A330570D81B64FC7680"},
     {"path": "scripts/check_g07_baseline.py", "sha256": "BBA9863304D810E9A19DFA0317C84887DBAD36E6D4EAA2C335C682EC3561F07D"},
-    {"path": "tests/tooling/test_g07_baseline.py", "sha256": "1BE03C6EBCC7F21AB2FE391098C230D91E37E282A40C4828EACDD33D76EE7573"},
-    {"path": "scripts/check_phase_g_gate.py", "sha256": "F46262D9E7AB1FC0D42432078F4A19BF756AB2DAEF2689FA3D01A2E858AF31B5"},
-    {"path": "tests/tooling/test_phase_g_gate.py", "sha256": "70B6E25E797B99B2C1276F0EE309484E268BC9D67B071C079DC83CF3904348E5"},
+    {"path": "tests/tooling/test_g07_baseline.py", "sha256": "D732BF3BA472744CEF43D74D49865F336C0493D3FCDE82E4FD4BA55F1421C4E1"},
+    {"path": "scripts/check_phase_g_gate.py", "sha256": "7C6E7E0328E5416285C123E811D77DD6D85E5E69B24367F15096594F3F65854A"},
+    {"path": "tests/tooling/test_phase_g_gate.py", "sha256": "0FEA5815C3156A4890C88673A8BAE2AEE15BFA4389F342623E7703CAB4301FDB"},
     {"path": "scripts/check_a02_tokens.py", "sha256": "F063221B5B500FF22FFA475097A47DE070015322DBE391696F3EF3F2E917C5AA"},
     {"path": "tests/tooling/test_a02_tokens.py", "sha256": "8C4A96E53423740E96B921E5E41F3DDCD19AF71B3A73889772B558350128CA82"},
     {"path": "docs/completion_reports/A-02_COMPLETION_REPORT.md", "sha256": "CE92C4A06F4E130D61B024ADAA09DA62B63ADAAF57405D232878B0090120FFF6"},
@@ -113,6 +113,8 @@
     ,{"path": "scripts/check_a10_provider_routing.py", "sha256": "7122264EF4497D35630F5A230D23C509A856BA752CB3C3BB82A2DE79B7954BE0"}
     ,{"path": "tests/tooling/test_a10_provider_routing.py", "sha256": "1774198F5C67AFED753D813938E3CB3B0874739F911D01A15E585649ECFE5D6C"}
     ,{"path": "docs/test_reports/A-10_TEST_REPORT.md", "sha256": "B1B51F68561805B3C12355D6A7A939063EA1AB77EF45553C22E036F4D1682045"}
+    ,{"path": "docs/work_orders/A-11_WORK_INSTRUCTION.md", "sha256": "CDDBF40709CCE174F79EBDF64408783AEFAC4F0F471238782A2A5637BF9C65F0"}
+    ,{"path": "docs/work_orders/A-11_INVOCATION_PROMPT.md", "sha256": "2A3CEF1D7FB9A3E045067E32276861FCBD324E59DE7AB5A6AB4A25F3D639D36B"}
   ],
   "latest_evidence_manifest_ref": {"path": "docs/evidence/manifests/A-10_EVIDENCE_MANIFEST.json", "sha256": "C9667081B8BEA555C32F8833D7F28BCF3528882324814CCE08CAAEAA27DE6A84"},
   "pending_approvals": [],
@@ -123,7 +125,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Main may prepare A-11 WorkInstruction; A-11 implementation has not started",
+  "next_safe_action": "developer-primary-a11 may implement only the leased A-11 product paths under WI-A-11-20260812-001",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -148,15 +150,15 @@
   },
   "repository": {
     "branch": "main",
-    "local_head": "ff433bcae92948bdecfe9a51fcb13a9c5c5050c2",
+    "local_head": "7983e21b1bb59b28af814ed457e56d82e392e496",
     "upstream": "origin/main",
-    "remote_head": "ff433bcae92948bdecfe9a51fcb13a9c5c5050c2",
+    "remote_head": "7983e21b1bb59b28af814ed457e56d82e392e496",
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "ff433bcae92948bdecfe9a51fcb13a9c5c5050c2",
+    "validated_base_commit": "7983e21b1bb59b28af814ed457e56d82e392e496",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "push_status": "PUSH_PENDING_MAIN",
-    "exact_allowed_paths": ["docs/evidence/manifests/A-10_ACCEPTANCE_PROGRESS_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a10-accepted.json", "docs/test_reports/A-10_TEST_REPORT.md", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
-    "observed_at": "2026-08-12T07:30:00+09:00", "worktree_status": "PUSH_PENDING_MAIN: acceptance base local HEAD=origin/main ff433bc; exact 11-path Main acceptance projection"
+    "exact_allowed_paths": ["docs/evidence/manifests/A-11_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a11-start.json", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
+    "observed_at": "2026-08-12T08:00:02+09:00", "worktree_status": "PUSH_PENDING_MAIN: start base local HEAD=origin/main 7983e21; exact 10-path Main start projection"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -168,7 +170,7 @@
     },
     "runtime_deferred": ["AV-FLOW-001"]
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {"artifact_id":"WI-A-11-20260812-001","path":"docs/work_orders/A-11_WORK_INSTRUCTION.md","sha256":"CDDBF40709CCE174F79EBDF64408783AEFAC4F0F471238782A2A5637BF9C65F0","invocation_path":"docs/work_orders/A-11_INVOCATION_PROMPT.md","invocation_sha256":"2A3CEF1D7FB9A3E045067E32276861FCBD324E59DE7AB5A6AB4A25F3D639D36B","package_status":"ACTIVE","result_status":"IN_PROGRESS","accepted":false,"independent_tester_status":"NOT_REQUESTED","canonical_l4":"F-13_RUNTIME_DEFERRED_NOT_EXECUTED","actual_operations_status":"NOT_EXECUTED","actual_api_status":"NOT_EXECUTED","actual_db_status":"NOT_EXECUTED","actual_event_status":"NOT_EXECUTED","actual_sse_status":"NOT_EXECUTED","actual_browser_status":"NOT_EXECUTED","actual_network_status":"NOT_EXECUTED","actual_deploy_status":"NOT_EXECUTED","actual_runtime_status":"NOT_EXECUTED","actual_dir_status":"NOT_EXECUTED","lease_projection":{"execution_fencing_token":"a11-execution-fence-epoch-1-7983e21","write_fencing_token":"a11-write-fence-epoch-1-7983e21"}},
   "phase_gate": {
     "gate": "G Gate",
     "decision": "ACCEPTED",
@@ -180,7 +182,7 @@
     "a01_start_allowed": true
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-A-09-20260812-001", "path": "docs/work_orders/A-09_WORK_INSTRUCTION.md", "sha256": "5BB6F711EB22B8AF776CD04F5E51004B3DACB58D47B8E822BF55854650D152AC",
+    "artifact_id": "WI-A-10-20260812-001", "path": "docs/work_orders/A-10_WORK_INSTRUCTION.md", "sha256": "A7D527B3AA9B50F30589526EDC1D790B75A778D96C47A959B7C966418BFECCF5",
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
@@ -189,14 +191,14 @@
     "stop_before_dialogue_report": false
   },
   "current_progress_evidence_ref": {
-    "package_id": "A-10",
-    "path": "docs/progress/progress-handoff-detached-digest-a10-accepted.json", "manifest_path": "docs/evidence/manifests/A-10_ACCEPTANCE_PROGRESS_MANIFEST.json"
+    "package_id": "A-11",
+    "path": "docs/progress/progress-handoff-detached-digest-a11-start.json", "manifest_path": "docs/evidence/manifests/A-11_START_EVIDENCE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {"path": "docs/progress/failure-ledger.json", "sha256": "BFEAF434E30EEDE8F9CF0EB70F7FA6D210007F382D00B5DD1BE4C27486FCD68B"},
     "non_semantic_revision_bindings": {"path": "docs/progress/non-semantic-revision-bindings.json", "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"},
     "dir_checkpoints": {"path": "docs/progress/dir-checkpoints.json", "sha256": "73147EA0DC940F34A7369E8A58EA7DD738DBA2246DD9F729DE8FB26273E44F4B"},
     "progress_event_contract": {"path": "docs/progress/progress-event-contract.json", "sha256": "B60E59C60BA15F984DB2070894F9ED8844498B931546DB55F68F2154FA654F7C"},
-    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "191D4FB842C5DE1FB05589FA63675BB445A14E79EDF839A5AB88F42DCD8A023A"}
+    "progress_events": {"path": "docs/progress/progress-events.json", "sha256": "53FAF73590E28B43A20F2DA892ABCF44E3211C6DD3F7D4E14B8497FA153E9BFE"}
   }
 }

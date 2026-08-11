@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-11-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "A-11",
+  "event_sequence": 123,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 21061, "file_sha256": "0B07673FA198682E15596B7A43A743E6F2FF40A73A37A08131EF5CD485DA490B", "canonical_json_sha256": "E232DD73C4D146CAAD4737031EBB85FDFF55364350E64AA931A6614753F361B1"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 47033, "file_sha256": "245FE690FFB14A940B822C3EE8EDF8E95965B984503FCE271BD7076FE0DE05D3", "machine_summary_canonical_sha256": "11A0264FF488E23BAC83E5A7144EF415C95FBFE9229F684B0A7B63035473FFAA"},
+  "created_at": "2026-08-12T08:00:02+09:00",
+  "scope": "A-11 fenced start projection on clean equal HEAD; operations, API, DB, Event, SSE, browser, network, deploy, runtime, and DIR NOT_EXECUTED"
+}
