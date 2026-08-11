@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="CONTROL_MODE_CARD|HUMAN_INTERVENTION_MAP|STOP_RESUME_PANEL" role="img" aria-labelledby="title desc">
+  <title id="title">A-04 control and stop resume static contract specimen</title>
+  <desc id="desc">E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED / RUNTIME_DEFERRED / NOT_EXECUTED</desc>
+  <rect width="1920" height="1080" fill="#0B1220"/>
+  <g font-family="Arial, sans-serif" fill="#F7F9FC">
+    <text x="32" y="48" font-size="16">Control · Human Intervention · Stop/Resume</text>
+    <text x="32" y="78" font-size="10" fill="#B8C4D8">세 축은 독립 계약이며 high-risk는 CONTROLLED + STOP</text>
+  </g>
+  <rect x="32" y="112" width="580" height="820" rx="8" fill="#142033" stroke="#60738F"/>
+  <rect x="632" y="112" width="600" height="820" rx="8" fill="#142033" stroke="#60738F"/>
+  <rect x="1252" y="112" width="636" height="820" rx="8" fill="#142033" stroke="#60738F"/>
+  <g font-family="Arial, sans-serif" fill="#F7F9FC">
+    <text x="56" y="148" font-size="16">Control Mode Card</text>
+    <text x="56" y="184" font-size="12">control level: LIGHT | STANDARD | CONTROLLED</text>
+    <text x="56" y="214" font-size="12">execution strategy: SINGLE_WORKER | DELEGATED | PARALLEL_BATCH</text>
+    <text x="56" y="244" font-size="12">failure policy: STOP | CONTINUE_INDEPENDENT | COLLECT_AND_REVIEW</text>
+    <rect x="56" y="280" width="532" height="132" rx="6" fill="#1B2A42" stroke="#FF7B86"/>
+    <text x="72" y="312" font-size="12">HIGH RISK → CONTROLLED + STOP</text>
+    <text x="72" y="340" font-size="10">ambiguity · migration · auth · secret · payment</text>
+    <text x="72" y="364" font-size="10">production deploy · deletion · shared schema</text>
+    <text x="72" y="388" font-size="10">direction change · unverified input</text>
+    <text x="56" y="452" font-size="12">Execute guard: approval + worker lease</text>
+    <text x="56" y="478" font-size="10">mutation requires write lease · automatic entry forbidden</text>
+    <text x="656" y="148" font-size="16">Human Intervention Map</text>
+    <text x="656" y="184" font-size="12">STEP-03 · STEP-06 · STEP-10 · STEP-12 · STEP-14</text>
+    <text x="656" y="218" font-size="12">subject_artifact · subject_hash · actor · capability</text>
+    <text x="656" y="246" font-size="12">allowed_decisions · reason · evidence · status · next_action</text>
+    <rect x="656" y="280" width="552" height="132" rx="6" fill="#1B2A42" stroke="#C4A7FF"/>
+    <text x="672" y="314" font-size="12">WAITING / BLOCKED / INTERRUPTED / SKIPPED ≠ success</text>
+    <text x="672" y="344" font-size="10">unauthorized action: disabled + reason + next_action</text>
+    <text x="672" y="372" font-size="10">Project view does not imply approve/apply/control</text>
+    <text x="1276" y="148" font-size="16">Stop / Resume Panel</text>
+    <text x="1276" y="184" font-size="12">interrupted_point · last_completed_step</text>
+    <text x="1276" y="212" font-size="12">checkpoint · checkpoint_hash · changed_conditions</text>
+    <text x="1276" y="240" font-size="12">side_effect_reconciliation · reason · next_action</text>
+    <rect x="1276" y="280" width="588" height="170" rx="6" fill="#1B2A42" stroke="#F8D66D"/>
+    <text x="1292" y="314" font-size="12">safe_resume · hold · restart · discard</text>
+    <text x="1292" y="344" font-size="10">same subject hash + checkpoint + completed steps restored</text>
+    <text x="1292" y="372" font-size="10">changed conditions reviewed + side effects reconciled</text>
+    <text x="1292" y="400" font-size="10">duplicate execution forbidden</text>
+    <text x="1292" y="428" font-size="10">dirty/untracked separate · policy/protected · UNKNOWN/CONFLICT fail-closed</text>
+    <text x="32" y="1018" font-size="10">i-icon · tooltip · popover · reason · next_action · keyboard · focus return</text>
+    <text x="32" y="1044" font-size="9" fill="#FFD166">STATIC_ONLY · E-SHOT_STATIC_NOT_RUNTIME_UI · E-DEC_NOT_EXECUTED · RUNTIME_DEFERRED / NOT_EXECUTED · Browser/API/DB/deploy NOT_EXECUTED</text>
+  </g>
+</svg>

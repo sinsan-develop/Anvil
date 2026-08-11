@@ -1,0 +1,40 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-04-COMPLETION-PROGRESS-20260811-001",
+  "artifact_type": "progress_transition_manifest",
+  "project_id": "anvil",
+  "package_id": "A-04",
+  "artifact_status": "test_review_pending_independent_tester",
+  "content_hash": "sha256:8AF996ADD10B49C025C013342517257C6A5FAFF2927C1872F04A91A18C080BF0",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-11T17:34:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-04_COMPLETION_PROGRESS_MANIFEST.json",
+  "target_hash": "sha256:8AF996ADD10B49C025C013342517257C6A5FAFF2927C1872F04A91A18C080BF0",
+  "delivered_hash": "sha256:8AF996ADD10B49C025C013342517257C6A5FAFF2927C1872F04A91A18C080BF0",
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 629,
+  "target_content_bytes": 17993,
+  "projection": {"event_sequence": 77, "status": "TEST_REVIEW", "result_status": "COMPLETED", "accepted": false, "active_agent": null, "worker_lease": null, "write_lease": null, "independent_tester_status": "PENDING", "next_package": "A-05", "next_package_status": "BLOCKED_PENDING_A04_ACCEPTANCE"},
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "49678f55b4b814415b6ed7b140d4fce173ab09ab",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "49678f55b4b814415b6ed7b140d4fce173ab09ab",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": ["docs/architecture/a04/A-04_CONTROL_STATIC_RENDER.svg", "docs/architecture/a04/A-04_CONVERSATION_CONTEXT.md", "docs/architecture/a04/A-04_PHASE_RAIL_CONTROL.md", "docs/architecture/a04/A-04_SESSION_WORKBENCH.md", "docs/architecture/a04/A-04_WORKBENCH_CATALOG.json", "docs/architecture/a04/A-04_WORKBENCH_STATIC_RENDER.svg", "docs/completion_reports/A-04_COMPLETION_REPORT.md", "docs/evidence/manifests/A-04_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a04-completion-test-review.json", "docs/validation/A-04_WORKBENCH_VALIDATION.md", "scripts/check_a04_workbench.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/fixtures/a04/canonical-contract.json", "tests/fixtures/a04/mutation-catalog.json", "tests/tooling/test_a04_workbench.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]
+  },
+  "developer_evidence": {"manifest_path": "docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json", "manifest_sha256": "C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB", "target_hash": "D2ED622DD179611026D8B396392C84EB5A373986C7733D0ADA78C897D049464E", "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"},
+  "raw_checksums": [
+    {"path": "docs/completion_reports/A-04_COMPLETION_REPORT.md", "bytes": 3038, "sha256": "388B07B9E5D4D448A342DDCC82962DA85FBCD72087C6F7C2A2FCA94256FC411E"},
+    {"path": "docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json", "bytes": 2520, "sha256": "C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB"},
+    {"path": "docs/evidence/manifests/A-04_START_EVIDENCE_MANIFEST.json", "bytes": 4464, "sha256": "582C1998CF4BED50E396C458FCE481BE04E6A326EA9A1929EA5894636EA5886D"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a04-completion-test-review.json", "bytes": 921, "sha256": "4787B5C57F8D77B0AF380FC9D64A58BE541F2B8EBE05033A80840F7ECFC8AD56"},
+    {"path": "docs/work_orders/A-04_WORK_INSTRUCTION.md", "bytes": 7050, "sha256": "1B8CE8809EC6546ED483D0E48294CC547F0767A5D0D31D120B08787290ED753E"}
+  ],
+  "historical_evidence_policy": "Sequences 1 through 74, A-04 start evidence, and Developer 13-path evidence remain byte-immutable",
+  "canonical_l7": "RUNTIME_DEFERRED / NOT_EXECUTED",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": ["This is a TEST_REVIEW transition, not A-04 acceptance.", "Canonical L7 runtime, browser, API, DB, Network, Docker, deployment, and release remain NOT_EXECUTED."]
+}

@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" data-surface-ids="WORKBENCH_SESSION_SHELL|CONVERSATION_REQUEST|CONTEXT_DRAWER|PHASE_RAIL" role="img" aria-labelledby="title desc">
+  <title id="title">A-04 Session Workbench static contract specimen</title>
+  <desc id="desc">E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED / RUNTIME_DEFERRED / NOT_EXECUTED</desc>
+  <rect width="1920" height="1080" fill="#0B1220"/>
+  <rect x="0" y="0" width="224" height="1080" fill="#142033"/>
+  <rect x="224" y="0" width="1696" height="48" fill="#1B2A42"/>
+  <g font-family="Arial, sans-serif" fill="#F7F9FC">
+    <text x="24" y="34" font-size="16">ANVIL · Session Workbench</text>
+    <text x="248" y="30" font-size="12">project: Anvil  ·  branch: main  ·  baseline: approved  ·  environment: LOCAL</text>
+    <text x="24" y="92" font-size="14">Phase Rail</text>
+    <text x="24" y="126" font-size="12">Idea  ✓</text><text x="24" y="154" font-size="12">Design  ✓</text>
+    <text x="24" y="182" font-size="12">Plan  CURRENT</text><text x="24" y="210" font-size="12">Execute  WAITING</text>
+    <text x="24" y="238" font-size="12">Verify</text><text x="24" y="266" font-size="12">Validate</text>
+    <text x="24" y="294" font-size="12">Release</text><text x="24" y="322" font-size="12">Learn</text>
+  </g>
+  <rect x="240" y="64" width="390" height="936" rx="8" fill="#142033" stroke="#60738F"/>
+  <rect x="646" y="64" width="634" height="936" rx="8" fill="#142033" stroke="#60738F"/>
+  <rect x="1296" y="64" width="600" height="936" rx="8" fill="#142033" stroke="#60738F"/>
+  <g font-family="Arial, sans-serif" fill="#F7F9FC">
+    <text x="260" y="96" font-size="16">Conversation</text>
+    <text x="260" y="128" font-size="12">objective / acceptance_criteria</text>
+    <text x="260" y="152" font-size="12">included_scope / excluded_scope / protected_scope</text>
+    <text x="260" y="176" font-size="12">assumptions / questions · guess ≠ confirmed fact</text>
+    <rect x="260" y="204" width="350" height="56" rx="6" fill="#1B2A42" stroke="#60738F"/>
+    <text x="276" y="236" font-size="12">confirm · edit · reject · hold · view_evidence</text>
+    <text x="260" y="294" font-size="12" fill="#B8C4D8">confirm_requirements guard</text>
+    <text x="260" y="318" font-size="10">objective + criterion≥1 + unanswered=0 + assumptions confirmed</text>
+    <text x="666" y="96" font-size="16">Current Work</text>
+    <text x="666" y="128" font-size="12">Plan · subject hash · impact · protected scope</text>
+    <rect x="666" y="152" width="594" height="84" rx="6" fill="#1B2A42" stroke="#C4A7FF"/>
+    <text x="682" y="182" font-size="12">WAITING · approval and valid lease required</text>
+    <text x="682" y="207" font-size="10" fill="#B8C4D8">reason + next_action · status is not success</text>
+    <text x="666" y="278" font-size="12">stop · revision_request · plan_approve · apply_approve · discard</text>
+    <text x="1316" y="96" font-size="16">Evidence·Decision · Context Drawer 360px ON_DEMAND</text>
+    <text x="1316" y="128" font-size="12">impact · source · evidence · hash · decision_history</text>
+    <text x="1316" y="152" font-size="12">i-icon → tooltip / popover · reason · next_action</text>
+    <text x="1316" y="176" font-size="10">keyboard · focus path · Escape · focus returns to trigger</text>
+    <rect x="1316" y="204" width="560" height="92" rx="6" fill="#1B2A42" stroke="#F8D66D"/>
+    <text x="1332" y="234" font-size="12">icon + status_label + short_description</text>
+    <text x="1332" y="258" font-size="10">body/form 12px · small 10px · auxiliary 9px · screen title 16px</text>
+    <text x="1332" y="280" font-size="10">persistent explanation box: forbidden · hover-only: forbidden</text>
+    <text x="248" y="1040" font-size="9" fill="#FFD166">STATIC_ONLY · E-SHOT_STATIC_NOT_RUNTIME_UI · E-DEC_NOT_EXECUTED · RUNTIME_DEFERRED / NOT_EXECUTED · Browser/API/DB/deploy NOT_EXECUTED</text>
+  </g>
+</svg>

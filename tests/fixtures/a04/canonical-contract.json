@@ -1,0 +1,7 @@
+{
+  "fixture_id": "A04-WORKBENCH-CANONICAL",
+  "catalog_path": "docs/architecture/a04/A-04_WORKBENCH_CATALOG.json",
+  "catalog_sha256": "230E32C99256F80904660735BA8B4A8BF95F9068164D8906E9E872EEE96AFE73",
+  "expected_package_verdict": "STATIC_CONTRACT_PASS",
+  "expected_runtime_verdict": "RUNTIME_DEFERRED / NOT_EXECUTED"
+}

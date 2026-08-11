@@ -59,6 +59,8 @@ A02_COMPLETION_PATH_PREFIXES = ("docs/architecture/a02/", "docs/completion_repor
 A02_COMPLETION_EXACT_PATHS = {"scripts/check_a02_tokens.py", "tests/tooling/test_a02_tokens.py"}
 A03_COMPLETION_PATH_PREFIXES = ("docs/architecture/a03/", "docs/completion_reports/A-03_", "docs/validation/A-03_", "tests/fixtures/a03/")
 A03_COMPLETION_EXACT_PATHS = {"scripts/check_a03_onboarding.py", "tests/tooling/test_a03_onboarding.py"}
+A04_COMPLETION_PATH_PREFIXES = ("docs/architecture/a04/", "docs/completion_reports/A-04_", "docs/validation/A-04_", "tests/fixtures/a04/")
+A04_COMPLETION_EXACT_PATHS = {"scripts/check_a04_workbench.py", "tests/tooling/test_a04_workbench.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -232,10 +234,12 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative in A01_COMPLETION_EXACT_PATHS
         or relative in A02_COMPLETION_EXACT_PATHS
         or relative in A03_COMPLETION_EXACT_PATHS
+        or relative in A04_COMPLETION_EXACT_PATHS
         or relative.startswith(EVIDENCE_ONLY_PATH_PREFIXES)
         or relative.startswith(A01_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A02_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A03_COMPLETION_PATH_PREFIXES)
+        or relative.startswith(A04_COMPLETION_PATH_PREFIXES)
     )
 
 

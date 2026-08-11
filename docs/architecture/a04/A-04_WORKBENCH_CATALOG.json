@@ -1,0 +1,127 @@
+{
+  "artifact_id": "A-04-WORKBENCH-CATALOG-20260811-001",
+  "artifact_type": "static_workbench_interaction_contract",
+  "package_id": "A-04",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "predecessor_contract": {
+    "a01_catalog_path": "docs/architecture/a01/A-01_PATH_CATALOG.json",
+    "a01_catalog_sha256": "FC3A503E5038C86BFD841DA5F93826A3FC85B5EB2A020E1196385247C2B7DD69",
+    "a01_manifest_sha256": "BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4",
+    "a02_catalog_path": "docs/architecture/a02/A-02_TOKEN_CATALOG.json",
+    "a02_catalog_sha256": "1709D227BB9C44480085CB10B53881B1613AED914F868B629F8B2C3D03D23207",
+    "a02_manifest_sha256": "779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168",
+    "a03_catalog_path": "docs/architecture/a03/A-03_ONBOARDING_CATALOG.json",
+    "a03_catalog_sha256": "464F785FB0A72C3E5571D30755EE3A107259D641A6035830B18343E5A0922093",
+    "a03_manifest_sha256": "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE"
+  },
+  "presentation": {
+    "viewport": {"width_px": 1920, "height_px": 1080},
+    "typography": {"body_form_px": 12, "small_description_px": 10, "auxiliary_px": 9, "sidebar_title_px": 14, "screen_title_px": 16},
+    "layout": {"sidebar_expanded_px": 224, "sidebar_collapsed_px": 56, "header_px": 48, "context_drawer_px": 360, "context_drawer_mode": "ON_DEMAND", "base_padding_px": 16, "card_gap_px": 12},
+    "explanation_interface": {"entry_point": "i-icon", "short_content_surface": "tooltip", "complex_content_surface": "popover", "required_content": ["reason", "next_action"], "persistent_explanation_box_allowed": false, "hover_only_allowed": false, "focus_path_required": true, "keyboard_access_required": true, "escape_closes": true, "focus_returns_to_trigger": true},
+    "status_presentation": {"color_only_allowed": false, "required_parts": ["icon", "status_label", "short_description"], "explanation_binding": "i-tooltip-popover"},
+    "semantic_colors": {"canvas": "#0B1220", "surface": "#142033", "surface-raised": "#1B2A42", "text-primary": "#F7F9FC", "text-muted": "#B8C4D8", "border": "#60738F", "interactive": "#7DB4FF", "focus": "#F8D66D", "success": "#5EE3A1", "warning": "#FFD166", "danger": "#FF7B86", "blocked": "#C4A7FF", "info": "#74D7FF", "neutral": "#B8C4D8"}
+  },
+  "surfaces": ["WORKBENCH_SESSION_SHELL", "CONVERSATION_REQUEST", "CONTEXT_DRAWER", "PHASE_RAIL", "CONTROL_MODE_CARD", "HUMAN_INTERVENTION_MAP", "STOP_RESUME_PANEL"],
+  "workbench_contract": {
+    "top_context": ["project", "branch", "baseline", "environment"],
+    "panes": ["Conversation", "Current Work", "Evidence·Decision"],
+    "controls": ["stop", "revision_request", "plan_approve", "apply_approve", "discard"],
+    "progressive_disclosure": true,
+    "fixed_independent_screen_count": false
+  },
+  "requirements_contract": {
+    "fields": ["objective", "acceptance_criteria", "included_scope", "excluded_scope", "protected_scope", "assumptions", "questions"],
+    "actions": ["confirm", "edit", "reject", "hold", "view_evidence", "request_reanalysis", "confirm_requirements", "stop"],
+    "confirm_guard": {"objective_required": true, "minimum_acceptance_criteria": 1, "mandatory_unanswered_count": 0, "all_assumptions_user_confirmed": true},
+    "agent_guess_separated_from_confirmed_fact": true,
+    "impact_changing_guess_becomes_question": true
+  },
+  "context_drawer_contract": {
+    "width_px": 360,
+    "mode": "ON_DEMAND",
+    "fields": ["impact", "source", "evidence", "hash", "decision_history", "reason", "next_action"],
+    "persistent_box_allowed": false,
+    "hover_only_allowed": false,
+    "keyboard_access_required": true,
+    "focus_path_required": true,
+    "escape_closes": true,
+    "focus_returns_to_trigger": true
+  },
+  "phase_rail_contract": {
+    "source_artifact": "A-01-PATH-CATALOG-001",
+    "phases": ["Idea", "Design", "Plan", "Execute", "Verify", "Validate", "Release", "Learn"],
+    "step_ids": ["STEP-01", "STEP-02", "STEP-03", "STEP-04", "STEP-05", "STEP-06", "STEP-07", "STEP-08", "STEP-09", "STEP-10", "STEP-11", "STEP-12", "STEP-13", "STEP-14"],
+    "edge_ids": ["EDGE-01-02", "EDGE-02-03", "EDGE-03-04", "EDGE-04-05", "EDGE-05-06", "EDGE-06-07", "EDGE-07-08", "EDGE-08-09", "EDGE-09-10", "EDGE-10-11", "EDGE-11-12", "EDGE-12-13", "EDGE-13-14", "EDGE-03-REJECT", "EDGE-03-REVISE", "EDGE-06-REJECT", "EDGE-06-REVISE", "EDGE-12-REJECT", "EDGE-12-REVISE", "EDGE-07-STOP", "EDGE-STOP-RESUME"],
+    "path_ids": ["PATH-NORMAL", "PATH-REJECT", "PATH-REVISE", "PATH-STOP", "PATH-RESUME"],
+    "states": ["CURRENT", "COMPLETED", "WAITING", "BLOCKED", "STOPPED", "RESUMING", "REWORK"],
+    "human_intervention_points": ["STEP-03", "STEP-06", "STEP-10", "STEP-12", "STEP-14"],
+    "redefinition_allowed": false
+  },
+  "human_intervention_contract": {
+    "fields": ["subject_artifact", "subject_hash", "actor", "capability", "allowed_decisions", "reason", "evidence", "status", "next_action"],
+    "decision_ids": ["DEC-CONCEPT", "DEC-WI-APPROVAL", "DEC-PRODUCT-VALIDATION", "DEC-RELEASE", "DEC-ACTIVATION"],
+    "subject_hash_required": true,
+    "actor_and_capability_required": true
+  },
+  "control_contract": {
+    "control_levels": ["LIGHT", "STANDARD", "CONTROLLED"],
+    "execution_strategies": ["SINGLE_WORKER", "DELEGATED", "PARALLEL_BATCH"],
+    "failure_policies": ["STOP", "CONTINUE_INDEPENDENT", "COLLECT_AND_REVIEW"],
+    "axes_separated": true,
+    "high_risk_triggers": ["AMBIGUITY", "MIGRATION", "AUTH", "SECRET", "PAYMENT", "PRODUCTION_DEPLOY", "DELETION", "SHARED_SCHEMA", "DIRECTION_CHANGE", "UNVERIFIED_INPUT"],
+    "high_risk_override": {"control_level": "CONTROLLED", "failure_policy": "STOP"}
+  },
+  "execution_guard": {"approval_required": true, "worker_lease_required": true, "write_lease_required_for_mutation": true, "automatic_execute_without_guards": false},
+  "stop_resume_contract": {
+    "fields": ["interrupted_point", "last_completed_step", "checkpoint", "checkpoint_hash", "side_effect_reconciliation", "changed_conditions", "reason", "next_action"],
+    "actions": ["safe_resume", "hold", "restart", "discard"],
+    "resume_guard": {"same_subject_hash_required": true, "checkpoint_required": true, "completed_steps_restored": true, "changed_conditions_reviewed": true, "side_effect_reconciliation_required": true, "duplicate_execution_allowed": false}
+  },
+  "status_contract": {
+    "phase_and_run_status_separated": true,
+    "phase_states": ["Idea", "Design", "Plan", "Execute", "Verify", "Validate", "Release", "Learn"],
+    "run_statuses": ["ACTIVE", "WAITING_DECISION", "BLOCKED", "INTERRUPTED", "COMPLETED", "CANCELLED"],
+    "non_success_statuses": ["WAITING", "BLOCKED", "INTERRUPTED", "SKIPPED"],
+    "non_success_cannot_render_as_completed": true
+  },
+  "permission_contract": {
+    "capabilities": ["PROJECT_VIEW", "CONTROL_MODE_MANAGE", "APPROVAL_DECIDE", "APPLY_DECIDE", "SAFE_STOP", "SAFE_RESUME", "DISCARD_RESULT"],
+    "capabilities_separated": true,
+    "project_view_does_not_imply_mutation": true,
+    "unauthorized_action_disabled": true,
+    "reason_and_next_action_visible": true
+  },
+  "preservation_contract": {
+    "draft_and_input_preserved_on_error": true,
+    "tracked_dirty_and_untracked_separate": true,
+    "policy_and_protected_paths_visible": true,
+    "a03_unknown_and_conflict_fail_closed": true,
+    "unknown_or_conflict_promoted_to_ready": false
+  },
+  "disclosure_contract": {
+    "secret_value_visible": false,
+    "raw_internal_endpoint_visible": false,
+    "loopback_endpoint_visible": false,
+    "unauthorized_full_path_visible": false,
+    "shell_or_cli_default_visible": false,
+    "masked_evidence_reference_allowed": true
+  },
+  "static_renders": [
+    {"path": "docs/architecture/a04/A-04_WORKBENCH_STATIC_RENDER.svg", "surface_ids": ["WORKBENCH_SESSION_SHELL", "CONVERSATION_REQUEST", "CONTEXT_DRAWER", "PHASE_RAIL"]},
+    {"path": "docs/architecture/a04/A-04_CONTROL_STATIC_RENDER.svg", "surface_ids": ["CONTROL_MODE_CARD", "HUMAN_INTERVENTION_MAP", "STOP_RESUME_PANEL"]}
+  ],
+  "matrix_contract": [
+    {"verification_id": "AV-UI-004", "level": "L7", "method": "MX", "evidence": "E-DEC", "severity": "MAJOR"},
+    {"verification_id": "AV-UI-005", "level": "L7", "method": "MI", "evidence": "E-SHOT", "severity": "MAJOR"}
+  ],
+  "verification_contract": {
+    "assigned_verification_ids": ["AV-UI-004", "AV-UI-005"],
+    "execution_classification": "STATIC_ONLY",
+    "package_verdict": "STATIC_CONTRACT_PASS",
+    "canonical_runtime_verdict": "RUNTIME_DEFERRED / NOT_EXECUTED",
+    "evidence_qualifier": "E-SHOT_STATIC_NOT_RUNTIME_UI / E-DEC_NOT_EXECUTED",
+    "runtime_owners": {"AV-UI-004": ["A-14", "A Gate"], "AV-UI-005": ["A Gate"]},
+    "environment": "ENV-LOCAL"
+  }
+}
