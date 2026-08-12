@@ -398,7 +398,7 @@
     },
     {
       "path": "tests/tooling/test_a11_operations_monitoring.py",
-      "sha256": "CF86F5425F13137CB7D2224F8AF2C0B36EF49F62B5012D58D86B1B08219E99ED"
+      "sha256": "99666403F069E2E929325C0314B9E9168B609F6FE9870C148CD67549CD288DA3"
     },
     {
       "path": "docs/test_reports/A-11_TEST_REPORT.md",
@@ -598,7 +598,7 @@
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "B4AD5CDFD15124A273EE201B790352B5FE569C1FEBCE18E0CE6C6FEE296D8351"
+      "sha256": "4A2C1CB567B47AE1CCC3D6897D46673E57755ADC1FCA7DE8BC478121F425EF59"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -606,7 +606,7 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "585FB31779F0FFA61AFA111EF3BAE84B59D6B521810DB4F932BF3AF50A154A4A"
+      "sha256": "D1CF92576710F5251FC33DAD81448041D1E96B1E90C40B186CD4A6BC0EEA3B82"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
@@ -614,7 +614,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "FD450E40E0F24CF3BDE62CEAD3109F74E7538BD095EDC881AADF4B59C577F6EC"
+      "sha256": "D23281408F746705B56EC2B949F13CE0E851274C45009076818C561407789851"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -650,11 +650,11 @@
     },
     {
       "path": "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
-      "sha256": "89B4B537B2486BCAA783284F404772137FA868A0524B276CD33CE30E70653F55"
+      "sha256": "F55C0472156989BC9203EB89DC7C054C265EB21BC8B80170A62CB68C00EB830A"
     },
     {
       "path": "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
-      "sha256": "67D5BD7C5ED5B86F5161ED199786BBC6202216DD9C57AF985A68E4D9F7A335D7"
+      "sha256": "D81BA87F8D78DC4FC061F1A2D2CA08E3A72DE7AB58C87FB2F093996743219A92"
     },
     {
       "path": "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
@@ -853,5 +853,5 @@
     "package_id": "A-15",
     "status": "BLOCKED_PENDING_A14_ACCEPTANCE"
   },
-  "snapshot_hash": "2D92A413853D67179D6A7E300D82F23AD12E38EEE174B2B9D57AA09E5521B3D6"
+  "snapshot_hash": "DC75A828831253D1088812BF2D82EE14331CBAF97F75A18D64512E230CFBC8ED"
 }

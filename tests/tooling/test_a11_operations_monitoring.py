@@ -3,7 +3,6 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
-import shutil
 import subprocess
 import tempfile
 import unittest
@@ -146,16 +145,6 @@ class A11OperationsMonitoringContractTests(unittest.TestCase):
             clone = Path(temp) / "bundle"
             subprocess.run(
                 ["git", "clone", "--quiet", "--local", "--no-hardlinks", str(ROOT), str(clone)],
-                check=True,
-            )
-            for source in (CHECKER_PATH, Path(__file__), SUCCESSOR_PATH):
-                destination = clone / source.relative_to(ROOT)
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copyfile(source, destination)
-            subprocess.run(["git", "add", "--", "."], cwd=clone, check=True)
-            subprocess.run(
-                ["git", "-c", "user.name=Anvil Test", "-c", "user.email=anvil-test@example.invalid", "commit", "--quiet", "-m", "test successor"],
-                cwd=clone,
                 check=True,
             )
             clone_manifest = json.loads((clone / MANIFEST_PATH.relative_to(ROOT)).read_text(encoding="utf-8"))

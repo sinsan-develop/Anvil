@@ -107,11 +107,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
         self.assertEqual("BLOCKED_PENDING_A14_ACCEPTANCE", progress["next_work_package"]["status"])
-        takeover_manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json").read_text(encoding="utf-8")
+        portability_manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json").read_text(encoding="utf-8")
         )
         self.assertEqual([], checker.validate_detached_progress_binding(bundle))
-        self.assertEqual([], checker.validate_a14_main_takeover_completion_manifest(takeover_manifest, bundle))
+        self.assertEqual([], checker.validate_a14_portability_completion_manifest(portability_manifest, bundle))
 
         with tempfile.TemporaryDirectory() as temp:
             clone = Path(temp) / "bundle"
@@ -130,10 +130,10 @@ class ProjectProgressContractTests(unittest.TestCase):
             )
             clone_bundle = checker.load_bundle(clone)
             clone_manifest = json.loads(
-                (clone / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json").read_text(encoding="utf-8")
+                (clone / "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json").read_text(encoding="utf-8")
             )
             self.assertEqual([], checker.validate_detached_progress_binding(clone_bundle))
-            self.assertEqual([], checker.validate_a14_main_takeover_completion_manifest(clone_manifest, clone_bundle))
+            self.assertEqual([], checker.validate_a14_portability_completion_manifest(clone_manifest, clone_bundle))
         self.assertEqual([], checker.validate_bundle(bundle))
     def test_package_specific_detached_progress_ref_is_resolved_safely(self) -> None:
         checker = self.require_checker()
@@ -1195,8 +1195,8 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn("A-03", progress["completed_packages"])
         self.assertIn("A-04", progress["completed_packages"])
         self.assertIn("A-06", progress["completed_packages"])
-        self.assertEqual(3, progress["valid_failure_count"])
-        self.assertEqual(3, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertEqual(4, progress["valid_failure_count"])
+        self.assertEqual(4, progress["active_failure_lineage"]["valid_failure_count"])
         self.assertEqual(0, progress["historical_failure_counts_by_lineage"].get("A-04", 0))
         self.assertEqual(1, progress["historical_failure_counts_by_lineage"]["A-03"])
         self.assertEqual(1, progress["historical_failure_counts_by_lineage"]["A-13"])

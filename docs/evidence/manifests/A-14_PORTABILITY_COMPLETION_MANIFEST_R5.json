@@ -62,7 +62,7 @@
     {
       "path": "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
       "bytes": 901,
-      "sha256": "7A60F051F3BC92F0A5F78F75BFBA4919B895A7DEBB55FF26863227D5EBF16B9B"
+      "sha256": "E95C24B07DF3781F22955891B08EB1538A9BF34B37CBF54EB5FF0D1B3D38A1E0"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
@@ -77,12 +77,12 @@
     {
       "path": "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
       "bytes": 753,
-      "sha256": "89B4B537B2486BCAA783284F404772137FA868A0524B276CD33CE30E70653F55"
+      "sha256": "F55C0472156989BC9203EB89DC7C054C265EB21BC8B80170A62CB68C00EB830A"
     },
     {
       "path": "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
       "bytes": 1025,
-      "sha256": "67D5BD7C5ED5B86F5161ED199786BBC6202216DD9C57AF985A68E4D9F7A335D7"
+      "sha256": "D81BA87F8D78DC4FC061F1A2D2CA08E3A72DE7AB58C87FB2F093996743219A92"
     },
     {
       "path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
@@ -96,8 +96,8 @@
     },
     {
       "path": "tests/tooling/test_a11_operations_monitoring.py",
-      "bytes": 9636,
-      "sha256": "CF86F5425F13137CB7D2224F8AF2C0B36EF49F62B5012D58D86B1B08219E99ED"
+      "bytes": 9041,
+      "sha256": "99666403F069E2E929325C0314B9E9168B609F6FE9870C148CD67549CD288DA3"
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
@@ -106,8 +106,8 @@
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "bytes": 41798,
-      "sha256": "B4AD5CDFD15124A273EE201B790352B5FE569C1FEBCE18E0CE6C6FEE296D8351"
+      "bytes": 41805,
+      "sha256": "4A2C1CB567B47AE1CCC3D6897D46673E57755ADC1FCA7DE8BC478121F425EF59"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -126,13 +126,13 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "bytes": 79057,
-      "sha256": "FD450E40E0F24CF3BDE62CEAD3109F74E7538BD095EDC881AADF4B59C577F6EC"
+      "bytes": 79055,
+      "sha256": "D23281408F746705B56EC2B949F13CE0E851274C45009076818C561407789851"
     }
   ],
   "target_canonical_bytes": 1644,
-  "target_content_bytes": 459255,
-  "target_hash": "sha256:ECEEBA285B299BA41D7A56FC6AE138E5A1B8ADD5AEA2FB842EE864B807A9D377",
-  "delivered_hash": "sha256:ECEEBA285B299BA41D7A56FC6AE138E5A1B8ADD5AEA2FB842EE864B807A9D377",
+  "target_content_bytes": 458665,
+  "target_hash": "sha256:AAF966304DA57400DC1D176BBB788289506854085D14E7B35AF3C2D60F507EC3",
+  "delivered_hash": "sha256:AAF966304DA57400DC1D176BBB788289506854085D14E7B35AF3C2D60F507EC3",
   "reporting_decision": "AUTO_CONTINUE"
 }

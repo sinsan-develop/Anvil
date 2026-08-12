@@ -13,8 +13,8 @@
       },
       {
         "path": "tests/tooling/test_a11_operations_monitoring.py",
-        "bytes": 9636,
-        "sha256": "CF86F5425F13137CB7D2224F8AF2C0B36EF49F62B5012D58D86B1B08219E99ED"
+        "bytes": 9041,
+        "sha256": "99666403F069E2E929325C0314B9E9168B609F6FE9870C148CD67549CD288DA3"
       }
     ]
   }
