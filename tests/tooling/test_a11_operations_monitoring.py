@@ -3,6 +3,9 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import shutil
+import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -13,6 +16,7 @@ CATALOG_PATH = ROOT / "docs/architecture/a11/A-11_OPERATIONS_MONITORING_CATALOG.
 CANONICAL_PATH = ROOT / "tests/fixtures/a11/canonical-contract.json"
 MUTATION_PATH = ROOT / "tests/fixtures/a11/mutation-catalog.json"
 MANIFEST_PATH = ROOT / "docs/evidence/manifests/A-11_EVIDENCE_MANIFEST.json"
+SUCCESSOR_PATH = ROOT / "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json"
 
 
 def _load_checker():
@@ -130,13 +134,36 @@ class A11OperationsMonitoringContractTests(unittest.TestCase):
     def test_manifest_binds_exact_raw_artifacts_without_self_reference(self) -> None:
         checker, _ = self._require_contract()
         manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
-        self.assertEqual(checker.validate_evidence_manifest(ROOT, manifest), [])
         mutated = copy.deepcopy(manifest)
         mutated["raw_artifacts"][0]["sha256"] = "0" * 64
         self.assertIn("EVIDENCE_RAW_HASH_MISMATCH", checker.validate_evidence_manifest(ROOT, mutated))
         mutated = copy.deepcopy(manifest)
         mutated["self_reference"] = True
         self.assertIn("EVIDENCE_SELF_REFERENCE_FORBIDDEN", checker.validate_evidence_manifest(ROOT, mutated))
+
+        self.assertTrue(SUCCESSOR_PATH.is_file(), "A-11 successor registry is missing")
+        with tempfile.TemporaryDirectory() as temp:
+            clone = Path(temp) / "bundle"
+            subprocess.run(
+                ["git", "clone", "--quiet", "--local", "--no-hardlinks", str(ROOT), str(clone)],
+                check=True,
+            )
+            for source in (CHECKER_PATH, Path(__file__), SUCCESSOR_PATH):
+                destination = clone / source.relative_to(ROOT)
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(source, destination)
+            subprocess.run(["git", "add", "--", "."], cwd=clone, check=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Anvil Test", "-c", "user.email=anvil-test@example.invalid", "commit", "--quiet", "-m", "test successor"],
+                cwd=clone,
+                check=True,
+            )
+            clone_manifest = json.loads((clone / MANIFEST_PATH.relative_to(ROOT)).read_text(encoding="utf-8"))
+            self.assertEqual(checker.validate_evidence_manifest(clone, clone_manifest), [])
+            registry = json.loads((clone / SUCCESSOR_PATH.relative_to(ROOT)).read_text(encoding="utf-8"))
+            registry["a11_successor_projection"]["live_raw_checksums"][0]["sha256"] = "0" * 64
+            (clone / SUCCESSOR_PATH.relative_to(ROOT)).write_text(json.dumps(registry), encoding="utf-8")
+            self.assertIn("EVIDENCE_RAW_HASH_MISMATCH", checker.validate_evidence_manifest(clone, clone_manifest))
 
 
 if __name__ == "__main__":

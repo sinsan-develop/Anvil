@@ -5,14 +5,15 @@ import copy
 import hashlib
 import json
 import re
+import subprocess
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
 try:
-    from scripts.evidence_portability import portable_hash
+    from scripts.evidence_portability import portable_hash, portable_row_matches
 except ModuleNotFoundError:  # direct `python scripts/check_*.py`
-    from evidence_portability import portable_hash
+    from evidence_portability import portable_hash, portable_row_matches
 
 
 CATALOG_REL = "docs/architecture/a11/A-11_OPERATIONS_MONITORING_CATALOG.json"
@@ -188,19 +189,67 @@ def manifest_target(raw: list[dict[str, Any]]) -> str:
     return hashlib.sha256(_projection(raw)).hexdigest().upper()
 
 
+def _tracked_clean(root: Path, relative: str) -> bool:
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", relative],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--", relative],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    return tracked.returncode == 0 and dirty.returncode == 0 and not dirty.stdout.strip()
+
+
+def _successor_rows(root: Path) -> dict[str, dict[str, Any]]:
+    predecessor = portable_hash(root, MANIFEST_REL, prefer_legacy=False)
+    rows: dict[str, dict[str, Any]] = {}
+    for registry_path in sorted((root / "docs/evidence/manifests").glob("A-14_A11_SUCCESSOR_*.json")):
+        relative = registry_path.relative_to(root).as_posix()
+        if not _tracked_clean(root, relative):
+            continue
+        try:
+            registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        successor = registry.get("a11_successor_projection", {})
+        if (
+            registry.get("artifact_type") == "a11_successor_registry"
+            and registry.get("self_reference") is False
+            and successor.get("predecessor_manifest_sha256") == predecessor
+        ):
+            rows.update(
+                {
+                    str(row.get("path")): row
+                    for row in successor.get("live_raw_checksums", [])
+                    if isinstance(row, dict) and row.get("path") in RAW_PATHS
+                }
+            )
+    return rows
+
+
 def validate_evidence_manifest(root: Path, manifest: dict[str, Any]) -> list[str]:
     raw = manifest.get("raw_artifacts", [])
     if not isinstance(raw, list) or not raw: return ["EVIDENCE_RAW_ARTIFACTS_EMPTY"]
     errors: list[str] = []; paths: set[str] = set(); content_bytes = 0
+    successor_rows = _successor_rows(root)
     if manifest.get("self_reference") is not False: errors.append("EVIDENCE_SELF_REFERENCE_FORBIDDEN")
     for item in raw:
         rel = str(item.get("path", "")); path = root / rel
         if not rel or rel in paths: errors.append("EVIDENCE_RAW_PATH_INVALID"); continue
         paths.add(rel)
         if not path.is_file(): errors.append("EVIDENCE_RAW_ARTIFACT_MISSING"); continue
-        content_bytes += path.stat().st_size
-        if item.get("bytes") != path.stat().st_size: errors.append("EVIDENCE_RAW_BYTES_MISMATCH")
-        if item.get("sha256") != sha256_file(path): errors.append("EVIDENCE_RAW_HASH_MISMATCH")
+        successor = successor_rows.get(rel)
+        successor_valid = successor and portable_row_matches(
+            root, rel, successor.get("bytes"), successor.get("sha256")
+        )
+        content_bytes += int(item.get("bytes", 0)) if successor_valid else path.stat().st_size
+        if item.get("bytes") != path.stat().st_size and not successor_valid: errors.append("EVIDENCE_RAW_BYTES_MISMATCH")
+        if item.get("sha256") != sha256_file(path) and not successor_valid: errors.append("EVIDENCE_RAW_HASH_MISMATCH")
     if paths != RAW_PATHS: errors.append("EVIDENCE_RAW_PATH_SET_MISMATCH")
     projection = _projection(raw); target = manifest_target(raw)
     if manifest.get("target_canonical_bytes") != len(projection): errors.append("EVIDENCE_CANONICAL_BYTES_MISMATCH")

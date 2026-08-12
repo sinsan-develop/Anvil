@@ -1,0 +1,21 @@
+{
+  "artifact_type": "a11_successor_registry",
+  "package_id": "A-14",
+  "reason": "A-11 checker gained strict EOL portability without rewriting the frozen A-11 manifest",
+  "self_reference": false,
+  "a11_successor_projection": {
+    "predecessor_manifest_sha256": "23280C4FD8EA6C3FCEF814D8D429A4BA45FA0BE940E88E8237008B60FDBADFC0",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a11_operations_monitoring.py",
+        "bytes": 18574,
+        "sha256": "0EA43907E7C640F5C82C70907533F3B8CB430A0C25E8333914C4B1216320D913"
+      },
+      {
+        "path": "tests/tooling/test_a11_operations_monitoring.py",
+        "bytes": 9636,
+        "sha256": "CF86F5425F13137CB7D2224F8AF2C0B36EF49F62B5012D58D86B1B08219E99ED"
+      }
+    ]
+  }
+}
