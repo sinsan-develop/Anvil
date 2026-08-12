@@ -107,6 +107,16 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
         destination = clone / completion.relative_to(ROOT)
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(completion, destination)
+    for relative in (
+        "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
+        "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+        "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+    ):
+        source = ROOT / relative
+        if source.is_file():
+            destination = clone / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
 
 
 class A13RepositoryScanFoundationTests(unittest.TestCase):
@@ -821,6 +831,19 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
             tampered = json.loads(destination.read_text(encoding="utf-8"))
             tampered["a13_successor_projection"]["live_raw_checksums"][0]["sha256"] = "0" * 64
             destination.write_text(json.dumps(tampered, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            errors = checker.validate_evidence_manifest(clone)
+            self.assertIn("EVIDENCE_RAW_HASH_MISMATCH", errors)
+
+        with tempfile.TemporaryDirectory() as temp:
+            clone = _clone_committed_bundle(Path(temp))
+            _overlay_r3_projection_bundle(clone)
+            takeover_path = clone / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json"
+            takeover = json.loads(takeover_path.read_text(encoding="utf-8"))
+            takeover["a13_successor_projection"]["live_raw_checksums"][0]["sha256"] = "0" * 64
+            takeover_path.write_text(
+                json.dumps(takeover, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
             errors = checker.validate_evidence_manifest(clone)
             self.assertIn("EVIDENCE_RAW_HASH_MISMATCH", errors)
 

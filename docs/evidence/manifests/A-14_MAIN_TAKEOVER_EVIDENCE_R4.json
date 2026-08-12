@@ -1,0 +1,34 @@
+{
+  "artifact_id": "A-14-MAIN-TAKEOVER-EVIDENCE-R4-001",
+  "package_id": "A-14",
+  "revision": 4,
+  "artifact_status": "main_takeover_in_progress",
+  "self_reference": false,
+  "source_report_path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+  "source_report_sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9",
+  "takeover_packet_path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+  "takeover_packet_sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263",
+  "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
+  "valid_failure_count": 3,
+  "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED",
+  "a13_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 30327,
+        "sha256": "040868CA182508DCA29C2BA0E49C17D624065F2F8F82138B3B21F5BE0A404E8D"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 40890,
+        "sha256": "825EDE53C735A607B3CFA5A12320F17E8914D69EFDA02C6014CBEF7600E0022B"
+      }
+    ],
+    "binding_mode": "MAIN_TAKEOVER_COMMITTED_CLEAN_EXACT_RAW"
+  },
+  "actual_browser_status": "R4_EXECUTED_UI_FINDINGS_CLOSED",
+  "actual_provider_status": "NOT_EXECUTED",
+  "actual_production_status": "NOT_EXECUTED"
+}

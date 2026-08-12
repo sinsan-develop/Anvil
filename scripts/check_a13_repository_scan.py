@@ -266,6 +266,10 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         a14_r3_completion = _load_json(a14_r3_completion_path) if a14_r3_completion_path.is_file() else {}
         a14_r3_evidence_path = root / 'docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json'
         a14_r3_evidence = _load_json(a14_r3_evidence_path) if a14_r3_evidence_path.is_file() else {}
+        a14_r4_takeover_path = root / 'docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json'
+        a14_r4_takeover = _load_json(a14_r4_takeover_path) if a14_r4_takeover_path.is_file() else {}
+        a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
+        a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
     except (OSError, json.JSONDecodeError):
         return None
@@ -330,7 +334,10 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('status') == 'TEST_REVIEW'
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
         == 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json'
-        and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        and (
+            committed_clean
+            or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        )
     )
     current_a14_r3_rework = (
         progress.get('event_sequence') == 165
@@ -364,7 +371,26 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         or a14_r3_completion.get('developer_evidence', {}).get('manifest_sha256')
         == hashlib.sha256(a14_r3_evidence_path.read_bytes()).hexdigest().upper()
     )
+    a14_r4_takeover_paths = live_paths | {
+        'docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json',
+        'docs/test_reports/A-14_RETEST_REPORT_R4.md',
+        'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md',
+    }
+    current_a14_r4_takeover = (
+        (committed_clean or (live_paths <= changed_paths <= a14_r4_takeover_paths))
+        and bool(a14_r4_takeover)
+        and a14_r4_report_path.is_file()
+        and a14_r4_packet_path.is_file()
+        and progress.get('event_sequence') == 168
+        and progress.get('status') == 'TEST_REVIEW'
+        and a14_r4_takeover.get('source_report_sha256')
+        == hashlib.sha256(a14_r4_report_path.read_bytes()).hexdigest().upper()
+        and a14_r4_takeover.get('takeover_packet_sha256')
+        == hashlib.sha256(a14_r4_packet_path.read_bytes()).hexdigest().upper()
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a14_r4_takeover:
+        candidates.append(a14_r4_takeover.get('a13_successor_projection', {}))
     if current_a14_r3_completion and completion_developer_binding_valid:
         candidates.append(a14_r3_completion.get('a13_successor_projection', {}))
         candidates.append(a14_r3_evidence.get('a13_successor_projection', {}))
