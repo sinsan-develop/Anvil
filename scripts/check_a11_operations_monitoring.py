@@ -9,7 +9,10 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
-from scripts.evidence_portability import portable_hash
+try:
+    from scripts.evidence_portability import portable_hash
+except ModuleNotFoundError:  # direct `python scripts/check_*.py`
+    from evidence_portability import portable_hash
 
 
 CATALOG_REL = "docs/architecture/a11/A-11_OPERATIONS_MONITORING_CATALOG.json"

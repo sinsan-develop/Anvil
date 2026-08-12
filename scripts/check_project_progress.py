@@ -11,7 +11,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping
 
-from scripts.evidence_portability import portable_hash, portable_row_matches
+try:
+    from scripts.evidence_portability import portable_hash, portable_row_matches
+except ModuleNotFoundError:  # direct `python scripts/check_*.py`
+    from evidence_portability import portable_hash, portable_row_matches
 
 
 CHAPTER_15_MINIMUM_FIELDS = {

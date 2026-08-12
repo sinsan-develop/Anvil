@@ -8,7 +8,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from scripts.evidence_portability import portable_hash, portable_row_matches
+try:
+    from scripts.evidence_portability import portable_hash, portable_row_matches
+except ModuleNotFoundError:  # direct `python scripts/check_*.py`
+    from evidence_portability import portable_hash, portable_row_matches
 
 EXACT_PATHS = [
     "apps/web/index.html","apps/web/server.mjs","apps/web/src/app/workbench.js","apps/web/src/api/workbench-client.js","apps/web/src/features/workbench/workbench-state.js","apps/web/src/styles/workbench.css","apps/web/tests/workbench.test.mjs","tests/browser/a14/workbench-runtime.test.mjs","tests/fixtures/a14/workbench-fixtures.json","tests/fixtures/a14/hostile-inputs.json","scripts/check_a14_workbench_prototype.py","tests/tooling/test_a14_workbench_prototype.py","docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md","docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json","docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md","docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json","docs/completion_reports/A-14_COMPLETION_REPORT.md"

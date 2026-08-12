@@ -9,7 +9,7 @@
     "predecessor_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
     "predecessor_manifest_sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
     "live_raw_checksums": [
-      {"path":"scripts/check_a14_workbench_prototype.py","bytes":10605,"sha256":"29BF61BA9A767DF6A7A90EC9857ACEB20107E7C0F9014CC52DBA5D0321357853"},
+      {"path":"scripts/check_a14_workbench_prototype.py","bytes":10753,"sha256":"8934D6CBB0A55A82F6B7DFEBD17F74B8C8BE005856CF18861661305D728F55C8"},
       {"path":"tests/tooling/test_a14_workbench_prototype.py","bytes":5041,"sha256":"8655EBFED5E1861AECDA2749BA4A13EFE853091D4A70C812B80FB75C262DE6FD"}
     ],
     "binding_mode": "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY"
