@@ -1,0 +1,312 @@
+"""Validate the reusable A-13 read-only scanner against all G-06 fixtures."""
+
+from __future__ import annotations
+
+import importlib.util
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+from typing import Any
+
+
+FIXTURE_IDS = (
+    "FIX-PY-CLEAN",
+    "FIX-PY-DIRTY",
+    "FIX-PY-REDFAIL",
+    "FIX-TS-CLEAN",
+    "FIX-TS-NOTOOL",
+    "FIX-PROTECTED",
+    "FIX-LARGE",
+    "FIX-CONFLICT",
+)
+EXPECTED_COMMAND_IDS = {
+    "is_inside_work_tree",
+    "repository_root",
+    "git_dir",
+    "git_common_dir",
+    "head",
+    "branch",
+    "status_porcelain_v2",
+    "remotes",
+}
+EXPECTED_RESULT_FIELDS = {
+    "schema_version",
+    "success",
+    "status",
+    "repository",
+    "inventory",
+    "manifests",
+    "no_write_proof",
+    "errors",
+    "evidence_types",
+}
+EVIDENCE_REL = "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json"
+RAW_PATHS = {
+    "docs/architecture/a13/A-13_REPOSITORY_SCAN.md",
+    "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.json",
+    "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+    "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
+    "packages/repository_intelligence/__init__.py",
+    "packages/repository_intelligence/errors.py",
+    "packages/repository_intelligence/git_readonly.py",
+    "packages/repository_intelligence/inventory.py",
+    "packages/repository_intelligence/manifests.py",
+    "packages/repository_intelligence/models.py",
+    "packages/repository_intelligence/path_guard.py",
+    "packages/repository_intelligence/profile.py",
+    "packages/repository_intelligence/scanner.py",
+    "scripts/check_a13_repository_scan.py",
+    "tests/fixtures/a13/hostile-cases.json",
+    "tests/tooling/test_a13_repository_scan.py",
+}
+DECLARED_CHANGED_PATHS = RAW_PATHS | {EVIDENCE_REL}
+
+
+def _load_module(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"MODULE_LOAD_FAILED:{path.name}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _projection(raw_artifacts: list[dict[str, Any]]) -> bytes:
+    projected = [
+        {"path": item.get("path"), "sha256": item.get("sha256")}
+        for item in sorted(raw_artifacts, key=lambda item: str(item.get("path")))
+    ]
+    return json.dumps(
+        projected,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+
+
+def _git_changed_paths(root: Path) -> set[str]:
+    completed = subprocess.run(
+        ["git", "--no-optional-locks", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        env={**os.environ, "GIT_OPTIONAL_LOCKS": "0"},
+    )
+    entries = completed.stdout.decode("utf-8", errors="surrogateescape").split("\0")
+    return {entry[3:].replace("\\", "/") for entry in entries if len(entry) >= 4}
+
+
+def _successor_projection(root: Path, changed_paths: set[str]) -> dict[str, dict[str, object]] | None:
+    """Validate the Main-owned completion successor for frozen Developer tooling."""
+    try:
+        progress = _load_json(root / "docs/progress/build-progress.json")
+        completion = _load_json(root / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json")
+        predecessor_sha = hashlib.sha256((root / EVIDENCE_REL).read_bytes()).hexdigest().upper()
+    except (OSError, json.JSONDecodeError):
+        return None
+    successor = completion.get("developer_successor_projection", {})
+    rows = successor.get("live_raw_checksums", [])
+    allowed = {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}
+    indexed = {row.get("path"): row for row in rows if isinstance(row, dict)}
+    if not (
+        progress.get("event_sequence") == 140
+        and progress.get("current_work_package") == "A-13"
+        and progress.get("status") == "TEST_REVIEW"
+        and progress.get("worker_lease") is None
+        and progress.get("write_lease") is None
+        and progress.get("current_progress_evidence_ref", {}).get("manifest_path")
+        == "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json"
+        and set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
+        and DECLARED_CHANGED_PATHS <= changed_paths
+        and successor.get("predecessor_manifest_sha256") == predecessor_sha
+        and set(indexed) == allowed
+    ):
+        return None
+    for path, row in indexed.items():
+        payload = (root / path).read_bytes()
+        if row.get("bytes") != len(payload) or row.get("sha256") != hashlib.sha256(payload).hexdigest().upper():
+            return None
+    return indexed
+
+
+def validate_evidence_manifest(root: Path) -> list[str]:
+    root = root.resolve()
+    errors: list[str] = []
+    try:
+        manifest = _load_json(root / EVIDENCE_REL)
+    except (OSError, json.JSONDecodeError):
+        return ["EVIDENCE_MANIFEST_MISSING_OR_INVALID"]
+    raw = manifest.get("raw_artifacts", [])
+    if not isinstance(raw, list) or not raw:
+        return ["EVIDENCE_RAW_ARTIFACTS_INVALID"]
+    if manifest.get("self_reference") is not False:
+        errors.append("EVIDENCE_SELF_REFERENCE_FORBIDDEN")
+    try:
+        changed_paths = _git_changed_paths(root)
+    except (OSError, subprocess.SubprocessError):
+        changed_paths = set()
+        errors.append("EVIDENCE_GIT_STATUS_UNAVAILABLE")
+    successor = _successor_projection(root, changed_paths)
+    observed_paths: set[str] = set()
+    content_bytes = 0
+    for item in raw:
+        path = str(item.get("path", ""))
+        file_path = root / path
+        if not path or path in observed_paths or path == EVIDENCE_REL:
+            errors.append("EVIDENCE_RAW_PATH_INVALID")
+            continue
+        observed_paths.add(path)
+        if not file_path.is_file():
+            errors.append("EVIDENCE_RAW_ARTIFACT_MISSING")
+            continue
+        payload = file_path.read_bytes()
+        successor_bound = path in (successor or {})
+        content_bytes += item.get("bytes", 0) if successor_bound else len(payload)
+        if item.get("bytes") != len(payload) and not successor_bound:
+            errors.append("EVIDENCE_RAW_BYTES_MISMATCH")
+        if item.get("sha256") != hashlib.sha256(payload).hexdigest().upper() and not successor_bound:
+            errors.append("EVIDENCE_RAW_HASH_MISMATCH")
+    projection = _projection(raw)
+    target = hashlib.sha256(projection).hexdigest().upper()
+    if observed_paths != RAW_PATHS:
+        errors.append("EVIDENCE_RAW_PATH_SET_MISMATCH")
+    if manifest.get("declared_changed_paths") != sorted(DECLARED_CHANGED_PATHS):
+        errors.append("EVIDENCE_DECLARED_DIFF_MISMATCH")
+    if changed_paths != DECLARED_CHANGED_PATHS and successor is None:
+        errors.append("EVIDENCE_ACTUAL_DIFF_MISMATCH")
+    if manifest.get("target_canonical_bytes") != len(projection):
+        errors.append("EVIDENCE_CANONICAL_BYTES_MISMATCH")
+    if manifest.get("target_content_bytes") != content_bytes:
+        errors.append("EVIDENCE_CONTENT_BYTES_MISMATCH")
+    if manifest.get("target_hash") != target or manifest.get("delivered_hash") != target:
+        errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
+    expected = {
+        "package_id": "A-13",
+        "work_instruction_sha256": "88B142690358661F456C715378B9AFACE5340FC4EBED90D567E07C8B58384835",
+        "assigned_verification_ids": ["AV-SAFE-010", "AV-SAFE-012"],
+        "execution_classification": "FIXTURE_INTEGRATION_ONLY",
+        "runtime_status": "ACTUAL_RUNTIME / NOT_EXECUTED",
+    }
+    if any(manifest.get(key) != value for key, value in expected.items()):
+        errors.append("EVIDENCE_QUALIFIER_MISMATCH")
+    return sorted(set(errors))
+
+
+def validate_bundle(root: Path) -> dict[str, Any]:
+    root = root.resolve()
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from packages.repository_intelligence import ScanRequest, ScanResult, scan_repository
+
+    errors: list[str] = []
+    contract_path = root / "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.json"
+    hostile_path = root / "tests/fixtures/a13/hostile-cases.json"
+    materializer_path = root / "scripts/materialize_fixture_repository.py"
+    try:
+        contract = _load_json(contract_path)
+        hostile = _load_json(hostile_path)
+        materializer = _load_module(materializer_path, "a13_checker_materializer")
+    except (OSError, json.JSONDecodeError, RuntimeError) as exc:
+        return {
+            "errors": [f"BUNDLE_LOAD_ERROR:{type(exc).__name__}"],
+            "fixture_count": 0,
+            "zero_delta_count": 0,
+            "hostile_case_count": 0,
+        }
+
+    if set(contract.get("result_fields", [])) != EXPECTED_RESULT_FIELDS:
+        errors.append("RESULT_SCHEMA_MISMATCH")
+    if set(contract.get("git_command_ids", [])) != EXPECTED_COMMAND_IDS:
+        errors.append("GIT_COMMAND_ALLOWLIST_MISMATCH")
+    if contract.get("inventory_fields") != ["path", "type", "size", "mtime_ns", "sha256", "mode"]:
+        errors.append("INVENTORY_SCHEMA_MISMATCH")
+    if set(ScanResult.schema_fields()) != EXPECTED_RESULT_FIELDS:
+        errors.append("PUBLIC_RESULT_SCHEMA_MISMATCH")
+    cases = hostile.get("cases")
+    if not isinstance(cases, list) or len(cases) != 15:
+        errors.append("HOSTILE_CASE_COUNT_MISMATCH")
+        cases = []
+    if len({case.get("case_id") for case in cases}) != len(cases):
+        errors.append("HOSTILE_CASE_DUPLICATE")
+    if any(case.get("network_allowed") is not False for case in cases):
+        errors.append("HOSTILE_NETWORK_POLICY_MISMATCH")
+    if any(case.get("project_execution_allowed") is not False for case in cases):
+        errors.append("HOSTILE_PROJECT_EXECUTION_POLICY_MISMATCH")
+
+    zero_delta_count = 0
+    with tempfile.TemporaryDirectory(prefix="anvil-a13-") as temp:
+        temp_root = Path(temp)
+        for fixture_id in FIXTURE_IDS:
+            try:
+                repo = materializer.materialize_fixture(root, fixture_id, temp_root / fixture_id)
+                before_dirty = materializer.snapshot_worktree(repo)
+                result = scan_repository(
+                    ScanRequest(
+                        repository_path=str(repo),
+                        allowed_root=str(temp_root),
+                        temp_root=str(temp_root / "scanner-temp"),
+                    )
+                )
+                after_dirty = materializer.snapshot_worktree(repo)
+            except Exception as exc:  # checker must report all fixtures, not stop at the first
+                errors.append(f"FIXTURE_SCAN_EXCEPTION:{fixture_id}:{type(exc).__name__}")
+                continue
+            if not result.success:
+                errors.append(f"FIXTURE_SCAN_REJECTED:{fixture_id}:{result.errors[0].code}")
+                continue
+            if before_dirty != after_dirty:
+                errors.append(f"FIXTURE_DIRTY_STATE_CHANGED:{fixture_id}")
+            if not result.no_write_proof.get("identical"):
+                errors.append(f"FIXTURE_ZERO_DELTA_FAILED:{fixture_id}")
+            else:
+                zero_delta_count += 1
+            observed_commands = {
+                entry.get("command_id")
+                for entry in (result.repository or {}).get("git_command_evidence", [])
+            }
+            if observed_commands != EXPECTED_COMMAND_IDS:
+                errors.append(f"FIXTURE_GIT_COMMAND_SET_MISMATCH:{fixture_id}")
+            if any(
+                entry.get("environment", {}).get("GIT_OPTIONAL_LOCKS") != "0"
+                or entry.get("network_allowed") is not False
+                or entry.get("writes_allowed") is not False
+                for entry in (result.repository or {}).get("git_command_evidence", [])
+            ):
+                errors.append(f"FIXTURE_GIT_POLICY_MISMATCH:{fixture_id}")
+
+    return {
+        "errors": sorted(set(errors)),
+        "fixture_count": len(FIXTURE_IDS),
+        "zero_delta_count": zero_delta_count,
+        "hostile_case_count": len(cases),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    arguments = argv if argv is not None else sys.argv[1:]
+    root = Path(arguments[0]).resolve() if arguments else Path.cwd()
+    report = validate_bundle(root)
+    if report["errors"]:
+        for error in report["errors"]:
+            print(error)
+        return 1
+    print(
+        "A-13 repository scan: "
+        f"fixtures={report['fixture_count']} "
+        f"zero_delta={report['zero_delta_count']} "
+        f"hostile={report['hostile_case_count']}"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,146 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-13-COMPLETION-20260812-001",
+  "artifact_type": "package_completion_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-13",
+  "artifact_status": "test_review",
+  "content_hash": "sha256:03652000579D921576D8E70BAA4968D46D16D2DBAC6706C24353454FD9914DC8",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-12T12:00:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json",
+  "target_hash": "sha256:03652000579D921576D8E70BAA4968D46D16D2DBAC6706C24353454FD9914DC8",
+  "delivered_hash": "sha256:03652000579D921576D8E70BAA4968D46D16D2DBAC6706C24353454FD9914DC8",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 629,
+  "target_content_bytes": 13198,
+  "projection": {
+    "event_sequence": 140,
+    "status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "current_work_package": "A-13",
+    "active_agent": null,
+    "valid_failure_count": 0
+  },
+  "canonical_l4": "A-14_A-GATE_RUNTIME_DEFERRED_NOT_EXECUTED",
+  "actual_user_repository_status": "NOT_EXECUTED",
+  "actual_browser_status": "NOT_EXECUTED",
+  "actual_api_status": "NOT_EXECUTED",
+  "actual_db_status": "NOT_EXECUTED",
+  "actual_wsl_status": "NOT_EXECUTED",
+  "actual_production_status": "NOT_EXECUTED",
+  "dir_status": "NOT_EXECUTED",
+  "actual_dir_status": "NOT_EXECUTED",
+  "developer_evidence": {
+    "manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json",
+    "manifest_sha256": "BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE",
+    "target_hash": "1AEC2DC560F1AF41B234FEDA3603C25F88B62740E8FB19A83FA85B770D3BA733",
+    "changed_path_count": 17,
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  },
+  "developer_successor_projection": {
+    "mode": "MAIN_COMPLETION_PROJECTION_AWARE_TOOLING_SUCCESSOR",
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json",
+    "predecessor_manifest_sha256": "BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE",
+    "predecessor_raw_and_target_immutable": true,
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 12801,
+        "sha256": "77444FF78A3B6382CE63D4520117F5F76C6CD01E2CD60CD421FD7ADAFDAD0215"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 26104,
+        "sha256": "ACB904206997924DDE3CDAD0DFFC962AF0EA28C9492781BD1DDC7246D123B089"
+      }
+    ]
+  },
+  "work_instruction": {
+    "artifact_id": "WI-A-13-20260812-001",
+    "path": "docs/work_orders/A-13_WORK_INSTRUCTION.md",
+    "sha256": "88B142690358661F456C715378B9AFACE5340FC4EBED90D567E07C8B58384835"
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "ee878ee4195d61715a31cf7e7aa79240ba7bc416",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "ee878ee4195d61715a31cf7e7aa79240ba7bc416",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/architecture/a13/A-13_REPOSITORY_SCAN.md",
+      "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.json",
+      "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a13-completion-test-review.json",
+      "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
+      "packages/repository_intelligence/__init__.py",
+      "packages/repository_intelligence/errors.py",
+      "packages/repository_intelligence/git_readonly.py",
+      "packages/repository_intelligence/inventory.py",
+      "packages/repository_intelligence/manifests.py",
+      "packages/repository_intelligence/models.py",
+      "packages/repository_intelligence/path_guard.py",
+      "packages/repository_intelligence/profile.py",
+      "packages/repository_intelligence/scanner.py",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/fixtures/a13/hostile-cases.json",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ]
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+      "bytes": 2084,
+      "sha256": "0F511C96E9E9F4718750C4A86E2D402FFE060750DE69C184DB81EC5D20661732"
+    },
+    {
+      "path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json",
+      "bytes": 4180,
+      "sha256": "BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE"
+    },
+    {
+      "path": "docs/evidence/manifests/A-13_START_EVIDENCE_MANIFEST.json",
+      "bytes": 3973,
+      "sha256": "AA507636D4763DAD84743292510C6332344FA274F68474F7F76605C348BB8359"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a13-completion-test-review.json",
+      "bytes": 930,
+      "sha256": "4F3B8F007E199CCC9DD58157CAE94539AC746E3CAC3BD95280E1044331264347"
+    },
+    {
+      "path": "docs/work_orders/A-13_WORK_INSTRUCTION.md",
+      "bytes": 2031,
+      "sha256": "88B142690358661F456C715378B9AFACE5340FC4EBED90D567E07C8B58384835"
+    }
+  ],
+  "historical_evidence_policy": "Sequences 1 through 137, A-01 through A-12 accepted evidence, and A-13 Developer evidence remain immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": [
+    "Independent Tester has not yet executed A-13 review.",
+    "Actual user repository, browser, API, DB, WSL, production, and DIR are NOT_EXECUTED."
+  ]
+}

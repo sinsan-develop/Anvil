@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-13-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "A-13",
+  "event_sequence": 140,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 29284,
+    "file_sha256": "212E0F32A47B11B57FC86C3E6E55AFD15D527A4DA90114C8118D0A02F8CCAEF6",
+    "canonical_json_sha256": "010C7AC33B49B0B39C762A8DF592C3125105D8BE34B9E0DA56A655570A44741E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 52408,
+    "file_sha256": "7DBB1DBFC6A29F60C4C64F0B78E1222D1831C1368A1FE0ECEB3B4D225C630D10",
+    "machine_summary_canonical_sha256": "978251430D41881A577E3BB37120D0B3FC36108506DAFF00C78525B78AA9611C"
+  },
+  "created_at": "2026-08-12T12:00:02+09:00",
+  "scope": "A-13 completion TEST_REVIEW projection; actual user repository, browser, API, DB, WSL, production, and DIR NOT_EXECUTED"
+}

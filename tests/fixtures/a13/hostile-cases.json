@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0.0",
+  "package_id": "A-13",
+  "execution_classification": "FIXTURE_INTEGRATION_ONLY",
+  "cases": [
+    {"case_id":"NON_GIT","expected_status":"REJECTED","expected_code":"NOT_A_GIT_REPOSITORY","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"OUTSIDE_ROOT","expected_status":"REJECTED","expected_code":"ROOT_OUTSIDE_ALLOWED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"CASE_ESCAPE","expected_status":"REJECTED","expected_code":"ROOT_OUTSIDE_ALLOWED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"REPARSE_ESCAPE","expected_status":"REJECTED","expected_code":"REPOSITORY_REPARSE_POINT_DENIED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"MALICIOUS_MANIFEST","expected_status":"SCANNED_READ_ONLY","expected_code":"NOT_EXECUTED_UNTRUSTED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"MALICIOUS_HOOK","expected_status":"SCANNED_READ_ONLY","expected_code":"NOT_EXECUTED_UNTRUSTED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"NETWORK_ATTEMPT","expected_status":"SCANNED_READ_ONLY","expected_code":"NOT_EXECUTED_UNTRUSTED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"TOOL_ATTEMPT","expected_status":"SCANNED_READ_ONLY","expected_code":"NOT_EXECUTED_UNTRUSTED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"OUTPUT_INSIDE","expected_status":"REJECTED","expected_code":"SCAN_AUX_PATH_INSIDE_REPOSITORY","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"TEMP_INSIDE","expected_status":"REJECTED","expected_code":"SCAN_AUX_PATH_INSIDE_REPOSITORY","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"ENTRY_LIMIT","expected_status":"REJECTED","expected_code":"SCAN_ENTRY_LIMIT_EXCEEDED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"TOTAL_BYTES_LIMIT","expected_status":"REJECTED","expected_code":"SCAN_TOTAL_BYTES_LIMIT_EXCEEDED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"FILE_LIMIT","expected_status":"REJECTED","expected_code":"SCAN_FILE_LIMIT_EXCEEDED","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"GIT_TIMEOUT","expected_status":"REJECTED","expected_code":"GIT_COMMAND_TIMEOUT","network_allowed":false,"project_execution_allowed":false},
+    {"case_id":"INJECTED_WRITE","expected_status":"REJECTED","expected_code":"SCAN_MUTATION_DETECTED","network_allowed":false,"project_execution_allowed":false}
+  ],
+  "actual_user_repository_status": "NOT_EXECUTED",
+  "actual_network_status": "NOT_EXECUTED",
+  "actual_runtime_status": "NOT_EXECUTED"
+}

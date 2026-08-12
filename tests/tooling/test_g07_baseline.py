@@ -195,9 +195,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
         self.assertEqual(
-            "23580ce603e8e78b4637bcb87f91546b8d08db8a",
+            "ee878ee4195d61715a31cf7e7aa79240ba7bc416",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
@@ -356,7 +356,7 @@ class G07BaselineTests(unittest.TestCase):
                 verify_git=True,
             )
 
-        self.assertIn("GIT_PROVENANCE_MISMATCH", self.codes(report))
+        self.assertIn("GIT_VALIDATED_BASE_NOT_ANCESTOR", self.codes(report))
 
     def test_evidence_manifest_recomputes_exact_delivered_target(self):
         errors = self.checker.validate_g07_manifest(ROOT, verify_live_raw=False)
