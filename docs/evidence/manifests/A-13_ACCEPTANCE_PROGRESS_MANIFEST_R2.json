@@ -1,0 +1,104 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-13-R2-ACCEPTANCE-20260812-001",
+  "artifact_type": "package_acceptance_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-13",
+  "artifact_status": "accepted",
+  "content_hash": "sha256:B321A2F741D0B4D5A9C42344BE8A51287E3FE7498C24CAFEBBE508DCDFAC4038",
+  "created_at": "2026-08-12T18:00:00+09:00",
+  "artifact_path": "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+  "target_hash": "sha256:B321A2F741D0B4D5A9C42344BE8A51287E3FE7498C24CAFEBBE508DCDFAC4038",
+  "delivered_hash": "sha256:B321A2F741D0B4D5A9C42344BE8A51287E3FE7498C24CAFEBBE508DCDFAC4038",
+  "target_canonical_bytes": 632,
+  "target_content_bytes": 18622,
+  "projection": {
+    "event_sequence": 148,
+    "status": "READY",
+    "current_work_package": "A-14",
+    "accepted": true
+  },
+  "tester_evidence": {
+    "path": "docs/test_reports/A-13_RETEST_REPORT_R2.md",
+    "sha256": "277B7F55EED69C3FDA112C6D8033674B5FC9AD63D39CDD89C2133865CBF66B86",
+    "verdict": "READ_ONLY_FIXTURE_INTEGRATION_PASS / READY_FOR_MAIN_ACCEPTANCE",
+    "blocking_findings": 0,
+    "closed_findings": [
+      "A13-TST-BLK-001",
+      "A13-TST-BLK-002"
+    ]
+  },
+  "developer_evidence": {
+    "manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "target_hash": "7629BE41F2174CEA6538B35C410A1E3DE7488A8BFD0BA166229F5C36DEB8A085"
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "24581ae9709387d39750f02c9c88625cf223b993",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "24581ae9709387d39750f02c9c88625cf223b993",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a13-r2-accepted.json",
+      "docs/test_reports/A-13_RETEST_REPORT_R2.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ]
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json",
+      "bytes": 5008,
+      "sha256": "82A29409FE20922AD92BF4A023953EF313CB07826FC5083FAF9695FB70D0EDC6"
+    },
+    {
+      "path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+      "bytes": 3386,
+      "sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a13-r2-accepted.json",
+      "bytes": 872,
+      "sha256": "1CC95D8B9ED70B2BB43D0D970A0F66F7E933AE334720CE15A078F66F56B2D0A7"
+    },
+    {
+      "path": "docs/test_reports/A-13_RETEST_REPORT_R2.md",
+      "bytes": 6932,
+      "sha256": "277B7F55EED69C3FDA112C6D8033674B5FC9AD63D39CDD89C2133865CBF66B86"
+    },
+    {
+      "path": "docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md",
+      "bytes": 2424,
+      "sha256": "A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B"
+    }
+  ],
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "developer_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 22314,
+        "sha256": "2AD6B8687612F3235D98317FE018E9BEA7828234250BF88A0C11766CA143BD3D"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 34900,
+        "sha256": "1C229F4F49970FC99EDD7413EBEF527C026DA1CD67985EAB31C57D9424954604"
+      }
+    ]
+  }
+}

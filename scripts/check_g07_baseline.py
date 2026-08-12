@@ -741,6 +741,20 @@ def validate_repository(
                     if isinstance(row, dict) and isinstance(row.get("path"), str)
                 }
                 completion_developer_paths.add(manifest_relative)
+            if (
+                reconciliation_event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+                and reconciliation_event.get("subject_ref") == "A-13"
+            ):
+                acceptance_relative = "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json"
+                try:
+                    acceptance_manifest = json.loads((root / acceptance_relative).read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    acceptance_manifest = {}
+                completion_developer_paths.update(
+                    row.get("path")
+                    for row in acceptance_manifest.get("developer_successor_projection", {}).get("live_raw_checksums", [])
+                    if isinstance(row, dict) and isinstance(row.get("path"), str)
+                )
             non_evidence_paths = {path for path in allowed if not _is_evidence_only_path(path)}
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))

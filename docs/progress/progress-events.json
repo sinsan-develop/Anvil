@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 147,
+  "last_sequence": 148,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -4685,6 +4685,78 @@
           "docs/progress/progress-handoff-detached-digest-a13-r2-completion-test-review.json",
           "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
           "scripts/check_a13_repository_scan.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "reporting_decision": "AUTO_CONTINUE"
+      }
+    },
+    {
+      "event_id": "evt_a13_r2_main_accepted",
+      "sequence": 148,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "occurred_at": "2026-08-12T18:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-13",
+      "details": {
+        "decision": "ACCEPTED",
+        "prior_package_status": "TEST_REVIEW",
+        "blocking_findings": 0,
+        "closed_findings": [
+          "A13-TST-BLK-001",
+          "A13-TST-BLK-002"
+        ],
+        "test_report_ref": {
+          "path": "docs/test_reports/A-13_RETEST_REPORT_R2.md",
+          "sha256": "277B7F55EED69C3FDA112C6D8033674B5FC9AD63D39CDD89C2133865CBF66B86"
+        },
+        "test_report_sha256": "277B7F55EED69C3FDA112C6D8033674B5FC9AD63D39CDD89C2133865CBF66B86",
+        "verdict": "READ_ONLY_FIXTURE_INTEGRATION_PASS / READY_FOR_MAIN_ACCEPTANCE",
+        "manifest_ref": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+        "manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+        "developer_manifest_ref": {
+          "path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+          "sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771"
+        },
+        "completion_manifest_ref": {
+          "path": "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json",
+          "sha256": "82A29409FE20922AD92BF4A023953EF313CB07826FC5083FAF9695FB70D0EDC6"
+        },
+        "next_work_package": "A-14",
+        "next_package_status": "READY",
+        "active_work_instruction": null,
+        "active_agent": null,
+        "worker_lease": null,
+        "write_lease": null,
+        "actual_user_repository_status": "NOT_EXECUTED",
+        "actual_browser_status": "NOT_EXECUTED",
+        "actual_api_status": "NOT_EXECUTED",
+        "actual_db_status": "NOT_EXECUTED",
+        "actual_wsl_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_dir_status": "NOT_EXECUTED",
+        "acceptance_head": "24581ae9709387d39750f02c9c88625cf223b993",
+        "acceptance_upstream_head": "24581ae9709387d39750f02c9c88625cf223b993",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "24581ae9709387d39750f02c9c88625cf223b993",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "24581ae9709387d39750f02c9c88625cf223b993",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a13-r2-accepted.json",
+          "docs/test_reports/A-13_RETEST_REPORT_R2.md",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
           "scripts/check_phase_g_gate.py",
           "scripts/check_project_progress.py",
           "tests/tooling/test_a13_repository_scan.py",

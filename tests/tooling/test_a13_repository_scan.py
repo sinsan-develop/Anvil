@@ -583,7 +583,9 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         spec.loader.exec_module(checker)
 
         report = checker.validate_bundle(ROOT)
+        changed_paths = checker._git_changed_paths(ROOT)
 
+        self.assertIsNotNone(checker._revision2_completion_successor(ROOT, changed_paths))
         self.assertEqual(report["errors"], [])
         self.assertEqual(report["fixture_count"], 8)
         self.assertEqual(report["zero_delta_count"], 8)

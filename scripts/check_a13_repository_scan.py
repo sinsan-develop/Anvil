@@ -246,14 +246,15 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
     try:
         completion = _load_json(root / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json")
         progress = _load_json(root / "docs/progress/build-progress.json")
+        acceptance_path = root / "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json"
+        acceptance = _load_json(acceptance_path) if acceptance_path.is_file() else {}
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
     except (OSError, json.JSONDecodeError):
         return None
-    successor = completion.get("developer_successor_projection", {})
-    rows = successor.get("live_raw_checksums", [])
-    indexed = {row.get("path"): row for row in rows if isinstance(row, dict)}
+
     live_paths = {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}
     completion_paths = set(completion.get("repository_projection", {}).get("exact_allowed_paths", []))
+    acceptance_paths = set(acceptance.get("repository_projection", {}).get("exact_allowed_paths", []))
     committed_clean = not changed_paths
     current_completion = (
         progress.get("event_sequence") == 147
@@ -266,14 +267,38 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and completion_paths == changed_paths
         and R2_CHANGED_PATHS <= changed_paths
     )
-    if not ((committed_clean or current_completion) and successor.get("predecessor_manifest_sha256") == predecessor_sha and set(indexed) == live_paths):
-        return None
-    for path, row in indexed.items():
-        payload = (root / path).read_bytes()
-        if row.get("bytes") != len(payload) or row.get("sha256") != hashlib.sha256(payload).hexdigest().upper():
-            return None
-    return indexed
+    current_acceptance = (
+        progress.get("event_sequence") == 148
+        and progress.get("current_work_package") == "A-14"
+        and progress.get("status") == "READY"
+        and progress.get("active_work_instruction") is None
+        and progress.get("worker_lease") is None
+        and progress.get("write_lease") is None
+        and progress.get("current_progress_evidence_ref", {}).get("manifest_path") == "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json"
+        and set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
+        and acceptance_paths == changed_paths
+        and live_paths <= changed_paths
+    )
 
+    candidates: list[dict[str, Any]] = []
+    if committed_clean or current_acceptance:
+        candidates.append(acceptance.get("developer_successor_projection", {}))
+    if committed_clean or current_completion:
+        candidates.append(completion.get("developer_successor_projection", {}))
+    for successor in candidates:
+        rows = successor.get("live_raw_checksums", [])
+        indexed = {row.get("path"): row for row in rows if isinstance(row, dict)}
+        if successor.get("predecessor_manifest_sha256") != predecessor_sha or set(indexed) != live_paths:
+            continue
+        valid = True
+        for path, row in indexed.items():
+            payload = (root / path).read_bytes()
+            if row.get("bytes") != len(payload) or row.get("sha256") != hashlib.sha256(payload).hexdigest().upper():
+                valid = False
+                break
+        if valid:
+            return indexed
+    return None
 
 def validate_evidence_manifest(root: Path) -> list[str]:
     root = root.resolve()
