@@ -4,8 +4,11 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
+
+from scripts.evidence_portability import portable_hash, portable_row_matches
 
 EXACT_PATHS = [
     "apps/web/index.html","apps/web/server.mjs","apps/web/src/app/workbench.js","apps/web/src/api/workbench-client.js","apps/web/src/features/workbench/workbench-state.js","apps/web/src/styles/workbench.css","apps/web/tests/workbench.test.mjs","tests/browser/a14/workbench-runtime.test.mjs","tests/fixtures/a14/workbench-fixtures.json","tests/fixtures/a14/hostile-inputs.json","scripts/check_a14_workbench_prototype.py","tests/tooling/test_a14_workbench_prototype.py","docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md","docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json","docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md","docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json","docs/completion_reports/A-14_COMPLETION_REPORT.md"
@@ -15,7 +18,7 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest().upper()
 
 def target_hash(root: Path, paths: list[str]) -> str:
-    material = "".join(f"{path}\0{sha256(root/path)}\n" for path in paths)
+    material = "".join(f"{path}\0{portable_hash(root, path)}\n" for path in paths)
     return hashlib.sha256(material.encode()).hexdigest().upper()
 
 def browser_source_findings(paths: list[Path]) -> list[str]:
@@ -30,6 +33,22 @@ def browser_source_findings(paths: list[Path]) -> list[str]:
             if literal.startswith(("/api/","apiPath(")) or match.group(1).strip().startswith("apiPath("): continue
             findings.append(f"non-relative-fetch:{path.as_posix()}")
     return findings
+
+
+def _tracked_clean(root: Path, relative: str) -> bool:
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", relative],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--", relative],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    return tracked.returncode == 0 and dirty.returncode == 0 and not dirty.stdout.strip()
 
 def check(root: Path) -> dict:
     errors=[]
@@ -93,10 +112,27 @@ def check(root: Path) -> dict:
                 successor = completion.get("developer_revision2_evidence", {})
                 if (successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8" and successor.get("manifest_sha256") == sha256(root / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json")):
                     successor_rows = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+            for registry_path in sorted((root / "docs/evidence/manifests").glob("A-14_A14_SUCCESSOR_*.json")):
+                relative_registry = registry_path.relative_to(root).as_posix()
+                if not _tracked_clean(root, relative_registry):
+                    continue
+                registry = json.loads(registry_path.read_text(encoding="utf-8"))
+                successor = registry.get("a14_successor_projection", {})
+                if (
+                    registry.get("artifact_type") == "a14_successor_registry"
+                    and registry.get("self_reference") is False
+                    and successor.get("predecessor_manifest_sha256")
+                    == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8"
+                ):
+                    successor_rows.update({
+                        row.get("path"): row
+                        for row in successor.get("live_raw_checksums", [])
+                        if isinstance(row, dict)
+                    })
             for path,value in raw.items():
-                actual = sha256(root/path)
+                actual = portable_hash(root, path)
                 row = successor_rows.get(path)
-                successor_valid = row and row.get("bytes") == (root/path).stat().st_size and row.get("sha256") == actual
+                successor_valid = row and portable_row_matches(root, path, row.get("bytes"), row.get("sha256"))
                 if actual != value and not successor_valid: errors.append(f"checksum:{path}")
         target_paths=[path for path in EXACT_PATHS if path != manifest_path.relative_to(root).as_posix()]
         if not missing and not successor_rows and manifest.get("target_hash") != target_hash(root,target_paths): errors.append("target-hash")

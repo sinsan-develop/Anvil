@@ -11,6 +11,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping
 
+from scripts.evidence_portability import portable_hash, portable_row_matches
+
 
 CHAPTER_15_MINIMUM_FIELDS = {
     "plan_version",
@@ -236,6 +238,12 @@ def compute_snapshot_hash(progress: Mapping[str, Any]) -> str:
 
 
 def _sha256(path: Path) -> str:
+    for root in (path.parent, *path.parents):
+        if (root / ".git").exists():
+            try:
+                return portable_hash(root, path.relative_to(root).as_posix())
+            except ValueError:
+                break
     return hashlib.sha256(path.read_bytes()).hexdigest().upper()
 
 
@@ -2727,9 +2735,12 @@ def validate_a14_main_takeover_completion_manifest(
             errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_INVALID")
             continue
         checksum = hashlib.sha256(raw).hexdigest().upper()
-        total += len(raw)
-        canonical.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{checksum}"))
-        if row.get("bytes") != len(raw) or row.get("sha256") != checksum:
+        row_matches = portable_row_matches(root, relative, row.get("bytes"), row.get("sha256"))
+        material_bytes = row.get("bytes") if row_matches else len(raw)
+        material_hash = row.get("sha256") if row_matches else checksum
+        total += material_bytes
+        canonical.append((relative.encode("utf-8"), f"{relative}\t{material_bytes}\t{material_hash}"))
+        if not row_matches:
             errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_INVALID")
     if seen != expected:
         errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_SET_INVALID")

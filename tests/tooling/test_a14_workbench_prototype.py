@@ -8,6 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import scripts.check_a14_workbench_prototype as checker
+from scripts.evidence_portability import portable_hash
 
 
 class A14WorkbenchArtifactTests(unittest.TestCase):
@@ -31,6 +32,14 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(result["errors"], [])
         self.assertEqual(result["manifest"]["self_reference"], False)
         self.assertEqual(len(result["manifest"]["paths"]), 17)
+        self.assertEqual(
+            portable_hash(ROOT, "apps/web/server.mjs"),
+            "432FF673E9271B3016D3FD8A2E175266DE77C73A990D4287BBFD52772BCD16D5",
+        )
+        self.assertEqual(
+            portable_hash(ROOT, "tests/browser/a14/workbench-runtime.test.mjs"),
+            "D6DC23724479AEBD43C91BFCB2CAFFA38940BFD161BE5F2C4E2DEC914AF59D9F",
+        )
 
     def test_standalone_checker_passes(self):
         result = subprocess.run([sys.executable, "scripts/check_a14_workbench_prototype.py", str(ROOT)], cwd=ROOT, capture_output=True, text=True)

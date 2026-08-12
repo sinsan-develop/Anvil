@@ -9,6 +9,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
 
+from scripts.evidence_portability import portable_hash
+
 
 CATALOG_REL = "docs/architecture/a11/A-11_OPERATIONS_MONITORING_CATALOG.json"
 MANIFEST_REL = "docs/evidence/manifests/A-11_EVIDENCE_MANIFEST.json"
@@ -114,7 +116,8 @@ def validate_predecessors(root: Path) -> list[str]:
     errors: list[str] = []
     for binding in bindings:
         path = root / str(binding.get("path", ""))
-        if not path.is_file() or binding.get("sha256") != sha256_file(path):
+        relative = str(binding.get("path", ""))
+        if not path.is_file() or binding.get("sha256") != portable_hash(root, relative):
             errors.append("PREDECESSOR_BINDING_MISMATCH")
     return _dedupe(errors)
 
