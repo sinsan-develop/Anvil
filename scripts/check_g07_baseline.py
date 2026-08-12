@@ -87,6 +87,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
     "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
     "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
+    "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+    "docs/work_orders/A-15_INVOCATION_PROMPT.md",
     "scripts/check_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
 }
@@ -700,6 +702,27 @@ def validate_repository(
             or acceptance.get("details", {}).get("next_package_status") != "READY"
         ):
             _error(errors, "A14_ACCEPTANCE_PROJECTION_MISMATCH", progress_path, "sequence=175")
+    if progress.get("event_sequence") == 178:
+        start_events = [event for event in events if 176 <= event.get("sequence", -1) <= 178]
+        instruction = progress.get("active_work_instruction") or {}
+        worker = progress.get("worker_lease") or {}
+        write = progress.get("write_lease") or {}
+        if (
+            progress.get("current_work_package") != "A-15"
+            or progress.get("status") != "ACTIVE"
+            or progress.get("valid_failure_count") != 0
+            or (progress.get("active_failure_lineage") or {}).get("step_lineage_id") != "A-15"
+            or instruction.get("artifact_id") != "WI-A-15-20260813-001"
+            or instruction.get("user_ux_approval_status") != "PENDING_USER_DECISION"
+            or worker.get("lease_epoch") != 1
+            or write.get("write_epoch") != 1
+            or write.get("worker_lease_id") != worker.get("lease_id")
+            or [event.get("event_type") for event in start_events]
+            != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]
+            or (events[-1] if events else {}).get("subject_ref") != "A-15"
+            or (progress.get("dir_review") or {}).get("status") != "NOT_REACHED"
+        ):
+            _error(errors, "A15_START_PROJECTION_MISMATCH", progress_path, "sequence=178")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"

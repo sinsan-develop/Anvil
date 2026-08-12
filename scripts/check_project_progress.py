@@ -216,6 +216,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
     "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
     "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
+    "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+    "docs/work_orders/A-15_INVOCATION_PROMPT.md",
 }
 
 
@@ -3009,6 +3011,136 @@ def validate_a14_acceptance_manifest(
             errors.append("A14_ACCEPTANCE_SUCCESSOR_INVALID")
     return sorted(set(errors))
 
+
+def validate_a15_start_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected = {
+        "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
+        "docs/progress/progress-handoff-detached-digest-a15-start.json",
+        "docs/work_orders/A-15_INVOCATION_PROMPT.md",
+        "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+        "scripts/check_a13_repository_scan.py",
+        "scripts/check_a14_workbench_prototype.py",
+        "tests/tooling/test_a13_repository_scan.py",
+        "tests/tooling/test_a14_workbench_prototype.py",
+    }
+    developer_paths = {
+        "docs/architecture/a15/A-15_ARTIFACT_STATE_API_UI_TRACE.md",
+        "docs/architecture/a15/A-15_ARTIFACT_SCHEMA.json",
+        "docs/architecture/a15/A-15_API_DRAFT.json",
+        "docs/architecture/a15/A-15_FIELD_TRACE_MATRIX.json",
+        "docs/architecture/a15/A-15_USER_UX_APPROVAL_REQUEST.md",
+        "tests/fixtures/a15/canonical-trace-contract.json",
+        "tests/fixtures/a15/trace-mutations.json",
+        "scripts/check_a15_artifact_state_api_ui_trace.py",
+        "tests/tooling/test_a15_artifact_state_api_ui_trace.py",
+        "docs/validation/A-15_ARTIFACT_STATE_API_UI_TRACE_VALIDATION.md",
+        "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+        "docs/completion_reports/A-15_COMPLETION_REPORT.md",
+    }
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A15_START_RAW_INVALID"]
+    errors: list[str] = []
+    seen: set[str] = set()
+    canonical: list[str] = []
+    total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("A15_START_RAW_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            matches = portable_row_matches(root, relative, row.get("bytes"), row.get("sha256"))
+        except (OSError, TypeError):
+            matches = False
+        if not matches:
+            errors.append("A15_START_RAW_INVALID")
+            continue
+        total += int(row["bytes"])
+        canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen != expected:
+        errors.append("A15_START_RAW_SET_INVALID")
+    canonical_bytes = "\n".join(sorted(canonical, key=lambda value: value.encode("utf-8"))).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if any((
+        manifest.get("target_canonical_bytes") != len(canonical_bytes),
+        manifest.get("target_content_bytes") != total,
+        manifest.get("target_hash") != target,
+        manifest.get("delivered_hash") != target,
+        manifest.get("content_hash") != target,
+        manifest.get("self_reference") is not False,
+    )):
+        errors.append("A15_START_TARGET_MISMATCH")
+    projection = manifest.get("projection") or {}
+    instruction = progress.get("active_work_instruction") or {}
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    start_events = [
+        event for event in bundle["events"]["events"]
+        if 176 <= event.get("sequence", -1) <= 178
+    ]
+    if any((
+        progress.get("event_sequence") != 178,
+        progress.get("current_work_package") != "A-15",
+        progress.get("status") != "ACTIVE",
+        progress.get("active_agent") != "developer-primary-a15",
+        instruction.get("artifact_id") != "WI-A-15-20260813-001",
+        instruction.get("user_ux_approval_status") != "PENDING_USER_DECISION",
+        worker.get("lease_epoch") != 1,
+        write.get("write_epoch") != 1,
+        write.get("worker_lease_id") != worker.get("lease_id"),
+        set(write.get("paths", [])) != developer_paths,
+        [event.get("event_type") for event in start_events]
+        != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+        projection.get("event_sequence") != 178,
+        projection.get("product_artifact_count") != 0,
+        projection.get("trace_artifact_count") != 0,
+        manifest.get("user_ux_approval_status") != "PENDING_USER_DECISION",
+        manifest.get("inherited_a14_browser_status") != "R5_EXECUTED_UI_FINDINGS_CLOSED",
+        manifest.get("r6_iab_status") != "ENVIRONMENT_BLOCKED / NOT_EXECUTED",
+        manifest.get("actual_provider_status") != "NOT_EXECUTED",
+        manifest.get("actual_production_status") != "NOT_EXECUTED",
+        manifest.get("actual_dir_status") != "NOT_REACHED",
+        (progress.get("dir_review") or {}).get("status") != "NOT_REACHED",
+    )):
+        errors.append("A15_START_PROJECTION_MISMATCH")
+    fields = (
+        "projection_mode", "validated_base_commit", "head_relation", "branch",
+        "upstream", "remote_head", "push_status", "exact_allowed_paths",
+    )
+    if any(
+        (manifest.get("repository_projection") or {}).get(field)
+        != (progress.get("repository") or {}).get(field)
+        for field in fields
+    ):
+        errors.append("A15_START_REPOSITORY_MISMATCH")
+    for name, predecessor, required in (
+        ("a13_successor_projection", "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771", {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}),
+        ("a14_successor_projection", "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09", {"scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"}),
+    ):
+        successor = manifest.get(name) or {}
+        indexed = {
+            row.get("path"): row
+            for row in successor.get("live_raw_checksums", [])
+            if isinstance(row, dict)
+        }
+        if (
+            successor.get("predecessor_manifest_sha256") != predecessor
+            or set(indexed) != required
+            or any(
+                not portable_row_matches(root, path, row.get("bytes"), row.get("sha256"))
+                for path, row in indexed.items()
+            )
+        ):
+            errors.append("A15_START_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -3672,6 +3804,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a14_portability_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json":
             errors.extend(validate_a14_acceptance_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_a15_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

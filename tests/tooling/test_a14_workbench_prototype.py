@@ -55,6 +55,22 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("A-14 WORKBENCH CHECK: PASS", result.stdout)
 
+    def test_a15_start_manifest_binds_live_a14_successor_rows(self):
+        manifest_path = ROOT / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file(), "A-15 start manifest is not materialized")
+        manifest = json.loads(
+            manifest_path.read_text(encoding="utf-8")
+        )
+        successor = manifest["a14_successor_projection"]
+        self.assertEqual(
+            "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09",
+            successor["predecessor_manifest_sha256"],
+        )
+        self.assertEqual(
+            {"scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"},
+            {row["path"] for row in successor["live_raw_checksums"]},
+        )
+
     def test_revision3_rework_manifest_supplies_live_successor_rows(self):
         manifest = json.loads((ROOT / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json").read_text(encoding="utf-8"))
         successor = manifest["a14_successor_projection"]

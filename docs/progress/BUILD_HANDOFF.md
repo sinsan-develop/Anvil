@@ -3,29 +3,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 175,
-  "status": "READY",
+  "event_sequence": 178,
+  "status": "ACTIVE",
   "current_work_package": "A-15",
-  "last_event_id": "evt_a14_r6_main_accepted",
+  "last_event_id": "evt_a15_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 11,
   "dir_status": "NOT_REACHED",
-  "repository_head": "2293b03b40319f39e4a4cd531a50617e978089af",
+  "repository_head": "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "2293b03b40319f39e4a4cd531a50617e978089af",
+  "repository_remote_head": "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "2293b03b40319f39e4a4cd531a50617e978089af",
+  "repository_validated_base_commit": "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
+    "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a14-accepted-r6.json",
-    "docs/test_reports/A-14_RETEST_REPORT_R6.md",
+    "docs/progress/progress-handoff-detached-digest-a15-start.json",
+    "docs/work_orders/A-15_INVOCATION_PROMPT.md",
+    "docs/work_orders/A-15_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_a14_workbench_prototype.py",
     "scripts/check_g07_baseline.py",
@@ -37,25 +38,72 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-accepted-r6.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a15-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Prepare A-15 WorkInstruction and fenced start; A-15 is READY but not started",
+  "next_safe_action": "Dispatch developer-primary-a15 with the active fenced WorkInstruction; do not implement A-15 as Main and do not enter DIR-1 before A-15 acceptance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": {
+    "artifact_id": "WI-A-15-20260813-001",
+    "path": "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+    "sha256": "B46E3D3A17C6050759A5EB22DF9D5B0F4484D9C59893CD0DA4A7483687077A1A",
+    "invocation_path": "docs/work_orders/A-15_INVOCATION_PROMPT.md",
+    "invocation_sha256": "002F608693A9C152949E4EB1884A5B16A6BABE170C7E4292FB85D590F0A20B14",
+    "package_status": "ACTIVE",
+    "result_status": "IN_PROGRESS",
+    "accepted": false,
+    "independent_tester_status": "NOT_STARTED",
+    "user_ux_approval_status": "PENDING_USER_DECISION"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-a15-20260813-001",
+    "worker_id": "developer-primary-a15",
+    "agent_id": "developer-primary-a15",
+    "work_package_id": "A-15",
+    "lease_epoch": 1,
+    "execution_fencing_token": "a15-execution-fence-epoch-1-4bb8155",
+    "issued_at": "2026-08-13T06:30:00+09:00",
+    "expires_at": "2026-08-13T18:30:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-a15-20260813-001",
+    "worker_lease_id": "worker-lease-a15-20260813-001",
+    "worker_id": "developer-primary-a15",
+    "agent_id": "developer-primary-a15",
+    "work_package_id": "A-15",
+    "write_epoch": 1,
+    "write_fencing_token": "a15-write-fence-epoch-1-4bb8155",
+    "execution_fencing_token": "a15-execution-fence-epoch-1-4bb8155",
+    "issued_at": "2026-08-13T06:30:01+09:00",
+    "expires_at": "2026-08-13T18:30:00+09:00",
+    "status": "ACTIVE",
+    "paths": [
+      "docs/architecture/a15/A-15_ARTIFACT_STATE_API_UI_TRACE.md",
+      "docs/architecture/a15/A-15_ARTIFACT_SCHEMA.json",
+      "docs/architecture/a15/A-15_API_DRAFT.json",
+      "docs/architecture/a15/A-15_FIELD_TRACE_MATRIX.json",
+      "docs/architecture/a15/A-15_USER_UX_APPROVAL_REQUEST.md",
+      "tests/fixtures/a15/canonical-trace-contract.json",
+      "tests/fixtures/a15/trace-mutations.json",
+      "scripts/check_a15_artifact_state_api_ui_trace.py",
+      "tests/tooling/test_a15_artifact_state_api_ui_trace.py",
+      "docs/validation/A-15_ARTIFACT_STATE_API_UI_TRACE_VALIDATION.md",
+      "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+      "docs/completion_reports/A-15_COMPLETION_REPORT.md"
+    ]
+  }
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-14 ACCEPTED / A-15 READY / LEASELESS`
+> 현재 상태: `A-15 ACTIVE / IN_PROGRESS / FENCED`
 > 현재 Phase / Package: `A / A-15`
 
 ## 1. 현재 기준선
@@ -481,3 +529,11 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - R5 실제 IAB evidence `3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B`는 UI target byte 불변 범위에서만 승계한다. R6 fresh IAB는 backend 부재로 `ENVIRONMENT_BLOCKED / NOT_EXECUTED`이며 PASS로 승격하지 않는다.
 - 실제 Provider/Secret/Egress와 production API/DB/SSE, user repository, WSL/ysna, deployment, DIR은 모두 `NOT_EXECUTED`다.
 - A-15는 `READY`로만 전환했다. active WorkInstruction/agent/worker lease/write lease는 모두 `null`이며 A-15 시작 event는 없다.
+
+## A-15 fenced start
+
+- clean/equal dispatch baseline은 `main = origin/main = 4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9`다.
+- WorkInstruction `WI-A-15-20260813-001`과 epoch-1 worker/write lease를 발급하고 seq 176→178로 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 append했다.
+- Developer write는 Artifact schema, API draft, field trace matrix, UX approval request, fixture/checker/test/validation/evidence/completion의 exact 12 paths로만 제한한다. A-14 제품과 accepted evidence, authority, progress/HANDOFF, 실제 승인 기록과 DIR artifact는 불변이다.
+- 시작 시점 A-15 product/trace artifact는 0개이며 사용자 UX 승인은 `PENDING_USER_DECISION`이다. R5 실제 fixture browser 증거는 A-14 accepted predecessor로만 보존하고 R6 IAB는 `ENVIRONMENT_BLOCKED / NOT_EXECUTED`다.
+- 실제 API/DB/Provider/Secret/Egress/WSL/production/deploy는 `NOT_EXECUTED`이며 A-15 acceptance 전 DIR-1은 `NOT_REACHED`다. A Gate는 `BLOCKED_PENDING_A15_ACCEPTANCE_AND_DIR1`이다.

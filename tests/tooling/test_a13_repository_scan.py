@@ -587,6 +587,20 @@ class A13RepositoryScanHostileTests(unittest.TestCase):
 
 
 class A13RepositoryScanArtifactTests(unittest.TestCase):
+    def test_a15_start_supplies_live_a13_successor_rows(self):
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json").read_text(encoding="utf-8")
+        )
+        successor = manifest["a13_successor_projection"]
+        self.assertEqual(
+            "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+            successor["predecessor_manifest_sha256"],
+        )
+        self.assertEqual(
+            {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
+            {row["path"] for row in successor["live_raw_checksums"]},
+        )
+
     """Catch missing reusable checker and frozen contract artifacts."""
 
     def test_checker_contract_and_hostile_catalog_exist(self) -> None:
@@ -812,10 +826,10 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(175, progress["event_sequence"])
+        self.assertEqual(178, progress["event_sequence"])
         self.assertEqual("A-15", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-A-15-20260813-001", progress["active_work_instruction"]["artifact_id"])
         self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())
         manifest = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
         self.assertEqual(

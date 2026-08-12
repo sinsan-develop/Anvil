@@ -1,0 +1,212 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-15-START-20260813-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-15",
+  "artifact_status": "active",
+  "artifact_path": "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-13T06:30:02+09:00",
+  "projection": {
+    "event_sequence": 178,
+    "status": "ACTIVE",
+    "result_status": "IN_PROGRESS",
+    "current_work_package": "A-15",
+    "active_agent": "developer-primary-a15",
+    "valid_failure_count": 0,
+    "product_artifact_count": 0,
+    "trace_artifact_count": 0,
+    "worker_lease_epoch": 1,
+    "write_lease_epoch": 1
+  },
+  "verification_contract": {
+    "assigned_verification_ids": [
+      "AV-UI-015",
+      "AV-STAT-041",
+      "AV-STAT-042"
+    ],
+    "environment": "ENV-LOCAL",
+    "acquisition_mode": "STATIC_TRACE_CONTRACT_AT_START",
+    "user_ux_approval_required": true,
+    "dir_trigger_boundary": "A-15_ACCEPTED_ONLY"
+  },
+  "predecessor_acceptance_ref": {
+    "path": "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
+    "sha256": "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09"
+  },
+  "user_ux_approval_status": "PENDING_USER_DECISION",
+  "actual_browser_status": "NOT_EXECUTED_AT_A15_START",
+  "inherited_a14_browser_status": "R5_EXECUTED_UI_FINDINGS_CLOSED",
+  "r6_iab_status": "ENVIRONMENT_BLOCKED / NOT_EXECUTED",
+  "actual_api_status": "NOT_EXECUTED",
+  "actual_db_status": "NOT_EXECUTED",
+  "actual_provider_status": "NOT_EXECUTED",
+  "actual_secret_status": "NOT_EXECUTED",
+  "actual_egress_status": "NOT_EXECUTED",
+  "actual_network_status": "NOT_EXECUTED_AT_A15_START",
+  "actual_runtime_status": "NOT_EXECUTED_AT_A15_START",
+  "actual_wsl_status": "NOT_EXECUTED",
+  "actual_production_status": "NOT_EXECUTED",
+  "actual_deployment_status": "NOT_EXECUTED",
+  "actual_dir_status": "NOT_REACHED",
+  "work_instruction": {
+    "artifact_id": "WI-A-15-20260813-001",
+    "path": "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+    "sha256": "B46E3D3A17C6050759A5EB22DF9D5B0F4484D9C59893CD0DA4A7483687077A1A",
+    "invocation_path": "docs/work_orders/A-15_INVOCATION_PROMPT.md",
+    "invocation_sha256": "002F608693A9C152949E4EB1884A5B16A6BABE170C7E4292FB85D590F0A20B14"
+  },
+  "lease_projection": {
+    "worker_lease_id": "worker-lease-a15-20260813-001",
+    "write_lease_id": "write-lease-a15-20260813-001",
+    "lease_epoch": 1,
+    "write_epoch": 1,
+    "execution_fencing_token": "a15-execution-fence-epoch-1-4bb8155",
+    "write_fencing_token": "a15-write-fence-epoch-1-4bb8155"
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a15-start.json",
+      "docs/work_orders/A-15_INVOCATION_PROMPT.md",
+      "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "observed_at": "2026-08-13T06:30:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: A-15 fenced start projection only; product artifacts 0",
+    "local_head": "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9"
+  },
+  "developer_write_allowlist": [
+    "docs/architecture/a15/A-15_ARTIFACT_STATE_API_UI_TRACE.md",
+    "docs/architecture/a15/A-15_ARTIFACT_SCHEMA.json",
+    "docs/architecture/a15/A-15_API_DRAFT.json",
+    "docs/architecture/a15/A-15_FIELD_TRACE_MATRIX.json",
+    "docs/architecture/a15/A-15_USER_UX_APPROVAL_REQUEST.md",
+    "tests/fixtures/a15/canonical-trace-contract.json",
+    "tests/fixtures/a15/trace-mutations.json",
+    "scripts/check_a15_artifact_state_api_ui_trace.py",
+    "tests/tooling/test_a15_artifact_state_api_ui_trace.py",
+    "docs/validation/A-15_ARTIFACT_STATE_API_UI_TRACE_VALIDATION.md",
+    "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/A-15_COMPLETION_REPORT.md"
+  ],
+  "a14_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
+    "predecessor_manifest_sha256": "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a14_workbench_prototype.py",
+        "bytes": 17001,
+        "sha256": "457ADA3E9F9132A5A84E3446E00FEB0D04AE86B889E3CAFE00334B7CDE472877"
+      },
+      {
+        "path": "tests/tooling/test_a14_workbench_prototype.py",
+        "bytes": 6474,
+        "sha256": "EC1900E10BD7E820E1738298BFE996B949263FA8F9F64ADE435F6756996C163D"
+      }
+    ],
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  },
+  "a13_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 34445,
+        "sha256": "86695F2F6CC9AF48DED9B292ABEFD78FE7EEC46379E732945E546B39C561F42B"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 42578,
+        "sha256": "9079428CC28FF6B1FEBE7D6378AE229372C61DD2292DCC4E8FFE46BF4729A392"
+      }
+    ],
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
+      "bytes": 7350,
+      "sha256": "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a15-start.json",
+      "bytes": 951,
+      "sha256": "86B2A749D1FDEAA3F0CB5C83949E6707505B753CB54FBD6048D2E5797390DA8A"
+    },
+    {
+      "path": "docs/work_orders/A-15_INVOCATION_PROMPT.md",
+      "bytes": 710,
+      "sha256": "002F608693A9C152949E4EB1884A5B16A6BABE170C7E4292FB85D590F0A20B14"
+    },
+    {
+      "path": "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+      "bytes": 5798,
+      "sha256": "B46E3D3A17C6050759A5EB22DF9D5B0F4484D9C59893CD0DA4A7483687077A1A"
+    },
+    {
+      "path": "scripts/check_a13_repository_scan.py",
+      "bytes": 34445,
+      "sha256": "86695F2F6CC9AF48DED9B292ABEFD78FE7EEC46379E732945E546B39C561F42B"
+    },
+    {
+      "path": "scripts/check_a14_workbench_prototype.py",
+      "bytes": 17001,
+      "sha256": "457ADA3E9F9132A5A84E3446E00FEB0D04AE86B889E3CAFE00334B7CDE472877"
+    },
+    {
+      "path": "tests/tooling/test_a13_repository_scan.py",
+      "bytes": 42578,
+      "sha256": "9079428CC28FF6B1FEBE7D6378AE229372C61DD2292DCC4E8FFE46BF4729A392"
+    },
+    {
+      "path": "tests/tooling/test_a14_workbench_prototype.py",
+      "bytes": 6474,
+      "sha256": "EC1900E10BD7E820E1738298BFE996B949263FA8F9F64ADE435F6756996C163D"
+    }
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 939,
+  "target_content_bytes": 115307,
+  "target_hash": "sha256:BE9E5327BD0938F4820A863D1D15A5833E15BB9ABCEF35AD74777DAB9745C0BD",
+  "delivered_hash": "sha256:BE9E5327BD0938F4820A863D1D15A5833E15BB9ABCEF35AD74777DAB9745C0BD",
+  "content_hash": "sha256:BE9E5327BD0938F4820A863D1D15A5833E15BB9ABCEF35AD74777DAB9745C0BD",
+  "historical_evidence_policy": "Sequences 1 through 175 and all A-01 through A-14 accepted evidence remain semantically immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": [
+    "A-15 product and trace artifacts do not yet exist.",
+    "User UX approval is pending and no approval record has been created.",
+    "Actual API, DB, provider, secret, egress, runtime, WSL, production, deployment and DIR are not executed at start."
+  ]
+}

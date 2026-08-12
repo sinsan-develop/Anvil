@@ -146,6 +146,20 @@ def check(root: Path) -> dict:
                         for row in successor.get("live_raw_checksums", [])
                         if isinstance(row, dict)
                     })
+            a15_start_path = root / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json"
+            if a15_start_path.is_file():
+                a15_start = json.loads(a15_start_path.read_text(encoding="utf-8"))
+                successor = a15_start.get("a14_successor_projection", {})
+                if (
+                    a15_start.get("self_reference") is False
+                    and successor.get("predecessor_manifest_sha256")
+                    == "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09"
+                ):
+                    successor_rows.update({
+                        row.get("path"): row
+                        for row in successor.get("live_raw_checksums", [])
+                        if isinstance(row, dict)
+                    })
             for path,value in raw.items():
                 actual = portable_hash(root, path)
                 row = successor_rows.get(path)
@@ -159,6 +173,7 @@ def check(root: Path) -> dict:
     takeover_path = root / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json"
     portability_path = root / "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json"
     acceptance_path = root / "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json"
+    a15_start_path = root / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json"
     if progress_path.is_file():
         progress = json.loads(progress_path.read_text(encoding="utf-8"))
         if progress.get("event_sequence") == 171:
@@ -214,6 +229,35 @@ def check(root: Path) -> dict:
                     or progress.get("write_lease") is not None
                 ):
                     errors.append("acceptance-boundary")
+        if progress.get("event_sequence") == 178:
+            if not a15_start_path.is_file():
+                errors.append("a15-start-missing")
+            else:
+                a15_start = json.loads(a15_start_path.read_text(encoding="utf-8"))
+                successor = a15_start.get("a14_successor_projection", {})
+                successor_rows = {
+                    row.get("path"): row
+                    for row in successor.get("live_raw_checksums", [])
+                    if isinstance(row, dict)
+                }
+                for path in ("scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"):
+                    row = successor_rows.get(path, {})
+                    if not portable_row_matches(root, path, row.get("bytes"), row.get("sha256")):
+                        errors.append(f"a15-start-successor:{path}")
+                if (
+                    a15_start.get("artifact_status") != "active"
+                    or a15_start.get("inherited_a14_browser_status") != "R5_EXECUTED_UI_FINDINGS_CLOSED"
+                    or a15_start.get("r6_iab_status") != "ENVIRONMENT_BLOCKED / NOT_EXECUTED"
+                    or a15_start.get("actual_provider_status") != "NOT_EXECUTED"
+                    or a15_start.get("actual_production_status") != "NOT_EXECUTED"
+                    or a15_start.get("actual_dir_status") != "NOT_REACHED"
+                    or progress.get("current_work_package") != "A-15"
+                    or progress.get("status") != "ACTIVE"
+                    or progress.get("active_work_instruction", {}).get("artifact_id") != "WI-A-15-20260813-001"
+                    or progress.get("worker_lease", {}).get("lease_epoch") != 1
+                    or progress.get("write_lease", {}).get("write_epoch") != 1
+                ):
+                    errors.append("a15-start-boundary")
     return {"errors":errors,"manifest":manifest,"exact_paths":EXACT_PATHS}
 
 def main(argv=None):
