@@ -125,12 +125,12 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual(worker["details"]["lease_id"], write["details"]["worker_lease_id"])
         self.assertEqual(write["details"]["lease_id"], start["details"]["write_lease_id"])
 
-    def test_gate_checkpoint_allows_a12_test_review_after_ordered_revocation(self):
+    def test_gate_checkpoint_allows_a13_ready_after_a12_acceptance(self):
         report = self.validate()
         self.assertEqual([], report["errors"])
-        self.assertEqual("A-12", report["progress"]["current_work_package"])
-        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
-        self.assertEqual("WI-A-12-20260812-001", report["progress"]["active_work_instruction"]["artifact_id"])
+        self.assertEqual("A-13", report["progress"]["current_work_package"])
+        self.assertEqual("READY", report["progress"]["status"])
+        self.assertIsNone(report["progress"]["active_work_instruction"])
         self.assertIsNone(report["progress"]["worker_lease"])
         self.assertIsNone(report["progress"]["write_lease"])
 

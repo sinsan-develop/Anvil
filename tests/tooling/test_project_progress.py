@@ -1136,7 +1136,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["actual_runtime_status"])
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["dir_status"])
         self.assertIn("A-09", progress["completed_packages"])
-        self.assertEqual("A-12", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual("A-13", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         a10_start = [event for event in bundle["events"]["events"] if 114 <= event["sequence"] <= 116]
         self.assertEqual(
@@ -1206,13 +1206,24 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("PENDING", completed_a12["independent_tester_status"])
         self.assertEqual("A-13", completed_a12["next_work_package"])
         self.assertEqual("BLOCKED_PENDING_A12_ACCEPTANCE", completed_a12["next_package_status"])
-        self.assertEqual(133, progress["event_sequence"])
-        self.assertEqual("A-12", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
+        accepted_a12_events = [event for event in bundle["events"]["events"] if event["sequence"] == 134]
+        self.assertEqual(1, len(accepted_a12_events))
+        accepted_a12 = accepted_a12_events[0]
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", accepted_a12["event_type"])
+        self.assertEqual("ACCEPTED", accepted_a12["details"]["decision"])
+        self.assertEqual(0, accepted_a12["details"]["blocking_findings"])
+        self.assertEqual("42BDCD1C71E6B0239E1A5313FE247D1491CF78692D5B6B6C4D815A5DEFD00583", accepted_a12["details"]["test_report_sha256"])
+        self.assertEqual("A-13", accepted_a12["details"]["next_work_package"])
+        self.assertEqual("READY", accepted_a12["details"]["next_package_status"])
+        self.assertEqual(134, progress["event_sequence"])
+        self.assertEqual("A-13", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_agent"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
-        self.assertEqual("docs/evidence/manifests/A-12_COMPLETION_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIn("A-12", progress["completed_packages"])
+        self.assertEqual("docs/evidence/manifests/A-12_ACCEPTANCE_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
 

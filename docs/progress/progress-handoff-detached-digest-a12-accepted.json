@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0.0","digest_id":"A-12-PROGRESS-HANDOFF-DIGEST-ACCEPTED","package_id":"A-12","event_sequence":134,"algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":21231,"file_sha256":"77C817BA46D41AB19B5EDB9ABBF39320485EC88A16645721A508D6B74A77ACC6","canonical_json_sha256":"EE560D9309779FCD683130EDCCE2708788F6F43353BA9E81A12A24E401CFF273"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":49689,"file_sha256":"0C3A83F293614779BA1CC78A235BA9B6F3E72F3FFAB0145B17D8B0564F487CC0","machine_summary_canonical_sha256":"F65781A8B7E1C1C3869E145CD445D35BAE6F6B01645E47D83AAB130B64B9DC3D"},
+  "created_at":"2026-08-12T10:30:00+09:00","scope":"A-12 Main acceptance and A-13 READY projection; browser, API, SSE, runtime, and DIR NOT_EXECUTED"
+}
