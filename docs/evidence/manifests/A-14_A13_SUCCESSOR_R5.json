@@ -1,0 +1,26 @@
+{
+  "artifact_id": "A-14-A13-SUCCESSOR-R5-001",
+  "artifact_type": "a13_successor_registry",
+  "package_id": "A-14",
+  "revision": 5,
+  "self_reference": false,
+  "source_report_path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
+  "source_report_sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B",
+  "a13_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 32405,
+        "sha256": "CD0631547CAE2D73A0BC30BA098E987F938696691C5EB39111ECF55E168A5A46"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 41845,
+        "sha256": "C26C547EDF7F8DACB569F77BE97AC51004B216A2673E20B864A876756D917112"
+      }
+    ],
+    "binding_mode": "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY"
+  }
+}

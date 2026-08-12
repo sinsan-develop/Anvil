@@ -120,6 +120,10 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
             destination = clone / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, destination)
+    for source in (ROOT / "docs/evidence/manifests").glob("A-14_A13_SUCCESSOR_*.json"):
+        destination = clone / source.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
 
 
 class A13RepositoryScanFoundationTests(unittest.TestCase):

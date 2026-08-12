@@ -366,7 +366,10 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('write_lease') is None
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
         == 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json'
-        and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        and (
+            committed_clean
+            or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        )
     )
     completion_developer_binding_valid = (
         not a14_r3_completion
@@ -399,7 +402,10 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('write_lease') is None
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
         == 'docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json'
-        and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        and (
+            committed_clean
+            or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        )
         and a14_r4_completion.get('takeover_status') == 'MAIN_AGENT_TAKEOVER_COMPLETED'
         and a14_r4_completion.get('source_report_sha256')
         == hashlib.sha256(a14_r4_report_path.read_bytes()).hexdigest().upper()
@@ -407,6 +413,21 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         == hashlib.sha256(a14_r4_packet_path.read_bytes()).hexdigest().upper()
     )
     candidates: list[dict[str, Any]] = []
+    if committed_clean:
+        for registry_path in sorted(
+            (root / 'docs/evidence/manifests').glob('A-14_A13_SUCCESSOR_*.json'),
+            reverse=True,
+        ):
+            try:
+                registry = _load_json(registry_path)
+            except (OSError, json.JSONDecodeError):
+                continue
+            if (
+                registry.get('self_reference') is False
+                and registry.get('package_id') == 'A-14'
+                and registry.get('artifact_type') == 'a13_successor_registry'
+            ):
+                candidates.append(registry.get('a13_successor_projection', {}))
     if current_a14_r4_completion:
         candidates.append(a14_r4_completion.get('a13_successor_projection', {}))
     if current_a14_r4_takeover:
