@@ -195,6 +195,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "docs/work_orders/A-01_INVOCATION_PROMPT.md",
     "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
     "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
 }
 
 
@@ -2387,6 +2389,28 @@ def validate_a13_completion_manifest(manifest: Mapping[str, Any], bundle: Mappin
     return sorted(set(errors))
 
 
+def validate_a13_rework_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[];expected={"docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json","docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-a13-rework-start.json","docs/test_reports/A-13_TEST_REPORT.md","docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["A13_REWORK_START_RAW_CHECKSUMS_INVALID"]
+    for row in rows:
+        rel=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(rel,str) or rel in seen: errors.append("A13_REWORK_START_RAW_CHECKSUMS_INVALID");continue
+        seen.add(rel)
+        try: raw=(root/rel).read_bytes()
+        except OSError: errors.append("A13_REWORK_START_RAW_CHECKSUMS_INVALID");continue
+        actual=hashlib.sha256(raw).hexdigest().upper();total+=len(raw);canonical.append((rel.encode(),f"{rel}\t{len(raw)}\t{actual}"))
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=actual: errors.append("A13_REWORK_START_RAW_CHECKSUMS_INVALID")
+    if seen!=expected: errors.append("A13_REWORK_START_RAW_SET_INVALID")
+    can="\n".join(v for _,v in sorted(canonical)).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_hash")!=target,manifest.get("content_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total)): errors.append("A13_REWORK_START_TARGET_MISMATCH")
+    fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths");mp=manifest.get("repository_projection") or {};rp=progress.get("repository") or {}
+    if any(mp.get(f)!=rp.get(f) for f in fields): errors.append("A13_REWORK_START_REPOSITORY_PROJECTION_MISMATCH")
+    wi=progress.get("active_work_instruction") or {};w=progress.get("worker_lease") or {};wr=progress.get("write_lease") or {};failure=manifest.get("failure_source") or {};pred=manifest.get("predecessor_evidence") or {}
+    if (progress.get("event_sequence")!=144 or progress.get("status")!="ACTIVE" or progress.get("active_agent")!="developer-primary-a13" or progress.get("valid_failure_count")!=1 or wi.get("artifact_id")!="WI-A-13-20260812-002" or wi.get("sha256")!="A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B" or wi.get("invocation_sha256")!="0AE9CFFFAB917EA9BC050598A2D3DABD5C2B76B190B78A311ADC860E813860ED" or wi.get("result_status")!="REWORK_IN_PROGRESS" or w.get("lease_epoch")!=2 or wr.get("write_epoch")!=2 or wr.get("worker_lease_id")!=w.get("lease_id") or failure.get("test_report_sha256")!="90765FDA6C240AE04A7548B265BC4E2506E9E1878F93DE353ECFEE1AD736A986" or failure.get("blocking_defect_count")!=2 or pred.get("developer_manifest_sha256")!="BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE" or pred.get("completion_manifest_sha256")!="56376C0DB64E840E1CB8145918F74291B413FFEFA681AD29DDE141D91681A854" or manifest.get("self_reference") is not False): errors.append("A13_REWORK_START_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -3024,6 +3048,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a13_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_a13_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-13_REWORK_START_MANIFEST.json":
+            errors.extend(validate_a13_rework_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-13-PROGRESS-HANDOFF-DIGEST-REWORK-START-R2",
+  "package_id": "A-13",
+  "event_sequence": 144,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 30542,
+    "file_sha256": "B16C730C0DA3C34A9825B1FE704FC54C14C24C9D03CD90D05DBE852F8CB06C31",
+    "canonical_json_sha256": "6EF6160C0DBB15AC1EFA815B9DB8AF1FF510A59D50C4953E7E07E77CC5B4FA82"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 52309,
+    "file_sha256": "5BB72E73CE4B32D0BCA01FB186A1E073C154AED9BECCF051D7B48C3A53C07B90",
+    "machine_summary_canonical_sha256": "3F37F128ACE12A57C7D6AFAE4AC7387872DBFD2ADB18D9B9B0EBA220A2B6C9AA"
+  },
+  "created_at": "2026-08-12T14:00:03+09:00",
+  "scope": "A-13 FAILURE_REPORT accepted and epoch-2 scoped rework resumed; product scanner core and actual runtime remain NOT_EXECUTED"
+}

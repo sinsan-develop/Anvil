@@ -1,7 +1,10 @@
 {
   "schema_version": "1.0.0",
   "ledger_id": "failure-ledger-anvil-build-v1",
-  "canonical_key": ["step_lineage_id", "failure_fingerprint"],
+  "canonical_key": [
+    "step_lineage_id",
+    "failure_fingerprint"
+  ],
   "entries": [
     {
       "entry_id": "failure-g05-independent-test-r1",
@@ -79,7 +82,10 @@
       "accepted": true,
       "counts_toward_valid_failure": true,
       "validator_acceptance": true,
-      "finding_ids": ["DEF-A02-001", "DEF-A02-002"],
+      "finding_ids": [
+        "DEF-A02-001",
+        "DEF-A02-002"
+      ],
       "blocking_severity": "MAJOR",
       "blocking_defect_count": 2,
       "evidence_refs": [
@@ -99,13 +105,39 @@
       "accepted": true,
       "counts_toward_valid_failure": true,
       "validator_acceptance": true,
-      "finding_ids": ["A03-TST-BLK-001", "A03-TST-BLK-002"],
+      "finding_ids": [
+        "A03-TST-BLK-001",
+        "A03-TST-BLK-002"
+      ],
       "blocking_severity": "MAJOR",
       "blocking_defect_count": 2,
       "evidence_refs": [
         {
           "path": "docs/test_reports/A-03_TEST_REPORT.md",
           "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a13-independent-test-r1",
+      "step_lineage_id": "A-13",
+      "failure_fingerprint": "a13-independent-test:clean-successor-and-cli-evidence-validator-fail-open-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "A13-TST-BLK-001",
+        "A13-TST-BLK-002"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 2,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/A-13_TEST_REPORT.md",
+          "sha256": "90765FDA6C240AE04A7548B265BC4E2506E9E1878F93DE353ECFEE1AD736A986"
         }
       ],
       "accepted_sequence": 1,

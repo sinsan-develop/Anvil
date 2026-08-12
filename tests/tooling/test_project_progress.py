@@ -1101,8 +1101,8 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn("A-03", progress["completed_packages"])
         self.assertIn("A-04", progress["completed_packages"])
         self.assertIn("A-06", progress["completed_packages"])
-        self.assertEqual(0, progress["valid_failure_count"])
-        self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertEqual(1, progress["valid_failure_count"])
+        self.assertEqual(1, progress["active_failure_lineage"]["valid_failure_count"])
         self.assertEqual(0, progress["historical_failure_counts_by_lineage"].get("A-04", 0))
         self.assertEqual(1, progress["historical_failure_counts_by_lineage"]["A-03"])
         a09_completion = [event for event in bundle["events"]["events"] if 110 <= event["sequence"] <= 112]
@@ -1137,7 +1137,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["dir_status"])
         self.assertIn("A-09", progress["completed_packages"])
         self.assertEqual("A-13", progress["active_failure_lineage"]["step_lineage_id"])
-        self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertEqual(1, progress["active_failure_lineage"]["valid_failure_count"])
         a10_start = [event for event in bundle["events"]["events"] if 114 <= event["sequence"] <= 116]
         self.assertEqual(
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
@@ -1228,16 +1228,21 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("BLOCKED_PENDING_A13_ACCEPTANCE", completed_a13["next_package_status"])
         self.assertEqual("BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE", completed_a13["developer_manifest_ref"]["sha256"])
         self.assertEqual("1AEC2DC560F1AF41B234FEDA3603C25F88B62740E8FB19A83FA85B770D3BA733", completed_a13["developer_target_hash"])
-        self.assertEqual(140, progress["event_sequence"])
         self.assertEqual("A-13", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertEqual("WI-A-13-20260812-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("TEST_REVIEW", progress["active_work_instruction"]["package_status"])
         self.assertIn("A-12", progress["completed_packages"])
-        self.assertEqual("docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
+        failure = next(event for event in bundle["events"]["events"] if event["sequence"] == 141)
+        self.assertEqual("FAILURE_REPORT_ACCEPTED", failure["event_type"])
+        self.assertEqual(2, failure["details"]["blocking_defect_count"])
+        self.assertEqual(1, failure["details"]["valid_failure_count"])
+        rework = [event for event in bundle["events"]["events"] if 142 <= event["sequence"] <= 144]
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"], [event["event_type"] for event in rework])
+        self.assertEqual(144, progress["event_sequence"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("developer-primary-a13", progress["active_agent"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("docs/evidence/manifests/A-13_REWORK_START_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
 

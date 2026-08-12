@@ -74,6 +74,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "docs/work_orders/A-01_INVOCATION_PROMPT.md",
     "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
     "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
 }
 
 
