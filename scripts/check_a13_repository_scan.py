@@ -248,6 +248,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         progress = _load_json(root / "docs/progress/build-progress.json")
         acceptance_path = root / "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json"
         acceptance = _load_json(acceptance_path) if acceptance_path.is_file() else {}
+        start_path = root / "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json"
+        start = _load_json(start_path) if start_path.is_file() else {}
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
     except (OSError, json.JSONDecodeError):
         return None
@@ -255,6 +257,7 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
     live_paths = {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}
     completion_paths = set(completion.get("repository_projection", {}).get("exact_allowed_paths", []))
     acceptance_paths = set(acceptance.get("repository_projection", {}).get("exact_allowed_paths", []))
+    start_paths = set(start.get("repository_projection", {}).get("exact_allowed_paths", []))
     committed_clean = not changed_paths
     current_completion = (
         progress.get("event_sequence") == 147
@@ -280,7 +283,20 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and live_paths <= changed_paths
     )
 
+    current_start = (
+        progress.get("event_sequence") == 151
+        and progress.get("current_work_package") == "A-14"
+        and progress.get("status") == "ACTIVE"
+        and progress.get("active_work_instruction", {}).get("artifact_id") == "WI-A-14-20260812-001"
+        and progress.get("current_progress_evidence_ref", {}).get("manifest_path") == "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json"
+        and set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
+        and start_paths == changed_paths
+
+    )
+
     candidates: list[dict[str, Any]] = []
+    if current_start:
+        candidates.append(start.get("developer_successor_projection", {}))
     if committed_clean or current_acceptance:
         candidates.append(acceptance.get("developer_successor_projection", {}))
     if committed_clean or current_completion:

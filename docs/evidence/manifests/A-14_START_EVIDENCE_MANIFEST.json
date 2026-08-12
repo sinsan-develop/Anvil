@@ -1,0 +1,165 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-14-START-20260812-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-14",
+  "artifact_status": "active",
+  "content_hash": "sha256:9C4229E2036F74ECCE83D2B6BCB3D12B9F6A7C76D1184FE289FC3FF2DB843E2A",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-12T19:00:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json",
+  "target_hash": "sha256:9C4229E2036F74ECCE83D2B6BCB3D12B9F6A7C76D1184FE289FC3FF2DB843E2A",
+  "delivered_hash": "sha256:9C4229E2036F74ECCE83D2B6BCB3D12B9F6A7C76D1184FE289FC3FF2DB843E2A",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 490,
+  "target_content_bytes": 10551.0,
+  "projection": {
+    "event_sequence": 151,
+    "status": "ACTIVE",
+    "result_status": "IN_PROGRESS",
+    "current_work_package": "A-14",
+    "active_agent": "developer-primary-a14",
+    "valid_failure_count": 0,
+    "product_artifact_count": 0
+  },
+  "verification_contract": {
+    "assigned_verification_ids": [
+      "AV-UI-004",
+      "AV-UI-010",
+      "AV-GATE-005"
+    ],
+    "environment": "ENV-LOCAL",
+    "fixture_browser_runtime_status": "NOT_EXECUTED_AT_START",
+    "production_runtime_status": "NOT_EXECUTED",
+    "release_decision_required": false
+  },
+  "actual_browser_status": "NOT_EXECUTED",
+  "actual_api_status": "NOT_EXECUTED",
+  "actual_db_status": "NOT_EXECUTED",
+  "actual_provider_status": "NOT_EXECUTED",
+  "actual_secret_status": "NOT_EXECUTED",
+  "actual_egress_status": "NOT_EXECUTED",
+  "actual_network_status": "NOT_EXECUTED",
+  "actual_runtime_status": "NOT_EXECUTED",
+  "actual_wsl_status": "NOT_EXECUTED",
+  "actual_production_status": "NOT_EXECUTED",
+  "actual_dir_status": "NOT_EXECUTED",
+  "work_instruction": {
+    "artifact_id": "WI-A-14-20260812-001",
+    "path": "docs/work_orders/A-14_WORK_INSTRUCTION.md",
+    "sha256": "10421A71394CDC3903EF9BB03D1EDDECB1CA6240219F9E992AA5971D9B1E5F38",
+    "invocation_path": "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+    "invocation_sha256": "00E3429BFC2E711AE37C3E06BFF0AF3CD30461F9338C8BBB647856496429C68C"
+  },
+  "lease_projection": {
+    "worker_lease_id": "worker-lease-a14-20260812-001",
+    "write_lease_id": "write-lease-a14-20260812-001",
+    "lease_epoch": 1,
+    "write_epoch": 1,
+    "execution_fencing_token": "a14-execution-fence-epoch-1-3883295",
+    "write_fencing_token": "a14-write-fence-epoch-1-3883295"
+  },
+  "repository_projection": {
+    "branch": "main",
+    "local_head": "38832955f475746c842c40433566309f989b4b64",
+    "upstream": "origin/main",
+    "remote_head": "38832955f475746c842c40433566309f989b4b64",
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "38832955f475746c842c40433566309f989b4b64",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a14-start.json",
+      "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+      "docs/work_orders/A-14_WORK_INSTRUCTION.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "observed_at": "2026-08-12T19:00:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: clean equal A-14 dispatch base with exact Main-only start projection"
+  },
+  "developer_write_allowlist": [
+    "apps/web/index.html",
+    "apps/web/server.mjs",
+    "apps/web/src/app/workbench.js",
+    "apps/web/src/api/workbench-client.js",
+    "apps/web/src/features/workbench/workbench-state.js",
+    "apps/web/src/styles/workbench.css",
+    "apps/web/tests/workbench.test.mjs",
+    "tests/browser/a14/workbench-runtime.test.mjs",
+    "tests/fixtures/a14/workbench-fixtures.json",
+    "tests/fixtures/a14/hostile-inputs.json",
+    "scripts/check_a14_workbench_prototype.py",
+    "tests/tooling/test_a14_workbench_prototype.py",
+    "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+    "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+    "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+    "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/A-14_COMPLETION_REPORT.md"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+      "bytes": 4304,
+      "sha256": "78D3E998C47B15BB0E260A84242B95B062412706896A1CE5583C5CA3BC4D075D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a14-start.json",
+      "bytes": 943,
+      "sha256": "D28E1F6929694C59F78AC3E90F5EDB53B06A226ED21E96EB466917188CF3E011"
+    },
+    {
+      "path": "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+      "bytes": 690,
+      "sha256": "00E3429BFC2E711AE37C3E06BFF0AF3CD30461F9338C8BBB647856496429C68C"
+    },
+    {
+      "path": "docs/work_orders/A-14_WORK_INSTRUCTION.md",
+      "bytes": 4614,
+      "sha256": "10421A71394CDC3903EF9BB03D1EDDECB1CA6240219F9E992AA5971D9B1E5F38"
+    }
+  ],
+  "historical_evidence_policy": "Sequences 1 through 148 and all A-01 through A-13 accepted evidence remain semantically immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": [
+    "A-14 product artifacts do not yet exist.",
+    "Actual browser, API, DB, provider, secret, egress, network, runtime, WSL, production, and DIR are NOT_EXECUTED."
+  ],
+  "developer_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 23229,
+        "sha256": "C2AA6FBD4823B6FEB8EA402E800065C631F5704A2EA664CABD056782C557B4F9"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 34900,
+        "sha256": "1C229F4F49970FC99EDD7413EBEF527C026DA1CD67985EAB31C57D9424954604"
+      }
+    ],
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  }
+}

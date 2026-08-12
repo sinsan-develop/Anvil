@@ -195,9 +195,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "24581ae9709387d39750f02c9c88625cf223b993",
+            "38832955f475746c842c40433566309f989b4b64",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(

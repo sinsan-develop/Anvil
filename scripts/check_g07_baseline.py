@@ -76,6 +76,10 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
     "docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md",
     "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/A-14_WORK_INSTRUCTION.md",
+    "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+    "scripts/check_a13_repository_scan.py",
+    "tests/tooling/test_g07_baseline.py",
 }
 
 

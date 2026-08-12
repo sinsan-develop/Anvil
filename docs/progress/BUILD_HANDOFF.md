@@ -3,58 +3,109 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 148,
-  "status": "READY",
+  "event_sequence": 151,
+  "status": "ACTIVE",
   "current_work_package": "A-14",
-  "last_event_id": "evt_a13_r2_main_accepted",
+  "last_event_id": "evt_a14_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 7,
   "dir_status": "NOT_REACHED",
-  "repository_head": "24581ae9709387d39750f02c9c88625cf223b993",
+  "repository_head": "38832955f475746c842c40433566309f989b4b64",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "24581ae9709387d39750f02c9c88625cf223b993",
+  "repository_remote_head": "38832955f475746c842c40433566309f989b4b64",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "24581ae9709387d39750f02c9c88625cf223b993",
+  "repository_validated_base_commit": "38832955f475746c842c40433566309f989b4b64",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a13-r2-accepted.json",
-    "docs/test_reports/A-13_RETEST_REPORT_R2.md",
+    "docs/progress/progress-handoff-detached-digest-a14-start.json",
+    "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+    "docs/work_orders/A-14_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a13-r2-accepted.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "A-14 is READY; no implementation begins without its fenced start projection",
+  "next_safe_action": "Developer A-14 executes the exact fenced WorkInstruction; A-15 remains blocked pending A-14 acceptance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": {
+    "artifact_id": "WI-A-14-20260812-001",
+    "path": "docs/work_orders/A-14_WORK_INSTRUCTION.md",
+    "sha256": "10421A71394CDC3903EF9BB03D1EDDECB1CA6240219F9E992AA5971D9B1E5F38",
+    "invocation_path": "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+    "invocation_sha256": "00E3429BFC2E711AE37C3E06BFF0AF3CD30461F9338C8BBB647856496429C68C",
+    "package_status": "ACTIVE",
+    "result_status": "IN_PROGRESS",
+    "accepted": false,
+    "independent_tester_status": "NOT_STARTED"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-a14-20260812-001",
+    "worker_id": "developer-primary-a14",
+    "agent_id": "developer-primary-a14",
+    "work_package_id": "A-14",
+    "lease_epoch": 1,
+    "execution_fencing_token": "a14-execution-fence-epoch-1-3883295",
+    "issued_at": "2026-08-12T19:00:00+09:00",
+    "expires_at": "2026-08-12T23:00:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-a14-20260812-001",
+    "worker_lease_id": "worker-lease-a14-20260812-001",
+    "worker_id": "developer-primary-a14",
+    "agent_id": "developer-primary-a14",
+    "work_package_id": "A-14",
+    "write_epoch": 1,
+    "write_fencing_token": "a14-write-fence-epoch-1-3883295",
+    "execution_fencing_token": "a14-execution-fence-epoch-1-3883295",
+    "issued_at": "2026-08-12T19:00:01+09:00",
+    "expires_at": "2026-08-12T23:00:00+09:00",
+    "status": "ACTIVE",
+    "paths": [
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/workbench.test.mjs",
+      "tests/browser/a14/workbench-runtime.test.mjs",
+      "tests/fixtures/a14/workbench-fixtures.json",
+      "tests/fixtures/a14/hostile-inputs.json",
+      "scripts/check_a14_workbench_prototype.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+      "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+      "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+      "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+      "docs/completion_reports/A-14_COMPLETION_REPORT.md"
+    ]
+  }
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-13 ACCEPTED / A-14 READY`
-> 현재 Phase / Package: `A / A-13`
+> 현재 상태: `A-14 ACTIVE / IN_PROGRESS`
+> 현재 Phase / Package: `A / A-14`
 
 ## 1. 현재 기준선
 
@@ -410,3 +461,11 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 독립 R2 report `277B7F55EED69C3FDA112C6D8033674B5FC9AD63D39CDD89C2133865CBF66B86`의 blocking 0, BLK-001/002 CLOSED를 검증해 seq 148 `MAIN_PACKAGE_ACCEPTED`를 append했다.
 - A-13은 ACCEPTED/completed, A-14는 READY이며 active WI/agent/lease는 없다.
 - actual user repository/browser/API/DB/WSL/production/DIR는 NOT_EXECUTED다.
+
+## A-14 fenced start
+
+- clean/equal dispatch baseline: `main = origin/main = 38832955f475746c842c40433566309f989b4b64`
+- WorkInstruction `WI-A-14-20260812-001`과 epoch-1 worker/write lease를 발급하고 sequence 149→151로 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 append했다.
+- Developer는 exact 17 product/evidence paths만 쓸 수 있고 A-13 accepted adapter는 read-only predecessor다. Main은 Developer lease 동안 해당 경로를 수정하지 않는다.
+- start 시점 product artifact는 0개다. 실제 browser/API/DB/provider/secret/egress/network/runtime/WSL/production/DIR은 모두 `NOT_EXECUTED`다.
+- A-15는 A-14 independent verification과 Main acceptance 전까지 `BLOCKED_PENDING_A14_ACCEPTANCE`다.

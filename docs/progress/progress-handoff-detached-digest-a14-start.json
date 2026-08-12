@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-14-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "A-14",
+  "event_sequence": 151,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 30290,
+    "file_sha256": "2FEFD4A106C1F6425C6EFCC69CFA6B4BF0951DC994344A7B80932553D98C8E94",
+    "canonical_json_sha256": "134F980A7B9C490775D49852B9ABD8EF5B99186AB5E1F488182C419EF01AD0A8"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 55169,
+    "file_sha256": "698B5805F9487333E33D3567EB1D2100A434E42B3C62B3C01C9F7358FD464DB6",
+    "machine_summary_canonical_sha256": "4CA5A80461C0CC8DC99BC5420DD5F73102CEB841650CF92C269DA7496C620F5F"
+  },
+  "created_at": "2026-08-12T19:00:02+09:00",
+  "scope": "A-14 fenced start projection; product artifacts 0; browser, API, DB, provider, secret, egress, network, runtime, WSL, production, and DIR NOT_EXECUTED"
+}
