@@ -147,11 +147,25 @@ def check(root: Path) -> dict:
                         if isinstance(row, dict)
                     })
             a15_start_path = root / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json"
+            a15_completion_path = root / "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json"
             if a15_start_path.is_file():
                 a15_start = json.loads(a15_start_path.read_text(encoding="utf-8"))
                 successor = a15_start.get("a14_successor_projection", {})
                 if (
                     a15_start.get("self_reference") is False
+                    and successor.get("predecessor_manifest_sha256")
+                    == "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09"
+                ):
+                    successor_rows.update({
+                        row.get("path"): row
+                        for row in successor.get("live_raw_checksums", [])
+                        if isinstance(row, dict)
+                    })
+            if a15_completion_path.is_file():
+                a15_completion = json.loads(a15_completion_path.read_text(encoding="utf-8"))
+                successor = a15_completion.get("a14_successor_projection", {})
+                if (
+                    a15_completion.get("self_reference") is False
                     and successor.get("predecessor_manifest_sha256")
                     == "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09"
                 ):
@@ -174,6 +188,7 @@ def check(root: Path) -> dict:
     portability_path = root / "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json"
     acceptance_path = root / "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json"
     a15_start_path = root / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json"
+    a15_completion_path = root / "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json"
     if progress_path.is_file():
         progress = json.loads(progress_path.read_text(encoding="utf-8"))
         if progress.get("event_sequence") == 171:
@@ -258,6 +273,32 @@ def check(root: Path) -> dict:
                     or progress.get("write_lease", {}).get("write_epoch") != 1
                 ):
                     errors.append("a15-start-boundary")
+        if progress.get("event_sequence") == 181:
+            if not a15_completion_path.is_file():
+                errors.append("a15-completion-missing")
+            else:
+                a15_completion = json.loads(a15_completion_path.read_text(encoding="utf-8"))
+                successor = a15_completion.get("a14_successor_projection", {})
+                successor_rows = {
+                    row.get("path"): row
+                    for row in successor.get("live_raw_checksums", [])
+                    if isinstance(row, dict)
+                }
+                for path in ("scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"):
+                    row = successor_rows.get(path, {})
+                    if not portable_row_matches(root, path, row.get("bytes"), row.get("sha256")):
+                        errors.append(f"a15-completion-successor:{path}")
+                if (
+                    a15_completion.get("artifact_status") != "test_review_pending"
+                    or a15_completion.get("user_ux_approval_status") != "PENDING_USER_DECISION"
+                    or a15_completion.get("actual_dir_status") != "NOT_REACHED"
+                    or progress.get("current_work_package") != "A-15"
+                    or progress.get("status") != "TEST_REVIEW"
+                    or progress.get("active_work_instruction", {}).get("independent_tester_status") != "PENDING"
+                    or progress.get("worker_lease") is not None
+                    or progress.get("write_lease") is not None
+                ):
+                    errors.append("a15-completion-boundary")
     return {"errors":errors,"manifest":manifest,"exact_paths":EXACT_PATHS}
 
 def main(argv=None):

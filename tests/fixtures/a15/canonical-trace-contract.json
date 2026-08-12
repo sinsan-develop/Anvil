@@ -1,0 +1,9 @@
+{
+  "package_id": "A-15",
+  "required_domains": ["ProductValidation", "Defect", "ReleaseDecision", "ApplyDeployApproval", "DIR", "WorkerWriteFencing", "BudgetReservation", "DataEgressProfile", "SecretRef", "EvidenceManifest", "ReleaseManifest", "DeploymentRun", "Monitoring"],
+  "required_trace_fields": ["artifact_field", "source_kind", "canonical_source", "source_reference", "api_request_field", "api_response_field", "ui_surface", "ui_state", "permission", "evidence_or_av_id", "runtime_boundary"],
+  "source_kinds": ["canonical_aggregate", "projection"],
+  "human_decision_status": "PENDING_USER_DECISION",
+  "dir_status": "NOT_REACHED",
+  "runtime_classification": "STATIC_TRACE_CONTRACT_ONLY / NOT ACTUAL PASS"
+}

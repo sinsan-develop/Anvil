@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-15-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "A-15",
+  "event_sequence": 181,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 33340,
+    "file_sha256": "7F1F0B198D10E090EE9B3FDE2D35AA9C17E12B8D12E59BFEDA39CE21284AA6F6",
+    "canonical_json_sha256": "DB11D80F10D24E2A2E25EBE1C6C579EF1D0BE08084C1B4C4F646CB453933C812"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 63370,
+    "file_sha256": "B47EDFDA6898E0D60B5B0E2D9533F23CC78059A1340598F6995E7280FCA1CAD1",
+    "machine_summary_canonical_sha256": "306B48AEE974885E4841D50240F3D4A52F465B128A2B26FC1D47CA8AE66618F9"
+  },
+  "created_at": "2026-08-13T08:00:02+09:00",
+  "scope": "A-15 Developer exact12 frozen; TEST_REVIEW independent Tester pending; UX decision pending; DIR-1 not reached"
+}

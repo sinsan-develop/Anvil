@@ -1,0 +1,119 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-15-COMPLETION-20260813-001",
+  "artifact_type": "package_completion_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-15",
+  "artifact_status": "test_review_pending",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-13T08:00:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
+  "projection": {
+    "event_sequence": 181,
+    "status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "accepted": false,
+    "independent_tester_status": "PENDING"
+  },
+  "developer_evidence": {
+    "manifest_path": "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+    "manifest_sha256": "2AEEACFCF8DB666EA89B85EE7C07A071F7B56DF52B3373F222801065A7918B60",
+    "target_hash": "34FCA32938AB9DE68EFFE1C9F0E3FB57E994C5D74E172717D027F871DB3309AE",
+    "changed_path_count": 12,
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  },
+  "user_ux_approval_status": "PENDING_USER_DECISION",
+  "next_package": "A-GATE",
+  "next_package_status": "BLOCKED_PENDING_A15_ACCEPTANCE_AND_DIR1",
+  "actual_dir_status": "NOT_REACHED",
+  "runtime_boundary": {
+    "actual_api": "NOT_EXECUTED",
+    "actual_db": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_network": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_secret": "NOT_EXECUTED",
+    "actual_egress": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "aeb6b5a6bc1716ea89fe47991c9800c17107b2ab",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "aeb6b5a6bc1716ea89fe47991c9800c17107b2ab",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/architecture/a15/A-15_API_DRAFT.json",
+      "docs/architecture/a15/A-15_ARTIFACT_SCHEMA.json",
+      "docs/architecture/a15/A-15_ARTIFACT_STATE_API_UI_TRACE.md",
+      "docs/architecture/a15/A-15_FIELD_TRACE_MATRIX.json",
+      "docs/architecture/a15/A-15_USER_UX_APPROVAL_REQUEST.md",
+      "docs/completion_reports/A-15_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a15-completion-test-review.json",
+      "docs/validation/A-15_ARTIFACT_STATE_API_UI_TRACE_VALIDATION.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_a15_artifact_state_api_ui_trace.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/fixtures/a15/canonical-trace-contract.json",
+      "tests/fixtures/a15/trace-mutations.json",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a15_artifact_state_api_ui_trace.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "worktree_status": "PUSH_PENDING_MAIN: A-15 Developer exact12 frozen; TEST_REVIEW independent Tester pending"
+  },
+  "a13_successor_projection": {
+    "mode": "MAIN_A15_COMPLETION_PHASE_AWARE_TOOLING_SUCCESSOR",
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "predecessor_raw_and_target_immutable": true,
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 35802, "sha256": "C4EEF3CC53A47078B279801F9B145E98EDA845A25744C905B103DFAE47E2119E"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 42795, "sha256": "DDA43F0D8469E7EC17AA0F38467E0752AB1A70FA099F291D247548DA449EFC46"}
+    ]
+  },
+  "a14_successor_projection": {
+    "mode": "MAIN_A15_COMPLETION_PHASE_AWARE_TOOLING_SUCCESSOR",
+    "predecessor_manifest_path": "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
+    "predecessor_manifest_sha256": "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09",
+    "predecessor_raw_and_target_immutable": true,
+    "live_raw_checksums": [
+      {"path": "scripts/check_a14_workbench_prototype.py", "bytes": 19563, "sha256": "567ED1CF6790FBC45CCE71593CCE3BEA045743FD764F0C40D8EF8658845A0C0D"},
+      {"path": "tests/tooling/test_a14_workbench_prototype.py", "bytes": 6474, "sha256": "EC1900E10BD7E820E1738298BFE996B949263FA8F9F64ADE435F6756996C163D"}
+    ]
+  },
+  "self_reference": false,
+  "raw_checksums": [
+    {"path": "docs/completion_reports/A-15_COMPLETION_REPORT.md", "bytes": 3069, "sha256": "4B5F46E2982D5BBAF90FFFA5AAAED3BAA4C81D89FBAC6DD23AB37AA00D9E1B7D"},
+    {"path": "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json", "bytes": 4556, "sha256": "2AEEACFCF8DB666EA89B85EE7C07A071F7B56DF52B3373F222801065A7918B60"},
+    {"path": "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json", "bytes": 8829, "sha256": "FA346AB8999287F7E4E3E4B4DF00A1A1B03F5259ED91F297A845F6C32F9F2952"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a15-completion-test-review.json", "bytes": 899, "sha256": "D0D9E895E33A281583C2DC019FEC2B08DD72443D4C298A00A028ED2432D303C0"},
+    {"path": "docs/work_orders/A-15_WORK_INSTRUCTION.md", "bytes": 5798, "sha256": "B46E3D3A17C6050759A5EB22DF9D5B0F4484D9C59893CD0DA4A7483687077A1A"}
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 629,
+  "target_content_bytes": 23151,
+  "target_hash": "sha256:8CDEB35870A26D4CD3864C3297A38D9C8B4F23BD409548BD622D9A18773824CC",
+  "delivered_hash": "sha256:8CDEB35870A26D4CD3864C3297A38D9C8B4F23BD409548BD622D9A18773824CC",
+  "content_hash": "sha256:8CDEB35870A26D4CD3864C3297A38D9C8B4F23BD409548BD622D9A18773824CC"
+}

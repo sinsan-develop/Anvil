@@ -1,0 +1,16 @@
+{
+  "mutations": [
+    {"id": "missing-source", "document": "matrix", "path": "rows.0.canonical_source", "operation": "set", "value": "", "expected_error": "TRACE_SOURCE_MISSING"},
+    {"id": "wrong-source-kind", "document": "matrix", "path": "rows.1.source_kind", "operation": "set", "value": "screen", "expected_error": "TRACE_SOURCE_KIND_INVALID"},
+    {"id": "missing-domain", "document": "matrix", "path": "rows.12", "operation": "remove", "expected_error": "TRACE_DOMAIN_COVERAGE_MISMATCH"},
+    {"id": "absolute-browser-url", "document": "matrix", "path": "rows.2.api_request_field", "operation": "set", "value": "http://localhost:8000/api/release-decisions", "expected_error": "SAME_ORIGIN_BOUNDARY_VIOLATION"},
+    {"id": "forged-human-decision", "document": "schema", "path": "human_decision_contract.decision_status", "operation": "set", "value": "APPROVED", "expected_error": "HUMAN_DECISION_FORGED"},
+    {"id": "early-dir", "document": "schema", "path": "human_decision_contract.dir_status", "operation": "set", "value": "DIR_HOLD", "expected_error": "DIR_PREMATURELY_CREATED"},
+    {"id": "missing-release-aggregate", "document": "schema", "path": "aggregates.release_decisions", "operation": "remove", "expected_error": "AGGREGATE_SET_INCOMPLETE"},
+    {"id": "wrong-dir-enum", "document": "schema", "path": "aggregates.design_intent_reviews.enums.status.3", "operation": "set", "value": "DONE", "expected_error": "DIR_ENUM_MISMATCH"},
+    {"id": "human-endpoint-not-protected", "document": "api", "path": "endpoints.5.human_only", "operation": "set", "value": false, "expected_error": "HUMAN_ENDPOINT_GUARD_MISSING"},
+    {"id": "mutation-envelope-missing-target", "document": "api", "path": "common_mutation_envelope.5", "operation": "remove", "expected_error": "MUTATION_ENVELOPE_MISMATCH"},
+    {"id": "runtime-promoted", "document": "api", "path": "runtime_boundary", "operation": "set", "value": "PASS", "expected_error": "RUNTIME_BOUNDARY_PROMOTION"},
+    {"id": "cross-environment-reuse", "document": "schema", "path": "fail_closed_contract.cross_environment_evidence_reuse_forbidden", "operation": "set", "value": false, "expected_error": "FAIL_CLOSED_GUARD_MISSING"}
+  ]
+}

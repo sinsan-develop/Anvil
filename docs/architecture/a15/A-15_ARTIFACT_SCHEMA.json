@@ -1,0 +1,27 @@
+{
+  "artifact_id": "A15-ARTIFACT-SCHEMA-20260813-001",
+  "package_id": "A-15",
+  "classification": "STATIC_TRACE_CONTRACT_ONLY",
+  "source_design_sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+  "source_reference": "Anvil_설계서_v2.md#49.1-49.17",
+  "aggregates": {
+    "product_validations": {"source": "49.1,49.14", "fields": ["product_validation_id", "acceptance_criterion_id", "target_hash", "delivered_hash", "environment_id", "procedure", "expected", "observed", "evidence_refs", "verdict", "validated_by", "validated_at"], "enums": {"verdict": ["SUITABLE", "NEEDS_IMPROVEMENT", "UNSUITABLE", "BLOCKED"]}},
+    "defects": {"source": "49.2,49.14", "fields": ["defect_id", "severity", "blocking", "status", "owner", "target_hash", "retest_evidence", "carryover_ref"], "enums": {"status": ["OPEN", "ACCEPTED", "FIXING", "READY_FOR_RETEST", "CLOSED", "DEFERRED", "REJECTED"]}},
+    "release_decisions": {"source": "49.1,49.14", "fields": ["release_decision_id", "target_hash", "decision", "conditions", "proposed_by", "decided_by_human", "decided_at"], "enums": {"decision": ["RELEASE", "REWORK", "DEFER", "REJECT"]}},
+    "apply_approvals": {"source": "49.1", "fields": ["approval_id", "target_hash", "diff_hash", "release_decision_id", "subject_hash", "approved_by_human", "approved_at"]},
+    "deploy_approval_subjects": {"source": "49.12,49.14", "fields": ["deploy_approval_subject_id", "environment_id", "release_manifest_hash", "migration_plan_hash", "rollback_plan_hash", "subject_hash"]},
+    "design_intent_reviews": {"source": "49.3,49.14", "fields": ["design_intent_review_id", "dir_type", "status", "subject_hash", "five_axis_results", "verdict", "report_ref", "reported_at", "owner_direction_ref"], "enums": {"status": ["DIR_HOLD", "REPORTING", "WAITING_OWNER_DIRECTION", "CLEARED"], "verdict": ["ALIGNED", "DRIFT_MINOR", "DRIFT_MAJOR", "DIVERGED"]}},
+    "worker_leases": {"source": "49.5,49.14", "fields": ["worker_lease_id", "queue_job_id", "run_id", "step_attempt_id", "lease_epoch", "execution_fencing_token", "heartbeat_at", "expires_at", "db_time_version"]},
+    "write_leases": {"source": "49.5,49.14", "fields": ["write_lease_id", "worker_lease_id", "repository_id", "workspace_id", "canonical_repo_relative_path", "repository_case_policy", "write_epoch", "write_fencing_token", "expires_at"]},
+    "budget_reservations": {"source": "49.6,49.14", "fields": ["budget_reservation_id", "run_id", "step_id", "request_id", "provider_id", "model_id", "pricing_version", "reserved", "consumed", "released", "usage_provenance"]},
+    "data_egress_profiles": {"source": "49.7,49.14", "fields": ["data_egress_profile_id", "mode", "provider_allowlist", "approved_paths", "excluded_paths", "revision", "approved_by"], "enums": {"mode": ["local_only", "metadata_only", "approved_paths", "masked_content"]}},
+    "secret_refs": {"source": "49.7,49.14", "fields": ["secret_ref_id", "project_id", "environment_id", "provider_id", "purpose", "version", "status", "expires_at", "last_rotated_at", "broker_policy_hash"], "enums": {"status": ["ACTIVE", "ROTATING", "REVOKED", "EXPIRED"]}},
+    "evidence_manifests": {"source": "49.10,49.14", "fields": ["design_baseline_hash", "work_plan_hash", "work_instruction_hash", "git_head", "delivered_artifact_hash", "environment_id", "toolchain_versions", "actor_id", "actor_role", "acquisition_mode", "raw_artifact_checksums", "skipped_or_blocked", "unverified_scope"]},
+    "release_manifests": {"source": "49.12,49.14", "fields": ["source_git_remote", "source_commit", "release_tag", "release_artifact_or_image_digest", "lockfile_hash", "sbom_and_signature_ref", "db_migration_head", "config_schema_revision", "provider_adapter_versions", "evidence_manifest_hash", "verification_report_hash"]},
+    "deployment_runs": {"source": "49.12-49.14", "fields": ["deployment_run_id", "state", "target_environment", "release_manifest_hash", "smoke_ref", "monitoring_ref", "rollback_receipt"], "enums": {"state": ["PENDING", "APPROVED", "DEPLOYING", "SMOKE_TEST", "MONITORING", "RELEASED", "ROLLBACK_REQUIRED", "ROLLING_BACK", "ROLLED_BACK", "BLOCKED"]}},
+    "monitoring_policies": {"source": "49.13", "fields": ["monitoring_policy_id", "risk_tier", "observation_window", "api_health", "worker_health", "db_health", "queue_health", "provider_health", "error_rate", "backlog", "cost", "critical_alert_count", "smoke_revision", "owner_confirmation_ref"]}
+  },
+  "human_decision_contract": {"decision_status": "PENDING_USER_DECISION", "required_actor_type": "authenticated_human", "agent_may_propose_only": true, "approval_record_created": false, "dir_status": "NOT_REACHED"},
+  "fail_closed_contract": {"source_required": true, "source_kind_required": true, "canonical_write_from_ui_forbidden": true, "target_environment_binding_required": true, "cross_target_evidence_reuse_forbidden": true, "cross_environment_evidence_reuse_forbidden": true, "stale_fencing_write_forbidden": true, "human_decision_forgery_forbidden": true},
+  "runtime_boundary": {"actual_api": "NOT_EXECUTED", "actual_db": "NOT_EXECUTED", "actual_browser": "NOT_EXECUTED", "actual_provider": "NOT_EXECUTED", "actual_deployment": "NOT_EXECUTED", "actual_dir": "NOT_REACHED"}
+}

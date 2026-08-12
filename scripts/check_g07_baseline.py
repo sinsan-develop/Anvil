@@ -65,6 +65,8 @@ A05_COMPLETION_PATH_PREFIXES = ("docs/architecture/a05/", "docs/completion_repor
 A05_COMPLETION_EXACT_PATHS = {"scripts/check_a05_design_decisions.py", "tests/tooling/test_a05_design_decisions.py"}
 A14_COMPLETION_PATH_PREFIXES = ("apps/web/", "docs/architecture/a14/", "docs/completion_reports/A-14_", "docs/validation/A-14_", "tests/browser/a14/", "tests/fixtures/a14/")
 A14_COMPLETION_EXACT_PATHS = {"docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json", "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json", "scripts/check_a13_repository_scan.py", "scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_a14_workbench_prototype.py"}
+A15_COMPLETION_PATH_PREFIXES = ("docs/architecture/a15/", "docs/completion_reports/A-15_", "docs/validation/A-15_", "tests/fixtures/a15/")
+A15_COMPLETION_EXACT_PATHS = {"docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json", "scripts/check_a15_artifact_state_api_ui_trace.py", "tests/tooling/test_a15_artifact_state_api_ui_trace.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/evidence_portability.py",
     "scripts/check_a11_operations_monitoring.py",
@@ -263,6 +265,8 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative.startswith(A05_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A14_COMPLETION_PATH_PREFIXES)
         or relative in A14_COMPLETION_EXACT_PATHS
+        or relative.startswith(A15_COMPLETION_PATH_PREFIXES)
+        or relative in A15_COMPLETION_EXACT_PATHS
     )
 
 
@@ -723,6 +727,26 @@ def validate_repository(
             or (progress.get("dir_review") or {}).get("status") != "NOT_REACHED"
         ):
             _error(errors, "A15_START_PROJECTION_MISMATCH", progress_path, "sequence=178")
+    if progress.get("event_sequence") == 181:
+        completion_events = [event for event in events if 179 <= event.get("sequence", -1) <= 181]
+        instruction = progress.get("active_work_instruction") or {}
+        if (
+            progress.get("current_work_package") != "A-15"
+            or progress.get("status") != "TEST_REVIEW"
+            or progress.get("valid_failure_count") != 0
+            or (progress.get("active_failure_lineage") or {}).get("step_lineage_id") != "A-15"
+            or instruction.get("artifact_id") != "WI-A-15-20260813-001"
+            or instruction.get("result_status") != "COMPLETED"
+            or instruction.get("independent_tester_status") != "PENDING"
+            or instruction.get("user_ux_approval_status") != "PENDING_USER_DECISION"
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or [event.get("event_type") for event in completion_events]
+            != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]
+            or (events[-1] if events else {}).get("subject_ref") != "A-15"
+            or (progress.get("dir_review") or {}).get("status") != "NOT_REACHED"
+        ):
+            _error(errors, "A15_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=181")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"

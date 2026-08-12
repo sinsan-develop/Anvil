@@ -196,6 +196,8 @@ A14_COMPLETION_EXACT_PATHS = {
     "scripts/check_a14_workbench_prototype.py",
     "tests/tooling/test_a14_workbench_prototype.py",
 }
+A15_COMPLETION_PATH_PREFIXES = ("docs/architecture/a15/", "docs/completion_reports/A-15_", "docs/validation/A-15_", "tests/fixtures/a15/")
+A15_COMPLETION_EXACT_PATHS = {"docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json", "scripts/check_a15_artifact_state_api_ui_trace.py", "tests/tooling/test_a15_artifact_state_api_ui_trace.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/evidence_portability.py",
     "scripts/check_g07_baseline.py",
@@ -2785,7 +2787,6 @@ def validate_a14_main_takeover_completion_manifest(
         "scripts/check_a13_repository_scan.py",
         "scripts/check_a14_workbench_prototype.py",
         "tests/tooling/test_a13_repository_scan.py",
-        "tests/tooling/test_a14_workbench_prototype.py",
     }
     rows = manifest.get("raw_checksums")
     if not isinstance(rows, list):
@@ -3138,6 +3139,148 @@ def validate_a15_start_manifest(
             )
         ):
             errors.append("A15_START_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
+def validate_a15_completion_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_raw = {
+        "docs/completion_reports/A-15_COMPLETION_REPORT.md",
+        "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+        "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-a15-completion-test-review.json",
+        "docs/work_orders/A-15_WORK_INSTRUCTION.md",
+    }
+    expected_paths = {
+        "docs/architecture/a15/A-15_API_DRAFT.json",
+        "docs/architecture/a15/A-15_ARTIFACT_SCHEMA.json",
+        "docs/architecture/a15/A-15_ARTIFACT_STATE_API_UI_TRACE.md",
+        "docs/architecture/a15/A-15_FIELD_TRACE_MATRIX.json",
+        "docs/architecture/a15/A-15_USER_UX_APPROVAL_REQUEST.md",
+        "docs/completion_reports/A-15_COMPLETION_REPORT.md",
+        "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
+        "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-a15-completion-test-review.json",
+        "docs/validation/A-15_ARTIFACT_STATE_API_UI_TRACE_VALIDATION.md",
+        "scripts/check_a13_repository_scan.py",
+        "scripts/check_a14_workbench_prototype.py",
+        "scripts/check_a15_artifact_state_api_ui_trace.py",
+        "scripts/check_g07_baseline.py",
+        "scripts/check_phase_g_gate.py",
+        "scripts/check_project_progress.py",
+        "tests/fixtures/a15/canonical-trace-contract.json",
+        "tests/fixtures/a15/trace-mutations.json",
+        "tests/tooling/test_a13_repository_scan.py",
+        "tests/tooling/test_a15_artifact_state_api_ui_trace.py",
+        "tests/tooling/test_g07_baseline.py",
+        "tests/tooling/test_phase_g_gate.py",
+        "tests/tooling/test_project_progress.py",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A15_COMPLETION_RAW_INVALID"]
+    seen: set[str] = set()
+    canonical: list[str] = []
+    total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("A15_COMPLETION_RAW_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            matches = portable_row_matches(root, relative, row.get("bytes"), row.get("sha256"))
+        except (OSError, TypeError):
+            matches = False
+        if not matches:
+            errors.append("A15_COMPLETION_RAW_INVALID")
+            continue
+        total += int(row["bytes"])
+        canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen != expected_raw:
+        errors.append("A15_COMPLETION_RAW_SET_INVALID")
+    canonical_bytes = "\n".join(sorted(canonical, key=lambda value: value.encode("utf-8"))).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if any((
+        manifest.get("target_canonical_bytes") != len(canonical_bytes),
+        manifest.get("target_content_bytes") != total,
+        manifest.get("target_hash") != target,
+        manifest.get("delivered_hash") != target,
+        manifest.get("content_hash") != target,
+        manifest.get("self_reference") is not False,
+    )):
+        errors.append("A15_COMPLETION_TARGET_MISMATCH")
+    projection = manifest.get("projection") or {}
+    instruction = progress.get("active_work_instruction") or {}
+    completion_events = [
+        event for event in bundle["events"]["events"]
+        if 179 <= event.get("sequence", -1) <= 181
+    ]
+    developer = manifest.get("developer_evidence") or {}
+    if any((
+        progress.get("event_sequence") != 181,
+        progress.get("current_work_package") != "A-15",
+        progress.get("status") != "TEST_REVIEW",
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        instruction.get("artifact_id") != "WI-A-15-20260813-001",
+        instruction.get("package_status") != "TEST_REVIEW",
+        instruction.get("result_status") != "COMPLETED",
+        instruction.get("accepted") is not False,
+        instruction.get("independent_tester_status") != "PENDING",
+        instruction.get("user_ux_approval_status") != "PENDING_USER_DECISION",
+        [event.get("event_type") for event in completion_events]
+        != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+        projection.get("event_sequence") != 181,
+        projection.get("accepted") is not False,
+        projection.get("independent_tester_status") != "PENDING",
+        developer.get("manifest_sha256") != "2AEEACFCF8DB666EA89B85EE7C07A071F7B56DF52B3373F222801065A7918B60",
+        developer.get("target_hash") != "34FCA32938AB9DE68EFFE1C9F0E3FB57E994C5D74E172717D027F871DB3309AE",
+        developer.get("changed_path_count") != 12,
+        developer.get("mutation") != "FORBIDDEN_FROZEN_PREDECESSOR",
+        manifest.get("user_ux_approval_status") != "PENDING_USER_DECISION",
+        manifest.get("actual_dir_status") != "NOT_REACHED",
+        (progress.get("dir_review") or {}).get("status") != "NOT_REACHED",
+        manifest.get("next_package_status") != "BLOCKED_PENDING_A15_ACCEPTANCE_AND_DIR1",
+    )):
+        errors.append("A15_COMPLETION_PROJECTION_MISMATCH")
+    runtime = manifest.get("runtime_boundary") or {}
+    if any(runtime.get(key) != "NOT_EXECUTED" for key in (
+        "actual_api", "actual_db", "actual_browser", "actual_network", "actual_provider",
+        "actual_secret", "actual_egress", "actual_wsl", "actual_production", "actual_deployment",
+    )):
+        errors.append("A15_COMPLETION_RUNTIME_BOUNDARY_MISMATCH")
+    repository = progress.get("repository") or {}
+    repo_manifest = manifest.get("repository_projection") or {}
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths")
+    if any(repo_manifest.get(field) != repository.get(field) for field in fields) or set(repository.get("exact_allowed_paths", [])) != expected_paths:
+        errors.append("A15_COMPLETION_REPOSITORY_MISMATCH")
+    for name, predecessor, required in (
+        ("a13_successor_projection", "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771", {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}),
+        ("a14_successor_projection", "910900E99464B00E362F1895BA55389550EF740DBE6177FB0A4E75D272A62C09", {"scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"}),
+    ):
+        successor = manifest.get(name) or {}
+        indexed = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+        if successor.get("predecessor_manifest_sha256") != predecessor or set(indexed) != required:
+            errors.append("A15_COMPLETION_SUCCESSOR_INVALID")
+            continue
+        try:
+            successor_rows_valid = all(
+                portable_row_matches(root, path, row.get("bytes"), row.get("sha256"))
+                for path, row in indexed.items()
+            )
+        except (OSError, TypeError):
+            successor_rows_valid = False
+        if not successor_rows_valid:
+            errors.append("A15_COMPLETION_SUCCESSOR_INVALID")
     return sorted(set(errors))
 
 
@@ -3539,6 +3682,8 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative in A13_COMPLETION_EXACT_PATHS
         or relative.startswith(A14_COMPLETION_PATH_PREFIXES)
         or relative in A14_COMPLETION_EXACT_PATHS
+        or relative.startswith(A15_COMPLETION_PATH_PREFIXES)
+        or relative in A15_COMPLETION_EXACT_PATHS
     )
 
 
@@ -3806,6 +3951,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a14_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_a15_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a15_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
