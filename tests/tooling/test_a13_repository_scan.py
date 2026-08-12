@@ -87,7 +87,7 @@ def _overlay_rework_bundle(clone: Path) -> None:
 def _overlay_r3_projection_bundle(clone: Path) -> None:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     if progress.get("event_sequence") == 171:
-        paths = progress["repository"]["exact_allowed_paths"]
+        return
     elif progress["write_lease"] is not None:
         paths = progress["write_lease"]["paths"]
     else:
