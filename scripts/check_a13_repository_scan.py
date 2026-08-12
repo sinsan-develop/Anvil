@@ -270,6 +270,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         a14_r4_takeover = _load_json(a14_r4_takeover_path) if a14_r4_takeover_path.is_file() else {}
         a14_r4_completion_path = root / 'docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json'
         a14_r4_completion = _load_json(a14_r4_completion_path) if a14_r4_completion_path.is_file() else {}
+        a14_acceptance_path = root / 'docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json'
+        a14_acceptance = _load_json(a14_acceptance_path) if a14_acceptance_path.is_file() else {}
         a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
         a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
@@ -412,7 +414,24 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and a14_r4_completion.get('takeover_packet_sha256')
         == hashlib.sha256(a14_r4_packet_path.read_bytes()).hexdigest().upper()
     )
+    current_a14_acceptance = (
+        bool(a14_acceptance)
+        and progress.get('event_sequence') == 175
+        and progress.get('current_work_package') == 'A-15'
+        and progress.get('status') == 'READY'
+        and progress.get('active_work_instruction') is None
+        and progress.get('worker_lease') is None
+        and progress.get('write_lease') is None
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json'
+        and (
+            committed_clean
+            or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        )
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a14_acceptance:
+        candidates.append(a14_acceptance.get('a13_successor_projection', {}))
     if committed_clean:
         for registry_path in sorted(
             (root / 'docs/evidence/manifests').glob('A-14_A13_SUCCESSOR_*.json'),

@@ -88,6 +88,8 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     if progress.get("event_sequence") in (171, 174):
         return
+    elif progress.get("event_sequence") == 175:
+        paths = progress["repository"]["exact_allowed_paths"]
     elif progress["write_lease"] is not None:
         paths = progress["write_lease"]["paths"]
     else:
@@ -810,9 +812,10 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(174, progress["event_sequence"])
-        self.assertEqual("WI-A-14-20260813-003", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("R6_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual(175, progress["event_sequence"])
+        self.assertEqual("A-15", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
         self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())
         manifest = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
         self.assertEqual(

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-14-R6-PROGRESS-HANDOFF-DIGEST-ACCEPTED",
+  "package_id": "A-14",
+  "event_sequence": 175,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 32019,
+    "file_sha256": "5AC922339E346B4D9AB29A9A9A40E641F51D4346ABA2EC3C5AE949B3E83481FC",
+    "canonical_json_sha256": "1982D95531F791CBA4D5E7690B2518EA7B4226EA5BAC167071A6E6CE38E5D24B"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 60248,
+    "file_sha256": "CDB1986F2EB2E3C771FD699C5A6EA920161907ED4C33FB14C22BD2CA8AB63BB9",
+    "machine_summary_canonical_sha256": "7A10B0256378E504937AE3250328FF18219500938B3CD1802AAA274C173E9F4C"
+  },
+  "created_at": "2026-08-13T04:55:00+09:00",
+  "scope": "A-14 R6 Main acceptance; A-15 READY but not started; leases null; R6 IAB NOT_EXECUTED"
+}

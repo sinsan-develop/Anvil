@@ -40,6 +40,15 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
             portable_hash(ROOT, "tests/browser/a14/workbench-runtime.test.mjs"),
             "D6DC23724479AEBD43C91BFCB2CAFFA38940BFD161BE5F2C4E2DEC914AF59D9F",
         )
+        acceptance = json.loads(
+            (ROOT / "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual("accepted", acceptance["artifact_status"])
+        self.assertEqual("R5_EXECUTED_UI_FINDINGS_CLOSED", acceptance["actual_browser_status"])
+        self.assertEqual("ENVIRONMENT_BLOCKED / NOT_EXECUTED", acceptance["r6_iab_status"])
+        self.assertEqual("NOT_EXECUTED", acceptance["actual_provider_status"])
+        self.assertEqual("NOT_EXECUTED", acceptance["actual_production_status"])
+        self.assertEqual("READY", acceptance["next_package_status"])
 
     def test_standalone_checker_passes(self):
         result = subprocess.run([sys.executable, "scripts/check_a14_workbench_prototype.py", str(ROOT)], cwd=ROOT, capture_output=True, text=True)

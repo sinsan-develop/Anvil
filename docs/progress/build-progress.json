@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000072",
-  "event_sequence": 174,
-  "updated_at": "2026-08-13T04:15:02+09:00",
-  "last_event_id": "evt_a14_r5_portability_completed_test_review",
+  "snapshot_id": "snapshot-anvil-build-000073",
+  "event_sequence": 175,
+  "updated_at": "2026-08-13T04:55:00+09:00",
+  "last_event_id": "evt_a14_r6_main_accepted",
   "plan_version": "1.5",
   "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "A",
-  "current_work_package": "A-14",
-  "status": "TEST_REVIEW",
+  "current_work_package": "A-15",
+  "status": "READY",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -31,20 +31,20 @@
     "A-10",
     "A-11",
     "A-12",
-    "A-13"
+    "A-13",
+    "A-14"
   ],
   "active_agent": null,
   "write_lease": null,
   "worker_lease": null,
   "budget_reservations": [],
-  "valid_failure_count": 4,
+  "valid_failure_count": 0,
   "active_failure_lineage": {
-    "step_lineage_id": "A-14",
-    "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
-    "valid_failure_count": 4,
-    "takeover_status": "MAIN_AGENT_TAKEOVER_COMPLETED"
+    "step_lineage_id": "A-15",
+    "valid_failure_count": 0,
+    "takeover_status": "NOT_REQUIRED"
   },
-  "historical_accepted_failure_count": 7,
+  "historical_accepted_failure_count": 11,
   "historical_failure_counts_by_lineage": {
     "G-05": 1,
     "G-06": 1,
@@ -53,7 +53,7 @@
     "A-02": 1,
     "A-03": 1,
     "A-13": 1,
-    "A-14": 1
+    "A-14": 4
   },
   "latest_evidence_refs": [
     {
@@ -578,43 +578,43 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "CD0631547CAE2D73A0BC30BA098E987F938696691C5EB39111ECF55E168A5A46"
+      "sha256": "478257D34EF9E6BFBA8E59ED357C576889B38C04C66E958B9A6E81F0F13029AD"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
-      "sha256": "E65525485470FE3EF9F158F4D6811DADFFDEA80A41E4BFB969D79BEBDE9D051F"
+      "sha256": "0A6F35A173BF952B8CBE3C60DC772B4C21B316E158C4CBFF4434E9800DF259D0"
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "70E3FD0B67AC674C84F868E37B0DF6E0619E545F68287AEE6208698683529958"
+      "sha256": "5548A19552A80F8BF29742C320E2389EA2A84A6A790BC34551D34ACE5D37F5A9"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "93036D8260EDD3401F21C0F4A29A7915230D7E9FA0C6E29521CFD78AAFC055D9"
+      "sha256": "F9D807213DA7F9E8DD2D30D1C13E060AFF5F0D7BD2D6A86C41FF8DB952E7FC23"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "D6951292D3DC6F27294FB3F544E6621CAC76EAC328FBEAD15AD13C02BFEBFBD8"
+      "sha256": "D337E4F8688D901551F7D90EB6D3C832DE194C94CE34FA0E852D4CC2D718B34E"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "4A2C1CB567B47AE1CCC3D6897D46673E57755ADC1FCA7DE8BC478121F425EF59"
+      "sha256": "54DAAD635C1222F1C7FFC1318C7BE00AC77947FEEB7134F43040C0DA38612E02"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
-      "sha256": "8655EBFED5E1861AECDA2749BA4A13EFE853091D4A70C812B80FB75C262DE6FD"
+      "sha256": "F32061F0A2D746DA77A00504C1851527D4AF696807FC058565A12A6436036291"
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "D1CF92576710F5251FC33DAD81448041D1E96B1E90C40B186CD4A6BC0EEA3B82"
+      "sha256": "FA3CF1E66AF5134200AF1E666E26DFE7BD6926DAE30A2DC23F2CAB215CE25428"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "ED12ED75BADEF882CF0CCC4834439F6A10AB8B54BED280CCE99469D45F3C1AFB"
+      "sha256": "28A82A818D23ED2D428BCCB2D8CFE7CA2B762C0BE05B0EED526BEE93DEF693A2"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "253AA92948612C474DDFDC9EEDAFB2A0AF23AD17F8B87D55EB43ADF6E9B17408"
+      "sha256": "A733C422CA2DC676904A4AA842328938040693BB1E7ED7B6051BC5176104FED1"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -633,12 +633,16 @@
       "sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B"
     },
     {
+      "path": "docs/test_reports/A-14_RETEST_REPORT_R6.md",
+      "sha256": "04EF9AE33F5823829A30E0E9C41EA35F594A00DB09610BD890E23414DB500792"
+    },
+    {
       "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
       "sha256": "52D4C769AEE757580FDC987B074EDF1EFA6A9C7462732216E46FD77BC7B75746"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1BDBBD8FEDD236A445967DDB9A0C24E9AABAC0D5427A6458DF00DBA482DA6812"
+      "sha256": "A7EFE470E140890D6F854216F66C189438DEE9F9A8CE4F6CAD338F967E9E9276"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -681,7 +685,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Independent Tester R6 verifies LF portability in current and clean clone; A-15 remains blocked pending A-14 acceptance",
+  "next_safe_action": "Prepare A-15 WorkInstruction and fenced start; A-15 is READY but not started",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -733,43 +737,33 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+    "validated_base_commit": "2293b03b40319f39e4a4cd531a50617e978089af",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3",
+    "remote_head": "2293b03b40319f39e4a4cd531a50617e978089af",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
-      "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
-      "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
-      "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
-      "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json",
-      "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
+      "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
-      "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
-      "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
-      "docs/test_reports/A-14_RETEST_REPORT_R5.md",
-      "scripts/check_a11_operations_monitoring.py",
+      "docs/progress/progress-handoff-detached-digest-a14-accepted-r6.json",
+      "docs/test_reports/A-14_RETEST_REPORT_R6.md",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_a14_workbench_prototype.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
-      "scripts/evidence_portability.py",
-      "tests/tooling/test_a11_operations_monitoring.py",
       "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_a14_workbench_prototype.py",
       "tests/tooling/test_g07_baseline.py",
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-13T04:15:02+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: A-14 R5 portability completion; TEST_REVIEW R6_PENDING; A-15 blocked",
-    "local_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3"
+    "observed_at": "2026-08-13T04:55:00+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: A-14 R6 accepted; A-15 READY not started",
+    "local_head": "2293b03b40319f39e4a4cd531a50617e978089af"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -783,22 +777,7 @@
       "AV-FLOW-001"
     ]
   },
-  "active_work_instruction": {
-    "artifact_id": "WI-A-14-20260813-003",
-    "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
-    "sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C",
-    "invocation_path": "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
-    "invocation_sha256": "075C42C6315EC0C721915D435302612ECD91645017828E67D7337261C018EEE3",
-    "package_status": "TEST_REVIEW",
-    "result_status": "COMPLETED",
-    "accepted": false,
-    "rework_revision": 5,
-    "independent_tester_status": "R6_PENDING",
-    "finding_status": "PORTABILITY_FIX_COMPLETED_AWAITING_INDEPENDENT_R6",
-    "source_test_report_sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B",
-    "developer_manifest_sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
-    "developer_target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
-  },
+  "active_work_instruction": null,
   "phase_gate": {
     "gate": "G Gate",
     "decision": "ACCEPTED",
@@ -810,22 +789,22 @@
     "a01_start_allowed": true
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-A-12-20260812-001",
-    "path": "docs/work_orders/A-12_WORK_INSTRUCTION.md",
-    "sha256": "9D2061A6F62C3101A4138A32642DB4C4AC9178B38B421B2C77B3E3A2FF37840F",
+    "artifact_id": "WI-A-14-20260813-003",
+    "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
+    "sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C",
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "APPROVED_PLAN_ROUTINE_REWORK"
+      "APPROVED_PLAN_ROUTINE_ACCEPTANCE"
     ],
     "stop_before_dialogue_report": false
   },
   "current_progress_evidence_ref": {
     "package_id": "A-14",
-    "path": "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
-    "manifest_path": "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json"
+    "path": "docs/progress/progress-handoff-detached-digest-a14-accepted-r6.json",
+    "manifest_path": "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -846,12 +825,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1BDBBD8FEDD236A445967DDB9A0C24E9AABAC0D5427A6458DF00DBA482DA6812"
+      "sha256": "A7EFE470E140890D6F854216F66C189438DEE9F9A8CE4F6CAD338F967E9E9276"
     }
   },
   "next_work_package": {
     "package_id": "A-15",
-    "status": "BLOCKED_PENDING_A14_ACCEPTANCE"
+    "status": "READY"
   },
-  "snapshot_hash": "353BE135AE898F14EB2188B5A7787E4C3CFEAA799BAC260187FB1C3F756D5A5C"
+  "snapshot_hash": "566476FB36977F1B73F55FF239346FFD2DE2E1D3452E6028AA769874118338DC"
 }

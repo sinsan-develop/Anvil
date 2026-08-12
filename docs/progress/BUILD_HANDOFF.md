@@ -3,85 +3,60 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 174,
-  "status": "TEST_REVIEW",
-  "current_work_package": "A-14",
-  "last_event_id": "evt_a14_r5_portability_completed_test_review",
+  "event_sequence": 175,
+  "status": "READY",
+  "current_work_package": "A-15",
+  "last_event_id": "evt_a14_r6_main_accepted",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 4,
-  "active_lineage_valid_failure_count": 4,
-  "historical_accepted_failure_count": 8,
+  "valid_failure_count": 0,
+  "active_lineage_valid_failure_count": 0,
+  "historical_accepted_failure_count": 11,
   "dir_status": "NOT_REACHED",
-  "repository_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3",
+  "repository_head": "2293b03b40319f39e4a4cd531a50617e978089af",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3",
+  "repository_remote_head": "2293b03b40319f39e4a4cd531a50617e978089af",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+  "repository_validated_base_commit": "2293b03b40319f39e4a4cd531a50617e978089af",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
-    "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
-    "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
-    "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
-    "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json",
-    "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
+    "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
-    "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
-    "docs/test_reports/A-14_RETEST_REPORT_R5.md",
-    "scripts/check_a11_operations_monitoring.py",
+    "docs/progress/progress-handoff-detached-digest-a14-accepted-r6.json",
+    "docs/test_reports/A-14_RETEST_REPORT_R6.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_a14_workbench_prototype.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "scripts/evidence_portability.py",
-    "tests/tooling/test_a11_operations_monitoring.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_a14_workbench_prototype.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-accepted-r6.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Independent Tester R6 verifies LF portability in current and clean clone; A-15 remains blocked pending A-14 acceptance",
+  "next_safe_action": "Prepare A-15 WorkInstruction and fenced start; A-15 is READY but not started",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": {
-    "artifact_id": "WI-A-14-20260813-003",
-    "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
-    "sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C",
-    "invocation_path": "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
-    "invocation_sha256": "075C42C6315EC0C721915D435302612ECD91645017828E67D7337261C018EEE3",
-    "package_status": "TEST_REVIEW",
-    "result_status": "COMPLETED",
-    "accepted": false,
-    "rework_revision": 5,
-    "independent_tester_status": "R6_PENDING",
-    "finding_status": "PORTABILITY_FIX_COMPLETED_AWAITING_INDEPENDENT_R6",
-    "source_test_report_sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B",
-    "developer_manifest_sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
-    "developer_target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
-  },
+  "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-14 TEST_REVIEW / R6_PENDING / MAIN_AGENT_TAKEOVER_COMPLETED`
-> 현재 Phase / Package: `A / A-14`
+> 현재 상태: `A-14 ACCEPTED / A-15 READY / LEASELESS`
+> 현재 Phase / Package: `A / A-15`
 
 ## 1. 현재 기준선
 
@@ -499,3 +474,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 과거 EvidenceManifest는 재작성하지 않고, 추적·clean successor registry와 `GIT_EOL_PORTABILITY_R1`의 exact LF canonical mapping으로 Windows mixed-EOL 및 새 LF clone을 동일 의미 증거로 검증한다.
 - R5 실제 browser UI/same-origin/hostile finding은 CLOSED 상태를 보존한다. 실제 Provider·production API/DB/SSE·deploy·DIR은 `NOT_EXECUTED`다.
 - A-15는 A-14 독립 R6 PASS와 Main acceptance 전까지 `BLOCKED_PENDING_A14_ACCEPTANCE`다.
+
+## A-14 R6 Main acceptance
+
+- 독립 Tester R6 report `04EF9AE33F5823829A30E0E9C41EA35F594A00DB09610BD890E23414DB500792`의 `READY_FOR_MAIN_ACCEPTANCE`, blocking 0을 Main이 검토해 seq 175 `MAIN_PACKAGE_ACCEPTED`로 A-14를 최종 `ACCEPTED`했다.
+- R5 실제 IAB evidence `3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B`는 UI target byte 불변 범위에서만 승계한다. R6 fresh IAB는 backend 부재로 `ENVIRONMENT_BLOCKED / NOT_EXECUTED`이며 PASS로 승격하지 않는다.
+- 실제 Provider/Secret/Egress와 production API/DB/SSE, user repository, WSL/ysna, deployment, DIR은 모두 `NOT_EXECUTED`다.
+- A-15는 `READY`로만 전환했다. active WorkInstruction/agent/worker lease/write lease는 모두 `null`이며 A-15 시작 event는 없다.

@@ -681,6 +681,25 @@ def validate_repository(
             != ["FAILURE_REPORT_ACCEPTED", "PACKAGE_RESUMED", "PACKAGE_COMPLETED"]
         ):
             _error(errors, "A14_PORTABILITY_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=174")
+    if progress.get("event_sequence") == 175:
+        acceptance = events[-1] if events else {}
+        if (
+            progress.get("current_work_package") != "A-15"
+            or progress.get("status") != "READY"
+            or progress.get("valid_failure_count") != 0
+            or (progress.get("active_failure_lineage") or {}).get("step_lineage_id") != "A-15"
+            or (progress.get("active_failure_lineage") or {}).get("valid_failure_count") != 0
+            or progress.get("active_work_instruction") is not None
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or acceptance.get("sequence") != 175
+            or acceptance.get("event_type") != "MAIN_PACKAGE_ACCEPTED"
+            or acceptance.get("subject_ref") != "A-14"
+            or acceptance.get("details", {}).get("decision") != "ACCEPTED"
+            or acceptance.get("details", {}).get("blocking_findings") != 0
+            or acceptance.get("details", {}).get("next_package_status") != "READY"
+        ):
+            _error(errors, "A14_ACCEPTANCE_PROJECTION_MISMATCH", progress_path, "sequence=175")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"
@@ -807,6 +826,21 @@ def validate_repository(
                     for row in acceptance_manifest.get("developer_successor_projection", {}).get("live_raw_checksums", [])
                     if isinstance(row, dict) and isinstance(row.get("path"), str)
                 )
+            if (
+                reconciliation_event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+                and reconciliation_event.get("subject_ref") == "A-14"
+            ):
+                acceptance_relative = "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json"
+                try:
+                    acceptance_manifest = json.loads((root / acceptance_relative).read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    acceptance_manifest = {}
+                for projection_name in ("a13_successor_projection", "a14_successor_projection"):
+                    completion_developer_paths.update(
+                        row.get("path")
+                        for row in acceptance_manifest.get(projection_name, {}).get("live_raw_checksums", [])
+                        if isinstance(row, dict) and isinstance(row.get("path"), str)
+                    )
             non_evidence_paths = {path for path in allowed if not _is_evidence_only_path(path)}
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
