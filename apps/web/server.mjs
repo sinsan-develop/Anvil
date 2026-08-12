@@ -1,0 +1,76 @@
+import http from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { dirname, extname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+
+const execFileAsync=promisify(execFile);
+const webRoot=dirname(fileURLToPath(import.meta.url));
+const repoRoot=resolve(webRoot,'..','..');
+const fixtures={
+  'FIX-PY-CLEAN':{label:'Python clean',state:'NORMAL'},
+  'FIX-PY-DIRTY':{label:'Python dirty',state:'BLOCKED'},
+  'FIX-TS-CLEAN':{label:'TypeScript clean',state:'NORMAL'}
+};
+const project={projectId:'anvil-fixture',name:'Anvil Fixture'};
+const securityHeaders={
+  'content-security-policy':"default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'",
+  'x-content-type-options':'nosniff','x-frame-options':'DENY','referrer-policy':'no-referrer','cache-control':'no-store'
+};
+const staticFiles=new Map([
+  ['/',['index.html','text/html; charset=utf-8']],
+  ['/src/app/workbench.js',['src/app/workbench.js','text/javascript; charset=utf-8']],
+  ['/src/api/workbench-client.js',['src/api/workbench-client.js','text/javascript; charset=utf-8']],
+  ['/src/features/workbench/workbench-state.js',['src/features/workbench/workbench-state.js','text/javascript; charset=utf-8']],
+  ['/src/styles/workbench.css',['src/styles/workbench.css','text/css; charset=utf-8']]
+]);
+
+function send(response,status,payload,extra={}) {
+  const body=typeof payload==='string'?payload:JSON.stringify(payload);
+  response.writeHead(status,{...securityHeaders,'content-type':typeof payload==='string'?'text/plain; charset=utf-8':'application/json; charset=utf-8','content-length':Buffer.byteLength(body),...extra}); response.end(body);
+}
+function safeFailure(response,status,state,message) { send(response,status,{ok:false,state,message,nextAction:'입력과 권한을 확인한 뒤 다시 시도하세요.'}); }
+async function jsonBody(request) {
+  let raw=''; for await (const chunk of request) { raw+=chunk; if (raw.length>4096) throw new Error('SIZE'); }
+  return JSON.parse(raw);
+}
+async function scanFixture(fixtureId) {
+  const code=`import json,sys,tempfile\nfrom pathlib import Path\nfrom scripts.materialize_fixture_repository import materialize_fixture\nfrom packages.repository_intelligence import ScanRequest,scan_repository\nroot=Path.cwd()\nwith tempfile.TemporaryDirectory(prefix='anvil-a14-') as value:\n repo=materialize_fixture(root,sys.argv[1],Path(value)/'repo')\n result=scan_repository(ScanRequest(repository_path=str(repo),allowed_root=value))\n print(json.dumps(result.to_dict(),ensure_ascii=False))`;
+  const {stdout}=await execFileAsync('python',['-c',code,fixtureId],{cwd:repoRoot,timeout:20000,windowsHide:true,maxBuffer:2_000_000});
+  return JSON.parse(stdout);
+}
+
+export async function startWorkbenchServer({host='127.0.0.1',port=4173}={}) {
+  const csrfToken=randomUUID();
+  let allowedHost='';
+  const server=http.createServer(async (request,response)=>{
+    try {
+      const requestUrl=new URL(request.url,'http://fixture.invalid');
+      if (request.method==='GET' && requestUrl.pathname==='/api/workbench/config') return send(response,200,{ok:true,project,fixtures:Object.entries(fixtures).map(([fixtureId,value])=>({fixtureId,label:value.label})),csrfToken,runtimeBoundary:'FIXTURE_BROWSER_RUNTIME_ONLY',actualProvider:'NOT_EXECUTED'});
+      if (request.method==='POST' && requestUrl.pathname==='/api/workbench/scan') {
+        const hostHeader=request.headers.host;
+        const expectedOrigin=`http://${allowedHost}`;
+        if (!hostHeader || hostHeader!==allowedHost || request.headers.origin!==expectedOrigin || request.headers['x-csrf-token']!==csrfToken) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처 또는 CSRF 검증에 실패했습니다.');
+        let body; try { body=await jsonBody(request); } catch { return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.'); }
+        if (body?.projectId!==project.projectId || !Object.hasOwn(fixtures,body?.fixtureId)) return safeFailure(response,403,'PERMISSION_DENIED','허용된 프로젝트 또는 fixture가 아닙니다.');
+        if (body.role!=='operator') return safeFailure(response,403,'PERMISSION_DENIED','읽기 전용 scan 권한이 없습니다.');
+        const scan=await scanFixture(body.fixtureId);
+        const state=fixtures[body.fixtureId].state;
+        return send(response,200,{ok:true,state,scan:{status:scan.status,repository:{branch:scan.repository?.branch ?? null,language:scan.repository?.primary_language ?? null,trackedDirtyPaths:scan.repository?.tracked_dirty_paths?.length ?? 0},noWriteIdentical:scan.no_write_proof?.identical===true},evidence:{badge:'FIXTURE',countsAsPass:false,scope:'FIXTURE_BROWSER_RUNTIME_ONLY'},message:state==='BLOCKED'?'dirty fixture가 감지되어 실행을 차단했습니다.':'읽기 전용 fixture scan이 끝났습니다.',nextAction:state==='BLOCKED'?'변경 파일을 검토한 뒤 새 scan을 시작하세요.':'실행 모드를 선택하세요.'});
+      }
+      const item=staticFiles.get(requestUrl.pathname);
+      if (request.method==='GET' && item) { const body=await readFile(join(webRoot,item[0])); response.writeHead(200,{...securityHeaders,'content-type':item[1],'content-length':body.length}); return response.end(body); }
+      safeFailure(response,404,'EMPTY','요청한 화면을 찾을 수 없습니다.');
+    } catch { safeFailure(response,500,'ERROR','Workbench 요청을 안전하게 처리하지 못했습니다.'); }
+  });
+  await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,host,ok);});
+  const address=server.address();
+  allowedHost=`${host}:${address.port}`;
+  return {origin:`http://${host}:${address.port}`,csrfToken,close:()=>new Promise((ok,fail)=>server.close(error=>error?fail(error):ok()))};
+}
+
+if (process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
+  startWorkbenchServer().then(({origin})=>console.log(`Anvil fixture Workbench: ${origin}`)).catch(()=>{console.error('Workbench failed to start.');process.exitCode=1;});
+}

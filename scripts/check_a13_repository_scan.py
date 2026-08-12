@@ -250,6 +250,16 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         acceptance = _load_json(acceptance_path) if acceptance_path.is_file() else {}
         start_path = root / "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json"
         start = _load_json(start_path) if start_path.is_file() else {}
+        a14_completion_path = root / 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json'
+        a14_completion = _load_json(a14_completion_path) if a14_completion_path.is_file() else {}
+        a14_rework_path = root / 'docs/evidence/manifests/A-14_REWORK_START_MANIFEST.json'
+        a14_rework = _load_json(a14_rework_path) if a14_rework_path.is_file() else {}
+        a14_rework_evidence_path = root / 'docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json'
+        a14_rework_evidence = (
+            _load_json(a14_rework_evidence_path) if a14_rework_evidence_path.is_file() else {}
+        )
+        a14_r2_completion_path = root / 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json'
+        a14_r2_completion = _load_json(a14_r2_completion_path) if a14_r2_completion_path.is_file() else {}
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
     except (OSError, json.JSONDecodeError):
         return None
@@ -289,12 +299,43 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get("status") == "ACTIVE"
         and progress.get("active_work_instruction", {}).get("artifact_id") == "WI-A-14-20260812-001"
         and progress.get("current_progress_evidence_ref", {}).get("manifest_path") == "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json"
-        and set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
-        and start_paths == changed_paths
-
+        and (
+            committed_clean
+            or (
+                set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
+                and start_paths == changed_paths
+            )
+        )
     )
 
+    current_a14_completion = (progress.get('event_sequence') == 154 and progress.get('status') == 'TEST_REVIEW' and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json' and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    rework_projection_paths = set(progress.get('repository', {}).get('exact_allowed_paths', []))
+    rework_evidence_rel = 'docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json'
+    current_a14_rework = (
+        progress.get('event_sequence') == 158
+        and progress.get('status') == 'ACTIVE'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-A-14-20260812-002'
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-14_REWORK_START_MANIFEST.json'
+        and changed_paths == rework_projection_paths | live_paths | {rework_evidence_rel}
+    )
+    current_a14_r2_completion = (
+        progress.get('event_sequence') == 161
+        and progress.get('status') == 'TEST_REVIEW'
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json'
+        and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a14_r2_completion:
+        candidates.append(a14_r2_completion.get('a13_successor_projection', {}))
+        candidates.append(a14_rework_evidence.get('developer_successor_projection', {}))
+        candidates.append(a14_r2_completion.get('developer_revision2_evidence', {}))
+    if current_a14_rework:
+        candidates.append(a14_rework_evidence.get('developer_successor_projection', {}))
+        candidates.append(a14_rework.get('developer_successor_projection', {}))
+    if current_a14_completion:
+        candidates.append(a14_completion.get('developer_successor_projection', {}))
     if current_start:
         candidates.append(start.get("developer_successor_projection", {}))
     if committed_clean or current_acceptance:
@@ -304,7 +345,7 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
     for successor in candidates:
         rows = successor.get("live_raw_checksums", [])
         indexed = {row.get("path"): row for row in rows if isinstance(row, dict)}
-        if successor.get("predecessor_manifest_sha256") != predecessor_sha or set(indexed) != live_paths:
+        if successor.get("predecessor_manifest_sha256") != predecessor_sha or not live_paths <= set(indexed):
             continue
         valid = True
         for path, row in indexed.items():

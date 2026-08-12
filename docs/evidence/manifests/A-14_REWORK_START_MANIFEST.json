@@ -1,0 +1,170 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-14-REWORK-START-20260812-001",
+  "artifact_type": "rework_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-14",
+  "artifact_status": "active_rework_revision_2",
+  "content_hash": "sha256:B73E2249EDF5CC1A5349AA1DFFCC044BAC977E89CDECDFE3E984E5B1C5C36EA0",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-12T21:00:03+09:00",
+  "artifact_path": "docs/evidence/manifests/A-14_REWORK_START_MANIFEST.json",
+  "target_hash": "sha256:B73E2249EDF5CC1A5349AA1DFFCC044BAC977E89CDECDFE3E984E5B1C5C36EA0",
+  "delivered_hash": "sha256:B73E2249EDF5CC1A5349AA1DFFCC044BAC977E89CDECDFE3E984E5B1C5C36EA0",
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 622,
+  "target_content_bytes": 18218,
+  "projection": {
+    "event_sequence": 158,
+    "status": "ACTIVE",
+    "result_status": "REWORK_IN_PROGRESS",
+    "accepted": false,
+    "valid_failure_count": 1,
+    "independent_tester_status": "RETEST_REQUIRED",
+    "next_package": "A-15",
+    "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE"
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/workbench.test.mjs",
+      "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+      "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+      "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+      "docs/evidence/manifests/A-14_REWORK_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/failure-ledger.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a14-completion-test-review.json",
+      "docs/progress/progress-handoff-detached-digest-a14-rework-start.json",
+      "docs/test_reports/A-14_TEST_REPORT.md",
+      "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+      "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
+      "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/browser/a14/workbench-runtime.test.mjs",
+      "tests/fixtures/a14/hostile-inputs.json",
+      "tests/fixtures/a14/workbench-fixtures.json",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ]
+  },
+  "failure_source": {
+    "test_report_path": "docs/test_reports/A-14_TEST_REPORT.md",
+    "test_report_sha256": "6A53A135F7362563846252D223376692938317F3A0C4E3EF07B5C767A201C768",
+    "counted_finding_ids": [
+      "BLK-A14-002"
+    ],
+    "environment_blocked_finding_ids": [
+      "BLK-A14-001"
+    ],
+    "environment_blocked_status": "ENVIRONMENT_BLOCKED",
+    "blocking_acceptance": true,
+    "valid_product_failure_count": 1
+  },
+  "lease_projection": {
+    "worker_lease_id": "worker-lease-a14-rework-20260812-002",
+    "execution_fencing_token": "a14-rework-execution-fence-epoch-2-39a7bcc",
+    "worker_lease_epoch": 2,
+    "write_lease_id": "write-lease-a14-rework-20260812-002",
+    "write_fencing_token": "a14-rework-write-fence-epoch-2-39a7bcc",
+    "write_epoch": 2
+  },
+  "predecessor_evidence": {
+    "developer_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "developer_manifest_sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
+    "developer_target_hash": "985E6B205B38637B7EC74594B3C376DFF11C79EDEFF65A8930690F2B1206130B",
+    "completion_manifest_path": "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json",
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  },
+  "developer_rework_scope": [
+    "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json",
+    "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+    "scripts/check_a13_repository_scan.py",
+    "tests/tooling/test_a13_repository_scan.py"
+  ],
+  "product_paths_frozen_count": 17,
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json",
+      "bytes": 5791,
+      "sha256": "ABB91D23FB2FF9E3696206499E1E58AB01DF04881D028ED4C42A2B6E77ADD54D"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+      "bytes": 3524,
+      "sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a14-rework-start.json",
+      "bytes": 910,
+      "sha256": "E9E5A50E934419F66EE81E8B5A65A79510C1B832FA5BFA6F636E4D802B57A990"
+    },
+    {
+      "path": "docs/test_reports/A-14_TEST_REPORT.md",
+      "bytes": 5156,
+      "sha256": "6A53A135F7362563846252D223376692938317F3A0C4E3EF07B5C767A201C768"
+    },
+    {
+      "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md",
+      "bytes": 2837,
+      "sha256": "73DE02532280784326FDCE67BBB50F0EE037BD7AB693A4F6C6D4741D525F0CD2"
+    }
+  ],
+  "historical_evidence_policy": "Sequences 1 through 154, product Workbench 17 paths, predecessor WI/evidence/completion manifest, and Tester report remain immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "limitations": [
+    "This starts revision-2 rework and is not A-14 acceptance.",
+    "BLK-A14-001 remains ENVIRONMENT_BLOCKED until in-app browser retry succeeds.",
+    "Production API, DB, SSE, provider, secret, egress, WSL, ysna, deployment, and DIR remain NOT_EXECUTED."
+  ],
+  "developer_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 24593,
+        "sha256": "D42EEBB9135AAD144123CEC996970FF8F2B47B2343442312465A6365C504436A"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 34900,
+        "sha256": "1C229F4F49970FC99EDD7413EBEF527C026DA1CD67985EAB31C57D9424954604"
+      }
+    ],
+    "scope": "A-14 rework workspace successor only; clean checkout mismatch remains the accepted finding"
+  }
+}

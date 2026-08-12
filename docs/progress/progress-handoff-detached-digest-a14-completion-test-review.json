@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-14-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "A-14",
+  "event_sequence": 154,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 28581,
+    "file_sha256": "6913CC4F080A9E578EC5B633590BEE0553740210DA40644C81DEB2489CC5B728",
+    "canonical_json_sha256": "C3948F600DCCD1C7A43F964E8322B02FCA8F165FF35364E23D765C63BD66BF4B"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 54680,
+    "file_sha256": "6495D593D808FD3C00E1A3A830C8C2D1756A440299A3EB84EC831C1CB54D0042",
+    "machine_summary_canonical_sha256": "102E70C69A65C688EBEDDD16811AB85B1D15FE0950294B4CE55337227F05D4BB"
+  },
+  "created_at": "2026-08-12T20:00:02+09:00",
+  "scope": "A-14 completion TEST_REVIEW projection; independent Tester pending"
+}

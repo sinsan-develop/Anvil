@@ -679,6 +679,28 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
                 checker.validate_evidence_manifest(clone),
             )
 
+    def _assert_clean_checkout_successor_tamper_is_rejected(self) -> None:
+        spec = importlib.util.spec_from_file_location("a13_checker_clean_successor", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+
+        with tempfile.TemporaryDirectory() as temp:
+            clone = _clone_committed_bundle(Path(temp))
+            start_path = clone / "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json"
+            start = json.loads(start_path.read_text(encoding="utf-8"))
+            start["developer_successor_projection"]["live_raw_checksums"][0]["sha256"] = "0" * 64
+            start_path.write_text(
+                json.dumps(start, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            errors = checker.validate_evidence_manifest(clone)
+            self.assertIn("EVIDENCE_RAW_BYTES_MISMATCH", errors)
+            self.assertIn("EVIDENCE_RAW_HASH_MISMATCH", errors)
+
     def _assert_revision2_manifest_and_cli_reject_every_required_integrity_tamper(self) -> None:
         spec = importlib.util.spec_from_file_location("a13_checker_r2_manifest", CHECKER_PATH)
         self.assertIsNotNone(spec)
@@ -757,6 +779,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
             {row["path"] for row in successor["live_raw_checksums"]},
         )
         self._assert_predecessor_binding_tamper_is_rejected()
+        self._assert_clean_checkout_successor_tamper_is_rejected()
         self._assert_revision2_manifest_and_cli_reject_every_required_integrity_tamper()
         completion = json.loads((ROOT / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json").read_text(encoding="utf-8"))
         successor = completion["developer_successor_projection"]

@@ -1,0 +1,137 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-14-COMPLETION-20260812-001",
+  "artifact_type": "package_completion_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-14",
+  "artifact_status": "test_review_pending",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-12T20:00:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json",
+  "projection": {
+    "event_sequence": 154,
+    "status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "accepted": false,
+    "independent_tester_status": "PENDING",
+    "next_package": "A-15",
+    "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE"
+  },
+  "developer_evidence": {
+    "manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "manifest_sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
+    "target_hash": "985E6B205B38637B7EC74594B3C376DFF11C79EDEFF65A8930690F2B1206130B",
+    "changed_path_count": 17,
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  },
+  "developer_successor_projection": {
+    "mode": "MAIN_A14_COMPLETION_PHASE_AWARE_TOOLING_SUCCESSOR",
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "predecessor_raw_and_target_immutable": true,
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 24410,
+        "sha256": "4D697C8DA126619748CB5F04CE903344D0A4C763385B54511ABA85F1C487C756"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 34900,
+        "sha256": "1C229F4F49970FC99EDD7413EBEF527C026DA1CD67985EAB31C57D9424954604"
+      }
+    ]
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/workbench.test.mjs",
+      "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+      "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+      "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a14-completion-test-review.json",
+      "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/browser/a14/workbench-runtime.test.mjs",
+      "tests/fixtures/a14/hostile-inputs.json",
+      "tests/fixtures/a14/workbench-fixtures.json",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ]
+  },
+  "actual_browser_status": "NOT_EXECUTED",
+  "actual_network_status": "NOT_EXECUTED",
+  "actual_api_db_sse_status": "NOT_EXECUTED",
+  "actual_provider_secret_egress_status": "NOT_EXECUTED",
+  "actual_user_repository_status": "NOT_EXECUTED",
+  "actual_wsl_production_status": "NOT_EXECUTED",
+  "actual_dir_status": "NOT_EXECUTED",
+  "historical_evidence_policy": "Sequences 1 through 151 and all predecessor evidence remain immutable",
+  "self_reference": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "raw_checksums": [
+    {
+      "path": "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+      "bytes": 2162,
+      "sha256": "D8BCDB8C22B1B84B7B32C41D12AFDA96AA371A079B97FCCF5323BCFFCC8A9165"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+      "bytes": 3524,
+      "sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json",
+      "bytes": 6939,
+      "sha256": "2C3C8851B7DBC0DD9AE13CC29880762F9900ADC148A8BACB6544E9CD314A4274"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a14-completion-test-review.json",
+      "bytes": 856,
+      "sha256": "37DC770283FD2B7B0683EA0A024ECDC66C182D68B7F2CA78CE578779C5AFEDF2"
+    },
+    {
+      "path": "docs/work_orders/A-14_WORK_INSTRUCTION.md",
+      "bytes": 4614,
+      "sha256": "10421A71394CDC3903EF9BB03D1EDDECB1CA6240219F9E992AA5971D9B1E5F38"
+    }
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 629,
+  "target_content_bytes": 18095,
+  "target_hash": "sha256:A47306D1CAD4B4E1DBF3BFE56826734D807531957DBC54E73E65C5E30E47F39E",
+  "delivered_hash": "sha256:A47306D1CAD4B4E1DBF3BFE56826734D807531957DBC54E73E65C5E30E47F39E",
+  "content_hash": "sha256:A47306D1CAD4B4E1DBF3BFE56826734D807531957DBC54E73E65C5E30E47F39E"
+}

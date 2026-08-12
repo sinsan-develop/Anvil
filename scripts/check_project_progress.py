@@ -184,6 +184,8 @@ A12_COMPLETION_PATH_PREFIXES = ("docs/architecture/a12/", "docs/completion_repor
 A12_COMPLETION_EXACT_PATHS = {"scripts/check_a12_screen_states.py", "tests/tooling/test_a12_screen_states.py"}
 A13_COMPLETION_PATH_PREFIXES = ("docs/architecture/a13/", "docs/completion_reports/A-13_", "docs/validation/A-13_", "tests/fixtures/a13/", "packages/repository_intelligence/")
 A13_COMPLETION_EXACT_PATHS = {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}
+A14_COMPLETION_PATH_PREFIXES = ("apps/web/", "docs/architecture/a14/", "docs/completion_reports/A-14_", "docs/validation/A-14_", "tests/browser/a14/", "tests/fixtures/a14/")
+A14_COMPLETION_EXACT_PATHS = {"docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json", "scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -199,6 +201,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
     "docs/work_orders/A-14_WORK_INSTRUCTION.md",
     "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+    "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
 }
 
 
@@ -2464,6 +2468,8 @@ def validate_a14_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str
         "docs/evidence/manifests/A-13_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
         "docs/progress/progress-handoff-detached-digest-a14-start.json",
         "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+    "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
         "docs/work_orders/A-14_WORK_INSTRUCTION.md",
     }
     rows = manifest.get("raw_checksums")
@@ -2504,6 +2510,72 @@ def validate_a14_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str
     if any(manifest_repository.get(field) != progress_repository.get(field) for field in fields):
         errors.append("A14_START_REPOSITORY_MISMATCH")
     return sorted(set(errors))
+def validate_a14_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]; errors=[]
+    expected={"docs/completion_reports/A-14_COMPLETION_REPORT.md","docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json","docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-a14-completion-test-review.json","docs/work_orders/A-14_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums"); seen=set(); canonical=[]; total=0
+    if not isinstance(rows,list): return ["A14_COMPLETION_RAW_INVALID"]
+    for row in rows:
+        rel=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(rel,str) or rel in seen: errors.append("A14_COMPLETION_RAW_INVALID"); continue
+        seen.add(rel)
+        try: raw=(root/rel).read_bytes()
+        except OSError: errors.append("A14_COMPLETION_RAW_INVALID"); continue
+        actual=hashlib.sha256(raw).hexdigest().upper(); total+=len(raw); canonical.append((rel.encode(),f"{rel}\t{len(raw)}\t{actual}"))
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=actual: errors.append("A14_COMPLETION_RAW_INVALID")
+    if seen!=expected: errors.append("A14_COMPLETION_RAW_SET_INVALID")
+    can="\n".join(v for _,v in sorted(canonical)).encode(); target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("self_reference") is not False)): errors.append("A14_COMPLETION_TARGET_MISMATCH")
+    wi=progress.get("active_work_instruction") or {}; dev=manifest.get("developer_evidence") or {}
+    if any((progress.get("event_sequence")!=154,progress.get("status")!="TEST_REVIEW",progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,wi.get("package_status")!="TEST_REVIEW",wi.get("result_status")!="COMPLETED",wi.get("independent_tester_status")!="PENDING",dev.get("manifest_sha256")!="B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",dev.get("target_hash")!="985E6B205B38637B7EC74594B3C376DFF11C79EDEFF65A8930690F2B1206130B",manifest.get("actual_browser_status")!="NOT_EXECUTED",manifest.get("actual_network_status")!="NOT_EXECUTED")): errors.append("A14_COMPLETION_PROJECTION_MISMATCH")
+    fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths")
+    if any((manifest.get("repository_projection") or {}).get(f)!=(progress.get("repository") or {}).get(f) for f in fields): errors.append("A14_COMPLETION_REPOSITORY_MISMATCH")
+    return sorted(set(errors))
+
+
+def validate_a14_r2_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]; errors=[]
+    rows=manifest.get("raw_checksums"); canonical=[]; total=0
+    if not isinstance(rows,list): return ["A14_R2_COMPLETION_RAW_INVALID"]
+    for row in rows:
+        rel=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(rel,str): errors.append("A14_R2_COMPLETION_RAW_INVALID"); continue
+        try: raw=(root/rel).read_bytes()
+        except OSError: errors.append("A14_R2_COMPLETION_RAW_INVALID"); continue
+        actual=hashlib.sha256(raw).hexdigest().upper();total+=len(raw);canonical.append((rel.encode(),f"{rel}\t{len(raw)}\t{actual}"))
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=actual: errors.append("A14_R2_COMPLETION_RAW_INVALID")
+    can="\n".join(v for _,v in sorted(canonical)).encode(); target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("self_reference") is not False)): errors.append("A14_R2_COMPLETION_TARGET_MISMATCH")
+    wi=progress.get("active_work_instruction") or {}; dev=manifest.get("developer_revision2_evidence") or {}; pred=manifest.get("predecessor_evidence") or {}
+    if any((progress.get("event_sequence")!=161,progress.get("status")!="TEST_REVIEW",progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,wi.get("result_status")!="COMPLETED",wi.get("independent_tester_status")!="R2_PENDING",dev.get("manifest_sha256")!="67AD9BD4AC3203900B97074B233DA751DC4FD75F7C772F955CA00BB2665EE58D",pred.get("manifest_sha256")!="B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",manifest.get("actual_browser_status")!="ENVIRONMENT_BLOCKED")): errors.append("A14_R2_COMPLETION_PROJECTION_MISMATCH")
+    fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths")
+    if any((manifest.get("repository_projection") or {}).get(f)!=(progress.get("repository") or {}).get(f) for f in fields): errors.append("A14_R2_COMPLETION_REPOSITORY_MISMATCH")
+    return sorted(set(errors))
+
+def validate_a14_rework_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]; progress = bundle["progress"]; errors: list[str] = []
+    expected = {"docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json", "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json", "docs/progress/progress-handoff-detached-digest-a14-rework-start.json", "docs/test_reports/A-14_TEST_REPORT.md", "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md"}
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list): return ["A14_REWORK_RAW_INVALID"]
+    seen: set[str] = set(); canonical: list[tuple[bytes, str]] = []; total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("A14_REWORK_RAW_INVALID"); continue
+        seen.add(relative)
+        try: raw = (root / relative).read_bytes()
+        except OSError: errors.append("A14_REWORK_RAW_INVALID"); continue
+        checksum = hashlib.sha256(raw).hexdigest().upper(); total += len(raw); canonical.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{checksum}"))
+        if row.get("bytes") != len(raw) or row.get("sha256") != checksum: errors.append("A14_REWORK_RAW_INVALID")
+    if seen != expected: errors.append("A14_REWORK_RAW_SET_INVALID")
+    canonical_bytes = "\n".join(value for _, value in sorted(canonical)).encode("utf-8"); target = "sha256:" + hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes") != len(canonical_bytes), manifest.get("target_content_bytes") != total, manifest.get("target_hash") != target, manifest.get("delivered_hash") != target, manifest.get("content_hash") != target, manifest.get("self_reference") is not False)): errors.append("A14_REWORK_TARGET_MISMATCH")
+    source = manifest.get("failure_source") or {}; lease = manifest.get("lease_projection") or {}; instruction = progress.get("active_work_instruction") or {}
+    if any((progress.get("event_sequence") != 158, progress.get("current_work_package") != "A-14", progress.get("status") != "ACTIVE", progress.get("valid_failure_count") != 1, instruction.get("artifact_id") != "WI-A-14-20260812-002", instruction.get("result_status") != "REWORK_IN_PROGRESS", instruction.get("independent_tester_status") != "RETEST_REQUIRED", (progress.get("worker_lease") or {}).get("lease_epoch") != 2, (progress.get("write_lease") or {}).get("write_epoch") != 2, lease.get("execution_fencing_token") != (progress.get("worker_lease") or {}).get("execution_fencing_token"), lease.get("write_fencing_token") != (progress.get("write_lease") or {}).get("write_fencing_token"), source.get("test_report_sha256") != "6A53A135F7362563846252D223376692938317F3A0C4E3EF07B5C767A201C768", source.get("counted_finding_ids") != ["BLK-A14-002"], source.get("environment_blocked_finding_ids") != ["BLK-A14-001"], manifest.get("product_paths_frozen_count") != 17)): errors.append("A14_REWORK_PROJECTION_MISMATCH")
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths"); mr = manifest.get("repository_projection") or {}; pr = progress.get("repository") or {}
+    if any(mr.get(field) != pr.get(field) for field in fields): errors.append("A14_REWORK_REPOSITORY_MISMATCH")
+    return sorted(set(errors))
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -2900,6 +2972,8 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative in A12_COMPLETION_EXACT_PATHS
         or relative.startswith(A13_COMPLETION_PATH_PREFIXES)
         or relative in A13_COMPLETION_EXACT_PATHS
+        or relative.startswith(A14_COMPLETION_PATH_PREFIXES)
+        or relative in A14_COMPLETION_EXACT_PATHS
     )
 
 
@@ -3149,6 +3223,12 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a13_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-14_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_a14_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a14_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-14_REWORK_START_MANIFEST.json":
+            errors.extend(validate_a14_rework_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json":
+            errors.extend(validate_a14_r2_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

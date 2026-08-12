@@ -1,0 +1,9 @@
+{
+  "schema_version":"1.0.0",
+  "cases":[
+    {"id":"xss-project","value":"<img src=x onerror=alert(1)>"},
+    {"id":"script-fixture","value":"<script>globalThis.pwned=true</script>"},
+    {"id":"path-traversal","value":"../../.git/config"},
+    {"id":"secret-shaped","value":"sk-proj-DO-NOT-RENDER"}
+  ]
+}

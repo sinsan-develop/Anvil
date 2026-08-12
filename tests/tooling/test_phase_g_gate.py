@@ -125,14 +125,17 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual(worker["details"]["lease_id"], write["details"]["worker_lease_id"])
         self.assertEqual(write["details"]["lease_id"], start["details"]["write_lease_id"])
 
-    def test_gate_checkpoint_allows_a14_active_after_fenced_start(self):
+    def test_gate_checkpoint_allows_a14_scoped_rework_after_failure_report(self):
         report = self.validate()
         self.assertEqual([], report["errors"])
-        self.assertEqual("A-14", report["progress"]["current_work_package"])
-        self.assertEqual("ACTIVE", report["progress"]["status"])
-        self.assertEqual("WI-A-14-20260812-001", report["progress"]["active_work_instruction"]["artifact_id"])
-        self.assertEqual(1, report["progress"]["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, report["progress"]["write_lease"]["write_epoch"])
+        progress = report["progress"]
+        self.assertEqual("A-14", progress["current_work_package"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual("WI-A-14-20260812-002", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("R2_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
         design_path = "Anvil_설계서_v2.md"

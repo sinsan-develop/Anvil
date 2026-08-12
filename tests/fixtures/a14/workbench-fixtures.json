@@ -1,0 +1,6 @@
+{
+  "schema_version": "1.0.0",
+  "projects": [{"project_id":"anvil-fixture","name":"Anvil Fixture","roles":["operator","viewer"],"fixtures":["FIX-PY-CLEAN","FIX-PY-DIRTY","FIX-TS-CLEAN"]}],
+  "default_project_id": "anvil-fixture",
+  "default_fixture_id": "FIX-PY-CLEAN"
+}

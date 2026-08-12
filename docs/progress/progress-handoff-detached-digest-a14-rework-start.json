@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-14-PROGRESS-HANDOFF-DIGEST-REWORK-START-R2",
+  "package_id": "A-14",
+  "event_sequence": 158,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 31032,
+    "file_sha256": "4E058E925D8B7912DFA0D0E6E20416A0C9FEF72F1A3A1E65BC0518EB67581498",
+    "canonical_json_sha256": "51C953E958D094BBC7D1C5B0CB88612F21E43693B9FE07EB8361540892F563F7"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 57943,
+    "file_sha256": "A6E2E863936B17E0A104624B80216A2DBF10283D697D7767E53B5B69DD2B33BB",
+    "machine_summary_canonical_sha256": "B411DEE411D66B95202120593A1A8156C3D72CB55C7355E8A06D77FDDADBB37D"
+  },
+  "created_at": "2026-08-12T21:00:03+09:00",
+  "scope": "A-14 FAILURE_REPORT accepted; epoch-2 scoped rework resumed; product Workbench 17 paths frozen; browser ACL ENVIRONMENT_BLOCKED"
+}

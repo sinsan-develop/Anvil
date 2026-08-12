@@ -142,6 +142,31 @@
       ],
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED"
+    },
+    {
+      "entry_id": "failure-a14-independent-test-r1",
+      "step_lineage_id": "A-14",
+      "failure_fingerprint": "a14-independent-test:a13-clean-checkout-successor-raw-byte-mismatch-r1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "BLK-A14-002"
+      ],
+      "environment_blocked_findings": [
+        "BLK-A14-001"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 1,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/A-14_TEST_REPORT.md",
+          "sha256": "6A53A135F7362563846252D223376692938317F3A0C4E3EF07B5C767A201C768"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED"
     }
   ]
 }

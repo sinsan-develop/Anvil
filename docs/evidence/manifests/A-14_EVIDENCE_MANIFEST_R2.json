@@ -1,0 +1,53 @@
+{
+  "artifact_id": "A-14-EVIDENCE-MANIFEST-R2-001",
+  "package_id": "A-14",
+  "revision": 2,
+  "artifact_status": "developer_rework_completed_pending_independent_retest",
+  "work_instruction_sha256": "73DE02532280784326FDCE67BBB50F0EE037BD7AB693A4F6C6D4741D525F0CD2",
+  "execution_fencing_token": "a14-rework-execution-fence-epoch-2-39a7bcc",
+  "write_fencing_token": "a14-rework-write-fence-epoch-2-39a7bcc",
+  "finding": "BLK-A14-002",
+  "self_reference": false,
+  "developer_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 25240,
+        "sha256": "1E7C890A6088E9ED9696022169239D3798EC7DDBE9C1A2AD7CD4680815B4311F"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 36076,
+        "sha256": "7BABDEDABA5095FD8AC25CD9CF3AC4C98EF802AAA684FC8C426F85EB395F5491"
+      }
+    ],
+    "binding_mode": "PHASE_AWARE_CLEAN_CHECKOUT_OR_EXACT_LIVE_RAW_BYTES"
+  },
+  "result": "COMPLETED_PENDING_INDEPENDENT_RETEST",
+  "browser_status": "ENVIRONMENT_BLOCKED / NOT_EXECUTED",
+  "not_executed": [
+    "PRODUCTION_API_DB_SSE",
+    "REAL_PROVIDER_SECRET_EGRESS",
+    "USER_REPOSITORY",
+    "WSL_YSNA_DEPLOYMENT",
+    "DIR"
+  ],
+  "browser_attempts": 2,
+  "browser_blocker": "windows sandbox failed: helper_unknown_error: apply deny-read ACLs",
+  "full_tooling": {
+    "total": 268,
+    "passed": 258,
+    "failed": 10,
+    "status": "PROJECTION_SYNC_REQUIRED",
+    "failure_codes": [
+      "GIT_DESCENDANT_PATH_SET_MISMATCH",
+      "PRG_REFERENCED_HASH_MISMATCH"
+    ]
+  },
+  "targeted_verification": {
+    "python": "26/26 PASS",
+    "node": "6/6 PASS"
+  }
+}

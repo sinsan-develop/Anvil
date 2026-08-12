@@ -63,6 +63,8 @@ A04_COMPLETION_PATH_PREFIXES = ("docs/architecture/a04/", "docs/completion_repor
 A04_COMPLETION_EXACT_PATHS = {"scripts/check_a04_workbench.py", "tests/tooling/test_a04_workbench.py"}
 A05_COMPLETION_PATH_PREFIXES = ("docs/architecture/a05/", "docs/completion_reports/A-05_", "docs/validation/A-05_", "tests/fixtures/a05/")
 A05_COMPLETION_EXACT_PATHS = {"scripts/check_a05_design_decisions.py", "tests/tooling/test_a05_design_decisions.py"}
+A14_COMPLETION_PATH_PREFIXES = ("apps/web/", "docs/architecture/a14/", "docs/completion_reports/A-14_", "docs/validation/A-14_", "tests/browser/a14/", "tests/fixtures/a14/")
+A14_COMPLETION_EXACT_PATHS = {"docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json", "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json", "scripts/check_a13_repository_scan.py", "scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_a14_workbench_prototype.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
@@ -78,6 +80,8 @@ EVIDENCE_ONLY_TOOLING_PATHS = {
     "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
     "docs/work_orders/A-14_WORK_INSTRUCTION.md",
     "docs/work_orders/A-14_INVOCATION_PROMPT.md",
+    "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
     "scripts/check_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
 }
@@ -250,6 +254,8 @@ def _is_evidence_only_path(relative: str) -> bool:
         or relative.startswith(A03_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A04_COMPLETION_PATH_PREFIXES)
         or relative.startswith(A05_COMPLETION_PATH_PREFIXES)
+        or relative.startswith(A14_COMPLETION_PATH_PREFIXES)
+        or relative in A14_COMPLETION_EXACT_PATHS
     )
 
 

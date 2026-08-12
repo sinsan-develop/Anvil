@@ -1,0 +1,13 @@
+{
+  "artifact_id":"A-14-WORKBENCH-CONTRACT-001",
+  "package_id":"A-14",
+  "assigned_verification_ids":["AV-UI-004","AV-UI-010","AV-GATE-005"],
+  "provider_order":["CEREBRAS","GROQ","MISTRAL","OPENROUTER","UPSTAGE","GEMINI","ANTHROPIC","OPENAI","OLLAMA"],
+  "flow":["PROJECT_REGISTER","FIXTURE_SELECT","READ_ONLY_SCAN","PROVIDER_SELECT","STATE_EVIDENCE_NEXT_ACTION"],
+  "state_vocabulary":["NORMAL","LOADING","EMPTY","ERROR","BLOCKED","QUOTA","CANCEL","RECONNECT","PERMISSION_DENIED"],
+  "same_origin":{"browser_api_prefix":"/api/","absolute_browser_api_forbidden":true,"server_side_a13_only":true},
+  "authorization":{"csrf_required":true,"origin_host_match_required":true,"allowed_role":"operator","project_allowlist":["anvil-fixture"],"fixture_allowlist":["FIX-PY-CLEAN","FIX-PY-DIRTY","FIX-TS-CLEAN"]},
+  "badge_contract":{"fixture_badge":"FIXTURE","fixture_counts_as_pass":false,"skipped_and_not_executed_distinct":true},
+  "runtime_boundary":{"fixture_browser":"EXECUTED_BY_NODE_HTTP_RUNTIME_TEST","production":"NOT_EXECUTED","actual_provider":"NOT_EXECUTED","actual_db":"NOT_EXECUTED","deployment":"NOT_EXECUTED","user_repository":"NOT_EXECUTED"},
+  "security":{"hostile_text_rendering":"textContent","raw_stack_path_secret_provider_error_visible":false,"csp":"self-only","disabled_server_bypass_blocked":true}
+}
