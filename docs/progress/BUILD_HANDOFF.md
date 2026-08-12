@@ -3,44 +3,44 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 144,
-  "status": "ACTIVE",
+  "event_sequence": 147,
+  "status": "TEST_REVIEW",
   "current_work_package": "A-13",
-  "last_event_id": "evt_a13_package_resumed_rework_r2",
+  "last_event_id": "evt_a13_r2_package_completed_test_review",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 6,
   "dir_status": "NOT_REACHED",
-  "repository_head": "b5df158ca5d4eb206ae026b0e6f9427cc257d10b",
+  "repository_head": "3dac0804b55bc696eafbca81900804017499fcf6",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "b5df158ca5d4eb206ae026b0e6f9427cc257d10b",
+  "repository_remote_head": "3dac0804b55bc696eafbca81900804017499fcf6",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "b5df158ca5d4eb206ae026b0e6f9427cc257d10b",
+  "repository_validated_base_commit": "3dac0804b55bc696eafbca81900804017499fcf6",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/A-13_REWORK_START_MANIFEST.json",
+    "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a13-rework-start.json",
-    "docs/test_reports/A-13_TEST_REPORT.md",
-    "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md",
-    "scripts/check_g07_baseline.py",
+    "docs/progress/progress-handoff-detached-digest-a13-r2-completion-test-review.json",
+    "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
+    "scripts/check_a13_repository_scan.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a13-rework-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-13_REWORK_START_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a13-r2-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "developer-primary-a13 may repair only A13-TST-BLK-001/002 within the epoch-2 leased paths; A-14 remains blocked",
+  "next_safe_action": "Independent Tester may retest frozen A-13 revision-2 evidence; A-14 remains blocked",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -51,24 +51,19 @@
     "artifact_id": "WI-A-13-20260812-002",
     "sha256": "A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B",
     "invocation_sha256": "0AE9CFFFAB917EA9BC050598A2D3DABD5C2B76B190B78A311ADC860E813860ED",
-    "package_status": "ACTIVE",
-    "result_status": "REWORK_IN_PROGRESS",
+    "package_status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
     "accepted": false,
-    "independent_tester_status": "RETEST_REQUIRED"
+    "independent_tester_status": "R2_PENDING",
+    "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST"
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-a13-rework-20260812-002",
-    "lease_epoch": 2
-  },
-  "write_lease": {
-    "lease_id": "write-lease-a13-rework-20260812-002",
-    "write_epoch": 2
-  }
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-12 ACCEPTED / A-13 ACTIVE REWORK_IN_PROGRESS`
+> 현재 상태: `A-12 ACCEPTED / A-13 R2 TEST_REVIEW`
 > 현재 Phase / Package: `A / A-13`
 
 ## 1. 현재 기준선
@@ -411,3 +406,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - Tester report `90765FDA6C240AE04A7548B265BC4E2506E9E1878F93DE353ECFEE1AD736A986`의 blocking 2건을 유효 실패 1회로 수락했다.
 - seq 141→144로 failure 수락, epoch-2 worker/write lease, `PACKAGE_RESUMED`를 비소급 append했다.
 - scanner core와 G-06 fixture는 동결하며 Developer는 5개 rework path만 수정할 수 있다. A-14는 acceptance 전 차단이다.
+
+
+## A-13 revision 2 Developer 완료 → 독립 재검증 대기
+
+- seq 145→147로 epoch-2 write/worker lease를 회수하고 `PACKAGE_COMPLETED / TEST_REVIEW`로 투영했다.
+- 두 finding은 `FIXED_AWAITING_INDEPENDENT_RETEST`; Developer exact 5 manifest `4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771`, target `7629BE41F2174CEA6538B35C410A1E3DE7488A8BFD0BA166229F5C36DEB8A085`를 동결했다.
+- A-14는 A-13 Main acceptance 전 차단이다.

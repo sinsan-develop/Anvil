@@ -30,3 +30,18 @@ canonical root/path identity, case/prefix escape, symlink/junction/reparse, mali
 ## 미실행 및 잔여 위험
 
 플랫폼별 Unix symlink/special-file 세부 동작과 실제 대형 저장소 성능은 이 Windows fixture 검증으로 증명하지 않는다. 독립 Tester와 Main Agent의 completion projection/lease 회수 후 full tooling 및 project checker 재실행이 남는다.
+
+## Revision 2 evidence-validator 재작업
+
+- 기준: `main = origin/main = 3dac0804b55bc696eafbca81900804017499fcf6`, sequence 144, epoch 2, `ACTIVE / REWORK_IN_PROGRESS`.
+- WI: `WI-A-13-20260812-002`, SHA-256 `A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B`.
+- `A13-TST-BLK-001` RED: clean committed clone에서 predecessor validator가 actual diff/raw bytes/raw hash/content bytes 네 오류를 재현했다.
+- `A13-TST-BLK-002` RED: hostile self-reference/target manifest에 `validate_bundle()`이 `errors=[]`을 반환했고 predecessor tamper는 전용 reason code 없이 fail-open했다.
+- GREEN 계약: clean committed successor는 empty Git diff와 frozen predecessor + completion successor live checksum으로 검증한다. R2 manifest가 있으면 그 manifest의 current raw를 직접 검증하며 clean diff 또는 exact five-path rework diff만 허용한다.
+- CLI 계약: `validate_bundle()`은 evidence validator를 fixture scan 전에 반드시 호출한다. self-reference, target, raw bytes, raw hash, content bytes, predecessor binding 오류는 stable reason code와 nonzero exit로 전달한다.
+- 변경하지 않은 경계: `packages/repository_intelligence/**`, G-06 fixtures, architecture contract, predecessor manifest/completion projection, Tester report, progress/HANDOFF.
+- R2 focused: `python -m unittest -v tests.tooling.test_a13_repository_scan`, 22/22 PASS, exit 0, 102.265s. 기존 22개 test 수를 유지하면서 clean successor와 six-tamper bundle/CLI 회귀를 포함했다.
+- full tooling: `python -m unittest discover -s tests/tooling -v`, 263개 중 259 PASS/4 FAIL, 164.983s. 네 실패는 Developer의 exact five-path dirty diff 때문에 project-progress가 반환한 `GIT_DESCENDANT_WORKTREE_DIRTY`와 progress가 참조하는 수정 문서의 `PRG_REFERENCED_HASH_MISMATCH`이며 A-13/기타 suite failure 또는 error는 0이다. Developer scope 밖 progress 수정이나 commit으로 우회하지 않는다.
+- A01~A12 checker, A13 checker(`fixtures=8 zero_delta=8 hostile=15`), G06(`8/8/20/8`), G07, Phase G는 PASS. project checker만 위 두 projection reason code로 nonzero다.
+- 최초 A01~A12 일괄 checker에 positional `.`을 준 호출 오류는 공식 `--root .`로 교정해 모두 PASS했으며 제품 결과로 세지 않았다.
+- fixture/static 결과를 실제 runtime PASS로 승격하지 않는다. 독립 retest와 Main의 lease/progress completion projection 뒤 full 263/263 및 project checker 재실행이 남는다.

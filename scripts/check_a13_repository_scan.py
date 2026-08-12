@@ -45,6 +45,7 @@ EXPECTED_RESULT_FIELDS = {
     "evidence_types",
 }
 EVIDENCE_REL = "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json"
+EVIDENCE_R2_REL = "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
 RAW_PATHS = {
     "docs/architecture/a13/A-13_REPOSITORY_SCAN.md",
     "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.json",
@@ -64,6 +65,23 @@ RAW_PATHS = {
     "tests/tooling/test_a13_repository_scan.py",
 }
 DECLARED_CHANGED_PATHS = RAW_PATHS | {EVIDENCE_REL}
+R2_RAW_PATHS = {
+    "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json",
+    "docs/test_reports/A-13_TEST_REPORT.md",
+    "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
+    "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md",
+    "scripts/check_a13_repository_scan.py",
+    "tests/tooling/test_a13_repository_scan.py",
+}
+R2_CHANGED_PATHS = {
+    "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+    EVIDENCE_R2_REL,
+    "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
+    "scripts/check_a13_repository_scan.py",
+    "tests/tooling/test_a13_repository_scan.py",
+}
 
 
 def _load_module(path: Path, name: str):
@@ -117,16 +135,22 @@ def _successor_projection(root: Path, changed_paths: set[str]) -> dict[str, dict
     rows = successor.get("live_raw_checksums", [])
     allowed = {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}
     indexed = {row.get("path"): row for row in rows if isinstance(row, dict)}
-    if not (
-        progress.get("event_sequence") == 140
+    completion_paths = set(completion.get("repository_projection", {}).get("exact_allowed_paths", []))
+    committed_clean = not changed_paths
+    uncommitted_completion = (
+        set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
+        and completion_paths == changed_paths
+        and DECLARED_CHANGED_PATHS <= changed_paths
+        and progress.get("event_sequence") == 140
         and progress.get("current_work_package") == "A-13"
         and progress.get("status") == "TEST_REVIEW"
         and progress.get("worker_lease") is None
         and progress.get("write_lease") is None
         and progress.get("current_progress_evidence_ref", {}).get("manifest_path")
         == "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json"
-        and set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
-        and DECLARED_CHANGED_PATHS <= changed_paths
+    )
+    if not (
+        (committed_clean or uncommitted_completion)
         and successor.get("predecessor_manifest_sha256") == predecessor_sha
         and set(indexed) == allowed
     ):
@@ -138,9 +162,132 @@ def _successor_projection(root: Path, changed_paths: set[str]) -> dict[str, dict
     return indexed
 
 
+def _validate_revision2_manifest(
+    root: Path,
+    manifest: dict[str, Any],
+    changed_paths: set[str],
+) -> list[str]:
+    errors: list[str] = []
+    raw = manifest.get("raw_artifacts", [])
+    if not isinstance(raw, list) or not raw:
+        return ["EVIDENCE_RAW_ARTIFACTS_INVALID"]
+    if manifest.get("self_reference") is not False:
+        errors.append("EVIDENCE_SELF_REFERENCE_FORBIDDEN")
+    completion_successor = _revision2_completion_successor(root, changed_paths)
+    observed_paths: set[str] = set()
+    content_bytes = 0
+    for item in raw:
+        path = str(item.get("path", ""))
+        file_path = root / path
+        if not path or path in observed_paths or path == EVIDENCE_R2_REL:
+            errors.append("EVIDENCE_RAW_PATH_INVALID")
+            continue
+        observed_paths.add(path)
+        if not file_path.is_file():
+            errors.append("EVIDENCE_RAW_ARTIFACT_MISSING")
+            continue
+        payload = file_path.read_bytes()
+        successor_bound = path in (completion_successor or {})
+        content_bytes += item.get("bytes", 0) if successor_bound else len(payload)
+        if item.get("bytes") != len(payload) and not successor_bound:
+            errors.append("EVIDENCE_RAW_BYTES_MISMATCH")
+        if item.get("sha256") != hashlib.sha256(payload).hexdigest().upper() and not successor_bound:
+            errors.append("EVIDENCE_RAW_HASH_MISMATCH")
+    projection = _projection(raw)
+    target = hashlib.sha256(projection).hexdigest().upper()
+    if observed_paths != R2_RAW_PATHS:
+        errors.append("EVIDENCE_RAW_PATH_SET_MISMATCH")
+    if manifest.get("declared_changed_paths") != sorted(R2_CHANGED_PATHS):
+        errors.append("EVIDENCE_DECLARED_DIFF_MISMATCH")
+    if changed_paths not in (set(), R2_CHANGED_PATHS) and completion_successor is None:
+        errors.append("EVIDENCE_ACTUAL_DIFF_MISMATCH")
+    if manifest.get("target_canonical_bytes") != len(projection):
+        errors.append("EVIDENCE_CANONICAL_BYTES_MISMATCH")
+    if manifest.get("target_content_bytes") != content_bytes:
+        errors.append("EVIDENCE_CONTENT_BYTES_MISMATCH")
+    if manifest.get("target_hash") != target or manifest.get("delivered_hash") != target:
+        errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
+    predecessor = manifest.get("supersedes_artifact_ref")
+    expected_predecessor = {
+        "path": EVIDENCE_REL,
+        "sha256": "BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE",
+    }
+    try:
+        actual_predecessor = hashlib.sha256((root / EVIDENCE_REL).read_bytes()).hexdigest().upper()
+    except OSError:
+        actual_predecessor = ""
+    if predecessor != expected_predecessor or actual_predecessor != expected_predecessor["sha256"]:
+        errors.append("EVIDENCE_PREDECESSOR_BINDING_MISMATCH")
+    expected_report = {
+        "path": "docs/test_reports/A-13_TEST_REPORT.md",
+        "sha256": "90765FDA6C240AE04A7548B265BC4E2506E9E1878F93DE353ECFEE1AD736A986",
+    }
+    try:
+        actual_report = hashlib.sha256((root / expected_report["path"]).read_bytes()).hexdigest().upper()
+    except OSError:
+        actual_report = ""
+    if manifest.get("source_test_report_ref") != expected_report or actual_report != expected_report["sha256"]:
+        errors.append("EVIDENCE_TEST_REPORT_BINDING_MISMATCH")
+    expected = {
+        "artifact_id": "EVIDENCE-MANIFEST-A-13-20260812-002",
+        "package_id": "A-13",
+        "work_instruction_sha256": "A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B",
+        "assigned_verification_ids": ["AV-SAFE-010", "AV-SAFE-012"],
+        "execution_classification": "FIXTURE_INTEGRATION_ONLY",
+        "runtime_status": "ACTUAL_RUNTIME / NOT_EXECUTED",
+        "finding_closure_claims": ["A13-TST-BLK-001", "A13-TST-BLK-002"],
+    }
+    if any(manifest.get(key) != value for key, value in expected.items()):
+        errors.append("EVIDENCE_QUALIFIER_MISMATCH")
+    return sorted(set(errors))
+
+
+def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict[str, dict[str, object]] | None:
+    try:
+        completion = _load_json(root / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json")
+        progress = _load_json(root / "docs/progress/build-progress.json")
+        predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
+    except (OSError, json.JSONDecodeError):
+        return None
+    successor = completion.get("developer_successor_projection", {})
+    rows = successor.get("live_raw_checksums", [])
+    indexed = {row.get("path"): row for row in rows if isinstance(row, dict)}
+    live_paths = {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}
+    completion_paths = set(completion.get("repository_projection", {}).get("exact_allowed_paths", []))
+    committed_clean = not changed_paths
+    current_completion = (
+        progress.get("event_sequence") == 147
+        and progress.get("current_work_package") == "A-13"
+        and progress.get("status") == "TEST_REVIEW"
+        and progress.get("worker_lease") is None
+        and progress.get("write_lease") is None
+        and progress.get("current_progress_evidence_ref", {}).get("manifest_path") == "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json"
+        and set(progress.get("repository", {}).get("exact_allowed_paths", [])) == changed_paths
+        and completion_paths == changed_paths
+        and R2_CHANGED_PATHS <= changed_paths
+    )
+    if not ((committed_clean or current_completion) and successor.get("predecessor_manifest_sha256") == predecessor_sha and set(indexed) == live_paths):
+        return None
+    for path, row in indexed.items():
+        payload = (root / path).read_bytes()
+        if row.get("bytes") != len(payload) or row.get("sha256") != hashlib.sha256(payload).hexdigest().upper():
+            return None
+    return indexed
+
+
 def validate_evidence_manifest(root: Path) -> list[str]:
     root = root.resolve()
     errors: list[str] = []
+    manifest_path = root / EVIDENCE_R2_REL
+    if manifest_path.is_file():
+        try:
+            manifest = _load_json(manifest_path)
+            changed_paths = _git_changed_paths(root)
+        except (OSError, json.JSONDecodeError):
+            return ["EVIDENCE_MANIFEST_MISSING_OR_INVALID"]
+        except subprocess.SubprocessError:
+            return ["EVIDENCE_GIT_STATUS_UNAVAILABLE"]
+        return _validate_revision2_manifest(root, manifest, changed_paths)
     try:
         manifest = _load_json(root / EVIDENCE_REL)
     except (OSError, json.JSONDecodeError):
@@ -155,6 +302,16 @@ def validate_evidence_manifest(root: Path) -> list[str]:
     except (OSError, subprocess.SubprocessError):
         changed_paths = set()
         errors.append("EVIDENCE_GIT_STATUS_UNAVAILABLE")
+    try:
+        completion = _load_json(root / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json")
+        successor_predecessor = completion.get("developer_successor_projection", {}).get(
+            "predecessor_manifest_sha256"
+        )
+        actual_predecessor = hashlib.sha256((root / EVIDENCE_REL).read_bytes()).hexdigest().upper()
+        if successor_predecessor != actual_predecessor:
+            errors.append("EVIDENCE_PREDECESSOR_BINDING_MISMATCH")
+    except (OSError, json.JSONDecodeError):
+        errors.append("EVIDENCE_PREDECESSOR_BINDING_MISMATCH")
     successor = _successor_projection(root, changed_paths)
     observed_paths: set[str] = set()
     content_bytes = 0
@@ -207,7 +364,14 @@ def validate_bundle(root: Path) -> dict[str, Any]:
         sys.path.insert(0, str(root))
     from packages.repository_intelligence import ScanRequest, ScanResult, scan_repository
 
-    errors: list[str] = []
+    errors = validate_evidence_manifest(root)
+    if errors:
+        return {
+            "errors": sorted(set(errors)),
+            "fixture_count": 0,
+            "zero_delta_count": 0,
+            "hostile_case_count": 0,
+        }
     contract_path = root / "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.json"
     hostile_path = root / "tests/fixtures/a13/hostile-cases.json"
     materializer_path = root / "scripts/materialize_fixture_repository.py"

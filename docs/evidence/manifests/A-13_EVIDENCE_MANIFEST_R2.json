@@ -1,0 +1,51 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-13-20260812-002",
+  "artifact_type": "package_evidence_manifest",
+  "project_id": "anvil",
+  "package_id": "A-13",
+  "artifact_status": "developer_rework_completed_pending_independent_retest",
+  "created_by": {"actor_type":"agent","actor_id":"developer-primary-a13"},
+  "created_at": "2026-08-12T15:00:00+09:00",
+  "work_instruction_sha256": "A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B",
+  "supersedes_artifact_ref": {
+    "path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json",
+    "sha256": "BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE"
+  },
+  "source_test_report_ref": {
+    "path": "docs/test_reports/A-13_TEST_REPORT.md",
+    "sha256": "90765FDA6C240AE04A7548B265BC4E2506E9E1878F93DE353ECFEE1AD736A986"
+  },
+  "finding_closure_claims": ["A13-TST-BLK-001", "A13-TST-BLK-002"],
+  "assigned_verification_ids": ["AV-SAFE-010", "AV-SAFE-012"],
+  "execution_classification": "FIXTURE_INTEGRATION_ONLY",
+  "runtime_status": "ACTUAL_RUNTIME / NOT_EXECUTED",
+  "not_executed_evidence": ["ACTUAL_USER_REPOSITORY","ACTUAL_BROWSER","ACTUAL_API","ACTUAL_DB","ACTUAL_WSL","ACTUAL_SERVER","ACTUAL_PRODUCTION","ACTUAL_DEPLOYMENT","ACTUAL_DIR","ACTUAL_NETWORK","PROJECT_TOOL_EXECUTION"],
+  "self_reference": false,
+  "raw_artifacts": [
+    {"path":"docs/completion_reports/A-13_COMPLETION_REPORT.md","bytes":3696,"sha256":"D11E2F7A2CDB2D5B699441E095268066E83015405559E6C7BDB627257927F7CA"},
+    {"path":"docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json","bytes":4180,"sha256":"BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE"},
+    {"path":"docs/test_reports/A-13_TEST_REPORT.md","bytes":11010,"sha256":"90765FDA6C240AE04A7548B265BC4E2506E9E1878F93DE353ECFEE1AD736A986"},
+    {"path":"docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md","bytes":5378,"sha256":"D8267B790E962280A9AF2A75B542730EBC4D057D9C92C684D121E5D0D1B97684"},
+    {"path":"docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md","bytes":907,"sha256":"0AE9CFFFAB917EA9BC050598A2D3DABD5C2B76B190B78A311ADC860E813860ED"},
+    {"path":"docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md","bytes":2424,"sha256":"A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B"},
+    {"path":"scripts/check_a13_repository_scan.py","bytes":18799,"sha256":"3BF45070A165BFBEACD3743BB3054BADFDF67E90CEB90A76C56C7BE7CE12F129"},
+    {"path":"tests/tooling/test_a13_repository_scan.py","bytes":34209,"sha256":"FB919AF45356E7E7F9303E3D7CCE229F7423D2964C49B5E31EAD437B1A5269E3"}
+  ],
+  "declared_changed_paths": [
+    "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
+    "scripts/check_a13_repository_scan.py",
+    "tests/tooling/test_a13_repository_scan.py"
+  ],
+  "target_canonical_bytes": 1072,
+  "target_content_bytes": 80603,
+  "target_hash": "7629BE41F2174CEA6538B35C410A1E3DE7488A8BFD0BA166229F5C36DEB8A085",
+  "delivered_hash": "7629BE41F2174CEA6538B35C410A1E3DE7488A8BFD0BA166229F5C36DEB8A085",
+  "limitations": [
+    "Revision 2 closes evidence validation findings only.",
+    "The predecessor manifest and independent Tester report remain byte-immutable.",
+    "Actual user repository and runtime surfaces remain NOT_EXECUTED.",
+    "Independent retest and Main acceptance are still required."
+  ]
+}

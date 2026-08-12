@@ -11,3 +11,15 @@
 - Existing behavior: 기존 tracked 파일은 수정하지 않았고 fixture dirty/untracked content·mtime·mode·status를 보존했다. commit/push/deploy는 수행하지 않았다.
 - Rollback: Main Agent가 lease를 회수한 뒤 EvidenceManifest `declared_changed_paths`에 열거된 신규 A-13 파일만 제거한다. 외부 운영 상태는 생성하지 않았다.
 - Remaining: 독립 Tester 판정, Main Agent의 progress/HANDOFF/lease projection, 그 후 full tooling/project checker 재검증과 commit/push 판단.
+
+## Revision 2 completion
+
+- 상태: `COMPLETED_PENDING_INDEPENDENT_RETEST`; Main acceptance를 주장하지 않는다.
+- 기준: branch `main`, HEAD/upstream `3dac0804b55bc696eafbca81900804017499fcf6`, 시작 worktree clean, sequence 144, epoch 2 worker/write fencing 유효.
+- 재작업 범위: `A13-TST-BLK-001/002`만 수정했다. 공식 checker가 clean committed predecessor/successor와 R2 evidence를 구분해 검증하며 모든 evidence 오류를 CLI nonzero로 전달한다.
+- R2 evidence: frozen `A-13_EVIDENCE_MANIFEST.json`과 Tester report를 SHA-256로 결박하고 현재 checker/test/validation/completion/WI/Invocation raw bytes를 successor manifest에 결박한다.
+- 제품 scanner core, G-06 fixture, dependency/config, authority/progress/HANDOFF, predecessor evidence/TestReport는 변경하지 않았다.
+- 실제 사용자 repository/browser/API/DB/WSL/server/Production/deployment/DIR은 `NOT_EXECUTED`; commit/push도 수행하지 않았다.
+- rollback: Main Agent가 lease를 회수한 뒤 R2 successor manifest의 `declared_changed_paths` 다섯 경로에 대한 revision-2 diff만 되돌린다.
+- fresh 검증: focused A-13 22/22 PASS; A01~A13/G06/G07/PhaseG checker PASS. full tooling은 259/263이며 남은 네 project-progress 실패는 active Developer dirty/hash projection 조건이다. project checker도 같은 두 stable reason code로 nonzero이므로 263/263을 주장하지 않는다.
+- 잔여 조치: Main이 제품 write lease를 회수하고 completion projection을 기록한 뒤 full tooling/project checker를 재실행하고 독립 Tester R2에 전달한다.

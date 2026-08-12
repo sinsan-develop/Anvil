@@ -1236,13 +1236,21 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(1, failure["details"]["valid_failure_count"])
         rework = [event for event in bundle["events"]["events"] if 142 <= event["sequence"] <= 144]
         self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"], [event["event_type"] for event in rework])
-        self.assertEqual(144, progress["event_sequence"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("developer-primary-a13", progress["active_agent"])
-        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(2, progress["write_lease"]["write_epoch"])
-        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
-        self.assertEqual("docs/evidence/manifests/A-13_REWORK_START_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
+        completion_r2 = [event for event in bundle["events"]["events"] if 145 <= event["sequence"] <= 147]
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in completion_r2])
+        details_r2 = completion_r2[-1]["details"]
+        self.assertEqual("TEST_REVIEW", details_r2["package_status"])
+        self.assertEqual("FIXED_AWAITING_INDEPENDENT_RETEST", details_r2["finding_status"])
+        self.assertEqual("4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771", details_r2["developer_manifest_ref"]["sha256"])
+        self.assertEqual("7629BE41F2174CEA6538B35C410A1E3DE7488A8BFD0BA166229F5C36DEB8A085", details_r2["developer_target_hash"])
+        self.assertEqual(147, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("R2_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual("FIXED_AWAITING_INDEPENDENT_RETEST", progress["active_work_instruction"]["finding_status"])
+        self.assertEqual("docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json", progress["current_progress_evidence_ref"]["manifest_path"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
 

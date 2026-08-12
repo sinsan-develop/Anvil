@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import copy
 import json
 import importlib.util
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -19,6 +21,7 @@ CHECKER_PATH = ROOT / "scripts/check_a13_repository_scan.py"
 A13_CONTRACT_PATH = ROOT / "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.json"
 A13_HOSTILE_PATH = ROOT / "tests/fixtures/a13/hostile-cases.json"
 A13_EVIDENCE_PATH = ROOT / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json"
+A13_EVIDENCE_R2_PATH = ROOT / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
 FIXTURE_IDS = (
     "FIX-PY-CLEAN",
     "FIX-PY-DIRTY",
@@ -48,6 +51,36 @@ def _git_status(repo: Path) -> bytes:
         check=True,
         capture_output=True,
     ).stdout
+
+
+def _clone_committed_bundle(destination: Path) -> Path:
+    clone = destination / "bundle"
+    completed = subprocess.run(
+        ["git", "clone", "--quiet", "--local", "--no-hardlinks", str(ROOT), str(clone)],
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=30,
+    )
+    if completed.returncode:
+        raise AssertionError(completed.stdout + completed.stderr)
+    return clone
+
+
+def _overlay_rework_bundle(clone: Path) -> None:
+    paths = (
+        "scripts/check_a13_repository_scan.py",
+        "tests/tooling/test_a13_repository_scan.py",
+        "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+        "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
+        "docs/completion_reports/A-13_COMPLETION_REPORT.md",
+    )
+    for relative in paths:
+        source = ROOT / relative
+        if source.is_file():
+            destination = clone / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
 
 
 class A13RepositoryScanFoundationTests(unittest.TestCase):
@@ -569,6 +602,138 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertIn("fixtures=8", result.stdout)
         self.assertIn("zero_delta=8", result.stdout)
         self.assertIn("hostile=15", result.stdout)
+        self._assert_bundle_and_cli_fail_closed_on_hostile_evidence_manifest()
+
+    def _assert_bundle_and_cli_fail_closed_on_hostile_evidence_manifest(self) -> None:
+        spec = importlib.util.spec_from_file_location("a13_checker_hostile_manifest", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+
+        with tempfile.TemporaryDirectory() as temp:
+            clone = _clone_committed_bundle(Path(temp))
+            shutil.copy2(CHECKER_PATH, clone / "scripts/check_a13_repository_scan.py")
+            if A13_EVIDENCE_R2_PATH.is_file():
+                _overlay_rework_bundle(clone)
+                manifest_path = clone / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
+            else:
+                manifest_path = clone / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json"
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            manifest["self_reference"] = True
+            manifest["target_hash"] = "0" * 64
+            manifest["delivered_hash"] = "0" * 64
+            manifest_path.write_text(
+                json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
+
+            report = checker.validate_bundle(clone)
+            self.assertIn("EVIDENCE_SELF_REFERENCE_FORBIDDEN", report["errors"])
+            self.assertIn("EVIDENCE_TARGET_HASH_MISMATCH", report["errors"])
+
+            cli = subprocess.run(
+                [sys.executable, str(clone / "scripts/check_a13_repository_scan.py"), str(clone)],
+                cwd=clone,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+            self.assertNotEqual(cli.returncode, 0, cli.stdout + cli.stderr)
+            self.assertIn("EVIDENCE_SELF_REFERENCE_FORBIDDEN", cli.stdout)
+
+    def _assert_predecessor_binding_tamper_is_rejected(self) -> None:
+        spec = importlib.util.spec_from_file_location("a13_checker_predecessor", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+
+        with tempfile.TemporaryDirectory() as temp:
+            clone = _clone_committed_bundle(Path(temp))
+            if A13_EVIDENCE_R2_PATH.is_file():
+                _overlay_rework_bundle(clone)
+                successor_path = clone / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
+                successor = json.loads(successor_path.read_text(encoding="utf-8"))
+                successor["supersedes_artifact_ref"]["sha256"] = "0" * 64
+                successor_path.write_text(
+                    json.dumps(successor, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+            else:
+                completion_path = clone / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json"
+                completion = json.loads(completion_path.read_text(encoding="utf-8"))
+                completion["developer_successor_projection"]["predecessor_manifest_sha256"] = "0" * 64
+                completion_path.write_text(
+                    json.dumps(completion, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+
+            self.assertIn(
+                "EVIDENCE_PREDECESSOR_BINDING_MISMATCH",
+                checker.validate_evidence_manifest(clone),
+            )
+
+    def _assert_revision2_manifest_and_cli_reject_every_required_integrity_tamper(self) -> None:
+        spec = importlib.util.spec_from_file_location("a13_checker_r2_manifest", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+
+        self.assertTrue(A13_EVIDENCE_R2_PATH.is_file(), "A-13 revision-2 evidence manifest is missing")
+        canonical = json.loads(A13_EVIDENCE_R2_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(checker.validate_evidence_manifest(ROOT), [])
+
+        cases: list[tuple[dict, str]] = []
+        self_reference = copy.deepcopy(canonical)
+        self_reference["self_reference"] = True
+        cases.append((self_reference, "EVIDENCE_SELF_REFERENCE_FORBIDDEN"))
+        target = copy.deepcopy(canonical)
+        target["target_hash"] = "0" * 64
+        cases.append((target, "EVIDENCE_TARGET_HASH_MISMATCH"))
+        content_bytes = copy.deepcopy(canonical)
+        content_bytes["target_content_bytes"] = 0
+        cases.append((content_bytes, "EVIDENCE_CONTENT_BYTES_MISMATCH"))
+        raw_bytes = copy.deepcopy(canonical)
+        raw_bytes["raw_artifacts"][0]["bytes"] += 1
+        cases.append((raw_bytes, "EVIDENCE_RAW_BYTES_MISMATCH"))
+        raw_hash = copy.deepcopy(canonical)
+        raw_hash["raw_artifacts"][0]["sha256"] = "0" * 64
+        cases.append((raw_hash, "EVIDENCE_RAW_HASH_MISMATCH"))
+        predecessor = copy.deepcopy(canonical)
+        predecessor["supersedes_artifact_ref"]["sha256"] = "0" * 64
+        cases.append((predecessor, "EVIDENCE_PREDECESSOR_BINDING_MISMATCH"))
+
+        with tempfile.TemporaryDirectory() as temp:
+            clone = _clone_committed_bundle(Path(temp))
+            _overlay_rework_bundle(clone)
+            manifest_path = clone / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
+            for mutated, expected in cases:
+                with self.subTest(expected=expected):
+                    manifest_path.write_text(
+                        json.dumps(mutated, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8",
+                    )
+                    self.assertIn(expected, checker.validate_bundle(clone)["errors"])
+                    cli = subprocess.run(
+                        [sys.executable, str(clone / "scripts/check_a13_repository_scan.py"), str(clone)],
+                        cwd=clone,
+                        capture_output=True,
+                        text=True,
+                        check=False,
+                        timeout=30,
+                    )
+                    self.assertNotEqual(cli.returncode, 0, cli.stdout + cli.stderr)
+                    self.assertIn(expected, cli.stdout)
+            manifest_path.write_text(
+                json.dumps(canonical, ensure_ascii=False, indent=2) + "\n",
+                encoding="utf-8",
+            )
 
     def test_evidence_manifest_has_raw_hashes_no_self_reference_and_exact_diff(self) -> None:
         spec = importlib.util.spec_from_file_location("a13_checker_manifest", CHECKER_PATH)
@@ -579,10 +744,21 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         spec.loader.exec_module(checker)
 
         self.assertTrue(A13_EVIDENCE_PATH.is_file(), "A-13 evidence manifest is missing")
-        self.assertEqual(checker.validate_evidence_manifest(ROOT), [])
+        with tempfile.TemporaryDirectory() as temp:
+            clean_clone = _clone_committed_bundle(Path(temp))
+            self.assertEqual(checker.validate_evidence_manifest(clean_clone), [])
         completion = json.loads((ROOT / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
         successor = completion["developer_successor_projection"]
         self.assertEqual("BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE", successor["predecessor_manifest_sha256"])
+        self.assertEqual(
+            {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
+            {row["path"] for row in successor["live_raw_checksums"]},
+        )
+        self._assert_predecessor_binding_tamper_is_rejected()
+        self._assert_revision2_manifest_and_cli_reject_every_required_integrity_tamper()
+        completion = json.loads((ROOT / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST_R2.json").read_text(encoding="utf-8"))
+        successor = completion["developer_successor_projection"]
+        self.assertEqual("4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771", successor["predecessor_manifest_sha256"])
         self.assertEqual(
             {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
             {row["path"] for row in successor["live_raw_checksums"]},
