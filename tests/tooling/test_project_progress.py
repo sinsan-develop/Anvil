@@ -99,6 +99,33 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
         self.assertEqual("BLOCKED_PENDING_A14_ACCEPTANCE", progress["next_work_package"]["status"])
+        takeover_manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_detached_progress_binding(bundle))
+        self.assertEqual([], checker.validate_a14_main_takeover_completion_manifest(takeover_manifest, bundle))
+
+        with tempfile.TemporaryDirectory() as temp:
+            clone = Path(temp) / "bundle"
+            subprocess.run(
+                ["git", "clone", "--quiet", "--local", "--no-hardlinks", str(ROOT), str(clone)],
+                check=True,
+            )
+            for source in (CHECKER_PATH, Path(__file__)):
+                destination = clone / source.relative_to(ROOT)
+                shutil.copyfile(source, destination)
+            subprocess.run(["git", "add", "--", "."], cwd=clone, check=True)
+            subprocess.run(
+                ["git", "-c", "user.name=Anvil Test", "-c", "user.email=anvil-test@example.invalid", "commit", "--quiet", "-m", "test progress portability"],
+                cwd=clone,
+                check=True,
+            )
+            clone_bundle = checker.load_bundle(clone)
+            clone_manifest = json.loads(
+                (clone / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual([], checker.validate_detached_progress_binding(clone_bundle))
+            self.assertEqual([], checker.validate_a14_main_takeover_completion_manifest(clone_manifest, clone_bundle))
         self.assertEqual([], checker.validate_bundle(bundle))
     def test_package_specific_detached_progress_ref_is_resolved_safely(self) -> None:
         checker = self.require_checker()

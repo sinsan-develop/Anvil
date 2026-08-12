@@ -250,6 +250,65 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest().upper()
 
 
+def _tracked_clean(root: Path, relative: str) -> bool:
+    tracked = subprocess.run(
+        ["git", "ls-files", "--error-unmatch", "--", relative],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    dirty = subprocess.run(
+        ["git", "status", "--porcelain=v1", "--", relative],
+        cwd=root,
+        capture_output=True,
+        check=False,
+    )
+    return tracked.returncode == 0 and dirty.returncode == 0 and not dirty.stdout.strip()
+
+
+def _a14_successor_live_rows(root: Path) -> dict[str, dict[str, Any]]:
+    contracts = (
+        (
+            "A-14_A13_SUCCESSOR_*.json",
+            "a13_successor_registry",
+            "a13_successor_projection",
+            "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+        ),
+        (
+            "A-14_A14_SUCCESSOR_*.json",
+            "a14_successor_registry",
+            "a14_successor_projection",
+            "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
+        ),
+    )
+    rows: dict[str, dict[str, Any]] = {}
+    manifest_root = root / "docs/evidence/manifests"
+    for pattern, artifact_type, projection_key, predecessor_sha in contracts:
+        for registry_path in sorted(manifest_root.glob(pattern)):
+            relative = registry_path.relative_to(root).as_posix()
+            if not _tracked_clean(root, relative):
+                continue
+            try:
+                registry = json.loads(registry_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            projection = registry.get(projection_key, {})
+            if (
+                registry.get("artifact_type") != artifact_type
+                or registry.get("self_reference") is not False
+                or projection.get("predecessor_manifest_sha256") != predecessor_sha
+            ):
+                continue
+            rows.update(
+                {
+                    str(row.get("path")): row
+                    for row in projection.get("live_raw_checksums", [])
+                    if isinstance(row, dict)
+                }
+            )
+    return rows
+
+
 def _load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -839,18 +898,23 @@ def validate_detached_progress_binding(bundle: Mapping[str, Any]) -> list[str]:
         errors.append("DETACHED_DIGEST_MISMATCH")
     if handoff_binding.get("machine_summary_canonical_sha256") != handoff_canonical:
         errors.append("DETACHED_DIGEST_MISMATCH")
-    file_hashes = bundle.get("_file_hashes", {})
-    if progress_binding.get("file_sha256") != file_hashes.get(expected_progress_path):
-        errors.append("DETACHED_DIGEST_MISMATCH")
-    if handoff_binding.get("file_sha256") != file_hashes.get(expected_handoff_path):
-        errors.append("DETACHED_DIGEST_MISMATCH")
     root = bundle["_root"]
     try:
-        if progress_binding.get("bytes") != (root / expected_progress_path).stat().st_size:
+        progress_file_matches = portable_row_matches(
+            root,
+            expected_progress_path,
+            progress_binding.get("bytes"),
+            progress_binding.get("file_sha256"),
+        )
+        handoff_file_matches = portable_row_matches(
+            root,
+            expected_handoff_path,
+            handoff_binding.get("bytes"),
+            handoff_binding.get("file_sha256"),
+        )
+        if not progress_file_matches or not handoff_file_matches:
             errors.append("DETACHED_DIGEST_MISMATCH")
-        if handoff_binding.get("bytes") != (root / expected_handoff_path).stat().st_size:
-            errors.append("DETACHED_DIGEST_MISMATCH")
-    except OSError:
+    except (OSError, TypeError):
         errors.append("DETACHED_DIGEST_MISMATCH")
     return sorted(set(errors))
 
@@ -2726,6 +2790,7 @@ def validate_a14_main_takeover_completion_manifest(
     seen: set[str] = set()
     canonical: list[tuple[bytes, str]] = []
     total = 0
+    successor_rows = _a14_successor_live_rows(root)
     for row in rows:
         relative = row.get("path") if isinstance(row, dict) else None
         if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
@@ -2738,7 +2803,11 @@ def validate_a14_main_takeover_completion_manifest(
             errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_INVALID")
             continue
         checksum = hashlib.sha256(raw).hexdigest().upper()
-        row_matches = portable_row_matches(root, relative, row.get("bytes"), row.get("sha256"))
+        successor = successor_rows.get(relative)
+        successor_matches = successor and portable_row_matches(
+            root, relative, successor.get("bytes"), successor.get("sha256")
+        )
+        row_matches = portable_row_matches(root, relative, row.get("bytes"), row.get("sha256")) or successor_matches
         material_bytes = row.get("bytes") if row_matches else len(raw)
         material_hash = row.get("sha256") if row_matches else checksum
         total += material_bytes
