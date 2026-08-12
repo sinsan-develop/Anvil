@@ -2342,6 +2342,27 @@ def validate_a12_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mappin
     return sorted(set(errors))
 
 
+def validate_a13_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[];expected={"docs/evidence/manifests/A-12_ACCEPTANCE_PROGRESS_MANIFEST.json","docs/progress/progress-handoff-detached-digest-a13-start.json","docs/test_reports/A-12_TEST_REPORT.md","docs/work_orders/A-13_INVOCATION_PROMPT.md","docs/work_orders/A-13_WORK_INSTRUCTION.md"};rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["A13_START_RAW_CHECKSUMS_INVALID"]
+    for row in rows:
+        rel=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(rel,str) or rel in seen: errors.append("A13_START_RAW_CHECKSUMS_INVALID");continue
+        seen.add(rel)
+        try: raw=(root/rel).read_bytes()
+        except OSError: errors.append("A13_START_RAW_CHECKSUMS_INVALID");continue
+        actual=hashlib.sha256(raw).hexdigest().upper();total+=len(raw);canonical.append((rel.encode(),f"{rel}\t{len(raw)}\t{actual}"))
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=actual: errors.append("A13_START_RAW_CHECKSUMS_INVALID")
+    if seen!=expected: errors.append("A13_START_RAW_SET_INVALID")
+    can="\n".join(v for _,v in sorted(canonical)).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_hash")!=target,manifest.get("content_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total)): errors.append("A13_START_TARGET_MISMATCH")
+    fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths");mp=manifest.get("repository_projection") or {};rp=progress.get("repository") or {}
+    if any(mp.get(f)!=rp.get(f) for f in fields): errors.append("A13_START_REPOSITORY_PROJECTION_MISMATCH")
+    wi=progress.get("active_work_instruction") or {};w=progress.get("worker_lease") or {};wr=progress.get("write_lease") or {};lp=wi.get("lease_projection") or {};statuses=("actual_user_repository_status","actual_browser_status","actual_api_status","actual_db_status","actual_wsl_status","actual_production_status","actual_dir_status")
+    if (progress.get("event_sequence")!=137 or progress.get("status")!="ACTIVE" or progress.get("active_agent")!="developer-primary-a13" or wi.get("sha256")!="88B142690358661F456C715378B9AFACE5340FC4EBED90D567E07C8B58384835" or wi.get("invocation_sha256")!="8894A6AD20D829908AFAE6FB3C641544E1DCC0A9710C921ABC3681906C1BE4D0" or w.get("lease_epoch")!=1 or wr.get("write_epoch")!=1 or wr.get("worker_lease_id")!=w.get("lease_id") or lp.get("execution_fencing_token")!=w.get("execution_fencing_token") or lp.get("write_fencing_token")!=wr.get("write_fencing_token") or any(manifest.get(k)!="NOT_EXECUTED" for k in statuses) or manifest.get("self_reference") is not False): errors.append("A13_START_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -2973,6 +2994,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a12_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-12_ACCEPTANCE_PROGRESS_MANIFEST.json":
             errors.extend(validate_a12_acceptance_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-13_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_a13_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

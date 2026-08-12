@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0.0","digest_id":"A-13-PROGRESS-HANDOFF-DIGEST-START","package_id":"A-13","event_sequence":137,"algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":23231,"file_sha256":"D592DA6D12E6F18601D12C32C10D32804FA15C8552ECF9CBF0C366032269024A","canonical_json_sha256":"DDE71CE38FA0FCFFB88F97E3381E4C86CE7D10AA731304F4DE5FD6DFBED10D40"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":50399,"file_sha256":"8997F82B8F7D41AE2339C6C3032E318E655754A034D5ECC09D4B8B1D7240C04C","machine_summary_canonical_sha256":"B87ACD201BC7E36FDEFFEBAE52E4AA76A9BB715635F7851987C298B73437AE8D"},
+  "created_at":"2026-08-12T11:00:02+09:00","scope":"A-13 fenced start projection; user repository, browser, API, DB, WSL, production, and DIR NOT_EXECUTED"
+}

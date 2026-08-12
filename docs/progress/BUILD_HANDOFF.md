@@ -3,36 +3,36 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 134, "status": "READY", "current_work_package": "A-13", "last_event_id": "evt_a12_main_accepted",
+  "event_sequence": 137, "status": "ACTIVE", "current_work_package": "A-13", "last_event_id": "evt_a13_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 6,
   "dir_status": "NOT_REACHED",
-  "repository_head": "2d6c7e8d907def680797a08a7b9109194932221a",
+  "repository_head": "23580ce603e8e78b4637bcb87f91546b8d08db8a",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "2d6c7e8d907def680797a08a7b9109194932221a",
+  "repository_remote_head": "23580ce603e8e78b4637bcb87f91546b8d08db8a",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "2d6c7e8d907def680797a08a7b9109194932221a",
+  "repository_validated_base_commit": "23580ce603e8e78b4637bcb87f91546b8d08db8a",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-  "repository_exact_allowed_paths": ["docs/evidence/manifests/A-12_ACCEPTANCE_PROGRESS_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a12-accepted.json", "docs/test_reports/A-12_TEST_REPORT.md", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a12-accepted.json", "current_progress_manifest_path": "docs/evidence/manifests/A-12_ACCEPTANCE_PROGRESS_MANIFEST.json",
+  "repository_exact_allowed_paths": ["docs/evidence/manifests/A-13_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a13-start.json", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"],
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a13-start.json", "current_progress_manifest_path": "docs/evidence/manifests/A-13_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Main may prepare A-13 WorkInstruction; A-13 implementation has not started",
+  "next_safe_action": "developer-primary-a13 may implement only the leased A-13 product paths under WI-A-13-20260812-001",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "g_gate_status": "ACCEPTED",
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
-  "active_work_instruction": null, "worker_lease": null, "write_lease": null
+  "active_work_instruction": {"artifact_id":"WI-A-13-20260812-001","sha256":"88B142690358661F456C715378B9AFACE5340FC4EBED90D567E07C8B58384835","invocation_sha256":"8894A6AD20D829908AFAE6FB3C641544E1DCC0A9710C921ABC3681906C1BE4D0"}, "worker_lease": {"lease_id":"worker-lease-a13-20260812-001","lease_epoch":1}, "write_lease": {"lease_id":"write-lease-a13-20260812-001","write_epoch":1}
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-12 ACCEPTED / A-13 READY`
+> 현재 상태: `A-12 ACCEPTED / A-13 ACTIVE`
 > 현재 Phase / Package: `A / A-13`
 
 ## 1. 현재 기준선
@@ -336,13 +336,15 @@
 - 독립 Tester 보고서 SHA-256 `42BDCD1C71E6B0239E1A5313FE247D1491CF78692D5B6B6C4D815A5DEFD00583`는 `PASS_STATIC_CONTRACT / READY_FOR_MAIN_ACCEPTANCE`, blocking finding 0임
 - sequence 134 `MAIN_PACKAGE_ACCEPTED`로 A-12를 최종 `ACCEPTED`하고 A-13을 `READY`로 전환했으며 active WI/agent/worker/write lease는 모두 null임
 - acceptance 기준 local `main` = `origin/main` = `2d6c7e8d907def680797a08a7b9109194932221a`; exact 11-path Main acceptance projection이며 A-13 구현은 시작하지 않음
+- A-13 WI `88B142690358661F456C715378B9AFACE5340FC4EBED90D567E07C8B58384835`, Invocation `8894A6AD20D829908AFAE6FB3C641544E1DCC0A9710C921ABC3681906C1BE4D0`를 결박하고 sequence 135~137로 epoch-1 worker/write/start를 투영함
+- dispatch 기준 local `main` = `origin/main` = `23580ce603e8e78b4637bcb87f91546b8d08db8a`; exact 10-path Main start projection, 제품 산출물 0이며 user repository/browser/API/DB/WSL/production/DIR은 `NOT_EXECUTED`임
 - dispatch 기준 local `main` = `origin/main` = `1bed9e88d962bebe9e4f6ad806b67d92c027fdcf`; exact 10-path Main start projection이며 Developer 제품 산출물은 아직 없음
 - 실제 Skill·Hook activation, runtime, DIR은 모두 `NOT_EXECUTED`를 유지함
 - completion 기준 local `main` = `origin/main` = `7627d74dba65b08ad53494f232af836b46f7f120`; exact 26-path Developer+Main completion projection이며 canonical L4는 계속 `RUNTIME_DEFERRED / NOT_EXECUTED`, 실제 DIR은 `NOT_EXECUTED`임
 
 ## 6. 다음 안전 행동
 
-G-05, G-06, G-07, Phase G Gate와 A-01~A-12는 최종 `ACCEPTED`다. current Package는 `A-13 / READY`이며 A-13 구현은 시작하지 않았다.
+G-05, G-06, G-07, Phase G Gate와 A-01~A-12는 최종 `ACCEPTED`다. current Package는 `A-13 / ACTIVE / IN_PROGRESS`다.
 
 DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 중단하고 신산님께 보고한다. 신산님의 계속 지시가 있을 때까지 후속 Gate·Package·Subagent·write·commit·push·배포를 시작하지 않는다.
 
