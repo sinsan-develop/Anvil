@@ -199,7 +199,15 @@
         }
       ],
       "accepted_sequence": 1,
-      "takeover_status": "NOT_REQUIRED"
+      "takeover_status": "NOT_REQUIRED",
+      "latest_rework_result_status": "COMPLETED",
+      "latest_rework_revision": 3,
+      "latest_rework_manifest_ref": {
+        "path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
+        "sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
+        "target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
+      },
+      "independent_retest_status": "R4_PENDING"
     }
   ]
 }

@@ -22,6 +22,7 @@ A13_CONTRACT_PATH = ROOT / "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.
 A13_HOSTILE_PATH = ROOT / "tests/fixtures/a13/hostile-cases.json"
 A13_EVIDENCE_PATH = ROOT / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json"
 A13_EVIDENCE_R2_PATH = ROOT / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
+A14_EVIDENCE_R3_PATH = ROOT / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json"
 FIXTURE_IDS = (
     "FIX-PY-CLEAN",
     "FIX-PY-DIRTY",
@@ -85,7 +86,11 @@ def _overlay_rework_bundle(clone: Path) -> None:
 
 def _overlay_r3_projection_bundle(clone: Path) -> None:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    paths = progress["repository"]["exact_allowed_paths"]
+    if progress["write_lease"] is not None:
+        paths = progress["write_lease"]["paths"]
+    else:
+        developer = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
+        paths = developer["declared_changed_paths"]
     for relative in paths:
         source = ROOT / relative
         if not source.is_file():
@@ -93,6 +98,15 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
         destination = clone / relative
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, destination)
+    if A14_EVIDENCE_R3_PATH.is_file():
+        destination = clone / A14_EVIDENCE_R3_PATH.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(A14_EVIDENCE_R3_PATH, destination)
+    completion = ROOT / "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json"
+    if completion.is_file():
+        destination = clone / completion.relative_to(ROOT)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(completion, destination)
 
 
 class A13RepositoryScanFoundationTests(unittest.TestCase):
@@ -779,9 +793,36 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(165, progress["event_sequence"])
+        self.assertEqual(168, progress["event_sequence"])
         self.assertEqual("WI-A-14-20260813-003", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("R4_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())
+        manifest = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
+        self.assertEqual(
+            {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
+            {row["path"] for row in manifest["a13_successor_projection"]["live_raw_checksums"]},
+        )
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+        completion = json.loads(
+            (ROOT / "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
+            {row["path"] for row in completion["a13_successor_projection"]["live_raw_checksums"]},
+        )
+
+        with tempfile.TemporaryDirectory() as temp:
+            clone = _clone_committed_bundle(Path(temp))
+            _overlay_r3_projection_bundle(clone)
+            destination = clone / A14_EVIDENCE_R3_PATH.relative_to(ROOT)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(A14_EVIDENCE_R3_PATH, destination)
+            tampered = json.loads(destination.read_text(encoding="utf-8"))
+            tampered["a13_successor_projection"]["live_raw_checksums"][0]["sha256"] = "0" * 64
+            destination.write_text(json.dumps(tampered, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            errors = checker.validate_evidence_manifest(clone)
+            self.assertIn("EVIDENCE_RAW_HASH_MISMATCH", errors)
 
     def test_evidence_manifest_has_raw_hashes_no_self_reference_and_exact_diff(self) -> None:
         spec = importlib.util.spec_from_file_location("a13_checker_manifest", CHECKER_PATH)

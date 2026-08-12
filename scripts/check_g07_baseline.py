@@ -641,6 +641,17 @@ def validate_repository(
             "target_hash": target,
         })
     events = _read_json(root, "docs/progress/progress-events.json", json_overrides).get("events", [])
+    if progress.get("event_sequence") == 168:
+        completion_events = [event for event in events if 166 <= event.get("sequence", -1) <= 168]
+        if (
+            progress.get("status") != "TEST_REVIEW"
+            or progress.get("active_work_instruction", {}).get("independent_tester_status") != "R4_PENDING"
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or [event.get("event_type") for event in completion_events]
+            != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]
+        ):
+            _error(errors, "A14_R3_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=168")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"

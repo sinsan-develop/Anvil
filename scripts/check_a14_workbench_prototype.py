@@ -45,12 +45,37 @@ def check(root: Path) -> dict:
         if set(raw) != set(EXACT_PATHS)-{manifest_path.relative_to(root).as_posix()}: errors.append("manifest-raw-set")
         else:
             successor_rows = {}
-            r3_path = root / "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json"
-            if r3_path.is_file():
-                r3 = json.loads(r3_path.read_text(encoding="utf-8"))
-                successor = r3.get("a14_successor_projection", {})
+            completion_r3_path = root / "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json"
+            if completion_r3_path.is_file():
+                completion_r3 = json.loads(completion_r3_path.read_text(encoding="utf-8"))
+                successor = completion_r3.get("a14_successor_projection", {})
                 if successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8":
                     successor_rows = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+            r3_evidence_path = root / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json"
+            if not successor_rows and r3_evidence_path.is_file():
+                r3_evidence = json.loads(r3_evidence_path.read_text(encoding="utf-8"))
+                successor = r3_evidence.get("a14_successor_projection", {})
+                rows = successor.get("live_raw_checksums", [])
+                indexed = {row.get("path"): row for row in rows if isinstance(row, dict)}
+                allowed = set(EXACT_PATHS) - {manifest_path.relative_to(root).as_posix()}
+                valid_binding = (
+                    r3_evidence.get("self_reference") is False
+                    and r3_evidence.get("work_instruction_sha256") == "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C"
+                    and successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8"
+                    and bool(indexed)
+                    and set(indexed) <= allowed
+                )
+                if valid_binding:
+                    successor_rows = indexed
+                else:
+                    errors.append("r3-successor-invalid")
+            elif not successor_rows:
+                r3_path = root / "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json"
+                if r3_path.is_file():
+                    r3 = json.loads(r3_path.read_text(encoding="utf-8"))
+                    successor = r3.get("a14_successor_projection", {})
+                    if successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8":
+                        successor_rows = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
             completion_path = root / "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json"
             if not successor_rows and completion_path.is_file():
                 completion = json.loads(completion_path.read_text(encoding="utf-8"))

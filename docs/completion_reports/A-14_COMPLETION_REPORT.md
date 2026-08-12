@@ -33,3 +33,16 @@ rollback은 A-14 exact 17 paths를 제거하는 것이다. Developer는 Git comm
 Status: `COMPLETED_PENDING_INDEPENDENT_RETEST`. BLK-A14-002 clean-checkout successor validation is GREEN in the A-13/A-14 targeted suites; A-14 product paths remain unchanged. Actual in-app browser remains `ENVIRONMENT_BLOCKED / NOT_EXECUTED` after two ACL-helper failures. Full tooling is not PASS until Main synchronizes the allowed-path/hash projection and reruns all 268 tests.
 
 Changed by Developer revision 2: `scripts/check_a13_repository_scan.py`, `tests/tooling/test_a13_repository_scan.py`, `docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json`, this report, and the A-14 validation report. Rollback is removal/reversion of only those revision-2 changes; commit, push, deployment and progress mutation were not performed.
+
+## Revision 3 Developer result
+
+- status: `COMPLETED_PENDING_INDEPENDENT_RETEST`
+- baseline/dispatch: `d4e08549814dd0478f338ef83d1173663819f719` (`main = origin/main`)
+- WorkInstruction: `WI-A-14-20260813-003` / `EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C`
+- fencing: execution `a14-rework-execution-fence-epoch-3-4d6b813`; write `a14-rework-write-fence-epoch-3-4d6b813`
+
+`BLK-A14-002`는 R3 exact live successor를 phase-aware하게 선택하도록 수정했고 clean-clone/tamper 회귀를 유지했다. fixture 변경과 새 scan 시작은 이전 scan/evidence/provider를 초기화하며 `BLOCKED/ERROR/PERMISSION_DENIED`에서 provider 선택을 해제한다. `EMPTY/QUOTA/CANCEL/RECONNECT`는 명시적인 fixture UI action으로 도달하되 모두 `countsAsPass=false`, `FIXTURE_BROWSER_RUNTIME_ONLY`다.
+
+TDD 증거는 UI RED exit 1 → Node GREEN `8/8`, A-13 successor RED `28 total / 24 PASS / 4 FAIL` → targeted GREEN `29/29`이다. A-13/A-14/G-07/Phase G standalone은 exit 0이다. project checker는 exit 1 (`GIT_DESCENDANT_WORKTREE_DIRTY`, `PRG_REFERENCED_HASH_MISMATCH`), full tooling은 `271 total / 266 PASS / 5 FAIL / 0 SKIP`이며 5건 모두 그 Main-owned projection 동기화 원인이다. 이를 PASS로 승격하지 않는다. 실제 in-app browser/Network/console은 Developer가 실행하지 않았고 독립 Tester 재검증 대상이다. production API/DB/SSE, 실제 Provider/Secret/Egress, user repository, WSL/ysna, deploy, DIR은 `NOT_EXECUTED`다. coverage 전용 runner는 없어 `NOT_EXECUTED`다.
+
+shell local clock과 canonical lease timestamp의 차이는 `LOCAL_CLOCK_SKEW`로 기록한다. 설계서 §49.5 PostgreSQL UTC 계약과 Main 판정에 따라 epoch-3 lease를 사용했으며 시스템 시각은 변경하지 않았다. rollback은 Revision 3 exact changed paths만 이전 commit으로 되돌리는 것이다. Developer는 progress/HANDOFF/events/ledger, commit, push, deploy, DIR, A-15를 수행하지 않았다.

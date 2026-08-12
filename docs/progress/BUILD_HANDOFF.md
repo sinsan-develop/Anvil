@@ -3,33 +3,37 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 165,
-  "status": "ACTIVE",
+  "event_sequence": 168,
+  "status": "TEST_REVIEW",
   "current_work_package": "A-14",
-  "last_event_id": "evt_a14_r3_package_resumed",
+  "last_event_id": "evt_a14_r3_package_completed_test_review",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 2,
   "active_lineage_valid_failure_count": 2,
   "historical_accepted_failure_count": 7,
   "dir_status": "NOT_REACHED",
-  "repository_head": "4d6b813af82047df40d1487ac011f6a542513713",
+  "repository_head": "d4e08549814dd0478f338ef83d1173663819f719",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "4d6b813af82047df40d1487ac011f6a542513713",
+  "repository_remote_head": "d4e08549814dd0478f338ef83d1173663819f719",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "4d6b813af82047df40d1487ac011f6a542513713",
+  "repository_validated_base_commit": "d4e08549814dd0478f338ef83d1173663819f719",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json",
+    "apps/web/src/app/workbench.js",
+    "apps/web/src/features/workbench/workbench-state.js",
+    "apps/web/tests/workbench.test.mjs",
+    "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+    "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+    "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json",
+    "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
-    "docs/progress/WSL_ENVIRONMENT_MIGRATION_HANDOFF_2026-08-12.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a14-r3-rework-start.json",
-    "docs/test_reports/A-14_RETEST_REPORT_R3.md",
-    "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
-    "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
+    "docs/progress/progress-handoff-detached-digest-a14-r3-completion-test-review.json",
+    "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_a14_workbench_prototype.py",
     "scripts/check_g07_baseline.py",
@@ -41,11 +45,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-r3-rework-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-r3-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer executes A-14 revision 3 exact-scope TDD rework and actual browser retest; A-15 remains blocked pending A-14 acceptance",
+  "next_safe_action": "Independent Tester R4 executes actual Codex in-app browser, Network, console, state-transition and security retest; A-15 remains blocked pending A-14 acceptance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -58,21 +62,23 @@
     "sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C",
     "invocation_path": "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
     "invocation_sha256": "075C42C6315EC0C721915D435302612ECD91645017828E67D7337261C018EEE3",
-    "package_status": "ACTIVE",
-    "result_status": "REWORK_IN_PROGRESS",
+    "package_status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
     "accepted": false,
     "rework_revision": 3,
-    "independent_tester_status": "RETEST_REQUIRED",
-    "finding_status": "REWORK_REQUIRED",
-    "source_test_report_sha256": "D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69"
+    "independent_tester_status": "R4_PENDING",
+    "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
+    "source_test_report_sha256": "D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69",
+    "developer_manifest_sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
+    "developer_target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
   },
-  "worker_lease": {"lease_id": "worker-lease-a14-rework-20260813-003", "lease_epoch": 3, "execution_fencing_token": "a14-rework-execution-fence-epoch-3-4d6b813", "status": "ACTIVE"},
-  "write_lease": {"lease_id": "write-lease-a14-rework-20260813-003", "worker_lease_id": "worker-lease-a14-rework-20260813-003", "write_epoch": 3, "write_fencing_token": "a14-rework-write-fence-epoch-3-4d6b813", "status": "ACTIVE"}
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-14 ACTIVE / IN_PROGRESS`
+> 현재 상태: `A-14 TEST_REVIEW / R4_PENDING`
 > 현재 Phase / Package: `A / A-14`
 
 ## 1. 현재 기준선
@@ -467,3 +473,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - Developer exact write scope는 R3 Tester finding을 닫는 최소 Workbench state/runtime fixture, A-13/A-14 checker와 tests, R3 evidence/validation/completion 경로뿐이다. 기존 제품 17개 경로 중 lease 밖 경로, Tester R3 report, WSL handoff, accepted authority/A-01~A-13은 불변이다.
 - R3 출발 baseline은 targeted A-13+A-14 `23/26`, full tooling `260/268`이며 BLK-A14-002 및 UI runtime gap 관련 RED를 정직하게 유지한다. projection/project/G-07/Phase G rework-start invariants만 Main materialization에서 GREEN이어야 한다.
 - 실제 browser retest와 same-origin/fixture non-PASS/security 검증이 필수다. production API/DB/SSE, real Provider/Secret/Egress, user repository, WSL/ysna, deploy, DIR은 실행하지 않았고 PASS로 승격하지 않는다.
+
+## A-14 revision 3 Developer 완료 - 독립 R4 재검증 대기
+
+- sequence 166~168로 epoch-3 write lease와 worker lease를 순서대로 회수한 뒤 PACKAGE_COMPLETED / TEST_REVIEW / R4_PENDING으로 투영했다.
+- Developer R3 exact 12 paths와 manifest 830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25, target D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64는 독립 재검증 전 byte-frozen이다.
+- TDD RED와 Developer 기본 검증은 보존하지만 실제 Codex in-app browser/Network/console은 Main completion materialization에서 NOT_EXECUTED다. fixture·Node HTTP를 production 또는 실제 Provider PASS로 승격하지 않는다.
+- A-15는 A-14 독립 R4 PASS와 Main acceptance 전까지 BLOCKED_PENDING_A14_ACCEPTANCE다.

@@ -69,14 +69,19 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69", a14_r3_rework[0]["details"]["test_report_ref"]["sha256"])
         self.assertEqual(3, a14_r3_rework[1]["details"]["lease_epoch"])
         self.assertEqual(3, a14_r3_rework[2]["details"]["write_epoch"])
-        self.assertEqual(165, progress["event_sequence"])
+        a14_r3_completion = [event for event in bundle["events"]["events"] if 166 <= event["sequence"] <= 168]
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [event["event_type"] for event in a14_r3_completion],
+        )
+        self.assertEqual(168, progress["event_sequence"])
         self.assertEqual("A-14", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual(2, progress["valid_failure_count"])
-        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
-        self.assertEqual("RETEST_REQUIRED", progress["active_work_instruction"]["independent_tester_status"])
-        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("R4_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual("BLOCKED_PENDING_A14_ACCEPTANCE", progress["next_work_package"]["status"])
         self.assertEqual([], checker.validate_bundle(bundle))
     def test_package_specific_detached_progress_ref_is_resolved_safely(self) -> None:
@@ -1308,19 +1313,18 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
             [event["event_type"] for event in a14_r2_completion],
         )
-        self.assertEqual(165, progress["event_sequence"])
+        self.assertEqual(168, progress["event_sequence"])
         self.assertEqual("A-14", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual("WI-A-14-20260813-003", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
-        self.assertEqual("RETEST_REQUIRED", progress["active_work_instruction"]["independent_tester_status"])
-        self.assertEqual("developer-primary-a14", progress["active_agent"])
-        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("R4_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertIn("A-13", progress["completed_packages"])
         self.assertNotIn("A-14", progress["completed_packages"])
         self.assertEqual([], checker.validate_bundle(bundle))
-
 
 if __name__ == "__main__":
     unittest.main()

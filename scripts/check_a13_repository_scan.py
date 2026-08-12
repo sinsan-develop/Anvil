@@ -262,6 +262,10 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         a14_r2_completion = _load_json(a14_r2_completion_path) if a14_r2_completion_path.is_file() else {}
         a14_r3_rework_path = root / 'docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json'
         a14_r3_rework = _load_json(a14_r3_rework_path) if a14_r3_rework_path.is_file() else {}
+        a14_r3_completion_path = root / 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json'
+        a14_r3_completion = _load_json(a14_r3_completion_path) if a14_r3_completion_path.is_file() else {}
+        a14_r3_evidence_path = root / 'docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json'
+        a14_r3_evidence = _load_json(a14_r3_evidence_path) if a14_r3_evidence_path.is_file() else {}
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
     except (OSError, json.JSONDecodeError):
         return None
@@ -334,10 +338,40 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-A-14-20260813-003'
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
         == 'docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json'
+        and (
+            committed_clean
+            or (
+                live_paths <= changed_paths
+                and changed_paths
+                <= set(progress.get('write_lease', {}).get('paths', []))
+                | {'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json'}
+            )
+        )
+    )
+    current_a14_r3_completion = (
+        progress.get('event_sequence') == 168
+        and progress.get('status') == 'TEST_REVIEW'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-A-14-20260813-003'
+        and progress.get('active_work_instruction', {}).get('independent_tester_status') == 'R4_PENDING'
+        and progress.get('worker_lease') is None
+        and progress.get('write_lease') is None
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json'
         and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
     )
+    completion_developer_binding_valid = (
+        not a14_r3_completion
+        or a14_r3_completion.get('developer_evidence', {}).get('manifest_sha256')
+        == hashlib.sha256(a14_r3_evidence_path.read_bytes()).hexdigest().upper()
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a14_r3_completion and completion_developer_binding_valid:
+        candidates.append(a14_r3_completion.get('a13_successor_projection', {}))
+        candidates.append(a14_r3_evidence.get('a13_successor_projection', {}))
     if current_a14_r3_rework:
+        if completion_developer_binding_valid:
+            candidates.append(a14_r3_completion.get('a13_successor_projection', {}))
+        candidates.append(a14_r3_evidence.get('a13_successor_projection', {}))
         candidates.append(a14_r3_rework.get('a13_successor_projection', {}))
     if current_a14_r2_completion:
         candidates.append(a14_r2_completion.get('a13_successor_projection', {}))

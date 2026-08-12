@@ -1,0 +1,197 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-14-R3-COMPLETION-20260813-001",
+  "artifact_type": "package_rework_completion_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-14",
+  "revision": 3,
+  "artifact_status": "test_review_r4_pending",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-13T13:00:02+09:00",
+  "artifact_path": "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json",
+  "projection": {
+    "event_sequence": 168,
+    "status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "accepted": false,
+    "independent_tester_status": "R4_PENDING",
+    "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
+    "next_package": "A-15",
+    "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE"
+  },
+  "developer_evidence": {
+    "manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
+    "manifest_sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
+    "target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64",
+    "changed_path_count": 12,
+    "mutation": "FORBIDDEN_FROZEN_PREDECESSOR"
+  },
+  "a13_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 28946,
+        "sha256": "FD08867CEBF8A7420171EF1ACFF7CD1EFEB61B9D8F1B4D93252523E9051C5754"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 39743,
+        "sha256": "267B566A0A0074A62F5F7F075A43DACF12FFBA4107EB00F64737C41908188829"
+      }
+    ],
+    "binding_mode": "PHASE_AWARE_CLEAN_CHECKOUT_OR_ACTIVE_EPOCH3_WRITE_LEASE"
+  },
+  "a14_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "predecessor_manifest_sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
+    "live_raw_checksums": [
+      {
+        "path": "apps/web/src/app/workbench.js",
+        "bytes": 4268,
+        "sha256": "17BC52B8C718ACE1291DD8ED721D8D9228435A6406194A7948902322547CB492"
+      },
+      {
+        "path": "apps/web/src/features/workbench/workbench-state.js",
+        "bytes": 3822,
+        "sha256": "EB8E7CA7F33A68E7641675D9AF972EF57C3FD441B9D761A061856A45FA4B44F7"
+      },
+      {
+        "path": "apps/web/tests/workbench.test.mjs",
+        "bytes": 4371,
+        "sha256": "560FD17AB637B6609885A5325665CC52D93B3E3690347B4779A1308329ADA9F3"
+      },
+      {
+        "path": "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+        "bytes": 1602,
+        "sha256": "9D3C6DE99DE6F319F5CEC7A51E82A23F4A1ECED21AEAF0F9437FA220AB7DEC6F"
+      },
+      {
+        "path": "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+        "bytes": 2440,
+        "sha256": "1A153180A83B69C169002751ED532B3F993AA201800ED102F1420B6063559D18"
+      },
+      {
+        "path": "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+        "bytes": 4922,
+        "sha256": "D7AC9F8BD4F7A6A262C1C1442F0495F323D6BFBA2508103D71CA93937A3B52A9"
+      },
+      {
+        "path": "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+        "bytes": 5656,
+        "sha256": "990221A4E99C036AD26E1FFC07B91D6B3E6B0F11B1B7146E7BA97684A0B7658D"
+      },
+      {
+        "path": "scripts/check_a14_workbench_prototype.py",
+        "bytes": 7099,
+        "sha256": "F89BF0767B942CACF89B8B7B5139D152CCE824631D0AAAE9B2AC5CC4E13D5335"
+      },
+      {
+        "path": "tests/tooling/test_a14_workbench_prototype.py",
+        "bytes": 4618,
+        "sha256": "4BEFA034938CB8874CABCAD5038C8D30D04A788DE6F9F13B5F60937A98391A22"
+      }
+    ],
+    "binding_mode": "R3_EXACT_LIVE_RAW_BYTES_WITH_PREDECESSOR"
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "d4e08549814dd0478f338ef83d1173663819f719",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "d4e08549814dd0478f338ef83d1173663819f719",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/tests/workbench.test.mjs",
+      "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+      "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+      "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json",
+      "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/failure-ledger.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a14-r3-completion-test-review.json",
+      "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "observed_at": "2026-08-13T13:00:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: A-14 R3 developer evidence frozen; TEST_REVIEW R4_PENDING; actual in-app browser NOT_EXECUTED",
+    "local_head": "d4e08549814dd0478f338ef83d1173663819f719"
+  },
+  "actual_browser_status": "NOT_EXECUTED",
+  "actual_network_status": "NOT_EXECUTED",
+  "actual_console_status": "NOT_EXECUTED",
+  "actual_provider_status": "NOT_EXECUTED",
+  "actual_production_status": "NOT_EXECUTED",
+  "actual_dir_status": "NOT_EXECUTED",
+  "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE",
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+      "bytes": 4922,
+      "sha256": "D7AC9F8BD4F7A6A262C1C1442F0495F323D6BFBA2508103D71CA93937A3B52A9"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
+      "bytes": 5131,
+      "sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json",
+      "bytes": 7472,
+      "sha256": "4B0A2FC8829D17F5D406BDDC50B8529AD610AEE7C984CFEAF3475805BDD914F8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a14-r3-completion-test-review.json",
+      "bytes": 917,
+      "sha256": "90C93071342CF9EF71927A1DD2CBB0E841451444B3E85847ED4CF0184293E283"
+    },
+    {
+      "path": "docs/test_reports/A-14_RETEST_REPORT_R3.md",
+      "bytes": 13490,
+      "sha256": "D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69"
+    },
+    {
+      "path": "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+      "bytes": 5656,
+      "sha256": "990221A4E99C036AD26E1FFC07B91D6B3E6B0F11B1B7146E7BA97684A0B7658D"
+    },
+    {
+      "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
+      "bytes": 3626,
+      "sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C"
+    }
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 885,
+  "target_content_bytes": 41214,
+  "target_hash": "sha256:A4A78EFF592D0667E17ADB1FCE1753035631F0ED82E37222A0FECBA051DAD951",
+  "delivered_hash": "sha256:A4A78EFF592D0667E17ADB1FCE1753035631F0ED82E37222A0FECBA051DAD951",
+  "content_hash": "sha256:A4A78EFF592D0667E17ADB1FCE1753035631F0ED82E37222A0FECBA051DAD951",
+  "reporting_decision": "AUTO_CONTINUE"
+}

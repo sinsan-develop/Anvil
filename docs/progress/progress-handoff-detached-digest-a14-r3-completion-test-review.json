@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-14-R3-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "A-14",
+  "event_sequence": 168,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 31356,
+    "file_sha256": "683BE47B7B5FF29C0CA05FA615397B99C2C34AA818B4ABDC07AB6412817F7B01",
+    "canonical_json_sha256": "636EF331A765ECB5375DA744869356628395C58EA568EADAF9369CE8FD0E885F"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 59043,
+    "file_sha256": "F8B11BDBC0665E5A66B202A090EB621C996E8D6E70F17788EA0709B728B376CE",
+    "machine_summary_canonical_sha256": "B8E02F1BBCAA59A8FE20FD52DCC8F6C79F9314AB7E1F5E3D72E170FC572565BD"
+  },
+  "created_at": "2026-08-13T13:00:02+09:00",
+  "scope": "A-14 revision-3 completion TEST_REVIEW projection; Developer evidence frozen; actual in-app browser NOT_EXECUTED; R4 pending"
+}

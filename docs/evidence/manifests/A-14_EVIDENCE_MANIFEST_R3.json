@@ -1,0 +1,92 @@
+{
+  "artifact_id": "A-14-EVIDENCE-MANIFEST-R3-001",
+  "package_id": "A-14",
+  "revision": 3,
+  "artifact_status": "developer_rework_completed_pending_independent_retest",
+  "work_instruction_sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C",
+  "execution_fencing_token": "a14-rework-execution-fence-epoch-3-4d6b813",
+  "write_fencing_token": "a14-rework-write-fence-epoch-3-4d6b813",
+  "self_reference": false,
+  "a13_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 27321,
+        "sha256": "4C9D5C066C3F3BF8DD5D1905EA9E8E1BF9BF25F69513C2FC7FE3E0E86242B13D"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 38764,
+        "sha256": "F7920C6E4484D4D475114CA296FB7A5D010D9A3CF11585A09C79C08393436E3F"
+      }
+    ],
+    "binding_mode": "PHASE_AWARE_CLEAN_CHECKOUT_OR_ACTIVE_EPOCH3_WRITE_LEASE"
+  },
+  "a14_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "predecessor_manifest_sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
+    "live_raw_checksums": [
+      {"path":"apps/web/src/app/workbench.js","bytes":4268,"sha256":"17BC52B8C718ACE1291DD8ED721D8D9228435A6406194A7948902322547CB492"},
+      {"path":"apps/web/src/features/workbench/workbench-state.js","bytes":3822,"sha256":"EB8E7CA7F33A68E7641675D9AF972EF57C3FD441B9D761A061856A45FA4B44F7"},
+      {"path":"apps/web/tests/workbench.test.mjs","bytes":4371,"sha256":"560FD17AB637B6609885A5325665CC52D93B3E3690347B4779A1308329ADA9F3"},
+      {"path":"docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json","bytes":1602,"sha256":"9D3C6DE99DE6F319F5CEC7A51E82A23F4A1ECED21AEAF0F9437FA220AB7DEC6F"},
+      {"path":"docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md","bytes":2440,"sha256":"1A153180A83B69C169002751ED532B3F993AA201800ED102F1420B6063559D18"},
+      {"path":"docs/completion_reports/A-14_COMPLETION_REPORT.md","bytes":4922,"sha256":"D7AC9F8BD4F7A6A262C1C1442F0495F323D6BFBA2508103D71CA93937A3B52A9"},
+      {"path":"docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md","bytes":5656,"sha256":"990221A4E99C036AD26E1FFC07B91D6B3E6B0F11B1B7146E7BA97684A0B7658D"},
+      {"path":"scripts/check_a14_workbench_prototype.py","bytes":6464,"sha256":"97B39D5373FA5AC3A99C062E6D69E5438FB6BFA6B24CBD84482B5C78BAC2F243"},
+      {"path":"tests/tooling/test_a14_workbench_prototype.py","bytes":4071,"sha256":"12AF4CF70E46F6E90478D4387A2E4EB155AAA5B135D2D1769BB99BD9562A7522"}
+    ],
+    "binding_mode": "R3_EXACT_LIVE_RAW_BYTES_WITH_PREDECESSOR"
+  },
+  "finding_status": {
+    "BLK-A14-002": "FIXED_AWAITING_INDEPENDENT_RETEST",
+    "BLK-A14-R3-002": "FIXED_AWAITING_INDEPENDENT_RETEST",
+    "BLK-A14-R3-003": "FIXED_AWAITING_INDEPENDENT_RETEST"
+  },
+  "declared_changed_paths": [
+    "apps/web/src/app/workbench.js",
+    "apps/web/src/features/workbench/workbench-state.js",
+    "apps/web/tests/workbench.test.mjs",
+    "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
+    "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
+    "docs/completion_reports/A-14_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
+    "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+    "scripts/check_a13_repository_scan.py",
+    "scripts/check_a14_workbench_prototype.py",
+    "tests/tooling/test_a13_repository_scan.py",
+    "tests/tooling/test_a14_workbench_prototype.py"
+  ],
+  "verification": {
+    "node_unit_http_runtime": "8/8 PASS / exit 0",
+    "python_a13_a14_targeted": "29/29 PASS / exit 0",
+    "a13_standalone": "PASS / exit 0",
+    "a14_standalone": "PASS / exit 0",
+    "g07_standalone": "PASS / exit 0",
+    "phase_g_standalone": "PASS / exit 0",
+    "project_progress": "FAIL / exit 1 / GIT_DESCENDANT_WORKTREE_DIRTY + PRG_REFERENCED_HASH_MISMATCH",
+    "full_tooling": "271 total / 266 PASS / 5 FAIL / 0 SKIP / exit 1",
+    "syntax_json_diff": "PASS",
+    "coverage": "NOT_EXECUTED / runner not configured"
+  },
+  "evidence_classification": "FIXTURE_BROWSER_RUNTIME_ONLY",
+  "fixture_counts_as_pass": false,
+  "developer_browser_status": "NOT_EXECUTED / independent Tester owned",
+  "actual_provider_status": "NOT_EXECUTED",
+  "production_status": "NOT_EXECUTED",
+  "local_clock_observation": "LOCAL_CLOCK_SKEW; lease validity follows PostgreSQL UTC canonical worker_leases contract",
+  "target_algorithm": {
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256",
+    "self_reference": false
+  },
+  "target_canonical_bytes": 1258,
+  "target_content_bytes": 103701,
+  "target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64",
+  "delivered_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
+}

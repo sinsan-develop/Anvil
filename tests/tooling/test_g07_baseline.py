@@ -57,6 +57,10 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(0, report["counts"]["uncovered_av_total"])
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(168, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual("R4_PENDING", progress["active_work_instruction"]["independent_tester_status"])
 
     def test_authority_hash_and_version_drift_are_rejected(self):
         design = (ROOT / "Anvil_설계서_v2.md").read_text(encoding="utf-8")
@@ -195,9 +199,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_RESUMED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
         self.assertEqual(
-            "4d6b813af82047df40d1487ac011f6a542513713",
+            "d4e08549814dd0478f338ef83d1173663819f719",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(

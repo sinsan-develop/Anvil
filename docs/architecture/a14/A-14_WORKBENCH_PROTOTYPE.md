@@ -10,6 +10,8 @@
 
 UI는 `NORMAL`, `LOADING`, `EMPTY`, `ERROR`, `BLOCKED`, `QUOTA`, `CANCEL`, `RECONNECT`, `PERMISSION_DENIED`를 구분한다. Fixture 결과 badge는 `FIXTURE`, 아직 실행하지 않은 영역은 `NOT EXECUTED`로 표시하고 실제 PASS로 계산하지 않는다.
 
+Revision 3에서는 `EMPTY`, `QUOTA`, `CANCEL`, `RECONNECT` 각각을 누를 수 있는 fixture runtime action을 제공한다. 이 action은 상태·메시지·다음 행동을 화면에 재현하지만 실제 Run, Provider quota, SSE 또는 checkpoint를 실행하지 않는다. fixture 선택 변경과 새 scan 시작은 이전 scan·evidence·Provider 선택을 즉시 초기화하고, `BLOCKED`, `ERROR`, `PERMISSION_DENIED`에서는 Provider 선택을 해제한다. 각 Provider의 `disabled`와 `aria-checked`는 별도 DOM 기억값이 아니라 현재 reducer state에서 매 render마다 계산한다.
+
 ## 보안과 운영 경계
 
 - 브라우저 source에는 API 절대 주소와 내부 주소가 없다.
