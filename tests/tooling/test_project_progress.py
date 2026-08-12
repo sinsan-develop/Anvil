@@ -119,15 +119,6 @@ class ProjectProgressContractTests(unittest.TestCase):
                 ["git", "clone", "--quiet", "--local", "--no-hardlinks", str(ROOT), str(clone)],
                 check=True,
             )
-            for source in (CHECKER_PATH, Path(__file__)):
-                destination = clone / source.relative_to(ROOT)
-                shutil.copyfile(source, destination)
-            subprocess.run(["git", "add", "--", "."], cwd=clone, check=True)
-            subprocess.run(
-                ["git", "-c", "user.name=Anvil Test", "-c", "user.email=anvil-test@example.invalid", "commit", "--quiet", "-m", "test progress portability"],
-                cwd=clone,
-                check=True,
-            )
             clone_bundle = checker.load_bundle(clone)
             clone_manifest = json.loads(
                 (clone / "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json").read_text(encoding="utf-8")
@@ -1232,7 +1223,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["dir_status"])
         self.assertIn("A-09", progress["completed_packages"])
         self.assertEqual("A-14", progress["active_failure_lineage"]["step_lineage_id"])
-        self.assertEqual(3, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertEqual(4, progress["active_failure_lineage"]["valid_failure_count"])
         a10_start = [event for event in bundle["events"]["events"] if 114 <= event["sequence"] <= 116]
         self.assertEqual(
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],

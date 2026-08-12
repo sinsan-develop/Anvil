@@ -62,7 +62,7 @@
     {
       "path": "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
       "bytes": 901,
-      "sha256": "E95C24B07DF3781F22955891B08EB1538A9BF34B37CBF54EB5FF0D1B3D38A1E0"
+      "sha256": "C523897BA9255E50206D12AE936A27A9AD66374E7DCE180D51E026957FBF4BDA"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
@@ -126,13 +126,13 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "bytes": 79055,
-      "sha256": "D23281408F746705B56EC2B949F13CE0E851274C45009076818C561407789851"
+      "bytes": 78549,
+      "sha256": "253AA92948612C474DDFDC9EEDAFB2A0AF23AD17F8B87D55EB43ADF6E9B17408"
     }
   ],
   "target_canonical_bytes": 1644,
-  "target_content_bytes": 458665,
-  "target_hash": "sha256:AAF966304DA57400DC1D176BBB788289506854085D14E7B35AF3C2D60F507EC3",
-  "delivered_hash": "sha256:AAF966304DA57400DC1D176BBB788289506854085D14E7B35AF3C2D60F507EC3",
+  "target_content_bytes": 458159,
+  "target_hash": "sha256:D9932F4230E6DDD0F9507DC25276F2C653B3D0E6E46D20CA50A0688E38BE86E8",
+  "delivered_hash": "sha256:D9932F4230E6DDD0F9507DC25276F2C653B3D0E6E46D20CA50A0688E38BE86E8",
   "reporting_decision": "AUTO_CONTINUE"
 }
