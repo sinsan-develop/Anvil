@@ -2692,6 +2692,82 @@ def validate_a14_r3_completion_manifest(manifest: Mapping[str, Any], bundle: Map
         errors.append("A14_R3_COMPLETION_REPOSITORY_MISMATCH")
     return sorted(set(errors))
 
+
+def validate_a14_main_takeover_completion_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    errors: list[str] = []
+    expected = {
+        "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
+        "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
+        "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+        "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+        "scripts/check_a13_repository_scan.py",
+        "scripts/check_a14_workbench_prototype.py",
+        "tests/tooling/test_a13_repository_scan.py",
+        "tests/tooling/test_a14_workbench_prototype.py",
+    }
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A14_MAIN_TAKEOVER_COMPLETION_RAW_INVALID"]
+    seen: set[str] = set()
+    canonical: list[tuple[bytes, str]] = []
+    total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            raw = (root / relative).read_bytes()
+        except OSError:
+            errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_INVALID")
+            continue
+        checksum = hashlib.sha256(raw).hexdigest().upper()
+        total += len(raw)
+        canonical.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{checksum}"))
+        if row.get("bytes") != len(raw) or row.get("sha256") != checksum:
+            errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_INVALID")
+    if seen != expected:
+        errors.append("A14_MAIN_TAKEOVER_COMPLETION_RAW_SET_INVALID")
+    canonical_bytes = "\n".join(value for _, value in sorted(canonical)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if any((
+        manifest.get("target_canonical_bytes") != len(canonical_bytes),
+        manifest.get("target_content_bytes") != total,
+        manifest.get("target_hash") != target,
+        manifest.get("delivered_hash") != target,
+        manifest.get("content_hash") != target,
+        manifest.get("self_reference") is not False,
+        manifest.get("takeover_status") != "MAIN_AGENT_TAKEOVER_COMPLETED",
+    )):
+        errors.append("A14_MAIN_TAKEOVER_COMPLETION_TARGET_MISMATCH")
+    instruction = progress.get("active_work_instruction") or {}
+    if any((
+        progress.get("event_sequence") != 171,
+        progress.get("current_work_package") != "A-14",
+        progress.get("status") != "TEST_REVIEW",
+        progress.get("valid_failure_count") != 3,
+        progress.get("active_failure_lineage", {}).get("takeover_status") != "MAIN_AGENT_TAKEOVER_COMPLETED",
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        instruction.get("result_status") != "COMPLETED",
+        instruction.get("independent_tester_status") != "R5_PENDING",
+        manifest.get("next_package_status") != "BLOCKED_PENDING_A14_ACCEPTANCE",
+        manifest.get("actual_browser_status") != "R4_EXECUTED_UI_FINDINGS_CLOSED",
+        manifest.get("actual_provider_status") != "NOT_EXECUTED",
+        manifest.get("actual_production_status") != "NOT_EXECUTED",
+    )):
+        errors.append("A14_MAIN_TAKEOVER_COMPLETION_PROJECTION_MISMATCH")
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths")
+    if any((manifest.get("repository_projection") or {}).get(field) != (progress.get("repository") or {}).get(field) for field in fields):
+        errors.append("A14_MAIN_TAKEOVER_COMPLETION_REPOSITORY_MISMATCH")
+    return sorted(set(errors))
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -3349,6 +3425,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a14_r3_rework_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json":
             errors.extend(validate_a14_r3_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json":
+            errors.extend(validate_a14_main_takeover_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

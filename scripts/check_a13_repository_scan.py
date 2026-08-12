@@ -268,6 +268,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         a14_r3_evidence = _load_json(a14_r3_evidence_path) if a14_r3_evidence_path.is_file() else {}
         a14_r4_takeover_path = root / 'docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json'
         a14_r4_takeover = _load_json(a14_r4_takeover_path) if a14_r4_takeover_path.is_file() else {}
+        a14_r4_completion_path = root / 'docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json'
+        a14_r4_completion = _load_json(a14_r4_completion_path) if a14_r4_completion_path.is_file() else {}
         a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
         a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
@@ -388,7 +390,25 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and a14_r4_takeover.get('takeover_packet_sha256')
         == hashlib.sha256(a14_r4_packet_path.read_bytes()).hexdigest().upper()
     )
+    current_a14_r4_completion = (
+        bool(a14_r4_completion)
+        and progress.get('event_sequence') == 171
+        and progress.get('status') == 'TEST_REVIEW'
+        and progress.get('active_work_instruction', {}).get('independent_tester_status') == 'R5_PENDING'
+        and progress.get('worker_lease') is None
+        and progress.get('write_lease') is None
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json'
+        and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        and a14_r4_completion.get('takeover_status') == 'MAIN_AGENT_TAKEOVER_COMPLETED'
+        and a14_r4_completion.get('source_report_sha256')
+        == hashlib.sha256(a14_r4_report_path.read_bytes()).hexdigest().upper()
+        and a14_r4_completion.get('takeover_packet_sha256')
+        == hashlib.sha256(a14_r4_packet_path.read_bytes()).hexdigest().upper()
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a14_r4_completion:
+        candidates.append(a14_r4_completion.get('a13_successor_projection', {}))
     if current_a14_r4_takeover:
         candidates.append(a14_r4_takeover.get('a13_successor_projection', {}))
     if current_a14_r3_completion and completion_developer_binding_valid:

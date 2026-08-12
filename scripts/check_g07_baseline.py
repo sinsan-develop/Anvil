@@ -652,6 +652,19 @@ def validate_repository(
             != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]
         ):
             _error(errors, "A14_R3_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=168")
+    if progress.get("event_sequence") == 171:
+        takeover_events = [event for event in events if 169 <= event.get("sequence", -1) <= 171]
+        if (
+            progress.get("status") != "TEST_REVIEW"
+            or progress.get("valid_failure_count") != 3
+            or progress.get("active_failure_lineage", {}).get("takeover_status") != "MAIN_AGENT_TAKEOVER_COMPLETED"
+            or progress.get("active_work_instruction", {}).get("independent_tester_status") != "R5_PENDING"
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or [event.get("event_type") for event in takeover_events]
+            != ["FAILURE_REPORT_ACCEPTED", "PACKAGE_RESUMED", "PACKAGE_COMPLETED"]
+        ):
+            _error(errors, "A14_MAIN_TAKEOVER_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=171")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"

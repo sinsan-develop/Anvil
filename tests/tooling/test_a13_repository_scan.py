@@ -86,7 +86,9 @@ def _overlay_rework_bundle(clone: Path) -> None:
 
 def _overlay_r3_projection_bundle(clone: Path) -> None:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress["write_lease"] is not None:
+    if progress.get("event_sequence") == 171:
+        paths = progress["repository"]["exact_allowed_paths"]
+    elif progress["write_lease"] is not None:
         paths = progress["write_lease"]["paths"]
     else:
         developer = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
@@ -108,6 +110,7 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(completion, destination)
     for relative in (
+        "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
         "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
         "docs/test_reports/A-14_RETEST_REPORT_R4.md",
         "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
@@ -803,9 +806,9 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(168, progress["event_sequence"])
+        self.assertEqual(171, progress["event_sequence"])
         self.assertEqual("WI-A-14-20260813-003", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("R4_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual("R5_PENDING", progress["active_work_instruction"]["independent_tester_status"])
         self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())
         manifest = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
         self.assertEqual(
@@ -820,6 +823,15 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual(
             {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
             {row["path"] for row in completion["a13_successor_projection"]["live_raw_checksums"]},
+        )
+
+        takeover_completion = json.loads(
+            (ROOT / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual("MAIN_AGENT_TAKEOVER_COMPLETED", takeover_completion["takeover_status"])
+        self.assertEqual(
+            {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
+            {row["path"] for row in takeover_completion["a13_successor_projection"]["live_raw_checksums"]},
         )
 
         with tempfile.TemporaryDirectory() as temp:

@@ -133,7 +133,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual("WI-A-14-20260813-003", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
-        self.assertEqual("R4_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual("R5_PENDING", progress["active_work_instruction"]["independent_tester_status"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
 

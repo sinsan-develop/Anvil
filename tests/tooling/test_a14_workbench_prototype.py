@@ -82,6 +82,5 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(manifest["target_hash"], target)
         self.assertEqual(manifest["delivered_hash"], target)
 
-
 if __name__ == "__main__":
     unittest.main()

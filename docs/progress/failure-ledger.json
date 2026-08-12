@@ -146,7 +146,7 @@
     {
       "entry_id": "failure-a14-independent-test-r1",
       "step_lineage_id": "A-14",
-      "failure_fingerprint": "a14-independent-test:a13-clean-checkout-successor-raw-byte-mismatch-r1",
+      "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
       "result_status": "FAILURE_REPORT",
       "accepted": true,
       "counts_toward_valid_failure": true,
@@ -171,7 +171,7 @@
     {
       "entry_id": "failure-a14-independent-test-r3",
       "step_lineage_id": "A-14",
-      "failure_fingerprint": "a14-independent-test:committed-successor-stale-ui-and-runtime-states-r3",
+      "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
       "result_status": "FAILURE_REPORT",
       "accepted": true,
       "counts_toward_valid_failure": true,
@@ -198,7 +198,7 @@
           "sha256": "D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69"
         }
       ],
-      "accepted_sequence": 1,
+      "accepted_sequence": 2,
       "takeover_status": "NOT_REQUIRED",
       "latest_rework_result_status": "COMPLETED",
       "latest_rework_revision": 3,
@@ -207,7 +207,47 @@
         "sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
         "target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
       },
-      "independent_retest_status": "R4_PENDING"
+      "independent_retest_status": "R4_FAILURE_ACCEPTED_MAIN_TAKEOVER_COMPLETED"
+    },
+    {
+      "entry_id": "failure-a14-independent-test-r4",
+      "step_lineage_id": "A-14",
+      "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "BLK-A14-R4-001"
+      ],
+      "closed_findings": [
+        "BLK-A14-R3-002",
+        "BLK-A14-R3-003",
+        "BLK-A14-R3-004"
+      ],
+      "reopened_findings": [
+        "BLK-A14-002"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 1,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+          "sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9"
+        }
+      ],
+      "accepted_sequence": 3,
+      "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED",
+      "takeover_packet_ref": {
+        "path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+        "sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263"
+      },
+      "takeover_evidence_ref": {
+        "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
+        "sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381"
+      },
+      "main_takeover_result_status": "COMPLETED",
+      "independent_retest_status": "R5_PENDING"
     }
   ]
 }

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-14-R4-MAIN-TAKEOVER-COMPLETION-PROGRESS-HANDOFF-DIGEST",
+  "package_id": "A-14",
+  "event_sequence": 171,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 31388,
+    "file_sha256": "79B2314EA052493338310448E759D698C55D835F9ECDAC5BFB06BF067392FE15",
+    "canonical_json_sha256": "DC01019FCDD6ADA9D01FC8613109A8A4F9B3BA9B19ED8C5CF62707E260ED9C11"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 59646,
+    "file_sha256": "274AB02A704BE106D3D3AF76872D7A5A4ABC2BF873CBD724CC7283CE57822D12",
+    "machine_summary_canonical_sha256": "98D05473B137468AAFC09F680201C9D4828A91366213D5329993BBD9205C910A"
+  },
+  "created_at": "2026-08-13T15:00:02+09:00",
+  "scope": "A-14 third valid failure accepted; Main takeover completed; TEST_REVIEW R5_PENDING; A-15 blocked"
+}

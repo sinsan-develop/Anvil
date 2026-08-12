@@ -1,0 +1,158 @@
+{
+  "artifact_id": "A-14-MAIN-TAKEOVER-COMPLETION-R4-001",
+  "artifact_type": "main_takeover_completion_projection_manifest",
+  "package_id": "A-14",
+  "revision": 4,
+  "artifact_status": "test_review_r5_pending",
+  "artifact_path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-13T15:00:02+09:00",
+  "source_report_path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+  "source_report_sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9",
+  "takeover_packet_path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+  "takeover_packet_sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263",
+  "takeover_evidence_path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
+  "takeover_evidence_sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381",
+  "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
+  "valid_failure_count": 3,
+  "takeover_status": "MAIN_AGENT_TAKEOVER_COMPLETED",
+  "projection": {
+    "event_sequence": 171,
+    "status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "accepted": false,
+    "independent_tester_status": "R5_PENDING",
+    "next_package": "A-15",
+    "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE"
+  },
+  "a13_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 31665,
+        "sha256": "87DB7D7D48C4C380188EB3FD6EB158BFDE973BDAEC226685B8AD8C97C110915B"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 41598,
+        "sha256": "0DDFD98BED0368688CEB2064B8DE0366FF8128B13B9329969424641B42A20AA3"
+      }
+    ],
+    "binding_mode": "MAIN_TAKEOVER_COMPLETION_EXACT_DIRTY_OR_COMMITTED_CLEAN"
+  },
+  "a14_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "predecessor_manifest_sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a14_workbench_prototype.py",
+        "bytes": 9010,
+        "sha256": "408A06AAE1CD4F27289E7159DDED92FE31B70EFA4D6A2255E239DAB33C30DEAF"
+      },
+      {
+        "path": "tests/tooling/test_a14_workbench_prototype.py",
+        "bytes": 4617,
+        "sha256": "08A19C257B7B3A05B9316625FB382F9CD2C92362CE0CFE2E399A76F14A68EC67"
+      }
+    ],
+    "binding_mode": "MAIN_TAKEOVER_COMPLETION_EXACT_DIRTY_OR_COMMITTED_CLEAN"
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/failure-ledger.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "observed_at": "2026-08-13T15:00:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: A-14 Main takeover completion; R5 pending",
+    "local_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70"
+  },
+  "actual_browser_status": "R4_EXECUTED_UI_FINDINGS_CLOSED",
+  "actual_network_status": "R4_FIXTURE_SAME_ORIGIN_OBSERVED",
+  "actual_provider_status": "NOT_EXECUTED",
+  "actual_production_status": "NOT_EXECUTED",
+  "actual_dir_status": "NOT_EXECUTED",
+  "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE",
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
+      "bytes": 1536,
+      "sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
+      "bytes": 891,
+      "sha256": "4CA455F90401C7F51305EB326C289A577F2038BF7D6751B1B6BE008DF24A3213"
+    },
+    {
+      "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+      "bytes": 12095,
+      "sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9"
+    },
+    {
+      "path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+      "bytes": 1888,
+      "sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263"
+    },
+    {
+      "path": "scripts/check_a13_repository_scan.py",
+      "bytes": 31665,
+      "sha256": "87DB7D7D48C4C380188EB3FD6EB158BFDE973BDAEC226685B8AD8C97C110915B"
+    },
+    {
+      "path": "tests/tooling/test_a13_repository_scan.py",
+      "bytes": 41598,
+      "sha256": "0DDFD98BED0368688CEB2064B8DE0366FF8128B13B9329969424641B42A20AA3"
+    },
+    {
+      "path": "scripts/check_a14_workbench_prototype.py",
+      "bytes": 9010,
+      "sha256": "408A06AAE1CD4F27289E7159DDED92FE31B70EFA4D6A2255E239DAB33C30DEAF"
+    },
+    {
+      "path": "tests/tooling/test_a14_workbench_prototype.py",
+      "bytes": 4617,
+      "sha256": "08A19C257B7B3A05B9316625FB382F9CD2C92362CE0CFE2E399A76F14A68EC67"
+    }
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 963,
+  "target_content_bytes": 103300,
+  "target_hash": "sha256:76577349100885C9CEF1737CB3703444B8A755CA2D4ADA40565890B093371C34",
+  "delivered_hash": "sha256:76577349100885C9CEF1737CB3703444B8A755CA2D4ADA40565890B093371C34",
+  "content_hash": "sha256:76577349100885C9CEF1737CB3703444B8A755CA2D4ADA40565890B093371C34",
+  "reporting_decision": "AUTO_CONTINUE"
+}

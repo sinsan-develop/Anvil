@@ -3,37 +3,29 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 168,
+  "event_sequence": 171,
   "status": "TEST_REVIEW",
   "current_work_package": "A-14",
-  "last_event_id": "evt_a14_r3_package_completed_test_review",
+  "last_event_id": "evt_a14_r4_main_takeover_completed_test_review",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 2,
-  "active_lineage_valid_failure_count": 2,
+  "valid_failure_count": 3,
+  "active_lineage_valid_failure_count": 3,
   "historical_accepted_failure_count": 7,
   "dir_status": "NOT_REACHED",
-  "repository_head": "d4e08549814dd0478f338ef83d1173663819f719",
+  "repository_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "d4e08549814dd0478f338ef83d1173663819f719",
+  "repository_remote_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "d4e08549814dd0478f338ef83d1173663819f719",
+  "repository_validated_base_commit": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "apps/web/src/app/workbench.js",
-    "apps/web/src/features/workbench/workbench-state.js",
-    "apps/web/tests/workbench.test.mjs",
-    "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
-    "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
-    "docs/completion_reports/A-14_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json",
-    "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
+    "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a14-r3-completion-test-review.json",
-    "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+    "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_a14_workbench_prototype.py",
     "scripts/check_g07_baseline.py",
@@ -45,11 +37,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-r3-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Independent Tester R4 executes actual Codex in-app browser, Network, console, state-transition and security retest; A-15 remains blocked pending A-14 acceptance",
+  "next_safe_action": "Independent Tester R5 verifies Main takeover completion on clean checkout; A-15 remains blocked pending A-14 acceptance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -65,10 +57,10 @@
     "package_status": "TEST_REVIEW",
     "result_status": "COMPLETED",
     "accepted": false,
-    "rework_revision": 3,
-    "independent_tester_status": "R4_PENDING",
-    "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
-    "source_test_report_sha256": "D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69",
+    "rework_revision": 4,
+    "independent_tester_status": "R5_PENDING",
+    "finding_status": "MAIN_FIX_COMPLETED_AWAITING_INDEPENDENT_R5",
+    "source_test_report_sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9",
     "developer_manifest_sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
     "developer_target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
   },
@@ -78,7 +70,7 @@
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-14 TEST_REVIEW / R4_PENDING`
+> 현재 상태: `A-14 TEST_REVIEW / R5_PENDING / MAIN_AGENT_TAKEOVER_COMPLETED`
 > 현재 Phase / Package: `A / A-14`
 
 ## 1. 현재 기준선
@@ -480,3 +472,11 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - Developer R3 exact 12 paths와 manifest 830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25, target D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64는 독립 재검증 전 byte-frozen이다.
 - TDD RED와 Developer 기본 검증은 보존하지만 실제 Codex in-app browser/Network/console은 Main completion materialization에서 NOT_EXECUTED다. fixture·Node HTTP를 production 또는 실제 Provider PASS로 승격하지 않는다.
 - A-15는 A-14 독립 R4 PASS와 Main acceptance 전까지 BLOCKED_PENDING_A14_ACCEPTANCE다.
+
+## A-14 R4 세 번째 유효 실패 및 Main 직접 인수 완료
+
+- 독립 Tester R4 report `10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9`의 `BLK-A14-R4-001 / CRITICAL`을 동일 A-13 clean successor false-rejection 계보의 세 번째 유효 실패로 수락했다.
+- seq 169는 `FAILURE_REPORT_ACCEPTED / valid_failure_count=3 / MAIN_AGENT_TAKEOVER_REQUIRED`, seq 170은 leaseless Main takeover resume, seq 171은 `PACKAGE_COMPLETED / TEST_REVIEW / R5_PENDING / MAIN_AGENT_TAKEOVER_COMPLETED`다.
+- TakeoverPacket `42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263`과 Main evidence `77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381`를 결박했다.
+- R4에서 실제 browser UI finding은 닫혔지만 후속 Main completion 단계에서 실제 browser/provider/production을 새로 실행하지 않았다. real Provider와 production은 계속 `NOT_EXECUTED`다.
+- A-14는 독립 R5 PASS와 Main acceptance 전까지 미수락이며 A-15는 `BLOCKED_PENDING_A14_ACCEPTANCE`다.

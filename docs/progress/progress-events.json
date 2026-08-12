@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 168,
+  "last_sequence": 171,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -5569,6 +5569,150 @@
           "docs/progress/progress-events.json",
           "docs/progress/progress-handoff-detached-digest-a14-r3-completion-test-review.json",
           "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_a14_workbench_prototype.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_a14_workbench_prototype.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "reporting_decision": "AUTO_CONTINUE"
+      }
+    },
+    {
+      "event_id": "evt_a14_r4_failure_report_accepted_takeover_required",
+      "sequence": 169,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-08-13T15:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-14",
+      "details": {
+        "entry_id": "failure-a14-independent-test-r4",
+        "evidence_ref": {
+          "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+          "sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9"
+        },
+        "test_report_ref": {
+          "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+          "sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9"
+        },
+        "result_status": "FAILURE_REPORT",
+        "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
+        "valid_failure_count": 3,
+        "finding_ids": [
+          "BLK-A14-R4-001"
+        ],
+        "closed_finding_ids": [
+          "BLK-A14-R3-002",
+          "BLK-A14-R3-003",
+          "BLK-A14-R3-004"
+        ],
+        "reopened_finding_ids": [
+          "BLK-A14-002"
+        ],
+        "blocking_defect_count": 1,
+        "blocking_severity": "CRITICAL",
+        "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED",
+        "takeover_packet_ref": {
+          "path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+          "sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263"
+        }
+      }
+    },
+    {
+      "event_id": "evt_a14_r4_main_takeover_resumed",
+      "sequence": 170,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-08-13T15:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-14",
+      "details": {
+        "resume_event_ref": "evt_a14_r4_failure_report_accepted_takeover_required",
+        "package_status": "ACTIVE",
+        "result_status": "MAIN_TAKEOVER_IN_PROGRESS",
+        "rework_revision": 4,
+        "developer_actor": "main-agent-eoul",
+        "worker_lease": null,
+        "write_lease": null,
+        "valid_failure_count": 3,
+        "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED",
+        "takeover_packet_ref": {
+          "path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+          "sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263"
+        },
+        "takeover_evidence_ref": {
+          "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
+          "sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381"
+        },
+        "next_work_package": "A-15",
+        "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE",
+        "actual_browser_status": "R4_EXECUTED_UI_FINDINGS_CLOSED",
+        "actual_network_status": "R4_FIXTURE_SAME_ORIGIN_OBSERVED",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_dir_status": "NOT_EXECUTED",
+        "reporting_decision": "AUTO_CONTINUE"
+      }
+    },
+    {
+      "event_id": "evt_a14_r4_main_takeover_completed_test_review",
+      "sequence": 171,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-13T15:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-14",
+      "details": {
+        "package_status": "TEST_REVIEW",
+        "result_status": "COMPLETED",
+        "accepted": false,
+        "rework_revision": 4,
+        "finding_status": "MAIN_FIX_COMPLETED_AWAITING_INDEPENDENT_R5",
+        "independent_tester_status": "R5_PENDING",
+        "worker_lease": null,
+        "write_lease": null,
+        "valid_failure_count": 3,
+        "takeover_status": "MAIN_AGENT_TAKEOVER_COMPLETED",
+        "source_report_ref": {
+          "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
+          "sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9"
+        },
+        "takeover_packet_ref": {
+          "path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
+          "sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263"
+        },
+        "takeover_evidence_ref": {
+          "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
+          "sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381"
+        },
+        "completion_manifest_path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
+        "next_work_package": "A-15",
+        "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE",
+        "actual_browser_status": "R4_EXECUTED_UI_FINDINGS_CLOSED",
+        "actual_network_status": "R4_FIXTURE_SAME_ORIGIN_OBSERVED",
+        "actual_runtime_status": "FIXTURE_BROWSER_R4_ONLY",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_dir_status": "NOT_EXECUTED",
+        "completion_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+        "completion_upstream_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/failure-ledger.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
           "scripts/check_a13_repository_scan.py",
           "scripts/check_a14_workbench_prototype.py",
           "scripts/check_g07_baseline.py",

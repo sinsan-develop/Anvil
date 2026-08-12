@@ -51,6 +51,17 @@ def check(root: Path) -> dict:
                 successor = completion_r3.get("a14_successor_projection", {})
                 if successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8":
                     successor_rows = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+            takeover_completion_path = root / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json"
+            if takeover_completion_path.is_file():
+                takeover_completion = json.loads(takeover_completion_path.read_text(encoding="utf-8"))
+                successor = takeover_completion.get("a14_successor_projection", {})
+                indexed = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+                if (
+                    takeover_completion.get("takeover_status") == "MAIN_AGENT_TAKEOVER_COMPLETED"
+                    and successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8"
+                    and indexed
+                ):
+                    successor_rows.update(indexed)
             r3_evidence_path = root / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json"
             if not successor_rows and r3_evidence_path.is_file():
                 r3_evidence = json.loads(r3_evidence_path.read_text(encoding="utf-8"))
@@ -91,6 +102,23 @@ def check(root: Path) -> dict:
         if not missing and not successor_rows and manifest.get("target_hash") != target_hash(root,target_paths): errors.append("target-hash")
     browser_paths=[root/"apps/web/index.html", *sorted((root/"apps/web/src").rglob("*"))]
     errors.extend(browser_source_findings([p for p in browser_paths if p.is_file()]))
+    progress_path = root / "docs/progress/build-progress.json"
+    takeover_path = root / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json"
+    if progress_path.is_file():
+        progress = json.loads(progress_path.read_text(encoding="utf-8"))
+        if progress.get("event_sequence") == 171:
+            if not takeover_path.is_file():
+                errors.append("takeover-completion-missing")
+            else:
+                takeover = json.loads(takeover_path.read_text(encoding="utf-8"))
+                if (
+                    takeover.get("takeover_status") != "MAIN_AGENT_TAKEOVER_COMPLETED"
+                    or takeover.get("next_package_status") != "BLOCKED_PENDING_A14_ACCEPTANCE"
+                    or takeover.get("actual_browser_status") != "R4_EXECUTED_UI_FINDINGS_CLOSED"
+                    or takeover.get("actual_provider_status") != "NOT_EXECUTED"
+                    or takeover.get("actual_production_status") != "NOT_EXECUTED"
+                ):
+                    errors.append("takeover-completion-boundary")
     return {"errors":errors,"manifest":manifest,"exact_paths":EXACT_PATHS}
 
 def main(argv=None):
