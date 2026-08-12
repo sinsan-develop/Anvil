@@ -260,6 +260,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         )
         a14_r2_completion_path = root / 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json'
         a14_r2_completion = _load_json(a14_r2_completion_path) if a14_r2_completion_path.is_file() else {}
+        a14_r3_rework_path = root / 'docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json'
+        a14_r3_rework = _load_json(a14_r3_rework_path) if a14_r3_rework_path.is_file() else {}
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
     except (OSError, json.JSONDecodeError):
         return None
@@ -326,7 +328,17 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         == 'docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json'
         and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
     )
+    current_a14_r3_rework = (
+        progress.get('event_sequence') == 165
+        and progress.get('status') == 'ACTIVE'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-A-14-20260813-003'
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json'
+        and set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a14_r3_rework:
+        candidates.append(a14_r3_rework.get('a13_successor_projection', {}))
     if current_a14_r2_completion:
         candidates.append(a14_r2_completion.get('a13_successor_projection', {}))
         candidates.append(a14_rework_evidence.get('developer_successor_projection', {}))

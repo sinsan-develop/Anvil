@@ -33,6 +33,12 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("A-14 WORKBENCH CHECK: PASS", result.stdout)
 
+    def test_revision3_rework_manifest_supplies_live_successor_rows(self):
+        manifest = json.loads((ROOT / "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json").read_text(encoding="utf-8"))
+        successor = manifest["a14_successor_projection"]
+        self.assertEqual("B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8", successor["predecessor_manifest_sha256"])
+        self.assertIn("scripts/check_a14_workbench_prototype.py", {row["path"] for row in successor["live_raw_checksums"]})
+
 
 if __name__ == "__main__":
     unittest.main()

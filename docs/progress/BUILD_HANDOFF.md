@@ -3,69 +3,49 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 161,
-  "status": "TEST_REVIEW",
+  "event_sequence": 165,
+  "status": "ACTIVE",
   "current_work_package": "A-14",
-  "last_event_id": "evt_a14_rework_package_completed",
+  "last_event_id": "evt_a14_r3_package_resumed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 1,
-  "active_lineage_valid_failure_count": 1,
+  "valid_failure_count": 2,
+  "active_lineage_valid_failure_count": 2,
   "historical_accepted_failure_count": 7,
   "dir_status": "NOT_REACHED",
-  "repository_head": "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+  "repository_head": "4d6b813af82047df40d1487ac011f6a542513713",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+  "repository_remote_head": "4d6b813af82047df40d1487ac011f6a542513713",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+  "repository_validated_base_commit": "4d6b813af82047df40d1487ac011f6a542513713",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "apps/web/index.html",
-    "apps/web/server.mjs",
-    "apps/web/src/api/workbench-client.js",
-    "apps/web/src/app/workbench.js",
-    "apps/web/src/features/workbench/workbench-state.js",
-    "apps/web/src/styles/workbench.css",
-    "apps/web/tests/workbench.test.mjs",
-    "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
-    "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
-    "docs/completion_reports/A-14_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json",
-    "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
-    "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json",
-    "docs/evidence/manifests/A-14_REWORK_START_MANIFEST.json",
+    "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/WSL_ENVIRONMENT_MIGRATION_HANDOFF_2026-08-12.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a14-completion-test-review.json",
-    "docs/progress/progress-handoff-detached-digest-a14-r2-completion-test-review.json",
-    "docs/progress/progress-handoff-detached-digest-a14-rework-start.json",
-    "docs/test_reports/A-14_RETEST_REPORT_R2.md",
-    "docs/test_reports/A-14_TEST_REPORT.md",
-    "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
-    "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-a14-r3-rework-start.json",
+    "docs/test_reports/A-14_RETEST_REPORT_R3.md",
+    "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
+    "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_a14_workbench_prototype.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/browser/a14/workbench-runtime.test.mjs",
-    "tests/fixtures/a14/hostile-inputs.json",
-    "tests/fixtures/a14/workbench-fixtures.json",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_a14_workbench_prototype.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-r2-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a14-r3-rework-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Independent Tester performs A-14 revision 2 retest; A-15 remains blocked pending A-14 acceptance",
+  "next_safe_action": "Developer executes A-14 revision 3 exact-scope TDD rework and actual browser retest; A-15 remains blocked pending A-14 acceptance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -73,21 +53,21 @@
   "g_gate_checkpoint_status": "CLEARED",
   "a01_start_allowed": true,
   "active_work_instruction": {
-    "artifact_id": "WI-A-14-20260812-002",
-    "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R2.md",
-    "sha256": "73DE02532280784326FDCE67BBB50F0EE037BD7AB693A4F6C6D4741D525F0CD2",
-    "invocation_path": "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R2.md",
-    "invocation_sha256": "B4AE6E504FF340FD3355ADAF3FFD81AF09E58F3052F6362FFDD6F11CCF84D97C",
-    "package_status": "TEST_REVIEW",
-    "result_status": "COMPLETED",
+    "artifact_id": "WI-A-14-20260813-003",
+    "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
+    "sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C",
+    "invocation_path": "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
+    "invocation_sha256": "075C42C6315EC0C721915D435302612ECD91645017828E67D7337261C018EEE3",
+    "package_status": "ACTIVE",
+    "result_status": "REWORK_IN_PROGRESS",
     "accepted": false,
-    "rework_revision": 2,
-    "independent_tester_status": "R2_PENDING",
-    "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
-    "source_test_report_sha256": "6A53A135F7362563846252D223376692938317F3A0C4E3EF07B5C767A201C768"
+    "rework_revision": 3,
+    "independent_tester_status": "RETEST_REQUIRED",
+    "finding_status": "REWORK_REQUIRED",
+    "source_test_report_sha256": "D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69"
   },
-  "worker_lease": null,
-  "write_lease": null
+  "worker_lease": {"lease_id": "worker-lease-a14-rework-20260813-003", "lease_epoch": 3, "execution_fencing_token": "a14-rework-execution-fence-epoch-3-4d6b813", "status": "ACTIVE"},
+  "write_lease": {"lease_id": "write-lease-a14-rework-20260813-003", "worker_lease_id": "worker-lease-a14-rework-20260813-003", "write_epoch": 3, "write_fencing_token": "a14-rework-write-fence-epoch-3-4d6b813", "status": "ACTIVE"}
 }
 ```
 
@@ -477,3 +457,13 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - sequence 159-161로 epoch-2 lease 회수와 PACKAGE_COMPLETED TEST_REVIEW R2_PENDING을 투영했다.
 - Developer R2 exact 5 manifest 67AD9BD4AC3203900B97074B233DA751DC4FD75F7C772F955CA00BB2665EE58D를 동결했고 기존 제품 17 paths는 불변이다.
 - GUI browser는 ENVIRONMENT_BLOCKED; A-15는 A-14 Main acceptance 전 차단이다.
+
+## A-14 R3 FAILURE_REPORT 수락 및 revision 3 재개
+
+- 독립 Tester R3 report `D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69`의 `FAILURE_REPORT / REWORK_REQUIRED`를 유효 실패 2회째로 수락했다.
+- `BLK-A14-001`은 `CLOSED`; `BLK-A14-002`는 committed seq161 successor raw bytes/hash mismatch로 `REOPENED CRITICAL`; stale scan/evidence/provider selection과 실제 `EMPTY/QUOTA/CANCEL/RECONNECT` route 부재는 `MAJOR`다.
+- 사용자 승인으로 생성된 `WSL_ENVIRONMENT_MIGRATION_HANDOFF_2026-08-12.md` SHA-256 `7FDDD3FE2FBE2D31AD81BC21E8731D62C1823CC6B30DCF2491090B0857277942`는 변경하지 않고 Main evidence-only exact projection에 포함했다. Developer write는 금지한다.
+- seq 162~165로 R3 failure 수락, epoch-3 worker/write lease 발급, revision 3 재개를 비소급 append했다. A-14는 `ACTIVE / REWORK_IN_PROGRESS / RETEST_REQUIRED`, A-15는 계속 `BLOCKED_PENDING_A14_ACCEPTANCE`다.
+- Developer exact write scope는 R3 Tester finding을 닫는 최소 Workbench state/runtime fixture, A-13/A-14 checker와 tests, R3 evidence/validation/completion 경로뿐이다. 기존 제품 17개 경로 중 lease 밖 경로, Tester R3 report, WSL handoff, accepted authority/A-01~A-13은 불변이다.
+- R3 출발 baseline은 targeted A-13+A-14 `23/26`, full tooling `260/268`이며 BLK-A14-002 및 UI runtime gap 관련 RED를 정직하게 유지한다. projection/project/G-07/Phase G rework-start invariants만 Main materialization에서 GREEN이어야 한다.
+- 실제 browser retest와 same-origin/fixture non-PASS/security 검증이 필수다. production API/DB/SSE, real Provider/Secret/Egress, user repository, WSL/ysna, deploy, DIR은 실행하지 않았고 PASS로 승격하지 않는다.

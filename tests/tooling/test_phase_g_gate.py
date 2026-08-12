@@ -130,12 +130,12 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         progress = report["progress"]
         self.assertEqual("A-14", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("WI-A-14-20260812-002", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
-        self.assertEqual("R2_PENDING", progress["active_work_instruction"]["independent_tester_status"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-A-14-20260813-003", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("RETEST_REQUIRED", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(3, progress["write_lease"]["write_epoch"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
         design_path = "Anvil_설계서_v2.md"

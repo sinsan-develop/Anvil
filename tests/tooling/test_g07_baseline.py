@@ -195,9 +195,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_RESUMED", reconciliation["event_type"])
         self.assertEqual(
-            "39a7bcce246db2f33d9ac7d02c81e0d4a11892d8",
+            "4d6b813af82047df40d1487ac011f6a542513713",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
@@ -205,7 +205,7 @@ class G07BaselineTests(unittest.TestCase):
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
         self.assertEqual("A-14", report["failure_counts"]["active_lineage"])
-        self.assertEqual(1, report["failure_counts"]["active_lineage_valid_failure_count"])
+        self.assertEqual(2, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(7, report["failure_counts"]["historical_accepted_failure_total"])
         self.assertEqual(1, report["failure_counts"]["historical_by_lineage"]["A-13"])
         self.assertTrue(report["g_gate"]["a01_start_allowed"])
@@ -228,7 +228,7 @@ class G07BaselineTests(unittest.TestCase):
         events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
         completion = next(event for event in events if event["sequence"] == 63)["details"]
         self.assertEqual("TEST_REVIEW", completion["package_status"])
-        self.assertEqual(1, report["failure_counts"]["active_lineage_valid_failure_count"])
+        self.assertEqual(2, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(1, report["failure_counts"]["historical_by_lineage"]["A-03"])
         self.assertEqual(1, report["failure_counts"]["historical_by_lineage"]["A-13"])
         self.assertEqual("dc2ba63e1d923663724d1291cbcec007e4e7e7fe", completion["validated_base_commit"])

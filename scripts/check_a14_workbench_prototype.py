@@ -45,8 +45,14 @@ def check(root: Path) -> dict:
         if set(raw) != set(EXACT_PATHS)-{manifest_path.relative_to(root).as_posix()}: errors.append("manifest-raw-set")
         else:
             successor_rows = {}
+            r3_path = root / "docs/evidence/manifests/A-14_REWORK_START_MANIFEST_R3.json"
+            if r3_path.is_file():
+                r3 = json.loads(r3_path.read_text(encoding="utf-8"))
+                successor = r3.get("a14_successor_projection", {})
+                if successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8":
+                    successor_rows = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
             completion_path = root / "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json"
-            if completion_path.is_file():
+            if not successor_rows and completion_path.is_file():
                 completion = json.loads(completion_path.read_text(encoding="utf-8"))
                 successor = completion.get("developer_revision2_evidence", {})
                 if (successor.get("predecessor_manifest_sha256") == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8" and successor.get("manifest_sha256") == sha256(root / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json")):

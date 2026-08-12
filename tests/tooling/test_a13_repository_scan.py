@@ -83,6 +83,18 @@ def _overlay_rework_bundle(clone: Path) -> None:
             shutil.copy2(source, destination)
 
 
+def _overlay_r3_projection_bundle(clone: Path) -> None:
+    progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    paths = progress["repository"]["exact_allowed_paths"]
+    for relative in paths:
+        source = ROOT / relative
+        if not source.is_file():
+            continue
+        destination = clone / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, destination)
+
+
 class A13RepositoryScanFoundationTests(unittest.TestCase):
     """Catch missing schemas and canonical path confinement."""
 
@@ -759,6 +771,18 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
+    def test_revision3_rework_projection_selects_current_live_successor(self):
+        spec = importlib.util.spec_from_file_location("a13_checker_r3_projection", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(165, progress["event_sequence"])
+        self.assertEqual("WI-A-14-20260813-003", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
     def test_evidence_manifest_has_raw_hashes_no_self_reference_and_exact_diff(self) -> None:
         spec = importlib.util.spec_from_file_location("a13_checker_manifest", CHECKER_PATH)
         self.assertIsNotNone(spec)
@@ -770,6 +794,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertTrue(A13_EVIDENCE_PATH.is_file(), "A-13 evidence manifest is missing")
         with tempfile.TemporaryDirectory() as temp:
             clean_clone = _clone_committed_bundle(Path(temp))
+            _overlay_r3_projection_bundle(clean_clone)
             self.assertEqual(checker.validate_evidence_manifest(clean_clone), [])
         completion = json.loads((ROOT / "docs/evidence/manifests/A-13_COMPLETION_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
         successor = completion["developer_successor_projection"]
