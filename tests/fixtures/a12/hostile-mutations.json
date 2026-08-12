@@ -1,0 +1,20 @@
+{
+  "fixture_type": "A-12 hostile fail-closed mutations",
+  "mutations": [
+    {"id":"missing-surface-state","path":"surfaces.0.states","operation":"set","value":["LOADING"],"expected_error":"SURFACE_STATE_COVERAGE_MISSING"},
+    {"id":"stale-loading","path":"state_envelopes.0.stale_previous_success_current_forbidden","operation":"set","value":false,"expected_error":"STALE_LOADING_GUARD_MISSING"},
+    {"id":"empty-success","path":"state_envelopes.1.verification_success_forbidden","operation":"set","value":false,"expected_error":"EMPTY_SUCCESS_PROMOTION"},
+    {"id":"error-leak","path":"state_envelopes.2.raw_stack_secret_path_forbidden","operation":"set","value":false,"expected_error":"ERROR_DISCLOSURE_GUARD_MISSING"},
+    {"id":"blocked-collapse","path":"state_envelopes.3.skipped_or_error_collapse_forbidden","operation":"set","value":false,"expected_error":"BLOCKED_SEMANTIC_COLLAPSE"},
+    {"id":"quota-success","path":"state_envelopes.4.failed_or_pass_promotion_forbidden","operation":"set","value":false,"expected_error":"QUOTA_FAIL_CLOSED_GUARD_MISSING"},
+    {"id":"quota-no-reconcile","path":"state_envelopes.4.reconcile_required","operation":"set","value":false,"expected_error":"QUOTA_FAIL_CLOSED_GUARD_MISSING"},
+    {"id":"cancel-conflation","path":"state_envelopes.5.terminal_run_reuse_forbidden","operation":"set","value":false,"expected_error":"CANCEL_TERMINAL_CONFLATION"},
+    {"id":"reconnect-no-dedupe","path":"state_envelopes.6.gap_replay_order_dedupe_required","operation":"set","value":false,"expected_error":"RECONNECT_REPLAY_GUARD_MISSING"},
+    {"id":"mock-promoted","path":"badge_catalog.6.counts_as_pass","operation":"set","value":true,"expected_error":"NON_PASS_PROMOTION_FORBIDDEN"},
+    {"id":"static-green-check","path":"badge_catalog.8.icon","operation":"set","value":"check","expected_error":"NON_PASS_PROMOTION_FORBIDDEN"},
+    {"id":"permission-leak","path":"permission_contract.detail_masking_required","operation":"set","value":false,"expected_error":"PERMISSION_LEAK_GUARD_MISSING"},
+    {"id":"client-state-mutation","path":"transition_contract.client_state_mutation_forbidden","operation":"set","value":false,"expected_error":"TRANSITION_INTEGRITY_GUARD_MISSING"},
+    {"id":"version-bypass","path":"transition_contract.optimistic_version_required","operation":"set","value":false,"expected_error":"TRANSITION_INTEGRITY_GUARD_MISSING"},
+    {"id":"runtime-promotion","path":"runtime_boundary.actual_sse","operation":"set","value":"PASS","expected_error":"RUNTIME_PROMOTION_FORBIDDEN"}
+  ]
+}

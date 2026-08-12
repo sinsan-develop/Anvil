@@ -1197,13 +1197,22 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("READY", accepted_a11["details"]["next_package_status"])
         a12_start = [event for event in bundle["events"]["events"] if 128 <= event["sequence"] <= 130]
         self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"], [event["event_type"] for event in a12_start])
-        self.assertEqual(130, progress["event_sequence"])
+        a12_completion = [event for event in bundle["events"]["events"] if 131 <= event["sequence"] <= 133]
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in a12_completion])
+        completed_a12 = a12_completion[-1]["details"]
+        self.assertEqual("TEST_REVIEW", completed_a12["package_status"])
+        self.assertEqual("COMPLETED", completed_a12["result_status"])
+        self.assertFalse(completed_a12["accepted"])
+        self.assertEqual("PENDING", completed_a12["independent_tester_status"])
+        self.assertEqual("A-13", completed_a12["next_work_package"])
+        self.assertEqual("BLOCKED_PENDING_A12_ACCEPTANCE", completed_a12["next_package_status"])
+        self.assertEqual(133, progress["event_sequence"])
         self.assertEqual("A-12", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("developer-primary-a12", progress["active_agent"])
-        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, progress["write_lease"]["write_epoch"])
-        self.assertEqual("docs/evidence/manifests/A-12_START_EVIDENCE_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("docs/evidence/manifests/A-12_COMPLETION_PROGRESS_MANIFEST.json", progress["current_progress_evidence_ref"]["manifest_path"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
 
