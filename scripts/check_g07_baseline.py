@@ -66,6 +66,9 @@ A05_COMPLETION_EXACT_PATHS = {"scripts/check_a05_design_decisions.py", "tests/to
 A14_COMPLETION_PATH_PREFIXES = ("apps/web/", "docs/architecture/a14/", "docs/completion_reports/A-14_", "docs/validation/A-14_", "tests/browser/a14/", "tests/fixtures/a14/")
 A14_COMPLETION_EXACT_PATHS = {"docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R2.json", "docs/evidence/manifests/A-14_COMPLETION_PROGRESS_MANIFEST_R2.json", "scripts/check_a13_repository_scan.py", "scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_a14_workbench_prototype.py"}
 EVIDENCE_ONLY_TOOLING_PATHS = {
+    "scripts/evidence_portability.py",
+    "scripts/check_a11_operations_monitoring.py",
+    "tests/tooling/test_a11_operations_monitoring.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
     "tests/tooling/test_g07_baseline.py",
@@ -665,6 +668,19 @@ def validate_repository(
             != ["FAILURE_REPORT_ACCEPTED", "PACKAGE_RESUMED", "PACKAGE_COMPLETED"]
         ):
             _error(errors, "A14_MAIN_TAKEOVER_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=171")
+    if progress.get("event_sequence") == 174:
+        portability_events = [event for event in events if 172 <= event.get("sequence", -1) <= 174]
+        if (
+            progress.get("status") != "TEST_REVIEW"
+            or progress.get("valid_failure_count") != 4
+            or progress.get("active_failure_lineage", {}).get("takeover_status") != "MAIN_AGENT_TAKEOVER_COMPLETED"
+            or progress.get("active_work_instruction", {}).get("independent_tester_status") != "R6_PENDING"
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or [event.get("event_type") for event in portability_events]
+            != ["FAILURE_REPORT_ACCEPTED", "PACKAGE_RESUMED", "PACKAGE_COMPLETED"]
+        ):
+            _error(errors, "A14_PORTABILITY_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=174")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"

@@ -1,0 +1,138 @@
+{
+  "artifact_id": "A-14-PORTABILITY-COMPLETION-R5-001",
+  "artifact_type": "main_takeover_portability_completion_manifest",
+  "package_id": "A-14",
+  "revision": 5,
+  "artifact_status": "test_review_r6_pending",
+  "artifact_path": "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json",
+  "created_at": "2026-08-13T04:15:02+09:00",
+  "source_report_path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
+  "source_report_sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B",
+  "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
+  "valid_failure_count": 4,
+  "takeover_status": "MAIN_AGENT_TAKEOVER_COMPLETED",
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
+      "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
+      "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
+      "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
+      "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json",
+      "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/failure-ledger.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
+      "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
+      "docs/test_reports/A-14_RETEST_REPORT_R5.md",
+      "scripts/check_a11_operations_monitoring.py",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "scripts/evidence_portability.py",
+      "tests/tooling/test_a11_operations_monitoring.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "observed_at": "2026-08-13T04:15:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: A-14 R5 portability completion; TEST_REVIEW R6_PENDING; A-15 blocked",
+    "local_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3"
+  },
+  "actual_browser_status": "R5_EXECUTED_UI_FINDINGS_CLOSED",
+  "actual_network_status": "R5_FIXTURE_SAME_ORIGIN_OBSERVED",
+  "actual_provider_status": "NOT_EXECUTED",
+  "actual_production_status": "NOT_EXECUTED",
+  "actual_dir_status": "NOT_EXECUTED",
+  "next_package_status": "BLOCKED_PENDING_A14_ACCEPTANCE",
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
+      "bytes": 901,
+      "sha256": "7A60F051F3BC92F0A5F78F75BFBA4919B895A7DEBB55FF26863227D5EBF16B9B"
+    },
+    {
+      "path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
+      "bytes": 11599,
+      "sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B"
+    },
+    {
+      "path": "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
+      "bytes": 6135,
+      "sha256": "7DEC88AF047A14F3C7D11E12F4D247556075675A8E71C36143F698214184E3BE"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
+      "bytes": 753,
+      "sha256": "89B4B537B2486BCAA783284F404772137FA868A0524B276CD33CE30E70653F55"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
+      "bytes": 1025,
+      "sha256": "67D5BD7C5ED5B86F5161ED199786BBC6202216DD9C57AF985A68E4D9F7A335D7"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
+      "bytes": 885,
+      "sha256": "44ECD1D3A22ACD6E189CE4046E2F6023E7D864E9782279C4A3ADB263F128D20F"
+    },
+    {
+      "path": "scripts/check_a11_operations_monitoring.py",
+      "bytes": 18574,
+      "sha256": "0EA43907E7C640F5C82C70907533F3B8CB430A0C25E8333914C4B1216320D913"
+    },
+    {
+      "path": "tests/tooling/test_a11_operations_monitoring.py",
+      "bytes": 9636,
+      "sha256": "CF86F5425F13137CB7D2224F8AF2C0B36EF49F62B5012D58D86B1B08219E99ED"
+    },
+    {
+      "path": "scripts/check_a13_repository_scan.py",
+      "bytes": 32405,
+      "sha256": "CD0631547CAE2D73A0BC30BA098E987F938696691C5EB39111ECF55E168A5A46"
+    },
+    {
+      "path": "tests/tooling/test_a13_repository_scan.py",
+      "bytes": 41798,
+      "sha256": "B4AD5CDFD15124A273EE201B790352B5FE569C1FEBCE18E0CE6C6FEE296D8351"
+    },
+    {
+      "path": "scripts/check_a14_workbench_prototype.py",
+      "bytes": 11540,
+      "sha256": "E65525485470FE3EF9F158F4D6811DADFFDEA80A41E4BFB969D79BEBDE9D051F"
+    },
+    {
+      "path": "tests/tooling/test_a14_workbench_prototype.py",
+      "bytes": 5041,
+      "sha256": "8655EBFED5E1861AECDA2749BA4A13EFE853091D4A70C812B80FB75C262DE6FD"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 239906,
+      "sha256": "D6951292D3DC6F27294FB3F544E6621CAC76EAC328FBEAD15AD13C02BFEBFBD8"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 79057,
+      "sha256": "FD450E40E0F24CF3BDE62CEAD3109F74E7538BD095EDC881AADF4B59C577F6EC"
+    }
+  ],
+  "target_canonical_bytes": 1644,
+  "target_content_bytes": 459255,
+  "target_hash": "sha256:ECEEBA285B299BA41D7A56FC6AE138E5A1B8ADD5AEA2FB842EE864B807A9D377",
+  "delivered_hash": "sha256:ECEEBA285B299BA41D7A56FC6AE138E5A1B8ADD5AEA2FB842EE864B807A9D377",
+  "reporting_decision": "AUTO_CONTINUE"
+}

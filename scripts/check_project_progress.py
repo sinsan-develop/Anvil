@@ -197,6 +197,7 @@ A14_COMPLETION_EXACT_PATHS = {
     "tests/tooling/test_a14_workbench_prototype.py",
 }
 EVIDENCE_ONLY_TOOLING_PATHS = {
+    "scripts/evidence_portability.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_project_progress.py",
     "tests/tooling/test_g07_baseline.py",
@@ -2851,6 +2852,65 @@ def validate_a14_main_takeover_completion_manifest(
         errors.append("A14_MAIN_TAKEOVER_COMPLETION_REPOSITORY_MISMATCH")
     return sorted(set(errors))
 
+
+def validate_a14_portability_completion_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or not rows:
+        return ["A14_PORTABILITY_COMPLETION_RAW_INVALID"]
+    errors: list[str] = []
+    seen: set[str] = set()
+    canonical: list[str] = []
+    total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("A14_PORTABILITY_COMPLETION_RAW_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            matches = portable_row_matches(root, relative, row.get("bytes"), row.get("sha256"))
+        except (OSError, TypeError):
+            matches = False
+        if not matches:
+            errors.append("A14_PORTABILITY_COMPLETION_RAW_INVALID")
+            continue
+        total += int(row["bytes"])
+        canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    canonical_bytes = "\n".join(sorted(canonical, key=lambda value: value.encode("utf-8"))).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if any((
+        manifest.get("target_canonical_bytes") != len(canonical_bytes),
+        manifest.get("target_content_bytes") != total,
+        manifest.get("target_hash") != target,
+        manifest.get("delivered_hash") != target,
+        manifest.get("self_reference") is not False,
+        manifest.get("source_report_sha256") != "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B",
+    )):
+        errors.append("A14_PORTABILITY_COMPLETION_TARGET_MISMATCH")
+    instruction = progress.get("active_work_instruction") or {}
+    if any((
+        progress.get("event_sequence") != 174,
+        progress.get("current_work_package") != "A-14",
+        progress.get("status") != "TEST_REVIEW",
+        progress.get("valid_failure_count") != 4,
+        progress.get("active_failure_lineage", {}).get("takeover_status") != "MAIN_AGENT_TAKEOVER_COMPLETED",
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        instruction.get("independent_tester_status") != "R6_PENDING",
+        manifest.get("actual_browser_status") != "R5_EXECUTED_UI_FINDINGS_CLOSED",
+        manifest.get("next_package_status") != "BLOCKED_PENDING_A14_ACCEPTANCE",
+    )):
+        errors.append("A14_PORTABILITY_COMPLETION_PROJECTION_MISMATCH")
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths")
+    if any((manifest.get("repository_projection") or {}).get(field) != (progress.get("repository") or {}).get(field) for field in fields):
+        errors.append("A14_PORTABILITY_COMPLETION_REPOSITORY_MISMATCH")
+    return sorted(set(errors))
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -3510,6 +3570,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a14_r3_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json":
             errors.extend(validate_a14_main_takeover_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json":
+            errors.extend(validate_a14_portability_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

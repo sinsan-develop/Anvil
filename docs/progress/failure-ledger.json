@@ -248,6 +248,36 @@
       },
       "main_takeover_result_status": "COMPLETED",
       "independent_retest_status": "R5_PENDING"
+    },
+    {
+      "entry_id": "failure-a14-independent-test-r5",
+      "step_lineage_id": "A-14",
+      "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "BLK-A14-R5-001",
+        "BLK-A14-R5-002"
+      ],
+      "closed_findings": [
+        "BLK-A14-R3-002",
+        "BLK-A14-R3-003",
+        "BLK-A14-R3-004"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 2,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
+          "sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B"
+        }
+      ],
+      "accepted_sequence": 4,
+      "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED",
+      "main_takeover_continued": true,
+      "independent_retest_status": "R6_PENDING"
     }
   ]
 }

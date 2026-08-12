@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000071",
-  "event_sequence": 171,
-  "updated_at": "2026-08-13T15:00:02+09:00",
-  "last_event_id": "evt_a14_r4_main_takeover_completed_test_review",
+  "snapshot_id": "snapshot-anvil-build-000072",
+  "event_sequence": 174,
+  "updated_at": "2026-08-13T04:15:02+09:00",
+  "last_event_id": "evt_a14_r5_portability_completed_test_review",
   "plan_version": "1.5",
   "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
@@ -37,11 +37,11 @@
   "write_lease": null,
   "worker_lease": null,
   "budget_reservations": [],
-  "valid_failure_count": 3,
+  "valid_failure_count": 4,
   "active_failure_lineage": {
     "step_lineage_id": "A-14",
     "failure_fingerprint": "a14-independent-test:a13-successor-clean-checkout-false-rejection",
-    "valid_failure_count": 3,
+    "valid_failure_count": 4,
     "takeover_status": "MAIN_AGENT_TAKEOVER_COMPLETED"
   },
   "historical_accepted_failure_count": 7,
@@ -394,11 +394,11 @@
     },
     {
       "path": "scripts/check_a11_operations_monitoring.py",
-      "sha256": "1F1847ECF3D51BCBA52CB9E01490F2ACB845563D4B45560F1223EB3615D27B18"
+      "sha256": "0EA43907E7C640F5C82C70907533F3B8CB430A0C25E8333914C4B1216320D913"
     },
     {
       "path": "tests/tooling/test_a11_operations_monitoring.py",
-      "sha256": "9129AA694DAA29E4B562A8F0A959C0F642F187047A45E14B23E78784E7C3D46A"
+      "sha256": "CF86F5425F13137CB7D2224F8AF2C0B36EF49F62B5012D58D86B1B08219E99ED"
     },
     {
       "path": "docs/test_reports/A-11_TEST_REPORT.md",
@@ -578,43 +578,43 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "87DB7D7D48C4C380188EB3FD6EB158BFDE973BDAEC226685B8AD8C97C110915B"
+      "sha256": "CD0631547CAE2D73A0BC30BA098E987F938696691C5EB39111ECF55E168A5A46"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
-      "sha256": "408A06AAE1CD4F27289E7159DDED92FE31B70EFA4D6A2255E239DAB33C30DEAF"
+      "sha256": "E65525485470FE3EF9F158F4D6811DADFFDEA80A41E4BFB969D79BEBDE9D051F"
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "4A3C3B158D593767F8D9549613DCCE64A24F51BC516AE24CC462D64E4E183576"
+      "sha256": "70E3FD0B67AC674C84F868E37B0DF6E0619E545F68287AEE6208698683529958"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "319BE7C27048C1A6CF8D5FEDD0BE01F919F8435AA4236F22057580175D8136AE"
+      "sha256": "93036D8260EDD3401F21C0F4A29A7915230D7E9FA0C6E29521CFD78AAFC055D9"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "570AA85B954F02EF1C7EF66EBA58565DCC3AD27E73A4C85DEACA63DAF34B14AF"
+      "sha256": "D6951292D3DC6F27294FB3F544E6621CAC76EAC328FBEAD15AD13C02BFEBFBD8"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "0DDFD98BED0368688CEB2064B8DE0366FF8128B13B9329969424641B42A20AA3"
+      "sha256": "B4AD5CDFD15124A273EE201B790352B5FE569C1FEBCE18E0CE6C6FEE296D8351"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
-      "sha256": "08A19C257B7B3A05B9316625FB382F9CD2C92362CE0CFE2E399A76F14A68EC67"
+      "sha256": "8655EBFED5E1861AECDA2749BA4A13EFE853091D4A70C812B80FB75C262DE6FD"
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "451BC682067F7F530BA436412DA14F0BC5D43FE3EA7CBCFB195A6C0554DE0E67"
+      "sha256": "585FB31779F0FFA61AFA111EF3BAE84B59D6B521810DB4F932BF3AF50A154A4A"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "EAC5AC2BC61B68E364795E6408DA878A63FE55830A3220C85FE85FCCEC4A2F26"
+      "sha256": "ED12ED75BADEF882CF0CCC4834439F6A10AB8B54BED280CCE99469D45F3C1AFB"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "A325CE816B779779BC5F04F61381072806E3475CB525FA2F783E88CDD1D11B0A"
+      "sha256": "FD450E40E0F24CF3BDE62CEAD3109F74E7538BD095EDC881AADF4B59C577F6EC"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -627,11 +627,51 @@
     {
       "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
       "sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381"
+    },
+    {
+      "path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
+      "sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
+      "sha256": "52D4C769AEE757580FDC987B074EDF1EFA6A9C7462732216E46FD77BC7B75746"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "sha256": "1BDBBD8FEDD236A445967DDB9A0C24E9AABAC0D5427A6458DF00DBA482DA6812"
+    },
+    {
+      "path": "docs/progress/failure-ledger.json",
+      "sha256": "701A5C19A21517B1EA90239BA0A0127491978D93C4248FF2EC3AA343F62DCABC"
+    },
+    {
+      "path": "scripts/evidence_portability.py",
+      "sha256": "ED08FF08CAB3C5740DC0669F2F4885B76A06216506CF1DC574146396529D535D"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
+      "sha256": "89B4B537B2486BCAA783284F404772137FA868A0524B276CD33CE30E70653F55"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
+      "sha256": "67D5BD7C5ED5B86F5161ED199786BBC6202216DD9C57AF985A68E4D9F7A335D7"
+    },
+    {
+      "path": "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
+      "sha256": "7DEC88AF047A14F3C7D11E12F4D247556075675A8E71C36143F698214184E3BE"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
+      "sha256": "4CA455F90401C7F51305EB326C289A577F2038BF7D6751B1B6BE008DF24A3213"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
+      "sha256": "44ECD1D3A22ACD6E189CE4046E2F6023E7D864E9782279C4A3ADB263F128D20F"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
-    "sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381"
+    "path": "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
+    "sha256": "7DEC88AF047A14F3C7D11E12F4D247556075675A8E71C36143F698214184E3BE"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -641,7 +681,7 @@
     "owner_reported_at": null,
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Independent Tester R5 verifies Main takeover completion on clean checkout; A-15 remains blocked pending A-14 acceptance",
+  "next_safe_action": "Independent Tester R6 verifies LF portability in current and clean clone; A-15 remains blocked pending A-14 acceptance",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -697,29 +737,39 @@
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70",
+    "remote_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
+      "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
+      "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
+      "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
       "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
+      "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json",
+      "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
+      "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
+      "docs/test_reports/A-14_RETEST_REPORT_R5.md",
+      "scripts/check_a11_operations_monitoring.py",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_a14_workbench_prototype.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
+      "scripts/evidence_portability.py",
+      "tests/tooling/test_a11_operations_monitoring.py",
       "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_a14_workbench_prototype.py",
       "tests/tooling/test_g07_baseline.py",
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-13T15:00:02+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: A-14 Main takeover completion projection; TEST_REVIEW R5_PENDING; A-15 blocked",
-    "local_head": "f0855749cdf27e81ea368c42ad2a771fab1e6c70"
+    "observed_at": "2026-08-13T04:15:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: A-14 R5 portability completion; TEST_REVIEW R6_PENDING; A-15 blocked",
+    "local_head": "3d3bfa5fd0108ee0634a9c286797560dfd2478e3"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -742,10 +792,10 @@
     "package_status": "TEST_REVIEW",
     "result_status": "COMPLETED",
     "accepted": false,
-    "rework_revision": 4,
-    "independent_tester_status": "R5_PENDING",
-    "finding_status": "MAIN_FIX_COMPLETED_AWAITING_INDEPENDENT_R5",
-    "source_test_report_sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9",
+    "rework_revision": 5,
+    "independent_tester_status": "R6_PENDING",
+    "finding_status": "PORTABILITY_FIX_COMPLETED_AWAITING_INDEPENDENT_R6",
+    "source_test_report_sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B",
     "developer_manifest_sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25",
     "developer_target_hash": "D9E78B29398209551E4AAE2A5AFE81FBAF6105BBDDD1517B9EC79DA5B5E01E64"
   },
@@ -774,13 +824,13 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "A-14",
-    "path": "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
-    "manifest_path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json"
+    "path": "docs/progress/progress-handoff-detached-digest-a14-portability-completion-r5.json",
+    "manifest_path": "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json"
   },
   "registry_refs": {
     "failure_ledger": {
       "path": "docs/progress/failure-ledger.json",
-      "sha256": "B26D38DD5170BA7BA13C2D63B3CDE552DAF234B7D87A4C299D1F455890EE81C0"
+      "sha256": "701A5C19A21517B1EA90239BA0A0127491978D93C4248FF2EC3AA343F62DCABC"
     },
     "non_semantic_revision_bindings": {
       "path": "docs/progress/non-semantic-revision-bindings.json",
@@ -796,12 +846,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7D32BC48F05604E5C503624479C23C4AD9677317042C1B717872911CBBB634F5"
+      "sha256": "1BDBBD8FEDD236A445967DDB9A0C24E9AABAC0D5427A6458DF00DBA482DA6812"
     }
   },
   "next_work_package": {
     "package_id": "A-15",
     "status": "BLOCKED_PENDING_A14_ACCEPTANCE"
   },
-  "snapshot_hash": "728F225EC06C68FBE6747316A99516A6A74E05E56A06F5987D602D5A97558E73"
+  "snapshot_hash": "2D92A413853D67179D6A7E300D82F23AD12E38EEE174B2B9D57AA09E5521B3D6"
 }

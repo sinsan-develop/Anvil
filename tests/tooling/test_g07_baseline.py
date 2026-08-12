@@ -58,10 +58,10 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(171, progress["event_sequence"])
+        self.assertEqual(174, progress["event_sequence"])
         self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("R5_PENDING", progress["active_work_instruction"]["independent_tester_status"])
-        self.assertEqual(3, progress["valid_failure_count"])
+        self.assertEqual("R6_PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual(4, progress["valid_failure_count"])
         self.assertEqual("MAIN_AGENT_TAKEOVER_COMPLETED", progress["active_failure_lineage"]["takeover_status"])
 
     def test_authority_hash_and_version_drift_are_rejected(self):

@@ -143,6 +143,7 @@ def check(root: Path) -> dict:
     errors.extend(browser_source_findings([p for p in browser_paths if p.is_file()]))
     progress_path = root / "docs/progress/build-progress.json"
     takeover_path = root / "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json"
+    portability_path = root / "docs/evidence/manifests/A-14_PORTABILITY_COMPLETION_MANIFEST_R5.json"
     if progress_path.is_file():
         progress = json.loads(progress_path.read_text(encoding="utf-8"))
         if progress.get("event_sequence") == 171:
@@ -158,6 +159,17 @@ def check(root: Path) -> dict:
                     or takeover.get("actual_production_status") != "NOT_EXECUTED"
                 ):
                     errors.append("takeover-completion-boundary")
+        if progress.get("event_sequence") == 174:
+            if not portability_path.is_file():
+                errors.append("portability-completion-missing")
+            else:
+                portability = json.loads(portability_path.read_text(encoding="utf-8"))
+                if (
+                    portability.get("actual_browser_status") != "R5_EXECUTED_UI_FINDINGS_CLOSED"
+                    or portability.get("next_package_status") != "BLOCKED_PENDING_A14_ACCEPTANCE"
+                    or progress.get("active_work_instruction", {}).get("independent_tester_status") != "R6_PENDING"
+                ):
+                    errors.append("portability-completion-boundary")
     return {"errors":errors,"manifest":manifest,"exact_paths":EXACT_PATHS}
 
 def main(argv=None):
