@@ -3551,6 +3551,29 @@ def validate_b01_r3_rework_start_manifest(manifest: Mapping[str, Any], bundle: M
     return sorted(set(errors))
 
 
+def validate_b01_r3_rework_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]; errors=[]
+    expected={"docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R3.json","docs/evidence/manifests/B-01_EVIDENCE_MANIFEST_R3.json","docs/progress/progress-handoff-detached-digest-b01-rework-completion-r3.json","docs/work_orders/B-01_REWORK_WORK_INSTRUCTION_R3.md"}
+    rows=manifest.get("raw_checksums"); seen=set(); canonical=[]; total=0
+    if not isinstance(rows,list): return ["B01_R3_COMPLETION_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B01_R3_COMPLETION_RAW_INVALID"); continue
+        seen.add(relative)
+        try: ok=portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): ok=False
+        if not ok: errors.append("B01_R3_COMPLETION_RAW_INVALID"); continue
+        total+=int(row["bytes"]); canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("B01_R3_COMPLETION_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode(); target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B01_R3_COMPLETION_TARGET_MISMATCH")
+    terminal=[event for event in bundle["events"]["events"] if 204<=event.get("sequence",-1)<=206]; wi=progress.get("active_work_instruction") or {}
+    if any((progress.get("event_sequence")!=206,progress.get("status")!="TEST_REVIEW",progress.get("valid_failure_count")!=2,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,wi.get("artifact_id")!="WI-B-01-20260814-003",wi.get("result_status")!="COMPLETED",wi.get("independent_tester_status")!="R3_PENDING",wi.get("finding_status")!="FIXED_AWAITING_INDEPENDENT_RETEST",[event.get("event_type") for event in terminal]!=["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"],manifest.get("developer_manifest_sha256")!="3BB34296CBCA18AB063EBA0752B3E98D60C6CD7FD2410D29F024421C13F3665F",manifest.get("developer_target_hash")!="49FB06F9454037B69D343C4FF82F5FAF66B012827241C6586278F5CDF05CDA82")): errors.append("B01_R3_COMPLETION_PROJECTION_MISMATCH")
+    successor=manifest.get("a13_successor_projection") or {}; indexed={row.get("path"):row for row in successor.get("live_raw_checksums",[]) if isinstance(row,dict)}; required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"}
+    if set(indexed)!=required or any(not portable_row_matches(root,path,row.get("bytes"),row.get("sha256")) for path,row in indexed.items()): errors.append("B01_R3_COMPLETION_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -3985,7 +4008,8 @@ def validate_repository_projection(
     b01_rework_start_projection = repository.get("validated_base_commit") == "6735088c8ed919cba44256ded5c4c8d281e4a3f8" and "docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed
     b01_rework_completion_projection = repository.get("validated_base_commit") == "f74c3a1dccd7b9e2752c742baf597de062f8b779" and "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed
     b01_r3_rework_start_projection = repository.get("validated_base_commit") == "6226e7828e11c564b08de738ba46c5b028792a85" and "docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R3.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection:
+    b01_r3_rework_completion_projection = repository.get("validated_base_commit") == "10149bcd6569bce539fabc980087b0ccec0f8a01" and "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -4239,6 +4263,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b01_rework_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R3.json":
             errors.extend(validate_b01_r3_rework_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json":
+            errors.extend(validate_b01_r3_rework_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

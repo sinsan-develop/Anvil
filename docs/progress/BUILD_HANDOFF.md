@@ -1,55 +1,55 @@
 # Anvil Build Handoff
 
-## B-01 R2 Failure Accepted / R3 Rework Started — sequence 200~203
+## B-01 R3 Developer Completion / TEST_REVIEW — sequence 204~206
 
-- Tester R2 report SHA-256 `AAFD3A01443162A99821B0D10967F432C9C5C9EF7309483CEC506E2B1BD02C09`의 CRITICAL `BLK-B01-002`를 B-01 lineage 유효 실패 2회로 수용했다. `BLK-B01-001`은 CLOSED다.
-- 설계·코드 현실 재검토 결과 동일 padded target pair가 canonical 계약을 우회함을 확인하고 R3 exact 5로 범위를 고정했다. R1/R2 제품·증거·보고서는 동결한다.
-- seq 200→203은 `FAILURE_REPORT_ACCEPTED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED` 순서다. B-01은 `ACTIVE / REWORK_IN_PROGRESS / R3_PENDING`이며 epoch-3 lease가 유효하다.
+- Developer R3 exact 5는 manifest SHA-256 `3BB34296CBCA18AB063EBA0752B3E98D60C6CD7FD2410D29F024421C13F3665F`, target `49FB06F9454037B69D343C4FF82F5FAF66B012827241C6586278F5CDF05CDA82`로 동결했다.
+- seq 204→206은 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED` 순서다. B-01은 `TEST_REVIEW / COMPLETED / R3_PENDING`, BLK-B01-002는 `FIXED_AWAITING_INDEPENDENT_RETEST`, 모든 lease는 null이다.
 - B-02는 `BLOCKED_PENDING_B01_ACCEPTANCE`; API·DB·UI·browser·provider·WSL·production·deploy는 `NOT_EXECUTED`다.
 
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 203,
-  "status": "ACTIVE",
+  "event_sequence": 206,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-01",
-  "last_event_id": "evt_b01_package_resumed_rework_r3",
+  "last_event_id": "evt_b01_rework_package_completed_r3",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 2,
   "active_lineage_valid_failure_count": 2,
   "historical_accepted_failure_count": 11,
   "dir_status": "CLEARED",
-  "repository_head": "6226e7828e11c564b08de738ba46c5b028792a85",
+  "repository_head": "10149bcd6569bce539fabc980087b0ccec0f8a01",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "6226e7828e11c564b08de738ba46c5b028792a85",
+  "repository_remote_head": "10149bcd6569bce539fabc980087b0ccec0f8a01",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "6226e7828e11c564b08de738ba46c5b028792a85",
+  "repository_validated_base_commit": "10149bcd6569bce539fabc980087b0ccec0f8a01",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R3.json",
+    "docs/completion_reports/B-01_COMPLETION_REPORT_R3.md",
+    "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST_R3.json",
+    "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b01-rework-start-r3.json",
-    "docs/test_reports/B-01_RETEST_REPORT_R2.md",
-    "docs/work_orders/B-01_REWORK_INVOCATION_PROMPT_R3.md",
-    "docs/work_orders/B-01_REWORK_WORK_INSTRUCTION_R3.md",
+    "docs/progress/progress-handoff-detached-digest-b01-rework-completion-r3.json",
+    "docs/validation/B-01_DOMAIN_CORE_VALIDATION_R3.md",
+    "packages/domain/reducer.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/domain/test_reducer.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-rework-start-r3.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-rework-completion-r3.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b01 for BLK-B01-002 under epoch-3 exact-path leases; do not start B-02",
+  "next_safe_action": "Dispatch independent Tester for B-01 R3 retest; do not accept B-01 or start B-02",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -57,11 +57,17 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-01-20260814-003 / ACTIVE / REWORK_IN_PROGRESS / R3_PENDING",
-  "worker_lease": "worker-lease-b01-rework-20260814-003 / epoch 3 / ACTIVE",
-  "write_lease": "write-lease-b01-rework-20260814-003 / epoch 3 / ACTIVE / exact 5"
+  "active_work_instruction": "WI-B-01-20260814-003 / TEST_REVIEW / COMPLETED / R3_PENDING",
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
+
+## 2026-08-14 B-01 R3 Developer completion → TEST_REVIEW
+
+- Developer exact 5를 manifest SHA `3BB34296...`, target `49FB06F9...`로 동결했다.
+- padding hostile regression과 domain `14/14 PASS`는 Developer evidence 범위이며 독립 재검증은 `R3_PENDING`이다.
+- 실제 API·DB·UI·browser·provider·WSL·production·deploy는 `NOT_EXECUTED`; B-02는 acceptance 전 차단이다.
 
 ## 2026-08-14 B-01 R3 rework start
 

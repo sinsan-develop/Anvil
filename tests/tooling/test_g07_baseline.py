@@ -58,13 +58,13 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(203, progress["event_sequence"])
+        self.assertEqual(206, progress["event_sequence"])
         self.assertEqual("B-01", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
         self.assertEqual("R3_PENDING", progress["active_work_instruction"]["independent_tester_status"])
-        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(2, progress["valid_failure_count"])
         self.assertEqual("B-01", progress["active_failure_lineage"]["step_lineage_id"])
@@ -207,9 +207,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_RESUMED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
         self.assertEqual(
-            "6226e7828e11c564b08de738ba46c5b028792a85",
+            "10149bcd6569bce539fabc980087b0ccec0f8a01",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(

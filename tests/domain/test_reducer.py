@@ -92,6 +92,21 @@ class ReducerTests(unittest.TestCase):
                 reduce_run(state, event(9, EventType.RELEASE_DECIDED,
                                         "ProductValidation·DefectAssessment·ReleaseDecision", **(base | payload)))
 
+    def test_release_rejects_ascii_unicode_and_one_sided_target_padding(self):
+        state = RunState(RunId("run_01"), RunPhase.USER_VALIDATION, RunStatus.ACTIVE, 8, ())
+        base = dict(conditions_satisfied=True, product_validation_complete=True,
+                    blocking_defect_count=0, authenticated_human_release=True,
+                    decision="RELEASE", target_hash="sha256:a", validation_target_hash="sha256:a")
+        hostile = (
+            {"target_hash": " sha256:a ", "validation_target_hash": " sha256:a "},
+            {"target_hash": "\u2003sha256:a\u00a0", "validation_target_hash": "\u2003sha256:a\u00a0"},
+            {"target_hash": "sha256:a", "validation_target_hash": " sha256:a "},
+        )
+        for payload in hostile:
+            with self.subTest(payload=payload), self.assertRaises(ConditionNotSatisfiedError):
+                reduce_run(state, event(9, EventType.RELEASE_DECIDED,
+                                        "ProductValidation·DefectAssessment·ReleaseDecision", **(base | payload)))
+
     def test_events_and_states_are_immutable(self):
         e = event(1, EventType.TASK_CONFIRMED, "Task snapshot", conditions_satisfied=True)
         with self.assertRaises((FrozenInstanceError, AttributeError)):

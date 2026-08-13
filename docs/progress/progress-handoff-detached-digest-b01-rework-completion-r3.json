@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0.0","digest_id":"B-01-PROGRESS-HANDOFF-DIGEST-REWORK-COMPLETION-R3","package_id":"B-01","event_sequence":206,"algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":33499,"file_sha256":"4C3B79A4E3430213C45CBA7D24154D18322CB1D9565A0C4C35A86E3DCB431A6A","canonical_json_sha256":"C239AFD30FF1BC6E2B1D8EC360C3FF5F64645B1CD35989F15CEB7ED0837A4E92"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":67195,"file_sha256":"9A5D43A35C93034BFB46CED4ADE0B21D3A49DE63D54AED4D505A6E86E536EEBE","machine_summary_canonical_sha256":"73EADEF2C8953A5AF14A6EAFA99B26C64C1CD5E610F8A70DD4695CEC72427243"},
+  "created_at":"2026-08-14T10:00:02+09:00","scope":"B-01 Developer R3 exact5 frozen; TEST_REVIEW R3_PENDING; leases null; B-02 blocked"
+}
