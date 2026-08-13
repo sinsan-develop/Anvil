@@ -1,0 +1,14 @@
+{
+  "artifact_id":"EVIDENCE-MANIFEST-B-02-COMPLETION-20260814-001","artifact_type":"package_completion_projection_manifest","project_id":"anvil","package_id":"B-02","artifact_status":"test_review","artifact_path":"docs/evidence/manifests/B-02_COMPLETION_PROGRESS_MANIFEST.json","created_by":{"actor_type":"agent","actor_id":"main-agent-eoul"},"created_at":"2026-08-14T13:00:02+09:00",
+  "projection":{"event_sequence":213,"status":"TEST_REVIEW","result_status":"COMPLETED","independent_tester_status":"PENDING","worker_lease":null,"write_lease":null,"next_package":"B-03","next_package_status":"BLOCKED_PENDING_B02_ACCEPTANCE"},
+  "developer_manifest_sha256":"7D2C102C5ACAC4C49278D2B2262C863CEB459F4528FA789CAC8EEBD740E2B77E","developer_target_hash":"B5AB576791132542F42F4102725E7159FE271600C1FAA87A0A8D44368CF011F9","developer_exact_path_count":15,"developer_mutation":"FORBIDDEN_FROZEN_PREDECESSOR",
+  "runtime_boundary":{"actual_postgresql15":"PASS","postgresql15_port":150017,"actual_postgresql18":"PASS","postgresql18_port":180004,"actual_api":"NOT_EXECUTED","actual_ui":"NOT_EXECUTED","actual_browser":"NOT_EXECUTED","actual_provider":"NOT_EXECUTED","actual_production":"NOT_EXECUTED","actual_deployment":"NOT_EXECUTED","shared_database":"UNTOUCHED","protected_environment":"UNTOUCHED","isolated_resources_cleanup":"PASS"},
+  "a13_successor_projection":{"predecessor_manifest_sha256":"4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771","live_raw_checksums":[{"path":"scripts/check_a13_repository_scan.py","bytes":46780,"sha256":"768F39A135F204B32ADA6A4EBCD15E71BA4BE446B2553B585E5BFA43F5436838"},{"path":"tests/tooling/test_a13_repository_scan.py","bytes":43105,"sha256":"9E533AD9497E350FB39EDD524656E4F2AB294B78C6D0EE8799375DFC343B9DBF"}]},
+  "raw_checksums":[
+    {"path":"docs/evidence/manifests/B-02_START_EVIDENCE_MANIFEST.json","bytes":4045,"sha256":"11E5F8FBBC9FFADD1FE32B9865E5676E1727826856A310858290E03B42A36E3D"},
+    {"path":"docs/evidence/manifests/B-02_EVIDENCE_MANIFEST.json","bytes":3726,"sha256":"7D2C102C5ACAC4C49278D2B2262C863CEB459F4528FA789CAC8EEBD740E2B77E"},
+    {"path":"docs/progress/progress-handoff-detached-digest-b02-completion-test-review.json","bytes":822,"sha256":"C00EAABAD52C39D483D6E4C86A82D31BB8899BB6CD1AC3AC1A699D0C9E9F1C3B"},
+    {"path":"docs/work_orders/B-02_WORK_INSTRUCTION.md","bytes":4667,"sha256":"6349CAB4525762319B6677F3B32A051358C1CC4B4D36672808AA24C3C4448821"}
+  ],
+  "target_canonical_bytes":509,"target_content_bytes":13260,"target_hash":"sha256:5BD61BE35D43BF421D886ACA849CDA3321325FFCEEC7ABD2F6DFCA8173BCCB67","delivered_hash":"sha256:5BD61BE35D43BF421D886ACA849CDA3321325FFCEEC7ABD2F6DFCA8173BCCB67","content_hash":"sha256:5BD61BE35D43BF421D886ACA849CDA3321325FFCEEC7ABD2F6DFCA8173BCCB67","self_reference":false
+}

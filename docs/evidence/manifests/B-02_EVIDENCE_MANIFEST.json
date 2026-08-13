@@ -1,0 +1,22 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-02-20260814-001",
+  "package_id": "B-02",
+  "artifact_status": "completed_pending_independent_test",
+  "work_instruction_sha256": "6349CAB4525762319B6677F3B32A051358C1CC4B4D36672808AA24C3C4448821",
+  "baseline_git_commit": "1871a53ecda15544757382ce13d30e3bb3f63f73",
+  "assigned_verification_ids": ["AV-OPS-009"],
+  "exact_write_paths": ["pyproject.toml","alembic.ini","packages/persistence/__init__.py","packages/persistence/config.py","packages/persistence/repositories.py","packages/persistence/compatibility.py","migrations/env.py","migrations/script.py.mako","migrations/versions/0001_base.py","tests/persistence/test_repository_contract.py","tests/persistence/test_migration_contract.py","tests/persistence/test_postgres_compatibility.py","docs/validation/B-02_DATABASE_FOUNDATION_VALIDATION.md","docs/evidence/manifests/B-02_EVIDENCE_MANIFEST.json","docs/completion_reports/B-02_COMPLETION_REPORT.md"],
+  "raw_artifacts": [
+    {"path":"pyproject.toml","bytes":204,"sha256":"157BDFBE7B3C3B16D15B4C2D556888801D4B2549649A9AAD9133CFC774B2DEDD"},{"path":"alembic.ini","bytes":112,"sha256":"5F6F88A89D0C9FC746A9F720C56FACF6983A9E1F9768D5EB914CF5F2DC279223"},{"path":"packages/persistence/__init__.py","bytes":311,"sha256":"28564649C8F257E9C562CE2C5B1252B055CC80A60857BD2CCBABAD3DEEA98401"},{"path":"packages/persistence/config.py","bytes":749,"sha256":"3E7AE84C24048D7EC561CFFFB13A1BADFBE490403B961553EE8B6DB668276C69"},{"path":"packages/persistence/repositories.py","bytes":300,"sha256":"C5380DBA9280ACABBB703BBE1D79A111EFF95B1CEDF63559351F4525090B7C53"},{"path":"packages/persistence/compatibility.py","bytes":708,"sha256":"4881674D49292000E5ACE0A9EA22724933F56552FCDD8450020C8A8FD138D480"},{"path":"migrations/env.py","bytes":840,"sha256":"C66A0E10E767A0D9AA8C6C0DA1DE77072E2AB74E79572017400B80ACC791A297"},{"path":"migrations/script.py.mako","bytes":281,"sha256":"FE123FEEA7A229CBD9EB62E1C6D2A0C1E767CCEE6F6DE0B82C4BD00406237706"},{"path":"migrations/versions/0001_base.py","bytes":557,"sha256":"D89923394A3AE1B0F7661E1C63E6C66D46311A531742F87B855077EE9680D987"},{"path":"tests/persistence/test_repository_contract.py","bytes":919,"sha256":"B84AD37B0B1BC07CC4CF66A5C74CA15336203C206F13C3FE8F13DC6B50FFA331"},{"path":"tests/persistence/test_migration_contract.py","bytes":656,"sha256":"F6B506B15FC5CA68AD3633B06DA255812234E89F62433BF6E34B0C74E011612B"},{"path":"tests/persistence/test_postgres_compatibility.py","bytes":621,"sha256":"ADFF2D5BAD3BE73EE99DAF3F8E56208C745782277CC1038B75730E71D6FBF2EA"},{"path":"docs/validation/B-02_DATABASE_FOUNDATION_VALIDATION.md","bytes":841,"sha256":"14F6A7D43F1E0CE794150AEE87AE513CEFF60F52BC1A179A087E37D9B1E1053E"},{"path":"docs/completion_reports/B-02_COMPLETION_REPORT.md","bytes":1108,"sha256":"5F9A13B96B725CE96BC35443AA8BF66E7C40BCABB3167D7C2E0241C74D833269"}
+  ],
+  "target_canonical_bytes": 1454,
+  "target_content_bytes": 8207,
+  "target_hash": "B5AB576791132542F42F4102725E7159FE271600C1FAA87A0A8D44368CF011F9",
+  "delivered_hash": "B5AB576791132542F42F4102725E7159FE271600C1FAA87A0A8D44368CF011F9",
+  "content_hash": "B5AB576791132542F42F4102725E7159FE271600C1FAA87A0A8D44368CF011F9",
+  "self_reference": false,
+  "actual_postgresql_15": "EXECUTED / 150017 / UTC / upgrade-downgrade-reupgrade PASS",
+  "actual_postgresql_18": "EXECUTED / 180004 / UTC / upgrade-downgrade-reupgrade PASS",
+  "runtime_boundary": {"actual_api":"NOT_EXECUTED","actual_ui":"NOT_EXECUTED","actual_provider":"NOT_EXECUTED","actual_production":"NOT_EXECUTED","actual_deployment":"NOT_EXECUTED"},
+  "limitations": ["Independent Tester and Main acceptance are not executed.", "Initial WSL access failure was recovered before isolated runtime validation."]
+}

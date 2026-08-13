@@ -1,5 +1,11 @@
 # Anvil Build Handoff
 
+## B-02 Developer Completion — sequence 213
+
+- Developer exact15는 manifest SHA `7D2C102C...`, target `B5AB5767...`로 동결했다.
+- seq 211→213은 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-02는 `TEST_REVIEW`, 독립 Tester는 `PENDING`, B-03은 acceptance 전 차단이다.
+- 격리 PG15 `150017`과 PG18 `180004`에서 UTC/plpgsql/schema/version_id 및 Alembic upgrade→downgrade absent→re-upgrade를 각각 exit 0으로 검증했다. API/UI/provider/production/deploy는 `NOT_EXECUTED`다.
+
 ## B-02 Start — sequence 210
 
 - B-01 R3 acceptance commit `85730a48cdc71c06a67728bbd4640b1aeb7e5cb5`를 clean baseline으로 B-02를 시작했다.
@@ -15,44 +21,57 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 210,
-  "status": "ACTIVE",
+  "event_sequence": 213,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-02",
-  "last_event_id": "evt_b02_package_started",
+  "last_event_id": "evt_b02_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 13,
   "dir_status": "CLEARED",
-  "repository_head": "85730a48cdc71c06a67728bbd4640b1aeb7e5cb5",
+  "repository_head": "1871a53ecda15544757382ce13d30e3bb3f63f73",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "85730a48cdc71c06a67728bbd4640b1aeb7e5cb5",
+  "repository_remote_head": "1871a53ecda15544757382ce13d30e3bb3f63f73",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "85730a48cdc71c06a67728bbd4640b1aeb7e5cb5",
+  "repository_validated_base_commit": "1871a53ecda15544757382ce13d30e3bb3f63f73",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-02_START_EVIDENCE_MANIFEST.json",
+    "alembic.ini",
+    "docs/completion_reports/B-02_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-02_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-02_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b02-start.json",
-    "docs/work_orders/B-02_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-02_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b02-completion-test-review.json",
+    "docs/validation/B-02_DATABASE_FOUNDATION_VALIDATION.md",
+    "migrations/env.py",
+    "migrations/script.py.mako",
+    "migrations/versions/0001_base.py",
+    "packages/persistence/__init__.py",
+    "packages/persistence/compatibility.py",
+    "packages/persistence/config.py",
+    "packages/persistence/repositories.py",
+    "pyproject.toml",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/persistence/test_migration_contract.py",
+    "tests/persistence/test_postgres_compatibility.py",
+    "tests/persistence/test_repository_contract.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-02_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-02_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b02 under exact 15-path epoch-1 leases",
+  "next_safe_action": "Dispatch an independent Tester for B-02; do not accept B-02 or start B-03",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -60,9 +79,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-02-20260814-001",
-  "worker_lease": "worker-lease-b02-20260814-001",
-  "write_lease": "write-lease-b02-20260814-001"
+  "active_work_instruction": "WI-B-02-20260814-001 / COMPLETED / TESTER_PENDING",
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 
