@@ -1,5 +1,11 @@
 # Anvil Build Handoff
 
+## B-02 Start — sequence 210
+
+- B-01 R3 acceptance commit `85730a48cdc71c06a67728bbd4640b1aeb7e5cb5`를 clean baseline으로 B-02를 시작했다.
+- seq 208→210은 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`; Developer exact 15-path lease만 활성이다.
+- 제품 산출물은 0개다. 실제 DB·WSL 검증은 Developer가 승인된 격리 PG15/PG18 환경에서 시도해야 하며 start 시점에는 `NOT_EXECUTED`다. shared/production DB, 직접 patch와 deploy는 금지다.
+
 ## B-01 R3 Main Acceptance — sequence 207
 
 - Tester R3 report SHA-256 `C0E25D90FEC533AEBF34B81D6698C702D88D898949ECA74B58B96627F5A18CE0`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 수용했다.
@@ -9,29 +15,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 207,
-  "status": "READY",
+  "event_sequence": 210,
+  "status": "ACTIVE",
   "current_work_package": "B-02",
-  "last_event_id": "evt_b01_main_package_accepted_r3",
+  "last_event_id": "evt_b02_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 13,
   "dir_status": "CLEARED",
-  "repository_head": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
+  "repository_head": "85730a48cdc71c06a67728bbd4640b1aeb7e5cb5",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
+  "repository_remote_head": "85730a48cdc71c06a67728bbd4640b1aeb7e5cb5",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
+  "repository_validated_base_commit": "85730a48cdc71c06a67728bbd4640b1aeb7e5cb5",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-01_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
+    "docs/evidence/manifests/B-02_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b01-accepted-r3.json",
-    "docs/test_reports/B-01_RETEST_REPORT_R3.md",
+    "docs/progress/progress-handoff-detached-digest-b02-start.json",
+    "docs/work_orders/B-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-02_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -41,11 +48,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-accepted-r3.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-01_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-02_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Prepare B-02 fenced start; do not implement B-02 before lease issuance",
+  "next_safe_action": "Dispatch developer-primary-b02 under exact 15-path epoch-1 leases",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -53,9 +60,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-02-20260814-001",
+  "worker_lease": "worker-lease-b02-20260814-001",
+  "write_lease": "write-lease-b02-20260814-001"
 }
 ```
 

@@ -777,6 +777,10 @@ def validate_repository(
         terminal=[event for event in events if 187 <= event.get("sequence",-1) <= 189]
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="ACTIVE" or (progress.get("active_work_instruction") or {}).get("artifact_id")!="WI-B-01-20260813-001" or progress.get("active_agent")!="developer-primary-b01" or (progress.get("worker_lease") or {}).get("lease_epoch")!=1 or (progress.get("write_lease") or {}).get("write_epoch")!=1 or (progress.get("dir_review") or {}).get("status")!="CLEARED" or (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("phase_gate") or {}).get("b01_started") is not True or [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]):
             _error(errors,"B01_START_PROJECTION_MISMATCH",progress_path,"sequence=189")
+    if progress.get("event_sequence") == 210:
+        terminal=[event for event in events if 208 <= event.get("sequence",-1) <= 210]
+        if (progress.get("current_work_package")!="B-02" or progress.get("status")!="ACTIVE" or (progress.get("active_work_instruction") or {}).get("artifact_id")!="WI-B-02-20260814-001" or progress.get("active_agent")!="developer-primary-b02" or (progress.get("worker_lease") or {}).get("lease_epoch")!=1 or (progress.get("write_lease") or {}).get("write_epoch")!=1 or [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]):
+            _error(errors,"B02_START_PROJECTION_MISMATCH",progress_path,"sequence=210")
     if progress.get("event_sequence") == 192:
         terminal=[event for event in events if 190 <= event.get("sequence",-1) <= 192]
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="TEST_REVIEW" or (progress.get("active_work_instruction") or {}).get("independent_tester_status")!="PENDING" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
@@ -963,6 +967,8 @@ def validate_repository(
             if reconciliation_event.get("event_type") == "PACKAGE_RESUMED" and reconciliation_event.get("subject_ref") == "B-01" and reconciliation_event.get("sequence") == 203:
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "PACKAGE_COMPLETED" and reconciliation_event.get("subject_ref") == "B-01" and reconciliation_event.get("sequence") == 206:
+                completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-02" and reconciliation_event.get("sequence") == 210:
                 completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))

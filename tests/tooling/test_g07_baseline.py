@@ -58,12 +58,12 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(207, progress["event_sequence"])
+        self.assertEqual(210, progress["event_sequence"])
         self.assertEqual("B-02", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-02-20260814-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("B-02", progress["active_failure_lineage"]["step_lineage_id"])
@@ -206,9 +206,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "033938b7d907d2c5ff02c006c3048edbf6467c5c",
+            "85730a48cdc71c06a67728bbd4640b1aeb7e5cb5",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
@@ -390,7 +390,6 @@ class G07BaselineTests(unittest.TestCase):
             "docs/evidence/manifests/G-07_EVIDENCE_MANIFEST_R2.json",
             manifest["supersedes_artifact_ref"]["path"],
         )
-
 
 if __name__ == "__main__":
     unittest.main()
