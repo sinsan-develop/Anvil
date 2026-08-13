@@ -1,0 +1,18 @@
+{
+  "artifact_id":"EVIDENCE-MANIFEST-B-01-REWORK-START-R2-20260813-001","artifact_type":"package_rework_start_projection_manifest","project_id":"anvil","package_id":"B-01","artifact_status":"active_rework","artifact_path":"docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R2.json","created_by":{"actor_type":"agent","actor_id":"main-agent-eoul"},"created_at":"2026-08-13T13:00:03+09:00",
+  "projection":{"event_sequence":196,"status":"ACTIVE","result_status":"REWORK_IN_PROGRESS","valid_failure_count":1,"worker_lease_epoch":2,"write_lease_epoch":2,"next_package":"B-02","next_package_status":"BLOCKED_PENDING_B01_ACCEPTANCE"},
+  "tester_report_sha256":"3215F8C1BF8BDFCED692C7AE86B7ABE0D26A8712C41B9E31B7C8481474BEEED8","failure_fingerprint":"BLK-B01-001-RELEASE-GUARD-TYPE-AND-WHITESPACE-BYPASS","finding_ids":["BLK-B01-001"],"blocking_severity":"CRITICAL",
+  "predecessor_r1":{"developer_manifest_sha256":"BC89F69EF898B815DC0084D7373C0F8F833A8E371AEA4386A890F9FECD57DBED","developer_target_hash":"DF891CEDE6A2DA1124A5BF3F9EB72D4A323E4E98476E2129A8803C3134400567","mutation":"FORBIDDEN_FROZEN_PREDECESSOR"},
+  "developer_r2_exact_paths":["packages/domain/reducer.py","tests/domain/test_reducer.py","docs/validation/B-01_DOMAIN_CORE_VALIDATION_R2.md","docs/evidence/manifests/B-01_EVIDENCE_MANIFEST_R2.json","docs/completion_reports/B-01_COMPLETION_REPORT_R2.md"],
+  "runtime_boundary":{"actual_api":"NOT_EXECUTED","actual_db":"NOT_EXECUTED","actual_ui":"NOT_EXECUTED","actual_browser":"NOT_EXECUTED","actual_provider":"NOT_EXECUTED","actual_wsl":"NOT_EXECUTED","actual_production":"NOT_EXECUTED","actual_deployment":"NOT_EXECUTED"},
+  "a13_successor_projection":{"predecessor_manifest_sha256":"4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771","live_raw_checksums":[{"path":"scripts/check_a13_repository_scan.py","bytes":40964,"sha256":"9D679D66149DE4522143E9F742D8EB86F17AFC7FFB2A1AE3B6B5E30DAD7D0AE5"},{"path":"tests/tooling/test_a13_repository_scan.py","bytes":42884,"sha256":"4D4298466335CCAB513851CDB149B798DEA52F719CFABF91F760334B89726B92"}]},
+  "raw_checksums":[
+    {"path":"docs/evidence/manifests/B-01_COMPLETION_PROGRESS_MANIFEST.json","bytes":2631,"sha256":"22DC5387DC24332F9CFD5490F2528EE12FA27FC4E1743B469135F7B2004E2E9D"},
+    {"path":"docs/progress/failure-ledger.json","bytes":10353,"sha256":"114228244F866B4256194BEBA30FE3057164CE7B2C73053D664E6C4449C1D78D"},
+    {"path":"docs/progress/progress-handoff-detached-digest-b01-rework-start-r2.json","bytes":796,"sha256":"B883EF9FEFCD1A925C1630B40F853B6F2AC89DE8EC85BB73E344A95192402E00"},
+    {"path":"docs/test_reports/B-01_INDEPENDENT_TEST_REPORT.md","bytes":5835,"sha256":"3215F8C1BF8BDFCED692C7AE86B7ABE0D26A8712C41B9E31B7C8481474BEEED8"},
+    {"path":"docs/work_orders/B-01_REWORK_INVOCATION_PROMPT_R2.md","bytes":940,"sha256":"B0A33FCB2628F7224582BC5B7CB9B19627CE9318D648D7737AB273B7212A8C3D"},
+    {"path":"docs/work_orders/B-01_REWORK_WORK_INSTRUCTION_R2.md","bytes":2909,"sha256":"0DB329051E34218DE1CBBD20E1221CA1E29DFA5B32C174FF91B508272B9FEFAF"}
+  ],
+  "target_canonical_bytes":742,"target_content_bytes":23464,"target_hash":"sha256:DFD640A456213AF10C47320F706CB0E4A759D10F72A5DA30D4D1A9BE83236D73","delivered_hash":"sha256:DFD640A456213AF10C47320F706CB0E4A759D10F72A5DA30D4D1A9BE83236D73","content_hash":"sha256:DFD640A456213AF10C47320F706CB0E4A759D10F72A5DA30D4D1A9BE83236D73","self_reference":false
+}

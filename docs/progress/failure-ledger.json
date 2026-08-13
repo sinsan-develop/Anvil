@@ -278,6 +278,22 @@
       "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED",
       "main_takeover_continued": true,
       "independent_retest_status": "R6_PENDING"
+    },
+    {
+      "entry_id": "failure-b01-independent-test-r1",
+      "step_lineage_id": "B-01",
+      "failure_fingerprint": "BLK-B01-001-RELEASE-GUARD-TYPE-AND-WHITESPACE-BYPASS",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": ["BLK-B01-001"],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 1,
+      "evidence_refs": [{"path": "docs/test_reports/B-01_INDEPENDENT_TEST_REPORT.md", "sha256": "3215F8C1BF8BDFCED692C7AE86B7ABE0D26A8712C41B9E31B7C8481474BEEED8"}],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R2_PENDING"
     }
   ]
 }

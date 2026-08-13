@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0.0","digest_id":"B-01-PROGRESS-HANDOFF-DIGEST-REWORK-START-R2","package_id":"B-01","event_sequence":196,"algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":34028,"file_sha256":"95AF20215343965768F4F4B17E13C432669633B44ACB47BB99C4AB5E88DE5A37","canonical_json_sha256":"2F3843FDF1B341D49E4EF7F4A412EFDABE3EA6548847BCF49D2C148FFBA223B2"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":66168,"file_sha256":"F72DF5E77713C91261431F0F649DA93C85E0A9F505F44A3317546D27F154C229","machine_summary_canonical_sha256":"FFDC66677F7A31159707E1F9358398399839CBA54433674728FB7938CCE397B4"},
+  "created_at":"2026-08-13T13:00:03+09:00","scope":"B-01 FAILURE_REPORT accepted; R2 ACTIVE; epoch-2 exact5 leases; R1 and Tester report frozen"
+}

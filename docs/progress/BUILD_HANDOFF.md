@@ -1,55 +1,55 @@
 # Anvil Build Handoff
 
+## B-01 Independent Failure Accepted / R2 Rework Started — sequence 193~196
+
+- Tester report `docs/test_reports/B-01_INDEPENDENT_TEST_REPORT.md` SHA-256 `3215F8C1BF8BDFCED692C7AE86B7ABE0D26A8712C41B9E31B7C8481474BEEED8`의 CRITICAL `BLK-B01-001`을 유효 실패 1회로 수용했다.
+- `BOOL_FALSE`, `FLOAT_ZERO`, `SPACE_TARGET` RELEASE guard 우회만 R2 범위로 고정했으며 R1 exact11과 Tester report는 동결한다.
+- `WI-B-01-20260813-002`에 epoch-2 worker/write lease와 exact 5 Developer paths를 발급했고 B-01은 `ACTIVE / REWORK_IN_PROGRESS`다.
+- B-02는 `BLOCKED_PENDING_B01_ACCEPTANCE`; API·DB·UI·browser·provider·WSL·production·deploy는 `NOT_EXECUTED`다.
+
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 192,
-  "status": "TEST_REVIEW",
+  "event_sequence": 196,
+  "status": "ACTIVE",
   "current_work_package": "B-01",
-  "last_event_id": "evt_b01_package_completed",
+  "last_event_id": "evt_b01_package_resumed_rework_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 0,
-  "active_lineage_valid_failure_count": 0,
+  "valid_failure_count": 1,
+  "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 11,
   "dir_status": "CLEARED",
-  "repository_head": "31656b934c225262a58f88f3411b57ea4839fc49",
+  "repository_head": "6735088c8ed919cba44256ded5c4c8d281e4a3f8",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "31656b934c225262a58f88f3411b57ea4839fc49",
+  "repository_remote_head": "6735088c8ed919cba44256ded5c4c8d281e4a3f8",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "31656b934c225262a58f88f3411b57ea4839fc49",
+  "repository_validated_base_commit": "6735088c8ed919cba44256ded5c4c8d281e4a3f8",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-01_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-01_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b01-completion-test-review.json",
-    "docs/validation/B-01_DOMAIN_CORE_VALIDATION.md",
-    "packages/domain/__init__.py",
-    "packages/domain/events.py",
-    "packages/domain/identifiers.py",
-    "packages/domain/reducer.py",
-    "packages/domain/states.py",
+    "docs/progress/progress-handoff-detached-digest-b01-rework-start-r2.json",
+    "docs/test_reports/B-01_INDEPENDENT_TEST_REPORT.md",
+    "docs/work_orders/B-01_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/B-01_REWORK_WORK_INSTRUCTION_R2.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/domain/test_identifiers.py",
-    "tests/domain/test_reducer.py",
-    "tests/domain/test_state_transitions.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-01_COMPLETION_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-rework-start-r2.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-01_REWORK_START_PROGRESS_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Run independent B-01 Tester review; B-02 remains blocked pending B-01 acceptance",
+  "next_safe_action": "Dispatch developer-primary-b01 for BLK-B01-001 under epoch-2 exact-path leases; do not start B-02",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -57,9 +57,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-01-20260813-001 / TEST_REVIEW / PENDING",
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-01-20260813-002 / ACTIVE / REWORK_IN_PROGRESS",
+  "worker_lease": "worker-lease-b01-rework-20260813-002 / epoch 2 / ACTIVE",
+  "write_lease": "write-lease-b01-rework-20260813-002 / epoch 2 / ACTIVE / exact 5"
 }
 ```
 
@@ -534,3 +534,4 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - DIR-1을 `CLEARED`로 전환한 뒤 누적 A-01~A-15 accepted evidence를 5개 권위 축과 Phase A Gate 기준으로 읽기 전용 검토했다.
 - A Gate는 seq186 `PHASE_GATE_DECIDED / ACCEPTED`, blocking finding 0이다. B-01은 `READY_NOT_STARTED`로만 허용하며 B Phase start Event, WorkInstruction, agent, worker/write lease는 생성하지 않았다.
 - 실제 API·DB·Provider·Secret·Egress·WSL·Production·deployment는 계속 `NOT_EXECUTED`다. A-14 R5 실제 browser evidence와 R6 fresh IAB `ENVIRONMENT_BLOCKED / NOT_EXECUTED` 경계를 보존한다.
+    "docs/progress/failure-ledger.json",
