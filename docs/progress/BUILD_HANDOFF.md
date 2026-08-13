@@ -1,5 +1,13 @@
 # Anvil Build Handoff
 
+## B-03 Developer Completion — sequence 227
+
+- Developer exact15는 manifest SHA `F6E41000...`, target `FC033DF8...`로 바이트 동결했다.
+- seq 225→227은 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-03은 `TEST_REVIEW`, 독립 Tester는 `PENDING`, 모든 lease와 active agent는 null이다.
+- AV-FLOW-002 artifact/audit의 static·unit 증거는 Developer 범위에서 PASS다. AV-FLOW-001 actual L4+L7는 `NOT_EXECUTED`이며, 이 미실행 경계가 PASS·REWORK·BLOCKED 중 어떤 독립 판정으로 이어지는지는 Main이 선결하지 않는다.
+- 전체 cached diff-check의 EOF blank-line 경고 5건은 Developer frozen source에만 존재한다. exact15 raw/hash 보존을 우선해 수정하지 않았고 projection13 diff-check는 PASS다.
+- B-03 acceptance와 B-04 시작은 수행하지 않았다. 실제 API·DB·UI·browser·provider·WSL·production·deploy도 `NOT_EXECUTED`다.
+
 ## B-03 Start — sequence 224
 
 - B-02 acceptance commit `a589b17f26991432de5cf48cfe95c441cdd6da39`를 clean baseline으로 B-03을 시작했다.
@@ -46,44 +54,57 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 224,
-  "status": "ACTIVE",
+  "event_sequence": 227,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-03",
-  "last_event_id": "evt_b03_package_started",
+  "last_event_id": "evt_b03_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 14,
   "dir_status": "CLEARED",
-  "repository_head": "a589b17f26991432de5cf48cfe95c441cdd6da39",
+  "repository_head": "8f65b3e32aa9a45e18879aedca6add424df2ce2c",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "a589b17f26991432de5cf48cfe95c441cdd6da39",
+  "repository_remote_head": "8f65b3e32aa9a45e18879aedca6add424df2ce2c",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "a589b17f26991432de5cf48cfe95c441cdd6da39",
+  "repository_validated_base_commit": "8f65b3e32aa9a45e18879aedca6add424df2ce2c",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-03_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b03-start.json",
-    "docs/work_orders/B-03_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-03_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b03-completion-test-review.json",
+    "docs/validation/B-03_DESIGN_LINEAGE_VALIDATION.md",
+    "migrations/versions/0002_design_artifacts.py",
+    "packages/api/__init__.py",
+    "packages/api/design_contracts.py",
+    "packages/design/__init__.py",
+    "packages/design/lineage.py",
+    "packages/design/models.py",
+    "packages/design/service.py",
+    "packages/persistence/design_repository.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/design/test_lineage.py",
+    "tests/design/test_models.py",
+    "tests/design/test_repository.py",
+    "tests/design/test_service.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b03 under the exact active lease; do not start B-04",
+  "next_safe_action": "Dispatch an independent Tester for B-03; assess AV-FLOW-001 L4+L7 NOT_EXECUTED honestly; do not accept B-03 or start B-04",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -92,8 +113,8 @@
   "b01_start_allowed": true,
   "b01_started": true,
   "active_work_instruction": "WI-B-03-20260814-001",
-  "worker_lease": "worker-lease-b03-20260814-001",
-  "write_lease": "write-lease-b03-20260814-001"
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 

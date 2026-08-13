@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 224,
+  "last_sequence": 227,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -7755,6 +7755,109 @@
         "next_work_package": "B-04",
         "next_package_status": "BLOCKED_PENDING_B03_ACCEPTANCE",
         "reporting_decision": "AUTO_CONTINUE"
+      }
+    },
+    {
+      "event_id": "evt_b03_write_lease_revoked",
+      "sequence": 225,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-08-14T18:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-03",
+      "details": {
+        "lease_id": "write-lease-b03-20260814-001",
+        "worker_lease_id": "worker-lease-b03-20260814-001",
+        "write_epoch": 1,
+        "reason": "DEVELOPER_COMPLETED",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b03_worker_lease_revoked",
+      "sequence": 226,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-08-14T18:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-03",
+      "details": {
+        "lease_id": "worker-lease-b03-20260814-001",
+        "lease_epoch": 1,
+        "reason": "DEVELOPER_COMPLETED",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b03_package_completed",
+      "sequence": 227,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-14T18:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-03",
+      "details": {
+        "completion_head": "8f65b3e32aa9a45e18879aedca6add424df2ce2c",
+        "completion_upstream_head": "8f65b3e32aa9a45e18879aedca6add424df2ce2c",
+        "package_status": "TEST_REVIEW",
+        "result_status": "COMPLETED",
+        "accepted": false,
+        "independent_tester_status": "PENDING",
+        "developer_actor": "developer-primary-b03",
+        "developer_manifest_ref": {
+          "path": "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json",
+          "sha256": "F6E41000512F973D6CF2F3560E42AE6A9545A17C0F4FC8C1F0424DC67BAC8A48"
+        },
+        "developer_target_hash": "FC033DF8B35C9DA19FEACD6FD8ECACA72A13985CBF2728624B53BA176D22F373",
+        "worker_lease": null,
+        "write_lease": null,
+        "next_work_package": "B-04",
+        "next_package_status": "BLOCKED_PENDING_B03_ACCEPTANCE",
+        "av_flow_001_l4_l7": "NOT_EXECUTED",
+        "av_flow_002_artifact_audit": "STATIC_UNIT_PASS",
+        "independent_tester_verdict": "PENDING_INDEPENDENT_ASSESSMENT",
+        "actual_db_status": "NOT_EXECUTED",
+        "actual_api_status": "NOT_EXECUTED",
+        "actual_ui_status": "NOT_EXECUTED",
+        "actual_browser_status": "NOT_EXECUTED",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_wsl_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_deployment_status": "NOT_EXECUTED",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "8f65b3e32aa9a45e18879aedca6add424df2ce2c",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "8f65b3e32aa9a45e18879aedca6add424df2ce2c",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/completion_reports/B-03_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-b03-completion-test-review.json",
+          "docs/validation/B-03_DESIGN_LINEAGE_VALIDATION.md",
+          "migrations/versions/0002_design_artifacts.py",
+          "packages/api/__init__.py",
+          "packages/api/design_contracts.py",
+          "packages/design/__init__.py",
+          "packages/design/lineage.py",
+          "packages/design/models.py",
+          "packages/design/service.py",
+          "packages/persistence/design_repository.py",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/design/test_lineage.py",
+          "tests/design/test_models.py",
+          "tests/design/test_repository.py",
+          "tests/design/test_service.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ]
       }
     }
   ]

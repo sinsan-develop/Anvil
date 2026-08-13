@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "B-03-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW",
+  "package_id": "B-03",
+  "event_sequence": 227,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 36289,
+    "file_sha256": "27145A2BE6F39140DC64B65954F03A8F41B154372E3061E309568617D2CEEF01",
+    "canonical_json_sha256": "26AC1E6908AC0A1E039227B60F035F1D51098DE80EFD2C1023B98DF3F34A50D0"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 71923,
+    "file_sha256": "BF59E4A9E23D46AE1B115EF5D39F6DCB3F3E59BCA3551381118E5F9AB5EF30FD",
+    "machine_summary_canonical_sha256": "86337DF78296357A097F584F9E746D6EBA6730906C14C85547B54ACD6AFAC6D2"
+  },
+  "created_at": "2026-08-14T18:00:02+09:00",
+  "scope": "B-03 Developer exact15 frozen; ordered lease revocation; TEST_REVIEW; AV-FLOW-001 L4+L7 NOT_EXECUTED; B-04 blocked"
+}

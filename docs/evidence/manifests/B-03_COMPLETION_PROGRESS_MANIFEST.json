@@ -1,0 +1,99 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-03-COMPLETION-20260814-001",
+  "artifact_type": "package_completion_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-03",
+  "artifact_status": "test_review",
+  "artifact_path": "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-14T18:00:02+09:00",
+  "projection": {
+    "event_sequence": 227,
+    "status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "independent_tester_status": "PENDING",
+    "worker_lease": null,
+    "write_lease": null,
+    "next_package": "B-04",
+    "next_package_status": "BLOCKED_PENDING_B03_ACCEPTANCE"
+  },
+  "developer_manifest_sha256": "F6E41000512F973D6CF2F3560E42AE6A9545A17C0F4FC8C1F0424DC67BAC8A48",
+  "developer_target_hash": "FC033DF8B35C9DA19FEACD6FD8ECACA72A13985CBF2728624B53BA176D22F373",
+  "developer_exact_path_count": 15,
+  "developer_mutation": "FORBIDDEN_FROZEN_PREDECESSOR",
+  "frozen_source_diff_check": {
+    "status": "WARN_PRESERVED_BYTE_FREEZE",
+    "warning_count": 5,
+    "warnings": [
+      "migrations/versions/0002_design_artifacts.py:35 new blank line at EOF",
+      "packages/api/__init__.py:6 new blank line at EOF",
+      "packages/design/__init__.py:7 new blank line at EOF",
+      "packages/design/lineage.py:94 new blank line at EOF",
+      "packages/persistence/design_repository.py:14 new blank line at EOF"
+    ],
+    "projection_only_diff_check": "PASS",
+    "reason": "Developer exact15 raw bytes are frozen by manifest F6E410...; whitespace mutation is forbidden before independent test."
+  },
+  "verification_boundary": {
+    "av_flow_001_l4_l7": "NOT_EXECUTED",
+    "av_flow_002_artifact_audit": "STATIC_UNIT_PASS",
+    "independent_tester_verdict": "PENDING_INDEPENDENT_ASSESSMENT",
+    "verdict_effect": "NOT_PREDECIDED_BY_MAIN"
+  },
+  "runtime_boundary": {
+    "actual_db": "NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  },
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 51704,
+        "sha256": "59004EF574E4B0C3EECB4A8BEA033A3BA3AABB82F75DC5A8A3211E41ECD6492D"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 43130,
+        "sha256": "14520A043C8C812B371EB5CCB84E5BBB7B70B75B91E818088521C7BB1EE5CA42"
+      }
+    ]
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json",
+      "bytes": 4954,
+      "sha256": "D22EE99F217FE5B64DCFFFF05D73EDD6C7C5D51E5563FA6523F84A68879B88CD"
+    },
+    {
+      "path": "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json",
+      "bytes": 4456,
+      "sha256": "F6E41000512F973D6CF2F3560E42AE6A9545A17C0F4FC8C1F0424DC67BAC8A48"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-b03-completion-test-review.json",
+      "bytes": 904,
+      "sha256": "B3CEE78644C7BA515CA47CFE6844D554DEEEECDC725B6CB8B0F3D8B9B40C391B"
+    },
+    {
+      "path": "docs/work_orders/B-03_WORK_INSTRUCTION.md",
+      "bytes": 5171,
+      "sha256": "A80E618ECA15E184ADB5DBFB7E079C3B42A474A9FE8F566D7EFE7A0C6D13E023"
+    }
+  ],
+  "target_canonical_bytes": 509,
+  "target_content_bytes": 15485,
+  "target_hash": "sha256:002070563A310674905C9C165894B0B3EC01A625E6EE648DD7516C58E22FB496",
+  "delivered_hash": "sha256:002070563A310674905C9C165894B0B3EC01A625E6EE648DD7516C58E22FB496",
+  "content_hash": "sha256:002070563A310674905C9C165894B0B3EC01A625E6EE648DD7516C58E22FB496",
+  "self_reference": false
+}
