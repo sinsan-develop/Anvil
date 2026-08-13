@@ -104,7 +104,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertFalse(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
         self.assertEqual("B-02", report["progress"]["current_work_package"])
-        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
+        self.assertEqual("ACTIVE", report["progress"]["status"])
         self.assertEqual("WI-A-02-20260811-001", start["details"]["work_instruction_id"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
@@ -132,10 +132,10 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         progress = report["progress"]
         self.assertEqual("B-02", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("WI-B-02-20260814-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-02-20260814-002", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
         actual_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual("CLEARED", actual_progress["dir_review"]["status"])
         self.assertEqual("BLOCKED_PENDING_B02_ACCEPTANCE", actual_progress["next_work_package"]["status"])

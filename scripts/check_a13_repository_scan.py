@@ -300,6 +300,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         b02_start = _load_json(b02_start_path) if b02_start_path.is_file() else {}
         b02_completion_path = root / 'docs/evidence/manifests/B-02_COMPLETION_PROGRESS_MANIFEST.json'
         b02_completion = _load_json(b02_completion_path) if b02_completion_path.is_file() else {}
+        b02_rework_path = root / 'docs/evidence/manifests/B-02_REWORK_START_PROGRESS_MANIFEST_R2.json'
+        b02_rework = _load_json(b02_rework_path) if b02_rework_path.is_file() else {}
         a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
         a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
@@ -599,7 +601,18 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-02_COMPLETION_PROGRESS_MANIFEST.json'
         and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
     )
+    current_b02_rework = (
+        bool(b02_rework) and progress.get('event_sequence') == 217
+        and progress.get('current_work_package') == 'B-02' and progress.get('status') == 'ACTIVE'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-02-20260814-002'
+        and progress.get('worker_lease', {}).get('lease_epoch') == 2
+        and progress.get('write_lease', {}).get('write_epoch') == 2
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-02_REWORK_START_PROGRESS_MANIFEST_R2.json'
+        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    )
     candidates: list[dict[str, Any]] = []
+    if current_b02_rework:
+        candidates.append(b02_rework.get('a13_successor_projection', {}))
     if current_b02_completion:
         candidates.append(b02_completion.get('a13_successor_projection', {}))
     if current_b02_start:

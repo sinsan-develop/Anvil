@@ -58,16 +58,16 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(213, progress["event_sequence"])
+        self.assertEqual(217, progress["event_sequence"])
         self.assertEqual("B-02", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("WI-B-02-20260814-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-02-20260814-002", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
-        self.assertEqual(0, progress["valid_failure_count"])
+        self.assertEqual(1, progress["valid_failure_count"])
         self.assertEqual("B-02", progress["active_failure_lineage"]["step_lineage_id"])
-        self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertEqual(1, progress["active_failure_lineage"]["valid_failure_count"])
 
     def test_authority_hash_and_version_drift_are_rejected(self):
         design = (ROOT / "Anvil_설계서_v2.md").read_text(encoding="utf-8")
@@ -206,9 +206,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_RESUMED", reconciliation["event_type"])
         self.assertEqual(
-            "1871a53ecda15544757382ce13d30e3bb3f63f73",
+            "0abd0a830432956fc3da18740edbfd07488e3847",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
@@ -216,7 +216,7 @@ class G07BaselineTests(unittest.TestCase):
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
         self.assertEqual("B-02", report["failure_counts"]["active_lineage"])
-        self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
+        self.assertEqual(1, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(13, report["failure_counts"]["historical_accepted_failure_total"])
         self.assertEqual(1, report["failure_counts"]["historical_by_lineage"]["A-13"])
         self.assertEqual(4, report["failure_counts"]["historical_by_lineage"]["A-14"])
@@ -240,7 +240,7 @@ class G07BaselineTests(unittest.TestCase):
         events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
         completion = next(event for event in events if event["sequence"] == 63)["details"]
         self.assertEqual("TEST_REVIEW", completion["package_status"])
-        self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
+        self.assertEqual(1, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(1, report["failure_counts"]["historical_by_lineage"]["A-03"])
         self.assertEqual(1, report["failure_counts"]["historical_by_lineage"]["A-13"])
         self.assertEqual("dc2ba63e1d923663724d1291cbcec007e4e7e7fe", completion["validated_base_commit"])
