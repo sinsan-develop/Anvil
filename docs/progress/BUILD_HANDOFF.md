@@ -1,5 +1,11 @@
 # Anvil Build Handoff
 
+## B-02 R2 Developer Completion — sequence 220
+
+- Developer exact4는 manifest SHA `9C0DC1AA...`, target `361EC1B0...`로 동결했다.
+- seq 218→220은 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-02는 `TEST_REVIEW / R2_PENDING`, B-03은 acceptance 전 차단이다.
+- `server_version_num` 의미 필드가 교정되었고 port key는 제거됐다. 실제 격리 PG15/PG18 런타임은 재실행하지 않았으며 R1 actual 및 독립 Tester runtime 증거를 보존한다.
+
 ## B-02 R2 Rework Start — sequence 217
 
 - Tester report SHA `1B2F3A70...`의 `BLK-B02-001-COMPLETION-RUNTIME-FIELD-SEMANTICS`를 valid failure 1로 수용했다.
@@ -27,46 +33,46 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 217,
-  "status": "ACTIVE",
+  "event_sequence": 220,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-02",
-  "last_event_id": "evt_b02_package_resumed_rework_r2",
+  "last_event_id": "evt_b02_rework_package_completed_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 13,
   "dir_status": "CLEARED",
-  "repository_head": "0abd0a830432956fc3da18740edbfd07488e3847",
+  "repository_head": "56f083509ebd04c6cc239af0008f1f76cd09c951",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "0abd0a830432956fc3da18740edbfd07488e3847",
+  "repository_remote_head": "56f083509ebd04c6cc239af0008f1f76cd09c951",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "0abd0a830432956fc3da18740edbfd07488e3847",
+  "repository_validated_base_commit": "56f083509ebd04c6cc239af0008f1f76cd09c951",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-02_REWORK_START_PROGRESS_MANIFEST_R2.json",
+    "docs/completion_reports/B-02_COMPLETION_REPORT_R2.md",
+    "docs/evidence/manifests/B-02_EVIDENCE_MANIFEST_R2.json",
+    "docs/evidence/manifests/B-02_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b02-rework-start-r2.json",
-    "docs/test_reports/B-02_INDEPENDENT_TEST_REPORT.md",
-    "docs/work_orders/B-02_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/B-02_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-b02-rework-completion-r2.json",
+    "docs/validation/B-02_DATABASE_FOUNDATION_VALIDATION_R2.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/persistence/test_postgres_compatibility.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-rework-start-r2.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-02_REWORK_START_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-rework-completion-r2.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-02_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b02 on WI-B-02-20260814-002 exact4; do not accept B-02 or start B-03",
+  "next_safe_action": "Dispatch independent Tester for B-02 R2; do not accept B-02 or start B-03",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -74,9 +80,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-02-20260814-002 / REWORK_IN_PROGRESS / R2_PENDING",
-  "worker_lease": "worker-lease-b02-rework-20260814-002 / epoch 2",
-  "write_lease": "write-lease-b02-rework-20260814-002 / epoch 2 / exact 4"
+  "active_work_instruction": "WI-B-02-20260814-002 / COMPLETED / R2_PENDING",
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 
