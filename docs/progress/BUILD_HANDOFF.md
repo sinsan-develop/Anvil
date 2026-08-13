@@ -1,5 +1,11 @@
 # Anvil Build Handoff
 
+## B-02 R2 Main Acceptance — sequence 221
+
+- Tester R2 report SHA `D9C46F74...`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 수용하고 BLK-B02-001을 CLOSED 처리했다.
+- B-02는 `ACCEPTED`, B-03은 `READY`; active failure 0, B-02 historical valid failure 1이며 모든 lease는 null이다.
+- 의미 범위는 `server_version_num` 150017/180004이며 port key는 없다. R2 DB runtime은 재실행하지 않았고 기존 actual·독립 증거를 보존한다.
+
 ## B-02 R2 Developer Completion — sequence 220
 
 - Developer exact4는 manifest SHA `9C0DC1AA...`, target `361EC1B0...`로 동결했다.
@@ -33,46 +39,43 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 220,
-  "status": "TEST_REVIEW",
-  "current_work_package": "B-02",
-  "last_event_id": "evt_b02_rework_package_completed_r2",
+  "event_sequence": 221,
+  "status": "READY",
+  "current_work_package": "B-03",
+  "last_event_id": "evt_b02_main_package_accepted_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 1,
-  "active_lineage_valid_failure_count": 1,
-  "historical_accepted_failure_count": 13,
+  "valid_failure_count": 0,
+  "active_lineage_valid_failure_count": 0,
+  "historical_accepted_failure_count": 14,
   "dir_status": "CLEARED",
-  "repository_head": "56f083509ebd04c6cc239af0008f1f76cd09c951",
+  "repository_head": "31366334eec3b1c42b82bc9c76a1b2de1f7fafe7",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "56f083509ebd04c6cc239af0008f1f76cd09c951",
+  "repository_remote_head": "31366334eec3b1c42b82bc9c76a1b2de1f7fafe7",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "56f083509ebd04c6cc239af0008f1f76cd09c951",
+  "repository_validated_base_commit": "31366334eec3b1c42b82bc9c76a1b2de1f7fafe7",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-02_COMPLETION_REPORT_R2.md",
-    "docs/evidence/manifests/B-02_EVIDENCE_MANIFEST_R2.json",
-    "docs/evidence/manifests/B-02_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/B-02_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b02-rework-completion-r2.json",
-    "docs/validation/B-02_DATABASE_FOUNDATION_VALIDATION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-b02-accepted-r2.json",
+    "docs/test_reports/B-02_RETEST_REPORT_R2.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/persistence/test_postgres_compatibility.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-rework-completion-r2.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-02_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-accepted-r2.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-02_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch independent Tester for B-02 R2; do not accept B-02 or start B-03",
+  "next_safe_action": "Prepare B-03 WorkInstruction and dispatch-ready start projection; do not implement B-03",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -80,7 +83,7 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-02-20260814-002 / COMPLETED / R2_PENDING",
+  "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
 }

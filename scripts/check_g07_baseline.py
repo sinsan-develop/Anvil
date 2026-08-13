@@ -794,6 +794,11 @@ def validate_repository(
         terminal=[event for event in events if 218 <= event.get("sequence",-1) <= 220]; instruction=progress.get("active_work_instruction") or {}
         if (progress.get("current_work_package")!="B-02" or progress.get("status")!="TEST_REVIEW" or instruction.get("artifact_id")!="WI-B-02-20260814-002" or instruction.get("result_status")!="COMPLETED" or instruction.get("independent_tester_status")!="R2_PENDING" or instruction.get("finding_status")!="FIXED_AWAITING_INDEPENDENT_RETEST" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
             _error(errors,"B02_R2_COMPLETION_PROJECTION_MISMATCH",progress_path,"sequence=220")
+    if progress.get("event_sequence") == 221:
+        acceptance=[event for event in events if event.get("sequence")==221]
+        historical=progress.get("historical_failure_counts_by_lineage") or {}
+        if (progress.get("current_work_package")!="B-03" or progress.get("status")!="READY" or "B-02" not in progress.get("completed_packages",[]) or progress.get("valid_failure_count")!=0 or historical.get("B-02")!=1 or progress.get("active_work_instruction") is not None or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in acceptance] != ["MAIN_PACKAGE_ACCEPTED"]):
+            _error(errors,"B02_R2_ACCEPTANCE_PROJECTION_MISMATCH",progress_path,"sequence=221")
     if progress.get("event_sequence") == 192:
         terminal=[event for event in events if 190 <= event.get("sequence",-1) <= 192]
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="TEST_REVIEW" or (progress.get("active_work_instruction") or {}).get("independent_tester_status")!="PENDING" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
