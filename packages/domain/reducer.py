@@ -36,12 +36,15 @@ def _release_conditions(payload: object) -> bool:
         return False
     get = payload.get  # type: ignore[union-attr]
     target = get("target_hash")
+    blocking_defect_count = get("blocking_defect_count")
     return (
         get("product_validation_complete") is True
-        and get("blocking_defect_count") == 0
+        and type(blocking_defect_count) is int
+        and blocking_defect_count == 0
         and get("authenticated_human_release") is True
         and get("decision") == "RELEASE"
-        and isinstance(target, str) and bool(target)
+        and isinstance(target, str)
+        and bool(target.strip())
         and get("validation_target_hash") == target
     )
 

@@ -1,0 +1,31 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-01-R2-20260813-001",
+  "artifact_type": "domain_core_rework_evidence_manifest",
+  "package_id": "B-01",
+  "revision": 2,
+  "artifact_status": "completed_pending_independent_retest",
+  "work_instruction_sha256": "0DB329051E34218DE1CBBD20E1221CA1E29DFA5B32C174FF91B508272B9FEFAF",
+  "baseline_git_commit": "f74c3a1dccd7b9e2752c742baf597de062f8b779",
+  "failure_fingerprint": "BLK-B01-001-RELEASE-GUARD-TYPE-AND-WHITESPACE-BYPASS",
+  "predecessor_manifest": {"path": "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json", "sha256": "BC89F69EF898B815DC0084D7373C0F8F833A8E371AEA4386A890F9FECD57DBED"},
+  "assigned_verification_ids": ["AV-STAT-001", "AV-STAT-002", "AV-STAT-003"],
+  "environment_id": "ENV-LOCAL",
+  "acquisition_mode": "unit_test",
+  "exact_write_paths": ["packages/domain/reducer.py", "tests/domain/test_reducer.py", "docs/validation/B-01_DOMAIN_CORE_VALIDATION_R2.md", "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST_R2.json", "docs/completion_reports/B-01_COMPLETION_REPORT_R2.md"],
+  "raw_artifacts": [
+    {"path": "packages/domain/reducer.py", "bytes": 2855, "sha256": "1BADE5C53668CB7FAD610A3ACA296DE0A4A608410999F1E4C139E0B04FF2AAC5"},
+    {"path": "tests/domain/test_reducer.py", "bytes": 6462, "sha256": "1CD2AABA534CB4135E3C86A6B7A4AD9C1DAAD1501E0D7713CB32B544F53D8913"},
+    {"path": "docs/validation/B-01_DOMAIN_CORE_VALIDATION_R2.md", "bytes": 912, "sha256": "D1DB439907CBF0CBC43C12149B96C5F9829747BB8D15DCACB08B7425897E844F"},
+    {"path": "docs/completion_reports/B-01_COMPLETION_REPORT_R2.md", "bytes": 1247, "sha256": "6451A10A9A56310211C3D73A739104D35C73251AA938D4AC7710AA6B81547614"}
+  ],
+  "target_algorithm": {"algorithm_version": "1.0.0", "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix", "sort": "UTF-8 byte ordinal", "row_separator": "LF", "final_newline": false, "hash_algorithm": "SHA-256"},
+  "target_canonical_bytes": 437,
+  "target_content_bytes": 11476,
+  "target_hash": "E63009EE0F8386E670431F87EC6D2CE8C089D8D9C4ADCF51A5FC8B6D9D46373A",
+  "delivered_hash": "E63009EE0F8386E670431F87EC6D2CE8C089D8D9C4ADCF51A5FC8B6D9D46373A",
+  "content_hash": "E63009EE0F8386E670431F87EC6D2CE8C089D8D9C4ADCF51A5FC8B6D9D46373A",
+  "self_reference": false,
+  "test_results": {"hostile_red": "3/3 BYPASS reproduced", "hostile_green": "3/3 rejected", "domain_full": "13/13 PASS", "tooling_full": "272/282 PASS; 10 projection failures retained"},
+  "runtime_boundary": {"actual_db": "NOT_EXECUTED", "actual_api": "NOT_EXECUTED", "actual_ui": "NOT_EXECUTED", "actual_browser": "NOT_EXECUTED", "actual_provider": "NOT_EXECUTED", "actual_wsl": "NOT_EXECUTED", "actual_production": "NOT_EXECUTED", "actual_deployment": "NOT_EXECUTED"},
+  "self_reference_policy": "manifest excluded from raw rows"
+}
