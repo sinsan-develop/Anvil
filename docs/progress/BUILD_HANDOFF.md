@@ -3,32 +3,31 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 184,
-  "status": "DIR_HOLD",
-  "current_work_package": "A-15",
-  "last_event_id": "evt_dir1_reported_waiting_owner_direction",
+  "event_sequence": 186,
+  "status": "READY",
+  "current_work_package": "B-01",
+  "last_event_id": "evt_a_gate_decided_accepted",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 11,
-  "dir_status": "WAITING_OWNER_DIRECTION",
-  "repository_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+  "dir_status": "CLEARED",
+  "repository_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+  "repository_remote_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+  "repository_validated_base_commit": "a0f3ecae09309980e76e64a2336732e880fdd246",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/approvals/APPROVAL-20260813-A15-UX-001.md",
-    "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
+    "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md",
+    "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/dir-checkpoints.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
-    "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md",
-    "docs/test_reports/DIR-1_REPORT.md",
+    "docs/progress/progress-handoff-detached-digest-a-gate-decision.json",
+    "docs/test_reports/A-GATE_TEST_REPORT.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -38,17 +37,18 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a-gate-decision.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "STOP at DIR-1 and await explicit owner direction; do not decide A Gate or start any successor package",
+  "next_safe_action": "B-01 is permitted but not started; issue a fresh WorkInstruction and fenced lease only in a subsequent authorized package-start projection",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
-  "reporting_decision": "STOP_AND_REPORT_DIR",
-  "a_gate_status": "NOT_STARTED",
-  "a_gate_checkpoint_status": "BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
-  "a_gate_start_allowed": false,
+  "reporting_decision": "AUTO_CONTINUE",
+  "a_gate_status": "ACCEPTED",
+  "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
+  "b01_start_allowed": true,
+  "b01_started": false,
   "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
@@ -56,8 +56,8 @@
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-15 ACCEPTED / DIR-1 WAITING_OWNER_DIRECTION / DIR_HOLD`
-> 현재 Phase / Package: `A / A-15`
+> 현재 상태: `DIR-1 CLEARED / A Gate ACCEPTED / B-01 READY_NOT_STARTED`
+> 현재 Phase / Package: `B / B-01 (not started)`
 
 ## 1. 현재 기준선
 
@@ -505,3 +505,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - canonical 순서대로 seq183 `DIR_REACHED`, seq184 `DIR_REPORTED`를 append했다. DIR-1 보고 판정은 `ALIGNED`이지만 상태는 `WAITING_OWNER_DIRECTION`이며, A Gate는 `NOT_STARTED / BLOCKED_PENDING_DIR1_OWNER_DIRECTION`이다.
 - active WorkInstruction, agent, worker lease, write lease는 모두 null이다. 신산님의 별도 DIR-1 계속 지시 전에는 A Gate 판정, 후속 Package, Subagent, 제품 write, 배포를 시작하지 않는다.
 - A-15 실제 API·DB·browser·network·Provider·Secret·Egress·WSL·production·deployment는 `NOT_EXECUTED`를 유지한다. A-14 R5 실제 browser 증거와 R6 IAB `ENVIRONMENT_BLOCKED / NOT_EXECUTED` 경계도 변경하지 않는다.
+
+## DIR-1 owner direction → A Gate 판정
+
+- 신산님의 현재 대화 지시 `계속 진행해`를 `APPROVAL-20260813-DIR1-CONTINUE-001`로 인증 기록하고 seq185 `DIR_OWNER_DIRECTION_RECORDED / CONTINUE`에 결박했다.
+- DIR-1을 `CLEARED`로 전환한 뒤 누적 A-01~A-15 accepted evidence를 5개 권위 축과 Phase A Gate 기준으로 읽기 전용 검토했다.
+- A Gate는 seq186 `PHASE_GATE_DECIDED / ACCEPTED`, blocking finding 0이다. B-01은 `READY_NOT_STARTED`로만 허용하며 B Phase start Event, WorkInstruction, agent, worker/write lease는 생성하지 않았다.
+- 실제 API·DB·Provider·Secret·Egress·WSL·Production·deployment는 계속 `NOT_EXECUTED`다. A-14 R5 실제 browser evidence와 R6 fresh IAB `ENVIRONMENT_BLOCKED / NOT_EXECUTED` 경계를 보존한다.

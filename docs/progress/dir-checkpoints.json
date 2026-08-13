@@ -4,7 +4,7 @@
   "checkpoints": [
     {
       "checkpoint": "DIR-1",
-      "status": "WAITING_OWNER_DIRECTION",
+      "status": "CLEARED",
       "verdict": "ALIGNED",
       "subject_hash": "25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC",
       "evidence_hash": "9AC48F7ACC288511E77AB079C99B32C9979CE8566E121711E1878D9152D79301",
@@ -13,7 +13,7 @@
       "canonical_trigger": "A-15_ACCEPTED",
       "report_event_id": "evt_dir1_reported_waiting_owner_direction",
       "report_ref": "docs/test_reports/DIR-1_REPORT.md",
-      "owner_direction_event_id": null,
+      "owner_direction_event_id": "evt_dir1_owner_direction_continue",
       "lease_released": true,
       "blocked_next_action": "A-GATE"
     },

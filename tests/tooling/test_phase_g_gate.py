@@ -102,7 +102,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual("A-02", start["subject_ref"])
         self.assertEqual("ACTIVE", start["details"]["package_status"])
         self.assertFalse(report["progress"]["a01_start_allowed"])
-        self.assertEqual("NOT_STARTED", report["progress"]["g_gate_status"])
+        self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
         self.assertEqual("WI-A-02-20260811-001", start["details"]["work_instruction_id"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
@@ -125,18 +125,19 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual(worker["details"]["lease_id"], write["details"]["worker_lease_id"])
         self.assertEqual(write["details"]["lease_id"], start["details"]["write_lease_id"])
 
-    def test_gate_checkpoint_blocks_a_gate_during_dir1_owner_direction_hold(self):
+    def test_a_gate_decision_permits_b01_but_does_not_start_it(self):
         report = self.validate()
         self.assertEqual([], report["errors"])
         progress = report["progress"]
-        self.assertEqual("A-15", progress["current_work_package"])
-        self.assertEqual("DIR_HOLD", progress["status"])
+        self.assertEqual("B-01", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
         actual_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual("WAITING_OWNER_DIRECTION", actual_progress["dir_review"]["status"])
-        self.assertEqual("BLOCKED_PENDING_DIR1_OWNER_DIRECTION", actual_progress["next_work_package"]["status"])
+        self.assertEqual("CLEARED", actual_progress["dir_review"]["status"])
+        self.assertEqual("READY_NOT_STARTED", actual_progress["next_work_package"]["status"])
+        self.assertEqual("ACCEPTED", actual_progress["phase_gate"]["decision"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
         design_path = "Anvil_설계서_v2.md"

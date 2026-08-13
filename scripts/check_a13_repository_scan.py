@@ -280,6 +280,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         a15_acceptance_dir1 = (
             _load_json(a15_acceptance_dir1_path) if a15_acceptance_dir1_path.is_file() else {}
         )
+        a_gate_path = root / 'docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json'
+        a_gate = _load_json(a_gate_path) if a_gate_path.is_file() else {}
         a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
         a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
@@ -490,7 +492,23 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
             or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
         )
     )
+    current_a_gate = (
+        bool(a_gate)
+        and progress.get('event_sequence') == 186
+        and progress.get('current_work_package') == 'B-01'
+        and progress.get('status') == 'READY'
+        and progress.get('active_work_instruction') is None
+        and progress.get('active_agent') is None
+        and progress.get('worker_lease') is None
+        and progress.get('write_lease') is None
+        and progress.get('dir_review', {}).get('status') == 'CLEARED'
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json'
+        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a_gate:
+        candidates.append(a_gate.get('a13_successor_projection', {}))
     if current_a15_acceptance_dir1:
         candidates.append(a15_acceptance_dir1.get('a13_successor_projection', {}))
     if current_a15_completion:

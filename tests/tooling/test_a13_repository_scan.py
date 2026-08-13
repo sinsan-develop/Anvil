@@ -88,7 +88,7 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     if progress.get("event_sequence") in (171, 174):
         return
-    elif progress.get("event_sequence") in (175, 181, 184):
+    elif progress.get("event_sequence") in (175, 181, 184, 186):
         paths = progress["repository"]["exact_allowed_paths"]
     elif progress["write_lease"] is not None:
         paths = progress["write_lease"]["paths"]
@@ -826,12 +826,12 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(184, progress["event_sequence"])
-        self.assertEqual("A-15", progress["current_work_package"])
-        self.assertEqual("DIR_HOLD", progress["status"])
+        self.assertEqual(186, progress["event_sequence"])
+        self.assertEqual("B-01", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertEqual("DIR-1", progress["dir_review"]["checkpoint"])
-        self.assertEqual("WAITING_OWNER_DIRECTION", progress["dir_review"]["status"])
+        self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
         self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())

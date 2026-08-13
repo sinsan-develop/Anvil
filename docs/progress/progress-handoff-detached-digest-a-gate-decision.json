@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-GATE-PROGRESS-HANDOFF-DIGEST-DECISION",
+  "package_id": "A-GATE",
+  "event_sequence": 186,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 32203, "file_sha256": "86995BCEE1780AA0CBBB13A86A8950F76DF20A88B29861BEBE801CA6651927D5", "canonical_json_sha256": "964600AA30C138509162E3C3D653B086EB54B8F2726165BD84B65A955E38B3C4"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 64225, "file_sha256": "3CB994F134CD3B01674C39469A75DAB0FFFF90B07B917AC606AA3912E7CC6EA0", "machine_summary_canonical_sha256": "B2CFCDB25D2D59690D26F90943BC596EC1D304ECBFD2DC07A56DBF09E8779E6D"},
+  "created_at": "2026-08-13T10:00:01+09:00",
+  "scope": "DIR-1 owner direction CONTINUE; DIR CLEARED; A Gate ACCEPTED; B-01 READY_NOT_STARTED; leases null"
+}

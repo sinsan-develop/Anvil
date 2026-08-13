@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000076",
-  "event_sequence": 184,
-  "updated_at": "2026-08-13T09:20:00+09:00",
-  "last_event_id": "evt_dir1_reported_waiting_owner_direction",
+  "snapshot_id": "snapshot-anvil-build-000077",
+  "event_sequence": 186,
+  "updated_at": "2026-08-13T10:00:01+09:00",
+  "last_event_id": "evt_a_gate_decided_accepted",
   "plan_version": "1.5",
   "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "current_phase": "A",
-  "current_work_package": "A-15",
-  "status": "DIR_HOLD",
+  "current_phase": "B",
+  "current_work_package": "B-01",
+  "status": "READY",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -579,7 +579,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "42FAA0BB2267F8BA7616FD9F7E22C234688D53D319C387940C8CADE839972DB1"
+      "sha256": "61658CBB749978D83A363ED90CED62F9C5AD8F741B8B0E278C95D98BFFCA3341"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -587,19 +587,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "38D475E07940678E28B22D4A48D1A6FCE7D71233D7E489772C479CE8D3301F0B"
+      "sha256": "71F7208910CB00B49B32ABB2A6DB7F9E88859F5027EEAD2521DF484BC3DDD1EC"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "9B0176EEE6EEA6081348273B6BA30B7D28273010AE14FE8D027D5952567563F7"
+      "sha256": "A21A6F35CCA873036D910CA58173A6F763542020E0B8EAA52F1E26191B60FB43"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "41E9383701F519F0D3BA1A6E53998671EFB8B8A1F6456CD56CB3BB5051AD5BAD"
+      "sha256": "5460B2AFD9E74EA8A09A26A5F200A623823E1B1FFFB3481CAA2C59C0D1595B9A"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "20B8FB603F7107278E61A70506B781ED7803E2A2A84169A3A59EAA62AA5E879F"
+      "sha256": "F3C4F64425D74DAA9DB7B7EC1EB6AE90000129CCC5217ED4245548D02E236A20"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -607,15 +607,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "216A61D4E809CE65EC441E7ACDFDBB9F155C3CB3B44C57E55116C33B7E6E9BC3"
+      "sha256": "12E3A51B35B06A7BC5D64777A3C29E70B8F74C9702C6FA557634A3DD426846F9"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "56E758B858301EC3E1A8CA808F69F04CB1AA52128FBECD90729A928B3DB77D40"
+      "sha256": "2344EDC8DBCB57DF53F4B84131D28D1E5A7DD379D03ADF00228E20168C93A011"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "43B3996CF69DFC832D70B4144F528672EC6F73E8EC367B2804CF6DFDFC4FAB0B"
+      "sha256": "D475703E5DE6650FE19BA335C7C41E13277C5320C8967CE7D07FA1E2E90F3DDE"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -643,7 +643,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "CD14159E6BC5A370DFE835A2F99D68BD867EA99A8B7F73B001C7608100B75632"
+      "sha256": "219B90626BF4B0E5C011D685E43F9115875F94E9720DC27530EC5881C3274C3D"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -681,12 +681,12 @@
   "pending_approvals": [],
   "dir_review": {
     "checkpoint": "DIR-1",
-    "status": "WAITING_OWNER_DIRECTION",
+    "status": "CLEARED",
     "report_path": "docs/test_reports/DIR-1_REPORT.md",
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "STOP at DIR-1 and await explicit owner direction; do not decide A Gate or start any successor package",
+  "next_safe_action": "B-01 is permitted but not started; issue a fresh WorkInstruction and fenced lease only in a subsequent authorized package-start projection",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -738,22 +738,21 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+    "validated_base_commit": "a0f3ecae09309980e76e64a2336732e880fdd246",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+    "remote_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/approvals/APPROVAL-20260813-A15-UX-001.md",
-      "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
+      "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md",
+      "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/dir-checkpoints.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
-      "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md",
-      "docs/test_reports/DIR-1_REPORT.md",
+      "docs/progress/progress-handoff-detached-digest-a-gate-decision.json",
+      "docs/test_reports/A-GATE_TEST_REPORT.md",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
@@ -763,9 +762,9 @@
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-13T09:20:00+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: A-15 accepted; DIR-1 WAITING_OWNER_DIRECTION; successor work forbidden",
-    "local_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08"
+    "observed_at": "2026-08-13T10:00:01+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: DIR-1 CLEARED; A Gate ACCEPTED; B-01 READY_NOT_STARTED",
+    "local_head": "a0f3ecae09309980e76e64a2336732e880fdd246"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -782,13 +781,14 @@
   "active_work_instruction": null,
   "phase_gate": {
     "gate": "A Gate",
-    "decision": "NOT_STARTED",
-    "checkpoint_status": "BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
-    "decision_ref": null,
-    "approval_mode": "OWNER_DIRECTION_REQUIRED",
-    "approval_ref": null,
-    "owner_report_review_status": "PENDING_OWNER_DIRECTION",
-    "a_gate_start_allowed": false
+    "decision": "ACCEPTED",
+    "checkpoint_status": "CLEARED_AND_DECIDED",
+    "decision_ref": "docs/test_reports/A-GATE_TEST_REPORT.md",
+    "approval_mode": "DIR1_OWNER_DIRECTION_APPLIED",
+    "approval_ref": "APPROVAL-20260813-DIR1-CONTINUE-001",
+    "owner_report_review_status": "ALIGNED_CONTINUE",
+    "b01_start_allowed": true,
+    "b01_started": false
   },
   "last_accepted_work_instruction": {
     "artifact_id": "WI-A-15-20260813-001",
@@ -797,17 +797,17 @@
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
-    "decision": "STOP_AND_REPORT_DIR",
+    "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "DIR-1_REACHED",
-      "OWNER_DIRECTION_REQUIRED"
+      "DIR1_OWNER_DIRECTION_RECORDED",
+      "A_GATE_DECIDED_NO_B_START"
     ],
-    "stop_before_dialogue_report": true
+    "stop_before_dialogue_report": false
   },
   "current_progress_evidence_ref": {
-    "package_id": "A-15",
-    "path": "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
-    "manifest_path": "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json"
+    "package_id": "A-GATE",
+    "path": "docs/progress/progress-handoff-detached-digest-a-gate-decision.json",
+    "manifest_path": "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -820,7 +820,7 @@
     },
     "dir_checkpoints": {
       "path": "docs/progress/dir-checkpoints.json",
-      "sha256": "FC1963BAFFBB1AE74A5E6A5276BAE1A79C8B9836A49CA315972B52FCF4CBC060"
+      "sha256": "D59282F07FDB30BC36601815A7E08E9D0FAA4C0B35BCA1D2E82A306FC9BF980E"
     },
     "progress_event_contract": {
       "path": "docs/progress/progress-event-contract.json",
@@ -828,12 +828,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "CD14159E6BC5A370DFE835A2F99D68BD867EA99A8B7F73B001C7608100B75632"
+      "sha256": "219B90626BF4B0E5C011D685E43F9115875F94E9720DC27530EC5881C3274C3D"
     }
   },
   "next_work_package": {
-    "package_id": "A-GATE",
-    "status": "BLOCKED_PENDING_DIR1_OWNER_DIRECTION"
+    "package_id": "B-01",
+    "status": "READY_NOT_STARTED"
   },
-  "snapshot_hash": "FC7BB79C146687A43988128956829B083B005761242087269011806C48C3336B"
+  "snapshot_hash": "01A21509F1DF4085D0804D690D76254367035968D7BAE995C6C69759BC86E0BD"
 }

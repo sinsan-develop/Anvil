@@ -1,0 +1,37 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-GATE-DECISION-20260813-001",
+  "artifact_type": "phase_gate_decision_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-GATE",
+  "artifact_status": "accepted",
+  "artifact_path": "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-13T10:00:01+09:00",
+  "gate_verdict": "PASS",
+  "gate_decision": "ACCEPTED",
+  "blocking_findings": 0,
+  "owner_direction": {"approval_id": "APPROVAL-20260813-DIR1-CONTINUE-001", "path": "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md", "sha256": "89E24F0E71C230A0EF56646A59998CF8F6812EB7EC56A3C62FDD243AC1E35851", "direction_subject_hash": "5440A142AAE544E2C9DFDD34BF966185B2F03B55036B9FF9FEE59B3A4CC5BC12"},
+  "gate_report": {"path": "docs/test_reports/A-GATE_TEST_REPORT.md", "sha256": "6B51C01EA0BE6951BEA7EBF4960355120D02167CC8941EBBF407426CDD537E89"},
+  "projection": {"event_sequence": 186, "dir_status": "CLEARED", "current_work_package": "B-01", "status": "READY", "next_package_status": "READY_NOT_STARTED", "b01_started": false, "worker_lease": null, "write_lease": null},
+  "runtime_boundary": {"actual_api": "NOT_EXECUTED", "actual_db": "NOT_EXECUTED", "actual_provider": "NOT_EXECUTED", "actual_secret": "NOT_EXECUTED", "actual_egress": "NOT_EXECUTED", "actual_wsl": "NOT_EXECUTED", "actual_production": "NOT_EXECUTED", "actual_deployment": "NOT_EXECUTED"},
+  "browser_boundary": {"a14_r5": "EXECUTED / FINDINGS_CLOSED", "a14_r6_fresh_iab": "ENVIRONMENT_BLOCKED / NOT_EXECUTED"},
+  "a13_successor_projection": {"predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771", "live_raw_checksums": [
+    {"path": "scripts/check_a13_repository_scan.py", "bytes": 38101, "sha256": "61658CBB749978D83A363ED90CED62F9C5AD8F741B8B0E278C95D98BFFCA3341"},
+    {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 42801, "sha256": "F3C4F64425D74DAA9DB7B7EC1EB6AE90000129CCC5217ED4245548D02E236A20"}
+  ]},
+  "repository_projection": {"projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "a0f3ecae09309980e76e64a2336732e880fdd246", "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", "branch": "main", "upstream": "origin/main", "remote_head": "a0f3ecae09309980e76e64a2336732e880fdd246", "push_status": "PUSH_PENDING_MAIN", "exact_allowed_paths": [
+    "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md", "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/dir-checkpoints.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-a-gate-decision.json", "docs/test_reports/A-GATE_TEST_REPORT.md", "scripts/check_a13_repository_scan.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"
+  ]},
+  "raw_checksums": [
+    {"path": "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md", "bytes": 956, "sha256": "89E24F0E71C230A0EF56646A59998CF8F6812EB7EC56A3C62FDD243AC1E35851"},
+    {"path": "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json", "bytes": 5625, "sha256": "8A01F8002FD6DCF3DD6EAACC75224BFA1E865EE00E7D1E7DBA8902DD33B4778F"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a-gate-decision.json", "bytes": 837, "sha256": "E7BC987CDBDEA1A10BE46FBFE06F180A25B224062914A05C46F3776F890A3B88"},
+    {"path": "docs/test_reports/A-GATE_TEST_REPORT.md", "bytes": 2233, "sha256": "6B51C01EA0BE6951BEA7EBF4960355120D02167CC8941EBBF407426CDD537E89"}
+  ],
+  "target_canonical_bytes": 507,
+  "target_content_bytes": 9651,
+  "target_hash": "sha256:C566D66E5EF44C167BBF1C163B4F6B54A61DE5E436716B0E6BCC60821F553B9D",
+  "delivered_hash": "sha256:C566D66E5EF44C167BBF1C163B4F6B54A61DE5E436716B0E6BCC60821F553B9D",
+  "content_hash": "sha256:C566D66E5EF44C167BBF1C163B4F6B54A61DE5E436716B0E6BCC60821F553B9D",
+  "self_reference": false
+}

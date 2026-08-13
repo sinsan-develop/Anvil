@@ -716,7 +716,7 @@ def validate_event_stream(
     projection_events = [
         event for event in events
         if isinstance(event, dict)
-        and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED"}
+        and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED", "PHASE_GATE_DECIDED"}
         and isinstance(event.get("details"), dict)
         and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]
@@ -767,7 +767,7 @@ def validate_event_stream(
                 errors.append("EVENT_EFFECT_MISMATCH")
         if (
             event is current_repository_event
-            and event_type in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED"}
+            and event_type in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED", "PHASE_GATE_DECIDED"}
             and isinstance(details, dict)
             and progress is not None
         ):
@@ -3401,6 +3401,36 @@ def validate_a15_acceptance_dir1_manifest(
     return sorted(set(errors))
 
 
+def validate_a_gate_decision_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]; errors=[]
+    expected={"docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md","docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json","docs/progress/progress-handoff-detached-digest-a-gate-decision.json","docs/test_reports/A-GATE_TEST_REPORT.md"}
+    rows=manifest.get("raw_checksums"); seen=set(); canonical=[]; total=0
+    if not isinstance(rows,list): return ["A_GATE_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("A_GATE_RAW_INVALID"); continue
+        seen.add(relative)
+        try: matches=portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): matches=False
+        if not matches: errors.append("A_GATE_RAW_INVALID"); continue
+        total+=int(row["bytes"]); canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("A_GATE_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode(); target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("A_GATE_TARGET_MISMATCH")
+    terminal=[event for event in bundle["events"]["events"] if 185<=event.get("sequence",-1)<=186]
+    checkpoint=next((row for row in bundle["dir_registry"].get("checkpoints",[]) if row.get("checkpoint")=="DIR-1"),{})
+    if any((progress.get("event_sequence")!=186,progress.get("current_work_package")!="B-01",progress.get("status")!="READY",progress.get("active_work_instruction") is not None,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,[e.get("event_type") for e in terminal]!=["DIR_OWNER_DIRECTION_RECORDED","PHASE_GATE_DECIDED"],(terminal[0].get("actor") if terminal else None)!="신산님",(terminal[0].get("details",{}).get("direction") if terminal else None)!="CONTINUE",checkpoint.get("status")!="CLEARED",(progress.get("phase_gate") or {}).get("decision")!="ACCEPTED",(progress.get("phase_gate") or {}).get("b01_started") is not False,(progress.get("next_work_package") or {}).get("status")!="READY_NOT_STARTED",manifest.get("gate_verdict")!="PASS",manifest.get("blocking_findings")!=0)): errors.append("A_GATE_PROJECTION_MISMATCH")
+    runtime=manifest.get("runtime_boundary") or {}
+    if any(runtime.get(k)!="NOT_EXECUTED" for k in ("actual_api","actual_db","actual_provider","actual_secret","actual_egress","actual_wsl","actual_production","actual_deployment")): errors.append("A_GATE_RUNTIME_BOUNDARY_MISMATCH")
+    repo=progress.get("repository") or {}; projection=manifest.get("repository_projection") or {}; fields=("projection_mode","validated_base_commit","head_relation","branch","upstream","remote_head","push_status","exact_allowed_paths")
+    if any(repo.get(f)!=projection.get(f) for f in fields): errors.append("A_GATE_REPOSITORY_MISMATCH")
+    successor=manifest.get("a13_successor_projection") or {}; indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)}; expected_live={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"}
+    try: live_ok=all(portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items())
+    except (OSError,TypeError): live_ok=False
+    if set(indexed)!=expected_live or not live_ok: errors.append("A_GATE_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -4072,6 +4102,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a15_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json":
             errors.extend(validate_a15_acceptance_dir1_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a_gate_decision_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

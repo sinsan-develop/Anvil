@@ -769,6 +769,10 @@ def validate_repository(
             or phase_gate.get("checkpoint_status") != "BLOCKED_PENDING_DIR1_OWNER_DIRECTION"
         ):
             _error(errors, "A15_ACCEPTANCE_DIR1_PROJECTION_MISMATCH", progress_path, "sequence=184")
+    if progress.get("event_sequence") == 186:
+        terminal=[event for event in events if 185 <= event.get("sequence",-1) <= 186]
+        if (progress.get("current_work_package")!="B-01" or progress.get("status")!="READY" or progress.get("active_work_instruction") is not None or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or (progress.get("dir_review") or {}).get("status")!="CLEARED" or (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("phase_gate") or {}).get("b01_started") is not False or [event.get("event_type") for event in terminal] != ["DIR_OWNER_DIRECTION_RECORDED","PHASE_GATE_DECIDED"]):
+            _error(errors,"A_GATE_DECISION_PROJECTION_MISMATCH",progress_path,"sequence=186")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"
@@ -819,7 +823,7 @@ def validate_repository(
     ]
     projection_events = [
         event for event in events
-        if event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED"}
+        if event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED", "PHASE_GATE_DECIDED"}
         and isinstance(event.get("details"), dict)
         and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]

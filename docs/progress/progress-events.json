@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 184,
+  "last_sequence": 186,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -6242,6 +6242,73 @@
         "verdict": "ALIGNED",
         "status": "WAITING_OWNER_DIRECTION",
         "next_action": "WAIT_FOR_OWNER_DIRECTION"
+      }
+    },
+    {
+      "event_id": "evt_dir1_owner_direction_continue",
+      "sequence": 185,
+      "event_type": "DIR_OWNER_DIRECTION_RECORDED",
+      "occurred_at": "2026-08-13T10:00:00+09:00",
+      "actor": "신산님",
+      "subject_ref": "DIR-1",
+      "details": {
+        "checkpoint": "DIR-1",
+        "subject_hash": "25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC",
+        "direction": "CONTINUE",
+        "direction_subject_hash": "5440A142AAE544E2C9DFDD34BF966185B2F03B55036B9FF9FEE59B3A4CC5BC12",
+        "approval_ref": {"path": "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md", "sha256": "89E24F0E71C230A0EF56646A59998CF8F6812EB7EC56A3C62FDD243AC1E35851"},
+        "authorized_action": "DECIDE_A_GATE_ONLY",
+        "b_phase_start_authorized": false
+      }
+    },
+    {
+      "event_id": "evt_a_gate_decided_accepted",
+      "sequence": 186,
+      "event_type": "PHASE_GATE_DECIDED",
+      "occurred_at": "2026-08-13T10:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A Gate",
+      "details": {
+        "gate": "A Gate",
+        "verdict": "ACCEPTED",
+        "evidence_ref": "docs/test_reports/A-GATE_TEST_REPORT.md",
+        "evidence_sha256": "6B51C01EA0BE6951BEA7EBF4960355120D02167CC8941EBBF407426CDD537E89",
+        "blocking_findings": 0,
+        "dir_checkpoint": "DIR-1",
+        "dir_status": "CLEARED",
+        "owner_direction_event_id": "evt_dir1_owner_direction_continue",
+        "next_work_package": "B-01",
+        "next_package_status": "READY_NOT_STARTED",
+        "b01_started": false,
+        "worker_lease": null,
+        "write_lease": null,
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "a0f3ecae09309980e76e64a2336732e880fdd246",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
+        "push_status": "PUSH_PENDING_MAIN",
+        "acceptance_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
+        "acceptance_upstream_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
+        "exact_allowed_paths": [
+          "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md",
+          "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/dir-checkpoints.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a-gate-decision.json",
+          "docs/test_reports/A-GATE_TEST_REPORT.md",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ]
       }
     }
   ]

@@ -41,34 +41,36 @@ def _load_checker_or_none():
 
 
 class ProjectProgressContractTests(unittest.TestCase):
-    def test_a15_human_approval_enters_dir1_owner_direction_hold(self) -> None:
+    def test_dir1_owner_direction_clears_hold_and_a_gate_is_decided_without_b_start(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
-        events = [event for event in bundle["events"]["events"] if 182 <= event["sequence"] <= 184]
+        events = [event for event in bundle["events"]["events"] if 185 <= event["sequence"] <= 186]
 
-        self.assertEqual("A-15", progress["current_work_package"])
-        self.assertEqual("DIR_HOLD", progress["status"])
+        self.assertEqual("B-01", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
         self.assertIn("A-15", progress["completed_packages"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["active_agent"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
         self.assertEqual(
-            ["MAIN_PACKAGE_ACCEPTED", "DIR_REACHED", "DIR_REPORTED"],
+            ["DIR_OWNER_DIRECTION_RECORDED", "PHASE_GATE_DECIDED"],
             [event["event_type"] for event in events],
         )
-        self.assertEqual("APPROVED", events[0]["details"]["user_ux_decision"])
-        self.assertEqual("DIR-1", events[-1]["subject_ref"])
+        self.assertEqual("CONTINUE", events[0]["details"]["direction"])
+        self.assertEqual("A Gate", events[-1]["subject_ref"])
         self.assertEqual("DIR-1", progress["dir_review"]["checkpoint"])
-        self.assertEqual("WAITING_OWNER_DIRECTION", progress["dir_review"]["status"])
+        self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(
-            "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
+            "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
-        self.assertEqual("STOP_AND_REPORT_DIR", progress["reporting_decision"]["decision"])
-        self.assertTrue(progress["reporting_decision"]["stop_before_dialogue_report"])
-        self.assertEqual("BLOCKED_PENDING_DIR1_OWNER_DIRECTION", progress["next_work_package"]["status"])
+        self.assertEqual("AUTO_CONTINUE", progress["reporting_decision"]["decision"])
+        self.assertFalse(progress["reporting_decision"]["stop_before_dialogue_report"])
+        self.assertEqual("READY_NOT_STARTED", progress["next_work_package"]["status"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertFalse(progress["phase_gate"]["b01_started"])
         self.assertEqual([], checker.validate_bundle(bundle))
 
     def test_a14_failure_report_starts_fenced_rework_without_counting_environment_block(self):
@@ -130,21 +132,21 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("ACCEPTED", acceptance["details"]["decision"])
         self.assertEqual(0, acceptance["details"]["blocking_findings"])
         self.assertEqual("READY_FOR_MAIN_ACCEPTANCE", acceptance["details"]["verdict"])
-        self.assertEqual(184, progress["event_sequence"])
-        self.assertEqual("A-15", progress["current_work_package"])
-        self.assertEqual("DIR_HOLD", progress["status"])
+        self.assertEqual(186, progress["event_sequence"])
+        self.assertEqual("B-01", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("A-15", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
-        self.assertEqual("BLOCKED_PENDING_DIR1_OWNER_DIRECTION", progress["next_work_package"]["status"])
+        self.assertEqual("READY_NOT_STARTED", progress["next_work_package"]["status"])
         completion_manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json").read_text(encoding="utf-8")
+            (ROOT / "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json").read_text(encoding="utf-8")
         )
         self.assertEqual([], checker.validate_detached_progress_binding(bundle))
-        self.assertEqual([], checker.validate_a15_acceptance_dir1_manifest(completion_manifest, bundle))
+        self.assertEqual([], checker.validate_a_gate_decision_manifest(completion_manifest, bundle))
 
         with tempfile.TemporaryDirectory() as temp:
             clone = Path(temp) / "bundle"
@@ -158,9 +160,9 @@ class ProjectProgressContractTests(unittest.TestCase):
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source, destination)
             clone_bundle = checker.load_bundle(clone)
-            clone_manifest = json.loads((clone / "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
+            clone_manifest = json.loads((clone / "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
             self.assertEqual([], checker.validate_detached_progress_binding(clone_bundle))
-            self.assertEqual([], checker.validate_a15_acceptance_dir1_manifest(clone_manifest, clone_bundle))
+            self.assertEqual([], checker.validate_a_gate_decision_manifest(clone_manifest, clone_bundle))
         self.assertEqual([], checker.validate_bundle(bundle))
     def test_package_specific_detached_progress_ref_is_resolved_safely(self) -> None:
         checker = self.require_checker()
@@ -490,8 +492,8 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
 
         projection = checker.recovery_projection(bundle)
-        self.assertEqual(projection["reporting_decision"], "STOP_AND_REPORT_DIR")
-        self.assertTrue(projection["stop_before_dialogue_report"])
+        self.assertEqual(projection["reporting_decision"], "AUTO_CONTINUE")
+        self.assertFalse(projection["stop_before_dialogue_report"])
 
         mutated = copy.deepcopy(bundle)
         mutated["progress"]["reporting_decision"] = {
@@ -862,8 +864,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         g07_r2_hash = hashlib.sha256(G07_R2_MANIFEST_PATH.read_bytes()).hexdigest().upper()
         a01_manifest_path = ROOT / "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json"
         self.assertEqual(hashlib.sha256(a01_manifest_path.read_bytes()).hexdigest().upper(), "BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4")
-        self.assertEqual(progress["phase_gate"]["checkpoint_status"], "BLOCKED_PENDING_DIR1_OWNER_DIRECTION")
-        self.assertFalse(progress["phase_gate"]["a_gate_start_allowed"])
+        self.assertEqual(progress["phase_gate"]["checkpoint_status"], "CLEARED_AND_DECIDED")
+        self.assertTrue(progress["phase_gate"]["b01_start_allowed"])
+        self.assertFalse(progress["phase_gate"]["b01_started"])
         self.assertEqual(hashlib.sha256(G06_R2_TEST_REPORT_PATH.read_bytes()).hexdigest().upper(), "436A0C67882ED51022B365B8CE4E41C7C302B19273187D1514E734A30EEB8546")
         self.assertIn("MAIN_PACKAGE_ACCEPTED", bundle["event_contract"]["event_types"])
 
@@ -1412,9 +1415,9 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
             [event["event_type"] for event in a15_start],
         )
-        self.assertEqual(184, progress["event_sequence"])
-        self.assertEqual("A-15", progress["current_work_package"])
-        self.assertEqual("DIR_HOLD", progress["status"])
+        self.assertEqual(186, progress["event_sequence"])
+        self.assertEqual("B-01", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["active_agent"])
         self.assertIsNone(progress["worker_lease"])
