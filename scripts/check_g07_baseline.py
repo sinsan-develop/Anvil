@@ -773,6 +773,10 @@ def validate_repository(
         terminal=[event for event in events if 185 <= event.get("sequence",-1) <= 186]
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="READY" or progress.get("active_work_instruction") is not None or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or (progress.get("dir_review") or {}).get("status")!="CLEARED" or (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("phase_gate") or {}).get("b01_started") is not False or [event.get("event_type") for event in terminal] != ["DIR_OWNER_DIRECTION_RECORDED","PHASE_GATE_DECIDED"]):
             _error(errors,"A_GATE_DECISION_PROJECTION_MISMATCH",progress_path,"sequence=186")
+    if progress.get("event_sequence") == 189:
+        terminal=[event for event in events if 187 <= event.get("sequence",-1) <= 189]
+        if (progress.get("current_work_package")!="B-01" or progress.get("status")!="ACTIVE" or (progress.get("active_work_instruction") or {}).get("artifact_id")!="WI-B-01-20260813-001" or progress.get("active_agent")!="developer-primary-b01" or (progress.get("worker_lease") or {}).get("lease_epoch")!=1 or (progress.get("write_lease") or {}).get("write_epoch")!=1 or (progress.get("dir_review") or {}).get("status")!="CLEARED" or (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("phase_gate") or {}).get("b01_started") is not True or [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]):
+            _error(errors,"B01_START_PROJECTION_MISMATCH",progress_path,"sequence=189")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"
@@ -915,6 +919,8 @@ def validate_repository(
                         if isinstance(row, dict) and isinstance(row.get("path"), str)
                     )
             non_evidence_paths = {path for path in allowed if not _is_evidence_only_path(path)}
+            if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-01" and reconciliation_event.get("sequence") == 189:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base

@@ -103,6 +103,8 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual("ACTIVE", start["details"]["package_status"])
         self.assertFalse(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
+        self.assertEqual("B-01", report["progress"]["current_work_package"])
+        self.assertEqual("ACTIVE", report["progress"]["status"])
         self.assertEqual("WI-A-02-20260811-001", start["details"]["work_instruction_id"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
@@ -125,18 +127,18 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual(worker["details"]["lease_id"], write["details"]["worker_lease_id"])
         self.assertEqual(write["details"]["lease_id"], start["details"]["write_lease_id"])
 
-    def test_a_gate_decision_permits_b01_but_does_not_start_it(self):
+    def test_a_gate_decision_precedes_b01_fenced_start(self):
         report = self.validate()
         self.assertEqual([], report["errors"])
         progress = report["progress"]
         self.assertEqual("B-01", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-01-20260813-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
         actual_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual("CLEARED", actual_progress["dir_review"]["status"])
-        self.assertEqual("READY_NOT_STARTED", actual_progress["next_work_package"]["status"])
+        self.assertEqual("ACTIVE", actual_progress["next_work_package"]["status"])
         self.assertEqual("ACCEPTED", actual_progress["phase_gate"]["decision"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):

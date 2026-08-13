@@ -3,31 +3,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 186,
-  "status": "READY",
+  "event_sequence": 189,
+  "status": "ACTIVE",
   "current_work_package": "B-01",
-  "last_event_id": "evt_a_gate_decided_accepted",
+  "last_event_id": "evt_b01_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 11,
   "dir_status": "CLEARED",
-  "repository_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
+  "repository_head": "11b79b98f9a7c042f897f090a75d3f912e436d60",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "a0f3ecae09309980e76e64a2336732e880fdd246",
+  "repository_remote_head": "11b79b98f9a7c042f897f090a75d3f912e436d60",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "a0f3ecae09309980e76e64a2336732e880fdd246",
+  "repository_validated_base_commit": "11b79b98f9a7c042f897f090a75d3f912e436d60",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/approvals/APPROVAL-20260813-DIR1-CONTINUE-001.md",
-    "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/dir-checkpoints.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a-gate-decision.json",
-    "docs/test_reports/A-GATE_TEST_REPORT.md",
+    "docs/progress/progress-handoff-detached-digest-b01-start.json",
+    "docs/work_orders/B-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-01_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -37,11 +36,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a-gate-decision.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "B-01 is permitted but not started; issue a fresh WorkInstruction and fenced lease only in a subsequent authorized package-start projection",
+  "next_safe_action": "Dispatch developer-primary-b01 under the active exact-path fenced leases; do not start B-02",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -54,6 +53,13 @@
   "write_lease": null
 }
 ```
+
+## 2026-08-13 B-01 fenced start
+
+- A Gate acceptance와 DIR-1 `CLEARED`를 predecessor로 확인하고 `WI-B-01-20260813-001`을 발행했다.
+- seq 187→189는 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED` 순서다.
+- Developer write lease는 WorkInstruction의 exact 11 paths에만 유효하며 execution/write epoch는 각각 1이다.
+- 현재 B-01은 `ACTIVE / IN_PROGRESS`, product artifact count는 0이다. B-02와 실제 API·DB·provider·WSL·production·deploy는 시작하지 않았다.
 
 > 갱신일: 2026-08-11
 > 현재 상태: `DIR-1 CLEARED / A Gate ACCEPTED / B-01 READY_NOT_STARTED`

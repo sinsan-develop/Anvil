@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "B-01-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "B-01",
+  "event_sequence": 189,
+  "algorithm": "SHA-256",
+  "progress": {"path": "docs/progress/build-progress.json", "bytes": 33921, "file_sha256": "221DC881F7C96B17BA6297F0AD50B3EC95082010F0604DC26189D22DB303BD48", "canonical_json_sha256": "510DE78CD4B0566F07F68456309859EE30989F882D358212573AB52B98CA8F51"},
+  "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": 64623, "file_sha256": "2F5E910420671E733DE4C6BABE0939FFCC9FDBD21A2BDADC115B8CB91060F74B", "machine_summary_canonical_sha256": "D143BD1AE4762D430648C4A12FA2713248760610E02FF69333BDC72AAD6DEF2A"},
+  "created_at": "2026-08-13T11:00:02+09:00",
+  "scope": "B-01 fenced start; exact 11-path Developer lease; product artifacts 0; API, DB, provider, WSL, production, deployment NOT_EXECUTED"
+}

@@ -58,15 +58,15 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(186, progress["event_sequence"])
+        self.assertEqual(189, progress["event_sequence"])
         self.assertEqual("B-01", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-01-20260813-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(0, progress["valid_failure_count"])
-        self.assertEqual("A-15", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual("B-01", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
 
     def test_authority_hash_and_version_drift_are_rejected(self):
@@ -206,16 +206,16 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PHASE_GATE_DECIDED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "a0f3ecae09309980e76e64a2336732e880fdd246",
+            "11b79b98f9a7c042f897f090a75d3f912e436d60",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
         )
         self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
-        self.assertEqual("A-15", report["failure_counts"]["active_lineage"])
+        self.assertEqual("B-01", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(11, report["failure_counts"]["historical_accepted_failure_total"])
         self.assertEqual(1, report["failure_counts"]["historical_by_lineage"]["A-13"])

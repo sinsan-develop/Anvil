@@ -587,9 +587,9 @@ class A13RepositoryScanHostileTests(unittest.TestCase):
 
 
 class A13RepositoryScanArtifactTests(unittest.TestCase):
-    def test_a15_start_supplies_live_a13_successor_rows(self):
+    def test_b01_start_supplies_live_a13_successor_rows(self):
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json").read_text(encoding="utf-8")
+            (ROOT / "docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json").read_text(encoding="utf-8")
         )
         successor = manifest["a13_successor_projection"]
         self.assertEqual(
@@ -826,14 +826,14 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(186, progress["event_sequence"])
+        self.assertEqual(189, progress["event_sequence"])
         self.assertEqual("B-01", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-01-20260813-001", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("DIR-1", progress["dir_review"]["checkpoint"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
         self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())
         manifest = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
         self.assertEqual(

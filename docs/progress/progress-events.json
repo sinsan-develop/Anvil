@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 186,
+  "last_sequence": 189,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -6309,6 +6309,98 @@
           "tests/tooling/test_phase_g_gate.py",
           "tests/tooling/test_project_progress.py"
         ]
+      }
+    },
+    {
+      "event_id": "evt_b01_worker_lease_issued",
+      "sequence": 187,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-13T11:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-01",
+      "details": {
+        "lease_id": "worker-lease-b01-20260813-001",
+        "worker_id": "developer-primary-b01",
+        "agent_id": "developer-primary-b01",
+        "work_package_id": "B-01",
+        "lease_epoch": 1,
+        "execution_fencing_token": "b01-execution-fence-epoch-1-11b79b9",
+        "issued_at": "2026-08-13T11:00:00+09:00",
+        "expires_at": "2026-08-13T23:00:00+09:00",
+        "status": "ACTIVE",
+        "fencing_token": "b01-execution-fence-epoch-1-11b79b9",
+        "subject_ref": "B-01"
+      }
+    },
+    {
+      "event_id": "evt_b01_write_lease_issued",
+      "sequence": 188,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-13T11:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-01",
+      "details": {
+        "lease_id": "write-lease-b01-20260813-001",
+        "worker_lease_id": "worker-lease-b01-20260813-001",
+        "worker_id": "developer-primary-b01",
+        "agent_id": "developer-primary-b01",
+        "work_package_id": "B-01",
+        "write_epoch": 1,
+        "write_fencing_token": "b01-write-fence-epoch-1-11b79b9",
+        "execution_fencing_token": "b01-execution-fence-epoch-1-11b79b9",
+        "issued_at": "2026-08-13T11:00:01+09:00",
+        "expires_at": "2026-08-13T23:00:00+09:00",
+        "status": "ACTIVE",
+        "paths": [
+          "packages/domain/__init__.py", "packages/domain/identifiers.py", "packages/domain/states.py", "packages/domain/events.py", "packages/domain/reducer.py", "tests/domain/test_identifiers.py", "tests/domain/test_state_transitions.py", "tests/domain/test_reducer.py", "docs/validation/B-01_DOMAIN_CORE_VALIDATION.md", "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-01_COMPLETION_REPORT.md"
+        ],
+        "fencing_token": "b01-write-fence-epoch-1-11b79b9",
+        "path_scope": [
+          "packages/domain/__init__.py", "packages/domain/identifiers.py", "packages/domain/states.py", "packages/domain/events.py", "packages/domain/reducer.py", "tests/domain/test_identifiers.py", "tests/domain/test_state_transitions.py", "tests/domain/test_reducer.py", "docs/validation/B-01_DOMAIN_CORE_VALIDATION.md", "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-01_COMPLETION_REPORT.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_b01_package_started",
+      "sequence": 189,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-13T11:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-01",
+      "details": {
+        "work_instruction_id": "WI-B-01-20260813-001",
+        "work_instruction_path": "docs/work_orders/B-01_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "C09132317703923FDABE89D1A7F1EA06660FCC123976E9286B4B061D0100194F",
+        "invocation_path": "docs/work_orders/B-01_INVOCATION_PROMPT.md",
+        "invocation_sha256": "AFD413A3E2566FDDEDB23B87F867CBF836475DF26AAB7C98CF1A88845528F0CB",
+        "package_status": "ACTIVE",
+        "result_status": "IN_PROGRESS",
+        "developer_actor": "developer-primary-b01",
+        "worker_lease_id": "worker-lease-b01-20260813-001",
+        "write_lease_id": "write-lease-b01-20260813-001",
+        "dispatch_head": "11b79b98f9a7c042f897f090a75d3f912e436d60",
+        "dispatch_upstream_head": "11b79b98f9a7c042f897f090a75d3f912e436d60",
+        "dispatch_worktree_status": "CLEAN",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "11b79b98f9a7c042f897f090a75d3f912e436d60",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "11b79b98f9a7c042f897f090a75d3f912e436d60",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-b01-start.json", "docs/work_orders/B-01_INVOCATION_PROMPT.md", "docs/work_orders/B-01_WORK_INSTRUCTION.md", "scripts/check_a13_repository_scan.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"
+        ],
+        "product_artifact_count": 0,
+        "actual_api_status": "NOT_EXECUTED",
+        "actual_db_status": "NOT_EXECUTED",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_wsl_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_deployment_status": "NOT_EXECUTED",
+        "next_work_package": "B-01",
+        "next_package_status": "ACTIVE",
+        "reporting_decision": "AUTO_CONTINUE"
       }
     }
   ]

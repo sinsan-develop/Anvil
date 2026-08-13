@@ -1,0 +1,38 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-01-START-20260813-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-01",
+  "artifact_status": "active",
+  "artifact_path": "docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-13T11:00:02+09:00",
+  "projection": {"event_sequence": 189, "status": "ACTIVE", "result_status": "IN_PROGRESS", "current_work_package": "B-01", "active_agent": "developer-primary-b01", "worker_lease_epoch": 1, "write_lease_epoch": 1},
+  "verification_contract": {"assigned_verification_ids": ["AV-STAT-001", "AV-STAT-002", "AV-STAT-003"], "environment": "ENV-LOCAL", "acquisition_mode": "TDD_DOMAIN_CORE_AT_START"},
+  "predecessor_acceptance_ref": {"path": "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json", "sha256": "F192F7257A678E728C163094A05E858B3970EBE17F50415DA6F6C892D2AD052C"},
+  "product_artifact_count": 0,
+  "runtime_boundary": {"actual_api": "NOT_EXECUTED", "actual_db": "NOT_EXECUTED", "actual_provider": "NOT_EXECUTED", "actual_wsl": "NOT_EXECUTED", "actual_production": "NOT_EXECUTED", "actual_deployment": "NOT_EXECUTED"},
+  "work_instruction": {"artifact_id": "WI-B-01-20260813-001", "path": "docs/work_orders/B-01_WORK_INSTRUCTION.md", "sha256": "C09132317703923FDABE89D1A7F1EA06660FCC123976E9286B4B061D0100194F", "invocation_path": "docs/work_orders/B-01_INVOCATION_PROMPT.md", "invocation_sha256": "AFD413A3E2566FDDEDB23B87F867CBF836475DF26AAB7C98CF1A88845528F0CB"},
+  "lease_projection": {"worker_lease_id": "worker-lease-b01-20260813-001", "write_lease_id": "write-lease-b01-20260813-001", "lease_epoch": 1, "write_epoch": 1, "execution_fencing_token": "b01-execution-fence-epoch-1-11b79b9", "write_fencing_token": "b01-write-fence-epoch-1-11b79b9"},
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "11b79b98f9a7c042f897f090a75d3f912e436d60", "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", "branch": "main", "upstream": "origin/main", "remote_head": "11b79b98f9a7c042f897f090a75d3f912e436d60", "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": ["docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-b01-start.json", "docs/work_orders/B-01_INVOCATION_PROMPT.md", "docs/work_orders/B-01_WORK_INSTRUCTION.md", "scripts/check_a13_repository_scan.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"]
+  },
+  "developer_write_allowlist": ["packages/domain/__init__.py", "packages/domain/identifiers.py", "packages/domain/states.py", "packages/domain/events.py", "packages/domain/reducer.py", "tests/domain/test_identifiers.py", "tests/domain/test_state_transitions.py", "tests/domain/test_reducer.py", "docs/validation/B-01_DOMAIN_CORE_VALIDATION.md", "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-01_COMPLETION_REPORT.md"],
+  "a13_successor_projection": {"predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771", "live_raw_checksums": [{"path": "scripts/check_a13_repository_scan.py", "bytes": 39088, "sha256": "46FB1FB50C89C7184CE0F490842F1F5707EA8D804E9F1144E60BCA567E71133F"}, {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 42874, "sha256": "09D9486F880364BCFD25DF9731FC9DC1C4ED6E87E7982DA7D6C7792DD7767EE9"}]},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json", "bytes": 4220, "sha256": "F192F7257A678E728C163094A05E858B3970EBE17F50415DA6F6C892D2AD052C"},
+    {"path": "docs/progress/progress-handoff-detached-digest-b01-start.json", "bytes": 863, "sha256": "7DF2B540221EE7AEBF62F5225AA994B7C9618D4073B444B586D5F41FFFFD0534"},
+    {"path": "docs/work_orders/B-01_INVOCATION_PROMPT.md", "bytes": 741, "sha256": "AFD413A3E2566FDDEDB23B87F867CBF836475DF26AAB7C98CF1A88845528F0CB"},
+    {"path": "docs/work_orders/B-01_WORK_INSTRUCTION.md", "bytes": 4056, "sha256": "C09132317703923FDABE89D1A7F1EA06660FCC123976E9286B4B061D0100194F"},
+    {"path": "scripts/check_a13_repository_scan.py", "bytes": 39088, "sha256": "46FB1FB50C89C7184CE0F490842F1F5707EA8D804E9F1144E60BCA567E71133F"},
+    {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 42874, "sha256": "09D9486F880364BCFD25DF9731FC9DC1C4ED6E87E7982DA7D6C7792DD7767EE9"}
+  ],
+  "target_canonical_bytes": 708,
+  "target_content_bytes": 91842,
+  "target_hash": "sha256:3674C55CC848EF8713911663701DB9A404571D3B13207AF55C993DC0F9E03D71",
+  "delivered_hash": "sha256:3674C55CC848EF8713911663701DB9A404571D3B13207AF55C993DC0F9E03D71",
+  "content_hash": "sha256:3674C55CC848EF8713911663701DB9A404571D3B13207AF55C993DC0F9E03D71",
+  "self_reference": false,
+  "limitations": ["B-01 product artifacts do not yet exist.", "Actual API, DB, provider, WSL, production and deployment are not executed at start."]
+}
