@@ -1,0 +1,133 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-03-START-20260814-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-03",
+  "artifact_status": "active",
+  "artifact_path": "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-14T17:00:02+09:00",
+  "projection": {
+    "event_sequence": 224,
+    "status": "ACTIVE",
+    "result_status": "IN_PROGRESS",
+    "current_work_package": "B-03",
+    "active_agent": "developer-primary-b03",
+    "worker_lease_epoch": 1,
+    "write_lease_epoch": 1
+  },
+  "verification_contract": {
+    "assigned_verification_ids": [
+      "AV-FLOW-001",
+      "AV-FLOW-002"
+    ],
+    "av_flow_001": "L4+L7 actual runtime required at completion; unavailable executable local UI/API is BLOCKED/NOT_EXECUTED",
+    "av_flow_002": "E-ART+E-AUD"
+  },
+  "predecessor_acceptance_ref": {
+    "path": "docs/evidence/manifests/B-02_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+    "sha256": "3BF009A1610C7C4C0CCCC0581AC3C5DD9E1ECC7D32454D07E3BAA7BDBACD0996"
+  },
+  "product_artifact_count": 0,
+  "runtime_boundary": {
+    "actual_l4": "NOT_EXECUTED",
+    "actual_l7": "NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_db": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-03-20260814-001",
+    "path": "docs/work_orders/B-03_WORK_INSTRUCTION.md",
+    "sha256": "A80E618ECA15E184ADB5DBFB7E079C3B42A474A9FE8F566D7EFE7A0C6D13E023",
+    "invocation_path": "docs/work_orders/B-03_INVOCATION_PROMPT.md",
+    "invocation_sha256": "BAB3CF4D3642A0C4178D9169D8BF79949F0C0FC85F10596F9AF278BD98C4C79D"
+  },
+  "lease_projection": {
+    "worker_lease_id": "worker-lease-b03-20260814-001",
+    "write_lease_id": "write-lease-b03-20260814-001",
+    "lease_epoch": 1,
+    "write_epoch": 1
+  },
+  "developer_write_allowlist": [
+    "packages/design/__init__.py",
+    "packages/design/models.py",
+    "packages/design/lineage.py",
+    "packages/design/service.py",
+    "packages/persistence/design_repository.py",
+    "packages/api/__init__.py",
+    "packages/api/design_contracts.py",
+    "migrations/versions/0002_design_artifacts.py",
+    "tests/design/test_models.py",
+    "tests/design/test_lineage.py",
+    "tests/design/test_service.py",
+    "tests/design/test_repository.py",
+    "docs/validation/B-03_DESIGN_LINEAGE_VALIDATION.md",
+    "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-03_COMPLETION_REPORT.md"
+  ],
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 50624,
+        "sha256": "3CBC577CE74E85F2FEA048343A905102DDB72015326DC662265E46934A8B1616"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 43154,
+        "sha256": "5168C98C335EDF8207E835178A81C85872667B5E835DA6AFC793FFDF892E283A"
+      }
+    ]
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/B-02_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+      "bytes": 2707,
+      "sha256": "3BF009A1610C7C4C0CCCC0581AC3C5DD9E1ECC7D32454D07E3BAA7BDBACD0996"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-b03-start.json",
+      "bytes": 864,
+      "sha256": "03A745B9A48839F67094EB15E7A4C4B18FD1501BD201C2FB554449DFE36D4709"
+    },
+    {
+      "path": "docs/work_orders/B-03_INVOCATION_PROMPT.md",
+      "bytes": 883,
+      "sha256": "BAB3CF4D3642A0C4178D9169D8BF7278E443E402CF633EF9609BB041C2A3B3C2"
+    },
+    {
+      "path": "docs/work_orders/B-03_WORK_INSTRUCTION.md",
+      "bytes": 5171,
+      "sha256": "A80E618ECA15E184ADB5DBFB7E079C3B42A474A9FE8F566D7EFE7A0C6D13E023"
+    },
+    {
+      "path": "scripts/check_a13_repository_scan.py",
+      "bytes": 50624,
+      "sha256": "3CBC577CE74E85F2FEA048343A905102DDB72015326DC662265E46934A8B1616"
+    },
+    {
+      "path": "tests/tooling/test_a13_repository_scan.py",
+      "bytes": 43154,
+      "sha256": "5168C98C335EDF8207E835178A81C85872667B5E835DA6AFC793FFDF892E283A"
+    }
+  ],
+  "target_canonical_bytes": 711,
+  "target_content_bytes": 103403,
+  "target_hash": "sha256:57AEA0818945CBD4707844EBB517241C024F50D599908B5CA047BE67CA284F22",
+  "delivered_hash": "sha256:57AEA0818945CBD4707844EBB517241C024F50D599908B5CA047BE67CA284F22",
+  "content_hash": "sha256:57AEA0818945CBD4707844EBB517241C024F50D599908B5CA047BE67CA284F22",
+  "self_reference": false,
+  "limitations": [
+    "Product artifacts 0; L4/L7/API/DB/UI/WSL/runtime NOT_EXECUTED at start.",
+    "Shared or production DB, provider, direct patch and deployment forbidden."
+  ]
+}

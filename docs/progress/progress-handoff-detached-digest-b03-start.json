@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "B-03-PROGRESS-HANDOFF-DIGEST-START",
+  "package_id": "B-03",
+  "event_sequence": 224,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 36438,
+    "file_sha256": "63E3D86A9E07AAC930BC1247350B471F8EA12911DDF5722FCF06172C3BD718E2",
+    "canonical_json_sha256": "66CFAAEF931F93DB09B4022F7FD6EB64E1E8A8E64EDE28392B469D34759A4405"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 70412,
+    "file_sha256": "40D4838ADAD4F063D767116B952D7B086358C52405BB2243BA255A63B4354AEC",
+    "machine_summary_canonical_sha256": "98C5956B3A0CC975E49F43B2054CE0E494C1B65673BF52A1E29C6E77D2208F19"
+  },
+  "created_at": "2026-08-14T17:00:02+09:00",
+  "scope": "B-03 fenced start; exact 15-path Developer lease; product artifacts 0; runtime NOT_EXECUTED"
+}

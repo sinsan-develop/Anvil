@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-03 Start — sequence 224
+
+- B-02 acceptance commit `a589b17f26991432de5cf48cfe95c441cdd6da39`를 clean baseline으로 B-03을 시작했다.
+- seq 222→224는 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`; Developer exact 15-path lease만 활성이다.
+- 목표는 Artifact·§49 상태·API 필드와 root approval/비의미 파생 lineage 영속화다. AV-FLOW-001은 실제 L4+L7, AV-FLOW-002는 E-ART+E-AUD가 완료 조건이며 start 시점 제품 산출물과 runtime 증거는 0/`NOT_EXECUTED`다.
+- B-04는 B-03 Main acceptance 전까지 차단한다. shared/production DB, provider, WSL, 직접 patch와 deploy는 금지한다.
+
 ## B-02 R2 Main Acceptance — sequence 221
 
 - Tester R2 report SHA `D9C46F74...`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 수용하고 BLK-B02-001을 CLOSED 처리했다.
@@ -39,29 +46,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 221,
-  "status": "READY",
+  "event_sequence": 224,
+  "status": "ACTIVE",
   "current_work_package": "B-03",
-  "last_event_id": "evt_b02_main_package_accepted_r2",
+  "last_event_id": "evt_b03_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 14,
   "dir_status": "CLEARED",
-  "repository_head": "31366334eec3b1c42b82bc9c76a1b2de1f7fafe7",
+  "repository_head": "a589b17f26991432de5cf48cfe95c441cdd6da39",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "31366334eec3b1c42b82bc9c76a1b2de1f7fafe7",
+  "repository_remote_head": "a589b17f26991432de5cf48cfe95c441cdd6da39",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "31366334eec3b1c42b82bc9c76a1b2de1f7fafe7",
+  "repository_validated_base_commit": "a589b17f26991432de5cf48cfe95c441cdd6da39",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-02_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b02-accepted-r2.json",
-    "docs/test_reports/B-02_RETEST_REPORT_R2.md",
+    "docs/progress/progress-handoff-detached-digest-b03-start.json",
+    "docs/work_orders/B-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-03_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -71,11 +79,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b02-accepted-r2.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-02_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Prepare B-03 WorkInstruction and dispatch-ready start projection; do not implement B-03",
+  "next_safe_action": "Dispatch developer-primary-b03 under the exact active lease; do not start B-04",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -83,9 +91,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-03-20260814-001",
+  "worker_lease": "worker-lease-b03-20260814-001",
+  "write_lease": "write-lease-b03-20260814-001"
 }
 ```
 
