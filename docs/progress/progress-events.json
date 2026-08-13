@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 189,
+  "last_sequence": 192,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -6402,6 +6402,9 @@
         "next_package_status": "ACTIVE",
         "reporting_decision": "AUTO_CONTINUE"
       }
-    }
+    },
+    {"event_id":"evt_b01_write_lease_revoked","sequence":190,"event_type":"WRITE_LEASE_REVOKED","occurred_at":"2026-08-13T12:00:00+09:00","actor":"main-agent-eoul","subject_ref":"B-01","details":{"lease_id":"write-lease-b01-20260813-001","worker_lease_id":"worker-lease-b01-20260813-001","write_epoch":1,"reason":"DEVELOPER_COMPLETED","status":"REVOKED"}},
+    {"event_id":"evt_b01_worker_lease_revoked","sequence":191,"event_type":"WORKER_LEASE_REVOKED","occurred_at":"2026-08-13T12:00:01+09:00","actor":"main-agent-eoul","subject_ref":"B-01","details":{"lease_id":"worker-lease-b01-20260813-001","lease_epoch":1,"reason":"DEVELOPER_COMPLETED","status":"REVOKED"}},
+    {"event_id":"evt_b01_package_completed","sequence":192,"event_type":"PACKAGE_COMPLETED","occurred_at":"2026-08-13T12:00:02+09:00","actor":"main-agent-eoul","subject_ref":"B-01","details":{"completion_head":"31656b934c225262a58f88f3411b57ea4839fc49","completion_upstream_head":"31656b934c225262a58f88f3411b57ea4839fc49","package_status":"TEST_REVIEW","result_status":"COMPLETED","accepted":false,"independent_tester_status":"PENDING","developer_actor":"developer-primary-b01","developer_manifest_ref":{"path":"docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json","sha256":"BC89F69EF898B815DC0084D7373C0F8F833A8E371AEA4386A890F9FECD57DBED"},"developer_target_hash":"DF891CEDE6A2DA1124A5BF3F9EB72D4A323E4E98476E2129A8803C3134400567","worker_lease":null,"write_lease":null,"next_work_package":"B-02","next_package_status":"BLOCKED_PENDING_B01_ACCEPTANCE","actual_api_status":"NOT_EXECUTED","actual_db_status":"NOT_EXECUTED","actual_ui_status":"NOT_EXECUTED","actual_wsl_status":"NOT_EXECUTED","actual_deployment_status":"NOT_EXECUTED","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"31656b934c225262a58f88f3411b57ea4839fc49","head_relation":"EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT","branch":"main","upstream":"origin/main","remote_head":"31656b934c225262a58f88f3411b57ea4839fc49","push_status":"PUSH_PENDING_MAIN","exact_allowed_paths":["docs/completion_reports/B-01_COMPLETION_REPORT.md","docs/evidence/manifests/B-01_COMPLETION_PROGRESS_MANIFEST.json","docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-b01-completion-test-review.json","docs/validation/B-01_DOMAIN_CORE_VALIDATION.md","packages/domain/__init__.py","packages/domain/events.py","packages/domain/identifiers.py","packages/domain/reducer.py","packages/domain/states.py","scripts/check_a13_repository_scan.py","scripts/check_g07_baseline.py","scripts/check_phase_g_gate.py","scripts/check_project_progress.py","tests/domain/test_identifiers.py","tests/domain/test_reducer.py","tests/domain/test_state_transitions.py","tests/tooling/test_a13_repository_scan.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_phase_g_gate.py","tests/tooling/test_project_progress.py"]}}
   ]
 }

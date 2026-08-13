@@ -1,0 +1,6 @@
+{
+  "schema_version":"1.0.0","digest_id":"B-01-PROGRESS-HANDOFF-DIGEST-COMPLETION-TEST-REVIEW","package_id":"B-01","event_sequence":192,"algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":33226,"file_sha256":"8BDC57526763E365775319135F243639FFD94F82DE03AD5102AFB952FBEAD01D","canonical_json_sha256":"46E94300E34F3E9580E0A2E205F561296A7CB5DEFF6BADE6089F8A0CF3A8B142"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":65545,"file_sha256":"433B9EF9D5E0B4AAA8F8A4EFFFDD40A8FDE8A76F9D1140C59B466CED5CF046C8","machine_summary_canonical_sha256":"10497660902EBE62C460F463C74024CAF586B35DA9D532003B7B04680810D019"},
+  "created_at":"2026-08-13T12:00:02+09:00","scope":"B-01 Developer exact11 frozen; TEST_REVIEW; Tester PENDING; leases null; B-02 blocked"
+}

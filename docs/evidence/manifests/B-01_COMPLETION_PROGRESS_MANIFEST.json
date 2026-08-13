@@ -1,0 +1,14 @@
+{
+  "artifact_id":"EVIDENCE-MANIFEST-B-01-COMPLETION-20260813-001","artifact_type":"package_completion_projection_manifest","project_id":"anvil","package_id":"B-01","artifact_status":"test_review","artifact_path":"docs/evidence/manifests/B-01_COMPLETION_PROGRESS_MANIFEST.json","created_by":{"actor_type":"agent","actor_id":"main-agent-eoul"},"created_at":"2026-08-13T12:00:02+09:00",
+  "projection":{"event_sequence":192,"status":"TEST_REVIEW","result_status":"COMPLETED","independent_tester_status":"PENDING","worker_lease":null,"write_lease":null,"next_package":"B-02","next_package_status":"BLOCKED_PENDING_B01_ACCEPTANCE"},
+  "developer_manifest_sha256":"BC89F69EF898B815DC0084D7373C0F8F833A8E371AEA4386A890F9FECD57DBED","developer_target_hash":"DF891CEDE6A2DA1124A5BF3F9EB72D4A323E4E98476E2129A8803C3134400567","developer_exact_path_count":11,"developer_mutation":"FORBIDDEN_FROZEN_PREDECESSOR",
+  "runtime_boundary":{"actual_api":"NOT_EXECUTED","actual_db":"NOT_EXECUTED","actual_ui":"NOT_EXECUTED","actual_browser":"NOT_EXECUTED","actual_provider":"NOT_EXECUTED","actual_wsl":"NOT_EXECUTED","actual_production":"NOT_EXECUTED","actual_deployment":"NOT_EXECUTED"},
+  "a13_successor_projection":{"predecessor_manifest_sha256":"4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771","live_raw_checksums":[{"path":"scripts/check_a13_repository_scan.py","bytes":39965,"sha256":"FC04C833271EEDEE7D30D34A9E872CF1B1C6B522F6150E6D58517C22D934F572"},{"path":"tests/tooling/test_a13_repository_scan.py","bytes":42850,"sha256":"68442C7A32B40EBD7AE2A17F15FFEC541751B2F9B5820F1E2D55EFC6032D50CA"}]},
+  "raw_checksums":[
+    {"path":"docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json","bytes":5308,"sha256":"C2BFC7542AF35D6F5A2092F31F6F4015CB72F76011FC34A8DB95EE0027B3A0C1"},
+    {"path":"docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json","bytes":4020,"sha256":"BC89F69EF898B815DC0084D7373C0F8F833A8E371AEA4386A890F9FECD57DBED"},
+    {"path":"docs/progress/progress-handoff-detached-digest-b01-completion-test-review.json","bytes":797,"sha256":"DA5439BC177292DB8DCBBED424C4E75D09FB9C223EA6C0C4883F5D7B2EB84FC5"},
+    {"path":"docs/work_orders/B-01_WORK_INSTRUCTION.md","bytes":4056,"sha256":"C09132317703923FDABE89D1A7F1EA06660FCC123976E9286B4B061D0100194F"}
+  ],
+  "target_canonical_bytes":509,"target_content_bytes":14181,"target_hash":"sha256:8C372637F3A727A31240B6B76297753F564E399412F95059F197405AC1EB4D65","delivered_hash":"sha256:8C372637F3A727A31240B6B76297753F564E399412F95059F197405AC1EB4D65","content_hash":"sha256:8C372637F3A727A31240B6B76297753F564E399412F95059F197405AC1EB4D65","self_reference":false
+}

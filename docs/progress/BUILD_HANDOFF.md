@@ -3,56 +3,72 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 189,
-  "status": "ACTIVE",
+  "event_sequence": 192,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-01",
-  "last_event_id": "evt_b01_package_started",
+  "last_event_id": "evt_b01_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 11,
   "dir_status": "CLEARED",
-  "repository_head": "11b79b98f9a7c042f897f090a75d3f912e436d60",
+  "repository_head": "31656b934c225262a58f88f3411b57ea4839fc49",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "11b79b98f9a7c042f897f090a75d3f912e436d60",
+  "repository_remote_head": "31656b934c225262a58f88f3411b57ea4839fc49",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "11b79b98f9a7c042f897f090a75d3f912e436d60",
+  "repository_validated_base_commit": "31656b934c225262a58f88f3411b57ea4839fc49",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-01_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-01_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b01-start.json",
-    "docs/work_orders/B-01_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-01_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b01-completion-test-review.json",
+    "docs/validation/B-01_DOMAIN_CORE_VALIDATION.md",
+    "packages/domain/__init__.py",
+    "packages/domain/events.py",
+    "packages/domain/identifiers.py",
+    "packages/domain/reducer.py",
+    "packages/domain/states.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/domain/test_identifiers.py",
+    "tests/domain/test_reducer.py",
+    "tests/domain/test_state_transitions.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-01_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b01 under the active exact-path fenced leases; do not start B-02",
+  "next_safe_action": "Run independent B-01 Tester review; B-02 remains blocked pending B-01 acceptance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
   "a_gate_status": "ACCEPTED",
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
-  "b01_started": false,
-  "active_work_instruction": null,
+  "b01_started": true,
+  "active_work_instruction": "WI-B-01-20260813-001 / TEST_REVIEW / PENDING",
   "worker_lease": null,
   "write_lease": null
 }
 ```
+
+## 2026-08-13 B-01 Developer completion → TEST_REVIEW
+
+- Developer exact 11 paths는 manifest SHA `BC89F69E...`와 target `DF891CED...`로 byte-frozen 상태다.
+- seq 190→192는 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED` 순서다.
+- B-01은 `TEST_REVIEW / COMPLETED`, 독립 Tester는 `PENDING`, 모든 lease와 active agent는 null이다.
+- B-02는 `BLOCKED_PENDING_B01_ACCEPTANCE`; B-01 acceptance와 B-02 시작은 수행하지 않았다.
 
 ## 2026-08-13 B-01 fenced start
 
