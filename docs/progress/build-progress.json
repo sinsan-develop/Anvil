@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000083",
-  "event_sequence": 206,
-  "updated_at": "2026-08-14T10:00:02+09:00",
-  "last_event_id": "evt_b01_rework_package_completed_r3",
+  "snapshot_id": "snapshot-anvil-build-000084",
+  "event_sequence": 207,
+  "updated_at": "2026-08-14T11:00:00+09:00",
+  "last_event_id": "evt_b01_main_package_accepted_r3",
   "plan_version": "1.5",
   "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "B",
-  "current_work_package": "B-01",
-  "status": "TEST_REVIEW",
+  "current_work_package": "B-02",
+  "status": "READY",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -33,19 +33,20 @@
     "A-12",
     "A-13",
     "A-14",
-    "A-15"
+    "A-15",
+    "B-01"
   ],
   "active_agent": null,
   "write_lease": null,
   "worker_lease": null,
   "budget_reservations": [],
-  "valid_failure_count": 2,
+  "valid_failure_count": 0,
   "active_failure_lineage": {
-    "step_lineage_id": "B-01",
-    "valid_failure_count": 2,
+    "step_lineage_id": "B-02",
+    "valid_failure_count": 0,
     "takeover_status": "NOT_REQUIRED"
   },
-  "historical_accepted_failure_count": 11,
+  "historical_accepted_failure_count": 13,
   "historical_failure_counts_by_lineage": {
     "G-05": 1,
     "G-06": 1,
@@ -54,7 +55,8 @@
     "A-02": 1,
     "A-03": 1,
     "A-13": 1,
-    "A-14": 4
+    "A-14": 4,
+    "B-01": 2
   },
   "latest_evidence_refs": [
     {
@@ -579,7 +581,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "1A99F3D9C647744330B1F47AF33C4B7E201C49BBA6A70FBDE88D9BE2BE716335"
+      "sha256": "558DC82D6809FA68D9A53129C0E6691DABC2AF899F1D0021779A7A6A28739BCE"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -587,19 +589,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "A2219F72FF20B7C9E7CC7DB651842337D27468679952ECCD9BA36F761A96AA76"
+      "sha256": "64C1B4C862E7AA65382E08F933110505F6A338BA0F5CE35A3222FC7C7DB9EAA5"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "6DFF10A99EEED4E82542EDB9F60D945110CDB3651E1F4D18E1800DB111942ECE"
+      "sha256": "6612477A94E9699BDBE02B7D24E0E7C00D3D797FB283E9D78BC212FBB726EE0B"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "47818053FC50C758F3EB752EDA3CEC7AA9A629151F0CACC46AE02682C4DABC7E"
+      "sha256": "B522520A7293900BB37013DDDCD7BDBA8B404792FF71045327BEF7D56ECEEC37"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "B4044F1322AFACE00226616DE884AEE7BF4BC8EB2975127EA728E32C5F29446F"
+      "sha256": "E0F0DE3F611C6722271193B08E70B223AAECB89EBC4A5E519606C5B5698E9726"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -607,15 +609,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "B0F12C787AFB6207D9612072FA7A5597520DC7414BDF361629177A02A5443E0D"
+      "sha256": "D25493B1A1DB5217CECE686D2912E445A2D0ABB39414727524430C4EFB52A942"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "9C4313C50D2970C3BD0FBEC2CAB56FE18F76A6A795B515D5D846068B06301F00"
+      "sha256": "582DD904AB66DB9E19EA1CAB0206359B49628525DCDE460D6F4745CFF9488CAA"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "169B5986D4E4C071F8990E7572C4F5AAD44F27464F5943D2951C4CC60AD6A757"
+      "sha256": "AACC4AF0655E7970EA47164CCB9BFF8D1787E405E4BEC1F5209CE0CD7B226AF2"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -643,7 +645,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "E7DD2E965DF9A58910D4D10065CEE1C1474D5336BA47D7E368B70D5645307E69"
+      "sha256": "1F81D0616D1A8AFAC706198C39CF2EE22D3A7304BCA3ACDA981437CB8512F46D"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -686,7 +688,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Dispatch independent Tester for B-01 R3 retest; do not accept B-01 or start B-02",
+  "next_safe_action": "Prepare B-02 fenced start; do not implement B-02 before lease issuance",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -738,35 +740,31 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "10149bcd6569bce539fabc980087b0ccec0f8a01",
+    "validated_base_commit": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "10149bcd6569bce539fabc980087b0ccec0f8a01",
+    "remote_head": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/completion_reports/B-01_COMPLETION_REPORT_R3.md",
-      "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST_R3.json",
-      "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
+      "docs/evidence/manifests/B-01_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-b01-rework-completion-r3.json",
-      "docs/validation/B-01_DOMAIN_CORE_VALIDATION_R3.md",
-      "packages/domain/reducer.py",
+      "docs/progress/progress-handoff-detached-digest-b01-accepted-r3.json",
+      "docs/test_reports/B-01_RETEST_REPORT_R3.md",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
-      "tests/domain/test_reducer.py",
       "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_g07_baseline.py",
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-14T10:00:02+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: B-01 R3 completion exact projection",
-    "local_head": "10149bcd6569bce539fabc980087b0ccec0f8a01"
+    "observed_at": "2026-08-14T11:00:00+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: B-01 R3 acceptance exact projection",
+    "local_head": "033938b7d907d2c5ff02c006c3048edbf6467c5c"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -780,19 +778,21 @@
       "AV-FLOW-001"
     ]
   },
-  "active_work_instruction": {
+  "active_work_instruction": null,
+  "accepted_b01_work_instruction": {
     "artifact_id": "WI-B-01-20260814-003",
     "path": "docs/work_orders/B-01_REWORK_WORK_INSTRUCTION_R3.md",
     "sha256": "43F078CD498AD2D4C97DF0B5462D5A6634149BF4D98C0FA3E5A69EF664ED1F4A",
     "invocation_path": "docs/work_orders/B-01_REWORK_INVOCATION_PROMPT_R3.md",
     "invocation_sha256": "6CF43C2BC86F134061CA12C78124E75E59E924A28EEBAFD843E89637D0BC2400",
-    "package_status": "TEST_REVIEW",
-    "result_status": "COMPLETED",
-    "accepted": false,
-    "independent_tester_status": "R3_PENDING",
+    "package_status": "ACCEPTED",
+    "result_status": "ACCEPTED",
+    "accepted": true,
+    "independent_tester_status": "READY_FOR_MAIN_ACCEPTANCE",
     "source_test_report_sha256": "AAFD3A01443162A99821B0D10967F432C9C5C9EF7309483CEC506E2B1BD02C09",
     "failure_fingerprint": "BLK-B01-002-NONCANONICAL-TARGET-PADDING-BYPASS",
-    "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
+    "finding_status": "CLOSED",
+    "acceptance_test_report_sha256": "C0E25D90FEC533AEBF34B81D6698C702D88D898949ECA74B58B96627F5A18CE0",
     "developer_manifest_sha256": "3BB34296CBCA18AB063EBA0752B3E98D60C6CD7FD2410D29F024421C13F3665F",
     "developer_target_hash": "49FB06F9454037B69D343C4FF82F5FAF66B012827241C6586278F5CDF05CDA82",
     "predecessor_developer_manifest_sha256": "DA32A7C2F2F3E38623BD691B876233A50E8267AC594E847E3108EE308A5E1AEF",
@@ -825,8 +825,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "B-01",
-    "path": "docs/progress/progress-handoff-detached-digest-b01-rework-completion-r3.json",
-    "manifest_path": "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json"
+    "path": "docs/progress/progress-handoff-detached-digest-b01-accepted-r3.json",
+    "manifest_path": "docs/evidence/manifests/B-01_ACCEPTANCE_PROGRESS_MANIFEST_R3.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -847,12 +847,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "E7DD2E965DF9A58910D4D10065CEE1C1474D5336BA47D7E368B70D5645307E69"
+      "sha256": "1F81D0616D1A8AFAC706198C39CF2EE22D3A7304BCA3ACDA981437CB8512F46D"
     }
   },
   "next_work_package": {
     "package_id": "B-02",
-    "status": "BLOCKED_PENDING_B01_ACCEPTANCE"
+    "status": "READY"
   },
-  "snapshot_hash": "E591C872DB6C8F369AF50F4096625BE70496943619DAA110EA707AAE0C870126"
+  "snapshot_hash": "8AA13FBC253EA59CF7D61F7939A26407ED5F220DE8554D51BC82A14BD81C5F12"
 }

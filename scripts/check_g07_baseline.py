@@ -800,6 +800,11 @@ def validate_repository(
         instruction=progress.get("active_work_instruction") or {}
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="TEST_REVIEW" or progress.get("valid_failure_count")!=2 or instruction.get("artifact_id")!="WI-B-01-20260814-003" or instruction.get("result_status")!="COMPLETED" or instruction.get("independent_tester_status")!="R3_PENDING" or instruction.get("finding_status")!="FIXED_AWAITING_INDEPENDENT_RETEST" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
             _error(errors,"B01_R3_COMPLETION_PROJECTION_MISMATCH",progress_path,"sequence=206")
+    if progress.get("event_sequence") == 207:
+        acceptance=[event for event in events if event.get("sequence")==207]
+        historical=progress.get("historical_failure_counts_by_lineage") or {}
+        if (progress.get("current_work_package")!="B-02" or progress.get("status")!="READY" or "B-01" not in progress.get("completed_packages",[]) or progress.get("valid_failure_count")!=0 or (progress.get("active_failure_lineage") or {}).get("step_lineage_id")!="B-02" or historical.get("B-01")!=2 or progress.get("active_work_instruction") is not None or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in acceptance] != ["MAIN_PACKAGE_ACCEPTED"]):
+            _error(errors,"B01_R3_ACCEPTANCE_PROJECTION_MISMATCH",progress_path,"sequence=207")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"
@@ -860,6 +865,11 @@ def validate_repository(
         default=phase_g_checkpoint,
     )
     reconciliation = reconciliation_event.get("details", {}) if reconciliation_event else {}
+    if progress.get("event_sequence") == 207:
+        acceptance = next((event for event in events if event.get("sequence") == 207), None)
+        if acceptance is not None:
+            reconciliation_event = acceptance
+            reconciliation = dict(progress.get("repository", {}))
     if not reconciliation_events:
         _error(errors, "PROGRESS_RECONCILIATION_EVENT_MISSING", "docs/progress/progress-events.json", "REPOSITORY_RECONCILED")
     progress_reconciliation = {"event_type": reconciliation_event.get("event_type") if reconciliation_event else None, **reconciliation}

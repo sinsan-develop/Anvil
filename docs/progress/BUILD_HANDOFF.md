@@ -1,55 +1,51 @@
 # Anvil Build Handoff
 
-## B-01 R3 Developer Completion / TEST_REVIEW — sequence 204~206
+## B-01 R3 Main Acceptance — sequence 207
 
-- Developer R3 exact 5는 manifest SHA-256 `3BB34296CBCA18AB063EBA0752B3E98D60C6CD7FD2410D29F024421C13F3665F`, target `49FB06F9454037B69D343C4FF82F5FAF66B012827241C6586278F5CDF05CDA82`로 동결했다.
-- seq 204→206은 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED` 순서다. B-01은 `TEST_REVIEW / COMPLETED / R3_PENDING`, BLK-B01-002는 `FIXED_AWAITING_INDEPENDENT_RETEST`, 모든 lease는 null이다.
-- B-02는 `BLOCKED_PENDING_B01_ACCEPTANCE`; API·DB·UI·browser·provider·WSL·production·deploy는 `NOT_EXECUTED`다.
+- Tester R3 report SHA-256 `C0E25D90FEC533AEBF34B81D6698C702D88D898949ECA74B58B96627F5A18CE0`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 수용했다.
+- seq 207 `MAIN_PACKAGE_ACCEPTED`로 B-01은 `ACCEPTED`, BLK-B01-001/002는 CLOSED, B-02는 `READY`다. active failure count는 0이고 B-01 historical count는 2다.
+- NUL/ZWSP/BOM은 current Python `strip()` 계약 범위일 뿐 hash grammar PASS가 아니다. API·DB·UI·browser·provider·WSL·production·deploy는 `NOT_EXECUTED`다.
 
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 206,
-  "status": "TEST_REVIEW",
-  "current_work_package": "B-01",
-  "last_event_id": "evt_b01_rework_package_completed_r3",
+  "event_sequence": 207,
+  "status": "READY",
+  "current_work_package": "B-02",
+  "last_event_id": "evt_b01_main_package_accepted_r3",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 2,
-  "active_lineage_valid_failure_count": 2,
-  "historical_accepted_failure_count": 11,
+  "valid_failure_count": 0,
+  "active_lineage_valid_failure_count": 0,
+  "historical_accepted_failure_count": 13,
   "dir_status": "CLEARED",
-  "repository_head": "10149bcd6569bce539fabc980087b0ccec0f8a01",
+  "repository_head": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "10149bcd6569bce539fabc980087b0ccec0f8a01",
+  "repository_remote_head": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "10149bcd6569bce539fabc980087b0ccec0f8a01",
+  "repository_validated_base_commit": "033938b7d907d2c5ff02c006c3048edbf6467c5c",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-01_COMPLETION_REPORT_R3.md",
-    "docs/evidence/manifests/B-01_EVIDENCE_MANIFEST_R3.json",
-    "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
+    "docs/evidence/manifests/B-01_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b01-rework-completion-r3.json",
-    "docs/validation/B-01_DOMAIN_CORE_VALIDATION_R3.md",
-    "packages/domain/reducer.py",
+    "docs/progress/progress-handoff-detached-digest-b01-accepted-r3.json",
+    "docs/test_reports/B-01_RETEST_REPORT_R3.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/domain/test_reducer.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-rework-completion-r3.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-01_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b01-accepted-r3.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-01_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch independent Tester for B-01 R3 retest; do not accept B-01 or start B-02",
+  "next_safe_action": "Prepare B-02 fenced start; do not implement B-02 before lease issuance",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -57,11 +53,17 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-01-20260814-003 / TEST_REVIEW / COMPLETED / R3_PENDING",
+  "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
 }
 ```
+
+## 2026-08-14 B-01 R3 Main acceptance
+
+- BLK-B01-001/002는 independent R3 retest로 CLOSED 되었고 B-01은 ACCEPTED다.
+- B-02는 READY이나 이 acceptance commit과 clean clone 검증 전에는 시작하지 않는다.
+- NUL/ZWSP/BOM 허용은 strip-semantics 계약이며 SHA-256 grammar 검증으로 과대 주장하지 않는다.
 
 ## 2026-08-14 B-01 R3 Developer completion → TEST_REVIEW
 
