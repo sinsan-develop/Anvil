@@ -276,6 +276,10 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         a15_start = _load_json(a15_start_path) if a15_start_path.is_file() else {}
         a15_completion_path = root / 'docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json'
         a15_completion = _load_json(a15_completion_path) if a15_completion_path.is_file() else {}
+        a15_acceptance_dir1_path = root / 'docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json'
+        a15_acceptance_dir1 = (
+            _load_json(a15_acceptance_dir1_path) if a15_acceptance_dir1_path.is_file() else {}
+        )
         a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
         a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
@@ -468,7 +472,27 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and a15_completion.get('developer_evidence', {}).get('manifest_sha256')
         == hashlib.sha256((root / 'docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json').read_bytes()).hexdigest().upper()
     )
+    current_a15_acceptance_dir1 = (
+        bool(a15_acceptance_dir1)
+        and progress.get('event_sequence') == 184
+        and progress.get('current_work_package') == 'A-15'
+        and progress.get('status') == 'DIR_HOLD'
+        and progress.get('active_work_instruction') is None
+        and progress.get('active_agent') is None
+        and progress.get('worker_lease') is None
+        and progress.get('write_lease') is None
+        and progress.get('dir_review', {}).get('checkpoint') == 'DIR-1'
+        and progress.get('dir_review', {}).get('status') == 'WAITING_OWNER_DIRECTION'
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
+        == 'docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json'
+        and (
+            committed_clean
+            or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths
+        )
+    )
     candidates: list[dict[str, Any]] = []
+    if current_a15_acceptance_dir1:
+        candidates.append(a15_acceptance_dir1.get('a13_successor_projection', {}))
     if current_a15_completion:
         candidates.append(a15_completion.get('a13_successor_projection', {}))
     if current_a15_start:

@@ -3,80 +3,60 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 181,
-  "status": "TEST_REVIEW",
+  "event_sequence": 184,
+  "status": "DIR_HOLD",
   "current_work_package": "A-15",
-  "last_event_id": "evt_a15_package_completed_test_review",
+  "last_event_id": "evt_dir1_reported_waiting_owner_direction",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 11,
-  "dir_status": "NOT_REACHED",
-  "repository_head": "aeb6b5a6bc1716ea89fe47991c9800c17107b2ab",
+  "dir_status": "WAITING_OWNER_DIRECTION",
+  "repository_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "aeb6b5a6bc1716ea89fe47991c9800c17107b2ab",
+  "repository_remote_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "aeb6b5a6bc1716ea89fe47991c9800c17107b2ab",
+  "repository_validated_base_commit": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/architecture/a15/A-15_API_DRAFT.json",
-    "docs/architecture/a15/A-15_ARTIFACT_SCHEMA.json",
-    "docs/architecture/a15/A-15_ARTIFACT_STATE_API_UI_TRACE.md",
-    "docs/architecture/a15/A-15_FIELD_TRACE_MATRIX.json",
-    "docs/architecture/a15/A-15_USER_UX_APPROVAL_REQUEST.md",
-    "docs/completion_reports/A-15_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+    "docs/approvals/APPROVAL-20260813-A15-UX-001.md",
+    "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/dir-checkpoints.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-a15-completion-test-review.json",
-    "docs/validation/A-15_ARTIFACT_STATE_API_UI_TRACE_VALIDATION.md",
+    "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
+    "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md",
+    "docs/test_reports/DIR-1_REPORT.md",
     "scripts/check_a13_repository_scan.py",
-    "scripts/check_a14_workbench_prototype.py",
-    "scripts/check_a15_artifact_state_api_ui_trace.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/fixtures/a15/canonical-trace-contract.json",
-    "tests/fixtures/a15/trace-mutations.json",
     "tests/tooling/test_a13_repository_scan.py",
-    "tests/tooling/test_a15_artifact_state_api_ui_trace.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a15-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch an independent Tester for A-15 static trace contract review; do not accept A-15 or enter DIR-1 before the Tester result and user UX decision",
+  "next_safe_action": "STOP at DIR-1 and await explicit owner direction; do not decide A Gate or start any successor package",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
-  "reporting_decision": "AUTO_CONTINUE",
-  "g_gate_status": "ACCEPTED",
-  "g_gate_checkpoint_status": "CLEARED",
-  "a01_start_allowed": true,
-  "active_work_instruction": {
-    "artifact_id": "WI-A-15-20260813-001",
-    "path": "docs/work_orders/A-15_WORK_INSTRUCTION.md",
-    "sha256": "B46E3D3A17C6050759A5EB22DF9D5B0F4484D9C59893CD0DA4A7483687077A1A",
-    "invocation_path": "docs/work_orders/A-15_INVOCATION_PROMPT.md",
-    "invocation_sha256": "002F608693A9C152949E4EB1884A5B16A6BABE170C7E4292FB85D590F0A20B14",
-    "package_status": "TEST_REVIEW",
-    "result_status": "COMPLETED",
-    "accepted": false,
-    "independent_tester_status": "PENDING",
-    "user_ux_approval_status": "PENDING_USER_DECISION"
-  },
+  "reporting_decision": "STOP_AND_REPORT_DIR",
+  "a_gate_status": "NOT_STARTED",
+  "a_gate_checkpoint_status": "BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
+  "a_gate_start_allowed": false,
+  "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
 }
 ```
 
 > 갱신일: 2026-08-11
-> 현재 상태: `A-15 TEST_REVIEW / COMPLETED / INDEPENDENT TESTER PENDING`
+> 현재 상태: `A-15 ACCEPTED / DIR-1 WAITING_OWNER_DIRECTION / DIR_HOLD`
 > 현재 Phase / Package: `A / A-15`
 
 ## 1. 현재 기준선
@@ -517,3 +497,11 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - Developer exact 12 paths는 byte-frozen이다. EvidenceManifest SHA-256은 `2AEEACFCF8DB666EA89B85EE7C07A071F7B56DF52B3373F222801065A7918B60`, target은 `34FCA32938AB9DE68EFFE1C9F0E3FB57E994C5D74E172717D027F871DB3309AE`다.
 - 사용자 UX 승인은 `PENDING_USER_DECISION`이며 실제 API/DB/browser/network/Provider/Secret/Egress/WSL/production/deployment는 `NOT_EXECUTED`다.
 - A-15는 아직 `ACCEPTED`가 아니다. DIR-1은 `NOT_REACHED`, A Gate는 `BLOCKED_PENDING_A15_ACCEPTANCE_AND_DIR1`이며 독립 Tester 결과 전 승인·DIR 진입을 금지한다.
+
+## A-15 Main acceptance → DIR-1 강제 중단
+
+- 신산님의 현재 대화 명시 결정 `승인해`를 `APPROVAL-20260813-A15-UX-001`로 인증 기록하고, 승인 subject hash `25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC`에 결박했다.
+- 독립 Tester 보고서 `F12CFEE0D7AE7A766C740CB89177F3DF13B345B8BF0DA372CDF99ACEA97B65EA`의 `READY_FOR_MAIN_ACCEPTANCE`, blocking 0을 검토해 seq182 `MAIN_PACKAGE_ACCEPTED`로 A-15를 최종 `ACCEPTED`했다.
+- canonical 순서대로 seq183 `DIR_REACHED`, seq184 `DIR_REPORTED`를 append했다. DIR-1 보고 판정은 `ALIGNED`이지만 상태는 `WAITING_OWNER_DIRECTION`이며, A Gate는 `NOT_STARTED / BLOCKED_PENDING_DIR1_OWNER_DIRECTION`이다.
+- active WorkInstruction, agent, worker lease, write lease는 모두 null이다. 신산님의 별도 DIR-1 계속 지시 전에는 A Gate 판정, 후속 Package, Subagent, 제품 write, 배포를 시작하지 않는다.
+- A-15 실제 API·DB·browser·network·Provider·Secret·Egress·WSL·production·deployment는 `NOT_EXECUTED`를 유지한다. A-14 R5 실제 browser 증거와 R6 IAB `ENVIRONMENT_BLOCKED / NOT_EXECUTED` 경계도 변경하지 않는다.

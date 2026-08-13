@@ -58,13 +58,13 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(181, progress["event_sequence"])
+        self.assertEqual(184, progress["event_sequence"])
         self.assertEqual("A-15", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("WI-A-15-20260813-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual("DIR_HOLD", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
+        self.assertEqual("WAITING_OWNER_DIRECTION", progress["dir_review"]["status"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("A-15", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
@@ -206,9 +206,9 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("PACKAGE_COMPLETED", reconciliation["event_type"])
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
         self.assertEqual(
-            "aeb6b5a6bc1716ea89fe47991c9800c17107b2ab",
+            "2c92b564fc049476e4bd766353e7816f7ca2ce08",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
@@ -268,7 +268,12 @@ class G07BaselineTests(unittest.TestCase):
             "push_status": "PUSHED",
         }
         progress["repository"] = projection
-        event_stream["events"][-1]["details"].update(projection)
+        current_projection_event = next(
+            event for event in reversed(event_stream["events"])
+            if event.get("details", {}).get("projection_mode")
+            == "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT"
+        )
+        current_projection_event["details"].update(projection)
 
         def fake_git(_root, *arguments):
             responses = {

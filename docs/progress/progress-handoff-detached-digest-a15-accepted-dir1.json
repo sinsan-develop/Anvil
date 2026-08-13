@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "A-15-PROGRESS-HANDOFF-DIGEST-ACCEPTED-DIR1",
+  "package_id": "A-15",
+  "event_sequence": 184,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 32213,
+    "file_sha256": "6C227C8D625F02A33B9FAC2E491D33D37B4756CD1FF449388A7AF7DA48F135C6",
+    "canonical_json_sha256": "BEC92DE4C0D07A475898AC4C77711E72733651E027AF1FED8CD6F877C928D69E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 63466,
+    "file_sha256": "5A9A41AB5BE35CD448EAC020E97DBCC9B497328FA7BF0B8C89462C8F9AF783D6",
+    "machine_summary_canonical_sha256": "F3CF911715F05C9FB978D0CB0F4BE0DA7B620FF463028F5B820C6DACC5AE36A4"
+  },
+  "created_at": "2026-08-13T09:20:00+09:00",
+  "scope": "A-15 accepted from authenticated human UX approval and independent Tester READY; DIR-1 ALIGNED WAITING_OWNER_DIRECTION; A Gate NOT_STARTED"
+}

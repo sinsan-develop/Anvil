@@ -1,0 +1,112 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-A-15-ACCEPTANCE-DIR1-20260813-001",
+  "artifact_type": "package_acceptance_dir_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "A-15",
+  "revision": 1,
+  "artifact_status": "accepted_dir_hold",
+  "artifact_path": "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-13T09:20:00+09:00",
+  "projection": {
+    "event_sequence": 184,
+    "status": "DIR_HOLD",
+    "current_work_package": "A-15",
+    "accepted": true,
+    "dir_checkpoint": "DIR-1",
+    "dir_status": "WAITING_OWNER_DIRECTION",
+    "worker_lease": null,
+    "write_lease": null
+  },
+  "human_approval": {
+    "approval_id": "APPROVAL-20260813-A15-UX-001",
+    "path": "docs/approvals/APPROVAL-20260813-A15-UX-001.md",
+    "sha256": "B33A5407D955B0CCB335CADB80E1EEA4C34227DB65FB6DADE2E03512AE86F144",
+    "subject_hash": "25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC",
+    "decision": "APPROVED",
+    "decision_source": "current_turn: 승인해"
+  },
+  "tester_evidence": {
+    "path": "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md",
+    "sha256": "F12CFEE0D7AE7A766C740CB89177F3DF13B345B8BF0DA372CDF99ACEA97B65EA",
+    "verdict": "READY_FOR_MAIN_ACCEPTANCE",
+    "blocking_findings": 0
+  },
+  "developer_completion_ref": {
+    "path": "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
+    "sha256": "91B3FDE42A669B806141D446713423D7110801A6C6222039D38AD363C3E1D906",
+    "developer_manifest_sha256": "2AEEACFCF8DB666EA89B85EE7C07A071F7B56DF52B3373F222801065A7918B60",
+    "developer_target_hash": "34FCA32938AB9DE68EFFE1C9F0E3FB57E994C5D74E172717D027F871DB3309AE"
+  },
+  "dir_report": {
+    "checkpoint": "DIR-1",
+    "path": "docs/test_reports/DIR-1_REPORT.md",
+    "sha256": "9AC48F7ACC288511E77AB079C99B32C9979CE8566E121711E1878D9152D79301",
+    "verdict": "ALIGNED",
+    "status": "WAITING_OWNER_DIRECTION"
+  },
+  "actual_dir_status": "WAITING_OWNER_DIRECTION",
+  "actual_a_gate_status": "NOT_STARTED / BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
+  "runtime_boundary": {
+    "actual_api": "NOT_EXECUTED",
+    "actual_db": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_network": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_secret": "NOT_EXECUTED",
+    "actual_egress": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  },
+  "a13_successor_projection": {
+    "predecessor_manifest_path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 37083, "sha256": "42FAA0BB2267F8BA7616FD9F7E22C234688D53D319C387940C8CADE839972DB1"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 42815, "sha256": "20B8FB603F7107278E61A70506B781ED7803E2A2A84169A3A59EAA62AA5E879F"}
+    ]
+  },
+  "repository_projection": {
+    "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+    "validated_base_commit": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+    "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+    "push_status": "PUSH_PENDING_MAIN",
+    "exact_allowed_paths": [
+      "docs/approvals/APPROVAL-20260813-A15-UX-001.md",
+      "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/dir-checkpoints.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
+      "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md",
+      "docs/test_reports/DIR-1_REPORT.md",
+      "scripts/check_a13_repository_scan.py",
+      "scripts/check_g07_baseline.py",
+      "scripts/check_phase_g_gate.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ]
+  },
+  "raw_checksums": [
+    {"path": "docs/approvals/APPROVAL-20260813-A15-UX-001.md", "bytes": 1244, "sha256": "B33A5407D955B0CCB335CADB80E1EEA4C34227DB65FB6DADE2E03512AE86F144"},
+    {"path": "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json", "bytes": 6398, "sha256": "91B3FDE42A669B806141D446713423D7110801A6C6222039D38AD363C3E1D906"},
+    {"path": "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json", "bytes": 919, "sha256": "36739270555FB7D572A5A27BC9CB90772711F601AC5078A5AF1647C04B51ECB5"},
+    {"path": "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md", "bytes": 5505, "sha256": "F12CFEE0D7AE7A766C740CB89177F3DF13B345B8BF0DA372CDF99ACEA97B65EA"},
+    {"path": "docs/test_reports/DIR-1_REPORT.md", "bytes": 1903, "sha256": "9AC48F7ACC288511E77AB079C99B32C9979CE8566E121711E1878D9152D79301"}
+  ],
+  "target_canonical_bytes": 612,
+  "target_content_bytes": 15969,
+  "target_hash": "sha256:08B60367BEA0EBA716C917A1F742BAAD1E4DB2EAB8AE85771BEA668ED6EFE4BF",
+  "delivered_hash": "sha256:08B60367BEA0EBA716C917A1F742BAAD1E4DB2EAB8AE85771BEA668ED6EFE4BF",
+  "content_hash": "sha256:08B60367BEA0EBA716C917A1F742BAAD1E4DB2EAB8AE85771BEA668ED6EFE4BF",
+  "self_reference": false,
+  "reporting_decision": "STOP_AND_REPORT_DIR"
+}

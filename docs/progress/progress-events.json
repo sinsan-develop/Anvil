@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 181,
+  "last_sequence": 184,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -6155,6 +6155,93 @@
         ],
         "completion_manifest_path": "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
         "reporting_decision": "AUTO_CONTINUE"
+      }
+    },
+    {
+      "event_id": "evt_a15_main_accepted_human_ux",
+      "sequence": 182,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "occurred_at": "2026-08-13T09:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "A-15",
+      "details": {
+        "decision": "ACCEPTED",
+        "user_ux_decision": "APPROVED",
+        "human_approval_ref": {"path": "docs/approvals/APPROVAL-20260813-A15-UX-001.md", "sha256": "B33A5407D955B0CCB335CADB80E1EEA4C34227DB65FB6DADE2E03512AE86F144"},
+        "human_approval_subject_hash": "25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC",
+        "test_report_ref": {"path": "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md", "sha256": "F12CFEE0D7AE7A766C740CB89177F3DF13B345B8BF0DA372CDF99ACEA97B65EA"},
+        "test_report_sha256": "F12CFEE0D7AE7A766C740CB89177F3DF13B345B8BF0DA372CDF99ACEA97B65EA",
+        "verdict": "READY_FOR_MAIN_ACCEPTANCE",
+        "blocking_findings": 0,
+        "manifest_ref": "docs/evidence/manifests/A-15_EVIDENCE_MANIFEST.json",
+        "manifest_sha256": "2AEEACFCF8DB666EA89B85EE7C07A071F7B56DF52B3373F222801065A7918B60",
+        "next_work_package": "A-GATE",
+        "next_package_status": "BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
+        "active_work_instruction": null,
+        "active_agent": null,
+        "worker_lease": null,
+        "write_lease": null,
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+        "push_status": "PUSH_PENDING_MAIN",
+        "acceptance_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+        "acceptance_upstream_head": "2c92b564fc049476e4bd766353e7816f7ca2ce08",
+        "exact_allowed_paths": [
+          "docs/approvals/APPROVAL-20260813-A15-UX-001.md",
+          "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/dir-checkpoints.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
+          "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md",
+          "docs/test_reports/DIR-1_REPORT.md",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_dir1_reached_after_a15_acceptance",
+      "sequence": 183,
+      "event_type": "DIR_REACHED",
+      "occurred_at": "2026-08-13T09:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "DIR-1",
+      "details": {
+        "checkpoint": "DIR-1",
+        "subject_hash": "25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC",
+        "canonical_trigger": "A-15_ACCEPTED",
+        "accepted_event_id": "evt_a15_main_accepted_human_ux",
+        "lease_released": true,
+        "blocked_next_action": "A-GATE"
+      }
+    },
+    {
+      "event_id": "evt_dir1_reported_waiting_owner_direction",
+      "sequence": 184,
+      "event_type": "DIR_REPORTED",
+      "occurred_at": "2026-08-13T09:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "DIR-1",
+      "details": {
+        "checkpoint": "DIR-1",
+        "subject_hash": "25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC",
+        "report_ref": "docs/test_reports/DIR-1_REPORT.md",
+        "report_sha256": "9AC48F7ACC288511E77AB079C99B32C9979CE8566E121711E1878D9152D79301",
+        "verdict": "ALIGNED",
+        "status": "WAITING_OWNER_DIRECTION",
+        "next_action": "WAIT_FOR_OWNER_DIRECTION"
       }
     }
   ]

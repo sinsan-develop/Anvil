@@ -127,6 +127,7 @@ CHANGE_CLASSIFICATION_ALIASES = {
 VALIDATED_BASE_PROJECTION_MODE = "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT"
 VALIDATED_BASE_PENDING_RELATION = "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT"
 EVIDENCE_ONLY_PATH_PREFIXES = (
+    "docs/approvals/",
     "docs/evidence/",
     "docs/progress/",
     "docs/test_reports/",
@@ -599,8 +600,14 @@ def _validate_dir(bundle: Mapping[str, Any]) -> list[str]:
     for event in bundle["events"].get("events", []):
         package = event.get("subject_ref")
         accepted = (
-            event.get("event_type") == "PACKAGE_COMPLETED"
-            and event.get("details", {}).get("package_status") == "ACCEPTED"
+            (
+                event.get("event_type") == "PACKAGE_COMPLETED"
+                and event.get("details", {}).get("package_status") == "ACCEPTED"
+            )
+            or (
+                event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+                and event.get("details", {}).get("decision") == "ACCEPTED"
+            )
         )
         if accepted and package in package_trigger_map:
             checkpoint = by_name.get(package_trigger_map[package])
@@ -3284,6 +3291,116 @@ def validate_a15_completion_manifest(
     return sorted(set(errors))
 
 
+def validate_a15_acceptance_dir1_manifest(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    expected_raw = {
+        "docs/approvals/APPROVAL-20260813-A15-UX-001.md",
+        "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-a15-accepted-dir1.json",
+        "docs/test_reports/A-15_INDEPENDENT_TEST_REPORT.md",
+        "docs/test_reports/DIR-1_REPORT.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["A15_ACCEPTANCE_DIR1_RAW_INVALID"]
+    seen: set[str] = set()
+    canonical: list[str] = []
+    total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("A15_ACCEPTANCE_DIR1_RAW_INVALID")
+            continue
+        seen.add(relative)
+        try:
+            matches = portable_row_matches(root, relative, row.get("bytes"), row.get("sha256"))
+        except (OSError, TypeError):
+            matches = False
+        if not matches:
+            errors.append("A15_ACCEPTANCE_DIR1_RAW_INVALID")
+            continue
+        total += int(row["bytes"])
+        canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen != expected_raw:
+        errors.append("A15_ACCEPTANCE_DIR1_RAW_SET_INVALID")
+    canonical_bytes = "\n".join(sorted(canonical, key=lambda value: value.encode("utf-8"))).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if any((
+        manifest.get("target_canonical_bytes") != len(canonical_bytes),
+        manifest.get("target_content_bytes") != total,
+        manifest.get("target_hash") != target,
+        manifest.get("delivered_hash") != target,
+        manifest.get("content_hash") != target,
+        manifest.get("self_reference") is not False,
+    )):
+        errors.append("A15_ACCEPTANCE_DIR1_TARGET_MISMATCH")
+    events = bundle["events"]["events"]
+    terminal = [event for event in events if 182 <= event.get("sequence", -1) <= 184]
+    acceptance = terminal[0] if len(terminal) == 3 else {}
+    checkpoint = next(
+        (row for row in bundle["dir_registry"].get("checkpoints", []) if row.get("checkpoint") == "DIR-1"),
+        {},
+    )
+    approval = manifest.get("human_approval") or {}
+    tester = manifest.get("tester_evidence") or {}
+    if any((
+        manifest.get("package_id") != "A-15",
+        progress.get("event_sequence") != 184,
+        progress.get("current_work_package") != "A-15",
+        progress.get("status") != "DIR_HOLD",
+        "A-15" not in progress.get("completed_packages", []),
+        progress.get("active_work_instruction") is not None,
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        [event.get("event_type") for event in terminal]
+        != ["MAIN_PACKAGE_ACCEPTED", "DIR_REACHED", "DIR_REPORTED"],
+        acceptance.get("subject_ref") != "A-15",
+        acceptance.get("details", {}).get("decision") != "ACCEPTED",
+        acceptance.get("details", {}).get("user_ux_decision") != "APPROVED",
+        approval.get("sha256") != "B33A5407D955B0CCB335CADB80E1EEA4C34227DB65FB6DADE2E03512AE86F144",
+        approval.get("subject_hash") != "25BA91B86F06B6343F8E6388B6B18AAA5DB40BDE3BEA427ED89C2DD4763DBAEC",
+        tester.get("sha256") != "F12CFEE0D7AE7A766C740CB89177F3DF13B345B8BF0DA372CDF99ACEA97B65EA",
+        tester.get("verdict") != "READY_FOR_MAIN_ACCEPTANCE",
+        tester.get("blocking_findings") != 0,
+        checkpoint.get("status") != "WAITING_OWNER_DIRECTION",
+        checkpoint.get("verdict") != "ALIGNED",
+        (progress.get("dir_review") or {}).get("status") != "WAITING_OWNER_DIRECTION",
+        (progress.get("phase_gate") or {}).get("decision") != "NOT_STARTED",
+        (progress.get("phase_gate") or {}).get("checkpoint_status") != "BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
+        (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
+        (progress.get("reporting_decision") or {}).get("decision") != "STOP_AND_REPORT_DIR",
+        manifest.get("actual_dir_status") != "WAITING_OWNER_DIRECTION",
+        manifest.get("actual_a_gate_status") != "NOT_STARTED / BLOCKED_PENDING_DIR1_OWNER_DIRECTION",
+    )):
+        errors.append("A15_ACCEPTANCE_DIR1_PROJECTION_MISMATCH")
+    runtime = manifest.get("runtime_boundary") or {}
+    if any(runtime.get(key) != "NOT_EXECUTED" for key in (
+        "actual_api", "actual_db", "actual_browser", "actual_network", "actual_provider",
+        "actual_secret", "actual_egress", "actual_wsl", "actual_production", "actual_deployment",
+    )):
+        errors.append("A15_ACCEPTANCE_DIR1_RUNTIME_BOUNDARY_MISMATCH")
+    repository = progress.get("repository") or {}
+    projection = manifest.get("repository_projection") or {}
+    fields = ("projection_mode", "validated_base_commit", "head_relation", "branch", "upstream", "remote_head", "push_status", "exact_allowed_paths")
+    if any(projection.get(field) != repository.get(field) for field in fields):
+        errors.append("A15_ACCEPTANCE_DIR1_REPOSITORY_MISMATCH")
+    successor = manifest.get("a13_successor_projection") or {}
+    indexed = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+    expected_successor = {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"}
+    try:
+        live_valid = all(portable_row_matches(root, path, row.get("bytes"), row.get("sha256")) for path, row in indexed.items())
+    except (OSError, TypeError):
+        live_valid = False
+    if successor.get("predecessor_manifest_sha256") != "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771" or set(indexed) != expected_successor or not live_valid:
+        errors.append("A15_ACCEPTANCE_DIR1_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
 def validate_a02_rework_start_manifest(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -3953,6 +4070,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_a15_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/A-15_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_a15_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/A-15_ACCEPTANCE_DIR1_PROGRESS_MANIFEST.json":
+            errors.extend(validate_a15_acceptance_dir1_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

@@ -52,7 +52,7 @@ FINAL_MANIFESTS = {
 }
 VALIDATED_BASE_PROJECTION_MODE = "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT"
 VALIDATED_BASE_PENDING_RELATION = "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT"
-EVIDENCE_ONLY_PATH_PREFIXES = ("docs/evidence/", "docs/progress/", "docs/test_reports/")
+EVIDENCE_ONLY_PATH_PREFIXES = ("docs/approvals/", "docs/evidence/", "docs/progress/", "docs/test_reports/")
 A01_COMPLETION_PATH_PREFIXES = ("docs/architecture/a01/", "docs/completion_reports/A-01_", "docs/validation/A-01_", "tests/fixtures/a01/")
 A01_COMPLETION_EXACT_PATHS = {"scripts/check_a01_journey.py", "tests/tooling/test_a01_journey.py"}
 A02_COMPLETION_PATH_PREFIXES = ("docs/architecture/a02/", "docs/completion_reports/A-02_", "docs/validation/A-02_", "tests/fixtures/a02/")
@@ -747,6 +747,28 @@ def validate_repository(
             or (progress.get("dir_review") or {}).get("status") != "NOT_REACHED"
         ):
             _error(errors, "A15_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=181")
+    if progress.get("event_sequence") == 184:
+        terminal_events = [event for event in events if 182 <= event.get("sequence", -1) <= 184]
+        phase_gate = progress.get("phase_gate") or {}
+        if (
+            progress.get("current_work_package") != "A-15"
+            or progress.get("status") != "DIR_HOLD"
+            or "A-15" not in progress.get("completed_packages", [])
+            or progress.get("active_work_instruction") is not None
+            or progress.get("active_agent") is not None
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or [event.get("event_type") for event in terminal_events]
+            != ["MAIN_PACKAGE_ACCEPTED", "DIR_REACHED", "DIR_REPORTED"]
+            or terminal_events[0].get("subject_ref") != "A-15"
+            or terminal_events[0].get("details", {}).get("user_ux_decision") != "APPROVED"
+            or (progress.get("dir_review") or {}).get("checkpoint") != "DIR-1"
+            or (progress.get("dir_review") or {}).get("status") != "WAITING_OWNER_DIRECTION"
+            or phase_gate.get("gate") != "A Gate"
+            or phase_gate.get("decision") != "NOT_STARTED"
+            or phase_gate.get("checkpoint_status") != "BLOCKED_PENDING_DIR1_OWNER_DIRECTION"
+        ):
+            _error(errors, "A15_ACCEPTANCE_DIR1_PROJECTION_MISMATCH", progress_path, "sequence=184")
     accepted_events = {event.get("subject_ref") for event in events if event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and event.get("details", {}).get("decision") == "ACCEPTED"}
     phase_g_gate_accepted = any(
         event.get("event_type") == "PHASE_GATE_DECIDED"
