@@ -294,6 +294,23 @@
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED",
       "independent_retest_status": "R2_PENDING"
+    },
+    {
+      "entry_id": "failure-b01-independent-retest-r2",
+      "step_lineage_id": "B-01",
+      "failure_fingerprint": "BLK-B01-002-NONCANONICAL-TARGET-PADDING-BYPASS",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": ["BLK-B01-002"],
+      "closed_findings": ["BLK-B01-001"],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 1,
+      "evidence_refs": [{"path": "docs/test_reports/B-01_RETEST_REPORT_R2.md", "sha256": "AAFD3A01443162A99821B0D10967F432C9C5C9EF7309483CEC506E2B1BD02C09"}],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R3_PENDING"
     }
   ]
 }
