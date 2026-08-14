@@ -4212,6 +4212,30 @@ def validate_b03_r3_rework_completion_manifest(manifest: Mapping[str, Any], bund
     return sorted(set(errors))
 
 
+def validate_b03_r3_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]; errors=[]
+    expected={"docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json","docs/progress/progress-handoff-detached-digest-b03-accepted-r3.json","docs/test_reports/B-03_RETEST_REPORT_R3.md"}
+    rows=manifest.get("raw_checksums"); seen=set(); canonical=[]; total=0
+    if not isinstance(rows,list): return ["B03_R3_ACCEPTANCE_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B03_R3_ACCEPTANCE_RAW_INVALID"); continue
+        seen.add(relative)
+        try: ok=portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): ok=False
+        if not ok: errors.append("B03_R3_ACCEPTANCE_RAW_INVALID"); continue
+        total+=int(row["bytes"]); canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("B03_R3_ACCEPTANCE_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode(); target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B03_R3_ACCEPTANCE_TARGET_MISMATCH")
+    acceptance=[e for e in bundle["events"]["events"] if e.get("sequence")==241]
+    historical=progress.get("historical_failure_counts_by_lineage") or {}
+    if any((progress.get("event_sequence")!=241,progress.get("current_work_package")!="B-04",progress.get("status")!="READY","B-03" not in progress.get("completed_packages",[]),progress.get("valid_failure_count")!=0,(progress.get("active_failure_lineage") or {}).get("step_lineage_id")!="B-04",historical.get("B-03")!=1,progress.get("active_work_instruction") is not None,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,(progress.get("next_work_package") or {}).get("status")!="READY",[e.get("event_type") for e in acceptance]!=["MAIN_PACKAGE_ACCEPTED"],manifest.get("tester_report_sha256")!="E90448B45A3646E32351C60E17C8FD77F628A1C1D688B42A6481FCEEFCCB59C6",manifest.get("blocking_findings")!=0)): errors.append("B03_R3_ACCEPTANCE_PROJECTION_MISMATCH")
+    boundary=manifest.get("runtime_boundary") or {}
+    if boundary.get("actual_browser_service_security")!="PASS_R2_EVIDENCE_PRESERVED" or boundary.get("r3_browser_rerun")!="NOT_EXECUTED_NOT_REQUIRED_FOR_R3_SCOPE": errors.append("B03_R3_ACCEPTANCE_BOUNDARY_MISMATCH")
+    return sorted(set(errors))
+
+
 def _git_value(root: Path, *arguments: str) -> str | None:
     result = subprocess.run(
         ["git", *arguments],
@@ -4338,7 +4362,8 @@ def validate_repository_projection(
     b03_rework_completion_projection = repository.get("validated_base_commit") in {"fcfa8059e060702afa6ea5fa801d40c4cb01cb63","6375e4e823c92fa518a9bab71a8db720dd132cc0","7508553188368b0b459faa3b67c2668ffb37c11a"} and "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed
     b03_r3_rework_start_projection = repository.get("validated_base_commit") == "03c0d131693f5479f16aababcce385ca1c46aee6" and "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R3.json" in allowed
     b03_r3_rework_completion_projection = repository.get("validated_base_commit") == "0f1ebb0686c2524fe6df9c1ba560e0c76cf7eeb3" and "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection:
+    b03_r3_acceptance_projection = repository.get("validated_base_commit") == "fc1304c903b74e7b8363c3fdf8556ea2a45d02aa" and "docs/evidence/manifests/B-03_ACCEPTANCE_PROGRESS_MANIFEST_R3.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -4618,6 +4643,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b03_r3_rework_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json":
             errors.extend(validate_b03_r3_rework_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-03_ACCEPTANCE_PROGRESS_MANIFEST_R3.json":
+            errors.extend(validate_b03_r3_acceptance_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
