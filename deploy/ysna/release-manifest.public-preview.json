@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "release_id": "anvil-public-ui-preview",
+  "release_commit_source": "DEPLOY_ARGUMENT_FULL_SHA",
+  "release_tag_pattern": "anvil-ui-preview-YYYYMMDD.N",
+  "deploy_root": "~/deploy/anvil",
+  "runtime": {
+    "service": "anvil-web",
+    "container_port": "3770",
+    "network": "proxy-network",
+    "public_origin": "https://anvil.sinsan.kr",
+    "api": "NOT_CONNECTED",
+    "database": "NOT_CONNECTED",
+    "llm": "NOT_CONNECTED",
+    "agent_runtime": "NOT_CONNECTED"
+  },
+  "protected_resources": [
+    "nginx-proxy-manager",
+    "shared-db",
+    "existing_containers",
+    "existing_volumes",
+    "existing_networks"
+  ],
+  "rollback": "deploy/ysna/rollback-public-preview.sh",
+  "scope": "READ_ONLY_UI_PREVIEW"
+}
