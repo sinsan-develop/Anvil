@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>Anvil · UI Preview</title>
+  <link rel="stylesheet" href="/src/styles/ui-preview.css">
+</head>
+<body data-preview-shell>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#dashboard" aria-label="Anvil Dashboard">
+        <span class="brand-mark" aria-hidden="true">A</span>
+        <span><strong>ANVIL</strong><small>AI Development OS</small></span>
+      </a>
+      <div class="project-switcher">
+        <span class="eyebrow">CURRENT PROJECT</span>
+        <button type="button" class="project-button" data-unavailable="프로젝트 전환">
+          <span class="project-avatar">AN</span>
+          <span><strong>Anvil</strong><small>main · UI preview</small></span>
+          <span aria-hidden="true">⌄</span>
+        </button>
+      </div>
+      <nav aria-label="Anvil 전체 메뉴">
+        <ul id="sidebar-nav" class="nav-list"></ul>
+      </nav>
+      <div class="sidebar-footer">
+        <button type="button" class="identity" data-unavailable="사용자 프로필">
+          <span class="identity-avatar">신</span>
+          <span><strong>신산님</strong><small>Owner</small></span>
+          <span class="online-dot" title="UI Preview 활성"></span>
+        </button>
+      </div>
+    </aside>
+
+    <section class="app-stage">
+      <header class="topbar">
+        <div class="environment">
+          <span class="status-dot"></span>
+          <span>Production Preview</span>
+          <span class="separator">·</span>
+          <strong>ysna-server</strong>
+        </div>
+        <div class="top-actions">
+          <button type="button" class="icon-button" title="전체 검색" aria-label="전체 검색" data-unavailable="전체 검색">⌕</button>
+          <button type="button" class="icon-button notification" title="알림" aria-label="알림" data-unavailable="알림">♢<span>2</span></button>
+          <button type="button" id="open-eoul" class="eoul-button"><span class="eoul-symbol">어</span> 어울</button>
+          <span class="preview-badge">UI PREVIEW</span>
+        </div>
+      </header>
+
+      <main id="main-content" class="main-content" tabindex="-1">
+        <section class="page-heading">
+          <div>
+            <span class="eyebrow" id="page-label">전체 현황</span>
+            <h1 id="page-title">Dashboard</h1>
+            <p id="page-description"></p>
+          </div>
+          <div class="heading-actions">
+            <button type="button" class="secondary-button" title="이 화면 설명" data-unavailable="화면 도움말">i</button>
+            <button type="button" class="primary-button" data-unavailable="새 작업 실행">+ 새 작업</button>
+          </div>
+        </section>
+
+        <section id="summary-cards" class="summary-grid" aria-label="기능 위치 요약"></section>
+
+        <section id="workbench-surface" class="workbench-surface" hidden>
+          <div class="workbench-tabs" role="tablist" aria-label="어울 작업실">
+            <div id="workbench-tabs"></div>
+            <span class="connection-state">LLM · NOT CONNECTED</span>
+          </div>
+          <div class="workbench-layout">
+            <article class="conversation-panel">
+              <div class="panel-heading">
+                <div><span class="eyebrow">MAIN AGENT</span><h2 id="workbench-tab-title">어울과 대화</h2></div>
+                <span class="agent-status"><span></span> Preview</span>
+              </div>
+              <div id="workbench-tab-content" class="tab-content"></div>
+              <div class="composer">
+                <label for="preview-message">어울에게 전달</label>
+                <div class="composer-row">
+                  <textarea id="preview-message" rows="2" placeholder="UI 프리뷰입니다. 실제 LLM에는 전달되지 않습니다."></textarea>
+                  <button type="button" data-unavailable="LLM 대화 전송">전송</button>
+                </div>
+                <small>실제 대화·작업 실행·저장은 연결되지 않았습니다.</small>
+              </div>
+            </article>
+            <aside class="context-panel">
+              <div class="context-section"><span class="eyebrow">CURRENT TASK</span><h3>B-04 · Planning Core</h3><p>TEST_REVIEW · 승인 대기</p></div>
+              <div class="phase-rail" aria-label="작업 단계">
+                <span class="done">요청</span><span class="done">설계</span><span class="done">구현</span><span class="active">검증</span><span>적용</span>
+              </div>
+              <dl class="evidence-list">
+                <div><dt>담당</dt><dd>developer-primary</dd></div>
+                <div><dt>증거</dt><dd>UI PREVIEW</dd></div>
+                <div><dt>API · DB</dt><dd>NOT CONNECTED</dd></div>
+              </dl>
+              <button type="button" class="wide-button" data-unavailable="결과 보고서 열기">결과 보고서 보기</button>
+            </aside>
+          </div>
+        </section>
+
+        <section id="menu-detail" class="detail-panel">
+          <div><span class="eyebrow">NEXT SAFE ACTION</span><h2>다음 행동</h2><p id="next-action"></p></div>
+          <button type="button" class="secondary-button" data-unavailable="상세 기능 열기">기능 위치 자세히 보기</button>
+        </section>
+      </main>
+
+      <footer class="statusbar">
+        <span><span class="status-dot"></span> UI service available</span>
+        <span>API <strong>NOT CONNECTED</strong></span>
+        <span>DB <strong>NOT CONNECTED</strong></span>
+        <span class="status-spacer"></span>
+        <span>Preview · read only</span>
+      </footer>
+    </section>
+  </div>
+
+  <aside id="eoul-drawer" class="drawer" aria-labelledby="drawer-title" aria-hidden="true">
+    <div class="drawer-heading">
+      <div><span class="eyebrow">MAIN AGENT</span><h2 id="drawer-title">어울</h2></div>
+      <button type="button" id="close-eoul" class="icon-button" aria-label="어울 닫기">×</button>
+    </div>
+    <div class="drawer-message">
+      <span class="eoul-symbol">어</span>
+      <div><strong>무엇을 도와드릴까요?</strong><p>대화와 작업 지시가 들어갈 위치입니다. 현재는 UI 프리뷰이며 실제 LLM은 연결되지 않았습니다.</p></div>
+    </div>
+    <button type="button" id="open-full-workbench" class="primary-button wide-button">전체 작업실 열기</button>
+  </aside>
+  <div id="drawer-backdrop" class="backdrop" hidden></div>
+  <div id="preview-popover" class="preview-popover" role="status" aria-live="polite" hidden></div>
+
+  <noscript>이 화면의 메뉴를 확인하려면 JavaScript를 활성화해야 합니다.</noscript>
+  <script type="module" src="/src/app/ui-preview.js"></script>
+</body>
+</html>
