@@ -950,6 +950,10 @@ def validate_gate(
     b04_acceptance_projection=(progress_projection.get("current_work_package")=="B-05" and progress_projection.get("status")=="READY" and progress_projection.get("active_work_instruction") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None)
     if b04_acceptance_projection:
         errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
+    workplan_v16_events=[event for event in events if event.get("sequence")==249]
+    workplan_v16_projection=(b04_acceptance_projection and progress.get("event_sequence")==249 and progress.get("plan_version")=="1.6" and progress.get("work_plan_hash")=="E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D" and (progress.get("authority_successor_binding") or {}).get("approval_id")=="APPROVAL-20260814-WORKPLAN-V16-001" and [event.get("event_type") for event in workplan_v16_events]==["EVIDENCE_MANIFEST_CREATED"])
+    if workplan_v16_projection:
+        errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
 
     counts = {
         "package": baseline["counts"]["package_total"],

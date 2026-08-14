@@ -1,0 +1,40 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-WORKPLAN-V16-SUCCESSOR-20260815-001",
+  "artifact_type": "authority_governance_successor_manifest",
+  "project_id": "anvil",
+  "package_id": "B-05",
+  "artifact_status": "validated_successor",
+  "artifact_path": "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-15T03:30:00+09:00",
+  "validated_base_commit": "56d409c4583bcf4090423995e79c63ae63598c1d",
+  "approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+  "approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+  "change_classification": "HUMAN_APPROVED_SEMANTIC_PLAN_REVISION",
+  "projection": {"event_sequence": 249, "current_package": "B-05", "status": "READY", "b05_started": false, "package_total": 108, "u_phase_serial_packages": 11, "av_total": 255, "matrix_missing_packages": 0, "matrix_extra_packages": 0, "product_runtime_status": "NOT_EXECUTED"},
+  "authority_versions": {"design": "2.6", "work_plan": "1.6", "validation_matrix": "1.4", "test_plan": "1.5", "operating_rules": "1.6"},
+  "runtime_boundary": {"product": "NOT_EXECUTED", "api": "NOT_EXECUTED", "ui": "NOT_EXECUTED", "database": "NOT_EXECUTED", "wsl": "NOT_EXECUTED", "ysna_server": "NOT_EXECUTED", "shared_db": "NOT_EXECUTED", "production": "NOT_EXECUTED", "deployment": "NOT_EXECUTED", "b05_start": "FORBIDDEN_NOT_STARTED"},
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 61331, "sha256": "2F41CF96682318AFF005F23212F341DF89FA1681A29A0E433FE580DB861365E8"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 46505, "sha256": "31C5A06728EF5A001B6C25587F12E52E7D196D0E1D1228F94B06596BF70F129E"}
+    ]
+  },
+  "raw_checksums": [
+    {"path": "Anvil_작업계획서_v1.md", "bytes": 77316, "sha256": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D"},
+    {"path": "Anvil_통합검증매트릭스_v1.md", "bytes": 67252, "sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5"},
+    {"path": "Anvil_테스트계획서_v1.md", "bytes": 58213, "sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644"},
+    {"path": "docs/superpowers/plans/2026-08-14-common-api-menu-sequential-plan.md", "bytes": 7043, "sha256": "9AA79F91B4B922A45054FF0F65E55CFCE0720AB98C56F4DFDF945D717253F73E"},
+    {"path": "docs/superpowers/specs/2026-08-14-common-api-menu-sequential-plan-design.md", "bytes": 7188, "sha256": "04C8321F17266708AE330C55341F34378F7DE66E36FF1B497058CB275F682217"},
+    {"path": "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md", "bytes": 1308, "sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236"},
+    {"path": "docs/validation/WORKPLAN_V16_SUCCESSOR_VALIDATION.md", "bytes": 1357, "sha256": "2A6F3E2136F33E01A579892C0C2E422300DED5AA327DC7DA3F0B5913888E3E88"},
+    {"path": "docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json", "bytes": 838, "sha256": "9EF24095C1DBDCA700C047274EFC56A2A1E18C5517E533201CFA24540A27AEE1"}
+  ],
+  "target_canonical_bytes": 983,
+  "target_content_bytes": 220515,
+  "target_hash": "sha256:6C60C7E192F2F6E002580F9D8C38119F0A3105B47B54E9E32C7AA1A3CF396FE3",
+  "delivered_hash": "sha256:6C60C7E192F2F6E002580F9D8C38119F0A3105B47B54E9E32C7AA1A3CF396FE3",
+  "content_hash": "sha256:6C60C7E192F2F6E002580F9D8C38119F0A3105B47B54E9E32C7AA1A3CF396FE3",
+  "self_reference": false
+}

@@ -1,5 +1,13 @@
 # Anvil Build Handoff
 
+## Workplan v1.6 Governance Successor — sequence 249
+
+- 신산님의 공통 모듈·공통 API/BFF 우선 및 U-01~U-11 메뉴 순차 개발 승인 지시를 `APPROVAL-20260814-WORKPLAN-V16-001`로 결박하고 `HUMAN_APPROVED_SEMANTIC_PLAN_REVISION`으로 분류했다.
+- base `56d409c4583bcf4090423995e79c63ae63598c1d`의 작업계획 v1.6, 매트릭스 v1.4, 테스트계획 v1.5와 짝 plan/spec를 raw hash로 고정했다.
+- 재계산 결과 Package 108/unique 108, matrix reverse 108, missing 0, extra 0, AV 255, U Package 11개 직렬 의존이 일치한다.
+- seq249 `EVIDENCE_MANIFEST_CREATED` 뒤에도 B-04는 ACCEPTED, B-05는 `READY / NOT_STARTED`다. active WorkInstruction/agent/worker lease/write lease는 모두 null이다.
+- 제품/API/UI/DB/WSL/ysna/shared-db/production/deploy는 `NOT_EXECUTED`다. 이 successor clean commit/push 전에는 B-05를 시작하지 않는다.
+
 ## B-04 Main Acceptance — sequence 248
 
 - 독립 Tester report SHA `343CAF908D2360D47220408F2127E56F355E3431A9FE0165E2CA84DC88C93A38`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검증해 seq248 `MAIN_PACKAGE_ACCEPTED`로 B-04를 최종 ACCEPTED했다.
@@ -111,29 +119,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 248,
+  "event_sequence": 249,
   "status": "READY",
   "current_work_package": "B-05",
-  "last_event_id": "evt_b04_main_package_accepted",
+  "last_event_id": "evt_workplan_v16_successor_manifest_created",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
+  "repository_head": "56d409c4583bcf4090423995e79c63ae63598c1d",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
+  "repository_remote_head": "d51cd09a662bb953c65cb8137b2fda219c0becba",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
+  "repository_validated_base_commit": "56d409c4583bcf4090423995e79c63ae63598c1d",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
+    "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md",
+    "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b04-accepted.json",
-    "docs/test_reports/B-04_INDEPENDENT_TEST_REPORT.md",
+    "docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json",
+    "docs/validation/WORKPLAN_V16_SUCCESSOR_VALIDATION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -143,11 +152,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b04-accepted.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "B-05 is READY but NOT_STARTED; stop at the clean B-04 acceptance commit and do not issue leases or integrate plan v1.6",
+  "next_safe_action": "B-05 is READY but NOT_STARTED; validate and commit the approved workplan v1.6 successor before issuing any B-05 lease",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_ISOLATED_APPLY_CONSTRAINTS_DOWNGRADE_CLEANUP",

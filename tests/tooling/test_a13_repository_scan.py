@@ -102,7 +102,7 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
         return
     elif progress.get("event_sequence") == 237:
         paths = progress["write_lease"]["paths"]
-    elif progress.get("event_sequence") in (240, 241, 244, 247, 248):
+    elif progress.get("event_sequence") in (240, 241, 244, 247, 248, 249):
         paths = progress["repository"]["exact_allowed_paths"]
     elif progress.get("event_sequence") in (175, 181, 184, 186, 192, 196, 199, 203, 206, 207, 210, 213, 217, 220, 221, 224, 227, 230, 233):
         paths = progress["repository"]["exact_allowed_paths"]
@@ -862,7 +862,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(248, progress["event_sequence"])
+        self.assertEqual(249, progress["event_sequence"])
         self.assertEqual("B-05", progress["current_work_package"])
         self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_work_instruction"])
@@ -954,6 +954,19 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
             {"scripts/check_a13_repository_scan.py", "tests/tooling/test_a13_repository_scan.py"},
             {row["path"] for row in successor["live_raw_checksums"]},
         )
+
+    def test_workplan_v16_successor_manifest_is_selected(self) -> None:
+        spec = importlib.util.spec_from_file_location("a13_workplan_v16_successor", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(249, progress["event_sequence"])
+        self.assertEqual("B-05", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b04_start_successor_manifest_is_selected(self):
         spec = importlib.util.spec_from_file_location("a13_checker_b04_start", CHECKER_PATH)

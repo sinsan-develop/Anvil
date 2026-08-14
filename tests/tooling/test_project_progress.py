@@ -63,7 +63,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("DIR-1", progress["dir_review"]["checkpoint"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(
-            "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
+            "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual("AUTO_CONTINUE", progress["reporting_decision"]["decision"])
@@ -135,7 +135,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("READY_FOR_MAIN_ACCEPTANCE", acceptance["details"]["verdict"])
         completion = [event for event in bundle["events"]["events"] if 190 <= event["sequence"] <= 192]
         self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in completion])
-        self.assertEqual(248, progress["event_sequence"])
+        self.assertEqual(249, progress["event_sequence"])
         self.assertEqual("B-05", progress["current_work_package"])
         self.assertEqual("READY", progress["status"])
         self.assertEqual(0, progress["valid_failure_count"])
@@ -1434,7 +1434,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
             [event["event_type"] for event in b01_start],
         )
-        self.assertEqual(248, progress["event_sequence"])
+        self.assertEqual(249, progress["event_sequence"])
         self.assertEqual("B-05", progress["current_work_package"])
         self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_work_instruction"])
@@ -1451,7 +1451,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
         manifest = json.loads((ROOT / "docs/evidence/manifests/B-04_START_EVIDENCE_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual("B-04", manifest["package_id"])
-        self.assertEqual(248, bundle["progress"]["event_sequence"])
+        self.assertEqual(249, bundle["progress"]["event_sequence"])
 
     def test_b04_start_binds_approved_internal_runtime_boundary(self) -> None:
         manifest = json.loads((ROOT / "docs/evidence/manifests/B-04_START_EVIDENCE_MANIFEST.json").read_text(encoding="utf-8"))
@@ -1475,7 +1475,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             [event["event_type"] for event in terminal],
         )
         progress = bundle["progress"]
-        self.assertEqual(248, progress["event_sequence"])
+        self.assertEqual(249, progress["event_sequence"])
         self.assertEqual("READY", progress["status"])
         self.assertIsNone(progress["active_agent"])
         self.assertIsNone(progress["worker_lease"])
@@ -1492,7 +1492,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         progress = bundle["progress"]
         accepted = [event for event in bundle["events"]["events"] if event["sequence"] == 248]
         self.assertEqual(["MAIN_PACKAGE_ACCEPTED"], [event["event_type"] for event in accepted])
-        self.assertEqual(248, progress["event_sequence"])
+        self.assertEqual(249, progress["event_sequence"])
         self.assertEqual("B-05", progress["current_work_package"])
         self.assertEqual("READY", progress["status"])
         self.assertIn("B-04", progress["completed_packages"])
@@ -1502,6 +1502,24 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIsNone(progress["write_lease"])
         self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual([], checker.validate_b04_acceptance_manifest(manifest, bundle))
+
+    def test_workplan_v16_successor_keeps_b05_ready_and_leaseless(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest_path = ROOT / "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        progress = bundle["progress"]
+        successor = [event for event in bundle["events"]["events"] if event["sequence"] == 249]
+        self.assertEqual(["EVIDENCE_MANIFEST_CREATED"], [event["event_type"] for event in successor])
+        self.assertEqual(249, progress["event_sequence"])
+        self.assertEqual("B-05", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual([], checker.validate_workplan_v16_successor_manifest(manifest, bundle))
 
 if __name__ == "__main__":
     unittest.main()

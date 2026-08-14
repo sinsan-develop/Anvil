@@ -1,11 +1,11 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000099",
-  "event_sequence": 248,
-  "updated_at": "2026-08-15T03:00:00+09:00",
-  "last_event_id": "evt_b04_main_package_accepted",
-  "plan_version": "1.5",
-  "work_plan_hash": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A",
+  "snapshot_id": "snapshot-anvil-build-000100",
+  "event_sequence": 249,
+  "updated_at": "2026-08-15T03:30:00+09:00",
+  "last_event_id": "evt_workplan_v16_successor_manifest_created",
+  "plan_version": "1.6",
+  "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "B",
   "current_work_package": "B-05",
@@ -64,6 +64,14 @@
     "B-03": 1
   },
   "latest_evidence_refs": [
+    {
+      "path": "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md",
+      "sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236"
+    },
+    {
+      "path": "docs/validation/WORKPLAN_V16_SUCCESSOR_VALIDATION.md",
+      "sha256": "2A6F3E2136F33E01A579892C0C2E422300DED5AA327DC7DA3F0B5913888E3E88"
+    },
     {
       "path": "docs/test_reports/B-04_INDEPENDENT_TEST_REPORT.md",
       "sha256": "343CAF908D2360D47220408F2127E56F355E3431A9FE0165E2CA84DC88C93A38"
@@ -606,7 +614,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "B0626739ECA6AA44155CAC369BDF67539497B689D69F9A61C252B3FE2162E509"
+      "sha256": "2F41CF96682318AFF005F23212F341DF89FA1681A29A0E433FE580DB861365E8"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -614,19 +622,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "1210F64AAF1688CB2A5E7EEB244E1C86652BBED7A292EEF6026ED21B9A9F562D"
+      "sha256": "06FEA6481FC720BA7969D9D9196B1CB3707DA16AD029ECB0086E96B74EC3B310"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "0D554CF096ED643B88391FC2B4B53B8724D1BFDAC67D2D916EF18F650283E07B"
+      "sha256": "1A86AA2E617016BC29AD55C808E2F7BF582F98264885CEEC13328D75A098EDAE"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "13DBE67FE634C1A7B2620C4685A545D27384841E8F210938B0A27C00C020FFB8"
+      "sha256": "054BE5CF8124DE0CE3D6F7945F529DBF91F84245531D27612DFC68DD6E7A3619"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "3A84011E2BD317FF0A25BA9B45B3321CD2B47DE25E7626D74C935FEEDF929EB2"
+      "sha256": "31C5A06728EF5A001B6C25587F12E52E7D196D0E1D1228F94B06596BF70F129E"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -634,15 +642,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "7130D99E926CC8B23D616D307D254D9DD498438D25C19FC7840F24C54F87B38C"
+      "sha256": "F2D544A8DAE3B6F5BBBF4BAF6860B7E94A6A12F0CDD85137CDD82124C0C411F9"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "530E8DBC9E00EEF2BCE37440EB5F78B94A64F71FD092A796AFA4697E12F986B2"
+      "sha256": "5E2A8B049E0279915C82F31871AA5E3DFEDE9A49684449A18656A441C484F6E8"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "0012F233890958CABE4E45DD80CE84DE0FD0A87AE21698F468A51FBFCB41B865"
+      "sha256": "C22F3FF95A37CC3BC3310579E3CC48309D4DC0A2EE58C4A1479800A3611BCC03"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -670,7 +678,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "AA5BC300BF6F0DA8FEC0726D6992536A005026A7734C177336C8C937F62D103A"
+      "sha256": "69816E6A219AF404CE64F8583F2D60C89B49F15D0B5AB344B850F645C5506FB0"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -713,7 +721,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "B-05 is READY but NOT_STARTED; stop at the clean B-04 acceptance commit and do not issue leases or integrate plan v1.6",
+  "next_safe_action": "B-05 is READY but NOT_STARTED; validate and commit the approved workplan v1.6 successor before issuing any B-05 lease",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -728,22 +736,25 @@
     "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"
   },
   "authority_successor_binding": {
-    "approval_id": "APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001",
+    "approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "approval_path": "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md",
+    "approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "classification": "HUMAN_APPROVED_SEMANTIC_PLAN_REVISION",
     "design": {
       "version": "2.6",
       "sha256": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5"
     },
     "work_plan": {
-      "version": "1.5",
-      "sha256": "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A"
+      "version": "1.6",
+      "sha256": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D"
     },
     "validation_matrix": {
-      "version": "1.3",
-      "sha256": "982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A"
+      "version": "1.4",
+      "sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5"
     },
     "test_plan": {
-      "version": "1.4",
-      "sha256": "803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8"
+      "version": "1.5",
+      "sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644"
     },
     "operating_rules": {
       "version": "1.6",
@@ -765,19 +776,20 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
+    "validated_base_commit": "56d409c4583bcf4090423995e79c63ae63598c1d",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
+    "remote_head": "d51cd09a662bb953c65cb8137b2fda219c0becba",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
+      "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md",
+      "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-b04-accepted.json",
-      "docs/test_reports/B-04_INDEPENDENT_TEST_REPORT.md",
+      "docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json",
+      "docs/validation/WORKPLAN_V16_SUCCESSOR_VALIDATION.md",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
@@ -787,9 +799,9 @@
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-15T03:00:00+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: B-04 acceptance exact projection",
-    "local_head": "75d9c72b847ed7122985d1bee656cbcc4b4da883"
+    "observed_at": "2026-08-15T03:30:00+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: workplan v1.6 governance successor exact projection",
+    "local_head": "56d409c4583bcf4090423995e79c63ae63598c1d"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -912,9 +924,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "B-04",
-    "path": "docs/progress/progress-handoff-detached-digest-b04-accepted.json",
-    "manifest_path": "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json"
+    "package_id": "B-05",
+    "path": "docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json",
+    "manifest_path": "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -935,12 +947,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "AA5BC300BF6F0DA8FEC0726D6992536A005026A7734C177336C8C937F62D103A"
+      "sha256": "69816E6A219AF404CE64F8583F2D60C89B49F15D0B5AB344B850F645C5506FB0"
     }
   },
   "next_work_package": {
     "package_id": "B-05",
     "status": "READY"
   },
-  "snapshot_hash": "382705175D82030E1FC655169A3DE2FA64AF53F42DF02E4E3903253CDF3176E3"
+  "snapshot_hash": "5BA2FCE3CD97B10708E2416019574DB8010E20C781B88CDD6BA434491A6F8D31"
 }

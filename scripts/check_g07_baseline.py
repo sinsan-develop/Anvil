@@ -19,13 +19,13 @@ from typing import Any, Iterable, Mapping
 
 AUTHORITY = {
     "Anvil_설계서_v2.md": ("v2.6", "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5"),
-    "Anvil_작업계획서_v1.md": ("v1.5", "A1032FB587337A914F63A316972402BAC99760A92C7934670EF93979BABA396A"),
-    "Anvil_통합검증매트릭스_v1.md": ("v1.3", "982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A"),
-    "Anvil_테스트계획서_v1.md": ("v1.4", "803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8"),
+    "Anvil_작업계획서_v1.md": ("v1.6", "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D"),
+    "Anvil_통합검증매트릭스_v1.md": ("v1.4", "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5"),
+    "Anvil_테스트계획서_v1.md": ("v1.5", "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644"),
     "docs/governance/ANVIL_OPERATING_RULES.md": ("v1.6", "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"),
 }
-PHASE_ORDER = "GABCDEF P".replace(" ", "")
-PACKAGE_RE = re.compile(r"\b([GABCDFEP])-(\d{2})(?:~(?:[GABCDFEP]-)?(\d{2}))?\b")
+PHASE_ORDER = "GABCDEFUP"
+PACKAGE_RE = re.compile(r"\b([GABCDFEPU])-(\d{2})(?:~(?:[GABCDFEPU]-)?(\d{2}))?\b")
 FULL_AV_RE = re.compile(r"AV-([A-Z]+)-(\d{3})(?:~(\d{3}))?")
 BARE_AV_RE = re.compile(r"(?<![A-Z0-9-])(\d{3})(?:~(\d{3}))?")
 AV_ID_RE = re.compile(r"^AV-([A-Z]+)-(\d{3})$")
@@ -389,17 +389,17 @@ def validate_repository(
     package_rows: list[tuple[str, str]] = []
     for line in plan.splitlines():
         cells = _cells(line)
-        if len(cells) == 5 and re.fullmatch(r"[GABCDFEP]-\d{2}", cells[0]):
+        if len(cells) == 5 and re.fullmatch(r"[GABCDFEPU]-\d{2}", cells[0]):
             package_rows.append((cells[0], cells[4]))
     packages = [package for package, _ in package_rows]
     package_counter = Counter(packages)
     duplicate_packages = sorted(package for package, count in package_counter.items() if count > 1)
     if duplicate_packages:
         _error(errors, "PACKAGE_DUPLICATE", plan_path, ",".join(duplicate_packages))
-    if len(packages) != 97 or len(package_counter) != 97:
+    if len(packages) != 108 or len(package_counter) != 108:
         _error(errors, "PACKAGE_TOTAL_MISMATCH", plan_path, f"rows={len(packages)} unique={len(package_counter)}")
     actual_phase_counts = Counter(package[0] for package in packages)
-    expected_phase_counts = {"G": 7, "A": 15, "B": 12, "C": 15, "D": 13, "E": 11, "F": 20, "P": 4}
+    expected_phase_counts = {"G": 7, "A": 15, "B": 12, "C": 15, "D": 13, "E": 11, "F": 20, "U": 11, "P": 4}
     if dict(actual_phase_counts) != expected_phase_counts:
         _error(errors, "PACKAGE_PHASE_COUNT_MISMATCH", plan_path, f"actual={dict(actual_phase_counts)}")
     package_set = set(packages)
@@ -417,6 +417,12 @@ def validate_repository(
     cycle = _package_cycle(dependency_graph)
     if cycle:
         _error(errors, "PACKAGE_DEPENDENCY_CYCLE", plan_path, " -> ".join(cycle))
+    expected_u_serial = {f"U-{index:02d}": {f"U-{index - 1:02d}"} for index in range(2, 12)}
+    if any(dependency_graph.get(package) != dependencies for package, dependencies in expected_u_serial.items()):
+        _error(errors, "U_PHASE_SERIAL_DEPENDENCY_MISMATCH", plan_path, str({key: sorted(dependency_graph.get(key, set())) for key in expected_u_serial}))
+    u01_dependency_text = dict(package_rows).get("U-01", "")
+    if any(gate not in u01_dependency_text for gate in ("B Gate", "C Gate", "D Gate", "E Gate", "F Capability Gate")):
+        _error(errors, "U01_FOUNDATION_GATE_DEPENDENCY_MISMATCH", plan_path, u01_dependency_text)
 
     matrix_path = "Anvil_통합검증매트릭스_v1.md"
     matrix = texts[matrix_path]
@@ -472,7 +478,7 @@ def validate_repository(
     reverse_rows: list[tuple[str, list[str]]] = []
     for line in reverse_body.splitlines():
         cells = _cells(line)
-        if len(cells) == 2 and re.fullmatch(r"[GABCDFEP]-\d{2}", cells[0]):
+        if len(cells) == 2 and re.fullmatch(r"[GABCDFEPU]-\d{2}", cells[0]):
             reverse_rows.append((cells[0], _expand_av(cells[1])))
     reverse_packages = [row[0] for row in reverse_rows]
     reverse_counter = Counter(reverse_packages)
@@ -481,7 +487,7 @@ def validate_repository(
         _error(errors, "REVERSE_PACKAGE_DUPLICATE", matrix_path, ",".join(reverse_duplicates))
     missing_reverse = sorted(package_set - set(reverse_packages))
     extra_reverse = sorted(set(reverse_packages) - package_set)
-    if len(reverse_rows) != 97 or missing_reverse or extra_reverse:
+    if len(reverse_rows) != 108 or missing_reverse or extra_reverse:
         _error(errors, "REVERSE_PACKAGE_SET_MISMATCH", matrix_path, f"rows={len(reverse_rows)} missing={missing_reverse} extra={extra_reverse}")
     direct_assignments: dict[str, set[str]] = defaultdict(set)
     package_assignments: dict[str, list[str]] = {}
@@ -587,7 +593,7 @@ def validate_repository(
         cells = _cells(line)
         if len(cells) >= 4 and re.fullmatch(r"\*\*DIR-[123X]\*\*", cells[0]):
             name = cells[0].replace("**", "")
-            cumulative = re.search(r"(\d+)\s*/\s*97", cells[2])
+            cumulative = re.search(r"(\d+)\s*/\s*108", cells[2])
             dir_rows[name] = {"timing": cells[1], "cumulative": int(cumulative.group(1)) if cumulative else None}
     package_position = {package: index + 1 for index, package in enumerate(packages)}
     expected_dirs = {"DIR-1": ("A-15", 22), "DIR-2": ("C-15", 49), "DIR-3": ("E-11", 73)}
@@ -839,6 +845,11 @@ def validate_repository(
         acceptance=[event for event in events if event.get("sequence")==248]
         if (progress.get("current_work_package")!="B-05" or progress.get("status")!="READY" or "B-04" not in progress.get("completed_packages",[]) or progress.get("active_work_instruction") is not None or progress.get("valid_failure_count")!=0 or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or (progress.get("next_work_package") or {}).get("status")!="READY" or [event.get("event_type") for event in acceptance] != ["MAIN_PACKAGE_ACCEPTED"]):
             _error(errors,"B04_ACCEPTANCE_PROJECTION_MISMATCH",progress_path,"sequence=248")
+    if progress.get("event_sequence") == 249:
+        successor=[event for event in events if event.get("sequence")==249]
+        authority=progress.get("authority_successor_binding") or {}
+        if (progress.get("current_work_package")!="B-05" or progress.get("status")!="READY" or progress.get("plan_version")!="1.6" or progress.get("work_plan_hash")!="E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D" or progress.get("active_work_instruction") is not None or progress.get("valid_failure_count")!=0 or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or (progress.get("next_work_package") or {}).get("status")!="READY" or authority.get("approval_id")!="APPROVAL-20260814-WORKPLAN-V16-001" or authority.get("classification")!="HUMAN_APPROVED_SEMANTIC_PLAN_REVISION" or [event.get("event_type") for event in successor] != ["EVIDENCE_MANIFEST_CREATED"]):
+            _error(errors,"WORKPLAN_V16_SUCCESSOR_PROJECTION_MISMATCH",progress_path,"sequence=249")
     if progress.get("event_sequence") == 192:
         terminal=[event for event in events if 190 <= event.get("sequence",-1) <= 192]
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="TEST_REVIEW" or (progress.get("active_work_instruction") or {}).get("independent_tester_status")!="PENDING" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
@@ -917,7 +928,7 @@ def validate_repository(
     ]
     projection_events = [
         event for event in events
-        if event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED", "PHASE_GATE_DECIDED"}
+        if event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED", "PHASE_GATE_DECIDED", "EVIDENCE_MANIFEST_CREATED"}
         and isinstance(event.get("details"), dict)
         and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
     ]
@@ -1054,6 +1065,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and reconciliation_event.get("subject_ref") == "B-04" and reconciliation_event.get("sequence") == 248:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "EVIDENCE_MANIFEST_CREATED" and reconciliation_event.get("subject_ref") == "WORKPLAN-V1.6-SUCCESSOR" and reconciliation_event.get("sequence") == 249:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1137,6 +1150,7 @@ def validate_repository(
         "package_total": len(packages),
         "unique_package_total": len(package_counter),
         "reverse_package_total": len(reverse_rows),
+        "phase_counts": dict(sorted(actual_phase_counts.items())),
         "av_total": len(av_ids),
         "unique_av_total": len(av_counter),
         "executable_av_total": sum(1 for row in av_rows if row["domain"] != "CON"),
