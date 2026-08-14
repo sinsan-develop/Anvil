@@ -563,6 +563,7 @@ class ProjectProgressContractTests(unittest.TestCase):
                 checker.resolve_detached_digest_path(progress),
                 progress["current_progress_evidence_ref"]["manifest_path"],
                 "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json",
+                "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
             }
             current_manifest = json.loads(
                 (ROOT / progress["current_progress_evidence_ref"]["manifest_path"]).read_text(encoding="utf-8")

@@ -24,6 +24,12 @@ def target_hash(root: Path, paths: list[str]) -> str:
     material = "".join(f"{path}\0{portable_hash(root, path)}\n" for path in paths)
     return hashlib.sha256(material.encode()).hexdigest().upper()
 
+def canonical_lf_row_matches(root: Path, path: str, row: dict) -> bool:
+    if row.get("canonical_eol") != "LF":
+        return False
+    raw = (root / path).read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return len(raw) == row.get("bytes") and hashlib.sha256(raw).hexdigest().upper() == row.get("sha256")
+
 def browser_source_findings(paths: list[Path]) -> list[str]:
     findings=[]
     forbidden=re.compile(r"https?://|localhost|127\.0\.0\.1|NEXT_PUBLIC_|host\.docker|container",re.I)
@@ -193,7 +199,10 @@ def check(root: Path) -> dict:
             for path,value in raw.items():
                 actual = portable_hash(root, path)
                 row = successor_rows.get(path)
-                successor_valid = row and portable_row_matches(root, path, row.get("bytes"), row.get("sha256"))
+                successor_valid = row and (
+                    portable_row_matches(root, path, row.get("bytes"), row.get("sha256"))
+                    or canonical_lf_row_matches(root, path, row)
+                )
                 if actual != value and not successor_valid: errors.append(f"checksum:{path}")
         target_paths=[path for path in EXACT_PATHS if path != manifest_path.relative_to(root).as_posix()]
         if not missing and not successor_rows and manifest.get("target_hash") != target_hash(root,target_paths): errors.append("target-hash")

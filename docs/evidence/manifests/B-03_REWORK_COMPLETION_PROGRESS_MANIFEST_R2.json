@@ -34,13 +34,14 @@
       "live_raw_checksums": [
         {
           "path": "apps/web/server.mjs",
-          "bytes": 8006,
-          "sha256": "BAA6757E18ED28AC02569DDF4575436EA32EE0DDEC363BA6D730A64D93FCFC0A"
+          "bytes": 8005,
+          "sha256": "77FCAABC7013AA1FA53B8872F2E980CB59224733FB34A74D2A481DB5F49B649C",
+          "canonical_eol": "LF"
         },
         {
           "path": "scripts/check_a14_workbench_prototype.py",
-          "bytes": 21161,
-          "sha256": "F47F44DEC2B83AEB00EEE5EC90A27B132D052B0FE29EBB05FDB2244BC1CF2DC4"
+          "bytes": 21589,
+          "sha256": "281BAFAF930641F4FCA6DD302A3DD9A82D48038CAA9CDAAAB3F3CFF070C3A122"
         },
         {
           "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -78,7 +79,7 @@
     {
       "path": "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json",
       "bytes": 780,
-      "sha256": "24910EDDC5CC1607BEB500D09A624ED34A251A1CAC06075B8AE3C3B93140FB5C"
+      "sha256": "6BF23CA34A5EDCBB6DE54114BE593EE5A72660FBE7E28F55E9DDA1027BC84C1C"
     },
     {
       "path": "docs/work_orders/B-03_REWORK_WORK_INSTRUCTION_R2.md",
@@ -88,8 +89,8 @@
   ],
   "target_canonical_bytes": 530,
   "target_content_bytes": 13264,
-  "target_hash": "sha256:3E047D88E761EA6E6FE190447877394DBD1E7DDDB60DE99255FB9753C6FD9E14",
-  "delivered_hash": "sha256:3E047D88E761EA6E6FE190447877394DBD1E7DDDB60DE99255FB9753C6FD9E14",
-  "content_hash": "sha256:3E047D88E761EA6E6FE190447877394DBD1E7DDDB60DE99255FB9753C6FD9E14",
+  "target_hash": "sha256:EF0376CE9F313ABED21C1320780239A009C882B12B913857908BFF993A972324",
+  "delivered_hash": "sha256:EF0376CE9F313ABED21C1320780239A009C882B12B913857908BFF993A972324",
+  "content_hash": "sha256:EF0376CE9F313ABED21C1320780239A009C882B12B913857908BFF993A972324",
   "self_reference": false
 }

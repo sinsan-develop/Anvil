@@ -212,9 +212,15 @@ class G07BaselineTests(unittest.TestCase):
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
+            "6375e4e823c92fa518a9bab71a8db720dd132cc0",
+            report["git"]["validated_base_commit"],
+        )
+        self.assertEqual(
             "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT", reconciliation["head_relation"]
         )
-        self.assertEqual(report["git"]["changed_paths"], reconciliation["exact_allowed_paths"])
+        current_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(report["git"]["changed_paths"], current_progress["repository"]["exact_allowed_paths"])
+        self.assertEqual(30, len(reconciliation["exact_allowed_paths"]))
         self.assertEqual("B-03", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(14, report["failure_counts"]["historical_accepted_failure_total"])

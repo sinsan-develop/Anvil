@@ -587,11 +587,11 @@
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
-      "sha256": "F47F44DEC2B83AEB00EEE5EC90A27B132D052B0FE29EBB05FDB2244BC1CF2DC4"
+      "sha256": "281BAFAF930641F4FCA6DD302A3DD9A82D48038CAA9CDAAAB3F3CFF070C3A122"
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "9E60EB679BA41076B160EF1C02147731A66244F82B457008038E1F2440BF0628"
+      "sha256": "208E3A28FC0536050F29FB06CFBAB67DA2ADBD8996F17B0FA60B755D38367A98"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
@@ -599,7 +599,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "9F59E900E1116AA2F83E3B36B86B605431901428AF1E29950954658D2C9876F1"
+      "sha256": "0D41DD5C9FB4095A62B536222DED71DC605A9921BC651016749F0A849DF1D95F"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -611,7 +611,7 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "3E88E455CA95526886264E6BDE3FB9AD52B9D4EF56AD88F3F81880409AD76EBF"
+      "sha256": "217DDF649BDC6EEB2AEB109AD04A05CE5F0F7606A95459FA0DA1ABD6C3EE6C21"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
@@ -619,7 +619,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "6E142A3232913F5506611294AB7BF81DB13E30922757CCD12693C8F9245D4BB3"
+      "sha256": "580E8A8BE3A4A1134A13D5811D84CCA01B47D9187EBE100B7125EB527740E5E0"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -742,47 +742,26 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "fcfa8059e060702afa6ea5fa801d40c4cb01cb63",
+    "validated_base_commit": "6375e4e823c92fa518a9bab71a8db720dd132cc0",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "fcfa8059e060702afa6ea5fa801d40c4cb01cb63",
+    "remote_head": "6375e4e823c92fa518a9bab71a8db720dd132cc0",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "apps/web/design-flow.html",
-      "apps/web/server.mjs",
-      "apps/web/src/api/design-flow-client.js",
-      "apps/web/src/app/design-flow.js",
-      "apps/web/src/styles/design-flow.css",
-      "docs/completion_reports/B-03_COMPLETION_REPORT_R2.md",
-      "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST_R2.json",
       "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
-      "docs/evidence/runtime/B-03_FLOW_BLOCKED.png",
-      "docs/evidence/runtime/B-03_FLOW_ERROR.png",
-      "docs/evidence/runtime/B-03_FLOW_EVENT_SEQUENCE.json",
-      "docs/evidence/runtime/B-03_FLOW_NORMAL.png",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
-      "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json",
-      "docs/validation/B-03_DESIGN_LINEAGE_VALIDATION_R2.md",
-      "packages/api/design_runtime.py",
-      "scripts/check_a13_repository_scan.py",
       "scripts/check_a14_workbench_prototype.py",
       "scripts/check_g07_baseline.py",
-      "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
-      "tests/browser/b03/design-flow-runtime.test.mjs",
-      "tests/design/test_runtime_bridge.py",
-      "tests/tooling/test_a13_repository_scan.py",
-      "tests/tooling/test_a14_workbench_prototype.py",
       "tests/tooling/test_g07_baseline.py",
-      "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
     "observed_at": "2026-08-14T20:00:02+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: B-03 R2 completion TEST_REVIEW exact projection",
-    "local_head": "fcfa8059e060702afa6ea5fa801d40c4cb01cb63"
+    "worktree_status": "PUSH_PENDING_MAIN: B-03 R2 canonical-LF successor follow-up exact projection",
+    "local_head": "6375e4e823c92fa518a9bab71a8db720dd132cc0"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -921,5 +900,5 @@
     "package_id": "B-04",
     "status": "BLOCKED_PENDING_B03_ACCEPTANCE"
   },
-    "snapshot_hash": "B3D6AAC4DC6E263F0B719F57BE7ED5668463B664CA72E706BAA380B82D4CA8E6"
+    "snapshot_hash": "531A9F9ADE645AC487403A47DB3B431540BB08660B8F3570A4F7EE6E9E25EFD4"
 }

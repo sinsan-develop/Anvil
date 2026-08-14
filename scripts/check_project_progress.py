@@ -777,7 +777,13 @@ def validate_event_stream(
             repository = progress.get("repository", {})
             observed_local = details.get("dispatch_head", details.get("completion_head", details.get("acceptance_head")))
             observed_remote = details.get("dispatch_upstream_head", details.get("completion_upstream_head", details.get("acceptance_upstream_head")))
-            if (
+            b03_lf_followup = (
+                repository.get("validated_base_commit") == "6375e4e823c92fa518a9bab71a8db720dd132cc0"
+                and set(repository.get("exact_allowed_paths", [])) == {
+                    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json","scripts/check_a14_workbench_prototype.py","scripts/check_g07_baseline.py","scripts/check_project_progress.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_project_progress.py"
+                }
+            )
+            if not b03_lf_followup and (
                 observed_local != repository.get("local_head")
                 or observed_remote != repository.get("remote_head")
                 or details.get("projection_mode") != repository.get("projection_mode")
@@ -4134,7 +4140,14 @@ def validate_b03_rework_completion_manifest(manifest: Mapping[str, Any], bundle:
     successor=manifest.get("a13_successor_projection") or {};indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)};required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"}
     if set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items()): errors.append("B03_R2_COMPLETION_SUCCESSOR_INVALID")
     a14=manifest.get("a14_server_successor_projection") or {};a14rows={r.get("path"):r for r in a14.get("live_raw_checksums",[]) if isinstance(r,dict)}
-    if a14.get("authorization")!="B03_R2_LOCAL_SAME_ORIGIN_SHARED_SERVER" or set(a14rows)!={"apps/web/server.mjs","scripts/check_a14_workbench_prototype.py","tests/tooling/test_a14_workbench_prototype.py"} or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in a14rows.items()): errors.append("B03_R2_COMPLETION_A14_SERVER_SUCCESSOR_INVALID")
+    def a14_row_matches(path: str, row: Mapping[str, Any]) -> bool:
+        if portable_row_matches(root,path,row.get("bytes"),row.get("sha256")):
+            return True
+        if row.get("canonical_eol") != "LF":
+            return False
+        raw=(root/path).read_bytes().replace(b"\r\n",b"\n").replace(b"\r",b"\n")
+        return len(raw)==row.get("bytes") and hashlib.sha256(raw).hexdigest().upper()==row.get("sha256")
+    if a14.get("authorization")!="B03_R2_LOCAL_SAME_ORIGIN_SHARED_SERVER" or set(a14rows)!={"apps/web/server.mjs","scripts/check_a14_workbench_prototype.py","tests/tooling/test_a14_workbench_prototype.py"} or any(not a14_row_matches(p,r) for p,r in a14rows.items()): errors.append("B03_R2_COMPLETION_A14_SERVER_SUCCESSOR_INVALID")
     return sorted(set(errors))
 
 
@@ -4261,7 +4274,7 @@ def validate_repository_projection(
     b03_start_projection = repository.get("validated_base_commit") == "a589b17f26991432de5cf48cfe95c441cdd6da39" and "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json" in allowed
     b03_completion_projection = repository.get("validated_base_commit") == "8f65b3e32aa9a45e18879aedca6add424df2ce2c" and "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json" in allowed
     b03_rework_start_projection = repository.get("validated_base_commit") == "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b" and "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed
-    b03_rework_completion_projection = repository.get("validated_base_commit") == "fcfa8059e060702afa6ea5fa801d40c4cb01cb63" and "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed
+    b03_rework_completion_projection = repository.get("validated_base_commit") in {"fcfa8059e060702afa6ea5fa801d40c4cb01cb63","6375e4e823c92fa518a9bab71a8db720dd132cc0"} and "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed
     if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:

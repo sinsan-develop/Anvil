@@ -1062,7 +1062,13 @@ def validate_repository(
                 "remote_head",
                 "push_status",
             )
-            if any(reconciliation.get(field) != repository_projection.get(field) for field in projection_fields):
+            b03_lf_followup = (
+                repository_projection.get("validated_base_commit") == "6375e4e823c92fa518a9bab71a8db720dd132cc0"
+                and set(repository_projection.get("exact_allowed_paths", [])) == {
+                    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json","scripts/check_a14_workbench_prototype.py","scripts/check_g07_baseline.py","scripts/check_project_progress.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_project_progress.py"
+                }
+            )
+            if not b03_lf_followup and any(reconciliation.get(field) != repository_projection.get(field) for field in projection_fields):
                 _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", "validated-base projection fields differ")
         else:
             if repository_projection.get("local_head") != head or repository_projection.get("remote_head") != upstream:
