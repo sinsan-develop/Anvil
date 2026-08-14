@@ -1,5 +1,14 @@
 # Anvil Build Handoff
 
+## B-04 Start — sequence 244
+
+- 최신 승인 문서 commit `1519d8cce5e205bd9e20652cc380e65e9ca01e49`을 clean/equal baseline으로 B-04 start를 재결박했다. B-04 기능 목적과 Developer exact15 제품 allowlist는 불변이다.
+- seq242→244는 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`; `developer-primary-b04` epoch-1 exact15 제품 lease만 활성이고 Main projection exact16에는 human approval record가 추가됐다.
+- 목표는 WorkPlan·IterationPlan·WorkInstruction과 독립 승인 종류의 canonical hash, invalidation, expiry, semantic/nonsemantic guard를 schema/service/framework-neutral API로 구현하는 것이다.
+- 신산님의 승인 `APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001`에 따라 WSL-first same-commit 검증 후 `ssh ysna-server:~/deploy/anvil` localhost-only 지속 배포와 `shared-db` 내부 Anvil 전용 DB·role 경계를 결박했다. WSL read-only probe(`/home/daon`, git 2.43.0, Docker server 29.1.3)는 `PASS_AVAILABLE`이지만 start 시점 제품/API/DB/UI/provider/WSL runtime/production/deploy는 모두 `NOT_EXECUTED`다.
+- B-04 Developer는 local isolated 또는 WSL Anvil 전용 격리 DB 검증만 수행할 수 있다. ysna/shared-db mutation, 기존 운영 자원 변경, 공개 `envil.sinsan.kr` 연결은 별도 계획 단계 전까지 금지한다.
+- B-04 acceptance와 B-05 시작, B-11 공개 API/auth/BFF는 금지한다.
+
 ## B-03 R3 Main Acceptance — sequence 241
 
 - Tester R3 report `E90448B45A...`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검증해 seq241 `MAIN_PACKAGE_ACCEPTED`로 B-03을 최종 ACCEPTED했다.
@@ -88,29 +97,31 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 241,
-  "status": "READY",
+  "event_sequence": 244,
+  "status": "ACTIVE",
   "current_work_package": "B-04",
-  "last_event_id": "evt_b03_main_package_accepted_r3",
+  "last_event_id": "evt_b04_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "fc1304c903b74e7b8363c3fdf8556ea2a45d02aa",
+  "repository_head": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "fc1304c903b74e7b8363c3fdf8556ea2a45d02aa",
+  "repository_remote_head": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "fc1304c903b74e7b8363c3fdf8556ea2a45d02aa",
+  "repository_validated_base_commit": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-03_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
+    "docs/approvals/APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001.md",
+    "docs/evidence/manifests/B-04_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b03-accepted-r3.json",
-    "docs/test_reports/B-03_RETEST_REPORT_R3.md",
+    "docs/progress/progress-handoff-detached-digest-b04-start.json",
+    "docs/work_orders/B-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-04_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -120,11 +131,13 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-accepted-r3.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-03_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b04-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-04_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b03 for R3 exact5 clone-local LF determinism; do not accept B-03 or start B-04",
+  "next_safe_action": "Dispatch developer-primary-b04 under revised WI-B-04-20260814-001 exact15 with WSL-first boundary; no ysna mutation, B-04 acceptance or B-05 start",
+  "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
+  "wsl_read_only_probe": "PASS_AVAILABLE_NOT_RUNTIME_EXECUTION",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -132,9 +145,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-03-20260814-003",
-  "worker_lease": "worker-lease-b03-20260814-003",
-  "write_lease": "write-lease-b03-20260814-003"
+  "active_work_instruction": "WI-B-04-20260814-001",
+  "worker_lease": "worker-lease-b04-20260814-001",
+  "write_lease": "write-lease-b04-20260814-001"
 }
 ```
 

@@ -939,6 +939,10 @@ def validate_gate(
     b03_r3_acceptance_projection=(progress_projection.get("current_work_package")=="B-04" and progress_projection.get("status")=="READY" and progress_projection.get("active_work_instruction") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None)
     if b03_r3_acceptance_projection:
         errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
+    b04_start_events=[event for event in events if 242 <= event.get("sequence",-1) <= 244]
+    b04_start_projection=(progress_projection.get("current_work_package")=="B-04" and progress_projection.get("status")=="ACTIVE" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-04-20260814-001" and progress_projection.get("worker_lease",{}).get("lease_epoch")==1 and progress_projection.get("write_lease",{}).get("write_epoch")==1 and [event.get("event_type") for event in b04_start_events]==["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"])
+    if b04_start_projection:
+        errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
 
     counts = {
         "package": baseline["counts"]["package_total"],

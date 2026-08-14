@@ -104,8 +104,8 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertFalse(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
         self.assertEqual("B-04", report["progress"]["current_work_package"])
-        self.assertEqual("READY", report["progress"]["status"])
-        self.assertEqual(241, json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))["event_sequence"])
+        self.assertEqual("ACTIVE", report["progress"]["status"])
+        self.assertEqual(244, json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))["event_sequence"])
         self.assertEqual("WI-A-02-20260811-001", start["details"]["work_instruction_id"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
@@ -133,13 +133,13 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         progress = report["progress"]
         self.assertEqual("B-04", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-04-20260814-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
         actual_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual("CLEARED", actual_progress["dir_review"]["status"])
-        self.assertEqual("READY", actual_progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B04_ACCEPTANCE", actual_progress["next_work_package"]["status"])
         self.assertEqual("ACCEPTED", actual_progress["phase_gate"]["decision"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
@@ -165,6 +165,14 @@ class PhaseGGateTests(unittest.TestCase):
 
     def test_checkpoint_manifest_preserves_frozen_rows_without_self_reference(self):
         self.assertEqual([], self.checker.validate_checkpoint_manifest(ROOT))
+
+    def test_b04_start_preserves_accepted_a_gate(self):
+        report = self.validate()
+        self.assertEqual("B-04", report["progress"]["current_work_package"])
+        self.assertEqual("ACTIVE", report["progress"]["status"])
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(244, progress["event_sequence"])
+        self.assertEqual([], report["errors"])
 
 if __name__ == "__main__":
     unittest.main()

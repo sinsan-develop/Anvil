@@ -58,12 +58,12 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(241, progress["event_sequence"])
+        self.assertEqual(244, progress["event_sequence"])
         self.assertEqual("B-04", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-04-20260814-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("B-04", progress["active_failure_lineage"]["step_lineage_id"])
@@ -206,13 +206,13 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "fc1304c903b74e7b8363c3fdf8556ea2a45d02aa",
+            "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
-            "fc1304c903b74e7b8363c3fdf8556ea2a45d02aa",
+            "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
             report["git"]["validated_base_commit"],
         )
         self.assertEqual(
@@ -220,7 +220,7 @@ class G07BaselineTests(unittest.TestCase):
         )
         current_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual(report["git"]["changed_paths"], current_progress["repository"]["exact_allowed_paths"])
-        self.assertEqual(14, len(reconciliation["exact_allowed_paths"]))
+        self.assertEqual(16, len(reconciliation["exact_allowed_paths"]))
         self.assertEqual("B-04", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(15, report["failure_counts"]["historical_accepted_failure_total"])
@@ -396,6 +396,14 @@ class G07BaselineTests(unittest.TestCase):
             "docs/evidence/manifests/G-07_EVIDENCE_MANIFEST_R2.json",
             manifest["supersedes_artifact_ref"]["path"],
         )
+
+    def test_b04_start_projection_is_current_and_fenced(self):
+        report = self.validate()
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual("B-04", progress["current_work_package"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual(244, progress["event_sequence"])
+        self.assertEqual([], report["errors"])
 
 if __name__ == "__main__":
     unittest.main()

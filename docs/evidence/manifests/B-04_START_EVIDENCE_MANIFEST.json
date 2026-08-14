@@ -1,0 +1,42 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-04-START-20260814-001",
+  "artifact_type": "package_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-04",
+  "artifact_status": "active",
+  "artifact_path": "docs/evidence/manifests/B-04_START_EVIDENCE_MANIFEST.json",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-14T23:55:02+09:00",
+  "projection": {"event_sequence": 244, "status": "ACTIVE", "result_status": "IN_PROGRESS", "current_work_package": "B-04", "active_agent": "developer-primary-b04", "worker_lease_epoch": 1, "write_lease_epoch": 1},
+  "validated_base_commit": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
+  "verification_contract": {
+    "assigned_verification_ids": ["AV-SAFE-002", "AV-SAFE-003", "AV-SAFE-004", "AV-SAFE-005", "AV-SAFE-033", "AV-STAT-002", "AV-FLOW-012"],
+    "approval_hash_invalidation": "E-API+E-AUD; content one-character change and resume fail-closed",
+    "approval_expiry": "BLOCKED_NOT_FAILED; no automatic execution",
+    "nonsemantic_reconfirmation": "root human approval scope cannot expand"
+  },
+  "predecessor_acceptance_ref": {"path": "docs/evidence/manifests/B-03_ACCEPTANCE_PROGRESS_MANIFEST_R3.json", "sha256": "577C005549601D63487D84E936E6FAE4F6322F734929EEA53FD7F077C374B030"},
+  "runtime_approval_ref": {"path": "docs/approvals/APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001.md", "sha256": "6E76E85D2895207F80639B6DE0D027A4CB08A61FA025968D0EC14C13960BB562", "classification": "HUMAN_APPROVED_RUNTIME_BOUNDARY_REBIND_B04_OBJECTIVE_UNCHANGED"},
+  "product_artifact_count": 0,
+  "runtime_boundary": {"actual_api": "NOT_EXECUTED", "actual_db": "NOT_EXECUTED", "actual_ui": "NOT_EXECUTED", "actual_provider": "NOT_EXECUTED", "actual_wsl": "NOT_EXECUTED", "actual_production": "NOT_EXECUTED", "actual_deployment": "NOT_EXECUTED", "wsl_read_only_probe": "PASS_AVAILABLE_NOT_RUNTIME_EXECUTION", "pre_deploy_validation": "WSL_FIRST_SAME_COMMIT_REQUIRED", "host": "ssh ysna-server", "deploy_root": "~/deploy/anvil", "database_container": "shared-db", "database_scope": "ANVIL_DEDICATED_DATABASE_AND_ROLES_ONLY", "listener": "127.0.0.1:4173", "public_exposure": "DENIED_PENDING_SEPARATE_APPROVAL", "b04_remote_mutation": "FORBIDDEN"},
+  "work_instruction": {"artifact_id": "WI-B-04-20260814-001", "path": "docs/work_orders/B-04_WORK_INSTRUCTION.md", "sha256": "12EC940E255E2BF67B77120337874BDEAE446F9B1F1A6B478CD61A0C791838A1", "invocation_path": "docs/work_orders/B-04_INVOCATION_PROMPT.md", "invocation_sha256": "0A43F62B1B33DBC1A1D78065C98B4BD4F9E802157309A607B3252F3A5D4575CF"},
+  "lease_projection": {"worker_lease_id": "worker-lease-b04-20260814-001", "write_lease_id": "write-lease-b04-20260814-001", "lease_epoch": 1, "write_epoch": 1},
+  "developer_write_allowlist": ["packages/planning/__init__.py", "packages/planning/models.py", "packages/planning/hashing.py", "packages/planning/approval.py", "packages/planning/service.py", "packages/persistence/planning_repository.py", "packages/api/planning_contracts.py", "migrations/versions/0003_planning_approvals.py", "tests/planning/test_models.py", "tests/planning/test_hash_invalidation.py", "tests/planning/test_approval_guard.py", "tests/planning/test_repository.py", "docs/validation/B-04_PLANNING_APPROVAL_VALIDATION.md", "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-04_COMPLETION_REPORT.md"],
+  "a13_successor_projection": {"predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771", "live_raw_checksums": [{"path": "scripts/check_a13_repository_scan.py", "bytes": 58527, "sha256": "8A7C0104F2C29E28A7785C24F6C156AAE6EBD02721217500CDF459E46AFA1CC3"}, {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 44921, "sha256": "DDAE83BDEE023BBD959206C3256BAFDC3D0828F8558D79CC7BF4E265C201719A"}]},
+  "raw_checksums": [
+    {"path": "docs/approvals/APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001.md", "bytes": 2591, "sha256": "6E76E85D2895207F80639B6DE0D027A4CB08A61FA025968D0EC14C13960BB562"},
+    {"path": "docs/evidence/manifests/B-03_ACCEPTANCE_PROGRESS_MANIFEST_R3.json", "bytes": 3318, "sha256": "5A50EF43E13688F2BC7BD42EF4C3ECFFEC9A02E2DF7CF005280F97879CB91859", "canonical_eol": "LF"},
+    {"path": "docs/progress/progress-handoff-detached-digest-b04-start.json", "bytes": 823, "sha256": "309314762A0A7248DF0D2D32D7BE63E4623A52B4753FBBB32B9375D6FE92A30D"},
+    {"path": "docs/work_orders/B-04_INVOCATION_PROMPT.md", "bytes": 959, "sha256": "0A43F62B1B33DBC1A1D78065C98B4BD4F9E802157309A607B3252F3A5D4575CF"},
+    {"path": "docs/work_orders/B-04_WORK_INSTRUCTION.md", "bytes": 6278, "sha256": "12EC940E255E2BF67B77120337874BDEAE446F9B1F1A6B478CD61A0C791838A1"},
+    {"path": "scripts/check_a13_repository_scan.py", "bytes": 58527, "sha256": "8A7C0104F2C29E28A7785C24F6C156AAE6EBD02721217500CDF459E46AFA1CC3"},
+    {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 44921, "sha256": "DDAE83BDEE023BBD959206C3256BAFDC3D0828F8558D79CC7BF4E265C201719A"}
+  ],
+  "target_canonical_bytes": 842,
+  "target_content_bytes": 117417,
+  "target_hash": "sha256:F6DE834D1367176F0F0F7781434F9025DC883318A3515B7EEDD0224CD6F8B28E",
+  "delivered_hash": "sha256:F6DE834D1367176F0F0F7781434F9025DC883318A3515B7EEDD0224CD6F8B28E",
+  "content_hash": "sha256:F6DE834D1367176F0F0F7781434F9025DC883318A3515B7EEDD0224CD6F8B28E",
+  "self_reference": false,
+  "limitations": ["Product artifacts 0; API/DB/UI/WSL runtime/production/deploy NOT_EXECUTED at start; WSL probe is availability-only.", "B-04 may use local/WSL Anvil-isolated validation; ysna/shared-db mutation, public API/auth/BFF, direct patch and deployment remain forbidden in this package."]
+}
