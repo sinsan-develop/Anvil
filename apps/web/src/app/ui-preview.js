@@ -10,6 +10,7 @@ const backdrop = byId('drawer-backdrop');
 const popover = byId('preview-popover');
 let activeWorkbenchTab = 'conversation';
 let popoverTimer;
+let previousFocus;
 
 function renderSidebar(activeId) {
   sidebar.replaceChildren();
@@ -113,6 +114,7 @@ function openWorkbench(tabId = 'conversation') {
 }
 
 function openDrawer() {
+  previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
   drawer.classList.add('open');
   drawer.setAttribute('aria-hidden', 'false');
   backdrop.hidden = false;
@@ -120,9 +122,11 @@ function openDrawer() {
 }
 
 function closeDrawer() {
+  const wasOpen = drawer.classList.contains('open');
   drawer.classList.remove('open');
   drawer.setAttribute('aria-hidden', 'true');
   backdrop.hidden = true;
+  if (wasOpen) previousFocus?.focus();
 }
 
 function showUnavailable(label) {

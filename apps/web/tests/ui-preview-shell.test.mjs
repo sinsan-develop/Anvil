@@ -9,12 +9,15 @@ test('preview shell exposes navigation and Eoul surfaces', async () => {
   assert.match(html, /data-preview-shell/);
   assert.match(html, /aria-label="Anvil 전체 메뉴"/);
   assert.match(html, /id="eoul-drawer"/);
+  assert.match(html, /role="dialog"/);
+  assert.match(html, /aria-modal="true"/);
   assert.match(html, /UI PREVIEW/);
 });
 
 test('browser code contains no internal endpoint', async () => {
   const source = await readFile(new URL('src/app/ui-preview.js', root), 'utf8');
   assert.doesNotMatch(source, /localhost|127\.0\.0\.1|anvil-api|shared-db|http:\/\//i);
+  assert.match(source, /previousFocus/);
 });
 
 test('screen style keeps the approved type scale and sidebar width', async () => {
