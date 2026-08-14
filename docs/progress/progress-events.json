@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 227,
+  "last_sequence": 230,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -7858,6 +7858,96 @@
           "tests/tooling/test_phase_g_gate.py",
           "tests/tooling/test_project_progress.py"
         ]
+      }
+    },
+    {
+      "event_id": "evt_b03_rework_worker_lease_issued_r2",
+      "sequence": 228,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-14T19:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-03",
+      "details": {
+        "lease_id": "worker-lease-b03-20260814-002",
+        "worker_id": "developer-primary-b03",
+        "agent_id": "developer-primary-b03",
+        "work_package_id": "B-03",
+        "lease_epoch": 2,
+        "execution_fencing_token": "b03-execution-fence-epoch-2-f9fbf64",
+        "fencing_token": "b03-execution-fence-epoch-2-f9fbf64",
+        "issued_at": "2026-08-14T19:00:00+09:00",
+        "expires_at": "2026-08-15T07:00:00+09:00",
+        "status": "ACTIVE",
+        "subject_ref": "B-03"
+      }
+    },
+    {
+      "event_id": "evt_b03_rework_write_lease_issued_r2",
+      "sequence": 229,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-14T19:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-03",
+      "details": {
+        "lease_id": "write-lease-b03-20260814-002",
+        "worker_lease_id": "worker-lease-b03-20260814-002",
+        "worker_id": "developer-primary-b03",
+        "agent_id": "developer-primary-b03",
+        "work_package_id": "B-03",
+        "write_epoch": 2,
+        "execution_fencing_token": "b03-execution-fence-epoch-2-f9fbf64",
+        "write_fencing_token": "b03-write-fence-epoch-2-f9fbf64",
+        "fencing_token": "b03-write-fence-epoch-2-f9fbf64",
+        "issued_at": "2026-08-14T19:00:01+09:00",
+        "expires_at": "2026-08-15T07:00:01+09:00",
+        "status": "ACTIVE",
+        "paths": [
+          "apps/web/server.mjs", "apps/web/design-flow.html", "apps/web/src/api/design-flow-client.js", "apps/web/src/app/design-flow.js", "apps/web/src/styles/design-flow.css", "packages/api/design_runtime.py", "tests/browser/b03/design-flow-runtime.test.mjs", "tests/design/test_runtime_bridge.py", "docs/evidence/runtime/B-03_FLOW_NORMAL.png", "docs/evidence/runtime/B-03_FLOW_ERROR.png", "docs/evidence/runtime/B-03_FLOW_BLOCKED.png", "docs/evidence/runtime/B-03_FLOW_EVENT_SEQUENCE.json", "docs/validation/B-03_DESIGN_LINEAGE_VALIDATION_R2.md", "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST_R2.json", "docs/completion_reports/B-03_COMPLETION_REPORT_R2.md"
+        ],
+        "path_scope": [
+          "apps/web/server.mjs", "apps/web/design-flow.html", "apps/web/src/api/design-flow-client.js", "apps/web/src/app/design-flow.js", "apps/web/src/styles/design-flow.css", "packages/api/design_runtime.py", "tests/browser/b03/design-flow-runtime.test.mjs", "tests/design/test_runtime_bridge.py", "docs/evidence/runtime/B-03_FLOW_NORMAL.png", "docs/evidence/runtime/B-03_FLOW_ERROR.png", "docs/evidence/runtime/B-03_FLOW_BLOCKED.png", "docs/evidence/runtime/B-03_FLOW_EVENT_SEQUENCE.json", "docs/validation/B-03_DESIGN_LINEAGE_VALIDATION_R2.md", "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST_R2.json", "docs/completion_reports/B-03_COMPLETION_REPORT_R2.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_b03_package_resumed_r2",
+      "sequence": 230,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-08-14T19:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-03",
+      "details": {
+        "resume_event_ref": "evt_b03_package_completed",
+        "work_instruction_id": "WI-B-03-20260814-002",
+        "work_instruction_path": "docs/work_orders/B-03_REWORK_WORK_INSTRUCTION_R2.md",
+        "work_instruction_sha256": "CE1BA88F32B6EBF6AB7FFB5C834A9092FAD6B6FEE3DF5AC91CEB0D63A79CF722",
+        "invocation_path": "docs/work_orders/B-03_REWORK_INVOCATION_PROMPT_R2.md",
+        "invocation_sha256": "CB32A1644BFEB1C996A54370382C75CD7ECE4178EFE984CA5354FBA9706C0A31",
+        "tester_report_ref": {"path":"docs/test_reports/B-03_INDEPENDENT_TEST_REPORT.md","sha256":"F55282DD30362AB1D76580442932D910C899CB771BFBC4DF1708C7F4F0AF474D"},
+        "tester_verdict": "BLOCKED",
+        "blocked_classification": "VERIFICATION_ENVIRONMENT_GAP_NOT_VALID_FAILURE",
+        "valid_failure_count": 0,
+        "package_status": "ACTIVE",
+        "result_status": "REWORK_IN_PROGRESS",
+        "developer_actor": "developer-primary-b03",
+        "worker_lease_id": "worker-lease-b03-20260814-002",
+        "write_lease_id": "write-lease-b03-20260814-002",
+        "runtime_scope": "LOCAL_VERIFICATION_ONLY",
+        "b11_canonical_api_scope": "FORBIDDEN",
+        "dispatch_head": "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b",
+        "dispatch_upstream_head": "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R2.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-b03-rework-start-r2.json", "docs/test_reports/B-03_INDEPENDENT_TEST_REPORT.md", "docs/work_orders/B-03_REWORK_INVOCATION_PROMPT_R2.md", "docs/work_orders/B-03_REWORK_WORK_INSTRUCTION_R2.md", "scripts/check_a13_repository_scan.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"
+        ],
+        "next_work_package": "B-04",
+        "next_package_status": "BLOCKED_PENDING_B03_ACCEPTANCE"
       }
     }
   ]

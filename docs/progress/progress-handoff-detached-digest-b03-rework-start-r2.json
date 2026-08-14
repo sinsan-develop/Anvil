@@ -1,0 +1,11 @@
+{
+  "schema_version":"1.0.0",
+  "digest_id":"B-03-PROGRESS-HANDOFF-DIGEST-REWORK-START-R2",
+  "package_id":"B-03",
+  "event_sequence":230,
+  "algorithm":"SHA-256",
+  "progress":{"path":"docs/progress/build-progress.json","bytes":37693,"file_sha256":"D3B48FA6339E457C6B477C2AF99D7523047D6EF5ADBC372C8761246B56788B29","canonical_json_sha256":"352D43CBFC74E20FCC5BD16F96C9C418479B31680B8F8A6954148EEE3F4E7A2F"},
+  "handoff":{"path":"docs/progress/BUILD_HANDOFF.md","bytes":72464,"file_sha256":"AE1F6523588DE34B01586472740D865D36121AAF5EA1F86FF638A7661A5B18C7","machine_summary_canonical_sha256":"580EC1B8169DDEE0F494E07011D36B54652E67779FC41EA76DF13B1697F269CA"},
+  "created_at":"2026-08-14T19:00:02+09:00",
+  "scope":"B-03 BLOCKED is not a valid failure; epoch-2 exact15 local-only runtime evidence remediation; B-11 canonical/prod forbidden; B-04 blocked"
+}
