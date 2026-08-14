@@ -1,5 +1,13 @@
 # Anvil Build Handoff
 
+## B-05 Developer Completion — sequence 260
+
+- Developer exact15는 manifest file SHA `262B9AB8AEBB5A940594A92000B9AA66E1F1C5908D5700C8AE5D0DEA55BE8E16`, target `8BFFC8B2F2D55DD951E59E849A5A2740723C0DC14CA1586E06C77FBD8E142BBB`로 byte-frozen이다.
+- seq258→260으로 epoch-2 write lease와 worker lease를 순서대로 회수한 뒤 `PACKAGE_COMPLETED / TEST_REVIEW / independent Tester PENDING`으로 투영했다. B-06은 `BLOCKED_PENDING_B05_ACCEPTANCE`다.
+- 구현 중 발견해 한 번에 해소한 trigger row-shape 문제는 최종 `COMPLETED` 결과 내부 수정이며 accepted `FAILURE_REPORT`가 아니므로 canonical B-05 valid failure count는 0이다.
+- 실제 WSL 격리 PostgreSQL 18에서 `0003 → 0004 → 0003`, B-05 table `0 → 10 → 0`, function 0, hostile/valid guard와 exact container/network cleanup을 확인한 Developer evidence를 보존한다.
+- API/UI/browser/provider/ysna/shared-db/production/deployment는 `NOT_EXECUTED`다. B-05 acceptance와 B-06 시작은 금지하며 다음 안전 행동은 독립 Tester 검증이다.
+
 ## B-05 WorkInstruction authority correction and epoch-2 rebind — sequence 257
 
 - 상위 권위 `Anvil_설계서_v2.md` §49.3/§49.14와 작업계획 v1.6에 따라 `design_intent_reviews.status`를 정확히 `DIR_HOLD | REPORTING | WAITING_OWNER_DIRECTION | CLEARED`로 교정했다. 기능 목적, 요구사항, 중요 위험과 Developer exact15는 불변이다.
@@ -135,44 +143,57 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 257,
-  "status": "ACTIVE",
+  "event_sequence": 260,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-05",
-  "last_event_id": "evt_b05_package_resumed_wi_rebind_r2",
+  "last_event_id": "evt_b05_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
+  "repository_head": "2edc44044df522e6ec7c56b95c5e9414932ac856",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
+  "repository_remote_head": "2edc44044df522e6ec7c56b95c5e9414932ac856",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
+  "repository_validated_base_commit": "2edc44044df522e6ec7c56b95c5e9414932ac856",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json",
+    "docs/completion_reports/B-05_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-05_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-05_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json",
-    "docs/work_orders/B-05_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-05_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b05-completion-test-review.json",
+    "docs/validation/B-05_EXECUTION_RELEASE_VALIDATION.md",
+    "migrations/versions/0004_execution_release.py",
+    "packages/api/execution_contracts.py",
+    "packages/execution/__init__.py",
+    "packages/execution/dir_guard.py",
+    "packages/execution/integrity.py",
+    "packages/execution/models.py",
+    "packages/execution/release.py",
+    "packages/persistence/execution_repository.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/execution/test_attempt_integrity.py",
+    "tests/execution/test_dir_guard.py",
+    "tests/execution/test_models.py",
+    "tests/execution/test_release_guard.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b05-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-05_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer executes corrected WI-B-05-20260815-002 within unchanged exact 15-path epoch-2 lease; B-06 remains blocked pending B-05 acceptance",
+  "next_safe_action": "Independent Tester validates B-05 exact15 and isolated WSL PostgreSQL 18 evidence; B-06 remains blocked pending B-05 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_ISOLATED_APPLY_CONSTRAINTS_DOWNGRADE_CLEANUP",
@@ -184,8 +205,8 @@
   "b01_start_allowed": true,
   "b01_started": true,
   "active_work_instruction": "WI-B-05-20260815-002",
-  "worker_lease": "worker-lease-b05-20260815-002 epoch2 ACTIVE",
-  "write_lease": "write-lease-b05-20260815-002 epoch2 ACTIVE exact15"
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 

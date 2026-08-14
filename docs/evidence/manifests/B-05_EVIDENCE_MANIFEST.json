@@ -1,0 +1,102 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-05-20260815-001",
+  "artifact_type": "execution_release_dir_evidence_manifest",
+  "package_id": "B-05",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "work_instruction": {
+    "artifact_id": "WI-B-05-20260815-002",
+    "sha256": "DFC7BDECBECE0E6A2E48E68011D91E51AEB370A0E6CB67E1EA1ACBAE00F17A43"
+  },
+  "invocation_sha256": "6C570930EBC566B52C1BC45459BF567CF8E64306CC140F78E3D2B3ED95927684",
+  "baseline_git_commit": "2edc44044df522e6ec7c56b95c5e9414932ac856",
+  "predecessor_rebind_manifest": {
+    "path": "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json",
+    "bytes": 3802,
+    "sha256": "9A8CC83295544E544438BE232A7A5D1C5AF872AE44BCF860FF5BB8EA342650A7"
+  },
+  "assigned_verification_ids": ["AV-STAT-008"],
+  "environment_id": "ENV-LOCAL + ENV-WSL-STAGING-ISOLATED-PG18",
+  "lease_binding": {
+    "worker_lease_id": "worker-lease-b05-20260815-002",
+    "write_lease_id": "write-lease-b05-20260815-002",
+    "lease_epoch": 2,
+    "write_epoch": 2
+  },
+  "exact_write_paths": [
+    "packages/execution/__init__.py",
+    "packages/execution/models.py",
+    "packages/execution/integrity.py",
+    "packages/execution/release.py",
+    "packages/execution/dir_guard.py",
+    "packages/persistence/execution_repository.py",
+    "packages/api/execution_contracts.py",
+    "migrations/versions/0004_execution_release.py",
+    "tests/execution/test_models.py",
+    "tests/execution/test_attempt_integrity.py",
+    "tests/execution/test_release_guard.py",
+    "tests/execution/test_dir_guard.py",
+    "docs/validation/B-05_EXECUTION_RELEASE_VALIDATION.md",
+    "docs/evidence/manifests/B-05_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-05_COMPLETION_REPORT.md"
+  ],
+  "raw_artifact_count": 14,
+  "raw_artifacts": [
+    {"path":"docs/completion_reports/B-05_COMPLETION_REPORT.md","bytes":3256,"sha256":"C469AB735953820E539FE992437F1EA0CE1298D6954DCC8C015B7B813ED0EFC1"},
+    {"path":"docs/validation/B-05_EXECUTION_RELEASE_VALIDATION.md","bytes":5692,"sha256":"2C82A27CB2122BCAACF0ECB0E60E2379D03D6B05CB77D6A82F3F99C0DB168819"},
+    {"path":"migrations/versions/0004_execution_release.py","bytes":13453,"sha256":"715084BD716D83D429496EA6F4BEF24C130A68E11C31ACDAABCBFAF6A2A89CAF"},
+    {"path":"packages/api/execution_contracts.py","bytes":2810,"sha256":"47DF3816AEBF8BF746A17D048F7081E6512D62DE19DA488558D6781E9526368E"},
+    {"path":"packages/execution/__init__.py","bytes":872,"sha256":"6270671B55337E035E8B2A14F177FFB637DFEBCFDB82BCC2B8455158DF3F097A"},
+    {"path":"packages/execution/dir_guard.py","bytes":1934,"sha256":"A58475A7F1FB62ECBD398A68EF56BAFF7B414875CF80CFB09BBE427322F4E61D"},
+    {"path":"packages/execution/integrity.py","bytes":2966,"sha256":"FA028D5C71BEC227D29645BA6AF61FB58E131D550AF036654BADF2E85E66C5AD"},
+    {"path":"packages/execution/models.py","bytes":10118,"sha256":"F14C4426BF27CB62CD8424581E2781C31DB2E55EB5643F7829FF1EACF1527436"},
+    {"path":"packages/execution/release.py","bytes":2199,"sha256":"F69D4690D3B6DE221DCDC1B3CF3AC920CF4B076E93AA68E1F8F550515A730C93"},
+    {"path":"packages/persistence/execution_repository.py","bytes":988,"sha256":"B980BE27FBC84BC311903C18AFDC155AB2D9B3BDB847BFF358D2905D721C385F"},
+    {"path":"tests/execution/test_attempt_integrity.py","bytes":4021,"sha256":"E96D3BA7A58FDFA5FFB20A374744ADEC8503E6DE11AFCFA146AD772BF3BE05A0"},
+    {"path":"tests/execution/test_dir_guard.py","bytes":2212,"sha256":"2A29F100F95EDA44CAC3E7BA3366674373F568A22DA3C1AE754AA7D88531C4ED"},
+    {"path":"tests/execution/test_models.py","bytes":3325,"sha256":"B6FD70969210B652544C2280660043F36EC662D17E856A8056897E1C2846514B"},
+    {"path":"tests/execution/test_release_guard.py","bytes":2648,"sha256":"7C8AA7CC0198D5B6545B79FA8593619ECB91640D50D20F952EC4D6E79546CC62"}
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1508,
+  "target_content_bytes": 56494,
+  "target_hash": "8BFFC8B2F2D55DD951E59E849A5A2740723C0DC14CA1586E06C77FBD8E142BBB",
+  "delivered_hash": "8BFFC8B2F2D55DD951E59E849A5A2740723C0DC14CA1586E06C77FBD8E142BBB",
+  "content_hash": "8BFFC8B2F2D55DD951E59E849A5A2740723C0DC14CA1586E06C77FBD8E142BBB",
+  "self_reference": false,
+  "test_results": {
+    "execution_focused": "11/11 PASS",
+    "domain_design_planning_persistence_execution": "55/55 PASS",
+    "python_compile": "PASS",
+    "diff_check": "PASS",
+    "tooling": "307 run; 16 dirty-worktree evidence/projection failures"
+  },
+  "database_evidence": {
+    "engine": "PostgreSQL 18.4 isolated WSL container",
+    "upgrade_path": "0003_planning_approvals -> 0004_execution_release",
+    "upgrade_b05_tables": 10,
+    "hostile_guards": "PASS_REJECTED_AS_DESIGNED",
+    "valid_paths": "PASS",
+    "downgrade_path": "0004_execution_release -> 0003_planning_approvals",
+    "downgrade_b05_tables": 0,
+    "downgrade_b05_functions": 0,
+    "cleanup": "exact container and network removed; absent post-check"
+  },
+  "runtime_boundary": {
+    "actual_database": "PASS_ISOLATED_WSL_POSTGRESQL18_ONLY",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_ysna": "NOT_EXECUTED",
+    "actual_shared_db": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  }
+}

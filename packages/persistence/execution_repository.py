@@ -1,0 +1,36 @@
+"""Framework-independent persistence port for execution aggregates."""
+
+from typing import Protocol
+
+from packages.execution.models import (
+    DesignIntentReview,
+    ReleaseDecision,
+    Result,
+    Run,
+    StepAttempt,
+    Task,
+)
+
+
+class ExecutionRepository(Protocol):
+    def get_task(self, task_id: str) -> Task | None: ...
+
+    def save_task(self, task: Task) -> None: ...
+
+    def get_run(self, run_id: str) -> Run | None: ...
+
+    def save_run(self, run: Run) -> None: ...
+
+    def get_attempt(self, attempt_id: str) -> StepAttempt | None: ...
+
+    def save_attempt(self, attempt: StepAttempt) -> None: ...
+
+    def save_result(self, result: Result) -> None: ...
+
+    def get_release_decision(self, decision_id: str) -> ReleaseDecision | None: ...
+
+    def save_release_decision(self, decision: ReleaseDecision) -> None: ...
+
+    def get_dir_review(self, review_id: str) -> DesignIntentReview | None: ...
+
+    def save_dir_review(self, review: DesignIntentReview) -> None: ...
