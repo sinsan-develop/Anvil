@@ -327,6 +327,22 @@
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED",
       "independent_retest_status": "R2_PENDING"
+    },
+    {
+      "entry_id": "failure-b03-independent-retest-r2",
+      "step_lineage_id": "B-03",
+      "failure_fingerprint": "BLK-B03-R2-001-CURRENT-CHECKOUT-A13-INNER-CLONE-PORTABILITY",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": ["BLK-B03-R2-001"],
+      "blocking_severity": "MAJOR",
+      "blocking_defect_count": 1,
+      "evidence_refs": [{"path":"docs/test_reports/B-03_RETEST_REPORT_R2.md","sha256":"D41F9D21BF3C92D6BD6C2FDEBDB80C2504E63745103D8655C78DC4F9A978E1C5"}],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R3_PENDING"
     }
   ]
 }

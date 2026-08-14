@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-03 R3 Rework Start — sequence 237
+
+- Tester R2 report SHA `D41F9D21...`의 `BLK-B03-R2-001-CURRENT-CHECKOUT-A13-INNER-CLONE-PORTABILITY`를 B-03 valid failure 1로 수용했다.
+- 실제 B-03 browser/service/security evidence는 PASS·byte-frozen이다. 결함은 system `core.autocrlf=true`를 상속하는 A13 내부 clone의 successor raw/diff mismatch로 한정되며 explicit LF clone tooling `282/282`는 PASS다.
+- seq 234→237은 `FAILURE_REPORT_ACCEPTED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`; epoch-3 Developer exact5만 활성이고 B-04는 차단이다.
+- 허용 수정은 clone-local LF determinism과 R3 validation/evidence/completion뿐이다. 제품·runtime 재구현, system/global Git 설정, acceptance, provider/WSL/production/deploy는 금지한다.
+
 ## B-03 R2 Developer Completion — sequence 233
 
 - Developer exact15는 manifest SHA `ADC773EF...`, target `A08847E8...`로 byte-frozen이며 actual local E-SHOT 정상/오류/BLOCKED 3종과 E-EVT 5-event sequence를 포함한다.
@@ -68,37 +75,46 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 233,
-  "status": "TEST_REVIEW",
+  "event_sequence": 237,
+  "status": "ACTIVE",
   "current_work_package": "B-03",
-  "last_event_id": "evt_b03_package_completed_r2",
+  "last_event_id": "evt_b03_package_resumed_r3",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 0,
-  "active_lineage_valid_failure_count": 0,
+  "valid_failure_count": 1,
+  "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 14,
   "dir_status": "CLEARED",
-  "repository_head": "7508553188368b0b459faa3b67c2668ffb37c11a",
+  "repository_head": "03c0d131693f5479f16aababcce385ca1c46aee6",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "7508553188368b0b459faa3b67c2668ffb37c11a",
+  "repository_remote_head": "03c0d131693f5479f16aababcce385ca1c46aee6",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "7508553188368b0b459faa3b67c2668ffb37c11a",
+  "repository_validated_base_commit": "03c0d131693f5479f16aababcce385ca1c46aee6",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json",
+    "docs/progress/failure-ledger.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-b03-rework-start-r3.json",
+    "docs/test_reports/B-03_RETEST_REPORT_R2.md",
+    "docs/work_orders/B-03_REWORK_INVOCATION_PROMPT_R3.md",
+    "docs/work_orders/B-03_REWORK_WORK_INSTRUCTION_R3.md",
+    "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
+    "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/tooling/test_a14_workbench_prototype.py",
-    "tests/tooling/test_g07_baseline.py"
+    "tests/tooling/test_a13_repository_scan.py",
+    "tests/tooling/test_g07_baseline.py",
+    "tests/tooling/test_phase_g_gate.py",
+    "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-rework-start-r3.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R3.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch an independent Tester for B-03 R2 actual L4+L7 evidence; do not accept B-03 or start B-04",
+  "next_safe_action": "Dispatch developer-primary-b03 for R3 exact5 clone-local LF determinism; do not accept B-03 or start B-04",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -106,9 +122,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-03-20260814-002",
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-03-20260814-003",
+  "worker_lease": "worker-lease-b03-20260814-003",
+  "write_lease": "write-lease-b03-20260814-003"
 }
 ```
 

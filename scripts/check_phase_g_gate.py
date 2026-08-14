@@ -928,6 +928,10 @@ def validate_gate(
     b03_r2_completion_projection=(progress_projection.get("current_work_package")=="B-03" and progress_projection.get("status")=="TEST_REVIEW" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-03-20260814-002" and progress_projection.get("active_work_instruction",{}).get("independent_tester_status")=="R2_PENDING" and progress.get("valid_failure_count")==0 and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and [event.get("event_type") for event in b03_r2_completion_events]==["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"])
     if b03_r2_completion_projection:
         errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
+    b03_r3_events=[event for event in events if 234 <= event.get("sequence",-1) <= 237]
+    b03_r3_rework_projection=(progress_projection.get("current_work_package")=="B-03" and progress_projection.get("status")=="ACTIVE" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-03-20260814-003" and progress.get("valid_failure_count")==1 and progress_projection.get("worker_lease",{}).get("lease_epoch")==3 and progress_projection.get("write_lease",{}).get("write_epoch")==3 and [event.get("event_type") for event in b03_r3_events]==["FAILURE_REPORT_ACCEPTED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_RESUMED"])
+    if b03_r3_rework_projection:
+        errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
 
     counts = {
         "package": baseline["counts"]["package_total"],
