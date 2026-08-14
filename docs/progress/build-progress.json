@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000105",
-  "event_sequence": 264,
-  "updated_at": "2026-08-15T09:00:02+09:00",
-  "last_event_id": "evt_b06_package_started",
+  "snapshot_id": "snapshot-anvil-build-000106",
+  "event_sequence": 267,
+  "updated_at": "2026-08-15T10:00:02+09:00",
+  "last_event_id": "evt_b06_package_completed",
   "plan_version": "1.6",
   "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "B",
   "current_work_package": "B-06",
-  "status": "ACTIVE",
+  "status": "TEST_REVIEW",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -40,63 +40,9 @@
     "B-04",
     "B-05"
   ],
-  "active_agent": "developer-primary-b06",
-  "write_lease": {
-    "lease_id": "write-lease-b06-20260815-001",
-    "worker_lease_id": "worker-lease-b06-20260815-001",
-    "agent_id": "developer-primary-b06",
-    "work_package_id": "B-06",
-    "write_epoch": 1,
-    "execution_fencing_token": "b06-execution-fence-epoch-1-ebe9ce9",
-    "write_fencing_token": "b06-write-fence-epoch-1-ebe9ce9",
-    "issued_at": "2026-08-15T09:00:01+09:00",
-    "expires_at": "2026-08-15T21:00:01+09:00",
-    "status": "ACTIVE",
-    "paths": [
-      "packages/events/__init__.py",
-      "packages/events/models.py",
-      "packages/events/store.py",
-      "packages/events/transition_guard.py",
-      "packages/events/reducer.py",
-      "packages/persistence/event_repository.py",
-      "packages/api/event_contracts.py",
-      "migrations/versions/0005_event_store.py",
-      "tests/events/test_event_store.py",
-      "tests/events/test_transition_guard.py",
-      "tests/events/test_idempotency.py",
-      "tests/events/test_navigation_guard.py",
-      "docs/validation/B-06_EVENT_STORE_VALIDATION.md",
-      "docs/evidence/manifests/B-06_EVIDENCE_MANIFEST.json",
-      "docs/completion_reports/B-06_COMPLETION_REPORT.md"
-    ],
-    "path_scope": [
-      "packages/events/__init__.py",
-      "packages/events/models.py",
-      "packages/events/store.py",
-      "packages/events/transition_guard.py",
-      "packages/events/reducer.py",
-      "packages/persistence/event_repository.py",
-      "packages/api/event_contracts.py",
-      "migrations/versions/0005_event_store.py",
-      "tests/events/test_event_store.py",
-      "tests/events/test_transition_guard.py",
-      "tests/events/test_idempotency.py",
-      "tests/events/test_navigation_guard.py",
-      "docs/validation/B-06_EVENT_STORE_VALIDATION.md",
-      "docs/evidence/manifests/B-06_EVIDENCE_MANIFEST.json",
-      "docs/completion_reports/B-06_COMPLETION_REPORT.md"
-    ]
-  },
-  "worker_lease": {
-    "lease_id": "worker-lease-b06-20260815-001",
-    "agent_id": "developer-primary-b06",
-    "work_package_id": "B-06",
-    "lease_epoch": 1,
-    "execution_fencing_token": "b06-execution-fence-epoch-1-ebe9ce9",
-    "issued_at": "2026-08-15T09:00:00+09:00",
-    "expires_at": "2026-08-15T21:00:00+09:00",
-    "status": "ACTIVE"
-  },
+  "active_agent": null,
+  "write_lease": null,
+  "worker_lease": null,
   "budget_reservations": [],
   "valid_failure_count": 0,
   "active_failure_lineage": {
@@ -119,6 +65,66 @@
     "B-03": 1
   },
   "latest_evidence_refs": [
+    {
+      "path": "docs/completion_reports/B-06_COMPLETION_REPORT.md",
+      "sha256": "2641528F3F97CDE1AA9011804E55F6E426B7F0C71D695194719E408ED8012CA1"
+    },
+    {
+      "path": "docs/evidence/manifests/B-06_EVIDENCE_MANIFEST.json",
+      "sha256": "CB14005DAE3D4E89C1BCD1320969477C47BFF2C4172BFC8329B884FF52548F07"
+    },
+    {
+      "path": "docs/validation/B-06_EVENT_STORE_VALIDATION.md",
+      "sha256": "2A6805CDC9C78D9B1EB3EB81CB4C6A26997251F494F7531E3D38C4860339ED7E"
+    },
+    {
+      "path": "migrations/versions/0005_event_store.py",
+      "sha256": "DEBC6D14C895567F6C4A528AD5572992756CE7AD59DDC2D33BF4D05DFF0599BE"
+    },
+    {
+      "path": "packages/api/event_contracts.py",
+      "sha256": "8C80FE1324056568F03432B9821519408F9826EA7AC9D04559A965D9152814DA"
+    },
+    {
+      "path": "packages/events/__init__.py",
+      "sha256": "9FC464A47CAFB945B99448B636CBD58D9272080915E40ED87522CF808990F101"
+    },
+    {
+      "path": "packages/events/models.py",
+      "sha256": "097F576122CA65F2549D0C7D5BB82E7764D085B9B2E706502634FCEBC34B4C34"
+    },
+    {
+      "path": "packages/events/reducer.py",
+      "sha256": "DE3EDA56F635FFFDF7A8B2EA166F772F3C3419C2C5EA809800E49AD6E26C33C8"
+    },
+    {
+      "path": "packages/events/store.py",
+      "sha256": "FE8E241D23E5CACD2C27DA2B74F177126F7360AEFBEEDCC8FBC090472CA0A610"
+    },
+    {
+      "path": "packages/events/transition_guard.py",
+      "sha256": "DC81A252886E3E85601C0C42D224C2251CCD59F0B0A8D3918002D1E2BEE953F3"
+    },
+    {
+      "path": "packages/persistence/event_repository.py",
+      "sha256": "9A79F35979E6AB233CA54BD98929315AD9753E898D904D1BCF7240B7CB9A82F2"
+    },
+    {
+      "path": "tests/events/test_event_store.py",
+      "sha256": "AFE74CA3F00EB611EFBC8DE28F01E2DDC86CA3DC7A4B8A18751FDF008C754CD8"
+    },
+    {
+      "path": "tests/events/test_idempotency.py",
+      "sha256": "7AB3E0F3F2D814E5DD979A31FF810725C2DAFBDC1803BF77A6BD599975760F44"
+    },
+    {
+      "path": "tests/events/test_navigation_guard.py",
+      "sha256": "5AAB1DF2B0F7C534BBFFBEDB48494794B011946CE5B1EAF00F40A31809CA7302"
+    },
+    {
+      "path": "tests/events/test_transition_guard.py",
+      "sha256": "9B562496C1E9A687EB4670BB1DF64B2295DCDDCF8B83DE5B146727DF3C7C5192"
+    },
     {
       "path": "docs/work_orders/B-06_WORK_INSTRUCTION.md",
       "sha256": "C52B192E88B581B44B47D2A07DC7E293119BE9F60732988393C99795A03DB827"
@@ -741,7 +747,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "67BEC7061B3BAB3B3972D85A4306603660AFF990B4FFBF0D307B46B87C9A933E"
+      "sha256": "1BFB1064535EDFE54F5A59159B11706BD00F602CFE6DD027CE2EDDFFA3753F98"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -749,19 +755,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "222F09A4330CEA76F19C7722582F48841809ED030F939E56427942EBE9A8182F"
+      "sha256": "E5000613311C8982982B44CF7C267CB9FE698032E43362BBB8D96D3802ED0B7C"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "05E446182C69E1CCE81B166799EA8248681ECAFAC66E4ED532CEE2C4F58F8BFA"
+      "sha256": "BD2AA13DE9BCB33C913FD41CC292E999DFF1C56B687DDAC9ECBADAD89131C48B"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "5A94D41577E1F162BD9682DD0D111DF4F10F9764469042693A80AA61828FB978"
+      "sha256": "F9C6602AD855A40EA6BA94C3ED845A2C215C99B15067199569CD34E72A852387"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "E747B7EAFF1DDC7EE8D3DEF825D825EA94CFFF0781627103E2512F842BCA1D0D"
+      "sha256": "E932268C342AF131BDBF602055C3A5B155567CE303AD6288766D9E72EB468C52"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -769,15 +775,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "A7D07AF2915906A0FDEB0D1F1DEF7EE434B46C74280C1CD630AA365C4F0CE040"
+      "sha256": "733F3D523ADCDBD6A0C9FA6CEC548738DDC3C10EBF1F8188B9F5248D9CD09663"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "47C2BC58852BD89DB5E997728D77A04AB7B0FEECE2679F0223D694BC19A87D7F"
+      "sha256": "55EEE972716399A4B4FAE547E25E6F38AC9DA66B9EC2E4AC82B4D1E2221631E7"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "6A522D2A814B746FF5F78C30BB3FCDFB5AC969885160A06565128C1149D2BC61"
+      "sha256": "3C1F0FF1860C4E9F31B490EE4470C32836536B2961838ED6DA017F828D6B98A7"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -805,7 +811,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "3DC2340AA61DDAFFEE175E763182D2BA9701895F099EFF4C0CC8241FFD7E6C0E"
+      "sha256": "353EB0E9B5985AC9724E8A36474E2AFB140B57147BDE489EE2CFCA6C4AFD7AD4"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -848,7 +854,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Developer executes WI-B-06-20260815-001 within exact 15-path lease; B-07 remains blocked pending B-06 acceptance",
+  "next_safe_action": "Independent Tester validates B-06 exact15 and isolated WSL PostgreSQL 18 evidence; B-07 remains blocked pending B-06 acceptance",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -903,32 +909,45 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "ebe9ce9c28c3e58f8d8200e5747e33ceb2d8174b",
+    "validated_base_commit": "105b12be5554d0d2de0c5440cda3d2cb25e98c05",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "ebe9ce9c28c3e58f8d8200e5747e33ceb2d8174b",
+    "remote_head": "105b12be5554d0d2de0c5440cda3d2cb25e98c05",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/B-06_START_EVIDENCE_MANIFEST.json",
+      "docs/completion_reports/B-06_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/B-06_COMPLETION_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/B-06_EVIDENCE_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-b06-start.json",
-      "docs/work_orders/B-06_INVOCATION_PROMPT.md",
-      "docs/work_orders/B-06_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-b06-completion-test-review.json",
+      "docs/validation/B-06_EVENT_STORE_VALIDATION.md",
+      "migrations/versions/0005_event_store.py",
+      "packages/api/event_contracts.py",
+      "packages/events/__init__.py",
+      "packages/events/models.py",
+      "packages/events/reducer.py",
+      "packages/events/store.py",
+      "packages/events/transition_guard.py",
+      "packages/persistence/event_repository.py",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
+      "tests/events/test_event_store.py",
+      "tests/events/test_idempotency.py",
+      "tests/events/test_navigation_guard.py",
+      "tests/events/test_transition_guard.py",
       "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_g07_baseline.py",
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
     "observed_at": "2026-08-15T09:00:02+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: B-06 start projection exact15",
-    "local_head": "ebe9ce9c28c3e58f8d8200e5747e33ceb2d8174b"
+    "worktree_status": "PUSH_PENDING_MAIN: B-06 completion projection exact28",
+    "local_head": "105b12be5554d0d2de0c5440cda3d2cb25e98c05"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1043,8 +1062,9 @@
     "sha256": "C52B192E88B581B44B47D2A07DC7E293119BE9F60732988393C99795A03DB827",
     "invocation_path": "docs/work_orders/B-06_INVOCATION_PROMPT.md",
     "invocation_sha256": "5AEBDFE2167788AB52BC2873194A7253CDD960119BD1D9C4F993ADC09D1B8B58",
-    "package_status": "ACTIVE",
-    "result_status": "IN_PROGRESS",
+    "package_status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "independent_tester_status": "PENDING",
     "accepted": false,
     "assigned_verification_ids": [
       "AV-STAT-004",
@@ -1067,8 +1087,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "B-06",
-    "path": "docs/progress/progress-handoff-detached-digest-b06-start.json",
-    "manifest_path": "docs/evidence/manifests/B-06_START_EVIDENCE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-b06-completion-test-review.json",
+    "manifest_path": "docs/evidence/manifests/B-06_COMPLETION_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1089,12 +1109,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "3DC2340AA61DDAFFEE175E763182D2BA9701895F099EFF4C0CC8241FFD7E6C0E"
+      "sha256": "353EB0E9B5985AC9724E8A36474E2AFB140B57147BDE489EE2CFCA6C4AFD7AD4"
     }
   },
   "next_work_package": {
     "package_id": "B-07",
     "status": "BLOCKED_PENDING_B06_ACCEPTANCE"
   },
-  "snapshot_hash": "2E9174F6EA0180A779A8BB91B40AE04048148D50EF42D3AA0B53121D1F9FA9C4"
+  "snapshot_hash": "921E32A88627FDE258C3B5A3A5FC18F4D3F8A0EA90DBFFD331AC3C6C08F6961C"
 }

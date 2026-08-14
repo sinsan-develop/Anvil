@@ -1,0 +1,103 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-06-20260815-001",
+  "artifact_type": "event_store_evidence_manifest",
+  "package_id": "B-06",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "work_instruction": {
+    "artifact_id": "WI-B-06-20260815-001",
+    "sha256": "C52B192E88B581B44B47D2A07DC7E293119BE9F60732988393C99795A03DB827"
+  },
+  "invocation_sha256": "5AEBDFE2167788AB52BC2873194A7253CDD960119BD1D9C4F993ADC09D1B8B58",
+  "baseline_git_commit": "105b12be5554d0d2de0c5440cda3d2cb25e98c05",
+  "start_manifest": {
+    "path": "docs/evidence/manifests/B-06_START_EVIDENCE_MANIFEST.json",
+    "bytes": 3461,
+    "sha256": "E47939A5C66D23B9D02CABB61321B7590AC666E5C9D845ADF5C5B2FC1C111DAD"
+  },
+  "assigned_verification_ids": ["AV-STAT-004", "AV-STAT-005", "AV-STAT-006", "AV-STAT-020"],
+  "environment_id": "ENV-LOCAL + ENV-WSL-STAGING-ISOLATED-PG18",
+  "lease_binding": {
+    "worker_lease_id": "worker-lease-b06-20260815-001",
+    "write_lease_id": "write-lease-b06-20260815-001",
+    "lease_epoch": 1,
+    "write_epoch": 1
+  },
+  "exact_write_paths": [
+    "packages/events/__init__.py",
+    "packages/events/models.py",
+    "packages/events/store.py",
+    "packages/events/transition_guard.py",
+    "packages/events/reducer.py",
+    "packages/persistence/event_repository.py",
+    "packages/api/event_contracts.py",
+    "migrations/versions/0005_event_store.py",
+    "tests/events/test_event_store.py",
+    "tests/events/test_transition_guard.py",
+    "tests/events/test_idempotency.py",
+    "tests/events/test_navigation_guard.py",
+    "docs/validation/B-06_EVENT_STORE_VALIDATION.md",
+    "docs/evidence/manifests/B-06_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-06_COMPLETION_REPORT.md"
+  ],
+  "raw_artifact_count": 14,
+  "raw_artifacts": [
+    {"path":"docs/completion_reports/B-06_COMPLETION_REPORT.md","bytes":2792,"sha256":"2641528F3F97CDE1AA9011804E55F6E426B7F0C71D695194719E408ED8012CA1"},
+    {"path":"docs/validation/B-06_EVENT_STORE_VALIDATION.md","bytes":6333,"sha256":"2A6805CDC9C78D9B1EB3EB81CB4C6A26997251F494F7531E3D38C4860339ED7E"},
+    {"path":"migrations/versions/0005_event_store.py","bytes":6260,"sha256":"DEBC6D14C895567F6C4A528AD5572992756CE7AD59DDC2D33BF4D05DFF0599BE"},
+    {"path":"packages/api/event_contracts.py","bytes":3189,"sha256":"8C80FE1324056568F03432B9821519408F9826EA7AC9D04559A965D9152814DA"},
+    {"path":"packages/events/__init__.py","bytes":362,"sha256":"9FC464A47CAFB945B99448B636CBD58D9272080915E40ED87522CF808990F101"},
+    {"path":"packages/events/models.py","bytes":3607,"sha256":"097F576122CA65F2549D0C7D5BB82E7764D085B9B2E706502634FCEBC34B4C34"},
+    {"path":"packages/events/reducer.py","bytes":1858,"sha256":"DE3EDA56F635FFFDF7A8B2EA166F772F3C3419C2C5EA809800E49AD6E26C33C8"},
+    {"path":"packages/events/store.py","bytes":6093,"sha256":"FE8E241D23E5CACD2C27DA2B74F177126F7360AEFBEEDCC8FBC090472CA0A610"},
+    {"path":"packages/events/transition_guard.py","bytes":2884,"sha256":"DC81A252886E3E85601C0C42D224C2251CCD59F0B0A8D3918002D1E2BEE953F3"},
+    {"path":"packages/persistence/event_repository.py","bytes":552,"sha256":"9A79F35979E6AB233CA54BD98929315AD9753E898D904D1BCF7240B7CB9A82F2"},
+    {"path":"tests/events/test_event_store.py","bytes":5108,"sha256":"AFE74CA3F00EB611EFBC8DE28F01E2DDC86CA3DC7A4B8A18751FDF008C754CD8"},
+    {"path":"tests/events/test_idempotency.py","bytes":3251,"sha256":"7AB3E0F3F2D814E5DD979A31FF810725C2DAFBDC1803BF77A6BD599975760F44"},
+    {"path":"tests/events/test_navigation_guard.py","bytes":1641,"sha256":"5AAB1DF2B0F7C534BBFFBEDB48494794B011946CE5B1EAF00F40A31809CA7302"},
+    {"path":"tests/events/test_transition_guard.py","bytes":3898,"sha256":"9B562496C1E9A687EB4670BB1DF64B2295DCDDCF8B83DE5B146727DF3C7C5192"}
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1471,
+  "target_content_bytes": 47828,
+  "target_hash": "B97BD64F82B4ACF675735B6D45B7C6AAE8A61965B8D528BC715BBB85574EC8EA",
+  "delivered_hash": "B97BD64F82B4ACF675735B6D45B7C6AAE8A61965B8D528BC715BBB85574EC8EA",
+  "content_hash": "B97BD64F82B4ACF675735B6D45B7C6AAE8A61965B8D528BC715BBB85574EC8EA",
+  "self_reference": false,
+  "test_results": {
+    "events_focused": "14/14 PASS",
+    "domain_design_planning_persistence_execution": "55/55 PASS",
+    "python_compile": "PASS",
+    "standalone_repository_import": "PASS",
+    "diff_check": "PASS",
+    "tooling": "319 run; 19 active-diff/frozen-evidence failures"
+  },
+  "database_evidence": {
+    "engine": "PostgreSQL 18.4 isolated WSL container",
+    "upgrade_path": "0004_execution_release -> 0005_event_store",
+    "valid_append_and_identical_resend": "PASS",
+    "hostile_guards": "PASS_REJECTED_AS_DESIGNED",
+    "history_after_hostile": "1:1:1",
+    "downgrade_path": "0005_event_store -> 0004_execution_release",
+    "downgrade_table_absent": true,
+    "downgrade_function_absent": true,
+    "cleanup": "exact container and network removed; absent post-check"
+  },
+  "runtime_boundary": {
+    "actual_database": "PASS_ISOLATED_WSL_POSTGRESQL18_ONLY",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_ysna": "NOT_EXECUTED",
+    "actual_shared_db": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  }
+}
