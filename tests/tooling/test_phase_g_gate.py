@@ -103,9 +103,9 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual("ACTIVE", start["details"]["package_status"])
         self.assertFalse(report["progress"]["a01_start_allowed"])
         self.assertEqual("ACCEPTED", report["progress"]["g_gate_status"])
-        self.assertEqual("B-04", report["progress"]["current_work_package"])
-        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
-        self.assertEqual(247, json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))["event_sequence"])
+        self.assertEqual("B-05", report["progress"]["current_work_package"])
+        self.assertEqual("READY", report["progress"]["status"])
+        self.assertEqual(248, json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))["event_sequence"])
         self.assertEqual("WI-A-02-20260811-001", start["details"]["work_instruction_id"])
 
         decision = json.loads((ROOT / "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json").read_text(encoding="utf-8"))
@@ -132,14 +132,14 @@ class PhaseGGateTests(unittest.TestCase):
         report = self.validate()
         self.assertEqual([], report["errors"])
         progress = report["progress"]
-        self.assertEqual("B-04", progress["current_work_package"])
-        self.assertEqual("TEST_REVIEW", progress["status"])
-        self.assertEqual("WI-B-04-20260814-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("B-05", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
         self.assertIsNone(progress["worker_lease"])
         self.assertIsNone(progress["write_lease"])
         actual_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual("CLEARED", actual_progress["dir_review"]["status"])
-        self.assertEqual("BLOCKED_PENDING_B04_ACCEPTANCE", actual_progress["next_work_package"]["status"])
+        self.assertEqual("READY", actual_progress["next_work_package"]["status"])
         self.assertEqual("ACCEPTED", actual_progress["phase_gate"]["decision"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
@@ -168,20 +168,31 @@ class PhaseGGateTests(unittest.TestCase):
 
     def test_b04_start_preserves_accepted_a_gate(self):
         report = self.validate()
-        self.assertEqual("B-04", report["progress"]["current_work_package"])
-        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
+        self.assertEqual("B-05", report["progress"]["current_work_package"])
+        self.assertEqual("READY", report["progress"]["status"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(247, progress["event_sequence"])
+        self.assertEqual(248, progress["event_sequence"])
         self.assertEqual([], report["errors"])
 
     def test_b04_completion_preserves_accepted_a_gate(self):
         report = self.validate()
-        self.assertEqual("B-04", report["progress"]["current_work_package"])
-        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
+        self.assertEqual("B-05", report["progress"]["current_work_package"])
+        self.assertEqual("READY", report["progress"]["status"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(247, progress["event_sequence"])
+        self.assertEqual(248, progress["event_sequence"])
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("BLOCKED_PENDING_B04_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual([], report["errors"])
+
+    def test_b04_acceptance_preserves_a_gate_and_stops_before_b05_start(self):
+        report = self.validate()
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual("B-05", report["progress"]["current_work_package"])
+        self.assertEqual("READY", report["progress"]["status"])
+        self.assertEqual(248, progress["event_sequence"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual([], report["errors"])
 
 if __name__ == "__main__":

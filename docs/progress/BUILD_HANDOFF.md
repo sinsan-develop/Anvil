@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-04 Main Acceptance — sequence 248
+
+- 독립 Tester report SHA `343CAF908D2360D47220408F2127E56F355E3431A9FE0165E2CA84DC88C93A38`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검증해 seq248 `MAIN_PACKAGE_ACCEPTED`로 B-04를 최종 ACCEPTED했다.
+- B-05는 `READY`지만 시작하지 않았다. active WorkInstruction, agent, worker lease, write lease는 모두 null이고 valid failure count는 0이다.
+- actual isolated WSL PostgreSQL 18 evidence는 보존했다. API/UI/browser/provider/ysna/shared-db/production/deployment는 `NOT_EXECUTED`이며 이 acceptance에서 추가 실행하지 않았다.
+- 이 clean acceptance commit에서 종료한다. B-05 start와 plan v1.6 통합은 별도 후속 projection 전까지 금지한다.
+
 ## B-04 Developer Completion — sequence 247
 
 - seq245→247로 epoch-1 write lease와 worker lease를 순서대로 회수한 뒤 `PACKAGE_COMPLETED / TEST_REVIEW / independent Tester PENDING`으로 투영했다.
@@ -104,57 +111,43 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 247,
-  "status": "TEST_REVIEW",
-  "current_work_package": "B-04",
-  "last_event_id": "evt_b04_package_completed",
+  "event_sequence": 248,
+  "status": "READY",
+  "current_work_package": "B-05",
+  "last_event_id": "evt_b04_main_package_accepted",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "47ad9e1216981c670aaec49b23e628315cff3547",
+  "repository_head": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "47ad9e1216981c670aaec49b23e628315cff3547",
+  "repository_remote_head": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "47ad9e1216981c670aaec49b23e628315cff3547",
+  "repository_validated_base_commit": "75d9c72b847ed7122985d1bee656cbcc4b4da883",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-04_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-04_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b04-completion-test-review.json",
-    "docs/validation/B-04_PLANNING_APPROVAL_VALIDATION.md",
-    "migrations/versions/0003_planning_approvals.py",
-    "packages/api/planning_contracts.py",
-    "packages/persistence/planning_repository.py",
-    "packages/planning/__init__.py",
-    "packages/planning/approval.py",
-    "packages/planning/hashing.py",
-    "packages/planning/models.py",
-    "packages/planning/service.py",
+    "docs/progress/progress-handoff-detached-digest-b04-accepted.json",
+    "docs/test_reports/B-04_INDEPENDENT_TEST_REPORT.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/planning/test_approval_guard.py",
-    "tests/planning/test_hash_invalidation.py",
-    "tests/planning/test_models.py",
-    "tests/planning/test_repository.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b04-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-04_COMPLETION_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b04-accepted.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch an independent Tester for B-04; do not accept B-04, start B-05, or deploy",
+  "next_safe_action": "B-05 is READY but NOT_STARTED; stop at the clean B-04 acceptance commit and do not issue leases or integrate plan v1.6",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_ISOLATED_APPLY_CONSTRAINTS_DOWNGRADE_CLEANUP",
@@ -165,7 +158,7 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-04-20260814-001",
+  "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
 }
