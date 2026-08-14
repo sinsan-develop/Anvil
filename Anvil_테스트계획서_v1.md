@@ -1,12 +1,12 @@
-# Anvil 테스트 계획서 v1.4
+# Anvil 테스트 계획서 v1.5
 
-> 문서 상태: A-01 책임 정합화 승인 반영 파생 기준선 / 독립 Tester 재검토 대기
-> 작성일: 2026-08-10
+> 문서 상태: 작업계획 v1.6 공통 API 우선·메뉴 순차 실행 successor / B-05 착수 전 독립 Tester 재검토 대기
+> 작성일: 2026-08-14
 > 작성 역할: Tester (독립 검증)
 > 최종 승인자: 신산님
 > 설계 기준선: `Anvil_설계서_v2.md` v2.6 / SHA-256 `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-> 계획 기준선: `Anvil_작업계획서_v1.md` v1.5 / 97개 Package
-> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.3 / SHA-256 `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A` (검증 항목 255건 / 고유 실행 234건)
+> 계획 기준선: `Anvil_작업계획서_v1.md` v1.6 / SHA-256 `E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D` / 108개 Package
+> 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.4 / SHA-256 `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5` (검증 항목 255건 / 고유 실행 234건 / U overlay 11건)
 > A-01 파생 기준선: `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md` / 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
@@ -18,9 +18,9 @@
 | 문서 | 정의하는 것 |
 |---|---|
 | `Anvil_설계서_v2.md` v2.6 | 제품이 무엇이어야 하는가 (검증 요구의 원천) |
-| `Anvil_작업계획서_v1.md` v1.5 | 무엇을 어떤 순서로 만드는가 (97개 Package·Phase Gate) |
-| `Anvil_통합검증매트릭스_v1.md` v1.3 | **무엇을** 검증하는가 (AV-* ID 255건) |
-| **`Anvil_테스트계획서_v1.md` v1.4** | **어떻게·언제·누가·무슨 증거로** 검증하는가 |
+| `Anvil_작업계획서_v1.md` v1.6 | 무엇을 어떤 순서로 만드는가 (108개 Package·공통 모듈/API 우선·11개 메뉴 직렬) |
+| `Anvil_통합검증매트릭스_v1.md` v1.4 | **무엇을** 검증하는가 (AV-* ID 255건 + U overlay 11건) |
+| **`Anvil_테스트계획서_v1.md` v1.5** | **어떻게·언제·누가·무슨 증거로** 검증하는가 |
 
 설계서와 충돌하면 설계서가 우선한다. 이 계획의 변경에는 신산님 승인과 revision 갱신이 필요하다.
 
@@ -363,7 +363,7 @@ golden_case:
 
 **G-06 fixture 검토**: Tester는 §6.1의 8개 fixture가 전부 준비되었는지, golden set이 구현 전에 고정되었는지 확인한다. **fixture가 부족한 채로 G Gate를 통과하면 이후 모든 L5 검증이 불가능해진다.** 이것이 Phase G에서 Tester가 가장 강하게 보는 지점이다.
 
-**G-07 문서 정규화**: 97개 Package가 매트릭스 역색인에 정확히 1회 이상 배정되고, §49.17의 20개 시나리오가 모두 개별 AV ID와 Gate를 가져야 한다. 누락·구 Package ID·구 배포 대상이 하나라도 있으면 G Gate를 닫지 않는다(AV-GATE-026).
+**G-07 문서 정규화 successor**: 108개 Package가 매트릭스 역색인에 정확히 1회 이상 배정되고, U-01~U-11이 메뉴 순서대로 직렬이며, §49.17의 20개 시나리오가 모두 개별 AV ID와 Gate를 가져야 한다. 누락·구 Package 수·구 배포 대상·중복 메뉴 책임이 하나라도 있으면 B-05를 시작하지 않는다(AV-GATE-026).
 
 ### 10.2 Phase A — 화면·계약·읽기 전용 온보딩
 
@@ -484,7 +484,7 @@ Phase D의 최대 위험은 승인되지 않은 학습이 다음 Run 동작을 �
 
 예산은 송신 전 원자 예약되고 abort 후에도 provider receipt 기반 실제 비용이 확정되어야 한다(AV-AGT-038, AV-OPS-019). `ProductValidation`과 `ReleaseDecision`은 분리하고 target hash와 blocking defect를 각각 검사하며(AV-FLOW-024~025), E-11 뒤 DIR-3이 `CLEARED`되기 전에는 F-01을 시작하지 않는다.
 
-### 10.7 Phase F — 운영·배포
+### 10.7 Phase F — 운영 capability·배포 기반
 
 | 항목 | 내용 |
 |---|---|
@@ -514,7 +514,37 @@ Phase D의 최대 위험은 승인되지 않은 학습이 다음 Run 동작을 �
 - 데이터 손실 가능 migration rollback은 자동 수행하지 않고 사람 결정으로 전환한다(AV-OPS-022).
 - `envil.sinsan.kr`에서 내부 주소·secret 노출 0건, `MonitoringPolicy`의 health/error/budget/failure 관찰 정상, Owner 기능 확인 후에만 `RELEASED`가 된다(AV-OPS-023~024).
 
-### 10.8 Phase P — Plugin
+F-01~F-19는 provider·관측·보안·환경 승격 capability를 준비한다. **F-20 최종 release 검증은 U-11 acceptance 뒤에만 실행**하며, U-01~U-11 전 메뉴의 동일 ReleaseManifest·same-origin·smoke·rollback evidence를 포함해야 한다.
+
+### 10.8 Phase U — 메뉴별 순차 수직 검증
+
+| 순서 | Package | 메뉴 | 핵심 실제 검증 |
+|---:|---|---|---|
+| 1 | U-01 | Dashboard | 상태·경고·승인대기·next action이 실제 read model과 일치 |
+| 2 | U-02 | Workbench | 어울 대화·지시·중단·재개·결과·승인 계보를 실제 클릭으로 확인 |
+| 3 | U-03 | Projects | intent→baseline→iteration→WI→승인 hash trace와 invalidation 표시 |
+| 4 | U-04 | Runs | Step/Attempt/Delegation/Event·pause/resume·checkpoint 흐름 |
+| 5 | U-05 | Reviews | ProductValidation·Defect·ReleaseDecision 분리와 blocking 상태 |
+| 6 | U-06 | Quality | G0~G3·diff·policy·test·evidence·coverage와 미실행 정직성 |
+| 7 | U-07 | Knowledge | candidate→approval→activation→rollback provenance |
+| 8 | U-08 | Agents & Automation | worker/lease/fencing/delegation/takeover 및 활성화 상태 |
+| 9 | U-09 | Environments | Local·WSL·ysna 경계, health, migration, ReleaseManifest 일치 |
+| 10 | U-10 | Operations | queue·worker·alert·audit·cost·backup/restore·monitoring |
+| 11 | U-11 | Settings | 9 provider·model·routing·credential 상태·execution mode |
+
+**각 U Package 공통 인수 절차**
+
+1. 이전 U Package가 `ACCEPTED`인지 확인하고 동시에 활성인 메뉴 write lease가 0건인지 검사한다.
+2. 1920×1080·기본 12px·tooltip/popover 설명 표준과 키보드·접근성을 실제 브라우저에서 검사한다.
+3. loading/empty/error/blocked/quota/cancel/reconnect 7상태를 실제 또는 결정론적 장애 주입으로 확인하고 미실행·BLOCKED를 PASS로 표시하지 않는지 검사한다.
+4. 메뉴의 주요 정상·거부·중단·재개 흐름을 실제 클릭하고 `E-SHOT`, `E-NET`, `E-API`, 관련 `E-EVT/E-AUD/E-MAN`을 수집한다.
+5. Network 전체 URL에서 브라우저의 `localhost`, `127.0.0.1`, Docker 내부 호스트명·포트, `NEXT_PUBLIC_*` 내부주소 직접 호출과 secret 노출이 0건인지 확인한다.
+6. backend 단위·계약 PASS를 화면 PASS로 승격하지 않고, 독립 Tester가 메뉴별 매트릭스 §6.11·§8 ID를 전부 판정한 뒤에만 acceptance한다.
+7. 다음 메뉴는 직전 메뉴 acceptance commit과 동일한 clean baseline에서 시작한다.
+
+**U Gate 종료 조건**: U-01~U-11이 순서대로 모두 `ACCEPTED`, 공통 navigation·권한·상태표현 회귀 PASS, cross-menu same-origin Network/secret 위반 0건이어야 한다. 이 조건 전에는 F-20 최종 release 검증을 시작하지 않는다.
+
+### 10.9 Phase P — Plugin
 
 | 항목 | 내용 |
 |---|---|
@@ -537,7 +567,7 @@ Phase D의 최대 위험은 승인되지 않은 학습이 다음 Run 동작을 �
 | 대상 | 해당 Phase 산출물 | 그 시점까지의 **누적 결과 전부** |
 | 판정자 | Main Agent + Tester | **Tester 작성 → Owner 최종** |
 
-**두 질문은 독립이다.** 97개 Package가 전부 `ACCEPTED`여도 제품이 설계 의도에서 벗어날 수 있다. 각 Package는 자기 WorkInstruction에만 충실하면 되고, 그 누구도 전체를 보지 않기 때문이다.
+**두 질문은 독립이다.** 108개 Package가 전부 `ACCEPTED`여도 제품이 설계 의도에서 벗어날 수 있다. 각 Package는 자기 WorkInstruction에만 충실하면 되고, 그 누구도 전체를 보지 않기 때문이다.
 
 드리프트의 특징은 **단일 위반이 아니라 누적**이라는 점이다. 어느 Package도 잘못하지 않았는데 합이 틀린다. Package 단위 검증은 구조적으로 이것을 잡을 수 없다.
 
@@ -547,10 +577,10 @@ Phase D의 최대 위험은 승인되지 않은 학습이 다음 Run 동작을 �
 
 | | 시점 | 선행 Package | 누적 진척 | 다음 Phase |
 |---|---|---|---:|---|
-| **DIR-1** | A-15 완료 후, A Gate 승인 **직전** | 22 / 97 | 23% | B (Durable State) |
-| **DIR-2** | C-15 완료 후, C Gate 승인 **직전** | 49 / 97 | 51% | D (Learning) |
+| **DIR-1** | A-15 완료 후, A Gate 승인 **직전** | 22 / 108 | 20% | B (Durable State) |
+| **DIR-2** | C-15 완료 후, C Gate 승인 **직전** | 49 / 108 | 45% | D (Learning) |
 | **DIR-X** | D Gate에서 AV-LRN-003~005가 같은 대상에 CRITICAL인 경우 **추가** | 조건부 | — | E 착수 전 |
-| **DIR-3** | E-11 완료 후, E Gate 승인 **직전** | 73 / 97 | 75% | F (운영·배포) |
+| **DIR-3** | E-11 완료 후, E Gate 승인 **직전** | 73 / 108 | 68% | F (운영·배포) |
 
 ### 11.3 시점 선정 근거
 
@@ -849,3 +879,4 @@ Phase E 이후 `RS-CRITICAL`이 30분을 초과할 것으로 예상된다. 이�
 - v1.3은 `APPROVAL-20260810-G02-DECISIONS-001`의 subject hash `E0DEC8651FEA543BDCC08B0A015C89F9D0E7A8F22E964F6025EBA1544BF68A91`를 root human approval로 상속한 `docs/approvals/G-02_MAIN_RECONFIRMED_NON_SEMANTIC.md`에 binding된다. 변경 후 SHA-256은 해당 binding과 EvidenceManifest에서 고정한다.
 - v1.2 content hash의 binding은 content 변경으로 무효화된다. v1.3 변경은 활성 기준선 상태·revision·hash 참조만 정규화하며 테스트 범위·ID·레벨·심각도·종료 기준을 바꾸지 않는다.
 - v1.4는 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`과 `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md`에 binding된다. A-01은 `STATIC_ONLY / RUNTIME_DEFERRED`, A-05·B-03과 A Gate의 `AV-FLOW-001` runtime 책임은 유지한다.
+- v1.5는 신산님의 2026-08-14 작업 순서 재편 지시와 작업계획 v1.6 content hash에 binding된다. 기존 검증 레벨·심각도·증거 계약은 유지하고, U-01~U-11의 실제 메뉴별 수직 인수 절차와 F-20 후행 조건을 추가한다.

@@ -1,18 +1,18 @@
-# Anvil 통합 검증 매트릭스 v1.3
+# Anvil 통합 검증 매트릭스 v1.4
 
-> 문서 상태: A-01 책임 정합화 승인 반영 파생 기준선 / 독립 Tester 재검토 대기
-> 작성일: 2026-08-10
+> 문서 상태: 작업계획 v1.6 공통 API 우선·메뉴 순차 실행 successor / B-05 착수 전 독립 Tester 재검토 대기
+> 작성일: 2026-08-14
 > 작성 역할: Tester (독립 검증)
 > 설계 기준선: `Anvil_설계서_v2.md` v2.6 / SHA-256 `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-> 계획 기준선: `Anvil_작업계획서_v1.md` v1.5 / 97개 Work Package
-> 짝 문서: `Anvil_테스트계획서_v1.md` v1.4
+> 계획 기준선: `Anvil_작업계획서_v1.md` v1.6 / SHA-256 `E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D` / 108개 Work Package
+> 짝 문서: `Anvil_테스트계획서_v1.md` v1.5
 > 책임 정합화 승인: `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`
 
 ---
 
 ## 0. 이 문서를 만든 이유
 
-설계서 v2.6은 48장의 운영 헌법과 49장의 canonical 완성 계약을 포함하고, 작업계획서 v1.5는 이를 **8개 Phase Gate와 97개 Package 완료조건**으로 분해한다. 이 문서는 두 기준선의 검증 요구를 하나의 ID·Package·Gate 체계로 동기화한다.
+설계서 v2.6은 48장의 운영 헌법과 49장의 canonical 완성 계약을 포함하고, 작업계획서 v1.6은 이를 **공통 모듈 → 공통 API/BFF → backend capability → 11개 메뉴 수직 구현 → 최종 운영 검증의 108개 Package 완료조건**으로 분해한다. 이 문서는 두 기준선의 검증 요구를 하나의 ID·Package·Gate 체계로 동기화한다.
 
 - 계획서 13.3과 설계서 34.6은 "중대 미진 시 해당 차수를 다시 검증한다"고 규정하지만, **재검증 대상 집합이 어디에도 열거되어 있지 않다.**
 - 같은 요구가 서로 다른 문장으로 4번까지 반복된다. 예: "SKIPPED/BLOCKED를 PASS로 처리 금지"는 설계서 P11, 22.4, 34.6, 47.18-14, 계획서 A Gate·C-14에 각각 존재한다. 어느 것이 정본인지 정의되지 않았다.
@@ -254,7 +254,7 @@ AV-<도메인>-<3자리>
 | AV-GATE-023 | G7 회귀 대상 4종(Impact Map 관련 기능 / 핵심 smoke set / 공통 helper 소비자 / 인증·설정·라우팅 공유 경계)이 선정된다 | 32.8 | E-09 | L3 | AI | E-TEST | MAJOR |
 | AV-GATE-024 | 전체 테스트 미실행 시 **실행 범위와 미검증 범위가 명시 표시**된다 | 32.8 | E-09 | L4 | MI | E-SHOT, E-TEST | CRITICAL |
 | AV-GATE-025 | 다른 commit·image digest·DB migration head·config·policy·provider routing snapshot의 PASS EvidenceManifest를 현재 Release에 연결하면 `EVIDENCE_TARGET_MISMATCH`로 거부된다 | 49.10, 49.17-15 | E-09, F-20 | L5 | AN | E-MAN, E-AUD | CRITICAL |
-| AV-GATE-026 | 검증 매트릭스·테스트계획이 설계 v2.6 hash, 작업계획 v1.4의 97개 Package, DIR-1/2/3·DIR-X와 Package 역색인을 일치시키며 구 기준선·미할당 ID가 0건이다 | 49.18, 계획서 G-07 | G-07 | L2 | AU+RV | E-ART, E-DEC | CRITICAL |
+| AV-GATE-026 | 검증 매트릭스·테스트계획이 설계 v2.6 hash, 작업계획 v1.6의 108개 Package, DIR-1/2/3·DIR-X와 Package 역색인을 일치시키며 구 기준선·미할당 ID가 0건이다 | 49.18, 계획서 G-07 | G-07 | L2 | AU+RV | E-ART, E-DEC | CRITICAL |
 
 ---
 
@@ -441,6 +441,28 @@ AV-<도메인>-<3자리>
 
 ---
 
+### 6.11 U — 메뉴별 수직 검증 successor overlay
+
+작업계획 v1.6의 `U-01~U-11`은 기존 AV ID의 책임을 이전하거나 완료된 Package를 다시 여는 단계가 아니다. 기존 backend·Gate 책임은 그대로 유지하고, 각 메뉴가 실제 서비스·API/BFF·UI를 연결하는 시점에 아래 ID의 **L4/L5/L7 실제 화면·Network·사용자 흐름 증거를 추가로 책임진다**. 모든 U Package는 공통으로 `AV-UI-001`, `002`, `006`, `007`, `010~014`를 판정하며, 브라우저 요청은 same-origin 상대 경로만 허용한다.
+
+| Package | 메뉴 | 추가 수직 검증 ID | 필수 실제 증거 |
+|---|---|---|---|
+| U-01 | Dashboard | AV-UI-003, 004, 008, 009, AV-OPS-001~005 | E-SHOT, E-NET, E-API, E-EVT |
+| U-02 | Workbench | AV-UI-004, 005, 008, 009, AV-FLOW-001, 003~009, 013~015, 017, 021, 023~025 | E-SHOT, E-NET, E-API, E-EVT, E-DEC |
+| U-03 | Projects | AV-UI-004, 005, 009, 015, AV-FLOW-002, 003, 012 | E-SHOT, E-NET, E-API, E-ART, E-AUD |
+| U-04 | Runs | AV-UI-003, 004, 008, 009, AV-FLOW-004~011, 013~015 | E-SHOT, E-NET, E-API, E-EVT, E-PRG |
+| U-05 | Reviews | AV-UI-008, 009, AV-GATE-004, 016~019, 023~025, AV-FLOW-014, 015, 024, 025 | E-SHOT, E-NET, E-API, E-DEC, E-MAN |
+| U-06 | Quality | AV-UI-008, 009, AV-GATE-001~025, AV-SAFE-017 | E-SHOT, E-NET, E-API, E-TEST, E-DIFF, E-MAN |
+| U-07 | Knowledge | AV-UI-004, 008, 009, AV-LRN-001~028, AV-FLOW-018, 022 | E-SHOT, E-NET, E-API, E-ART, E-AUD |
+| U-08 | Agents & Automation | AV-UI-003, 004, 008, 009, AV-AGT-001~038, AV-FLOW-004~009, 016, 017, 023 | E-SHOT, E-NET, E-API, E-EVT, E-AUD |
+| U-09 | Environments | AV-UI-003, 004, 008, 009, AV-OPS-013~017, 020, 021, 025 | E-SHOT, E-NET, E-API, E-CMD, E-MAN |
+| U-10 | Operations | AV-UI-003, 004, 008, 009, AV-OPS-001~009, 014~018, 022~025 | E-SHOT, E-NET, E-API, E-AUD, E-MAN |
+| U-11 | Settings | AV-UI-003, 004, 008, 009, AV-SAFE-021, 029~032, AV-OPS-010~012, AV-FLOW-019 | E-SHOT, E-NET, E-API, E-AUD |
+
+U Package의 자동 테스트 PASS는 메뉴 인수가 아니다. 각 메뉴는 1920×1080·12px 화면, loading/empty/error/blocked/quota/cancel/reconnect 상태, 키보드·접근성, 실제 클릭→API→저장→재표시, Network 내부주소·secret 노출 0건을 독립 Tester가 확인해야 `ACCEPTED`가 된다. U-01부터 U-11까지 write lease는 직렬이며 다음 메뉴는 직전 메뉴 acceptance 전 시작할 수 없다.
+
+---
+
 ## 7. Phase Gate별 필수 통과 집합 (재검증 범위 정본)
 
 **이 표가 계획서 13.3 / 설계서 34.6의 "해당 차수를 다시 검증한다"의 대상 집합이다.**
@@ -457,6 +479,7 @@ AV-<도메인>-<3자리>
 | **D Gate** | 위 3개 내부 Gate 전량 + AV-FLOW-018, AV-FLOW-022 | C Gate CRITICAL 전량 |
 | **E Gate** | AV-SAFE-015, 020, 023, AV-GATE-004, 016~019, 023~025, AV-AGT-032~038, AV-UI-013, 014, AV-OPS-012, AV-OPS-019, AV-FLOW-005~009, 014, 015, 017, 023~025, AV-STAT-041~042 | D Gate CRITICAL 전량 |
 | **F Gate** | AV-SAFE-021, AV-SAFE-029~032, AV-OPS-001~025, AV-UI-003, 010, 012, AV-GATE-025, AV-LRN-028, AV-FLOW-019, 020 | E Gate CRITICAL 전량 |
+| **U Gate** | §6.11의 U-01~U-11 공통·추가 ID 전량 | F Capability Gate CRITICAL 전량 + 직전 U Package 전량 |
 | **P Gate** | AV-PLG-001~007 | F Gate CRITICAL 전량 |
 
 **회귀 원칙**: 각 Gate에서 이전 Gate의 `CRITICAL` 항목은 전량 재실행한다. `MAJOR`는 변경 영향(Impact Map)에 걸린 것만, `MINOR`는 재실행하지 않는다.
@@ -465,10 +488,10 @@ AV-<도메인>-<3자리>
 
 | DIR | 시점 | 누적 진척 | 차단 대상 |
 |---|---|---:|---|
-| DIR-1 | A-15 완료 후, A Gate 판정 전 | 22/97 | A Gate·Phase B |
-| DIR-2 | C-15 완료 후, C Gate 판정 전 | 49/97 | C Gate·Phase D |
+| DIR-1 | A-15 완료 후, A Gate 판정 전 | 22/108 | A Gate·Phase B |
+| DIR-2 | C-15 완료 후, C Gate 판정 전 | 49/108 | C Gate·Phase D |
 | DIR-X | D Gate에서 `DIRX-LRN-CRITICAL` 발생 시 추가 | 조건부 | Phase E; DIR-3 유지 |
-| DIR-3 | E-11 완료 후, E Gate 판정 전 | 73/97 | E Gate·Phase F |
+| DIR-3 | E-11 완료 후, E Gate 판정 전 | 73/108 | E Gate·Phase F |
 
 ---
 
@@ -571,6 +594,17 @@ AV-<도메인>-<3자리>
 | F-18 | AV-OPS-013, 016, 020, 021 |
 | F-19 | AV-OPS-017, AV-FLOW-020 |
 | F-20 | AV-OPS-017, 018, 022~025, AV-GATE-025, AV-UI-010, AV-FLOW-020 |
+| U-01 | AV-UI-001~004, 006~014, AV-OPS-001~005 |
+| U-02 | AV-UI-001, 002, 004~014, AV-FLOW-001, 003~009, 013~015, 017, 021, 023~025 |
+| U-03 | AV-UI-001, 002, 004~007, 009~015, AV-FLOW-002, 003, 012 |
+| U-04 | AV-UI-001~004, 006~014, AV-FLOW-004~011, 013~015 |
+| U-05 | AV-UI-001, 002, 006~014, AV-GATE-004, 016~019, 023~025, AV-FLOW-014, 015, 024, 025 |
+| U-06 | AV-UI-001, 002, 006~014, AV-GATE-001~025, AV-SAFE-017 |
+| U-07 | AV-UI-001, 002, 004, 006~014, AV-LRN-001~028, AV-FLOW-018, 022 |
+| U-08 | AV-UI-001~004, 006~014, AV-AGT-001~038, AV-FLOW-004~009, 016, 017, 023 |
+| U-09 | AV-UI-001~004, 006~014, AV-OPS-013~017, 020, 021, 025 |
+| U-10 | AV-UI-001~004, 006~014, AV-OPS-001~009, 014~018, 022~025 |
+| U-11 | AV-UI-001~004, 006~014, AV-SAFE-021, 029~032, AV-OPS-010~012, AV-FLOW-019 |
 | P-01 | AV-PLG-001, 002 |
 | P-02 | AV-PLG-003, 004 |
 | P-03 | AV-PLG-005, 006 |
@@ -585,12 +619,12 @@ AV-<도메인>-<3자리>
 ### 9.1 v1.2 비의미 정규화 판정
 
 - **판정**: `READY_FOR_G07_RETROSPECTIVE_VALIDATION`
-- **판단 이유**: 설계 v2.6의 49.17 시나리오, approval binding, 97개 Package 역색인과 Gate 집합을 문서 기준선에 반영했다. 이는 제품 구현 PASS나 G Gate 합격을 뜻하지 않는다.
+- **판단 이유**: 설계 v2.6의 49.17 시나리오, approval binding, 당시 97개 Package 역색인과 Gate 집합을 문서 기준선에 반영했다. 이는 제품 구현 PASS나 G Gate 합격을 뜻하지 않는다.
 - **조치**: G-07에서 독립 Tester가 G-01~G-07을 이 revision으로 소급 검증하고, 모든 Package Test Report와 증거가 PASS일 때만 `ACCEPTED`를 기록한다.
 
 ### 9.2 G-07 필수 확인
 
-1. 설계 v2.6 SHA-256과 작업계획 v1.4의 97개 Package가 실제 source와 일치한다.
+1. 설계 v2.6 SHA-256과 작업계획 v1.6 SHA-256, 108개 Package가 실제 source와 일치한다.
 2. §6의 모든 AV ID가 §8에서 하나 이상의 책임 Package에 할당된다.
 3. DIR-1=A-15, DIR-2=C-15, DIR-X=조건부 추가, DIR-3=E-11 위치가 Gate와 테스트계획에서 일치한다.
 4. §49.17의 20개 시나리오가 `AV-STAT-041~043`, `AV-SAFE-028~032`, `AV-AGT-038`, `AV-LRN-027~028`, `AV-GATE-025`, `AV-OPS-019~024`, `AV-FLOW-024~025`에 1:1 연결된다.
@@ -607,7 +641,13 @@ AV-<도메인>-<3자리>
 
 - **판정**: `DERIVED_RESPONSIBILITY_BASELINE`
 - **판단 이유**: 신산님 승인 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`에 따라 A-01 역색인에서만 `AV-FLOW-001`을 제거했다. A-01은 `AV-UI-005`의 정적 journey artifact만 판정하며 `AV-FLOW-001`의 L4+L7 runtime 책임은 A-05·B-03과 A Gate에 그대로 남는다.
-- **조치**: A-01은 `STATIC_ONLY / RUNTIME_DEFERRED`로 실행하고, runtime evidence를 fixture·mock으로 대체해 PASS로 승격하지 않는다. Package 97개, AV ID 255개, 고유 실행 234개, 역색인 97개와 미할당 0건은 유지한다.
+- **조치**: A-01은 `STATIC_ONLY / RUNTIME_DEFERRED`로 실행하고, runtime evidence를 fixture·mock으로 대체해 PASS로 승격하지 않는다. 당시 Package 97개, AV ID 255개, 고유 실행 234개, 역색인 97개와 미할당 0건은 유지했다.
+
+### 9.5 v1.4 작업계획 v1.6 successor 판정
+
+- **판정**: `READY_FOR_V16_SUCCESSOR_VALIDATION`
+- **판단 이유**: 완료된 G·A·B-01~B-04의 검증 ID·심각도·증거를 변경하지 않고, B-05 이후 공통 모듈·공통 API/BFF 우선 순서와 U-01~U-11의 실제 메뉴 수직 검증 책임을 추가했다. AV ID 총수와 고유 실행 정본은 유지하고 Package 역색인만 108개로 확장했다.
+- **조치**: 짝 테스트계획 v1.5와 함께 108개 Package·11개 U Package·직렬 선행관계·DIR 위치·미할당 0건을 독립 검증한다. 이 successor가 accepted 되기 전에는 B-05 write lease를 발급하지 않는다.
 
 ---
 
@@ -640,3 +680,4 @@ CON 21항은 그 자체가 실행 테스트가 아니라 하위 도메인으로 
 - Phase Gate 판정 결과는 이 문서가 아니라 `docs/test_reports/`에 기록하고, 이 문서는 **기준**만 유지한다.
 - `[historical]` v1.2 SHA-256은 `0A0CEA887EB0ECEB00EBFF7439E86890C878DDB06E1814398FB4D758E6B245D3`이며 G-02/G-07/Phase G accepted evidence와 함께 불변이다.
 - v1.3의 유일한 책임 의미 변경은 A-01 역색인의 `AV-FLOW-001` 제거다. A Gate·A-05·B-03 책임과 검증 ID·레벨·심각도·증거 계약은 변경하지 않는다.
+- v1.4는 작업계획 v1.6의 108개 Package와 U-01~U-11 overlay를 추가한다. 기존 255개 AV ID의 정의·레벨·심각도·완료 증거는 삭제하거나 낮추지 않는다.
