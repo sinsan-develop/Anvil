@@ -57,7 +57,19 @@ def _git_status(repo: Path) -> bytes:
 def _clone_committed_bundle(destination: Path) -> Path:
     clone = destination / "bundle"
     completed = subprocess.run(
-        ["git", "clone", "--quiet", "--local", "--no-hardlinks", str(ROOT), str(clone)],
+        [
+            "git",
+            "clone",
+            "--quiet",
+            "--local",
+            "--no-hardlinks",
+            "--config",
+            "core.autocrlf=false",
+            "--config",
+            "core.eol=lf",
+            str(ROOT),
+            str(clone),
+        ],
         capture_output=True,
         check=False,
         text=True,
@@ -88,7 +100,11 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     if progress.get("event_sequence") in (171, 174):
         return
-    elif progress.get("event_sequence") in (175, 181, 184, 186, 192, 196, 199, 203, 206, 207, 210, 213, 217, 220, 221, 224, 227, 230, 233, 237):
+    elif progress.get("event_sequence") == 237:
+        paths = progress["write_lease"]["paths"]
+    elif progress.get("event_sequence") == 240:
+        paths = progress["repository"]["exact_allowed_paths"]
+    elif progress.get("event_sequence") in (175, 181, 184, 186, 192, 196, 199, 203, 206, 207, 210, 213, 217, 220, 221, 224, 227, 230, 233):
         paths = progress["repository"]["exact_allowed_paths"]
     elif progress["write_lease"] is not None:
         paths = progress["write_lease"]["paths"]
@@ -819,6 +835,26 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
             )
 
     def test_revision3_rework_projection_selects_current_live_successor(self):
+        hostile_config = {
+            "GIT_CONFIG_COUNT": "2",
+            "GIT_CONFIG_KEY_0": "core.autocrlf",
+            "GIT_CONFIG_VALUE_0": "true",
+            "GIT_CONFIG_KEY_1": "core.eol",
+            "GIT_CONFIG_VALUE_1": "native",
+        }
+        with tempfile.TemporaryDirectory() as temp:
+            with mock.patch.dict(os.environ, hostile_config, clear=False):
+                clone = _clone_committed_bundle(Path(temp))
+            for key, expected in (("core.autocrlf", "false"), ("core.eol", "lf")):
+                configured = subprocess.run(
+                    ["git", "config", "--local", "--get", key],
+                    cwd=clone,
+                    capture_output=True,
+                    check=False,
+                    text=True,
+                )
+                self.assertEqual((0, expected), (configured.returncode, configured.stdout.strip()))
+
         spec = importlib.util.spec_from_file_location("a13_checker_r3_projection", CHECKER_PATH)
         self.assertIsNotNone(spec)
         self.assertIsNotNone(spec.loader)
@@ -826,14 +862,14 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(237, progress["event_sequence"])
+        self.assertEqual(240, progress["event_sequence"])
         self.assertEqual("B-03", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual("WI-B-03-20260814-003", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("DIR-1", progress["dir_review"]["checkpoint"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
-        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())
         manifest = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
         self.assertEqual(

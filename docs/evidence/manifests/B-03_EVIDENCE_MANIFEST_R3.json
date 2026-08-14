@@ -1,0 +1,40 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-03-R3-20260814-001",
+  "package_id": "B-03",
+  "revision": 3,
+  "artifact_status": "completed_pending_independent_retest",
+  "work_instruction_sha256": "A15F078F729361D486064AB44234B5D2CC41FB1C40A1EFFB09A0F4EF184F8CB7",
+  "invocation_sha256": "907AD3FD8FC1C301B52465254AA6AE34BF1E6B28AE3F965573D9545C2E5FB222",
+  "source_tester_report_sha256": "D41F9D21BF3C92D6BD6C2FDEBDB80C2504E63745103D8655C78DC4F9A978E1C5",
+  "baseline_git_commit": "0f1ebb0686c2524fe6df9c1ba560e0c76cf7eeb3",
+  "exact_write_paths": [
+    "scripts/check_a13_repository_scan.py",
+    "tests/tooling/test_a13_repository_scan.py",
+    "docs/validation/B-03_A13_INNER_CLONE_PORTABILITY_VALIDATION_R3.md",
+    "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST_R3.json",
+    "docs/completion_reports/B-03_COMPLETION_REPORT_R3.md"
+  ],
+  "raw_artifacts": [
+    {"path":"docs/completion_reports/B-03_COMPLETION_REPORT_R3.md","bytes":1208,"sha256":"AA373C8F2B40C236CBD753AE4D4748A1338DA8317EA02819B921FF5D44862364"},
+    {"path":"docs/validation/B-03_A13_INNER_CLONE_PORTABILITY_VALIDATION_R3.md","bytes":1517,"sha256":"E08E004B1A13416A248EA0B76EAEF1265F2B1C9ED5330B65CDCF40EA8D397349"},
+    {"path":"scripts/check_a13_repository_scan.py","bytes":55423,"sha256":"90A6C2C0C16449C4692DEB786CE758379048922CE9312D86B2B57A012BEF6447"},
+    {"path":"tests/tooling/test_a13_repository_scan.py","bytes":44358,"sha256":"AC241B0AD73F548474C7AE1F0EB855CE551816186419BC5329C637ACF6210122"}
+  ],
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path":"scripts/check_a13_repository_scan.py","bytes":55423,"sha256":"90A6C2C0C16449C4692DEB786CE758379048922CE9312D86B2B57A012BEF6447"},
+      {"path":"tests/tooling/test_a13_repository_scan.py","bytes":44358,"sha256":"AC241B0AD73F548474C7AE1F0EB855CE551816186419BC5329C637ACF6210122"}
+    ]
+  },
+  "target_algorithm": {"row_format":"path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix","sort":"UTF-8 byte ordinal","row_separator":"LF","final_newline":false,"hash_algorithm":"SHA-256"},
+  "target_canonical_bytes": 479,
+  "target_content_bytes": 102506,
+  "target_hash": "9015590770C866E612DCB5B59152BBAAE4E078503DD5F3224F40CA142AC47EE6",
+  "delivered_hash": "9015590770C866E612DCB5B59152BBAAE4E078503DD5F3224F40CA142AC47EE6",
+  "content_hash": "9015590770C866E612DCB5B59152BBAAE4E078503DD5F3224F40CA142AC47EE6",
+  "self_reference": false,
+  "frozen_r2_actual_evidence": {"manifest_sha256":"ADC773EF9C6D9A973B46660331AE1A9956ED010B11CC11D4A0C25ADAD472EC87","target_hash":"A08847E8970706D49EAAC5181CE6743C1012145C151078E6D5390D4BB52B8ED8","browser_runtime_rerun":"NOT_EXECUTED"},
+  "test_results": {"hostile_clone":"1/1 PASS","a13_focused":"24/24 PASS","full_tooling":"276/282 PASS; 6 frozen-successor/current-exact5-dirty-projection failures"},
+  "not_executed": ["browser_runtime_rerun","provider","shared_db","wsl_db","production","deployment","B03_acceptance","B04","commit","push"]
+}

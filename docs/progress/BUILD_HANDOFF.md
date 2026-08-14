@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-03 R3 Developer Completion — sequence 240
+
+- Developer exact5는 manifest SHA `C0E2EBAC...`, target `90155907...`로 byte-frozen이다.
+- seq 238→240은 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-03은 `TEST_REVIEW / R3_PENDING`, 모든 lease와 active agent는 null이고 B-04는 차단이다.
+- clone-local LF determinism 보완과 hostile inner-clone 검증은 Developer 범위에서 PASS다. R2 actual browser/service/security evidence는 그대로 보존하며 R3 browser runtime은 재실행하지 않았다.
+- B-03 acceptance와 B-04 시작, provider/WSL/production/deploy는 수행하지 않는다.
+
 ## B-03 R3 Rework Start — sequence 237
 
 - Tester R2 report SHA `D41F9D21...`의 `BLK-B03-R2-001-CURRENT-CHECKOUT-A13-INNER-CLONE-PORTABILITY`를 B-03 valid failure 1로 수용했다.
@@ -75,32 +82,31 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 237,
-  "status": "ACTIVE",
+  "event_sequence": 240,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-03",
-  "last_event_id": "evt_b03_package_resumed_r3",
+  "last_event_id": "evt_b03_package_completed_r3",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 14,
   "dir_status": "CLEARED",
-  "repository_head": "03c0d131693f5479f16aababcce385ca1c46aee6",
+  "repository_head": "0f1ebb0686c2524fe6df9c1ba560e0c76cf7eeb3",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "03c0d131693f5479f16aababcce385ca1c46aee6",
+  "repository_remote_head": "0f1ebb0686c2524fe6df9c1ba560e0c76cf7eeb3",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "03c0d131693f5479f16aababcce385ca1c46aee6",
+  "repository_validated_base_commit": "0f1ebb0686c2524fe6df9c1ba560e0c76cf7eeb3",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R3.json",
+    "docs/completion_reports/B-03_COMPLETION_REPORT_R3.md",
+    "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST_R3.json",
+    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b03-rework-start-r3.json",
-    "docs/test_reports/B-03_RETEST_REPORT_R2.md",
-    "docs/work_orders/B-03_REWORK_INVOCATION_PROMPT_R3.md",
-    "docs/work_orders/B-03_REWORK_WORK_INSTRUCTION_R3.md",
+    "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r3.json",
+    "docs/validation/B-03_A13_INNER_CLONE_PORTABILITY_VALIDATION_R3.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -110,8 +116,8 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-rework-start-r3.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r3.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
   "next_safe_action": "Dispatch developer-primary-b03 for R3 exact5 clone-local LF determinism; do not accept B-03 or start B-04",
