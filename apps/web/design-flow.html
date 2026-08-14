@@ -1,0 +1,5 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Anvil Design Flow</title><link rel="stylesheet" href="/src/styles/design-flow.css"></head><body>
+<main><header><span class="badge">LOCAL VERIFICATION ONLY</span><h1>설계 의도 확정 흐름</h1><p>모호한 의도를 대안과 인증된 사람 결정으로 확정합니다.</p></header>
+<section><label>Intent<textarea id="intent">운영 승인 자동화</textarea></label><label>대안 A<input id="proposal-a" value="안전 우선"></label><label>대안 B<input id="proposal-b" value="속도 우선"></label><label>선택<select id="selected"><option>안전 우선</option><option>속도 우선</option></select></label><div class="actions"><button id="normal">인증 결정 후 Baseline</button><button id="blocked">결정 전 Baseline 시도</button><button id="error">오류 시나리오</button></div></section>
+<section id="result" data-state="EMPTY"><h2 id="state">EMPTY</h2><p id="message">시나리오를 선택하세요.</p><ol id="events"></ol></section>
+</main><script type="module" src="/src/app/design-flow.js"></script></body></html>

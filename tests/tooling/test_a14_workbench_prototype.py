@@ -34,7 +34,7 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(len(result["manifest"]["paths"]), 17)
         self.assertEqual(
             portable_hash(ROOT, "apps/web/server.mjs"),
-            "432FF673E9271B3016D3FD8A2E175266DE77C73A990D4287BBFD52772BCD16D5",
+            "BAA6757E18ED28AC02569DDF4575436EA32EE0DDEC363BA6D730A64D93FCFC0A",
         )
         self.assertEqual(
             portable_hash(ROOT, "tests/browser/a14/workbench-runtime.test.mjs"),

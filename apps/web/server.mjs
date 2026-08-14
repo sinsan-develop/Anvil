@@ -24,7 +24,11 @@ const staticFiles=new Map([
   ['/src/app/workbench.js',['src/app/workbench.js','text/javascript; charset=utf-8']],
   ['/src/api/workbench-client.js',['src/api/workbench-client.js','text/javascript; charset=utf-8']],
   ['/src/features/workbench/workbench-state.js',['src/features/workbench/workbench-state.js','text/javascript; charset=utf-8']],
-  ['/src/styles/workbench.css',['src/styles/workbench.css','text/css; charset=utf-8']]
+  ['/src/styles/workbench.css',['src/styles/workbench.css','text/css; charset=utf-8']],
+  ['/design-flow',['design-flow.html','text/html; charset=utf-8']],
+  ['/src/api/design-flow-client.js',['src/api/design-flow-client.js','text/javascript; charset=utf-8']],
+  ['/src/app/design-flow.js',['src/app/design-flow.js','text/javascript; charset=utf-8']],
+  ['/src/styles/design-flow.css',['src/styles/design-flow.css','text/css; charset=utf-8']]
 ]);
 
 function send(response,status,payload,extra={}) {
@@ -48,6 +52,20 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173}={}) {
   const server=http.createServer(async (request,response)=>{
     try {
       const requestUrl=new URL(request.url,'http://fixture.invalid');
+      if (request.method==='GET' && requestUrl.pathname==='/api/design-flow/config') return send(response,200,{ok:true,csrfToken,runtimeBoundary:'LOCAL_VERIFICATION_ONLY'});
+      if (request.method==='POST' && requestUrl.pathname==='/api/design-flow/run') {
+        const expectedOrigin=`http://${allowedHost}`;
+        if (request.headers.host!==allowedHost || request.headers.origin!==expectedOrigin || request.headers['x-csrf-token']!==csrfToken) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처 또는 CSRF 검증에 실패했습니다.');
+        let body; try { body=await jsonBody(request); } catch { return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.'); }
+        const python=process.env.ANVIL_PYTHON || (process.env.CONDA_PREFIX ? join(process.env.CONDA_PREFIX,'python.exe') : 'python');
+        try {
+          const {stdout}=await execFileAsync(python,['-m','packages.api.design_runtime',JSON.stringify(body)],{cwd:repoRoot,timeout:10000,windowsHide:true,maxBuffer:500000});
+          return send(response,200,JSON.parse(stdout));
+        } catch (error) {
+          const stdout=error?.stdout; if (stdout) { const payload=JSON.parse(stdout); return send(response,payload.state==='BLOCKED'?409:400,payload); }
+          return safeFailure(response,500,'ERROR','Design service를 실행하지 못했습니다.');
+        }
+      }
       if (request.method==='GET' && requestUrl.pathname==='/api/workbench/config') return send(response,200,{ok:true,project,fixtures:Object.entries(fixtures).map(([fixtureId,value])=>({fixtureId,label:value.label})),csrfToken,runtimeBoundary:'FIXTURE_BROWSER_RUNTIME_ONLY',actualProvider:'NOT_EXECUTED'});
       if (request.method==='POST' && requestUrl.pathname==='/api/workbench/scan') {
         const hostHeader=request.headers.host;

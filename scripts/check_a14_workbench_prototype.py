@@ -85,6 +85,13 @@ def check(root: Path) -> dict:
                 ):
                     successor_rows.update(indexed)
             r3_evidence_path = root / "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json"
+            b03_completion_path = root / "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json"
+            if b03_completion_path.is_file():
+                b03_completion = json.loads(b03_completion_path.read_text(encoding="utf-8"))
+                successor = b03_completion.get("a14_server_successor_projection", {})
+                indexed = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+                if successor.get("authorization") == "B03_R2_LOCAL_SAME_ORIGIN_SHARED_SERVER" and set(indexed) == {"apps/web/server.mjs", "scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"}:
+                    successor_rows.update(indexed)
             if not successor_rows and r3_evidence_path.is_file():
                 r3_evidence = json.loads(r3_evidence_path.read_text(encoding="utf-8"))
                 successor = r3_evidence.get("a14_successor_projection", {})
@@ -174,6 +181,15 @@ def check(root: Path) -> dict:
                         for row in successor.get("live_raw_checksums", [])
                         if isinstance(row, dict)
                     })
+            # B-03 R2 is the latest authorized successor for the shared local
+            # same-origin server.  Apply it last so older A-14/A-15 successor
+            # records cannot overwrite the live server row.
+            if b03_completion_path.is_file():
+                b03_completion = json.loads(b03_completion_path.read_text(encoding="utf-8"))
+                successor = b03_completion.get("a14_server_successor_projection", {})
+                indexed = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+                if successor.get("authorization") == "B03_R2_LOCAL_SAME_ORIGIN_SHARED_SERVER" and set(indexed) == {"apps/web/server.mjs", "scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"}:
+                    successor_rows.update(indexed)
             for path,value in raw.items():
                 actual = portable_hash(root, path)
                 row = successor_rows.get(path)

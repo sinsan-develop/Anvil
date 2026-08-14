@@ -1,0 +1,14 @@
+{
+  "evidence_type": "E-EVT",
+  "environment": "ENV-LOCAL",
+  "runtime_boundary": "LOCAL_VERIFICATION_ONLY",
+  "service": "DesignLineageService",
+  "source": "actual_same_origin_browser_normal_flow",
+  "events": [
+    {"event_id":"evt-b03-0001","sequence":1,"type":"INTENT_RECORDED","occurred_at":"2026-08-14T00:15:36.471669+00:00","actor":{"type":"user","id":"sinsan"},"artifact_id":"intent-runtime"},
+    {"event_id":"evt-b03-0002","sequence":2,"type":"PROPOSALS_RECORDED","occurred_at":"2026-08-14T00:15:36.471669+00:00","actor":{"type":"agent","id":"eoul"},"artifact_id":"proposals-runtime"},
+    {"event_id":"evt-b03-0003","sequence":3,"type":"DECISION_RECORDED","occurred_at":"2026-08-14T00:15:36.471669+00:00","actor":{"type":"user","id":"sinsan"},"artifact_id":"decision-runtime"},
+    {"event_id":"evt-b03-0004","sequence":4,"type":"SPECIFICATION_RECORDED","occurred_at":"2026-08-14T00:15:36.471669+00:00","actor":{"type":"agent","id":"eoul"},"artifact_id":"spec-runtime"},
+    {"event_id":"evt-b03-0005","sequence":5,"type":"BASELINE_APPROVED","occurred_at":"2026-08-14T00:15:36.471669+00:00","actor":{"type":"user","id":"sinsan"},"artifact_id":"baseline-runtime"}
+  ]
+}

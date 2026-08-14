@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-03 R2 Developer Completion — sequence 233
+
+- Developer exact15는 manifest SHA `ADC773EF...`, target `A08847E8...`로 byte-frozen이며 actual local E-SHOT 정상/오류/BLOCKED 3종과 E-EVT 5-event sequence를 포함한다.
+- seq 231→233은 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-03은 `TEST_REVIEW / R2_PENDING`, 모든 lease와 active agent는 null이고 B-04는 차단이다.
+- `apps/web/server.mjs` 변경은 B-03 R2 local same-origin bridge 승인 범위이며 A-14 frozen predecessor를 수정하지 않고 phase-aware successor로 결박한다.
+- actual local UI/API/browser는 Developer evidence 범위 PASS지만 독립 Tester 재판정 전 acceptance가 아니다. provider/shared DB/WSL/production/deploy/B-11 canonical API는 `NOT_EXECUTED`다.
+
 ## B-03 R2 Rework Start — sequence 230
 
 - Tester report SHA `F55282DD...`의 `BLOCKED`는 제품 결함이나 정식 `FAILURE_REPORT`가 아니라, B-03에 이미 배정된 CRITICAL `AV-FLOW-001` actual L4+L7 E-SHOT/E-EVT 검증환경 공백이다. valid failure count는 `0`을 유지한다.
@@ -61,45 +68,59 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 230,
-  "status": "ACTIVE",
+  "event_sequence": 233,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-03",
-  "last_event_id": "evt_b03_package_resumed_r2",
+  "last_event_id": "evt_b03_package_completed_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 14,
   "dir_status": "CLEARED",
-  "repository_head": "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b",
+  "repository_head": "fcfa8059e060702afa6ea5fa801d40c4cb01cb63",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b",
+  "repository_remote_head": "fcfa8059e060702afa6ea5fa801d40c4cb01cb63",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b",
+  "repository_validated_base_commit": "fcfa8059e060702afa6ea5fa801d40c4cb01cb63",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R2.json",
+    "apps/web/design-flow.html",
+    "apps/web/server.mjs",
+    "apps/web/src/api/design-flow-client.js",
+    "apps/web/src/app/design-flow.js",
+    "apps/web/src/styles/design-flow.css",
+    "docs/completion_reports/B-03_COMPLETION_REPORT_R2.md",
+    "docs/evidence/manifests/B-03_EVIDENCE_MANIFEST_R2.json",
+    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/runtime/B-03_FLOW_BLOCKED.png",
+    "docs/evidence/runtime/B-03_FLOW_ERROR.png",
+    "docs/evidence/runtime/B-03_FLOW_EVENT_SEQUENCE.json",
+    "docs/evidence/runtime/B-03_FLOW_NORMAL.png",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b03-rework-start-r2.json",
-    "docs/test_reports/B-03_INDEPENDENT_TEST_REPORT.md",
-    "docs/work_orders/B-03_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/B-03_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json",
+    "docs/validation/B-03_DESIGN_LINEAGE_VALIDATION_R2.md",
+    "packages/api/design_runtime.py",
     "scripts/check_a13_repository_scan.py",
+    "scripts/check_a14_workbench_prototype.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/browser/b03/design-flow-runtime.test.mjs",
+    "tests/design/test_runtime_bridge.py",
     "tests/tooling/test_a13_repository_scan.py",
+    "tests/tooling/test_a14_workbench_prototype.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-rework-start-r2.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b03 for the exact R2 local-only AV-FLOW-001 runtime evidence allowlist; do not accept B-03 or start B-04",
+  "next_safe_action": "Dispatch an independent Tester for B-03 R2 actual L4+L7 evidence; do not accept B-03 or start B-04",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -108,8 +129,8 @@
   "b01_start_allowed": true,
   "b01_started": true,
   "active_work_instruction": "WI-B-03-20260814-002",
-  "worker_lease": "worker-lease-b03-20260814-002",
-  "write_lease": "write-lease-b03-20260814-002"
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 
