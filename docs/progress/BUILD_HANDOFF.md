@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-05 Main Acceptance — sequence 261
+
+- 독립 Tester report SHA `122D901CEC44AFF20EC238F03B33BC1E98806C28C1FD5D2984224448E49184AE`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검증해 seq261 `MAIN_PACKAGE_ACCEPTED`로 B-05를 최종 ACCEPTED했다.
+- B-06은 `READY / NOT_STARTED`다. active WorkInstruction, agent, worker lease, write lease는 모두 null이고 valid failure count는 0이다.
+- actual isolated WSL PostgreSQL 18 migration·guard·cleanup 증거는 보존했다. API/UI/browser/provider/ysna/shared-db/production/deployment는 `NOT_EXECUTED`이며 acceptance에서 추가 실행하지 않았다.
+- 이 acceptance projection에서는 B-06을 시작하지 않는다. 다음 안전 행동은 별도 B-06 authority/WI/start projection이다.
+
 ## B-05 Developer Completion — sequence 260
 
 - Developer exact15는 manifest file SHA `262B9AB8AEBB5A940594A92000B9AA66E1F1C5908D5700C8AE5D0DEA55BE8E16`, target `8BFFC8B2F2D55DD951E59E849A5A2740723C0DC14CA1586E06C77FBD8E142BBB`로 byte-frozen이다.
@@ -143,57 +150,43 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 260,
-  "status": "TEST_REVIEW",
-  "current_work_package": "B-05",
-  "last_event_id": "evt_b05_package_completed",
+  "event_sequence": 261,
+  "status": "READY",
+  "current_work_package": "B-06",
+  "last_event_id": "evt_b05_main_package_accepted",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "2edc44044df522e6ec7c56b95c5e9414932ac856",
+  "repository_head": "e08c2e34766e5a306c1d25d4579ff098c629dc3b",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "2edc44044df522e6ec7c56b95c5e9414932ac856",
+  "repository_remote_head": "e08c2e34766e5a306c1d25d4579ff098c629dc3b",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "2edc44044df522e6ec7c56b95c5e9414932ac856",
+  "repository_validated_base_commit": "e08c2e34766e5a306c1d25d4579ff098c629dc3b",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-05_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-05_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-05_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-05_ACCEPTANCE_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b05-completion-test-review.json",
-    "docs/validation/B-05_EXECUTION_RELEASE_VALIDATION.md",
-    "migrations/versions/0004_execution_release.py",
-    "packages/api/execution_contracts.py",
-    "packages/execution/__init__.py",
-    "packages/execution/dir_guard.py",
-    "packages/execution/integrity.py",
-    "packages/execution/models.py",
-    "packages/execution/release.py",
-    "packages/persistence/execution_repository.py",
+    "docs/progress/progress-handoff-detached-digest-b05-accepted.json",
+    "docs/test_reports/B-05_INDEPENDENT_TEST_REPORT.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/execution/test_attempt_integrity.py",
-    "tests/execution/test_dir_guard.py",
-    "tests/execution/test_models.py",
-    "tests/execution/test_release_guard.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b05-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-05_COMPLETION_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b05-accepted.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-05_ACCEPTANCE_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Independent Tester validates B-05 exact15 and isolated WSL PostgreSQL 18 evidence; B-06 remains blocked pending B-05 acceptance",
+  "next_safe_action": "Separate B-06 authority, WorkInstruction, and start projection; B-06 remains NOT_STARTED in this acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_ISOLATED_APPLY_CONSTRAINTS_DOWNGRADE_CLEANUP",
@@ -204,7 +197,7 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-05-20260815-002",
+  "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
 }
