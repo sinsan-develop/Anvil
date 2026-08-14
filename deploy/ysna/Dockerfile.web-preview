@@ -1,0 +1,18 @@
+FROM node:22-bookworm-slim@sha256:f32b81066cde10a75dbac96646099533316d94bac4150c55da1636e1f0ffdc46
+
+ENV NODE_ENV=production \
+    ANVIL_UI_MODE=preview \
+    ANVIL_HOST=0.0.0.0 \
+    ANVIL_PORT=3770
+
+WORKDIR /opt/anvil
+
+RUN groupadd --system anvil \
+    && useradd --system --gid anvil --home-dir /opt/anvil --shell /usr/sbin/nologin anvil
+
+COPY --chown=anvil:anvil apps/web ./apps/web
+
+USER anvil
+EXPOSE 3770
+
+CMD ["node", "apps/web/server.mjs"]

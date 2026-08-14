@@ -1,0 +1,10 @@
+.git
+.worktrees
+.pytest_cache
+__pycache__
+*.pyc
+docs
+tests
+Backup
+runtime
+evidence

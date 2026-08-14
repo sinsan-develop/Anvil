@@ -1,0 +1,40 @@
+name: anvil-public-preview
+
+services:
+  anvil-web:
+    container_name: anvil-web
+    image: "anvil-web:${ANVIL_IMAGE_TAG:-preview}"
+    build:
+      context: ../..
+      dockerfile: deploy/ysna/Dockerfile.web-preview
+    environment:
+      ANVIL_UI_MODE: preview
+      ANVIL_HOST: 0.0.0.0
+      ANVIL_PORT: "3770"
+    expose:
+      - "3770"
+    networks:
+      - proxy-network
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3770/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 10s
+
+networks:
+  proxy-network:
+    external: true
