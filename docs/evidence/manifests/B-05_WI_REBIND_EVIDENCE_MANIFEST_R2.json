@@ -1,0 +1,70 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-05-WI-REBIND-20260815-002",
+  "artifact_type": "package_work_instruction_rebind_evidence_manifest",
+  "artifact_path": "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json",
+  "package_id": "B-05",
+  "event_sequence": 257,
+  "validated_base_commit": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
+  "classification": "MAIN_CORRECTED_LOWER_AUTHORITY_CONFLICT_OBJECTIVE_UNCHANGED",
+  "predecessor_start_manifest_ref": {
+    "path": "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json",
+    "sha256": "3E7160F6B21CA2D058D2BCB7DF51CDCC5B4A5A5B27C43FA1B77878D1E03E1D48"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-05-20260815-002",
+    "path": "docs/work_orders/B-05_WORK_INSTRUCTION.md",
+    "sha256": "DFC7BDECBECE0E6A2E48E68011D91E51AEB370A0E6CB67E1EA1ACBAE00F17A43",
+    "invocation_path": "docs/work_orders/B-05_INVOCATION_PROMPT.md",
+    "invocation_sha256": "6C570930EBC566B52C1BC45459BF567CF8E64306CC140F78E3D2B3ED95927684"
+  },
+  "objective_status": "UNCHANGED_FROM_B05_START",
+  "canonical_design_intent_review_statuses": ["DIR_HOLD", "REPORTING", "WAITING_OWNER_DIRECTION", "CLEARED"],
+  "not_reached_representation": "ABSENT_REVIEW_ROW_OR_PROGRESS_PROJECTION",
+  "recurrent_drift_policy": "CREATE_NEW_DIR_REVIEW_AND_EVENT",
+  "worker_lease": {
+    "lease_id": "worker-lease-b05-20260815-002",
+    "lease_epoch": 2,
+    "execution_fencing_token": "b05-execution-fence-epoch-2-0a3a9bb",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-b05-20260815-002",
+    "write_epoch": 2,
+    "execution_fencing_token": "b05-execution-fence-epoch-2-0a3a9bb",
+    "write_fencing_token": "b05-write-fence-epoch-2-0a3a9bb",
+    "status": "ACTIVE"
+  },
+  "developer_exact_path_count": 15,
+  "developer_product_scope": "UNCHANGED_EXACT15",
+  "product_artifact_count": 0,
+  "runtime_boundary": {
+    "actual_db": "NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "developer_db_boundary": "ISOLATED_WSL_ANVIL_DB_ONLY"
+  },
+  "next_package": {"package_id": "B-06", "status": "BLOCKED_PENDING_B05_ACCEPTANCE"},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json", "bytes": 3449, "sha256": "3E7160F6B21CA2D058D2BCB7DF51CDCC5B4A5A5B27C43FA1B77878D1E03E1D48"},
+    {"path": "docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json", "bytes": 823, "sha256": "DBA8649E6E0456F881D4BD7734287E83C0068FA824F4F877A187908DF0775975"},
+    {"path": "docs/work_orders/B-05_INVOCATION_PROMPT.md", "bytes": 1001, "sha256": "6C570930EBC566B52C1BC45459BF567CF8E64306CC140F78E3D2B3ED95927684"},
+    {"path": "docs/work_orders/B-05_WORK_INSTRUCTION.md", "bytes": 6138, "sha256": "DFC7BDECBECE0E6A2E48E68011D91E51AEB370A0E6CB67E1EA1ACBAE00F17A43"}
+  ],
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 63295, "sha256": "09B8DF6E0887CF3A7B2442A4F2DFDBE18F773EBA0FBC3757E04C1CD726BD0BBF"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 47924, "sha256": "C8D725C76557EAD6D749879F19E059D4503082347C10E73005D0C8C64BE395AC"}
+    ]
+  },
+  "target_canonical_bytes": 490,
+  "target_content_bytes": 11411,
+  "target_hash": "sha256:FD92E3E78E3FD68A198E171ACAC7887046E813EBE8A03B916E05026C0024813B",
+  "delivered_hash": "sha256:FD92E3E78E3FD68A198E171ACAC7887046E813EBE8A03B916E05026C0024813B",
+  "content_hash": "sha256:FD92E3E78E3FD68A198E171ACAC7887046E813EBE8A03B916E05026C0024813B",
+  "self_reference": false
+}

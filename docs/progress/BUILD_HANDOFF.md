@@ -1,5 +1,13 @@
 # Anvil Build Handoff
 
+## B-05 WorkInstruction authority correction and epoch-2 rebind — sequence 257
+
+- 상위 권위 `Anvil_설계서_v2.md` §49.3/§49.14와 작업계획 v1.6에 따라 `design_intent_reviews.status`를 정확히 `DIR_HOLD | REPORTING | WAITING_OWNER_DIRECTION | CLEARED`로 교정했다. 기능 목적, 요구사항, 중요 위험과 Developer exact15는 불변이다.
+- `NOT_REACHED`는 review row와 progress projection이 모두 없는 상태이며 DB enum 값이 아니다. `CLEARED` 후 drift 재발 시 기존 row를 `REOPENED`로 바꾸지 않고 새 DIR review와 새 canonical Event를 생성한다.
+- seq253→257은 epoch1 write/worker revoke 뒤 epoch2 worker/write 발행과 `PACKAGE_RESUMED`다. epoch1 token은 폐기됐고 제품 write는 0이다.
+- Developer는 교정된 `WI-B-05-20260815-002`와 Invocation R2, epoch2 token, 동일 exact15만 사용한다. B-06은 `BLOCKED_PENDING_B05_ACCEPTANCE`다.
+- API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 이 rebind에서 모두 `NOT_EXECUTED`다.
+
 ## B-05 Start — sequence 252
 
 - canonical clean baseline `e59c4a105dab0faae31f43fd75e3ac53f1992ffe`에서 seq250→252 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
@@ -127,28 +135,28 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 252,
+  "event_sequence": 257,
   "status": "ACTIVE",
   "current_work_package": "B-05",
-  "last_event_id": "evt_b05_package_started",
+  "last_event_id": "evt_b05_package_resumed_wi_rebind_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
+  "repository_head": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
+  "repository_remote_head": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
+  "repository_validated_base_commit": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b05-start.json",
+    "docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json",
     "docs/work_orders/B-05_INVOCATION_PROMPT.md",
     "docs/work_orders/B-05_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
@@ -160,11 +168,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b05-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer executes WI-B-05-20260815-001 within exact 15-path lease; B-06 remains blocked pending B-05 acceptance",
+  "next_safe_action": "Developer executes corrected WI-B-05-20260815-002 within unchanged exact 15-path epoch-2 lease; B-06 remains blocked pending B-05 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_ISOLATED_APPLY_CONSTRAINTS_DOWNGRADE_CLEANUP",
@@ -175,9 +183,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-05-20260815-001",
-  "worker_lease": "worker-lease-b05-20260815-001 epoch1 ACTIVE",
-  "write_lease": "write-lease-b05-20260815-001 epoch1 ACTIVE exact15"
+  "active_work_instruction": "WI-B-05-20260815-002",
+  "worker_lease": "worker-lease-b05-20260815-002 epoch2 ACTIVE",
+  "write_lease": "write-lease-b05-20260815-002 epoch2 ACTIVE exact15"
 }
 ```
 

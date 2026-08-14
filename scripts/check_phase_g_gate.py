@@ -958,6 +958,10 @@ def validate_gate(
     b05_start_projection=(progress_projection.get("current_work_package")=="B-05" and progress_projection.get("status")=="ACTIVE" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-05-20260815-001" and progress_projection.get("worker_lease",{}).get("lease_epoch")==1 and progress_projection.get("write_lease",{}).get("write_epoch")==1 and [event.get("event_type") for event in b05_start_events]==["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"])
     if b05_start_projection:
         errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
+    b05_rebind_events=[event for event in events if 253 <= event.get("sequence",-1) <= 257]
+    b05_rebind_projection=(progress_projection.get("current_work_package")=="B-05" and progress_projection.get("status")=="ACTIVE" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-05-20260815-002" and progress_projection.get("worker_lease",{}).get("lease_epoch")==2 and progress_projection.get("write_lease",{}).get("write_epoch")==2 and [event.get("event_type") for event in b05_rebind_events]==["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_RESUMED"])
+    if b05_rebind_projection:
+        errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
 
     counts = {
         "package": baseline["counts"]["package_total"],

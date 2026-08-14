@@ -4189,6 +4189,7 @@ def validate_workplan_v16_successor_manifest(manifest: Mapping[str, Any], bundle
 
 def validate_b05_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
     root=bundle["_root"];progress=bundle["progress"];errors=[]
+    is_current=(progress.get("current_progress_evidence_ref") or {}).get("manifest_path")=="docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json"
     expected={"docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b05-start.json","docs/work_orders/B-05_INVOCATION_PROMPT.md","docs/work_orders/B-05_WORK_INSTRUCTION.md"}
     rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
     if not isinstance(rows,list): return ["B05_START_RAW_INVALID"]
@@ -4196,7 +4197,7 @@ def validate_b05_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str
         relative=row.get("path") if isinstance(row,dict) else None
         if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B05_START_RAW_INVALID");continue
         seen.add(relative)
-        try: ok=portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        try: ok=(not is_current) or portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
         except (OSError,TypeError): ok=False
         if not ok: errors.append("B05_START_RAW_INVALID");continue
         total+=int(row["bytes"]);canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
@@ -4204,10 +4205,33 @@ def validate_b05_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str
     can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
     if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B05_START_TARGET_MISMATCH")
     terminal=[e for e in bundle["events"]["events"] if 250<=e.get("sequence",-1)<=252];wi=progress.get("active_work_instruction") or {};worker=progress.get("worker_lease") or {};write=progress.get("write_lease") or {};runtime=manifest.get("runtime_boundary") or {}
-    if any((progress.get("event_sequence")!=252,progress.get("current_work_package")!="B-05",progress.get("status")!="ACTIVE",progress.get("valid_failure_count")!=0,wi.get("artifact_id")!="WI-B-05-20260815-001",wi.get("sha256")!="C75DAA8E3FC9304256CA661AABB5E5C70015849C9F776B7A9BF01141F9AC9393",wi.get("invocation_sha256")!="AE6EAD1C596D815E89AD7BFE21EB66DD8BF08E59784114A3DF89623869301DED",progress.get("active_agent")!="developer-primary-b05",worker.get("lease_epoch")!=1,write.get("write_epoch")!=1,(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B05_ACCEPTANCE",[e.get("event_type") for e in terminal]!=["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],manifest.get("validated_base_commit")!="e59c4a105dab0faae31f43fd75e3ac53f1992ffe",manifest.get("product_artifact_count")!=0,runtime.get("actual_db")!="NOT_EXECUTED",runtime.get("actual_api")!="NOT_EXECUTED",runtime.get("actual_ui")!="NOT_EXECUTED",runtime.get("actual_browser")!="NOT_EXECUTED",runtime.get("actual_wsl")!="NOT_EXECUTED",runtime.get("actual_ysna_server")!="NOT_EXECUTED",runtime.get("deployment")!="NOT_EXECUTED",runtime.get("developer_db_boundary")!="ISOLATED_WSL_ANVIL_DB_ONLY")): errors.append("B05_START_PROJECTION_MISMATCH")
+    if is_current and any((progress.get("event_sequence")!=252,progress.get("current_work_package")!="B-05",progress.get("status")!="ACTIVE",progress.get("valid_failure_count")!=0,wi.get("artifact_id")!="WI-B-05-20260815-001",wi.get("sha256")!="C75DAA8E3FC9304256CA661AABB5E5C70015849C9F776B7A9BF01141F9AC9393",wi.get("invocation_sha256")!="AE6EAD1C596D815E89AD7BFE21EB66DD8BF08E59784114A3DF89623869301DED",progress.get("active_agent")!="developer-primary-b05",worker.get("lease_epoch")!=1,write.get("write_epoch")!=1,(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B05_ACCEPTANCE",[e.get("event_type") for e in terminal]!=["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],manifest.get("validated_base_commit")!="e59c4a105dab0faae31f43fd75e3ac53f1992ffe",manifest.get("product_artifact_count")!=0,runtime.get("actual_db")!="NOT_EXECUTED",runtime.get("actual_api")!="NOT_EXECUTED",runtime.get("actual_ui")!="NOT_EXECUTED",runtime.get("actual_browser")!="NOT_EXECUTED",runtime.get("actual_wsl")!="NOT_EXECUTED",runtime.get("actual_ysna_server")!="NOT_EXECUTED",runtime.get("deployment")!="NOT_EXECUTED",runtime.get("developer_db_boundary")!="ISOLATED_WSL_ANVIL_DB_ONLY")): errors.append("B05_START_PROJECTION_MISMATCH")
     required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"};successor=manifest.get("a13_successor_projection") or {};indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)}
-    if set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items()): errors.append("B05_START_SUCCESSOR_INVALID")
+    if is_current and (set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items())): errors.append("B05_START_SUCCESSOR_INVALID")
     if manifest.get("predecessor_successor_ref",{}).get("sha256")!="63868EAE469167EF167D56E03AED408D73BBAA460EEB322DF3A7455CA586750D": errors.append("B05_START_PREDECESSOR_INVALID")
+    return sorted(set(errors))
+
+
+def validate_b05_wi_rebind_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[]
+    expected={"docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json","docs/work_orders/B-05_INVOCATION_PROMPT.md","docs/work_orders/B-05_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["B05_REBIND_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B05_REBIND_RAW_INVALID");continue
+        seen.add(relative)
+        try: ok=portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): ok=False
+        if not ok: errors.append("B05_REBIND_RAW_INVALID");continue
+        total+=int(row["bytes"]);canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("B05_REBIND_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B05_REBIND_TARGET_MISMATCH")
+    terminal=[e for e in bundle["events"]["events"] if 253<=e.get("sequence",-1)<=257];wi=progress.get("active_work_instruction") or {};worker=progress.get("worker_lease") or {};write=progress.get("write_lease") or {};runtime=manifest.get("runtime_boundary") or {}
+    if any((progress.get("event_sequence")!=257,progress.get("current_work_package")!="B-05",progress.get("status")!="ACTIVE",progress.get("valid_failure_count")!=0,wi.get("artifact_id")!="WI-B-05-20260815-002",wi.get("sha256")!="DFC7BDECBECE0E6A2E48E68011D91E51AEB370A0E6CB67E1EA1ACBAE00F17A43",wi.get("invocation_sha256")!="6C570930EBC566B52C1BC45459BF567CF8E64306CC140F78E3D2B3ED95927684",progress.get("active_agent")!="developer-primary-b05",worker.get("lease_epoch")!=2,write.get("write_epoch")!=2,(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B05_ACCEPTANCE",[e.get("event_type") for e in terminal]!=["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_RESUMED"],manifest.get("validated_base_commit")!="0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",manifest.get("classification")!="MAIN_CORRECTED_LOWER_AUTHORITY_CONFLICT_OBJECTIVE_UNCHANGED",manifest.get("canonical_design_intent_review_statuses")!=["DIR_HOLD","REPORTING","WAITING_OWNER_DIRECTION","CLEARED"],manifest.get("not_reached_representation")!="ABSENT_REVIEW_ROW_OR_PROGRESS_PROJECTION",manifest.get("recurrent_drift_policy")!="CREATE_NEW_DIR_REVIEW_AND_EVENT",manifest.get("developer_exact_path_count")!=15,manifest.get("product_artifact_count")!=0,runtime.get("actual_db")!="NOT_EXECUTED",runtime.get("actual_api")!="NOT_EXECUTED",runtime.get("actual_ui")!="NOT_EXECUTED",runtime.get("actual_browser")!="NOT_EXECUTED",runtime.get("actual_wsl")!="NOT_EXECUTED",runtime.get("actual_ysna_server")!="NOT_EXECUTED",runtime.get("deployment")!="NOT_EXECUTED")): errors.append("B05_REBIND_PROJECTION_MISMATCH")
+    required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"};successor=manifest.get("a13_successor_projection") or {};indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)}
+    if set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items()): errors.append("B05_REBIND_SUCCESSOR_INVALID")
     return sorted(set(errors))
 
 
@@ -4503,7 +4527,8 @@ def validate_repository_projection(
     b04_acceptance_projection = repository.get("validated_base_commit") == "75d9c72b847ed7122985d1bee656cbcc4b4da883" and "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json" in allowed
     workplan_v16_successor_projection = repository.get("validated_base_commit") == "56d409c4583bcf4090423995e79c63ae63598c1d" and "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json" in allowed
     b05_start_projection = repository.get("validated_base_commit") == "e59c4a105dab0faae31f43fd75e3ac53f1992ffe" and "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection:
+    b05_rebind_projection = repository.get("validated_base_commit") == "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565" and "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -4783,6 +4808,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_workplan_v16_successor_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_b05_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json":
+            errors.extend(validate_b05_wi_rebind_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b03_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R2.json":

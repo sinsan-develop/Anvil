@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000101",
-  "event_sequence": 252,
-  "updated_at": "2026-08-15T04:30:02+09:00",
-  "last_event_id": "evt_b05_package_started",
+  "snapshot_id": "snapshot-anvil-build-000102",
+  "event_sequence": 257,
+  "updated_at": "2026-08-15T05:30:04+09:00",
+  "last_event_id": "evt_b05_package_resumed_wi_rebind_r2",
   "plan_version": "1.6",
   "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
@@ -41,26 +41,26 @@
   ],
   "active_agent": "developer-primary-b05",
   "write_lease": {
-    "lease_id": "write-lease-b05-20260815-001",
-    "worker_lease_id": "worker-lease-b05-20260815-001",
+    "lease_id": "write-lease-b05-20260815-002",
+    "worker_lease_id": "worker-lease-b05-20260815-002",
     "agent_id": "developer-primary-b05",
     "work_package_id": "B-05",
-    "write_epoch": 1,
-    "execution_fencing_token": "b05-execution-fence-epoch-1-e59c4a1",
-    "write_fencing_token": "b05-write-fence-epoch-1-e59c4a1",
-    "issued_at": "2026-08-15T04:30:01+09:00",
-    "expires_at": "2026-08-15T16:30:01+09:00",
+    "write_epoch": 2,
+    "execution_fencing_token": "b05-execution-fence-epoch-2-0a3a9bb",
+    "write_fencing_token": "b05-write-fence-epoch-2-0a3a9bb",
+    "issued_at": "2026-08-15T05:30:03+09:00",
+    "expires_at": "2026-08-15T17:30:03+09:00",
     "status": "ACTIVE",
     "path_scope": ["packages/execution/__init__.py", "packages/execution/models.py", "packages/execution/integrity.py", "packages/execution/release.py", "packages/execution/dir_guard.py", "packages/persistence/execution_repository.py", "packages/api/execution_contracts.py", "migrations/versions/0004_execution_release.py", "tests/execution/test_models.py", "tests/execution/test_attempt_integrity.py", "tests/execution/test_release_guard.py", "tests/execution/test_dir_guard.py", "docs/validation/B-05_EXECUTION_RELEASE_VALIDATION.md", "docs/evidence/manifests/B-05_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-05_COMPLETION_REPORT.md"]
   },
   "worker_lease": {
-    "lease_id": "worker-lease-b05-20260815-001",
+    "lease_id": "worker-lease-b05-20260815-002",
     "agent_id": "developer-primary-b05",
     "work_package_id": "B-05",
-    "lease_epoch": 1,
-    "execution_fencing_token": "b05-execution-fence-epoch-1-e59c4a1",
-    "issued_at": "2026-08-15T04:30:00+09:00",
-    "expires_at": "2026-08-15T16:30:00+09:00",
+    "lease_epoch": 2,
+    "execution_fencing_token": "b05-execution-fence-epoch-2-0a3a9bb",
+    "issued_at": "2026-08-15T05:30:02+09:00",
+    "expires_at": "2026-08-15T17:30:02+09:00",
     "status": "ACTIVE"
   },
   "budget_reservations": [],
@@ -87,11 +87,11 @@
   "latest_evidence_refs": [
     {
       "path": "docs/work_orders/B-05_WORK_INSTRUCTION.md",
-      "sha256": "C75DAA8E3FC9304256CA661AABB5E5C70015849C9F776B7A9BF01141F9AC9393"
+      "sha256": "DFC7BDECBECE0E6A2E48E68011D91E51AEB370A0E6CB67E1EA1ACBAE00F17A43"
     },
     {
       "path": "docs/work_orders/B-05_INVOCATION_PROMPT.md",
-      "sha256": "AE6EAD1C596D815E89AD7BFE21EB66DD8BF08E59784114A3DF89623869301DED"
+      "sha256": "6C570930EBC566B52C1BC45459BF567CF8E64306CC140F78E3D2B3ED95927684"
     },
     {
       "path": "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md",
@@ -643,7 +643,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "C56D79A28D590CC40BC5FAE06BFC435A8D51CECF5E72FABC826F5E298C813B94"
+      "sha256": "09B8DF6E0887CF3A7B2442A4F2DFDBE18F773EBA0FBC3757E04C1CD726BD0BBF"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -651,19 +651,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "5472175C1102073CB2424FB6B81C7DEBB36ADC8AF10A6B8BB69417250875148B"
+      "sha256": "16039A246363B1E676C665C47DFBB9395EA6DB98CA781A7668520142D782E6F7"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "5740CB1C0E94B2E5B7C6CEF033A03DCE73AAE40F9595620045FEBA95622CB167"
+      "sha256": "8D75672C87E35BCF68412FD0305A753F8BEDB094636A9442E74DBC1134A7EDE5"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "BCA67434236DB9BFC474F10DEC43B2F91696940EF08CED8EA1A9C364E359BBAF"
+      "sha256": "3EBFD87283F7354D8294175A037C2E10C6CCE99C56955A675672AE1189193080"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "AEFF6D9F200DBB4D7C7962D2A8B65061E237DB3C9DC38F49C29A3F29916A6152"
+      "sha256": "C8D725C76557EAD6D749879F19E059D4503082347C10E73005D0C8C64BE395AC"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -671,15 +671,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "87A3343D462AE87519122792B4DB7AD20BD4916FE07CFBBFF8CE75F1267D7D2E"
+      "sha256": "FD8363319959FA2A34B512582637813EA6D797B61986510FE7FD9E0D78D43854"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "E032355F3BDA29151F03FEDE8335D927BB575B2E8551EE0F66C9C1FF582D8EEF"
+      "sha256": "83AE40FDF93F835294D8F4D4C5B09BAB650E09440F76FC8169E482753543DABB"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "749CFDE0423D3895ECD0B35DBC5B275D2834F298EAB7B50892BCC3CC902ACFB3"
+      "sha256": "8847E6039EB435AD8B0000BE5C04EBD4FC01AEF06F8AA065AC44DA46FC0B58D4"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -707,7 +707,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "3F398BDB18950DB0DC9B9316BBA141C2BE31B766C3095BC014ECABB9E7163C41"
+      "sha256": "0958EF32D231F2E61418454B29E240E5963CA9B4EC2F3726489FFB6A0647E2EE"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -750,7 +750,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Developer executes WI-B-05-20260815-001 within exact 15-path lease; B-06 remains blocked pending B-05 acceptance",
+  "next_safe_action": "Developer executes corrected WI-B-05-20260815-002 within unchanged exact 15-path epoch-2 lease; B-06 remains blocked pending B-05 acceptance",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -805,18 +805,18 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
+    "validated_base_commit": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
+    "remote_head": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json",
+      "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-b05-start.json",
+      "docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json",
       "docs/work_orders/B-05_INVOCATION_PROMPT.md",
       "docs/work_orders/B-05_WORK_INSTRUCTION.md",
       "scripts/check_a13_repository_scan.py",
@@ -828,9 +828,9 @@
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-15T04:30:02+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: B-05 start projection exact 15",
-    "local_head": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe"
+    "observed_at": "2026-08-15T05:30:04+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: B-05 WI correction and epoch-2 rebind exact 15",
+    "local_head": "0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -940,11 +940,13 @@
     "stop_before_dialogue_report": false
   },
   "active_work_instruction": {
-    "artifact_id": "WI-B-05-20260815-001",
+    "artifact_id": "WI-B-05-20260815-002",
     "path": "docs/work_orders/B-05_WORK_INSTRUCTION.md",
-    "sha256": "C75DAA8E3FC9304256CA661AABB5E5C70015849C9F776B7A9BF01141F9AC9393",
+    "sha256": "DFC7BDECBECE0E6A2E48E68011D91E51AEB370A0E6CB67E1EA1ACBAE00F17A43",
     "invocation_path": "docs/work_orders/B-05_INVOCATION_PROMPT.md",
-    "invocation_sha256": "AE6EAD1C596D815E89AD7BFE21EB66DD8BF08E59784114A3DF89623869301DED",
+    "invocation_sha256": "6C570930EBC566B52C1BC45459BF567CF8E64306CC140F78E3D2B3ED95927684",
+    "revision": 2,
+    "revision_classification": "MAIN_CORRECTED_LOWER_AUTHORITY_CONFLICT_OBJECTIVE_UNCHANGED",
     "package_status": "ACTIVE",
     "result_status": "IN_PROGRESS",
     "accepted": false,
@@ -964,8 +966,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "B-05",
-    "path": "docs/progress/progress-handoff-detached-digest-b05-start.json",
-    "manifest_path": "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-b05-wi-rebind-r2.json",
+    "manifest_path": "docs/evidence/manifests/B-05_WI_REBIND_EVIDENCE_MANIFEST_R2.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -986,12 +988,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "3F398BDB18950DB0DC9B9316BBA141C2BE31B766C3095BC014ECABB9E7163C41"
+      "sha256": "0958EF32D231F2E61418454B29E240E5963CA9B4EC2F3726489FFB6A0647E2EE"
     }
   },
   "next_work_package": {
     "package_id": "B-06",
     "status": "BLOCKED_PENDING_B05_ACCEPTANCE"
   },
-  "snapshot_hash": "09FC4E81F2F24FC84A1741C64F290846BB75EDF16EACD5EB39B7F14F2564825B"
+  "snapshot_hash": "320575DA8EBCF7331C2989165EB30CD307F9AAC1C0A4B677C7DD4245F89D8125"
 }

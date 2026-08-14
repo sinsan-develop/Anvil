@@ -1,9 +1,10 @@
 # B-05 WorkInstruction — execution, release, and DIR foundation schemas
 
-- artifact_id: `WI-B-05-20260815-001`
+- artifact_id: `WI-B-05-20260815-002`
+- revision: `R2 / MAIN_CORRECTED_LOWER_AUTHORITY_CONFLICT_OBJECTIVE_UNCHANGED`
 - package/status: `B-05 / ACTIVE`
 - executor: `developer-primary-b05`
-- baseline_git_commit: `e59c4a105dab0faae31f43fd75e3ac53f1992ffe`
+- baseline_git_commit: `0a3a9bbf0c11ed53a5f5ff647591d48bc4d06565`
 - source_design_sha256: `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
 - source_plan_sha256: `E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D`
 - source_matrix_sha256: `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5`
@@ -17,7 +18,7 @@
 
 ## 목적과 완료 조건
 
-Foundation 1의 `Task`, `Run`, `PlanStep`, `StepAttempt`, `Delegation`, `Result`와 `ProductValidation`, `Defect`, `ReleaseDecision`, `DIR` schema·repository·framework-neutral contract를 구현한다. `PlanStep 1:N StepAttempt`, `StepAttempt 1:0..1 Delegation` 무결성, 인증된 사람만 가능한 ReleaseDecision, blocking defect와 미완료 ProductValidation의 release 차단, DIR `NOT_REACHED | WAITING_OWNER_DIRECTION | CLEARED | REOPENED` 및 owner direction guard를 결정론적 test와 실제 DB constraint로 증명한다.
+Foundation 1의 `Task`, `Run`, `PlanStep`, `StepAttempt`, `Delegation`, `Result`와 `ProductValidation`, `Defect`, `ReleaseDecision`, `DIR` schema·repository·framework-neutral contract를 구현한다. `PlanStep 1:N StepAttempt`, `StepAttempt 1:0..1 Delegation` 무결성, 인증된 사람만 가능한 ReleaseDecision, blocking defect와 미완료 ProductValidation의 release 차단, `design_intent_reviews.status`의 정확한 canonical 상태 `DIR_HOLD | REPORTING | WAITING_OWNER_DIRECTION | CLEARED` 및 owner direction guard를 결정론적 test와 실제 DB constraint로 증명한다.
 
 ## 구현 계약
 
@@ -27,7 +28,8 @@ Foundation 1의 `Task`, `Run`, `PlanStep`, `StepAttempt`, `Delegation`, `Result`
 - Result는 source attempt, target/delivered hash, actor, event sequence와 결박하고 terminal result 중복을 거부한다.
 - ProductValidation은 criterion과 target/delivered hash를 결박하며 Technical PASS나 Main preliminary acceptance를 대체하지 않는다.
 - ReleaseDecision은 인증된 사람 actor만 생성한다. 동일 subject hash, 필수 ProductValidation 완료·적합, 열린 blocking CRITICAL/MAJOR defect 0건이 아니면 `RELEASE`를 fail-closed 한다.
-- DIR은 canonical 4상태만 허용한다. `WAITING_OWNER_DIRECTION`에서 인증된 owner direction Event 없이 `CLEARED`로 갈 수 없고, drift가 재발하면 `REOPENED`로 전이한다.
+- `design_intent_reviews.status`는 canonical 4상태 `DIR_HOLD | REPORTING | WAITING_OWNER_DIRECTION | CLEARED`만 허용한다. `NOT_REACHED`는 review row가 아직 없고 progress projection에도 DIR review가 없는 상태로 표현하며 이 enum에 저장하지 않는다.
+- `WAITING_OWNER_DIRECTION`에서 인증된 owner direction Event 없이 `CLEARED`로 갈 수 없다. `CLEARED` 뒤 drift가 재발하면 기존 review를 `REOPENED`로 바꾸지 않고 새 DIR review row와 새 canonical DIR Event를 생성해 `DIR_HOLD`부터 다시 시작한다.
 - API contract는 framework-neutral schema·입출력·오류만 정의한다. FastAPI route/auth/SSE/same-origin BFF는 B-11 범위다.
 - migration/constraint 검증은 local isolated PostgreSQL 또는 WSL의 Anvil 전용 격리 DB·container·network만 허용한다. 기존 DB/role/schema/data, ysna/shared-db/production을 변경하지 않는다.
 - 제품 API/UI/browser/provider/ysna/shared-db/public production/deployment는 금지하며 미실행을 PASS로 승격하지 않는다.
@@ -54,7 +56,7 @@ Foundation 1의 `Task`, `Run`, `PlanStep`, `StepAttempt`, `Delegation`, `Result`
 
 ## TDD·검증·보고
 
-1. baseline·authority·predecessor acceptance, epoch-1 worker/write fencing token과 exact 15-path allowlist를 먼저 검증한다.
+1. baseline·authority·predecessor acceptance, epoch-2 worker/write fencing token과 exact 15-path allowlist를 먼저 검증한다. epoch-1 token은 폐기됐으며 사용하면 안 된다.
 2. 중복 활성 attempt, SUBAGENT 무위임, MAIN_TAKEOVER 위임, 중복 terminal result, 비인증 ReleaseDecision, hash mismatch, 미완료/BLOCKED ProductValidation, blocking defect, owner direction 없는 DIR clear를 먼저 RED test로 고정한다.
 3. 최소 구현 후 execution focused tests와 기존 domain/design/planning/persistence/tooling 회귀를 실행한다.
 4. DB constraint가 포함되므로 가능하면 WSL Anvil 전용 격리 PostgreSQL에서 revision `0004` upgrade/downgrade와 hostile constraint를 실제 검증한다. 불가능하면 `BLOCKED`/`NOT_EXECUTED`로 기록한다.
