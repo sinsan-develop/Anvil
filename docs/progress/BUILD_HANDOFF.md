@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-04 Developer Completion — sequence 247
+
+- seq245→247로 epoch-1 write lease와 worker lease를 순서대로 회수한 뒤 `PACKAGE_COMPLETED / TEST_REVIEW / independent Tester PENDING`으로 투영했다.
+- Developer exact15는 manifest file SHA `D1E9A6A4C8526EC20E118051711B5E9F674B4CAA64FBFB325DAD86134122DB2D`, target `B33FB1C7BF55B8AB3EF88AC8433DB3232A49601DC8348FDAF4A210A4404B4834`로 byte-frozen이다.
+- Main fresh 검토는 planning `9/9`, design/domain/persistence/planning `44/44`를 통과했다. 실제 WSL 격리 PostgreSQL 18에서 revision 0003 apply, 5개 table, 두 hostile constraint rejection, downgrade 0002 후 0개 table, exact container/network cleanup을 확인했다.
+- 실제 API/UI/browser/provider/ysna/shared-db/production/deployment는 `NOT_EXECUTED`다. B-04는 아직 acceptance되지 않았고 B-05는 `BLOCKED_PENDING_B04_ACCEPTANCE`다.
+
 ## B-04 Start — sequence 244
 
 - 최신 승인 문서 commit `1519d8cce5e205bd9e20652cc380e65e9ca01e49`을 clean/equal baseline으로 B-04 start를 재결박했다. B-04 기능 목적과 Developer exact15 제품 allowlist는 불변이다.
@@ -97,47 +104,60 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 244,
-  "status": "ACTIVE",
+  "event_sequence": 247,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-04",
-  "last_event_id": "evt_b04_package_started",
+  "last_event_id": "evt_b04_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
+  "repository_head": "47ad9e1216981c670aaec49b23e628315cff3547",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
+  "repository_remote_head": "47ad9e1216981c670aaec49b23e628315cff3547",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
+  "repository_validated_base_commit": "47ad9e1216981c670aaec49b23e628315cff3547",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/approvals/APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001.md",
-    "docs/evidence/manifests/B-04_START_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-04_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-04_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b04-start.json",
-    "docs/work_orders/B-04_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-04_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b04-completion-test-review.json",
+    "docs/validation/B-04_PLANNING_APPROVAL_VALIDATION.md",
+    "migrations/versions/0003_planning_approvals.py",
+    "packages/api/planning_contracts.py",
+    "packages/persistence/planning_repository.py",
+    "packages/planning/__init__.py",
+    "packages/planning/approval.py",
+    "packages/planning/hashing.py",
+    "packages/planning/models.py",
+    "packages/planning/service.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/planning/test_approval_guard.py",
+    "tests/planning/test_hash_invalidation.py",
+    "tests/planning/test_models.py",
+    "tests/planning/test_repository.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b04-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-04_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b04-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-04_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Dispatch developer-primary-b04 under revised WI-B-04-20260814-001 exact15 with WSL-first boundary; no ysna mutation, B-04 acceptance or B-05 start",
+  "next_safe_action": "Dispatch an independent Tester for B-04; do not accept B-04, start B-05, or deploy",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
-  "wsl_read_only_probe": "PASS_AVAILABLE_NOT_RUNTIME_EXECUTION",
+  "wsl_read_only_probe": "PASS_AVAILABLE",
+  "wsl_postgresql18_runtime": "PASS_ISOLATED_APPLY_CONSTRAINTS_DOWNGRADE_CLEANUP",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -146,8 +166,8 @@
   "b01_start_allowed": true,
   "b01_started": true,
   "active_work_instruction": "WI-B-04-20260814-001",
-  "worker_lease": "worker-lease-b04-20260814-001",
-  "write_lease": "write-lease-b04-20260814-001"
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 

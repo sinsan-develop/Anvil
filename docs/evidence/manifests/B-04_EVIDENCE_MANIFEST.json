@@ -1,0 +1,41 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-04-20260814-001",
+  "artifact_type": "planning_approval_evidence_manifest",
+  "package_id": "B-04",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "work_instruction_sha256": "12EC940E255E2BF67B77120337874BDEAE446F9B1F1A6B478CD61A0C791838A1",
+  "baseline_git_commit": "1519d8cce5e205bd9e20652cc380e65e9ca01e49",
+  "predecessor_acceptance_manifest": {"path": "docs/evidence/manifests/B-03_ACCEPTANCE_PROGRESS_MANIFEST_R3.json", "sha256": "577C005549601D63487D84E936E6FAE4F6322F734929EEA53FD7F077C374B030"},
+  "assigned_verification_ids": ["AV-SAFE-002", "AV-SAFE-003", "AV-SAFE-004", "AV-SAFE-005", "AV-SAFE-033", "AV-STAT-002", "AV-FLOW-012"],
+  "environment_id": "ENV-LOCAL + ENV-WSL-STAGING-ISOLATED",
+  "exact_write_paths": [
+    "packages/planning/__init__.py", "packages/planning/models.py", "packages/planning/hashing.py", "packages/planning/approval.py", "packages/planning/service.py", "packages/persistence/planning_repository.py", "packages/api/planning_contracts.py", "migrations/versions/0003_planning_approvals.py", "tests/planning/test_models.py", "tests/planning/test_hash_invalidation.py", "tests/planning/test_approval_guard.py", "tests/planning/test_repository.py", "docs/validation/B-04_PLANNING_APPROVAL_VALIDATION.md", "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-04_COMPLETION_REPORT.md"
+  ],
+  "raw_artifact_count": 14,
+  "raw_artifacts": [
+    {"path":"packages/planning/__init__.py","bytes":40,"sha256":"1DA70E16A5D1FDA4E392A062A32506FD60E43106EDD94C7818149C298F17B3E7"},
+    {"path":"packages/planning/models.py","bytes":3808,"sha256":"376FEEC9EC5F7BF8816C89F2F2CA8F63263116BDBD2AB9ACBFF7CAAFCDED8262"},
+    {"path":"packages/planning/hashing.py","bytes":510,"sha256":"483416AB5FBEA4BD754E583198F77F67D742F14239C45A4018CEAFC50303F41B"},
+    {"path":"packages/planning/approval.py","bytes":3643,"sha256":"7738CFD1D58D654BF819E7425A4B74C6D0E976D85AB97ADF41FE05394BC7B5AA"},
+    {"path":"packages/planning/service.py","bytes":5166,"sha256":"62EBDF41F465DE07A051EBEA28BA53F223CDF0FC8A69A8206D36B5F4E4ABC385"},
+    {"path":"packages/persistence/planning_repository.py","bytes":598,"sha256":"D27E90951C0B014FE3B9878B7615E4BC3260AC9F06808FDB1ECF5533DB5974F5"},
+    {"path":"packages/api/planning_contracts.py","bytes":1395,"sha256":"481AAF652D07EAD947D623369AFE4FD89059B1B8DEDA0599BCE3BA2B5780B3C5"},
+    {"path":"migrations/versions/0003_planning_approvals.py","bytes":3416,"sha256":"E599A26B9340BE98F4A0FBE4D08BC71094BD69A870DD1C430DCA9E457844080E"},
+    {"path":"tests/planning/test_models.py","bytes":1830,"sha256":"66F49F6EA4748F39E0653AB3C8074AAEC75316B22B75D05A5F268410F7017D05"},
+    {"path":"tests/planning/test_hash_invalidation.py","bytes":1673,"sha256":"1603FBDB7D11F230F7E045C50887FD206B95EA8D0059F9876728CF439F05796D"},
+    {"path":"tests/planning/test_approval_guard.py","bytes":4889,"sha256":"93D81D4B29ED72F8860BD1A5CFCC8F903CC4A683D5D4396BC3B10ABA88DE319E"},
+    {"path":"tests/planning/test_repository.py","bytes":2152,"sha256":"2DA27720B984E6EA9FFBE1AF8AE2355F0DD724346920729CC7186147D424E2DF"},
+    {"path":"docs/validation/B-04_PLANNING_APPROVAL_VALIDATION.md","bytes":3857,"sha256":"391844C04FFFC37A5E81B55D19B6596AC880084223073E7B7DFA6333414127E4"},
+    {"path":"docs/completion_reports/B-04_COMPLETION_REPORT.md","bytes":2484,"sha256":"57FAE7CA9C307D53ECD076CED4075CC043A28DB8E56412060537361FA513F49D"}
+  ],
+  "target_algorithm": {"algorithm_version":"1.0.0","row_format":"path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix","sort":"UTF-8 byte ordinal","row_separator":"LF","final_newline":false,"hash_algorithm":"SHA-256"},
+  "target_canonical_bytes": 1493,
+  "target_content_bytes": 35461,
+  "target_hash": "B33FB1C7BF55B8AB3EF88AC8433DB3232A49601DC8348FDAF4A210A4404B4834",
+  "delivered_hash": "B33FB1C7BF55B8AB3EF88AC8433DB3232A49601DC8348FDAF4A210A4404B4834",
+  "content_hash": "B33FB1C7BF55B8AB3EF88AC8433DB3232A49601DC8348FDAF4A210A4404B4834",
+  "self_reference": false,
+  "test_results": {"planning":"9/9 PASS","domain_design_persistence_planning":"44/44 PASS","tooling":"287 run; 16 dirty-worktree projection failures"},
+  "database_evidence": {"engine":"PostgreSQL 18 isolated WSL container","upgrade_revision":"0003_planning_approvals","upgrade_b04_tables":5,"hostile_approval_insert":"DB_CHECK_REJECTED","hostile_nonsemantic_insert":"DB_CHECK_REJECTED","downgrade_revision":"0002_design_artifacts","downgrade_b04_tables":0,"cleanup":"container and network removed"},
+  "runtime_boundary": {"actual_api":"NOT_EXECUTED","actual_ui":"NOT_EXECUTED","actual_browser":"NOT_EXECUTED","actual_provider":"NOT_EXECUTED","actual_ysna":"NOT_EXECUTED","actual_production":"NOT_EXECUTED","actual_deployment":"NOT_EXECUTED"}
+}
