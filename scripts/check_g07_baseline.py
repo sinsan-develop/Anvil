@@ -850,6 +850,10 @@ def validate_repository(
         authority=progress.get("authority_successor_binding") or {}
         if (progress.get("current_work_package")!="B-05" or progress.get("status")!="READY" or progress.get("plan_version")!="1.6" or progress.get("work_plan_hash")!="E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D" or progress.get("active_work_instruction") is not None or progress.get("valid_failure_count")!=0 or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or (progress.get("next_work_package") or {}).get("status")!="READY" or authority.get("approval_id")!="APPROVAL-20260814-WORKPLAN-V16-001" or authority.get("classification")!="HUMAN_APPROVED_SEMANTIC_PLAN_REVISION" or [event.get("event_type") for event in successor] != ["EVIDENCE_MANIFEST_CREATED"]):
             _error(errors,"WORKPLAN_V16_SUCCESSOR_PROJECTION_MISMATCH",progress_path,"sequence=249")
+    if progress.get("event_sequence") == 252:
+        terminal=[event for event in events if 250 <= event.get("sequence",-1) <= 252]; instruction=progress.get("active_work_instruction") or {}
+        if (progress.get("current_work_package")!="B-05" or progress.get("status")!="ACTIVE" or instruction.get("artifact_id")!="WI-B-05-20260815-001" or progress.get("valid_failure_count")!=0 or progress.get("active_agent")!="developer-primary-b05" or (progress.get("worker_lease") or {}).get("lease_epoch")!=1 or (progress.get("write_lease") or {}).get("write_epoch")!=1 or (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B05_ACCEPTANCE" or [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]):
+            _error(errors,"B05_START_PROJECTION_MISMATCH",progress_path,"sequence=252")
     if progress.get("event_sequence") == 192:
         terminal=[event for event in events if 190 <= event.get("sequence",-1) <= 192]
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="TEST_REVIEW" or (progress.get("active_work_instruction") or {}).get("independent_tester_status")!="PENDING" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
@@ -1066,6 +1070,8 @@ def validate_repository(
             if reconciliation_event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and reconciliation_event.get("subject_ref") == "B-04" and reconciliation_event.get("sequence") == 248:
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "EVIDENCE_MANIFEST_CREATED" and reconciliation_event.get("subject_ref") == "WORKPLAN-V1.6-SUCCESSOR" and reconciliation_event.get("sequence") == 249:
+                completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-05" and reconciliation_event.get("sequence") == 252:
                 completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))

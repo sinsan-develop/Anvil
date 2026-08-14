@@ -1,5 +1,13 @@
 # Anvil Build Handoff
 
+## B-05 Start — sequence 252
+
+- canonical clean baseline `e59c4a105dab0faae31f43fd75e3ac53f1992ffe`에서 seq250→252 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
+- `developer-primary-b05` epoch-1 worker/write lease와 Developer exact15만 활성이다. B-06은 `BLOCKED_PENDING_B05_ACCEPTANCE`다.
+- 목표는 Task·Run·PlanStep·StepAttempt·Delegation·Result와 ProductValidation·Defect·ReleaseDecision·DIR schema, attempt 무결성, 사람 ReleaseDecision, blocking defect, DIR owner direction guard 구현이다.
+- assigned verification은 `AV-STAT-008`; 선행 B-02, A-15, B-04와 workplan v1.6 successor는 ACCEPTED 상태다.
+- start 시점 제품 산출물 0개, API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 모두 `NOT_EXECUTED`다. Developer 구현 검증에서 WSL Anvil 전용 격리 PostgreSQL만 허용한다.
+
 ## Workplan v1.6 Governance Successor — sequence 249
 
 - 신산님의 공통 모듈·공통 API/BFF 우선 및 U-01~U-11 메뉴 순차 개발 승인 지시를 `APPROVAL-20260814-WORKPLAN-V16-001`로 결박하고 `HUMAN_APPROVED_SEMANTIC_PLAN_REVISION`으로 분류했다.
@@ -119,30 +127,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 249,
-  "status": "READY",
+  "event_sequence": 252,
+  "status": "ACTIVE",
   "current_work_package": "B-05",
-  "last_event_id": "evt_workplan_v16_successor_manifest_created",
+  "last_event_id": "evt_b05_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "56d409c4583bcf4090423995e79c63ae63598c1d",
+  "repository_head": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "d51cd09a662bb953c65cb8137b2fda219c0becba",
+  "repository_remote_head": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "56d409c4583bcf4090423995e79c63ae63598c1d",
+  "repository_validated_base_commit": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md",
-    "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json",
-    "docs/validation/WORKPLAN_V16_SUCCESSOR_VALIDATION.md",
+    "docs/progress/progress-handoff-detached-digest-b05-start.json",
+    "docs/work_orders/B-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-05_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -152,11 +160,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b05-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "B-05 is READY but NOT_STARTED; validate and commit the approved workplan v1.6 successor before issuing any B-05 lease",
+  "next_safe_action": "Developer executes WI-B-05-20260815-001 within exact 15-path lease; B-06 remains blocked pending B-05 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_ISOLATED_APPLY_CONSTRAINTS_DOWNGRADE_CLEANUP",
@@ -167,9 +175,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-05-20260815-001",
+  "worker_lease": "worker-lease-b05-20260815-001 epoch1 ACTIVE",
+  "write_lease": "write-lease-b05-20260815-001 epoch1 ACTIVE exact15"
 }
 ```
 

@@ -1,0 +1,55 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-05-START-20260815-001",
+  "artifact_type": "package_start_evidence_manifest",
+  "artifact_path": "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json",
+  "package_id": "B-05",
+  "event_sequence": 252,
+  "validated_base_commit": "e59c4a105dab0faae31f43fd75e3ac53f1992ffe",
+  "predecessor_successor_ref": {
+    "path": "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json",
+    "sha256": "63868EAE469167EF167D56E03AED408D73BBAA460EEB322DF3A7455CA586750D"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-05-20260815-001",
+    "path": "docs/work_orders/B-05_WORK_INSTRUCTION.md",
+    "sha256": "C75DAA8E3FC9304256CA661AABB5E5C70015849C9F776B7A9BF01141F9AC9393",
+    "invocation_path": "docs/work_orders/B-05_INVOCATION_PROMPT.md",
+    "invocation_sha256": "AE6EAD1C596D815E89AD7BFE21EB66DD8BF08E59784114A3DF89623869301DED"
+  },
+  "objective": "Foundation 1 execution and release governance schemas for Task, Run, PlanStep, StepAttempt, Delegation, Result, ProductValidation, Defect, ReleaseDecision, and DIR with attempt integrity, human release decisions, blocking-defect enforcement, and four-state DIR owner-direction guard",
+  "assigned_verification_ids": ["AV-STAT-008"],
+  "worker_lease": {"lease_id": "worker-lease-b05-20260815-001", "lease_epoch": 1, "status": "ACTIVE"},
+  "write_lease": {"lease_id": "write-lease-b05-20260815-001", "write_epoch": 1, "status": "ACTIVE"},
+  "developer_exact_path_count": 15,
+  "product_artifact_count": 0,
+  "runtime_boundary": {
+    "actual_db": "NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "developer_db_boundary": "ISOLATED_WSL_ANVIL_DB_ONLY"
+  },
+  "next_package": {"package_id": "B-06", "status": "BLOCKED_PENDING_B05_ACCEPTANCE"},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json", "bytes": 3617, "sha256": "63868EAE469167EF167D56E03AED408D73BBAA460EEB322DF3A7455CA586750D"},
+    {"path": "docs/progress/progress-handoff-detached-digest-b05-start.json", "bytes": 856, "sha256": "DC3CE86D222409F02A7045C2EB76D57CFE6AE6F8BD0D5364FC7A2FF22F5166AE"},
+    {"path": "docs/work_orders/B-05_INVOCATION_PROMPT.md", "bytes": 941, "sha256": "AE6EAD1C596D815E89AD7BFE21EB66DD8BF08E59784114A3DF89623869301DED"},
+    {"path": "docs/work_orders/B-05_WORK_INSTRUCTION.md", "bytes": 5576, "sha256": "C75DAA8E3FC9304256CA661AABB5E5C70015849C9F776B7A9BF01141F9AC9393"}
+  ],
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 62302, "sha256": "C56D79A28D590CC40BC5FAE06BFC435A8D51CECF5E72FABC826F5E298C813B94"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 47242, "sha256": "AEFF6D9F200DBB4D7C7962D2A8B65061E237DB3C9DC38F49C29A3F29916A6152"}
+    ]
+  },
+  "target_canonical_bytes": 485,
+  "target_content_bytes": 10990,
+  "target_hash": "sha256:A2EB236B71154A20309E29A452D0B698537E5567CA2F2F1D07CF7312EE76CB21",
+  "delivered_hash": "sha256:A2EB236B71154A20309E29A452D0B698537E5567CA2F2F1D07CF7312EE76CB21",
+  "content_hash": "sha256:A2EB236B71154A20309E29A452D0B698537E5567CA2F2F1D07CF7312EE76CB21",
+  "self_reference": false
+}

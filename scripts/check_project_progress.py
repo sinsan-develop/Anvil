@@ -4165,6 +4165,7 @@ def validate_b04_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mappin
 
 def validate_workplan_v16_successor_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
     root=bundle["_root"];progress=bundle["progress"];errors=[]
+    is_current=(progress.get("current_progress_evidence_ref") or {}).get("manifest_path")=="docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json"
     expected={"Anvil_작업계획서_v1.md","Anvil_통합검증매트릭스_v1.md","Anvil_테스트계획서_v1.md","docs/superpowers/plans/2026-08-14-common-api-menu-sequential-plan.md","docs/superpowers/specs/2026-08-14-common-api-menu-sequential-plan-design.md","docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md","docs/validation/WORKPLAN_V16_SUCCESSOR_VALIDATION.md","docs/progress/progress-handoff-detached-digest-workplan-v16-successor.json"}
     rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
     if not isinstance(rows,list): return ["WORKPLAN_V16_RAW_INVALID"]
@@ -4180,9 +4181,33 @@ def validate_workplan_v16_successor_manifest(manifest: Mapping[str, Any], bundle
     can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
     if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("WORKPLAN_V16_TARGET_MISMATCH")
     events=[event for event in bundle["events"]["events"] if event.get("sequence")==249];authority=progress.get("authority_successor_binding") or {};projection=manifest.get("projection") or {}
-    if any((progress.get("event_sequence")!=249,progress.get("current_work_package")!="B-05",progress.get("status")!="READY",progress.get("plan_version")!="1.6",progress.get("work_plan_hash")!="E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",progress.get("active_work_instruction") is not None,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,progress.get("valid_failure_count")!=0,[event.get("event_type") for event in events]!=["EVIDENCE_MANIFEST_CREATED"],authority.get("approval_id")!="APPROVAL-20260814-WORKPLAN-V16-001",authority.get("classification")!="HUMAN_APPROVED_SEMANTIC_PLAN_REVISION",manifest.get("validated_base_commit")!="56d409c4583bcf4090423995e79c63ae63598c1d",manifest.get("approval_sha256")!="3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",projection.get("package_total")!=108,projection.get("u_phase_serial_packages")!=11,projection.get("av_total")!=255,projection.get("matrix_missing_packages")!=0,projection.get("matrix_extra_packages")!=0,projection.get("b05_started") is not False,projection.get("product_runtime_status")!="NOT_EXECUTED")): errors.append("WORKPLAN_V16_PROJECTION_MISMATCH")
+    if is_current and any((progress.get("event_sequence")!=249,progress.get("current_work_package")!="B-05",progress.get("status")!="READY",progress.get("plan_version")!="1.6",progress.get("work_plan_hash")!="E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",progress.get("active_work_instruction") is not None,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,progress.get("valid_failure_count")!=0,[event.get("event_type") for event in events]!=["EVIDENCE_MANIFEST_CREATED"],authority.get("approval_id")!="APPROVAL-20260814-WORKPLAN-V16-001",authority.get("classification")!="HUMAN_APPROVED_SEMANTIC_PLAN_REVISION",manifest.get("validated_base_commit")!="56d409c4583bcf4090423995e79c63ae63598c1d",manifest.get("approval_sha256")!="3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",projection.get("package_total")!=108,projection.get("u_phase_serial_packages")!=11,projection.get("av_total")!=255,projection.get("matrix_missing_packages")!=0,projection.get("matrix_extra_packages")!=0,projection.get("b05_started") is not False,projection.get("product_runtime_status")!="NOT_EXECUTED")): errors.append("WORKPLAN_V16_PROJECTION_MISMATCH")
     required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"};successor=manifest.get("a13_successor_projection") or {};indexed={row.get("path"):row for row in successor.get("live_raw_checksums",[]) if isinstance(row,dict)}
-    if set(indexed)!=required or any(not portable_row_matches(root,path,row.get("bytes"),row.get("sha256")) for path,row in indexed.items()): errors.append("WORKPLAN_V16_SUCCESSOR_INVALID")
+    if is_current and (set(indexed)!=required or any(not portable_row_matches(root,path,row.get("bytes"),row.get("sha256")) for path,row in indexed.items())): errors.append("WORKPLAN_V16_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
+def validate_b05_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[]
+    expected={"docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b05-start.json","docs/work_orders/B-05_INVOCATION_PROMPT.md","docs/work_orders/B-05_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["B05_START_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B05_START_RAW_INVALID");continue
+        seen.add(relative)
+        try: ok=portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): ok=False
+        if not ok: errors.append("B05_START_RAW_INVALID");continue
+        total+=int(row["bytes"]);canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("B05_START_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B05_START_TARGET_MISMATCH")
+    terminal=[e for e in bundle["events"]["events"] if 250<=e.get("sequence",-1)<=252];wi=progress.get("active_work_instruction") or {};worker=progress.get("worker_lease") or {};write=progress.get("write_lease") or {};runtime=manifest.get("runtime_boundary") or {}
+    if any((progress.get("event_sequence")!=252,progress.get("current_work_package")!="B-05",progress.get("status")!="ACTIVE",progress.get("valid_failure_count")!=0,wi.get("artifact_id")!="WI-B-05-20260815-001",wi.get("sha256")!="C75DAA8E3FC9304256CA661AABB5E5C70015849C9F776B7A9BF01141F9AC9393",wi.get("invocation_sha256")!="AE6EAD1C596D815E89AD7BFE21EB66DD8BF08E59784114A3DF89623869301DED",progress.get("active_agent")!="developer-primary-b05",worker.get("lease_epoch")!=1,write.get("write_epoch")!=1,(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B05_ACCEPTANCE",[e.get("event_type") for e in terminal]!=["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],manifest.get("validated_base_commit")!="e59c4a105dab0faae31f43fd75e3ac53f1992ffe",manifest.get("product_artifact_count")!=0,runtime.get("actual_db")!="NOT_EXECUTED",runtime.get("actual_api")!="NOT_EXECUTED",runtime.get("actual_ui")!="NOT_EXECUTED",runtime.get("actual_browser")!="NOT_EXECUTED",runtime.get("actual_wsl")!="NOT_EXECUTED",runtime.get("actual_ysna_server")!="NOT_EXECUTED",runtime.get("deployment")!="NOT_EXECUTED",runtime.get("developer_db_boundary")!="ISOLATED_WSL_ANVIL_DB_ONLY")): errors.append("B05_START_PROJECTION_MISMATCH")
+    required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"};successor=manifest.get("a13_successor_projection") or {};indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)}
+    if set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items()): errors.append("B05_START_SUCCESSOR_INVALID")
+    if manifest.get("predecessor_successor_ref",{}).get("sha256")!="63868EAE469167EF167D56E03AED408D73BBAA460EEB322DF3A7455CA586750D": errors.append("B05_START_PREDECESSOR_INVALID")
     return sorted(set(errors))
 
 
@@ -4477,7 +4502,8 @@ def validate_repository_projection(
     b04_completion_projection = repository.get("validated_base_commit") == "47ad9e1216981c670aaec49b23e628315cff3547" and "docs/evidence/manifests/B-04_COMPLETION_PROGRESS_MANIFEST.json" in allowed
     b04_acceptance_projection = repository.get("validated_base_commit") == "75d9c72b847ed7122985d1bee656cbcc4b4da883" and "docs/evidence/manifests/B-04_ACCEPTANCE_PROGRESS_MANIFEST.json" in allowed
     workplan_v16_successor_projection = repository.get("validated_base_commit") == "56d409c4583bcf4090423995e79c63ae63598c1d" and "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection:
+    b05_start_projection = repository.get("validated_base_commit") == "e59c4a105dab0faae31f43fd75e3ac53f1992ffe" and "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -4755,6 +4781,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b04_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/WORKPLAN_V16_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_workplan_v16_successor_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-05_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_b05_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b03_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R2.json":
