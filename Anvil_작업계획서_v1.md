@@ -1,6 +1,6 @@
-# Anvil 전체 개발 작업계획서 v1.5
+# Anvil 전체 개발 작업계획서 v1.6
 
-> 문서 상태: A-01 책임 정합화 승인 반영 파생 기준선 / 독립 Tester 재검토 대기
+> 문서 상태: 신산님 승인 공통 모듈·API 우선 및 메뉴 순차 개발 재편 기준선 / 통합검증매트릭스·테스트계획서 successor 정합화 대기
 > 작성일: 2026-08-10  
 > 설계 책임자·Main Agent: 어울  
 > 최종 승인자: 신산님  
@@ -17,20 +17,33 @@
 
 이 문서는 Anvil 전체 설계를 실제 개발 가능한 **1회 작업분량의 Work Package**로 분해한 상위 작업계획서다. 개별 개발을 시작할 때는 이 문서를 그대로 프롬프트로 복사하지 않고, 해당 Work Package에서 별도의 `WorkInstruction`과 짧은 `InvocationPrompt`를 만든다.
 
-이 계획은 다음 순서를 고정한다.
+이 계획은 완료된 G·A·B-01~B-04를 historical로 보존하고 다음 순서를 고정한다.
 
 ```text
 G. 기준선·운영 준비
 → A. 전체 사용자 흐름·화면·Artifact 계약과 읽기 전용 온보딩
-→ B. Durable Project/Run State와 진행 파일
-→ C. Main Agent + Single Developer Coding
-→ D. Hermes형 Learning과 Skill·Hook Evolution
-→ E. Reviewer/Tester·DAG·제한 병렬 실행
-→ F. 운영·Local→WSL-server Test/Staging→ysna-server Production 단계적 배포
+→ B-01~B-04. 완료된 공통 기반
+→ Foundation 1. 공통 모듈
+→ Foundation 2. 공통 API·same-origin BFF
+→ Backend Capability. Agent·Learning·Reviewer·Provider·환경·운영 서비스/API
+→ Foundation 3. 공통 화면 프레임
+→ U-01~U-11. Dashboard부터 Settings까지 메뉴 순차 수직 개발
+→ F-20. Local→WSL-server Test/Staging→ysna-server Production 최종 Release
 → P. 안정성이 입증된 구성의 Plugin 포장
 ```
 
-설계서 44장의 Phase A~F가 canonical 순서다. 후속 단계의 구현 편의를 이유로 Durable State보다 코딩 실행을 먼저 만들거나, 프롬프트 파일럿 검증 전에 Skill·Hook을 먼저 만들 수 없다.
+설계서 44장의 Phase A~F 책임과 M1~M5 승격 순서는 보존한다. 다만 B-05 이후의 실행 순서는 공통 모듈과 공통 API를 먼저 닫고 실제 메뉴 UI를 `U-01~U-11`에서 직렬로 완성하는 v1.6 순서를 따른다. 후속 단계의 구현 편의를 이유로 Durable State보다 코딩 실행을 먼저 만들거나, 프롬프트 파일럿 검증 전에 Skill·Hook을 먼저 만들 수 없다.
+
+### 1.1 B-05 이후 canonical 실행 규칙
+
+1. 완료된 G·A·B-01~B-04 Package ID, 상태, 승인, evidence와 hash는 변경하지 않는다.
+2. B-05~B-10은 framework 독립 공통 모듈을 완성하고 B-11~B-12는 공통 API/BFF와 복구 계약을 완성한다.
+3. C·D·E·F-01~F-19는 메뉴가 공통으로 소비할 Agent·Learning·검증·Provider·환경·운영 backend와 API capability를 완성한다. 이 구간의 UI 표기는 실제 메뉴 화면이 아니라 read model·projection·API contract를 뜻한다.
+4. 공통 화면 shell은 A에서 승인한 1920×1080·12px 표준, route, 권한, error boundary, loading/empty/blocked 상태와 same-origin client만 제공한다. 메뉴 전용 업무 로직을 포함하지 않는다.
+5. 실제 메뉴는 `U-01 Dashboard → U-02 Workbench → U-03 Projects → U-04 Runs → U-05 Reviews → U-06 Quality → U-07 Knowledge → U-08 Agents & Automation → U-09 Environments → U-10 Operations → U-11 Settings` 순서로 하나씩 개발한다.
+6. 각 U Package는 메뉴 전용 service 보완, API/BFF, UI, 접근성, 보안, 실제 브라우저 클릭, Network, 오류·빈 상태, 회귀, evidence와 rollback을 같은 Package에서 완료한다.
+7. 현재 메뉴가 독립 Tester `ACCEPTED`가 되기 전에는 다음 메뉴의 제품 write lease를 발급하지 않는다.
+8. 여러 메뉴가 사용하는 기능은 Foundation이 소유하며, 특정 메뉴를 위해 공통 모듈이나 공통 API에 예외 분기를 추가하지 않는다.
 
 ---
 
@@ -198,7 +211,7 @@ Main Agent는 구현 종료까지 책임 주체로 남는다. Developer Subagent
 - 결함 재검증은 매트릭스 §7을 canonical 범위로 한다. CRITICAL은 해당 Phase CRITICAL 전량과 결함 Package 할당 ID 전량, MAJOR는 해당 Package와 직접 종속 Package, MINOR는 다음 Package 흡수다.
 - dirty/untracked 변경, secret 노출, 승인 없는 write, PASS 집계 오염, Event-progress 불일치, 검증 hash와 적용 hash 불일치가 발견되면 남은 검증과 다음 Package 예약을 즉시 중단한다. 현재 evidence를 보존하고 `critical_stop_code`와 CRITICAL defect를 기록해 Main Agent와 신산님께 보고한다. 이는 Developer의 `FAILURE_REPORT`가 아니며 3회 인수 횟수에 포함하지 않는다.
 
-통합검증매트릭스 v1.3은 G-01~G-07을 포함한 97개 Package 역색인을 가진다. 따라서 G-01부터 일반 검증 절차를 적용하고 각 Package는 할당 ID와 EvidenceManifest에 대한 독립 Tester PASS 뒤에만 `ACCEPTED`가 된다. G-07의 historical accepted evidence는 v1.2 기준으로 불변이며, v1.3은 A-01 책임 정합화 승인에 따른 활성 successor다.
+통합검증매트릭스 v1.3은 `[historical]` G-01~G-07을 포함한 기존 97개 Package 역색인을 가진다. v1.6은 U-01~U-11을 추가해 108개 Package가 되므로 B-05를 시작하기 전에 매트릭스와 테스트계획서 successor에서 U Package 검증 ID·Gate·evidence를 정합화해야 한다. 기존 97개 Package의 할당 ID는 삭제하거나 심각도를 낮추지 않는다. 각 Package는 현재 successor의 할당 ID와 EvidenceManifest에 대한 독립 Tester PASS 뒤에만 `ACCEPTED`가 된다. G-07의 historical accepted evidence는 v1.2 기준으로 불변이다.
 
 ### 4.5 DIR 강제 중단·보고 계약
 
@@ -206,9 +219,9 @@ DIR은 Package 완료를 합산하는 Phase Gate와 별개로, 설계서에서 �
 
 | 중단점 | 정확한 도달 시점 | 누적 Package | 차단 대상 |
 |---|---|---:|---|
-| `DIR-1` | A-15 완료 후, A Gate 판정 전 | 22 / 97 (약 23%) | A Gate와 Phase B |
-| `DIR-2` | C-15 완료 후, C Gate 판정 전 | 49 / 97 (약 51%) | C Gate와 Phase D |
-| `DIR-3` | E-11 완료 후, E Gate 판정 전 | 73 / 97 (약 75%) | E Gate와 Phase F |
+| `DIR-1` | A-15 완료 후, A Gate 판정 전 | `[historical 도달]` 22 / 97; v1.6 기준 22 / 108 (약 20%) | A Gate와 Phase B |
+| `DIR-2` | C-15 완료 후, C Gate 판정 전 | 49 / 108 (약 45%) | C Gate와 Phase D |
+| `DIR-3` | E-11 완료 후, E Gate 판정 전 | 73 / 108 (약 68%) | E Gate와 Phase F capability |
 
 각 중단점에 도달하면 예외 없이 다음 순서로 처리한다.
 
@@ -243,18 +256,24 @@ DIR 대상 artifact·`EvidenceManifest`·기준선 hash가 보고 전후 한 바
 ```mermaid
 flowchart LR
     G["G 기준선·운영 준비"] --> A["A 전체 화면·계약·읽기 전용 온보딩"]
-    A --> B["B Durable State·진행 파일"]
+    A --> B["B 공통 모듈·API/BFF Foundation"]
     B --> C1["C M1 결과 전달"]
     C1 --> C2["C M2 결과 상태"]
     C2 --> C3["C M3 3회 인수"]
     C3 --> D1["D M4 Skill"]
     D1 --> D2["D M5 Hook"]
     D2 --> E["E Reviewer·Tester·DAG·제한 병렬"]
-    E --> F["F 운영·단계적 배포"]
-    F --> P["P M6 Plugin 포장"]
+    E --> F["F Provider·환경·운영 backend/API·공통 shell"]
+    F --> U1["U-01 Dashboard"]
+    U1 --> U2["U-02 Workbench"]
+    U2 --> U3["U-03 Projects"]
+    U3 --> UX["U-04~U-10 메뉴 직렬 개발"]
+    UX --> U11["U-11 Settings"]
+    U11 --> R["F-20 최종 Release"]
+    R --> P["P M6 Plugin 포장"]
 ```
 
-각 Phase Gate가 `ACCEPTED`가 되기 전에는 다음 Phase의 write-capable Package를 시작하지 않는다. 다음 Phase의 읽기 분석·설계 초안은 가능하지만 실행 기준선으로 사용하지 않는다.
+각 Foundation·Capability·메뉴 Gate가 `ACCEPTED`가 되기 전에는 다음 write-capable Package를 시작하지 않는다. 다음 단계의 읽기 분석·설계 초안은 가능하지만 실행 기준선으로 사용하지 않는다. U Phase는 예외 없이 한 번에 한 메뉴만 ACTIVE로 둔다.
 
 ### 전체 작업분할 요약
 
@@ -262,13 +281,14 @@ flowchart LR
 |---|---:|---|
 | G | 7 | 기준선·결정·작업지시·진행복구·검증 기준선 체계 |
 | A | 15 | 전체 화면·9개 LLM Provider 선택·Artifact 계약·읽기 전용 온보딩 |
-| B | 12 | 영속 상태·승인·Event·중단·재개 |
-| C | 15 | Main + Single Developer와 M1~M3 |
-| D | 13 | Memory·Learning·M4 Skill·M5 Hook |
-| E | 11 | 독립 검증·외부 검증·DAG·제한 병렬 |
-| F | 20 | 9개 Provider adapter·화면 기반 운영·Local→WSL-server→ysna-server Git 승격 |
+| B | 12 | 공통 영속 상태·승인·Event·queue·복구·API/BFF Foundation |
+| C | 15 | Main + Single Developer와 M1~M3 backend/API capability |
+| D | 13 | Memory·Learning·M4 Skill·M5 Hook backend/API capability |
+| E | 11 | 독립 검증·외부 검증·DAG·제한 병렬 backend/API capability |
+| F | 20 | 9개 Provider adapter·환경·운영 backend/API·공통 shell·최종 Release |
+| U | 11 | Dashboard부터 Settings까지 메뉴별 수직 구현·검증 |
 | P | 4 | 검증 완료 구성의 M6 Plugin 포장 |
-| **합계** | **97** | 각 항목이 독립 WorkInstruction·검증·rollback 단위 |
+| **합계** | **108** | 각 항목이 독립 WorkInstruction·검증·rollback 단위 |
 
 ---
 
@@ -286,7 +306,7 @@ flowchart LR
 | G-04 | WorkInstruction·InvocationPrompt·CompletionReport·TestReport·ProductValidation·Defect·ReleaseDecision·EvidenceManifest template 작성 | `docs/work_orders/templates/*`, validation/release templates | 본문 중복 없이 ID/hash 참조가 가능하고 `verification_contract`·target/delivered hash·사람 actor·blocking defect 필드가 있음 | G-03 |
 | G-05 | 개발 자체의 progress/HANDOFF, failure ledger, nonsemantic binding, canonical DIR 상태 구축 | build-progress schema, BUILD_HANDOFF, failure ledger, `non_semantic_revision_bindings`, DIR checkpoint | 세션 재시작 후 root human approval·파생 baseline·`DIR_HOLD/REPORTING/WAITING_OWNER_DIRECTION/CLEARED`·다음 행동 복원 | G-04 |
 | G-06 | 8개 fixture repository·구현 전 golden acceptance set·§49 fault/security/deploy scenario 기반 설계 | Python/TS fixture, expected diff/test/EvidenceManifest, `tests/fault/*` | PASS 오염, stale fencing, budget race, CSRF/SSRF, secret revoke, evidence/release hash mismatch를 재현 가능 | G-03 |
-| G-07 | 검증 문서의 설계 v2.6·작업계획 v1.4·97개 Package·255개 ID·§49.17 정합성을 독립 재검증하고 G Gate 회귀 집합 고정 | baseline verification report, package↔AV ID trace, Gate regression suites, G-01~G-07 test reports | 구 기준선·구 Package 수 참조 0건, 미할당 ID 0건, §49.17 20개 시나리오·DIR trigger/status·환경·문서 hash 일치, G-01~G-07 전량 `ACCEPTED` | G-02, G-04~06 |
+| G-07 | `[historical G-07 당시]` 검증 문서의 설계 v2.6·작업계획 v1.4·97개 Package·255개 ID·§49.17 정합성을 독립 재검증하고 G Gate 회귀 집합 고정 | baseline verification report, package↔AV ID trace, Gate regression suites, G-01~G-07 test reports | 당시 구 기준선·구 Package 수 참조 0건, 미할당 ID 0건, §49.17 20개 시나리오·DIR trigger/status·환경·문서 hash 일치, G-01~G-07 전량 `ACCEPTED` | G-02, G-04~06 |
 
 ### Phase G Gate
 
@@ -294,7 +314,7 @@ flowchart LR
 - 개발자와 Main Agent가 동시에 쓰지 않는 절차를 실제 dry-run으로 확인했다.
 - WorkInstruction 한 건을 파일만 읽고 다른 Agent가 정확히 재구성할 수 있다.
 - progress/HANDOFF에서 다음 Package가 명확하다.
-- 통합검증매트릭스와 테스트계획서가 현재 설계·계획 hash 및 97개 Package와 일치하고 golden set이 구현 전에 고정됐다.
+- `[historical G Gate]` 통합검증매트릭스와 테스트계획서가 당시 설계·계획 hash 및 97개 Package와 일치하고 golden set이 구현 전에 고정됐다. v1.6 successor의 108개 정합화는 B-05 착수 전 별도 Gate다.
 - 설계서 §49의 ProductValidation/Defect/Release, DIR, fencing, budget, 보안, EvidenceManifest, 환경·Git 배포·Monitoring 계약이 검증 ID와 Package에 누락 없이 역색인됐다.
 - G-01~G-07이 검증 매트릭스 v1.2의 Package 역색인·EvidenceManifest·독립 Tester 절차로 각각 검증되어 모두 `ACCEPTED`다.
 
@@ -336,11 +356,11 @@ flowchart LR
 
 ---
 
-## 8. Phase B — Durable Project/Run State와 진행 파일
+## 8. Phase B — 공통 모듈·API/BFF Foundation
 
 ### 목표
 
-Agent 코딩을 연결하기 전에 Project·Run·Step·Delegation의 권위 상태와 중단·재개 기반을 완성한다.
+Agent 코딩과 메뉴 구현을 연결하기 전에 Project·Run·Step·Delegation의 권위 상태, 공통 저장·queue·중단·재개 모듈과 공통 API/BFF 기반을 완성한다.
 
 | ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
 |---|---|---|---|---|
@@ -354,8 +374,8 @@ Agent 코딩을 연결하기 전에 Project·Run·Step·Delegation의 권위 상
 | B-08 | transactional outbox와 Project/Run progress·HANDOFF exporter 구현 | outbox worker, atomic file writer | DB commit·파일 replace·ack 순서와 crash recovery 통과 | B-06~07 |
 | B-09 | at-least-once durable queue·Worker/write lease fencing·경로 identity 구현 | queue/scheduler, worker/write lease services | DB-time atomic claim, epoch/token 검증, stale Worker commit 거부, poison job 격리, Windows/WSL/Docker path alias 이중 lease 0건 | B-06~08 |
 | B-10 | HumanInterventionReceipt·pause·원자 budget reservation·quota·cancel 구현 | intervention/budget services | 요청 접수/효력 시각 분리, Provider 호출 전 atomic reserve, usage reconcile, CANCELLED 후 새 Run 계약 재현 | B-09 |
-| B-11 | canonical API registry·same-origin BFF·SSE·Web security 구현 | FastAPI routes, web API client, auth/security middleware | `Last-Event-ID`, 409, Secure/HttpOnly/SameSite, CSRF·Origin/Host, CORS deny, proxy trust, endpoint별 권한 검증 | B-03~10 |
-| B-12 | process/PC 종료·reconcile·resume와 stale fencing/secret/capability recovery E2E | recovery test suite, Recovery Center | 완료 Step 중복 0건, 이전 token commit 거부, revoked Secret·drift snapshot 재개 차단, 동일 hash·다음 행동 복원 | B-08~11 |
+| B-11 | **Foundation 2 Gate** canonical API registry·same-origin BFF·SSE·공통 Web security 구현 | FastAPI routes, framework-neutral ports, server-side BFF client, auth/security middleware, OpenAPI contract | `Last-Event-ID`, 409, 표준 오류 envelope, request ID, pagination, Secure/HttpOnly/SameSite, CSRF·Origin/Host, CORS deny, proxy trust, endpoint별 권한 검증 | B-03~10 |
+| B-12 | process/PC 종료·reconcile·resume와 stale fencing/secret/capability recovery E2E | recovery test suite, recovery read model/API | 완료 Step 중복 0건, 이전 token commit 거부, revoked Secret·drift snapshot 재개 차단, 동일 hash·다음 행동이 공통 API에서 복원 | B-08~11 |
 
 ### Phase B Gate
 
@@ -363,9 +383,10 @@ Agent 코딩을 연결하기 전에 Project·Run·Step·Delegation의 권위 상
 - process 강제 종료 후 progress/HANDOFF와 DB가 같은 Event sequence로 복구된다.
 - FI-01~FI-08(DB commit/파일 replace/ack 경계, Worker heartbeat, 외부 요청 전후, PC 종료, SSE 절단)를 전용 환경에서 각각 최소 3회 실행하고 중복 실행·유실·불일치 0건을 확인한다.
 - `CANCELLED` terminal Run은 같은 Run으로 재개되지 않는다.
-- 승인·진행·복구가 화면과 API에서 확인된다.
+- 승인·진행·복구가 공통 API와 read model에서 확인되며 실제 메뉴 UI 판정은 U Phase에서 수행한다.
 - Queue는 exactly-once를 주장하지 않고 at-least-once+receipt+fencing으로 중복 부작용을 막으며, budget hard limit을 병렬 호출 전 원자 예약으로 지킨다.
 - 다른 target/environment의 EvidenceManifest와 신산님 direction 없는 DIR `CLEARED`가 DB guard에서 거부된다.
+- B Gate 전에는 A Phase의 read-only prototype을 제외한 메뉴별 실제 기능·write API 연결을 시작하지 않는다.
 
 ---
 
@@ -380,7 +401,7 @@ MoaWorks M1~M3을 순서대로 검증하며, Main Agent가 조율하고 Develope
 | C-01 | LLM Gateway·NativeAgentAdapter capability probe와 Minimal Main Agent Kernel 구현 | provider/adapter, model→action→observation loop | request ID·abort·final usage·retry-after·usage provenance를 반환하고 한 Step 예약 budget 검증 | B Gate |
 | C-02 | 최소 DelegationPacket과 Main→Developer 권한·컨텍스트·egress snapshot 계약 구현 | packet schema, scope/permission/egress projection | 목표·허용·금지·완료조건·baseline·DataEgressProfile hash 누락 시 시작 차단 | C-01 |
 | C-03 | **M1** Developer Subagent 한 명의 read-only start·wait·stop·raw result 반환 구현 | launch lifecycle, raw result artifact | 저장소 변경 없이 Main이 시작·중지하고 결과를 자동 수신 | C-02 |
-| C-04 | **M1** steer·resume·현재 작업·결과 handoff UI 구현 | intervention API/UI, checkpoint handoff | 사람이 실행 중 개입하고 세션 중단 후 같은 Delegation을 복원 | C-03 |
+| C-04 | **M1** steer·resume·현재 작업·결과 handoff service와 API projection 구현 | intervention API, checkpoint handoff, Workbench projection contract | 사람이 실행 중 개입하고 세션 중단 후 같은 Delegation을 API 계약으로 복원하며 실제 Workbench UI는 U-02가 소유 | C-03 |
 | C-05 | **M2** 구조화 Result Envelope와 schema validator 구현 | result schema, validator, reason code | COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED/CANCELLED 형식 검증 | C-03~04 |
 | C-06 | **M2** 유효 FAILURE_REPORT 판별기 구현 | failure report validator | 원인·증거·변경 경로·잔여 작업·판단 요청 없는 보고는 횟수 미집계 | C-05 |
 | C-07 | **M2** DelegationOutcomeResolver와 Step·Delegation·fencing 원자 전이 구현 | resolver, transition/outbox/fencing tests | 현재 execution/write token이 있는 결과만 canonical Step 상태·Event에 1회 반영 | C-05~06, B-05~09 |
@@ -389,9 +410,9 @@ MoaWorks M1~M3을 순서대로 검증하며, Main Agent가 조율하고 Develope
 | C-10 | patch/write/execute Action과 risk·permission·egress·Secret Broker policy 구현 | tools, structured receipt, deterministic policy | 양 fencing token·허용 path·egress snapshot을 강제하고 Agent secret read, metadata/redirect/DNS rebinding, destructive 기본 차단 | C-09 |
 | C-11 | Main Agent Task 분석·ExecutionPlan·WorkInstruction orchestration 구현 | planner/orchestrator | 승인 전 write Step이 schedule되지 않고 Main이 전체 판단 유지 | C-08~10 |
 | C-12 | **M3** failure lineage·fingerprint·유효 횟수 집계 구현 | failure ledger, replay tests | 같은 lineage/fingerprint의 유효 보고만 1·2·3회로 누적 | C-06~07, C-11 |
-| C-13 | **M3** 세 번째 실패의 lease·tool 회수와 Main 직접 인수 구현 | TakeoverPacket, takeover UI/audit | 3회째에 Developer 강제 중지 후 순차 인수, 동시 write 0건 | C-12 |
+| C-13 | **M3** 세 번째 실패의 lease·tool 회수와 Main 직접 인수 구현 | TakeoverPacket, takeover projection/audit | 3회째에 Developer 강제 중지 후 순차 인수, 동시 write 0건; 실제 Workbench·Agents 화면은 U-02·U-08이 소유 | C-12 |
 | C-14 | G0~G3·diff review·EvidenceManifest·Apply Approval 구현 | gate engine, reports, apply service | SKIPPED/BLOCKED는 PASS 제외, verified=delivered=manifest target hash, blocking defect·미완료 ProductValidation 적용 차단 | C-10~13 |
-| C-15 | 작은 실제 fixture 기능의 전체 Single Developer E2E | end-to-end report, screenshots, API/EvidenceManifest | 정상·중단·재개·거부·3회 인수와 요청→기술검증→ProductValidation→DefectAssessment→사람 ReleaseDecision→적용/폐기 재현 | C-01~14 |
+| C-15 | 작은 실제 fixture 기능의 전체 Single Developer backend/API E2E | end-to-end report, API/EvidenceManifest, projection evidence | 정상·중단·재개·거부·3회 인수와 요청→기술검증→ProductValidation→DefectAssessment→사람 ReleaseDecision→적용/폐기를 API·projection으로 재현하며 실제 메뉴 UI는 U Phase가 소유 | C-01~14 |
 
 ### Phase C Gate
 
@@ -421,12 +442,12 @@ MoaWorks M1~M3을 순서대로 검증하며, Main Agent가 조율하고 Develope
 | D-04 | CodePattern·ExampleReference·AntiPattern 추출·조회 구현 | pattern repository/retrieval | 검증되지 않은 생성 코드는 positive exemplar가 되지 않음 | D-03 |
 | D-05 | terminal Run LearningReview와 Reflection 구현 | review schema/background job | 모든 terminal Run에서 review 또는 no-change reason 생성 | D-01~04 |
 | D-06 | learning candidate·evaluation·approval·activation·rollback·quarantine 구현 | candidate lifecycle/API | source→candidate→activation→Run 계보와 source revoke 시 파생 Skill/Hook/Memory 신규 사용 차단 | D-05 |
-| D-07 | **M4** Skill catalog L0/L1/L2·progressive loader·사용 기록 구현 | Skill runtime/UI | 선택 후 전체 SKILL.md, reference는 필요 시만 로드 | D-06 |
+| D-07 | **M4** Skill catalog L0/L1/L2·progressive loader·사용 기록 구현 | Skill runtime, catalog API/projection | 선택 후 전체 SKILL.md, reference는 필요 시만 로드하며 실제 화면은 U-08이 소유 | D-06 |
 | D-08 | **M4** Skill create/patch/split/merge/archive evolution 구현 | Skill candidate/replay/pilot | 새 Skill은 사람 승인, 기존 저위험 patch만 trusted_auto | D-07 |
 | D-09 | **M5** Hook Event·Matcher·Program·Fault Policy registry 구현 | Hook definition/version/API | Hook이 조언이 아니라 versioned deterministic rule로 저장 | D-06, D-08 |
 | D-10 | **M5** Hook sandbox runner·shadow·pilot·trust·quarantine 구현 | secure runner, replay suite | 새 executable/deny/권한 확대는 사전 승인, recursion 차단 | D-09 |
 | D-11 | canonical 9개 Provider의 Prompt/Model Registry·privacy/가격/capability snapshot·atomic routing activation 구현 | benchmark runner/routing evidence | upstream·region·retention·training/ZDR·가격표·probe TTL drift를 탐지하고 중요 변경 시 새 Run 차단 | D-05~06 |
-| D-12 | Learning Studio·Skills·Hooks·Learning Journey 화면 구현 | UI, provenance views | source→후보→평가→승인→활성→적용 Run→rollback 계보를 화면에서 조회 | D-01~11 |
+| D-12 | Learning Studio·Skills·Hooks·Learning Journey read model과 API 구현 | provenance query/API, menu projection contract | source→후보→평가→승인→활성→적용 Run→rollback 계보를 API로 조회하며 실제 Knowledge·Agents 화면은 U-07~U-08이 소유 | D-01~11 |
 | D-13 | 가르친 코드와 완료 Run을 사용하는 전체 학습·source revoke E2E | provenance/benchmark/test report | 후보 생성→승인→다음 Task 적용→source revoke 영향 격리→rollback과 무변경 review 재현 | D-01~12 |
 
 ### Phase D 내부 승격 Gate
@@ -443,7 +464,7 @@ MoaWorks M1~M3을 순서대로 검증하며, Main Agent가 조율하고 Develope
 - 새 Skill과 새 executable Hook이 무승인으로 활성화되지 않는다.
 - 현재 Run에 학습이 조용히 섞이지 않고 다음 Task/Run snapshot부터 적용된다.
 - 동일 입력이 미승인 candidate 전후에는 같고, 승인 후에만 바뀌며 rollback 뒤 baseline으로 복귀한다. 검증 실패 코드는 positive exemplar로 채택되지 않는다.
-- Hook shadow/pilot과 rollback을 화면에서 확인하고 D-13 전체 학습 E2E가 합격한다.
+- Hook shadow/pilot과 rollback을 API·projection에서 확인하고 D-13 전체 학습 E2E가 합격한다. 실제 Knowledge·Agents 화면 확인은 U-07~U-08이 소유한다.
 - 같은 model ID의 privacy·가격·capability drift와 revoked LearningSource가 조용히 새 Run에 적용되지 않는다.
 - 동일 검증 대상 hash에서 `AV-LRN-003~005` 중 하나 이상이 CRITICAL 실패로 확정되면 `DIRX-LRN-CRITICAL`을 한 번 발생시켜 긴급 `DIR-X`를 이 Gate 직후 추가하고 신산님 지시 전 Phase E를 시작하지 않는다. E-11 뒤 DIR-3은 별도로 유지한다.
 
@@ -458,14 +479,14 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 | ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
 |---|---|---|---|---|
 | E-01 | Reviewer·Tester AgentDefinition과 축소 permission 구현 | role specs, result schemas | Developer 결과와 독립 context·evidence로 검토 | D Gate |
-| E-02 | Developer→Reviewer→Tester 구조화 handoff와 EvidenceManifest 전달 구현 | handoff workflow/UI | raw transcript 없이 target/environment/toolchain/raw evidence checksum을 전달하고 누락·불일치 탐지 | E-01 |
+| E-02 | Developer→Reviewer→Tester 구조화 handoff와 EvidenceManifest 전달 구현 | handoff workflow/API/projection | raw transcript 없이 target/environment/toolchain/raw evidence checksum을 전달하고 누락·불일치 탐지; 실제 Reviews 화면은 U-05가 소유 | E-01 |
 | E-03 | ExternalVerifierAdapter와 수동 외부 Claude 검증 artifact bundle 구현 | adapter contract, export/import bundle | native 결과를 독립 검증하고 제한·출처 표시, 자동 연결은 보류 | E-01~02 |
-| E-04 | Task DAG·dependency·conflict group·at-least-once queue scheduler 구현 | DAG/queue service, graph UI | cycle 차단, dependency 완료 전 claim 금지, DB-time atomic claim·visibility·quarantine 검증 | E-02 |
+| E-04 | Task DAG·dependency·conflict group·at-least-once queue scheduler 구현 | DAG/queue service, graph projection API | cycle 차단, dependency 완료 전 claim 금지, DB-time atomic claim·visibility·quarantine 검증; 실제 Runs·Agents 화면은 U-04·U-08이 소유 | E-02 |
 | E-05 | 제한 병렬 read/analyze Delegation 구현 | concurrency scheduler | 같은 baseline에서 독립 분석 후 Main이 결과 통합 | E-04 |
 | E-06 | disjoint worktree/canonical path의 worker·write fencing 기반 독립 write 구현 | multi-worktree/lease manager | 동일 conflict scope 이중 lease 0건, 인수 전 token의 Tool/filesystem commit 거부, merge 전 검증 | E-05 |
 | E-07 | STOP·CONTINUE_INDEPENDENT·COLLECT_AND_REVIEW 실패 정책 구현 | exception resolver/inbox | 실패 종속 Step만 차단, 전체 성공으로 오표시하지 않음 | E-04~06 |
 | E-08 | token·cost·quota·concurrency atomic reservation과 capability routing 구현 | budget reservation/router services | 병렬 호출 전 max forecast 예약, abort/final usage reconcile, 한도 소진은 PAUSED_QUOTA, 무승인 fallback 없음 | E-04~07 |
-| E-09 | G4~G7·통합/API/UI·ProductValidation·Defect·ReleaseDecision Gate 구현 | verification suite | 동일 target EvidenceManifest만 PASS, criterion 미판정·blocking defect·비인증 actor Release 차단 | E-01~08 |
+| E-09 | G4~G7·통합/API·UI contract projection·ProductValidation·Defect·ReleaseDecision Gate 구현 | verification suite | 동일 target EvidenceManifest만 PASS, criterion 미판정·blocking defect·비인증 actor Release 차단; 실제 메뉴 UI Gate는 U Phase가 소유 | E-01~08 |
 | E-10 | Git branch·commit·merge·PR adapter 구현 | Git adapter/audit | 사용자 변경 보존, force/destructive 차단, 전달 hash 일치 | E-06, E-09 |
 | E-11 | 대규모 fixture migration·bug hunt 제한 병렬·§49 신뢰사슬 E2E | benchmark/test report | stale fencing, hard-limit race, evidence/Release hash mismatch를 포함해 병렬 실패 격리와 비용·품질 비교 | E-01~10 |
 
@@ -482,11 +503,11 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 
 ---
 
-## 12. Phase F — 운영·단계적 배포
+## 12. Phase F — Provider·환경·운영 backend/API와 배포 capability
 
 ### 목표
 
-사용자가 CLI·DB를 직접 다루지 않고 Local development→WSL-server Test/Staging→ysna-server Production에서 장시간 작업·중단·복구·학습·Git 배포를 운영하게 한다.
+메뉴가 공통으로 소비할 Provider·환경·운영 backend/API와 Local development→WSL-server Test/Staging→ysna-server Production 배포 capability를 먼저 완성한다. 실제 화면 운영과 최종 Release는 U Phase와 F-20 뒤에 판정한다.
 
 | ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
 |---|---|---|---|---|
@@ -501,15 +522,68 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 | F-09 | ANTHROPIC adapter 구현 | provider adapter, contract tests | generate·stream·health·discovery와 request ID·abort·final usage·quota/error/retry-after mapping 통과 | F-02 |
 | F-10 | OPENAI adapter 구현 | provider adapter, contract tests | generate·stream·health·discovery와 request ID·abort·final usage·quota/error/retry-after mapping 통과 | F-02 |
 | F-11 | OLLAMA local adapter와 endpoint SSRF 방어 구현 | local adapter, endpoint validator/probe | 환경 allowlist 외 metadata/link-local/loopback/private IP·redirect·DNS rebinding 차단, endpoint 비노출, 설치/model/offline/stream 상태 구분 | F-02 |
-| F-12 | 9개 Provider Settings·Egress·Secret·Execution Mode·routing 화면 통합검증 | provider UI/BFF, screenshots, Network evidence | canonical 순서, 비활성 사유, drift·egress·Secret 상태·model refresh·역할 저장이 adapter와 일치하고 값/endpoint 비노출 | F-03~11 |
-| F-13 | Dashboard·Queue·Worker fencing·Audit·Alert·Cost reservation·Deployment Monitoring 구현 | operations/observability UI/API | lease epoch/token, quarantine, budget reserved/consumed/reconcile, Provider/DB/queue health, alert dedupe·ack·Monitoring 상태 조회 | F-12 |
-| F-14 | PostgreSQL 15/18 migration·backup/restore·artifact retention·재해복구 구현 | migration compatibility, recovery manifest, UI runbook | WSL-server `local-postgres` PG15 개발 DB, 분리 PG18 RC, ysna-server `shared-db` PG18 운영의 schema/extension/backup/restore/rollback 계보를 EvidenceManifest로 복구 | F-13 |
-| F-15 | Local Web/API/Worker + WSL-server `local-postgres` 개발 DB의 production-like Docker·Web security·same-origin 검증 | compose/local deployment, security evidence | PG15 Anvil 전용 DB/role·최소권한·방화벽/IP 제한 또는 SSH tunnel을 사용하고 CSRF/CSP/proxy trust 및 브라우저 내부주소·secret 0건 | F-14 |
+| F-12 | 9개 Provider Settings·Egress·Secret·Execution Mode·routing API/BFF contract 통합검증 | provider settings API/BFF, projection contract, Network contract evidence | canonical 순서, 비활성 사유, drift·egress·Secret 상태·model refresh·역할 저장이 adapter와 일치하고 값/endpoint 비노출; 실제 Settings 화면은 U-11이 소유 | F-03~11 |
+| F-13 | Dashboard·Queue·Worker fencing·Audit·Alert·Cost reservation·Deployment Monitoring read model/API 구현 | operations/observability API, Dashboard·Operations projection | lease epoch/token, quarantine, budget reserved/consumed/reconcile, Provider/DB/queue health, alert dedupe·ack·Monitoring 상태 조회; 실제 화면은 U-01·U-10이 소유 | F-12 |
+| F-14 | PostgreSQL 15/18 migration·backup/restore·artifact retention·재해복구 구현 | migration compatibility, recovery manifest, screen-independent runbook API | WSL-server `local-postgres` PG15 개발 DB, 분리 PG18 RC, ysna-server `shared-db` PG18 운영의 schema/extension/backup/restore/rollback 계보를 EvidenceManifest로 복구 | F-13 |
+| F-15 | 공통 화면 shell·Local Web/API/Worker + WSL-server `local-postgres` 개발 DB의 production-like Docker·Web security·same-origin 검증 | common shell, compose/local deployment, security evidence | sidebar/header/route/권한/error boundary와 PG15 Anvil 전용 DB/role·최소권한·방화벽/IP 제한 또는 SSH tunnel을 사용하고 CSRF/CSP/proxy trust 및 브라우저 내부주소·secret 0건; 메뉴 전용 업무 기능 없음 | F-14 |
 | F-16 | Git 전용 WSL-server(hostname `SINSAN`) Test/Staging 배포와 ReleaseManifest 구현 | deploy/wsl, signed ReleaseManifest | 공개 staging 도메인 임의 생성 없이 승인 접근/tunnel 사용, 승인 remote commit/tag만 checkout, dirty/server-local patch 차단, manifest hash 검증 | F-15 |
 | F-17 | WSL-server 실제 기능과 PostgreSQL 18 Release Candidate 격리 검증 | WSL test report, PG18 RC EvidenceManifest | 일반 통합은 `local-postgres` PG15 전용 DB, 별도 격리 PG18에서 migration·extension·query·backup/restore·rollback rehearsal, 핵심 E2E·ProductValidation 통과 | F-16 |
-| F-18 | ysna-server Production·OIDC·object storage·network policy·`envil.sinsan.kr` Git 배포 구현 | production deployment, DeployApprovalSubject | WSL 합격 동일 commit/digest만 Git checkout하고 `shared-db` pgvector PG18 전용 DB/role, environment+manifest+migration+rollback hash, secret·권한·network 분리 | F-17 |
+| F-18 | ysna-server Production target·OIDC·object storage·network policy·`envil.sinsan.kr` Git 배포 capability와 비공개 rehearsal 구현 | production deployment adapter, DeployApprovalSubject | WSL 합격 동일 commit/digest만 Git checkout하고 `shared-db` pgvector PG18 전용 DB/role, environment+manifest+migration+rollback hash, secret·권한·network 분리; U Gate 전 최종 공개 Release 금지 | F-17 |
 | F-19 | Local·WSL-server·ysna-server의 9개 Provider·egress·Web·secret 보안 회귀검증 | cross-environment provider/security EvidenceManifest | 환경별 지원/비지원·routing이 정직하고 `envil.sinsan.kr` Network·payload·DB·log·artifact에 secret·DB/OLLAMA 내부주소 0건 | F-18 |
-| F-20 | 운영 smoke·Monitoring·ProductValidation·Defect·backup/restore·rollback 최종 검증 | release report, deployment monitoring, runbook | 동일 ReleaseManifest에서 smoke·중단/재개·복구·blocking defect 0건·관찰구간 critical alert 0건 후 신산님 확인으로만 `RELEASED` | F-14, F-19 |
+### Phase F Capability Gate
+
+- F-01~F-19의 Provider·환경·운영 backend와 API/BFF가 독립 Tester `ACCEPTED`다.
+- Local·WSL-server·ysna-server의 checkout·DB·credential·network 경계와 rollback API가 검증됐다.
+- Settings·Dashboard·Operations를 포함한 모든 메뉴가 사용할 read model과 API projection이 고정됐다.
+- 브라우저 코드에 내부 API 주소를 제공하지 않으며 실제 메뉴 제품 write는 아직 시작하지 않는다.
+- 이 Gate 뒤에만 U-01 Dashboard write lease를 발급한다.
+
+---
+
+## 13. Phase U — 화면 메뉴 순차 수직 개발
+
+### 목표
+
+공통 모듈·API/BFF·화면 shell을 기반으로 11개 메뉴를 하나씩 완성한다. 각 메뉴는 backend 보완, API/BFF, UI, 실제 브라우저와 운영 evidence까지 같은 Package에서 닫으며 다음 메뉴와 동시에 개발하지 않는다.
+
+### 메뉴 Package 공통 완료조건
+
+- 메뉴 전용 domain/service와 API/OpenAPI/BFF 계약이 TDD로 검증된다.
+- 1920×1080·12px 표준, tooltip/popover 설명, 키보드와 접근성 계약을 지킨다.
+- loading·empty·error·blocked·quota·cancel·reconnect 중 해당 상태를 숨기지 않는다.
+- 운영 유사 Docker에서 실제 클릭, same-origin Network, API request/response와 필요한 DB evidence를 수집한다.
+- 브라우저 Network에 `localhost`, `127.0.0.1`, Docker hostname, 내부 포트, secret이 없다.
+- 앞서 완료된 메뉴와 Foundation 전체 회귀가 PASS하고 독립 Tester `ACCEPTED` 뒤에만 다음 메뉴를 시작한다.
+
+| ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
+|---|---|---|---|---|
+| U-01 | **Dashboard** 전체 상태·경고·승인 대기·다음 행동 수직 구현 | dashboard service 보완, API/BFF, UI, E-SHOT/E-NET/E-API | Project·Run·Agent·Provider·환경 상태가 실제 read model과 일치하고 미연결·미실행을 PASS로 표시하지 않음 | B Gate, C Gate, D Gate, E Gate, F Capability Gate |
+| U-02 | **Workbench** 어울 대화·작업 지시·진행·결과 보고·승인·기록 수직 구현 | conversation/instruction/progress/report/approval/history API·UI | LLM 요청, 사람 개입, checkpoint, 결과·승인 계보가 같은 Run hash로 연결되고 중단·재개 실제 클릭 검증 | U-01 |
+| U-03 | **Projects** 프로젝트 등록·repository onboarding·baseline·정책·보호 경로 수직 구현 | project/repository API·UI, read/write guard evidence | 실제 repository를 등록·scan하고 dirty/untracked·금지 경로를 보존하며 승인 없는 mutation 0건 | U-02 |
+| U-04 | **Runs** Run·Step·Delegation·attempt·queue·중단·재개·취소 수직 구현 | run graph API·UI, SSE/recovery evidence | Event sequence, lease epoch/token, retry·cancel·resume가 API·DB·화면에서 일치하고 stale commit 차단 | U-03 |
+| U-05 | **Reviews** 기술 검토·ProductValidation·DefectAssessment·사람 ReleaseDecision 수직 구현 | review/validation/defect/release API·UI | 기술 PASS와 제품 판정이 분리되고 blocking defect·비인증 actor·다른 target hash Release가 차단 | U-04 |
+| U-06 | **Quality** Gate·테스트·EvidenceManifest·diff·적대적·회귀 검증 수직 구현 | quality gate API·UI, evidence viewer | PASS/FAIL/SKIPPED/BLOCKED/ERROR가 정직하고 동일 target/environment evidence만 합격 집계 | U-05 |
+| U-07 | **Knowledge** source·memory·pattern·provenance·revocation·snapshot 수직 구현 | knowledge API·UI, provenance graph | source→snapshot→candidate 계보와 revoke 영향이 보이고 미승인 학습이 현재 Run에 섞이지 않음 | U-06 |
+| U-08 | **Agents & Automation** Main/Developer/Reviewer/Tester·Skill·Hook·DAG·takeover 수직 구현 | agent/skill/hook API·UI, audit/takeover evidence | M1~M5 순서, 권한·fencing·3회 인수·shadow/pilot·rollback이 실제 상태와 일치 | U-07 |
+| U-09 | **Environments** Local·WSL·ysna·DB·secret·egress·deployment target 수직 구현 | environment/deploy-target API·UI | PG15·격리 PG18 RC·운영 PG18, Git SHA/tag, network·secret 경계를 화면에서 구분하고 직접 DB/CLI 없이 확인 | U-08 |
+| U-10 | **Operations** queue·worker·alert·budget·audit·health·deployment monitoring 수직 구현 | operations API·UI, alert/monitoring evidence | stale worker, quarantine, reserve/consume/reconcile, alert dedupe·ack, rollback next action이 실제 운영 상태와 일치 | U-09 |
+| U-11 | **Settings** 9개 Provider·model·routing·credential 상태·execution mode·정책 수직 구현 | settings API/BFF·UI, provider Network evidence | canonical Provider 순서, unavailable 사유, privacy·가격·capability drift, secret version/status가 값·내부 endpoint 노출 없이 저장·복원 | U-10 |
+
+### Phase U Gate
+
+- U-01~U-11이 순서대로 독립 Tester `ACCEPTED`이며 동시 메뉴 write가 0건이다.
+- 11개 메뉴가 1920×1080 표준에서 접근 가능하고 공통 navigation·권한·상태 표현이 일치한다.
+- 각 메뉴의 API·DB·브라우저·Network 증거가 실행 범위별로 구분되고 mock·static 결과가 실제 PASS로 승격되지 않는다.
+- 메뉴 간 이동, 권한 변경, 중단·재개, error recovery와 cross-menu regression이 PASS한다.
+- 운영 브라우저에서 내부 API 주소·secret 노출이 0건이다.
+
+---
+
+## 14. F-20 — 최종 운영 Release
+
+| ID | 1회 작업 목표와 범위 | 주요 산출물 | 완료조건·증거 | 선행 |
+|---|---|---|---|---|
+| F-20 | 운영 smoke·Monitoring·ProductValidation·Defect·backup/restore·rollback 최종 검증 | release report, deployment monitoring, runbook | 동일 ReleaseManifest에서 11개 메뉴 smoke·중단/재개·복구·blocking defect 0건·관찰구간 critical alert 0건 후 신산님 확인으로만 `RELEASED` | F-19, U-11 |
 
 ### Phase F Gate
 
@@ -527,7 +601,7 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 
 ---
 
-## 13. Phase P — M6 Plugin 포장
+## 15. Phase P — M6 Plugin 포장
 
 ### 목표
 
@@ -549,9 +623,9 @@ Single Developer가 안정된 뒤 역할 전달과 독립 검증을 먼저 확�
 
 ---
 
-## 14. Package별 필수 완료 판정
+## 16. Package별 필수 완료 판정
 
-### 14.1 개발자 완료보고
+### 16.1 개발자 완료보고
 
 ```yaml
 work_package_result:
@@ -576,7 +650,7 @@ work_package_result:
   next_action: review
 ```
 
-### 14.2 Main Agent 판정
+### 16.2 Main Agent 판정
 
 Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록한다.
 
@@ -595,7 +669,7 @@ Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록�
 
 `DEFER`는 사유·위험·재검토 시점과 `CarryoverItem`을 요구한다. Developer 수정 보고만으로 defect를 `CLOSED`로 만들지 않으며, `CRITICAL`과 blocking `MAJOR`가 열려 있으면 Release를 차단한다.
 
-### 14.3 중대·경미 미진 구분
+### 16.3 중대·경미 미진 구분
 
 - 중대: 완료조건 미충족, 공개 동작·데이터·보안·승인 위반, 필수 Gate 실패, 회귀, 실제 evidence 없음. 별도 수정 WorkInstruction을 발행한다.
 - 경미: 기능과 필수 Gate는 합격했으나 문구·관측성·비차단 UI 보완이 남음. 다음 Package에 흡수한다.
@@ -603,13 +677,13 @@ Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록�
 
 ---
 
-## 15. 진행 파일과 세션 복구
+## 17. 진행 파일과 세션 복구
 
 `docs/progress/build-progress.json` 최소 필드:
 
 ```json
 {
-  "plan_version": "1.4",
+  "plan_version": "1.6",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "G",
   "current_work_package": "G-02",
@@ -652,38 +726,40 @@ Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록�
 
 ---
 
-## 16. 요구사항 추적과 Phase별 인수 기준
+## 18. 요구사항 추적과 Phase별 인수 기준
 
 | 설계 핵심 | 구현 Phase·Package | 최종 증거 |
 |---|---|---|
-| 전체 화면과 운영 흐름 우선 | A-01~A-15 | 승인된 screen map·prototype·trace matrix |
-| 9개 LLM Provider 선택 | A-10, D-11, F-01~F-12, F-19~F-20 | catalog·adapter contract·Settings/Execution Mode·Network/security evidence |
-| 영속 상태·중단·재개 | B-01~B-12 | crash/reconcile/resume E2E |
+| 전체 화면과 운영 흐름 우선 | A-01~A-15, U-01~U-11 | 승인된 screen map·prototype·메뉴별 실제 브라우저·trace matrix |
+| 11개 메뉴 순차 수직 개발 | U-01~U-11 | 메뉴별 service·API/BFF·UI·E-SHOT/E-NET/E-API·독립 acceptance |
+| 9개 LLM Provider 선택 | A-10, D-11, F-01~F-12, U-11, F-19~F-20 | catalog·adapter contract·Settings/Execution Mode·Network/security evidence |
+| 공통 모듈과 API 우선 | B-01~B-12, C-01~E-11, F-01~F-19 | framework-neutral module·OpenAPI·same-origin BFF·capability Gate evidence |
+| 영속 상태·중단·재개 | B-01~B-12, U-04 | crash/reconcile/resume E2E와 Runs 실제 화면 |
 | Main 조율 + Developer Subagent | C-01~C-15 | Single Developer 수직 흐름 report |
 | 결과 상태와 3회 인수 | C-05~C-07, C-12~C-13 | failure classification·takeover evidence |
 | 단계별 진행 파일 | G-05, B-08, 전 Package | 동일 sequence의 progress/HANDOFF |
 | 사람 승인·언제든 개입 | B-04, B-10, C-04, C-11 | approval invalidation·intervention E2E |
 | 비의미 revision과 원 승인 binding | G-05, A-06, B-03~04 | root human approval·semantic diff·scope 비확장 DB guard |
-| Memory·작업 후 학습 | D-01~D-06 | LearningReview·snapshot·provenance |
-| Skill 자연 생성·upgrade | D-07~D-08 | candidate→pilot→approval→activation |
-| Hook 자연 생성·적용 | D-09~D-10 | Event→Matcher→Program shadow/pilot evidence |
-| 우수 코드·방법 가르치기 | D-03~D-04, D-12~D-13 | source hash→pattern/skill/hook candidate |
-| 역할별 독립 검증 | E-01~E-03, E-09 | Reviewer/Tester/외부검증 별도 evidence |
-| ProductValidation·Defect·사람 ReleaseDecision | A-08, B-05, C-14~15, E-09, F-17~20 | criterion·target hash·defect 재검증·사람 actor·Apply/Deploy binding |
+| Memory·작업 후 학습 | D-01~D-06, U-07 | LearningReview·snapshot·provenance·Knowledge 화면 |
+| Skill 자연 생성·upgrade | D-07~D-08, U-08 | candidate→pilot→approval→activation·Agents 화면 |
+| Hook 자연 생성·적용 | D-09~D-10, U-08 | Event→Matcher→Program shadow/pilot evidence |
+| 우수 코드·방법 가르치기 | D-03~D-04, D-12~D-13, U-07~U-08 | source hash→pattern/skill/hook candidate와 provenance UI |
+| 역할별 독립 검증 | E-01~E-03, E-09, U-05~U-06 | Reviewer/Tester/외부검증 별도 evidence와 Reviews·Quality 화면 |
+| ProductValidation·Defect·사람 ReleaseDecision | A-08, B-05, C-14~15, E-09, U-05~U-06, F-17~20 | criterion·target hash·defect 재검증·사람 actor·Apply/Deploy binding |
 | 통합검증·적대적·장애복구 | G-06~G-07, 전 Package·Gate | AV ID trace·L5/L6·Phase 회귀·실제 evidence |
 | EvidenceManifest 신뢰 사슬 | G-04, B-07, C-14~15, E-02·E-09, F-14~20 | target·Git·image·migration·config·routing·actor·raw checksum binding |
 | 설계 의도 강제 중단 | DIR-1(A-15), DIR-2(C-15), DIR-3(E-11), `DIRX-LRN-CRITICAL` DIR-X | canonical 4상태·독립 DIR Report·신산님 direction Event |
 | Queue·Worker/write fencing·경로 identity | B-09·B-12, C-07·C-09~10, E-04·E-06·E-11 | stale token commit 거부·alias 이중 lease 0건·quarantine evidence |
-| 제한 병렬과 원자 비용 통제 | B-10, C-01, E-04~E-11, F-03~13 | DAG·atomic reservation·abort/final usage·invoice reconcile benchmark |
-| Egress·Secret·Web 보안 | A-10·A-14, B-11~12, C-02·C-10, F-01~19 | CSRF/Origin·SSRF/DNS rebinding·Secret rotate/revoke·Network evidence |
-| 화면 기반 Git 운영·배포 | F-01~F-20 | Local→WSL-server→ysna-server·PG15/격리 PG18 RC·ReleaseManifest·Monitoring evidence |
+| 제한 병렬과 원자 비용 통제 | B-10, C-01, E-04~E-11, F-03~13, U-08·U-10 | DAG·atomic reservation·abort/final usage·invoice reconcile benchmark |
+| Egress·Secret·Web 보안 | A-10·A-14, B-11~12, C-02·C-10, F-01~19, U-01~U-11 | CSRF/Origin·SSRF/DNS rebinding·Secret rotate/revoke·Network evidence |
+| 화면 기반 Git 운영·배포 | U-09~U-10, F-14~F-20 | Local→WSL-server→ysna-server·PG15/격리 PG18 RC·ReleaseManifest·Monitoring evidence |
 | 안정 구성 Plugin 포장 | P-01~P-04 | 별도 환경 install·upgrade·rollback evidence |
 
 ---
 
-## 17. 전체 착수 순서와 다음 행동
+## 19. 전체 착수 순서와 다음 행동
 
-`[historical]` 첫 실제 작업은 `G-01 설계 기준선 등록`이었고 완료됐다. 현재는 G-02 revision 2 독립 재검토 전이며, 첫 코드 작업은 승인된 G-03 scaffold WorkInstruction 이후다.
+`[historical]` 첫 실제 작업은 `G-01 설계 기준선 등록`이었고 G·A·B-01~B-03은 완료됐다. v1.6 작성 시점의 보호된 실행 경계는 B-04이며, B-04는 기존 승인 WorkInstruction과 hash로 완료·검증한다. v1.6의 첫 적용 Package는 B-04 acceptance와 검증 문서 successor 정합화 뒤의 B-05다.
 
 초기 승인 계보와 이후 순서는 다음과 같다.
 
@@ -691,13 +767,23 @@ Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록�
 2. `[historical 완료]` Main Agent가 G-01 WorkInstruction과 InvocationPrompt를 작성했다.
 3. G Phase는 Main Agent가 설계·운영 artifact를 확정하고, 코드 scaffold가 필요한 G-03부터 Developer Subagent 한 명을 사용한다.
 4. 각 Package 종료 후 progress/HANDOFF와 Completion/Test Report를 갱신하고 매트릭스 할당 ID를 전량 판정한다.
-5. Phase Gate 합격 전에는 다음 Phase의 구현을 시작하지 않는다.
-6. DIR-1·DIR-2·DIR-3 또는 `DIRX-LRN-CRITICAL` DIR-X에 도달하면 canonical DIR 상태로 즉시 중단하고 신산님께 보고한다. `ALIGNED`여도 신산님의 direction Event와 `CLEARED` 전에는 다음 행동을 시작하지 않는다.
+5. B-04 acceptance와 v1.6 매트릭스·테스트계획서 successor 정합화 뒤 B-05부터 공통 모듈→공통 API/BFF→backend capability→U-01~U-11 순서로 진행한다.
+6. Foundation·Capability·메뉴 Gate 합격 전에는 다음 write-capable 단계나 메뉴를 시작하지 않는다.
+7. DIR-1·DIR-2·DIR-3 또는 `DIRX-LRN-CRITICAL` DIR-X에 도달하면 canonical DIR 상태로 즉시 중단하고 신산님께 보고한다. `ALIGNED`여도 신산님의 direction Event와 `CLEARED` 전에는 다음 행동을 시작하지 않는다.
 
-### 17.1 v1.5 A-01 책임 정합화 revision
+### 19.1 v1.5 A-01 책임 정합화 revision
 
 - `[historical]` v1.4 SHA-256은 `4DB8F5F5F85703CB4E1093550F6C8268D8666A50D2E84FDD70FC355014CF7475`이며 G-02/G-07/Phase G accepted evidence와 함께 불변이다.
 - v1.5는 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`과 `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md`에 binding된다.
 - 의미 변경은 A-01 역색인의 `AV-FLOW-001` 제거뿐이다. Package 97개, A Gate, A-05·B-03 책임, 기능 범위·요구사항·중요 위험은 변경하지 않는다.
+
+### 19.2 v1.6 공통 모듈·API 우선 및 메뉴 순차 개발 revision
+
+- 승인 근거는 신산님의 2026-08-14 명시 지시와 `docs/superpowers/specs/2026-08-14-common-api-menu-sequential-plan-design.md`다.
+- 완료된 G·A·B-01~B-04는 historical로 보존하며 재번호화·재개방하지 않는다.
+- B-05 이후 실행 순서와 UI 소유권을 변경하고 U-01~U-11을 추가해 canonical Package 수를 108개로 변경한다.
+- 제품 범위·요구사항·중요 위험과 기존 검증 ID는 삭제하거나 축소하지 않는다.
+- B-04 active WorkInstruction은 기존 승인 hash로 완료·검증한다. v1.6은 B-04 acceptance 뒤 새 WorkInstruction부터 적용한다.
+- 통합검증매트릭스·테스트계획서가 v1.6 successor로 정합화되기 전에는 B-05 write lease를 발급하지 않는다.
 
 이 계획의 목표는 많은 Subagent를 빠르게 띄우는 것이 아니다. Main Agent가 설계 책임을 유지하면서 한 번에 한 역할·한 write lease·한 검증 가능한 결과를 쌓고, 실제로 안정된 절차만 Skill·Hook·Plugin으로 승격하는 것이다.
