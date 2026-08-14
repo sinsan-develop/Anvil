@@ -4,7 +4,6 @@
 /.codex_qa/
 /.tmp_subagent_review/
 /.superpowers/
-/.worktrees/
 
 # Local runtime artifacts are intentionally outside the G-03 scaffold.
 /data/*
