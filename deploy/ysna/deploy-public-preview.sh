@@ -7,7 +7,7 @@ deploy_root="$HOME/deploy/anvil"
 repo_dir="$deploy_root/repo"
 runtime_dir="$deploy_root/runtime"
 evidence_dir="$deploy_root/evidence"
-origin_url="https://github.com/cyhuh7950/anvil.git"
+origin_url="git@github.com:cyhuh7950/anvil.git"
 compose_file="deploy/ysna/compose.public-preview.yml"
 compose_project="anvil-public-preview"
 

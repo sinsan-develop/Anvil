@@ -19,6 +19,7 @@ class AnvilPublicPreviewScriptTests(unittest.TestCase):
         self.assertIn('git checkout --detach "$release_commit"', script)
         self.assertIn('git rev-parse "$release_tag^{commit}"', script)
         self.assertIn('deploy_root="$HOME/deploy/anvil"', script)
+        self.assertIn('origin_url="git@github.com:cyhuh7950/anvil.git"', script)
 
     def test_scripts_manage_only_anvil_preview_resources(self):
         scripts = "\n".join(
@@ -53,8 +54,12 @@ class AnvilPublicPreviewScriptTests(unittest.TestCase):
             "nginx-proxy-manager",
             "shared-db",
             "content-security-policy",
+            "docker exec nginx-proxy-manager curl -fsS",
+            "curl -fsS -D - -o /dev/null",
         ):
             self.assertIn(required, script)
+        self.assertNotIn("wget", script)
+        self.assertNotIn("curl -fsSI", script)
 
     def test_release_manifest_is_non_secret_and_scope_honest(self):
         manifest = json.loads(self.read("release-manifest.public-preview.json"))

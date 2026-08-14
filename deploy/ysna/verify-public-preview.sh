@@ -19,9 +19,9 @@ cd "$repo_dir"
 [[ "$(docker inspect anvil-web --format '{{.State.Health.Status}}')" == "healthy" ]]
 docker inspect anvil-web --format '{{json .NetworkSettings.Networks}}' | grep -q 'proxy-network'
 
-internal_health="$(docker exec nginx-proxy-manager sh -lc 'wget -qO- http://anvil-web:3770/healthz')"
+internal_health="$(docker exec nginx-proxy-manager curl -fsS http://anvil-web:3770/healthz)"
 printf '%s' "$internal_health" | grep -q '"service":"anvil-web"'
-public_headers="$(curl -fsSI https://anvil.sinsan.kr)"
+public_headers="$(curl -fsS -D - -o /dev/null https://anvil.sinsan.kr)"
 printf '%s\n' "$public_headers" | grep -qi '^content-security-policy:'
 printf '%s\n' "$public_headers" | grep -qi '^x-content-type-options: nosniff'
 curl -fsS https://anvil.sinsan.kr | grep -q 'data-preview-shell'
