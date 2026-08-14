@@ -212,7 +212,7 @@ class G07BaselineTests(unittest.TestCase):
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
-            "6375e4e823c92fa518a9bab71a8db720dd132cc0",
+            "7508553188368b0b459faa3b67c2668ffb37c11a",
             report["git"]["validated_base_commit"],
         )
         self.assertEqual(

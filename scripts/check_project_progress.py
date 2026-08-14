@@ -778,9 +778,9 @@ def validate_event_stream(
             observed_local = details.get("dispatch_head", details.get("completion_head", details.get("acceptance_head")))
             observed_remote = details.get("dispatch_upstream_head", details.get("completion_upstream_head", details.get("acceptance_upstream_head")))
             b03_lf_followup = (
-                repository.get("validated_base_commit") == "6375e4e823c92fa518a9bab71a8db720dd132cc0"
+                repository.get("validated_base_commit") == "7508553188368b0b459faa3b67c2668ffb37c11a"
                 and set(repository.get("exact_allowed_paths", [])) == {
-                    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json","scripts/check_a14_workbench_prototype.py","scripts/check_g07_baseline.py","scripts/check_project_progress.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_project_progress.py"
+                    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json","scripts/check_g07_baseline.py","scripts/check_project_progress.py","tests/tooling/test_a14_workbench_prototype.py","tests/tooling/test_g07_baseline.py"
                 }
             )
             if not b03_lf_followup and (
@@ -4274,7 +4274,7 @@ def validate_repository_projection(
     b03_start_projection = repository.get("validated_base_commit") == "a589b17f26991432de5cf48cfe95c441cdd6da39" and "docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json" in allowed
     b03_completion_projection = repository.get("validated_base_commit") == "8f65b3e32aa9a45e18879aedca6add424df2ce2c" and "docs/evidence/manifests/B-03_COMPLETION_PROGRESS_MANIFEST.json" in allowed
     b03_rework_start_projection = repository.get("validated_base_commit") == "f9fbf64f2f6f135050b69afe47e6bed3aabeea3b" and "docs/evidence/manifests/B-03_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed
-    b03_rework_completion_projection = repository.get("validated_base_commit") in {"fcfa8059e060702afa6ea5fa801d40c4cb01cb63","6375e4e823c92fa518a9bab71a8db720dd132cc0"} and "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed
+    b03_rework_completion_projection = repository.get("validated_base_commit") in {"fcfa8059e060702afa6ea5fa801d40c4cb01cb63","6375e4e823c92fa518a9bab71a8db720dd132cc0","7508553188368b0b459faa3b67c2668ffb37c11a"} and "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed
     if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:

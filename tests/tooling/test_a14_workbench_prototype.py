@@ -32,10 +32,8 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(result["errors"], [])
         self.assertEqual(result["manifest"]["self_reference"], False)
         self.assertEqual(len(result["manifest"]["paths"]), 17)
-        self.assertEqual(
-            portable_hash(ROOT, "apps/web/server.mjs"),
-            "BAA6757E18ED28AC02569DDF4575436EA32EE0DDEC363BA6D730A64D93FCFC0A",
-        )
+        server_lf = (ROOT / "apps/web/server.mjs").read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        self.assertEqual(hashlib.sha256(server_lf).hexdigest().upper(), "77FCAABC7013AA1FA53B8872F2E980CB59224733FB34A74D2A481DB5F49B649C")
         self.assertEqual(
             portable_hash(ROOT, "tests/browser/a14/workbench-runtime.test.mjs"),
             "D6DC23724479AEBD43C91BFCB2CAFFA38940BFD161BE5F2C4E2DEC914AF59D9F",

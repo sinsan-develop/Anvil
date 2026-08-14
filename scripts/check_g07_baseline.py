@@ -1063,9 +1063,9 @@ def validate_repository(
                 "push_status",
             )
             b03_lf_followup = (
-                repository_projection.get("validated_base_commit") == "6375e4e823c92fa518a9bab71a8db720dd132cc0"
+                repository_projection.get("validated_base_commit") == "7508553188368b0b459faa3b67c2668ffb37c11a"
                 and set(repository_projection.get("exact_allowed_paths", [])) == {
-                    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json","scripts/check_a14_workbench_prototype.py","scripts/check_g07_baseline.py","scripts/check_project_progress.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_project_progress.py"
+                    "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json","scripts/check_g07_baseline.py","scripts/check_project_progress.py","tests/tooling/test_a14_workbench_prototype.py","tests/tooling/test_g07_baseline.py"
                 }
             )
             if not b03_lf_followup and any(reconciliation.get(field) != repository_projection.get(field) for field in projection_fields):

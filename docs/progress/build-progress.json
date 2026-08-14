@@ -591,7 +591,7 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "208E3A28FC0536050F29FB06CFBAB67DA2ADBD8996F17B0FA60B755D38367A98"
+      "sha256": "524D5F13FE635D7A556480D318D5BDA8EF8DAD9A6C3EC2C5B93FEB4EC051633A"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
@@ -599,7 +599,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "0D41DD5C9FB4095A62B536222DED71DC605A9921BC651016749F0A849DF1D95F"
+      "sha256": "C0057983ECEC4C372B27EEBDEDBD3B7F38507936705BB6A9793FF4A6DDAA0F36"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -607,11 +607,11 @@
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
-      "sha256": "13AA8C88C27BC5601D38FACE4C36F75F27273D1A729525545259F5792BF17CBF"
+      "sha256": "0341223A8703E4D86A50A7F7C569371B6F9416BF8D92DF1457731E6EB9A0A2C6"
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "217DDF649BDC6EEB2AEB109AD04A05CE5F0F7606A95459FA0DA1ABD6C3EE6C21"
+      "sha256": "F86D601DBCBD419AAF58944FAD3ABD8F1E181777D6363BF55FF677D21F175E5C"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
@@ -742,26 +742,25 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "6375e4e823c92fa518a9bab71a8db720dd132cc0",
+    "validated_base_commit": "7508553188368b0b459faa3b67c2668ffb37c11a",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "6375e4e823c92fa518a9bab71a8db720dd132cc0",
+    "remote_head": "7508553188368b0b459faa3b67c2668ffb37c11a",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
       "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json",
-      "scripts/check_a14_workbench_prototype.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_project_progress.py",
-      "tests/tooling/test_g07_baseline.py",
-      "tests/tooling/test_project_progress.py"
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py"
     ],
     "observed_at": "2026-08-14T20:00:02+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: B-03 R2 canonical-LF successor follow-up exact projection",
-    "local_head": "6375e4e823c92fa518a9bab71a8db720dd132cc0"
+    "local_head": "7508553188368b0b459faa3b67c2668ffb37c11a"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -900,5 +899,5 @@
     "package_id": "B-04",
     "status": "BLOCKED_PENDING_B03_ACCEPTANCE"
   },
-    "snapshot_hash": "531A9F9ADE645AC487403A47DB3B431540BB08660B8F3570A4F7EE6E9E25EFD4"
+    "snapshot_hash": "9A6C56B1E7AA7FFF6054669EB5248485669B60733F751D82FB7E8E9FB1B490B9"
 }
