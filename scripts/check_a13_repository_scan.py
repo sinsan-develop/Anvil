@@ -338,6 +338,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         b05_completion = _load_json(b05_completion_path) if b05_completion_path.is_file() else {}
         b05_acceptance_path = root / 'docs/evidence/manifests/B-05_ACCEPTANCE_PROGRESS_MANIFEST.json'
         b05_acceptance = _load_json(b05_acceptance_path) if b05_acceptance_path.is_file() else {}
+        b06_start_path = root / 'docs/evidence/manifests/B-06_START_EVIDENCE_MANIFEST.json'
+        b06_start = _load_json(b06_start_path) if b06_start_path.is_file() else {}
         a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
         a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
@@ -814,6 +816,18 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
     )
     if current_b05_acceptance:
         candidates.append(b05_acceptance.get('a13_successor_projection', {}))
+    current_b06_start = (
+        bool(b06_start) and progress.get('event_sequence') == 264
+        and progress.get('current_work_package') == 'B-06' and progress.get('status') == 'ACTIVE'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-06-20260815-001'
+        and progress.get('active_agent') == 'developer-primary-b06'
+        and progress.get('worker_lease', {}).get('lease_epoch') == 1
+        and progress.get('write_lease', {}).get('write_epoch') == 1
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-06_START_EVIDENCE_MANIFEST.json'
+        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    )
+    if current_b06_start:
+        candidates.append(b06_start.get('a13_successor_projection', {}))
     current_b03_rework = (
         bool(b03_rework) and progress.get('event_sequence') == 230
         and progress.get('current_work_package') == 'B-03' and progress.get('status') == 'ACTIVE'

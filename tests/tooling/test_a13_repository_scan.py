@@ -862,14 +862,14 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(261, progress["event_sequence"])
+        self.assertEqual(264, progress["event_sequence"])
         self.assertEqual("B-06", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-06-20260815-001", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("DIR-1", progress["dir_review"]["checkpoint"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
         self.assertTrue(A14_EVIDENCE_R3_PATH.is_file())
         manifest = json.loads(A14_EVIDENCE_R3_PATH.read_text(encoding="utf-8"))
         self.assertEqual(
@@ -963,9 +963,9 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(261, progress["event_sequence"])
+        self.assertEqual(264, progress["event_sequence"])
         self.assertEqual("B-06", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b04_start_successor_manifest_is_selected(self):
@@ -1003,8 +1003,8 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(261, progress["event_sequence"])
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual(264, progress["event_sequence"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b05_wi_rebind_successor_manifest_is_selected(self):
@@ -1015,8 +1015,8 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(261, progress["event_sequence"])
-        self.assertIsNone(progress["worker_lease"])
+        self.assertEqual(264, progress["event_sequence"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b05_completion_successor_manifest_is_selected(self):
@@ -1027,8 +1027,8 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(261, progress["event_sequence"])
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual(264, progress["event_sequence"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b05_acceptance_successor_manifest_is_selected(self):
@@ -1039,9 +1039,22 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(261, progress["event_sequence"])
+        self.assertEqual(264, progress["event_sequence"])
         self.assertEqual("B-06", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b06_start_successor_manifest_is_selected(self):
+        spec = importlib.util.spec_from_file_location("a13_checker_b06_start", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(264, progress["event_sequence"])
+        self.assertEqual("B-06", progress["current_work_package"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
 if __name__ == "__main__":
