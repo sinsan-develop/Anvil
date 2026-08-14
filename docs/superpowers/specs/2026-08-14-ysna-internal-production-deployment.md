@@ -2,7 +2,7 @@
 
 ## 목적과 승인 경계
 
-Anvil을 `ysna-server`의 `~/deploy/anvil`에 지속 실행하되, 기능과 운영 안전성이 검증되기 전에는 외부 도메인에 공개하지 않는다. 신산님의 2026-08-14 지시에 따라 WSL-server 대신 `ysna-server`를 실행 호스트로 사용하고 `shared-db` PostgreSQL 18 컨테이너를 DB 서버로 사용한다.
+Anvil을 WSL에서 개발·통합 검증한 뒤 동일한 승인 Git commit을 `ysna-server`의 `~/deploy/anvil`에 지속 실행한다. 기능과 운영 안전성이 검증되기 전에는 외부 도메인에 공개하지 않는다. 신산님의 2026-08-14 지시에 따라 WSL 복구 후 개발·검증에는 WSL을 우선 사용하고, 지속 배포에서는 `ysna-server`와 `shared-db` PostgreSQL 18 컨테이너를 사용한다.
 
 이 결정은 배포 위치와 DB 실행환경을 변경하지만 다음 권한을 포함하지 않는다.
 
@@ -30,14 +30,15 @@ Anvil을 `ysna-server`의 `~/deploy/anvil`에 지속 실행하되, 기능과 운
 
 ## 배포 흐름
 
-1. `ysna-server`의 hostname, Git, Docker, 디스크, 기존 컨테이너·네트워크·포트, `shared-db` 상태를 읽기 전용으로 기록한다.
-2. `~/deploy/anvil`이 없으면 생성하고 승인된 repository와 commit을 Git으로 checkout한다.
-3. 전용 DB·role 존재 여부를 확인한다. 없을 때만 생성하고, 이미 있으면 owner와 privilege가 설계와 일치하는지 검증한다.
-4. migration 전 현재 revision과 rollback 가능성을 기록한 뒤 `upgrade`를 수행한다.
-5. Anvil 서비스는 localhost-only 포트로 시작한다.
-6. health, migration head, same-origin API, 인증 전 접근 거부, Host/Origin/CSRF, secret 비노출을 실제 요청으로 확인한다.
-7. 상태와 실패 사유는 운영자가 화면과 API에서 확인할 수 있어야 한다. CLI 결과만으로 운영 완료를 선언하지 않는다.
-8. 검증이 끝나도 공개 proxy 연결은 하지 않는다. 공개는 별도 설계·검증·승인을 거친다.
+1. WSL에서 승인 commit의 migration·API·화면·same-origin·보안·rollback을 격리 DB로 검증하고 EvidenceManifest를 고정한다.
+2. `ysna-server`의 hostname, Git, Docker, 디스크, 기존 컨테이너·네트워크·포트, `shared-db` 상태를 읽기 전용으로 기록한다.
+3. WSL에서 합격한 것과 동일한 full Git SHA인지 확인하고 `~/deploy/anvil`에 checkout한다.
+4. 전용 DB·role 존재 여부를 확인한다. 없을 때만 생성하고, 이미 있으면 owner와 privilege가 설계와 일치하는지 검증한다.
+5. migration 전 현재 revision과 rollback 가능성을 기록한 뒤 `upgrade`를 수행한다.
+6. Anvil 서비스는 localhost-only 포트로 시작한다.
+7. health, migration head, same-origin API, 인증 전 접근 거부, Host/Origin/CSRF, secret 비노출을 실제 요청으로 확인한다.
+8. 상태와 실패 사유는 운영자가 화면과 API에서 확인할 수 있어야 한다. CLI 결과만으로 운영 완료를 선언하지 않는다.
+9. 검증이 끝나도 공개 proxy 연결은 하지 않는다. 공개는 별도 설계·검증·승인을 거친다.
 
 ## 실패 처리와 rollback
 
