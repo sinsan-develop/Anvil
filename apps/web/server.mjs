@@ -20,7 +20,6 @@ const securityHeaders={
   'x-content-type-options':'nosniff','x-frame-options':'DENY','referrer-policy':'no-referrer','cache-control':'no-store'
 };
 const staticFiles=new Map([
-  ['/',['index.html','text/html; charset=utf-8']],
   ['/src/app/workbench.js',['src/app/workbench.js','text/javascript; charset=utf-8']],
   ['/src/api/workbench-client.js',['src/api/workbench-client.js','text/javascript; charset=utf-8']],
   ['/src/features/workbench/workbench-state.js',['src/features/workbench/workbench-state.js','text/javascript; charset=utf-8']],
@@ -29,6 +28,9 @@ const staticFiles=new Map([
   ['/src/api/design-flow-client.js',['src/api/design-flow-client.js','text/javascript; charset=utf-8']],
   ['/src/app/design-flow.js',['src/app/design-flow.js','text/javascript; charset=utf-8']],
   ['/src/styles/design-flow.css',['src/styles/design-flow.css','text/css; charset=utf-8']]
+  ,['/src/app/ui-preview.js',['src/app/ui-preview.js','text/javascript; charset=utf-8']]
+  ,['/src/features/ui-preview/ui-preview-model.js',['src/features/ui-preview/ui-preview-model.js','text/javascript; charset=utf-8']]
+  ,['/src/styles/ui-preview.css',['src/styles/ui-preview.css','text/css; charset=utf-8']]
 ]);
 
 function send(response,status,payload,extra={}) {
@@ -46,12 +48,14 @@ async function scanFixture(fixtureId) {
   return JSON.parse(stdout);
 }
 
-export async function startWorkbenchServer({host='127.0.0.1',port=4173}={}) {
+export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='fixture'}={}) {
+  const runtimeMode=uiMode==='preview'?'preview':'fixture';
   const csrfToken=randomUUID();
   let allowedHost='';
   const server=http.createServer(async (request,response)=>{
     try {
       const requestUrl=new URL(request.url,'http://fixture.invalid');
+      if (request.method==='GET' && requestUrl.pathname==='/healthz') return send(response,200,{ok:true,service:'anvil-web',mode:runtimeMode});
       if (request.method==='GET' && requestUrl.pathname==='/api/design-flow/config') return send(response,200,{ok:true,csrfToken,runtimeBoundary:'LOCAL_VERIFICATION_ONLY'});
       if (request.method==='POST' && requestUrl.pathname==='/api/design-flow/run') {
         const expectedOrigin=`http://${allowedHost}`;
@@ -78,6 +82,12 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173}={}) {
         const state=fixtures[body.fixtureId].state;
         return send(response,200,{ok:true,state,scan:{status:scan.status,repository:{branch:scan.repository?.branch ?? null,language:scan.repository?.primary_language ?? null,trackedDirtyPaths:scan.repository?.tracked_dirty_paths?.length ?? 0},noWriteIdentical:scan.no_write_proof?.identical===true},evidence:{badge:'FIXTURE',countsAsPass:false,scope:'FIXTURE_BROWSER_RUNTIME_ONLY'},message:state==='BLOCKED'?'dirty fixture가 감지되어 실행을 차단했습니다.':'읽기 전용 fixture scan이 끝났습니다.',nextAction:state==='BLOCKED'?'변경 파일을 검토한 뒤 새 scan을 시작하세요.':'실행 모드를 선택하세요.'});
       }
+      if (request.method==='GET' && requestUrl.pathname==='/') {
+        const filename=runtimeMode==='preview'?'ui-preview.html':'index.html';
+        const body=await readFile(join(webRoot,filename));
+        response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
+        return response.end(body);
+      }
       const item=staticFiles.get(requestUrl.pathname);
       if (request.method==='GET' && item) { const body=await readFile(join(webRoot,item[0])); response.writeHead(200,{...securityHeaders,'content-type':item[1],'content-length':body.length}); return response.end(body); }
       safeFailure(response,404,'EMPTY','요청한 화면을 찾을 수 없습니다.');
@@ -90,5 +100,8 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173}={}) {
 }
 
 if (process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
-  startWorkbenchServer().then(({origin})=>console.log(`Anvil fixture Workbench: ${origin}`)).catch(()=>{console.error('Workbench failed to start.');process.exitCode=1;});
+  const host=process.env.ANVIL_HOST||'127.0.0.1';
+  const port=Number(process.env.ANVIL_PORT||4173);
+  const uiMode=process.env.ANVIL_UI_MODE||'fixture';
+  startWorkbenchServer({host,port,uiMode}).then(({origin})=>console.log(`Anvil ${uiMode} Workbench: ${origin}`)).catch(()=>{console.error('Workbench failed to start.');process.exitCode=1;});
 }
