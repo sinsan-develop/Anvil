@@ -1,0 +1,37 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-07-ACCEPTANCE-20260815-001",
+  "artifact_type": "package_acceptance_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-07",
+  "artifact_status": "accepted",
+  "artifact_path": "docs/evidence/manifests/B-07_ACCEPTANCE_PROGRESS_MANIFEST.json",
+  "created_by": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+  "created_at": "2026-08-15T15:00:00+09:00",
+  "projection": {"event_sequence": 275, "status": "ACCEPTED", "valid_failure_count": 0, "next_package": "B-08", "next_package_status": "READY", "b08_started": false},
+  "tester_report_sha256": "B278C498DB599FE7FF67940996705758C9AECEF70466035B40F9FB7F36E1903C",
+  "tester_verdict": "READY_FOR_MAIN_ACCEPTANCE",
+  "blocking_findings": 0,
+  "developer_manifest_sha256": "3DBF08310FF92E715A862F9AC79D73F634840D62C33D47E40373357B862E5DF1",
+  "developer_target_hash": "ECE15CC1FD547E381512A817F71308F897DC5469EBEF70E44039C14B118B65D5",
+  "completion_manifest_sha256": "44795EA8B67CE41D2956CB086E58B78812561E3F3DBB403548898ECBB39AB88A",
+  "runtime_boundary": {"actual_wsl_pg18": "PASS_EVIDENCE_PRESERVED", "actual_api": "NOT_EXECUTED", "actual_ui": "NOT_EXECUTED", "actual_browser": "NOT_EXECUTED", "actual_provider": "NOT_EXECUTED", "actual_ysna_server": "NOT_EXECUTED", "shared_db": "NOT_EXECUTED", "production": "NOT_EXECUTED", "deployment": "NOT_EXECUTED", "b08_start": "FORBIDDEN_NOT_STARTED"},
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 72177, "sha256": "854F1E900D4B1E8F9F43911EF8EC856D54B213CC2A53E914A739098869C05544"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 52918, "sha256": "8637DDE9E84599DEC0AC547D43E1A64DD0A41207F10B1624A0CEC45E69A67252"}
+    ]
+  },
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/B-07_COMPLETION_PROGRESS_MANIFEST.json", "bytes": 2912, "sha256": "44795EA8B67CE41D2956CB086E58B78812561E3F3DBB403548898ECBB39AB88A"},
+    {"path": "docs/progress/progress-handoff-detached-digest-b07-accepted.json", "bytes": 893, "sha256": "647C7289CB4D4B242D77E479188789EDC741A141F80E8AEC59206AEE42205406"},
+    {"path": "docs/test_reports/B-07_INDEPENDENT_TEST_REPORT.md", "bytes": 8622, "sha256": "B278C498DB599FE7FF67940996705758C9AECEF70466035B40F9FB7F36E1903C"},
+    {"path": "docs/work_orders/B-07_WORK_INSTRUCTION.md", "bytes": 6350, "sha256": "4809891FD6EADFB7CD5A147D879257FC61C3AD7D20B63081814DF46F59E0741F"}
+  ],
+  "target_canonical_bytes": 498,
+  "target_content_bytes": 18777,
+  "target_hash": "sha256:BA21F2FB10AD248D2181E545E0551590F9FC0633B360B2B94C0E9FC9B7F6155A",
+  "delivered_hash": "sha256:BA21F2FB10AD248D2181E545E0551590F9FC0633B360B2B94C0E9FC9B7F6155A",
+  "content_hash": "sha256:BA21F2FB10AD248D2181E545E0551590F9FC0633B360B2B94C0E9FC9B7F6155A",
+  "self_reference": false
+}

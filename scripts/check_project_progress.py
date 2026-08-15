@@ -4409,6 +4409,30 @@ def validate_b07_completion_manifest(manifest: Mapping[str, Any], bundle: Mappin
     return sorted(set(errors))
 
 
+def validate_b07_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[]
+    is_current=(progress.get("current_progress_evidence_ref") or {}).get("manifest_path")=="docs/evidence/manifests/B-07_ACCEPTANCE_PROGRESS_MANIFEST.json"
+    expected={"docs/evidence/manifests/B-07_COMPLETION_PROGRESS_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b07-accepted.json","docs/test_reports/B-07_INDEPENDENT_TEST_REPORT.md","docs/work_orders/B-07_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["B07_ACCEPTANCE_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B07_ACCEPTANCE_RAW_INVALID");continue
+        seen.add(relative)
+        try: ok=portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): ok=False
+        if not ok: errors.append("B07_ACCEPTANCE_RAW_INVALID");continue
+        total+=int(row["bytes"]);canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("B07_ACCEPTANCE_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B07_ACCEPTANCE_TARGET_MISMATCH")
+    acceptance=[e for e in bundle["events"]["events"] if e.get("sequence")==275];boundary=manifest.get("runtime_boundary") or {}
+    if is_current and any((progress.get("event_sequence")!=275,progress.get("current_work_package")!="B-08",progress.get("status")!="READY","B-07" not in progress.get("completed_packages",[]),progress.get("valid_failure_count")!=0,(progress.get("active_failure_lineage") or {}).get("step_lineage_id")!="B-08",(progress.get("active_failure_lineage") or {}).get("valid_failure_count")!=0,progress.get("active_work_instruction") is not None,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,(progress.get("next_work_package") or {}).get("package_id")!="B-08",(progress.get("next_work_package") or {}).get("status")!="READY",[e.get("event_type") for e in acceptance]!=["MAIN_PACKAGE_ACCEPTED"],manifest.get("tester_report_sha256")!="B278C498DB599FE7FF67940996705758C9AECEF70466035B40F9FB7F36E1903C",manifest.get("blocking_findings")!=0,manifest.get("developer_manifest_sha256")!="3DBF08310FF92E715A862F9AC79D73F634840D62C33D47E40373357B862E5DF1",manifest.get("completion_manifest_sha256")!="44795EA8B67CE41D2956CB086E58B78812561E3F3DBB403548898ECBB39AB88A",boundary.get("actual_wsl_pg18")!="PASS_EVIDENCE_PRESERVED",boundary.get("actual_api")!="NOT_EXECUTED",boundary.get("actual_ui")!="NOT_EXECUTED",boundary.get("actual_browser")!="NOT_EXECUTED",boundary.get("actual_ysna_server")!="NOT_EXECUTED",boundary.get("shared_db")!="NOT_EXECUTED",boundary.get("production")!="NOT_EXECUTED",boundary.get("deployment")!="NOT_EXECUTED",boundary.get("b08_start")!="FORBIDDEN_NOT_STARTED")): errors.append("B07_ACCEPTANCE_PROJECTION_MISMATCH")
+    required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"};successor=manifest.get("a13_successor_projection") or {};indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)}
+    if is_current and (set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items())): errors.append("B07_ACCEPTANCE_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
 def validate_b03_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
     root=bundle["_root"];progress=bundle["progress"];errors=[]
     expected={"docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json","docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b03-completion-test-review.json","docs/work_orders/B-03_WORK_INSTRUCTION.md"}
@@ -5015,6 +5039,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b07_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-07_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b07_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-07_ACCEPTANCE_PROGRESS_MANIFEST.json":
+            errors.extend(validate_b07_acceptance_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
