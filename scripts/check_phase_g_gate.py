@@ -978,6 +978,10 @@ def validate_gate(
     b06_completion_projection=(progress_projection.get("current_work_package")=="B-06" and progress_projection.get("status")=="TEST_REVIEW" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-06-20260815-001" and progress_projection.get("active_work_instruction",{}).get("result_status")=="COMPLETED" and progress_projection.get("active_work_instruction",{}).get("independent_tester_status")=="PENDING" and progress.get("active_agent") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and (progress.get("next_work_package") or {}).get("status")=="BLOCKED_PENDING_B06_ACCEPTANCE" and [event.get("event_type") for event in b06_completion_events]==["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"])
     if b06_completion_projection:
         errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
+    b06_acceptance_events=[event for event in events if event.get("sequence")==268]
+    b06_acceptance_projection=(progress_projection.get("current_work_package")=="B-07" and progress_projection.get("status")=="READY" and "B-06" in progress.get("completed_packages",[]) and progress.get("valid_failure_count")==0 and progress_projection.get("active_work_instruction") is None and progress.get("active_agent") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and (progress.get("next_work_package") or {}).get("package_id")=="B-07" and (progress.get("next_work_package") or {}).get("status")=="READY" and [event.get("event_type") for event in b06_acceptance_events]==["MAIN_PACKAGE_ACCEPTED"])
+    if b06_acceptance_projection:
+        errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
 
     counts = {
         "package": baseline["counts"]["package_total"],
