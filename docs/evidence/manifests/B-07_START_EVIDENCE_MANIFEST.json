@@ -1,0 +1,57 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-07-START-20260815-001",
+  "artifact_type": "package_start_evidence_manifest",
+  "artifact_path": "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json",
+  "package_id": "B-07",
+  "event_sequence": 271,
+  "validated_base_commit": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
+  "predecessor_acceptance_ref": {
+    "path": "docs/evidence/manifests/B-06_ACCEPTANCE_PROGRESS_MANIFEST.json",
+    "sha256": "D81F942EE5BFEEC13E5BE7452CAF544A3D6EDBF4CA5F7D36F495478909502880"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-07-20260815-001",
+    "path": "docs/work_orders/B-07_WORK_INSTRUCTION.md",
+    "sha256": "4809891FD6EADFB7CD5A147D879257FC61C3AD7D20B63081814DF46F59E0741F",
+    "invocation_path": "docs/work_orders/B-07_INVOCATION_PROMPT.md",
+    "invocation_sha256": "E5F71C33D8909AF2D662D08EC5C68EA55C5825DBA40E019000BAD766B98B6A4E"
+  },
+  "objective": "Event-sequence-bound Checkpoint, immutable content-addressed filesystem Artifact Store, metadata-only database references, and target/environment-bound EvidenceManifest",
+  "assigned_verification_ids": ["AV-STAT-010"],
+  "worker_lease": {"lease_id": "worker-lease-b07-20260815-001", "lease_epoch": 1, "status": "ACTIVE"},
+  "write_lease": {"lease_id": "write-lease-b07-20260815-001", "write_epoch": 1, "status": "ACTIVE"},
+  "developer_exact_path_count": 15,
+  "product_artifact_count": 0,
+  "runtime_boundary": {
+    "actual_db": "NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "shared_db": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "developer_db_boundary": "ISOLATED_WSL_ANVIL_DB_ONLY"
+  },
+  "next_package": {"package_id": "B-08", "status": "BLOCKED_PENDING_B07_ACCEPTANCE"},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/B-06_ACCEPTANCE_PROGRESS_MANIFEST.json", "bytes": 2943, "sha256": "D81F942EE5BFEEC13E5BE7452CAF544A3D6EDBF4CA5F7D36F495478909502880"},
+    {"path": "docs/progress/progress-handoff-detached-digest-b07-start.json", "bytes": 856, "sha256": "AD38DED1BAB4B0C21A134DAD1DE7DC0142B30742695527D5AC1800DBC6AE03F9"},
+    {"path": "docs/work_orders/B-07_INVOCATION_PROMPT.md", "bytes": 998, "sha256": "E5F71C33D8909AF2D662D08EC5C68EA55C5825DBA40E019000BAD766B98B6A4E"},
+    {"path": "docs/work_orders/B-07_WORK_INSTRUCTION.md", "bytes": 6350, "sha256": "4809891FD6EADFB7CD5A147D879257FC61C3AD7D20B63081814DF46F59E0741F"}
+  ],
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 69979, "sha256": "26DD1FFECC6C2D36D4718B2BC80646CCBFEF80CA21CE7C30E6BF93B817AD6EDF"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 52272, "sha256": "495EEF7FCD50AE0842884010C3A60745D0D4DF3C3EBB806A82FBC7F5DFE4DDEF"}
+    ]
+  },
+  "target_canonical_bytes": 487,
+  "target_content_bytes": 11147,
+  "target_hash": "sha256:DBBE957D69F1737B1B6C01829EB111A10B3AC3DC7E51093C08D6BF78EA54EF5C",
+  "delivered_hash": "sha256:DBBE957D69F1737B1B6C01829EB111A10B3AC3DC7E51093C08D6BF78EA54EF5C",
+  "content_hash": "sha256:DBBE957D69F1737B1B6C01829EB111A10B3AC3DC7E51093C08D6BF78EA54EF5C",
+  "self_reference": false
+}

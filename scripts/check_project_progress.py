@@ -4358,6 +4358,33 @@ def validate_b06_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mappin
     return sorted(set(errors))
 
 
+def validate_b07_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[]
+    is_current=(progress.get("current_progress_evidence_ref") or {}).get("manifest_path")=="docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json"
+    expected={"docs/evidence/manifests/B-06_ACCEPTANCE_PROGRESS_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b07-start.json","docs/work_orders/B-07_INVOCATION_PROMPT.md","docs/work_orders/B-07_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["B07_START_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B07_START_RAW_INVALID");continue
+        seen.add(relative)
+        try: ok=(not is_current) or portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): ok=False
+        if not ok: errors.append("B07_START_RAW_INVALID");continue
+        total+=int(row["bytes"]);canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("B07_START_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B07_START_TARGET_MISMATCH")
+    terminal=[e for e in bundle["events"]["events"] if 269<=e.get("sequence",-1)<=271];wi=progress.get("active_work_instruction") or {};worker=progress.get("worker_lease") or {};write=progress.get("write_lease") or {};runtime=manifest.get("runtime_boundary") or {}
+    expected_ids=["AV-STAT-010"]
+    expected_paths={"packages/artifacts/__init__.py","packages/artifacts/models.py","packages/artifacts/store.py","packages/artifacts/evidence.py","packages/checkpoints/__init__.py","packages/checkpoints/models.py","packages/checkpoints/service.py","packages/persistence/artifact_checkpoint_repository.py","migrations/versions/0006_checkpoint_artifacts.py","tests/artifacts/test_artifact_store.py","tests/artifacts/test_evidence_manifest.py","tests/checkpoints/test_checkpoint_service.py","docs/validation/B-07_CHECKPOINT_ARTIFACT_VALIDATION.md","docs/evidence/manifests/B-07_EVIDENCE_MANIFEST.json","docs/completion_reports/B-07_COMPLETION_REPORT.md"}
+    if is_current and any((progress.get("event_sequence")!=271,progress.get("current_work_package")!="B-07",progress.get("status")!="ACTIVE",progress.get("valid_failure_count")!=0,wi.get("artifact_id")!="WI-B-07-20260815-001",wi.get("sha256")!="4809891FD6EADFB7CD5A147D879257FC61C3AD7D20B63081814DF46F59E0741F",wi.get("invocation_sha256")!="E5F71C33D8909AF2D662D08EC5C68EA55C5825DBA40E019000BAD766B98B6A4E",wi.get("assigned_verification_ids")!=expected_ids,progress.get("active_agent")!="developer-primary-b07",worker.get("lease_epoch")!=1,write.get("write_epoch")!=1,write.get("worker_lease_id")!=worker.get("lease_id"),set(write.get("paths",[]))!=expected_paths,set(write.get("path_scope",[]))!=expected_paths,(progress.get("next_work_package") or {}).get("package_id")!="B-08",(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B07_ACCEPTANCE",[e.get("event_type") for e in terminal]!=["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],manifest.get("validated_base_commit")!="1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",manifest.get("assigned_verification_ids")!=expected_ids,manifest.get("developer_exact_path_count")!=15,manifest.get("product_artifact_count")!=0,runtime.get("actual_db")!="NOT_EXECUTED",runtime.get("actual_api")!="NOT_EXECUTED",runtime.get("actual_ui")!="NOT_EXECUTED",runtime.get("actual_browser")!="NOT_EXECUTED",runtime.get("actual_wsl")!="NOT_EXECUTED",runtime.get("actual_ysna_server")!="NOT_EXECUTED",runtime.get("shared_db")!="NOT_EXECUTED",runtime.get("production")!="NOT_EXECUTED",runtime.get("deployment")!="NOT_EXECUTED",runtime.get("developer_db_boundary")!="ISOLATED_WSL_ANVIL_DB_ONLY")): errors.append("B07_START_PROJECTION_MISMATCH")
+    required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"};successor=manifest.get("a13_successor_projection") or {};indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)}
+    if is_current and (set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items())): errors.append("B07_START_SUCCESSOR_INVALID")
+    if (manifest.get("predecessor_acceptance_ref") or {}).get("sha256")!="D81F942EE5BFEEC13E5BE7452CAF544A3D6EDBF4CA5F7D36F495478909502880": errors.append("B07_START_PREDECESSOR_INVALID")
+    return sorted(set(errors))
+
+
 def validate_b03_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
     root=bundle["_root"];progress=bundle["progress"];errors=[]
     expected={"docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json","docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b03-completion-test-review.json","docs/work_orders/B-03_WORK_INSTRUCTION.md"}
@@ -4655,7 +4682,8 @@ def validate_repository_projection(
     b05_acceptance_projection = repository.get("validated_base_commit") == "e08c2e34766e5a306c1d25d4579ff098c629dc3b" and "docs/evidence/manifests/B-05_ACCEPTANCE_PROGRESS_MANIFEST.json" in allowed
     b06_start_projection = repository.get("validated_base_commit") == "ebe9ce9c28c3e58f8d8200e5747e33ceb2d8174b" and "docs/evidence/manifests/B-06_START_EVIDENCE_MANIFEST.json" in allowed
     b06_completion_projection = repository.get("validated_base_commit") == "105b12be5554d0d2de0c5440cda3d2cb25e98c05" and "docs/evidence/manifests/B-06_COMPLETION_PROGRESS_MANIFEST.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection:
+    b07_start_projection = repository.get("validated_base_commit") == "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93" and "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -4959,6 +4987,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b03_r3_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-06_ACCEPTANCE_PROGRESS_MANIFEST.json":
             errors.extend(validate_b06_acceptance_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_b07_start_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

@@ -1,5 +1,13 @@
 # Anvil Build Handoff
 
+## B-07 Start — sequence 271
+
+- canonical clean/equal baseline `1a9c25b7ce2c257d40aaa10fcf3a0478f654db93`에서 seq269→271 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
+- `developer-primary-b07` epoch-1 worker/write lease와 Developer exact15만 활성이다. B-08은 `BLOCKED_PENDING_B07_ACCEPTANCE`다.
+- 목표는 Checkpoint·filesystem Artifact Store·EvidenceManifest다. 대형 log 본문은 artifact에 저장하고 DB에는 hash/ref metadata만 두며 assigned verification은 `AV-STAT-010`이다.
+- manifest는 target hash와 Git·image·migration·config·policy·routing·environment·actor·raw checksum을 결박한다. B-08 progress/HANDOFF outbox/export, B-11 API/BFF/UI, replay/fork orchestration은 후속 범위다.
+- start 시점 제품 산출물 0개, API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 모두 `NOT_EXECUTED`다. Developer 구현 검증에서 WSL Anvil 전용 격리 PostgreSQL만 허용한다.
+
 ## B-06 Main Acceptance — sequence 268
 
 - 독립 Tester report SHA `8D19FC784223B24BBF082C815C2BB196321658F0896427D84E1F4A9DBB4AC1A5`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검증해 seq268 `MAIN_PACKAGE_ACCEPTED`로 B-06을 최종 ACCEPTED했다.
@@ -173,29 +181,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 268,
-  "status": "READY",
+  "event_sequence": 271,
+  "status": "ACTIVE",
   "current_work_package": "B-07",
-  "last_event_id": "evt_b06_main_package_accepted",
+  "last_event_id": "evt_b07_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "405c2788332996e178eb320a0e30318cc56a8f2a",
+  "repository_head": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "405c2788332996e178eb320a0e30318cc56a8f2a",
+  "repository_remote_head": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "405c2788332996e178eb320a0e30318cc56a8f2a",
+  "repository_validated_base_commit": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-06_ACCEPTANCE_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b06-accepted.json",
-    "docs/test_reports/B-06_INDEPENDENT_TEST_REPORT.md",
+    "docs/progress/progress-handoff-detached-digest-b07-start.json",
+    "docs/work_orders/B-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-07_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -205,11 +214,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b06-accepted.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-06_ACCEPTANCE_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b07-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Issue B-07 authority, WorkInstruction and fenced start projection separately; B-07 is READY but NOT_STARTED",
+  "next_safe_action": "Developer executes WI-B-07-20260815-001 within exact 15-path lease; B-08 remains blocked pending B-07 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_0004_0005_0004_APPEND_IDEMPOTENCY_HOSTILE_GUARDS_CLEANUP",
@@ -220,9 +229,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-07-20260815-001",
+  "worker_lease": "worker-lease-b07-20260815-001 / epoch 1 / ACTIVE",
+  "write_lease": "write-lease-b07-20260815-001 / epoch 1 / ACTIVE / exact15"
 }
 ```
 
