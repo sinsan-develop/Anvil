@@ -1,0 +1,57 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-08-START-20260815-001",
+  "artifact_type": "package_start_evidence_manifest",
+  "artifact_path": "docs/evidence/manifests/B-08_START_EVIDENCE_MANIFEST.json",
+  "package_id": "B-08",
+  "event_sequence": 278,
+  "validated_base_commit": "9913636f030aa248216f58e3251cfa181f491d9c",
+  "predecessor_acceptance_ref": {
+    "path": "docs/evidence/manifests/B-07_ACCEPTANCE_PROGRESS_MANIFEST.json",
+    "sha256": "996EF6B8C16B24870D73214389AFBC1FCEDE1D6CDD238951B200C05B2C97DD94"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-08-20260815-001",
+    "path": "docs/work_orders/B-08_WORK_INSTRUCTION.md",
+    "sha256": "655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406",
+    "invocation_path": "docs/work_orders/B-08_INVOCATION_PROMPT.md",
+    "invocation_sha256": "4E7A0CF3AE60C154A8837E271526224310E4CC5B79E0D92450F8563E9BE0F0B3"
+  },
+  "objective": "Transactional outbox and atomic Project/Run progress plus BUILD_HANDOFF export with ordered acknowledgement and scheduler fencing",
+  "assigned_verification_ids": ["AV-STAT-009", "AV-STAT-011", "AV-STAT-012", "AV-STAT-013"],
+  "worker_lease": {"lease_id": "worker-lease-b08-20260815-001", "lease_epoch": 1, "status": "ACTIVE"},
+  "write_lease": {"lease_id": "write-lease-b08-20260815-001", "write_epoch": 1, "status": "ACTIVE"},
+  "developer_exact_path_count": 15,
+  "product_artifact_count": 0,
+  "runtime_boundary": {
+    "actual_db": "NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "shared_db": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "developer_db_boundary": "ISOLATED_WSL_ANVIL_DB_ONLY"
+  },
+  "next_package": {"package_id": "B-09", "status": "BLOCKED_PENDING_B08_ACCEPTANCE"},
+  "raw_checksums": [
+    {"path": "docs/evidence/manifests/B-07_ACCEPTANCE_PROGRESS_MANIFEST.json", "bytes": 2943, "sha256": "996EF6B8C16B24870D73214389AFBC1FCEDE1D6CDD238951B200C05B2C97DD94"},
+    {"path": "docs/progress/progress-handoff-detached-digest-b08-start.json", "bytes": 856, "sha256": "F4385D34435B851AD046248F85FDE354173252286D2B433A28FFE349AA043B1E"},
+    {"path": "docs/work_orders/B-08_INVOCATION_PROMPT.md", "bytes": 1032, "sha256": "4E7A0CF3AE60C154A8837E271526224310E4CC5B79E0D92450F8563E9BE0F0B3"},
+    {"path": "docs/work_orders/B-08_WORK_INSTRUCTION.md", "bytes": 7103, "sha256": "655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406"}
+  ],
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {"path": "scripts/check_a13_repository_scan.py", "bytes": 73369, "sha256": "02B0BA42C613EF986FFA3A469FF2AFE81003BD820804177C1E73DEE9AA92719F"},
+      {"path": "tests/tooling/test_a13_repository_scan.py", "bytes": 53853, "sha256": "F50541809D9E06F00BFB6DDB87F92FC3F4FA881A8248DB5F76CCF9DB32CB0658"}
+    ]
+  },
+  "target_canonical_bytes": 488,
+  "target_content_bytes": 11934,
+  "target_hash": "sha256:F0A1C834E19909A4E7BBE2915D80087DCFD5FDE6C002416377E55DEA62B6A724",
+  "delivered_hash": "sha256:F0A1C834E19909A4E7BBE2915D80087DCFD5FDE6C002416377E55DEA62B6A724",
+  "content_hash": "sha256:F0A1C834E19909A4E7BBE2915D80087DCFD5FDE6C002416377E55DEA62B6A724",
+  "self_reference": false
+}
