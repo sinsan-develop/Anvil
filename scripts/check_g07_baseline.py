@@ -888,6 +888,11 @@ def validate_repository(
         instruction=progress.get("active_work_instruction") or {}; worker=progress.get("worker_lease") or {}; write=progress.get("write_lease") or {}
         if (progress.get("current_work_package")!="B-07" or progress.get("status")!="ACTIVE" or instruction.get("artifact_id")!="WI-B-07-20260815-001" or instruction.get("assigned_verification_ids")!=["AV-STAT-010"] or progress.get("valid_failure_count")!=0 or progress.get("active_agent")!="developer-primary-b07" or worker.get("lease_epoch")!=1 or write.get("write_epoch")!=1 or write.get("worker_lease_id")!=worker.get("lease_id") or (progress.get("next_work_package") or {}).get("package_id")!="B-08" or (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B07_ACCEPTANCE" or [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]):
             _error(errors,"B07_START_PROJECTION_MISMATCH",progress_path,"sequence=271")
+    if progress.get("event_sequence") == 274:
+        terminal=[event for event in events if 272 <= event.get("sequence",-1) <= 274]
+        instruction=progress.get("active_work_instruction") or {}
+        if (progress.get("current_work_package")!="B-07" or progress.get("status")!="TEST_REVIEW" or instruction.get("artifact_id")!="WI-B-07-20260815-001" or instruction.get("result_status")!="COMPLETED" or instruction.get("independent_tester_status")!="PENDING" or progress.get("valid_failure_count")!=0 or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B07_ACCEPTANCE" or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
+            _error(errors,"B07_COMPLETION_PROJECTION_MISMATCH",progress_path,"sequence=274")
     if progress.get("event_sequence") == 192:
         terminal=[event for event in events if 190 <= event.get("sequence",-1) <= 192]
         if (progress.get("current_work_package")!="B-01" or progress.get("status")!="TEST_REVIEW" or (progress.get("active_work_instruction") or {}).get("independent_tester_status")!="PENDING" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]):
@@ -1121,6 +1126,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-07" and reconciliation_event.get("sequence") == 271:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_COMPLETED" and reconciliation_event.get("subject_ref") == "B-07" and reconciliation_event.get("sequence") == 274:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1171,7 +1178,12 @@ def validate_repository(
                     "docs/evidence/manifests/B-03_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-handoff-detached-digest-b03-rework-completion-r2.json","scripts/check_g07_baseline.py","scripts/check_project_progress.py","tests/tooling/test_a14_workbench_prototype.py","tests/tooling/test_g07_baseline.py"
                 }
             )
-            if not b03_lf_followup and any(reconciliation.get(field) != repository_projection.get(field) for field in projection_fields):
+            projection_mismatch = any(
+                (set(reconciliation.get(field, [])) != set(repository_projection.get(field, [])))
+                if field == "exact_allowed_paths" else reconciliation.get(field) != repository_projection.get(field)
+                for field in projection_fields
+            )
+            if not b03_lf_followup and projection_mismatch:
                 _error(errors, "PROGRESS_RECONCILIATION_MISMATCH", "docs/progress/progress-events.json", "validated-base projection fields differ")
         else:
             if repository_projection.get("local_head") != head or repository_projection.get("remote_head") != upstream:

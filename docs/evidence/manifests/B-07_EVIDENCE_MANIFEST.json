@@ -1,0 +1,104 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-07-20260815-001",
+  "artifact_type": "checkpoint_artifact_evidence_manifest",
+  "package_id": "B-07",
+  "artifact_status": "developer_completed_pending_independent_test",
+  "work_instruction": {
+    "artifact_id": "WI-B-07-20260815-001",
+    "sha256": "4809891FD6EADFB7CD5A147D879257FC61C3AD7D20B63081814DF46F59E0741F"
+  },
+  "invocation_sha256": "E5F71C33D8909AF2D662D08EC5C68EA55C5825DBA40E019000BAD766B98B6A4E",
+  "baseline_git_commit": "2d100b157aedc36da8a78341bbe67085c1663236",
+  "dispatch_base_commit": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
+  "start_manifest": {
+    "path": "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json",
+    "bytes": 3407,
+    "sha256": "5C091A8C619CA17D3C2335412E70646929384449C50B918B4856656F574EFC66"
+  },
+  "assigned_verification_ids": ["AV-STAT-010"],
+  "environment_id": "ENV-LOCAL + ENV-WSL-STAGING-ISOLATED-PG18",
+  "lease_binding": {
+    "worker_lease_id": "worker-lease-b07-20260815-001",
+    "write_lease_id": "write-lease-b07-20260815-001",
+    "lease_epoch": 1,
+    "write_epoch": 1
+  },
+  "exact_write_paths": [
+    "packages/artifacts/__init__.py",
+    "packages/artifacts/models.py",
+    "packages/artifacts/store.py",
+    "packages/artifacts/evidence.py",
+    "packages/checkpoints/__init__.py",
+    "packages/checkpoints/models.py",
+    "packages/checkpoints/service.py",
+    "packages/persistence/artifact_checkpoint_repository.py",
+    "migrations/versions/0006_checkpoint_artifacts.py",
+    "tests/artifacts/test_artifact_store.py",
+    "tests/artifacts/test_evidence_manifest.py",
+    "tests/checkpoints/test_checkpoint_service.py",
+    "docs/validation/B-07_CHECKPOINT_ARTIFACT_VALIDATION.md",
+    "docs/evidence/manifests/B-07_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-07_COMPLETION_REPORT.md"
+  ],
+  "raw_artifact_count": 14,
+  "raw_artifacts": [
+    {"path":"docs/completion_reports/B-07_COMPLETION_REPORT.md","bytes":3022,"sha256":"92141091B7BB383A60E627A4B8F5604A434FEFA74A5F8842A0C06F88121F7A55"},
+    {"path":"docs/validation/B-07_CHECKPOINT_ARTIFACT_VALIDATION.md","bytes":6981,"sha256":"6CFFF4280857BAF4660647F9312AA18E832508560CC90348DCD6F74882426499"},
+    {"path":"migrations/versions/0006_checkpoint_artifacts.py","bytes":12120,"sha256":"101B36DDA8742236144C77D4244FBDF9C9C3520782F13B925C06667FF430CC31"},
+    {"path":"packages/artifacts/__init__.py","bytes":442,"sha256":"BB8512F7477D3585F13352DBC7446A88B065B6FAC89E149CFA1D7AFAFFF0EF59"},
+    {"path":"packages/artifacts/evidence.py","bytes":5435,"sha256":"AAC8F9F0A67F35DEF2A7E5AEC521C76D5EEBA4FDB5C14302E4AA4015350BDD16"},
+    {"path":"packages/artifacts/models.py","bytes":3586,"sha256":"79839F88B1A49465601F226919BA5C0765B01225A9349ADD71DEED81F1038581"},
+    {"path":"packages/artifacts/store.py","bytes":4201,"sha256":"F02F51423575885ABEE29F3DF172D457A484796D671AF083EF6D28CEFC28B948"},
+    {"path":"packages/checkpoints/__init__.py","bytes":208,"sha256":"8175C69EDAD696E9F6BA688FFE8DED0121359E32E5F3EB8B50F1CBE4FE4A67BD"},
+    {"path":"packages/checkpoints/models.py","bytes":3924,"sha256":"2A9173DDAB47C2E82682B045297F7AD068358664C079A2A20E1BE6CA486388BD"},
+    {"path":"packages/checkpoints/service.py","bytes":1949,"sha256":"F926645A59D18961402915E5D474DD3C1F2F5B1C3ED2A5C5A680B41F257209F3"},
+    {"path":"packages/persistence/artifact_checkpoint_repository.py","bytes":741,"sha256":"809F7949E6D23E30007F887AB76AA0E7FEB53D8A7DB955D3EA03615C3E531E74"},
+    {"path":"tests/artifacts/test_artifact_store.py","bytes":4647,"sha256":"C630000E9E038DDBE5A439CE75D2C14999060B6DD74AF05CBAA7A987B5E1E500"},
+    {"path":"tests/artifacts/test_evidence_manifest.py","bytes":4725,"sha256":"BA8F1A29058E07834AABBA7D49EE29B382167BF7B87700862E0D44968B133ED0"},
+    {"path":"tests/checkpoints/test_checkpoint_service.py","bytes":6609,"sha256":"3369AD3B6E6D2A22A2F3E7CC08FE23138018D6F805AADA93CF2606975E5C6AFD"}
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1527,
+  "target_content_bytes": 58590,
+  "target_hash": "ECE15CC1FD547E381512A817F71308F897DC5469EBEF70E44039C14B118B65D5",
+  "delivered_hash": "ECE15CC1FD547E381512A817F71308F897DC5469EBEF70E44039C14B118B65D5",
+  "content_hash": "ECE15CC1FD547E381512A817F71308F897DC5469EBEF70E44039C14B118B65D5",
+  "self_reference": false,
+  "test_results": {
+    "artifacts_checkpoints_focused": "14/14 PASS",
+    "domain_design_planning_persistence_execution_events": "69/69 PASS",
+    "python_compile": "PASS",
+    "standalone_repository_import": "PASS",
+    "diff_check": "PASS",
+    "tooling": "329 run; 22 active-diff/frozen-evidence failures"
+  },
+  "database_evidence": {
+    "engine": "PostgreSQL 18.4 isolated WSL container",
+    "upgrade_path": "0005_event_store -> 0006_checkpoint_artifacts",
+    "valid_metadata_checkpoint_manifest_raw": "PASS 1:1:1:1",
+    "metadata_only_forbidden_column_count": 0,
+    "hostile_guards": "PASS_REJECTED_AS_DESIGNED",
+    "post_hostile_counts": "1:1:1:1",
+    "downgrade_path": "0006_checkpoint_artifacts -> 0005_event_store",
+    "downgrade_objects_absent": true,
+    "cleanup": "exact container and network removed; absent post-check"
+  },
+  "runtime_boundary": {
+    "actual_database": "PASS_ISOLATED_WSL_POSTGRESQL18_ONLY",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_ysna": "NOT_EXECUTED",
+    "actual_shared_db": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  }
+}

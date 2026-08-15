@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-07 Developer Completion — sequence 274
+
+- Developer exact15는 manifest file SHA `3DBF08310FF92E715A862F9AC79D73F634840D62C33D47E40373357B862E5DF1`, target `ECE15CC1FD547E381512A817F71308F897DC5469EBEF70E44039C14B118B65D5`로 byte-frozen이다.
+- seq272→274로 epoch-1 write lease와 worker lease를 순서대로 회수한 뒤 `PACKAGE_COMPLETED / TEST_REVIEW / independent Tester PENDING`으로 투영했다. B-08은 `BLOCKED_PENDING_B07_ACCEPTANCE`다.
+- Developer 검증은 focused `14/14`, core `69/69`, compile/import/diff를 통과했고 실제 WSL 격리 PostgreSQL 18에서 `0005 → 0006 → 0005`, metadata-only, hostile 9종 거부, cleanup을 확인했다.
+- API/UI/browser/provider/ysna/shared-db/production/deployment는 `NOT_EXECUTED`다. B-07 acceptance와 B-08 시작은 금지하며 다음 안전 행동은 독립 Tester 검증이다.
+
 ## B-07 Start — sequence 271
 
 - canonical clean/equal baseline `1a9c25b7ce2c257d40aaa10fcf3a0478f654db93`에서 seq269→271 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
@@ -181,47 +188,60 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 271,
-  "status": "ACTIVE",
+  "event_sequence": 274,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-07",
-  "last_event_id": "evt_b07_package_started",
+  "last_event_id": "evt_b07_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
+  "repository_head": "2d100b157aedc36da8a78341bbe67085c1663236",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
+  "repository_remote_head": "2d100b157aedc36da8a78341bbe67085c1663236",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93",
+  "repository_validated_base_commit": "2d100b157aedc36da8a78341bbe67085c1663236",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-07_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-07_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-07_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b07-start.json",
-    "docs/work_orders/B-07_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-07_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b07-completion-test-review.json",
+    "docs/validation/B-07_CHECKPOINT_ARTIFACT_VALIDATION.md",
+    "migrations/versions/0006_checkpoint_artifacts.py",
+    "packages/artifacts/__init__.py",
+    "packages/artifacts/evidence.py",
+    "packages/artifacts/models.py",
+    "packages/artifacts/store.py",
+    "packages/checkpoints/__init__.py",
+    "packages/checkpoints/models.py",
+    "packages/checkpoints/service.py",
+    "packages/persistence/artifact_checkpoint_repository.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/artifacts/test_artifact_store.py",
+    "tests/artifacts/test_evidence_manifest.py",
+    "tests/checkpoints/test_checkpoint_service.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b07-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b07-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-07_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer executes WI-B-07-20260815-001 within exact 15-path lease; B-08 remains blocked pending B-07 acceptance",
+  "next_safe_action": "Independent Tester validates frozen B-07 exact15; B-08 remains blocked pending B-07 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
-  "wsl_postgresql18_runtime": "PASS_0004_0005_0004_APPEND_IDEMPOTENCY_HOSTILE_GUARDS_CLEANUP",
+  "wsl_postgresql18_runtime": "PASS_0005_0006_0005_METADATA_ONLY_HOSTILE9_CLEANUP",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -230,8 +250,8 @@
   "b01_start_allowed": true,
   "b01_started": true,
   "active_work_instruction": "WI-B-07-20260815-001",
-  "worker_lease": "worker-lease-b07-20260815-001 / epoch 1 / ACTIVE",
-  "write_lease": "write-lease-b07-20260815-001 / epoch 1 / ACTIVE / exact15"
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 
