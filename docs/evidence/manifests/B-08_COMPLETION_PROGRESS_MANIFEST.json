@@ -1,0 +1,30 @@
+{
+  "artifact_id":"EVIDENCE-MANIFEST-B-08-COMPLETION-20260815-001",
+  "artifact_type":"package_completion_projection_manifest",
+  "project_id":"anvil",
+  "package_id":"B-08",
+  "artifact_status":"test_review_database_verification_pending",
+  "artifact_path":"docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json",
+  "created_by":{"actor_type":"agent","actor_id":"main-agent-eoul"},
+  "created_at":"2026-08-15T18:45:02+09:00",
+  "projection":{"event_sequence":281,"status":"TEST_REVIEW","result_status":"COMPLETED","valid_failure_count":0,"independent_tester_status":"PENDING_DATABASE_VERIFICATION","next_package":"B-09","next_package_status":"BLOCKED_PENDING_B08_ACCEPTANCE"},
+  "developer_manifest_sha256":"91B20ACE8DCBAC4C64F57F5F0158333F6E13665F6E615E81BEB74BE7D1CB47CC",
+  "developer_target_hash":"45B736CE7845E9E5E757DF45916B025479D7CD51EAC281A4CEBD8306BAAF695B",
+  "developer_exact_paths_frozen":true,
+  "developer_mutation":"FORBIDDEN_FROZEN_PREDECESSOR",
+  "internal_resolved_failure_classification":"NOT_A_FAILURE_REPORT_VALID_COUNT_UNCHANGED",
+  "evidence_boundary":{"actual_wsl_pg18":"BLOCKED_NOT_EXECUTED","independent_tester":"PENDING_DATABASE_VERIFICATION","actual_api":"NOT_EXECUTED","actual_ui":"NOT_EXECUTED","actual_browser":"NOT_EXECUTED","actual_provider":"NOT_EXECUTED","actual_ysna_server":"NOT_EXECUTED","shared_db":"NOT_EXECUTED","production":"NOT_EXECUTED","deployment":"NOT_EXECUTED","acceptance":"FORBIDDEN_PENDING_DATABASE_VERIFICATION","b09_start":"FORBIDDEN_PENDING_B08_ACCEPTANCE"},
+  "a13_successor_projection":{"predecessor_manifest_sha256":"4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771","live_raw_checksums":[{"path":"scripts/check_a13_repository_scan.py","bytes":74512,"sha256":"B09FFA95CF8C73E49ACFA56D474895FDB3B3CC0880F0F35E40C66653CC0804C6"},{"path":"tests/tooling/test_a13_repository_scan.py","bytes":54851,"sha256":"8000481F5A9F9B364F226CC1EE6AF2E6BD762F839B81B337BBD1DDBCA2A5411E"}]},
+  "raw_checksums":[
+    {"path":"docs/evidence/manifests/B-08_START_EVIDENCE_MANIFEST.json","bytes":3414,"sha256":"21DCEC9D851DF7C0459D5E99F58857C2D1C48E347233E405F931FB722F2C4C38"},
+    {"path":"docs/evidence/manifests/B-08_EVIDENCE_MANIFEST.json","bytes":6094,"sha256":"91B20ACE8DCBAC4C64F57F5F0158333F6E13665F6E615E81BEB74BE7D1CB47CC"},
+    {"path":"docs/progress/progress-handoff-detached-digest-b08-completion-test-review.json","bytes":955,"sha256":"E1CD1F51BEC1F557821C773D144D0C68759C42588F6E8AF39DCB565192C982C0"},
+    {"path":"docs/work_orders/B-08_WORK_INSTRUCTION.md","bytes":7103,"sha256":"655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406"}
+  ],
+  "target_canonical_bytes":509,
+  "target_content_bytes":17566,
+  "target_hash":"sha256:FA84EE2E577D4A38256A2F2459ABC326CA39E8C23D630F3B54208E1D600C6076",
+  "delivered_hash":"sha256:FA84EE2E577D4A38256A2F2459ABC326CA39E8C23D630F3B54208E1D600C6076",
+  "content_hash":"sha256:FA84EE2E577D4A38256A2F2459ABC326CA39E8C23D630F3B54208E1D600C6076",
+  "self_reference":false
+}

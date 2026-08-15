@@ -4460,6 +4460,30 @@ def validate_b08_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str
     return sorted(set(errors))
 
 
+def validate_b08_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"];progress=bundle["progress"];errors=[]
+    is_current=(progress.get("current_progress_evidence_ref") or {}).get("manifest_path")=="docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json"
+    expected={"docs/evidence/manifests/B-08_START_EVIDENCE_MANIFEST.json","docs/evidence/manifests/B-08_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b08-completion-test-review.json","docs/work_orders/B-08_WORK_INSTRUCTION.md"}
+    rows=manifest.get("raw_checksums");seen=set();canonical=[];total=0
+    if not isinstance(rows,list): return ["B08_COMPLETION_RAW_INVALID"]
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in seen or relative==manifest.get("artifact_path"): errors.append("B08_COMPLETION_RAW_INVALID");continue
+        seen.add(relative)
+        try: ok=(not is_current) or portable_row_matches(root,relative,row.get("bytes"),row.get("sha256"))
+        except (OSError,TypeError): ok=False
+        if not ok: errors.append("B08_COMPLETION_RAW_INVALID");continue
+        total+=int(row["bytes"]);canonical.append(f"{relative}\t{row['bytes']}\t{row['sha256']}")
+    if seen!=expected: errors.append("B08_COMPLETION_RAW_SET_INVALID")
+    can="\n".join(sorted(canonical,key=lambda value:value.encode())).encode();target="sha256:"+hashlib.sha256(can).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes")!=len(can),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B08_COMPLETION_TARGET_MISMATCH")
+    terminal=[e for e in bundle["events"]["events"] if 279<=e.get("sequence",-1)<=281];wi=progress.get("active_work_instruction") or {};boundary=manifest.get("evidence_boundary") or {}
+    if is_current and any((progress.get("event_sequence")!=281,progress.get("current_work_package")!="B-08",progress.get("status")!="TEST_REVIEW",progress.get("valid_failure_count")!=0,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,wi.get("artifact_id")!="WI-B-08-20260815-001",wi.get("result_status")!="COMPLETED",wi.get("independent_tester_status")!="PENDING_DATABASE_VERIFICATION",wi.get("database_verification_status")!="BLOCKED_NOT_EXECUTED",(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B08_ACCEPTANCE",[e.get("event_type") for e in terminal]!=["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"],manifest.get("developer_manifest_sha256")!="91B20ACE8DCBAC4C64F57F5F0158333F6E13665F6E615E81BEB74BE7D1CB47CC",manifest.get("developer_target_hash")!="45B736CE7845E9E5E757DF45916B025479D7CD51EAC281A4CEBD8306BAAF695B",manifest.get("developer_exact_paths_frozen") is not True,manifest.get("developer_mutation")!="FORBIDDEN_FROZEN_PREDECESSOR",boundary.get("actual_wsl_pg18")!="BLOCKED_NOT_EXECUTED",boundary.get("independent_tester")!="PENDING_DATABASE_VERIFICATION",boundary.get("acceptance")!="FORBIDDEN_PENDING_DATABASE_VERIFICATION",boundary.get("b09_start")!="FORBIDDEN_PENDING_B08_ACCEPTANCE")): errors.append("B08_COMPLETION_PROJECTION_MISMATCH")
+    required={"scripts/check_a13_repository_scan.py","tests/tooling/test_a13_repository_scan.py"};successor=manifest.get("a13_successor_projection") or {};indexed={r.get("path"):r for r in successor.get("live_raw_checksums",[]) if isinstance(r,dict)}
+    if is_current and (set(indexed)!=required or any(not portable_row_matches(root,p,r.get("bytes"),r.get("sha256")) for p,r in indexed.items())): errors.append("B08_COMPLETION_SUCCESSOR_INVALID")
+    return sorted(set(errors))
+
+
 def validate_b03_completion_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
     root=bundle["_root"];progress=bundle["progress"];errors=[]
     expected={"docs/evidence/manifests/B-03_START_EVIDENCE_MANIFEST.json","docs/evidence/manifests/B-03_EVIDENCE_MANIFEST.json","docs/progress/progress-handoff-detached-digest-b03-completion-test-review.json","docs/work_orders/B-03_WORK_INSTRUCTION.md"}
@@ -4759,7 +4783,8 @@ def validate_repository_projection(
     b06_completion_projection = repository.get("validated_base_commit") == "105b12be5554d0d2de0c5440cda3d2cb25e98c05" and "docs/evidence/manifests/B-06_COMPLETION_PROGRESS_MANIFEST.json" in allowed
     b07_start_projection = (repository.get("validated_base_commit") == "1a9c25b7ce2c257d40aaa10fcf3a0478f654db93" and "docs/evidence/manifests/B-07_START_EVIDENCE_MANIFEST.json" in allowed) or (repository.get("validated_base_commit") == "2d100b157aedc36da8a78341bbe67085c1663236" and "docs/evidence/manifests/B-07_COMPLETION_PROGRESS_MANIFEST.json" in allowed)
     b08_start_projection = repository.get("validated_base_commit") == "9913636f030aa248216f58e3251cfa181f491d9c" and "docs/evidence/manifests/B-08_START_EVIDENCE_MANIFEST.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection:
+    b08_completion_projection = repository.get("validated_base_commit") == "dfc92411bd7b4127623863c71aa7c30f3ccaf8be" and "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -5071,6 +5096,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b07_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_b08_start_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_b08_completion_manifest(manifest, bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)

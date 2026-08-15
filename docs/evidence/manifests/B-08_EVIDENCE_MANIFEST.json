@@ -1,0 +1,108 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-08-20260815-001",
+  "artifact_type": "transactional_progress_outbox_evidence_manifest",
+  "package_id": "B-08",
+  "artifact_status": "developer_completed_pending_independent_test_with_database_blocked",
+  "work_instruction": {
+    "artifact_id": "WI-B-08-20260815-001",
+    "sha256": "655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406"
+  },
+  "invocation_sha256": "4E7A0CF3AE60C154A8837E271526224310E4CC5B79E0D92450F8563E9BE0F0B3",
+  "baseline_git_commit": "dfc92411bd7b4127623863c71aa7c30f3ccaf8be",
+  "work_instruction_base_commit": "9913636f030aa248216f58e3251cfa181f491d9c",
+  "start_manifest": {
+    "path": "docs/evidence/manifests/B-08_START_EVIDENCE_MANIFEST.json",
+    "bytes": 3414,
+    "sha256": "21DCEC9D851DF7C0459D5E99F58857C2D1C48E347233E405F931FB722F2C4C38"
+  },
+  "assigned_verification_ids": ["AV-STAT-009", "AV-STAT-011", "AV-STAT-012", "AV-STAT-013"],
+  "environment_id": "ENV-LOCAL; ENV-WSL-STAGING-ISOLATED-PG18-BLOCKED",
+  "lease_binding": {
+    "worker_lease_id": "worker-lease-b08-20260815-001",
+    "write_lease_id": "write-lease-b08-20260815-001",
+    "lease_epoch": 1,
+    "write_epoch": 1,
+    "execution_fencing_token": "b08-execution-fence-epoch-1-9913636",
+    "write_fencing_token": "b08-write-fence-epoch-1-9913636"
+  },
+  "exact_write_paths": [
+    "packages/outbox/__init__.py",
+    "packages/outbox/models.py",
+    "packages/outbox/service.py",
+    "packages/progress/__init__.py",
+    "packages/progress/models.py",
+    "packages/progress/exporter.py",
+    "packages/persistence/progress_outbox_repository.py",
+    "migrations/versions/0007_progress_outbox.py",
+    "tests/outbox/test_transactional_outbox.py",
+    "tests/outbox/test_sequence_invariants.py",
+    "tests/progress/test_progress_exporter.py",
+    "tests/progress/test_crash_recovery.py",
+    "docs/validation/B-08_PROGRESS_OUTBOX_VALIDATION.md",
+    "docs/evidence/manifests/B-08_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-08_COMPLETION_REPORT.md"
+  ],
+  "raw_artifact_count": 14,
+  "raw_artifacts": [
+    {"path":"docs/completion_reports/B-08_COMPLETION_REPORT.md","bytes":3585,"sha256":"53564C5C006E291E1A48C8D02DB6C363D65ECB9678D3CACA88C7BAE42E3A9DE9"},
+    {"path":"docs/validation/B-08_PROGRESS_OUTBOX_VALIDATION.md","bytes":8602,"sha256":"F9EEA2FABA208D64927D6D751D7E2F581229233FB9E0E5A0B31FF17AE8B1A289"},
+    {"path":"migrations/versions/0007_progress_outbox.py","bytes":8251,"sha256":"3781A8AF3AECC04392BA8EBB86785183D62A55B3CD341CF3443488C4C38A5548"},
+    {"path":"packages/outbox/__init__.py","bytes":314,"sha256":"AE1C307DA8D2C7CEF9C396102385FCF55928E031484C5AF54145D15E9B2B810D"},
+    {"path":"packages/outbox/models.py","bytes":3741,"sha256":"68CC326EE00CADC2F19AEEF18D35F40676E68D125285E74F1A0D353E9F3C94A2"},
+    {"path":"packages/outbox/service.py","bytes":7808,"sha256":"017E1967E77DED34A7310ECC5980B7179F307E294C67257ACA3E129353977376"},
+    {"path":"packages/persistence/progress_outbox_repository.py","bytes":1035,"sha256":"49B7BA334A4D0605C1B3BFEECF96A3DD405FED562A33B689768AB4B5EC30BA9E"},
+    {"path":"packages/progress/__init__.py","bytes":116,"sha256":"DAB560ADA3630BC30C6B5F0BB315DE78E69861FDCA5CDE54DAF920246E895B06"},
+    {"path":"packages/progress/exporter.py","bytes":7316,"sha256":"B5F0908F1A4D443074F59E5EA4676226FB10FF744BA5C7A0E92B4A6B396883F1"},
+    {"path":"packages/progress/models.py","bytes":1344,"sha256":"BF99F88EBA97BE6F290101089A254CF6C894895621EF56869236E609A74B66EF"},
+    {"path":"tests/outbox/test_sequence_invariants.py","bytes":2631,"sha256":"9F511D6EA52A435085C0AAA7AFE5DB4BA133852C0278607817E8B26DE46DDCA6"},
+    {"path":"tests/outbox/test_transactional_outbox.py","bytes":2776,"sha256":"E88DFE5992BFDFC14D681E1DCECFA7B46C01F8026CF0211E8D04015272402EC1"},
+    {"path":"tests/progress/test_crash_recovery.py","bytes":2966,"sha256":"9276F3488A3C5194E1C48C0316A343F5FBF995FD8778C6FA8FF2565CCA7E6CC1"},
+    {"path":"tests/progress/test_progress_exporter.py","bytes":5189,"sha256":"89E35A11D81E93E875C8C38C430E9F1DF0C4C325BF2C1F0EB1EC52619B46A7FB"}
+  ],
+  "target_algorithm": {
+    "algorithm_version": "1.0.0",
+    "row_format": "path<TAB>decimal_bytes<TAB>uppercase_sha256_without_prefix",
+    "sort": "UTF-8 byte ordinal",
+    "row_separator": "LF",
+    "final_newline": false,
+    "hash_algorithm": "SHA-256"
+  },
+  "target_canonical_bytes": 1504,
+  "target_content_bytes": 55674,
+  "target_hash": "45B736CE7845E9E5E757DF45916B025479D7CD51EAC281A4CEBD8306BAAF695B",
+  "delivered_hash": "45B736CE7845E9E5E757DF45916B025479D7CD51EAC281A4CEBD8306BAAF695B",
+  "content_hash": "45B736CE7845E9E5E757DF45916B025479D7CD51EAC281A4CEBD8306BAAF695B",
+  "self_reference": false,
+  "test_results": {
+    "outbox_progress_focused": "10/10 PASS",
+    "combined_core": "93/93 PASS",
+    "fault_injection": "FI-01/FI-02/FI-03 each 3 repetitions; 9/9 recovery subcases PASS",
+    "python_compile": "PASS",
+    "standalone_repository_import": "PASS",
+    "diff_check": "PASS",
+    "coverage": "NOT_EXECUTED_MODULE_UNAVAILABLE",
+    "offline_alembic_sql": "NOT_EXECUTED_MODULE_UNAVAILABLE",
+    "tooling": "338 run; 24 active-diff/frozen-evidence or dirty-worktree failures"
+  },
+  "database_evidence": {
+    "status": "BLOCKED_NOT_EXECUTED",
+    "reason": "WSL E_ACCESSDENIED followed by platform escalation rejection after approval-review usage limit",
+    "upgrade_path": "0006_checkpoint_artifacts -> 0007_progress_outbox NOT_EXECUTED",
+    "hostile_constraints": "NOT_EXECUTED",
+    "downgrade_path": "0007_progress_outbox -> 0006_checkpoint_artifacts NOT_EXECUTED",
+    "resources_created": false,
+    "cleanup": "NOT_APPLICABLE_NO_RESOURCE_CREATED"
+  },
+  "runtime_boundary": {
+    "actual_local_filesystem_fault_injection": "PASS",
+    "actual_database": "BLOCKED_NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_ysna": "NOT_EXECUTED",
+    "actual_shared_db": "NOT_EXECUTED",
+    "actual_production": "NOT_EXECUTED",
+    "actual_deployment": "NOT_EXECUTED"
+  }
+}
