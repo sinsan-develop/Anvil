@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-08 Main Acceptance — sequence 282
+
+- 독립 Tester report SHA `EF8976924169E5267F9DD028C5ACAFAF836EDA0834069C0134E49C3618934DE9`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검증해 seq282 `MAIN_PACKAGE_ACCEPTED`로 B-08을 최종 ACCEPTED했다.
+- B-09는 `READY / NOT_STARTED`다. active WorkInstruction, agent, worker lease, write lease는 모두 null이고 valid failure count는 0이다.
+- 독립 Tester가 격리 WSL PostgreSQL 18에서 `0006 → 0007 → 0006`, PROJECT/RUN outbox→snapshot→ACK, hostile 13건, Event+outbox atomic rollback, downgrade cleanup을 실제 확인했다.
+- API/UI/browser/provider/ysna/shared-db/production/deployment는 `NOT_EXECUTED`다. 이 projection은 B-09 queue·Worker/write lease를 시작하지 않고 안정적으로 종료한다.
+
 ## B-08 Developer Completion — sequence 281
 
 - Developer exact15는 manifest file SHA `91B20ACE8DCBAC4C64F57F5F0158333F6E13665F6E615E81BEB74BE7D1CB47CC`, target `45B736CE7845E9E5E757DF45916B025479D7CD51EAC281A4CEBD8306BAAF695B`로 byte-frozen이다.
@@ -212,60 +219,46 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 281,
-  "status": "TEST_REVIEW",
-  "current_work_package": "B-08",
-  "last_event_id": "evt_b08_package_completed",
+  "event_sequence": 282,
+  "status": "READY",
+  "current_work_package": "B-09",
+  "last_event_id": "evt_b08_main_package_accepted",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "dfc92411bd7b4127623863c71aa7c30f3ccaf8be",
+  "repository_head": "7cea707b2ce765a306544873cfe31703a3d8201d",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "dfc92411bd7b4127623863c71aa7c30f3ccaf8be",
+  "repository_remote_head": "7cea707b2ce765a306544873cfe31703a3d8201d",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "dfc92411bd7b4127623863c71aa7c30f3ccaf8be",
+  "repository_validated_base_commit": "7cea707b2ce765a306544873cfe31703a3d8201d",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-08_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-08_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b08-completion-test-review.json",
-    "docs/validation/B-08_PROGRESS_OUTBOX_VALIDATION.md",
-    "migrations/versions/0007_progress_outbox.py",
-    "packages/outbox/__init__.py",
-    "packages/outbox/models.py",
-    "packages/outbox/service.py",
-    "packages/persistence/progress_outbox_repository.py",
-    "packages/progress/__init__.py",
-    "packages/progress/exporter.py",
-    "packages/progress/models.py",
+    "docs/progress/progress-handoff-detached-digest-b08-accepted.json",
+    "docs/test_reports/B-08_INDEPENDENT_TEST_REPORT.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/outbox/test_sequence_invariants.py",
-    "tests/outbox/test_transactional_outbox.py",
-    "tests/progress/test_crash_recovery.py",
-    "tests/progress/test_progress_exporter.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b08-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b08-accepted.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Run B-08 independent validation only after approved isolated PostgreSQL 18 is available; B-08 acceptance and B-09 start remain forbidden",
+  "next_safe_action": "STOP_AFTER_B08_ACCEPTANCE; B-09 is READY but must remain NOT_STARTED until a separate start projection",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
-  "wsl_postgresql18_runtime": "BLOCKED_NOT_EXECUTED_B08",
+  "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
   "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
   "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
   "reporting_decision": "AUTO_CONTINUE",
@@ -273,7 +266,7 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-08-20260815-001 / TEST_REVIEW / PENDING_DATABASE_VERIFICATION",
+  "active_work_instruction": null,
   "worker_lease": null,
   "write_lease": null
 }

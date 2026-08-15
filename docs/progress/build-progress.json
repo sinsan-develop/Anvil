@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000112",
-  "event_sequence": 281,
-  "updated_at": "2026-08-15T18:45:02+09:00",
-  "last_event_id": "evt_b08_package_completed",
+  "snapshot_id": "snapshot-anvil-build-000113",
+  "event_sequence": 282,
+  "updated_at": "2026-08-16T05:05:00+09:00",
+  "last_event_id": "evt_b08_main_package_accepted",
   "plan_version": "1.6",
   "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "B",
-  "current_work_package": "B-08",
-  "status": "TEST_REVIEW",
+  "current_work_package": "B-09",
+  "status": "READY",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -40,7 +40,8 @@
     "B-04",
     "B-05",
     "B-06",
-    "B-07"
+    "B-07",
+    "B-08"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -48,7 +49,7 @@
   "budget_reservations": [],
   "valid_failure_count": 0,
   "active_failure_lineage": {
-    "step_lineage_id": "B-08",
+    "step_lineage_id": "B-09",
     "valid_failure_count": 0,
     "takeover_status": "NOT_REQUIRED"
   },
@@ -67,6 +68,10 @@
     "B-03": 1
   },
   "latest_evidence_refs": [
+    {
+      "path": "docs/test_reports/B-08_INDEPENDENT_TEST_REPORT.md",
+      "sha256": "EF8976924169E5267F9DD028C5ACAFAF836EDA0834069C0134E49C3618934DE9"
+    },
     {
       "path": "docs/work_orders/B-08_WORK_INSTRUCTION.md",
       "sha256": "655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406"
@@ -773,7 +778,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "B09FFA95CF8C73E49ACFA56D474895FDB3B3CC0880F0F35E40C66653CC0804C6"
+      "sha256": "05919EC89334402C89AE0B257D544553EDA37C81E7F5DE2A68369A442E664D0D"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -781,19 +786,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "CEAA65E21C9958C4AE8C3BF358C55E431D0D334B7FAB9842731A008377DBBBDC"
+      "sha256": "001A19ADB554F5372E22404042B9BAA44647A1A4AE18545A018B36C5993ADB3A"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "B7B444564A59681A74A5E365423482585A5A4AEBB5D834AA84F5329674A23A7B"
+      "sha256": "53BA558B384C8940453941B3A7231D812C4D2B4C150B9EE0FDE50CF19CAB945E"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "EA39B353046AFDD3FDCEAB8803CE2BF12B4E11753F6F9CA315D664B33D975A91"
+      "sha256": "9C7D492ED032225B71FCF31534015D4FF4AA7BE364F27550DBD27B2D88590F04"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "8000481F5A9F9B364F226CC1EE6AF2E6BD762F839B81B337BBD1DDBCA2A5411E"
+      "sha256": "2FFD9459EFBC016F0716041C950BAC8D32AA263B87651B8803213BCD200D1ABD"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -801,15 +806,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "C25A461DC8CF90947BF02837ECFC7E04235E0FE410266BE4448E899645B2B345"
+      "sha256": "170E2D76A06668C2FA371CC39B6DD1C2005CB8FD95B7776A60B6EFA130CF1C78"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "FFD8A3B4CA58860ED7E985F69CBAED02DF21C02F5F46309EA191933AA03F70BF"
+      "sha256": "B61F225A458100A9DBFF07279DC2A684B30E1F32208577C3B4117C82415A3017"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "FDBD84D3597BC52C8EC1B10031CBEA37BB5B5CBCF222BAE7DC4B378B447BB4A8"
+      "sha256": "4A10B1565A651058F1CEAABC11597EE3980E422ABEF1079DCCD6933A3148D488"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -837,7 +842,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "E83695B8496367D8D3788A8D65DFB8B17672AFE4574ACB786450DB4AB515EB1E"
+      "sha256": "2605D84BD1447927656FB844A7E4E22CC9BCBE3C460A1EF477D228BCD7D3B1CF"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -880,7 +885,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Run B-08 independent validation only after approved isolated PostgreSQL 18 is available; B-08 acceptance and B-09 start remain forbidden",
+  "next_safe_action": "STOP_AFTER_B08_ACCEPTANCE; B-09 is READY but must remain NOT_STARTED until a separate start projection",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -935,45 +940,31 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "dfc92411bd7b4127623863c71aa7c30f3ccaf8be",
+    "validated_base_commit": "7cea707b2ce765a306544873cfe31703a3d8201d",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "dfc92411bd7b4127623863c71aa7c30f3ccaf8be",
+    "remote_head": "7cea707b2ce765a306544873cfe31703a3d8201d",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/completion_reports/B-08_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json",
-      "docs/evidence/manifests/B-08_EVIDENCE_MANIFEST.json",
+      "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-b08-completion-test-review.json",
-      "docs/validation/B-08_PROGRESS_OUTBOX_VALIDATION.md",
-      "migrations/versions/0007_progress_outbox.py",
-      "packages/outbox/__init__.py",
-      "packages/outbox/models.py",
-      "packages/outbox/service.py",
-      "packages/persistence/progress_outbox_repository.py",
-      "packages/progress/__init__.py",
-      "packages/progress/exporter.py",
-      "packages/progress/models.py",
+      "docs/progress/progress-handoff-detached-digest-b08-accepted.json",
+      "docs/test_reports/B-08_INDEPENDENT_TEST_REPORT.md",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
-      "tests/outbox/test_sequence_invariants.py",
-      "tests/outbox/test_transactional_outbox.py",
-      "tests/progress/test_crash_recovery.py",
-      "tests/progress/test_progress_exporter.py",
       "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_g07_baseline.py",
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-15T18:45:02+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: B-08 completion projection exact28 with database verification pending",
-    "local_head": "dfc92411bd7b4127623863c71aa7c30f3ccaf8be"
+    "observed_at": "2026-08-16T05:05:00+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: B-08 acceptance projection exact14; B-09 READY_NOT_STARTED",
+    "local_head": "7cea707b2ce765a306544873cfe31703a3d8201d"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1070,9 +1061,9 @@
     "b01_started": true
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-B-07-20260815-001",
-    "path": "docs/work_orders/B-07_WORK_INSTRUCTION.md",
-    "sha256": "4809891FD6EADFB7CD5A147D879257FC61C3AD7D20B63081814DF46F59E0741F",
+    "artifact_id": "WI-B-08-20260815-001",
+    "path": "docs/work_orders/B-08_WORK_INSTRUCTION.md",
+    "sha256": "655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406",
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
@@ -1082,26 +1073,7 @@
     ],
     "stop_before_dialogue_report": false
   },
-  "active_work_instruction": {
-    "artifact_id": "WI-B-08-20260815-001",
-    "path": "docs/work_orders/B-08_WORK_INSTRUCTION.md",
-    "sha256": "655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406",
-    "invocation_path": "docs/work_orders/B-08_INVOCATION_PROMPT.md",
-    "invocation_sha256": "4E7A0CF3AE60C154A8837E271526224310E4CC5B79E0D92450F8563E9BE0F0B3",
-    "package_status": "TEST_REVIEW",
-    "result_status": "COMPLETED",
-    "accepted": false,
-    "independent_tester_status": "PENDING_DATABASE_VERIFICATION",
-    "developer_manifest_sha256": "91B20ACE8DCBAC4C64F57F5F0158333F6E13665F6E615E81BEB74BE7D1CB47CC",
-    "developer_target_hash": "45B736CE7845E9E5E757DF45916B025479D7CD51EAC281A4CEBD8306BAAF695B",
-    "database_verification_status": "BLOCKED_NOT_EXECUTED",
-    "assigned_verification_ids": [
-      "AV-STAT-009",
-      "AV-STAT-011",
-      "AV-STAT-012",
-      "AV-STAT-013"
-    ]
-  },
+  "active_work_instruction": null,
   "runtime_boundary_approval": {
     "approval_id": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
     "path": "docs/approvals/APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001.md",
@@ -1116,8 +1088,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "B-08",
-    "path": "docs/progress/progress-handoff-detached-digest-b08-completion-test-review.json",
-    "manifest_path": "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-b08-accepted.json",
+    "manifest_path": "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1138,12 +1110,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "E83695B8496367D8D3788A8D65DFB8B17672AFE4574ACB786450DB4AB515EB1E"
+      "sha256": "2605D84BD1447927656FB844A7E4E22CC9BCBE3C460A1EF477D228BCD7D3B1CF"
     }
   },
   "next_work_package": {
     "package_id": "B-09",
-    "status": "BLOCKED_PENDING_B08_ACCEPTANCE"
+    "status": "READY"
   },
-  "snapshot_hash": "95ECA503FC7D5E8A10D3524E2D09EBAEC160C6CDE9559349E9246FC5FFFD4D3B"
+  "snapshot_hash": "DB387C0519DFD0802FE646765DCB7E8C587A9E8B6D07C4D4CE37C764CB310474"
 }
