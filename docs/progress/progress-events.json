@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 322,
+  "last_sequence": 325,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -11798,6 +11798,104 @@
         "next_work_package": "B-11",
         "next_package_status": "BLOCKED_PENDING_B10_ACCEPTANCE",
         "reporting_decision": "AUTO_CONTINUE"
+      }
+    },
+    {
+      "event_id": "evt_b10_write_lease_revoked_r2",
+      "sequence": 323,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-08-21T03:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "lease_id": "write-lease-b10-20260821-002",
+        "worker_lease_id": "worker-lease-b10-20260821-002",
+        "write_epoch": 2,
+        "reason": "DEVELOPER_R2_COMPLETED_PENDING_INDEPENDENT_RETEST",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b10_worker_lease_revoked_r2",
+      "sequence": 324,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-08-21T03:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "lease_id": "worker-lease-b10-20260821-002",
+        "lease_epoch": 2,
+        "reason": "DEVELOPER_R2_COMPLETED_PENDING_INDEPENDENT_RETEST",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b10_package_completed_r2",
+      "sequence": 325,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-21T03:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "completion_head": "a5515ea94d3b5a6e185c0521a0de4906d6e21dae",
+        "completion_upstream_head": "a5515ea94d3b5a6e185c0521a0de4906d6e21dae",
+        "package_status": "TEST_REVIEW",
+        "result_status": "COMPLETED",
+        "accepted": false,
+        "independent_tester_status": "PENDING_RETEST",
+        "developer_actor": "developer-primary-b10",
+        "developer_manifest_ref": {
+          "path": "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+          "sha256": "6CBB859DA5598F4586380A124477C0D0C084B64AB43ACAE8C2FE4182B6A37934"
+        },
+        "developer_target_hash": "6CEB2CB8CCFB2168141C0B995EB4E1868EFBF4D0EC1DC94B9176D860CD785317",
+        "developer_raw_artifact_count": 6,
+        "worker_lease": null,
+        "write_lease": null,
+        "valid_failure_count": 1,
+        "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
+        "source_test_report_sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB",
+        "actual_local_status": "PASS_DEVELOPER_R2_EVIDENCE",
+        "actual_wsl_postgresql18": "PASS_DEVELOPER_R2_ISOLATED_PENDING_INDEPENDENT_RETEST",
+        "actual_api_status": "NOT_EXECUTED",
+        "actual_ui_status": "NOT_EXECUTED",
+        "actual_browser_status": "NOT_EXECUTED",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_ysna_status": "NOT_EXECUTED",
+        "actual_shared_db_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_deployment_status": "NOT_EXECUTED",
+        "next_work_package": "B-11",
+        "next_package_status": "BLOCKED_PENDING_B10_ACCEPTANCE",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "a5515ea94d3b5a6e185c0521a0de4906d6e21dae",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "a5515ea94d3b5a6e185c0521a0de4906d6e21dae",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/completion_reports/B-10_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+          "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r2.json",
+          "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+          "migrations/versions/0009_intervention_budget.py",
+          "packages/persistence/intervention_budget_repository.py",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/budget/test_atomic_reservation.py",
+          "tests/budget/test_quota_reconcile.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ]
       }
     }
   ]

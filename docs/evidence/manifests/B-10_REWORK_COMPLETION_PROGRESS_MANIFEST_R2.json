@@ -1,0 +1,86 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-10-REWORK-COMPLETION-R2-20260821-001",
+  "artifact_type": "package_rework_completion_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-10",
+  "artifact_status": "test_review_pending_retest",
+  "artifact_path": "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-21T03:00:02+09:00",
+  "projection": {
+    "event_sequence": 325,
+    "status": "TEST_REVIEW",
+    "result_status": "COMPLETED",
+    "independent_tester_status": "PENDING_RETEST",
+    "valid_failure_count": 1,
+    "worker_lease": null,
+    "write_lease": null,
+    "next_package": "B-11",
+    "next_package_status": "BLOCKED_PENDING_B10_ACCEPTANCE"
+  },
+  "developer_manifest_sha256": "6CBB859DA5598F4586380A124477C0D0C084B64AB43ACAE8C2FE4182B6A37934",
+  "developer_target_hash": "6CEB2CB8CCFB2168141C0B995EB4E1868EFBF4D0EC1DC94B9176D860CD785317",
+  "developer_raw_artifact_count": 6,
+  "developer_exact_paths_frozen": true,
+  "developer_mutation": "FORBIDDEN_FROZEN_R2",
+  "source_tester_report_sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB",
+  "failure_fingerprint": "BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE",
+  "r2_start_manifest_sha256": "E3D312DEC08D189F6767FD3C6AB8858B3E64FE9C4D7111334F23E8EF23CA7D85",
+  "main_projection_exact_path_count": 20,
+  "projection_product_mutation_count": 0,
+  "runtime_boundary": {
+    "actual_local": "PASS_DEVELOPER_R2_EVIDENCE",
+    "actual_wsl_postgresql18": "PASS_DEVELOPER_R2_ISOLATED_PENDING_INDEPENDENT_RETEST",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "shared_db": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "acceptance": "FORBIDDEN_PENDING_R2_INDEPENDENT_RETEST",
+    "b11_start": "FORBIDDEN_PENDING_B10_ACCEPTANCE"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+      "bytes": 4582,
+      "sha256": "6CBB859DA5598F4586380A124477C0D0C084B64AB43ACAE8C2FE4182B6A37934"
+    },
+    {
+      "path": "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json",
+      "bytes": 5236,
+      "sha256": "E3D312DEC08D189F6767FD3C6AB8858B3E64FE9C4D7111334F23E8EF23CA7D85"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r2.json",
+      "bytes": 792,
+      "sha256": "0B0143E2CC08816FC0D2B978E5732B2498B6288B7125749B9BF0BCA512B60EBA"
+    },
+    {
+      "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+      "bytes": 11159,
+      "sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB"
+    },
+    {
+      "path": "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
+      "bytes": 980,
+      "sha256": "489222E413D61AEBEC177E42CDBBCA88AE4380644F5A6534511BC5B12C0F9674"
+    },
+    {
+      "path": "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
+      "bytes": 5617,
+      "sha256": "DFFCE00D420BC0DDC04C48B18856D111397C8DDC67155EE3DE702B8C379E6D21"
+    }
+  ],
+  "target_canonical_bytes": 770,
+  "target_content_bytes": 28366,
+  "target_hash": "sha256:B427A9090D4C9CA4BF19CFB2F7E1F2353CAF4AD07A35F144F620276A1632CAAD",
+  "delivered_hash": "sha256:B427A9090D4C9CA4BF19CFB2F7E1F2353CAF4AD07A35F144F620276A1632CAAD",
+  "content_hash": "sha256:B427A9090D4C9CA4BF19CFB2F7E1F2353CAF4AD07A35F144F620276A1632CAAD",
+  "self_reference": false
+}

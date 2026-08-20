@@ -139,7 +139,8 @@ def upgrade():
           END IF;
           SELECT COALESCE(sum(reserved_cost),0),COALESCE(sum(reserved_tokens),0),count(*)
           INTO active_cost,active_tokens,active_count
-          FROM budget_reservations WHERE budget_id=p_budget_id AND status='RESERVED';
+          FROM budget_reservations
+          WHERE budget_id=p_budget_id AND status IN ('RESERVED','RECONCILIATION_REQUIRED');
           SELECT active_cost + COALESCE(sum(consumed_cost),0),
                  active_tokens + COALESCE(sum(consumed_tokens),0)
           INTO active_cost,active_tokens

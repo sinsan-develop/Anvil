@@ -176,7 +176,8 @@ class InMemoryInterventionBudgetRepository:
     def _snapshot_unlocked(self, budget_id: str) -> BudgetSnapshot:
         limit = self._limits[budget_id]
         reservations = tuple(item for item in self._reservations.values() if item.budget_id == budget_id)
-        active = tuple(item for item in reservations if item.status is ReservationStatus.RESERVED)
+        active_statuses = {ReservationStatus.RESERVED, ReservationStatus.RECONCILIATION_REQUIRED}
+        active = tuple(item for item in reservations if item.status in active_statuses)
         return BudgetSnapshot(
             budget_id,
             limit.hard_cost_limit,

@@ -1205,6 +1205,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "PACKAGE_RESUMED" and reconciliation_event.get("subject_ref") == "B-10" and reconciliation_event.get("sequence") == 322:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_COMPLETED" and reconciliation_event.get("subject_ref") == "B-10" and reconciliation_event.get("sequence") == 325:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1311,6 +1313,11 @@ def validate_repository(
         instruction = progress.get("active_work_instruction") or {}
         if any((progress.get("current_work_package") != "B-10", progress.get("status") != "ACTIVE", instruction.get("artifact_id") != "WI-B-10-20260821-002", instruction.get("result_status") != "REWORK_IN_PROGRESS", progress.get("active_agent") != "developer-primary-b10", progress.get("valid_failure_count") != 1, (progress.get("worker_lease") or {}).get("lease_epoch") != 2, (progress.get("write_lease") or {}).get("write_epoch") != 2, (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE", [event.get("event_type") for event in terminal] != ["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"])):
             _error(errors, "B10_R2_PROJECTION_MISMATCH", progress_path, "sequence=322")
+    if progress.get("event_sequence") == 325:
+        terminal = [event for event in events if 323 <= event.get("sequence", -1) <= 325]
+        instruction = progress.get("active_work_instruction") or {}
+        if any((progress.get("current_work_package") != "B-10", progress.get("status") != "TEST_REVIEW", instruction.get("artifact_id") != "WI-B-10-20260821-002", instruction.get("result_status") != "COMPLETED", instruction.get("independent_tester_status") != "PENDING_RETEST", progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, progress.get("valid_failure_count") != 1, (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE", [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"])):
+            _error(errors, "B10_R2_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=325")
     return {
         "schema_version": "1.0.0",
         "package_id": "G-07",
@@ -1460,6 +1467,18 @@ def validate_b10_rework_start_projection(root: Path) -> list[str]:
     if [event["event_type"] for event in terminal] != ["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"]: errors.append("B10_R2_EVENT_ORDER_INVALID")
     if (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE": errors.append("B11_BOUNDARY_INVALID")
     return errors
+
+
+def validate_b10_rework_completion_projection(root: Path) -> list[str]:
+    report = validate_repository(root, verify_git=True)
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal = [event for event in events if 323 <= event.get("sequence", -1) <= 325]
+    errors = [entry["code"] for entry in report["errors"]]
+    wi = progress.get("active_work_instruction") or {}
+    if any((progress.get("event_sequence") != 325, progress.get("status") != "TEST_REVIEW", progress.get("valid_failure_count") != 1, wi.get("result_status") != "COMPLETED", wi.get("independent_tester_status") != "PENDING_RETEST", progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, len((progress.get("repository") or {}).get("exact_allowed_paths", [])) != 20, [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"])):
+        errors.append("B10_R2_COMPLETION_INVALID")
+    return sorted(set(errors))
 
 if __name__ == "__main__":
     raise SystemExit(main())

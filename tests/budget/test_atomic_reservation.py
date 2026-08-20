@@ -152,6 +152,69 @@ class AtomicReservationTests(unittest.TestCase):
             ).fetchone()
         self.assertEqual((Decimal("90"), 900), totals)
 
+    @unittest.skipUnless(os.environ.get("ANVIL_B10_PG18_DSN"), "isolated PostgreSQL 18 DSN not configured")
+    def test_postgres_unresolved_usage_remains_in_atomic_admission_totals(self):
+        import psycopg
+
+        dsn = os.environ["ANVIL_B10_PG18_DSN"]
+        suffix = uuid.uuid4().hex[:12]
+        scenarios = (
+            ("cost", Decimal("50"), 5000, 8, Decimal("40"), 400, Decimal("20"), 100),
+            ("tokens", Decimal("500"), 500, 8, Decimal("40"), 400, Decimal("20"), 200),
+            ("concurrency", Decimal("500"), 5000, 1, Decimal("40"), 400, Decimal("1"), 1),
+        )
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            for (
+                name, hard_cost, hard_tokens, max_concurrent,
+                first_cost, first_tokens, second_cost, second_tokens,
+            ) in scenarios:
+                task_id = f"task-b10-{name}-{suffix}"
+                run_id = f"run-b10-{name}-{suffix}"
+                budget_id = f"budget-b10-{name}-{suffix}"
+                first_id = f"r1-{name}-{suffix}"
+                connection.execute(
+                    "INSERT INTO tasks(task_id,project_id,repository_id,title,objective,requested_by,status) "
+                    "VALUES (%s,'project-b09','repo-b09','B10 unresolved','B10 unresolved','developer-primary-b10','IN_PROGRESS')",
+                    (task_id,),
+                )
+                connection.execute(
+                    "INSERT INTO runs(run_id,task_id,baseline_id,phase,status,version) "
+                    "VALUES (%s,%s,'baseline-b09','B','ACTIVE',1)",
+                    (run_id, task_id),
+                )
+                connection.execute(
+                    "INSERT INTO budget_ledgers(budget_id,run_id,hard_cost_limit,hard_token_limit,max_concurrent_requests) "
+                    "VALUES (%s,%s,%s,%s,%s)",
+                    (budget_id, run_id, hard_cost, hard_tokens, max_concurrent),
+                )
+                first = connection.execute(
+                    "SELECT reservation_id FROM anvil_budget_reserve(%s,%s,%s,'step-1',%s,'OPENAI','m','p1',%s,%s)",
+                    (first_id, budget_id, run_id, f"q1-{name}-{suffix}", first_cost, first_tokens),
+                ).fetchone()
+                self.assertEqual(first_id, first[0])
+                connection.execute(
+                    "UPDATE budget_reservations SET status='RECONCILIATION_REQUIRED' WHERE reservation_id=%s",
+                    (first_id,),
+                )
+                second = connection.execute(
+                    "SELECT reservation_id FROM anvil_budget_reserve(%s,%s,%s,'step-2',%s,'OPENAI','m','p1',%s,%s)",
+                    (
+                        f"r2-{name}-{suffix}", budget_id, run_id, f"q2-{name}-{suffix}",
+                        second_cost, second_tokens,
+                    ),
+                ).fetchone()
+                exposure = connection.execute(
+                    "SELECT status,reserved_cost,reserved_tokens FROM budget_reservations WHERE budget_id=%s",
+                    (budget_id,),
+                ).fetchall()
+
+                with self.subTest(limit=name):
+                    self.assertIsNone(second[0])
+                    self.assertEqual(
+                        [("RECONCILIATION_REQUIRED", first_cost, first_tokens)],
+                        exposure,
+                    )
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,3 +1,9 @@
+# B-10 R2 Main completion — sequence 325
+
+- Developer R2 exact7/raw6는 manifest SHA `6CBB859DA5598F4586380A124477C0D0C084B64AB43ACAE8C2FE4182B6A37934`, target `6CEB2CB8CCFB2168141C0B995EB4E1868EFBF4D0EC1DC94B9176D860CD785317`로 동결했다.
+- seq323→325는 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-10은 `TEST_REVIEW`, Tester는 `PENDING_RETEST`, B-11은 acceptance 전 차단이다.
+- R2 start manifest와 CRITICAL report history를 결박했다. 실제 API/UI/browser/provider/shared DB/ysna/production/deployment는 `NOT_EXECUTED`다.
+
 ## B-10 독립 FAILURE_REPORT 수락 → R2 재작업 재개 — sequence 322
 
 - 독립 Tester report `B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB`의 `REWORK_REQUIRED / BLK-B10-IT-001 / CRITICAL`을 B-10 첫 유효 실패로 수락했다.
@@ -301,46 +307,49 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 322,
-  "status": "ACTIVE",
+  "event_sequence": 325,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-10",
-  "last_event_id": "evt_b10_rework_resumed_r2",
+  "last_event_id": "evt_b10_package_completed_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
   "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 19,
   "dir_status": "CLEARED",
-  "repository_head": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
+  "repository_head": "a5515ea94d3b5a6e185c0521a0de4906d6e21dae",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
+  "repository_remote_head": "a5515ea94d3b5a6e185c0521a0de4906d6e21dae",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
+  "repository_validated_base_commit": "a5515ea94d3b5a6e185c0521a0de4906d6e21dae",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json",
+    "docs/completion_reports/B-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b10-rework-start-r2.json",
-    "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
-    "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r2.json",
+    "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+    "migrations/versions/0009_intervention_budget.py",
+    "packages/persistence/intervention_budget_repository.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/budget/test_atomic_reservation.py",
+    "tests/budget/test_quota_reconcile.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-rework-start-r2.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r2.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "developer-primary-b10 executes R2 exact7 under epoch2 fencing; B-11 remains blocked",
+  "next_safe_action": "Independent Tester performs B-10 R2 retest; B-11 remains blocked pending B-10 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
@@ -351,9 +360,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-10-20260821-002 / REWORK_IN_PROGRESS / R2_PENDING",
-  "worker_lease": "worker-lease-b10-20260821-002 / epoch 2 / ACTIVE",
-  "write_lease": "write-lease-b10-20260821-002 / epoch 2 / ACTIVE / exact7"
+  "active_work_instruction": "WI-B-10-20260821-002 / COMPLETED / PENDING_RETEST",
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 

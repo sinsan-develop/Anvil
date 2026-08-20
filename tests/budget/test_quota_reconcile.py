@@ -1,17 +1,21 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
 import unittest
 
 try:
     from packages.budget.models import BudgetLimit, BudgetRequest, UsageReceipt
-    from packages.budget.service import BudgetService, UsageReconciliationRequired
+    from packages.budget.service import BudgetReservationFailed, BudgetService, UsageReconciliationRequired
     from packages.persistence.intervention_budget_repository import InMemoryInterventionBudgetRepository
 except ModuleNotFoundError:
     BudgetLimit = BudgetRequest = UsageReceipt = None
 
     class UsageReconciliationRequired(ValueError):
         code = "USAGE_RECONCILIATION_REQUIRED"
+
+    class BudgetReservationFailed(ValueError):
+        pass
 
     class BudgetService:
         def __init__(self, *args, **kwargs):
@@ -84,6 +88,90 @@ class QuotaReconcileTests(unittest.TestCase):
             self.service.reconcile(unknown)
         self.assertEqual("USAGE_RECONCILIATION_REQUIRED", caught.exception.code)
         self.assertEqual(Decimal("10.00"), self.service.reservation("reservation-unknown").reserved_cost)
+
+    def test_unknown_usage_remains_full_admission_exposure_until_final_receipt(self):
+        service = BudgetService(InMemoryInterventionBudgetRepository())
+        service.create_budget(BudgetLimit("budget-unresolved", Decimal("50.00"), 500, 1))
+        service.reserve(
+            BudgetRequest(
+                "reservation-unresolved", "budget-unresolved", "run-q", "step-unresolved",
+                "request-unresolved", "ANTHROPIC", "model-q", "price-v2", Decimal("40.00"), 400,
+            )
+        )
+        unknown = UsageReceipt(
+            "usage-unresolved", "reservation-unresolved", "request-unresolved", "ABORT_UNKNOWN",
+            None, None, None, "bucket-a", "provider_missing_final_usage",
+        )
+        with self.assertRaises(UsageReconciliationRequired):
+            service.reconcile(unknown)
+
+        snapshot = service.snapshot("budget-unresolved")
+        self.assertEqual(Decimal("40.00"), snapshot.reserved_cost)
+        self.assertEqual(400, snapshot.reserved_tokens)
+        self.assertEqual(1, snapshot.active_requests)
+        sent: list[str] = []
+        with self.assertRaises(BudgetReservationFailed):
+            service.reserve_and_send(
+                BudgetRequest(
+                    "reservation-over", "budget-unresolved", "run-q", "step-over", "request-over",
+                    "ANTHROPIC", "model-q", "price-v2", Decimal("50.00"), 500,
+                ),
+                lambda request_id: sent.append(request_id),
+            )
+        self.assertEqual([], sent)
+
+    def test_final_receipt_replay_and_concurrent_reserve_release_exposure_once(self):
+        service = BudgetService(InMemoryInterventionBudgetRepository())
+        service.create_budget(BudgetLimit("budget-final", Decimal("50.00"), 500, 1))
+        service.reserve(
+            BudgetRequest(
+                "reservation-final", "budget-final", "run-q", "step-final", "request-final",
+                "ANTHROPIC", "model-q", "price-v2", Decimal("40.00"), 400,
+            )
+        )
+        with self.assertRaises(UsageReconciliationRequired):
+            service.reconcile(
+                UsageReceipt(
+                    "usage-unknown-final", "reservation-final", "request-final", "ABORT_UNKNOWN",
+                    None, None, None, "bucket-a", "provider_missing_final_usage",
+                )
+            )
+        final = UsageReceipt(
+            "usage-authoritative-final", "reservation-final", "request-final", "ABORT_CONFIRMED",
+            Decimal("12.00"), 120, None, "bucket-a", "provider_final_usage",
+        )
+
+        def reconcile_final():
+            return service.reconcile(final)
+
+        def reserve_remainder(index: int):
+            try:
+                return service.reserve(
+                    BudgetRequest(
+                        f"reservation-remainder-{index}", "budget-final", "run-q", f"step-{index}",
+                        f"request-remainder-{index}", "ANTHROPIC", "model-q", "price-v2",
+                        Decimal("38.00"), 380,
+                    )
+                )
+            except BudgetReservationFailed:
+                return None
+
+        with ThreadPoolExecutor(max_workers=9) as pool:
+            futures = [pool.submit(reconcile_final) for _ in range(4)]
+            futures.extend(pool.submit(reserve_remainder, index) for index in range(5))
+            results = tuple(future.result() for future in futures)
+
+        reconciliation_results = results[:4]
+        self.assertTrue(all(item == reconciliation_results[0] for item in reconciliation_results))
+        snapshot = service.snapshot("budget-final")
+        self.assertLessEqual(snapshot.reserved_cost + snapshot.consumed_cost, Decimal("50.00"))
+        self.assertLessEqual(snapshot.reserved_tokens + snapshot.consumed_tokens, 500)
+        self.assertLessEqual(snapshot.active_requests, 1)
+        self.assertEqual(Decimal("12.00"), snapshot.consumed_cost)
+        self.assertEqual(120, snapshot.consumed_tokens)
+        reservation = service.reservation("reservation-final")
+        self.assertEqual(Decimal("28.00"), reservation.released_cost)
+        self.assertEqual(280, reservation.released_tokens)
 
 
 if __name__ == "__main__":
