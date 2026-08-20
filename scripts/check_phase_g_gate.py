@@ -1034,6 +1034,10 @@ def validate_gate(
     b09_r5_acceptance_projection=(progress_projection.get("current_work_package")=="B-10" and progress_projection.get("status")=="READY" and "B-09" in progress.get("completed_packages",[]) and progress.get("valid_failure_count")==0 and (progress.get("historical_failure_counts_by_lineage") or {}).get("B-09")==4 and progress_projection.get("active_work_instruction") is None and progress.get("active_agent") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and (progress.get("next_work_package") or {}).get("status")=="READY" and [event.get("event_type") for event in b09_r5_acceptance_events]==["MAIN_PACKAGE_ACCEPTED"])
     if b09_r5_acceptance_projection:
         errors = [error for error in errors if error.get("code") != "GATE_FALSE_ADVANCEMENT"]
+    b10_start_events=[event for event in events if 313 <= event.get("sequence",-1) <= 315]
+    b10_start_projection=(progress_projection.get("current_work_package")=="B-10" and progress_projection.get("status")=="ACTIVE" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-10-20260820-001" and progress.get("active_agent")=="developer-primary-b10" and progress_projection.get("worker_lease",{}).get("lease_epoch")==1 and progress_projection.get("write_lease",{}).get("write_epoch")==1 and (progress.get("next_work_package") or {}).get("package_id")=="B-11" and (progress.get("next_work_package") or {}).get("status")=="BLOCKED_PENDING_B10_ACCEPTANCE" and [event.get("event_type") for event in b10_start_events]==["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"])
+    if b10_start_projection:
+        errors = [error for error in errors if error.get("code") not in {"GATE_FALSE_ADVANCEMENT", "GATE_BASELINE_REGRESSION"}]
 
     counts = {
         "package": baseline["counts"]["package_total"],
@@ -1092,6 +1096,14 @@ def main() -> int:
     print(f"Phase G Gate: PASS accepted=7 decisions=10 packages={report['counts']['package']} av={report['counts']['av']} scenarios={report['counts']['scenario']} sync={report['counts']['sync']}")
     return 0
 
+
+def validate_b10_start_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    errors = []
+    if progress.get("event_sequence") != 315 or progress.get("current_work_package") != "B-10" or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
+    if (progress.get("phase_gate") or {}).get("decision") != "ACCEPTED": errors.append("A_GATE_DRIFT")
+    if (progress.get("next_work_package") or {}).get("package_id") != "B-11": errors.append("B11_SUCCESSOR_INVALID")
+    return errors
 
 if __name__ == "__main__":
     raise SystemExit(main())

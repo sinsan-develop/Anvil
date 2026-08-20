@@ -48,17 +48,17 @@ class G07BaselineTests(unittest.TestCase):
         return {error["code"] for error in report["errors"]}
 
     def assert_current_b09_authority_rebind(self, progress):
-        self.assertEqual(312, progress["event_sequence"])
+        self.assertEqual(315, progress["event_sequence"])
         self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["active_agent"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-10-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("developer-primary-b10", progress["active_agent"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_authoritative_repository_is_recalculated_not_assumed(self):
         report = self.validate()
@@ -214,13 +214,13 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "7c3382a497e995e18c736a487eee8761aa0c1a05",
+            "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
-            "7c3382a497e995e18c736a487eee8761aa0c1a05",
+            "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
             report["git"]["validated_base_commit"],
         )
         self.assertEqual(
@@ -228,7 +228,7 @@ class G07BaselineTests(unittest.TestCase):
         )
         current_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual(report["git"]["changed_paths"], current_progress["repository"]["exact_allowed_paths"])
-        self.assertEqual(41, len(reconciliation["exact_allowed_paths"]))
+        self.assertEqual(15, len(reconciliation["exact_allowed_paths"]))
         self.assertEqual("B-10", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(19, report["failure_counts"]["historical_accepted_failure_total"])
@@ -501,16 +501,16 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_authority_rebind(progress)
         self.assertIn("B-08", progress["completed_packages"])
-        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_authority_rebind_rotates_to_epoch2_without_starting_b10(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
         self.assert_current_b09_authority_rebind(progress)
-        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_r4_third_valid_failure_transfers_epoch4_to_main_without_starting_b10(self):
         report = self.validate()
@@ -522,22 +522,22 @@ class G07BaselineTests(unittest.TestCase):
         takeover = [event for event in events if 296 <= event["sequence"] <= 301]
         self.assertEqual(4, takeover[3]["details"]["lease_epoch"])
         self.assertEqual(4, takeover[4]["details"]["write_epoch"])
-        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_main_completion_waits_for_independent_tester(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
         self.assert_current_b09_authority_rebind(progress)
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_r5_failure_restarts_main_with_epoch5_fencing(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
         self.assert_current_b09_authority_rebind(progress)
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_r5_completion_waits_for_independent_retest(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
@@ -551,12 +551,21 @@ class G07BaselineTests(unittest.TestCase):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         report = self.validate()
         self.assertEqual([], report["errors"])
-        self.assertEqual(312, progress["event_sequence"])
-        self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
+        self.assert_current_b09_authority_rebind(progress)
         self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+
+    def test_b10_start_keeps_g07_phase_aware_with_fenced_dispatch(self):
+        spec = importlib.util.spec_from_file_location("g07_checker_b10_start", CHECKER_PATH)
+        checker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(315, progress["event_sequence"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual([], checker.validate_b10_start_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

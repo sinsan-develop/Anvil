@@ -4937,7 +4937,8 @@ def validate_repository_projection(
     b09_r5_rework_projection = repository.get("validated_base_commit") == "7c3382a497e995e18c736a487eee8761aa0c1a05" and "docs/evidence/manifests/B-09_REWORK_START_PROGRESS_MANIFEST_R5.json" in allowed
     b09_r5_completion_projection = repository.get("validated_base_commit") == "7c3382a497e995e18c736a487eee8761aa0c1a05" and "docs/evidence/manifests/B-09_REWORK_COMPLETION_PROGRESS_MANIFEST_R5.json" in allowed
     b09_r5_acceptance_projection = repository.get("validated_base_commit") == "7c3382a497e995e18c736a487eee8761aa0c1a05" and "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    b10_start_projection = repository.get("validated_base_commit") == "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8" and "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -5259,6 +5260,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b09_rework_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json":
             errors.extend(validate_b09_r5_acceptance_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json":
+            errors.extend(validate_b10_start_projection(bundle["_root"]))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b08_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json":
@@ -5296,6 +5299,20 @@ def main(argv: list[str] | None = None) -> int:
     )
     return 0
 
+
+def validate_b10_start_projection(root: Path) -> list[str]:
+    bundle = load_bundle(root)
+    progress = bundle["progress"]
+    events = [event for event in bundle["events"]["events"] if 313 <= event["sequence"] <= 315]
+    errors = []
+    expected_ids = ["AV-SAFE-003", "AV-SAFE-025", "AV-STAT-030", "AV-STAT-031", "AV-STAT-032", "AV-STAT-033", "AV-STAT-037", "AV-AGT-006"]
+    wi = progress.get("active_work_instruction") or {}
+    if progress.get("event_sequence") != 315 or progress.get("current_work_package") != "B-10" or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
+    if wi.get("artifact_id") != "WI-B-10-20260820-001" or wi.get("assigned_verification_ids") != expected_ids: errors.append("B10_WORK_INSTRUCTION_INVALID")
+    if progress.get("active_agent") != "developer-primary-b10" or (progress.get("worker_lease") or {}).get("lease_epoch") != 1 or (progress.get("write_lease") or {}).get("write_epoch") != 1: errors.append("B10_FENCING_INVALID")
+    if [event["event_type"] for event in events] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]: errors.append("B10_EVENT_ORDER_INVALID")
+    if (progress.get("next_work_package") or {}) != {"package_id": "B-11", "status": "BLOCKED_PENDING_B10_ACCEPTANCE"}: errors.append("B11_BOUNDARY_INVALID")
+    return errors
 
 if __name__ == "__main__":
     raise SystemExit(main())

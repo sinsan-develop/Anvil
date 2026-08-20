@@ -1199,6 +1199,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "MAIN_PACKAGE_ACCEPTED" and reconciliation_event.get("subject_ref") == "B-09" and reconciliation_event.get("sequence") == 312:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-10" and reconciliation_event.get("sequence") == 315:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1409,6 +1411,14 @@ def main(argv: Iterable[str] | None = None) -> int:
         return 1
     return 0
 
+
+def validate_b10_start_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    errors = []
+    if progress.get("event_sequence") != 315 or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
+    if (progress.get("worker_lease") or {}).get("lease_epoch") != 1 or (progress.get("write_lease") or {}).get("write_epoch") != 1: errors.append("B10_FENCING_INVALID")
+    if (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE": errors.append("B11_BOUNDARY_INVALID")
+    return errors
 
 if __name__ == "__main__":
     raise SystemExit(main())

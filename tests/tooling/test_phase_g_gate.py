@@ -41,17 +41,17 @@ class PhaseGGateTests(unittest.TestCase):
 
     def assert_current_b09_start(self, progress):
         self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-10-20260820-001", progress["active_work_instruction"]["artifact_id"])
         if "event_sequence" in progress:
-            self.assertEqual(312, progress["event_sequence"])
-            self.assertIsNone(progress["active_agent"])
+            self.assertEqual(315, progress["event_sequence"])
+            self.assertEqual("developer-primary-b10", progress["active_agent"])
             self.assertEqual(0, progress["valid_failure_count"])
             self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
-            self.assertIsNone(progress["worker_lease"])
-            self.assertIsNone(progress["write_lease"])
-            self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-            self.assertEqual("READY", progress["next_work_package"]["status"])
+            self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+            self.assertEqual(1, progress["write_lease"]["write_epoch"])
+            self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+            self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_gate_recalculates_all_required_contracts(self):
         report = self.validate()
@@ -145,11 +145,11 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         progress = report["progress"]
         self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual("ACTIVE", progress["status"])
         actual_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assert_current_b09_start(actual_progress)
         self.assertEqual("CLEARED", actual_progress["dir_review"]["status"])
-        self.assertEqual("READY", actual_progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", actual_progress["next_work_package"]["status"])
         self.assertEqual("ACCEPTED", actual_progress["phase_gate"]["decision"])
 
     def test_document_sync_and_core_av_evidence_reject_wrong_nonempty_values(self):
@@ -187,7 +187,7 @@ class PhaseGGateTests(unittest.TestCase):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
         self.assertEqual([], report["errors"])
 
     def test_b04_acceptance_preserves_a_gate_and_stops_before_b05_start(self):
@@ -209,7 +209,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b05_wi_rebind_preserves_accepted_a_gate(self):
         report = self.validate()
@@ -217,7 +217,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b05_completion_preserves_accepted_a_gate(self):
         report = self.validate()
@@ -225,7 +225,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b05_acceptance_preserves_a_gate_and_stops_before_b06_start(self):
         report = self.validate()
@@ -233,7 +233,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b06_start_preserves_accepted_a_gate(self):
         report = self.validate()
@@ -241,7 +241,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b06_acceptance_preserves_accepted_a_gate(self):
         report = self.validate()
@@ -249,7 +249,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b07_start_preserves_accepted_a_gate(self):
         report = self.validate()
@@ -257,7 +257,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b07_acceptance_preserves_a_gate_and_stops_before_b08_start(self):
         report = self.validate()
@@ -265,7 +265,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b08_start_preserves_accepted_a_gate_and_blocks_b09(self):
         report = self.validate()
@@ -287,10 +287,10 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("B-10", report["progress"]["current_work_package"])
-        self.assertEqual("READY", report["progress"]["status"])
+        self.assertEqual("ACTIVE", report["progress"]["status"])
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_authority_rebind_preserves_a_gate_and_blocks_b10(self):
         report = self.validate()
@@ -298,7 +298,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_r4_main_takeover_preserves_a_gate_and_blocks_b10(self):
         report = self.validate()
@@ -306,8 +306,8 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_main_completion_preserves_a_gate_and_blocks_b10(self):
         report = self.validate()
@@ -315,7 +315,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_r5_rework_preserves_a_gate_and_blocks_b10(self):
         report = self.validate()
@@ -323,7 +323,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_b09_r5_completion_preserves_a_gate_and_blocks_b10(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
@@ -338,12 +338,18 @@ class PhaseGGateTests(unittest.TestCase):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         report = self.validate()
         self.assertEqual([], report["errors"])
-        self.assertEqual(312, progress["event_sequence"])
-        self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
+        self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+
+    def test_b10_start_preserves_a_gate_and_blocks_b11(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(315, progress["event_sequence"])
+        self.assertEqual("B-10", progress["current_work_package"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual([], self.checker.validate_b10_start_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

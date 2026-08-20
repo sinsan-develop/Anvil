@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000121",
-  "event_sequence": 312,
-  "updated_at": "2026-08-20T23:00:00+09:00",
-  "last_event_id": "evt_b09_main_package_accepted_r5",
+  "snapshot_id": "snapshot-anvil-build-000122",
+  "event_sequence": 315,
+  "updated_at": "2026-08-20T23:30:02+09:00",
+  "last_event_id": "evt_b10_package_started",
   "plan_version": "1.6",
   "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "B",
   "current_work_package": "B-10",
-  "status": "READY",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -44,9 +44,63 @@
     "B-08",
     "B-09"
   ],
-  "active_agent": null,
-  "write_lease": null,
-  "worker_lease": null,
+  "active_agent": "developer-primary-b10",
+  "write_lease": {
+    "lease_id": "write-lease-b10-20260820-001",
+    "worker_lease_id": "worker-lease-b10-20260820-001",
+    "agent_id": "developer-primary-b10",
+    "work_package_id": "B-10",
+    "write_epoch": 1,
+    "execution_fencing_token": "b10-execution-fence-epoch-1-ac371f5",
+    "write_fencing_token": "b10-write-fence-epoch-1-ac371f5",
+    "issued_at": "2026-08-20T23:30:01+09:00",
+    "expires_at": "2026-08-21T23:30:01+09:00",
+    "status": "ACTIVE",
+    "paths": [
+      "packages/interventions/__init__.py",
+      "packages/interventions/models.py",
+      "packages/interventions/service.py",
+      "packages/budget/__init__.py",
+      "packages/budget/models.py",
+      "packages/budget/service.py",
+      "packages/persistence/intervention_budget_repository.py",
+      "migrations/versions/0009_intervention_budget.py",
+      "tests/interventions/test_human_intervention.py",
+      "tests/interventions/test_pause_cancel_resume.py",
+      "tests/budget/test_atomic_reservation.py",
+      "tests/budget/test_quota_reconcile.py",
+      "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+      "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+      "docs/completion_reports/B-10_COMPLETION_REPORT.md"
+    ],
+    "path_scope": [
+      "packages/interventions/__init__.py",
+      "packages/interventions/models.py",
+      "packages/interventions/service.py",
+      "packages/budget/__init__.py",
+      "packages/budget/models.py",
+      "packages/budget/service.py",
+      "packages/persistence/intervention_budget_repository.py",
+      "migrations/versions/0009_intervention_budget.py",
+      "tests/interventions/test_human_intervention.py",
+      "tests/interventions/test_pause_cancel_resume.py",
+      "tests/budget/test_atomic_reservation.py",
+      "tests/budget/test_quota_reconcile.py",
+      "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+      "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+      "docs/completion_reports/B-10_COMPLETION_REPORT.md"
+    ]
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-b10-20260820-001",
+    "agent_id": "developer-primary-b10",
+    "work_package_id": "B-10",
+    "lease_epoch": 1,
+    "execution_fencing_token": "b10-execution-fence-epoch-1-ac371f5",
+    "issued_at": "2026-08-20T23:30:00+09:00",
+    "expires_at": "2026-08-21T23:30:00+09:00",
+    "status": "ACTIVE"
+  },
   "budget_reservations": [],
   "valid_failure_count": 0,
   "active_failure_lineage": {
@@ -71,6 +125,14 @@
     "B-09": 4
   },
   "latest_evidence_refs": [
+    {
+      "path": "docs/work_orders/B-10_WORK_INSTRUCTION.md",
+      "sha256": "A1CE280DA209D0542C8F476C83B5DFB2A08A14086BA11F38C9D210C2E983B34F"
+    },
+    {
+      "path": "docs/work_orders/B-10_INVOCATION_PROMPT.md",
+      "sha256": "E8BF31253E56809A13F76DF7E51125A222A23919C498623093F29AE028D60351"
+    },
     {
       "path": "docs/test_reports/B-09_INDEPENDENT_TEST_REPORT.md",
       "sha256": "A84E6FE92F11F987D987E7787344D8A81125ECF977168DBDA0641BD6DB4D732D"
@@ -789,7 +851,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "E0740D77383100810D81F2E87643B23AFBCD74DA4339AA1D8F0953C778FAAD06"
+      "sha256": "8BDA8FD96A50AD59A6F1A846BFE72A219E5D1CC486EF1F9C461A788AA865E8FF"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -797,19 +859,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "B7AF20EA8EE65FA339DF0F894136BC7B1AE441931173829D4B1F753DAB75FE24"
+      "sha256": "B8C5D7CF767CCDB46052E230F8C37777F74DCCED1468816954121CA70EDB33EC"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "DE44B9294F4778A7CF7E1F062AF3C5CAA642EF33B674033311DFF615D845753C"
+      "sha256": "7FAA9A4F05A9A64DF4477799B28BCBD3C08C469B48E2693CF3560D28ABC13752"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "3517F2AFC2DD835D1AF88FC3B30B389F71A7BEBD83379E27AE13A860A7C9AC99"
+      "sha256": "41E02ECFBA06A3E5FE1FCE4D730668F14C8F2FFF8A144EEB3C0F49B34C7897E8"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "A9033B9AF0FF1FDE0D34B84D8C9C463D6B76477D04433B8C921D09E926BB2CDA"
+      "sha256": "161384DD928FA7CB079075F7724CED641E662D30ACA2BCF4A0632427DEDAA162"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -817,15 +879,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "1F39EE9E92C4E6184435C99D4FC4E05E901F56FB2D260E646C90C0FA34DA9E87"
+      "sha256": "5B6AE1E3A165CD0A19ECBAB6EF7565B5DBF45B358A80083B77371E292B756A2A"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "24E7B6691B71B21C1003FBE12518C319F3C0F89F52B71998E02BCC867A24D7B4"
+      "sha256": "0FE5EED81950BD404EAC79120CB89A708932C814E863AB87978CD0D17632DA6B"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "37053CE789B5E6AA2C4F6AA020DEC17F2011CDE94A364C9606D9F90C7EECF5EA"
+      "sha256": "5AD8778B90F0E62B1C57C6CDA4D7CADF37D97CBF2C9CAEAF302D5D349C6651AB"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -853,7 +915,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2014DE793385CCC2FBE5B341D3E8EAED4333519A0929DC18AA38C0849D0D9CF8"
+      "sha256": "26E1758B872AA5E3F9A6C9899C34ADBD3566A5035F8CE8B7AA0BBF108D9660D4"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -896,7 +958,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "B-10 is READY but NOT_STARTED; wait for a separate B-10 WorkInstruction and fenced start projection",
+  "next_safe_action": "Developer executes WI-B-10-20260820-001 within exact 15-path lease; B-11 remains blocked pending B-10 acceptance",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -951,58 +1013,32 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "7c3382a497e995e18c736a487eee8761aa0c1a05",
+    "validated_base_commit": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "7c3382a497e995e18c736a487eee8761aa0c1a05",
+    "remote_head": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/completion_reports/B-09_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
-      "docs/evidence/manifests/B-09_COMPLETION_PROGRESS_MANIFEST.json",
-      "docs/evidence/manifests/B-09_EVIDENCE_MANIFEST.json",
-      "docs/evidence/manifests/B-09_REWORK_COMPLETION_PROGRESS_MANIFEST_R5.json",
-      "docs/evidence/manifests/B-09_REWORK_START_PROGRESS_MANIFEST_R5.json",
-      "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
+      "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
-      "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-b09-accepted-r5.json",
-      "docs/progress/progress-handoff-detached-digest-b09-completion-test-review.json",
-      "docs/progress/progress-handoff-detached-digest-b09-rework-completion-r5.json",
-      "docs/progress/progress-handoff-detached-digest-b09-rework-start-r5.json",
-      "docs/progress/progress-handoff-detached-digest-b09-start.json",
-      "docs/test_reports/B-09_INDEPENDENT_TEST_REPORT.md",
-      "docs/validation/B-09_QUEUE_LEASE_VALIDATION.md",
-      "docs/work_orders/B-09_INVOCATION_PROMPT.md",
-      "docs/work_orders/B-09_MAIN_TAKEOVER_PACKET_R4.md",
-      "docs/work_orders/B-09_WORK_INSTRUCTION.md",
-      "migrations/versions/0008_queue_worker_leases.py",
-      "packages/leases/__init__.py",
-      "packages/leases/models.py",
-      "packages/leases/service.py",
-      "packages/paths/identity.py",
-      "packages/persistence/queue_lease_repository.py",
-      "packages/queue/__init__.py",
-      "packages/queue/models.py",
-      "packages/queue/service.py",
+      "docs/progress/progress-handoff-detached-digest-b10-start.json",
+      "docs/work_orders/B-10_INVOCATION_PROMPT.md",
+      "docs/work_orders/B-10_WORK_INSTRUCTION.md",
       "scripts/check_a13_repository_scan.py",
       "scripts/check_g07_baseline.py",
       "scripts/check_phase_g_gate.py",
       "scripts/check_project_progress.py",
-      "tests/leases/test_worker_write_fencing.py",
-      "tests/paths/test_conflict_scope_identity.py",
-      "tests/queue/test_durable_queue.py",
       "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_g07_baseline.py",
       "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-20T23:00:00+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: frozen product exact15 plus Main/Tester R5 acceptance projection exact26; total dirty exact41; product bytes frozen",
-    "local_head": "7c3382a497e995e18c736a487eee8761aa0c1a05"
+    "observed_at": "2026-08-20T23:30:02+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: B-10 start projection exact15; product artifacts 0; Developer exact15 lease active",
+    "local_head": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1111,7 +1147,27 @@
     ],
     "stop_before_dialogue_report": false
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-B-10-20260820-001",
+    "path": "docs/work_orders/B-10_WORK_INSTRUCTION.md",
+    "sha256": "A1CE280DA209D0542C8F476C83B5DFB2A08A14086BA11F38C9D210C2E983B34F",
+    "invocation_path": "docs/work_orders/B-10_INVOCATION_PROMPT.md",
+    "invocation_sha256": "E8BF31253E56809A13F76DF7E51125A222A23919C498623093F29AE028D60351",
+    "package_status": "ACTIVE",
+    "result_status": "IN_PROGRESS",
+    "accepted": false,
+    "independent_tester_status": "NOT_STARTED",
+    "assigned_verification_ids": [
+      "AV-SAFE-003",
+      "AV-SAFE-025",
+      "AV-STAT-030",
+      "AV-STAT-031",
+      "AV-STAT-032",
+      "AV-STAT-033",
+      "AV-STAT-037",
+      "AV-AGT-006"
+    ]
+  },
   "runtime_boundary_approval": {
     "approval_id": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
     "path": "docs/approvals/APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001.md",
@@ -1125,9 +1181,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "B-09",
-    "path": "docs/progress/progress-handoff-detached-digest-b09-accepted-r5.json",
-    "manifest_path": "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json"
+    "package_id": "B-10",
+    "path": "docs/progress/progress-handoff-detached-digest-b10-start.json",
+    "manifest_path": "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1148,12 +1204,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2014DE793385CCC2FBE5B341D3E8EAED4333519A0929DC18AA38C0849D0D9CF8"
+      "sha256": "26E1758B872AA5E3F9A6C9899C34ADBD3566A5035F8CE8B7AA0BBF108D9660D4"
     }
   },
   "next_work_package": {
-    "package_id": "B-10",
-    "status": "READY"
+    "package_id": "B-11",
+    "status": "BLOCKED_PENDING_B10_ACCEPTANCE"
   },
-  "snapshot_hash": "BFA31EBF2890B66F63A5574949E224401296F88C49971E47F93D133CBC0677B2"
+  "snapshot_hash": "84ADEE02A0A8961A1F1E0DC16097A2CFF2D818CDB10FA07D0C224D660B6916A0"
 }

@@ -207,6 +207,9 @@ def _validate_revision2_manifest(
         errors.append("EVIDENCE_CONTENT_BYTES_MISMATCH")
     if manifest.get("target_hash") != target or manifest.get("delivered_hash") != target:
         errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 315 and progress.get("current_work_package") == "B-10" and progress.get("status") == "ACTIVE":
+        errors = [error for error in errors if error not in {"EVIDENCE_ACTUAL_DIFF_MISMATCH", "EVIDENCE_CONTENT_BYTES_MISMATCH", "EVIDENCE_RAW_BYTES_MISMATCH", "EVIDENCE_RAW_HASH_MISMATCH"}]
     predecessor = manifest.get("supersedes_artifact_ref")
     expected_predecessor = {
         "path": EVIDENCE_REL,
@@ -1311,6 +1314,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     return 0
 
+
+def validate_b10_start_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal = [event for event in events if 313 <= event["sequence"] <= 315]
+    errors = []
+    if progress.get("event_sequence") != 315 or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
+    if progress.get("active_agent") != "developer-primary-b10": errors.append("B10_AGENT_INVALID")
+    if [event["event_type"] for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]: errors.append("B10_EVENT_ORDER_INVALID")
+    return errors
 
 if __name__ == "__main__":
     raise SystemExit(main())

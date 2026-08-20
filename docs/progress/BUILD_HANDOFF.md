@@ -1,5 +1,13 @@
 # Anvil Build Handoff
 
+## B-10 Start — sequence 315
+
+- canonical clean/equal baseline `ac371f5743dce0fa87b3ee3b767d63c9c6102cd8`에서 seq313→315 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
+- `developer-primary-b10` epoch-1 worker/write lease와 Developer exact15만 활성이다. B-11은 `BLOCKED_PENDING_B10_ACCEPTANCE`다.
+- 목표는 HumanInterventionReceipt, pause/resume, 원자 budget reservation, quota, 7단계 cancel과 immutable CANCELLED/새 Run 계약이다. assigned verification은 `AV-SAFE-003/025`, `AV-STAT-030~033/037`, `AV-AGT-006`이다.
+- 제품 산출물은 0개이고 API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 모두 `NOT_EXECUTED`다. B-09는 read-only predecessor다.
+- 기능 범위·요구사항·중요 위험 변경과 새 DIR은 없다. B-10 acceptance와 B-11 API/BFF/SSE/UI는 시작하지 않는다.
+
 ## B-09 R5 Main acceptance → B-10 준비, 미시작 — sequence 312
 
 - 독립 Tester report SHA-256 `A84E6FE92F11F987D987E7787344D8A81125ECF977168DBDA0641BD6DB4D732D`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검토해 seq312 `MAIN_PACKAGE_ACCEPTED`로 B-09를 최종 ACCEPTED했다.
@@ -277,70 +285,44 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 312,
-  "status": "READY",
+  "event_sequence": 315,
+  "status": "ACTIVE",
   "current_work_package": "B-10",
-  "last_event_id": "evt_b09_main_package_accepted_r5",
+  "last_event_id": "evt_b10_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 19,
   "dir_status": "CLEARED",
-  "repository_head": "7c3382a497e995e18c736a487eee8761aa0c1a05",
+  "repository_head": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "7c3382a497e995e18c736a487eee8761aa0c1a05",
+  "repository_remote_head": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "7c3382a497e995e18c736a487eee8761aa0c1a05",
+  "repository_validated_base_commit": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-09_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
-    "docs/evidence/manifests/B-09_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-09_EVIDENCE_MANIFEST.json",
-    "docs/evidence/manifests/B-09_REWORK_COMPLETION_PROGRESS_MANIFEST_R5.json",
-    "docs/evidence/manifests/B-09_REWORK_START_PROGRESS_MANIFEST_R5.json",
-    "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b09-accepted-r5.json",
-    "docs/progress/progress-handoff-detached-digest-b09-completion-test-review.json",
-    "docs/progress/progress-handoff-detached-digest-b09-rework-completion-r5.json",
-    "docs/progress/progress-handoff-detached-digest-b09-rework-start-r5.json",
-    "docs/progress/progress-handoff-detached-digest-b09-start.json",
-    "docs/test_reports/B-09_INDEPENDENT_TEST_REPORT.md",
-    "docs/validation/B-09_QUEUE_LEASE_VALIDATION.md",
-    "docs/work_orders/B-09_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-09_MAIN_TAKEOVER_PACKET_R4.md",
-    "docs/work_orders/B-09_WORK_INSTRUCTION.md",
-    "migrations/versions/0008_queue_worker_leases.py",
-    "packages/leases/__init__.py",
-    "packages/leases/models.py",
-    "packages/leases/service.py",
-    "packages/paths/identity.py",
-    "packages/persistence/queue_lease_repository.py",
-    "packages/queue/__init__.py",
-    "packages/queue/models.py",
-    "packages/queue/service.py",
+    "docs/progress/progress-handoff-detached-digest-b10-start.json",
+    "docs/work_orders/B-10_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-10_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/leases/test_worker_write_fencing.py",
-    "tests/paths/test_conflict_scope_identity.py",
-    "tests/queue/test_durable_queue.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b09-accepted-r5.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "B-10 is READY but NOT_STARTED; wait for a separate B-10 WorkInstruction and fenced start projection",
+  "next_safe_action": "Developer executes WI-B-10-20260820-001 within exact 15-path lease; B-11 remains blocked pending B-10 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
@@ -351,9 +333,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-10-20260820-001",
+  "worker_lease": "worker-lease-b10-20260820-001 / epoch-1 / ACTIVE",
+  "write_lease": "write-lease-b10-20260820-001 / epoch-1 / ACTIVE / exact15"
 }
 ```
 

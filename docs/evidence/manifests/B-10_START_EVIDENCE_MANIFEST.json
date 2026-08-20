@@ -1,0 +1,131 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-10-START-20260820-001",
+  "artifact_type": "package_start_evidence_manifest",
+  "artifact_path": "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json",
+  "package_id": "B-10",
+  "event_sequence": 315,
+  "validated_base_commit": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
+  "predecessor_acceptance_ref": {
+    "path": "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
+    "sha256": "AB4676DA7706B2351C30690C81592CDDDB6F2CD450A85BC532F9A19385B17672"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-10-20260820-001",
+    "path": "docs/work_orders/B-10_WORK_INSTRUCTION.md",
+    "sha256": "A1CE280DA209D0542C8F476C83B5DFB2A08A14086BA11F38C9D210C2E983B34F",
+    "invocation_path": "docs/work_orders/B-10_INVOCATION_PROMPT.md",
+    "invocation_sha256": "E8BF31253E56809A13F76DF7E51125A222A23919C498623093F29AE028D60351"
+  },
+  "objective": "HumanInterventionReceipt, pause/resume, atomic budget reservation, quota checkpoint, usage reconciliation, and immutable cancel/new Run contract",
+  "assigned_verification_ids": [
+    "AV-SAFE-003",
+    "AV-SAFE-025",
+    "AV-STAT-030",
+    "AV-STAT-031",
+    "AV-STAT-032",
+    "AV-STAT-033",
+    "AV-STAT-037",
+    "AV-AGT-006"
+  ],
+  "worker_lease": {
+    "lease_id": "worker-lease-b10-20260820-001",
+    "lease_epoch": 1,
+    "execution_fencing_token": "b10-execution-fence-epoch-1-ac371f5",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-b10-20260820-001",
+    "write_epoch": 1,
+    "write_fencing_token": "b10-write-fence-epoch-1-ac371f5",
+    "status": "ACTIVE"
+  },
+  "developer_exact_path_count": 15,
+  "product_artifact_count": 0,
+  "projection_exact_path_count": 15,
+  "projection_product_mutation_count": 0,
+  "runtime_boundary": {
+    "actual_db": "NOT_EXECUTED",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "shared_db": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "developer_db_boundary": "ISOLATED_WSL_ANVIL_PG18_ONLY"
+  },
+  "next_package": {
+    "package_id": "B-11",
+    "status": "BLOCKED_PENDING_B10_ACCEPTANCE"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
+      "bytes": 3508,
+      "sha256": "AB4676DA7706B2351C30690C81592CDDDB6F2CD450A85BC532F9A19385B17672"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-b10-start.json",
+      "bytes": 830,
+      "sha256": "8B5A3B9F5611EA2930A89FBF29C9892C0D7E024F98476C2E4ECF32E311987D03"
+    },
+    {
+      "path": "docs/work_orders/B-10_INVOCATION_PROMPT.md",
+      "bytes": 955,
+      "sha256": "E8BF31253E56809A13F76DF7E51125A222A23919C498623093F29AE028D60351"
+    },
+    {
+      "path": "docs/work_orders/B-10_WORK_INSTRUCTION.md",
+      "bytes": 5867,
+      "sha256": "A1CE280DA209D0542C8F476C83B5DFB2A08A14086BA11F38C9D210C2E983B34F"
+    },
+    {
+      "path": "scripts/check_a13_repository_scan.py",
+      "bytes": 82479,
+      "sha256": "8BDA8FD96A50AD59A6F1A846BFE72A219E5D1CC486EF1F9C461A788AA865E8FF"
+    },
+    {
+      "path": "scripts/check_g07_baseline.py",
+      "bytes": 115508,
+      "sha256": "B8C5D7CF767CCDB46052E230F8C37777F74DCCED1468816954121CA70EDB33EC"
+    },
+    {
+      "path": "scripts/check_phase_g_gate.py",
+      "bytes": 123593,
+      "sha256": "7FAA9A4F05A9A64DF4477799B28BCBD3C08C469B48E2693CF3560D28ABC13752"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 454204,
+      "sha256": "41E02ECFBA06A3E5FE1FCE4D730668F14C8F2FFF8A144EEB3C0F49B34C7897E8"
+    },
+    {
+      "path": "tests/tooling/test_a13_repository_scan.py",
+      "bytes": 59137,
+      "sha256": "161384DD928FA7CB079075F7724CED641E662D30ACA2BCF4A0632427DEDAA162"
+    },
+    {
+      "path": "tests/tooling/test_g07_baseline.py",
+      "bytes": 30318,
+      "sha256": "5B6AE1E3A165CD0A19ECBAB6EF7565B5DBF45B358A80083B77371E292B756A2A"
+    },
+    {
+      "path": "tests/tooling/test_phase_g_gate.py",
+      "bytes": 21009,
+      "sha256": "0FE5EED81950BD404EAC79120CB89A708932C814E863AB87978CD0D17632DA6B"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 106735,
+      "sha256": "5AD8778B90F0E62B1C57C6CDA4D7CADF37D97CBF2C9CAEAF302D5D349C6651AB"
+    }
+  ],
+  "target_canonical_bytes": 1344,
+  "target_content_bytes": 1004143,
+  "target_hash": "sha256:4916F5F38CE7D368D025D3B8C724EFF1FB3C606E4AD37678DF4B676EEEE31EFD",
+  "delivered_hash": "sha256:4916F5F38CE7D368D025D3B8C724EFF1FB3C606E4AD37678DF4B676EEEE31EFD",
+  "content_hash": "sha256:4916F5F38CE7D368D025D3B8C724EFF1FB3C606E4AD37678DF4B676EEEE31EFD",
+  "self_reference": false
+}
