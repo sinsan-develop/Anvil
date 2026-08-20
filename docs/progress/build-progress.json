@@ -915,7 +915,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "26E1758B872AA5E3F9A6C9899C34ADBD3566A5035F8CE8B7AA0BBF108D9660D4"
+      "sha256": "B2243B64981EAF1E49969434ED816431D8FF5EBA0BA5147F44CC350D6225AC2A"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1204,12 +1204,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "26E1758B872AA5E3F9A6C9899C34ADBD3566A5035F8CE8B7AA0BBF108D9660D4"
+      "sha256": "B2243B64981EAF1E49969434ED816431D8FF5EBA0BA5147F44CC350D6225AC2A"
     }
   },
   "next_work_package": {
     "package_id": "B-11",
     "status": "BLOCKED_PENDING_B10_ACCEPTANCE"
   },
-  "snapshot_hash": "84ADEE02A0A8961A1F1E0DC16097A2CFF2D818CDB10FA07D0C224D660B6916A0"
+  "snapshot_hash": "497158B747753A40C9D4066EE4C1815E90E7EB89AAF0A25B64B207F26D9650F8"
 }
