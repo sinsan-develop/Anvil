@@ -1,5 +1,53 @@
 # Anvil Build Handoff
 
+## B-09 R5 Main acceptance → B-10 준비, 미시작 — sequence 312
+
+- 독립 Tester report SHA-256 `A84E6FE92F11F987D987E7787344D8A81125ECF977168DBDA0641BD6DB4D732D`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검토해 seq312 `MAIN_PACKAGE_ACCEPTED`로 B-09를 최종 ACCEPTED했다.
+- `BLK-B09-IT-001/002`는 CLOSED이며, B-09 유효 실패 4건은 historical lineage로 보존했다. current failure count는 0이고 B-10은 `READY / NOT_STARTED`다.
+- active WorkInstruction, active agent, worker lease, write lease는 모두 null이다. 제품 exact15는 manifest SHA `5DBBEB29C5788E1D91B092B2239E615E8505C4B2F41F61E061D7A136ACA85F26`, raw14 target `0EE80F9B636595125F94E5B5C5E50BC4B703D6DA1E2BDC9D88061DB42A354578`로 동결했다.
+- 실제 dirty set은 frozen product exact15 + Main/Tester acceptance projection exact26 = exact41이다. API·UI·browser·provider·ysna·shared DB·production·deployment·commit·push·B-10 start는 수행하지 않았다.
+
+## B-09 Main R5 재작업 완료 → 독립 재검증 대기 — sequence 311
+
+- seq309→311은 epoch-5 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED` 순서다. B-09는 `TEST_REVIEW / COMPLETED`, 독립 Tester는 `PENDING_RETEST`, active agent와 두 lease는 null이다.
+- `BLK-B09-IT-001/002` 수정 결과를 제품 manifest SHA-256 `5DBBEB29C5788E1D91B092B2239E615E8505C4B2F41F61E061D7A136ACA85F26`, raw14 target `0EE80F9B636595125F94E5B5C5E50BC4B703D6DA1E2BDC9D88061DB42A354578`로 byte-frozen했다. 완료 projection 이후 제품 mutation은 0이다.
+- local focused `9 PASS + 2 DSN SKIP`, 격리 WSL PostgreSQL 18 focused `11/11`, core `102 PASS + 2 DSN SKIP`, max-attempt orphan quarantine·queue forward progress·실제 Windows junction 수렴·외부 absolute path fail-closed 증거는 Main 결과이며 독립 재검증 전 acceptance로 승격하지 않는다.
+- 실제 dirty set은 frozen product exact15 + Main/Tester R5 completion projection exact24 = exact39다. B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다.
+- API·UI·browser·provider·ysna·shared DB·production·deployment·commit·push는 수행하지 않았다.
+
+## B-09 독립 Tester 실패 수용 → Main R5 재작업 — sequence 308
+
+- 독립 Tester report SHA-256 `8DE9794641BB22716A2A6392B9AC2F96B22387DFC12BFF17C91F467777C62B5D`의 `FAILURE_REPORT / REWORK_REQUIRED`, CRITICAL `BLK-B09-IT-001/002`를 같은 `B-09/DB_FENCING_RECOVERY_CONTRACT_GAP` lineage의 네 번째 유효 실패로 수용했다.
+- seq305→308은 `FAILURE_REPORT_ACCEPTED → Main epoch-5 WORKER_LEASE_ISSUED → Main epoch-5 WRITE_LEASE_ISSUED → PACKAGE_RESUMED` 순서다. token은 `b09-main-rework-execution-fence-epoch-5-7c3382a` / `b09-main-rework-write-fence-epoch-5-7c3382a`다.
+- `WI-B-09-20260820-005`는 max-attempt expired orphan의 원자 quarantine와 queue forward progress, 실제 junction/symlink/8.3 alias 수렴, repository 밖 absolute path fail-closed를 기존 B-09 요구 안에서 재작업하도록 고정한다. 기능 범위·요구사항·중요 위험·제품 exact15는 변경하지 않았다.
+- 현재 dirty set은 frozen product exact15 + Main/Tester R5 projection exact22 = exact37이다. B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다.
+- 이 projection에서 제품 mutation, API/UI/browser/provider/WSL/ysna/shared-db/production/deployment, commit/push는 수행하지 않았다.
+
+## B-09 Main 구현 완료 → 독립 Tester 대기 — sequence 304
+
+- Main 직접 인수 구현을 완료하고 seq302→304로 epoch-4 write lease와 worker lease를 순서대로 회수한 뒤 `PACKAGE_COMPLETED / TEST_REVIEW / independent Tester PENDING`으로 투영했다.
+- R5 제품 exact15는 manifest file SHA-256 `5DBBEB29C5788E1D91B092B2239E615E8505C4B2F41F61E061D7A136ACA85F26`, raw14 target `0EE80F9B636595125F94E5B5C5E50BC4B703D6DA1E2BDC9D88061DB42A354578`로 byte-frozen이다. 재작업 projection 밖 제품 mutation은 0이다.
+- local focused `7/7`과 DSN 미제공 `2 SKIP`, 격리 WSL PostgreSQL 18 focused `9/9`, FI-04 `3/3`, migration `0007→0008→0007`, stale execution/write fencing·`SKIP LOCKED`·quarantine·cleanup을 확인했다. core는 `100 PASS + 2 DSN SKIP`, tooling은 `355/355`, standalone 4종과 project checker는 PASS했다.
+- 현재 전체 dirty set은 frozen product exact15 + Main completion projection exact19 = exact34다. B-09는 아직 ACCEPTED가 아니며 B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다.
+- API·UI·browser·provider·ysna·shared DB·production·deployment는 `NOT_EXECUTED`다. 다음 안전 행동은 독립 Tester 검증이다.
+
+## B-09 R4 third valid failure → Main direct takeover — sequence 301
+
+- 동일 lineage `B-09` / fingerprint `DB_FENCING_RECOVERY_CONTRACT_GAP`의 세 번째 유효 실패를 수락했다. `B-09_MAIN_TAKEOVER_PACKET_R4.md`에 따라 Developer를 중지하고 기능 범위·요구사항·중요 위험 변경 없이 Main이 직접 인수한다.
+- seq296→301은 `FAILURE_REPORT_ACCEPTED → epoch-3 WRITE_LEASE_REVOKED → epoch-3 WORKER_LEASE_REVOKED → Main epoch-4 WORKER_LEASE_ISSUED → Main epoch-4 WRITE_LEASE_ISSUED → PACKAGE_RESUMED/DIRECT_IMPLEMENTATION` 순서다.
+- 새 token은 `b09-main-takeover-execution-fence-epoch-4-7c3382a` / `b09-main-takeover-write-fence-epoch-4-7c3382a`다. epoch-3 및 이전 token은 폐기됐고 stale commit은 허용하지 않는다.
+- Developer exact15 path와 bytes는 동결했다. Main R4 projection은 packet 1개를 추가해 Main exact17, 전체 dirty exact32이며 제품 mutation은 0이다.
+- 남은 구현은 exact15 안의 DB-backed `reclaim_orphan`과 product-mutation current execution+write fencing guard다. B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다.
+- 이 projection에서 API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 실행하지 않았다.
+
+## B-09 R3 second valid failure revision — sequence 295
+
+- 동일 lineage `B-09` / fingerprint `DB_FENCING_RECOVERY_CONTRACT_GAP`의 두 번째 유효 실패를 수용하고 AGENTS §6에 따라 `WI-B-09-20260820-003`으로 revision했다. 기능 범위·요구사항·중요 위험·Developer exact15는 변경하지 않았다.
+- seq291→295는 epoch-2 write lease 회수 → epoch-2 worker lease 회수 → epoch-3 worker/write lease 발급 → `PACKAGE_RESUMED` 순서다. 새 token은 `b09-execution-fence-epoch-3-7c3382a` / `b09-write-fence-epoch-3-7c3382a`이며 이전 epoch token은 폐기됐다.
+- Developer exact15는 현재 bytes 그대로 frozen이고 Main은 제품 파일을 수정하지 않았다. 정식 실패 2건을 canonical `failure-ledger.json`에 추가해 실제 dirty set은 frozen Developer 15 + Main R3 projection 16 = exact31로 투영한다.
+- Main R3 projection에서 API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 실행하지 않았다. Developer DB 경계는 계속 Anvil 전용 격리 WSL PostgreSQL 18뿐이다.
+- B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다. 다음 안전 행동은 R3 epoch-3 token과 동결 exact15로 Developer 재작업을 재개하는 것이다.
+
 ## B-09 Authority Rebind R2 — sequence 290
 
 - canonical clean/equal baseline `e33f231c2a7fbc7f020391939ff067f8d6177cb6`에서 authority binding 오류를 scope-change 없이 수리했다. seq286→290 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`로 R1 epoch-1을 회수하고 R2 epoch-2를 발급했다.
@@ -229,44 +277,70 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 290,
-  "status": "ACTIVE",
-  "current_work_package": "B-09",
-  "last_event_id": "evt_b09_authority_rebind_resumed_r2",
+  "event_sequence": 312,
+  "status": "READY",
+  "current_work_package": "B-10",
+  "last_event_id": "evt_b09_main_package_accepted_r5",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
-  "historical_accepted_failure_count": 15,
+  "historical_accepted_failure_count": 19,
   "dir_status": "CLEARED",
-  "repository_head": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
+  "repository_head": "7c3382a497e995e18c736a487eee8761aa0c1a05",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
+  "repository_remote_head": "7c3382a497e995e18c736a487eee8761aa0c1a05",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
+  "repository_validated_base_commit": "7c3382a497e995e18c736a487eee8761aa0c1a05",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
+    "docs/completion_reports/B-09_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
+    "docs/evidence/manifests/B-09_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-09_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-09_REWORK_COMPLETION_PROGRESS_MANIFEST_R5.json",
+    "docs/evidence/manifests/B-09_REWORK_START_PROGRESS_MANIFEST_R5.json",
     "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-b09-accepted-r5.json",
+    "docs/progress/progress-handoff-detached-digest-b09-completion-test-review.json",
+    "docs/progress/progress-handoff-detached-digest-b09-rework-completion-r5.json",
+    "docs/progress/progress-handoff-detached-digest-b09-rework-start-r5.json",
     "docs/progress/progress-handoff-detached-digest-b09-start.json",
+    "docs/test_reports/B-09_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/B-09_QUEUE_LEASE_VALIDATION.md",
     "docs/work_orders/B-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-09_MAIN_TAKEOVER_PACKET_R4.md",
     "docs/work_orders/B-09_WORK_INSTRUCTION.md",
+    "migrations/versions/0008_queue_worker_leases.py",
+    "packages/leases/__init__.py",
+    "packages/leases/models.py",
+    "packages/leases/service.py",
+    "packages/paths/identity.py",
+    "packages/persistence/queue_lease_repository.py",
+    "packages/queue/__init__.py",
+    "packages/queue/models.py",
+    "packages/queue/service.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/queue/test_durable_queue.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b09-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b09-accepted-r5.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer executes only B-09 exact15; B-10 remains BLOCKED_PENDING_B09_ACCEPTANCE",
+  "next_safe_action": "B-10 is READY but NOT_STARTED; wait for a separate B-10 WorkInstruction and fenced start projection",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
@@ -277,9 +351,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-09-20260820-002",
-  "worker_lease": "worker-lease-b09-20260820-002 epoch-2",
-  "write_lease": "write-lease-b09-20260820-002 epoch-2"
+  "active_work_instruction": null,
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 

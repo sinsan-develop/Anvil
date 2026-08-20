@@ -102,7 +102,7 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
         return
     elif progress.get("event_sequence") == 237:
         paths = progress["write_lease"]["paths"]
-    elif progress.get("event_sequence") in (240, 241, 244, 247, 248, 249, 252, 257, 260, 261, 264, 267, 268, 271, 274, 275, 278, 281, 282, 290):
+    elif progress.get("event_sequence") in (240, 241, 244, 247, 248, 249, 252, 257, 260, 261, 264, 267, 268, 271, 274, 275, 278, 281, 282, 290, 295, 301, 304, 308, 311, 312):
         paths = progress["repository"]["exact_allowed_paths"]
     elif progress.get("event_sequence") in (175, 181, 184, 186, 192, 196, 199, 203, 206, 207, 210, 213, 217, 220, 221, 224, 227, 230, 233):
         paths = progress["repository"]["exact_allowed_paths"]
@@ -604,15 +604,17 @@ class A13RepositoryScanHostileTests(unittest.TestCase):
 
 class A13RepositoryScanArtifactTests(unittest.TestCase):
     def assert_current_b09_start(self, progress):
-        self.assertEqual(290, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("developer-primary-b09", progress["active_agent"])
-        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual(312, progress["event_sequence"])
+        self.assertEqual("B-10", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertEqual(0, progress["valid_failure_count"])
+        self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
 
     def test_b01_start_supplies_live_a13_successor_rows(self):
         manifest = json.loads(
@@ -1128,11 +1130,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(290, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("developer-primary-b09", progress["active_agent"])
+        self.assert_current_b09_start(progress)
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b09_authority_rebind_successor_manifest_is_selected(self):
@@ -1143,9 +1141,67 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(290, progress["event_sequence"])
-        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assert_current_b09_start(progress)
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b09_r4_takeover_projection_selects_successor_with_frozen_developer_dirty_set(self):
+        spec = importlib.util.spec_from_file_location("a13_checker_b09_r3", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assert_current_b09_start(progress)
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b09_main_completion_selects_successor_without_product_mutation(self):
+        spec = importlib.util.spec_from_file_location("a13_checker_b09_completion", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assert_current_b09_start(progress)
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b09_r5_rework_selects_successor_with_exact37_projection(self):
+        spec = importlib.util.spec_from_file_location("a13_checker_b09_r5", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assert_current_b09_start(progress)
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b09_r5_completion_selects_successor_with_exact39_projection(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        spec = importlib.util.spec_from_file_location("a13_checker_b09_r5_completion", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        self.assert_current_b09_start(progress)
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(41, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b09_r5_acceptance_selects_successor_with_exact41_projection(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(312, progress["event_sequence"])
+        spec = importlib.util.spec_from_file_location("a13_checker_b09_r5_acceptance", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        self.assertEqual("B-10", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertEqual(41, len(progress["repository"]["exact_allowed_paths"]))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
 if __name__ == "__main__":

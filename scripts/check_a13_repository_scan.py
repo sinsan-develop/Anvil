@@ -358,6 +358,14 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         b08_acceptance = _load_json(b08_acceptance_path) if b08_acceptance_path.is_file() else {}
         b09_start_path = root / 'docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json'
         b09_start = _load_json(b09_start_path) if b09_start_path.is_file() else {}
+        b09_completion_path = root / 'docs/evidence/manifests/B-09_COMPLETION_PROGRESS_MANIFEST.json'
+        b09_completion = _load_json(b09_completion_path) if b09_completion_path.is_file() else {}
+        b09_r5_path = root / 'docs/evidence/manifests/B-09_REWORK_START_PROGRESS_MANIFEST_R5.json'
+        b09_r5 = _load_json(b09_r5_path) if b09_r5_path.is_file() else {}
+        b09_r5_completion_path = root / 'docs/evidence/manifests/B-09_REWORK_COMPLETION_PROGRESS_MANIFEST_R5.json'
+        b09_r5_completion = _load_json(b09_r5_completion_path) if b09_r5_completion_path.is_file() else {}
+        b09_r5_acceptance_path = root / 'docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json'
+        b09_r5_acceptance = _load_json(b09_r5_acceptance_path) if b09_r5_acceptance_path.is_file() else {}
         a14_r4_report_path = root / 'docs/test_reports/A-14_RETEST_REPORT_R4.md'
         a14_r4_packet_path = root / 'docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md'
         predecessor_sha = hashlib.sha256((root / EVIDENCE_R2_REL).read_bytes()).hexdigest().upper()
@@ -580,7 +588,7 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('dir_review', {}).get('status') == 'CLEARED'
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
         == 'docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json'
-        and (committed_clean or progress.get('event_sequence') == 290 or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+        and (committed_clean or progress.get('event_sequence') in {290, 295, 301, 304, 308} or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
     )
     current_b01_start = (
         bool(b01_start)
@@ -943,17 +951,63 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
     if current_b08_acceptance:
         candidates.append(b08_acceptance.get('a13_successor_projection', {}))
     current_b09_start = (
-        bool(b09_start) and progress.get('event_sequence') == 290
+        bool(b09_start) and progress.get('event_sequence') == 301
         and progress.get('current_work_package') == 'B-09' and progress.get('status') == 'ACTIVE'
-        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-09-20260820-002'
-        and progress.get('active_agent') == 'developer-primary-b09'
-        and progress.get('worker_lease', {}).get('lease_epoch') == 2
-        and progress.get('write_lease', {}).get('write_epoch') == 2
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-09-20260820-004'
+        and progress.get('active_agent') == 'main-agent-eoul'
+        and progress.get('valid_failure_count') == 3
+        and progress.get('active_failure_lineage', {}).get('failure_fingerprint') == 'DB_FENCING_RECOVERY_CONTRACT_GAP'
+        and progress.get('active_failure_lineage', {}).get('takeover_status') == 'MAIN_TAKEOVER'
+        and progress.get('worker_lease', {}).get('lease_epoch') == 4
+        and progress.get('write_lease', {}).get('write_epoch') == 4
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json'
         and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
     )
     if current_b09_start:
         candidates.append(b09_start.get('a13_successor_projection', {}))
+    current_b09_completion = (
+        bool(b09_completion) and progress.get('event_sequence') == 304
+        and progress.get('current_work_package') == 'B-09' and progress.get('status') == 'TEST_REVIEW'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-09-20260820-004'
+        and progress.get('active_work_instruction', {}).get('independent_tester_status') == 'PENDING'
+        and progress.get('active_agent') is None and progress.get('worker_lease') is None and progress.get('write_lease') is None
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-09_COMPLETION_PROGRESS_MANIFEST.json'
+        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    )
+    if current_b09_completion:
+        candidates.append(b09_completion.get('a13_successor_projection', {}))
+    current_b09_r5 = (
+        bool(b09_r5) and progress.get('event_sequence') == 308
+        and progress.get('current_work_package') == 'B-09' and progress.get('status') == 'ACTIVE'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-09-20260820-005'
+        and progress.get('active_agent') == 'main-agent-eoul'
+        and progress.get('worker_lease', {}).get('lease_epoch') == 5 and progress.get('write_lease', {}).get('write_epoch') == 5
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-09_REWORK_START_PROGRESS_MANIFEST_R5.json'
+        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    )
+    if current_b09_r5:
+        candidates.append(b09_r5.get('a13_successor_projection', {}))
+    current_b09_r5_completion = (
+        bool(b09_r5_completion) and progress.get('event_sequence') == 311
+        and progress.get('current_work_package') == 'B-09' and progress.get('status') == 'TEST_REVIEW'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-09-20260820-005'
+        and progress.get('active_work_instruction', {}).get('independent_tester_status') == 'PENDING_RETEST'
+        and progress.get('active_agent') is None and progress.get('worker_lease') is None and progress.get('write_lease') is None
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-09_REWORK_COMPLETION_PROGRESS_MANIFEST_R5.json'
+        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    )
+    if current_b09_r5_completion:
+        candidates.append(b09_r5_completion.get('a13_successor_projection', {}))
+    current_b09_r5_acceptance = (
+        bool(b09_r5_acceptance) and progress.get('event_sequence') == 312
+        and progress.get('current_work_package') == 'B-10' and progress.get('status') == 'READY'
+        and progress.get('active_work_instruction') is None
+        and progress.get('active_agent') is None and progress.get('worker_lease') is None and progress.get('write_lease') is None
+        and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json'
+        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+    )
+    if current_b09_r5_acceptance:
+        candidates.append(b09_r5_acceptance.get('a13_successor_projection', {}))
     current_b03_rework = (
         bool(b03_rework) and progress.get('event_sequence') == 230
         and progress.get('current_work_package') == 'B-03' and progress.get('status') == 'ACTIVE'

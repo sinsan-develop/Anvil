@@ -42,15 +42,19 @@ def _load_checker_or_none():
 
 class ProjectProgressContractTests(unittest.TestCase):
     def assert_current_b09_start(self, progress):
-        self.assertEqual(290, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("developer-primary-b09", progress["active_agent"])
-        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual(312, progress["event_sequence"])
+        self.assertEqual("B-10", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertEqual(0, progress["valid_failure_count"])
+        self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
+        self.assertEqual("B-10", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
 
     def test_dir1_owner_direction_and_gate_precede_b01_fenced_start(self) -> None:
         checker = self.require_checker()
@@ -69,12 +73,12 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("DIR-1", progress["dir_review"]["checkpoint"])
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(
-            "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
+            "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json",
             progress["current_progress_evidence_ref"]["manifest_path"],
         )
         self.assertEqual("AUTO_CONTINUE", progress["reporting_decision"]["decision"])
         self.assertFalse(progress["reporting_decision"]["stop_before_dialogue_report"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
         self.assertFalse(events[-1]["details"]["b01_started"])
         self.assertTrue(progress["phase_gate"]["b01_started"])
@@ -143,7 +147,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in completion])
         self.assert_current_b09_start(progress)
         self.assertEqual(0, progress["valid_failure_count"])
-        self.assertEqual("B-09", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual("B-10", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         acceptance = next(event for event in bundle["events"]["events"] if event["sequence"] == 241)
         self.assertEqual("MAIN_PACKAGE_ACCEPTED", acceptance["event_type"])
@@ -1253,7 +1257,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn("A-04", progress["completed_packages"])
         self.assertIn("A-06", progress["completed_packages"])
         self.assertEqual(0, progress["valid_failure_count"])
-        self.assertEqual("B-09", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual("B-10", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         self.assertEqual(0, progress["historical_failure_counts_by_lineage"].get("A-04", 0))
         self.assertEqual(1, progress["historical_failure_counts_by_lineage"]["A-03"])
@@ -1290,7 +1294,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["actual_runtime_status"])
         self.assertEqual("NOT_EXECUTED", accepted_a09["details"]["dir_status"])
         self.assertIn("A-09", progress["completed_packages"])
-        self.assertEqual("B-09", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual("B-10", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
         a10_start = [event for event in bundle["events"]["events"] if 114 <= event["sequence"] <= 116]
         self.assertEqual(
@@ -1560,7 +1564,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         events = [event for event in bundle["events"]["events"] if 262 <= event["sequence"] <= 264]
         self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"], [event["event_type"] for event in events])
         self.assert_current_b09_start(progress)
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual([], checker.validate_b06_start_manifest(manifest, bundle))
 
     def test_b06_completion_revokes_epoch1_and_enters_test_review(self) -> None:
@@ -1577,7 +1581,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         self.assert_current_b09_start(progress)
         self.assertEqual(0, progress["valid_failure_count"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual([], checker.validate_b06_completion_manifest(manifest, bundle))
 
     def test_b06_main_acceptance_releases_b07_without_starting_it(self) -> None:
@@ -1590,7 +1594,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn("B-06", progress["completed_packages"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         manifest = json.loads((ROOT / "docs/evidence/manifests/B-06_ACCEPTANCE_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_b06_acceptance_manifest(manifest, bundle))
 
@@ -1604,7 +1608,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         events = [event for event in bundle["events"]["events"] if 269 <= event["sequence"] <= 271]
         self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"], [event["event_type"] for event in events])
         self.assert_current_b09_start(progress)
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual([], checker.validate_b07_start_manifest(manifest, bundle))
 
     def test_b07_completion_revokes_epoch1_and_enters_test_review(self) -> None:
@@ -1617,7 +1621,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         events = [event for event in bundle["events"]["events"] if 272 <= event["sequence"] <= 274]
         self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
         self.assert_current_b09_start(progress)
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual([], checker.validate_b07_completion_manifest(manifest, bundle))
 
     def test_b07_main_acceptance_releases_b08_without_starting_it(self) -> None:
@@ -1630,7 +1634,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn("B-07", progress["completed_packages"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         manifest = json.loads((ROOT / "docs/evidence/manifests/B-07_ACCEPTANCE_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_b07_acceptance_manifest(manifest, bundle))
 
@@ -1642,7 +1646,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         self.assert_current_b09_start(progress)
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual(
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
             [event["event_type"] for event in events],
@@ -1662,7 +1666,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             [event["event_type"] for event in events],
         )
         self.assert_current_b09_start(progress)
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         manifest_path = ROOT / "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json"
         self.assertTrue(manifest_path.is_file())
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -1678,7 +1682,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn("B-08", progress["completed_packages"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         manifest_path = ROOT / "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json"
         self.assertTrue(manifest_path.is_file())
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -1690,15 +1694,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         progress = bundle["progress"]
         events = [event for event in bundle["events"]["events"] if 283 <= event["sequence"] <= 285]
 
-        self.assertEqual(290, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("developer-primary-b09", progress["active_agent"])
-        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assert_current_b09_start(progress)
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         self.assertEqual(
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
             [event["event_type"] for event in events],
@@ -1713,16 +1711,89 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
             [event["event_type"] for event in events],
         )
-        self.assertEqual(290, progress["event_sequence"])
-        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assert_current_b09_start(progress)
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
-        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
         manifest_path = ROOT / "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json"
         self.assertTrue(manifest_path.is_file())
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_b09_start_manifest(manifest, bundle))
+
+    def test_b09_r4_third_valid_failure_transfers_epoch4_to_main_and_keeps_b10_blocked(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 296 <= event["sequence"] <= 301]
+        lineage = progress["active_failure_lineage"]
+
+        self.assert_current_b09_start(progress)
+        self.assertEqual("B-10", lineage["step_lineage_id"])
+        self.assertIsNone(lineage["failure_fingerprint"])
+        self.assertEqual(4, events[3]["details"]["lease_epoch"])
+        self.assertEqual("b09-main-takeover-execution-fence-epoch-4-7c3382a", events[3]["details"]["execution_fencing_token"])
+        self.assertEqual(4, events[4]["details"]["write_epoch"])
+        self.assertEqual("b09-main-takeover-write-fence-epoch-4-7c3382a", events[4]["details"]["write_fencing_token"])
+        self.assertEqual(
+            ["FAILURE_REPORT_ACCEPTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
+            [event["event_type"] for event in events],
+        )
+        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
+
+    def test_b09_main_completion_revokes_epoch4_and_waits_for_tester(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 302 <= event["sequence"] <= 304]
+        self.assert_current_b09_start(progress)
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
+
+    def test_b09_r5_rework_issues_epoch5_main_leases_for_frozen_product(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 305 <= event["sequence"] <= 308]
+        self.assert_current_b09_start(progress)
+        self.assertEqual(["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"], [event["event_type"] for event in events])
+        self.assertEqual(15, len(events[2]["details"]["paths"]))
+        self.assertEqual("READY", progress["next_work_package"]["status"])
+
+    def test_b09_r5_completion_revokes_epoch5_and_waits_for_retest(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 309 <= event["sequence"] <= 311]
+        self.assert_current_b09_start(progress)
+        self.assertEqual("PENDING_RETEST", events[-1]["details"]["independent_tester_status"])
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [event["event_type"] for event in events],
+        )
+        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual([], checker.validate_bundle(bundle))
+
+    def test_b09_r5_acceptance_releases_b10_without_starting_it(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        accepted = [event for event in bundle["events"]["events"] if event["sequence"] == 312]
+        self.assertEqual(312, progress["event_sequence"])
+        self.assertEqual("B-10", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIn("B-09", progress["completed_packages"])
+        self.assertEqual(0, progress["valid_failure_count"])
+        self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
+        self.assertEqual("B-10", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(["MAIN_PACKAGE_ACCEPTED"], [event["event_type"] for event in accepted])
+        self.assertEqual("A84E6FE92F11F987D987E7787344D8A81125ECF977168DBDA0641BD6DB4D732D", accepted[0]["details"]["test_report_sha256"])
+        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual([], checker.validate_bundle(bundle))
 
 if __name__ == "__main__":
     unittest.main()
