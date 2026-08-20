@@ -1,5 +1,14 @@
 # Anvil Build Handoff
 
+## B-09 Start — sequence 285
+
+- canonical clean/equal baseline `716398fe0a44d6dbce17c4378c78c8e9e0cb5962`에서 seq283→285 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
+- `developer-primary-b09` epoch-1 worker/write lease와 Developer exact15만 활성이다. B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다.
+- 목표는 at-least-once durable queue, DB UTC claim, worker/write epoch fencing, poison quarantine와 Windows/WSL/Docker path identity다. assigned verification은 `AV-STAT-026/027/043`, `AV-SAFE-028`이며 FI-04는 동일 fingerprint별 최소 3회다.
+- stale Worker Step·Tool·Event·filesystem commit은 `STALE_FENCING_TOKEN`으로 거부하고, alias는 같은 conflict scope key로 정규화해 이중 write lease 0건을 강제한다.
+- start 시점 제품 산출물 0개, API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 모두 `NOT_EXECUTED`다. 실제 DB 검증은 이후 Developer 구현 중 Anvil 전용 격리 WSL PostgreSQL 18에서만 허용한다.
+- B-09 acceptance, B-10 intervention/budget, B-11 API/BFF/SSE/UI, B-12 recovery는 시작하지 않는다.
+
 ## B-08 Main Acceptance — sequence 282
 
 - 독립 Tester report SHA `EF8976924169E5267F9DD028C5ACAFAF836EDA0834069C0134E49C3618934DE9`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검증해 seq282 `MAIN_PACKAGE_ACCEPTED`로 B-08을 최종 ACCEPTED했다.
@@ -219,29 +228,30 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 282,
-  "status": "READY",
+  "event_sequence": 285,
+  "status": "ACTIVE",
   "current_work_package": "B-09",
-  "last_event_id": "evt_b08_main_package_accepted",
+  "last_event_id": "evt_b09_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "7cea707b2ce765a306544873cfe31703a3d8201d",
+  "repository_head": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "7cea707b2ce765a306544873cfe31703a3d8201d",
+  "repository_remote_head": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "7cea707b2ce765a306544873cfe31703a3d8201d",
+  "repository_validated_base_commit": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b08-accepted.json",
-    "docs/test_reports/B-08_INDEPENDENT_TEST_REPORT.md",
+    "docs/progress/progress-handoff-detached-digest-b09-start.json",
+    "docs/work_orders/B-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-09_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
@@ -251,11 +261,11 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b08-accepted.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b09-start.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "STOP_AFTER_B08_ACCEPTANCE; B-09 is READY but must remain NOT_STARTED until a separate start projection",
+  "next_safe_action": "Developer executes only B-09 exact15; B-10 remains BLOCKED_PENDING_B09_ACCEPTANCE",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
@@ -266,9 +276,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": null,
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-09-20260820-001",
+  "worker_lease": "worker-lease-b09-20260820-001 epoch-1",
+  "write_lease": "write-lease-b09-20260820-001 epoch-1"
 }
 ```
 

@@ -47,6 +47,17 @@ class G07BaselineTests(unittest.TestCase):
     def codes(report):
         return {error["code"] for error in report["errors"]}
 
+    def assert_current_b09_start(self, progress):
+        self.assertEqual(285, progress["event_sequence"])
+        self.assertEqual("B-09", progress["current_work_package"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("developer-primary-b09", progress["active_agent"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+
     def test_authoritative_repository_is_recalculated_not_assumed(self):
         report = self.validate()
         self.assertEqual([], report["errors"])
@@ -58,12 +69,7 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(20, report["counts"]["scenario_total"])
         self.assertEqual("A01_READY", report["g_gate"]["readiness"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
         self.assertEqual("CLEARED", progress["dir_review"]["status"])
         self.assertEqual(0, progress["valid_failure_count"])
         self.assertEqual("B-09", progress["active_failure_lineage"]["step_lineage_id"])
@@ -206,13 +212,13 @@ class G07BaselineTests(unittest.TestCase):
         report = self.checker.validate_repository(ROOT, verify_git=True)
         self.assertEqual([], report["errors"])
         reconciliation = report["progress_reconciliation"]
-        self.assertEqual("MAIN_PACKAGE_ACCEPTED", reconciliation["event_type"])
+        self.assertEqual("PACKAGE_STARTED", reconciliation["event_type"])
         self.assertEqual(
-            "7cea707b2ce765a306544873cfe31703a3d8201d",
+            "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
             reconciliation["validated_base_commit"],
         )
         self.assertEqual(
-            "7cea707b2ce765a306544873cfe31703a3d8201d",
+            "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
             report["git"]["validated_base_commit"],
         )
         self.assertEqual(
@@ -220,7 +226,7 @@ class G07BaselineTests(unittest.TestCase):
         )
         current_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual(report["git"]["changed_paths"], current_progress["repository"]["exact_allowed_paths"])
-        self.assertEqual(14, len(reconciliation["exact_allowed_paths"]))
+        self.assertEqual(15, len(reconciliation["exact_allowed_paths"]))
         self.assertEqual("B-09", report["failure_counts"]["active_lineage"])
         self.assertEqual(0, report["failure_counts"]["active_lineage_valid_failure_count"])
         self.assertEqual(15, report["failure_counts"]["historical_accepted_failure_total"])
@@ -400,31 +406,19 @@ class G07BaselineTests(unittest.TestCase):
     def test_b04_start_projection_is_current_and_fenced(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertEqual(282, progress["event_sequence"])
+        self.assert_current_b09_start(progress)
         self.assertEqual([], report["errors"])
 
     def test_b04_completion_projection_is_current_and_leaseless(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
         self.assertEqual([], report["errors"])
 
     def test_b04_acceptance_projection_makes_b05_ready_but_not_started(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
         self.assertEqual([], report["errors"])
 
     def test_workplan_v16_successor_has_108_packages_and_serial_u_phase(self):
@@ -435,138 +429,84 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(255, report["counts"]["av_total"])
         self.assertEqual(11, report["counts"]["phase_counts"]["U"])
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
+        self.assert_current_b09_start(progress)
 
     def test_b05_start_is_current_fenced_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
 
     def test_b05_wi_rebind_is_current_epoch2_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
 
     def test_b05_completion_is_current_test_review_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
 
     def test_b05_acceptance_is_current_b06_ready_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
 
     def test_b06_start_is_current_fenced_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
 
     def test_b06_acceptance_is_current_ready_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assert_current_b09_start(progress)
         self.assertIn("B-06", progress["completed_packages"])
 
     def test_b07_start_is_current_fenced_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertIsNone(progress["active_work_instruction"])
+        self.assert_current_b09_start(progress)
 
     def test_b07_acceptance_is_current_ready_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
         self.assertIn("B-07", progress["completed_packages"])
 
     def test_b08_start_is_current_fenced_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
+        self.assert_current_b09_start(progress)
 
     def test_b08_completion_is_current_test_review_with_database_pending(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
-        self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assert_current_b09_start(progress)
 
-    def test_b08_acceptance_is_current_ready_projection(self):
+    def test_b09_start_is_current_fenced_queue_projection(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(282, progress["event_sequence"])
+        self.assertEqual(285, progress["event_sequence"])
         self.assertEqual("B-09", progress["current_work_package"])
-        self.assertEqual("READY", progress["status"])
+        self.assertEqual("ACTIVE", progress["status"])
         self.assertIn("B-08", progress["completed_packages"])
-        self.assertIsNone(progress["active_work_instruction"])
-        self.assertIsNone(progress["active_agent"])
-        self.assertIsNone(progress["worker_lease"])
-        self.assertIsNone(progress["write_lease"])
-        self.assertEqual("READY", progress["next_work_package"]["status"])
+        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("developer-primary-b09", progress["active_agent"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
 
 if __name__ == "__main__":
     unittest.main()
