@@ -1,0 +1,128 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-10-REWORK-START-R2-20260821-001",
+  "artifact_type": "package_rework_start_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-10",
+  "artifact_status": "active_rework",
+  "artifact_path": "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-21T01:00:03+09:00",
+  "projection": {
+    "event_sequence": 322,
+    "status": "ACTIVE",
+    "result_status": "REWORK_IN_PROGRESS",
+    "independent_tester_status": "R2_PENDING",
+    "valid_failure_count": 1,
+    "worker_lease_epoch": 2,
+    "write_lease_epoch": 2,
+    "next_package": "B-11",
+    "next_package_status": "BLOCKED_PENDING_B10_ACCEPTANCE"
+  },
+  "tester_report_sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB",
+  "tester_verdict": "REWORK_REQUIRED",
+  "finding_ids": [
+    "BLK-B10-IT-001"
+  ],
+  "blocking_severity": "CRITICAL",
+  "failure_fingerprint": "BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE",
+  "work_instruction": {
+    "artifact_id": "WI-B-10-20260821-002",
+    "sha256": "DFFCE00D420BC0DDC04C48B18856D111397C8DDC67155EE3DE702B8C379E6D21",
+    "invocation_sha256": "489222E413D61AEBEC177E42CDBBCA88AE4380644F5A6534511BC5B12C0F9674"
+  },
+  "worker_fencing_token": "b10-execution-fence-epoch-2-e9dd009",
+  "write_fencing_token": "b10-write-fence-epoch-2-e9dd009",
+  "developer_r2_exact_paths": [
+    "packages/persistence/intervention_budget_repository.py",
+    "migrations/versions/0009_intervention_budget.py",
+    "tests/budget/test_atomic_reservation.py",
+    "tests/budget/test_quota_reconcile.py",
+    "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+    "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-10_COMPLETION_REPORT.md"
+  ],
+  "developer_r2_exact_path_count": 7,
+  "main_projection_exact_path_count": 17,
+  "projection_product_mutation_count": 0,
+  "frozen_predecessors": {
+    "r1_developer_manifest_sha256": "750AB971D95D860324656AE81CF8501C434AF78210386B277C26ACC5F791086F",
+    "r1_developer_target_hash": "0DDE236523F95C995A583C580108744A656717F4D285CFE30B1ED4FC5E46C43F",
+    "r1_completion_manifest_sha256": "1832AE8FBD8F1C5F62E11503EEF494C0A13D318D8F363AD73101FCF30E3231B8"
+  },
+  "defect_contract": {
+    "reconciliation_required_cost_tokens_concurrency": "FULL_WORST_CASE_EXPOSURE_UNTIL_AUTHORITATIVE_RESOLUTION",
+    "in_memory_and_postgresql_parity": "REQUIRED",
+    "double_release": "FORBIDDEN",
+    "idempotency_and_concurrency_regression": "REQUIRED"
+  },
+  "runtime_boundary": {
+    "actual_local": "NOT_EXECUTED_R2_DEVELOPER_PENDING",
+    "actual_wsl_pg18": "NOT_EXECUTED_R2_DEVELOPER_PENDING",
+    "actual_api": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "shared_db": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "acceptance": "FORBIDDEN_PENDING_R2_INDEPENDENT_RETEST",
+    "b11_start": "FORBIDDEN_PENDING_B10_ACCEPTANCE"
+  },
+  "a13_successor_projection": {
+    "predecessor_manifest_sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771",
+    "live_raw_checksums": [
+      {
+        "path": "scripts/check_a13_repository_scan.py",
+        "bytes": 84860,
+        "sha256": "F843931C23937E297F03801893F1BE623FE4F5B4F69428030D6B814ED593DE1E"
+      },
+      {
+        "path": "tests/tooling/test_a13_repository_scan.py",
+        "bytes": 60557,
+        "sha256": "1D9AB197FD3206CA4137815000CBD5E3881D5DB7BC78C0550D07EEFE0555D6A4"
+      }
+    ]
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json",
+      "bytes": 3348,
+      "sha256": "1832AE8FBD8F1C5F62E11503EEF494C0A13D318D8F363AD73101FCF30E3231B8"
+    },
+    {
+      "path": "docs/progress/failure-ledger.json",
+      "bytes": 17013,
+      "sha256": "E0A912DBA7C98D7C404A7345971E06EF3C85BDBC27C7F719179EC53BAED6BCF4"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-b10-rework-start-r2.json",
+      "bytes": 811,
+      "sha256": "5C37159AF4FDB1A45FB6F1D732D810B397667D0CA38FB7676923A53F2A687EBE"
+    },
+    {
+      "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+      "bytes": 11159,
+      "sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB"
+    },
+    {
+      "path": "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
+      "bytes": 980,
+      "sha256": "489222E413D61AEBEC177E42CDBBCA88AE4380644F5A6534511BC5B12C0F9674"
+    },
+    {
+      "path": "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
+      "bytes": 5617,
+      "sha256": "DFFCE00D420BC0DDC04C48B18856D111397C8DDC67155EE3DE702B8C379E6D21"
+    }
+  ],
+  "target_canonical_bytes": 743,
+  "target_content_bytes": 38928,
+  "target_hash": "sha256:3E6B179E8DBD0AF36A2080DB931FE7242F85224CBE07C0031178574094693B57",
+  "delivered_hash": "sha256:3E6B179E8DBD0AF36A2080DB931FE7242F85224CBE07C0031178574094693B57",
+  "content_hash": "sha256:3E6B179E8DBD0AF36A2080DB931FE7242F85224CBE07C0031178574094693B57",
+  "self_reference": false
+}

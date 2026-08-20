@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 318,
+  "last_sequence": 322,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -11619,6 +11619,185 @@
           "tests/tooling/test_phase_g_gate.py",
           "tests/tooling/test_project_progress.py"
         ]
+      }
+    },
+    {
+      "event_id": "evt_b10_failure_report_accepted_r2",
+      "sequence": 319,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-08-21T01:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "entry_id": "failure-b10-independent-test-r1",
+        "evidence_ref": {
+          "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB"
+        },
+        "test_report_ref": {
+          "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB"
+        },
+        "tester_verdict": "REWORK_REQUIRED",
+        "finding_ids": [
+          "BLK-B10-IT-001"
+        ],
+        "blocking_severity": "CRITICAL",
+        "blocking_defect_count": 1,
+        "step_lineage_id": "B-10",
+        "failure_fingerprint": "BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE",
+        "valid_failure_count": 1,
+        "takeover_status": "NOT_REQUIRED",
+        "scope_change": "NONE",
+        "requirements_change": "NONE",
+        "material_risk_change": "NONE",
+        "next_action": "DEVELOPER_R2_REWORK"
+      }
+    },
+    {
+      "event_id": "evt_b10_worker_lease_issued_rework_r2",
+      "sequence": 320,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-21T01:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "lease_id": "worker-lease-b10-20260821-002",
+        "worker_id": "developer-primary-b10",
+        "agent_id": "developer-primary-b10",
+        "work_package_id": "B-10",
+        "lease_epoch": 2,
+        "execution_fencing_token": "b10-execution-fence-epoch-2-e9dd009",
+        "fencing_token": "b10-execution-fence-epoch-2-e9dd009",
+        "issued_at": "2026-08-21T01:00:01+09:00",
+        "expires_at": "2026-08-22T01:00:01+09:00",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_b10_write_lease_issued_rework_r2",
+      "sequence": 321,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-21T01:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "lease_id": "write-lease-b10-20260821-002",
+        "worker_lease_id": "worker-lease-b10-20260821-002",
+        "worker_id": "developer-primary-b10",
+        "agent_id": "developer-primary-b10",
+        "work_package_id": "B-10",
+        "write_epoch": 2,
+        "execution_fencing_token": "b10-execution-fence-epoch-2-e9dd009",
+        "write_fencing_token": "b10-write-fence-epoch-2-e9dd009",
+        "fencing_token": "b10-write-fence-epoch-2-e9dd009",
+        "issued_at": "2026-08-21T01:00:02+09:00",
+        "expires_at": "2026-08-22T01:00:02+09:00",
+        "status": "ACTIVE",
+        "paths": [
+          "packages/persistence/intervention_budget_repository.py",
+          "migrations/versions/0009_intervention_budget.py",
+          "tests/budget/test_atomic_reservation.py",
+          "tests/budget/test_quota_reconcile.py",
+          "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+          "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+          "docs/completion_reports/B-10_COMPLETION_REPORT.md"
+        ],
+        "path_scope": [
+          "packages/persistence/intervention_budget_repository.py",
+          "migrations/versions/0009_intervention_budget.py",
+          "tests/budget/test_atomic_reservation.py",
+          "tests/budget/test_quota_reconcile.py",
+          "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+          "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+          "docs/completion_reports/B-10_COMPLETION_REPORT.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_b10_rework_resumed_r2",
+      "sequence": 322,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-08-21T01:00:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "resume_event_ref": "evt_b10_package_completed",
+        "work_instruction_id": "WI-B-10-20260821-002",
+        "work_instruction_path": "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
+        "work_instruction_sha256": "DFFCE00D420BC0DDC04C48B18856D111397C8DDC67155EE3DE702B8C379E6D21",
+        "invocation_path": "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
+        "invocation_sha256": "489222E413D61AEBEC177E42CDBBCA88AE4380644F5A6534511BC5B12C0F9674",
+        "source_test_report_sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB",
+        "step_lineage_id": "B-10",
+        "failure_fingerprint": "BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE",
+        "finding_ids": [
+          "BLK-B10-IT-001"
+        ],
+        "valid_failure_count": 1,
+        "scope_change": "NONE",
+        "package_status": "ACTIVE",
+        "result_status": "REWORK_IN_PROGRESS",
+        "independent_tester_status": "R2_PENDING",
+        "developer_actor": "developer-primary-b10",
+        "worker_lease_id": "worker-lease-b10-20260821-002",
+        "write_lease_id": "write-lease-b10-20260821-002",
+        "worker_lease_epoch": 2,
+        "write_lease_epoch": 2,
+        "execution_fencing_token": "b10-execution-fence-epoch-2-e9dd009",
+        "write_fencing_token": "b10-write-fence-epoch-2-e9dd009",
+        "developer_r2_exact_paths": [
+          "packages/persistence/intervention_budget_repository.py",
+          "migrations/versions/0009_intervention_budget.py",
+          "tests/budget/test_atomic_reservation.py",
+          "tests/budget/test_quota_reconcile.py",
+          "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+          "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+          "docs/completion_reports/B-10_COMPLETION_REPORT.md"
+        ],
+        "developer_r2_exact_path_count": 7,
+        "projection_product_mutation_count": 0,
+        "dispatch_head": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
+        "dispatch_upstream_head": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/failure-ledger.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-b10-rework-start-r2.json",
+          "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+          "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
+          "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "actual_local_status": "NOT_EXECUTED_R2_DEVELOPER_PENDING",
+        "actual_wsl_postgresql18": "NOT_EXECUTED_R2_DEVELOPER_PENDING",
+        "actual_api_status": "NOT_EXECUTED",
+        "actual_ui_status": "NOT_EXECUTED",
+        "actual_browser_status": "NOT_EXECUTED",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_ysna_status": "NOT_EXECUTED",
+        "actual_shared_db_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_deployment_status": "NOT_EXECUTED",
+        "next_work_package": "B-11",
+        "next_package_status": "BLOCKED_PENDING_B10_ACCEPTANCE",
+        "reporting_decision": "AUTO_CONTINUE"
       }
     }
   ]

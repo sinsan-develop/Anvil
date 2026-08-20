@@ -4939,7 +4939,8 @@ def validate_repository_projection(
     b09_r5_acceptance_projection = repository.get("validated_base_commit") == "7c3382a497e995e18c736a487eee8761aa0c1a05" and "docs/evidence/manifests/B-09_ACCEPTANCE_PROGRESS_MANIFEST_R5.json" in allowed
     b10_start_projection = repository.get("validated_base_commit") == "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8" and "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json" in allowed
     b10_completion_projection = repository.get("validated_base_commit") == "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba" and "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    b10_rework_projection = repository.get("validated_base_commit") == "e9dd00983775a5b1b2849f6be35304e34ef4fa17" and "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -5265,6 +5266,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b10_start_projection(bundle["_root"]))
         elif current_manifest_relative == "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b10_completion_manifest(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json":
+            errors.extend(validate_b10_rework_start_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b08_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json":
@@ -5357,6 +5360,57 @@ def validate_b10_completion_manifest(manifest: Mapping[str, Any], bundle: Mappin
     if any((progress.get("event_sequence") != 318, progress.get("current_work_package") != "B-10", progress.get("status") != "TEST_REVIEW", progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, wi.get("artifact_id") != "WI-B-10-20260820-001", wi.get("result_status") != "COMPLETED", wi.get("independent_tester_status") != "PENDING", (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE", [event.get("event_type") for event in events] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], manifest.get("developer_manifest_sha256") != "750AB971D95D860324656AE81CF8501C434AF78210386B277C26ACC5F791086F", manifest.get("developer_target_hash") != "0DDE236523F95C995A583C580108744A656717F4D285CFE30B1ED4FC5E46C43F", manifest.get("developer_exact_paths_frozen") is not True, manifest.get("developer_mutation") != "FORBIDDEN_FROZEN_PREDECESSOR")):
         errors.append("B10_COMPLETION_PROJECTION_MISMATCH")
     return sorted(set(errors))
+
+
+def validate_b10_rework_start_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = [event for event in bundle["events"]["events"] if 319 <= event["sequence"] <= 322]
+    expected = {
+        "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json",
+        "docs/progress/failure-ledger.json",
+        "docs/progress/progress-handoff-detached-digest-b10-rework-start-r2.json",
+        "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+        "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
+        "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
+    }
+    errors: list[str] = []
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return ["B10_R2_RAW_INVALID"]
+    seen: set[str] = set()
+    canonical_rows: list[tuple[bytes, str]] = []
+    total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("B10_R2_RAW_INVALID")
+            continue
+        seen.add(relative)
+        raw = (root / relative).read_bytes()
+        sha = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != sha:
+            errors.append("B10_R2_RAW_INVALID")
+        total += len(raw)
+        canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{sha}"))
+    if seen != expected:
+        errors.append("B10_R2_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8")
+    target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes") != len(canonical), manifest.get("target_content_bytes") != total, manifest.get("target_hash") != target, manifest.get("delivered_hash") != target, manifest.get("content_hash") != target, manifest.get("self_reference") is not False)):
+        errors.append("B10_R2_TARGET_MISMATCH")
+    wi = progress.get("active_work_instruction") or {}
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    if any((progress.get("event_sequence") != 322, progress.get("current_work_package") != "B-10", progress.get("status") != "ACTIVE", progress.get("active_agent") != "developer-primary-b10", progress.get("valid_failure_count") != 1, wi.get("artifact_id") != "WI-B-10-20260821-002", wi.get("result_status") != "REWORK_IN_PROGRESS", worker.get("lease_epoch") != 2, write.get("write_epoch") != 2, write.get("worker_lease_id") != worker.get("lease_id"), (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE", [event.get("event_type") for event in events] != ["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"], manifest.get("tester_report_sha256") != "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB", manifest.get("failure_fingerprint") != "BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE", manifest.get("developer_r2_exact_path_count") != 7)):
+        errors.append("B10_R2_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
+def validate_b10_rework_start_projection(root: Path) -> list[str]:
+    bundle = load_bundle(root)
+    manifest = _load_json(root / "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json")
+    return validate_b10_rework_start_manifest(manifest, bundle)
 
 if __name__ == "__main__":
     raise SystemExit(main())

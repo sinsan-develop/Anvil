@@ -1,3 +1,12 @@
+## B-10 독립 FAILURE_REPORT 수락 → R2 재작업 재개 — sequence 322
+
+- 독립 Tester report `B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB`의 `REWORK_REQUIRED / BLK-B10-IT-001 / CRITICAL`을 B-10 첫 유효 실패로 수락했다.
+- 결함 fingerprint는 `BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE`이며 기능 범위·요구사항·중요 위험 변경은 없다.
+- sequence 319→322는 `FAILURE_REPORT_ACCEPTED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED` 순서다.
+- `developer-primary-b10` epoch-2 lease는 R1 exact15 안의 최소 exact7만 쓸 수 있다. execution token은 `b10-execution-fence-epoch-2-e9dd009`, write token은 `b10-write-fence-epoch-2-e9dd009`이다.
+- unresolved `RECONCILIATION_REQUIRED` exposure를 hard cost/token/concurrency에서 계속 계산하고 double release를 막는 local/PG18 회귀가 필수다.
+- B-10은 `ACTIVE / REWORK_IN_PROGRESS / R2_PENDING`; B-11은 `BLOCKED_PENDING_B10_ACCEPTANCE`이며 시작하지 않았다. API/UI/browser/provider/shared DB/ysna/production/deployment는 `NOT_EXECUTED`다.
+
 # Anvil Build Handoff
 
 ## B-10 Developer 완료 → 독립 Tester 대기 — sequence 318
@@ -292,57 +301,46 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 318,
-  "status": "TEST_REVIEW",
+  "event_sequence": 322,
+  "status": "ACTIVE",
   "current_work_package": "B-10",
-  "last_event_id": "evt_b10_package_completed",
+  "last_event_id": "evt_b10_rework_resumed_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 0,
-  "active_lineage_valid_failure_count": 0,
+  "valid_failure_count": 1,
+  "active_lineage_valid_failure_count": 1,
   "historical_accepted_failure_count": 19,
   "dir_status": "CLEARED",
-  "repository_head": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
+  "repository_head": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
+  "repository_remote_head": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
+  "repository_validated_base_commit": "e9dd00983775a5b1b2849f6be35304e34ef4fa17",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-10_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b10-completion-test-review.json",
-    "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
-    "migrations/versions/0009_intervention_budget.py",
-    "packages/budget/__init__.py",
-    "packages/budget/models.py",
-    "packages/budget/service.py",
-    "packages/interventions/__init__.py",
-    "packages/interventions/models.py",
-    "packages/interventions/service.py",
-    "packages/persistence/intervention_budget_repository.py",
+    "docs/progress/progress-handoff-detached-digest-b10-rework-start-r2.json",
+    "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+    "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/budget/test_atomic_reservation.py",
-    "tests/budget/test_quota_reconcile.py",
-    "tests/interventions/test_human_intervention.py",
-    "tests/interventions/test_pause_cancel_resume.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-completion-test-review.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-rework-start-r2.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Independent Tester validates frozen B-10 exact15; B-11 remains blocked pending B-10 acceptance",
+  "next_safe_action": "developer-primary-b10 executes R2 exact7 under epoch2 fencing; B-11 remains blocked",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
@@ -353,9 +351,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-10-20260820-001 / COMPLETED / PENDING",
-  "worker_lease": null,
-  "write_lease": null
+  "active_work_instruction": "WI-B-10-20260821-002 / REWORK_IN_PROGRESS / R2_PENDING",
+  "worker_lease": "worker-lease-b10-20260821-002 / epoch 2 / ACTIVE",
+  "write_lease": "write-lease-b10-20260821-002 / epoch 2 / ACTIVE / exact7"
 }
 ```
 
