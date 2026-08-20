@@ -1,7 +1,7 @@
 # B-09 WorkInstruction — Durable Queue, Worker/Write Fencing, and Path Identity
 
-- artifact_id: `WI-B-09-20260820-001`
-- revision: `R1 / PLAN_ALIGNED_INITIAL`
+- artifact_id: `WI-B-09-20260820-002`
+- revision: `R2 / AUTHORITY_BINDING_REPAIR_NO_SCOPE_CHANGE`
 - package/status: `B-09 / ACTIVE`
 - executor: `developer-primary-b09`
 - baseline_git_commit: `716398fe0a44d6dbce17c4378c78c8e9e0cb5962`
@@ -10,11 +10,12 @@
 - source_matrix_sha256: `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5`
 - source_test_plan_sha256: `9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644`
 - source_operating_rules_sha256: `4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E`
-- developer_agent_definition_sha256: `931ED3D4A4A351F47FB48ED459270565E63889E8049EC4587032E2C640782B90`
+- developer_agent_definition_sha256: `DBA19287719B527112F1D4A1505D616259D4D013115ACD0CF7B4A647EE93FE77`
 - predecessor_b08_acceptance_manifest_sha256: `6D98116937FC09DA1B51996A87315A33FDA6972C13B8F55F1D6048685CC754E4`
 - assigned: `AV-STAT-026, AV-STAT-027, AV-STAT-043, AV-SAFE-028`
 - predecessors: `B-06~B-08 ACCEPTED`, `A Gate ACCEPTED`, `DIR-1 CLEARED`
 - environment: `ENV-LOCAL only at start; WSL Anvil isolated PostgreSQL 18 only during later implementation validation`
+- authority_rebind: `APPROVAL-20260814-WORKPLAN-V16-001 / 3DFC... successor binding`; Operating Rules §2의 A1032/982B/8038 표는 해당 human-approved successor 이전 역사 기준선이며, 실제 설계·v1.6 plan·v1.4 matrix·v1.5 test plan과 승인 binding이 우선한다. 기능·요구사항·중요 위험·Developer exact15는 변경하지 않는다.
 
 ## 목적과 완료 조건
 
@@ -54,7 +55,7 @@ PostgreSQL durable queue의 at-least-once claim, DB UTC 기반 worker/write leas
 
 ## TDD·검증·보고
 
-1. baseline·authority·B-08 acceptance, epoch-1 worker/write fencing token과 exact 15-path allowlist를 먼저 검증한다.
+1. baseline·authority·B-08 acceptance, R1 epoch-1 revoke 및 R2 epoch-2 worker/write fencing token과 exact 15-path allowlist를 먼저 검증한다.
 2. non-atomic claim, stale token, orphan recovery, poison retry, path alias double lease를 RED test로 고정한다.
 3. 최소 구현 후 queue/lease/path focused tests와 기존 domain/design/planning/persistence/execution/events/artifacts/checkpoints/outbox/tooling 회귀를 실행한다.
 4. FI-04는 동일 fingerprint별 최소 3회 실행한다. 반복 수, worker heartbeat stop point, recovery Event, lease epoch/token, orphan/quarantine 결과를 raw evidence로 남긴다.

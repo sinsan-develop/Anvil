@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-anvil-build-000114",
-  "event_sequence": 285,
-  "updated_at": "2026-08-20T10:00:02+09:00",
-  "last_event_id": "evt_b09_package_started",
+  "snapshot_id": "snapshot-anvil-build-000115",
+  "event_sequence": 290,
+  "updated_at": "2026-08-20T11:10:04+09:00",
+  "last_event_id": "evt_b09_authority_rebind_resumed_r2",
   "plan_version": "1.6",
   "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
@@ -45,31 +45,31 @@
   ],
   "active_agent": "developer-primary-b09",
   "write_lease": {
-    "lease_id": "write-lease-b09-20260820-001",
-    "worker_lease_id": "worker-lease-b09-20260820-001",
+    "lease_id": "write-lease-b09-20260820-002",
+    "worker_lease_id": "worker-lease-b09-20260820-002",
     "worker_id": "developer-primary-b09",
     "agent_id": "developer-primary-b09",
     "work_package_id": "B-09",
-    "write_epoch": 1,
-    "execution_fencing_token": "b09-execution-fence-epoch-1-716398f",
-    "write_fencing_token": "b09-write-fence-epoch-1-716398f",
-    "fencing_token": "b09-write-fence-epoch-1-716398f",
-    "issued_at": "2026-08-20T10:00:01+09:00",
-    "expires_at": "2026-08-21T10:00:01+09:00",
+    "write_epoch": 2,
+    "execution_fencing_token": "b09-execution-fence-epoch-2-e33f231",
+    "write_fencing_token": "b09-write-fence-epoch-2-e33f231",
+    "fencing_token": "b09-write-fence-epoch-2-e33f231",
+    "issued_at": "2026-08-20T11:10:03+09:00",
+    "expires_at": "2026-08-21T11:10:03+09:00",
     "status": "ACTIVE",
     "paths": ["packages/queue/__init__.py", "packages/queue/models.py", "packages/queue/service.py", "packages/leases/__init__.py", "packages/leases/models.py", "packages/leases/service.py", "packages/paths/identity.py", "packages/persistence/queue_lease_repository.py", "migrations/versions/0008_queue_worker_leases.py", "tests/queue/test_durable_queue.py", "tests/leases/test_worker_write_fencing.py", "tests/paths/test_conflict_scope_identity.py", "docs/validation/B-09_QUEUE_LEASE_VALIDATION.md", "docs/evidence/manifests/B-09_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-09_COMPLETION_REPORT.md"],
     "path_scope": ["packages/queue/__init__.py", "packages/queue/models.py", "packages/queue/service.py", "packages/leases/__init__.py", "packages/leases/models.py", "packages/leases/service.py", "packages/paths/identity.py", "packages/persistence/queue_lease_repository.py", "migrations/versions/0008_queue_worker_leases.py", "tests/queue/test_durable_queue.py", "tests/leases/test_worker_write_fencing.py", "tests/paths/test_conflict_scope_identity.py", "docs/validation/B-09_QUEUE_LEASE_VALIDATION.md", "docs/evidence/manifests/B-09_EVIDENCE_MANIFEST.json", "docs/completion_reports/B-09_COMPLETION_REPORT.md"]
   },
   "worker_lease": {
-    "lease_id": "worker-lease-b09-20260820-001",
+    "lease_id": "worker-lease-b09-20260820-002",
     "worker_id": "developer-primary-b09",
     "agent_id": "developer-primary-b09",
     "work_package_id": "B-09",
-    "lease_epoch": 1,
-    "execution_fencing_token": "b09-execution-fence-epoch-1-716398f",
-    "fencing_token": "b09-execution-fence-epoch-1-716398f",
-    "issued_at": "2026-08-20T10:00:00+09:00",
-    "expires_at": "2026-08-21T10:00:00+09:00",
+    "lease_epoch": 2,
+    "execution_fencing_token": "b09-execution-fence-epoch-2-e33f231",
+    "fencing_token": "b09-execution-fence-epoch-2-e33f231",
+    "issued_at": "2026-08-20T11:10:02+09:00",
+    "expires_at": "2026-08-21T11:10:02+09:00",
     "status": "ACTIVE",
     "subject_ref": "B-09"
   },
@@ -805,7 +805,7 @@
     },
     {
       "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "2668613AD7F5774B740C5D321F7C492595870CB332F33FB91670B2EE4855F330"
+      "sha256": "A755EB8AED1D8714F5A601F7D8120D3E4D4FEE0FD78BB953D9F06464CA23FBA0"
     },
     {
       "path": "scripts/check_a14_workbench_prototype.py",
@@ -813,19 +813,19 @@
     },
     {
       "path": "scripts/check_g07_baseline.py",
-      "sha256": "B11EF2BF652091FDB6A9BA5F1C20920579A2AEC96C6E36C6A2F7C11595CEFBCB"
+      "sha256": "D875A3972805AD642CC3099890F2F5CB875FD21C13A4F437B48646F864BECDDD"
     },
     {
       "path": "scripts/check_phase_g_gate.py",
-      "sha256": "486708E7D44DD063407865208340ECF1C628EFB60B1EEA9DA40CE2DB9EA34227"
+      "sha256": "3387686C7DA90D20BC9614709D09F0EBCE20FE25249BE8568D192B549AE68685"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "CF29CCA1301B869A5C15E094F38230D928872A8565C6E43E9F171E9F083B8B34"
+      "sha256": "4037F3D157B8B8DFAB1E8469180FFB7C7EEF10FA68F94F9A4D3120375EFE4F0F"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "F1342CE266300203B7204FF543591EC7E1EF5A22C1D3BEBDC0C3CB990777DC3A"
+      "sha256": "B89648E62E4E900464EF897D2F3F4A37D5DC6025C4750081D5CAAB5AAC8E68FD"
     },
     {
       "path": "tests/tooling/test_a14_workbench_prototype.py",
@@ -833,15 +833,15 @@
     },
     {
       "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "60184D590B69384CDA02F0E794F4CBBB530AB034B62555F939BF24B1DE610300"
+      "sha256": "3D80CBF3C9A473EABDD593BEAA62DD7DD3675EF9F92DD621B49B81A2656CD36E"
     },
     {
       "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "956164B9A5224ADCBA6E599457CC88F1D5FAFBED8165E955AE00DDDEE0747489"
+      "sha256": "BE9FABA835D7E352BAAC48D05260C74E7C227FA0B52185FA901A2050380EA257"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "B11108D81733E43F9F7CFDB149AB02C4F0DE867FAE06D39F58F3495300CCEDD3"
+      "sha256": "720CFF9E3B53D74F7FBEA9A770074F5214CF450BF79004C534E69DA6A48ECC81"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -869,7 +869,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "26B5AD379284A25044073827DCA8395FB985D92C2385B3C7D7DF31658F01691B"
+      "sha256": "16DBBEFEC552D00D432A953F74691608453A0A00999CE8A8F0DF3DC785AB08E2"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -967,11 +967,11 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
+    "validated_base_commit": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
+    "remote_head": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
       "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
@@ -992,7 +992,7 @@
     ],
     "observed_at": "2026-08-20T10:00:02+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: B-09 start projection exact15; product artifacts 0",
-    "local_head": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962"
+    "local_head": "e33f231c2a7fbc7f020391939ff067f8d6177cb6"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1102,11 +1102,11 @@
     "stop_before_dialogue_report": false
   },
   "active_work_instruction": {
-    "artifact_id": "WI-B-09-20260820-001",
+    "artifact_id": "WI-B-09-20260820-002",
     "path": "docs/work_orders/B-09_WORK_INSTRUCTION.md",
-    "sha256": "648E8A8C95010D0F43EC2DFB7ACEF3919FA1B6D150EA12E15C513E5AE40D1F21",
+    "sha256": "59CB28881109B2FAF1FF36FFCD29F698AE3EE51C398FA1DE7955B8D3AED83E83",
     "invocation_path": "docs/work_orders/B-09_INVOCATION_PROMPT.md",
-    "invocation_sha256": "9B7708CF98EE5078B3F1A1377F3D6D0D7E652FE704CAC3ABCC72E5FAB0F4DB50",
+    "invocation_sha256": "B37845C341B067BF628730EAC4C6FFF62E4A6C44C3DC6051B51D07DDD15D37DB",
     "package_status": "ACTIVE",
     "result_status": "IN_PROGRESS",
     "accepted": false,
@@ -1148,12 +1148,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "26B5AD379284A25044073827DCA8395FB985D92C2385B3C7D7DF31658F01691B"
+      "sha256": "16DBBEFEC552D00D432A953F74691608453A0A00999CE8A8F0DF3DC785AB08E2"
     }
   },
   "next_work_package": {
     "package_id": "B-10",
     "status": "BLOCKED_PENDING_B09_ACCEPTANCE"
   },
-  "snapshot_hash": "B13A92399C0951B234FB133920EE4DB21349AB3D8B3AC5BAB654BF9CF62C5637"
+  "snapshot_hash": "6BEDD51E399FEF1DD45F083614F8395C3B262BB99CDC8DB42098629DA95D7546"
 }

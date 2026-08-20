@@ -102,7 +102,7 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
         return
     elif progress.get("event_sequence") == 237:
         paths = progress["write_lease"]["paths"]
-    elif progress.get("event_sequence") in (240, 241, 244, 247, 248, 249, 252, 257, 260, 261, 264, 267, 268, 271, 274, 275, 278, 281, 282):
+    elif progress.get("event_sequence") in (240, 241, 244, 247, 248, 249, 252, 257, 260, 261, 264, 267, 268, 271, 274, 275, 278, 281, 282, 290):
         paths = progress["repository"]["exact_allowed_paths"]
     elif progress.get("event_sequence") in (175, 181, 184, 186, 192, 196, 199, 203, 206, 207, 210, 213, 217, 220, 221, 224, 227, 230, 233):
         paths = progress["repository"]["exact_allowed_paths"]
@@ -604,13 +604,13 @@ class A13RepositoryScanHostileTests(unittest.TestCase):
 
 class A13RepositoryScanArtifactTests(unittest.TestCase):
     def assert_current_b09_start(self, progress):
-        self.assertEqual(285, progress["event_sequence"])
+        self.assertEqual(290, progress["event_sequence"])
         self.assertEqual("B-09", progress["current_work_package"])
         self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("developer-primary-b09", progress["active_agent"])
-        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
         self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
 
@@ -1128,11 +1128,24 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(285, progress["event_sequence"])
+        self.assertEqual(290, progress["event_sequence"])
         self.assertEqual("B-09", progress["current_work_package"])
         self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("developer-primary-b09", progress["active_agent"])
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b09_authority_rebind_successor_manifest_is_selected(self):
+        spec = importlib.util.spec_from_file_location("a13_checker_b09_rebind", CHECKER_PATH)
+        self.assertIsNotNone(spec)
+        self.assertIsNotNone(spec.loader)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(290, progress["event_sequence"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
 if __name__ == "__main__":

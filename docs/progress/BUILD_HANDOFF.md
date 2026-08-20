@@ -1,9 +1,10 @@
 # Anvil Build Handoff
 
-## B-09 Start — sequence 285
+## B-09 Authority Rebind R2 — sequence 290
 
-- canonical clean/equal baseline `716398fe0a44d6dbce17c4378c78c8e9e0cb5962`에서 seq283→285 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
-- `developer-primary-b09` epoch-1 worker/write lease와 Developer exact15만 활성이다. B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다.
+- canonical clean/equal baseline `e33f231c2a7fbc7f020391939ff067f8d6177cb6`에서 authority binding 오류를 scope-change 없이 수리했다. seq286→290 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`로 R1 epoch-1을 회수하고 R2 epoch-2를 발급했다.
+- `APPROVAL-20260814-WORKPLAN-V16-001` successor binding과 실제 `developer-primary.md` SHA를 R2 WI에 결박했다. Operating Rules §2의 A1032/982B/8038 표는 승인 successor 전 역사 기준선이며, 기능·요구사항·위험·Developer exact15는 변경하지 않았다.
+- `developer-primary-b09` epoch-2 worker/write lease와 Developer exact15만 활성이다. B-10은 `BLOCKED_PENDING_B09_ACCEPTANCE`다.
 - 목표는 at-least-once durable queue, DB UTC claim, worker/write epoch fencing, poison quarantine와 Windows/WSL/Docker path identity다. assigned verification은 `AV-STAT-026/027/043`, `AV-SAFE-028`이며 FI-04는 동일 fingerprint별 최소 3회다.
 - stale Worker Step·Tool·Event·filesystem commit은 `STALE_FENCING_TOKEN`으로 거부하고, alias는 같은 conflict scope key로 정규화해 이중 write lease 0건을 강제한다.
 - start 시점 제품 산출물 0개, API/DB/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 모두 `NOT_EXECUTED`다. 실제 DB 검증은 이후 Developer 구현 중 Anvil 전용 격리 WSL PostgreSQL 18에서만 허용한다.
@@ -228,21 +229,21 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 285,
+  "event_sequence": 290,
   "status": "ACTIVE",
   "current_work_package": "B-09",
-  "last_event_id": "evt_b09_package_started",
+  "last_event_id": "evt_b09_authority_rebind_resumed_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 15,
   "dir_status": "CLEARED",
-  "repository_head": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
+  "repository_head": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
+  "repository_remote_head": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "716398fe0a44d6dbce17c4378c78c8e9e0cb5962",
+  "repository_validated_base_commit": "e33f231c2a7fbc7f020391939ff067f8d6177cb6",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
     "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json",
@@ -276,9 +277,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-09-20260820-001",
-  "worker_lease": "worker-lease-b09-20260820-001 epoch-1",
-  "write_lease": "write-lease-b09-20260820-001 epoch-1"
+  "active_work_instruction": "WI-B-09-20260820-002",
+  "worker_lease": "worker-lease-b09-20260820-002 epoch-2",
+  "write_lease": "write-lease-b09-20260820-002 epoch-2"
 }
 ```
 

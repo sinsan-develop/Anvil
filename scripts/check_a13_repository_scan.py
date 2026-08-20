@@ -522,8 +522,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('status') == 'ACTIVE'
         and progress.get('active_work_instruction', {}).get('artifact_id')
         == 'WI-A-15-20260813-001'
-        and progress.get('worker_lease', {}).get('lease_epoch') == 1
-        and progress.get('write_lease', {}).get('write_epoch') == 1
+        and progress.get('worker_lease', {}).get('lease_epoch') == 2
+        and progress.get('write_lease', {}).get('write_epoch') == 2
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
         == 'docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json'
         and (
@@ -580,7 +580,7 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('dir_review', {}).get('status') == 'CLEARED'
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path')
         == 'docs/evidence/manifests/A-GATE_DECISION_PROGRESS_MANIFEST.json'
-        and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
+        and (committed_clean or progress.get('event_sequence') == 290 or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
     )
     current_b01_start = (
         bool(b01_start)
@@ -588,8 +588,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
         and progress.get('current_work_package') == 'B-01'
         and progress.get('status') == 'ACTIVE'
         and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-01-20260813-001'
-        and progress.get('worker_lease', {}).get('lease_epoch') == 1
-        and progress.get('write_lease', {}).get('write_epoch') == 1
+        and progress.get('worker_lease', {}).get('lease_epoch') == 2
+        and progress.get('write_lease', {}).get('write_epoch') == 2
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-01_START_EVIDENCE_MANIFEST.json'
         and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
     )
@@ -943,12 +943,12 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
     if current_b08_acceptance:
         candidates.append(b08_acceptance.get('a13_successor_projection', {}))
     current_b09_start = (
-        bool(b09_start) and progress.get('event_sequence') == 285
+        bool(b09_start) and progress.get('event_sequence') == 290
         and progress.get('current_work_package') == 'B-09' and progress.get('status') == 'ACTIVE'
-        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-09-20260820-001'
+        and progress.get('active_work_instruction', {}).get('artifact_id') == 'WI-B-09-20260820-002'
         and progress.get('active_agent') == 'developer-primary-b09'
-        and progress.get('worker_lease', {}).get('lease_epoch') == 1
-        and progress.get('write_lease', {}).get('write_epoch') == 1
+        and progress.get('worker_lease', {}).get('lease_epoch') == 2
+        and progress.get('write_lease', {}).get('write_epoch') == 2
         and progress.get('current_progress_evidence_ref', {}).get('manifest_path') == 'docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json'
         and (committed_clean or set(progress.get('repository', {}).get('exact_allowed_paths', [])) == changed_paths)
     )

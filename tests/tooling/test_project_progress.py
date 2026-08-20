@@ -42,13 +42,13 @@ def _load_checker_or_none():
 
 class ProjectProgressContractTests(unittest.TestCase):
     def assert_current_b09_start(self, progress):
-        self.assertEqual(285, progress["event_sequence"])
+        self.assertEqual(290, progress["event_sequence"])
         self.assertEqual("B-09", progress["current_work_package"])
         self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("developer-primary-b09", progress["active_agent"])
-        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
         self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
 
@@ -1690,19 +1690,35 @@ class ProjectProgressContractTests(unittest.TestCase):
         progress = bundle["progress"]
         events = [event for event in bundle["events"]["events"] if 283 <= event["sequence"] <= 285]
 
-        self.assertEqual(285, progress["event_sequence"])
+        self.assertEqual(290, progress["event_sequence"])
         self.assertEqual("B-09", progress["current_work_package"])
         self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual("developer-primary-b09", progress["active_agent"])
-        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
         self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
         self.assertEqual(
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
             [event["event_type"] for event in events],
         )
+
+    def test_b09_authority_rebind_rotates_fencing_without_product_write(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 286 <= event["sequence"] <= 290]
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
+            [event["event_type"] for event in events],
+        )
+        self.assertEqual(290, progress["event_sequence"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual("B-10", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
         manifest_path = ROOT / "docs/evidence/manifests/B-09_START_EVIDENCE_MANIFEST.json"
         self.assertTrue(manifest_path.is_file())
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))

@@ -42,12 +42,12 @@ class PhaseGGateTests(unittest.TestCase):
     def assert_current_b09_start(self, progress):
         self.assertEqual("B-09", progress["current_work_package"])
         self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
         if "event_sequence" in progress:
-            self.assertEqual(285, progress["event_sequence"])
+            self.assertEqual(290, progress["event_sequence"])
             self.assertEqual("developer-primary-b09", progress["active_agent"])
-            self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-            self.assertEqual(1, progress["write_lease"]["write_epoch"])
+            self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+            self.assertEqual(2, progress["write_lease"]["write_epoch"])
             self.assertEqual("B-10", progress["next_work_package"]["package_id"])
             self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
 
@@ -283,15 +283,26 @@ class PhaseGGateTests(unittest.TestCase):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assertEqual([], report["errors"])
-        self.assertEqual(285, progress["event_sequence"])
+        self.assertEqual(290, progress["event_sequence"])
         self.assertEqual("B-09", report["progress"]["current_work_package"])
         self.assertEqual("ACTIVE", report["progress"]["status"])
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("WI-B-09-20260820-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
         self.assertEqual("developer-primary-b09", progress["active_agent"])
-        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
         self.assertEqual("B-10", progress["next_work_package"]["package_id"])
+        self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
+
+    def test_b09_authority_rebind_preserves_a_gate_and_blocks_b10(self):
+        report = self.validate()
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual([], report["errors"])
+        self.assertEqual(290, progress["event_sequence"])
+        self.assertEqual("WI-B-09-20260820-002", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
         self.assertEqual("BLOCKED_PENDING_B09_ACCEPTANCE", progress["next_work_package"]["status"])
 
 if __name__ == "__main__":
