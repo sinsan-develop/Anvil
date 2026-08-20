@@ -1211,6 +1211,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "PACKAGE_COMPLETED" and reconciliation_event.get("subject_ref") == "B-10" and reconciliation_event.get("sequence") == 332:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-11" and reconciliation_event.get("sequence") == 336:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1337,6 +1339,11 @@ def validate_repository(
         historical = progress.get("historical_failure_counts_by_lineage") or {}
         if any((progress.get("current_work_package") != "B-11", progress.get("status") != "READY", "B-10" not in progress.get("completed_packages", []), progress.get("valid_failure_count") != 0, historical.get("B-10") != 2, progress.get("active_work_instruction") is not None, progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, (progress.get("next_work_package") or {}).get("status") != "READY", [event.get("event_type") for event in accepted] != ["MAIN_PACKAGE_ACCEPTED"])):
             _error(errors, "B10_R3_ACCEPTANCE_PROJECTION_MISMATCH", progress_path, "sequence=333")
+    if progress.get("event_sequence") == 336:
+        terminal = [event for event in events if 334 <= event.get("sequence", -1) <= 336]
+        instruction = progress.get("active_work_instruction") or {}
+        if any((progress.get("current_work_package") != "B-11", progress.get("status") != "ACTIVE", instruction.get("artifact_id") != "WI-B-11-20260821-001", progress.get("active_agent") != "developer-primary-b11", (progress.get("worker_lease") or {}).get("lease_epoch") != 1, (progress.get("write_lease") or {}).get("write_epoch") != 1, (progress.get("next_work_package") or {}) != {"package_id": "B-12", "status": "BLOCKED_PENDING_B11_ACCEPTANCE"}, [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"])):
+            _error(errors, "B11_START_PROJECTION_MISMATCH", progress_path, "sequence=336")
     return {
         "schema_version": "1.0.0",
         "package_id": "G-07",
@@ -1459,6 +1466,18 @@ def validate_b10_start_projection(root: Path) -> list[str]:
     if progress.get("event_sequence") != 315 or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
     if (progress.get("worker_lease") or {}).get("lease_epoch") != 1 or (progress.get("write_lease") or {}).get("write_epoch") != 1: errors.append("B10_FENCING_INVALID")
     if (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE": errors.append("B11_BOUNDARY_INVALID")
+    return errors
+
+
+def validate_b11_start_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal = [event for event in events if 334 <= event.get("sequence", -1) <= 336]
+    errors = []
+    if progress.get("event_sequence") != 336 or progress.get("current_work_package") != "B-11" or progress.get("status") != "ACTIVE": errors.append("B11_PHASE_PROJECTION_INVALID")
+    if (progress.get("worker_lease") or {}).get("lease_epoch") != 1 or (progress.get("write_lease") or {}).get("write_epoch") != 1: errors.append("B11_FENCING_INVALID")
+    if (progress.get("next_work_package") or {}) != {"package_id": "B-12", "status": "BLOCKED_PENDING_B11_ACCEPTANCE"}: errors.append("B12_BOUNDARY_INVALID")
+    if [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]: errors.append("B11_EVENT_ORDER_INVALID")
     return errors
 
 

@@ -1,0 +1,129 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-11-START-20260821-001",
+  "artifact_type": "package_start_evidence_manifest",
+  "artifact_path": "docs/evidence/manifests/B-11_START_EVIDENCE_MANIFEST.json",
+  "package_id": "B-11",
+  "event_sequence": 336,
+  "validated_base_commit": "1134619b2ecdbe521bb0cce2288af7fac6d1e9dc",
+  "predecessor_acceptance_ref": {
+    "path": "docs/evidence/manifests/B-10_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
+    "sha256": "28CCFBBEED4A6BDC04145BE715C16B97AA76E6BEF1A70CEAF5FE0A54E98099E2"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-11-20260821-001",
+    "path": "docs/work_orders/B-11_WORK_INSTRUCTION.md",
+    "sha256": "B015056A38BD70A995D6F886231BC1733988D6D0ECCD6C2B71E4EA0B04B4B45F",
+    "invocation_path": "docs/work_orders/B-11_INVOCATION_PROMPT.md",
+    "invocation_sha256": "1FCD913209A2B06EA0E88B752A760DC933F84656F3FCE03768C570FAA64C6A07"
+  },
+  "objective": "Foundation 2 canonical API registry, FastAPI ports, same-origin server BFF, Last-Event-ID SSE, common response and Web security contracts",
+  "assigned_verification_ids": [
+    "AV-STAT-007",
+    "AV-UI-011",
+    "AV-UI-012",
+    "AV-UI-016",
+    "AV-SAFE-029"
+  ],
+  "worker_lease": {
+    "lease_id": "worker-lease-b11-20260821-001",
+    "lease_epoch": 1,
+    "execution_fencing_token": "b11-execution-fence-epoch-1-1134619",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-b11-20260821-001",
+    "write_epoch": 1,
+    "write_fencing_token": "b11-write-fence-epoch-1-1134619",
+    "status": "ACTIVE"
+  },
+  "developer_exact_path_count": 17,
+  "product_artifact_count": 0,
+  "projection_exact_path_count": 15,
+  "projection_product_mutation_count": 0,
+  "runtime_boundary": {
+    "actual_api": "NOT_EXECUTED",
+    "actual_bff": "NOT_EXECUTED",
+    "actual_sse": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "shared_db": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "developer_runtime_boundary": "LOCAL_PRODUCTION_LIKE_API_BFF_SSE_BROWSER_ONLY"
+  },
+  "next_package": {
+    "package_id": "B-12",
+    "status": "BLOCKED_PENDING_B11_ACCEPTANCE"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/B-10_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
+      "bytes": 3341,
+      "sha256": "28CCFBBEED4A6BDC04145BE715C16B97AA76E6BEF1A70CEAF5FE0A54E98099E2"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-b11-start.json",
+      "bytes": 815,
+      "sha256": "C3A8E0574826171AD938498494C66671F965C62688283F21410C449B51DC0D19"
+    },
+    {
+      "path": "docs/work_orders/B-11_INVOCATION_PROMPT.md",
+      "bytes": 959,
+      "sha256": "1FCD913209A2B06EA0E88B752A760DC933F84656F3FCE03768C570FAA64C6A07"
+    },
+    {
+      "path": "docs/work_orders/B-11_WORK_INSTRUCTION.md",
+      "bytes": 6851,
+      "sha256": "B015056A38BD70A995D6F886231BC1733988D6D0ECCD6C2B71E4EA0B04B4B45F"
+    },
+    {
+      "path": "scripts/check_a13_repository_scan.py",
+      "bytes": 90055,
+      "sha256": "1B7D10E6C3663785EEC558F2D4F94030D015EE7C7B725FF115F8302EF7BABFA6"
+    },
+    {
+      "path": "scripts/check_g07_baseline.py",
+      "bytes": 130872,
+      "sha256": "6F992A0839E3E053B8180384ADE910AE51F1DD4C8BC97B255D93EB0AC1E31DCF"
+    },
+    {
+      "path": "scripts/check_phase_g_gate.py",
+      "bytes": 138154,
+      "sha256": "044110550530B3F2B5175D97776B5A50463EEF6FDBFB75EE537FCD160DC3B382"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 480718,
+      "sha256": "80357BBCE6C352DA561CE2B1EC5143C544EC04DD8294C0FBC97DF2CAE1240DE6"
+    },
+    {
+      "path": "tests/tooling/test_a13_repository_scan.py",
+      "bytes": 67276,
+      "sha256": "9DEF8DF24E2F445315B44C47F739D8F1280749F61A52E31C926AAB643F85BEF6"
+    },
+    {
+      "path": "tests/tooling/test_g07_baseline.py",
+      "bytes": 38285,
+      "sha256": "496F1302406AE7DD8E34A1247C3AD718D639026C02448EB3D06E1649E6D21582"
+    },
+    {
+      "path": "tests/tooling/test_phase_g_gate.py",
+      "bytes": 28693,
+      "sha256": "A0CAAEBCC3D3713710A03FC7716EB3F6F7CFB06075351D313569D753291D778D"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 117436,
+      "sha256": "111ED7C32DCEFB1ACF0073BD60723A25DD547287758FD2E5F0135BC56A859E90"
+    }
+  ],
+  "target_canonical_bytes": 1344,
+  "target_content_bytes": 1103455,
+  "target_hash": "sha256:1467BD816EB1A8C672575EAA920B0BFD7F1D0C6F5B675E5CED645CA51B08B22F",
+  "delivered_hash": "sha256:1467BD816EB1A8C672575EAA920B0BFD7F1D0C6F5B675E5CED645CA51B08B22F",
+  "content_hash": "sha256:1467BD816EB1A8C672575EAA920B0BFD7F1D0C6F5B675E5CED645CA51B08B22F",
+  "self_reference": false
+}

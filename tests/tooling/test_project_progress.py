@@ -19,6 +19,15 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 336:
+        assert progress.get("current_work_package") == "B-11"
+        assert progress.get("status") == "ACTIVE"
+        assert progress.get("active_agent") == "developer-primary-b11"
+        assert (progress.get("next_work_package") or {}) == {
+            "package_id": "B-12",
+            "status": "BLOCKED_PENDING_B11_ACCEPTANCE",
+        }
+        return True
     if progress.get("event_sequence") != 333:
         return False
     assert progress.get("current_work_package") == "B-11"
@@ -1964,6 +1973,25 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIsNone(progress["active_work_instruction"])
         self.assertEqual(["MAIN_PACKAGE_ACCEPTED"], [event["event_type"] for event in accepted])
         self.assertEqual([], checker.validate_bundle(bundle))
+
+    def test_b11_start_projects_common_api_bff_sse_security_dispatch(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 334 <= event["sequence"] <= 336]
+        self.assertEqual([], checker.validate_b11_start_projection(ROOT))
+        self.assertEqual(336, progress["event_sequence"])
+        self.assertEqual("B-11", progress["current_work_package"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("developer-primary-b11", progress["active_agent"])
+        self.assertEqual("WI-B-11-20260821-001", progress["active_work_instruction"]["artifact_id"])
+        self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(1, progress["write_lease"]["write_epoch"])
+        self.assertEqual({"package_id": "B-12", "status": "BLOCKED_PENDING_B11_ACCEPTANCE"}, progress["next_work_package"])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [event["event_type"] for event in events],
+        )
 
 if __name__ == "__main__":
     unittest.main()

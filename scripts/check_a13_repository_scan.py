@@ -209,8 +209,8 @@ def _validate_revision2_manifest(
         errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     b10_phase_projection = (
-        progress.get("event_sequence") in (315, 318, 322, 325, 329, 332, 333)
-        and progress.get("current_work_package") == ("B-11" if progress.get("event_sequence") == 333 else "B-10")
+        progress.get("event_sequence") in (315, 318, 322, 325, 329, 332, 333, 336)
+        and progress.get("current_work_package") == ("B-11" if progress.get("event_sequence") in (333, 336) else "B-10")
         and progress.get("status") == ("READY" if progress.get("event_sequence") == 333 else ("TEST_REVIEW" if progress.get("event_sequence") in (318, 325, 332) else "ACTIVE"))
         and (
             not changed_paths
@@ -1334,6 +1334,19 @@ def validate_b10_start_projection(root: Path) -> list[str]:
     if progress.get("event_sequence") != 315 or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
     if progress.get("active_agent") != "developer-primary-b10": errors.append("B10_AGENT_INVALID")
     if [event["event_type"] for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]: errors.append("B10_EVENT_ORDER_INVALID")
+    return errors
+
+
+def validate_b11_start_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal = [event for event in events if 334 <= event["sequence"] <= 336]
+    errors = []
+    if progress.get("event_sequence") != 336 or progress.get("current_work_package") != "B-11" or progress.get("status") != "ACTIVE": errors.append("B11_PHASE_PROJECTION_INVALID")
+    if progress.get("active_agent") != "developer-primary-b11": errors.append("B11_AGENT_INVALID")
+    if (progress.get("active_work_instruction") or {}).get("artifact_id") != "WI-B-11-20260821-001": errors.append("B11_WORK_INSTRUCTION_INVALID")
+    if [event["event_type"] for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]: errors.append("B11_EVENT_ORDER_INVALID")
+    if (progress.get("next_work_package") or {}) != {"package_id": "B-12", "status": "BLOCKED_PENDING_B11_ACCEPTANCE"}: errors.append("B12_BOUNDARY_INVALID")
     return errors
 
 
