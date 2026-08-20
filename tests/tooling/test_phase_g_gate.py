@@ -12,6 +12,13 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 343:
+        assert progress.get("current_work_package") == "B-11"
+        assert progress.get("status") == "ACTIVE"
+        assert progress.get("active_agent") == "developer-primary-b11"
+        assert (progress.get("active_work_instruction") or {}).get("result_status") == "REWORK_IN_PROGRESS"
+        assert (progress.get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_B11_ACCEPTANCE"
+        return True
     if progress.get("event_sequence") == 339:
         assert progress.get("current_work_package") == "B-11"
         assert progress.get("status") == "TEST_REVIEW"
@@ -490,8 +497,10 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], self.checker.validate_b11_start_projection(ROOT))
 
     def test_b11_completion_preserves_a_gate_and_blocks_b12(self):
-        report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 339:
+            return
+        report = self.validate()
         self.assertEqual([], report["errors"])
         self.assertEqual(339, progress["event_sequence"])
         self.assertEqual("B-11", progress["current_work_package"])
@@ -499,6 +508,17 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
         self.assertEqual("BLOCKED_PENDING_B11_ACCEPTANCE", progress["next_work_package"]["status"])
         self.assertEqual([], self.checker.validate_b11_completion_projection(ROOT))
+
+    def test_b11_rework_start_preserves_a_gate_and_blocks_b12(self):
+        report = self.validate()
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual([], report["errors"])
+        self.assertEqual(343, progress["event_sequence"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual(1, progress["valid_failure_count"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertEqual("BLOCKED_PENDING_B11_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual([], self.checker.validate_b11_rework_start_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

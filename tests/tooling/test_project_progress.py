@@ -19,6 +19,13 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 343:
+        assert progress.get("current_work_package") == "B-11"
+        assert progress.get("status") == "ACTIVE"
+        assert progress.get("active_agent") == "developer-primary-b11"
+        assert (progress.get("active_work_instruction") or {}).get("result_status") == "REWORK_IN_PROGRESS"
+        assert (progress.get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_B11_ACCEPTANCE"
+        return True
     if progress.get("event_sequence") == 339:
         assert progress.get("current_work_package") == "B-11"
         assert progress.get("status") == "TEST_REVIEW"
@@ -2004,6 +2011,8 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
+        if progress.get("event_sequence", 0) > 339:
+            return
         events = [event for event in bundle["events"]["events"] if 337 <= event["sequence"] <= 339]
         self.assertEqual([], checker.validate_b11_completion_projection(ROOT))
         self.assertEqual(339, progress["event_sequence"])
@@ -2017,6 +2026,25 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5", progress["active_work_instruction"]["developer_target_hash"])
         self.assertEqual("BLOCKED_PENDING_B11_ACCEPTANCE", progress["next_work_package"]["status"])
         self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+
+    def test_b11_rework_start_accepts_scope_failure_and_issues_epoch2_leases(self) -> None:
+        """Dropping the accepted failure or either epoch-2 lease must fail this projection."""
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 340 <= event["sequence"] <= 343]
+        self.assertEqual([], checker.validate_b11_rework_start_projection(ROOT))
+        self.assertEqual(343, progress["event_sequence"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
+        self.assertEqual(1, progress["valid_failure_count"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual("BLOCKED_PENDING_B11_ACCEPTANCE", progress["next_work_package"]["status"])
+        self.assertEqual(
+            ["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
+            [event["event_type"] for event in events],
+        )
 
 if __name__ == "__main__":
     unittest.main()

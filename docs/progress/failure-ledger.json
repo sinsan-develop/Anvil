@@ -519,6 +519,29 @@
       "accepted_sequence": 2,
       "takeover_status": "NOT_REQUIRED",
       "independent_retest_status": "R3_PENDING"
+    },
+    {
+      "entry_id": "failure-b11-independent-test-r1",
+      "step_lineage_id": "B-11",
+      "failure_fingerprint": "BLK-B11-001-SCOPE-AUTHORIZATION-NOT-ENFORCED",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "BLK-B11-001"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 1,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "EFBE6313A9BFF589702149E7042FDA127DF99CA323FD864C8EC16EA72D07441C"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R2_PENDING"
     }
   ]
 }

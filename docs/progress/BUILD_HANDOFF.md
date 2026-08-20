@@ -1,3 +1,11 @@
+# B-11 R2 authorization 재작업 시작 — sequence 343
+
+- 독립 Tester report SHA `EFBE6313A9BFF589702149E7042FDA127DF99CA323FD864C8EC16EA72D07441C`의 `FAILURE_REPORT / REWORK_REQUIRED / CRITICAL`을 유효 실패 1회로 수용했다. fingerprint는 `BLK-B11-001-SCOPE-AUTHORIZATION-NOT-ENFORCED`다.
+- seq340→343은 `FAILURE_REPORT_ACCEPTED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`; `developer-primary-b11` epoch-2 worker/write lease와 기존 R1 exact17 안의 R2 exact8만 활성이다.
+- R2는 permission-only authorization을 authoritative project/environment/allowed-role resolver와 서버 측 대조로 보완한다. Approval·artifact·SSE의 wrong/missing/cross scope는 403 및 application port/SSE read 0이어야 한다.
+- 이 Main 시작 투영의 제품 mutation은 0이다. R1 exact17과 manifest target `FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5`는 predecessor evidence로 동결한다.
+- B-11은 `ACTIVE / REWORK_IN_PROGRESS / R2_PENDING`; B-12는 `BLOCKED_PENDING_B11_ACCEPTANCE`다. 실제 R2 HTTP/SSE/browser는 Developer pending이며 shared DB/WSL/ysna/production/deployment는 시작하지 않는다.
+
 # B-11 Developer 완료 → 독립 Tester 대기 — sequence 339
 
 - Developer exact17을 manifest file SHA `BE11EA4C21FC34484CDF5B4CC924CAC03E9E64940A69EE014D9CE18D5D6A0C29`, raw16 target `FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5`로 byte-frozen했다. Main completion projection의 제품 mutation은 0이다.
@@ -336,50 +344,37 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 339,
-  "status": "TEST_REVIEW",
+  "event_sequence": 343,
+  "status": "ACTIVE",
   "current_work_package": "B-11",
-  "last_event_id": "evt_b11_package_completed",
+  "last_event_id": "evt_b11_r2_package_resumed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 0,
-  "next_safe_action": "Independent Tester validates frozen B-11 exact17; B-12 remains blocked pending B-11 acceptance",
+  "valid_failure_count": 1,
+  "next_safe_action": "developer-primary-b11 executes R2 exact8 with epoch2 fencing; B-12 remains blocked pending B-11 acceptance",
   "dir_status": "CLEARED",
-  "repository_head": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
+  "repository_head": "ce8179527a64128899df21542b24f1b7f85e35b1",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
+  "repository_validated_base_commit": "ce8179527a64128899df21542b24f1b7f85e35b1",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-11_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-11_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-11_REWORK_START_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b11-completion.json",
-    "docs/validation/B-11_COMMON_API_BFF_VALIDATION.md",
-    "packages/api/__init__.py",
-    "packages/api/common.py",
-    "packages/api/fastapi_app.py",
-    "packages/api/registry.py",
-    "packages/api/security.py",
-    "packages/api/sse.py",
-    "packages/bff/__init__.py",
-    "packages/bff/client.py",
-    "pyproject.toml",
+    "docs/progress/progress-handoff-detached-digest-b11-rework-start-r2.json",
+    "docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md",
+    "docs/work_orders/B-11_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/B-11_REWORK_WORK_INSTRUCTION_R2.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/api/test_error_concurrency.py",
-    "tests/api/test_registry_openapi.py",
-    "tests/api/test_sse_resume.py",
-    "tests/api/test_web_security.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
-    "tests/tooling/test_project_progress.py",
-    "uv.lock"
+    "tests/tooling/test_project_progress.py"
   ],
   "reporting_decision": "AUTO_CONTINUE"
 }
