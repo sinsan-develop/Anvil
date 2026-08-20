@@ -209,9 +209,9 @@ def _validate_revision2_manifest(
         errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     b10_phase_projection = (
-        progress.get("event_sequence") == 315
+        progress.get("event_sequence") in (315, 318)
         and progress.get("current_work_package") == "B-10"
-        and progress.get("status") == "ACTIVE"
+        and progress.get("status") == ("ACTIVE" if progress.get("event_sequence") == 315 else "TEST_REVIEW")
         and (
             not changed_paths
             or set(progress.get("repository", {}).get("exact_allowed_paths", []))
@@ -1333,6 +1333,17 @@ def validate_b10_start_projection(root: Path) -> list[str]:
     if progress.get("event_sequence") != 315 or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
     if progress.get("active_agent") != "developer-primary-b10": errors.append("B10_AGENT_INVALID")
     if [event["event_type"] for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]: errors.append("B10_EVENT_ORDER_INVALID")
+    return errors
+
+
+def validate_b10_completion_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    manifest = json.loads((root / "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
+    errors = []
+    if progress.get("event_sequence") != 318 or progress.get("status") != "TEST_REVIEW": errors.append("B10_COMPLETION_PHASE_INVALID")
+    if manifest.get("developer_manifest_sha256") != "750AB971D95D860324656AE81CF8501C434AF78210386B277C26ACC5F791086F": errors.append("B10_COMPLETION_DEVELOPER_MANIFEST_INVALID")
+    if manifest.get("developer_target_hash") != "0DDE236523F95C995A583C580108744A656717F4D285CFE30B1ED4FC5E46C43F" or manifest.get("developer_exact_paths_frozen") is not True: errors.append("B10_COMPLETION_FREEZE_INVALID")
+    if len(progress.get("repository", {}).get("exact_allowed_paths", [])) != 28: errors.append("B10_COMPLETION_SCOPE_INVALID")
     return errors
 
 if __name__ == "__main__":

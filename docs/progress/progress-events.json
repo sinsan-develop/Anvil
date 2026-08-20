@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 315,
+  "last_sequence": 318,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -11514,6 +11514,111 @@
         "push_status": "PUSH_PENDING_MAIN",
         "upstream": "origin/main",
         "branch": "main"
+      }
+    },
+    {
+      "event_id": "evt_b10_write_lease_revoked_completion",
+      "sequence": 316,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-08-20T23:45:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "lease_id": "write-lease-b10-20260820-001",
+        "worker_lease_id": "worker-lease-b10-20260820-001",
+        "write_epoch": 1,
+        "reason": "DEVELOPER_COMPLETED_PENDING_INDEPENDENT_TEST",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b10_worker_lease_revoked_completion",
+      "sequence": 317,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-08-20T23:45:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "lease_id": "worker-lease-b10-20260820-001",
+        "lease_epoch": 1,
+        "reason": "DEVELOPER_COMPLETED_PENDING_INDEPENDENT_TEST",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b10_package_completed",
+      "sequence": 318,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-20T23:45:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-10",
+      "details": {
+        "completion_head": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
+        "completion_upstream_head": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
+        "package_status": "TEST_REVIEW",
+        "result_status": "COMPLETED",
+        "accepted": false,
+        "independent_tester_status": "PENDING",
+        "developer_actor": "developer-primary-b10",
+        "developer_manifest_ref": {
+          "path": "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+          "sha256": "750AB971D95D860324656AE81CF8501C434AF78210386B277C26ACC5F791086F"
+        },
+        "developer_target_hash": "0DDE236523F95C995A583C580108744A656717F4D285CFE30B1ED4FC5E46C43F",
+        "developer_exact_paths_frozen": true,
+        "developer_mutation": "FORBIDDEN_FROZEN_PREDECESSOR",
+        "worker_lease": null,
+        "write_lease": null,
+        "valid_failure_count": 0,
+        "actual_local_status": "PASS_DEVELOPER_EVIDENCE",
+        "actual_wsl_postgresql18": "PASS_DEVELOPER_ISOLATED_PENDING_INDEPENDENT_TEST",
+        "actual_api_status": "NOT_EXECUTED",
+        "actual_ui_status": "NOT_EXECUTED",
+        "actual_browser_status": "NOT_EXECUTED",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_ysna_status": "NOT_EXECUTED",
+        "actual_shared_db_status": "NOT_EXECUTED",
+        "actual_production_status": "NOT_EXECUTED",
+        "actual_deployment_status": "NOT_EXECUTED",
+        "next_work_package": "B-11",
+        "next_package_status": "BLOCKED_PENDING_B10_ACCEPTANCE",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
+        "push_status": "PUSH_PENDING_MAIN",
+        "exact_allowed_paths": [
+          "docs/completion_reports/B-10_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-b10-completion-test-review.json",
+          "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+          "migrations/versions/0009_intervention_budget.py",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/service.py",
+          "packages/interventions/__init__.py",
+          "packages/interventions/models.py",
+          "packages/interventions/service.py",
+          "packages/persistence/intervention_budget_repository.py",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/budget/test_atomic_reservation.py",
+          "tests/budget/test_quota_reconcile.py",
+          "tests/interventions/test_human_intervention.py",
+          "tests/interventions/test_pause_cancel_resume.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py"
+        ]
       }
     }
   ]

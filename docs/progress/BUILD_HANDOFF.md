@@ -1,5 +1,12 @@
 # Anvil Build Handoff
 
+## B-10 Developer 완료 → 독립 Tester 대기 — sequence 318
+
+- Developer exact15는 manifest file SHA `750AB971D95D860324656AE81CF8501C434AF78210386B277C26ACC5F791086F`, raw14 target `0DDE236523F95C995A583C580108744A656717F4D285CFE30B1ED4FC5E46C43F`로 byte-frozen했다. completion projection에서 제품 mutation은 0이다.
+- seq316→318로 epoch-1 write lease와 worker lease를 순서대로 회수한 뒤 `PACKAGE_COMPLETED / TEST_REVIEW / independent Tester PENDING`으로 투영했다. active agent와 두 lease는 null이다.
+- Developer 증거의 local focused, 격리 WSL PostgreSQL 18 migration·hostile·concurrency 결과는 독립 재검증 전 acceptance로 승격하지 않는다. API/UI/browser/provider/ysna/shared DB/production/deployment는 `NOT_EXECUTED`다.
+- B-11은 `BLOCKED_PENDING_B10_ACCEPTANCE`다. 다음 안전 행동은 frozen exact15에 대한 독립 Tester 검증이며 B-10 acceptance와 B-11 시작은 금지한다.
+
 ## B-10 Start — sequence 315
 
 - canonical clean/equal baseline `ac371f5743dce0fa87b3ee3b767d63c9c6102cd8`에서 seq313→315 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
@@ -285,44 +292,57 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 315,
-  "status": "ACTIVE",
+  "event_sequence": 318,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-10",
-  "last_event_id": "evt_b10_package_started",
+  "last_event_id": "evt_b10_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
   "active_lineage_valid_failure_count": 0,
   "historical_accepted_failure_count": 19,
   "dir_status": "CLEARED",
-  "repository_head": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
+  "repository_head": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
+  "repository_remote_head": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "ac371f5743dce0fa87b3ee3b767d63c9c6102cd8",
+  "repository_validated_base_commit": "9419c686c1e82823ced20c3cb9b0ddfcfa82d7ba",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b10-start.json",
-    "docs/work_orders/B-10_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-10_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b10-completion-test-review.json",
+    "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+    "migrations/versions/0009_intervention_budget.py",
+    "packages/budget/__init__.py",
+    "packages/budget/models.py",
+    "packages/budget/service.py",
+    "packages/interventions/__init__.py",
+    "packages/interventions/models.py",
+    "packages/interventions/service.py",
+    "packages/persistence/intervention_budget_repository.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/budget/test_atomic_reservation.py",
+    "tests/budget/test_quota_reconcile.py",
+    "tests/interventions/test_human_intervention.py",
+    "tests/interventions/test_pause_cancel_resume.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-start.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-10_START_EVIDENCE_MANIFEST.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-completion-test-review.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer executes WI-B-10-20260820-001 within exact 15-path lease; B-11 remains blocked pending B-10 acceptance",
+  "next_safe_action": "Independent Tester validates frozen B-10 exact15; B-11 remains blocked pending B-10 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
@@ -333,9 +353,9 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-10-20260820-001",
-  "worker_lease": "worker-lease-b10-20260820-001 / epoch-1 / ACTIVE",
-  "write_lease": "write-lease-b10-20260820-001 / epoch-1 / ACTIVE / exact15"
+  "active_work_instruction": "WI-B-10-20260820-001 / COMPLETED / PENDING",
+  "worker_lease": null,
+  "write_lease": null
 }
 ```
 

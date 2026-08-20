@@ -41,15 +41,17 @@ class PhaseGGateTests(unittest.TestCase):
 
     def assert_current_b09_start(self, progress):
         self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual("WI-B-10-20260820-001", progress["active_work_instruction"]["artifact_id"])
         if "event_sequence" in progress:
-            self.assertEqual(315, progress["event_sequence"])
-            self.assertEqual("developer-primary-b10", progress["active_agent"])
+            self.assertEqual(318, progress["event_sequence"])
+            self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+            self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
+            self.assertIsNone(progress["active_agent"])
             self.assertEqual(0, progress["valid_failure_count"])
             self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
-            self.assertEqual(1, progress["worker_lease"]["lease_epoch"])
-            self.assertEqual(1, progress["write_lease"]["write_epoch"])
+            self.assertIsNone(progress["worker_lease"])
+            self.assertIsNone(progress["write_lease"])
             self.assertEqual("B-11", progress["next_work_package"]["package_id"])
             self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
@@ -145,7 +147,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         progress = report["progress"]
         self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         actual_progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         self.assert_current_b09_start(actual_progress)
         self.assertEqual("CLEARED", actual_progress["dir_review"]["status"])
@@ -287,7 +289,7 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], report["errors"])
         self.assert_current_b09_start(progress)
         self.assertEqual("B-10", report["progress"]["current_work_package"])
-        self.assertEqual("ACTIVE", report["progress"]["status"])
+        self.assertEqual("TEST_REVIEW", report["progress"]["status"])
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
         self.assertEqual("B-11", progress["next_work_package"]["package_id"])
         self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
@@ -343,13 +345,20 @@ class PhaseGGateTests(unittest.TestCase):
 
     def test_b10_start_preserves_a_gate_and_blocks_b11(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        self.assertEqual(315, progress["event_sequence"])
-        self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assert_current_b09_start(progress)
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
-        self.assertEqual("B-11", progress["next_work_package"]["package_id"])
+
+    def test_b10_completion_preserves_a_gate_and_waits_for_independent_tester(self):
+        report = self.validate()
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual([], report["errors"])
+        self.assertEqual(318, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
         self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
-        self.assertEqual([], self.checker.validate_b10_start_projection(ROOT))
+        self.assertEqual([], self.checker.validate_b10_completion_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()
