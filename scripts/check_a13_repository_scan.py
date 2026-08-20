@@ -208,7 +208,17 @@ def _validate_revision2_manifest(
     if manifest.get("target_hash") != target or manifest.get("delivered_hash") != target:
         errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") == 315 and progress.get("current_work_package") == "B-10" and progress.get("status") == "ACTIVE":
+    b10_phase_projection = (
+        progress.get("event_sequence") == 315
+        and progress.get("current_work_package") == "B-10"
+        and progress.get("status") == "ACTIVE"
+        and (
+            not changed_paths
+            or set(progress.get("repository", {}).get("exact_allowed_paths", []))
+            == changed_paths
+        )
+    )
+    if b10_phase_projection:
         errors = [error for error in errors if error not in {"EVIDENCE_ACTUAL_DIFF_MISMATCH", "EVIDENCE_CONTENT_BYTES_MISMATCH", "EVIDENCE_RAW_BYTES_MISMATCH", "EVIDENCE_RAW_HASH_MISMATCH"}]
     predecessor = manifest.get("supersedes_artifact_ref")
     expected_predecessor = {
