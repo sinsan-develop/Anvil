@@ -215,6 +215,146 @@ class AtomicReservationTests(unittest.TestCase):
                         exposure,
                     )
 
+    @unittest.skipUnless(os.environ.get("ANVIL_B10_PG18_DSN"), "isolated PostgreSQL 18 DSN not configured")
+    def test_postgres_authoritative_final_is_unique_per_reservation(self):
+        import psycopg
+
+        dsn = os.environ["ANVIL_B10_PG18_DSN"]
+        suffix = uuid.uuid4().hex[:12]
+        task_id = f"task-b10-final-unique-{suffix}"
+        run_id = f"run-b10-final-unique-{suffix}"
+        budget_id = f"budget-b10-final-unique-{suffix}"
+        reservation_id = f"reservation-final-unique-{suffix}"
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            connection.execute(
+                "INSERT INTO tasks(task_id,project_id,repository_id,title,objective,requested_by,status) "
+                "VALUES (%s,'project-b09','repo-b09','B10 final unique','B10 final unique','developer-primary-b10','IN_PROGRESS')",
+                (task_id,),
+            )
+            connection.execute(
+                "INSERT INTO runs(run_id,task_id,baseline_id,phase,status,version) "
+                "VALUES (%s,%s,'baseline-b09','B','ACTIVE',1)",
+                (run_id, task_id),
+            )
+            connection.execute(
+                "INSERT INTO budget_ledgers(budget_id,run_id,hard_cost_limit,hard_token_limit,max_concurrent_requests) "
+                "VALUES (%s,%s,50,500,2)",
+                (budget_id, run_id),
+            )
+            connection.execute(
+                "SELECT reservation_id FROM anvil_budget_reserve(%s,%s,%s,'step-final',%s,'OPENAI','m','p1',40,400)",
+                (reservation_id, budget_id, run_id, f"request-final-unique-{suffix}"),
+            )
+            first_sql = (
+                "INSERT INTO budget_usage_receipts(usage_receipt_id,reservation_id,request_id,abort_status,actual_cost,actual_tokens,released_cost,released_tokens,payload_hash,retry_after,rate_bucket,provenance,is_authoritative_final) "
+                "VALUES (%s,%s,%s,'ABORT_CONFIRMED',12,120,28,280,%s,'30','bucket-a','provider_final_usage',true)"
+            )
+            try:
+                connection.execute(
+                    first_sql,
+                    (f"usage-u1-{suffix}", reservation_id, f"request-final-unique-{suffix}", f"payload-u1-{suffix}"),
+                )
+            except psycopg.errors.UndefinedColumn:
+                self.fail("authoritative final identity column is missing")
+            with self.assertRaises(psycopg.errors.UniqueViolation):
+                connection.execute(
+                    first_sql,
+                    (f"usage-u2-{suffix}", reservation_id, f"request-final-unique-{suffix}", f"payload-u2-{suffix}"),
+                )
+
+    @unittest.skipUnless(os.environ.get("ANVIL_B10_PG18_DSN"), "isolated PostgreSQL 18 DSN not configured")
+    def test_postgres_concurrent_distinct_final_receipts_choose_one_and_reject_new49(self):
+        import psycopg
+
+        dsn = os.environ["ANVIL_B10_PG18_DSN"]
+        suffix = uuid.uuid4().hex[:12]
+        task_id = f"task-b10-final-race-{suffix}"
+        run_id = f"run-b10-final-race-{suffix}"
+        budget_id = f"budget-b10-final-race-{suffix}"
+        reservation_id = f"reservation-final-race-{suffix}"
+        request_id = f"request-final-race-{suffix}"
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            connection.execute(
+                "INSERT INTO tasks(task_id,project_id,repository_id,title,objective,requested_by,status) "
+                "VALUES (%s,'project-b09','repo-b09','B10 final race','B10 final race','developer-primary-b10','IN_PROGRESS')",
+                (task_id,),
+            )
+            connection.execute(
+                "INSERT INTO runs(run_id,task_id,baseline_id,phase,status,version) "
+                "VALUES (%s,%s,'baseline-b09','B','ACTIVE',1)",
+                (run_id, task_id),
+            )
+            connection.execute(
+                "INSERT INTO budget_ledgers(budget_id,run_id,hard_cost_limit,hard_token_limit,max_concurrent_requests) "
+                "VALUES (%s,%s,50,500,2)",
+                (budget_id, run_id),
+            )
+            connection.execute(
+                "SELECT reservation_id FROM anvil_budget_reserve(%s,%s,%s,'step-final',%s,'OPENAI','m','p1',40,400)",
+                (reservation_id, budget_id, run_id, request_id),
+            )
+
+        connections = tuple(psycopg.connect(dsn, autocommit=True) for _ in range(8))
+        try:
+            def finalize(index: int):
+                try:
+                    row = connections[index].execute(
+                        "SELECT usage_receipt_id FROM anvil_budget_reconcile(%s,%s,%s,'ABORT_CONFIRMED',12,120,28,280,%s,'30','bucket-a','provider_final_usage')",
+                        (f"usage-race-{suffix}-{index}", reservation_id, request_id, f"payload-{suffix}-{index}"),
+                    ).fetchone()
+                except psycopg.errors.UndefinedFunction:
+                    return "FUNCTION_MISSING"
+                return None if row is None or row[0] is None else row[0]
+
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                results = tuple(pool.map(finalize, range(8)))
+        finally:
+            for connection in connections:
+                connection.close()
+
+        self.assertNotIn("FUNCTION_MISSING", results)
+        winners = tuple(item for item in results if item is not None)
+        self.assertEqual(1, len(winners))
+        winner = winners[0]
+        winner_index = int(winner.rsplit("-", 1)[-1])
+        with psycopg.connect(dsn, autocommit=True) as connection:
+            replay = connection.execute(
+                "SELECT usage_receipt_id FROM anvil_budget_reconcile(%s,%s,%s,'ABORT_CONFIRMED',12,120,28,280,%s,'30','bucket-a','provider_final_usage')",
+                (winner, reservation_id, request_id, f"payload-{suffix}-{winner_index}"),
+            ).fetchone()
+            changed_identity = connection.execute(
+                "SELECT usage_receipt_id FROM anvil_budget_reconcile(%s,%s,%s,'ABORT_CONFIRMED',12,120,28,280,%s,'30','bucket-a','provider_final_usage')",
+                (f"usage-changed-{suffix}", reservation_id, request_id, f"payload-{suffix}-{winner_index}"),
+            ).fetchone()
+            changed_payload = connection.execute(
+                "SELECT usage_receipt_id FROM anvil_budget_reconcile(%s,%s,%s,'ABORT_CONFIRMED',12,120,28,280,%s,'30','bucket-a','provider_final_usage')",
+                (winner, reservation_id, request_id, f"payload-changed-{suffix}"),
+            ).fetchone()
+            changed_actual_release = connection.execute(
+                "SELECT usage_receipt_id FROM anvil_budget_reconcile(%s,%s,%s,'ABORT_CONFIRMED',1,10,39,390,%s,'30','bucket-a','provider_final_usage')",
+                (winner, reservation_id, request_id, f"payload-{suffix}-{winner_index}"),
+            ).fetchone()
+            new49 = connection.execute(
+                "SELECT reservation_id FROM anvil_budget_reserve(%s,%s,%s,'step-new49',%s,'OPENAI','m','p1',49,490)",
+                (f"reservation-new49-{suffix}", budget_id, run_id, f"request-new49-{suffix}"),
+            ).fetchone()
+            final_state = connection.execute(
+                "SELECT consumed_cost,consumed_tokens,released_cost,released_tokens,status FROM budget_reservations WHERE reservation_id=%s",
+                (reservation_id,),
+            ).fetchone()
+            receipt_count = connection.execute(
+                "SELECT count(*) FROM budget_usage_receipts WHERE reservation_id=%s AND is_authoritative_final",
+                (reservation_id,),
+            ).fetchone()[0]
+
+        self.assertEqual(winner, replay[0])
+        self.assertIsNone(changed_identity[0])
+        self.assertIsNone(changed_payload[0])
+        self.assertIsNone(changed_actual_release[0])
+        self.assertIsNone(new49[0])
+        self.assertEqual((Decimal("12"), 120, Decimal("28"), 280, "CONSUMED"), final_state)
+        self.assertEqual(1, receipt_count)
+
 
 if __name__ == "__main__":
     unittest.main()

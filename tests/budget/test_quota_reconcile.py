@@ -173,6 +173,102 @@ class QuotaReconcileTests(unittest.TestCase):
         self.assertEqual(Decimal("28.00"), reservation.released_cost)
         self.assertEqual(280, reservation.released_tokens)
 
+    def test_consumed_reservation_rejects_distinct_final_identity_and_preserves_new49_exposure(self):
+        service = BudgetService(InMemoryInterventionBudgetRepository())
+        service.create_budget(BudgetLimit("budget-terminal", Decimal("50.00"), 500, 2))
+        service.reserve(
+            BudgetRequest(
+                "reservation-terminal", "budget-terminal", "run-q", "step-terminal", "request-terminal",
+                "ANTHROPIC", "model-q", "price-v2", Decimal("40.00"), 400,
+            )
+        )
+        canonical = UsageReceipt(
+            "usage-terminal-u1", "reservation-terminal", "request-terminal", "ABORT_CONFIRMED",
+            Decimal("12.00"), 120, "30", "bucket-a", "provider_final_usage",
+        )
+        first = service.reconcile(canonical)
+        self.assertEqual(first, service.reconcile(canonical))
+        changed_finals = (
+            UsageReceipt(
+                "usage-terminal-u2-equal", "reservation-terminal", "request-terminal", "ABORT_CONFIRMED",
+                Decimal("12.00"), 120, "30", "bucket-a", "provider_final_usage",
+            ),
+            UsageReceipt(
+                "usage-terminal-u2-lower", "reservation-terminal", "request-terminal", "ABORT_CONFIRMED",
+                Decimal("1.00"), 10, "30", "bucket-a", "provider_final_usage",
+            ),
+            UsageReceipt(
+                "usage-terminal-u2-higher", "reservation-terminal", "request-terminal", "ABORT_CONFIRMED",
+                Decimal("20.00"), 200, "30", "bucket-a", "provider_final_usage",
+            ),
+            UsageReceipt(
+                "usage-terminal-u2-payload", "reservation-terminal", "request-terminal", "ABORT_CONFIRMED",
+                Decimal("12.00"), 120, "60", "bucket-b", "changed_payload",
+            ),
+        )
+        for changed in changed_finals:
+            with self.subTest(receipt=changed.usage_receipt_id):
+                with self.assertRaises(UsageReconciliationRequired):
+                    service.reconcile(changed)
+
+        snapshot = service.snapshot("budget-terminal")
+        self.assertEqual(Decimal("12.00"), snapshot.consumed_cost)
+        self.assertEqual(120, snapshot.consumed_tokens)
+        self.assertEqual(Decimal("0"), snapshot.reserved_cost)
+        reservation = service.reservation("reservation-terminal")
+        self.assertEqual(Decimal("28.00"), reservation.released_cost)
+        self.assertEqual(280, reservation.released_tokens)
+        with self.assertRaises(BudgetReservationFailed):
+            service.reserve(
+                BudgetRequest(
+                    "reservation-new49", "budget-terminal", "run-q", "step-new49", "request-new49",
+                    "ANTHROPIC", "model-q", "price-v2", Decimal("49.00"), 490,
+                )
+            )
+
+    def test_concurrent_distinct_final_receipts_choose_one_immutable_canonical_final(self):
+        service = BudgetService(InMemoryInterventionBudgetRepository())
+        service.create_budget(BudgetLimit("budget-final-race", Decimal("50.00"), 500, 2))
+        service.reserve(
+            BudgetRequest(
+                "reservation-final-race", "budget-final-race", "run-q", "step-race", "request-race",
+                "ANTHROPIC", "model-q", "price-v2", Decimal("40.00"), 400,
+            )
+        )
+        receipts = tuple(
+            UsageReceipt(
+                f"usage-race-{index}", "reservation-final-race", "request-race", "ABORT_CONFIRMED",
+                Decimal("12.00"), 120, "30", "bucket-a", "provider_final_usage",
+            )
+            for index in range(8)
+        )
+
+        def reconcile(receipt):
+            try:
+                return service.reconcile(receipt)
+            except UsageReconciliationRequired:
+                return None
+
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = tuple(pool.map(reconcile, receipts))
+
+        winners = tuple(item for item in results if item is not None)
+        self.assertEqual(1, len(winners))
+        winner = winners[0]
+        winning_receipt = next(item for item in receipts if item.usage_receipt_id == winner.usage_receipt_id)
+        self.assertEqual(winner, service.reconcile(winning_receipt))
+        snapshot = service.snapshot("budget-final-race")
+        self.assertEqual(Decimal("12.00"), snapshot.consumed_cost)
+        self.assertEqual(120, snapshot.consumed_tokens)
+        self.assertEqual(Decimal("28.00"), service.reservation("reservation-final-race").released_cost)
+        with self.assertRaises(BudgetReservationFailed):
+            service.reserve(
+                BudgetRequest(
+                    "reservation-race-new39", "budget-final-race", "run-q", "step-new39", "request-new39",
+                    "ANTHROPIC", "model-q", "price-v2", Decimal("39.00"), 390,
+                )
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

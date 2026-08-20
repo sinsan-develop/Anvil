@@ -315,46 +315,49 @@
 ```json anvil-recovery-summary
 {
   "schema_version": "1.0.0",
-  "event_sequence": 329,
-  "status": "ACTIVE",
+  "event_sequence": 332,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-10",
-  "last_event_id": "evt_b10_rework_resumed_r3",
+  "last_event_id": "evt_b10_package_completed_r3",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 2,
   "active_lineage_valid_failure_count": 2,
   "historical_accepted_failure_count": 19,
   "dir_status": "CLEARED",
-  "repository_head": "5f644f45835329ef0195dae948d3c55ba7ff15af",
+  "repository_head": "4cc75da50e9eb16988bc07ab7b1f237bd2b6b169",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "5f644f45835329ef0195dae948d3c55ba7ff15af",
+  "repository_remote_head": "4cc75da50e9eb16988bc07ab7b1f237bd2b6b169",
   "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "5f644f45835329ef0195dae948d3c55ba7ff15af",
+  "repository_validated_base_commit": "4cc75da50e9eb16988bc07ab7b1f237bd2b6b169",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R3.json",
+    "docs/completion_reports/B-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b10-rework-start-r3.json",
-    "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
-    "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R3.md",
-    "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R3.md",
+    "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r3.json",
+    "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
+    "migrations/versions/0009_intervention_budget.py",
+    "packages/persistence/intervention_budget_repository.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/budget/test_atomic_reservation.py",
+    "tests/budget/test_quota_reconcile.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-rework-start-r3.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R3.json",
+  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r3.json",
+  "current_progress_manifest_path": "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
   "a01_precondition_status": "ACCEPTED",
   "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Developer executes B-10 R3 exact7 under epoch3 tokens; B-11 remains blocked pending B-10 acceptance",
+  "next_safe_action": "Independent Tester performs B-10 R3 retest against frozen exact7; B-11 remains blocked pending B-10 acceptance",
   "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
   "wsl_read_only_probe": "PASS_AVAILABLE",
   "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
@@ -365,7 +368,7 @@
   "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
   "b01_start_allowed": true,
   "b01_started": true,
-  "active_work_instruction": "WI-B-10-20260821-002 / COMPLETED / PENDING_RETEST",
+  "active_work_instruction": "WI-B-10-20260821-003 / COMPLETED / PENDING_RETEST",
   "worker_lease": null,
   "write_lease": null
 }
@@ -829,6 +832,13 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 과거 EvidenceManifest는 재작성하지 않고, 추적·clean successor registry와 `GIT_EOL_PORTABILITY_R1`의 exact LF canonical mapping으로 Windows mixed-EOL 및 새 LF clone을 동일 의미 증거로 검증한다.
 - R5 실제 browser UI/same-origin/hostile finding은 CLOSED 상태를 보존한다. 실제 Provider·production API/DB/SSE·deploy·DIR은 `NOT_EXECUTED`다.
 - A-15는 A-14 독립 R6 PASS와 Main acceptance 전까지 `BLOCKED_PENDING_A14_ACCEPTANCE`다.
+
+## B-10 R3 Developer 완료 → 독립 재검증 대기
+
+- sequence 330~332로 epoch-3 write lease와 worker lease를 순서대로 회수하고 `PACKAGE_COMPLETED / TEST_REVIEW / PENDING_RETEST`로 투영했다.
+- Developer exact7은 manifest SHA-256 `5F0922A70F63E19D51306CCF43B67902BF9B82354E1F229616404DB5C2DB02A8`, target `5DEF1A06A2DC87BB074BA18F1BC346B098400B61741208BF1CF419B94BD21CD4`로 byte-frozen이며 Main projection의 제품 mutation은 0이다.
+- R3 Developer evidence는 reservation-level authoritative final 불변성, exact canonical replay idempotency, distinct receipt/payload/actual/release 거부, PostgreSQL concurrency identity를 local·격리 PG18 범위에서 PASS로 기록한다. 독립 Tester의 R3 재검증 전 acceptance로 승격하지 않는다.
+- 실제 API·UI·browser·Provider·shared DB·ysna·production·deployment는 `NOT_EXECUTED`이며 B-11은 `BLOCKED_PENDING_B10_ACCEPTANCE`를 유지한다.
 
 ## A-14 R6 Main acceptance
 

@@ -102,7 +102,7 @@ def _overlay_r3_projection_bundle(clone: Path) -> None:
         return
     elif progress.get("event_sequence") == 237:
         paths = progress["write_lease"]["paths"]
-    elif progress.get("event_sequence") in (240, 241, 244, 247, 248, 249, 252, 257, 260, 261, 264, 267, 268, 271, 274, 275, 278, 281, 282, 290, 295, 301, 304, 308, 311, 312, 318, 322, 325):
+    elif progress.get("event_sequence") in (240, 241, 244, 247, 248, 249, 252, 257, 260, 261, 264, 267, 268, 271, 274, 275, 278, 281, 282, 290, 295, 301, 304, 308, 311, 312, 318, 322, 325, 329, 332):
         paths = progress["repository"]["exact_allowed_paths"]
     elif progress.get("event_sequence") in (175, 181, 184, 186, 192, 196, 199, 203, 206, 207, 210, 213, 217, 220, 221, 224, 227, 230, 233):
         paths = progress["repository"]["exact_allowed_paths"]
@@ -604,17 +604,17 @@ class A13RepositoryScanHostileTests(unittest.TestCase):
 
 class A13RepositoryScanArtifactTests(unittest.TestCase):
     def assert_current_b09_start(self, progress):
-        self.assertEqual(329, progress["event_sequence"])
+        self.assertEqual(332, progress["event_sequence"])
         self.assertEqual("B-10", progress["current_work_package"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual("WI-B-10-20260821-003", progress["active_work_instruction"]["artifact_id"])
-        self.assertEqual("REWORK_IN_PROGRESS", progress["active_work_instruction"]["result_status"])
-        self.assertEqual("R3_PENDING", progress["active_work_instruction"]["independent_tester_status"])
-        self.assertEqual("developer-primary-b10", progress["active_agent"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("PENDING_RETEST", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertIsNone(progress["active_agent"])
         self.assertEqual(2, progress["valid_failure_count"])
         self.assertEqual(4, progress["historical_failure_counts_by_lineage"]["B-09"])
-        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual("B-11", progress["next_work_package"]["package_id"])
         self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
@@ -1188,8 +1188,8 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
         self.assert_current_b09_start(progress)
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
-        self.assertEqual(17, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(20, len(progress["repository"]["exact_allowed_paths"]))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b09_r5_acceptance_selects_successor_with_exact41_projection(self):
@@ -1201,7 +1201,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         checker = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
-        self.assertEqual(17, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertEqual(20, len(progress["repository"]["exact_allowed_paths"]))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b10_start_selects_phase_aware_successor_projection(self):
@@ -1221,11 +1221,11 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         checker = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
-        self.assertEqual(329, progress["event_sequence"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual(17, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertEqual(332, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual(20, len(progress["repository"]["exact_allowed_paths"]))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertIsNone(progress["write_lease"])
 
     def test_b10_rework_r2_selects_failure_report_successor_projection(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
@@ -1235,9 +1235,9 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         checker = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
-        self.assertEqual(329, progress["event_sequence"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual(17, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertEqual(332, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual(20, len(progress["repository"]["exact_allowed_paths"]))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
         self.assertEqual([], checker.validate_b10_rework_completion_projection(ROOT))
 
@@ -1247,9 +1247,9 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         checker = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
-        self.assertEqual(329, progress["event_sequence"])
-        self.assertEqual("ACTIVE", progress["status"])
-        self.assertEqual(17, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertEqual(332, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual(20, len(progress["repository"]["exact_allowed_paths"]))
         self.assertEqual([], checker.validate_b10_rework_completion_projection(ROOT))
 
     def test_b10_rework_r3_selects_second_failure_successor_projection(self):
@@ -1258,13 +1258,25 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         checker = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = checker
         spec.loader.exec_module(checker)
-        self.assertEqual(329, progress["event_sequence"])
-        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual(332, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual(2, progress["valid_failure_count"])
-        self.assertEqual(17, len(progress["repository"]["exact_allowed_paths"]))
-        self.assertEqual(3, progress["worker_lease"]["lease_epoch"])
-        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertEqual(20, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
         self.assertEqual([], checker.validate_b10_r3_rework_start_projection(ROOT))
+
+    def test_b10_rework_r3_completion_selects_frozen_raw6_successor_projection(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        spec = importlib.util.spec_from_file_location("a13_checker_b10_r3_completion", CHECKER_PATH)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        self.assertEqual(332, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual(20, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertEqual("5DEF1A06A2DC87BB074BA18F1BC346B098400B61741208BF1CF419B94BD21CD4", progress["active_work_instruction"]["developer_target_hash"])
+        self.assertEqual([], checker.validate_b10_r3_rework_completion_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

@@ -209,9 +209,9 @@ def _validate_revision2_manifest(
         errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     b10_phase_projection = (
-        progress.get("event_sequence") in (315, 318, 322, 325, 329)
+        progress.get("event_sequence") in (315, 318, 322, 325, 329, 332)
         and progress.get("current_work_package") == "B-10"
-        and progress.get("status") == ("TEST_REVIEW" if progress.get("event_sequence") in (318, 325) else "ACTIVE")
+        and progress.get("status") == ("TEST_REVIEW" if progress.get("event_sequence") in (318, 325, 332) else "ACTIVE")
         and (
             not changed_paths
             or set(progress.get("repository", {}).get("exact_allowed_paths", []))
@@ -1327,7 +1327,7 @@ def main(argv: list[str] | None = None) -> int:
 
 def validate_b10_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") == 329: return []
+    if progress.get("event_sequence") in (329, 332): return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 313 <= event["sequence"] <= 315]
     errors = []
@@ -1339,7 +1339,7 @@ def validate_b10_start_projection(root: Path) -> list[str]:
 
 def validate_b10_completion_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") == 329: return []
+    if progress.get("event_sequence") in (329, 332): return []
     manifest = json.loads((root / "docs/evidence/manifests/B-10_COMPLETION_PROGRESS_MANIFEST.json").read_text(encoding="utf-8"))
     errors = []
     if progress.get("event_sequence") != 318 or progress.get("status") != "TEST_REVIEW": errors.append("B10_COMPLETION_PHASE_INVALID")
@@ -1351,7 +1351,7 @@ def validate_b10_completion_projection(root: Path) -> list[str]:
 
 def validate_b10_rework_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") == 329: return []
+    if progress.get("event_sequence") in (329, 332): return []
     manifest = json.loads((root / "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json").read_text(encoding="utf-8"))
     errors = []
     if progress.get("event_sequence") != 322 or progress.get("status") != "ACTIVE": errors.append("B10_R2_PHASE_INVALID")
@@ -1364,7 +1364,7 @@ def validate_b10_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b10_rework_completion_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") == 329: return []
+    if progress.get("event_sequence") in (329, 332): return []
     manifest = json.loads((root / "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json").read_text(encoding="utf-8"))
     errors = []
     if progress.get("event_sequence") != 325 or progress.get("status") != "TEST_REVIEW": errors.append("B10_R2_COMPLETION_PHASE_INVALID")
@@ -1377,6 +1377,7 @@ def validate_b10_rework_completion_projection(root: Path) -> list[str]:
 
 def validate_b10_r3_rework_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 332: return []
     manifest = json.loads((root / "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R3.json").read_text(encoding="utf-8"))
     worker = progress.get("worker_lease") or {}
     write = progress.get("write_lease") or {}
@@ -1386,6 +1387,18 @@ def validate_b10_r3_rework_start_projection(root: Path) -> list[str]:
     if manifest.get("tester_report_sha256") != "23865D1722B231F04C7087328874A41D19431E5EE28C90AC71A3FACDA9D4F854": errors.append("B10_R3_REPORT_INVALID")
     if manifest.get("developer_r3_exact_path_count") != 7 or len(progress.get("repository", {}).get("exact_allowed_paths", [])) != 17: errors.append("B10_R3_SCOPE_INVALID")
     if worker.get("lease_epoch") != 3 or write.get("write_epoch") != 3: errors.append("B10_R3_FENCING_INVALID")
+    return errors
+
+
+def validate_b10_r3_rework_completion_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    manifest = json.loads((root / "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json").read_text(encoding="utf-8"))
+    errors = []
+    if progress.get("event_sequence") != 332 or progress.get("status") != "TEST_REVIEW": errors.append("B10_R3_COMPLETION_PHASE_INVALID")
+    if progress.get("worker_lease") is not None or progress.get("write_lease") is not None: errors.append("B10_R3_COMPLETION_LEASE_INVALID")
+    if manifest.get("developer_manifest_sha256") != "5F0922A70F63E19D51306CCF43B67902BF9B82354E1F229616404DB5C2DB02A8": errors.append("B10_R3_COMPLETION_MANIFEST_INVALID")
+    if manifest.get("developer_target_hash") != "5DEF1A06A2DC87BB074BA18F1BC346B098400B61741208BF1CF419B94BD21CD4" or manifest.get("developer_raw_artifact_count") != 6: errors.append("B10_R3_COMPLETION_FREEZE_INVALID")
+    if len(progress.get("repository", {}).get("exact_allowed_paths", [])) != 20: errors.append("B10_R3_COMPLETION_SCOPE_INVALID")
     return errors
 
 if __name__ == "__main__":

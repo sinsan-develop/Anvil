@@ -42,6 +42,7 @@ class InMemoryInterventionBudgetRepository:
         self._limits: dict[str, BudgetLimit] = {}
         self._reservations: dict[str, BudgetReservation] = {}
         self._usage: dict[str, tuple[UsageReceipt, ReconciliationReceipt]] = {}
+        self._finalizations: dict[str, tuple[UsageReceipt, ReconciliationReceipt]] = {}
         self._allowed: dict[str, bool] = {}
         self._lock = RLock()
 
@@ -128,9 +129,16 @@ class InMemoryInterventionBudgetRepository:
                 if previous[0] != receipt:
                     raise ReconciliationConflict("usage receipt id is bound to different content")
                 return previous[1]
+            finalization = self._finalizations.get(receipt.reservation_id)
+            if finalization is not None:
+                if finalization[0] != receipt:
+                    raise ReconciliationConflict("reservation is bound to another authoritative final receipt")
+                return finalization[1]
             reservation = self._reservations[receipt.reservation_id]
             if reservation.request_id != receipt.request_id:
                 raise ReconciliationConflict("usage receipt request does not match reservation")
+            if reservation.status is ReservationStatus.CONSUMED:
+                raise ReconciliationConflict("consumed reservation has no mutable final state")
             if receipt.actual_cost is None or receipt.actual_tokens is None:
                 self._reservations[receipt.reservation_id] = replace(
                     reservation, status=ReservationStatus.RECONCILIATION_REQUIRED
@@ -166,6 +174,7 @@ class InMemoryInterventionBudgetRepository:
             )
             self._reservations[receipt.reservation_id] = updated
             self._usage[receipt.usage_receipt_id] = (receipt, result)
+            self._finalizations[receipt.reservation_id] = (receipt, result)
             return result
 
     def set_new_action_allowed(self, budget_id: str, allowed: bool) -> BudgetSnapshot:

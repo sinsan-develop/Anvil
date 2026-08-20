@@ -1,69 +1,89 @@
-# B-10 R2 Unresolved Usage Admission Validation
+# B-10 R3 Immutable Reservation Finalization Validation
 
-## Authority and write boundary
+## Authority and boundary
 
-- WorkInstruction: `WI-B-10-20260821-002`, SHA-256 `DFFCE00D420BC0DDC04C48B18856D111397C8DDC67155EE3DE702B8C379E6D21`.
-- Invocation SHA-256: `489222E413D61AEBEC177E42CDBBCA88AE4380644F5A6534511BC5B12C0F9674`.
-- Independent report SHA-256: `B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB`.
-- Canonical start: `main=origin/main=a5515ea94d3b5a6e185c0521a0de4906d6e21dae`, clean. R2 product baseline `e9dd00983775a5b1b2849f6be35304e34ef4fa17` is its ancestor; the intervening diff contains only the approved R2 progress/report/WI/checker projection.
-- Lease: epoch 2 execution token `b10-execution-fence-epoch-2-e9dd009`, write token `b10-write-fence-epoch-2-e9dd009`, Developer exact7.
-- Finding: `BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE`.
+- WorkInstruction: `WI-B-10-20260821-003`, SHA-256 `193734C3AD871D8042C0440342763A289DDCA70E1F862A143B357A1B8AABCF2D`.
+- Invocation SHA-256: `27D14DCAAF638FF6D0637A266BCCB64DB93D0D633925703F8C47ECC5F8E3A642`.
+- Independent R2 retest report SHA-256: `23865D1722B231F04C7087328874A41D19431E5EE28C90AC71A3FACDA9D4F854`.
+- Start: `main=origin/main=4cc75da50e9eb16988bc07ab7b1f237bd2b6b169`, clean. Product baseline `5f644f45835329ef0195dae948d3c55ba7ff15af` is an ancestor; the intervening paths are the approved R3 progress/report/WI/checker projection and contain no product mutation.
+- Lease: epoch 3 execution token `b10-execution-fence-epoch-3-5f644f4`, write token `b10-write-fence-epoch-3-5f644f4`, Developer exact7.
+- Finding: `BLK-B10-IT-001-R2`, lineage `BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE`, valid failure count `2`.
 
-Only the two budget implementation paths, two budget test paths, and three R2 evidence paths were written. The other R1 exact15 paths, authority, progress/HANDOFF, Tester report, checkers, Git index/refs, B-11/B-12, shared DB, ysna, production, and deployment remained read-only.
+Only the R3 exact7 paths were written. Other R1/B-10 paths, authority, progress/HANDOFF, Tester report, checkers, Git index/refs, B-11/B-12, Provider adapter, shared DB, ysna, production, and deployment stayed read-only.
 
-## Root cause and TDD evidence
+## Root cause and minimal change
 
-Both admission implementations selected active forecast exposure only when status was `RESERVED`. An unknown final usage receipt retained `reserved_cost` and `reserved_tokens` on the row but changed status to `RECONCILIATION_REQUIRED`, so cost, tokens, and concurrency disappeared from the admission snapshot.
+R2 keyed final receipt idempotency only by `usage_receipt_id`. A distinct receipt ID for the same already consumed reservation therefore bypassed `_usage`, recalculated release, and overwrote terminal consumed state. PostgreSQL had atomic reservation admission but no reservation-level authoritative-final identity or reconcile function.
 
-Regression tests were added before production changes.
+R3 makes authoritative finalization a reservation terminal:
 
-1. In-memory RED:
-   - Command: `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests\budget\test_quota_reconcile.py::QuotaReconcileTests::test_unknown_usage_remains_full_admission_exposure_until_final_receipt tests\budget\test_quota_reconcile.py::QuotaReconcileTests::test_final_receipt_replay_and_concurrent_reserve_release_exposure_once -q`
-   - Result: exit `1`, `1 failed, 1 passed`.
-   - Expected `reserved_cost=40.00`; actual was `0` after `ABORT_UNKNOWN`.
-2. PostgreSQL 18 RED:
-   - After actual `0008_queue_worker_leases -> 0009_intervention_budget`, the DSN test `test_postgres_unresolved_usage_remains_in_atomic_admission_totals` exited `1`.
-   - The unresolved `40/400` row remained present, but the second reservation was accepted instead of returning `NULL`.
+- the in-memory repository binds one immutable `(UsageReceipt, ReconciliationReceipt)` pair per reservation under its existing `RLock`;
+- exact full canonical replay returns that same result without mutation;
+- different receipt ID, request/payload fields, actual usage, or derived release fails closed;
+- PostgreSQL adds backward-compatible receipt columns, a partial unique authoritative-final index per reservation, and `anvil_budget_reconcile()`;
+- the function locks the reservation row, validates actual plus release against the forecast, stores one final identity, and returns `NULL` for any noncanonical replay.
 
-The minimal correction was limited to two filters:
+The migration revision remains `0009_intervention_budget`. R2 unresolved `RECONCILIATION_REQUIRED` exposure remains active in cost/token/concurrency accounting.
 
-- in-memory active exposure now includes `RESERVED` and `RECONCILIATION_REQUIRED`;
-- `anvil_budget_reserve()` uses the same two statuses inside the ledger row lock.
+## TDD RED
 
-Mutation boundary: removing either added status makes its corresponding local or PostgreSQL regression fail. No public model, service API, table, column, migration revision, or R1 intervention behavior changed.
+Production bytes were unchanged when these commands ran.
 
-## GREEN and regression results
+1. Local:
+   - `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests\budget\test_quota_reconcile.py::QuotaReconcileTests::test_consumed_reservation_rejects_distinct_final_identity_and_preserves_new49_exposure tests\budget\test_quota_reconcile.py::QuotaReconcileTests::test_concurrent_distinct_final_receipts_choose_one_immutable_canonical_final -q`
+   - Exit `1`, `2 failed`: distinct final was accepted; concurrent distinct receipts produced eight winners instead of one.
+2. Actual PostgreSQL 18:
+   - After `0008_queue_worker_leases ->` pre-R3 `0009_intervention_budget`, the two new PG tests exited `1`, `2 failed`.
+   - The authoritative-final schema column and `anvil_budget_reconcile()` were both absent.
 
-- In-memory focused reconciliation after the fix: `4 passed`.
-- Targeted PostgreSQL unresolved admission: `1 passed`; cost, token, and concurrency were exercised as three independent hard-limit scenarios.
-- DSN-enabled focused intervention/budget suite: `15 passed`.
-- Local focused without DSN: `13 passed, 2 skipped`; both skips are explicitly DSN-gated PostgreSQL tests.
-- Canonical core with `--import-mode=importlib`: `115 passed, 4 skipped`; skips are only B-09/B-10 DSN-gated tests.
-- Full tooling on the authorized active dirty R2 worktree: `347 passed, 36 failed`, exit `1`. Failures are confined to A-13 frozen raw/diff comparisons (`EVIDENCE_ACTUAL_DIFF_MISMATCH`, content/raw byte/hash mismatch) and project-progress `GIT_DESCENDANT_WORKTREE_DIRTY` plus `PRG_REFERENCED_HASH_MISMATCH`. The latter is expected because progress still references the frozen R1 Developer manifest while R2 replaces that manifest under its active write lease. These checks passed `379/379` on the clean R2 start baseline in the independent report. Prohibited checker/progress files were not changed to conceal the expected active-worktree projection.
-- Standalone checkers on the active dirty worktree:
-  - G-07 baseline: PASS, `packages=108 av=255 uncovered=0 scenarios=20`.
-  - Phase G Gate: PASS, `accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`.
-  - A-13 repository scan: expected active-dirty failure with the four raw/diff mismatch codes above.
-  - project progress: expected active-rework failures `GIT_DESCENDANT_WORKTREE_DIRTY` and `PRG_REFERENCED_HASH_MISMATCH`.
+The failures matched the reported terminal-final overwrite, not a fixture or environment error.
 
-The concurrent final-receipt test submits four identical authoritative receipts and five competing reservations through the real `RLock` repository. Identical final receipts return one canonical result, consumed usage remains exactly `12/120`, release remains exactly `28/280`, and cost/token/concurrency never exceed `50/500/1`. The unknown exposure test retains `40/400`, active count `1`, rejects a later `50/500`, and records Provider sender calls as `[]`.
+## GREEN and regression
 
-## Isolated PostgreSQL 18 evidence
+- Local quota/reconcile module: `6 passed`.
+- Local focused without DSN: `15 passed, 4 skipped`; all skips are explicit B-10 PostgreSQL gates.
+- Isolated PostgreSQL focused: `19 passed`.
+- Canonical core with `--import-mode=importlib`: `117 passed, 6 skipped`; skips are only B-09/B-10 PostgreSQL gates.
+- Full tooling on the active dirty R3 projection: `355 passed, 36 failed`, exit `1`. Failures were confined to frozen A-13 raw/diff evidence and project-progress dirty projection checks. The independent clean R3 start predecessor passed `387/387`; prohibited checker/progress files were not edited.
 
-- Container/network: `anvil-b10-r2-pg18-322` / `anvil-b10-r2-net-322`.
-- Runtime: `postgres:18-alpine`, server `18.4`, tmpfs `/var/lib/postgresql`, loopback-only `127.0.0.1:32771`, database `anvil_b10_r2_322`.
-- Migration sequence: `0008 -> R1 0009` for SQL RED, then `0009 -> 0008 -> corrected 0009` for GREEN, followed by final `0009 -> 0008` rollback; all migration commands exited `0`.
-- Eight concurrent `30/300` requests under `100/1000` admitted exactly three and retained totals `90/900`.
-- Three independent unresolved scenarios proved cost, token, and concurrency each reject new admission while `RECONCILIATION_REQUIRED` retains the original forecast row.
-- DSN focused result: `15/15 PASS`.
-- Final rollback query: B-10 tables `0`, `anvil_budget_reserve` functions `0`, Alembic head `0008_queue_worker_leases`.
-- Exact container and network removal returned both exact names; post-removal exact-name filters were blank.
+Local hostile coverage proves:
 
-One initial read-only post-rollback query command had PowerShell quoting errors after the Alembic downgrade had already succeeded. It was excluded from evidence and retried with a read-only `psycopg` query, which produced the `0 / 0 / 0008_queue_worker_leases` result above. No shared database or external environment was accessed.
+- first canonical final `u1` records `12/120` consumed and `28/280` released;
+- exact `u1` replay returns the canonical result;
+- distinct ID with equal, lower, or higher usage and changed retry/rate/provenance payload all fail;
+- snapshot and terminal reservation remain `12/120` and `28/280`;
+- new `49/490` is rejected because authoritative exposure is still `12/120`;
+- eight concurrent distinct receipt IDs produce exactly one winner; loser calls cannot overwrite or release twice.
 
-## Runtime boundary, rollback, and residual risk
+PostgreSQL hostile coverage independently proves:
 
-- Executed: framework-neutral local service logic and unique isolated PostgreSQL 18.
-- Not executed: actual API, UI, browser/Network, real Provider/invoice, B-11 BFF/SSE, B-12 process/PC recovery, shared DB, ysna, production, deployment, acceptance, commit, and push.
-- R2 fixes the independently reported admission-release defect. Package acceptance remains forbidden until conversation-separated independent retest.
-- Rollback: revert only the exact7 R2 bytes. On an approved isolated database at `0009_intervention_budget`, downgrade only to `0008_queue_worker_leases`. Never apply this rollback to shared DB, ysna, or production without a separate approved deployment plan.
+- partial unique authoritative-final identity rejects a second final row for the same reservation;
+- eight concurrent distinct receipt IDs through `anvil_budget_reconcile()` produce exactly one winner;
+- exact winning identity replay returns the same row;
+- changed receipt identity, payload hash, and actual/release each return `NULL` independently;
+- final reservation stays `CONSUMED`, `12/120`, release `28/280`, with one authoritative receipt;
+- new `49/490` returns `NULL`;
+- R2 unresolved cost/token/concurrency cases and existing eight-way reservation admission remain green.
+
+## Isolated PostgreSQL 18 and rollback
+
+- Resource: `anvil-b10-r3-pg18-329` / `anvil-b10-r3-net-329`.
+- Runtime: `postgres:18-alpine`, PostgreSQL `18.4`, tmpfs `/var/lib/postgresql`, loopback-only `127.0.0.1:32773`, database `anvil_b10_r3_329`.
+- Migration sequence: `0008 -> pre-R3 0009` for RED; then pre-R3 `0009 -> 0008 -> R3 0009` for GREEN; final `R3 0009 -> 0008` rollback.
+- The first pre-R3 downgrade attempt exposed a same-revision compatibility issue: the new downgrade tried to remove an index absent from the installed pre-R3 schema. That actual failure was fixed with `DROP INDEX IF EXISTS`; the same database then completed the full sequence. This was one migration fix attempt, not a product retry loop.
+- Final rollback query: B-10 tables `0`, both `anvil_budget_reserve` and `anvil_budget_reconcile` functions `0`, Alembic head `0008_queue_worker_leases`.
+- Exact container/network removal returned both resource names; post-removal exact filters were blank.
+
+The first WSL readiness query hit a transient WSL service error before Docker execution and was excluded. An approved identical retry confirmed PostgreSQL `18.4` and the loopback port. shared DB, ysna, production, and deployment were never accessed.
+
+## Exact verification commands and runtime limit
+
+- Focused: `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests\interventions tests\budget -q`.
+- Core: the canonical package list ending in `tests\interventions tests\budget -q --import-mode=importlib`.
+- Tooling: `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests\tooling -q --import-mode=importlib`.
+- Standalone: the four scripts `check_a13_repository_scan.py`, `check_g07_baseline.py`, `check_phase_g_gate.py`, and `check_project_progress.py`.
+- Static: `compileall`, supported public imports, manifest JSON/raw6 recomputation, exact7 status comparison, and `git diff --check`.
+
+Executed scope is local framework-neutral logic and unique isolated PostgreSQL 18 only. Actual API, UI, browser/Network, real Provider/invoice, B-11/B-12, process/PC recovery, shared DB, ysna, production, deployment, acceptance, commit, and push are `NOT_EXECUTED`. R3 remains pending conversation-separated independent retest.
+
+Rollback is limited to the exact7 bytes and, only on an approved isolated database, `0009_intervention_budget -> 0008_queue_worker_leases`. No shared or production rollback is authorized.
