@@ -1,10 +1,13 @@
-# B-10 Independent Test Report
+# B-10 Independent Retest Report — R2
 
 - Package: `B-10`
+- Retest revision: `R2`
 - Tester: implementation conversation-separated independent Tester
-- Tested baseline: `main = origin/main = e9dd00983775a5b1b2849f6be35304e34ef4fa17`
-- Tested projection: sequence `318`, `B-10 / TEST_REVIEW`, worker/write lease `null`, B-11 `BLOCKED_PENDING_B10_ACCEPTANCE`
-- Tested at: `2026-08-21` (Asia/Seoul)
+- Tested baseline: `main = origin/main = 5f644f45835329ef0195dae948d3c55ba7ff15af`
+- Tested projection: sequence `325`, `B-10 / TEST_REVIEW / PENDING_RETEST`, worker/write lease `null`, B-11 `BLOCKED_PENDING_B10_ACCEPTANCE`
+- Source report SHA-256: `B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB`
+- Failure fingerprint: `BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE`
+- Result contract: `FAILURE_REPORT`
 - Verdict: `REWORK_REQUIRED`
 - Blocking finding count: `1`
 - Write scope: this report only
@@ -13,163 +16,152 @@
 
 ### Decision
 
-`REWORK_REQUIRED`
+`REWORK_REQUIRED / FAILURE_REPORT`
 
 ### Reason
 
-Authority hashes, WorkInstruction/Invocation binding, frozen raw 14 artifacts, and target hash were independently recalculated successfully. Current checkout and a clean default fresh clone both passed focused B-10, canonical core, full tooling, and four standalone checkers. A unique isolated PostgreSQL 18.4 environment passed migration `0008_queue_worker_leases -> 0009_intervention_budget -> 0008_queue_worker_leases`, DSN-focused `12/12`, concurrent reservation, hostile timestamp/idempotency, rollback object removal, and exact cleanup.
+R2 closes the originally reported admission-filter defect: an unresolved `RECONCILIATION_REQUIRED` reservation now remains full cost, token, and concurrency exposure in both the in-memory repository and PostgreSQL `anvil_budget_reserve()`. Current and fresh-clone regression, independent local hostile execution, and isolated PostgreSQL 18 all confirmed that boundary.
 
-However, `BLK-B10-IT-001 / CRITICAL` remains. When final usage is unknown, the reservation row retains its forecast amount but changes to `RECONCILIATION_REQUIRED`. Both the in-memory snapshot and PostgreSQL reservation function count only `RESERVED` rows against the hard limit. Therefore unresolved worst-case cost/token usage disappears from admission accounting and a later Provider request can reserve and send up to the full limit again. Under a cost/token hard limit of `50/500`, an unresolved `40/400` reservation and a new accepted `50/500` reservation coexisted. This violates the WorkInstruction contracts that unknown usage must not be treated as zero and that Provider dispatch must remain bounded by atomic hard-limit reservation.
+The same failure fingerprint is nevertheless not fully closed. After an authoritative final receipt has consumed and released a reservation, a second final receipt with a different `usage_receipt_id` but the same reservation/request is accepted. It overwrites the already final consumed and released amounts. Under a hard limit of `50/500`, the first final receipt recorded actual `12/120` and release `28/280`; a second distinct-ID receipt changed the final state to actual `1/10` and release `39/390`, after which a new `49/490` reservation was accepted. The first authoritative usage plus the new reservation is `61/610`, exceeding both hard limits.
+
+This violates the R2 WorkInstruction's explicit requirements that authoritative final usage consume/release exactly once, identical replay be idempotent, changed replay be rejected, and concurrent reconciliation never release exposure twice.
 
 ### Action
 
-Main Agent should keep B-10 unaccepted and issue a scoped rework instruction. `RECONCILIATION_REQUIRED` reservations must continue to consume worst-case reserved cost/tokens and concurrency until an authoritative final usage receipt resolves them or an explicitly governed adjustment is recorded. The fix must cover both the in-memory repository and PostgreSQL admission query, add local and DSN hostile regression tests, regenerate the frozen B-10 evidence, and return to independent retest. This Tester did not accept B-10, start B-11, commit, push, or deploy.
+Main Agent must keep B-10 unaccepted and issue a scoped R3 rework for the same failure lineage. Once a reservation is `CONSUMED`, its authoritative final receipt binding and amounts must be immutable. Only the exact canonical final replay may return the existing result; any distinct receipt ID or changed content for the same consumed reservation must fail closed. The check and write must remain atomic under concurrent reconcile/reserve. Add regression cases for a different receipt ID with lower, equal, and higher final usage after consumption, including concurrent attempts and hard-limit admission after rejection. Then regenerate the frozen evidence and return to independent retest.
 
-## 2. Baseline, authority, and frozen evidence
+This Tester did not accept B-10, start B-11, commit, push, or deploy.
+
+## 2. Authority, projection, and manifests
 
 | Item | Result |
 |---|---|
-| HEAD / origin/main | `e9dd00983775a5b1b2849f6be35304e34ef4fa17` / equal |
+| HEAD / origin/main | `5f644f45835329ef0195dae948d3c55ba7ff15af` / equal |
 | initial status | clean |
-| progress | sequence `318`, `TEST_REVIEW`, leases `null` |
-| WorkInstruction SHA-256 | `A1CE280DA209D0542C8F476C83B5DFB2A08A14086BA11F38C9D210C2E983B34F` |
-| Invocation SHA-256 | `E8BF31253E56809A13F76DF7E51125A222A23919C498623093F29AE028D60351` |
-| product manifest SHA-256 | `750AB971D95D860324656AE81CF8501C434AF78210386B277C26ACC5F791086F` |
-| exact paths / raw artifacts | `15 / 14` |
-| raw checksum errors | `0` |
-| canonical bytes / content bytes | `1541 / 69490` |
-| target hash | `0DDE236523F95C995A583C580108744A656717F4D285CFE30B1ED4FC5E46C43F`, match |
-| self-reference | `false` |
+| progress | sequence `325`, `TEST_REVIEW / PENDING_RETEST`, leases `null` |
+| R2 WorkInstruction SHA-256 | `DFFCE00D420BC0DDC04C48B18856D111397C8DDC67155EE3DE702B8C379E6D21` |
+| R2 Invocation SHA-256 | `489222E413D61AEBEC177E42CDBBCA88AE4380644F5A6534511BC5B12C0F9674` |
+| Developer manifest SHA-256 | `6CBB859DA5598F4586380A124477C0D0C084B64AB43ACAE8C2FE4182B6A37934` |
+| Developer raw artifacts | `6`, checksum errors `0` |
+| Developer canonical/content bytes | `705 / 46545` |
+| Developer target | `6CEB2CB8CCFB2168141C0B995EB4E1868EFBF4D0EC1DC94B9176D860CD785317`, match |
+| R2 completion projection raw artifacts | `6`, checksum errors `0` |
+| R2 completion projection target | `B427A9090D4C9CA4BF19CFB2F7E1F2353CAF4AD07A35F144F620276A1632CAAD`, match |
+| R1 completion historical raw artifacts | `4`, checksum errors `0` at `e9dd009` |
+| R1 completion historical target | `585CA850332F1E18352A700D9A65CAF95D8497C3AFB7C21F7C2ABF13B394BA83`, match |
 
-Authority bytes matched the WorkInstruction baselines:
-
-- design `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`
-- plan `E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D`
-- matrix `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5`
-- test plan `9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644`
-- operating rules `4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E`
+The historical raw-four calculation used the clean disposable clone detached at `e9dd00983775a5b1b2849f6be35304e34ef4fa17`; it did not compare the frozen R1 projection to the intentionally replaced R2 live manifest bytes.
 
 ## 3. Current and fresh-clone regression
 
-The fresh clone used `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\b10-it-clone-20260821-318`, verified the same HEAD and a clean status, and was removed by exact resolved path after testing.
+The clean fresh clone used `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\b10-r2-it-clone-20260821-325`, initially matched `5f644f4`, and was removed by its exact resolved path after testing.
 
 | Verification | Current | Fresh clone |
 |---|---:|---:|
-| focused intervention/budget exact four files | `11 passed, 1 skipped` | `11 passed, 1 skipped` |
-| canonical combined core with `--import-mode=importlib` | `113 passed, 3 skipped` | `113 passed, 3 skipped` |
-| full `tests/tooling` | `379 passed` | `379 passed` |
-| four standalone checkers | `4/4 PASS` | `4/4 PASS` |
-| raw 14 / target recomputation | match | match |
+| focused intervention/budget | `13 passed, 2 skipped` | `13 passed, 2 skipped` |
+| canonical core, `--import-mode=importlib` | `115 passed, 4 skipped` | `115 passed, 4 skipped` |
+| full tooling | `387 passed` | `387 passed` |
+| standalone checkers | `4/4 PASS` | `4/4 PASS` |
+| Developer raw6/target | match | match |
 
-The local/fresh skips were only DSN-gated B-09/B-10 PostgreSQL integration tests. The isolated DSN run separately passed B-10 focused `12/12`.
-
-One initial over-broad core command collected three sample repositories under `tests/fixtures/repositories` and stopped with their intentionally isolated `src` imports. That command is not the canonical core set and was excluded from product results. It created exactly three ignored `__pycache__` directories at the same execution timestamp. The first tooling run then correctly reported `FIXTURE_SOURCE_INVENTORY_MISMATCH` (`3 failed, 376 passed`). The Tester verified those exact generated paths, removed only those three caches, enabled `PYTHONDONTWRITEBYTECODE=1`, and reran tooling to the current `379/379` PASS. No fixture source, manifest, checker, product, authority, progress, or HANDOFF file was changed.
+The skips were only explicitly DSN-gated B-09/B-10 PostgreSQL tests. With the isolated B-10 DSN, the focused suite passed `15/15`.
 
 Standalone outputs were:
 
 - A-13 repository scan: `fixtures=8 zero_delta=8 hostile=15`
 - G-07 baseline: `packages=108 av=255 uncovered=0 scenarios=20`
 - Phase G Gate: `accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`
-- project progress: `sequence=318 reporting=AUTO_CONTINUE`
+- project progress: `sequence=325 reporting=AUTO_CONTINUE`
 
-## 4. Blocking finding
+## 4. R2 original finding retest
 
-### BLK-B10-IT-001 — unresolved usage is released from admission accounting
+### Admission exposure — closed sub-boundary
+
+Independent in-memory execution confirmed:
+
+```text
+UNRESOLVED 40 400 1 SECOND_BLOCKED True SENT []
+FINAL 12 120 28 280 SNAP 38 380 12 120 1 RESERVE_SUCCESS 1 REPLAY_EQUAL True
+CHANGED_REPLAY=REJECTED
+```
+
+Thus unresolved forecast `40/400`, concurrency `1` remains active; a second `50/500` request is rejected before sender invocation. Four exact final receipt replays returned one canonical result. Concurrent final reconciliation and five competing `38/380` reservations admitted only one reservation and kept total exposure at `50/500/1`.
+
+The existing `CHANGED_REPLAY=REJECTED` check uses the same `usage_receipt_id`; it does not cover a distinct-ID second final receipt for the same reservation.
+
+### PostgreSQL admission exposure — closed sub-boundary
+
+In PostgreSQL 18, three independent unresolved scenarios retained `40/400` and rejected the second request by cost, token, and concurrency respectively. A separate unresolved-plus-concurrent race started with one `30/300` unresolved row under `100/1000/concurrency 3`; eight simultaneous `30/300` attempts admitted exactly two, leaving three active exposure rows totaling `90/900`.
+
+## 5. Blocking finding — authoritative final can be replaced
+
+### BLK-B10-IT-001-R2
 
 - Severity: `CRITICAL`
 - Status: `OPEN`
-- Affected contracts: B-10 atomic hard-limit reservation, usage reconciliation, unknown usage not zeroed, Provider-before-send admission
-- Affected paths: `packages/persistence/intervention_budget_repository.py`, `migrations/versions/0009_intervention_budget.py`; regression coverage in `tests/budget/test_quota_reconcile.py` and `tests/budget/test_atomic_reservation.py`
+- Lineage: same `BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE`
+- Affected contract: definitive final release exactly once; changed replay rejection; no double release/under-accounting
+- Affected implementation: `packages/persistence/intervention_budget_repository.py::reconcile`
+- Missing regression: different `usage_receipt_id` after the reservation is already `CONSUMED`
 
-#### In-memory reproduction
+Independent reproduction:
 
-1. Create hard limit `cost=50`, `tokens=500`.
-2. Reserve forecast `40/400`.
-3. Reconcile an `ABORT_UNKNOWN` receipt with `actual_cost=None`, `actual_tokens=None`.
-4. The row becomes `RECONCILIATION_REQUIRED` and still stores `reserved_cost=40`.
-5. The snapshot reports `reserved_cost=0`, `active_requests=0`.
-6. A second forecast reservation of `50/500` is accepted.
+1. Hard limit `50/500`, reserve forecast `40/400`.
+2. Reconcile authoritative receipt `u1` with actual `12/120`.
+3. Observe consumed `12/120`, released `28/280`.
+4. Submit receipt `u2` for the same reservation/request with actual `1/10`.
+5. R2 accepts `u2`, overwriting consumed to `1/10` and released to `39/390`.
+6. A new `49/490` reservation is accepted.
 
 Observed output:
 
 ```text
-AFTER_UNKNOWN status=RECONCILIATION_REQUIRED row_reserved=40 snapshot_reserved=0 active=0
-SECOND_RESERVATION=ACCEPTED
-BudgetSnapshot(... reserved_cost=Decimal('50'), reserved_tokens=500, consumed_cost=Decimal('0'), active_requests=1 ...)
+FIRST 12 28 BudgetSnapshot(... consumed_cost=Decimal('12'), consumed_tokens=120 ...)
+SECOND_DISTINCT_ID=ACCEPTED 1 39 BudgetSnapshot(... consumed_cost=Decimal('1'), consumed_tokens=10 ...)
+NEW49=ACCEPTED BudgetSnapshot(... reserved_cost=Decimal('49'), reserved_tokens=490,
+                              consumed_cost=Decimal('1'), consumed_tokens=10 ...)
 ```
 
-Root cause is `_snapshot_unlocked()` selecting active reservations only when `status is ReservationStatus.RESERVED`. `RECONCILIATION_REQUIRED` preserves row values but is omitted from cost, token, and concurrency admission totals.
+Root cause: `_usage` provides idempotency only by `usage_receipt_id`. `reconcile()` does not reject a new receipt ID after the reservation has reached `CONSUMED`, so the second call replaces the reservation's final values and creates a second canonical-looking reconciliation result. The global `RLock` serializes the operations but cannot enforce an absent terminal-final guard.
 
-#### PostgreSQL 18 reproduction
+An initial one-off harness invocation used the wrong result attribute name (`actual_cost` instead of `consumed_cost`) and stopped before the second receipt. It was excluded from product evidence. The corrected command produced the output above.
 
-The isolated database reproduced the same accounting boundary. After a valid `40/400` reservation, the row was moved to the schema's `RECONCILIATION_REQUIRED` status to represent unresolved final usage. `anvil_budget_reserve()` then accepted a new `50/500` reservation under the same `50/500` ledger:
+## 6. Isolated PostgreSQL 18 evidence
 
-```text
-FIRST ('r1-...',)
-ALTERED_IDEMPOTENCY (None,)
-SECOND_AFTER_UNKNOWN ('r2-...',)
-ROWS [('RECONCILIATION_REQUIRED', Decimal('40.00000000'), 400),
-      ('RESERVED', Decimal('50.00000000'), 500)]
-```
-
-Root cause is the SQL admission query filtering active forecast totals and concurrency with `status='RESERVED'`, while unresolved rows have zero consumed usage. The two layers therefore share the same defect.
-
-## 5. PostgreSQL 18 and hostile verification
-
-- Container: `anvil-b10-it-pg18-318`
-- Network: `anvil-b10-it-net-318`
-- Image/version: `postgres:18-alpine`, PostgreSQL `18.4`, server number `180004`
+- Container: `anvil-b10-r2-it-pg18-325`
+- Network: `anvil-b10-r2-it-net-325`
+- Runtime: `postgres:18-alpine`, PostgreSQL `18.4`, server number `180004`
 - tmpfs: `/var/lib/postgresql`
-- bind: loopback-only `127.0.0.1:32770`
-- shared-db / ysna / production / deployment: not accessed
+- bind: loopback-only `127.0.0.1:32772`
+- database: `anvil_b10_r2_it_325`
+- shared DB / ysna / production / deployment: not accessed
 
-Successful evidence:
+Results:
 
-1. `0008_queue_worker_leases -> 0009_intervention_budget` passed.
-2. DSN-focused B-10 suite passed `12/12`.
-3. Eight simultaneous forecast reservations of `30/300` under `100/1000` admitted exactly three, totaling `90/900`.
-4. Changed forecast replay for an existing reservation ID returned `(None,)`; the original binding remained singular.
-5. Equal request/effective timestamps were rejected by `ck_human_intervention_time_order`; a later effective timestamp was accepted.
-6. Separate in-memory hostile checks rejected cost, token, and concurrency over-limit attempts before the sender; the sender list contained only the first admitted request.
-7. Identical usage receipt replay was idempotent; changed content under the same usage receipt ID was rejected.
-8. `0009_intervention_budget -> 0008_queue_worker_leases` passed; five B-10 tables and `anvil_budget_reserve` were `0 / 0` and Alembic current was `0008_queue_worker_leases`.
-9. Exact container/network removal succeeded and exact-name filtered listings were blank.
+1. `0008_queue_worker_leases -> corrected 0009_intervention_budget` passed.
+2. DSN-focused B-10 passed `15/15`.
+3. Cost, token, and concurrency unresolved admission each rejected the second request.
+4. Unresolved/concurrent race admitted only two new requests and retained total exposure `3 / 90 / 900`.
+5. `0009_intervention_budget -> 0008_queue_worker_leases` passed.
+6. Final B-10 tables/functions were `0/0`; Alembic head was `0008_queue_worker_leases`.
+7. Exact container/network removal returned both names; exact-name post-filters were blank.
 
-The first cleanup call encountered a WSL `E_ACCESSDENIED` before Docker execution. It was excluded from cleanup PASS; the same exact-name cleanup was retried through the approved execution path, returned both removed resource names, and blank post-filters.
+The PostgreSQL migration supplies atomic admission but no PostgreSQL reconciliation function/adapter in this package. Therefore the distinct-final replacement was proven against the actual framework-neutral repository that owns R2 reconciliation. API, Provider, and later adapter behavior were not inferred from it.
 
-## 6. Intervention and assigned-ID result
+## 7. Verification IDs and runtime boundary
 
-Independent hostile service checks confirmed:
+The R1 intervention/cancel contracts remained green through current and fresh regression:
 
-- human input was dequeued before a system Event even when requested later;
-- STOP immediately made new scheduling false;
-- ambiguous STOP/CANCEL became `WAITING_DECISION`;
-- cancel accepted only the seven canonical steps in order;
-- `CANCELLED` resume and status mutation were rejected;
-- continuation used a new Run with `prior_run_id` and a reusable checkpoint;
-- drifted plan/baseline/policy bindings without reapproval were rejected;
-- same-Run resume stayed restricted to `PAUSED_USER`, `PAUSED_QUOTA`, and `INTERRUPTED`.
+- `AV-SAFE-003`, `AV-SAFE-025`
+- `AV-STAT-030`, `AV-STAT-031`, `AV-STAT-032`, `AV-STAT-033`, `AV-STAT-037`
+- `AV-AGT-006`
 
-| ID | Result | Evidence |
-|---|---|---|
-| `AV-SAFE-003` | PASS | binding drift without new approval/reconfirmation rejected |
-| `AV-SAFE-025` | PASS | STOP blocked new Action scheduling immediately |
-| `AV-STAT-030` | PASS | seven-step cancel order and out-of-order rejection |
-| `AV-STAT-031` | PASS | `CANCELLED` terminal mutation/resume rejected |
-| `AV-STAT-032` | PASS | continuation only through a new Run with `prior_run_id` |
-| `AV-STAT-033` | PASS | resume allowlist enforced |
-| `AV-STAT-037` | PASS | binding drift required reapproval reference |
-| `AV-AGT-006` | PASS | human Event priority over system Event |
+These PASS results do not override the package-level CRITICAL budget reconciliation blocker.
 
-These assigned-ID results do not override `BLK-B10-IT-001`; the package-level budget and reconcile completion contract remains failed.
-
-## 7. Runtime boundary and final status
-
-- Actual local framework-neutral services: executed.
-- Actual isolated PostgreSQL 18: executed.
-- Actual API, UI, browser, Network, real Provider/invoice, B-11 BFF/SSE, B-12 process/PC recovery, shared-db, ysna, production, deployment: `NOT_EXECUTED`.
+- Executed: framework-neutral local service logic; clean current/fresh regression; unique isolated PostgreSQL 18.
+- `NOT_EXECUTED`: actual API, UI, browser/Network, real Provider/invoice, B-11 BFF/SSE, B-12 process/PC recovery, shared DB, ysna, production, deployment.
 - Acceptance, commit, push, B-11 start: `NOT_EXECUTED`.
 - Product, authority, progress/HANDOFF, checker writes: `0`.
 - Written file: `docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md` only.
 
-Final verdict: `REWORK_REQUIRED`, blocking finding count `1`.
+Final result: `FAILURE_REPORT / REWORK_REQUIRED`, blocking finding count `1`.

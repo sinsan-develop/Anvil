@@ -496,6 +496,29 @@
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED",
       "independent_retest_status": "R2_PENDING"
+    },
+    {
+      "entry_id": "failure-b10-independent-retest-r2",
+      "step_lineage_id": "B-10",
+      "failure_fingerprint": "BLK-B10-IT-001-RECONCILIATION-RELEASES-ADMISSION-EXPOSURE",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "BLK-B10-IT-001-R2"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 1,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "23865D1722B231F04C7087328874A41D19431E5EE28C90AC71A3FACDA9D4F854"
+        }
+      ],
+      "accepted_sequence": 2,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R3_PENDING"
     }
   ]
 }
