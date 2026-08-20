@@ -1332,6 +1332,11 @@ def validate_repository(
         instruction = progress.get("active_work_instruction") or {}
         if any((progress.get("current_work_package") != "B-10", progress.get("status") != "TEST_REVIEW", instruction.get("artifact_id") != "WI-B-10-20260821-003", instruction.get("result_status") != "COMPLETED", instruction.get("independent_tester_status") != "PENDING_RETEST", progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, progress.get("valid_failure_count") != 2, (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B10_ACCEPTANCE", [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"])):
             _error(errors, "B10_R3_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=332")
+    if progress.get("event_sequence") == 333:
+        accepted = [event for event in events if event.get("sequence") == 333]
+        historical = progress.get("historical_failure_counts_by_lineage") or {}
+        if any((progress.get("current_work_package") != "B-11", progress.get("status") != "READY", "B-10" not in progress.get("completed_packages", []), progress.get("valid_failure_count") != 0, historical.get("B-10") != 2, progress.get("active_work_instruction") is not None, progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, (progress.get("next_work_package") or {}).get("status") != "READY", [event.get("event_type") for event in accepted] != ["MAIN_PACKAGE_ACCEPTED"])):
+            _error(errors, "B10_R3_ACCEPTANCE_PROJECTION_MISMATCH", progress_path, "sequence=333")
     return {
         "schema_version": "1.0.0",
         "package_id": "G-07",
@@ -1449,7 +1454,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 def validate_b10_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") in (329, 332): return []
+    if progress.get("event_sequence") in (329, 332, 333): return []
     errors = []
     if progress.get("event_sequence") != 315 or progress.get("status") != "ACTIVE": errors.append("B10_PHASE_PROJECTION_INVALID")
     if (progress.get("worker_lease") or {}).get("lease_epoch") != 1 or (progress.get("write_lease") or {}).get("write_epoch") != 1: errors.append("B10_FENCING_INVALID")
@@ -1459,7 +1464,7 @@ def validate_b10_start_projection(root: Path) -> list[str]:
 
 def validate_b10_completion_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") in (329, 332): return []
+    if progress.get("event_sequence") in (329, 332, 333): return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 316 <= event["sequence"] <= 318]
     wi = progress.get("active_work_instruction") or {}
@@ -1473,7 +1478,7 @@ def validate_b10_completion_projection(root: Path) -> list[str]:
 
 def validate_b10_rework_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") in (329, 332): return []
+    if progress.get("event_sequence") in (329, 332, 333): return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 319 <= event["sequence"] <= 322]
     worker = progress.get("worker_lease") or {}
@@ -1488,7 +1493,7 @@ def validate_b10_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b10_rework_completion_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") in (329, 332): return []
+    if progress.get("event_sequence") in (329, 332, 333): return []
     report = validate_repository(root, verify_git=True)
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 323 <= event.get("sequence", -1) <= 325]
@@ -1501,7 +1506,7 @@ def validate_b10_rework_completion_projection(root: Path) -> list[str]:
 
 def validate_b10_r3_rework_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-    if progress.get("event_sequence") == 332: return []
+    if progress.get("event_sequence") in (332, 333): return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 326 <= event.get("sequence", -1) <= 329]
     worker = progress.get("worker_lease") or {}
@@ -1517,6 +1522,7 @@ def validate_b10_r3_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b10_r3_rework_completion_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 333: return []
     report = validate_repository(root, verify_git=True)
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 330 <= event.get("sequence", -1) <= 332]

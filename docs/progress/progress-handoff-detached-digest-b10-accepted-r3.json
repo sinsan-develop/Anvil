@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "B-10-PROGRESS-HANDOFF-DIGEST-ACCEPTED-R3",
+  "package_id": "B-10",
+  "event_sequence": 333,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 46983,
+    "file_sha256": "C1755CB7D95FA5CA4977413671931D4DC3C97F349DCAACB65527DC98EC5055ED",
+    "canonical_json_sha256": "11CE0E31B08ED8F3F82166D3A3024FCF11AE13B56BF295434DF8B119D3DA5CD4"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 105440,
+    "file_sha256": "06EFEF177CB286D0FF8C17274369D50A27DDDE318F9C0AC21F8C49E3AEC4C85B",
+    "machine_summary_canonical_sha256": "73E37C2B8DB4BD4CB04C5955855A409D7A93258E11725DBDC1C84CBDF4A67CBC"
+  },
+  "created_at": "2026-08-21T08:30:01+09:00",
+  "scope": "B-10 R3 accepted; historical failures preserved; B-11 ready and not started"
+}

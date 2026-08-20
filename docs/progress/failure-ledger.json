@@ -490,7 +490,7 @@
       "evidence_refs": [
         {
           "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
-          "sha256": "B1FDDE5244129A0E086E9F666A635955751A6D3A5A83DB582E23CC1EB90AEBBB"
+          "sha256": "D884388D180FB746632DBE3B77C34533D875566619F05CFCF6FB093F43D35FFA"
         }
       ],
       "accepted_sequence": 1,
@@ -513,7 +513,7 @@
       "evidence_refs": [
         {
           "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
-          "sha256": "23865D1722B231F04C7087328874A41D19431E5EE28C90AC71A3FACDA9D4F854"
+          "sha256": "D884388D180FB746632DBE3B77C34533D875566619F05CFCF6FB093F43D35FFA"
         }
       ],
       "accepted_sequence": 2,

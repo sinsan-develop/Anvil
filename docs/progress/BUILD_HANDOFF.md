@@ -1,3 +1,9 @@
+# B-10 R3 Main acceptance → B-11 준비, 미시작 — sequence 333
+
+- 독립 Tester report SHA-256 `D884388D180FB746632DBE3B77C34533D875566619F05CFCF6FB093F43D35FFA`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검토해 seq333 `MAIN_PACKAGE_ACCEPTED`로 B-10을 최종 ACCEPTED했다.
+- B-10 유효 실패 2건은 historical lineage로 보존하고 active failure count는 0으로 닫았다. B-11은 `READY / NOT_STARTED`이며 제품 write·lease·WorkInstruction은 시작하지 않았다.
+- 제품 exact7은 target `5DEF1A06A2DC87BB074BA18F1BC346B098400B61741208BF1CF419B94BD21CD4`로 동결되며 acceptance projection의 제품 mutation은 0이다.
+
 # B-10 R3 두 번째 유효 실패 수락 및 epoch-3 재작업 — sequence 329
 
 - 독립 R2 retest report `23865D1722B231F04C7087328874A41D19431E5EE28C90AC71A3FACDA9D4F854`의 `REWORK_REQUIRED / BLK-B10-IT-001-R2 / CRITICAL`을 동일 B-10 계보의 두 번째 유효 실패로 수락했다. takeover는 아직 필요하지 않다.
@@ -314,63 +320,37 @@
 
 ```json anvil-recovery-summary
 {
-  "schema_version": "1.0.0",
-  "event_sequence": 332,
-  "status": "TEST_REVIEW",
-  "current_work_package": "B-10",
-  "last_event_id": "evt_b10_package_completed_r3",
+  "event_sequence": 333,
+  "status": "READY",
+  "current_work_package": "B-11",
+  "last_event_id": "evt_b10_main_package_accepted_r3",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 2,
-  "active_lineage_valid_failure_count": 2,
-  "historical_accepted_failure_count": 19,
+  "valid_failure_count": 0,
+  "next_safe_action": "Main Agent prepares and dispatches B-11 WorkInstruction; B-11 product work remains not started",
   "dir_status": "CLEARED",
-  "repository_head": "4cc75da50e9eb16988bc07ab7b1f237bd2b6b169",
+  "repository_head": "d92a24ef3ecaa0d55a8c2d3ad0d43dea49748037",
   "repository_upstream": "origin/main",
-  "repository_remote_head": "4cc75da50e9eb16988bc07ab7b1f237bd2b6b169",
-  "repository_status": "PUSH_PENDING_MAIN",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "4cc75da50e9eb16988bc07ab7b1f237bd2b6b169",
+  "repository_validated_base_commit": "d92a24ef3ecaa0d55a8c2d3ad0d43dea49748037",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-10_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
-    "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
+    "docs/evidence/manifests/B-10_ACCEPTANCE_PROGRESS_MANIFEST_R3.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r3.json",
-    "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
-    "migrations/versions/0009_intervention_budget.py",
-    "packages/persistence/intervention_budget_repository.py",
+    "docs/progress/progress-handoff-detached-digest-b10-accepted-r3.json",
+    "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/budget/test_atomic_reservation.py",
-    "tests/budget/test_quota_reconcile.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_progress_digest_path": "docs/progress/progress-handoff-detached-digest-b10-rework-completion-r3.json",
-  "current_progress_manifest_path": "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json",
-  "a01_precondition_status": "ACCEPTED",
-  "a01_precondition_readiness": "READY_FOR_A01_WI",
-  "next_safe_action": "Independent Tester performs B-10 R3 retest against frozen exact7; B-11 remains blocked pending B-10 acceptance",
-  "runtime_boundary_approval": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
-  "wsl_read_only_probe": "PASS_AVAILABLE",
-  "wsl_postgresql18_runtime": "PASS_INDEPENDENT_0006_0007_0006_VALID_PROJECT_RUN_OUTBOX_SNAPSHOT_ACK_HOSTILE13_ATOMIC_ROLLBACK_CLEANUP",
-  "root_human_approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
-  "derived_baseline_id": "BASELINE-A-01-PRECONDITION-DERIVED-20260810-001",
-  "reporting_decision": "AUTO_CONTINUE",
-  "a_gate_status": "ACCEPTED",
-  "a_gate_checkpoint_status": "CLEARED_AND_DECIDED",
-  "b01_start_allowed": true,
-  "b01_started": true,
-  "active_work_instruction": "WI-B-10-20260821-003 / COMPLETED / PENDING_RETEST",
-  "worker_lease": null,
-  "write_lease": null
+  "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 
