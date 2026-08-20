@@ -1213,6 +1213,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-11" and reconciliation_event.get("sequence") == 336:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_COMPLETED" and reconciliation_event.get("subject_ref") == "B-11" and reconciliation_event.get("sequence") == 339:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1344,6 +1346,11 @@ def validate_repository(
         instruction = progress.get("active_work_instruction") or {}
         if any((progress.get("current_work_package") != "B-11", progress.get("status") != "ACTIVE", instruction.get("artifact_id") != "WI-B-11-20260821-001", progress.get("active_agent") != "developer-primary-b11", (progress.get("worker_lease") or {}).get("lease_epoch") != 1, (progress.get("write_lease") or {}).get("write_epoch") != 1, (progress.get("next_work_package") or {}) != {"package_id": "B-12", "status": "BLOCKED_PENDING_B11_ACCEPTANCE"}, [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"])):
             _error(errors, "B11_START_PROJECTION_MISMATCH", progress_path, "sequence=336")
+    if progress.get("event_sequence") == 339:
+        terminal = [event for event in events if 337 <= event.get("sequence", -1) <= 339]
+        instruction = progress.get("active_work_instruction") or {}
+        if any((progress.get("current_work_package") != "B-11", progress.get("status") != "TEST_REVIEW", instruction.get("result_status") != "COMPLETED", instruction.get("independent_tester_status") != "PENDING", progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B11_ACCEPTANCE", [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"])):
+            _error(errors, "B11_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=339")
     return {
         "schema_version": "1.0.0",
         "package_id": "G-07",
@@ -1478,6 +1485,19 @@ def validate_b11_start_projection(root: Path) -> list[str]:
     if (progress.get("worker_lease") or {}).get("lease_epoch") != 1 or (progress.get("write_lease") or {}).get("write_epoch") != 1: errors.append("B11_FENCING_INVALID")
     if (progress.get("next_work_package") or {}) != {"package_id": "B-12", "status": "BLOCKED_PENDING_B11_ACCEPTANCE"}: errors.append("B12_BOUNDARY_INVALID")
     if [event.get("event_type") for event in terminal] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]: errors.append("B11_EVENT_ORDER_INVALID")
+    return errors
+
+
+def validate_b11_completion_projection(root: Path) -> list[str]:
+    progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal = [event for event in events if 337 <= event["sequence"] <= 339]
+    errors = []
+    if progress.get("event_sequence") != 339 or progress.get("status") != "TEST_REVIEW": errors.append("B11_COMPLETION_PHASE_INVALID")
+    if (progress.get("phase_gate") or {}).get("decision") != "ACCEPTED": errors.append("A_GATE_DRIFT")
+    if progress.get("worker_lease") is not None or progress.get("write_lease") is not None: errors.append("B11_COMPLETION_LEASE_INVALID")
+    if [event["event_type"] for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]: errors.append("B11_COMPLETION_EVENT_ORDER_INVALID")
+    if (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B11_ACCEPTANCE": errors.append("B12_BOUNDARY_INVALID")
     return errors
 
 

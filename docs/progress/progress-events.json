@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 336,
+  "last_sequence": 339,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -12380,6 +12380,114 @@
           "tests/tooling/test_g07_baseline.py",
           "tests/tooling/test_phase_g_gate.py",
           "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_b11_write_lease_revoked",
+      "sequence": 337,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-08-21T14:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-11",
+      "details": {
+        "lease_id": "write-lease-b11-20260821-001",
+        "worker_lease_id": "worker-lease-b11-20260821-001",
+        "write_epoch": 1,
+        "reason": "DEVELOPER_COMPLETED_PENDING_INDEPENDENT_TEST",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b11_worker_lease_revoked",
+      "sequence": 338,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-08-21T14:30:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-11",
+      "details": {
+        "lease_id": "worker-lease-b11-20260821-001",
+        "lease_epoch": 1,
+        "reason": "DEVELOPER_COMPLETED_PENDING_INDEPENDENT_TEST",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_b11_package_completed",
+      "sequence": 339,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-21T14:30:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-11",
+      "details": {
+        "completion_head": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
+        "completion_upstream_head": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
+        "package_status": "TEST_REVIEW",
+        "result_status": "COMPLETED",
+        "accepted": false,
+        "independent_tester_status": "PENDING",
+        "developer_actor": "developer-primary-b11",
+        "developer_manifest_ref": {
+          "path": "docs/evidence/manifests/B-11_EVIDENCE_MANIFEST.json",
+          "sha256": "BE11EA4C21FC34484CDF5B4CC924CAC03E9E64940A69EE014D9CE18D5D6A0C29"
+        },
+        "developer_target_hash": "FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5",
+        "developer_raw_artifact_count": 16,
+        "developer_exact_path_count": 17,
+        "product_exact_paths_frozen": true,
+        "projection_product_mutation_count": 0,
+        "worker_lease": null,
+        "write_lease": null,
+        "valid_failure_count": 0,
+        "actual_local_http": "PASS_INDEPENDENT_UVICORN_HTTP_SECURITY",
+        "actual_sse_fi08": "PASS_INDEPENDENT_THREE_RECONNECTS_STRICT_SUCCESSORS_NO_RUN_CREATION",
+        "actual_browser_network": "ENVIRONMENT_BLOCKED_DEVELOPER_ERR_BLOCKED_BY_CLIENT_NOT_REEXECUTED_BY_MAIN",
+        "actual_database": "NOT_EXECUTED_NOT_REQUIRED",
+        "actual_ui": "NOT_IN_SCOPE",
+        "actual_provider": "NOT_EXECUTED",
+        "actual_wsl_shared_db_ysna_production_deployment": "NOT_EXECUTED",
+        "next_work_package": "B-12",
+        "next_package_status": "BLOCKED_PENDING_B11_ACCEPTANCE",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "branch": "main",
+        "upstream": "origin/main",
+        "remote_head": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
+        "push_status": "PUSH_PENDING_MAIN",
+        "actual_dirty_exact_path_count": 30,
+        "main_projection_exact_path_count": 13,
+        "exact_allowed_paths": [
+          "docs/completion_reports/B-11_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/B-11_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-b11-completion.json",
+          "docs/validation/B-11_COMMON_API_BFF_VALIDATION.md",
+          "packages/api/__init__.py",
+          "packages/api/common.py",
+          "packages/api/fastapi_app.py",
+          "packages/api/registry.py",
+          "packages/api/security.py",
+          "packages/api/sse.py",
+          "packages/bff/__init__.py",
+          "packages/bff/client.py",
+          "pyproject.toml",
+          "scripts/check_a13_repository_scan.py",
+          "scripts/check_g07_baseline.py",
+          "scripts/check_phase_g_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/api/test_error_concurrency.py",
+          "tests/api/test_registry_openapi.py",
+          "tests/api/test_sse_resume.py",
+          "tests/api/test_web_security.py",
+          "tests/tooling/test_a13_repository_scan.py",
+          "tests/tooling/test_g07_baseline.py",
+          "tests/tooling/test_phase_g_gate.py",
+          "tests/tooling/test_project_progress.py",
+          "uv.lock"
         ]
       }
     }

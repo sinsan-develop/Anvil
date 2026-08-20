@@ -1,3 +1,11 @@
+# B-11 Developer 완료 → 독립 Tester 대기 — sequence 339
+
+- Developer exact17을 manifest file SHA `BE11EA4C21FC34484CDF5B4CC924CAC03E9E64940A69EE014D9CE18D5D6A0C29`, raw16 target `FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5`로 byte-frozen했다. Main completion projection의 제품 mutation은 0이다.
+- seq337→339는 epoch-1 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-11은 `TEST_REVIEW / COMPLETED`, 독립 Tester는 `PENDING`, B-12는 `BLOCKED_PENDING_B11_ACCEPTANCE`다.
+- Main 독립 실행에서 focused `16 passed`, canonical core `117 passed, 6 skipped`, 실제 loopback uvicorn HTTP 501 fail-closed·CSRF pre-side-effect·정상 mutation과 FI-08 3회 strict successor SSE를 확인했다. SSE payload SHA는 `456E740594DDB04772451363C715EC1846105307F3564C26ECD967C5D7FF7C0C`, read 3회, Run 생성 0회다.
+- Browser Network는 Developer 시도에서 `ERR_BLOCKED_BY_CLIENT`로 `ENVIRONMENT_BLOCKED`이며 Main이 PASS로 승격하지 않았다. 실제 DB는 불필요했고 UI/provider/WSL/shared DB/ysna/production/deployment는 실행하지 않았다.
+- 다음 안전 행동은 frozen exact17의 대화 분리 독립 Tester 검증이다. B-11 acceptance와 B-12 시작은 금지한다.
+
 # B-11 Start — sequence 336
 
 - canonical clean/equal baseline `1134619b2ecdbe521bb0cce2288af7fac6d1e9dc`에서 seq334→336 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
@@ -328,35 +336,50 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 336,
-  "status": "ACTIVE",
+  "event_sequence": 339,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-11",
-  "last_event_id": "evt_b11_package_started",
+  "last_event_id": "evt_b11_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
-  "next_safe_action": "Developer executes WI-B-11-20260821-001 within exact17; B-12 remains blocked pending B-11 acceptance",
+  "next_safe_action": "Independent Tester validates frozen B-11 exact17; B-12 remains blocked pending B-11 acceptance",
   "dir_status": "CLEARED",
-  "repository_head": "1134619b2ecdbe521bb0cce2288af7fac6d1e9dc",
+  "repository_head": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "1134619b2ecdbe521bb0cce2288af7fac6d1e9dc",
+  "repository_validated_base_commit": "3304c7d82fd7101f6913cbee7b98bcd05ac75ede",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-11_START_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/B-11_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/B-11_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b11-start.json",
-    "docs/work_orders/B-11_INVOCATION_PROMPT.md",
-    "docs/work_orders/B-11_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-b11-completion.json",
+    "docs/validation/B-11_COMMON_API_BFF_VALIDATION.md",
+    "packages/api/__init__.py",
+    "packages/api/common.py",
+    "packages/api/fastapi_app.py",
+    "packages/api/registry.py",
+    "packages/api/security.py",
+    "packages/api/sse.py",
+    "packages/bff/__init__.py",
+    "packages/bff/client.py",
+    "pyproject.toml",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/api/test_error_concurrency.py",
+    "tests/api/test_registry_openapi.py",
+    "tests/api/test_sse_resume.py",
+    "tests/api/test_web_security.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
-    "tests/tooling/test_project_progress.py"
+    "tests/tooling/test_project_progress.py",
+    "uv.lock"
   ],
   "reporting_decision": "AUTO_CONTINUE"
 }

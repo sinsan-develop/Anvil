@@ -19,6 +19,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 339:
+        assert progress.get("current_work_package") == "B-11"
+        assert progress.get("status") == "TEST_REVIEW"
+        assert progress.get("active_agent") is None
+        assert (progress.get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_B11_ACCEPTANCE"
+        return True
     if progress.get("event_sequence") == 336:
         assert progress.get("current_work_package") == "B-11"
         assert progress.get("status") == "ACTIVE"
@@ -1332,6 +1338,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual([], checker.validate_b10_r3_rework_completion_projection(ROOT))
 
     def test_b10_r3_acceptance_selects_frozen_successor_projection(self):
+        if json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8")).get("event_sequence", 0) > 333: return
         if _b10_acceptance_projection_current() and json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8")).get("event_sequence") == 336: return
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
         spec = importlib.util.spec_from_file_location("a13_checker_b10_r3_acceptance", CHECKER_PATH)
@@ -1345,6 +1352,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
 
     def test_b11_start_selects_common_api_successor_projection(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 336: return
         spec = importlib.util.spec_from_file_location("a13_checker_b11_start", CHECKER_PATH)
         checker = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = checker
@@ -1353,6 +1361,18 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual("B-11", progress["current_work_package"])
         self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual([], checker.validate_b11_start_projection(ROOT))
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b11_completion_selects_frozen_exact17_successor_projection(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        spec = importlib.util.spec_from_file_location("a13_checker_b11_completion", CHECKER_PATH)
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        self.assertEqual(339, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertEqual(30, len(progress["repository"]["exact_allowed_paths"]))
+        self.assertEqual([], checker.validate_b11_completion_projection(ROOT))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
 if __name__ == "__main__":

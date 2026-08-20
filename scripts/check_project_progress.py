@@ -4950,7 +4950,8 @@ def validate_repository_projection(
     b10_rework_projection = (repository.get("validated_base_commit") == "e9dd00983775a5b1b2849f6be35304e34ef4fa17" and "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed) or (repository.get("validated_base_commit") == "a5515ea94d3b5a6e185c0521a0de4906d6e21dae" and "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed) or (repository.get("validated_base_commit") == "5f644f45835329ef0195dae948d3c55ba7ff15af" and "docs/evidence/manifests/B-10_REWORK_START_PROGRESS_MANIFEST_R3.json" in allowed) or (repository.get("validated_base_commit") == "4cc75da50e9eb16988bc07ab7b1f237bd2b6b169" and "docs/evidence/manifests/B-10_REWORK_COMPLETION_PROGRESS_MANIFEST_R3.json" in allowed)
     b10_acceptance_projection = repository.get("validated_base_commit") == "d92a24ef3ecaa0d55a8c2d3ad0d43dea49748037" and "docs/evidence/manifests/B-10_ACCEPTANCE_PROGRESS_MANIFEST_R3.json" in allowed
     b11_start_projection = repository.get("validated_base_commit") == "1134619b2ecdbe521bb0cce2288af7fac6d1e9dc" and "docs/evidence/manifests/B-11_START_EVIDENCE_MANIFEST.json" in allowed
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    b11_completion_projection = repository.get("validated_base_commit") == "3304c7d82fd7101f6913cbee7b98bcd05ac75ede" and "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -5288,6 +5289,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b10_r3_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-11_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_b11_start_projection(bundle["_root"]))
+        elif current_manifest_relative == "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json":
+            errors.extend(validate_b11_completion_projection(bundle["_root"]))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b08_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json":
@@ -5396,6 +5399,44 @@ def validate_b11_start_projection(root: Path) -> list[str]:
     target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
     if any((manifest.get("target_canonical_bytes") != len(canonical), manifest.get("target_content_bytes") != total, manifest.get("target_hash") != target, manifest.get("delivered_hash") != target, manifest.get("content_hash") != target, manifest.get("self_reference") is not False, manifest.get("projection_product_mutation_count") != 0, manifest.get("developer_exact_path_count") != 17)):
         errors.append("B11_START_TARGET_MISMATCH")
+    return sorted(set(errors))
+
+
+def validate_b11_completion_projection(root: Path) -> list[str]:
+    bundle = load_bundle(root)
+    progress = bundle["progress"]
+    manifest = _load_json(root / "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json")
+    events = [event for event in bundle["events"]["events"] if 337 <= event["sequence"] <= 339]
+    errors: list[str] = []
+    wi = progress.get("active_work_instruction") or {}
+    if any((progress.get("event_sequence") != 339, progress.get("current_work_package") != "B-11", progress.get("status") != "TEST_REVIEW", progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None)):
+        errors.append("B11_COMPLETION_PHASE_INVALID")
+    if any((wi.get("artifact_id") != "WI-B-11-20260821-001", wi.get("result_status") != "COMPLETED", wi.get("independent_tester_status") != "PENDING", wi.get("developer_manifest_sha256") != "BE11EA4C21FC34484CDF5B4CC924CAC03E9E64940A69EE014D9CE18D5D6A0C29", wi.get("developer_target_hash") != "FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5")):
+        errors.append("B11_COMPLETION_WORK_INSTRUCTION_INVALID")
+    if [event.get("event_type") for event in events] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]:
+        errors.append("B11_COMPLETION_EVENT_ORDER_INVALID")
+    if (progress.get("next_work_package") or {}) != {"package_id": "B-12", "status": "BLOCKED_PENDING_B11_ACCEPTANCE"}:
+        errors.append("B12_BOUNDARY_INVALID")
+    if len((progress.get("repository") or {}).get("exact_allowed_paths", [])) != 30:
+        errors.append("B11_COMPLETION_SCOPE_INVALID")
+    if any((manifest.get("developer_manifest_sha256") != "BE11EA4C21FC34484CDF5B4CC924CAC03E9E64940A69EE014D9CE18D5D6A0C29", manifest.get("developer_target_hash") != "FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5", manifest.get("developer_raw_artifact_count") != 16, manifest.get("developer_exact_path_count") != 17, manifest.get("product_exact_paths_frozen") is not True, manifest.get("projection_product_mutation_count") != 0)):
+        errors.append("B11_COMPLETION_FREEZE_INVALID")
+    expected = {"docs/evidence/manifests/B-11_EVIDENCE_MANIFEST.json", "docs/progress/progress-handoff-detached-digest-b11-completion.json", "docs/work_orders/B-11_INVOCATION_PROMPT.md", "docs/work_orders/B-11_WORK_INSTRUCTION.md", "scripts/check_a13_repository_scan.py", "scripts/check_g07_baseline.py", "scripts/check_phase_g_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py", "tests/tooling/test_project_progress.py"}
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list):
+        return sorted(set(errors + ["B11_COMPLETION_RAW_INVALID"]))
+    seen: set[str] = set(); canonical_rows: list[tuple[bytes, str]] = []; total = 0
+    for row in rows:
+        relative = row.get("path") if isinstance(row, dict) else None
+        if not isinstance(relative, str) or relative in seen or relative == manifest.get("artifact_path"):
+            errors.append("B11_COMPLETION_RAW_INVALID"); continue
+        seen.add(relative); raw = (root / relative).read_bytes(); digest = hashlib.sha256(raw).hexdigest().upper()
+        if row.get("bytes") != len(raw) or row.get("sha256") != digest: errors.append("B11_COMPLETION_RAW_INVALID")
+        total += len(raw); canonical_rows.append((relative.encode("utf-8"), f"{relative}\t{len(raw)}\t{digest}"))
+    if seen != expected: errors.append("B11_COMPLETION_RAW_SET_INVALID")
+    canonical = "\n".join(text for _, text in sorted(canonical_rows)).encode("utf-8"); target = "sha256:" + hashlib.sha256(canonical).hexdigest().upper()
+    if any((manifest.get("target_canonical_bytes") != len(canonical), manifest.get("target_content_bytes") != total, manifest.get("target_hash") != target, manifest.get("delivered_hash") != target, manifest.get("content_hash") != target, manifest.get("self_reference") is not False)):
+        errors.append("B11_COMPLETION_TARGET_MISMATCH")
     return sorted(set(errors))
 
 
