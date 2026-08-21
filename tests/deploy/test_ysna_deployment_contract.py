@@ -20,8 +20,11 @@ class DeploymentContractTests(unittest.TestCase):
  def test_tmpfs_mount_spec_is_single_compose_value(self):
   text=(DEPLOY/'compose.internal.yml').read_text()
   self.assertIn('tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]', text)
- def test_web_not_proxy_and_migrate_profile(self):
-  text=(DEPLOY/'compose.internal.yml').read_text(); self.assertNotIn('proxy-network',text.split('  migrate:',1)[0]); self.assertIn('profiles: [tools]',text)
+ def test_web_and_migrate_share_database_network(self):
+  text=(DEPLOY/'compose.internal.yml').read_text(); web, migrate = text.split('  migrate:',1)
+  self.assertIn('networks: [anvil-internal, proxy-network]', web)
+  self.assertIn('networks: [proxy-network]', migrate)
+  self.assertIn('profiles: [tools]',text)
  def test_entrypoint_and_health(self):
   text=(ROOT/'apps/api/anvil_api/asgi.py').read_text(); self.assertIn('create_runtime_app()',text); self.assertIn('/health/live',text); self.assertIn('/health/ready',text)
  def test_sha_and_non_destructive(self):

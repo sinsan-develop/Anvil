@@ -6,7 +6,7 @@ services:
       dockerfile: deploy/ysna/Dockerfile.web
     env_file: ["${ANVIL_RUNTIME_ENV_FILE:?run deploy/ysna/deploy.sh to prepare runtime/anvil.env}"]
     ports: ["127.0.0.1:4173:4173"]
-    networks: [anvil-internal]
+    networks: [anvil-internal, proxy-network]
     read_only: true
     tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]
     cap_drop: [ALL]
