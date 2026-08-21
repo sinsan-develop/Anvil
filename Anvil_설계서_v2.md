@@ -6688,3 +6688,25 @@ v2.7은 v2.6의 의미 변경 successor다. 다음을 갱신하고 새 approval 
 4. Agent Team·Conversation·Capability MoA API/data/evidence contract
 5. progress/HANDOFF, Gate·DIR 위치와 Package 수
 6. 실제 Agent별 대화 UI·same-origin API·브라우저/운영 검증 계획
+
+### 50.6 원격 모니터링·지시 채널
+
+Anvil은 네이티브 모바일 앱을 먼저 만들지 않는다. 모바일·다른 PC의 공식 운영 채널은 반응형 same-origin Web Console/PWA로 한다. Web Console은 상태·대화·설계 승인·diff·evidence·고위험 지시의 단일 원장이다.
+
+```text
+모바일/PC Web Console(PWA)
+        ↓ same-origin BFF / Control API
+Event Store · Command Queue · Artifact Store
+        ↓
+서버/PC Agent Runner
+```
+
+- 실시간 상태는 SSE 또는 WebSocket과 `Last-Event-ID` 재연결로 제공한다.
+- 원격 명령은 `CommandEnvelope`로 감싸 대상 project/run/agent, actor/device/session, command, payload, baseline hash, idempotency key, 승인 범위를 기록한다.
+- Pause·Resume·Stop·질문·수정지시·승인 요청은 queue와 fencing 검증을 거쳐 Runner에 전달한다.
+- 서버/PC가 offline이면 명령을 임의 실행하지 않고 `PENDING_REMOTE`로 보류하며 마지막 checkpoint부터 재개한다.
+- Telegram은 공식 원장이 아닌 `Notification/Command Adapter`다. 완료·오류·중단·승인 대기 알림, 상태 조회, 저위험 일시정지/재개 요청과 Web Console deep link만 허용한다.
+- 설계 승인, Provider/Model 변경, Apply·Deploy·Delete, 권한·보안 정책 변경은 Telegram에서 확정하지 않고 Web Console의 step-up 인증·diff·evidence 화면에서만 승인한다.
+- 브라우저는 내부 API·Docker·SSH 주소에 직접 연결하지 않으며, 모든 원격 활동은 progress/event/audit와 원격 command receipt에 남긴다.
+
+네이티브 iOS/Android 앱은 운영 사용량·접속 불편·push 요구가 확인된 뒤 별도 범위와 승인으로 추가한다. 현재 기준선에서는 `NOT_IN_CURRENT_SCOPE`다.

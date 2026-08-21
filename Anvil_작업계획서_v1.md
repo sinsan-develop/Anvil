@@ -5,7 +5,7 @@
 > 설계 책임자·Main Agent: 어울  
 > 최종 승인자: 신산님  
 > 설계 기준선: `Anvil_설계서_v2.md` v2.7
-> 설계 기준선 SHA-256: `C93A9044C2D9172077726C52F26A0BC2273CFBE05DA6566704E4E6FF9DAC077A`
+> 설계 기준선 SHA-256: `DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3`
 > Subagent 운영 근거: `C:\Users\cyhuh\OneDrive\문서\AI 자료\MoaWorks_Subagent_단계적_적용_권고안.docx` / SHA-256 `0C033D15389AE00DAC27373D028DE7FF375EE2855925714804C55C741AC7B77D` / workspace 외부 read-only source  
 > 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.3 / SHA-256 `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A`
 > 테스트 실행 기준선: `Anvil_테스트계획서_v1.md` v1.4 / SHA-256 `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8`
@@ -824,3 +824,18 @@ C-15의 Single Developer 기준선은 유지한다. C-16~C-17은 Agent Teams 협
 5. 매뉴얼 이후 F 배포와 P Plugin 포장을 순서대로 유지한다.
 
 v1.6 successor는 설계서 v2.7, 통합검증매트릭스 successor, 테스트계획서 successor, progress/HANDOFF 및 새 approval binding이 정합화되기 전에는 구현 기준선으로 사용하지 않는다.
+
+### 19.6 원격 모니터링·Telegram 보조 채널 successor
+
+원격 운영은 네이티브 모바일 앱이 아니라 반응형 Web Console/PWA를 공식 채널로 사용하고, Telegram은 보조 Notification/Command Adapter로 제한한다. 다음 Package를 C Phase 뒤에 추가한다.
+
+| ID | 목표 | 주요 완료조건 | 선행 |
+|---|---|---|---|
+| C-19 | Remote Control Plane·Web Console/PWA | Event Store·Command Queue·Artifact Store, SSE/WebSocket·Last-Event-ID, CommandEnvelope·idempotency·fencing·offline `PENDING_REMOTE`, 모바일/PC 모니터링·Agent 대화·승인·지시 UI와 same-origin Network evidence | C-18 |
+| C-20 | Telegram Notification/Command Adapter | 완료·오류·중단·승인대기 알림, 상태 조회, 저위험 pause/resume 요청, Web Console deep link, actor/device/session·receipt·rate limit·replay 방지; 고위험 승인·배포·삭제·권한 변경은 거부 | C-19 |
+
+- Web Console은 공식 상태·대화·승인·지시 원장이다.
+- Telegram은 보조 채널이며 설계 승인·Provider 변경·Apply·Deploy·Delete를 확정할 수 없다.
+- 네이티브 iOS/Android 앱은 현재 범위에서 제외하고 사용량·운영 수요가 확인된 뒤 별도 승인 Package로 검토한다.
+
+이에 따라 successor 기준 Package 수는 기존 111개에서 **113개**가 된다. C-19~C-20의 API·UI·보안·fault·offline·replay·알림 검증 ID와 매뉴얼 절차는 successor 매트릭스·테스트계획서에 추가한다.

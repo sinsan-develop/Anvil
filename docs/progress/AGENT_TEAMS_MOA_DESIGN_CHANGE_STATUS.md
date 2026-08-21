@@ -12,8 +12,9 @@
 - Capability MoA: 기능별 LLM Provider/Model routing, fallback, benchmark, provenance
 - Conversation-Driven Design: 사용자↔Agent·Agent↔Agent 대화, iteration, DecisionRequest, ApprovalRecord
 - 최상위 순서: 설계 → 화면 → 공통 모듈 → API → 메뉴 기능 → 테스트 → 매뉴얼 → 배포 → Plugin
-- 신규 successor Package: C-16, C-17, C-18
-- successor Package 총계: 111개
+- 신규 successor Package: C-16~C-20
+- successor Package 총계: 113개
+- 원격 운영: Web Console/PWA 공식 채널, Telegram 보조 adapter, native mobile app 후속 검토
 
 ## 현재 경계
 
