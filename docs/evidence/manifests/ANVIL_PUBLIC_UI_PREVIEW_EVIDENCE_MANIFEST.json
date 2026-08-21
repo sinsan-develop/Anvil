@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "work_package": "ANVIL_PUBLIC_UI_PREVIEW",
+  "candidate_parent_commit": "83c90afea7406929299afed21e2534fdbeac27ef",
+  "release_tag": "anvil-ui-preview-20260814.1",
+  "deployment_root": "~/deploy/anvil",
+  "service": {
+    "name": "anvil-web",
+    "internal_port": 3770,
+    "network": "proxy-network",
+    "public_url": "https://anvil.sinsan.kr"
+  },
+  "scope": "READ_ONLY_UI_PREVIEW",
+  "runtime_boundaries": {
+    "api": "NOT_CONNECTED",
+    "database": "NOT_CONNECTED",
+    "llm": "NOT_CONNECTED",
+    "agent": "NOT_CONNECTED",
+    "provider": "NOT_CONNECTED",
+    "shared_db_mutation": false
+  },
+  "verification": {
+    "web_tests": {"passed": 14, "failed": 0},
+    "browser_security_tests": {"passed": 3, "failed": 0},
+    "deploy_tests": {"passed": 8, "failed": 0},
+    "tooling_tests": {"passed": 273, "failed": 14, "classification": "ISOLATED_BRANCH_PROJECTION_AND_FROZEN_A14_CHECKSUM"},
+    "browser_1920x1080": "PASS_LOCAL",
+    "public_browser": "PENDING_DEPLOYMENT"
+  },
+  "image": {
+    "local_test_digest": "sha256:0908ab30122791ad14b0f13b2556fc54b20ff6e40657d1f40102fe3574953444"
+  },
+  "raw_sha256": {
+    "apps/web/server.mjs": "F5351CBE826C86B773B16B322089D4002781432A932594BA8C2CB4C1CB0E15EB",
+    "apps/web/ui-preview.html": "9B1F10935D4161B73AE54B78DCB0B4AC0D3B08009371BCFE850E64A3E93D2820",
+    "deploy/ysna/compose.public-preview.yml": "8361C6AEEF2C2A0EB0D54FB901CE078AA22A505D2F741FE25332BC8E16FCB867",
+    "deploy/ysna/Dockerfile.web-preview": "D12E492682B13E02E934EB1DD1556DBED5E93C87D445A102D5B70E5D8198932A",
+    "deploy/ysna/deploy-public-preview.sh": "B6FB92C08467D978F3AFCA16447913F04BA5A7F733B615D87B5108369C7EF702"
+  },
+  "self_reference": false
+}
