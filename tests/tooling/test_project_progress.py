@@ -425,6 +425,79 @@ class ProjectProgressContractTests(unittest.TestCase):
             validate(repository, **{**defaults, "actual_remote_head": "e" * 40}),
         )
 
+    def test_phase_b_test_review_exact22_descendant_allows_pending_push_only(self) -> None:
+        checker = self.require_checker()
+        validate = getattr(checker, "validate_repository_projection", None)
+        self.assertIsNotNone(validate, "validated-base descendant projection is not implemented")
+        base = "165a9bfff5e085bfec322c748e83464477642f8a"
+        head = "a" * 40
+        allowed = [
+            "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
+            "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md",
+            "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json",
+            "docs/evidence/manifests/PHASE_B_GATE_PROGRESS_PROJECTION_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/SESSION_CHECKPOINT_2026-08-21_PHASE_B_GATE.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-phase-b-gate-start.json",
+            "docs/test_reports/PHASE_B_GATE_INDEPENDENT_TEST_REPORT.md",
+            "docs/validation/PHASE_B_GATE_AUTHORITY_CONFLICT_EVIDENCE.md",
+            "docs/validation/PHASE_B_GATE_VALIDATION.md",
+            "docs/work_orders/PHASE_B_GATE_INVOCATION_PROMPT.md",
+            "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R2.md",
+            "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R3.md",
+            "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R2.md",
+            "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
+            "docs/work_orders/PHASE_B_GATE_WORK_INSTRUCTION.md",
+            "scripts/check_phase_b_gate.py",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_phase_b_gate.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        repository = {
+            "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+            "validated_base_commit": base,
+            "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+            "exact_allowed_paths": allowed,
+            "branch": "main",
+            "upstream": "origin/main",
+            "remote_head": base,
+            "push_status": "PUSH_PENDING_MAIN",
+        }
+        phase_b_progress = {
+            "current_work_package": "PHASE_B_GATE",
+            "status": "TEST_REVIEW",
+            "active_work_instruction": {
+                "result_status": "COMPLETED",
+                "package_status": "TEST_REVIEW",
+                "accepted": False,
+            },
+        }
+        defaults = {
+            "actual_head": head,
+            "actual_branch": "main",
+            "actual_upstream": "origin/main",
+            "actual_remote_head": base,
+            "base_is_ancestor": True,
+            "actual_changed_paths": allowed,
+            "working_tree_mode": False,
+            "progress": phase_b_progress,
+        }
+
+        self.assertEqual([], validate(repository, **defaults))
+
+        product_path = copy.deepcopy(repository)
+        product_path["exact_allowed_paths"] = sorted([*allowed, "packages/recovery/service.py"])
+        self.assertIn(
+            "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN",
+            validate(product_path, **{**defaults, "actual_changed_paths": product_path["exact_allowed_paths"]}),
+        )
+
+        accepted = copy.deepcopy(phase_b_progress)
+        accepted["active_work_instruction"]["accepted"] = True
+        self.assertIn("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", validate(repository, **{**defaults, "progress": accepted}))
+
     def test_event_sequence_and_complete_event_contract_are_guarded(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)

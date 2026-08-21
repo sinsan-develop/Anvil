@@ -944,7 +944,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "F9DE58D1DA04B6F06DF85032D4581E7BDE136AF03469F20C2A52C1188286EF3D"
+      "sha256": "0471A64CF0B1188905BA31589603FCE3BE97662775112841EA262419FDF084B5"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -964,7 +964,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "68454EBD5BED08DAB516DA733E8EBACBB84545F41F2AD4886802135C52934696"
+      "sha256": "32555659A2C2693A23781A5CFF0D9F53E44549423FFB7BBE251BBA3659C42ADC"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "29DC61FCEB4AB63A0F9538DC0275314C793C0109A6331171DE204B214181ADE0"
+      "sha256": "5CBA071DF878B4D1CE10FCE7B78ACDC4805AF87A7F3814DFC90FC0E97AD97043"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1102,32 +1102,39 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb",
+    "validated_base_commit": "165a9bfff5e085bfec322c748e83464477642f8a",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb",
+    "remote_head": "165a9bfff5e085bfec322c748e83464477642f8a",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/B-12_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+      "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
+      "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json",
+      "docs/evidence/manifests/PHASE_B_GATE_PROGRESS_PROJECTION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/SESSION_CHECKPOINT_2026-08-21_PHASE_B_GATE.md",
       "docs/progress/build-progress.json",
-      "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-b12-accepted-r2.json",
-      "docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md",
-      "scripts/check_a13_repository_scan.py",
-      "scripts/check_g07_baseline.py",
-      "scripts/check_phase_g_gate.py",
+      "docs/progress/progress-handoff-detached-digest-phase-b-gate-start.json",
+      "docs/test_reports/PHASE_B_GATE_INDEPENDENT_TEST_REPORT.md",
+      "docs/validation/PHASE_B_GATE_AUTHORITY_CONFLICT_EVIDENCE.md",
+      "docs/validation/PHASE_B_GATE_VALIDATION.md",
+      "docs/work_orders/PHASE_B_GATE_INVOCATION_PROMPT.md",
+      "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R2.md",
+      "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R3.md",
+      "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R2.md",
+      "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
+      "docs/work_orders/PHASE_B_GATE_WORK_INSTRUCTION.md",
+      "scripts/check_phase_b_gate.py",
       "scripts/check_project_progress.py",
-      "tests/tooling/test_a13_repository_scan.py",
-      "tests/tooling/test_g07_baseline.py",
-      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_phase_b_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-08-21T23:00:00+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: B-12 acceptance governance exact15; frozen product mutation 0",
-    "local_head": "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb"
+    "observed_at": "2026-08-22T01:00:00+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: Phase B Gate TEST_REVIEW exact44; frozen product mutation 0",
+    "local_head": "355b99a1ec09cdcd6c0ac9767c3ef9c369937880"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1289,12 +1296,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "29DC61FCEB4AB63A0F9538DC0275314C793C0109A6331171DE204B214181ADE0"
+      "sha256": "5CBA071DF878B4D1CE10FCE7B78ACDC4805AF87A7F3814DFC90FC0E97AD97043"
     }
   },
   "next_work_package": {
     "package_id": "C-01",
     "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE"
   },
-  "snapshot_hash": "B8DBC5E1709E6E9FAB17EE77975D202EA848AE0DF27BBCD797365BEF2A54C42E"
+  "snapshot_hash": "0E15C7DF99A0C623548F67F89EF99B125764C14D3149ABCE366A930B14EFA9D4"
 }

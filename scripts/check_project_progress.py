@@ -4895,6 +4895,7 @@ def validate_repository_projection(
     base_is_ancestor: bool,
     actual_changed_paths: list[str],
     working_tree_mode: bool,
+    progress: Mapping[str, Any] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     base = repository.get("validated_base_commit")
@@ -4960,7 +4961,20 @@ def validate_repository_projection(
     b11_acceptance_projection = repository.get("validated_base_commit") == "28bcf4742fee0536b09c75ce352e6f2ae505cebe" and "docs/evidence/manifests/B-11_ACCEPTANCE_PROGRESS_MANIFEST_R2.json" in allowed
     b12_start_projection = repository.get("validated_base_commit") == "370a39436c4b15a84483017583a9fe3878652504" and "docs/evidence/manifests/B-12_START_EVIDENCE_MANIFEST.json" in allowed
     b12_completion_projection = (repository.get("validated_base_commit") == "26e2fcf1977d11c22ce81b400b3bf0696337d4ac" and "docs/evidence/manifests/B-12_COMPLETION_PROGRESS_MANIFEST.json" in allowed) or (repository.get("validated_base_commit") == "e29ffcfc6e401af43bdb2672fd0817252792d652" and "docs/evidence/manifests/B-12_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed) or (repository.get("validated_base_commit") == "3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0" and "docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed)
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    phase_b_paths = {
+        "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md", "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md", "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/PHASE_B_GATE_PROGRESS_PROJECTION_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/SESSION_CHECKPOINT_2026-08-21_PHASE_B_GATE.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-phase-b-gate-start.json", "docs/test_reports/PHASE_B_GATE_INDEPENDENT_TEST_REPORT.md", "docs/validation/PHASE_B_GATE_AUTHORITY_CONFLICT_EVIDENCE.md", "docs/validation/PHASE_B_GATE_VALIDATION.md", "docs/work_orders/PHASE_B_GATE_INVOCATION_PROMPT.md", "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R2.md", "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R3.md", "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R2.md", "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md", "docs/work_orders/PHASE_B_GATE_WORK_INSTRUCTION.md", "scripts/check_phase_b_gate.py", "scripts/check_project_progress.py", "tests/tooling/test_phase_b_gate.py", "tests/tooling/test_project_progress.py",
+    }
+    phase_b_instruction = (progress or {}).get("active_work_instruction") or {}
+    phase_b_projection = (
+        repository.get("validated_base_commit") == "165a9bfff5e085bfec322c748e83464477642f8a"
+        and set(allowed) == phase_b_paths
+        and (progress or {}).get("current_work_package") == "PHASE_B_GATE"
+        and (progress or {}).get("status") == "TEST_REVIEW"
+        and phase_b_instruction.get("result_status") == "COMPLETED"
+        and phase_b_instruction.get("package_status") == "TEST_REVIEW"
+        and phase_b_instruction.get("accepted") is False
+    )
+    if any(not _is_evidence_only_path(path) for path in allowed) and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -4970,17 +4984,17 @@ def validate_repository_projection(
         errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
     if sorted(set(actual_changed_paths)) != allowed:
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+    remote_lag_declared = (
+        repository.get("push_status") == "PUSH_PENDING_MAIN"
+        and repository.get("remote_head") == actual_remote_head
+        and isinstance(actual_remote_head, str)
+        and re.fullmatch(r"[0-9a-f]{40}", actual_remote_head) is not None
+        and actual_head != base
+    )
     if working_tree_mode:
-        remote_lag_declared = (
-            repository.get("push_status") == "PUSH_PENDING_MAIN"
-            and repository.get("remote_head") == actual_remote_head
-            and isinstance(actual_remote_head, str)
-            and re.fullmatch(r"[0-9a-f]{40}", actual_remote_head) is not None
-            and actual_remote_head != base
-        )
         if actual_head != base or (actual_remote_head != base and not remote_lag_declared):
             errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
-    elif actual_remote_head != actual_head:
+    elif actual_remote_head != actual_head and not remote_lag_declared:
         errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
     return sorted(set(errors))
 
@@ -5028,6 +5042,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 base_is_ancestor=base_is_ancestor,
                 actual_changed_paths=changed_paths,
                 working_tree_mode=working_tree_mode,
+                progress=bundle["progress"],
             )
         )
         if not repository.get("worktree_status"):
