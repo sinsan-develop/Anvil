@@ -1,6 +1,6 @@
 # Anvil 통합검증매트릭스 v2 successor
 
-> 상태: `PROPOSED / PENDING_HUMAN_BINDING`
+> 상태: `HUMAN_APPROVED_SEMANTIC_SUCCESSOR_SCOPE`
 > 목적: Agent Teams·Capability MoA·원격 제어·Telegram 보조 채널의 successor 검증 기준을 historical v1.4와 분리해 정의한다.
 > historical 기준선: `Anvil_통합검증매트릭스_v1.md` (v1.4, 108 packages, 255 AV IDs) — 변경하지 않음
 > 상위 설계: `Anvil_설계서_v2.md` v2.7 successor draft
@@ -8,7 +8,7 @@
 
 ## 1. 승격 경계
 
-이 문서는 v1.4를 대체하지 않는다. C-16~C-20의 framework-free scoped prototype 증거를 successor 검증 대상으로 등록할 뿐이며, active implementation baseline·Phase B Gate·C-01을 자동으로 변경하지 않는다. `PROPOSED` 상태에서 사람의 별도 binding 없이는 이 문서의 기준으로 Gate를 통과시킬 수 없다.
+이 문서는 v1.4를 대체하지 않는다. C-16~C-20의 framework-free scoped prototype 증거를 successor 검증 대상으로 등록할 뿐이며, active implementation baseline·Phase B Gate·C-01을 자동으로 변경하지 않는다. 신산님의 `HUMAN_APPROVED_SEMANTIC_SUCCESSOR_SCOPE` binding은 문서·evidence 정합성과 C-21 준비 범위에만 적용된다.
 
 ## 2. successor package 역색인
 
@@ -58,12 +58,12 @@
 
 | Gate | 종료 기준 | 현재 판정 |
 |---|---|---|
-| G-SUCCESSOR-01 | successor 문서와 상호참조 hash 정합성, historical hash 보존 | `PENDING` |
-| G-SUCCESSOR-02 | C-16~C-20 package/evidence/검증 ID 1회 역색인 | `PENDING` |
-| G-SUCCESSOR-03 | 제안 approval이 새 subject hash에 결박되고 기존 scope 불변 | `PENDING` |
-| G-SUCCESSOR-04 | 33 focused tests·compileall·diff-check·scoped review evidence | `PENDING` |
-| G-SUCCESSOR-05 | progress/HANDOFF/event와 successor hash 정합, lease null | `PENDING` |
-| G-SUCCESSOR-06 | operational NOT_EXECUTED 경계가 PASS로 승격되지 않음 | `PENDING` |
+| G-SUCCESSOR-01 | successor 문서와 상호참조 hash 정합성, historical hash 보존 | `ALIGNED` |
+| G-SUCCESSOR-02 | C-16~C-20 package/evidence/검증 ID 1회 역색인 | `ALIGNED` |
+| G-SUCCESSOR-03 | 승인 binding이 subject hash에 결박되고 기존 scope 불변 | `HUMAN_APPROVED_SEMANTIC_SUCCESSOR_SCOPE` |
+| G-SUCCESSOR-04 | 33 focused tests·compileall·diff-check·scoped review evidence | `PASS_PROTOTYPE_ONLY` |
+| G-SUCCESSOR-05 | progress/HANDOFF/event와 successor hash 정합, lease null | `ALIGNED` |
+| G-SUCCESSOR-06 | operational NOT_EXECUTED 경계가 PASS로 승격되지 않음 | `NOT_EXECUTED_BOUNDARY_PRESERVED` |
 
 ## 5. 운영 미실행 경계
 
@@ -71,4 +71,4 @@
 
 ## 6. 판정 및 다음 행동
 
-현재 판정은 `ALIGNMENT_REQUIRED / PROPOSED`다. 사람의 binding이 생성·확정되기 전까지 C-01을 시작하지 않고, historical Phase B Gate 상태도 변경하지 않는다.
+현재 판정은 `BOUND / PROTOTYPE_ONLY`다. 승인 binding은 C-16~C-20 successor 문서·evidence 정합성과 C-21 WorkInstruction 준비만 허용한다. C-01을 시작하지 않고 historical Phase B Gate 상태도 변경하지 않는다.

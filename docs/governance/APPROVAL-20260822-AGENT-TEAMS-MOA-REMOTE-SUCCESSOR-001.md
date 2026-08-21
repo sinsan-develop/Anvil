@@ -23,7 +23,7 @@ Agent Teams 대화형 협업, capability-based MoA, Web Console/PWA 원격 제�
 | progress/HANDOFF | 현재 historical operational projection 보존, successor 반영은 별도 승인 후 수행 |
 | package set | C-16, C-17, C-18, C-19, C-20 (successor package 109~113) |
 
-현재 subject SHA-256 (이 제안이 `PENDING`인 동안의 검토용 digest):
+승인 subject SHA-256 (승인 binding에 고정된 현재 digest):
 
 | 산출물 | SHA-256 |
 |---|---|
@@ -31,8 +31,8 @@ Agent Teams 대화형 협업, capability-based MoA, Web Console/PWA 원격 제�
 | 작업계획서 v1.6 draft | `FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31` |
 | historical matrix v1.4 | `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5` |
 | historical test plan v1.5 | `9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644` |
-| successor matrix | `3F795C4FCB20BD0824596D6C53FF7C8DC3049DC4A9457249541C270B995C9CCC` |
-| successor test plan | `1EC873172603D7353E6D1F500771A451B654574A66ABD44BE14B6A12B91F7F9B` |
+| successor matrix | `696BED77D4CC6C4D928EA6931F1ADABE9B585738CBAF8A611AA694DB57C0FFC3` |
+| successor test plan | `F3B08A8CF3805351D2B1989995A87DF7862C03CBCE1B242D5DEF8EB0662CEACD` |
 | current HANDOFF | `CD741D2CC15AAB27C84A1499BD2EF73B76E4B43771FB297EF7E9207908BF9E11` |
 
 ## 3. 허용 범위
