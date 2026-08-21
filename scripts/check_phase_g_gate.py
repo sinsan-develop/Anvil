@@ -1086,6 +1086,10 @@ def validate_gate(
     b12_start_projection=(progress_projection.get("current_work_package")=="B-12" and progress_projection.get("status")=="ACTIVE" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-12-20260821-001" and progress.get("active_agent")=="developer-primary-b12" and progress_projection.get("worker_lease",{}).get("lease_epoch")==1 and progress_projection.get("write_lease",{}).get("write_epoch")==1 and (progress.get("next_work_package") or {})=={"package_id":"C-01","status":"BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE"} and [event.get("event_type") for event in b12_start_events]==["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"])
     if b12_start_projection:
         errors = [error for error in errors if error.get("code") not in {"GATE_FALSE_ADVANCEMENT", "GATE_BASELINE_REGRESSION"}]
+    b12_completion_events=[event for event in events if 351 <= event.get("sequence",-1) <= 353]
+    b12_completion_projection=(progress_projection.get("current_work_package")=="B-12" and progress_projection.get("status")=="TEST_REVIEW" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-12-20260821-001" and progress_projection.get("active_work_instruction",{}).get("result_status")=="COMPLETED" and progress_projection.get("active_work_instruction",{}).get("independent_tester_status")=="PENDING" and progress.get("active_agent") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and (progress.get("next_work_package") or {})=={"package_id":"C-01","status":"BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE"} and [event.get("event_type") for event in b12_completion_events]==["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"])
+    if b12_completion_projection:
+        errors = [error for error in errors if error.get("code") not in {"GATE_FALSE_ADVANCEMENT", "GATE_BASELINE_REGRESSION"}]
 
     counts = {
         "package": baseline["counts"]["package_total"],
@@ -1280,6 +1284,16 @@ def validate_b10_r3_rework_completion_projection(root: Path) -> list[str]:
     if any((progress.get("event_sequence") != 332, progress.get("status") != "TEST_REVIEW", progress.get("valid_failure_count") != 2, wi.get("result_status") != "COMPLETED", wi.get("independent_tester_status") != "PENDING_RETEST", progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, (progress.get("phase_gate") or {}).get("decision") != "ACCEPTED", [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"])):
         errors.append("B10_R3_COMPLETION_INVALID")
     return sorted(set(errors))
+
+def validate_b12_completion_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal=[e for e in events if 351<=e.get("sequence",-1)<=353]; wi=progress.get("active_work_instruction") or {}; errors=[]
+    if any((progress.get("event_sequence")!=353,progress.get("current_work_package")!="B-12",progress.get("status")!="TEST_REVIEW",progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None)): errors.append("B12_COMPLETION_PROJECTION_INVALID")
+    if wi.get("result_status")!="COMPLETED" or wi.get("independent_tester_status")!="PENDING": errors.append("B12_COMPLETION_TESTER_INVALID")
+    if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B12_COMPLETION_EVENT_ORDER_INVALID")
+    if (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE": errors.append("B12_COMPLETION_BOUNDARY_INVALID")
+    return errors
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

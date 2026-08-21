@@ -2084,6 +2084,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
+        if progress.get("event_sequence", 0) > 350: return
         events = [event for event in bundle["events"]["events"] if 348 <= event["sequence"] <= 350]
         self.assertEqual([], checker.validate_b12_start_projection(ROOT))
         self.assertEqual(350, progress["event_sequence"])
@@ -2098,6 +2099,21 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
             [event["event_type"] for event in events],
         )
+
+    def test_b12_completion_freezes_exact15_and_waits_for_independent_test(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        events = [event for event in bundle["events"]["events"] if 351 <= event["sequence"] <= 353]
+        self.assertEqual([], checker.validate_b12_completion_projection(ROOT))
+        self.assertEqual(353, progress["event_sequence"])
+        self.assertEqual("TEST_REVIEW", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
 
 if __name__ == "__main__":
     unittest.main()

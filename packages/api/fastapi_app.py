@@ -305,9 +305,21 @@ def create_app(
     authenticate: Authenticator | None = None,
     security_config: WebSecurityConfig | None = None,
     authorization_resolver: AuthorizationResolver | None = None,
+    recovery_ports: ApiPorts | None = None,
 ) -> FastAPI:
     api_registry = registry or canonical_api_registry()
-    application_ports = ports or ApiPorts()
+    base_ports = ports or ApiPorts()
+    if recovery_ports is None:
+        application_ports = base_ports
+    else:
+        duplicate_commands = set(base_ports.commands) & set(recovery_ports.commands)
+        duplicate_queries = set(base_ports.queries) & set(recovery_ports.queries)
+        if duplicate_commands or duplicate_queries:
+            raise ValueError("recovery ports must not replace an existing application port")
+        application_ports = ApiPorts(
+            commands={**base_ports.commands, **recovery_ports.commands},
+            queries={**base_ports.queries, **recovery_ports.queries},
+        )
     stream = event_stream or EmptyEventStream()
     authenticator = authenticate or _deny_authentication
     config = security_config or WebSecurityConfig()

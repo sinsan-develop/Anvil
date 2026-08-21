@@ -1131,6 +1131,18 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
 def validate_evidence_manifest(root: Path) -> list[str]:
     root = root.resolve()
     progress = _load_json(root / "docs/progress/build-progress.json")
+    predecessor = root / EVIDENCE_R2_REL
+    if predecessor.is_file():
+        predecessor_manifest = _load_json(predecessor)
+        hostile_errors = []
+        if predecessor_manifest.get("self_reference") is not False:
+            hostile_errors.append("EVIDENCE_SELF_REFERENCE_FORBIDDEN")
+        if predecessor_manifest.get("target_hash") == "0" * 64:
+            hostile_errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
+        if hostile_errors:
+            return hostile_errors
+    if progress.get("event_sequence") == 353:
+        return validate_b12_completion_projection(root)
     if progress.get("event_sequence") == 350:
         return validate_b12_start_projection(root)
     errors: list[str] = []
@@ -1473,6 +1485,16 @@ def validate_b10_r3_rework_completion_projection(root: Path) -> list[str]:
     if manifest.get("developer_target_hash") != "5DEF1A06A2DC87BB074BA18F1BC346B098400B61741208BF1CF419B94BD21CD4" or manifest.get("developer_raw_artifact_count") != 6: errors.append("B10_R3_COMPLETION_FREEZE_INVALID")
     if len(progress.get("repository", {}).get("exact_allowed_paths", [])) != 20: errors.append("B10_R3_COMPLETION_SCOPE_INVALID")
     return errors
+
+def validate_b12_completion_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal=[e for e in events if 351<=e.get("sequence",-1)<=353]; wi=progress.get("active_work_instruction") or {}; errors=[]
+    if any((progress.get("event_sequence")!=353,progress.get("current_work_package")!="B-12",progress.get("status")!="TEST_REVIEW",progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None)): errors.append("B12_COMPLETION_PHASE_INVALID")
+    if wi.get("result_status")!="COMPLETED" or wi.get("independent_tester_status")!="PENDING": errors.append("B12_COMPLETION_TESTER_INVALID")
+    if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B12_COMPLETION_EVENT_ORDER_INVALID")
+    if len((progress.get("repository") or {}).get("exact_allowed_paths",[]))!=28: errors.append("B12_COMPLETION_SCOPE_INVALID")
+    return errors
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
