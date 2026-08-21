@@ -1,7 +1,18 @@
 from pathlib import Path
+from pathlib import PurePosixPath
 import unittest
 ROOT=Path(__file__).parents[2]; DEPLOY=ROOT/'deploy'/'ysna'
 class DeploymentContractTests(unittest.TestCase):
+ def test_deploy_root_is_parent_of_repo(self):
+  deploy=(DEPLOY/'deploy.sh').read_text()
+  self.assertIn('SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"', deploy)
+  self.assertIn('ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"', deploy)
+  self.assertIn('REPO="$ROOT/repo"', deploy)
+  # The deployed script is inside <deploy-root>/repo/deploy/ysna.
+  script=PurePosixPath('/srv/anvil/repo/deploy/ysna/deploy.sh')
+  deploy_root=script.parents[3]
+  self.assertEqual(PurePosixPath('/srv/anvil'), deploy_root)
+
  def test_artifacts_and_boundary(self):
   for name in ('Dockerfile.web','compose.internal.yml','.dockerignore','README.md'): self.assertTrue((DEPLOY/name).is_file())
   text=(DEPLOY/'compose.internal.yml').read_text(); self.assertIn('"127.0.0.1:4173:4173"',text); self.assertIn('read_only: true',text); self.assertIn('cap_drop: [ALL]',text); self.assertIn('no-new-privileges:true',text)
