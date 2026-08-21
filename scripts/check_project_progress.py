@@ -4954,7 +4954,8 @@ def validate_repository_projection(
     b11_completion_projection = repository.get("validated_base_commit") == "3304c7d82fd7101f6913cbee7b98bcd05ac75ede" and "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json" in allowed
     b11_rework_projection = repository.get("validated_base_commit") == "ce8179527a64128899df21542b24f1b7f85e35b1" and "docs/evidence/manifests/B-11_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed
     b11_rework_projection = b11_rework_projection or (repository.get("validated_base_commit") == "f1e3a6bc8c145ab1961fa2b9dcabdea68191074b" and "docs/evidence/manifests/B-11_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed)
-    if any(not _is_evidence_only_path(path) for path in allowed) and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    b11_acceptance_projection = repository.get("validated_base_commit") == "28bcf4742fee0536b09c75ce352e6f2ae505cebe" and "docs/evidence/manifests/B-11_ACCEPTANCE_PROGRESS_MANIFEST_R2.json" in allowed
+    if any(not _is_evidence_only_path(path) for path in allowed) and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -5298,6 +5299,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b11_rework_start_projection(bundle["_root"]))
         elif current_manifest_relative == "docs/evidence/manifests/B-11_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json":
             errors.extend(validate_b11_r2_completion_projection(bundle["_root"]))
+        elif current_manifest_relative == "docs/evidence/manifests/B-11_ACCEPTANCE_PROGRESS_MANIFEST_R2.json":
+            errors.extend(validate_b11_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b08_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json":
@@ -5356,6 +5359,7 @@ def validate_b10_start_projection(root: Path) -> list[str]:
 def validate_b11_start_projection(root: Path) -> list[str]:
     bundle = load_bundle(root)
     progress = bundle["progress"]
+    if progress.get("event_sequence") == 347: return []
     manifest = _load_json(root / "docs/evidence/manifests/B-11_START_EVIDENCE_MANIFEST.json")
     events = [event for event in bundle["events"]["events"] if 334 <= event["sequence"] <= 336]
     errors = []
@@ -5412,6 +5416,7 @@ def validate_b11_start_projection(root: Path) -> list[str]:
 def validate_b11_completion_projection(root: Path) -> list[str]:
     bundle = load_bundle(root)
     progress = bundle["progress"]
+    if progress.get("event_sequence") == 347: return []
     manifest = _load_json(root / "docs/evidence/manifests/B-11_COMPLETION_PROGRESS_MANIFEST.json")
     events = [event for event in bundle["events"]["events"] if 337 <= event["sequence"] <= 339]
     errors: list[str] = []
@@ -5450,6 +5455,7 @@ def validate_b11_completion_projection(root: Path) -> list[str]:
 def validate_b11_rework_start_projection(root: Path) -> list[str]:
     bundle = load_bundle(root)
     progress = bundle["progress"]
+    if progress.get("event_sequence") == 347: return []
     manifest = _load_json(root / "docs/evidence/manifests/B-11_REWORK_START_PROGRESS_MANIFEST_R2.json")
     events = [event for event in bundle["events"]["events"] if 340 <= event["sequence"] <= 343]
     worker = progress.get("worker_lease") or {}
@@ -5530,6 +5536,7 @@ def validate_b11_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b11_r2_completion_projection(root: Path) -> list[str]:
     bundle = load_bundle(root); progress = bundle["progress"]
+    if progress.get("event_sequence") == 347: return []
     manifest = _load_json(root / "docs/evidence/manifests/B-11_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json")
     events = [event for event in bundle["events"]["events"] if 344 <= event["sequence"] <= 346]
     wi = progress.get("active_work_instruction") or {}; errors: list[str] = []
@@ -5549,6 +5556,26 @@ def validate_b11_r2_completion_projection(root: Path) -> list[str]:
         total+=len(raw); canonical.append((relative.encode(),f"{relative}\t{len(raw)}\t{digest}"))
     material="\n".join(v for _,v in sorted(canonical)).encode(); target="sha256:"+hashlib.sha256(material).hexdigest().upper()
     if any((manifest.get("target_canonical_bytes")!=len(material),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B11_R2_COMPLETION_TARGET_MISMATCH")
+    return sorted(set(errors))
+
+
+def validate_b11_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]
+    expected={"docs/evidence/manifests/B-11_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/progress-handoff-detached-digest-b11-accepted-r2.json","docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md","docs/work_orders/B-11_REWORK_WORK_INSTRUCTION_R2.md"}
+    rows=manifest.get("raw_checksums")
+    if not isinstance(rows,list): return ["B11_ACCEPTANCE_RAW_INVALID"]
+    errors=[]; indexed={}; canonical=[]; total=0
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in indexed or relative==manifest.get("artifact_path"): errors.append("B11_ACCEPTANCE_RAW_INVALID"); continue
+        raw=(root/relative).read_bytes(); digest=hashlib.sha256(raw).hexdigest().upper(); indexed[relative]=row; total+=len(raw); canonical.append(f"{relative}\t{len(raw)}\t{digest}")
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=digest: errors.append("B11_ACCEPTANCE_RAW_INVALID")
+    canonical_bytes="\n".join(sorted(canonical)).encode("utf-8"); target="sha256:"+hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if set(indexed)!=expected: errors.append("B11_ACCEPTANCE_RAW_SET_INVALID")
+    if any((manifest.get("target_canonical_bytes")!=len(canonical_bytes),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B11_ACCEPTANCE_TARGET_MISMATCH")
+    accepted=[event for event in bundle["events"]["events"] if event.get("sequence")==347]; historical=progress.get("historical_failure_counts_by_lineage") or {}
+    lineage=progress.get("active_failure_lineage") or {}
+    if any((progress.get("event_sequence")!=347,progress.get("current_work_package")!="B-12",progress.get("status")!="READY","B-11" not in progress.get("completed_packages",[]),progress.get("valid_failure_count")!=0,lineage.get("step_lineage_id")!="B-12",lineage.get("valid_failure_count")!=0,historical.get("B-11")!=1,progress.get("active_work_instruction") is not None,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,(progress.get("next_work_package") or {})!={"package_id":"B-12","status":"READY"},[event.get("event_type") for event in accepted]!=["MAIN_PACKAGE_ACCEPTED"],manifest.get("tester_report_sha256")!="F925ECC0C70E4DC4EE2E0F5BF883E94FD9D5AA666A801448B2044CBF8B6819E5",manifest.get("tester_verdict")!="READY_FOR_MAIN_ACCEPTANCE",manifest.get("blocking_findings")!=0,manifest.get("developer_target_hash")!="25167A1D9C951C9A3E032862F72A4F1D8F5EBCF310585812EE7DC7095F4B3ABA",manifest.get("product_exact_paths_frozen") is not True,manifest.get("product_mutation_after_freeze_count")!=0,len((progress.get("repository") or {}).get("exact_allowed_paths",[]))!=15)): errors.append("B11_ACCEPTANCE_PROJECTION_MISMATCH")
     return sorted(set(errors))
 
 

@@ -1365,6 +1365,12 @@ def validate_repository(
         instruction = progress.get("active_work_instruction") or {}
         if any((progress.get("current_work_package") != "B-11", progress.get("status") != "TEST_REVIEW", instruction.get("result_status") != "COMPLETED", instruction.get("independent_tester_status") != "PENDING_RETEST", progress.get("valid_failure_count") != 1, progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B11_ACCEPTANCE", [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"])):
             _error(errors, "B11_R2_COMPLETION_PROJECTION_MISMATCH", progress_path, "sequence=346")
+    if progress.get("event_sequence") == 347:
+        accepted = [event for event in events if event.get("sequence") == 347]
+        historical = progress.get("historical_failure_counts_by_lineage") or {}
+        lineage = progress.get("active_failure_lineage") or {}
+        if any((progress.get("current_work_package") != "B-12", progress.get("status") != "READY", "B-11" not in progress.get("completed_packages", []), progress.get("valid_failure_count") != 0, lineage.get("step_lineage_id") != "B-12", lineage.get("valid_failure_count") != 0, historical.get("B-11") != 1, progress.get("active_work_instruction") is not None, progress.get("active_agent") is not None, progress.get("worker_lease") is not None, progress.get("write_lease") is not None, (progress.get("next_work_package") or {}) != {"package_id": "B-12", "status": "READY"}, [event.get("event_type") for event in accepted] != ["MAIN_PACKAGE_ACCEPTED"])):
+            _error(errors, "B11_ACCEPTANCE_PROJECTION_MISMATCH", progress_path, "sequence=347")
     return {
         "schema_version": "1.0.0",
         "package_id": "G-07",
@@ -1492,6 +1498,7 @@ def validate_b10_start_projection(root: Path) -> list[str]:
 
 def validate_b11_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 347: return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 334 <= event.get("sequence", -1) <= 336]
     errors = []
@@ -1504,6 +1511,7 @@ def validate_b11_start_projection(root: Path) -> list[str]:
 
 def validate_b11_completion_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 347: return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 337 <= event["sequence"] <= 339]
     errors = []
@@ -1518,12 +1526,14 @@ def validate_b11_completion_projection(root: Path) -> list[str]:
 def validate_b11_r2_completion_projection(root: Path) -> list[str]:
     report=validate_repository(root,verify_git=True); progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); errors=list(report["errors"])
     errors=[e for e in errors if e.get("code") not in {"PROGRESS_RECONCILIATION_MISMATCH","GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN"}]
+    if progress.get("event_sequence") == 347: return errors
     if progress.get("event_sequence")!=346 or progress.get("status")!="TEST_REVIEW": errors.append("B11_R2_COMPLETION_PHASE_INVALID")
     return errors
 
 
 def validate_b11_rework_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 347: return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 340 <= event.get("sequence", -1) <= 343]
     worker = progress.get("worker_lease") or {}; write = progress.get("write_lease") or {}; errors = []

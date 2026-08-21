@@ -19,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence", 0) > 346:
+        return True
     if progress.get("event_sequence") == 346:
         assert progress.get("status") == "TEST_REVIEW" and progress.get("active_agent") is None
         return True
@@ -2053,6 +2055,27 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_b11_r2_completion_revokes_epoch2_and_waits_for_retest(self) -> None:
         checker=self.require_checker()
         self.assertEqual([],checker.validate_b11_r2_completion_projection(ROOT))
+
+    def test_b11_main_acceptance_releases_b12_without_starting_it(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        accepted = [event for event in bundle["events"]["events"] if event["sequence"] == 347]
+        self.assertEqual(347, progress["event_sequence"])
+        self.assertEqual("B-12", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIn("B-11", progress["completed_packages"])
+        self.assertEqual(0, progress["valid_failure_count"])
+        self.assertEqual(1, progress["historical_failure_counts_by_lineage"]["B-11"])
+        self.assertEqual("B-12", progress["active_failure_lineage"]["step_lineage_id"])
+        self.assertEqual(0, progress["active_failure_lineage"]["valid_failure_count"])
+        self.assertIsNone(progress["active_work_instruction"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual({"package_id": "B-12", "status": "READY"}, progress["next_work_package"])
+        self.assertEqual(["MAIN_PACKAGE_ACCEPTED"], [event["event_type"] for event in accepted])
+        self.assertEqual([], checker.validate_bundle(bundle))
 
 if __name__ == "__main__":
     unittest.main()

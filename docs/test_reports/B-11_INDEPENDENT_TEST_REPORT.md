@@ -1,83 +1,86 @@
-# B-11 Independent Test Report
+# B-11 R2 Independent Retest Report
 
 - Package: `B-11`
-- Tester result: `FAILURE_REPORT`
-- Verdict: `REWORK_REQUIRED`
-- Step lineage: `B-11`
-- Failure fingerprint: `BLK-B11-001-SCOPE-AUTHORIZATION-NOT-ENFORCED`
-- Severity: `CRITICAL`
-- Tested commit: `main=origin/main=ce8179527a64128899df21542b24f1b7f85e35b1`, clean
-- Progress state: `sequence=339`, `TEST_REVIEW`, no worker/write lease; B-12 remains `BLOCKED_PENDING_B11_ACCEPTANCE`
+- Tester result: `COMPLETED`
+- Verdict: `READY_FOR_MAIN_ACCEPTANCE`
+- Blocking findings: `0`
+- Retested finding: `BLK-B11-001-SCOPE-AUTHORIZATION-NOT-ENFORCED / CLOSED`
+- Tested commit: `main=origin/main=28bcf4742fee0536b09c75ce352e6f2ae505cebe`, clean
+- Progress state: `sequence=346`, `TEST_REVIEW / PENDING_RETEST`, no worker/write lease
+- Next package: `B-12 / BLOCKED_PENDING_B11_ACCEPTANCE`
 
 ## Authority and frozen evidence
 
-The current design, plan, matrix, test plan, operating rules, WorkInstruction, and Invocation hashes match the B-11 binding. WorkInstruction SHA-256 is `B015056A38BD70A995D6F886231BC1733988D6D0ECCD6C2B71E4EA0B04B4B45F`; Invocation SHA-256 is `1FCD913209A2B06EA0E88B752A760DC933F84656F3FCE03768C570FAA64C6A07`.
+The current design, work plan, validation matrix, test plan, and operating-rules hashes match the approved B-11 binding. R2 WorkInstruction `WI-B-11-20260821-002` SHA-256 is `1B72ABC408EF8B4C8A3CAE657201F3D1C1A00D1000D1E417D61942F457941002`; Invocation SHA-256 is `DE63A51A7E1A1A7AAE0A0B865D0C3BF7483EA6860261F78A5DC4CD6C129CF094`. The R2 instruction correctly binds the prior Tester report SHA-256 `EFBE6313A9BFF589702149E7042FDA127DF99CA323FD864C8EC16EA72D07441C` and the same failure fingerprint.
 
-The Developer manifest SHA-256 is `BE11EA4C21FC34484CDF5B4CC924CAC03E9E64940A69EE014D9CE18D5D6A0C29`. All raw 16 artifact byte counts and SHA-256 values were independently recalculated with zero mismatch; its canonical projection is 1,567 bytes and target is `FCA6FB92BD092C68BA9F0C500B107E95198FE2B693C6F7F14E7C09680D2E29F5`.
+Developer R2 EvidenceManifest SHA-256 is `3F60EAE9A978EA8ED0ABB83CEB77EB0B1828251895AB0B323C5CC4C8481B8C23`. All raw 7 byte counts and hashes were independently recalculated with zero mismatch; canonical projection length is 750 bytes and target is `25167A1D9C951C9A3E032862F72A4F1D8F5EBCF310585812EE7DC7095F4B3ABA`.
 
-The completion projection manifest SHA-256 is `4208EAD1D9153424DBEF6AAA018A7E3C88DDCA36DE7A131FE504EB6AC81C66CD`. All 12 raw checksum rows were independently recalculated with zero mismatch; its canonical projection is 1,335 bytes and target is `D8D912463EA9F859F313A8F54FA233751B31EC99C5E2F5D5B77D39BB2A924776`. Both manifests keep `self_reference=false`.
+R2 completion projection manifest SHA-256 is `0629AA77CCAE6D7AAD4A14D34E25D758B9CF732951DAFBC8518895CC79BC5CD5`. All raw 13 checksum rows were independently recalculated with zero mismatch; canonical projection length is 1,471 bytes and target is `E773FABE8A5D27E9F4539EF8C09855DBA0349BBAE948630F9FE666FDE43D7E3E`. Both manifests retain `self_reference=false`.
 
-## Blocking finding
+## BLK-B11-001 closure
 
-### BLK-B11-001 — project, environment, and role authorization is not enforced
+The R2 boundary uses a server-supplied `AuthorizationResolver` to produce an authoritative project, environment, and allowed-role scope from the canonical endpoint and path parameters. A matching permission label is necessary but no longer sufficient. Resolver absence or incomplete/mismatched role, project, or environment scope fails closed before request body parsing, application command/query dispatch, or SSE journal access.
 
-**Contract.** The WorkInstruction requires Approval, artifact, SSE, and other endpoints to enforce project, environment, and role authorization on every request at the server boundary. Same-origin and authentication are explicitly not substitutes for authorization.
+Independent ASGI hostile retest:
 
-**Cause.** `packages/api/fastapi_app.py::_authorize` checks only whether `endpoint.permission` is present in `principal.permissions`. `SessionPrincipal.actor_role`, `project_ids`, and `environment_ids` are not inspected by this authorization path. Approval, artifact, and SSE handlers dispatch after that permission-only check.
+| Principal variant | Approval POST | Artifact GET | SSE GET | Command/query/journal access |
+|---|---:|---:|---:|---:|
+| resolver absent, nominal permission labels | 403 | 403 | 403 | `0/0/0` |
+| wrong role | 403 | 403 | 403 | `0/0/0` |
+| missing project | 403 | 403 | 403 | `0/0/0` |
+| cross project | 403 | 403 | 403 | `0/0/0` |
+| missing environment | 403 | 403 | 403 | `0/0/0` |
+| cross environment | 403 | 403 | 403 | `0/0/0` |
 
-**Independent hostile evidence.** Three principals were tested separately while retaining only the endpoint permission string:
+The stable codes were `AUTHORIZATION_SCOPE_UNRESOLVED`, `AUTHORIZATION_ROLE_DENIED`, `AUTHORIZATION_PROJECT_DENIED`, and `AUTHORIZATION_ENVIRONMENT_DENIED` as applicable. Hostile caller-controlled project/environment values were also placed in body, query, and headers; they did not grant authorization. The nominal owner with authoritative `project-1 / env-local / owner` scope produced Approval/artifact/SSE `200/200/200` with the expected command/query/journal counters `1/1/1`.
 
-| Variant | Approval POST | Artifact GET | SSE GET | Observed dispatch |
-|---|---:|---:|---:|---|
-| wrong role (`viewer`) with nominal project/environment | 200 | 200 | 200 | approval and artifact ports called; SSE journal read |
-| empty project scope | 200 | 200 | 200 | approval and artifact ports called; SSE journal read |
-| empty environment scope | 200 | 200 | 200 | approval and artifact ports called; SSE journal read |
+An independent real uvicorn run repeated all five role/project/environment variants across the same three sensitive endpoints. All 15 requests returned the expected stable HTTP 403 codes, and the observed command/query/journal counters remained `0/0/0`. Therefore `BLK-B11-001` is closed.
 
-The hostile assertion required `403/403/403` for each variant and exited `1`. Actual output was `SCOPE_VARIANTS [('wrong_role', 200, 200, 200, 2, 1), ('no_project', 200, 200, 200, 4, 1), ('no_environment', 200, 200, 200, 6, 1)]`; approval/artifact port side effects totalled six, and SSE read once per variant. A combined viewer plus empty-project plus empty-environment case independently produced `200/200/200`, two application-port calls, and one SSE read.
+## Security ordering and API contracts
 
-**Impact.** A principal with a matching permission label can cross the required role/project/environment boundary and reach sensitive approval, evidence, and event-stream operations. This violates the B-11 WorkInstruction security contract and blocks package acceptance. The narrower `AV-SAFE-029` Host/Origin/CSRF behavior itself passed and is not overstated as failed.
+With a valid resolver and principal, hostile Host, missing Origin, and invalid CSRF Approval requests returned `HOST_VALIDATION_FAILED`, `ORIGIN_VALIDATION_FAILED`, and `CSRF_VALIDATION_FAILED`, all HTTP 403. Command/query/journal counters remained `0/0/0` before the nominal requests, proving pre-side-effect ordering was preserved.
 
-**Required rework.** Add a framework-neutral, explicit authorization decision that binds each request to the target project, environment, and allowed actor role before command/query/event-stream dispatch. Where a path ID cannot itself establish scope, resolve scope through a supplied authorization port; do not trust client-supplied scope as authority. Add independent tests for wrong role, cross/missing project, cross/missing environment, and approval/artifact/SSE pre-dispatch side-effect count zero. Main Agent must decide the exact WorkInstruction revision and rework allowlist; no product change was made by this Tester.
+The actual uvicorn nominal boundary then produced:
 
-## Passing independent evidence
+- valid Approval and artifact: HTTP `200`, command/query counters `1/1`;
+- optimistic conflict: HTTP `409 OPTIMISTIC_VERSION_CONFLICT`, correlated `req-409`, internal conflict detail absent;
+- unbound Provider capability: HTTP `501 CAPABILITY_NOT_AVAILABLE`, correlated `req-501`;
+- 32 concurrent unbound requests: all stable 501 envelopes, 32 unique request IDs matching body and header;
+- SSE FI-08: three `Last-Event-ID: evt-1` reconnects returned byte-identical strict successors `evt-2, evt-3`; cursor replay 0, gap 0, duplicate 0, new Run 0, journal reads 3;
+- each SSE body SHA-256: `6EF1925F4EFD660383B4D5F46E80BF105DFA7C1F9A6AD429B539B72863852696`.
+
+The canonical registry and OpenAPI remain equal at `83/83`. Existing same-origin server-only BFF, stable HMAC cursor, request/error envelope, cookie/CORS/CSP/trusted-proxy, and `Last-Event-ID` tests passed unchanged.
+
+## Current and fresh-clone regression
 
 Current canonical worktree:
 
-- focused API: `16 passed in 0.65s`
-- canonical core: `117 passed, 6 existing DSN-gated skipped in 3.06s`
-- tooling: `407 passed in 133.63s`
-- canonical combined full excluding intentional browser/fixture repositories: `540 passed, 6 skipped in 140.88s`
-- standalone A-13, G-07, Phase G, and project-progress checkers: all exit `0`; project progress reports sequence 339
-- registry/OpenAPI equality: `83/83`; `git diff --check`: exit `0`
+- focused API: `22 passed in 0.88s`;
+- canonical core: `117 passed, 6 existing DSN-gated skipped in 3.42s`;
+- full tooling: `415 passed in 145.26s`;
+- canonical combined full excluding intentional browser/fixture repositories: `554 passed, 6 skipped in 151.45s`;
+- A-13, G-07, Phase G, and project-progress standalone checkers: all exit `0`, with progress sequence 346;
+- compile/import, registry/OpenAPI 83/83, and `git diff --check`: exit `0`.
 
-Fresh remote default clone at the same `ce817952` commit:
+Fresh remote default clone at the same `28bcf474` commit:
 
-- focused API: `16 passed in 0.72s`
-- canonical core: `117 passed, 6 skipped in 5.93s`
-- tooling: `407 passed in 118.05s`
-- canonical combined full: `540 passed, 6 skipped in 122.00s`
-- the same four standalone checkers and `git diff --check`: exit `0`
+- focused API: `22 passed in 1.90s`;
+- canonical core: `117 passed, 6 skipped in 5.42s`;
+- full tooling: `415 passed in 138.08s`;
+- canonical combined full: `554 passed, 6 skipped in 130.44s`;
+- the same four standalone checkers, compile/import, registry/OpenAPI 83/83, and `git diff --check`: exit `0`;
+- fresh clone remained clean.
 
-The first fresh-clone focused attempt was interrupted while uv installed the new environment by a Windows PE-resource access error. It was an environment setup failure, not a test result; after dependency materialization the complete focused command was rerun and passed as recorded above.
+## Browser and execution boundary
 
-Actual production-like loopback uvicorn evidence:
+Connected Chrome was retried against `http://127.0.0.1:8766/api/providers` and returned `net::ERR_BLOCKED_BY_CLIENT`; the server observed an HTTP 403 request but the browser did not expose a usable page or Network capture. The prior in-app browser binding was unavailable, and fresh automatic selection chose connected Chrome rather than an in-app surface. Browser Network remains `ENVIRONMENT_BLOCKED`, not PASS. This does not reopen the server/API evidence above.
 
-- authenticated unbound `GET /api/providers`: HTTP `501 CAPABILITY_NOT_AVAILABLE`, correlated request ID, CSP/HSTS/no-sniff present
-- invalid CSRF, missing Origin, and hostile Host deployment mutations: each HTTP `403`; application command calls remained zero before the subsequent valid request
-- valid deployment mutation: HTTP `200`, exactly one command call
-- optimistic conflict: HTTP `409 OPTIMISTIC_VERSION_CONFLICT`, stable correlated request ID
-- 64 concurrent unbound requests: all 64 returned the same stable `501/CAPABILITY_NOT_AVAILABLE` contract with 64 unique, body/header-matching request IDs
-- SSE FI-08: three `Last-Event-ID: evt-1` reconnects returned byte-identical strict successors `evt-2, evt-3`; body SHA-256 was `6EF1925F4EFD660383B4D5F46E80BF105DFA7C1F9A6AD429B539B72863852696` for all three; cursor replay 0, gap 0, read count 3, new Run count 0
-- runtime server terminated cleanly
+PostgreSQL, WSL/shared DB, Provider, ysna, production, deployment, actual menu UI, and B-12 were not executed and remain outside B-11 R2 exact8. Acceptance, commit, push, and B-12 start remain Main Agent responsibilities.
 
-## Browser and unexecuted boundaries
+## Files, cleanup, risk, and rollback
 
-The in-app browser and connected Chrome were both attempted against `http://127.0.0.1:8765/api/providers`. Both surfaces returned `net::ERR_BLOCKED_BY_CLIENT`; the loopback server observed corresponding HTTP 403 requests, but neither browser exposed a navigable page or usable Network capture. Browser Network verification remains `ENVIRONMENT_BLOCKED`, not PASS. Product menu UI/bundle inspection is outside B-11 exact17.
+The Tester replaced only `docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md`. Product, governance, progress/HANDOFF, manifests, Git index/refs, predecessor evidence, and B-12 were not modified. Both uvicorn runs were stopped; port 8766 has no listener. The dedicated fresh clone and R2 temporary uv caches were removed after their resolved paths were verified. Existing B-10 ACL residue was untouched.
 
-PostgreSQL, WSL/shared DB, provider, ysna, production, and deployment were not executed and are outside this package. No B-12 work was started.
+Residual risk is limited to the unavailable browser Network capture and later environment/deployment integration that this package does not claim. No acceptance-blocking finding remains in the executed B-11 R2 scope.
 
-## Files, cleanup, and rollback
-
-The Tester changed only `docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md`. Product, governance, progress/HANDOFF, manifests, Git index/refs, and predecessor evidence were not modified. The loopback server was stopped; the dedicated fresh clone and B-11 temporary uv caches were removed after their resolved paths were verified. Existing B-10 ACL residue was untouched.
-
-Rollback is deletion of this single report before Main integration, or a normal revert of the eventual report commit. No database or external-state rollback is required.
+Rollback is restoration of the prior Tester report before Main integration, or a normal revert of the eventual report commit. No database or external-state rollback is required.

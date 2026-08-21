@@ -14,6 +14,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence", 0) > 346:
+        return True
     if progress.get("event_sequence") == 346:
         assert progress.get("status") == "TEST_REVIEW" and progress.get("active_agent") is None
         return True
@@ -746,6 +748,15 @@ class G07BaselineTests(unittest.TestCase):
 
     def test_b11_r2_completion_keeps_g07_accepted_and_blocks_b12(self):
         self.assertEqual([],self.checker.validate_b11_r2_completion_projection(ROOT))
+
+    def test_b11_acceptance_preserves_gate_and_releases_b12(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual(347, progress["event_sequence"])
+        self.assertEqual("B-12", progress["current_work_package"])
+        self.assertEqual("READY", progress["status"])
+        self.assertIn("B-11", progress["completed_packages"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertEqual([], self.validate()["errors"])
 
 if __name__ == "__main__":
     unittest.main()

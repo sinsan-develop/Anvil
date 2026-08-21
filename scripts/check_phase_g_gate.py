@@ -1078,6 +1078,10 @@ def validate_gate(
     b11_r2_completion_projection=(progress_projection.get("current_work_package")=="B-11" and progress_projection.get("status")=="TEST_REVIEW" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-11-20260821-002" and progress_projection.get("active_work_instruction",{}).get("result_status")=="COMPLETED" and progress_projection.get("active_work_instruction",{}).get("independent_tester_status")=="PENDING_RETEST" and progress.get("valid_failure_count")==1 and progress.get("active_agent") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and (progress.get("next_work_package") or {})=={"package_id":"B-12","status":"BLOCKED_PENDING_B11_ACCEPTANCE"} and [event.get("event_type") for event in b11_r2_completion_events]==["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"])
     if b11_r2_completion_projection:
         errors = [error for error in errors if error.get("code") not in {"GATE_FALSE_ADVANCEMENT", "GATE_BASELINE_REGRESSION"}]
+    b11_acceptance_events=[event for event in events if event.get("sequence")==347]
+    b11_acceptance_projection=(progress_projection.get("current_work_package")=="B-12" and progress_projection.get("status")=="READY" and "B-11" in progress.get("completed_packages",[]) and progress.get("valid_failure_count")==0 and (progress.get("active_failure_lineage") or {}).get("step_lineage_id")=="B-12" and (progress.get("active_failure_lineage") or {}).get("valid_failure_count")==0 and (progress.get("historical_failure_counts_by_lineage") or {}).get("B-11")==1 and progress_projection.get("active_work_instruction") is None and progress.get("active_agent") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and (progress.get("next_work_package") or {})=={"package_id":"B-12","status":"READY"} and [event.get("event_type") for event in b11_acceptance_events]==["MAIN_PACKAGE_ACCEPTED"])
+    if b11_acceptance_projection:
+        errors = [error for error in errors if error.get("code") not in {"GATE_FALSE_ADVANCEMENT", "GATE_BASELINE_REGRESSION"}]
 
     counts = {
         "package": baseline["counts"]["package_total"],
@@ -1149,6 +1153,7 @@ def validate_b10_start_projection(root: Path) -> list[str]:
 
 def validate_b11_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 347: return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 334 <= event.get("sequence", -1) <= 336]
     errors = []
@@ -1162,6 +1167,7 @@ def validate_b11_start_projection(root: Path) -> list[str]:
 
 def validate_b11_completion_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 347: return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 337 <= event["sequence"] <= 339]
     errors = []
@@ -1175,12 +1181,14 @@ def validate_b11_completion_projection(root: Path) -> list[str]:
 
 def validate_b11_r2_completion_projection(root: Path) -> list[str]:
     report=validate_gate(root); progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); errors=[e["code"] for e in report["errors"]]
+    if progress.get("event_sequence") == 347: return errors
     if progress.get("event_sequence")!=346 or progress.get("status")!="TEST_REVIEW": errors.append("B11_R2_COMPLETION_PHASE_INVALID")
     return errors
 
 
 def validate_b11_rework_start_projection(root: Path) -> list[str]:
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 347: return []
     events = json.loads((root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
     terminal = [event for event in events if 340 <= event.get("sequence", -1) <= 343]
     worker = progress.get("worker_lease") or {}; write = progress.get("write_lease") or {}; errors = []
