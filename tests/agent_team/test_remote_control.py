@@ -1,0 +1,59 @@
+from datetime import datetime, timedelta, timezone
+from unittest import TestCase
+
+from packages.agent_team.remote_control import (
+    ApprovalRequired, AgentStatusSnapshot, CommandKind, OfflineQueue,
+    OperatorCommand, ProgressEvent, RemoteControlPlane, RemoteSession,
+)
+
+
+UTC = timezone.utc
+NOW = datetime(2026, 8, 21, tzinfo=UTC)
+
+
+def command(kind=CommandKind.PAUSE, *, token="secret", key="k1"):
+    return OperatorCommand("cmd-1", "op-1", kind, NOW, NOW + timedelta(minutes=5), key, token)
+
+
+class RemoteControlTests(TestCase):
+    def setUp(self):
+        self.plane = RemoteControlPlane(queue_limit=2)
+        self.plane.register_operator("op-1", "secret", NOW + timedelta(hours=1))
+        self.plane.open_session(RemoteSession("rs-1", "op-1", NOW + timedelta(minutes=30), NOW), auth_token="secret", now=NOW)
+
+    def test_snapshot_and_event_replay_are_monotonic_and_idempotent(self):
+        self.plane.publish_snapshot(AgentStatusSnapshot("a-1", "RUNNING", 1, "s1", NOW))
+        self.plane.publish_event(ProgressEvent("e1", "started", 1, "c1", "event-key", NOW))
+        self.assertEqual(("e1",), tuple(e.event_id for e in self.plane.replay(cursor=0)))
+        with self.assertRaises(ValueError):
+            self.plane.publish_event(ProgressEvent("e2", "duplicate", 2, "c2", "event-key", NOW))
+        with self.assertRaises(ValueError):
+            self.plane.publish_snapshot(AgentStatusSnapshot("a-1", "OLD", 1, "s0", NOW))
+
+    def test_low_risk_command_auth_expiry_dedupe_and_audit(self):
+        audit = self.plane.execute(command(), session_id="rs-1", now=NOW + timedelta(seconds=1))
+        self.assertEqual("ACCEPTED", audit.outcome)
+        with self.assertRaises(ValueError):
+            self.plane.execute(command(), session_id="rs-1", now=NOW + timedelta(seconds=1))
+        with self.assertRaises(PermissionError):
+            self.plane.execute(command(token="wrong", key="k2"), session_id="rs-1", now=NOW + timedelta(seconds=1))
+
+    def test_approval_commands_are_rejected_and_materialized(self):
+        with self.assertRaises(ApprovalRequired) as caught:
+            self.plane.execute(command(CommandKind.DEPLOY, key="deploy"), session_id="rs-1", now=NOW)
+        self.assertEqual(CommandKind.DEPLOY, caught.exception.request.command.kind)
+        self.assertEqual(1, len(self.plane.approvals))
+
+    def test_offline_queue_is_ordered_bounded_and_drops_stale_or_seen(self):
+        queue = OfflineQueue(2)
+        queue.enqueue(command(key="first")); queue.enqueue(command(key="second"))
+        with self.assertRaises(OverflowError): queue.enqueue(command(key="third"))
+        drained = queue.drain(now=NOW + timedelta(seconds=1), seen_keys=frozenset({"first"}))
+        self.assertEqual(("second",), tuple(c.idempotency_key for c in drained))
+        queue.enqueue(command(key="expired"))
+        self.assertEqual((), queue.drain(now=NOW + timedelta(minutes=6)))
+
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()
