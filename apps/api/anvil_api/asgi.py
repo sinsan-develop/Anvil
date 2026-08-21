@@ -1,5 +1,6 @@
 """ASGI entrypoint for the internal runtime; secrets stay in process env."""
 from fastapi import Response
+from sqlalchemy import text
 from packages.api.runtime import create_runtime_app
 
 app = create_runtime_app()
@@ -10,6 +11,20 @@ async def liveness() -> dict[str, str]:
 
 @app.get("/health/ready", include_in_schema=False)
 async def readiness() -> Response:
-    return Response('{"status":"ready"}', media_type="application/json")
+    engine = getattr(app.state, "database_engine", None)
+    expected_head = getattr(app.state, "migration_head", "0011_telegram_webhook_state")
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+            current_head = connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar_one_or_none()
+    except Exception:
+        return Response('{"status":"not_ready","reason":"database_unavailable"}', status_code=503, media_type="application/json")
+    if current_head != expected_head:
+        return Response('{"status":"not_ready","reason":"migration_head_mismatch"}', status_code=503, media_type="application/json")
+    if not getattr(app.state, "runtime_database_configured", False) or not getattr(app.state, "provider_catalog", None):
+        return Response('{"status":"not_ready","reason":"runtime_refs_missing"}', status_code=503, media_type="application/json")
+    return Response('{"status":"ready","migration_head":"0011_telegram_webhook_state"}', media_type="application/json")
 
 __all__ = ["app"]

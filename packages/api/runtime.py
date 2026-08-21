@@ -99,6 +99,8 @@ def create_runtime_app(
     # consumers without turning provider secrets into API data.
     app.state.provider_catalog = runtime_catalog(source)
     app.state.primary_provider = PRIMARY_PROVIDER
+    app.state.database_engine = engine
+    app.state.migration_head = "0011_telegram_webhook_state"
     app.state.runtime_database_configured = True
     return app
 

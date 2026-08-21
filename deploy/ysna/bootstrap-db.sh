@@ -13,8 +13,8 @@ DO $$ BEGIN
  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname='anvil_app') THEN CREATE ROLE anvil_app LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS; END IF;
 END $$;
 SQL
-psql_shared --dbname=postgres -v "migrator_password=$ANVIL_MIGRATOR_PASSWORD" -v "app_password=$ANVIL_APP_PASSWORD" <<'SQL'
-ALTER ROLE anvil_migrator PASSWORD :'migrator_password'; ALTER ROLE anvil_app PASSWORD :'app_password';
+psql_shared --dbname=postgres <<SQL
+ALTER ROLE anvil_migrator PASSWORD '$ANVIL_MIGRATOR_PASSWORD'; ALTER ROLE anvil_app PASSWORD '$ANVIL_APP_PASSWORD';
 SELECT format('CREATE DATABASE anvil OWNER anvil_owner') WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname='anvil')\gexec
 SQL
 psql_shared --dbname=anvil <<'SQL'

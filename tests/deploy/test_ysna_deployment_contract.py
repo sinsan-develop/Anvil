@@ -10,7 +10,11 @@ class DeploymentContractTests(unittest.TestCase):
  def test_entrypoint_and_health(self):
   text=(ROOT/'apps/api/anvil_api/asgi.py').read_text(); self.assertIn('create_runtime_app()',text); self.assertIn('/health/live',text); self.assertIn('/health/ready',text)
  def test_sha_and_non_destructive(self):
-  deploy=(DEPLOY/'deploy.sh').read_text(); rollback=(DEPLOY/'rollback.sh').read_text(); self.assertIn('^[0-9a-f]{40}$',deploy); self.assertIn('git fetch --prune origin',deploy); self.assertIn('git checkout --detach',deploy); self.assertNotIn('DROP DATABASE',rollback); self.assertNotIn('docker volume rm',rollback)
+  deploy=(DEPLOY/'deploy.sh').read_text(); rollback=(DEPLOY/'rollback.sh').read_text(); guard=(DEPLOY/'manifest-guard.sh').read_text(); self.assertIn('^[0-9a-f]{40}$',deploy); self.assertIn('git fetch --prune origin',deploy); self.assertIn('git checkout --detach',deploy); self.assertIn('APPROVED_FOR_DEPLOYMENT',guard); self.assertIn('merge-base --is-ancestor',guard); self.assertIn('successor_binding_sha256',guard); self.assertIn('verify.sh',rollback); self.assertNotIn('DROP DATABASE',rollback); self.assertNotIn('docker volume rm',rollback)
  def test_bootstrap_least_privilege(self):
   text=(DEPLOY/'bootstrap-db.sh').read_text();
   for value in ('NOSUPERUSER','NOCREATEDB','NOCREATEROLE','NOREPLICATION','NOBYPASSRLS'): self.assertIn(value,text)
+ def test_failure_and_readiness_guards(self):
+  deploy=(DEPLOY/'deploy.sh').read_text(); verify=(DEPLOY/'verify.sh').read_text(); bootstrap=(DEPLOY/'bootstrap-db.sh').read_text()
+  self.assertIn('MIGRATION_FAILED', deploy); self.assertIn('START_FAILED', deploy); self.assertIn('/health/ready', verify)
+  self.assertNotIn('-v "migrator_password=', bootstrap); self.assertNotIn('-v "app_password=', bootstrap)
