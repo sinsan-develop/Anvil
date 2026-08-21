@@ -34,3 +34,7 @@ class DeploymentContractTests(unittest.TestCase):
   deploy=(DEPLOY/'deploy.sh').read_text(); verify=(DEPLOY/'verify.sh').read_text(); bootstrap=(DEPLOY/'bootstrap-db.sh').read_text()
   self.assertIn('MIGRATION_FAILED', deploy); self.assertIn('START_FAILED', deploy); self.assertIn('/health/ready', verify)
   self.assertNotIn('-v "migrator_password=', bootstrap); self.assertNotIn('-v "app_password=', bootstrap)
+
+ def test_migration_rebuilds_target_image_before_run(self):
+  deploy=(DEPLOY/'deploy.sh').read_text()
+  self.assertIn('compose --profile tools run --rm --build migrate', deploy)

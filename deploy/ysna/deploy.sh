@@ -38,7 +38,7 @@ if [[ ! -d "$REPO/.git" ]]; then git clone https://github.com/cyhuh7950/anvil.gi
 cd "$REPO"; git fetch --prune origin; [[ -z "$(git status --porcelain)" ]] || { echo 'checkout is dirty' >&2; exit 3; };
 source "$REPO/deploy/ysna/manifest-guard.sh"; ANVIL_RELEASE_MANIFEST_REF="${ANVIL_RELEASE_MANIFEST_REF:-origin/main}"; validate_release_manifest "$REPO" "$ANVIL_RELEASE_MANIFEST_REF" "$ANVIL_RELEASE_COMMIT"
 git rev-parse HEAD > "$RUNTIME/previous.sha"; git checkout --detach "$ANVIL_RELEASE_COMMIT"
-if ! compose --profile tools run --rm migrate; then
+if ! compose --profile tools run --rm --build migrate; then
   printf '{"status":"MIGRATION_FAILED","commit":"%s","rollback":"NOT_STARTED","secret_values":"omitted"}\n' "$ANVIL_RELEASE_COMMIT" > "$EVIDENCE/deployment-failure.json"; exit 10
 fi
 if ! compose up -d --build web; then
