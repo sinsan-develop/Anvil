@@ -1,0 +1,88 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-12-START-20260821-001",
+  "artifact_type": "package_start_evidence_manifest",
+  "artifact_path": "docs/evidence/manifests/B-12_START_EVIDENCE_MANIFEST.json",
+  "package_id": "B-12",
+  "event_sequence": 350,
+  "validated_base_commit": "370a39436c4b15a84483017583a9fe3878652504",
+  "predecessor_acceptance_ref": {
+    "path": "docs/evidence/manifests/B-11_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+    "sha256": "24DE9BF27412722A9D6E478A698688BBD75B0CE22AD60DA5CC420C5CA4B66395"
+  },
+  "work_instruction": {
+    "artifact_id": "WI-B-12-20260821-001",
+    "path": "docs/work_orders/B-12_WORK_INSTRUCTION.md",
+    "sha256": "C588069F8F735DF32AC908F3E2F27F9BE5D2E6E18E0C2F67CBAF36202BA4C3EE",
+    "invocation_path": "docs/work_orders/B-12_INVOCATION_PROMPT.md",
+    "invocation_sha256": "3E2A28FECB4E0A64FDF30BDAD8E0D3DD9546E98F84F010C95924B18D8A41D7DF"
+  },
+  "objective": "Process and PC termination reconciliation and resume, completed-action skip, uncertain-side-effect classification, stale fencing, revoked Secret and capability drift recovery API",
+  "assigned_verification_ids": [
+    "AV-STAT-014",
+    "AV-STAT-034",
+    "AV-STAT-035",
+    "AV-STAT-036",
+    "AV-STAT-038",
+    "AV-STAT-039",
+    "AV-OPS-005",
+    "AV-SAFE-031",
+    "AV-FLOW-010",
+    "AV-FLOW-011"
+  ],
+  "worker_lease": {
+    "lease_id": "worker-lease-b12-20260821-001",
+    "lease_epoch": 1,
+    "execution_fencing_token": "b12-execution-fence-epoch-1-370a394",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-b12-20260821-001",
+    "write_epoch": 1,
+    "write_fencing_token": "b12-write-fence-epoch-1-370a394",
+    "status": "ACTIVE"
+  },
+  "developer_exact_path_count": 15,
+  "product_artifact_count": 0,
+  "projection_exact_path_count": 15,
+  "projection_product_mutation_count": 0,
+  "phase_b_gate": "BLOCKED_PENDING_B12_ACCEPTANCE",
+  "dir_reached": false,
+  "runtime_boundary": {
+    "actual_api": "NOT_EXECUTED",
+    "actual_database": "NOT_EXECUTED",
+    "actual_fault_injection": "NOT_EXECUTED",
+    "actual_ui": "NOT_EXECUTED",
+    "actual_browser": "NOT_EXECUTED",
+    "actual_provider": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "actual_ysna_server": "NOT_EXECUTED",
+    "shared_db": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "developer_runtime_boundary": "LOCAL_AND_ISOLATED_WSL_PG18_RECOVERY_FAULT_INJECTION_ONLY"
+  },
+  "next_package": {
+    "package_id": "C-01",
+    "status": "BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE"
+  },
+  "raw_checksums": [
+    {"path":"docs/evidence/manifests/B-11_ACCEPTANCE_PROGRESS_MANIFEST_R2.json","bytes":3249,"sha256":"24DE9BF27412722A9D6E478A698688BBD75B0CE22AD60DA5CC420C5CA4B66395"},
+    {"path":"docs/progress/progress-handoff-detached-digest-b12-start.json","bytes":854,"sha256":"94383003FB4AF723FE1497AF7BBA37848B19F97324EB1AE2E9C4D5C4A83B1AC3"},
+    {"path":"docs/work_orders/B-12_INVOCATION_PROMPT.md","bytes":975,"sha256":"3E2A28FECB4E0A64FDF30BDAD8E0D3DD9546E98F84F010C95924B18D8A41D7DF"},
+    {"path":"docs/work_orders/B-12_WORK_INSTRUCTION.md","bytes":6473,"sha256":"C588069F8F735DF32AC908F3E2F27F9BE5D2E6E18E0C2F67CBAF36202BA4C3EE"},
+    {"path":"scripts/check_a13_repository_scan.py","bytes":96777,"sha256":"896827D9C1488BA255FC1CB352EE1576A3059AEA3D442A4E36DE96619ED38EA6"},
+    {"path":"scripts/check_g07_baseline.py","bytes":139575,"sha256":"895DD46B91594E675314FC4C8CFA83A2D4DB19483F6BFB892D47A22EDE9C6B3A"},
+    {"path":"scripts/check_phase_g_gate.py","bytes":147451,"sha256":"4B32CCBFEDA526389574315D8C70164A044E6F2B2BA9F38564D52D4C261B5FE0"},
+    {"path":"scripts/check_project_progress.py","bytes":501633,"sha256":"95905039C06E3426673A1D991E6282B2CC215CE4698A49C6ED575017FF6B77E5"},
+    {"path":"tests/tooling/test_a13_repository_scan.py","bytes":72178,"sha256":"0AD828ED80870E20E22286664D9AF23128611286880AB6AA8457C9CC5C68FBA6"},
+    {"path":"tests/tooling/test_g07_baseline.py","bytes":42833,"sha256":"5BD00EE2786D76BF05407C360DF7E1B4C28C6CB629C466224BD0BDA7E4B31AD1"},
+    {"path":"tests/tooling/test_phase_g_gate.py","bytes":33047,"sha256":"7E968A5CD729127A977182D74AB35626C4A2E1A5522F9F1D45E0A3EA9ACE9849"},
+    {"path":"tests/tooling/test_project_progress.py","bytes":124119,"sha256":"8614520F2EF4B432FB4F8C489D5D8165BD8CDA47F0BCA181E8ADC7EC33D97B9E"}
+  ],
+  "target_canonical_bytes": 1344,
+  "target_content_bytes": 1169164,
+  "target_hash": "sha256:6932FAE6DCF1A543F6591A56733E5CF52676D27A0A7BF4B8C4B1694B131428EC",
+  "delivered_hash": "sha256:6932FAE6DCF1A543F6591A56733E5CF52676D27A0A7BF4B8C4B1694B131428EC",
+  "content_hash": "sha256:6932FAE6DCF1A543F6591A56733E5CF52676D27A0A7BF4B8C4B1694B131428EC",
+  "self_reference": false
+}

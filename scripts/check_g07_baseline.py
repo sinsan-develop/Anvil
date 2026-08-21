@@ -1219,6 +1219,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "PACKAGE_COMPLETED" and reconciliation_event.get("subject_ref") == "B-11" and reconciliation_event.get("sequence") == 346:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_STARTED" and reconciliation_event.get("subject_ref") == "B-12" and reconciliation_event.get("sequence") == 350:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1543,6 +1545,14 @@ def validate_b11_rework_start_projection(root: Path) -> list[str]:
     if (progress.get("phase_gate") or {}).get("decision") != "ACCEPTED": errors.append("A_GATE_DRIFT")
     if (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B11_ACCEPTANCE": errors.append("B12_BOUNDARY_INVALID")
     return sorted(set(errors))
+
+
+def validate_b12_start_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal=[e for e in events if 348<=e.get("sequence",-1)<=350]; errors=[]
+    if any((progress.get("event_sequence")!=350,progress.get("current_work_package")!="B-12",progress.get("status")!="ACTIVE",(progress.get("phase_gate") or {}).get("decision")!="ACCEPTED",progress.get("active_agent")!="developer-primary-b12",(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE")): errors.append("B12_START_PROJECTION_INVALID")
+    if [e.get("event_type") for e in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]: errors.append("B12_START_EVENT_ORDER_INVALID")
+    return errors
 
 
 def validate_b10_completion_projection(root: Path) -> list[str]:

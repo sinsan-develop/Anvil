@@ -1,3 +1,11 @@
+# B-12 Start — sequence 350
+
+- canonical clean/equal baseline `370a39436c4b15a84483017583a9fe3878652504`에서 seq348→350 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`를 기록했다.
+- `developer-primary-b12` epoch-1 worker/write lease와 Developer exact15만 활성이다. C-01은 `BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE`다.
+- 목표는 process/PC 종료 reconcile·resume, 완료 Action skip, 미확정 부작용 3분류, FI-05/06/07, stale fencing, revoked Secret·capability snapshot drift 차단과 recovery 공통 API다. assigned verification은 `AV-STAT-014/034/035/036/038/039`, `AV-OPS-005`, `AV-SAFE-031`, `AV-FLOW-010/011`이다.
+- 시작 시 제품 산출물은 0개다. 실제 API/DB/fault injection/UI/browser/provider/WSL/ysna/shared-db/production/deployment는 모두 `NOT_EXECUTED`다. B-08~B-11은 read-only predecessor이며 `packages/api/fastapi_app.py`는 기존 계약을 보존하는 recovery route 연결만 허용한다.
+- 기능 범위·요구사항·중요 위험 변경과 DIR은 없다. B-12 acceptance, Phase B Gate 판정, C-01 Agent/provider kernel, 실제 메뉴 UI와 provider/deployment는 시작하지 않는다.
+
 # B-11 R2 Main acceptance → B-12 준비, 미시작 — sequence 347
 
 - 독립 Tester report SHA `F925ECC0C70E4DC4EE2E0F5BF883E94FD9D5AA666A801448B2044CBF8B6819E5`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검토해 seq347 `MAIN_PACKAGE_ACCEPTED`로 B-11을 최종 `ACCEPTED`했다.
@@ -352,27 +360,27 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 347,
-  "status": "READY",
+  "event_sequence": 350,
+  "status": "ACTIVE",
   "current_work_package": "B-12",
-  "last_event_id": "evt_b11_main_package_accepted_r2",
+  "last_event_id": "evt_b12_package_started",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
-  "next_safe_action": "issue B-12 WorkInstruction and fenced start projection; B-12 is ready and not started",
+  "next_safe_action": "Developer executes WI-B-12-20260821-001 within exact15; C-01 remains blocked pending B-12 acceptance and Phase B Gate",
   "dir_status": "CLEARED",
-  "repository_head": "28bcf4742fee0536b09c75ce352e6f2ae505cebe",
+  "repository_head": "370a39436c4b15a84483017583a9fe3878652504",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "28bcf4742fee0536b09c75ce352e6f2ae505cebe",
+  "repository_validated_base_commit": "370a39436c4b15a84483017583a9fe3878652504",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-11_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/B-12_START_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b11-accepted-r2.json",
-    "docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md",
+    "docs/progress/progress-handoff-detached-digest-b12-start.json",
+    "docs/work_orders/B-12_INVOCATION_PROMPT.md",
+    "docs/work_orders/B-12_WORK_INSTRUCTION.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",

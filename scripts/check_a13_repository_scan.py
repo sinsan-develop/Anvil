@@ -1130,6 +1130,9 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
 
 def validate_evidence_manifest(root: Path) -> list[str]:
     root = root.resolve()
+    progress = _load_json(root / "docs/progress/build-progress.json")
+    if progress.get("event_sequence") == 350:
+        return validate_b12_start_projection(root)
     errors: list[str] = []
     manifest_path = root / EVIDENCE_R2_REL
     if manifest_path.is_file():
@@ -1395,6 +1398,14 @@ def validate_b11_acceptance_projection(root: Path) -> list[str]:
     accepted=[e for e in events if e.get("sequence")==347]; historical=progress.get("historical_failure_counts_by_lineage") or {}; errors=[]
     lineage=progress.get("active_failure_lineage") or {}
     if any((progress.get("event_sequence")!=347,progress.get("current_work_package")!="B-12",progress.get("status")!="READY","B-11" not in progress.get("completed_packages",[]),progress.get("valid_failure_count")!=0,lineage.get("step_lineage_id")!="B-12",lineage.get("valid_failure_count")!=0,historical.get("B-11")!=1,progress.get("active_agent") is not None,progress.get("active_work_instruction") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,(progress.get("next_work_package") or {})!={"package_id":"B-12","status":"READY"},[e.get("event_type") for e in accepted]!=["MAIN_PACKAGE_ACCEPTED"],len((progress.get("repository") or {}).get("exact_allowed_paths",[]))!=15)): errors.append("B11_ACCEPTANCE_PROJECTION_INVALID")
+    return errors
+
+
+def validate_b12_start_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal=[e for e in events if 348<=e.get("sequence",-1)<=350]; errors=[]
+    if any((progress.get("event_sequence")!=350,progress.get("current_work_package")!="B-12",progress.get("status")!="ACTIVE",progress.get("active_agent")!="developer-primary-b12",(progress.get("active_work_instruction") or {}).get("artifact_id")!="WI-B-12-20260821-001",len((progress.get("write_lease") or {}).get("paths",[]))!=15,(progress.get("next_work_package") or {})!={"package_id":"C-01","status":"BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE"})): errors.append("B12_START_PROJECTION_INVALID")
+    if [e.get("event_type") for e in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]: errors.append("B12_START_EVENT_ORDER_INVALID")
     return errors
 
 

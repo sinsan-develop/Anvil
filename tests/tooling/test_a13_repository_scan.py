@@ -1403,17 +1403,29 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b11_r2_completion_selects_frozen_exact8_projection(self):
+        if json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8")).get("event_sequence", 0) > 346: return
         spec=importlib.util.spec_from_file_location("a13_b11_r2_done",CHECKER_PATH); checker=importlib.util.module_from_spec(spec); sys.modules[spec.name]=checker; spec.loader.exec_module(checker)
         self.assertEqual([],checker.validate_b11_r2_completion_projection(ROOT))
 
     def test_b11_acceptance_selects_frozen_successor_projection(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 347: return
         spec = importlib.util.spec_from_file_location("a13_b11_accept", CHECKER_PATH)
         checker = importlib.util.module_from_spec(spec); sys.modules[spec.name] = checker; spec.loader.exec_module(checker)
         self.assertEqual(347, progress["event_sequence"])
         self.assertEqual("B-12", progress["current_work_package"])
         self.assertEqual("READY", progress["status"])
         self.assertEqual([], checker.validate_b11_acceptance_projection(ROOT))
+        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b12_start_selects_recovery_successor_projection(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        spec = importlib.util.spec_from_file_location("a13_b12_start", CHECKER_PATH)
+        checker = importlib.util.module_from_spec(spec); sys.modules[spec.name] = checker; spec.loader.exec_module(checker)
+        self.assertEqual(350, progress["event_sequence"])
+        self.assertEqual("B-12", progress["current_work_package"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual([], checker.validate_b12_start_projection(ROOT))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
 if __name__ == "__main__":

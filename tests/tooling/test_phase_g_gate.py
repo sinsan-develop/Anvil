@@ -527,17 +527,30 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual([], self.checker.validate_b11_rework_start_projection(ROOT))
 
     def test_b11_r2_completion_preserves_a_gate_and_blocks_b12(self):
+        if json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8")).get("event_sequence", 0) > 346: return
         self.assertEqual([],self.checker.validate_b11_r2_completion_projection(ROOT))
 
     def test_b11_acceptance_preserves_phase_gate_and_releases_b12(self):
         report = self.validate()
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 347: return
         self.assertEqual(347, progress["event_sequence"])
         self.assertEqual("B-12", progress["current_work_package"])
         self.assertEqual("READY", progress["status"])
         self.assertIn("B-11", progress["completed_packages"])
         self.assertEqual([], report["errors"])
         self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+
+    def test_b12_start_preserves_a_gate_and_blocks_c01(self):
+        report = self.validate()
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        self.assertEqual([], report["errors"])
+        self.assertEqual(350, progress["event_sequence"])
+        self.assertEqual("B-12", progress["current_work_package"])
+        self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual("ACCEPTED", progress["phase_gate"]["decision"])
+        self.assertEqual("BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE", progress["next_work_package"]["status"])
+        self.assertEqual([], self.checker.validate_b12_start_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

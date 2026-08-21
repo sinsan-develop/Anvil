@@ -1082,6 +1082,10 @@ def validate_gate(
     b11_acceptance_projection=(progress_projection.get("current_work_package")=="B-12" and progress_projection.get("status")=="READY" and "B-11" in progress.get("completed_packages",[]) and progress.get("valid_failure_count")==0 and (progress.get("active_failure_lineage") or {}).get("step_lineage_id")=="B-12" and (progress.get("active_failure_lineage") or {}).get("valid_failure_count")==0 and (progress.get("historical_failure_counts_by_lineage") or {}).get("B-11")==1 and progress_projection.get("active_work_instruction") is None and progress.get("active_agent") is None and progress_projection.get("worker_lease") is None and progress_projection.get("write_lease") is None and (progress.get("next_work_package") or {})=={"package_id":"B-12","status":"READY"} and [event.get("event_type") for event in b11_acceptance_events]==["MAIN_PACKAGE_ACCEPTED"])
     if b11_acceptance_projection:
         errors = [error for error in errors if error.get("code") not in {"GATE_FALSE_ADVANCEMENT", "GATE_BASELINE_REGRESSION"}]
+    b12_start_events=[event for event in events if 348 <= event.get("sequence",-1) <= 350]
+    b12_start_projection=(progress_projection.get("current_work_package")=="B-12" and progress_projection.get("status")=="ACTIVE" and progress_projection.get("active_work_instruction",{}).get("artifact_id")=="WI-B-12-20260821-001" and progress.get("active_agent")=="developer-primary-b12" and progress_projection.get("worker_lease",{}).get("lease_epoch")==1 and progress_projection.get("write_lease",{}).get("write_epoch")==1 and (progress.get("next_work_package") or {})=={"package_id":"C-01","status":"BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE"} and [event.get("event_type") for event in b12_start_events]==["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"])
+    if b12_start_projection:
+        errors = [error for error in errors if error.get("code") not in {"GATE_FALSE_ADVANCEMENT", "GATE_BASELINE_REGRESSION"}]
 
     counts = {
         "package": baseline["counts"]["package_total"],
@@ -1198,6 +1202,14 @@ def validate_b11_rework_start_projection(root: Path) -> list[str]:
     if [event.get("event_type") for event in terminal] != ["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"]: errors.append("B11_R2_EVENT_ORDER_INVALID")
     if (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B11_ACCEPTANCE": errors.append("B12_BOUNDARY_INVALID")
     return sorted(set(errors))
+
+
+def validate_b12_start_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal=[e for e in events if 348<=e.get("sequence",-1)<=350]; errors=[]
+    if any((progress.get("event_sequence")!=350,progress.get("current_work_package")!="B-12",progress.get("status")!="ACTIVE",(progress.get("phase_gate") or {}).get("decision")!="ACCEPTED",(progress.get("active_work_instruction") or {}).get("artifact_id")!="WI-B-12-20260821-001",(progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE")): errors.append("B12_START_PROJECTION_INVALID")
+    if [e.get("event_type") for e in terminal] != ["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]: errors.append("B12_START_EVENT_ORDER_INVALID")
+    return errors
 
 
 def validate_b10_completion_projection(root: Path) -> list[str]:
