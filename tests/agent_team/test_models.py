@@ -91,8 +91,26 @@ class AgentTeamModelTests(unittest.TestCase):
             delivered.acknowledge("message-1", "leader-1", LATER)
         acknowledged = delivered.acknowledge("message-1", "teammate-1", LATER)
         self.assertEqual(TeamDeliveryState.ACKNOWLEDGED, acknowledged.messages[0].delivery_state)
-        with self.assertRaisesRegex(ValueError, "already acknowledged"):
+        with self.assertRaisesRegex(ValueError, "only delivered"):
             acknowledged.acknowledge("message-1", "teammate-1", LATER)
+
+    def test_message_delivery_state_requires_matching_timestamps(self):
+        from packages.agent_team import TeamDeliveryState, TeamMessage, TeamMessageType
+
+        with self.assertRaisesRegex(ValueError, "ACKNOWLEDGED"):
+            TeamMessage("message-1", "team-1", "leader-1", "teammate-1", TeamMessageType.REVIEW, "Review", (), "idem-1", HASH_A, 1, NOW, TeamDeliveryState.ACKNOWLEDGED)
+        with self.assertRaisesRegex(ValueError, "DELIVERED"):
+            TeamMessage("message-2", "team-1", "leader-1", "teammate-1", TeamMessageType.REVIEW, "Review", (), "idem-2", HASH_A, 1, NOW, TeamDeliveryState.DELIVERED, None, LATER)
+        with self.assertRaisesRegex(ValueError, "PENDING"):
+            TeamMessage("message-3", "team-1", "leader-1", "teammate-1", TeamMessageType.REVIEW, "Review", (), "idem-3", HASH_A, 1, NOW, TeamDeliveryState.PENDING, LATER)
+
+    def test_acknowledgement_only_accepts_delivered_messages(self):
+        from packages.agent_team import TeamMailbox, TeamMessage, TeamMessageType
+
+        pending = TeamMessage("message-1", "team-1", "leader-1", "teammate-1", TeamMessageType.REVIEW, "Review", (), "idem-1", HASH_A, 1, NOW)
+        mailbox = TeamMailbox("mailbox-1", "team-1", "teammate-1", HASH_A, 1, (pending,))
+        with self.assertRaisesRegex(ValueError, "only delivered"):
+            mailbox.acknowledge("message-1", "teammate-1", LATER)
 
     def test_messages_cannot_encode_privileged_action_types(self):
         from packages.agent_team import TeamMessage, TeamMessageType
@@ -114,6 +132,8 @@ class AgentTeamModelTests(unittest.TestCase):
         from packages.agent_team import DecisionRequest, RequestState
 
         request = DecisionRequest("decision-1", "team-1", "leader-1", "user-1", "Choose", ("keep", "expand"), HASH_A, ("packages/agent_team/",), ("models only",), ("API changes",))
+        with self.assertRaisesRegex(ValueError, "PENDING"):
+            request.transition(RequestState.PENDING, "user-1")
         with self.assertRaisesRegex(PermissionError, "approver"):
             request.transition(RequestState.APPROVED, "teammate-1")
         approved = request.transition(RequestState.APPROVED, "user-1")
@@ -125,6 +145,8 @@ class AgentTeamModelTests(unittest.TestCase):
         from packages.agent_team import RequestState, RevisionRequest
 
         request = RevisionRequest("revision-1", "team-1", "teammate-1", "user-1", "More evidence", HASH_B, ("packages/agent_team/",), ("add tests",), ("API changes",), "revision-4")
+        with self.assertRaisesRegex(ValueError, "PENDING"):
+            request.transition(RequestState.PENDING, "user-1")
         self.assertEqual(RequestState.REJECTED, request.transition(RequestState.REJECTED, "user-1").state)
         with self.assertRaisesRegex(ValueError, "overlap"):
             RevisionRequest("revision-2", "team-1", "teammate-1", "user-1", "Conflict", HASH_B, ("packages/agent_team/",), ("same",), ("same",), "revision-4")

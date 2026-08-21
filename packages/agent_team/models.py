@@ -237,6 +237,15 @@ class TeamMessage:
             _utc(self.delivered_at, "delivered_at")
         if self.acknowledged_at is not None:
             _utc(self.acknowledged_at, "acknowledged_at")
+        if self.delivery_state is TeamDeliveryState.PENDING:
+            if self.delivered_at is not None or self.acknowledged_at is not None:
+                raise ValueError("PENDING message cannot have delivery timestamps")
+        elif self.delivery_state is TeamDeliveryState.DELIVERED:
+            if self.delivered_at is None or self.acknowledged_at is not None:
+                raise ValueError("DELIVERED message requires delivered_at only")
+        elif self.delivery_state is TeamDeliveryState.ACKNOWLEDGED:
+            if self.delivered_at is None or self.acknowledged_at is None:
+                raise ValueError("ACKNOWLEDGED message requires both delivery timestamps")
 
 
 @dataclass(frozen=True, slots=True)
@@ -295,8 +304,8 @@ class TeamMailbox:
                 updated_messages.append(message)
                 continue
             found = True
-            if message.delivery_state is TeamDeliveryState.ACKNOWLEDGED:
-                raise ValueError("message was already acknowledged")
+            if message.delivery_state is not TeamDeliveryState.DELIVERED:
+                raise ValueError("only delivered message can be acknowledged")
             updated_messages.append(
                 replace(
                     message,
@@ -395,6 +404,8 @@ class DecisionRequest:
         _required(actor_id, "actor_id")
         if self.state is not RequestState.PENDING:
             raise ValueError("terminal request cannot transition again")
+        if new_state is RequestState.PENDING:
+            raise ValueError("request cannot transition to PENDING")
         if new_state in {RequestState.APPROVED, RequestState.REJECTED} and actor_id != self.approver_id:
             raise PermissionError("only the approver can decide this request")
         if new_state is RequestState.CANCELLED and actor_id not in {self.requester_id, self.approver_id}:
@@ -446,6 +457,8 @@ class RevisionRequest:
         _required(actor_id, "actor_id")
         if self.state is not RequestState.PENDING:
             raise ValueError("terminal request cannot transition again")
+        if new_state is RequestState.PENDING:
+            raise ValueError("request cannot transition to PENDING")
         if new_state in {RequestState.APPROVED, RequestState.REJECTED} and actor_id != self.approver_id:
             raise PermissionError("only the approver can decide this request")
         if new_state is RequestState.CANCELLED and actor_id not in {self.requester_id, self.approver_id}:
