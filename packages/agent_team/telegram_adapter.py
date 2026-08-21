@@ -14,6 +14,7 @@ import hashlib
 import hmac
 import json
 import re
+from uuid import uuid4
 from urllib.parse import urlparse
 from typing import TYPE_CHECKING
 
@@ -175,7 +176,7 @@ class TelegramAdapter:
     def _audit(self, update: TelegramUpdate | None, outcome: TelegramOutcome, now: datetime) -> AuditEvent:
         command_id = update.command_id if update is not None and isinstance(update.command_id, str) and update.command_id.strip() else "malformed"
         operator_id = update.user_id if update is not None and isinstance(update.user_id, str) and update.user_id.strip() else "unknown"
-        audit = AuditEvent(f"telegram-audit-{len(self._audits) + 1}", command_id, operator_id, "telegram", outcome.value, now)
+        audit = AuditEvent(f"telegram-audit-{uuid4().hex}", command_id, operator_id, "telegram", outcome.value, now)
         self._audits += (audit,)
         if self._state_store is not None:
             self._state_store.record_audit(

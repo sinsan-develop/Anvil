@@ -82,7 +82,12 @@ class InMemoryTelegramStateStore:
         return True
 
     def record_audit(self, **kwargs: Any) -> None:
-        self._audits[kwargs["audit_id"]] = {key: str(value) for key, value in kwargs.items()}
+        audit_id = kwargs["audit_id"]
+        value = {key: str(value) for key, value in kwargs.items()}
+        existing = self._audits.get(audit_id)
+        if existing is not None and existing != value:
+            raise ValueError("audit id collision")
+        self._audits[audit_id] = value
 
     def allow_rate(self, *, identity: str, now: datetime, limit: int, window_seconds: int) -> bool:
         bucket = self._windows[identity]
@@ -106,6 +111,9 @@ class SqlAlchemyTelegramStateStore:
         session = self._session_factory()
         try:
             with session.begin():
+                session.execute(telegram_updates.delete().where(
+                    telegram_updates.c.expires_at < _utc(first_seen_at) - timedelta(days=1)
+                ))
                 exists = session.execute(sa.select(telegram_updates.c.nonce).where(
                     sa.or_(telegram_updates.c.nonce == nonce, telegram_updates.c.command_id == command_id)
                 )).first()
@@ -130,9 +138,6 @@ class SqlAlchemyTelegramStateStore:
                     audit_id=audit_id, command_id=command_id, operator_id=operator_id,
                     source=source, outcome=outcome, occurred_at=_utc(occurred_at),
                 ))
-        except sa.exc.IntegrityError:
-            # Audit IDs are deterministic and retries must not create a second row.
-            pass
         finally:
             session.close()
 
@@ -140,23 +145,27 @@ class SqlAlchemyTelegramStateStore:
         session = self._session_factory()
         normalized_now = _utc(now)
         epoch = int(normalized_now.timestamp())
-        window_start = datetime.fromtimestamp(epoch - (epoch % window_seconds), tz=timezone.utc)
+        window_start = datetime.fromtimestamp(epoch, tz=timezone.utc)
+        recent = window_start - timedelta(seconds=window_seconds - 1)
         try:
             with session.begin():
                 session.execute(telegram_rate_limits.delete().where(
                     telegram_rate_limits.c.identity == identity,
-                    telegram_rate_limits.c.window_start < window_start - timedelta(seconds=window_seconds * 2),
+                    telegram_rate_limits.c.window_start < recent,
                 ))
-                row = session.execute(sa.select(telegram_rate_limits.c.request_count).where(
+                self._ensure_rate_row(session, identity, window_start)
+                # Re-read all active buckets after locking them. The current
+                # second was inserted with an atomic upsert above, so a
+                # concurrent request cannot create a duplicate primary key.
+                rows = session.execute(sa.select(
+                    telegram_rate_limits.c.window_start,
+                    telegram_rate_limits.c.request_count,
+                ).where(
                     telegram_rate_limits.c.identity == identity,
-                    telegram_rate_limits.c.window_start == window_start,
-                ).with_for_update()).first()
-                if row is None:
-                    session.execute(telegram_rate_limits.insert().values(
-                        identity=identity, window_start=window_start, request_count=1,
-                    ))
-                    return True
-                if row.request_count >= limit:
+                    telegram_rate_limits.c.window_start >= recent,
+                    telegram_rate_limits.c.window_start <= window_start,
+                ).with_for_update()).all()
+                if sum(row.request_count for row in rows) >= limit:
                     return False
                 session.execute(telegram_rate_limits.update().where(
                     telegram_rate_limits.c.identity == identity,
@@ -165,6 +174,20 @@ class SqlAlchemyTelegramStateStore:
                 return True
         finally:
             session.close()
+
+    @staticmethod
+    def _ensure_rate_row(session: Any, identity: str, window_start: datetime) -> None:
+        values = {"identity": identity, "window_start": window_start, "request_count": 0}
+        dialect = session.bind.dialect.name
+        if dialect == "postgresql":
+            from sqlalchemy.dialects.postgresql import insert
+            statement = insert(telegram_rate_limits).values(**values).on_conflict_do_nothing()
+        elif dialect == "sqlite":
+            from sqlalchemy.dialects.sqlite import insert
+            statement = insert(telegram_rate_limits).values(**values).on_conflict_do_nothing()
+        else:
+            statement = telegram_rate_limits.insert().values(**values)
+        session.execute(statement)
 
 
 __all__ = ["TELEGRAM_METADATA", "TelegramStateStore", "InMemoryTelegramStateStore", "SqlAlchemyTelegramStateStore"]

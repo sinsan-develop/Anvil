@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 from packages.agent_team.telegram_adapter import TelegramAdapter, TelegramUpdate
 from packages.api.fastapi_app import create_app
 from packages.api.telegram_webhook import TelegramWebhook, TelegramWebhookConfig
+from packages.persistence.telegram_webhook import InMemoryTelegramStateStore
+import pytest
 
 
 def _adapter() -> TelegramAdapter:
@@ -14,6 +16,15 @@ def _adapter() -> TelegramAdapter:
         signing_secret="update-secret",
         console_base_url="https://anvil.sinsan.kr",
     )
+
+
+def _webhook(config: TelegramWebhookConfig) -> TelegramWebhook:
+    return TelegramWebhook(_adapter(), config, state_store=InMemoryTelegramStateStore())
+
+
+def test_webhook_fails_closed_without_durable_store() -> None:
+    with pytest.raises(ValueError):
+        TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"), state_store=None)  # type: ignore[arg-type]
 
 
 def _body(now: datetime, command: str = "status", command_id: str = "cmd-1", nonce: str = "nonce-1") -> bytes:
@@ -42,7 +53,7 @@ def _headers(body: bytes) -> dict[str, str]:
 
 
 def test_webhook_requires_host_and_telegram_secret_only() -> None:
-    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    webhook = _webhook(TelegramWebhookConfig("telegram-secret", "update-secret"))
     now = datetime.now(timezone.utc)
     body = _body(now)
     assert webhook.handle(body, {}, now=now)[0] == 400
@@ -55,7 +66,7 @@ def test_webhook_requires_host_and_telegram_secret_only() -> None:
 
 
 def test_webhook_delegates_replay_and_high_risk_denial() -> None:
-    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    webhook = _webhook(TelegramWebhookConfig("telegram-secret", "update-secret"))
     now = datetime.now(timezone.utc)
     body = _body(now)
     assert webhook.handle(body, _headers(body), now=now)[1]["outcome"] == "ACCEPTED"
@@ -69,7 +80,7 @@ def test_webhook_delegates_replay_and_high_risk_denial() -> None:
 def test_webhook_rate_limit_and_same_origin_route() -> None:
     now = datetime.now(timezone.utc)
     body = _body(now)
-    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret", rate_limit=1))
+    webhook = _webhook(TelegramWebhookConfig("telegram-secret", "update-secret", rate_limit=1))
     app = create_app(telegram_webhook=webhook)
     client = TestClient(app)
     assert client.post("/integrations/telegram/webhook", content=body, headers=_headers(body)).status_code == 200
@@ -87,20 +98,20 @@ def test_webhook_accepts_standard_telegram_update_without_anvil_signature() -> N
             "text": "/status",
         },
     }).encode()
-    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    webhook = _webhook(TelegramWebhookConfig("telegram-secret", "update-secret"))
     status, result = webhook.handle(body, _headers(body), now=now)
     assert status == 200
     assert result["outcome"] == "ACCEPTED"
 
 
 def test_webhook_rejects_malformed_standard_update() -> None:
-    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    webhook = _webhook(TelegramWebhookConfig("telegram-secret", "update-secret"))
     status, _ = webhook.handle(b'{"update_id": 1, "message": {}}', _headers(b""), now=datetime.now(timezone.utc))
     assert status == 400
 
 
 def test_webhook_rejects_malformed_datetime_types_without_server_error() -> None:
-    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    webhook = _webhook(TelegramWebhookConfig("telegram-secret", "update-secret"))
     now = datetime.now(timezone.utc)
     body = json.loads(_body(now))
 
@@ -115,7 +126,7 @@ def test_webhook_rejects_malformed_datetime_types_without_server_error() -> None
 
 
 def test_webhook_rejects_malformed_clock_type_without_server_error() -> None:
-    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    webhook = _webhook(TelegramWebhookConfig("telegram-secret", "update-secret"))
     body = _body(datetime.now(timezone.utc))
     status, result = webhook.handle(body, _headers(body), now="not-a-datetime")  # type: ignore[arg-type]
     assert status == 400

@@ -9,7 +9,7 @@ import json
 from typing import Any, Mapping
 
 from packages.agent_team.telegram_adapter import TelegramAdapter, TelegramUpdate
-from packages.persistence.telegram_webhook import InMemoryTelegramStateStore, TelegramStateStore
+from packages.persistence.telegram_webhook import SqlAlchemyTelegramStateStore, TelegramStateStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,12 +40,21 @@ class TelegramWebhookConfig:
 
 
 class TelegramWebhook:
-    def __init__(self, adapter: TelegramAdapter, config: TelegramWebhookConfig, *, state_store: TelegramStateStore | None = None) -> None:
+    def __init__(self, adapter: TelegramAdapter, config: TelegramWebhookConfig, *, state_store: TelegramStateStore) -> None:
         self.adapter = adapter
         self.config = config
-        self._state_store = state_store or getattr(adapter, "_state_store", None) or InMemoryTelegramStateStore()
+        if state_store is None:
+            raise ValueError("durable Telegram state_store is required")
+        self._state_store = state_store
         if getattr(adapter, "_state_store", None) is None:
             adapter.attach_state_store(self._state_store)
+
+    @classmethod
+    def from_session_factory(
+        cls, adapter: TelegramAdapter, config: TelegramWebhookConfig, *, session_factory: Any,
+    ) -> "TelegramWebhook":
+        """Build the production boundary from the application's DB session factory."""
+        return cls(adapter, config, state_store=SqlAlchemyTelegramStateStore(session_factory))
 
     def handle(self, raw_body: bytes, headers: Mapping[str, str], *, now: datetime) -> tuple[int, dict[str, Any]]:
         if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() != timezone.utc.utcoffset(now):

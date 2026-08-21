@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import pytest
 
 import sqlalchemy as sa
 from sqlalchemy.orm import sessionmaker
@@ -7,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from packages.persistence.telegram_webhook import (
     TELEGRAM_METADATA,
     SqlAlchemyTelegramStateStore,
+    telegram_updates,
 )
 
 
@@ -33,13 +35,17 @@ def test_sqlalchemy_state_store_persists_replay_audit_and_rate_window() -> None:
         audit_id="a-1", command_id="c-1", operator_id="user-1", source="telegram",
         outcome="ACCEPTED", occurred_at=now,
     )
-    store.record_audit(
-        audit_id="a-1", command_id="c-1", operator_id="user-1", source="telegram",
-        outcome="ACCEPTED", occurred_at=now,
-    )
+    with pytest.raises(sa.exc.IntegrityError):
+        store.record_audit(
+            audit_id="a-1", command_id="c-1", operator_id="user-1", source="telegram",
+            outcome="ACCEPTED", occurred_at=now,
+        )
     assert store.allow_rate(identity="chat-1", now=now, limit=2, window_seconds=60)
     assert store.allow_rate(identity="chat-1", now=now, limit=2, window_seconds=60)
     assert not store.allow_rate(identity="chat-1", now=now, limit=2, window_seconds=60)
+    assert store.allow_rate(
+        identity="chat-1", now=now + timedelta(seconds=60), limit=2, window_seconds=60
+    )
 
 
 def test_migration_has_reversible_durable_tables() -> None:
@@ -49,3 +55,20 @@ def test_migration_has_reversible_durable_tables() -> None:
     for name in ("telegram_webhook_updates", "telegram_webhook_audits", "telegram_webhook_rate_limits"):
         assert name in text
     assert "def upgrade" in text and "def downgrade" in text
+
+
+def test_claim_update_cleans_only_replay_rows_past_grace_horizon() -> None:
+    engine = sa.create_engine("sqlite+pysqlite:///:memory:")
+    TELEGRAM_METADATA.create_all(engine)
+    Session = sessionmaker(bind=engine)
+    store = SqlAlchemyTelegramStateStore(Session)
+    now = datetime(2026, 8, 22, tzinfo=timezone.utc)
+    with engine.begin() as connection:
+        connection.execute(telegram_updates.insert().values(
+            nonce="old-nonce", command_id="old-command", chat_id="chat-1", user_id="user-1",
+            first_seen_at=now - timedelta(days=2), expires_at=now - timedelta(days=2),
+        ))
+    assert store.claim_update(
+        nonce="old-nonce", command_id="new-command", chat_id="chat-1", user_id="user-1",
+        first_seen_at=now, expires_at=now + timedelta(minutes=5),
+    ) is True
