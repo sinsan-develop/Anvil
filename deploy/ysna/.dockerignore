@@ -1,0 +1,16 @@
+.env
+**/.env
+.git
+.git/**
+.worktrees
+.worktrees/**
+.superpowers
+.superpowers/**
+.venv
+.venv/**
+node_modules
+**/__pycache__
+*.py[cod]
+tests
+docs
+Backup

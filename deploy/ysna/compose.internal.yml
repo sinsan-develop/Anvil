@@ -1,0 +1,37 @@
+name: anvil-internal
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: deploy/ysna/Dockerfile.web
+    env_file: [../../runtime/anvil.env]
+    ports: ["127.0.0.1:4173:4173"]
+    networks: [anvil-internal]
+    read_only: true
+    tmpfs: [/tmp:rw,noexec,nosuid,size=64m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+    init: true
+    healthcheck:
+      test: ["CMD", "/opt/venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:4173/health/live', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+  migrate:
+    profiles: [tools]
+    build:
+      context: ../..
+      dockerfile: deploy/ysna/Dockerfile.web
+    env_file: [../../runtime/anvil.env]
+    networks: [proxy-network]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint: [/opt/venv/bin/alembic]
+    command: [upgrade, head]
+networks:
+  anvil-internal:
+    name: anvil-internal
+  proxy-network:
+    external: true

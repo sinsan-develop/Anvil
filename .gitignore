@@ -8,6 +8,8 @@
 # Local runtime artifacts are intentionally outside the G-03 scaffold.
 /data/*
 !/data/.gitkeep
+/runtime/
+/evidence/
 __pycache__/
 *.py[cod]
 .env
