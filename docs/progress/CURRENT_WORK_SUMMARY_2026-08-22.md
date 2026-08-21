@@ -40,7 +40,14 @@
 
 ## 주요 커밋
 
-`ecfbb7c` root path fix → `9388749` psycopg3 DSN → `430b6fa` migration rebuild → `6668ec4` tmpfs fix → `348131a` database network → `f806399` successor projection
+`ecfbb7c` root path fix → `9388749` psycopg3 DSN → `430b6fa` migration rebuild → `6668ec4` tmpfs fix → `348131a` database network → `f806399` successor projection → `06a3a4e` public UI preview plan/spec merge
+
+## 2026-08-22 병합 기록
+
+- `codex/anvil-public-ui-preview`를 `main`에 충돌 없이 `--no-ff` 병합했다.
+- 병합 커밋: `06a3a4e23fd3c8caa387f0fe61c35fa1ef9a9cec`
+- 추가 파일: `docs/superpowers/plans/2026-08-14-anvil-public-ui-preview.md`, `docs/superpowers/specs/2026-08-14-anvil-public-ui-preview.md`
+- `git diff --check` 통과, `origin/main` push 완료.
 
 ## 남은 문제
 
