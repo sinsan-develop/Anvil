@@ -144,6 +144,8 @@ class TeamOrchestrator:
         _required(agent_id, "agent_id")
         if agent_id in self._members:
             raise ValueError("agent is already registered")
+        if any(not isinstance(capability, str) for capability in capabilities):
+            raise TypeError("capabilities must contain only strings")
         if any(cap.lower() in _RESERVED for cap in capabilities):
             raise ValueError("capabilities must not grant reserved authority")
         member = TeamMember(agent_id, "TEAMMATE", frozenset(capabilities))
@@ -153,7 +155,10 @@ class TeamOrchestrator:
         self._event(OrchestrationEventType.TEAMMATE_REGISTERED, actor_id, agent_id)
         return member
 
-    def activate(self) -> TeamSession:
+    def activate(self, actor_id: str) -> TeamSession:
+        self._member(actor_id)
+        if actor_id != self.session.leader_id:
+            raise PermissionError("only the leader can activate the session")
         self.session = self.session.transition(TeamSessionState.ACTIVE)
         return self.session
 
@@ -163,6 +168,8 @@ class TeamOrchestrator:
             raise PermissionError("only the leader can add tasks")
         if task.session_id != self.session.session_id or task.task_id in self._tasks:
             raise ValueError("task does not belong to this session or already exists")
+        if task.status is not TeamTaskStatus.PENDING or task.claimed_by is not None or task.completed_by is not None:
+            raise ValueError("only a pristine PENDING task can be added")
         missing = task.dependency_ids.difference(self._tasks)
         if missing:
             raise ValueError("task dependencies must be registered")
@@ -189,7 +196,10 @@ class TeamOrchestrator:
         if sender_id == receiver_id:
             raise ValueError("direct peer message requires distinct sender and receiver")
         created = self._time(now)
-        message = TeamMessage(f"message-{self._counter + 1}", self.session.session_id, sender_id, receiver_id, message_type, body, artifact_refs, idempotency_key, self.session.baseline_hash, revision or self.session.revision, created)
+        message_revision = self.session.revision if revision is None else revision
+        if message_revision != self.session.revision:
+            raise ValueError("stale or future session revision")
+        message = TeamMessage(f"message-{self._counter + 1}", self.session.session_id, sender_id, receiver_id, message_type, body, artifact_refs, idempotency_key, self.session.baseline_hash, message_revision, created)
         self._mailboxes[receiver_id] = self._mailboxes[receiver_id].deliver(message, created)
         self._event(OrchestrationEventType.MESSAGE_SENT, sender_id, message.message_id, now=created, details=(("receiver_id", receiver_id),))
         return self._mailboxes[receiver_id].messages[-1]

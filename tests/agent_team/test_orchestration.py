@@ -14,13 +14,21 @@ class OrchestrationTests(unittest.TestCase):
         self.team = TeamOrchestrator.create_session(session_id="s1", leader_id="leader", baseline_hash=HASH, budget=10, now=NOW)
         self.team.register_teammate("leader", "dev")
         self.team.register_teammate("leader", "reviewer")
-        self.team.activate()
+        self.team.activate("leader")
 
     def test_registration_and_reserved_capability_guard(self):
         with self.assertRaises(ValueError):
             self.team.register_teammate("leader", "bad", capabilities=frozenset({"deploy"}))
         with self.assertRaises(PermissionError):
             self.team.register_teammate("dev", "bad")
+        with self.assertRaises(TypeError):
+            self.team.register_teammate("leader", "bad-type", capabilities=frozenset({"coding", 7}))
+        with self.assertRaises(PermissionError):
+            TeamOrchestrator.create_session(session_id="s2", leader_id="lead", baseline_hash=HASH, budget=1).activate("unknown")
+        team = TeamOrchestrator.create_session(session_id="s3", leader_id="lead", baseline_hash=HASH, budget=1)
+        team.register_teammate("lead", "dev")
+        with self.assertRaises(PermissionError):
+            team.activate("dev")
 
     def test_dependency_claim_and_scope_conflict(self):
         self.team.add_task("leader", TeamTask("a", "s1", "A", TeamTaskStatus.PENDING, frozenset(), ("src/a",)))
@@ -32,6 +40,12 @@ class OrchestrationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.team.claim_task("reviewer", "c", baseline_hash=HASH, revision=2)
 
+    def test_add_task_requires_pristine_pending_task(self):
+        with self.assertRaises(ValueError):
+            self.team.add_task("leader", TeamTask("claimed", "s1", "claimed", TeamTaskStatus.CLAIMED, frozenset(), ("src",), claimed_by="dev"))
+        with self.assertRaises(ValueError):
+            self.team.add_task("leader", TeamTask("completed", "s1", "completed", TeamTaskStatus.COMPLETED, frozenset(), ("src",), claimed_by="dev", completed_by="dev"))
+
     def test_mailbox_replay_stale_and_peer_review(self):
         self.team.add_task("leader", TeamTask("a", "s1", "A", TeamTaskStatus.PENDING, frozenset(), ("src/a",)))
         msg = self.team.send_message("dev", "reviewer", TeamMessageType.REVIEW, "please review", idempotency_key="k1")
@@ -40,6 +54,10 @@ class OrchestrationTests(unittest.TestCase):
             self.team.send_message("dev", "reviewer", TeamMessageType.REVIEW, "replay", idempotency_key="k1")
         with self.assertRaises(ValueError):
             self.team.send_message("dev", "reviewer", TeamMessageType.CONTEXT, "stale", idempotency_key="k2", revision=1)
+        with self.assertRaises(ValueError):
+            self.team.send_message("dev", "reviewer", TeamMessageType.CONTEXT, "zero", idempotency_key="k3", revision=0)
+        with self.assertRaises(ValueError):
+            self.team.send_message("dev", "reviewer", TeamMessageType.CONTEXT, "future", idempotency_key="k4", revision=3)
         review = self.team.record_peer_review("reviewer", "a", "PASS", "looks good")
         self.assertEqual("PASS", review.outcome)
         self.assertIsNotNone(msg)
