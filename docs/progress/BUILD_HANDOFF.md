@@ -397,7 +397,7 @@
   "valid_failure_count": 0,
   "next_safe_action": "Main Gate decision after frozen-diff, integrity, and commit readiness verification; C-01 remains BLOCKED pending acceptance",
   "dir_status": "CLEARED",
-  "repository_head": "355b99a1ec09cdcd6c0ac9767c3ef9c369937880",
+  "repository_head": "0c8a8b075c1ee970d5d872895f69c254da453cce",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "165a9bfff5e085bfec322c748e83464477642f8a",

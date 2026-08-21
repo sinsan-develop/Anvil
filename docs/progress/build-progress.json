@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "5CBA071DF878B4D1CE10FCE7B78ACDC4805AF87A7F3814DFC90FC0E97AD97043"
+      "sha256": "7698C035D617028336BC05108FC9F4147AAC547196DC4A78EB6CA044C320C2C0"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1106,7 +1106,7 @@
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "165a9bfff5e085bfec322c748e83464477642f8a",
+    "remote_head": "0c8a8b075c1ee970d5d872895f69c254da453cce",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
       "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
@@ -1134,7 +1134,7 @@
     ],
     "observed_at": "2026-08-22T01:00:00+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: Phase B Gate TEST_REVIEW exact44; frozen product mutation 0",
-    "local_head": "355b99a1ec09cdcd6c0ac9767c3ef9c369937880"
+    "local_head": "0c8a8b075c1ee970d5d872895f69c254da453cce"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1296,12 +1296,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "5CBA071DF878B4D1CE10FCE7B78ACDC4805AF87A7F3814DFC90FC0E97AD97043"
+      "sha256": "7698C035D617028336BC05108FC9F4147AAC547196DC4A78EB6CA044C320C2C0"
     }
   },
   "next_work_package": {
     "package_id": "C-01",
     "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE"
   },
-  "snapshot_hash": "0E15C7DF99A0C623548F67F89EF99B125764C14D3149ABCE366A930B14EFA9D4"
+  "snapshot_hash": "A216968E341D02C05053B07E6FABCF4A1A283AB43E35BD7C9EA99A10A44CBCAF"
 }
