@@ -1,0 +1,1 @@
+Implement R3 WorkInstruction exactly. Preserve historical B-12 validation independently of active projection; enforce document boundary content and raw checksum tamper rejection; add regression tests. Do not modify Main-owned progress/HANDOFF/events/digest or product/C-01 files. Report exact commands/results; do not accept Gate or commit/push.

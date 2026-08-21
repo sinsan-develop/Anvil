@@ -1,0 +1,15 @@
+{
+  "artifact_id": "PHASE-B-GATE-PROGRESS-PROJECTION-MANIFEST-20260821-001",
+  "package_id": "PHASE_B_GATE",
+  "manifest_type": "MAIN_PROGRESS_PROJECTION",
+  "target_status": "TEST_REVIEW_EXACT44",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-phase-b-gate-start.json",
+      "bytes": 895,
+      "sha256": "81835E394BD99E558F0AAE45CE0BFD9EAEE1EB4CC895B8BCCAB91AEC384572F1"
+    }
+  ],
+  "self_reference": false,
+  "scope": "Main-owned seq368 progress/HANDOFF/detached digest binding"
+}

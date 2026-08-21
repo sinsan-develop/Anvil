@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "PHASE-B-GATE-PROGRESS-HANDOFF-DIGEST-REWORK-R2",
+  "package_id": "PHASE_B_GATE",
+  "event_sequence": 374,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 51801,
+    "file_sha256": "FC9304FE7F38DB5BC0F0D1060B557F720FD5A4F5F3DA1A1D8C562415877BBD84",
+    "canonical_json_sha256": "8E8BC53F7EC4FE7CC58BC8E814083F2CEBC35F8164E715FE5AE15C105593E466"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 117958,
+    "file_sha256": "6ECA462E981AA8F2FD0E86EB5F619E797B418C2245E5E27E82B6818E60F87B62",
+    "machine_summary_canonical_sha256": "47B484B1DB9DC34C3C79C05BE74508FE00FF8BC2E1933668A6FC46E552C4628C"
+  },
+  "created_at": "2026-08-22T00:20:00+09:00",
+  "scope": "Phase B Gate exact44 R3 rework active; C-01 blocked pending independent review and Main Gate decision"
+}

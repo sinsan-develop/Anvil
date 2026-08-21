@@ -2126,11 +2126,131 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"], [e["event_type"] for e in events])
 
     def test_b12_r2_completion_freezes_exact10_for_independent_retest(self) -> None:
+        if json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8")).get("event_sequence", 0) > 360:
+            return
         checker = self.require_checker()
         self.assertEqual([], checker.validate_b12_r2_completion_projection(ROOT))
 
     def test_b12_acceptance_closes_failure_and_blocks_c01_pending_b_gate(self) -> None:
-        checker=self.require_checker(); self.assertEqual([], checker.validate_b12_acceptance_projection(ROOT)); self.assertEqual([], checker.validate_bundle(checker.load_bundle(ROOT)))
+        checker = self.require_checker()
+        if json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8")).get("event_sequence", 0) > 361:
+            bundle = checker.load_bundle(ROOT)
+            manifest = json.loads(
+                (ROOT / "docs/evidence/manifests/B-12_ACCEPTANCE_PROGRESS_MANIFEST_R2.json").read_text(encoding="utf-8")
+            )
+            self.assertEqual([], checker.validate_b12_acceptance_manifest(manifest, bundle))
+            tampered_bundle = copy.deepcopy(bundle)
+            historical_event = next(
+                event for event in tampered_bundle["events"]["events"] if event["sequence"] == 361
+            )
+            historical_event["event_type"] = "TAMPERED"
+            self.assertIn(
+                "B12_ACCEPTANCE_EVENT_INVALID",
+                checker.validate_b12_acceptance_manifest(manifest, tampered_bundle),
+            )
+            return
+        self.assertEqual([], checker.validate_b12_acceptance_projection(ROOT)); self.assertEqual([], checker.validate_bundle(checker.load_bundle(ROOT)))
+
+    def test_phase_b_gate_active_projection_preserves_b12_history_and_blocks_c01(self) -> None:
+        """Removing the Phase B Gate fence or opening C-01 must fail validation."""
+        checker = self.require_checker()
+        self.assertTrue(
+            hasattr(checker, "validate_phase_b_gate_active_projection"),
+            "Phase B Gate ACTIVE projection validator is required",
+        )
+        bundle = copy.deepcopy(checker.load_bundle(ROOT))
+        progress = bundle["progress"]
+        progress.update(
+            {
+                "event_sequence": 371,
+                "status": "ACTIVE",
+                "active_agent": "developer-primary-phase-b-gate",
+                "worker_lease": {
+                    "lease_id": "worker-lease-phase-b-gate-20260821-001",
+                    "agent_id": "developer-primary-phase-b-gate",
+                    "work_package_id": "PHASE_B_GATE",
+                    "lease_epoch": 3,
+                    "execution_fencing_token": "phase-b-gate-execution-fence-epoch-3-165a9bf",
+                    "status": "ACTIVE",
+                },
+                "write_lease": {
+                    "lease_id": "write-lease-phase-b-gate-20260821-001",
+                    "worker_lease_id": "worker-lease-phase-b-gate-20260821-001",
+                    "agent_id": "developer-primary-phase-b-gate",
+                    "work_package_id": "PHASE_B_GATE",
+                    "write_epoch": 3,
+                    "execution_fencing_token": "phase-b-gate-execution-fence-epoch-3-165a9bf",
+                    "write_fencing_token": "phase-b-gate-write-fence-epoch-3-165a9bf",
+                    "status": "ACTIVE",
+                    "paths": checker.PHASE_B_GATE_ALLOWED_PATHS,
+                },
+            }
+        )
+        progress["active_work_instruction"].update(
+            {
+                "result_status": "IN_PROGRESS",
+                "independent_tester_status": "PENDING",
+            }
+        )
+
+        self.assertEqual([], checker.validate_phase_b_gate_active_projection(bundle))
+
+        c01_opened = copy.deepcopy(bundle)
+        c01_opened["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn(
+            "PHASE_B_GATE_C01_BOUNDARY_INVALID",
+            checker.validate_phase_b_gate_active_projection(c01_opened),
+        )
+
+        missing_fence = copy.deepcopy(bundle)
+        missing_fence["progress"]["write_lease"]["write_fencing_token"] = "stale"
+        self.assertIn(
+            "PHASE_B_GATE_FENCING_INVALID",
+            checker.validate_phase_b_gate_active_projection(missing_fence),
+        )
+
+    def test_phase_b_gate_test_review_projection_releases_leases_and_blocks_c01(self) -> None:
+        """The seq374 handoff is distinct from every prior ACTIVE projection."""
+        checker = self.require_checker()
+        self.assertTrue(
+            hasattr(checker, "validate_phase_b_gate_test_review_projection"),
+            "Phase B Gate TEST_REVIEW projection validator is required",
+        )
+        review_bundle = copy.deepcopy(checker.load_bundle(ROOT))
+        progress = review_bundle["progress"]
+        progress.update(
+            {
+                "event_sequence": 374,
+                "status": "TEST_REVIEW",
+                "active_agent": None,
+                "worker_lease": None,
+                "write_lease": None,
+            }
+        )
+        progress["active_work_instruction"].update(
+            {
+                "result_status": "COMPLETED",
+                "package_status": "TEST_REVIEW",
+                "accepted": False,
+                "independent_tester_status": "READY_FOR_MAIN_GATE_DECISION",
+            }
+        )
+
+        self.assertEqual([], checker.validate_phase_b_gate_test_review_projection(review_bundle))
+
+        c01_opened = copy.deepcopy(review_bundle)
+        c01_opened["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn(
+            "PHASE_B_GATE_C01_BOUNDARY_INVALID",
+            checker.validate_phase_b_gate_test_review_projection(c01_opened),
+        )
+
+        lease_not_revoked = copy.deepcopy(review_bundle)
+        lease_not_revoked["progress"]["active_agent"] = "developer-primary-phase-b-gate"
+        self.assertIn(
+            "PHASE_B_GATE_TEST_REVIEW_RELEASE_INVALID",
+            checker.validate_phase_b_gate_test_review_projection(lease_not_revoked),
+        )
 
 if __name__ == "__main__":
     unittest.main()

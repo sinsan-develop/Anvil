@@ -5046,6 +5046,133 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     return errors
 
 
+PHASE_B_GATE_ALLOWED_PATHS = [
+    "docs/validation/PHASE_B_GATE_VALIDATION.md",
+    "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json",
+    "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md",
+    "scripts/check_phase_b_gate.py",
+    "tests/tooling/test_phase_b_gate.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py",
+]
+PHASE_B_GATE_DEFERRED_IDS = [
+    "AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028",
+]
+
+
+def validate_phase_b_gate_active_projection(bundle: Mapping[str, Any]) -> list[str]:
+    """Validate the active owner-approved exact-44 Gate projection, including rework epochs."""
+    progress = bundle["progress"]
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    instruction = progress.get("active_work_instruction") or {}
+    events = bundle["events"].get("events", [])
+    errors: list[str] = []
+
+    projection = {
+        365: ("WI-PHASE-B-GATE-20260821-001", 1, 362, 365, ["PACKAGE_WAITING_APPROVAL", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]),
+        368: ("WI-PHASE-B-GATE-REWORK-20260821-002", 2, 366, 368, ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"]),
+        371: ("WI-PHASE-B-GATE-REWORK-20260821-003", 3, 369, 371, ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"]),
+    }.get(progress.get("event_sequence"))
+    if projection is None:
+        expected_instruction, expected_epoch, event_start, event_end, expected_event_types = "", 0, 0, -1, []
+    else:
+        expected_instruction, expected_epoch, event_start, event_end, expected_event_types = projection
+    expected_execution_token = f"phase-b-gate-execution-fence-epoch-{expected_epoch}-165a9bf"
+    expected_write_token = f"phase-b-gate-write-fence-epoch-{expected_epoch}-165a9bf"
+    if any((
+        projection is None,
+        progress.get("current_phase") != "B",
+        progress.get("current_work_package") != "PHASE_B_GATE",
+        progress.get("status") != "ACTIVE",
+        progress.get("active_agent") != "developer-primary-phase-b-gate",
+        "B-12" not in progress.get("completed_packages", []),
+        "PHASE_B_GATE" in progress.get("completed_packages", []),
+        (progress.get("historical_failure_counts_by_lineage") or {}).get("B-12") != 1,
+        (progress.get("active_failure_lineage") or {}).get("step_lineage_id") != "PHASE_B_GATE",
+        (progress.get("active_failure_lineage") or {}).get("valid_failure_count") != 0,
+    )):
+        errors.append("PHASE_B_GATE_ACTIVE_PROJECTION_INVALID")
+
+    if any((
+        instruction.get("artifact_id") != expected_instruction,
+        instruction.get("result_status") != "IN_PROGRESS",
+        instruction.get("independent_tester_status") != "PENDING",
+        instruction.get("assigned_verification_count") != 44,
+        instruction.get("direct_gate_set") != "EXACT44_DEPENDENCY_SAFE",
+        instruction.get("deferred_verification_ids") != PHASE_B_GATE_DEFERRED_IDS,
+        instruction.get("undefined_verification_ids") != ["AV-STAT-029"],
+    )):
+        errors.append("PHASE_B_GATE_INSTRUCTION_INVALID")
+
+    if any((
+        worker.get("lease_id") != "worker-lease-phase-b-gate-20260821-001",
+        worker.get("agent_id") != "developer-primary-phase-b-gate",
+        worker.get("work_package_id") != "PHASE_B_GATE",
+        worker.get("lease_epoch") != expected_epoch,
+        worker.get("execution_fencing_token") != expected_execution_token,
+        worker.get("status") != "ACTIVE",
+        write.get("lease_id") != "write-lease-phase-b-gate-20260821-001",
+        write.get("worker_lease_id") != worker.get("lease_id"),
+        write.get("agent_id") != worker.get("agent_id"),
+        write.get("work_package_id") != "PHASE_B_GATE",
+        write.get("write_epoch") != expected_epoch,
+        write.get("execution_fencing_token") != worker.get("execution_fencing_token"),
+        write.get("write_fencing_token") != expected_write_token,
+        write.get("status") != "ACTIVE",
+        write.get("paths") != PHASE_B_GATE_ALLOWED_PATHS,
+    )):
+        errors.append("PHASE_B_GATE_FENCING_INVALID")
+
+    if (progress.get("next_work_package") or {}) != {
+        "package_id": "C-01", "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE"
+    }:
+        errors.append("PHASE_B_GATE_C01_BOUNDARY_INVALID")
+
+    active_events = [event for event in events if event_start <= event.get("sequence", -1) <= event_end]
+    if [event.get("event_type") for event in active_events] != expected_event_types or any(event.get("subject_ref") != "PHASE_B_GATE" for event in active_events):
+        errors.append("PHASE_B_GATE_EVENT_ORDER_INVALID")
+    return sorted(set(errors))
+
+
+def validate_phase_b_gate_test_review_projection(bundle: Mapping[str, Any]) -> list[str]:
+    """Validate the seq374 completed-but-unaccepted Gate handoff to test review."""
+    progress = bundle["progress"]
+    instruction = progress.get("active_work_instruction") or {}
+    errors: list[str] = []
+
+    if any((
+        progress.get("event_sequence") != 374,
+        progress.get("current_phase") != "B",
+        progress.get("current_work_package") != "PHASE_B_GATE",
+        progress.get("status") != "TEST_REVIEW",
+        "B-12" not in progress.get("completed_packages", []),
+        "PHASE_B_GATE" in progress.get("completed_packages", []),
+        (progress.get("historical_failure_counts_by_lineage") or {}).get("B-12") != 1,
+        (progress.get("active_failure_lineage") or {}).get("step_lineage_id") != "PHASE_B_GATE",
+        (progress.get("active_failure_lineage") or {}).get("valid_failure_count") != 0,
+        instruction.get("artifact_id") != "WI-PHASE-B-GATE-REWORK-20260821-003",
+        instruction.get("result_status") != "COMPLETED",
+        instruction.get("package_status") != "TEST_REVIEW",
+        instruction.get("accepted") is not False,
+        instruction.get("independent_tester_status") != "READY_FOR_MAIN_GATE_DECISION",
+    )):
+        errors.append("PHASE_B_GATE_TEST_REVIEW_PROJECTION_INVALID")
+
+    if any((
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+    )):
+        errors.append("PHASE_B_GATE_TEST_REVIEW_RELEASE_INVALID")
+
+    if (progress.get("next_work_package") or {}) != {
+        "package_id": "C-01", "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE"
+    }:
+        errors.append("PHASE_B_GATE_C01_BOUNDARY_INVALID")
+    return sorted(set(errors))
+
+
 def validate_b12_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
     root=bundle["_root"]; p=bundle["progress"]
     expected={"docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/progress-handoff-detached-digest-b12-accepted-r2.json","docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md","docs/work_orders/B-12_REWORK_WORK_INSTRUCTION_R2.md"}
@@ -5060,8 +5187,28 @@ def validate_b12_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mappin
     canonical_bytes="\n".join(sorted(canonical)).encode("utf-8"); target="sha256:"+hashlib.sha256(canonical_bytes).hexdigest().upper()
     if set(indexed)!=expected: errors.append("B12_ACCEPTANCE_RAW_SET_INVALID")
     if any((manifest.get("target_canonical_bytes")!=len(canonical_bytes),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B12_ACCEPTANCE_TARGET_MISMATCH")
-    accepted=[event for event in bundle["events"]["events"] if event.get("sequence")==361]; historical=p.get("historical_failure_counts_by_lineage") or {}; lineage=p.get("active_failure_lineage") or {}
-    if any((p.get("event_sequence")!=361,p.get("current_work_package")!="B-12",p.get("status")!="ACCEPTED","B-12" not in p.get("completed_packages",[]),p.get("valid_failure_count")!=0,lineage.get("step_lineage_id")!="PHASE_B_GATE",lineage.get("valid_failure_count")!=0,historical.get("B-12")!=1,p.get("historical_accepted_failure_count")!=23,p.get("active_work_instruction") is not None,p.get("active_agent") is not None,p.get("worker_lease") is not None,p.get("write_lease") is not None,(p.get("next_work_package") or {})!={"package_id":"C-01","status":"BLOCKED_PENDING_B_GATE"},[event.get("event_type") for event in accepted]!=["MAIN_PACKAGE_ACCEPTED"],manifest.get("tester_report_sha256")!="4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06",manifest.get("tester_verdict")!="READY_FOR_MAIN_ACCEPTANCE",manifest.get("blocking_findings")!=0,manifest.get("developer_target_hash")!="D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D",manifest.get("product_exact_paths_frozen") is not True,manifest.get("product_mutation_after_freeze_count")!=0,len((p.get("repository") or {}).get("exact_allowed_paths",[]))!=15)): errors.append("B12_ACCEPTANCE_PROJECTION_MISMATCH")
+    accepted=[event for event in bundle["events"]["events"] if event.get("sequence")==361]
+    historical=p.get("historical_failure_counts_by_lineage") or {}
+    lineage=p.get("active_failure_lineage") or {}
+    expected_event_details={
+        "decision":"ACCEPTED", "verdict":"READY_FOR_MAIN_ACCEPTANCE",
+        "test_report_ref":"docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md",
+        "test_report_sha256":"4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06",
+        "manifest_ref":"docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
+        "manifest_sha256":"2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA",
+        "tester_verdict":"READY_FOR_MAIN_ACCEPTANCE", "blocking_findings":0,
+        "developer_manifest_sha256":"2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA",
+        "developer_target_hash":"D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D",
+        "product_exact_paths_frozen":True, "product_mutation_after_freeze_count":0,
+        "valid_failure_count":0, "historical_failure_count":1,
+        "next_work_package":"C-01", "next_package_status":"BLOCKED_PENDING_B_GATE", "c01_started":False,
+    }
+    if len(accepted) != 1 or accepted[0].get("event_type") != "MAIN_PACKAGE_ACCEPTED" or accepted[0].get("subject_ref") != "B-12" or any(accepted[0].get("details", {}).get(key) != value for key, value in expected_event_details.items()):
+        errors.append("B12_ACCEPTANCE_EVENT_INVALID")
+    if any(("B-12" not in p.get("completed_packages",[]), historical.get("B-12") != 1, p.get("historical_accepted_failure_count") != 23)):
+        errors.append("B12_ACCEPTANCE_HISTORICAL_PROJECTION_INVALID")
+    if p.get("event_sequence") == 361 and any((p.get("current_work_package")!="B-12",p.get("status")!="ACCEPTED",p.get("valid_failure_count")!=0,lineage.get("step_lineage_id")!="PHASE_B_GATE",lineage.get("valid_failure_count")!=0,p.get("active_work_instruction") is not None,p.get("active_agent") is not None,p.get("worker_lease") is not None,p.get("write_lease") is not None,(p.get("next_work_package") or {})!={"package_id":"C-01","status":"BLOCKED_PENDING_B_GATE"},manifest.get("tester_report_sha256")!="4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06",manifest.get("tester_verdict")!="READY_FOR_MAIN_ACCEPTANCE",manifest.get("blocking_findings")!=0,manifest.get("developer_target_hash")!="D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D",manifest.get("product_exact_paths_frozen") is not True,manifest.get("product_mutation_after_freeze_count")!=0,len((p.get("repository") or {}).get("exact_allowed_paths",[]))!=15)):
+        errors.append("B12_ACCEPTANCE_PROJECTION_MISMATCH")
     return sorted(set(errors))
 
 
@@ -5333,6 +5480,11 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b08_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json":
             errors.extend(validate_b08_acceptance_manifest(manifest, bundle))
+    if progress.get("current_work_package") == "PHASE_B_GATE":
+        if progress.get("status") == "ACTIVE":
+            errors.extend(validate_phase_b_gate_active_projection(bundle))
+        elif progress.get("status") == "TEST_REVIEW":
+            errors.extend(validate_phase_b_gate_test_review_projection(bundle))
     historical_g05_path = bundle["_root"] / "docs/evidence/manifests/G-05_EVIDENCE_MANIFEST.json"
     try:
         historical_g05_manifest = _load_json(historical_g05_path)
@@ -5913,7 +6065,6 @@ def validate_b12_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b12_r2_completion_projection(root: Path) -> list[str]:
     bundle=load_bundle(root); progress=bundle["progress"]; events=bundle["events"]["events"]; wi=progress.get("active_work_instruction") or {}; errors=[]
-    if progress.get("event_sequence")==361: return []
     terminal=[e for e in events if 358<=e.get("sequence",-1)<=360]
     if any((progress.get("event_sequence")!=360,progress.get("status")!="TEST_REVIEW",progress.get("valid_failure_count")!=1,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None)): errors.append("B12_R2_COMPLETION_PHASE_INVALID")
     if any((wi.get("result_status")!="COMPLETED",wi.get("independent_tester_status")!="PENDING_RETEST",wi.get("developer_manifest_sha256")!="2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA",wi.get("developer_target_hash")!="D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D",wi.get("developer_exact_path_count")!=10)): errors.append("B12_R2_COMPLETION_WI_INVALID")

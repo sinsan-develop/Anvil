@@ -389,13 +389,13 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 361,
-  "status": "ACCEPTED",
-  "current_work_package": "B-12",
-  "last_event_id": "evt_b12_main_package_accepted_r2",
+  "event_sequence": 374,
+  "status": "TEST_REVIEW",
+  "current_work_package": "PHASE_B_GATE",
+  "last_event_id": "evt_phase_b_gate_package_completed_test_review",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
-  "next_safe_action": "Evaluate the normal automatic Phase B Gate; C-01 remains BLOCKED and NOT_STARTED until Gate decision",
+  "next_safe_action": "Main Gate decision after frozen-diff, integrity, and commit readiness verification; C-01 remains BLOCKED pending acceptance",
   "dir_status": "CLEARED",
   "repository_head": "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb",
   "repository_upstream": "origin/main",
@@ -419,9 +419,29 @@
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "reporting_decision": "AUTO_CONTINUE"
+  "reporting_decision": "AUTO_CONTINUE",
+  "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
+  "phase_b_gate_deferred_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
+  "phase_b_gate_undefined_ids": ["AV-STAT-029"],
+  "phase_b_gate_approval_ref": "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
+  "phase_b_gate_work_instruction": "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
+  "phase_b_gate_status": "TEST_REVIEW_EXACT44"
 }
 ```
+
+## 2026-08-21 Phase B Gate exact44 fenced start
+
+- 신산님 승인 `APPROVAL-20260821-PHASE-B-GATE-EXACT44-001`에 따라 selector 충돌을 dependency-safe exact 44로 결박했다. 후속 책임 6개와 undefined `AV-STAT-029`는 Gate direct set에서 제외하고 후속 검증/미정의 상태로 보존한다.
+- sequence 362~365는 `PACKAGE_WAITING_APPROVAL → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`다.
+- `developer-primary-phase-b-gate`는 checker/test/validation/evidence/completion의 exact 7 paths만 쓴다. 권위 문서, B-01~B-12 accepted 산출물, 제품 코드, C-01, API/UI/provider/DB/WSL/ysna/deploy는 금지다.
+- 현재 Gate는 `ACTIVE_EXACT44`; 독립 Tester와 Main Gate 판정 전 C-01은 `BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE`다.
+
+## 2026-08-21 Phase B Gate exact44 R2 rework resumed
+
+- 독립 Reviewer가 `SPEC: FAIL / QUALITY: FAIL`로 판정한 6개 보완사항을 유효 재작업으로 수용했다. 승인된 exact44 범위와 C-01 차단은 유지한다.
+- seq 366~368은 이전 epoch-1 lease를 대체하는 R2 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`다.
+- R2는 validation/completion 계약 내용 검증, B-12 historical manifest 검증 보존, 부정 경로 테스트, manifest 경로 containment, 실제 테스트 수치 정정을 수행한다.
+- 현재 Gate는 `ACTIVE_EXACT44_REWORK_R2`; 독립 재검토와 Main Gate 판정 전 C-01은 계속 `BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE`다.
 
 ## 2026-08-14 B-01 R3 Main acceptance
 

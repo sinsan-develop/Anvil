@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 361,
+  "last_sequence": 374,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13102,6 +13102,185 @@
     },
     {
       "event_id":"evt_b12_main_package_accepted_r2","sequence":361,"event_type":"MAIN_PACKAGE_ACCEPTED","occurred_at":"2026-08-21T23:00:00+09:00","actor":"main-agent-eoul","subject_ref":"B-12","details":{"decision":"ACCEPTED","verdict":"READY_FOR_MAIN_ACCEPTANCE","test_report_ref":"docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md","test_report_sha256":"4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06","manifest_ref":"docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json","manifest_sha256":"2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA","tester_verdict":"READY_FOR_MAIN_ACCEPTANCE","blocking_findings":0,"closed_findings":["BLK-B12-001-FI07-DURABLE-RECOVERY-DISCONNECTED","BLK-B12-002-FI0506-NOT-ACTUAL-FAULT-INJECTION"],"developer_manifest_sha256":"2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA","developer_target_hash":"D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D","completion_manifest_sha256":"2259C7D54868EE007E063A50FDFA79BE7C7DA89001298FD672F3AD541073041C","product_exact_paths_frozen":true,"product_mutation_after_freeze_count":0,"valid_failure_count":0,"historical_failure_count":1,"next_work_package":"C-01","next_package_status":"BLOCKED_PENDING_B_GATE","c01_started":false,"acceptance_head":"bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb","acceptance_upstream_head":"bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb","head_relation":"EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT","branch":"main","upstream":"origin/main","remote_head":"bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb","push_status":"PUSH_PENDING_MAIN","exact_allowed_paths":["docs/evidence/manifests/B-12_ACCEPTANCE_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-b12-accepted-r2.json","docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md","scripts/check_a13_repository_scan.py","scripts/check_g07_baseline.py","scripts/check_phase_g_gate.py","scripts/check_project_progress.py","tests/tooling/test_a13_repository_scan.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_phase_g_gate.py","tests/tooling/test_project_progress.py"]}
-    }
+    },
+    {
+      "event_id": "evt_phase_b_gate_owner_direction_exact44",
+      "sequence": 362,
+      "event_type": "PACKAGE_WAITING_APPROVAL",
+      "occurred_at": "2026-08-21T23:20:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_B_GATE",
+      "details": {
+        "approval_ref": "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
+        "approval_sha256": "95312D30CC2360561DBE126F7B1EA5F1B0976E5C0DBE2EBB8AC64BD325F770BB",
+        "change_classification": "HUMAN_APPROVED_SEMANTIC_GATE_SCOPE_DECISION",
+        "direct_gate_set": "EXACT44_DEPENDENCY_SAFE",
+        "deferred_count": 6,
+        "undefined_count": 1
+      }
+    },
+    {
+      "event_id": "evt_phase_b_gate_worker_lease_issued",
+      "sequence": 363,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-21T23:20:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_B_GATE",
+      "details": {
+        "lease_id": "worker-lease-phase-b-gate-20260821-001",
+        "agent_id": "developer-primary-phase-b-gate",
+        "work_package_id": "PHASE_B_GATE",
+        "lease_epoch": 1,
+        "fencing_token": "phase-b-gate-execution-fence-epoch-1-165a9bf",
+        "execution_fencing_token": "phase-b-gate-execution-fence-epoch-1-165a9bf",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_phase_b_gate_write_lease_issued",
+      "sequence": 364,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-21T23:20:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_B_GATE",
+      "details": {
+        "lease_id": "write-lease-phase-b-gate-20260821-001",
+        "worker_lease_id": "worker-lease-phase-b-gate-20260821-001",
+        "agent_id": "developer-primary-phase-b-gate",
+        "work_package_id": "PHASE_B_GATE",
+        "write_epoch": 1,
+        "execution_fencing_token": "phase-b-gate-execution-fence-epoch-1-165a9bf",
+        "write_fencing_token": "phase-b-gate-write-fence-epoch-1-165a9bf",
+        "fencing_token": "phase-b-gate-write-fence-epoch-1-165a9bf",
+        "path_scope": [
+          "docs/validation/PHASE_B_GATE_VALIDATION.md",
+          "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json",
+          "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md",
+          "scripts/check_phase_b_gate.py",
+          "tests/tooling/test_phase_b_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_phase_b_gate_package_started",
+      "sequence": 365,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-08-21T23:20:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_B_GATE",
+      "details": {
+        "work_instruction_id": "WI-PHASE-B-GATE-20260821-001",
+        "work_instruction_path": "docs/work_orders/PHASE_B_GATE_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "AD6E617435D6FD7A6F9EA59AB0851DAF26FB35BED9F1A3D30E612610A2C1BF0A",
+        "invocation_sha256": "FBE1392965377BDFD63EFA7802711B969D2CCD88002C9473B4DB3A3CF4740DFE",
+        "developer_actor": "developer-primary-phase-b-gate",
+        "package_status": "ACTIVE",
+        "result_status": "IN_PROGRESS",
+        "worker_lease_id": "worker-lease-phase-b-gate-20260821-001",
+        "write_lease_id": "write-lease-phase-b-gate-20260821-001",
+        "assigned_verification_ids": "EXACT44_DEPENDENCY_SAFE",
+        "developer_exact_path_count": 7,
+        "product_artifact_count": 0,
+        "actual_api_status": "NOT_EXECUTED",
+        "actual_database_status": "NOT_EXECUTED",
+        "actual_ui_status": "NOT_EXECUTED",
+        "actual_browser_status": "NOT_EXECUTED",
+        "actual_provider_status": "NOT_EXECUTED",
+        "actual_wsl_status": "NOT_EXECUTED",
+        "actual_ysna_status": "NOT_EXECUTED",
+        "actual_deployment_status": "NOT_EXECUTED",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE",
+        "phase_b_gate_status": "ACTIVE_EXACT44",
+        "dir_reached": false,
+        "branch": "main",
+        "upstream": "origin/main"
+      }
+    },
+    {
+      "event_id": "evt_phase_b_gate_rework_worker_lease_issued",
+      "sequence": 366,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-08-21T23:45:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_B_GATE",
+      "details": {
+        "lease_id": "worker-lease-phase-b-gate-20260821-002",
+        "agent_id": "developer-primary-phase-b-gate",
+        "work_package_id": "PHASE_B_GATE",
+        "lease_epoch": 2,
+        "fencing_token": "phase-b-gate-execution-fence-epoch-2-165a9bf",
+        "execution_fencing_token": "phase-b-gate-execution-fence-epoch-2-165a9bf",
+        "status": "ACTIVE",
+        "replaces_lease_id": "worker-lease-phase-b-gate-20260821-001",
+        "reason": "REWORK_REQUIRED_R2"
+      }
+    },
+    {
+      "event_id": "evt_phase_b_gate_rework_write_lease_issued",
+      "sequence": 367,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-08-21T23:45:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_B_GATE",
+      "details": {
+        "lease_id": "write-lease-phase-b-gate-20260821-002",
+        "worker_lease_id": "worker-lease-phase-b-gate-20260821-002",
+        "agent_id": "developer-primary-phase-b-gate",
+        "work_package_id": "PHASE_B_GATE",
+        "write_epoch": 2,
+        "execution_fencing_token": "phase-b-gate-execution-fence-epoch-2-165a9bf",
+        "write_fencing_token": "phase-b-gate-write-fence-epoch-2-165a9bf",
+        "fencing_token": "phase-b-gate-write-fence-epoch-2-165a9bf",
+        "path_scope": [
+          "docs/validation/PHASE_B_GATE_VALIDATION.md",
+          "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json",
+          "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md",
+          "scripts/check_phase_b_gate.py",
+          "tests/tooling/test_phase_b_gate.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "status": "ACTIVE",
+        "replaces_lease_id": "write-lease-phase-b-gate-20260821-001"
+      }
+    },
+    {
+      "event_id": "evt_phase_b_gate_rework_resumed",
+      "sequence": 368,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-08-21T23:45:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "PHASE_B_GATE",
+      "details": {
+        "work_instruction_id": "WI-PHASE-B-GATE-REWORK-20260821-002",
+        "work_instruction_path": "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R2.md",
+        "work_instruction_sha256": "0D978750150AB2F7017990844634F96AB2522D801EFAB38C0A086D2E63B672C7",
+        "invocation_path": "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R2.md",
+        "invocation_sha256": "93DA77CFC22A8647B5D0AC37248B01269C3CB60266BDC050A06468C023D7A092",
+        "developer_actor": "developer-primary-phase-b-gate",
+        "package_status": "ACTIVE_REWORK_R2",
+        "result_status": "IN_PROGRESS",
+        "worker_lease_id": "worker-lease-phase-b-gate-20260821-002",
+        "write_lease_id": "write-lease-phase-b-gate-20260821-002",
+        "assigned_verification_ids": "EXACT44_DEPENDENCY_SAFE",
+        "developer_exact_path_count": 7,
+        "product_artifact_count": 0,
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE",
+        "phase_b_gate_status": "ACTIVE_EXACT44_REWORK_R2",
+        "resume_event_ref": "evt_phase_b_gate_rework_worker_lease_issued",
+        "dir_reached": false
+      }
+    },
+    {"event_id":"evt_phase_b_gate_rework_r3_worker_lease_issued","sequence":369,"event_type":"WORKER_LEASE_ISSUED","occurred_at":"2026-08-22T00:20:01+09:00","actor":"main-agent-eoul","subject_ref":"PHASE_B_GATE","details":{"lease_id":"worker-lease-phase-b-gate-20260821-003","agent_id":"developer-primary-phase-b-gate","work_package_id":"PHASE_B_GATE","lease_epoch":3,"fencing_token":"phase-b-gate-execution-fence-epoch-3-165a9bf","execution_fencing_token":"phase-b-gate-execution-fence-epoch-3-165a9bf","status":"ACTIVE","reason":"REWORK_REQUIRED_R3","subject_ref":"PHASE_B_GATE"}},
+    {"event_id":"evt_phase_b_gate_rework_r3_write_lease_issued","sequence":370,"event_type":"WRITE_LEASE_ISSUED","occurred_at":"2026-08-22T00:20:02+09:00","actor":"main-agent-eoul","subject_ref":"PHASE_B_GATE","details":{"lease_id":"write-lease-phase-b-gate-20260821-003","worker_lease_id":"worker-lease-phase-b-gate-20260821-003","agent_id":"developer-primary-phase-b-gate","work_package_id":"PHASE_B_GATE","write_epoch":3,"execution_fencing_token":"phase-b-gate-execution-fence-epoch-3-165a9bf","write_fencing_token":"phase-b-gate-write-fence-epoch-3-165a9bf","fencing_token":"phase-b-gate-write-fence-epoch-3-165a9bf","path_scope":["docs/validation/PHASE_B_GATE_VALIDATION.md","docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json","docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md","scripts/check_phase_b_gate.py","tests/tooling/test_phase_b_gate.py","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"status":"ACTIVE"}},
+    {"event_id":"evt_phase_b_gate_rework_r3_resumed","sequence":371,"event_type":"PACKAGE_RESUMED","occurred_at":"2026-08-22T00:20:03+09:00","actor":"main-agent-eoul","subject_ref":"PHASE_B_GATE","details":{"work_instruction_id":"WI-PHASE-B-GATE-REWORK-20260821-003","work_instruction_path":"docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md","work_instruction_sha256":"7DBA454EBF87A8FAC80EB1D67EED1942A0389E61532A6925416C7A9CDE2862B2","invocation_path":"docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R3.md","invocation_sha256":"F396EF594D616FDF68881339ED7FD122CF8446865B0B64C32C4C02D09458B4EA","developer_actor":"developer-primary-phase-b-gate","package_status":"ACTIVE_REWORK_R3","result_status":"IN_PROGRESS","worker_lease_id":"worker-lease-phase-b-gate-20260821-003","write_lease_id":"write-lease-phase-b-gate-20260821-003","phase_b_gate_status":"ACTIVE_EXACT44_REWORK_R3","next_package_status":"BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE","resume_event_ref":"evt_phase_b_gate_rework_r3_worker_lease_issued"}},
+    {"event_id":"evt_phase_b_gate_write_lease_revoked","sequence":372,"event_type":"WRITE_LEASE_REVOKED","occurred_at":"2026-08-22T00:45:01+09:00","actor":"main-agent-eoul","subject_ref":"PHASE_B_GATE","details":{"lease_id":"write-lease-phase-b-gate-20260821-001","worker_lease_id":"worker-lease-phase-b-gate-20260821-001","agent_id":"developer-primary-phase-b-gate","work_package_id":"PHASE_B_GATE","write_epoch":3,"execution_fencing_token":"phase-b-gate-execution-fence-epoch-3-165a9bf","write_fencing_token":"phase-b-gate-write-fence-epoch-3-165a9bf","fencing_token":"phase-b-gate-write-fence-epoch-3-165a9bf","reason":"R3_DEVELOPER_COMPLETED_INDEPENDENT_REVIEW_PASS_PENDING_MAIN_GATE_DECISION","status":"REVOKED"}},
+    {"event_id":"evt_phase_b_gate_worker_lease_revoked","sequence":373,"event_type":"WORKER_LEASE_REVOKED","occurred_at":"2026-08-22T00:45:02+09:00","actor":"main-agent-eoul","subject_ref":"PHASE_B_GATE","details":{"lease_id":"worker-lease-phase-b-gate-20260821-001","agent_id":"developer-primary-phase-b-gate","work_package_id":"PHASE_B_GATE","lease_epoch":3,"fencing_token":"phase-b-gate-execution-fence-epoch-3-165a9bf","execution_fencing_token":"phase-b-gate-execution-fence-epoch-3-165a9bf","reason":"R3_DEVELOPER_COMPLETED_INDEPENDENT_REVIEW_PASS_PENDING_MAIN_GATE_DECISION","status":"REVOKED"}},
+    {"event_id":"evt_phase_b_gate_package_completed_test_review","sequence":374,"event_type":"PACKAGE_COMPLETED","occurred_at":"2026-08-22T00:45:03+09:00","actor":"main-agent-eoul","subject_ref":"PHASE_B_GATE","details":{"package_status":"TEST_REVIEW","result_status":"COMPLETED","accepted":false,"independent_tester_status":"READY_FOR_MAIN_GATE_DECISION","independent_test_report_ref":"docs/test_reports/PHASE_B_GATE_INDEPENDENT_TEST_REPORT.md","independent_test_report_sha256":"7F98EBD937EC8CF027A307C1D931A5E3CE1E73474E916168CA284AB15CDE8FDE","developer_completion_report_ref":"docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md","next_work_package":"C-01","next_package_status":"BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE","phase_b_gate_status":"TEST_REVIEW_EXACT44","worker_lease":null,"write_lease":null,"actual_api_status":"NOT_EXECUTED","actual_database_status":"NOT_EXECUTED","actual_ui_status":"NOT_EXECUTED","actual_browser_status":"NOT_EXECUTED","actual_wsl_status":"NOT_EXECUTED","actual_provider_status":"NOT_EXECUTED","actual_deployment_status":"NOT_EXECUTED"}}
   ]
 }
