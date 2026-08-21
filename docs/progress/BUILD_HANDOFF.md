@@ -1,3 +1,10 @@
+# B-12 R2 Main acceptance → Phase B Gate 대기 — sequence 361
+
+- 독립 Tester report SHA `4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06`의 `READY_FOR_MAIN_ACCEPTANCE / blockers 0`을 검토해 seq361 `MAIN_PACKAGE_ACCEPTED`로 B-12를 최종 `ACCEPTED`했다.
+- 두 CRITICAL finding은 `CLOSED`; 유효 실패 1건은 historical lineage로 보존하고 active count는 0으로 닫았다. Developer exact10 target `D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D`는 byte-frozen이며 제품 mutation은 0이다.
+- worker/write lease와 active WorkInstruction은 null이다. C-01은 정상 자동 Phase B Gate 판정 전 `BLOCKED_PENDING_B_GATE / NOT_STARTED`다.
+- 다음 안전 행동은 누적 B-01~B-12 evidence와 assigned AV의 Phase B Gate 판정이다. C-01은 Gate PASS 전 시작하지 않는다.
+
 # B-12 R2 Developer 완료 → 독립 재테스트 대기 — sequence 360
 
 - Developer R2 exact10을 evidence manifest file SHA `2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA`, raw9 target `D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D`로 byte-frozen했다. Main 완료 projection의 제품 mutation은 0이다.
@@ -382,39 +389,31 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 360,
-  "status": "TEST_REVIEW",
+  "event_sequence": 361,
+  "status": "ACCEPTED",
   "current_work_package": "B-12",
-  "last_event_id": "evt_b12_r2_package_completed",
+  "last_event_id": "evt_b12_main_package_accepted_r2",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 1,
-  "next_safe_action": "Independent Tester retests frozen B-12 R2 exact10; B-12 acceptance, B Gate, and C-01 remain forbidden",
+  "valid_failure_count": 0,
+  "next_safe_action": "Evaluate the normal automatic Phase B Gate; C-01 remains BLOCKED and NOT_STARTED until Gate decision",
   "dir_status": "CLEARED",
-  "repository_head": "3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0",
+  "repository_head": "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0",
+  "repository_validated_base_commit": "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-12_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
-    "docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/B-12_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b12-rework-completion-r2.json",
-    "docs/validation/B-12_RECOVERY_VALIDATION.md",
-    "migrations/versions/0010_recovery.py",
-    "packages/persistence/recovery_repository.py",
-    "packages/recovery/models.py",
-    "packages/recovery/service.py",
+    "docs/progress/progress-handoff-detached-digest-b12-accepted-r2.json",
+    "docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/recovery/test_action_reconcile.py",
-    "tests/recovery/test_process_resume.py",
-    "tests/recovery/test_recovery_api.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",

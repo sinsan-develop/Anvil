@@ -1,0 +1,90 @@
+{
+  "artifact_id": "EVIDENCE-MANIFEST-B-12-ACCEPTANCE-R2-20260821-001",
+  "artifact_type": "package_acceptance_projection_manifest",
+  "project_id": "anvil",
+  "package_id": "B-12",
+  "artifact_status": "accepted",
+  "artifact_path": "docs/evidence/manifests/B-12_ACCEPTANCE_PROGRESS_MANIFEST_R2.json",
+  "created_by": {
+    "actor_type": "agent",
+    "actor_id": "main-agent-eoul"
+  },
+  "created_at": "2026-08-21T23:00:00+09:00",
+  "projection": {
+    "event_sequence": 361,
+    "status": "ACCEPTED",
+    "valid_failure_count": 0,
+    "historical_failure_count": 1,
+    "next_package": "C-01",
+    "next_package_status": "BLOCKED_PENDING_B_GATE",
+    "phase_b_gate_decided": false,
+    "c01_started": false
+  },
+  "tester_report_sha256": "4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06",
+  "tester_verdict": "READY_FOR_MAIN_ACCEPTANCE",
+  "blocking_findings": 0,
+  "closed_findings": [
+    "BLK-B12-001-FI07-DURABLE-RECOVERY-DISCONNECTED",
+    "BLK-B12-002-FI0506-NOT-ACTUAL-FAULT-INJECTION"
+  ],
+  "developer_manifest_sha256": "2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA",
+  "developer_target_hash": "D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D",
+  "completion_manifest_sha256": "2259C7D54868EE007E063A50FDFA79BE7C7DA89001298FD672F3AD541073041C",
+  "product_exact_paths_frozen": true,
+  "product_exact_path_count": 10,
+  "product_mutation_after_freeze_count": 0,
+  "repository_projection": {
+    "validated_base_commit": "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb",
+    "actual_dirty_exact_path_count": 15,
+    "main_projection_exact_path_count": 15
+  },
+  "assigned_verification_ids": [
+    "AV-STAT-014",
+    "AV-STAT-034",
+    "AV-STAT-035",
+    "AV-STAT-036",
+    "AV-STAT-038",
+    "AV-STAT-039",
+    "AV-OPS-005",
+    "AV-SAFE-031",
+    "AV-FLOW-010",
+    "AV-FLOW-011"
+  ],
+  "runtime_boundary": {
+    "actual_local_http": "PASS_INDEPENDENT_UVICORN_HOSTILE_AND_NOMINAL",
+    "actual_postgresql18": "PASS_INDEPENDENT_DURABLE_RECOVERY_FI05_FI06_FI07_MIGRATION_ROLLBACK_CLEANUP",
+    "actual_process_termination": "PASS_INDEPENDENT_THREE_DB_BOUND_FRESH_PROCESS_REPLAYS",
+    "actual_real_pc_power_off": "NOT_EXECUTED_PROCESS_TERMINATION_SIMULATION_ONLY",
+    "actual_browser_ui_provider_shared_wsl_ysna_production_deployment": "NOT_EXECUTED",
+    "phase_b_gate": "PENDING_NOT_DECIDED",
+    "c01_start": "FORBIDDEN_NOT_STARTED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
+      "bytes": 3936,
+      "sha256": "2259C7D54868EE007E063A50FDFA79BE7C7DA89001298FD672F3AD541073041C"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-b12-accepted-r2.json",
+      "bytes": 914,
+      "sha256": "D90600BCAFA275995D75F617089BB406DFFB322E273EB9FA279164E49A24D000"
+    },
+    {
+      "path": "docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md",
+      "bytes": 8921,
+      "sha256": "4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06"
+    },
+    {
+      "path": "docs/work_orders/B-12_REWORK_WORK_INSTRUCTION_R2.md",
+      "bytes": 5265,
+      "sha256": "476D2A7EAE064F25EDF479F3D66BB6F64DFAFFB38D49430BF26BD38E92A0BAB2"
+    }
+  ],
+  "target_canonical_bytes": 521,
+  "target_content_bytes": 19036,
+  "target_hash": "sha256:2D1B169D21AC60378153F6C0D0A24446C245AC8719DE173E67C42257B94691EB",
+  "delivered_hash": "sha256:2D1B169D21AC60378153F6C0D0A24446C245AC8719DE173E67C42257B94691EB",
+  "content_hash": "sha256:2D1B169D21AC60378153F6C0D0A24446C245AC8719DE173E67C42257B94691EB",
+  "self_reference": false
+}

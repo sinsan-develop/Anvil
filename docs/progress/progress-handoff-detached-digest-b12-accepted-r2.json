@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "B-12-PROGRESS-HANDOFF-DIGEST-R2-ACCEPTED",
+  "package_id": "B-12",
+  "event_sequence": 361,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 50705,
+    "file_sha256": "A475F7813F7A919AA694017D28FF0EF32A5E9355E9E02C5CBF9C92F347636A4C",
+    "canonical_json_sha256": "BFDED5E7B8934216564BB0888338533180C4AA78E88AB8F4EAF2E73B1DE1795C"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 115952,
+    "file_sha256": "3CD0EFF2FB60C42B570832763620547D5F10AEA7AB18663F8C94297ECF457E17",
+    "machine_summary_canonical_sha256": "E082FBAF9C7049F324EEC7E20BBCCCDBBE0F0E2645AA455BF431DBADC4114DBB"
+  },
+  "created_at": "2026-08-21T23:00:00+09:00",
+  "scope": "B-12 R2 accepted; two independent blockers closed and historical failure preserved; Phase B Gate pending; C-01 blocked and not started"
+}

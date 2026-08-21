@@ -1652,10 +1652,19 @@ def validate_b12_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b12_r2_completion_projection(root: Path) -> list[str]:
     progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]; errors=[]
+    if progress.get("event_sequence")==361: return []
     terminal=[e for e in events if 358<=e.get("sequence",-1)<=360]
     if progress.get("event_sequence")!=360 or progress.get("status")!="TEST_REVIEW" or progress.get("valid_failure_count")!=1: errors.append("B12_R2_COMPLETION_PHASE_INVALID")
     if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B12_R2_COMPLETION_EVENT_ORDER_INVALID")
     if (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE": errors.append("B12_R2_COMPLETION_BOUNDARY_INVALID")
+    return errors
+
+
+def validate_b12_acceptance_projection(root: Path) -> list[str]:
+    p=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); e=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    errors=[]; accepted=[x for x in e if x.get("sequence")==361]
+    if p.get("event_sequence")!=361 or p.get("status")!="ACCEPTED" or p.get("valid_failure_count")!=0 or (p.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B_GATE": errors.append("B12_ACCEPTANCE_INVALID")
+    if [x.get("event_type") for x in accepted] != ["MAIN_PACKAGE_ACCEPTED"]: errors.append("B12_ACCEPTANCE_EVENT_INVALID")
     return errors
 
 

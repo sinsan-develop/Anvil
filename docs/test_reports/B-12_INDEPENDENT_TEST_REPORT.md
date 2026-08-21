@@ -1,122 +1,124 @@
-# B-12 Independent Test Report
+# B-12 R2 Independent Retest Report
 
 - Package: `B-12`
+- Retest revision: `R2`
 - Tester: implementation-conversation-separated independent Tester
-- Tested commit: `main = origin/main = e29ffcfc6e401af43bdb2672fd0817252792d652`
-- Tested projection: sequence `353`, `B-12 / TEST_REVIEW / PENDING`
-- Result contract: `FAILURE_REPORT / REWORK_REQUIRED`
-- Blocking finding count: `2`
+- Tested commit: `main = origin/main = bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb`
+- Tested projection: sequence `360`, `B-12 / TEST_REVIEW / PENDING_RETEST`
+- Failure fingerprint: `B-12/DURABLE_PROCESS_RECOVERY_AND_ACTUAL_SEND_BOUNDARY_GAP`
+- Result contract: `READY_FOR_MAIN_ACCEPTANCE`
+- Blocking finding count: `0`
 - Write scope: this report only
 
 ## 1. 판정
 
 ### 판정
 
-`FAILURE / REWORK_REQUIRED`
+`READY_FOR_MAIN_ACCEPTANCE`
 
 ### 판단 이유
 
-정적 recovery 분류, API 보안 경계, migration, fencing, concurrent receipt, Secret/capability 차단과 current/fresh 회귀는 통과했다. 그러나 B-12의 핵심 L6 완료조건인 실제 송신 경계 장애주입과 process 종료 뒤 durable DB·progress/HANDOFF 기반 새 Session 복구는 구현 또는 테스트된 증거가 아니다.
+R2는 `BLK-B12-001`과 `BLK-B12-002`를 실제 PostgreSQL-backed process recovery evidence로 닫았다. 독립 PostgreSQL 18 환경에서 FI-05·FI-06·FI-07을 각각 고유 Run 3개로 실행했다. 각 worker subprocess가 실제 boundary 상태를 commit한 뒤 강제 종료됐고, 새 Python process와 새 `PostgresRecoveryRepository`가 in-memory reseed 없이 동일 Run을 load·reconcile했다.
 
-`FI-07` 테스트는 DB나 progress/HANDOFF를 사용하지 않는 `sleep(30)` subprocess를 종료한 뒤, 테스트 프로세스가 새 `InMemoryRecoveryRepository`를 생성하고 종료 후에 fixture를 다시 seed한다. 종료된 subprocess와 복구 입력 사이에 durable state 계보가 없다. 제품 persistence 모듈에도 `RecoveryRepository` Protocol과 `InMemoryRecoveryRepository`만 있고 PostgreSQL recovery load/save/audit adapter가 없다. PostgreSQL 테스트는 resume fencing 함수와 receipt serialization만 검증한다.
+FI-07은 완료 Step 3개를 skip하고 `RUNNING → INTERRUPTED` 3개를 중단 Step으로만 재개했다. DB/progress/HANDOFF/Event/checkpoint sequence는 `3/3` 일치했고 process interruption/reconciliation audit도 각각 3개였다. FI-05는 send `0`, lookup `0`, retry intent `3`, duplicate `0`; FI-06은 send `3`, authoritative receipt lookup `3`, retry `0`, duplicate `0`이었다. 따라서 이전 두 CRITICAL finding은 `CLOSED`다.
 
-`FI-05/06` 테스트는 같은 `REQUEST_PREPARED`와 `REQUEST_SENT` 값을 파라미터 0~2로 세 번 pure function에 전달하며 마지막에 `fault_round in range(3)`만 확인한다. 실제 송신 직전/직후 subprocess 중단, Provider send counter, authoritative receipt lookup, automatic retry counter가 없다. 따라서 완료보고의 “provider sends 0 / automatic retries 0”은 독립 재현되지 않는다.
+current와 fresh clone의 회귀, 두 manifest raw target, 실제 loopback API, hostile lineage·Secret·capability 차단, stale worker/write fencing, 8-way concurrent immutable receipt와 migration rollback도 통과했다. 실행 범위 안에 남은 acceptance blocker는 없다.
 
 ### 조치
 
-아래 두 blocking lineage를 같은 B-12 범위에서 재작업해야 한다. Main acceptance, Phase B Gate, C-01 시작은 금지한다.
+Main Agent는 이 보고서를 근거로 별도의 B-12 acceptance를 판단할 수 있다. 이 Tester는 B-12를 accept하거나 Phase B Gate/C-01을 시작하지 않았고 commit/push/deploy도 수행하지 않았다.
 
-1. 실제 격리 PostgreSQL recovery repository를 통해 subprocess가 durable recovery input/Event/checkpoint를 기록한 뒤 종료되고, 새 프로세스가 같은 DB와 progress/HANDOFF sequence를 읽어 완료 Step skip, `RUNNING → INTERRUPTED`, 중단 Step만 안전 재개하는 FI-07을 최소 3회 수행한다.
-2. FI-05/06을 실제 send boundary fault harness로 각각 최소 3회 수행하고 Provider send/automatic retry/authoritative receipt 조회 카운터로 중복 요청 0을 증명한다.
-
-## 2. Authority와 frozen evidence
+## 2. Authority, projection, manifests
 
 | 항목 | 독립 결과 |
 |---|---|
-| HEAD / origin/main / initial status | `e29ffcfc...` / equal / clean |
-| progress | sequence `353`, `TEST_REVIEW`, worker/write lease `null` |
-| WorkInstruction SHA-256 | `C588069F8F735DF32AC908F3E2F27F9BE5D2E6E18E0C2F67CBAF36202BA4C3EE` |
-| Invocation SHA-256 | `3E2A28FECB4E0A64FDF30BDAD8E0D3DD9546E98F84F010C95924B18D8A41D7DF` |
-| product manifest SHA-256 | `47543B6D41C57CEBAB7003478F76177B1B1F05B2C46868D156612908AA7E6D7E` |
-| product projection | raw `14`, canonical bytes `1491`, content bytes `73787`, checksum mismatch `0` |
-| product target | `7EE778EBA5A85C107C90BA94D7186297192BDB6358CFA4571363183FB2AF316C`, match |
-| completion manifest SHA-256 | `0D535E483E000CAE239C16C88B6BAEB48ACE2B0ED75E9F5EDDAE095103B490B4` |
-| completion projection | raw `12`, canonical bytes `1335`, content bytes `1181636`, checksum mismatch `0` |
-| completion target | `03667710A82559FC0D305EE470976A4F895CBB1EC8F4D458216C5AF076213986`, match |
+| HEAD / origin/main / initial status | `bb43f22f...` / equal / clean |
+| progress | sequence `360`, `TEST_REVIEW / PENDING_RETEST`, leases `null` |
+| R2 WorkInstruction SHA-256 | `476D2A7EAE064F25EDF479F3D66BB6F64DFAFFB38D49430BF26BD38E92A0BAB2` |
+| R2 Invocation SHA-256 | `1B310073C8871C3F57B8065FF818BEB436DB0C66574DFF97D759133D930C09DC` |
+| source R1 Tester report SHA-256 | `224CC87D40496A09765551A317413832039C4BDBA2B67C22AC37C6E05681AF91` |
+| R2 product manifest SHA-256 | `2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA` |
+| product projection | raw `9`, canonical bytes `978`, content bytes `86808`, checksum mismatch `0` |
+| product target | `D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D`, match |
+| R2 completion manifest SHA-256 | `2259C7D54868EE007E063A50FDFA79BE7C7DA89001298FD672F3AD541073041C` |
+| completion projection | raw `14`, canonical bytes `1625`, content bytes `1211368`, checksum mismatch `0` |
+| completion target | `55E3DDAA15A5B8D41BB6A20AF13902363E12C9E3B5BE3C2555DEC0964EC40397`, match |
 
-두 manifest의 `self_reference=false`, raw bytes, target은 current와 fresh clone에서 각각 독립 재계산해 동일했다. `git show --check e29ffc...`는 기존 세 경로의 `new blank line at EOF`를 정확히 보고했다: `packages/persistence/recovery_repository.py:84`, `packages/recovery/read_model.py:37`, `tests/recovery/test_secret_capability_recovery.py:67`. Tester는 이를 수정하지 않았고 `git diff --check`는 clean checkout에서 exit `0`이었다.
+두 manifest는 `self_reference=false`이며 current와 fresh clone에서 raw byte로 독립 재계산해 동일했다. `git diff --check`는 exit `0`이었다. 저장소의 기존 `.pytest_cache` ACL residue는 읽거나 수정·삭제하지 않았다.
 
-## 3. Blocking findings
+## 3. Failure-lineage closure
 
-### BLK-B12-001-FI07-DURABLE-RECOVERY-DISCONNECTED
+### BLK-B12-001-FI07-DURABLE-RECOVERY-DISCONNECTED / CLOSED
 
-- Severity / verification: `CRITICAL / AV-STAT-038, AV-STAT-039, AV-OPS-005, AV-FLOW-010, AV-FLOW-011`
-- Expected: 종료된 실제 subprocess가 사용하던 durable DB Event, progress/HANDOFF, checkpoint, Action 상태를 새 Session이 읽고 sequence 일치와 안전 재개를 증명한다.
-- Actual: `_wait_for_termination()`은 `sleep(30)`만 수행한다. 종료 후 테스트 본문이 새 in-memory repository를 생성하고 `_input()`을 seed한다. PostgreSQL recovery adapter는 존재하지 않고 `tests/recovery`의 PostgreSQL 사용은 resume fencing/receipt 함수 한 건뿐이다.
-- Impact: 실제 process/PC 종료 뒤 상태가 새 Session으로 복원된다는 B-12 핵심 완료조건을 제품이 수행한다는 증거가 없다. `RUNNING`을 durable `INTERRUPTED` Event/state로 바꾸는 구현도 없고 pure reconciliation에서 바로 `safe_retry`로 분류한다.
-- Action: PostgreSQL recovery load/save/decision/audit 계층과 DB/progress/HANDOFF 동기화 harness를 구현하고, 종료 전후 동일 run/checkpoint/action lineage를 최소 3회 검증한다.
+- `PostgresRecoveryRepository`가 recovery Run, canonical Run Event, checkpoint artifact, plan Step, Action, decision, audit와 resume receipt를 실제 PostgreSQL lineage로 저장하고 새 process에서 load한다.
+- FI-07 worker는 각 고유 Run에서 `RUNNING` boundary와 PID를 DB에 commit한 뒤 종료됐다. parent는 DB boundary count 도달을 확인한 뒤 process를 terminate했고 nonzero exit를 assertion했다.
+- fresh recovery process는 종료 후 fixture seed 없이 같은 DSN과 Run ID로 load했다. persisted 결과는 완료 Action `SUCCESS 3`, 중단 Action `INTERRUPTED / interrupted_from_status=RUNNING 3`이었다.
+- DB, progress, HANDOFF, canonical Run Event, checkpoint의 sequence는 세 Run 모두 exact 일치했다.
+- persisted aggregate는 FI-07 Run `3`, interruption count 각 `1`, decision `3`, automatic retry intent `3`, duplicate `0`, `PROCESS_INTERRUPTED` audit `3`, `RECOVERY_RECONCILED` audit `3`이었다.
+- 별도 replay process는 기존 decision/retry/audit를 중복 증가시키지 않았다.
 
-### BLK-B12-002-FI0506-NOT-ACTUAL-FAULT-INJECTION
+### BLK-B12-002-FI0506-NOT-ACTUAL-FAULT-INJECTION / CLOSED
 
-- Severity / verification: `CRITICAL / AV-STAT-035, AV-STAT-036`
-- Expected: 외부 요청 송신 직전과 송신 후 응답 직전을 각각 실제로 중단해 send 전 safe retry, send 후 authoritative receipt 조회 전 자동 retry 금지와 중복 요청 0을 증명한다.
-- Actual: `test_before_send_is_safe_retry_but_after_send_without_receipt_requires_review`는 정적 enum 두 개의 분류를 세 번 반복한다. `fault_round`는 장애주입에 사용되지 않고 tautological range assertion에만 사용된다. Provider send, receipt lookup, retry counter와 종료 프로세스가 없다.
-- Impact: 분류 규칙 unit test는 통과하지만 장애 경계의 중복 side effect 불변식은 검증되지 않았다.
-- Action: 실제 fault harness와 authoritative receipt stub/counter를 추가해 FI-05/06 각각 3회 이상 재현하고 send/retry/duplicate 수를 보고한다.
+- FI-05와 FI-06 모두 Windows `spawn` worker가 PostgreSQL boundary를 commit한 조건을 parent가 polling한 뒤 실제 terminate했다. 그 뒤 별도 recovery process와 새 repository instance만 사용했다.
+- FI-05 `BEFORE_SEND` 세 Run: interruption 각 `1`, send `0`, receipt lookup `0`, automatic retry intent 합계 `3`, duplicate request `0`, decision `3`.
+- FI-06 `AFTER_SEND_BEFORE_RESPONSE` 세 Run: interruption 각 `1`, provider receipt row `3`, send 합계 `3`, authoritative receipt lookup 합계 `3`, automatic retry `0`, duplicate request `0`, decision `3`.
+- FI-06 recovery는 receipt 기반 `confirmed_success`로 수렴하고 재송신하지 않았다. FI-05만 persisted safe-retry intent를 정확히 한 번 남겼다.
 
-## 4. 통과한 current/fresh 회귀
+## 4. Current와 fresh-clone regression
 
-Fresh remote clone `C:\tmp\anvil-b12-independent-5d8b73c1`은 exact commit으로 생성했고 검증 후 resolved parent `C:\tmp`와 leaf를 확인해 제거했다.
+Fresh remote clone `C:\tmp\anvil-b12-r2-independent-6a21f9d4`는 exact commit으로 생성했고 검증 뒤 resolved parent `C:\tmp`와 exact leaf를 확인해 제거했다.
 
 | 검증 | current | fresh clone |
 |---|---:|---:|
-| focused recovery, DSN 미제공 | `20 passed, 1 skipped` | `20 passed, 1 skipped` |
-| canonical core, `--import-mode=importlib` | `159 passed, 7 skipped` | `159 passed, 7 skipped` |
-| full tooling | `427 passed` | `427 passed` |
-| combined canonical | `586 passed, 7 skipped` | `586 passed, 7 skipped` |
+| recovery, DSN 미제공 | `17 passed, 13 skipped` | `17 passed, 13 skipped` |
+| canonical core, `--import-mode=importlib` | `156 passed, 19 skipped` | `156 passed, 19 skipped` |
+| full tooling | `435 passed` | `435 passed` |
+| combined canonical | `591 passed, 19 skipped` | `591 passed, 19 skipped` |
 | standalone A-13/project/G-07/Phase G | `4/4 PASS` | `4/4 PASS` |
 
-Standalone 결과는 A-13 `fixtures=8 zero_delta=8 hostile=15`, project progress `sequence=353`, G-07 `packages=108 av=255 uncovered=0 scenarios=20`, Phase G `accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`이다.
+Developer/Main handoff의 no-DSN `15` 및 PostgreSQL `28`보다 최종 committed tree에서는 각각 두 테스트가 더 수집돼 실제 값은 `17`과 `30`이었다. 결과를 축소하지 않고 최종 fresh 실행값을 기록한다.
 
-## 5. 실제 loopback HTTP
+Standalone 결과는 A-13 `fixtures=8 zero_delta=8 hostile=15`, project progress `sequence=360`, G-07 `packages=108 av=255 uncovered=0 scenarios=20`, Phase G `accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`이다.
 
-Uvicorn을 `127.0.0.1:8767`에서 실행해 다음 유효 요청을 확인했다.
+## 5. 격리 PostgreSQL 18
 
-- authenticated progress read: `200`, request ID 결박, target/evidence hash, checkpoint, next action 포함
+- Runtime: `postgres:18-alpine`, PostgreSQL `18.4`
+- Container/network: `anvil-b12-r2-independent-pg18-9422` / `anvil-b12-r2-independent-net-9422`
+- Bind/tmpfs: `127.0.0.1:32791` / `/var/lib/postgresql=rw,noexec,nosuid,size=512m`
+- Database: `anvil_b12_r2_test_9422`
+- shared DB / WSL staging / ysna / production: 미접근
+
+검증 결과:
+
+1. migration `0009_intervention_budget → 0010_recovery` 통과.
+2. DSN recovery suite 최종 committed tree 기준 `30/30 PASS`.
+3. FI-05/06/07 persisted process/counter/decision/audit 결과는 3절과 일치.
+4. cross-Run checkpoint·Step lineage와 plaintext Secret은 fail-closed.
+5. revoked Secret과 capability drift는 Provider send/retry 없이 지정된 blocked status로 수렴.
+6. stale worker token과 동일 conflict scope의 stale write token은 `STALE_FENCING_TOKEN`.
+7. 8 concurrent current resume는 동일 checkpoint를 반환하고 immutable receipt row `1`개.
+8. rollback `0010_recovery → 0009_intervention_budget` 통과; recovery table/function `0/0`.
+9. 삭제 전 exact container/network name과 ID를 확인했고 제거 후 exact-name filter는 blank.
+
+## 6. 실제 loopback API
+
+Uvicorn을 `127.0.0.1:8768`에서 실행해 다음을 확인했다.
+
+- authenticated progress read: `200`, target/evidence hash, checkpoint, next action과 request ID
 - stale target reconcile: `409 RECOVERY_TARGET_HASH_MISMATCH`
 - nominal reconcile: `200`, Event sequence `4`
 - missing session: `401 AUTHENTICATION_REQUIRED`
 - wrong permission scope: `403 PERMISSION_SCOPE_MISMATCH`
 
-첫 POST 묶음은 Tester의 PowerShell `If-Match` quoting 오류로 curl URL parsing 경고와 HTTP 400을 만들었고 제품 판정에서 제외했다. 유효한 `If-Match: 4`로 재실행해 위 `409/200/403`을 얻었다. 종료 후 port `8767` listener는 없었다.
-
-## 6. 격리 PostgreSQL 18
-
-- image/runtime: `postgres:18-alpine`, PostgreSQL `18.4`
-- container/network: `anvil-b12-independent-pg18-9231` / `anvil-b12-independent-net-9231`
-- bind/tmpfs: `127.0.0.1:32789` / `/var/lib/postgresql=rw,noexec,nosuid,size=512m`
-- database: `anvil_b12_test_9231`
-
-실행 결과:
-
-1. 최초 WSL resource inspect는 `E_ACCESSDENIED`였고 승인된 WSL/Docker 실행으로 재시도했다.
-2. migration `0009_intervention_budget → 0010_recovery`가 통과했다.
-3. DSN-focused recovery는 `21/21 PASS`였다.
-4. stale worker token과 같은 conflict scope의 이전 write token은 `STALE_FENCING_TOKEN`으로 거부됐다.
-5. 8 concurrent current resume는 모두 동일 checkpoint를 반환했고 immutable receipt row는 정확히 `1`개였다.
-6. negative sequence, invalid Secret status, raw Secret value, invalid Action status, raw Secret audit의 hostile 5종은 named check constraint로 모두 거부됐다. hostile row는 `0`, canonical Secret reference는 유지됐다.
-7. rollback `0010_recovery → 0009_intervention_budget`가 통과했고 recovery table/function은 `0/0`이었다.
-8. 삭제 전 exact name/ID를 확인했고 container/network 제거 후 exact-name filter는 blank였다.
-
-이 PASS는 migration, schema constraints와 resume fencing/receipt serialization만 증명한다. 위 blocking finding의 durable recovery repository와 process-linked FI-07을 대신하지 않는다.
+종료 후 port `8768` listener는 없었다. 이는 actual HTTP evidence이며 실제 browser/menu Network evidence로 승격하지 않는다.
 
 ## 7. 실행 경계, cleanup, rollback
 
-- 실제 PC 전원 차단, 실제 브라우저/menu Network, actual Secret Broker/Provider, shared DB, WSL staging, ysna, production, deployment는 `NOT_EXECUTED`다.
-- FI-07은 실제 subprocess terminate 3회였지만 종료 대상과 durable recovery state가 연결되지 않아 B-12 L6 PASS로 승격하지 않았다.
-- Tester가 수정한 파일은 `docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md` 하나다.
-- 제품, authority, WorkInstruction, progress/HANDOFF, manifests, Git index/refs, 기존 ACL residue는 수정하지 않았다.
-- fresh clone, uvicorn process/port, PostgreSQL container/network는 모두 정리했다.
+- 실제 PC power-off, 실제 browser/menu Network, actual Provider/Secret Broker, shared DB, WSL staging, ysna, production, deployment는 `NOT_EXECUTED`다.
+- 실행한 FI-05/06/07은 실제 subprocess termination이지만 실제 PC 전원 차단으로 주장하지 않는다.
+- Tester가 교체한 파일은 `docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md` 하나다.
+- 제품, authority, WorkInstruction, progress/HANDOFF, manifests, Git index/refs와 기존 ACL residue는 수정하지 않았다.
+- fresh clone, uvicorn process/port, PostgreSQL container/network는 모두 exact 경계 확인 후 정리했다.
 - acceptance, Phase B Gate, C-01, commit, push, deployment는 수행하지 않았다.
 
-최종 결과: `FAILURE / REWORK_REQUIRED`, blocking finding `2`건.
+최종 결과: `READY_FOR_MAIN_ACCEPTANCE`, blocking finding `0`건.

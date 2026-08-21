@@ -1145,6 +1145,8 @@ def validate_evidence_manifest(root: Path) -> list[str]:
         return validate_b12_rework_start_projection(root)
     if progress.get("event_sequence") == 360:
         return validate_b12_r2_completion_projection(root)
+    if progress.get("event_sequence") == 361:
+        return validate_b12_acceptance_projection(root)
     predecessor = root / EVIDENCE_R2_REL
     if predecessor.is_file():
         predecessor_manifest = _load_json(predecessor)
@@ -1522,11 +1524,20 @@ def validate_b12_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b12_r2_completion_projection(root: Path) -> list[str]:
     progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]; wi=progress.get("active_work_instruction") or {}; errors=[]
+    if progress.get("event_sequence")==361: return []
     manifest=json.loads((root/"docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json").read_text(encoding="utf-8")); rows=manifest.get("raw_checksums") or []
     if manifest.get("self_reference") is not False or manifest.get("artifact_path") in {row.get("path") for row in rows if isinstance(row,dict)}: errors.append("EVIDENCE_SELF_REFERENCE_FORBIDDEN")
     terminal=[e for e in events if 358<=e.get("sequence",-1)<=360]
     if any((progress.get("event_sequence")!=360,progress.get("status")!="TEST_REVIEW",progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,wi.get("independent_tester_status")!="PENDING_RETEST",wi.get("developer_exact_path_count")!=10)): errors.append("B12_R2_COMPLETION_INVALID")
     if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B12_R2_COMPLETION_EVENT_ORDER_INVALID")
+    return errors
+
+
+def validate_b12_acceptance_projection(root: Path) -> list[str]:
+    p=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); e=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    errors=[]; accepted=[x for x in e if x.get("sequence")==361]
+    if p.get("event_sequence")!=361 or p.get("status")!="ACCEPTED" or p.get("valid_failure_count")!=0 or p.get("active_work_instruction") is not None: errors.append("B12_ACCEPTANCE_INVALID")
+    if [x.get("event_type") for x in accepted] != ["MAIN_PACKAGE_ACCEPTED"]: errors.append("B12_ACCEPTANCE_EVENT_INVALID")
     return errors
 
 

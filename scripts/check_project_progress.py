@@ -5046,6 +5046,25 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     return errors
 
 
+def validate_b12_acceptance_manifest(manifest: Mapping[str, Any], bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; p=bundle["progress"]
+    expected={"docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/progress-handoff-detached-digest-b12-accepted-r2.json","docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md","docs/work_orders/B-12_REWORK_WORK_INSTRUCTION_R2.md"}
+    rows=manifest.get("raw_checksums")
+    if not isinstance(rows,list): return ["B12_ACCEPTANCE_RAW_INVALID"]
+    errors=[]; indexed={}; canonical=[]; total=0
+    for row in rows:
+        relative=row.get("path") if isinstance(row,dict) else None
+        if not isinstance(relative,str) or relative in indexed or relative==manifest.get("artifact_path"): errors.append("B12_ACCEPTANCE_RAW_INVALID"); continue
+        raw=(root/relative).read_bytes(); digest=hashlib.sha256(raw).hexdigest().upper(); indexed[relative]=row; total+=len(raw); canonical.append(f"{relative}\t{len(raw)}\t{digest}")
+        if row.get("bytes")!=len(raw) or row.get("sha256")!=digest: errors.append("B12_ACCEPTANCE_RAW_INVALID")
+    canonical_bytes="\n".join(sorted(canonical)).encode("utf-8"); target="sha256:"+hashlib.sha256(canonical_bytes).hexdigest().upper()
+    if set(indexed)!=expected: errors.append("B12_ACCEPTANCE_RAW_SET_INVALID")
+    if any((manifest.get("target_canonical_bytes")!=len(canonical_bytes),manifest.get("target_content_bytes")!=total,manifest.get("target_hash")!=target,manifest.get("delivered_hash")!=target,manifest.get("content_hash")!=target,manifest.get("self_reference") is not False)): errors.append("B12_ACCEPTANCE_TARGET_MISMATCH")
+    accepted=[event for event in bundle["events"]["events"] if event.get("sequence")==361]; historical=p.get("historical_failure_counts_by_lineage") or {}; lineage=p.get("active_failure_lineage") or {}
+    if any((p.get("event_sequence")!=361,p.get("current_work_package")!="B-12",p.get("status")!="ACCEPTED","B-12" not in p.get("completed_packages",[]),p.get("valid_failure_count")!=0,lineage.get("step_lineage_id")!="PHASE_B_GATE",lineage.get("valid_failure_count")!=0,historical.get("B-12")!=1,p.get("historical_accepted_failure_count")!=23,p.get("active_work_instruction") is not None,p.get("active_agent") is not None,p.get("worker_lease") is not None,p.get("write_lease") is not None,(p.get("next_work_package") or {})!={"package_id":"C-01","status":"BLOCKED_PENDING_B_GATE"},[event.get("event_type") for event in accepted]!=["MAIN_PACKAGE_ACCEPTED"],manifest.get("tester_report_sha256")!="4BC563551B64B885A3361957E5DA7EAE7458121FE83803D9844E178916D3CD06",manifest.get("tester_verdict")!="READY_FOR_MAIN_ACCEPTANCE",manifest.get("blocking_findings")!=0,manifest.get("developer_target_hash")!="D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D",manifest.get("product_exact_paths_frozen") is not True,manifest.get("product_mutation_after_freeze_count")!=0,len((p.get("repository") or {}).get("exact_allowed_paths",[]))!=15)): errors.append("B12_ACCEPTANCE_PROJECTION_MISMATCH")
+    return sorted(set(errors))
+
+
 def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
     progress = bundle["progress"]
@@ -5308,6 +5327,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_b11_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-12_START_EVIDENCE_MANIFEST.json":
             errors.extend(validate_b12_start_projection(bundle["_root"]))
+        elif current_manifest_relative == "docs/evidence/manifests/B-12_ACCEPTANCE_PROGRESS_MANIFEST_R2.json":
+            errors.extend(validate_b12_acceptance_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_COMPLETION_PROGRESS_MANIFEST.json":
             errors.extend(validate_b08_completion_manifest(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/B-08_ACCEPTANCE_PROGRESS_MANIFEST.json":
@@ -5892,12 +5913,21 @@ def validate_b12_rework_start_projection(root: Path) -> list[str]:
 
 def validate_b12_r2_completion_projection(root: Path) -> list[str]:
     bundle=load_bundle(root); progress=bundle["progress"]; events=bundle["events"]["events"]; wi=progress.get("active_work_instruction") or {}; errors=[]
+    if progress.get("event_sequence")==361: return []
     terminal=[e for e in events if 358<=e.get("sequence",-1)<=360]
     if any((progress.get("event_sequence")!=360,progress.get("status")!="TEST_REVIEW",progress.get("valid_failure_count")!=1,progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None)): errors.append("B12_R2_COMPLETION_PHASE_INVALID")
     if any((wi.get("result_status")!="COMPLETED",wi.get("independent_tester_status")!="PENDING_RETEST",wi.get("developer_manifest_sha256")!="2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA",wi.get("developer_target_hash")!="D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D",wi.get("developer_exact_path_count")!=10)): errors.append("B12_R2_COMPLETION_WI_INVALID")
     if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B12_R2_COMPLETION_EVENT_ORDER_INVALID")
     if (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE": errors.append("C01_BOUNDARY_INVALID")
     return sorted(set(errors))
+
+
+def validate_b12_acceptance_projection(root: Path) -> list[str]:
+    bundle=load_bundle(root); p=bundle["progress"]; e=[x for x in bundle["events"]["events"] if x.get("sequence")==361]; errors=[]
+    if any((p.get("event_sequence")!=361,p.get("status")!="ACCEPTED",p.get("valid_failure_count")!=0,"B-12" not in p.get("completed_packages",[]),p.get("active_work_instruction") is not None,p.get("active_agent") is not None,p.get("worker_lease") is not None,p.get("write_lease") is not None)): errors.append("B12_ACCEPTANCE_PHASE_INVALID")
+    if [x.get("event_type") for x in e] != ["MAIN_PACKAGE_ACCEPTED"]: errors.append("B12_ACCEPTANCE_EVENT_INVALID")
+    if (p.get("historical_failure_counts_by_lineage") or {}).get("B-12")!=1 or (p.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B_GATE": errors.append("B12_ACCEPTANCE_BOUNDARY_INVALID")
+    return errors
 
 
 if __name__ == "__main__":

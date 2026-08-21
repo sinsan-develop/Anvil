@@ -2129,5 +2129,8 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         self.assertEqual([], checker.validate_b12_r2_completion_projection(ROOT))
 
+    def test_b12_acceptance_closes_failure_and_blocks_c01_pending_b_gate(self) -> None:
+        checker=self.require_checker(); self.assertEqual([], checker.validate_b12_acceptance_projection(ROOT)); self.assertEqual([], checker.validate_bundle(checker.load_bundle(ROOT)))
+
 if __name__ == "__main__":
     unittest.main()

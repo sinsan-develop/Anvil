@@ -790,5 +790,8 @@ class G07BaselineTests(unittest.TestCase):
     def test_b12_r2_completion_preserves_gate_and_blocks_c01(self):
         self.assertEqual([], self.checker.validate_b12_r2_completion_projection(ROOT))
 
+    def test_b12_acceptance_preserves_a_gate_and_blocks_c01_pending_b_gate(self):
+        self.assertEqual([], self.checker.validate_b12_acceptance_projection(ROOT)); self.assertEqual([], self.validate()["errors"])
+
 if __name__ == "__main__":
     unittest.main()

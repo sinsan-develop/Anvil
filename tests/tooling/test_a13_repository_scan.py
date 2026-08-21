@@ -1449,5 +1449,8 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         spec=importlib.util.spec_from_file_location("a13_b12_r2_done",CHECKER_PATH); checker=importlib.util.module_from_spec(spec); sys.modules[spec.name]=checker; spec.loader.exec_module(checker)
         self.assertEqual([], checker.validate_b12_r2_completion_projection(ROOT))
 
+    def test_b12_acceptance_selects_frozen_successor_projection(self):
+        spec=importlib.util.spec_from_file_location("a13_b12_accept",CHECKER_PATH); checker=importlib.util.module_from_spec(spec); sys.modules[spec.name]=checker; spec.loader.exec_module(checker); self.assertEqual([], checker.validate_b12_acceptance_projection(ROOT))
+
 if __name__ == "__main__":
     unittest.main()
