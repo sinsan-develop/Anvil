@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C-32-YSNA-OPERATIONAL-PROJECTION-DIGEST-001",
+  "package_id": "C-32",
+  "event_sequence": 375,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 54484,
+    "file_sha256": "7E7905CE51702061A00E43197558C837EAFA682ADACEC93AEC181DE8899D42A2",
+    "canonical_json_sha256": "937F41B0C0A3AD3BBE3027C2BD3F4B07DF13779E7AE47E0A02FF1B329E981316"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 121537,
+    "file_sha256": "21149559FDF16E72ECD7013E60AE1AFFF40AB373C4927D34380882F1A0A6F0E1",
+    "machine_summary_canonical_sha256": "21149559FDF16E72ECD7013E60AE1AFFF40AB373C4927D34380882F1A0A6F0E1"
+  },
+  "successor_manifest": {
+    "path": "docs/evidence/manifests/C-32_YSNA_OPERATIONAL_PROJECTION_MANIFEST.json",
+    "historical_predecessor_sequence": 374,
+    "sha256": "DE113540C0DE410FFAD25C64A0C55C2F20E46D76DE18A884039C17A086C2B72F"
+  },
+  "created_at": "2026-08-22T01:00:00+09:00",
+  "scope": "C-32 actual ysna dedicated database, migration, readiness, NPM route, and Telegram webhook evidence projected as a non-retroactive successor; Phase B Gate remains TEST_REVIEW and C-01 remains blocked"
+}

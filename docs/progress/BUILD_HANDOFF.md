@@ -960,6 +960,13 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - DIR-1을 `CLEARED`로 전환한 뒤 누적 A-01~A-15 accepted evidence를 5개 권위 축과 Phase A Gate 기준으로 읽기 전용 검토했다.
 - A Gate는 seq186 `PHASE_GATE_DECIDED / ACCEPTED`, blocking finding 0이다. B-01은 `READY_NOT_STARTED`로만 허용하며 B Phase start Event, WorkInstruction, agent, worker/write lease는 생성하지 않았다.
 - 실제 API·DB·Provider·Secret·Egress·WSL·Production·deployment는 계속 `NOT_EXECUTED`다. A-14 R5 실제 browser evidence와 R6 fresh IAB `ENVIRONMENT_BLOCKED / NOT_EXECUTED` 경계를 보존한다.
+
+## C-32 운영 successor projection — historical 보존 (sequence 375)
+
+- C-32 운영 검증 결과는 `docs/evidence/manifests/C-32_YSNA_OPERATIONAL_PROJECTION_MANIFEST.json` 및 `docs/validation/C-32_YSNA_OPERATIONAL_PROJECTION_VALIDATION.md`에 별도 투영했다.
+- 기존 progress event sequence 1~374, Phase B Gate `TEST_REVIEW`, 관련 historical hash와 C-01 차단 상태는 수정하지 않았다.
+- 운영 증거는 전용 `shared-db/anvil`·`anvil_app`, migration head `0011_telegram_webhook_state`, live/ready 200, NPM webhook 외부 경로 및 Telegram `setWebhook` 성공이다.
+- successor digest는 `docs/progress/progress-handoff-detached-digest-c32-operational-projection.json`에 기록했으며 Phase B Gate acceptance와 C-01 시작은 수행하지 않았다.
     "docs/progress/failure-ledger.json",
 # B-11 R2 Developer 완료 → 독립 재검증 대기 — sequence 346
 
@@ -967,3 +974,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - seq344→346은 epoch-2 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-11은 `TEST_REVIEW / COMPLETED / PENDING_RETEST`, B-12는 `BLOCKED_PENDING_B11_ACCEPTANCE`다.
 - Main 독립 검증에서 focused `22 passed`, core `117 passed, 6 skipped`, hostile scope 403/zero dispatch와 nominal HTTP 및 FI-08 SSE strict successor를 확인했다. Browser는 기존 `ENVIRONMENT_BLOCKED`를 유지하며 PASS로 승격하지 않는다.
 - 다음 안전 행동은 frozen exact8의 대화 분리 독립 Tester 재검증이다. B-11 acceptance와 B-12 시작은 금지한다.
+
+## C-32 Operational Successor Projection — historical 보존
+
+- C-32 운영 증거를 append-only successor로 투영했다. 전용 `shared-db/anvil` 데이터베이스와 `anvil_app` role, migration `0011_telegram_webhook_state`를 확인했다.
+- `/health/live`와 `/health/ready`는 HTTP 200이며, `/integrations/telegram/webhook` same-origin 경로와 Telegram `setWebhook`/`getWebhookInfo`가 성공했다. pending update는 0이고 잘못된 secret은 HTTP 400으로 거부됐다.
+- 기존 `progress-events.json`, `build-progress.json`의 historical event sequence/hash는 변경하지 않았다. 상세 증거는 `docs/evidence/manifests/C-32_OPERATIONAL_SUCCESSOR_PROJECTION.json`, `docs/completion_reports/C-32_OPERATIONAL_SUCCESSOR_PROJECTION.md`, `docs/progress/progress-handoff-detached-digest-c32-successor.json`에 둔다.
+- 이 successor projection은 Phase B Gate 판정이나 C-01 시작 승인을 대체하지 않는다. 다음 안전 행동은 Main Agent의 historical baseline과 successor evidence 정합성 검토다.

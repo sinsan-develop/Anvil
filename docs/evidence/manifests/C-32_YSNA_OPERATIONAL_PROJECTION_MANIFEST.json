@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_id": "C-32-YSNA-OPERATIONAL-PROJECTION-20260822-001",
+  "package_id": "C-32",
+  "artifact_status": "SUCCESSOR_PROJECTION",
+  "predecessor": {
+    "event_sequence": 374,
+    "event_id": "evt_phase_b_gate_package_completed_test_review",
+    "historical_immutable": true
+  },
+  "projection": {
+    "event_sequence": 375,
+    "phase_b_gate_status": "TEST_REVIEW_EXACT44",
+    "phase_b_gate_acceptance": "NOT_STARTED",
+    "c01_status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE",
+    "next_successor": "C-21",
+    "next_successor_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "runtime_evidence": {
+    "host": "ysna-server",
+    "deploy_root": "~/deploy/anvil",
+    "database": "anvil",
+    "application_role": "anvil_app",
+    "migration_head": "0011_telegram_webhook_state",
+    "health_live_http": 200,
+    "health_ready_http": 200,
+    "telegram_set_webhook": "PASS",
+    "telegram_get_webhook_info": "PASS",
+    "npm_route": "https://anvil.sinsan.kr/integrations/telegram/webhook",
+    "secret_values": "OMITTED_RUNTIME_ONLY"
+  },
+  "evidence_ref": {
+    "validation_path": "docs/validation/C-32_YSNA_OPERATIONAL_PROJECTION_VALIDATION.md",
+    "historical_events_preserved": true,
+    "authority_hashes_preserved": true
+  },
+  "limitations": [
+    "This successor projection does not accept Phase B Gate.",
+    "C-01 is not started.",
+    "No public Release claim is made."
+  ]
+}
