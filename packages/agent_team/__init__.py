@@ -18,6 +18,14 @@ from .models import (
     TeamTask,
     TeamTaskStatus,
 )
+from .provider_catalog import (
+    PRIMARY_PROVIDER,
+    PROVIDER_CREDENTIAL_KEYS,
+    SUPPORTED_PROVIDERS,
+    ProviderCatalogEntry,
+    catalog_entries,
+    ordered_candidates,
+)
 
 __all__ = [
     "ConversationRole",
@@ -36,4 +44,10 @@ __all__ = [
     "TeamSessionStatus",
     "TeamTask",
     "TeamTaskStatus",
+    "PRIMARY_PROVIDER",
+    "PROVIDER_CREDENTIAL_KEYS",
+    "SUPPORTED_PROVIDERS",
+    "ProviderCatalogEntry",
+    "catalog_entries",
+    "ordered_candidates",
 ]
