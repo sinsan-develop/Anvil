@@ -16,6 +16,10 @@ class DeploymentContractTests(unittest.TestCase):
  def test_artifacts_and_boundary(self):
   for name in ('Dockerfile.web','compose.internal.yml','.dockerignore','README.md'): self.assertTrue((DEPLOY/name).is_file())
   text=(DEPLOY/'compose.internal.yml').read_text(); self.assertIn('"127.0.0.1:4173:4173"',text); self.assertIn('read_only: true',text); self.assertIn('cap_drop: [ALL]',text); self.assertIn('no-new-privileges:true',text)
+
+ def test_tmpfs_mount_spec_is_single_compose_value(self):
+  text=(DEPLOY/'compose.internal.yml').read_text()
+  self.assertIn('tmpfs: ["/tmp:rw,noexec,nosuid,size=64m"]', text)
  def test_web_not_proxy_and_migrate_profile(self):
   text=(DEPLOY/'compose.internal.yml').read_text(); self.assertNotIn('proxy-network',text.split('  migrate:',1)[0]); self.assertIn('profiles: [tools]',text)
  def test_entrypoint_and_health(self):
