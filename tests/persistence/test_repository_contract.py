@@ -16,4 +16,8 @@ class RepositoryContractTests(unittest.TestCase):
         settings = DatabaseSettings("postgresql+psycopg://user:secret@db/anvil")
         self.assertNotIn("secret", repr(settings))
 
+    def test_unqualified_postgresql_dsn_uses_psycopg3_dialect(self):
+        settings = DatabaseSettings("postgresql://user:secret@db/anvil")
+        self.assertEqual("postgresql+psycopg://user:secret@db/anvil", settings.dsn)
+
 if __name__ == "__main__": unittest.main()
