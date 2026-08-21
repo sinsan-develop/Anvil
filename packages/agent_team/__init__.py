@@ -26,6 +26,7 @@ from .provider_catalog import (
     catalog_entries,
     ordered_candidates,
 )
+from .runtime_config import credential_reference, runtime_catalog
 
 __all__ = [
     "ConversationRole",
@@ -50,4 +51,6 @@ __all__ = [
     "ProviderCatalogEntry",
     "catalog_entries",
     "ordered_candidates",
+    "credential_reference",
+    "runtime_catalog",
 ]

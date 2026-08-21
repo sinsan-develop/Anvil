@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 import hmac
 import inspect
 import re
@@ -17,6 +18,7 @@ from .common import ApiContractError, ApplicationRequest, SessionPrincipal, cano
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
 from .security import WebSecurityConfig, effective_host, request_id, security_headers
 from .sse import EmptyEventStream, EventStreamPort, encode_sse
+from .telegram_webhook import TelegramWebhook
 
 
 ApplicationPort = Callable[[ApplicationRequest], Any]
@@ -306,6 +308,7 @@ def create_app(
     security_config: WebSecurityConfig | None = None,
     authorization_resolver: AuthorizationResolver | None = None,
     recovery_ports: ApiPorts | None = None,
+    telegram_webhook: TelegramWebhook | None = None,
 ) -> FastAPI:
     api_registry = registry or canonical_api_registry()
     base_ports = ports or ApiPorts()
@@ -368,4 +371,13 @@ def create_app(
             )
         )
         app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source])
+    if telegram_webhook is not None:
+        @app.post("/integrations/telegram/webhook", include_in_schema=False)
+        async def telegram_webhook_handler(request: Request) -> JSONResponse:
+            status, payload = telegram_webhook.handle(
+                await request.body(),
+                {key.lower(): value for key, value in request.headers.items()},
+                now=datetime.now(timezone.utc),
+            )
+            return JSONResponse(payload, status_code=status)
     return app
