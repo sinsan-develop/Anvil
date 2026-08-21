@@ -9,7 +9,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Mapping
 
 
 def _text(value: str, field: str) -> None:
@@ -22,6 +21,19 @@ def _utc(value: datetime, field: str) -> None:
         raise ValueError(f"{field} must be timezone-aware")
     if value.utcoffset().total_seconds() != 0:
         raise ValueError(f"{field} must be UTC")
+
+
+def _canonical_cursor(sequence: int) -> str:
+    return str(sequence)
+
+
+def _parse_cursor(cursor: str) -> int:
+    _text(cursor, "cursor")
+    if cursor == "0":
+        return 0
+    if not cursor.isdecimal() or cursor.startswith("0"):
+        raise ValueError("cursor must be a canonical decimal sequence")
+    return int(cursor)
 
 
 class CommandKind(str, Enum):
@@ -80,9 +92,10 @@ class AgentStatusSnapshot:
     def __post_init__(self) -> None:
         _text(self.agent_id, "agent_id")
         _text(self.status, "status")
-        _text(self.cursor, "cursor")
         if type(self.sequence) is not int or self.sequence < 1:
             raise ValueError("sequence must be a positive integer")
+        if self.cursor != _canonical_cursor(self.sequence):
+            raise ValueError("cursor must match sequence in canonical form")
         _utc(self.observed_at, "observed_at")
 
 
@@ -101,6 +114,8 @@ class ProgressEvent:
             _text(value, field)
         if type(self.sequence) is not int or self.sequence < 1:
             raise ValueError("sequence must be a positive integer")
+        if self.cursor != _canonical_cursor(self.sequence):
+            raise ValueError("cursor must match sequence in canonical form")
         _utc(self.occurred_at, "occurred_at")
 
 
@@ -220,34 +235,47 @@ class RemoteControlPlane:
         self._event_keys.add(event.idempotency_key); self._events += (event,)
         return event
 
-    def replay(self, *, cursor: int = 0, limit: int = 100) -> tuple[ProgressEvent, ...]:
-        if type(cursor) is not int or cursor < 0 or type(limit) is not int or not 1 <= limit <= 1000:
+    def replay(self, *, cursor: str = "0", limit: int = 100) -> tuple[ProgressEvent, ...]:
+        parsed_cursor = _parse_cursor(cursor)
+        known_cursors = {event.cursor for event in self._events}
+        if cursor != "0" and cursor not in known_cursors:
+            raise ValueError("unknown cursor")
+        if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("cursor/limit out of range")
-        return tuple(event for event in self._events if event.sequence > cursor)[:limit]
+        return tuple(event for event in self._events if event.sequence > parsed_cursor)[:limit]
 
     def execute(self, command: OperatorCommand, *, session_id: str, now: datetime) -> AuditEvent:
         _utc(now, "now")
         session = self._sessions.get(session_id)
         if session is None or session.operator_id != command.operator_id or not session.is_authenticated(now):
+            self._audit(command, "SESSION_UNAUTHENTICATED", now)
             raise PermissionError("remote session is not authenticated")
         registered = self._operators.get(command.operator_id)
         if registered is None or registered[0] != command.auth_token or registered[1] <= now:
+            self._audit(command, "AUTH_FAILED", now)
             raise PermissionError("operator authentication failed")
         if command.expires_at <= now:
+            self._audit(command, "EXPIRED", now)
             raise ValueError("command is expired")
+        if command.issued_at > now:
+            self._audit(command, "FUTURE_ISSUED_AT", now)
+            raise ValueError("command issued_at cannot be in the future")
         if command.idempotency_key in self._commands:
+            self._audit(command, "DUPLICATE", now)
             raise ValueError("duplicate command rejected")
         self._commands.add(command.idempotency_key)
         if command.kind in APPROVAL_REQUIRED:
             request = ApprovalRequest(f"approval-{len(self._approvals) + 1}", command, command.operator_id, "remote command requires Leader/Main approval", now)
             self._approvals += (request,)
+            self._audit(command, "APPROVAL_REQUIRED", now, (("request_id", request.request_id),))
             raise ApprovalRequired(request)
         if command.kind not in LOW_RISK:
+            self._audit(command, "UNSUPPORTED", now)
             raise ValueError("unsupported command")
         return self._audit(command, "ACCEPTED", now)
 
-    def _audit(self, command: OperatorCommand, outcome: str, now: datetime) -> AuditEvent:
-        audit = AuditEvent(f"audit-{len(self._audits) + 1}", command.command_id, command.operator_id, command.kind.value, outcome, now)
+    def _audit(self, command: OperatorCommand, outcome: str, now: datetime, details: tuple[tuple[str, str], ...] = ()) -> AuditEvent:
+        audit = AuditEvent(f"audit-{len(self._audits) + 1}", command.command_id, command.operator_id, command.kind.value, outcome, now, details)
         self._audits += (audit,)
         return audit
 
@@ -261,9 +289,14 @@ class OfflineQueue:
         self.limit = limit
         self._commands: list[OperatorCommand] = []
         self._keys: set[str] = set()
+        self._last_drain_outcomes: tuple[tuple[str, str], ...] = ()
 
     @property
     def commands(self) -> tuple[OperatorCommand, ...]: return tuple(self._commands)
+
+    @property
+    def last_drain_outcomes(self) -> tuple[tuple[str, str], ...]:
+        return self._last_drain_outcomes
 
     def enqueue(self, command: OperatorCommand) -> None:
         if not isinstance(command, OperatorCommand): raise TypeError("command must be OperatorCommand")
@@ -275,9 +308,19 @@ class OfflineQueue:
         _utc(now, "now")
         if not isinstance(seen_keys, frozenset): raise TypeError("seen_keys must be a frozenset")
         ready: list[OperatorCommand] = []
+        outcomes: list[tuple[str, str]] = []
         for command in self._commands:
-            if command.idempotency_key in seen_keys: continue
-            if command.expires_at <= now: continue
+            if command.idempotency_key in seen_keys:
+                outcomes.append((command.idempotency_key, "DUPLICATE"))
+                continue
+            if command.expires_at <= now:
+                outcomes.append((command.idempotency_key, "STALE"))
+                continue
+            if command.issued_at > now:
+                outcomes.append((command.idempotency_key, "FUTURE_ISSUED_AT"))
+                continue
+            outcomes.append((command.idempotency_key, "READY"))
             ready.append(command)
         self._commands.clear(); self._keys.clear()
+        self._last_drain_outcomes = tuple(outcomes)
         return tuple(ready)
