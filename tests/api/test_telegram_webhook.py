@@ -97,3 +97,26 @@ def test_webhook_rejects_malformed_standard_update() -> None:
     webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
     status, _ = webhook.handle(b'{"update_id": 1, "message": {}}', _headers(b""), now=datetime.now(timezone.utc))
     assert status == 400
+
+
+def test_webhook_rejects_malformed_datetime_types_without_server_error() -> None:
+    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    now = datetime.now(timezone.utc)
+    body = json.loads(_body(now))
+
+    for field, value in (("issued_at", 123), ("expires_at", {"not": "a timestamp"}), ("issued_at", "not-a-date")):
+        malformed = dict(body)
+        malformed[field] = value
+        status, result = webhook.handle(
+            json.dumps(malformed).encode(), _headers(b""), now=now
+        )
+        assert status == 400
+        assert result == {"error": "malformed webhook payload"}
+
+
+def test_webhook_rejects_malformed_clock_type_without_server_error() -> None:
+    webhook = TelegramWebhook(_adapter(), TelegramWebhookConfig("telegram-secret", "update-secret"))
+    body = _body(datetime.now(timezone.utc))
+    status, result = webhook.handle(body, _headers(body), now="not-a-datetime")  # type: ignore[arg-type]
+    assert status == 400
+    assert result == {"error": "invalid clock"}

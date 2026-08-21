@@ -46,7 +46,7 @@ class TelegramWebhook:
         self._requests: dict[str, deque[datetime]] = {}
 
     def handle(self, raw_body: bytes, headers: Mapping[str, str], *, now: datetime) -> tuple[int, dict[str, Any]]:
-        if now.tzinfo is None or now.utcoffset() != timezone.utc.utcoffset(now):
+        if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() != timezone.utc.utcoffset(now):
             return 400, {"error": "invalid clock"}
         if len(raw_body) > self.config.max_body_bytes:
             return 413, {"error": "payload too large"}
@@ -58,7 +58,7 @@ class TelegramWebhook:
         try:
             payload = json.loads(raw_body.decode("utf-8"))
             update = self._decode(payload, now=now)
-        except (UnicodeDecodeError, ValueError, TypeError, KeyError, json.JSONDecodeError):
+        except (UnicodeDecodeError, ValueError, TypeError, KeyError, AttributeError, OverflowError):
             return 400, {"error": "malformed webhook payload"}
         key = update.chat_id
         bucket = self._requests.setdefault(key, deque())
@@ -112,12 +112,27 @@ class TelegramWebhook:
         parameters = values.get("parameters", ())
         if isinstance(parameters, list):
             parameters = tuple(tuple(pair) for pair in parameters)
+        issued_at = self._parse_utc(values.get("issued_at"), "issued_at")
+        expires_at = self._parse_utc(values.get("expires_at"), "expires_at")
         return TelegramUpdate(
             values["command_id"], values["chat_id"], values["user_id"], values["command"],
-            datetime.fromisoformat(values["issued_at"].replace("Z", "+00:00")),
-            datetime.fromisoformat(values["expires_at"].replace("Z", "+00:00")),
+            issued_at,
+            expires_at,
             values["nonce"], values["signature"], parameters,
         )
+
+    @staticmethod
+    def _parse_utc(value: Any, field: str) -> datetime:
+        """Parse only string ISO-8601 UTC timestamps at the ingress boundary."""
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"{field} must be an ISO-8601 string")
+        try:
+            parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"{field} must be a valid ISO-8601 timestamp") from exc
+        if parsed.tzinfo is None or parsed.utcoffset() != timezone.utc.utcoffset(parsed):
+            raise ValueError(f"{field} must be timezone-aware UTC")
+        return parsed
 
 
 __all__ = ["TelegramWebhook", "TelegramWebhookConfig"]
