@@ -1,7 +1,7 @@
-# Anvil 인간 통제형 학습 바이브코딩 에이전트 설계서 v2.6
+# Anvil 인간 통제형 학습 바이브코딩 에이전트 설계서 v2.7
 
-> 문서 상태: **신산님 승인 기준선** — 연계 문서 동기화 중  
-> 승인 기록: 2026-08-10 신산님 명시 승인  
+> 문서 상태: **신산님 승인 기준선 successor 초안** — Agent Teams·Capability MoA·대화형 설계 반영, 연계 문서 동기화 대기
+> 기존 승인 기록: 2026-08-10 신산님 명시 승인 / v2.7 successor 승인: PENDING
 > 비의미 재확정: 승인 직후 독립 정합성 검토 P1 4건(승인 binding, ReleaseDecision 전이, `BLOCKED_DEPENDENCY` 출구, DIR-X trigger)을 기능 범위·요구사항·중요 위험 변경 없이 `MAIN_RECONFIRMED_NON_SEMANTIC`으로 반영  
 > 작성 기준일: 2026-08-10  
 > 목적: 신산님의 실제 바이브코딩 운영 방식과 Forge·LogicForge·OrcheFlow/FlowMind에서 검증된 개념을 제품 흐름의 근거로 삼고, Hermes Agent·Smolagents·LangGraph·Claude Code·ChatGPT Codex의 핵심 메커니즘으로 실행 엔진을 강화한 독립 바이브코딩 에이전트를 정의한다.
@@ -6625,3 +6625,66 @@ DEPLOYMENT_ROLLBACK_DECISION_REQUIRED
 7. Developer 재온보딩 증거
 
 기존 97개 Work Package는 먼저 유지하고 관련 Package 완료조건을 강화한다. 독립 목적이 한 번의 작업분량을 초과할 때만 Package를 추가하고 전체 수와 DIR 누적 위치를 다시 계산한다. 이 동기화가 끝나기 전에는 v2.6을 근거로 구현을 시작하지 않는다.
+
+## 50. v2.7 Agent Teams·Capability MoA·대화형 설계 successor
+
+### 50.1 사용자 대화가 설계·실행의 기준 입력이다
+
+Anvil은 사용자가 Main Agent에 한 번 지시하고 결과만 받는 구조가 아니다. 사용자는 Leader와 각 전문 Agent의 대화 세션에서 질문·반박·추가 요구·수정 지시를 계속할 수 있다. 대화는 단순 transcript가 아니라 `ConversationTurn`, `DecisionRequest`, `RevisionRequest`, `ApprovalRecord`와 연결된 설계 계보다.
+
+```text
+사용자 ↔ Leader Agent
+사용자 ↔ 전문 Teammate
+Teammate ↔ Teammate
+        ↕
+공유 설계 artifact·작업목록·decision/event log
+        ↓
+Leader synthesis → 사용자 승인 → WorkPlan/WorkInstruction 확정
+```
+
+현재 fixture의 `design-flow.html`과 `index.html`은 의도·대안·상태를 표시하는 LOCAL VERIFICATION ONLY UI일 뿐이며, Agent별 자유 대화·팀 메시징·설계 revision은 아직 구현되지 않은 `NOT_IMPLEMENTED` 범위다.
+
+### 50.2 Agent Team Collaboration Model
+
+Agent Team은 Subagent 병렬 호출과 구분한다. Leader가 팀원을 생성·조율하지만 각 Teammate는 독립 context를 가지며, 승인된 팀 내부에서 직접 메시지·공유 작업목록·dependency·peer review를 사용한다. Leader만 제품 방향·승인·merge·deploy를 결정한다.
+
+- `TeamSession`: leader, teammate membership, 권한·예산·baseline hash
+- `TeamTask`: 상태 `PENDING|CLAIMED|BLOCKED|COMPLETED|CANCELLED`, dependency와 path scope
+- `TeamMessage/Mailbox`: sender·receiver·message type·artifact refs·idempotency key
+- `TeamDecision`: 팀 내부 제안과 Leader synthesis를 분리하고 사용자 승인을 대체하지 않음
+- `TeammateIdle/TaskCompleted`: hook으로 결과 계약·미완료·stale message를 검증
+- 직접 협업은 허용하되 write lease·egress·fencing·scope 경계를 우회하지 않음
+
+### 50.3 Capability-based Mixture of Agents
+
+Anvil의 MoA는 단순한 답변 aggregator가 아니라 LLM Provider와 모델을 Capability별로 조합하는 routing 전략이다. 요청의 기능 유형을 식별하고 `ProviderModelCatalog`에서 최적 후보를 선택한다.
+
+- `CapabilityProfile`: writing, coding, design, analysis, review 등 기능별 요구사항
+- `ProviderModelCatalog`: provider/model/version, capability score, privacy, cost, latency, quota, tool boundary
+- `CapabilityRouter`: 목적·위험·예산·데이터 경계·현재 quota에 따른 선택 이유를 산출
+- `FallbackPolicy`: 장애·quota·품질 미달 시 허용된 대체 순서와 중단 조건
+- `RoutingProvenance`: 선택된 provider/model, catalog hash, prompt contract hash, cost·latency·usage evidence
+- `CapabilityBenchmark`: 기능별 품질·비용·지연을 동일 fixture와 동일 evidence contract로 비교
+
+MoA routing은 Agent Team의 직접 대화를 대신하지 않으며, Agent Team 안의 각 Teammate가 어떤 Provider/Model을 사용할지 결정하는 실행 전략으로도 사용할 수 있다. Provider 추가·모델 교체·privacy/가격/capability drift는 자동 승격하지 않고 사람 승인과 baseline 재확정을 요구한다.
+
+### 50.4 대화형 반복 개선 루프
+
+설계·리서치·검토 작업은 다음 iteration을 명시적으로 기록한다.
+
+```text
+초안 → 비판/질문 → 수정 → 재검토 → 승인 또는 반복 한도/중단
+```
+
+각 iteration은 prompt·response·참조 artifact hash·actor·provider/model·token·cost·latency·수정 diff를 남긴다. 요구사항·범위·중요 위험이 바뀌면 자동 수정하지 않고 `DecisionRequest`로 사용자에게 환류한다. 승인 전에는 WorkPlan·WorkInstruction·제품 write를 확정하지 않는다.
+
+### 50.5 v2.7 successor 동기화 조건
+
+v2.7은 v2.6의 의미 변경 successor다. 다음을 갱신하고 새 approval binding을 만든 뒤에만 구현 기준선으로 사용할 수 있다.
+
+1. `Anvil_작업계획서_v1.md` v1.6 successor
+2. `Anvil_통합검증매트릭스_v1.md` successor
+3. `Anvil_테스트계획서_v1.md` successor
+4. Agent Team·Conversation·Capability MoA API/data/evidence contract
+5. progress/HANDOFF, Gate·DIR 위치와 Package 수
+6. 실제 Agent별 대화 UI·same-origin API·브라우저/운영 검증 계획

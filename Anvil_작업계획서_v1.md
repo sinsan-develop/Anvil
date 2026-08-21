@@ -1,11 +1,11 @@
 # Anvil 전체 개발 작업계획서 v1.6
 
-> 문서 상태: 신산님 승인 공통 모듈·API 우선 및 메뉴 순차 개발 재편 기준선 / 통합검증매트릭스·테스트계획서 successor 정합화 대기
+> 문서 상태: 신산님 승인 successor 초안 / Agent Teams·Capability MoA·대화형 설계·9단계 생명주기 반영, 통합검증매트릭스·테스트계획서 successor 정합화 대기
 > 작성일: 2026-08-10  
 > 설계 책임자·Main Agent: 어울  
 > 최종 승인자: 신산님  
-> 설계 기준선: `Anvil_설계서_v2.md` v2.6  
-> 설계 기준선 SHA-256: `246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5`  
+> 설계 기준선: `Anvil_설계서_v2.md` v2.7
+> 설계 기준선 SHA-256: `C93A9044C2D9172077726C52F26A0BC2273CFBE05DA6566704E4E6FF9DAC077A`
 > Subagent 운영 근거: `C:\Users\cyhuh\OneDrive\문서\AI 자료\MoaWorks_Subagent_단계적_적용_권고안.docx` / SHA-256 `0C033D15389AE00DAC27373D028DE7FF375EE2855925714804C55C741AC7B77D` / workspace 외부 read-only source  
 > 검증 기준선: `Anvil_통합검증매트릭스_v1.md` v1.3 / SHA-256 `982B4046A4764D74564E0291A82F0306DB9B06F5D0A3858D49876322FB93F90A`
 > 테스트 실행 기준선: `Anvil_테스트계획서_v1.md` v1.4 / SHA-256 `803868505616BE655B8D12FC216736DECB55E4812E7673DA242F2637BF7F40F8`
@@ -23,13 +23,15 @@
 G. 기준선·운영 준비
 → A. 전체 사용자 흐름·화면·Artifact 계약과 읽기 전용 온보딩
 → B-01~B-04. 완료된 공통 기반
-→ Foundation 1. 공통 모듈
-→ Foundation 2. 공통 API·same-origin BFF
-→ Backend Capability. Agent·Learning·Reviewer·Provider·환경·운영 서비스/API
-→ Foundation 3. 공통 화면 프레임
-→ U-01~U-11. Dashboard부터 Settings까지 메뉴 순차 수직 개발
-→ F-20. Local→WSL-server Test/Staging→ysna-server Production 최종 Release
-→ P. 안정성이 입증된 구성의 Plugin 포장
+→ 1. 설계서 작성·협의·확정
+→ 2. 화면 설계·확정·승인
+→ 3. 공통 모듈
+→ 4. 공통 API·same-origin BFF
+→ 5. 화면·메뉴별 기능 구현
+→ 6. 전체 테스트·통합검증
+→ 7. 매뉴얼 작성
+→ 8. F-20 Local→WSL-server Test/Staging→ysna-server Production 최종 Release
+→ 9. P. 안정성이 입증된 구성의 Plugin 포장
 ```
 
 설계서 44장의 Phase A~F 책임과 M1~M5 승격 순서는 보존한다. 다만 B-05 이후의 실행 순서는 공통 모듈과 공통 API를 먼저 닫고 실제 메뉴 UI를 `U-01~U-11`에서 직렬로 완성하는 v1.6 순서를 따른다. 후속 단계의 구현 편의를 이유로 Durable State보다 코딩 실행을 먼저 만들거나, 프롬프트 파일럿 검증 전에 Skill·Hook을 먼저 만들 수 없다.
@@ -787,3 +789,38 @@ Main Agent의 Tester 진입 전 예비판정은 항상 다음 순서로 기록�
 - 통합검증매트릭스·테스트계획서가 v1.6 successor로 정합화되기 전에는 B-05 write lease를 발급하지 않는다.
 
 이 계획의 목표는 많은 Subagent를 빠르게 띄우는 것이 아니다. Main Agent가 설계 책임을 유지하면서 한 번에 한 역할·한 write lease·한 검증 가능한 결과를 쌓고, 실제로 안정된 절차만 Skill·Hook·Plugin으로 승격하는 것이다.
+
+### 19.3 Agent Teams·Capability MoA·Conversation successor
+
+신산님의 추가 확정에 따라 v1.6 successor는 기존 108개 Package를 historical로 보존하고, 다음 신규 Package를 C Phase 뒤에 추가한다.
+
+| ID | 목표 | 주요 완료조건 | 선행 |
+|---|---|---|---|
+| C-16 | Agent Team durable collaboration primitives | TeamSession·TeamTask·dependency·TeamMessage/Mailbox·ConversationTurn·DecisionRequest schema와 event/progress projection, 사용자↔Agent 및 Agent↔Agent thread identity | C-15 |
+| C-17 | Team orchestration·peer communication·협업 E2E | Leader/Teammate 생성·직접 메시지·task claim·peer review·idle/completion hook·중단/재개·write conflict·stale message·cost limit 검증 | C-16 |
+| C-18 | Capability-based MoA Provider/Model routing | CapabilityProfile·ProviderModelCatalog·CapabilityRouter·FallbackPolicy·RoutingProvenance·benchmark와 provider/model drift 차단 | C-17 |
+
+C-15의 Single Developer 기준선은 유지한다. C-16~C-17은 Agent Teams 협업을, C-18은 기능별 최적 Provider/Model 선택을 구현한다. MoA는 Agent Team의 직접 대화를 대체하지 않으며, 각 Agent의 실행 모델을 선택하는 routing 전략이다.
+
+### 19.4 사용자 대화형 설계·승인 인터페이스
+
+현재 `apps/web/design-flow.html`과 `apps/web/index.html`은 fixture 기반 의도·대안·상태 표시만 제공하므로, 다음 화면/API를 별도 WorkInstruction으로 추가한다.
+
+- Agent별 대화 탭과 Leader 종합 탭
+- 사용자→특정 Agent 메시지, Agent→Agent 메시지, 공유 artifact/diff 참조
+- 초안→비판→수정→재검토 iteration timeline
+- `DecisionRequest`, `RevisionRequest`, `ApprovalRecord`와 승인 대상 hash 표시
+- 승인 전 WorkPlan/WorkInstruction/제품 write 차단
+- same-origin API, SSE/Last-Event-ID, 권한·egress·secret 경계와 브라우저 Network evidence
+
+### 19.5 전체 Package·Gate 후속 정합화
+
+신규 C-16~C-18로 canonical Package 수는 successor 기준 **111개**가 된다. 기존 108개와 historical Gate·DIR evidence는 재작성하지 않고 successor matrix/test plan에서 다음을 갱신한다.
+
+1. C Gate 기준점을 C-17 또는 C-18 완료조건과 연결한다.
+2. Agent Team·MoA·Conversation의 AV ID, API/data schema, EvidenceManifest, fault/benchmark 시나리오를 추가한다.
+3. 최종 테스트 단계는 Package별 기본 검증과 별도로 전체 통합·브라우저·운영 검증으로 판정한다.
+4. 매뉴얼 단계는 테스트 완료 후 운영자 화면·승인·Agent 대화·MoA routing·복구·배포 절차를 작성하고 검증한다.
+5. 매뉴얼 이후 F 배포와 P Plugin 포장을 순서대로 유지한다.
+
+v1.6 successor는 설계서 v2.7, 통합검증매트릭스 successor, 테스트계획서 successor, progress/HANDOFF 및 새 approval binding이 정합화되기 전에는 구현 기준선으로 사용하지 않는다.
