@@ -1,3 +1,11 @@
+# B-12 독립 FAILURE_REPORT 수용 → R2 재작업 — sequence 357
+
+- 독립 Tester report SHA `224CC87D40496A09765551A317413832039C4BDBA2B67C22AC37C6E05681AF91`의 `FAILURE_REPORT / REWORK_REQUIRED`, CRITICAL 2건을 B-12 첫 유효 실패로 수용했다.
+- fingerprint는 `B-12/DURABLE_PROCESS_RECOVERY_AND_ACTUAL_SEND_BOUNDARY_GAP`; seq354→357은 `FAILURE_REPORT_ACCEPTED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`다.
+- `developer-primary-b12` epoch-2 token은 `b12-execution-fence-epoch-2-e29ffcf` / `b12-write-fence-epoch-2-e29ffcf`; R1 exact15 안의 최소 exact10만 수정할 수 있다.
+- R2는 실제 PostgreSQL adapter/load/reconcile/audit persistence, process-linked FI-07과 actual send-boundary FI-05/06 및 persisted counter/receipt evidence를 요구한다. 기능 범위·요구사항·중요 위험 변경은 없다.
+- B-12는 `ACTIVE / REWORK_IN_PROGRESS / R2_PENDING`; C-01은 `BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE`다. B-12 acceptance, B Gate, C-01은 금지한다.
+
 # B-12 Developer 완료 → 독립 Tester 대기 — sequence 353
 
 - Developer exact15를 evidence manifest file SHA `47543B6D41C57CEBAB7003478F76177B1B1F05B2C46868D156612908AA7E6D7E`, raw14 target `7EE778EBA5A85C107C90BA94D7186297192BDB6358CFA4571363183FB2AF316C`로 byte-frozen했다. Main 완료 projection의 제품 mutation은 0이다.
@@ -367,44 +375,33 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 353,
-  "status": "TEST_REVIEW",
+  "event_sequence": 357,
+  "status": "ACTIVE",
   "current_work_package": "B-12",
-  "last_event_id": "evt_b12_package_completed",
+  "last_event_id": "evt_b12_r2_package_resumed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "valid_failure_count": 0,
-  "next_safe_action": "independent Tester validates frozen B-12 exact15; B-12 acceptance and Phase B Gate remain forbidden",
+  "valid_failure_count": 1,
+  "next_safe_action": "Developer executes B-12 R2 durable PostgreSQL recovery and actual FI-05/06/07 within exact10; B-12 acceptance, B Gate, and C-01 remain forbidden",
   "dir_status": "CLEARED",
-  "repository_head": "26e2fcf1977d11c22ce81b400b3bf0696337d4ac",
+  "repository_head": "e29ffcfc6e401af43bdb2672fd0817252792d652",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "26e2fcf1977d11c22ce81b400b3bf0696337d4ac",
+  "repository_validated_base_commit": "e29ffcfc6e401af43bdb2672fd0817252792d652",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/completion_reports/B-12_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/B-12_COMPLETION_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-12_REWORK_START_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b12-completion.json",
-    "docs/validation/B-12_RECOVERY_VALIDATION.md",
-    "migrations/versions/0010_recovery.py",
-    "packages/api/fastapi_app.py",
-    "packages/persistence/recovery_repository.py",
-    "packages/recovery/__init__.py",
-    "packages/recovery/api.py",
-    "packages/recovery/models.py",
-    "packages/recovery/read_model.py",
-    "packages/recovery/service.py",
+    "docs/progress/progress-handoff-detached-digest-b12-rework-start-r2.json",
+    "docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md",
+    "docs/work_orders/B-12_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/B-12_REWORK_WORK_INSTRUCTION_R2.md",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
-    "tests/recovery/test_action_reconcile.py",
-    "tests/recovery/test_process_resume.py",
-    "tests/recovery/test_recovery_api.py",
-    "tests/recovery/test_secret_capability_recovery.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",

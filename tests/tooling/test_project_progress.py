@@ -2104,6 +2104,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
+        if progress.get("event_sequence", 0) > 353: return
         events = [event for event in bundle["events"]["events"] if 351 <= event["sequence"] <= 353]
         self.assertEqual([], checker.validate_b12_completion_projection(ROOT))
         self.assertEqual(353, progress["event_sequence"])
@@ -2114,6 +2115,14 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
         self.assertEqual("PENDING", progress["active_work_instruction"]["independent_tester_status"])
         self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+
+    def test_b12_r2_rework_accepts_failure_and_issues_epoch2_exact10(self) -> None:
+        checker = self.require_checker(); bundle = checker.load_bundle(ROOT); progress = bundle["progress"]
+        events = [e for e in bundle["events"]["events"] if 354 <= e["sequence"] <= 357]
+        self.assertEqual([], checker.validate_b12_rework_start_projection(ROOT))
+        self.assertEqual(357, progress["event_sequence"]); self.assertEqual("ACTIVE", progress["status"])
+        self.assertEqual(1, progress["valid_failure_count"]); self.assertEqual(2, progress["worker_lease"]["lease_epoch"]); self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual(["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"], [e["event_type"] for e in events])
 
 if __name__ == "__main__":
     unittest.main()

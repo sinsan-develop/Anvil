@@ -550,6 +550,30 @@
       ],
       "blocking_defect_count_after_retest": 0,
       "acceptance_sequence": 347
+    },
+    {
+      "entry_id": "failure-b12-independent-test-r1",
+      "step_lineage_id": "B-12",
+      "failure_fingerprint": "B-12/DURABLE_PROCESS_RECOVERY_AND_ACTUAL_SEND_BOUNDARY_GAP",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "BLK-B12-001-FI07-DURABLE-RECOVERY-DISCONNECTED",
+        "BLK-B12-002-FI0506-NOT-ACTUAL-FAULT-INJECTION"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 2,
+      "evidence_refs": [
+        {
+          "path": "docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "224CC87D40496A09765551A317413832039C4BDBA2B67C22AC37C6E05681AF91"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R2_PENDING"
     }
   ]
 }

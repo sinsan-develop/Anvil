@@ -1131,6 +1131,8 @@ def _revision2_completion_successor(root: Path, changed_paths: set[str]) -> dict
 def validate_evidence_manifest(root: Path) -> list[str]:
     root = root.resolve()
     progress = _load_json(root / "docs/progress/build-progress.json")
+    if progress.get("event_sequence") == 357:
+        return validate_b12_rework_start_projection(root)
     predecessor = root / EVIDENCE_R2_REL
     if predecessor.is_file():
         predecessor_manifest = _load_json(predecessor)
@@ -1493,6 +1495,16 @@ def validate_b12_completion_projection(root: Path) -> list[str]:
     if wi.get("result_status")!="COMPLETED" or wi.get("independent_tester_status")!="PENDING": errors.append("B12_COMPLETION_TESTER_INVALID")
     if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B12_COMPLETION_EVENT_ORDER_INVALID")
     if len((progress.get("repository") or {}).get("exact_allowed_paths",[]))!=28: errors.append("B12_COMPLETION_SCOPE_INVALID")
+    return errors
+
+
+def validate_b12_rework_start_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal=[e for e in events if 354<=e.get("sequence",-1)<=357]; worker=progress.get("worker_lease") or {}; write=progress.get("write_lease") or {}; errors=[]
+    if any((progress.get("event_sequence")!=357,progress.get("current_work_package")!="B-12",progress.get("status")!="ACTIVE",progress.get("valid_failure_count")!=1,progress.get("active_agent")!="developer-primary-b12")): errors.append("B12_R2_PHASE_INVALID")
+    if worker.get("lease_epoch")!=2 or write.get("write_epoch")!=2 or write.get("worker_lease_id")!=worker.get("lease_id"): errors.append("B12_R2_FENCING_INVALID")
+    if [e.get("event_type") for e in terminal] != ["FAILURE_REPORT_ACCEPTED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_RESUMED"]: errors.append("B12_R2_EVENT_ORDER_INVALID")
+    if len((progress.get("repository") or {}).get("exact_allowed_paths",[]))!=17: errors.append("B12_R2_SCOPE_INVALID")
     return errors
 
 

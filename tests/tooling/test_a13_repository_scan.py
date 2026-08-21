@@ -1431,12 +1431,18 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
 
     def test_b12_completion_selects_frozen_exact15_projection(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 353: return
         spec = importlib.util.spec_from_file_location("a13_b12_completion", CHECKER_PATH)
         checker = importlib.util.module_from_spec(spec); sys.modules[spec.name] = checker; spec.loader.exec_module(checker)
         self.assertEqual(353, progress["event_sequence"])
         self.assertEqual("TEST_REVIEW", progress["status"])
         self.assertEqual([], checker.validate_b12_completion_projection(ROOT))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b12_r2_rework_selects_durable_recovery_projection(self):
+        progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        spec = importlib.util.spec_from_file_location("a13_b12_r2", CHECKER_PATH); checker = importlib.util.module_from_spec(spec); sys.modules[spec.name] = checker; spec.loader.exec_module(checker)
+        self.assertEqual(357, progress["event_sequence"]); self.assertEqual([], checker.validate_b12_rework_start_projection(ROOT)); self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

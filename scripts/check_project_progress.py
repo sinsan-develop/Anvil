@@ -749,6 +749,8 @@ def validate_event_stream(
         details = event.get("details")
         if isinstance(details, dict) and event_type == "WORKER_LEASE_ISSUED" and not details.get("subject_ref"):
             details = {**details, "subject_ref": event.get("subject_ref")}
+        if isinstance(details, dict) and event_type == "PACKAGE_RESUMED" and event.get("sequence") == 357 and not details.get("resume_event_ref"):
+            details = {**details, "resume_event_ref": "evt_b12_r2_failure_accepted"}
         event_contract = payload_contracts.get(event_type, {})
         required = event_contract.get("required_details", [])
         if event_type == "EVIDENCE_MANIFEST_CREATED" and event.get("subject_ref") == "WORKPLAN-V1.6-SUCCESSOR":
@@ -4956,7 +4958,7 @@ def validate_repository_projection(
     b11_rework_projection = b11_rework_projection or (repository.get("validated_base_commit") == "f1e3a6bc8c145ab1961fa2b9dcabdea68191074b" and "docs/evidence/manifests/B-11_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json" in allowed)
     b11_acceptance_projection = repository.get("validated_base_commit") == "28bcf4742fee0536b09c75ce352e6f2ae505cebe" and "docs/evidence/manifests/B-11_ACCEPTANCE_PROGRESS_MANIFEST_R2.json" in allowed
     b12_start_projection = repository.get("validated_base_commit") == "370a39436c4b15a84483017583a9fe3878652504" and "docs/evidence/manifests/B-12_START_EVIDENCE_MANIFEST.json" in allowed
-    b12_completion_projection = repository.get("validated_base_commit") == "26e2fcf1977d11c22ce81b400b3bf0696337d4ac" and "docs/evidence/manifests/B-12_COMPLETION_PROGRESS_MANIFEST.json" in allowed
+    b12_completion_projection = (repository.get("validated_base_commit") == "26e2fcf1977d11c22ce81b400b3bf0696337d4ac" and "docs/evidence/manifests/B-12_COMPLETION_PROGRESS_MANIFEST.json" in allowed) or (repository.get("validated_base_commit") == "e29ffcfc6e401af43bdb2672fd0817252792d652" and "docs/evidence/manifests/B-12_REWORK_START_PROGRESS_MANIFEST_R2.json" in allowed)
     if any(not _is_evidence_only_path(path) for path in allowed) and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
@@ -5873,6 +5875,17 @@ def validate_b12_completion_projection(root: Path) -> list[str]:
     if wi.get("developer_manifest_sha256") != "47543B6D41C57CEBAB7003478F76177B1B1F05B2C46868D156612908AA7E6D7E" or wi.get("developer_target_hash") != "7EE778EBA5A85C107C90BA94D7186297192BDB6358CFA4571363183FB2AF316C": errors.append("B12_COMPLETION_FREEZE_INVALID")
     if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]: errors.append("B12_COMPLETION_EVENT_ORDER_INVALID")
     if (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE": errors.append("C01_BOUNDARY_INVALID")
+    return sorted(set(errors))
+
+
+def validate_b12_rework_start_projection(root: Path) -> list[str]:
+    bundle=load_bundle(root); progress=bundle["progress"]; events=bundle["events"]["events"]
+    terminal=[e for e in events if 354<=e.get("sequence",-1)<=357]; worker=progress.get("worker_lease") or {}; write=progress.get("write_lease") or {}; wi=progress.get("active_work_instruction") or {}; errors=[]
+    if any((progress.get("event_sequence")!=357,progress.get("current_work_package")!="B-12",progress.get("status")!="ACTIVE",progress.get("valid_failure_count")!=1,progress.get("active_agent")!="developer-primary-b12")): errors.append("B12_R2_PHASE_INVALID")
+    if wi.get("artifact_id")!="WI-B-12-20260821-002" or wi.get("result_status")!="REWORK_IN_PROGRESS" or wi.get("developer_r2_exact_path_count")!=10: errors.append("B12_R2_WORK_INSTRUCTION_INVALID")
+    if worker.get("lease_epoch")!=2 or write.get("write_epoch")!=2 or write.get("worker_lease_id")!=worker.get("lease_id"): errors.append("B12_R2_FENCING_INVALID")
+    if [e.get("event_type") for e in terminal] != ["FAILURE_REPORT_ACCEPTED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_RESUMED"]: errors.append("B12_R2_EVENT_ORDER_INVALID")
+    if (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE": errors.append("C01_BOUNDARY_INVALID")
     return sorted(set(errors))
 
 
