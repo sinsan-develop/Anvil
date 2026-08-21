@@ -209,9 +209,9 @@ def _validate_revision2_manifest(
         errors.append("EVIDENCE_TARGET_HASH_MISMATCH")
     progress = json.loads((root / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     b10_phase_projection = (
-        progress.get("event_sequence") in (315, 318, 322, 325, 329, 332, 333, 336, 339, 343)
-        and progress.get("current_work_package") == ("B-11" if progress.get("event_sequence") in (333, 336, 339, 343) else "B-10")
-        and progress.get("status") == ("READY" if progress.get("event_sequence") == 333 else ("TEST_REVIEW" if progress.get("event_sequence") in (318, 325, 332, 339) else "ACTIVE"))
+        progress.get("event_sequence") in (315, 318, 322, 325, 329, 332, 333, 336, 339, 343, 346)
+        and progress.get("current_work_package") == ("B-11" if progress.get("event_sequence") in (333, 336, 339, 343, 346) else "B-10")
+        and progress.get("status") == ("READY" if progress.get("event_sequence") == 333 else ("TEST_REVIEW" if progress.get("event_sequence") in (318, 325, 332, 339, 346) else "ACTIVE"))
         and (
             not changed_paths
             or set(progress.get("repository", {}).get("exact_allowed_paths", []))
@@ -1376,6 +1376,14 @@ def validate_b11_rework_start_projection(root: Path) -> list[str]:
     if len((progress.get("repository") or {}).get("exact_allowed_paths", [])) != 17 or manifest.get("developer_r2_exact_path_count") != 8: errors.append("B11_R2_SCOPE_INVALID")
     if manifest.get("tester_report_sha256") != "EFBE6313A9BFF589702149E7042FDA127DF99CA323FD864C8EC16EA72D07441C" or manifest.get("projection_product_mutation_count") != 0: errors.append("B11_R2_REPORT_OR_FREEZE_INVALID")
     return sorted(set(errors))
+
+
+def validate_b11_r2_completion_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+    terminal=[e for e in events if 344<=e["sequence"]<=346]; wi=progress.get("active_work_instruction") or {}; errors=[]
+    if any((progress.get("event_sequence")!=346,progress.get("status")!="TEST_REVIEW",progress.get("active_agent") is not None,progress.get("worker_lease") is not None,progress.get("write_lease") is not None,wi.get("result_status")!="COMPLETED",wi.get("independent_tester_status")!="PENDING_RETEST",len(progress.get("repository",{}).get("exact_allowed_paths",[]))!=22)): errors.append("B11_R2_COMPLETION_PHASE_INVALID")
+    if [e["event_type"] for e in terminal]!=["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B11_R2_COMPLETION_EVENT_ORDER_INVALID")
+    return errors
 
 
 def validate_b10_completion_projection(root: Path) -> list[str]:

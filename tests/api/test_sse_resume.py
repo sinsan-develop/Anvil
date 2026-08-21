@@ -16,6 +16,12 @@ def _b11():
     return common, sse, fastapi_app
 
 
+def _scope_resolver(fastapi_app):
+    return lambda _endpoint, _path: fastapi_app.AuthorizationScope(
+        "project-1", "env-local", frozenset({"tester"})
+    )
+
+
 def _event_ids(body: str) -> list[str]:
     return [line[4:] for line in body.splitlines() if line.startswith("id: ")]
 
@@ -42,6 +48,7 @@ def test_last_event_id_reconnect_replays_only_strict_successors_three_times() ->
     app = fastapi_app.create_app(
         event_stream=journal,
         authenticate=lambda token: principal if token == "session-1" else None,
+        authorization_resolver=_scope_resolver(fastapi_app),
     )
     client = TestClient(app)
     client.cookies.set("anvil_session", "session-1")
@@ -80,6 +87,7 @@ def test_sse_rejects_query_alias_unknown_cursor_and_cross_run_cursor() -> None:
         fastapi_app.create_app(
             event_stream=journal,
             authenticate=lambda token: principal if token == "session-1" else None,
+            authorization_resolver=_scope_resolver(fastapi_app),
         )
     )
     client.cookies.set("anvil_session", "session-1")

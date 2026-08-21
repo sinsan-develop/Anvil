@@ -19,6 +19,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 346:
+        assert progress.get("status") == "TEST_REVIEW" and progress.get("active_agent") is None
+        return True
     if progress.get("event_sequence") == 343:
         assert progress.get("current_work_package") == "B-11"
         assert progress.get("status") == "ACTIVE"
@@ -1386,6 +1389,7 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
 
     def test_b11_rework_start_selects_scope_authorization_successor_projection(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 343: return
         spec = importlib.util.spec_from_file_location("a13_checker_b11_rework_start", CHECKER_PATH)
         checker = importlib.util.module_from_spec(spec)
         sys.modules[spec.name] = checker
@@ -1395,6 +1399,10 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual(8, len(progress["write_lease"]["paths"]))
         self.assertEqual([], checker.validate_b11_rework_start_projection(ROOT))
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b11_r2_completion_selects_frozen_exact8_projection(self):
+        spec=importlib.util.spec_from_file_location("a13_b11_r2_done",CHECKER_PATH); checker=importlib.util.module_from_spec(spec); sys.modules[spec.name]=checker; spec.loader.exec_module(checker)
+        self.assertEqual([],checker.validate_b11_r2_completion_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

@@ -17,6 +17,12 @@ def _b11():
     return registry, fastapi_app, bff
 
 
+def _scope_resolver(fastapi_app):
+    return lambda _endpoint, _path: fastapi_app.AuthorizationScope(
+        "project-1", "env-local", frozenset({"owner", "tester"})
+    )
+
+
 def test_registry_is_the_single_openapi_source_and_has_no_command_aliases() -> None:
     """A removed canonical route or slash-command alias must change this contract."""
     registry, fastapi_app, _ = _b11()
@@ -72,7 +78,8 @@ def test_unbound_future_capability_fails_closed_instead_of_returning_fake_succes
     )
     client = TestClient(
         fastapi_app.create_app(
-            authenticate=lambda token: principal if token == "session-1" else None
+            authenticate=lambda token: principal if token == "session-1" else None,
+            authorization_resolver=_scope_resolver(fastapi_app),
         )
     )
     client.cookies.set("anvil_session", "session-1")

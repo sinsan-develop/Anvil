@@ -344,33 +344,38 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 343,
-  "status": "ACTIVE",
+  "event_sequence": 346,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-11",
-  "last_event_id": "evt_b11_r2_package_resumed",
+  "last_event_id": "evt_b11_r2_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
-  "next_safe_action": "developer-primary-b11 executes R2 exact8 with epoch2 fencing; B-12 remains blocked pending B-11 acceptance",
+  "next_safe_action": "independent Tester retests frozen B-11 R2 exact8; B-12 remains blocked pending B-11 acceptance",
   "dir_status": "CLEARED",
-  "repository_head": "ce8179527a64128899df21542b24f1b7f85e35b1",
+  "repository_head": "f1e3a6bc8c145ab1961fa2b9dcabdea68191074b",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "ce8179527a64128899df21542b24f1b7f85e35b1",
+  "repository_validated_base_commit": "f1e3a6bc8c145ab1961fa2b9dcabdea68191074b",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-11_REWORK_START_PROGRESS_MANIFEST_R2.json",
+    "docs/completion_reports/B-11_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-11_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-11_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b11-rework-start-r2.json",
-    "docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md",
-    "docs/work_orders/B-11_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/B-11_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-b11-rework-completion-r2.json",
+    "docs/validation/B-11_COMMON_API_BFF_VALIDATION.md",
+    "packages/api/fastapi_app.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/api/test_error_concurrency.py",
+    "tests/api/test_registry_openapi.py",
+    "tests/api/test_sse_resume.py",
+    "tests/api/test_web_security.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",
@@ -883,3 +888,9 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - A Gate는 seq186 `PHASE_GATE_DECIDED / ACCEPTED`, blocking finding 0이다. B-01은 `READY_NOT_STARTED`로만 허용하며 B Phase start Event, WorkInstruction, agent, worker/write lease는 생성하지 않았다.
 - 실제 API·DB·Provider·Secret·Egress·WSL·Production·deployment는 계속 `NOT_EXECUTED`다. A-14 R5 실제 browser evidence와 R6 fresh IAB `ENVIRONMENT_BLOCKED / NOT_EXECUTED` 경계를 보존한다.
     "docs/progress/failure-ledger.json",
+# B-11 R2 Developer 완료 → 독립 재검증 대기 — sequence 346
+
+- Developer exact8은 manifest SHA `3F60EAE9A978EA8ED0ABB83CEB77EB0B1828251895AB0B323C5CC4C8481B8C23`, raw7 target `25167A1D9C951C9A3E032862F72A4F1D8F5EBCF310585812EE7DC7095F4B3ABA`로 byte-frozen했다. Main completion projection의 제품 mutation은 0이다.
+- seq344→346은 epoch-2 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-11은 `TEST_REVIEW / COMPLETED / PENDING_RETEST`, B-12는 `BLOCKED_PENDING_B11_ACCEPTANCE`다.
+- Main 독립 검증에서 focused `22 passed`, core `117 passed, 6 skipped`, hostile scope 403/zero dispatch와 nominal HTTP 및 FI-08 SSE strict successor를 확인했다. Browser는 기존 `ENVIRONMENT_BLOCKED`를 유지하며 PASS로 승격하지 않는다.
+- 다음 안전 행동은 frozen exact8의 대화 분리 독립 Tester 재검증이다. B-11 acceptance와 B-12 시작은 금지한다.

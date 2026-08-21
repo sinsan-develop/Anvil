@@ -25,6 +25,16 @@ _IF_MATCH = re.compile(r'(?:W/)?"?([0-9]+)"?\Z')
 
 
 @dataclass(frozen=True, slots=True)
+class AuthorizationScope:
+    project_id: str
+    environment_id: str
+    allowed_actor_roles: frozenset[str]
+
+
+AuthorizationResolver = Callable[[EndpointSpec, Mapping[str, str]], AuthorizationScope | None]
+
+
+@dataclass(frozen=True, slots=True)
 class ApiPorts:
     commands: Mapping[str, ApplicationPort] = field(default_factory=dict)
     queries: Mapping[str, ApplicationPort] = field(default_factory=dict)
@@ -90,9 +100,59 @@ def _principal(request: Request, authenticate: Authenticator, config: WebSecurit
     return principal
 
 
-def _authorize(principal: SessionPrincipal, endpoint: EndpointSpec) -> None:
+def _authorize(
+    principal: SessionPrincipal,
+    endpoint: EndpointSpec,
+    path_parameters: Mapping[str, str],
+    resolve_authorization: AuthorizationResolver | None,
+) -> None:
     if endpoint.permission not in principal.permissions:
         raise ApiContractError("PERMISSION_DENIED", "Permission is denied.", 403)
+    if resolve_authorization is None:
+        raise ApiContractError(
+            "AUTHORIZATION_SCOPE_UNRESOLVED",
+            "The authorization scope could not be resolved.",
+            403,
+        )
+    scope = resolve_authorization(endpoint, path_parameters)
+    if (
+        not isinstance(scope, AuthorizationScope)
+        or not isinstance(scope.project_id, str)
+        or not scope.project_id.strip()
+        or scope.project_id != scope.project_id.strip()
+        or not isinstance(scope.environment_id, str)
+        or not scope.environment_id.strip()
+        or scope.environment_id != scope.environment_id.strip()
+        or not isinstance(scope.allowed_actor_roles, frozenset)
+        or not scope.allowed_actor_roles
+        or any(
+            not isinstance(role, str) or not role.strip() or role != role.strip()
+            for role in scope.allowed_actor_roles
+        )
+    ):
+        raise ApiContractError(
+            "AUTHORIZATION_SCOPE_UNRESOLVED",
+            "The authorization scope could not be resolved.",
+            403,
+        )
+    if principal.actor_role not in scope.allowed_actor_roles:
+        raise ApiContractError(
+            "AUTHORIZATION_ROLE_DENIED",
+            "The actor role is not allowed for this resource.",
+            403,
+        )
+    if scope.project_id not in principal.project_ids:
+        raise ApiContractError(
+            "AUTHORIZATION_PROJECT_DENIED",
+            "The project scope is not allowed for this resource.",
+            403,
+        )
+    if scope.environment_id not in principal.environment_ids:
+        raise ApiContractError(
+            "AUTHORIZATION_ENVIRONMENT_DENIED",
+            "The environment scope is not allowed for this resource.",
+            403,
+        )
 
 
 def _host(request: Request, config: WebSecurityConfig) -> None:
@@ -133,12 +193,13 @@ def _endpoint_handler(
     ports: ApiPorts,
     authenticate: Authenticator,
     config: WebSecurityConfig,
+    resolve_authorization: AuthorizationResolver | None,
 ) -> Callable[[Request], Any]:
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
             _host(request, config)
             principal = _principal(request, authenticate, config)
-            _authorize(principal, endpoint)
+            _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             body = await _body(request) if endpoint.is_mutation else {}
             expected = target_hash = reason = None
             if endpoint.is_mutation:
@@ -189,12 +250,13 @@ def _sse_handler(
     stream: EventStreamPort,
     authenticate: Authenticator,
     config: WebSecurityConfig,
+    resolve_authorization: AuthorizationResolver | None,
 ) -> Callable[[Request], Any]:
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
             _host(request, config)
             principal = _principal(request, authenticate, config)
-            _authorize(principal, endpoint)
+            _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             if "after" in request.query_params:
                 raise ApiContractError(
                     "SSE_QUERY_CURSOR_FORBIDDEN",
@@ -242,6 +304,7 @@ def create_app(
     event_stream: EventStreamPort | None = None,
     authenticate: Authenticator | None = None,
     security_config: WebSecurityConfig | None = None,
+    authorization_resolver: AuthorizationResolver | None = None,
 ) -> FastAPI:
     api_registry = registry or canonical_api_registry()
     application_ports = ports or ApiPorts()
@@ -282,9 +345,15 @@ def create_app(
 
     for endpoint in api_registry.endpoints:
         handler = (
-            _sse_handler(endpoint, stream, authenticator, config)
+            _sse_handler(endpoint, stream, authenticator, config, authorization_resolver)
             if endpoint.key == "GET /api/runs/{id}/events"
-            else _endpoint_handler(endpoint, application_ports, authenticator, config)
+            else _endpoint_handler(
+                endpoint,
+                application_ports,
+                authenticator,
+                config,
+                authorization_resolver,
+            )
         )
         app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source])
     return app

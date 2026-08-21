@@ -1,100 +1,99 @@
-# B-11 Canonical API, BFF, SSE, and Web Security Validation
+# B-11 R2 Scope Authorization Validation
 
 - Package: `B-11`
-- WorkInstruction: `WI-B-11-20260821-001`
-- WorkInstruction SHA-256: `B015056A38BD70A995D6F886231BC1733988D6D0ECCD6C2B71E4EA0B04B4B45F`
-- Invocation SHA-256: `1FCD913209A2B06EA0E88B752A760DC933F84656F3FCE03768C570FAA64C6A07`
-- Start: `main=origin/main=3304c7d82fd7101f6913cbee7b98bcd05ac75ede`, clean
-- Execution/write fencing: `b11-execution-fence-epoch-1-1134619` / `b11-write-fence-epoch-1-1134619`
-- Result: `COMPLETED_PENDING_INDEPENDENT_TEST`
+- Result: `COMPLETED_PENDING_INDEPENDENT_RETEST`
+- Failure fingerprint: `BLK-B11-001-SCOPE-AUTHORIZATION-NOT-ENFORCED`
+- WorkInstruction: `WI-B-11-20260821-002`
+- WorkInstruction SHA-256: `1B72ABC408EF8B4C8A3CAE657201F3D1C1A00D1000D1E417D61942F457941002`
+- Invocation SHA-256: `DE63A51A7E1A1A7AAE0A0B865D0C3BF7483EA6860261F78A5DC4CD6C129CF094`
+- Source Tester report SHA-256: `EFBE6313A9BFF589702149E7042FDA127DF99CA323FD864C8EC16EA72D07441C`
+- Start: `main=origin/main=f1e3a6bc8c145ab1961fa2b9dcabdea68191074b`, clean
+- Product baseline: `ce8179527a64128899df21542b24f1b7f85e35b1`
+- Execution/write fencing: `b11-execution-fence-epoch-2-ce81795` / `b11-write-fence-epoch-2-ce81795`
 
-## Scope and implementation
+## Defect reproduction and TDD
 
-The framework-neutral registry is the single source for 83 FastAPI v1 routes. It preserves the canonical colon-command and child-resource forms, exposes only `POST /api/tasks/{taskId}/runs` for Run creation, and returns a stable 501 error for an unbound future application port instead of a placeholder success.
+The independent finding was verified against the actual R1 code before modifying production behavior. A principal retaining the nominal Approval, artifact, and SSE permission labels but having a viewer role and empty project/environment sets reached all three sensitive boundaries.
 
-FastAPI handlers authenticate and authorize every request before invoking a supplied query, command, or event-stream port. Mutation handlers validate Host, Origin, CSRF, idempotency key, expected version, canonical target hash, permission scope, and reason before any application-port side effect. Optimistic state conflicts map to the stable HTTP 409 envelope. Unexpected application-port errors are masked and correlated by request ID. Opaque list cursors are HMAC authenticated and bound to one resource.
+### RED 1 — resolver absence
 
-The server-only BFF client accepts browser-facing same-origin `/api/...` paths, retains its internal absolute base only in server state, removes forwarded host/proto input, and does not put the internal base in response objects. The SSE port replays stored events strictly after `Last-Event-ID`; `?after=`, missing IDs, and cross-Run IDs fail closed. Common Web policy uses explicit Host/Origin allowlists, trusted-proxy-only forwarded host handling, credentialed CORS default deny, secure session-cookie construction, CSP without inline/eval, HSTS, `frame-ancestors 'none'`, and `object-src 'none'`.
+- Command: `$env:UV_CACHE_DIR='C:\tmp\anvil-b11-r2-uv-cache'; uv run python -m pytest -q tests/api/test_web_security.py -k authoritative_scope_resolver`
+- Exit: `1`
+- Actual: Approval `200`, artifact `200`, SSE `200`; both application ports were called and the journal read count was `1`.
+- Expected: `403/403/403`, command/query calls `0`, journal reads `0`.
 
-No domain decision or repository access was added to the transport layer. Existing B-03 exports remain available. B-12 recovery, product menu UI, Provider/Secret/Egress capability, database migration, deployment, and provider calls were not implemented.
+The minimal first change added an explicit server-supplied authorization resolver contract and made its absence or an unresolved/incomplete scope fail closed with stable HTTP 403 before application dispatch.
 
-## TDD evidence
+### RED 2 — role/project/environment membership
 
-Dependencies and lock configuration were established first so tests could collect. The four exact test modules were then added before B-11 production modules.
+An authoritative resolver then returned `project-1`, `env-local`, and allowed role `owner`. Five hostile principals kept all nominal permission strings:
 
-1. Initial RED:
-   - Command: `$env:UV_CACHE_DIR='C:\tmp\anvil-b11-uv-cache'; uv run python -m pytest -q tests/api`
-   - Exit: `1`
-   - Result: `15 failed`; all failures named missing B-11 API/BFF modules, not collection or environment errors.
-2. First GREEN:
-   - Same focused command.
-   - Exit: `0`
-   - Result: `15 passed`.
-3. Contract-hardening RED:
-   - Added assertions that all OpenAPI path placeholders are declared and that unexpected port exceptions do not expose raw paths/errors.
-   - Exit: `1`
-   - Result: `2 failed` for absent dynamic path declarations and an unmasked exception response.
-4. Cookie-lifetime hardening RED:
-   - Added the explicit short-lived session maximum assertion.
-   - Exit: `1`.
-   - Result: `1 failed`; an 86,400-second cookie was accepted before the 3,600-second maximum was enforced.
-5. Final focused GREEN:
-   - Command: `$env:UV_CACHE_DIR='C:\tmp\anvil-b11-uv-cache'; uv run python -m pytest -q tests/api --import-mode=importlib`
-   - Exit: `0`
-   - Result: `16 passed in 0.58s`.
+- wrong role `viewer` with matching project/environment;
+- empty project scope;
+- cross-project scope `project-2`;
+- empty environment scope;
+- cross-environment scope `env-other`.
 
-The focused tests bind registry/OpenAPI equality and alias absence, future capability fail-closed, BFF same-origin separation, request-ID behavior, opaque cursor tamper/resource rejection, 409 mapping, internal-error masking, three identical SSE reconnects, cursor gap/cross-Run rejection, pre-side-effect CSRF/Origin/Host rejection, short-lived cookie/CSP/CORS/proxy policy, and per-request approval/artifact/SSE permission checks.
+- Command: `$env:UV_CACHE_DIR='C:\tmp\anvil-b11-r2-uv-cache'; uv run python -m pytest -q tests/api/test_web_security.py -k authoritative_scope_rejects_each`
+- Exit: `1`
+- Actual: all five variants produced Approval/artifact/SSE `200/200/200` before membership enforcement.
+- Expected: each request `403`, application calls `0`, journal reads `0`.
 
-## Regression and tooling
+The API boundary now checks, in order, the endpoint permission label, resolved scope completeness, endpoint-specific allowed roles, authoritative project membership, and authoritative environment membership. Stable denial codes are `AUTHORIZATION_SCOPE_UNRESOLVED`, `AUTHORIZATION_ROLE_DENIED`, `AUTHORIZATION_PROJECT_DENIED`, and `AUTHORIZATION_ENVIRONMENT_DENIED`. The resolver receives only the canonical endpoint specification and route path parameters; body, query, and headers cannot grant scope.
 
-- Canonical core:
-  - Command: `$env:UV_CACHE_DIR='C:\tmp\anvil-b11-uv-cache'; uv run python -m pytest -q tests --ignore=tests/tooling --ignore=tests/browser --ignore=tests/api --ignore=tests/fixtures --import-mode=importlib`
-  - Exit: `0`
-  - Result: `117 passed, 6 skipped in 9.18s`; the six existing skips are DSN-gated tests.
-- Compile/import/diff:
-  - `uv run python -m compileall -q packages/api packages/bff tests/api`: exit `0`.
-  - Registry/OpenAPI count import check: `83 / 83`.
-  - `git diff --check`: exit `0`.
-- Full tooling:
-  - Command: `$env:UV_CACHE_DIR='C:\tmp\anvil-b11-uv-cache'; uv run python -m pytest -q tests/tooling --import-mode=importlib`
-  - Exit: `1`.
-  - Result: `12 failed, 391 passed in 104.85s`.
-  - Classification: expected active-worktree projection failures, not focused/core product regression. Six A-13 tests report the previous frozen EvidenceManifest raw/diff mismatch; three G-06 tests report fixture source inventory mismatch after authorized `tests/api` additions; three project-progress tests report `GIT_DESCENDANT_WORKTREE_DIRTY`. Developer is forbidden to update checkers, frozen predecessor manifests, fixture index, progress, or HANDOFF.
-- Standalone checkers:
-  - `uv run python scripts/check_a13_repository_scan.py .`: exit `1`, four expected frozen evidence raw/diff mismatch codes.
-  - `uv run python scripts/check_g07_baseline.py .`: exit `0`, `PASS packages=108 av=255 uncovered=0 scenarios=20`.
-  - `uv run python scripts/check_phase_g_gate.py .`: exit `0`, `PASS accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`.
-  - `uv run python scripts/check_project_progress.py .`: exit `1`, expected `GIT_DESCENDANT_WORKTREE_DIRTY` during authorized exact17 implementation.
+### GREEN
 
-An earlier overbroad `pytest tests` invocation produced six collection-name/fixture errors because it included mutually exclusive tooling, browser, API, and fixture test surfaces. It was an invalid regression command, not a product result; the repository's canonical separated core/tooling commands above were then used.
+- Resolver absence plus all five independent hostile variants: `6 passed, 7 deselected`.
+- Final focused API: `22 passed in 1.17s`.
+- Canonical core: `117 passed, 6 existing DSN-gated skipped in 3.91s`.
 
-## Actual production-like local HTTP and SSE
+The existing Host → authentication → authorization → mutation Origin/CSRF/idempotency/version/target-hash/permission-scope/reason order remains unchanged. Authorization completes before body parsing, command/query port calls, and SSE journal reads. R1 registry/OpenAPI, request ID, 409, BFF, SSE wire format, cookie, CORS, CSP, and proxy contracts were not changed.
 
-A local uvicorn process served the real FastAPI app on loopback `127.0.0.1:8765`, with an explicit loopback Host/Origin policy, a real session principal, an application port for deployment acceptance, and an in-memory stored-event port. No mock HTTP response or TestClient was used for these checks.
+## Actual production-like uvicorn evidence
 
-- Authenticated `GET /api/providers`: HTTP `501 CAPABILITY_NOT_AVAILABLE`, with correlated request ID plus CSP, HSTS, no-sniff, referrer, and cache headers. This proves future-port fail-closed at the actual HTTP boundary.
-- `POST /api/deployments`, otherwise-valid envelope:
-  - missing CSRF: HTTP `403 CSRF_VALIDATION_FAILED`, application-port calls `0`;
-  - missing Origin: HTTP `403 ORIGIN_VALIDATION_FAILED`, application-port calls `0`;
-  - valid Host/Origin/CSRF/idempotency/version/target/scope/reason: HTTP `200`, accepted response.
-- `GET /api/runs/runtime-run/events` with `Last-Event-ID: runtime-evt-1`, repeated three times:
-  - all responses HTTP `200`;
-  - each body contains exactly `runtime-evt-2`, then `runtime-evt-3`;
-  - all three body SHA-256 values are `54F32C7CBC18655D53EB795CE7EC7827476979F2729C14409ECA919F27A25495` (identical observed payloads);
-  - no cursor event replay and no new Run creation.
+A real local uvicorn process served the R2 app on `127.0.0.1:8766`. Its server-supplied resolver returned the fixed authoritative target `project-1 / env-local / owner`. Five distinct session principals represented wrong role, empty/cross project, and empty/cross environment. No TestClient or fabricated HTTP response was used.
 
-The local runtime used only process memory and loopback HTTP; no database was required by this package. It did not contact WSL-server, ysna-server, a shared database, a provider, or deployment infrastructure.
+For every hostile principal, each of the following was called separately:
 
-## Browser boundary and limitations
+- `POST /api/design-specifications/design-1:approve`;
+- `GET /api/evidence-manifests/evidence-1`;
+- `GET /api/runs/runtime-run/events`.
 
-Actual browser Network verification was attempted in both the in-app browser and connected Chrome against `http://127.0.0.1:8765/api/providers`. Both browser surfaces rejected navigation before the request with `net::ERR_BLOCKED_BY_CLIENT`. Therefore `AV-UI-011/012` have focused contract and actual HTTP evidence, but actual browser Network is `ENVIRONMENT_BLOCKED` and is not claimed PASS.
+All 15 requests returned HTTP `403`. Wrong-role responses used `AUTHORIZATION_ROLE_DENIED`; empty/cross project used `AUTHORIZATION_PROJECT_DENIED`; empty/cross environment used `AUTHORIZATION_ENVIRONMENT_DENIED`. A subsequent authenticated status query observed `command=0`, `query=0`, `journal_reads=0`.
 
-The following remain unexecuted or pending:
+Hostile Host, missing Origin, and missing CSRF Approval requests each returned the original stable `403` code (`HOST_VALIDATION_FAILED`, `ORIGIN_VALIDATION_FAILED`, `CSRF_VALIDATION_FAILED`). The same subsequent status observation remained `0/0/0`, proving the pre-dispatch ordering was preserved.
 
-- independent B-11 Tester acceptance: `PENDING`;
-- actual browser Network capture: `ENVIRONMENT_BLOCKED` by the browser client;
-- actual product menu UI and browser bundle inspection: `NOT_IN_SCOPE` because `apps/web` is outside exact17;
-- actual PostgreSQL/WSL/shared DB/provider/ysna/production/deployment: `NOT_EXECUTED` and out of scope;
-- B-12 recovery and C+ capabilities: `NOT_STARTED`.
+Nominal evidence:
 
-The developer did not modify progress/HANDOFF, checkers, fixture indexes, Git index/refs, or predecessor evidence, and did not commit or push. Main Agent review, evidence projection, independent test, acceptance, commit, and push remain separate steps.
+- valid Approval: HTTP `200`, correlated request ID `req-r2-approval`;
+- valid artifact query: HTTP `200`;
+- optimistic conflict: HTTP `409 OPTIMISTIC_VERSION_CONFLICT`, correlated request ID `req-r2-conflict`, raw conflict detail absent;
+- FI-08 SSE: three HTTP `200` reconnects with `Last-Event-ID: runtime-evt-1`; each body contained exactly `runtime-evt-2`, then `runtime-evt-3`;
+- all three SSE bodies had SHA-256 `54F32C7CBC18655D53EB795CE7EC7827476979F2729C14409ECA919F27A25495`;
+- final counters: `command=1`, `query=1`, `journal_reads=3`; no cursor replay, gap, duplicate, or new Run.
+
+The runtime process was stopped and port 8766 was verified no longer listening.
+
+## Browser and execution boundary
+
+Connected Chrome was retried against `http://127.0.0.1:8766/api/providers` and returned `net::ERR_BLOCKED_BY_CLIENT` before a usable Network capture. The existing in-app browser binding was unavailable. Browser Network remains `ENVIRONMENT_BLOCKED`, not PASS.
+
+PostgreSQL, WSL/shared DB, Provider, ysna, production, deployment, actual menu UI, and B-12 were not executed and remain outside R2 exact8. No progress/HANDOFF, checker, failure ledger, Tester report, authority, Git index/ref, commit, or push was modified.
+
+## Regression, tooling, and artifact integrity
+
+- Focused API: `22 passed`.
+- Canonical core: `117 passed, 6 existing DSN-gated skipped`.
+- Full tooling: `402 passed, 9 failed in 109.91s`.
+- Canonical combined full excluding intentional browser/fixture repositories: `541 passed, 6 skipped, 9 failed in 118.77s`.
+
+The nine failures are active-dirty governance projections, not focused/core product failures. Six A-13 tests reject the authorized replacement of the frozen R1 EvidenceManifest with the R2 exact8/raw7 artifact using `EVIDENCE_ACTUAL_DIFF_MISMATCH`, `EVIDENCE_CONTENT_BYTES_MISMATCH`, `EVIDENCE_RAW_BYTES_MISMATCH`, and `EVIDENCE_RAW_HASH_MISMATCH`. Three project-progress tests reject the authorized active exact8 worktree with `GIT_DESCENDANT_WORKTREE_DIRTY`. Developer cannot change predecessor completion projection, progress/HANDOFF, or checker logic.
+
+Standalone checkers:
+
+- `uv run python scripts/check_a13_repository_scan.py .`: exit `1`, the same four frozen R1 evidence mismatch codes;
+- `uv run python scripts/check_g07_baseline.py .`: exit `0`, `PASS packages=108 av=255 uncovered=0 scenarios=20`;
+- `uv run python scripts/check_phase_g_gate.py .`: exit `0`, `PASS accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`;
+- `uv run python scripts/check_project_progress.py .`: exit `1`, expected active `GIT_DESCENDANT_WORKTREE_DIRTY`.
+
+Final compile/import/diff, exact8 path comparison, and raw7 manifest recomputation are performed after this report is frozen. The manifest excludes itself with `self_reference=false`; any unavailable or failing governance projection is retained as observed rather than promoted to PASS.

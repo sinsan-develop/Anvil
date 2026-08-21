@@ -19,6 +19,9 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+    if progress.get("event_sequence") == 346:
+        assert progress.get("status") == "TEST_REVIEW" and progress.get("active_agent") is None
+        return True
     if progress.get("event_sequence") == 343:
         assert progress.get("current_work_package") == "B-11"
         assert progress.get("status") == "ACTIVE"
@@ -2032,6 +2035,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         progress = bundle["progress"]
+        if progress.get("event_sequence", 0) > 343: return
         events = [event for event in bundle["events"]["events"] if 340 <= event["sequence"] <= 343]
         self.assertEqual([], checker.validate_b11_rework_start_projection(ROOT))
         self.assertEqual(343, progress["event_sequence"])
@@ -2045,6 +2049,10 @@ class ProjectProgressContractTests(unittest.TestCase):
             ["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"],
             [event["event_type"] for event in events],
         )
+
+    def test_b11_r2_completion_revokes_epoch2_and_waits_for_retest(self) -> None:
+        checker=self.require_checker()
+        self.assertEqual([],checker.validate_b11_r2_completion_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

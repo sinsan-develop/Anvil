@@ -20,6 +20,12 @@ def _b11():
     return common, fastapi_app
 
 
+def _scope_resolver(fastapi_app):
+    return lambda _endpoint, _path: fastapi_app.AuthorizationScope(
+        "project-1", "env-local", frozenset({"owner"})
+    )
+
+
 def _session(common):
     return common.SessionPrincipal(
         actor_id="owner-1",
@@ -55,6 +61,7 @@ def test_optimistic_version_conflict_maps_to_stable_409_envelope() -> None:
     app = fastapi_app.create_app(
         ports=ports,
         authenticate=lambda token: _session(common) if token == "session-1" else None,
+        authorization_resolver=_scope_resolver(fastapi_app),
     )
     client = TestClient(app)
     client.cookies.set("anvil_session", "session-1")
@@ -100,6 +107,7 @@ def test_invalid_incoming_request_id_is_replaced_with_a_valid_correlation_id() -
     common, fastapi_app = _b11()
     app = fastapi_app.create_app(
         authenticate=lambda token: _session(common) if token == "session-1" else None,
+        authorization_resolver=_scope_resolver(fastapi_app),
     )
     client = TestClient(app)
     client.cookies.set("anvil_session", "session-1")
@@ -126,6 +134,7 @@ def test_unexpected_port_error_is_masked_and_correlated() -> None:
         fastapi_app.create_app(
             ports=fastapi_app.ApiPorts(commands={"POST /api/runs/{id}:pause": fail}),
             authenticate=lambda token: _session(common) if token == "session-1" else None,
+            authorization_resolver=_scope_resolver(fastapi_app),
         ),
         raise_server_exceptions=False,
     )

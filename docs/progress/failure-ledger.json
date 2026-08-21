@@ -300,7 +300,10 @@
       ],
       "accepted_sequence": 1,
       "takeover_status": "NOT_REQUIRED",
-      "independent_retest_status": "R2_PENDING"
+      "independent_retest_status": "PENDING_RETEST",
+      "finding_status": "FIXED_AWAITING_INDEPENDENT_RETEST",
+      "developer_manifest_sha256": "3F60EAE9A978EA8ED0ABB83CEB77EB0B1828251895AB0B323C5CC4C8481B8C23",
+      "developer_target_hash": "25167A1D9C951C9A3E032862F72A4F1D8F5EBCF310585812EE7DC7095F4B3ABA"
     },
     {
       "entry_id": "failure-b01-independent-retest-r2",
