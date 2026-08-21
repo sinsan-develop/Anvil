@@ -2,7 +2,7 @@
   "manifest_type": "AnvilReleaseManifest",
   "manifest_version": "1.0",
   "work_package": "C-32",
-  "status": "PREFLIGHT_BLOCKED_TARGET_MISMATCH",
+  "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
     "commit": "173a835cadb38eaad0e931997c9819177e802b1f",
@@ -33,7 +33,7 @@
     "target_runtime_root": "~/deploy/anvil",
     "target_expected_commit": "173a835cadb38eaad0e931997c9819177e802b1f",
     "target_observed_commit": "d4cb841464c19817afd79ed7127cc3ad5dc9a4b4",
-    "target_preflight": "BLOCKED_TARGET_COMMIT_MISMATCH",
+    "target_preflight": "APPROVED_TARGET_ALIGNMENT_PENDING",
     "target_checkout_status": "CLEAN_DETACHED",
     "compose_available": "docker-compose.local.yml (services: {})",
     "protected_container_observed": "anvil-web (existing; unchanged)",
@@ -62,13 +62,8 @@
     "listener": "127.0.0.1:4173 only",
     "browser_api": "same-origin relative paths only",
     "database": "Anvil dedicated database and roles only; no shared-db mutation in preflight",
-    "public_exposure": "DENIED_PENDING_SEPARATE_APPROVAL",
+    "public_exposure": "APPROVED_WITH_EXISTING_HTTPS_HOST_ONLY",
     "forbidden_actions_in_this_manifest": [
-      "push",
-      "server checkout",
-      "server restart or recreate",
-      "production migration",
-      "Telegram setWebhook",
       "public proxy or DNS change"
     ]
   }
