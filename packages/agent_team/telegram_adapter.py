@@ -15,6 +15,10 @@ import hmac
 import json
 import re
 from urllib.parse import urlparse
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from packages.persistence.telegram_webhook import TelegramStateStore
 
 from .remote_control import ApprovalRequest, ApprovalState, AuditEvent, CommandKind, OperatorCommand
 
@@ -121,9 +125,9 @@ def notification_text(notification: TelegramNotification, console_base_url: str)
 
 
 class TelegramAdapter:
-    """Validate updates in memory; no secret or update is persisted."""
+    """Validate Telegram updates; optional state store makes replay/audit durable."""
 
-    def __init__(self, *, allowlisted_identities: frozenset[tuple[str, str]], signing_secret: str, console_base_url: str) -> None:
+    def __init__(self, *, allowlisted_identities: frozenset[tuple[str, str]], signing_secret: str, console_base_url: str, state_store: "TelegramStateStore | None" = None) -> None:
         if not isinstance(allowlisted_identities, frozenset) or any(not isinstance(pair, tuple) or len(pair) != 2 or any(not isinstance(v, str) or not v.strip() for v in pair) for pair in allowlisted_identities):
             raise ValueError("allowlisted_identities must be a frozenset of (chat_id, user_id)")
         _text(signing_secret, "signing_secret")
@@ -131,12 +135,19 @@ class TelegramAdapter:
         self._allowlist = allowlisted_identities
         self._secret = signing_secret
         self._console_base_url = normalized_console_base_url
+        self._state_store = state_store
         self._seen: set[str] = set()
         self._audits: tuple[AuditEvent, ...] = ()
 
     @property
     def audits(self) -> tuple[AuditEvent, ...]:
         return self._audits
+
+    def attach_state_store(self, state_store: "TelegramStateStore") -> None:
+        """Attach the process-wide durable store before serving requests."""
+        if self._state_store is not None and self._state_store is not state_store:
+            raise ValueError("a Telegram state store is already attached")
+        self._state_store = state_store
 
     @staticmethod
     def canonical_payload(update: TelegramUpdate) -> str:
@@ -166,6 +177,12 @@ class TelegramAdapter:
         operator_id = update.user_id if update is not None and isinstance(update.user_id, str) and update.user_id.strip() else "unknown"
         audit = AuditEvent(f"telegram-audit-{len(self._audits) + 1}", command_id, operator_id, "telegram", outcome.value, now)
         self._audits += (audit,)
+        if self._state_store is not None:
+            self._state_store.record_audit(
+                audit_id=audit.audit_id, command_id=audit.command_id,
+                operator_id=audit.operator_id, source=audit.action,
+                outcome=audit.outcome, occurred_at=audit.recorded_at,
+            )
         return audit
 
     def process(self, update: TelegramUpdate, *, now: datetime) -> TelegramResult:
@@ -193,7 +210,14 @@ class TelegramAdapter:
         if not hmac.compare_digest(update.signature, expected):
             audit = self._audit(update, TelegramOutcome.INVALID_SIGNATURE, now)
             return TelegramResult(False, "서명 검증에 실패했습니다.", TelegramOutcome.INVALID_SIGNATURE, audit)
-        if update.nonce in self._seen or update.command_id in self._seen:
+        claimed = update.nonce not in self._seen and update.command_id not in self._seen
+        if claimed and self._state_store is not None:
+            claimed = self._state_store.claim_update(
+                nonce=update.nonce, command_id=update.command_id,
+                chat_id=update.chat_id, user_id=update.user_id,
+                first_seen_at=now, expires_at=update.expires_at,
+            )
+        if not claimed:
             audit = self._audit(update, TelegramOutcome.REPLAYED, now)
             return TelegramResult(False, "이미 처리된 명령입니다.", TelegramOutcome.REPLAYED, audit)
         self._seen.update((update.nonce, update.command_id))

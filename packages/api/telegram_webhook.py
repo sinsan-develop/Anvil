@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import hmac
@@ -10,6 +9,7 @@ import json
 from typing import Any, Mapping
 
 from packages.agent_team.telegram_adapter import TelegramAdapter, TelegramUpdate
+from packages.persistence.telegram_webhook import InMemoryTelegramStateStore, TelegramStateStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,10 +40,12 @@ class TelegramWebhookConfig:
 
 
 class TelegramWebhook:
-    def __init__(self, adapter: TelegramAdapter, config: TelegramWebhookConfig) -> None:
+    def __init__(self, adapter: TelegramAdapter, config: TelegramWebhookConfig, *, state_store: TelegramStateStore | None = None) -> None:
         self.adapter = adapter
         self.config = config
-        self._requests: dict[str, deque[datetime]] = {}
+        self._state_store = state_store or getattr(adapter, "_state_store", None) or InMemoryTelegramStateStore()
+        if getattr(adapter, "_state_store", None) is None:
+            adapter.attach_state_store(self._state_store)
 
     def handle(self, raw_body: bytes, headers: Mapping[str, str], *, now: datetime) -> tuple[int, dict[str, Any]]:
         if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() != timezone.utc.utcoffset(now):
@@ -61,13 +63,11 @@ class TelegramWebhook:
         except (UnicodeDecodeError, ValueError, TypeError, KeyError, AttributeError, OverflowError):
             return 400, {"error": "malformed webhook payload"}
         key = update.chat_id
-        bucket = self._requests.setdefault(key, deque())
-        cutoff = now.timestamp() - self.config.rate_window_seconds
-        while bucket and bucket[0].timestamp() <= cutoff:
-            bucket.popleft()
-        if len(bucket) >= self.config.rate_limit:
+        if not self._state_store.allow_rate(
+            identity=key, now=now, limit=self.config.rate_limit,
+            window_seconds=self.config.rate_window_seconds,
+        ):
             return 429, {"error": "rate limit exceeded"}
-        bucket.append(now)
         result = self.adapter.process(update, now=now)
         return 200, {"accepted": result.accepted, "outcome": result.outcome.value, "text": result.text, "audit_id": result.audit.audit_id}
 
