@@ -40,7 +40,7 @@
 
 ## 주요 커밋
 
-`ecfbb7c` root path fix → `9388749` psycopg3 DSN → `430b6fa` migration rebuild → `6668ec4` tmpfs fix → `348131a` database network → `f806399` successor projection → `06a3a4e` public UI preview plan/spec merge
+`ecfbb7c` root path fix → `9388749` psycopg3 DSN → `430b6fa` migration rebuild → `6668ec4` tmpfs fix → `348131a` database network → `f806399` successor projection → `06a3a4e` public UI preview plan/spec merge → `199a02b` common API/menu plan merge
 
 ## 2026-08-22 병합 기록
 
@@ -48,6 +48,14 @@
 - 병합 커밋: `06a3a4e23fd3c8caa387f0fe61c35fa1ef9a9cec`
 - 추가 파일: `docs/superpowers/plans/2026-08-14-anvil-public-ui-preview.md`, `docs/superpowers/specs/2026-08-14-anvil-public-ui-preview.md`
 - `git diff --check` 통과, `origin/main` push 완료.
+
+## 2026-08-22 추가 병합 기록
+
+- `codex/anvil-public-ui-preview-impl` 검증 후 `main`에 병합했다.
+- 검증: Node UI preview 6/6, 배포 계약 pytest 8/8, `node --check apps/web/server.mjs` 통과.
+- 구현 병합은 `main`의 운영 코드와 배포 이력을 보존하는 3-way 병합으로 완료했다.
+- `codex/anvil-plan-common-api-menu-order`는 작업계획서 충돌을 해소한 후 `199a02b`로 병합했다.
+- 충돌 해소는 신산님 확정 1~7단계 생명주기를 유지하고 공통 모듈·API·Backend Capability·U-01~U-11 순서를 하위 실행 규칙으로 결합하는 방식으로 기록했다.
 
 ## 남은 문제
 
