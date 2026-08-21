@@ -1,6 +1,6 @@
 # Anvil 전체 개발 작업계획서 v1.6
 
-> 문서 상태: 신산님 승인 successor 초안 / Agent Teams·Capability MoA·대화형 설계·9단계 생명주기 반영, 통합검증매트릭스·테스트계획서 successor 정합화 대기
+> 문서 상태: 신산님 승인 successor 기준선 / Agent Teams·Capability MoA·대화형 설계·공통 모듈·API 우선·메뉴 순차 개발·9단계 생명주기 반영, 통합검증매트릭스·테스트계획서 successor 정합화 대기
 > 작성일: 2026-08-10  
 > 설계 책임자·Main Agent: 어울  
 > 최종 승인자: 신산님  
