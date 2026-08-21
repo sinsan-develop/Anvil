@@ -1,7 +1,8 @@
 # APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001
 
-- 상태: `PROPOSED / PENDING_HUMAN_BINDING`
+- 상태: `HUMAN_APPROVED_SEMANTIC_SUCCESSOR_SCOPE`
 - 제안 시각: 2026-08-22 (Asia/Seoul)
+- 승인 시각: 2026-08-22 (Asia/Seoul)
 - 제안자: Main Agent 어울
 - 최종 승인자: 신산님
 - 부모 historical binding: `APPROVAL-20260814-WORKPLAN-V16-001`
@@ -50,7 +51,9 @@ Agent Teams 대화형 협업, capability-based MoA, Web Console/PWA 원격 제�
 
 ## 6. 승인 binding 규칙
 
-이 파일은 사람의 별도 확인 전까지 승인 기록이 아니다. 아래 subject hash가 확정된 뒤 신산님의 명시 승인을 받아야 `HUMAN_APPROVED_SEMANTIC_SUCCESSOR_SCOPE`로 전환할 수 있다. subject 또는 범위가 변경되면 이 제안은 무효화하고 새 revision을 만든다.
+아래 subject hash와 허용 범위에 대해 신산님이 2026-08-22 (Asia/Seoul) 명시 승인했다. 이 binding은 문서 successor와 C-16~C-20 prototype evidence의 정합성 projection만 승인하며, subject 또는 범위가 변경되면 이 binding을 무효화하고 새 revision을 만든다.
+
+승인된 후속 운영 검증은 C-21로 한정한다. C-21은 persistence/API/DB/browser/provider/Telegram webhook의 운영 유사 검증을 수행하기 위한 다음 Work Package이며, 이 승인만으로 실제 외부 시스템 변경·배포·public exposure·C-01 시작을 허용하지 않는다.
 
 ## 7. 현재 증거
 

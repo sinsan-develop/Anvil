@@ -1100,6 +1100,44 @@
       ]
     }
   },
+  "successor_scope_binding": {
+    "approval_id": "APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001",
+    "approval_path": "docs/governance/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
+    "classification": "HUMAN_APPROVED_SEMANTIC_SUCCESSOR_SCOPE",
+    "approved_at": "2026-08-22 (Asia/Seoul)",
+    "approved_by": "신산님",
+    "subject_hashes": {
+      "design_v2_7_successor": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+      "work_plan_v1_6_successor": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
+      "historical_matrix_v1_4": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+      "historical_test_plan_v1_5": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+      "successor_matrix": "3F795C4FCB20BD0824596D6C53FF7C8DC3049DC4A9457249541C270B995C9CCC",
+      "successor_test_plan": "1EC873172603D7353E6D1F500771A451B654574A66ABD44BE14B6A12B91F7F9B"
+    },
+    "package_scope": ["C-16", "C-17", "C-18", "C-19", "C-20"],
+    "prototype_evidence": {
+      "focused_tests": "33 passed",
+      "compileall": "PASS",
+      "diff_check": "PASS",
+      "scoped_review": "PASS"
+    },
+    "historical_state_preserved": {
+      "current_phase": "B",
+      "current_work_package": "PHASE_B_GATE",
+      "status": "TEST_REVIEW",
+      "active_agent": null,
+      "worker_lease": null,
+      "write_lease": null,
+      "c01_status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE",
+      "c01_started": false
+    },
+    "operational_validation": {
+      "next_work_package": "C-21",
+      "status": "READY_FOR_WORK_INSTRUCTION",
+      "scope": ["persistence", "API", "DB", "browser", "provider", "Telegram webhook"],
+      "not_executed": ["WSL", "production", "deployment", "public exposure"]
+    }
+  },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "165a9bfff5e085bfec322c748e83464477642f8a",
@@ -1302,6 +1340,13 @@
   "next_work_package": {
     "package_id": "C-01",
     "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE"
+  },
+  "next_successor_work_package": {
+    "package_id": "C-21",
+    "status": "READY_FOR_WORK_INSTRUCTION",
+    "purpose": "successor operational validation",
+    "requires": ["C-21 WorkInstruction", "independent validation scope"],
+    "does_not_unblock": ["C-01", "Phase B Gate acceptance"]
   },
   "snapshot_hash": "A216968E341D02C05053B07E6FABCF4A1A283AB43E35BD7C9EA99A10A44CBCAF"
 }
