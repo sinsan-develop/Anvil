@@ -3,6 +3,7 @@ set -euo pipefail
 ANVIL_RELEASE_COMMIT="${1:-${ANVIL_RELEASE_COMMIT:-}}"; : "${ANVIL_RELEASE_COMMIT:?full release SHA required}"
 [[ "$ANVIL_RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]] || { echo 'full 40-character SHA required' >&2; exit 2; }
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"; RUNTIME="$ROOT/runtime"; EVIDENCE="$ROOT/evidence"; REPO="$ROOT/repo"; mkdir -p "$RUNTIME" "$EVIDENCE"
+# The server-owned .env lives beside repo/ at the deployment root. Never read secrets from the Git checkout.
 SOURCE_ENV="$ROOT/.env"; TARGET_ENV="$RUNTIME/anvil.env"
 
 prepare_runtime_env() {

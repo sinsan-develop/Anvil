@@ -13,7 +13,7 @@ class DeploymentContractTests(unittest.TestCase):
   deploy=(DEPLOY/'deploy.sh').read_text(); rollback=(DEPLOY/'rollback.sh').read_text(); guard=(DEPLOY/'manifest-guard.sh').read_text(); self.assertIn('^[0-9a-f]{40}$',deploy); self.assertIn('git fetch --prune origin',deploy); self.assertIn('git checkout --detach',deploy); self.assertIn('APPROVED_FOR_DEPLOYMENT',guard); self.assertIn('merge-base --is-ancestor',guard); self.assertIn('successor_binding_sha256',guard); self.assertIn('verify.sh',rollback); self.assertNotIn('DROP DATABASE',rollback); self.assertNotIn('docker volume rm',rollback)
  def test_runtime_secret_wiring(self):
   deploy=(DEPLOY/'deploy.sh').read_text(); compose=(DEPLOY/'compose.internal.yml').read_text(); readme=(DEPLOY/'README.md').read_text(encoding='utf-8'); rollback=(DEPLOY/'rollback.sh').read_text()
-  self.assertIn('SOURCE_ENV="$ROOT/.env"',deploy); self.assertIn('TARGET_ENV="$RUNTIME/anvil.env"',deploy); self.assertIn('install -m 600',deploy); self.assertIn('ANVIL_RUNTIME_ENV_FILE',deploy); self.assertIn('ANVIL_RUNTIME_ENV_FILE',compose)
+  self.assertIn('SOURCE_ENV="$ROOT/.env"',deploy); self.assertNotIn('SOURCE_ENV="$REPO/.env"',deploy); self.assertIn('TARGET_ENV="$RUNTIME/anvil.env"',deploy); self.assertIn('install -m 600',deploy); self.assertIn('ANVIL_RUNTIME_ENV_FILE',deploy); self.assertIn('ANVIL_RUNTIME_ENV_FILE',compose)
   for name in ('ANVIL_DATABASE_URL','TELEGRAM_BOT_TOKEN','TELEGRAM_WEBHOOK_SECRET','TELEGRAM_INTERNAL_SIGNING_SECRET','TELEGRAM_ALLOWED_IDENTITIES','ANVIL_CONSOLE_BASE_URL'): self.assertIn(name,deploy)
   self.assertIn('runtime secret retained',rollback); self.assertIn('runtime/anvil.env',readme)
  def test_bootstrap_least_privilege(self):

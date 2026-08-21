@@ -1,8 +1,9 @@
 # ysna 내부 배포
 
 `ysna-server:~/deploy/anvil`에서 실행하는 localhost 전용 경로다. 서버 전용
-`~/deploy/anvil/.env`를 배포 스크립트가 검증한 뒤 `runtime/anvil.env`로 원자적
-복사하고 권한 `0600`을 보장한다. 비밀값은 Git, 이미지, 로그, evidence에 넣지
+`~/deploy/anvil/.env`(Git checkout인 `~/deploy/anvil/repo/.env`가 아님)를 배포
+스크립트가 검증한 뒤 `runtime/anvil.env`로 원자적 복사하고 권한 `0600`을
+보장한다. 비밀값은 Git, 이미지, 로그, evidence에 넣지
 않는다. `web`은 `127.0.0.1:4173`과 내부 네트워크만 사용하고
 `migrate`만 외부 `proxy-network`로 기존 DB에 접근한다.
 
