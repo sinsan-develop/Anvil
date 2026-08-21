@@ -5,7 +5,7 @@
   "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "ecfbb7c20d2d5d3770c169b713acd81113af1b58",
+    "commit": "9388749dd2b36e2c03ea837ca7f19b110eede9bb",
     "branch_at_capture": "main",
     "working_tree": "CLEAN"
   },
@@ -31,7 +31,7 @@
     "target_host": "ysna-server",
     "target_checkout": "~/deploy/anvil/repo",
     "target_runtime_root": "~/deploy/anvil",
-    "target_expected_commit": "ecfbb7c20d2d5d3770c169b713acd81113af1b58",
+    "target_expected_commit": "9388749dd2b36e2c03ea837ca7f19b110eede9bb",
     "target_observed_commit": "d4cb841464c19817afd79ed7127cc3ad5dc9a4b4",
     "target_preflight": "APPROVED_TARGET_ALIGNMENT_PENDING",
     "target_checkout_status": "CLEAN_DETACHED",
