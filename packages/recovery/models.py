@@ -27,6 +27,7 @@ class ActionStatus(StrEnum):
     RUNNING = "RUNNING"
     REQUEST_PREPARED = "REQUEST_PREPARED"
     REQUEST_SENT = "REQUEST_SENT"
+    INTERRUPTED = "INTERRUPTED"
 
 
 class ReconciliationClass(StrEnum):
@@ -53,6 +54,7 @@ class ActionAttempt:
     status: ActionStatus
     idempotency_key: str
     provider_receipt_ref: str | None = None
+    interrupted_from_status: ActionStatus | None = None
 
     def __post_init__(self) -> None:
         for value, field in (
@@ -65,6 +67,20 @@ class ActionAttempt:
             raise ValueError("status must be an ActionStatus")
         if self.provider_receipt_ref is not None:
             _text(self.provider_receipt_ref, "provider_receipt_ref")
+        if self.interrupted_from_status is not None and not isinstance(
+            self.interrupted_from_status, ActionStatus
+        ):
+            raise ValueError("interrupted_from_status must be an ActionStatus")
+
+
+@dataclass(frozen=True, slots=True)
+class RecoveryFaultCounters:
+    interruption_count: int
+    boundary_count: int
+    send_count: int
+    receipt_lookup_count: int
+    automatic_retry_count: int
+    duplicate_request_count: int
 
 
 @dataclass(frozen=True, slots=True)

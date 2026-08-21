@@ -1441,8 +1441,13 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
 
     def test_b12_r2_rework_selects_durable_recovery_projection(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 357: return
         spec = importlib.util.spec_from_file_location("a13_b12_r2", CHECKER_PATH); checker = importlib.util.module_from_spec(spec); sys.modules[spec.name] = checker; spec.loader.exec_module(checker)
         self.assertEqual(357, progress["event_sequence"]); self.assertEqual([], checker.validate_b12_rework_start_projection(ROOT)); self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+
+    def test_b12_r2_completion_selects_frozen_exact10_projection(self):
+        spec=importlib.util.spec_from_file_location("a13_b12_r2_done",CHECKER_PATH); checker=importlib.util.module_from_spec(spec); sys.modules[spec.name]=checker; spec.loader.exec_module(checker)
+        self.assertEqual([], checker.validate_b12_r2_completion_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

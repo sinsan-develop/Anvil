@@ -19,7 +19,7 @@ def upgrade():
         sa.Column("db_event_sequence", sa.BigInteger(), nullable=False),
         sa.Column("progress_event_sequence", sa.BigInteger(), nullable=False),
         sa.Column("handoff_event_sequence", sa.BigInteger(), nullable=False),
-        sa.Column("checkpoint_id", sa.String(128), nullable=False),
+        sa.Column("checkpoint_id", sa.String(128), sa.ForeignKey("checkpoints.checkpoint_id", ondelete="RESTRICT"), nullable=False),
         sa.Column("checkpoint_hash", sa.String(71), nullable=False),
         sa.Column("target_hash", sa.String(71), nullable=False),
         sa.Column("git_head", sa.String(128), nullable=False),
@@ -29,6 +29,9 @@ def upgrade():
         sa.Column("current_capability_hash", sa.String(71), nullable=False),
         sa.Column("required_capabilities", sa.JSON(), nullable=False),
         sa.Column("current_capabilities", sa.JSON(), nullable=False),
+        sa.Column("process_status", sa.String(24), nullable=False, server_default="IDLE"),
+        sa.Column("process_id", sa.BigInteger()),
+        sa.Column("interruption_count", sa.Integer(), nullable=False, server_default="0"),
         sa.CheckConstraint(
             "db_event_sequence>=0 AND progress_event_sequence>=0 AND handoff_event_sequence>=0",
             name="ck_recovery_sequences_nonnegative",
@@ -38,21 +41,50 @@ def upgrade():
             name="ck_recovery_secret_status",
         ),
         sa.CheckConstraint("secret_reference LIKE 'secret://%'", name="ck_recovery_secret_reference_only"),
+        sa.CheckConstraint(
+            "process_status IN ('IDLE','RUNNING','INTERRUPTED','RECOVERED')",
+            name="ck_recovery_process_status",
+        ),
+        sa.CheckConstraint("interruption_count>=0", name="ck_recovery_interruption_count"),
     )
     op.create_table(
         "recovery_action_attempts",
         sa.Column("action_id", sa.String(128), primary_key=True),
         sa.Column("run_id", sa.String(128), sa.ForeignKey("recovery_runs.run_id", ondelete="CASCADE"), nullable=False),
-        sa.Column("step_id", sa.String(128), nullable=False),
+        sa.Column("step_id", sa.String(128), sa.ForeignKey("plan_steps.step_id", ondelete="RESTRICT"), nullable=False),
         sa.Column("status", sa.String(32), nullable=False),
         sa.Column("idempotency_key", sa.String(128), nullable=False, unique=True),
         sa.Column("provider_receipt_ref", sa.String(256)),
+        sa.Column("interrupted_from_status", sa.String(32)),
+        sa.Column("last_boundary", sa.String(48)),
+        sa.Column("boundary_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("send_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("receipt_lookup_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("automatic_retry_count", sa.Integer(), nullable=False, server_default="0"),
+        sa.Column("duplicate_request_count", sa.Integer(), nullable=False, server_default="0"),
         sa.CheckConstraint(
-            "status IN ('SUCCESS','RUNNING','REQUEST_PREPARED','REQUEST_SENT')",
+            "status IN ('SUCCESS','RUNNING','REQUEST_PREPARED','REQUEST_SENT','INTERRUPTED')",
             name="ck_recovery_action_status",
+        ),
+        sa.CheckConstraint(
+            "interrupted_from_status IS NULL OR interrupted_from_status IN ('RUNNING','REQUEST_PREPARED','REQUEST_SENT')",
+            name="ck_recovery_interrupted_from_status",
+        ),
+        sa.CheckConstraint(
+            "boundary_count>=0 AND send_count>=0 AND receipt_lookup_count>=0 "
+            "AND automatic_retry_count>=0 AND duplicate_request_count>=0",
+            name="ck_recovery_action_counters",
         ),
     )
     op.create_index("ix_recovery_action_run_step", "recovery_action_attempts", ["run_id", "step_id"])
+    op.create_table(
+        "recovery_provider_receipts",
+        sa.Column("idempotency_key", sa.String(128), primary_key=True),
+        sa.Column("run_id", sa.String(128), sa.ForeignKey("recovery_runs.run_id", ondelete="RESTRICT"), nullable=False),
+        sa.Column("action_id", sa.String(128), sa.ForeignKey("recovery_action_attempts.action_id", ondelete="RESTRICT"), nullable=False, unique=True),
+        sa.Column("receipt_ref", sa.String(256), nullable=False),
+        sa.Column("sent_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+    )
     op.create_table(
         "recovery_decisions",
         sa.Column("decision_id", sa.String(128), primary_key=True),
@@ -62,6 +94,7 @@ def upgrade():
         sa.Column("evidence_hash", sa.String(71), nullable=False),
         sa.Column("blocked_reason", sa.String(128)),
         sa.Column("next_action", sa.String(256), nullable=False),
+        sa.Column("decision_payload", sa.JSON(), nullable=False),
         sa.Column("observed_at", sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint("run_id", "event_sequence", "evidence_hash", name="uq_recovery_decision_evidence"),
     )
@@ -80,6 +113,13 @@ def upgrade():
         ),
     )
     op.create_table(
+        "recovery_retry_receipts",
+        sa.Column("run_id", sa.String(128), sa.ForeignKey("recovery_runs.run_id", ondelete="RESTRICT"), primary_key=True),
+        sa.Column("action_id", sa.String(128), sa.ForeignKey("recovery_action_attempts.action_id", ondelete="RESTRICT"), primary_key=True),
+        sa.Column("evidence_hash", sa.String(71), primary_key=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
+    )
+    op.create_table(
         "recovery_resume_receipts",
         sa.Column("run_id", sa.String(128), sa.ForeignKey("recovery_runs.run_id", ondelete="RESTRICT"), primary_key=True),
         sa.Column("worker_lease_id", sa.String(128), sa.ForeignKey("worker_leases.worker_lease_id", ondelete="RESTRICT"), nullable=False),
@@ -89,6 +129,32 @@ def upgrade():
         sa.Column("checkpoint_id", sa.String(128), nullable=False),
         sa.Column("committed_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("CURRENT_TIMESTAMP")),
         sa.CheckConstraint("worker_epoch>0 AND write_epoch>0", name="ck_recovery_resume_epochs"),
+    )
+    op.execute(
+        """
+        CREATE FUNCTION anvil_validate_recovery_lineage() RETURNS trigger AS $$
+        DECLARE linked_run varchar(128);
+        BEGIN
+          IF TG_TABLE_NAME = 'recovery_runs' THEN
+            SELECT run_id INTO linked_run FROM checkpoints WHERE checkpoint_id=NEW.checkpoint_id;
+          ELSE
+            SELECT run_id INTO linked_run FROM plan_steps WHERE step_id=NEW.step_id;
+          END IF;
+          IF linked_run IS NULL OR linked_run <> NEW.run_id THEN
+            RAISE EXCEPTION 'recovery lineage binding mismatch';
+          END IF;
+          RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+        """
+    )
+    op.execute(
+        "CREATE TRIGGER validate_recovery_run_lineage BEFORE INSERT OR UPDATE ON recovery_runs "
+        "FOR EACH ROW EXECUTE FUNCTION anvil_validate_recovery_lineage()"
+    )
+    op.execute(
+        "CREATE TRIGGER validate_recovery_action_lineage BEFORE INSERT OR UPDATE ON recovery_action_attempts "
+        "FOR EACH ROW EXECUTE FUNCTION anvil_validate_recovery_lineage()"
     )
     op.execute(
         """
@@ -146,9 +212,12 @@ def upgrade():
 
 def downgrade():
     op.execute("DROP FUNCTION IF EXISTS anvil_recovery_commit_resume(text,text,text,bigint,text,bigint,text,text)")
+    op.execute("DROP FUNCTION IF EXISTS anvil_validate_recovery_lineage() CASCADE")
     op.drop_table("recovery_resume_receipts")
+    op.drop_table("recovery_retry_receipts")
     op.drop_table("recovery_audit_events")
     op.drop_table("recovery_decisions")
+    op.drop_table("recovery_provider_receipts")
     op.drop_index("ix_recovery_action_run_step", table_name="recovery_action_attempts")
     op.drop_table("recovery_action_attempts")
     op.drop_table("recovery_runs")

@@ -28,7 +28,11 @@ def reconcile_action(
     receipt = authoritative_receipt_ref or action.provider_receipt_ref
     if action.status is ActionStatus.SUCCESS or receipt is not None:
         classification = ReconciliationClass.CONFIRMED_SUCCESS
-    elif action.status in {ActionStatus.REQUEST_PREPARED, ActionStatus.RUNNING}:
+    elif action.status in {ActionStatus.REQUEST_PREPARED, ActionStatus.RUNNING} or (
+        action.status is ActionStatus.INTERRUPTED
+        and action.interrupted_from_status
+        in {ActionStatus.REQUEST_PREPARED, ActionStatus.RUNNING}
+    ):
         classification = ReconciliationClass.SAFE_RETRY
     else:
         classification = ReconciliationClass.MANUAL_REVIEW
@@ -93,7 +97,22 @@ class RecoveryService:
             blocked_reason = "CAPABILITY_SNAPSHOT_DRIFT"
             next_action = "CREATE_NEW_RUN_OR_REPLAN"
 
-        actions = tuple(reconcile_action(action) for action in source.actions)
+        receipt_lookup = getattr(self._repository, "authoritative_receipt", None)
+        actions = tuple(
+            reconcile_action(
+                action,
+                authoritative_receipt_ref=(
+                    receipt_lookup(source.run_id, action.action_id)
+                    if receipt_lookup is not None
+                    and (
+                        action.status is ActionStatus.REQUEST_SENT
+                        or action.interrupted_from_status is ActionStatus.REQUEST_SENT
+                    )
+                    else None
+                ),
+            )
+            for action in source.actions
+        )
         skipped = tuple(
             dict.fromkeys(
                 item.step_id
@@ -144,6 +163,31 @@ class RecoveryService:
             observed_at,
         )
         self._repository.save_decision(decision)
+        return decision
+
+    def recover_terminated_process(
+        self, run_id: str, *, actor_id: str, observed_at: datetime
+    ) -> RecoveryDecision:
+        """Persist interruption, reconcile from PostgreSQL, and record one retry intent."""
+        mark_interrupted = getattr(self._repository, "mark_process_interrupted", None)
+        if mark_interrupted is None:
+            raise TypeError("repository does not support durable process recovery")
+        mark_interrupted(run_id, actor_id=actor_id, observed_at=observed_at)
+        decision = self.reconcile(run_id, actor_id=actor_id, observed_at=observed_at)
+        mark_retry = getattr(self._repository, "mark_automatic_retry", None)
+        if mark_retry is not None and decision.status is RecoveryStatus.READY_TO_RESUME:
+            for action in decision.action_reconciliations:
+                if action.classification is ReconciliationClass.SAFE_RETRY:
+                    mark_retry(run_id, action.action_id, decision.evidence_hash)
+        self._repository.append_audit(
+            RecoveryAuditEvent(
+                run_id,
+                "RECOVERY_RECONCILED",
+                actor_id,
+                observed_at,
+                reason=decision.evidence_hash,
+            )
+        )
         return decision
 
 

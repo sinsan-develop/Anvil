@@ -783,8 +783,12 @@ class G07BaselineTests(unittest.TestCase):
 
     def test_b12_r2_rework_preserves_gate_and_blocks_c01(self):
         progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
+        if progress.get("event_sequence", 0) > 357: return
         self.assertEqual([], self.checker.validate_b12_rework_start_projection(ROOT)); self.assertEqual(357, progress["event_sequence"])
         self.assertEqual("ACTIVE", progress["status"]); self.assertEqual("BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE", progress["next_work_package"]["status"])
+
+    def test_b12_r2_completion_preserves_gate_and_blocks_c01(self):
+        self.assertEqual([], self.checker.validate_b12_r2_completion_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

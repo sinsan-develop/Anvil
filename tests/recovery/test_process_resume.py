@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
 import os
 import time
+from uuid import uuid4
 
 import pytest
 
@@ -16,7 +17,10 @@ from packages.recovery.models import (
     ResumeLease,
 )
 from packages.recovery.service import RecoveryService, StaleRecoveryFencingToken
-from packages.persistence.recovery_repository import InMemoryRecoveryRepository
+from packages.persistence.recovery_repository import (
+    InMemoryRecoveryRepository,
+    PostgresRecoveryRepository,
+)
 
 
 HASH = "sha256:" + "a" * 64
@@ -26,21 +30,65 @@ def _wait_for_termination() -> None:
     time.sleep(30)
 
 
-def _input(*, file_sequence: int = 12, db_sequence: int = 12) -> RecoveryInput:
+def _write_running_boundary(dsn: str, run_id: str, action_id: str) -> None:
+    repository = PostgresRecoveryRepository(dsn)
+    repository.record_action_boundary(
+        run_id,
+        action_id,
+        status=ActionStatus.RUNNING,
+        process_id=os.getpid(),
+        boundary="RUNNING",
+    )
+    time.sleep(30)
+
+
+def _recover_in_fresh_process(dsn: str, run_id: str, actor_id: str) -> None:
+    repository = PostgresRecoveryRepository(dsn)
+    RecoveryService(repository).recover_terminated_process(
+        run_id,
+        actor_id=actor_id,
+        observed_at=datetime.now(UTC),
+    )
+
+
+def _wait_for_db_value(dsn: str, sql: str, expected: object) -> None:
+    import psycopg
+
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        with psycopg.connect(dsn) as connection:
+            value = connection.execute(sql).fetchone()[0]
+        if value == expected:
+            return
+        time.sleep(0.02)
+    pytest.fail(f"database condition did not reach {expected!r}: {sql}")
+
+
+def _input(
+    *, file_sequence: int = 12, db_sequence: int = 12, run_id: str = "run-1"
+) -> RecoveryInput:
+    suffix = "" if run_id == "run-1" else f"-{run_id.rsplit('-', 1)[-1]}"
     return RecoveryInput(
-        run_id="run-1",
+        run_id=run_id,
         project_id="project-1",
         environment_id="env-local",
         db_event_sequence=db_sequence,
         progress_event_sequence=file_sequence,
         handoff_event_sequence=file_sequence,
-        checkpoint_id="checkpoint-9",
+        checkpoint_id="checkpoint-9" if run_id == "run-1" else f"checkpoint-{run_id}",
         checkpoint_hash=HASH,
         target_hash=HASH,
         git_head="abc123",
         actions=(
-            ActionAttempt("done", "step-done", ActionStatus.SUCCESS, "idem-done", "receipt-done"),
-            ActionAttempt("interrupted", "step-interrupted", ActionStatus.RUNNING, "idem-running"),
+            ActionAttempt(
+                f"done{suffix}", f"step-done{suffix}", ActionStatus.SUCCESS, f"idem-done{suffix}", "receipt-done"
+            ),
+            ActionAttempt(
+                f"interrupted{suffix}",
+                f"step-interrupted{suffix}",
+                ActionStatus.RUNNING,
+                f"idem-running{suffix}",
+            ),
         ),
         secret_reference="secret://provider/key#v3",
         secret_status="ACTIVE",
@@ -83,20 +131,59 @@ def test_sequence_disagreement_fails_closed_without_overwriting_either_source() 
 
 @pytest.mark.parametrize("fault_round", range(3))
 def test_fi07_terminated_subprocess_recovers_from_durable_snapshot(fault_round: int) -> None:
-    process = multiprocessing.get_context("spawn").Process(target=_wait_for_termination)
+    dsn = os.environ.get("ANVIL_B12_TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("ANVIL_B12_TEST_DATABASE_URL is required for FI-07")
+    run_id = f"run-fi07-{fault_round}-{uuid4().hex[:8]}"
+    repository = PostgresRecoveryRepository(dsn)
+    source = _input(run_id=run_id)
+    repository.persist_recovery_lineage(source)
+
+    process = multiprocessing.get_context("spawn").Process(
+        target=_write_running_boundary,
+        args=(dsn, run_id, source.actions[1].action_id),
+    )
     process.start()
+    _wait_for_db_value(
+        dsn,
+        "SELECT boundary_count FROM recovery_action_attempts "
+        f"WHERE action_id='{source.actions[1].action_id}'",
+        1,
+    )
     process.terminate()
     process.join(timeout=5)
     assert process.exitcode is not None and process.exitcode != 0
 
-    repository = InMemoryRecoveryRepository()
-    repository.seed(_input())
-    decision = RecoveryService(repository).reconcile(
-        "run-1", actor_id=f"operator-{fault_round}", observed_at=datetime.now(UTC)
+    recovery = multiprocessing.get_context("spawn").Process(
+        target=_recover_in_fresh_process,
+        args=(dsn, run_id, f"operator-{fault_round}"),
     )
-    assert decision.skipped_step_ids == ("step-done",)
-    assert decision.resumable_step_ids == ("step-interrupted",)
+    recovery.start()
+    recovery.join(timeout=10)
+    assert recovery.exitcode == 0
+
+    fresh_repository = PostgresRecoveryRepository(dsn)
+    decision = fresh_repository.decision(run_id)
+    assert decision is not None
+    assert decision.skipped_step_ids == (source.actions[0].step_id,)
+    assert decision.resumable_step_ids == (source.actions[1].step_id,)
     assert decision.event_sequence == 12
+    counters = fresh_repository.fault_counters(run_id, source.actions[1].action_id)
+    assert counters.interruption_count == 1
+    assert counters.automatic_retry_count == 1
+    assert fresh_repository.audit_count(run_id, "PROCESS_INTERRUPTED") == 1
+
+    # Exact replay in another repository/process is immutable and idempotent.
+    replay = multiprocessing.get_context("spawn").Process(
+        target=_recover_in_fresh_process,
+        args=(dsn, run_id, f"operator-{fault_round}"),
+    )
+    replay.start()
+    replay.join(timeout=10)
+    assert replay.exitcode == 0
+    assert fresh_repository.fault_counters(
+        run_id, source.actions[1].action_id
+    ) == counters
 
 
 def test_only_current_epoch_and_tokens_can_commit_resume() -> None:
@@ -171,24 +258,8 @@ def test_postgres_rejects_stale_resume_and_serializes_concurrent_current_resume(
     stale_write = "stale_write_token_1234567890123456"
     prior_current_worker_write = "prior_current_worker_write_token_12345"
     current_scope2_write = "current_scope2_write_token_123456789"
+    PostgresRecoveryRepository(dsn).persist_recovery_lineage(_input(run_id="run-b12"))
     with psycopg.connect(dsn, autocommit=True) as connection:
-        connection.execute(
-            "INSERT INTO tasks(task_id,project_id,repository_id,title,objective,requested_by,status) "
-            "VALUES ('task-b12','project-1','repo-1','B12','Recovery','owner-1','IN_PROGRESS')"
-        )
-        connection.execute(
-            "INSERT INTO runs(run_id,task_id,baseline_id,phase,status,version) "
-            "VALUES ('run-b12','task-b12','baseline-1','B','ACTIVE',1)"
-        )
-        connection.execute(
-            "INSERT INTO recovery_runs(run_id,project_id,environment_id,db_event_sequence,"
-            "progress_event_sequence,handoff_event_sequence,checkpoint_id,checkpoint_hash,target_hash,"
-            "git_head,secret_reference,secret_status,capability_snapshot_hash,current_capability_hash,"
-            "required_capabilities,current_capabilities) VALUES ("
-            "'run-b12','project-1','env-local',4,4,4,'checkpoint-1',%s,%s,'abc123',"
-            "'secret://provider/key#v1','ACTIVE',%s,%s,'[\"tool\"]','[\"tool\"]')",
-            (HASH, HASH, HASH, HASH),
-        )
         connection.execute(
             "INSERT INTO worker_leases(worker_lease_id,run_id,worker_id,lease_epoch,execution_fencing_token,issued_at,expires_at) VALUES "
             "('worker-stale','run-b12','worker-1',1,%s,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP+interval '1 hour'),"
@@ -218,25 +289,27 @@ def test_postgres_rejects_stale_resume_and_serializes_concurrent_current_resume(
         )
         with pytest.raises(psycopg.errors.RaiseException, match="STALE_FENCING_TOKEN"):
             connection.execute(
-                "SELECT anvil_recovery_commit_resume('run-b12','worker-stale','write-stale',1,%s,1,%s,'checkpoint-1')",
+                "SELECT anvil_recovery_commit_resume('run-b12','worker-stale','write-stale',1,%s,1,%s,'checkpoint-run-b12')",
                 (stale_execution, stale_write),
             ).fetchone()
         with pytest.raises(psycopg.errors.RaiseException, match="STALE_FENCING_TOKEN"):
             connection.execute(
-                "SELECT anvil_recovery_commit_resume('run-b12','worker-current','write-current-stale',2,%s,1,%s,'checkpoint-1')",
+                "SELECT anvil_recovery_commit_resume('run-b12','worker-current','write-current-stale',2,%s,1,%s,'checkpoint-run-b12')",
                 (current_execution, prior_current_worker_write),
             ).fetchone()
 
     def commit_current(_index: int):
-        with psycopg.connect(dsn, autocommit=True) as connection:
-            return connection.execute(
-                "SELECT (anvil_recovery_commit_resume('run-b12','worker-current','write-current',2,%s,2,%s,'checkpoint-1')).checkpoint_id",
-                (current_execution, current_write),
-            ).fetchone()[0]
+        return PostgresRecoveryRepository(dsn).commit_resume(
+            "run-b12",
+            ResumeLease("run-b12", 2, current_execution, 2, current_write),
+            "checkpoint-run-b12",
+            worker_lease_id="worker-current",
+            write_lease_id="write-current",
+        ).checkpoint_id
 
     with ThreadPoolExecutor(max_workers=8) as pool:
         checkpoints = tuple(pool.map(commit_current, range(8)))
-    assert checkpoints == ("checkpoint-1",) * 8
+    assert checkpoints == ("checkpoint-run-b12",) * 8
     with psycopg.connect(dsn) as connection:
         assert connection.execute(
             "SELECT count(*) FROM recovery_resume_receipts WHERE run_id='run-b12'"

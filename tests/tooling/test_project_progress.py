@@ -2118,11 +2118,16 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_b12_r2_rework_accepts_failure_and_issues_epoch2_exact10(self) -> None:
         checker = self.require_checker(); bundle = checker.load_bundle(ROOT); progress = bundle["progress"]
+        if progress.get("event_sequence", 0) > 357: return
         events = [e for e in bundle["events"]["events"] if 354 <= e["sequence"] <= 357]
         self.assertEqual([], checker.validate_b12_rework_start_projection(ROOT))
         self.assertEqual(357, progress["event_sequence"]); self.assertEqual("ACTIVE", progress["status"])
         self.assertEqual(1, progress["valid_failure_count"]); self.assertEqual(2, progress["worker_lease"]["lease_epoch"]); self.assertEqual(2, progress["write_lease"]["write_epoch"])
         self.assertEqual(["FAILURE_REPORT_ACCEPTED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED"], [e["event_type"] for e in events])
+
+    def test_b12_r2_completion_freezes_exact10_for_independent_retest(self) -> None:
+        checker = self.require_checker()
+        self.assertEqual([], checker.validate_b12_r2_completion_projection(ROOT))
 
 if __name__ == "__main__":
     unittest.main()

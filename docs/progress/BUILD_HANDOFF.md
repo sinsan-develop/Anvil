@@ -1,3 +1,10 @@
+# B-12 R2 Developer 완료 → 독립 재테스트 대기 — sequence 360
+
+- Developer R2 exact10을 evidence manifest file SHA `2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA`, raw9 target `D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D`로 byte-frozen했다. Main 완료 projection의 제품 mutation은 0이다.
+- seq358→360은 epoch-2 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED`; B-12는 `TEST_REVIEW / COMPLETED`, 독립 Tester는 `PENDING_RETEST`, active agent와 두 lease는 null이다.
+- Developer 증거는 no-DSN focused `15 PASS + 13 honest SKIP`, 격리 PostgreSQL 18 `28 PASS`, durable FI-05/06/07 각 3회 실제 process termination, core `156 PASS + 19 SKIP`, loopback uvicorn `200/409/200/401`과 cleanup을 포함한다. Main 독립 재실행 범위만 Main evidence이며 Tester 판정 전 acceptance로 승격하지 않는다.
+- R1 CRITICAL 2건의 active failure count 1은 재테스트 판정 전 유지한다. C-01은 `BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE`; B-12 acceptance, B Gate, C-01은 금지한다.
+
 # B-12 독립 FAILURE_REPORT 수용 → R2 재작업 — sequence 357
 
 - 독립 Tester report SHA `224CC87D40496A09765551A317413832039C4BDBA2B67C22AC37C6E05681AF91`의 `FAILURE_REPORT / REWORK_REQUIRED`, CRITICAL 2건을 B-12 첫 유효 실패로 수용했다.
@@ -375,33 +382,39 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 357,
-  "status": "ACTIVE",
+  "event_sequence": 360,
+  "status": "TEST_REVIEW",
   "current_work_package": "B-12",
-  "last_event_id": "evt_b12_r2_package_resumed",
+  "last_event_id": "evt_b12_r2_package_completed",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 1,
-  "next_safe_action": "Developer executes B-12 R2 durable PostgreSQL recovery and actual FI-05/06/07 within exact10; B-12 acceptance, B Gate, and C-01 remain forbidden",
+  "next_safe_action": "Independent Tester retests frozen B-12 R2 exact10; B-12 acceptance, B Gate, and C-01 remain forbidden",
   "dir_status": "CLEARED",
-  "repository_head": "e29ffcfc6e401af43bdb2672fd0817252792d652",
+  "repository_head": "3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "e29ffcfc6e401af43bdb2672fd0817252792d652",
+  "repository_validated_base_commit": "3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/B-12_REWORK_START_PROGRESS_MANIFEST_R2.json",
+    "docs/completion_reports/B-12_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-b12-rework-start-r2.json",
-    "docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md",
-    "docs/work_orders/B-12_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/B-12_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-b12-rework-completion-r2.json",
+    "docs/validation/B-12_RECOVERY_VALIDATION.md",
+    "migrations/versions/0010_recovery.py",
+    "packages/persistence/recovery_repository.py",
+    "packages/recovery/models.py",
+    "packages/recovery/service.py",
     "scripts/check_a13_repository_scan.py",
     "scripts/check_g07_baseline.py",
     "scripts/check_phase_g_gate.py",
     "scripts/check_project_progress.py",
+    "tests/recovery/test_action_reconcile.py",
+    "tests/recovery/test_process_resume.py",
+    "tests/recovery/test_recovery_api.py",
     "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_g07_baseline.py",
     "tests/tooling/test_phase_g_gate.py",

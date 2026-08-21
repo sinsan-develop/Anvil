@@ -1225,6 +1225,8 @@ def validate_repository(
                 completion_developer_paths.update(non_evidence_paths)
             if reconciliation_event.get("event_type") == "PACKAGE_RESUMED" and reconciliation_event.get("subject_ref") == "B-12" and reconciliation_event.get("sequence") == 357:
                 completion_developer_paths.update(non_evidence_paths)
+            if reconciliation_event.get("event_type") == "PACKAGE_COMPLETED" and reconciliation_event.get("subject_ref") == "B-12" and reconciliation_event.get("sequence") == 360:
+                completion_developer_paths.update(non_evidence_paths)
             if non_evidence_paths and not non_evidence_paths <= completion_developer_paths:
                 _error(errors, "GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN", progress_path, str(allowed))
             working_tree_mode = head == base
@@ -1645,6 +1647,15 @@ def validate_b12_rework_start_projection(root: Path) -> list[str]:
     if progress.get("event_sequence")!=357 or progress.get("status")!="ACTIVE" or progress.get("valid_failure_count")!=1: errors.append("B12_R2_PHASE_INVALID")
     if [e.get("event_type") for e in terminal] != ["FAILURE_REPORT_ACCEPTED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_RESUMED"]: errors.append("B12_R2_EVENT_ORDER_INVALID")
     if (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE": errors.append("B12_R2_BOUNDARY_INVALID")
+    return errors
+
+
+def validate_b12_r2_completion_projection(root: Path) -> list[str]:
+    progress=json.loads((root/"docs/progress/build-progress.json").read_text(encoding="utf-8")); events=json.loads((root/"docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]; errors=[]
+    terminal=[e for e in events if 358<=e.get("sequence",-1)<=360]
+    if progress.get("event_sequence")!=360 or progress.get("status")!="TEST_REVIEW" or progress.get("valid_failure_count")!=1: errors.append("B12_R2_COMPLETION_PHASE_INVALID")
+    if [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"]: errors.append("B12_R2_COMPLETION_EVENT_ORDER_INVALID")
+    if (progress.get("phase_gate") or {}).get("decision")!="ACCEPTED" or (progress.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE": errors.append("B12_R2_COMPLETION_BOUNDARY_INVALID")
     return errors
 
 

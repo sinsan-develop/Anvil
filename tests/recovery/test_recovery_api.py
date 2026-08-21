@@ -1,16 +1,27 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+import os
 import subprocess
 import sys
+from uuid import uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 
 from packages.api.common import SessionPrincipal
 from packages.api.fastapi_app import AuthorizationScope, create_app
-from packages.persistence.recovery_repository import InMemoryRecoveryRepository
+from packages.persistence.recovery_repository import (
+    InMemoryRecoveryRepository,
+    PostgresRecoveryRepository,
+)
 from packages.recovery.api import RecoveryApi
-from packages.recovery.models import ActionAttempt, ActionStatus, RecoveryInput
+from packages.recovery.models import (
+    ActionAttempt,
+    ActionStatus,
+    RecoveryInput,
+    RecoveryStatus,
+)
 from packages.recovery.service import RecoveryService
 
 
@@ -143,3 +154,109 @@ def test_target_hash_mismatch_is_rejected_before_recovery_audit_side_effect() ->
     )
     assert response.status_code == 409
     assert repository.audit_events("run-1") == ()
+
+
+def _durable_source(
+    run_id: str, *, secret_status: str = "ACTIVE", capability_drift: bool = False
+) -> RecoveryInput:
+    return RecoveryInput(
+        run_id=run_id,
+        project_id="project-durable",
+        environment_id="env-local",
+        db_event_sequence=5,
+        progress_event_sequence=5,
+        handoff_event_sequence=5,
+        checkpoint_id=f"checkpoint-{run_id}",
+        checkpoint_hash=HASH,
+        target_hash=HASH,
+        git_head="abc123",
+        actions=(
+            ActionAttempt(
+                f"action-{run_id}",
+                f"step-{run_id}",
+                ActionStatus.RUNNING,
+                f"idem-{run_id}",
+            ),
+        ),
+        secret_reference="secret://provider/key#v7",
+        secret_status=secret_status,
+        capability_snapshot_hash=HASH,
+        current_capability_hash=("sha256:" + "d" * 64) if capability_drift else HASH,
+        required_capabilities=frozenset({"provider.send"}),
+        current_capabilities=(
+            frozenset({"provider.read"})
+            if capability_drift
+            else frozenset({"provider.send"})
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("run_id", "secret_status", "capability_drift", "expected"),
+    [
+        ("run-revoked-durable", "REVOKED", False, RecoveryStatus.BLOCKED_SECRET_REVOKED),
+        ("run-capability-durable", "ACTIVE", True, RecoveryStatus.BLOCKED_CAPABILITY_DRIFT),
+    ],
+)
+def test_postgres_recovery_fails_closed_on_secret_or_capability_drift(
+    run_id: str,
+    secret_status: str,
+    capability_drift: bool,
+    expected: RecoveryStatus,
+) -> None:
+    dsn = os.environ.get("ANVIL_B12_TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("ANVIL_B12_TEST_DATABASE_URL is required for durable security recovery")
+    run_id = f"{run_id}-{uuid4().hex[:8]}"
+    repository = PostgresRecoveryRepository(dsn)
+    source = _durable_source(
+        run_id, secret_status=secret_status, capability_drift=capability_drift
+    )
+    repository.persist_recovery_lineage(source)
+    repository.record_action_boundary(
+        run_id,
+        source.actions[0].action_id,
+        status=ActionStatus.RUNNING,
+        process_id=12345,
+        boundary="RUNNING",
+    )
+
+    decision = RecoveryService(repository).recover_terminated_process(
+        run_id, actor_id="recovery-security", observed_at=datetime.now(UTC)
+    )
+
+    assert decision.status is expected
+    counters = repository.fault_counters(run_id, source.actions[0].action_id)
+    assert counters.send_count == 0
+    assert counters.automatic_retry_count == 0
+    assert counters.duplicate_request_count == 0
+
+
+def test_postgres_recovery_rejects_cross_run_lineage_and_secret_value() -> None:
+    dsn = os.environ.get("ANVIL_B12_TEST_DATABASE_URL")
+    if not dsn:
+        pytest.skip("ANVIL_B12_TEST_DATABASE_URL is required for hostile recovery constraints")
+    import psycopg
+
+    token = uuid4().hex[:8]
+    left = _durable_source(f"run-hostile-left-{token}")
+    right = _durable_source(f"run-hostile-right-{token}")
+    repository = PostgresRecoveryRepository(dsn)
+    repository.persist_recovery_lineage(left)
+    repository.persist_recovery_lineage(right)
+    with psycopg.connect(dsn, autocommit=True) as connection:
+        with pytest.raises(psycopg.errors.RaiseException, match="lineage binding mismatch"):
+            connection.execute(
+                "UPDATE recovery_runs SET checkpoint_id=%s WHERE run_id=%s",
+                (right.checkpoint_id, left.run_id),
+            )
+        with pytest.raises(psycopg.errors.RaiseException, match="lineage binding mismatch"):
+            connection.execute(
+                "UPDATE recovery_action_attempts SET step_id=%s WHERE action_id=%s",
+                (right.actions[0].step_id, left.actions[0].action_id),
+            )
+        with pytest.raises(psycopg.errors.CheckViolation, match="ck_recovery_secret_reference_only"):
+            connection.execute(
+                "UPDATE recovery_runs SET secret_reference='plaintext-secret' WHERE run_id=%s",
+                (left.run_id,),
+            )

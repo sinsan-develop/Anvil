@@ -1,90 +1,75 @@
-# B-12 Process/PC Recovery Validation
+# B-12 R2 Durable Process Recovery Validation
 
-## Authority and execution boundary
+## Authority and boundary
 
-- WorkInstruction: `WI-B-12-20260821-001`, SHA-256 `C588069F8F735DF32AC908F3E2F27F9BE5D2E6E18E0C2F67CBAF36202BA4C3EE`.
-- Invocation SHA-256: `3E2A28FECB4E0A64FDF30BDAD8E0D3DD9546E98F84F010C95924B18D8A41D7DF`.
-- Start: `main=origin/main=26e2fcf1977d11c22ce81b400b3bf0696337d4ac`, clean. WorkInstruction product baseline is `370a39436c4b15a84483017583a9fe3878652504`.
-- Lease: epoch 1 execution token `b12-execution-fence-epoch-1-370a394`, write token `b12-write-fence-epoch-1-370a394`, Developer exact15.
-- Assigned verification: `AV-STAT-014/034/035/036/038/039`, `AV-OPS-005`, `AV-SAFE-031`, `AV-FLOW-010/011`.
+- WorkInstruction: `WI-B-12-20260821-002`, SHA-256 `476D2A7EAE064F25EDF479F3D66BB6F64DFAFFB38D49430BF26BD38E92A0BAB2`.
+- Invocation SHA-256: `1B310073C8871C3F57B8065FF818BEB436DB0C66574DFF97D759133D930C09DC`.
+- Source Tester report SHA-256: `224CC87D40496A09765551A317413832039C4BDBA2B67C22AC37C6E05681AF91`.
+- Failure fingerprint: `B-12/DURABLE_PROCESS_RECOVERY_AND_ACTUAL_SEND_BOUNDARY_GAP`.
+- Start: `main=origin/main=3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0`, clean, progress sequence `357`, `ACTIVE_REWORK`.
+- Lease: epoch-2 execution token `b12-execution-fence-epoch-2-e29ffcf`, write token `b12-write-fence-epoch-2-e29ffcf`.
 
-Only exact15 was written. Authority, progress/HANDOFF, checkers, B-01~B-11 frozen artifacts, Git index/refs, B Gate, C-01, real Provider/Secret Broker, UI, shared DB, WSL staging, ysna, production, and deployment remained read-only or unexecuted.
+Developer exact10만 수정했다. progress/HANDOFF, authority, checker, Git index/ref, commit/push, B-12 acceptance, B Gate, C-01, shared DB, WSL staging, ysna, production, deployment은 수정 또는 실행하지 않았다.
 
-## Implementation and security contract
+## TDD RED and implementation
 
-The recovery module reads immutable DB/progress/HANDOFF sequences, checkpoint and target hashes, Action receipts, Git head, reference-only Secret version status, and capability snapshot bindings. Sequence disagreement returns `RECONCILIATION_REQUIRED` without overwriting either source. Completed Actions are `confirmed_success` and skipped; request-prepared Actions are `safe_retry`; sent-but-unconfirmed Actions are `manual_review` and cannot retry automatically.
-
-Revoked/expired Secret versions block before secret read or provider call and append actor/time/reference-only audit data. Capability hash or required-capability drift blocks automatic fallback and returns `CREATE_NEW_RUN_OR_REPLAN`. Recovery API output omits the Secret reference and preserves B-11 Host, authentication, authoritative scope, CSRF, idempotency, optimistic version, target hash, permission-scope, error envelope, and request-ID contracts. A hostile target hash is rejected before recovery audit mutation.
-
-Resume commits require current worker and same-conflict-scope write epochs and tokens. The in-memory repository and PostgreSQL function make exact current replay idempotent, reject previous worker/write tokens as `STALE_FENCING_TOKEN`, and serialize concurrent resume to one immutable receipt.
-
-## TDD evidence
-
-Production bytes were unchanged for the first four independent RED commands:
+`PYTHONPATH=.`에서 다음 focused collection은 production 변경 전에 `PostgresRecoveryRepository` import 부재로 2 errors/exit 2 RED였다.
 
 ```text
-C:\Users\cyhuh\anaconda3\python.exe -m pytest -q tests/recovery/test_action_reconcile.py
-C:\Users\cyhuh\anaconda3\python.exe -m pytest -q tests/recovery/test_process_resume.py
-C:\Users\cyhuh\anaconda3\python.exe -m pytest -q tests/recovery/test_secret_capability_recovery.py
-C:\Users\cyhuh\anaconda3\python.exe -m pytest -q tests/recovery/test_recovery_api.py
+uv run pytest tests/recovery/test_process_resume.py tests/recovery/test_action_reconcile.py -q
 ```
 
-Each failed during collection for the expected missing `packages.recovery` or `recovery_repository` implementation. Additional regression REDs reproduced:
+R2 최소 구현은 다음 durable 경계를 추가했다.
 
-- fresh uvicorn/import order: persistence-first import failed through a circular package export;
-- invalid zero epoch/short fencing tokens were accepted;
-- hostile recovery target hash recorded a revoked-Secret audit before returning 409;
-- a previous same-scope write token tied to the current worker was accepted by PostgreSQL.
+- PostgreSQL adapter가 Run, append-only Event, checkpoint artifact, plan Step, Action, recovery input/decision/audit를 하나의 lineage로 저장하고 새 process/repository instance에서 다시 load한다.
+- `recovery_runs`는 실제 process 상태/PID/interruption count를, Action은 `INTERRUPTED` 이전 상태와 boundary/send/receipt lookup/automatic retry/duplicate counters를 저장한다.
+- provider send receipt는 idempotency key당 한 행이며 response 처리 전 process가 종료되어도 fresh recovery process가 receipt를 조회해 재송신 없이 성공으로 수렴한다.
+- automatic retry intent는 `(run, action, evidence hash)` immutable receipt로 exact replay 시 한 번만 기록된다.
+- checkpoint와 Step의 cross-Run 결박은 PostgreSQL trigger가 거부한다.
+- resume commit은 최신 worker/write epoch와 두 token을 모두 검증하고 exact current replay를 한 receipt로 직렬화한다.
+- revoked/expired Secret과 capability drift는 send/retry 전에 fail-closed이며 Secret 값은 읽거나 저장하지 않는다.
 
-Minimal GREEN changes respectively added recovery models/service/read model/API/repository, lazy package export, fencing validation, pre-side-effect target/version guard, and same-scope maximum write-epoch enforcement.
+## Actual subprocess fault injection
 
-## Fault injection and local results
+모든 fault case는 Windows `spawn`으로 별도 Python worker를 실행했다. parent는 worker가 동일 PostgreSQL에 boundary/counter를 commit한 조건을 polling한 후 `terminate()`하고 nonzero exit를 확인했다. 그 뒤 별도 fresh Python recovery process와 새 repository instance만 사용했다. 종료 뒤 in-memory reseed는 없으며 sleep-only process를 recovery 증거로 사용하지 않았다.
 
-- FI-05, request prepared before send: three independent rounds classified `safe_retry`, provider sends `0` before recovery.
-- FI-06, request sent before response: three independent rounds classified `manual_review`, automatic retries `0`; authoritative success receipt changes classification to `confirmed_success` without retry.
-- FI-07: three spawned subprocesses were terminated and joined with nonzero exit; each new recovery instance skipped the completed Step, selected only the interrupted Step, restored checkpoint/hash and Event sequence `12`.
-- Sequence mismatch retained the original immutable input and returned `EVENT_SEQUENCE_MISMATCH`.
-- Eight concurrent in-memory resume calls returned one immutable receipt.
-- Focused without DSN: `20 passed, 1 PostgreSQL gate skipped`.
-- Focused with isolated PostgreSQL 18 DSN: `21 passed`.
-- Canonical B core including API/recovery: `159 passed, 7 DSN-gated skipped`.
+- FI-07, 3 rounds: worker가 `RUNNING` boundary를 commit한 뒤 종료됐다. fresh process가 `RUNNING -> INTERRUPTED`와 interruption audit를 저장하고 completed Step은 skip, interrupted Step만 resumable로 결정했다. replay process의 interruption/retry/audit counters는 증가하지 않았다.
+- FI-05, 3 rounds: `REQUEST_PREPARED / BEFORE_SEND` commit 뒤 종료됐다. persisted `send=0`, `receipt_lookup=0`, `automatic_retry=1`, `duplicate=0`이고 safe retry로 결정됐다.
+- FI-06, 3 rounds: provider receipt와 `send=1 / AFTER_SEND_BEFORE_RESPONSE`를 같은 transaction으로 commit한 뒤 종료됐다. fresh process가 authoritative receipt를 한 번 조회했고 `receipt_lookup=1`, `automatic_retry=0`, `duplicate=0`; Step은 confirmed success로 skip됐다.
 
-Actual PC power removal was not performed. FI-07 evidence is explicitly subprocess termination simulation, not a real power-off claim.
+Final actual PostgreSQL focused command:
 
-## Isolated PostgreSQL 18 and rollback
+```text
+ANVIL_DATABASE_URL=postgresql+psycopg://...@127.0.0.1:32791/anvil_b12_r2
+ANVIL_B12_TEST_DATABASE_URL=postgresql://...@127.0.0.1:32791/anvil_b12_r2
+uv run alembic upgrade 0010_recovery
+uv run pytest tests/recovery/test_process_resume.py tests/recovery/test_action_reconcile.py tests/recovery/test_recovery_api.py -q
+```
 
-Final verification used `postgres:18-alpine`, PostgreSQL `18.4`, tmpfs `/var/lib/postgresql`, unique network/container `anvil-b12-dev-net-822` / `anvil-b12-dev-pg18-822`, loopback-only `127.0.0.1:32775`, and database `anvil_b12_dev_822`.
+Result: `28 passed in 17.60s`, exit `0`.
 
-- Migration: `0009_intervention_budget -> 0010_recovery`.
-- Hostile worker epoch/token and same-conflict-scope write epoch/token calls raised `STALE_FENCING_TOKEN`.
-- Eight concurrent current-token calls all returned `checkpoint-1`; `recovery_resume_receipts` count remained `1`.
-- A non-reference Secret persistence attempt violated `ck_recovery_secret_reference_only`; the stored canonical row remained reference-only.
-- Rollback: `0010_recovery -> 0009_intervention_budget`.
-- Post-rollback: Alembic `0009_intervention_budget`, recovery tables `0`, `anvil_recovery_commit_resume` functions `0`.
-- Exact container and network names were verified before deletion; post-removal exact filters were blank.
+## PostgreSQL 18 migration, hostile, fencing, rollback
 
-The earlier unique `821` instance established the initial migration/hostile/rollback path and was also removed. The final `822` pass includes the later same-scope stale-write regression.
+- Runtime: `postgres:18-alpine`, PostgreSQL `18.4`, container `anvil-b12-r2-pg18`, tmpfs `/var/lib/postgresql`, loopback-only `127.0.0.1:32791`, database `anvil_b12_r2`.
+- Migration path `0009_intervention_budget -> 0010_recovery -> 0009_intervention_budget -> 0010_recovery` passed before final focused execution.
+- Cross-Run checkpoint update and Step update raised `recovery lineage binding mismatch`.
+- plaintext Secret reference update violated `ck_recovery_secret_reference_only`.
+- revoked Secret and capability snapshot drift each produced the assigned blocked status with send/retry/duplicate counters `0`.
+- stale worker token and stale same-conflict-scope write token raised `STALE_FENCING_TOKEN`.
+- eight concurrent current adapter calls returned the same checkpoint and persisted one immutable resume receipt.
+- Final rollback returned Alembic `0009_intervention_budget`; recovery tables `0`, recovery functions `0`.
+- Exact container configuration was inspected before removal; removal returned `anvil-b12-r2-pg18` and the exact post-removal filter was blank.
 
-## Actual loopback HTTP
+## API/runtime and regressions
 
-Uvicorn served the same recovery app on `127.0.0.1:8767`; no TestClient response was used for this evidence.
+Actual loopback uvicorn on `127.0.0.1:8768` returned authenticated read `200`, stale target `409 RECOVERY_TARGET_HASH_MISMATCH`, nominal reconcile `200`, and unauthenticated read `401`. The uv wrapper and child server were stopped; `netstat` then reported `PORT_CLOSED`. This is actual HTTP evidence, not browser evidence.
 
-- authenticated recovery read: HTTP 200, `req-runtime-read`, target/evidence hash, checkpoint and next action present;
-- stale target reconcile: HTTP 409 `RECOVERY_TARGET_HASH_MISMATCH`;
-- nominal reconcile: HTTP 200, `req-runtime-write`, Event sequence `4`;
-- missing session: HTTP 401 `AUTHENTICATION_REQUIRED`;
-- wrong permission scope: HTTP 403 `PERMISSION_SCOPE_MISMATCH`.
+- No-DSN focused: `15 passed, 13 skipped`, exit `0`; skips are explicitly DSN-gated.
+- Canonical core: `156 passed, 19 skipped`, exit `0`.
+- Full tooling: `427 passed, 4 failed`, exit `1`.
+- Canonical combined: `583 passed, 19 skipped, 4 failed`, exit `1`.
+- Compile/import and `git diff --check`: exit `0`.
 
-The process was stopped and port 8767 had no listener afterward. Actual browser/menu Network was not executed and is not promoted to PASS.
+Tooling/combined four failures are not promoted to PASS: three are the known Main-owned active dirty projection `GIT_DESCENDANT_WORKTREE_DIRTY`; one frozen A-13 copied hostile-manifest helper did not observe its copied tamper. Standalone A-13 checker passed `fixtures=8 zero_delta=8 hostile=15`; G-07 passed `packages=108 av=255 uncovered=0 scenarios=20`; Phase G passed `accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`; project-progress returned the expected active dirty reason.
 
-## Regression and limitations
-
-- Full tooling: `419 passed, 4 failed`. Three failures are the expected active exact15 `GIT_DESCENDANT_WORKTREE_DIRTY` projection. One frozen A-13 hostile-manifest helper failed to observe its copied tamper, while the standalone A-13 checker on the actual tree passed `fixtures=8 zero_delta=8 hostile=15`; no checker or A-13 artifact was modified.
-- Standalone G-07: `PASS packages=108 av=255 uncovered=0 scenarios=20`.
-- Standalone Phase G Gate: `PASS accepted=7 decisions=10 packages=108 av=255 scenarios=20 sync=7`.
-- Standalone project-progress: expected `GIT_DESCENDANT_WORKTREE_DIRTY` during authorized exact15 development.
-- Compileall, public imports, `git diff --check`, exact-path comparison, and raw14 manifest recomputation are final freeze gates.
-
-Executed results prove only framework-neutral local logic, subprocess fault simulation, actual loopback HTTP, and unique isolated PostgreSQL 18. Real PC power-off, browser/UI, actual Secret value read, Provider request, shared DB, WSL staging, ysna, production, deployment, B-12 independent acceptance, B Gate, commit, and push are `NOT_EXECUTED` by Developer.
-
-Rollback before Main integration is restoration of exact15 to start HEAD and, only in a dedicated database, `0010_recovery -> 0009_intervention_budget`. No shared or production rollback is authorized.
+Actual PC power removal, browser/menu Network, real Provider/Secret Broker, shared DB, WSL staging, ysna, production, deployment, independent acceptance, B Gate, commit, and push remain `NOT_EXECUTED`. Rollback before Main integration is restoration of exact10 to start HEAD; DB rollback is authorized only in a dedicated database and was verified here.

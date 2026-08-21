@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 357,
+  "last_sequence": 360,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13072,6 +13072,33 @@
       "actor": "main-agent-eoul",
       "subject_ref": "B-12",
       "details": {"work_instruction_id":"WI-B-12-20260821-002","work_instruction_sha256":"476D2A7EAE064F25EDF479F3D66BB6F64DFAFFB38D49430BF26BD38E92A0BAB2","invocation_sha256":"1B310073C8871C3F57B8065FF818BEB436DB0C66574DFF97D759133D930C09DC","package_status":"ACTIVE_REWORK","result_status":"REWORK_IN_PROGRESS","independent_tester_status":"R2_PENDING","valid_failure_count":1,"developer_r2_exact_path_count":10,"next_package":"C-01","next_package_status":"BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE","validated_base_commit":"e29ffcfc6e401af43bdb2672fd0817252792d652","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","head_relation":"EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT","branch":"main","upstream":"origin/main","remote_head":"e29ffcfc6e401af43bdb2672fd0817252792d652","push_status":"PUSH_PENDING_MAIN","exact_allowed_paths":["docs/evidence/manifests/B-12_REWORK_START_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-b12-rework-start-r2.json","docs/test_reports/B-12_INDEPENDENT_TEST_REPORT.md","docs/work_orders/B-12_REWORK_INVOCATION_PROMPT_R2.md","docs/work_orders/B-12_REWORK_WORK_INSTRUCTION_R2.md","scripts/check_a13_repository_scan.py","scripts/check_g07_baseline.py","scripts/check_phase_g_gate.py","scripts/check_project_progress.py","tests/tooling/test_a13_repository_scan.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_phase_g_gate.py","tests/tooling/test_project_progress.py"]}
+    },
+    {
+      "event_id": "evt_b12_r2_write_lease_revoked",
+      "sequence": 358,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-08-21T22:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-12",
+      "details": {"lease_id":"write-lease-b12-20260821-002","worker_lease_id":"worker-lease-b12-20260821-002","write_epoch":2,"fencing_token":"b12-write-fence-epoch-2-e29ffcf","reason":"R2_DEVELOPER_COMPLETED_PENDING_INDEPENDENT_RETEST","status":"REVOKED"}
+    },
+    {
+      "event_id": "evt_b12_r2_worker_lease_revoked",
+      "sequence": 359,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-08-21T22:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-12",
+      "details": {"lease_id":"worker-lease-b12-20260821-002","lease_epoch":2,"fencing_token":"b12-execution-fence-epoch-2-e29ffcf","reason":"R2_DEVELOPER_COMPLETED_PENDING_INDEPENDENT_RETEST","status":"REVOKED"}
+    },
+    {
+      "event_id": "evt_b12_r2_package_completed",
+      "sequence": 360,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-08-21T22:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "B-12",
+      "details": {"completion_head":"3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0","completion_upstream_head":"3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0","resume_event_ref":"evt_b12_r2_package_resumed","package_status":"TEST_REVIEW","result_status":"COMPLETED","accepted":false,"independent_tester_status":"PENDING_RETEST","developer_actor":"developer-primary-b12","developer_manifest_sha256":"2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA","developer_target_hash":"D11F17409DDE8C51B036EE9AE659D5295B7D7B840A0BB472CCFEA483135E6A5D","developer_raw_artifact_count":9,"developer_exact_path_count":10,"product_exact_paths_frozen":true,"projection_product_mutation_count":0,"worker_lease":null,"write_lease":null,"valid_failure_count":1,"actual_local_focused":"PASS_15_WITH_13_DSN_SKIPS","actual_postgresql18":"PASS_28","actual_fault_injection":"PASS_FI05_FI06_FI07_THREE_ACTUAL_TERMINATIONS_EACH","actual_loopback_http":"PASS_200_409_200_401_PORT_CLOSED","actual_real_pc_power_off":"NOT_EXECUTED_PROCESS_TERMINATION_SIMULATION_ONLY","actual_ui_browser_provider_shared_wsl_ysna_production_deployment":"NOT_EXECUTED","next_work_package":"C-01","next_package_status":"BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE","phase_b_gate_status":"BLOCKED_PENDING_B12_ACCEPTANCE","validated_base_commit":"3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","head_relation":"EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT","branch":"main","upstream":"origin/main","remote_head":"3bc5e3194d848dbaa1b85a8d55ab51e1d410a9e0","push_status":"PUSH_PENDING_MAIN","actual_dirty_exact_path_count":23,"main_projection_exact_path_count":13,"exact_allowed_paths":["docs/completion_reports/B-12_COMPLETION_REPORT.md","docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json","docs/evidence/manifests/B-12_REWORK_COMPLETION_PROGRESS_MANIFEST_R2.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-b12-rework-completion-r2.json","docs/validation/B-12_RECOVERY_VALIDATION.md","migrations/versions/0010_recovery.py","packages/persistence/recovery_repository.py","packages/recovery/models.py","packages/recovery/service.py","scripts/check_a13_repository_scan.py","scripts/check_g07_baseline.py","scripts/check_phase_g_gate.py","scripts/check_project_progress.py","tests/recovery/test_action_reconcile.py","tests/recovery/test_process_resume.py","tests/recovery/test_recovery_api.py","tests/tooling/test_a13_repository_scan.py","tests/tooling/test_g07_baseline.py","tests/tooling/test_phase_g_gate.py","tests/tooling/test_project_progress.py"]}
     }
   ]
 }
