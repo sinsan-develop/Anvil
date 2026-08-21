@@ -23,6 +23,20 @@ class TelegramAdapterTests(unittest.TestCase):
         self.assertIn("https://console.example/sessions/s1", text)
         self.assertNotIn("secret", text)
 
+    def test_notification_and_adapter_reject_non_origin_base_urls(self):
+        notification = TelegramNotification("e1", "상태", "작업 완료", "/sessions/s1")
+        for base_url in ("https://console.example/", "https://console.example/path", "https://console.example?x=1", "https://console.example#fragment"):
+            with self.assertRaises(ValueError):
+                notification_text(notification, base_url)
+            with self.assertRaises(ValueError):
+                TelegramAdapter(allowlisted_identities=frozenset({("chat-1", "user-1")}), signing_secret="secret-value", console_base_url=base_url)
+
+    def test_parameters_are_signed_and_tampering_is_rejected(self):
+        original = self.update()
+        original = TelegramUpdate(original.command_id, original.chat_id, original.user_id, original.command, original.issued_at, original.expires_at, original.nonce, original.signature, (("scope", "safe"),))
+        tampered = TelegramUpdate(original.command_id, original.chat_id, original.user_id, original.command, original.issued_at, original.expires_at, original.nonce, original.signature, (("scope", "changed"),))
+        self.assertEqual(TelegramOutcome.INVALID_SIGNATURE, self.adapter.process(tampered, now=NOW).outcome)
+
     def test_low_risk_accepts_and_replay_is_audited(self):
         first = self.adapter.process(self.update("pause"), now=NOW)
         second = self.adapter.process(self.update("pause"), now=NOW)
@@ -44,6 +58,9 @@ class TelegramAdapterTests(unittest.TestCase):
         self.assertIsNotNone(result.approval)
         self.assertIn("Web Console", result.text)
         self.assertNotIn("secret-value", result.text)
+        self.assertNotIn("secret-value", repr(result.audit))
+        self.assertNotIn("secret-value", repr(result.approval))
+        self.assertEqual("telegram-redacted", result.approval.command.auth_token)
 
     def test_malformed_and_unsupported_are_audited(self):
         self.assertEqual(TelegramOutcome.MALFORMED, self.adapter.process(object(), now=NOW).outcome)

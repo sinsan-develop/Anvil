@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from enum import Enum
 import hashlib
 import hmac
+import json
 import re
 from urllib.parse import urlparse
 
@@ -37,6 +38,24 @@ def _safe_path(path: str) -> str:
     if not path.startswith("/") or path.startswith("//") or "\\" in path or "\n" in path:
         raise ValueError("console_path must be a relative Web Console path")
     return path
+
+
+def _console_origin(value: str) -> str:
+    """Validate and return an origin-only Web Console base URL."""
+    _text(value, "console_base_url")
+    parsed = urlparse(value)
+    if (
+        parsed.scheme not in {"http", "https"}
+        or not parsed.netloc
+        or parsed.path != ""
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+        or parsed.username is not None
+        or parsed.password is not None
+    ):
+        raise ValueError("console_base_url must be an HTTP(S) origin with no path, query, or fragment")
+    return value.rstrip("/")
 
 
 class TelegramOutcome(str, Enum):
@@ -97,11 +116,7 @@ class TelegramResult:
 
 def notification_text(notification: TelegramNotification, console_base_url: str) -> str:
     """Format a notification with a Web Console deep link and no credentials."""
-    _text(console_base_url, "console_base_url")
-    parsed = urlparse(console_base_url)
-    if parsed.scheme not in {"http", "https"} or not parsed.netloc or parsed.query or parsed.fragment:
-        raise ValueError("console_base_url must be an HTTP(S) origin")
-    link = console_base_url.rstrip("/") + _safe_path(notification.console_path)
+    link = _console_origin(console_base_url) + _safe_path(notification.console_path)
     return f"{notification.title}\n{notification.body}\n상세 보기: {link}"
 
 
@@ -112,12 +127,10 @@ class TelegramAdapter:
         if not isinstance(allowlisted_identities, frozenset) or any(not isinstance(pair, tuple) or len(pair) != 2 or any(not isinstance(v, str) or not v.strip() for v in pair) for pair in allowlisted_identities):
             raise ValueError("allowlisted_identities must be a frozenset of (chat_id, user_id)")
         _text(signing_secret, "signing_secret")
-        _text(console_base_url, "console_base_url")
-        if urlparse(console_base_url).scheme not in {"http", "https"} or not urlparse(console_base_url).netloc:
-            raise ValueError("console_base_url must be an HTTP(S) origin")
+        normalized_console_base_url = _console_origin(console_base_url)
         self._allowlist = allowlisted_identities
         self._secret = signing_secret
-        self._console_base_url = console_base_url.rstrip("/")
+        self._console_base_url = normalized_console_base_url
         self._seen: set[str] = set()
         self._audits: tuple[AuditEvent, ...] = ()
 
@@ -127,7 +140,21 @@ class TelegramAdapter:
 
     @staticmethod
     def canonical_payload(update: TelegramUpdate) -> str:
-        return "|".join((update.command_id, update.chat_id, update.user_id, update.command, update.issued_at.isoformat(), update.expires_at.isoformat(), update.nonce))
+        # JSON gives fields and parameter boundaries an unambiguous canonical form.
+        return json.dumps(
+            {
+                "chat_id": update.chat_id,
+                "command": update.command,
+                "command_id": update.command_id,
+                "expires_at": update.expires_at.isoformat(),
+                "issued_at": update.issued_at.isoformat(),
+                "nonce": update.nonce,
+                "parameters": update.parameters,
+                "user_id": update.user_id,
+            },
+            ensure_ascii=False,
+            separators=(",", ":"),
+        )
 
     @classmethod
     def sign(cls, update: TelegramUpdate, secret: str) -> str:
@@ -182,4 +209,3 @@ class TelegramAdapter:
             return TelegramResult(False, "지원하지 않는 명령입니다.", TelegramOutcome.UNSUPPORTED, audit)
         audit = self._audit(update, TelegramOutcome.ACCEPTED, now)
         return TelegramResult(True, f"명령을 접수했습니다: {command}", TelegramOutcome.ACCEPTED, audit)
-
