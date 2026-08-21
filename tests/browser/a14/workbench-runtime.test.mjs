@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startWorkbenchServer } from '../../../apps/web/server.mjs';
+import { resolvePythonExecutable, startWorkbenchServer } from '../../../apps/web/server.mjs';
 
 async function fixtureServer(t) {
   const instance=await startWorkbenchServer({host:'127.0.0.1',port:0});
@@ -33,6 +33,22 @@ test('scan BFF enforces origin, csrf, role and allowlists before server-side A13
   assert.equal(payload.evidence.badge,'FIXTURE');
   assert.equal(payload.evidence.countsAsPass,false);
   assert.equal(payload.scan.status,'SCANNED_READ_ONLY');
+});
+
+test('scan runtime resolves the repository-local Python before the literal fallback', async () => {
+  const previousAnvilPython=process.env.ANVIL_PYTHON;
+  const previousCondaPrefix=process.env.CONDA_PREFIX;
+  try {
+    delete process.env.ANVIL_PYTHON;
+    delete process.env.CONDA_PREFIX;
+    const executable=await resolvePythonExecutable();
+    assert.match(executable, /[\\/]\.venv[\\/](Scripts[\\/]python\.exe|bin[\\/]python)$/);
+  } finally {
+    if (previousAnvilPython === undefined) delete process.env.ANVIL_PYTHON;
+    else process.env.ANVIL_PYTHON=previousAnvilPython;
+    if (previousCondaPrefix === undefined) delete process.env.CONDA_PREFIX;
+    else process.env.CONDA_PREFIX=previousCondaPrefix;
+  }
 });
 
 test('malformed and hostile requests return masked errors without stack, path or secret', async (t) => {

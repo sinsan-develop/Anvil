@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { dirname, extname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -40,9 +40,25 @@ async function jsonBody(request) {
   let raw=''; for await (const chunk of request) { raw+=chunk; if (raw.length>4096) throw new Error('SIZE'); }
   return JSON.parse(raw);
 }
+
+async function isExecutable(path) {
+  try { await access(path); return true; } catch { return false; }
+}
+
+export async function resolvePythonExecutable() {
+  if (process.env.ANVIL_PYTHON) return process.env.ANVIL_PYTHON;
+  if (process.env.CONDA_PREFIX) {
+    return join(process.env.CONDA_PREFIX, process.platform === 'win32' ? 'python.exe' : 'bin/python');
+  }
+  const localPython=join(repoRoot,'.venv',process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+  if (await isExecutable(localPython)) return localPython;
+  return 'python';
+}
+
 async function scanFixture(fixtureId) {
   const code=`import json,sys,tempfile\nfrom pathlib import Path\nfrom scripts.materialize_fixture_repository import materialize_fixture\nfrom packages.repository_intelligence import ScanRequest,scan_repository\nroot=Path.cwd()\nwith tempfile.TemporaryDirectory(prefix='anvil-a14-') as value:\n repo=materialize_fixture(root,sys.argv[1],Path(value)/'repo')\n result=scan_repository(ScanRequest(repository_path=str(repo),allowed_root=value))\n print(json.dumps(result.to_dict(),ensure_ascii=False))`;
-  const {stdout}=await execFileAsync('python',['-c',code,fixtureId],{cwd:repoRoot,timeout:20000,windowsHide:true,maxBuffer:2_000_000});
+  const python=await resolvePythonExecutable();
+  const {stdout}=await execFileAsync(python,['-c',code,fixtureId],{cwd:repoRoot,timeout:20000,windowsHide:true,maxBuffer:2_000_000});
   return JSON.parse(stdout);
 }
 
@@ -57,7 +73,7 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173}={}) {
         const expectedOrigin=`http://${allowedHost}`;
         if (request.headers.host!==allowedHost || request.headers.origin!==expectedOrigin || request.headers['x-csrf-token']!==csrfToken) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처 또는 CSRF 검증에 실패했습니다.');
         let body; try { body=await jsonBody(request); } catch { return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.'); }
-        const python=process.env.ANVIL_PYTHON || (process.env.CONDA_PREFIX ? join(process.env.CONDA_PREFIX,'python.exe') : 'python');
+        const python=await resolvePythonExecutable();
         try {
           const {stdout}=await execFileAsync(python,['-m','packages.api.design_runtime',JSON.stringify(body)],{cwd:repoRoot,timeout:10000,windowsHide:true,maxBuffer:500000});
           return send(response,200,JSON.parse(stdout));
