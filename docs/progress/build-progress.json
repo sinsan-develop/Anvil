@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-phase-b-gate-exact44-rework-r3-start",
-  "event_sequence": 374,
-  "updated_at": "2026-08-22T00:45:00+09:00",
-  "last_event_id": "evt_phase_b_gate_package_completed_test_review",
+  "snapshot_id": "snapshot-phase-b-gate-accepted",
+  "event_sequence": 375,
+  "updated_at": "2026-08-23T00:00:00+09:00",
+  "last_event_id": "evt_phase_b_gate_package_accepted",
   "plan_version": "1.6",
   "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "current_phase": "B",
   "current_work_package": "PHASE_B_GATE",
-  "status": "TEST_REVIEW",
+  "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -54,49 +54,49 @@
     "status": "REVOKED",
     "revoked_at": "2026-08-21T22:00:01+09:00",
     "lease": {
-    "lease_id": "worker-lease-b12-20260821-002",
-    "agent_id": "developer-primary-b12",
-    "work_package_id": "B-12",
-    "lease_epoch": 2,
-    "execution_fencing_token": "b12-execution-fence-epoch-2-e29ffcf"
+      "lease_id": "worker-lease-b12-20260821-002",
+      "agent_id": "developer-primary-b12",
+      "work_package_id": "B-12",
+      "lease_epoch": 2,
+      "execution_fencing_token": "b12-execution-fence-epoch-2-e29ffcf"
     }
   },
   "completed_write_lease": {
     "status": "REVOKED",
     "revoked_at": "2026-08-21T22:00:00+09:00",
     "lease": {
-    "lease_id": "write-lease-b12-20260821-002",
-    "worker_lease_id": "worker-lease-b12-20260821-002",
-    "agent_id": "developer-primary-b12",
-    "work_package_id": "B-12",
-    "write_epoch": 2,
-    "execution_fencing_token": "b12-execution-fence-epoch-2-e29ffcf",
-    "write_fencing_token": "b12-write-fence-epoch-2-e29ffcf",
-    "issued_at": "2026-08-21T21:00:02+09:00",
-    "paths": [
-      "packages/recovery/models.py",
-      "packages/recovery/service.py",
-      "packages/persistence/recovery_repository.py",
-      "migrations/versions/0010_recovery.py",
-      "tests/recovery/test_action_reconcile.py",
-      "tests/recovery/test_process_resume.py",
-      "tests/recovery/test_recovery_api.py",
-      "docs/validation/B-12_RECOVERY_VALIDATION.md",
-      "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
-      "docs/completion_reports/B-12_COMPLETION_REPORT.md"
-    ],
-    "path_scope": [
-      "packages/recovery/models.py",
-      "packages/recovery/service.py",
-      "packages/persistence/recovery_repository.py",
-      "migrations/versions/0010_recovery.py",
-      "tests/recovery/test_action_reconcile.py",
-      "tests/recovery/test_process_resume.py",
-      "tests/recovery/test_recovery_api.py",
-      "docs/validation/B-12_RECOVERY_VALIDATION.md",
-      "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
-      "docs/completion_reports/B-12_COMPLETION_REPORT.md"
-    ]
+      "lease_id": "write-lease-b12-20260821-002",
+      "worker_lease_id": "worker-lease-b12-20260821-002",
+      "agent_id": "developer-primary-b12",
+      "work_package_id": "B-12",
+      "write_epoch": 2,
+      "execution_fencing_token": "b12-execution-fence-epoch-2-e29ffcf",
+      "write_fencing_token": "b12-write-fence-epoch-2-e29ffcf",
+      "issued_at": "2026-08-21T21:00:02+09:00",
+      "paths": [
+        "packages/recovery/models.py",
+        "packages/recovery/service.py",
+        "packages/persistence/recovery_repository.py",
+        "migrations/versions/0010_recovery.py",
+        "tests/recovery/test_action_reconcile.py",
+        "tests/recovery/test_process_resume.py",
+        "tests/recovery/test_recovery_api.py",
+        "docs/validation/B-12_RECOVERY_VALIDATION.md",
+        "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
+        "docs/completion_reports/B-12_COMPLETION_REPORT.md"
+      ],
+      "path_scope": [
+        "packages/recovery/models.py",
+        "packages/recovery/service.py",
+        "packages/persistence/recovery_repository.py",
+        "migrations/versions/0010_recovery.py",
+        "tests/recovery/test_action_reconcile.py",
+        "tests/recovery/test_process_resume.py",
+        "tests/recovery/test_recovery_api.py",
+        "docs/validation/B-12_RECOVERY_VALIDATION.md",
+        "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
+        "docs/completion_reports/B-12_COMPLETION_REPORT.md"
+      ]
     }
   },
   "budget_reservations": [],
@@ -1114,7 +1114,13 @@
       "successor_matrix": "696BED77D4CC6C4D928EA6931F1ADABE9B585738CBAF8A611AA694DB57C0FFC3",
       "successor_test_plan": "F3B08A8CF3805351D2B1989995A87DF7862C03CBCE1B242D5DEF8EB0662CEACD"
     },
-    "package_scope": ["C-16", "C-17", "C-18", "C-19", "C-20"],
+    "package_scope": [
+      "C-16",
+      "C-17",
+      "C-18",
+      "C-19",
+      "C-20"
+    ],
     "prototype_evidence": {
       "focused_tests": "33 passed",
       "compileall": "PASS",
@@ -1134,8 +1140,20 @@
     "operational_validation": {
       "next_work_package": "C-21",
       "status": "READY_FOR_WORK_INSTRUCTION",
-      "scope": ["persistence", "API", "DB", "browser", "provider", "Telegram webhook"],
-      "not_executed": ["WSL", "production", "deployment", "public exposure"]
+      "scope": [
+        "persistence",
+        "API",
+        "DB",
+        "browser",
+        "provider",
+        "Telegram webhook"
+      ],
+      "not_executed": [
+        "WSL",
+        "production",
+        "deployment",
+        "public exposure"
+      ]
     }
   },
   "repository": {
@@ -1281,7 +1299,8 @@
     ],
     "stop_before_dialogue_report": false
   },
-  "active_work_instruction": {
+  "active_work_instruction": null,
+  "last_completed_work_instruction": {
     "artifact_id": "WI-PHASE-B-GATE-REWORK-20260821-003",
     "path": "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
     "sha256": "7DBA454EBF87A8FAC80EB1D67EED1942A0389E61532A6925416C7A9CDE2862B2",
@@ -1290,13 +1309,20 @@
     "approval_ref": "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
     "approval_sha256": "95312D30CC2360561DBE126F7B1EA5F1B0976E5C0DBE2EBB8AC64BD325F770BB",
     "result_status": "COMPLETED",
-    "package_status": "TEST_REVIEW",
-    "accepted": false,
-    "independent_tester_status": "READY_FOR_MAIN_GATE_DECISION",
+    "package_status": "ACCEPTED",
     "assigned_verification_count": 44,
     "direct_gate_set": "EXACT44_DEPENDENCY_SAFE",
-    "deferred_verification_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
-    "undefined_verification_ids": ["AV-STAT-029"]
+    "deferred_verification_ids": [
+      "AV-STAT-021",
+      "AV-STAT-022",
+      "AV-STAT-023",
+      "AV-STAT-024",
+      "AV-STAT-025",
+      "AV-STAT-028"
+    ],
+    "undefined_verification_ids": [
+      "AV-STAT-029"
+    ]
   },
   "runtime_boundary_approval": {
     "approval_id": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
@@ -1339,14 +1365,24 @@
   },
   "next_work_package": {
     "package_id": "C-01",
-    "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE"
+    "status": "READY_FOR_WORK_INSTRUCTION",
+    "condition": "Phase B Gate ACCEPTED; C-01 WorkInstruction 발행 전까지 시작하지 않음",
+    "does_not_unblock": [
+      "C-21"
+    ]
   },
   "next_successor_work_package": {
     "package_id": "C-21",
     "status": "READY_FOR_WORK_INSTRUCTION",
     "purpose": "successor operational validation",
-    "requires": ["C-21 WorkInstruction", "independent validation scope"],
-    "does_not_unblock": ["C-01", "Phase B Gate acceptance"]
+    "requires": [
+      "C-21 WorkInstruction",
+      "independent validation scope"
+    ],
+    "does_not_unblock": [
+      "C-01",
+      "Phase B Gate acceptance"
+    ]
   },
-  "snapshot_hash": "86A6E6CB1F4CE3EA01BB0F12C205A50191335939DE92222232578D3FC915C66D"
+  "snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
 }

@@ -1,9 +1,17 @@
+# Phase B Gate MAIN_GATE_ACCEPTED — sequence 375
+
+- 독립 Tester report SHA `7F98EBD937EC8CF027A307C1D931A5E3CE1E73474E916168CA284AB15CDE8FDE`의 `READY_FOR_MAIN_GATE_DECISION / spec PASS / quality PASS_WITH_EXPECTED_IN_PROGRESS_DIRTY`를 검토해 seq375 `MAIN_GATE_ACCEPTED`로 Phase B Gate를 최종 `ACCEPTED`했다.
+- EXACT44 selector: 51 slots / 50 defined / 44 direct / 6 deferred / 1 undefined. deferred 6건은 각 후속 Package 책임, undefined `AV-STAT-029`는 승격하지 않는다.
+- B-01~B-12 모두 ACCEPTED, 유효 failure 0 (B-12 historical 1건 lineage 보존). Phase B Gate valid failure count: 0.
+- worker/write lease와 active WorkInstruction은 null이다. Gate 수락 event는 Phase B Gate 개발 산출물 회수 후 발행한다.
+- 실제 persistence/API/DB/browser/provider/Telegram webhook/WSL/production/deployment와 public exposure, C-01 시작은 이 수락 기록만으로는 수행하지 않는다. C-01은 Gate ACCEPT 확인 후 별도 WorkInstruction 발행 시점부터 시작한다.
+
 # Successor binding projection — Agent Teams·Capability MoA·원격 운영 검증
 
 - `APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001`은 신산님의 2026-08-22 (Asia/Seoul) 승인으로 `HUMAN_APPROVED_SEMANTIC_SUCCESSOR_SCOPE`가 되었다.
 - 승인 subject hash와 historical Phase B Gate 기록은 변경하지 않는다. 이 projection은 v2.7/v1.6 successor 및 C-16~C-20 scoped prototype evidence(`33 passed`, compileall PASS, diff-check PASS, scoped review PASS)를 연결한다.
 - successor 승인 범위는 문서·evidence 정합성과 다음 운영 검증 Work Package 준비에 한정된다. 실제 persistence/API/DB/browser/provider/Telegram webhook/WSL/production/deployment와 public exposure는 아직 `NOT_EXECUTED`다.
-- historical operational state는 그대로 유지한다: Phase B Gate는 `TEST_REVIEW`, active agent/worker lease/write lease는 `null`, C-01은 `BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE / NOT_STARTED`다.
+- historical operational state는 그대로 유지한다: Phase B Gate는 `ACCEPTED`, active agent/worker lease/write lease는 `null`, C-01은 `BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE / NOT_STARTED`다.
 - 다음 successor 운영 검증은 `C-21`로 투영한다. C-21 시작은 별도 WorkInstruction·lease·검증 범위가 확정된 뒤 진행하며, 이 binding만으로 C-01을 시작하거나 배포하지 않는다.
 
 # B-12 R2 Main acceptance → Phase B Gate 대기 — sequence 361
