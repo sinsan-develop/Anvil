@@ -1142,9 +1142,9 @@
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "165a9bfff5e085bfec322c748e83464477642f8a",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-    "branch": "main",
+    "branch": "codex/phase-b-gate-exact44-verification",
     "upstream": "origin/main",
-    "remote_head": "0c8a8b075c1ee970d5d872895f69c254da453cce",
+    "remote_head": "c49b7534012d97ad130483c1ff255c0db1e99df4",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
       "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
@@ -1172,7 +1172,7 @@
     ],
     "observed_at": "2026-08-22T01:00:00+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: Phase B Gate TEST_REVIEW exact44; frozen product mutation 0",
-    "local_head": "0c8a8b075c1ee970d5d872895f69c254da453cce"
+    "local_head": "c49b7534012d97ad130483c1ff255c0db1e99df4"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1348,5 +1348,5 @@
     "requires": ["C-21 WorkInstruction", "independent validation scope"],
     "does_not_unblock": ["C-01", "Phase B Gate acceptance"]
   },
-  "snapshot_hash": "EF0360996FF6ED957B188864596B97963C4EB678B8B3359539551E682CBA1C3F"
+  "snapshot_hash": "86A6E6CB1F4CE3EA01BB0F12C205A50191335939DE92222232578D3FC915C66D"
 }
