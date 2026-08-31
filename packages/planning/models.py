@@ -121,5 +121,4 @@ class WorkInstruction:
             raise ValueError("scope must be a non-empty tuple without duplicates")
         for value in self.scope:
             _required(value, "scope item")
-        if self.request_analysis_hash is not None:
-            _canonical_hash(self.request_analysis_hash, "request_analysis_hash")
+        _canonical_hash(self.request_analysis_hash, "request_analysis_hash")
