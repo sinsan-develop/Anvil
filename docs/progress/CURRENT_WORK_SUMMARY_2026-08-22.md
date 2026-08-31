@@ -93,3 +93,10 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - Main 검토에서 abort 빈 output 계약 결함 1회를 발견했고 동일 subagent가 최소 수정 후 보완했다. 오류 횟수는 1회이며 3회 인수 기준 미도달.
 - 현재 판정: `C-01 TEST_REVIEW / INDEPENDENT_TESTER_PENDING`; C-02는 C-01 독립 Tester `ACCEPTED` 전까지 시작하지 않는다.
 - 최신 main push 전 최종 검증과 독립 Tester 재검토가 다음 조치다.
+
+## 2026-08-31 C-01 독립 검증 및 수락
+
+- 독립 Tester 보고서 `docs/test_reports/C-01_INDEPENDENT_TEST_REPORT.md` 판정은 `PASS`다.
+- C-01 테스트 6/6, compileall, `git diff --check`, branch 조상 검증이 통과했다.
+- C-01을 `ACCEPTED`로 전환하고 다음 미완료 항목 C-02 WorkInstruction 발행을 시작한다.
+- 외부 Provider·DB·API·browser·deployment는 C-01 범위 외로 `NOT_EXECUTED` 상태를 유지한다.
