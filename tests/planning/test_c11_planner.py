@@ -4,7 +4,7 @@ import unittest
 from packages.planning.approval import ApprovalRecord, ApprovalType
 from packages.planning.planner import (
     ExecutionPlan, ExecutionStep, PlannerError, StepKind, analyze_request,
-    generate_work_instruction, schedule_ready_steps,
+    generate_work_instruction, schedule_ready_steps, validate_work_instruction,
 )
 from packages.planning.service import PlanningApprovalService
 
