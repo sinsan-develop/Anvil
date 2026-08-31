@@ -183,6 +183,14 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-18을 `2845f8d` 병합 커밋으로 `main`에 통합했다. 실제 provider/API/key/network/DB/browser/Docker/WSL/deployment는 미검증이다.
 - 다음 미완료 항목은 C-19 Remote Control Plane·Web Console/PWA다.
 
+## 2026-09-01 C-19 독립 검증 및 수락
+
+- Event/command/audit 계약, cursor 재생, artifact·diff reference, offline `PENDING_REMOTE`/`READY_TO_SYNC`, fencing 및 고위험 승인 경계를 구현했다.
+- 독립 검토 2회 보완 후 고위험 subject hash 필수화, 승인자·단일 상태 전이·immutable audit, conversation/thread별 sequence를 확정했다.
+- 최종 독립 검증: C-19 도메인 테스트 PASS, `tests/agent_team/test_remote_control.py` 9 passed, compileall·`git diff --check` PASS.
+- C-19를 `main`에 병합했다. 실제 SSE/WebSocket/DB/browser/provider/Telegram/deployment는 미검증이며 Python 런타임 경계는 별도 기록했다.
+- 다음 미완료 항목은 C-20 Telegram Notification/Command Adapter다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
