@@ -52,6 +52,22 @@ class C11PlannerTests(unittest.TestCase):
             with self.assertRaises(PlannerError):
                 analyze_request("req", "objective", scope=("x",), completion_conditions=("done",), allowed_paths=("src",), prohibited_actions=("network",), risk=("low",), baseline_hash=value, egress_snapshot_hash=B)
 
+    def test_only_steps_with_completed_dependencies_are_ready(self):
+        first = ExecutionStep("s1", StepKind.READ, "inspect", (), ("src",), ("report",), egress_snapshot_hash=B)
+        second = ExecutionStep("s2", StepKind.READ, "summarize", ("s1",), ("src",), ("report",), egress_snapshot_hash=B)
+        p = plan(first, second)
+        self.assertEqual(("s1",), schedule_ready_steps(p).step_ids)
+        self.assertEqual(("s2",), schedule_ready_steps(p, completed_step_ids={"s1"}).step_ids)
+
+    def test_analysis_scope_is_carried_into_instruction(self):
+        analysis = analyze_request("req-1", "build feature", scope=("feature",), completion_conditions=("tests pass",), allowed_paths=("src",), prohibited_actions=("network", "secrets"), risk=("high",), baseline_hash=A, egress_snapshot_hash=B)
+        step = ExecutionStep("s1", StepKind.WRITE, "patch", (), ("src",), ("tests pass",), ("high",), B)
+        p = ExecutionPlan("plan-1", analysis.content_hash, A, A, B, (step,), NOW)
+        from packages.planning.planner import validate_work_instruction
+        instruction = generate_work_instruction(p, "s1", analysis=analysis)
+        self.assertEqual(("network", "secrets"), instruction.prohibited_actions)
+        self.assertTrue(validate_work_instruction(instruction, p, "s1", analysis=analysis))
+
 
 if __name__ == "__main__":
     unittest.main()

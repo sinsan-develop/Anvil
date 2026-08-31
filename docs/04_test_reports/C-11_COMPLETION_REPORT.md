@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — 독립 검증 1회 보완 후 결정론적 Main Agent 요청 분석, DAG ExecutionPlan, WorkInstruction 생성 및 승인 전 write scheduling 차단을 구현했다.
+`COMPLETED` — 독립 검증 2회 보완 후 결정론적 Main Agent 요청 분석, DAG ExecutionPlan, WorkInstruction 생성 및 승인 전 write scheduling 차단을 구현했다.
 
 ## 판단 이유
 
@@ -12,6 +12,7 @@
 - cycle, 누락 dependency, egress 불일치, stale/만료 승인, 승인 없는 write는 fail-closed다.
 - WorkInstruction에 objective, risk, egress snapshot, prohibited actions를 immutable하게 결박하고 검증한다.
 - 모든 planner hash 입력은 lowercase hex 64자리 정규식으로 fail-closed 검증한다.
+- dependency가 완료된 READY step만 schedule하며, 분석의 실제 scope/risk/egress/prohibited action을 instruction에 전달한다.
 
 ## 변경 파일
 
@@ -22,15 +23,15 @@
 
 ## 검증
 
-- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/planning/test_c11_planner.py`: 종료 코드 0, 5 passed
-- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/planning tests/orchestration`: 종료 코드 0, 52 passed (기존 계약 회귀 없음)
+- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/planning/test_c11_planner.py`: 종료 코드 0, 7 passed
+- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/planning tests/orchestration`: 종료 코드 0, 54 passed (기존 계약 회귀 없음)
 - `C:\Users\cyhuh\anaconda3\python.exe -m compileall -q packages tests`: 종료 코드 0
 - `git diff --check`: 종료 코드 0
 
 ## 오류 이력
 
-- 정식 실패 1회: 독립 검증에서 WorkInstruction binding 및 hash 정규식 누락 확인.
-- 조치: 모델 필드·생성/검증 경로를 보강하고 대문자·비hex·길이 오류 회귀 테스트 추가. 동일 근본 원인 반복 1회.
+- 정식 실패 2회: 1회차 WorkInstruction binding/hash 정규식 누락, 2회차 dependency READY projection 및 analysis 전달/전체 binding 누락.
+- 조치: 모델·생성/검증·schedule 경로를 보강하고 dependency/analysis/hash 회귀 테스트 추가. 동일 근본 원인 반복 2회(3회 미도달).
 
 ## 미검증 범위
 

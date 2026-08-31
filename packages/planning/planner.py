@@ -153,34 +153,50 @@ class ScheduleDecision:
     step_ids: tuple[str, ...] = ()
 
 
-def generate_work_instruction(plan: ExecutionPlan, step_id: str, *, artifact_id: str | None = None, revision: int = 1) -> WorkInstruction:
+def generate_work_instruction(plan: ExecutionPlan, step_id: str, *, analysis: RequestAnalysis | None = None, artifact_id: str | None = None, revision: int = 1) -> WorkInstruction:
     step = next((item for item in plan.steps if item.step_id == step_id), None)
     if step is None: raise PlannerError("unknown step")
     if step.egress_snapshot_hash != plan.egress_snapshot_hash:
         raise PlannerError("step egress snapshot is not bound to plan")
-    prohibited = ("network", "secret", "destructive") if step.write_capable else ("write", "execute")
-    return WorkInstruction(artifact_id or f"wi-{plan.plan_id}-{step_id}", revision, canonical_content_hash({"plan": plan.content_hash, "step": step.to_dict()}), plan.plan_id, plan.content_hash, step.allowed_paths, (step.kind.value.lower(),), step.completion_conditions or ("step result recorded",), plan.created_at, step.objective, step.risk or ("no additional risk",), plan.egress_snapshot_hash, prohibited)
+    if analysis is not None:
+        if analysis.content_hash != plan.request_analysis_hash:
+            raise PlannerError("request analysis hash is stale")
+        if analysis.egress_snapshot_hash != plan.egress_snapshot_hash:
+            raise PlannerError("analysis egress snapshot is not bound to plan")
+        if tuple(step.allowed_paths) != tuple(analysis.allowed_paths):
+            raise PlannerError("step path scope is not bound to request analysis")
+        prohibited = analysis.prohibited_actions
+        risks = analysis.risk
+    else:
+        prohibited = ("network", "secret", "destructive") if step.write_capable else ("write", "execute")
+        risks = step.risk or ("no additional risk",)
+    return WorkInstruction(artifact_id or f"wi-{plan.plan_id}-{step_id}", revision, canonical_content_hash({"plan": plan.content_hash, "step": step.to_dict(), "analysis": analysis.to_dict() if analysis else None}), plan.plan_id, plan.content_hash, step.allowed_paths, (step.kind.value.lower(),), step.completion_conditions or ("step result recorded",), plan.created_at, step.objective, risks, plan.egress_snapshot_hash, prohibited)
 
 
-def validate_work_instruction(instruction: WorkInstruction, plan: ExecutionPlan, step_id: str) -> bool:
+def validate_work_instruction(instruction: WorkInstruction, plan: ExecutionPlan, step_id: str, *, analysis: RequestAnalysis | None = None) -> bool:
     if not isinstance(instruction, WorkInstruction): return False
     step = next((item for item in plan.steps if item.step_id == step_id), None)
     if step is None or instruction.iteration_plan_hash != plan.content_hash: return False
-    return (instruction.objective == step.objective and instruction.egress_snapshot_hash == plan.egress_snapshot_hash and tuple(instruction.allowed_paths) == tuple(step.allowed_paths) and tuple(instruction.risk) == tuple(step.risk or ("no additional risk",)))
+    expected_risk = tuple(analysis.risk) if analysis is not None else tuple(step.risk or ("no additional risk",))
+    expected_prohibited = tuple(analysis.prohibited_actions) if analysis is not None else tuple(instruction.prohibited_actions)
+    return (instruction.objective == step.objective and instruction.egress_snapshot_hash == plan.egress_snapshot_hash and tuple(instruction.allowed_paths) == tuple(step.allowed_paths) and tuple(instruction.completion_conditions) == tuple(step.completion_conditions or ("step result recorded",)) and tuple(instruction.risk) == expected_risk and tuple(instruction.prohibited_actions) == expected_prohibited and tuple(instruction.allowed_actions) == (step.kind.value.lower(),))
 
 
 def analyze_request(request_id: str, objective: str, *, scope: tuple[str, ...], completion_conditions: tuple[str, ...], allowed_paths: tuple[str, ...], prohibited_actions: tuple[str, ...], risk: tuple[str, ...], baseline_hash: str, egress_snapshot_hash: str) -> RequestAnalysis:
     return RequestAnalysis(request_id, objective, scope, completion_conditions, risk, allowed_paths, prohibited_actions, egress_snapshot_hash, baseline_hash)
 
 
-def schedule_ready_steps(plan: ExecutionPlan, *, approval_guard: Any | None = None, at: datetime | None = None, approval_type: ApprovalType = ApprovalType.APPLY) -> ScheduleDecision:
+def schedule_ready_steps(plan: ExecutionPlan, *, completed_step_ids: frozenset[str] | set[str] | tuple[str, ...] = frozenset(), approval_guard: Any | None = None, at: datetime | None = None, approval_type: ApprovalType = ApprovalType.APPLY) -> ScheduleDecision:
     now = at or datetime.now(timezone.utc)
-    write_steps = tuple(step for step in plan.steps if step.write_capable)
-    if not write_steps: return ScheduleDecision(True, "ALLOWED", "read-only plan may be scheduled without approval", tuple(step.step_id for step in plan.steps))
+    completed = frozenset(completed_step_ids)
+    ready = tuple(step for step in plan.steps if step.step_id not in completed and all(dep in completed for dep in step.depends_on))
+    if not ready: return ScheduleDecision(False, "BLOCKED", "no step is ready; dependencies are incomplete")
+    write_steps = tuple(step for step in ready if step.write_capable)
+    if not write_steps: return ScheduleDecision(True, "ALLOWED", "read-only ready steps may be scheduled without approval", tuple(step.step_id for step in ready))
     if approval_guard is None: return ScheduleDecision(False, "DENIED", "explicit approval binding is required before write scheduling")
     guard = approval_guard.execution_guard(plan.plan_id, plan.content_hash, approval_type, now)
     if not guard.allowed: return ScheduleDecision(False, guard.status, guard.reason)
-    return ScheduleDecision(True, "ALLOWED", "active approval matches canonical execution plan", tuple(step.step_id for step in plan.steps))
+    return ScheduleDecision(True, "ALLOWED", "active approval matches canonical execution plan", tuple(step.step_id for step in ready))
 
 
 __all__ = ["PlannerError", "StepKind", "RequestAnalysis", "ExecutionStep", "ExecutionPlan", "ScheduleDecision", "analyze_request", "generate_work_instruction", "validate_work_instruction", "schedule_ready_steps"]
