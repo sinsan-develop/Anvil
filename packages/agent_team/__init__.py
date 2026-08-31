@@ -27,6 +27,17 @@ from .provider_catalog import (
     ordered_candidates,
 )
 from .runtime_config import credential_reference, runtime_catalog
+from .collaboration import (
+    AppendOnlyTeamLog,
+    DependencyGraph,
+    TeamEvent,
+    TeamEventType,
+    TeamProgressProjection,
+    ThreadIdentity,
+    ThreadKind,
+    canonical_hash,
+    validate_schema_identity,
+)
 
 __all__ = [
     "ConversationRole",
@@ -53,4 +64,13 @@ __all__ = [
     "ordered_candidates",
     "credential_reference",
     "runtime_catalog",
+    "AppendOnlyTeamLog",
+    "DependencyGraph",
+    "TeamEvent",
+    "TeamEventType",
+    "TeamProgressProjection",
+    "ThreadIdentity",
+    "ThreadKind",
+    "canonical_hash",
+    "validate_schema_identity",
 ]
