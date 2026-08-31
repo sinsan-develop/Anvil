@@ -21,6 +21,7 @@ from .result_envelope import canonical_hash
 
 
 class TakeoverReasonCode(StrEnum):
+    MISSING_FENCING_TOKEN = "MISSING_FENCING_TOKEN"
     COUNT_BELOW_THREE = "COUNT_BELOW_THREE"
     INVALID_LEDGER_RECEIPT = "INVALID_LEDGER_RECEIPT"
     STALE_LINEAGE = "STALE_LINEAGE"
@@ -112,6 +113,8 @@ class MainAgentTakeoverService:
         entry must still match the ledger projection and current session.
         """
         with self._lock:
+            if not isinstance(execution_fencing_token, str) or not execution_fencing_token.strip():
+                return TakeoverReceipt(False, reason_codes=(TakeoverReasonCode.MISSING_FENCING_TOKEN.value,))
             if not isinstance(receipt, FailureLedgerReceipt) or not receipt.accepted or receipt.entry is None:
                 return TakeoverReceipt(False, reason_codes=(TakeoverReasonCode.INVALID_LEDGER_RECEIPT.value,))
             entry = receipt.entry
@@ -139,15 +142,14 @@ class MainAgentTakeoverService:
                 return TakeoverReceipt(False, reason_codes=(TakeoverReasonCode.UNKNOWN_SESSION.value,))
             if current.session_id != session_id:
                 return TakeoverReceipt(False, reason_codes=(TakeoverReasonCode.SESSION_IDENTITY_MISMATCH.value,))
-            if execution_fencing_token is not None:
-                try:
-                    # require_current is a pure check; an arbitrary write token
-                    # is not needed because revoke_run fences the worker token.
-                    worker = next((w for w in self._leases._workers.values() if w.run_id == session_id), None)
-                    if worker is None or worker.execution_fencing_token != execution_fencing_token:
-                        raise StaleFencingToken("stale execution fencing token")
-                except StaleFencingToken:
-                    return TakeoverReceipt(False, reason_codes=(TakeoverReasonCode.STALE_FENCING_TOKEN.value,))
+            try:
+                # require_current is a pure check; revocation below fences the
+                # same execution token before any takeover mutation.
+                worker = next((w for w in self._leases._workers.values() if w.run_id == session_id), None)
+                if worker is None or worker.execution_fencing_token != execution_fencing_token:
+                    raise StaleFencingToken("stale execution fencing token")
+            except StaleFencingToken:
+                return TakeoverReceipt(False, reason_codes=(TakeoverReasonCode.STALE_FENCING_TOKEN.value,))
 
             report_ids = tuple(item.result_id for item in self._ledger.entries
                                if item.failure_key == key and item.accepted)

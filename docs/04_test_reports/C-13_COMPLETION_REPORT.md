@@ -38,3 +38,9 @@
 ## 롤백
 
 이 커밋을 revert하면 C-13 takeover coordinator와 lease/tool revoke 확장이 제거된다. 기존 C-12 ledger 및 이전 orchestration API는 유지된다.
+
+## 독립 검증 보완 이력
+
+- 1차 `FAILURE_REPORT`: fencing token 누락 시 takeover가 진행될 수 있어 fail-closed 조건이 부족했다.
+- 조치: `execution_fencing_token`을 필수로 검증하고 누락은 `MISSING_FENCING_TOKEN`, 불일치는 `STALE_FENCING_TOKEN`으로 거부하며 lease·tool·packet/audit를 변경하지 않도록 보완했다.
+- 보완 후 C-13 회귀 포함 `tests/orchestration` 57 passed, compileall 및 `git diff --check` 통과.

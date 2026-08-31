@@ -80,6 +80,16 @@ def test_stale_lineage_and_fencing_fail_closed():
     assert leases.active_writes("run-1") == (write,)
 
 
+def test_missing_fencing_token_fails_closed_without_mutation():
+    lifecycle, leases, tools, ledger, receipts, worker, write = _ready()
+    service = MainAgentTakeoverService(ledger, lifecycle, leases, tools)
+    result = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint="failure-A")
+    assert not result.accepted and TakeoverReasonCode.MISSING_FENCING_TOKEN.value in result.reason_codes
+    assert leases.active_writes("run-1") == (write,)
+    assert lifecycle.current("run-1").status.name == "RUNNING"
+    assert service.packets == () and service.audits == ()
+
+
 def test_concurrent_replay_creates_one_packet_and_zero_writes():
     lifecycle, leases, tools, ledger, receipts, worker, write = _ready()
     service = MainAgentTakeoverService(ledger, lifecycle, leases, tools)
