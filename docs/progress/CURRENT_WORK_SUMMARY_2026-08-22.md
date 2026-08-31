@@ -207,3 +207,11 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - 독립 검증: C-12 5/5, orchestration 52/52, compileall, `git diff --check` PASS.
 - C-12를 `main`에 병합·push했으며 실제 lease/tool 회수는 C-13 범위로 미실행이다.
 - 다음 미완료 항목은 C-13 세 번째 실패의 lease·tool 회수와 Main 직접 인수다.
+
+## 2026-09-01 C-14 독립 검증 및 수락
+
+- C-14 G0~G3 gate engine, EvidenceManifest, ReleaseDecision/Apply Approval을 구현했다.
+- 독립 검토에서 gate target hash 결박·외부 위조 결정·path traversal 결함 1회를 보완했다.
+- 최종 독립 검증: 신규 8개 및 verification/orchestration 회귀 65개 통과, compileall·`git diff --check` PASS.
+- C-14를 `main`에 병합·push했으며 실제 DB/API/browser/provider/Docker/WSL/deployment/분산 persistence는 미검증이다.
+- 다음 미완료 항목은 C-15 실제 fixture 전체 Single Developer backend/API E2E다.
