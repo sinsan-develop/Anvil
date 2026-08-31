@@ -51,3 +51,9 @@ Main Agent가 독립 read-only 검증 후 동일 범위로 병합 여부를 판�
 - 보완 조치: event session 필수·정확 일치, participant/subject/receiver 검증, ACTIVE lifecycle guard 및 user/Agent conversation 경계를 추가했다.
 - 보완 검증: `pytest tests/agent_team -q` → exit 0, **52 passed**; `compileall` → exit 0; `git diff --check` → exit 0.
 - 오류 횟수: 동일 근본 원인 2회. Main Agent 인수 기준(3회)에 도달하지 않았다.
+
+## Main Agent Takeover (3회 동일 실패)
+
+- 3회차 독립 검증에서 subject prefix fallback과 conflicting duplicate event 수용이 확인되어 Developer를 중지하고 Main Agent가 직접 인수했다.
+- 조치: 실제 등록 subject만 허용하고 동일 event_id 재전달은 전체 event/hash가 동일할 때만 idempotent 처리하도록 수정했다.
+- Main Agent 검증: `tests/agent_team tests/orchestration tests/leases` → 111 passed, 1 skipped; compileall·`git diff --check` PASS.

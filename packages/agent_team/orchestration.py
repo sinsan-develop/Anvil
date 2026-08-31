@@ -436,13 +436,16 @@ class TeamOrchestrator:
 
     def replay_events(self, events: Iterable[OrchestrationEvent]) -> tuple[OrchestrationEvent, ...]:
         """Validate an exported event stream; exact replays are idempotent."""
-        seen: set[str] = set()
+        seen: dict[str, OrchestrationEvent] = {}
         head = "root"
         accepted: list[OrchestrationEvent] = []
         for event in events:
             if not isinstance(event, OrchestrationEvent):
                 raise TypeError("events must contain OrchestrationEvent")
-            if event.event_id in seen:
+            prior = seen.get(event.event_id)
+            if prior is not None:
+                if prior.event_hash != event.event_hash or prior != event:
+                    raise ValueError("conflicting duplicate orchestration event")
                 continue
             if not event.session_id:
                 raise ValueError("event session_id is required")
@@ -451,7 +454,7 @@ class TeamOrchestrator:
             if event.actor_id not in self._members and event.actor_id not in self._user_ids:
                 raise PermissionError("event actor is not a team member")
             known_subjects = self._known_subjects | set(self._tasks) | set(self._members) | set(self._user_ids)
-            if event.subject_id not in known_subjects and not event.subject_id.startswith(("message-", "review-", "turn-", "event-")):
+            if event.subject_id not in known_subjects:
                 raise ValueError("event subject is not a team participant")
             details = dict(event.details)
             receiver = details.get("receiver_id")
@@ -461,7 +464,7 @@ class TeamOrchestrator:
                 raise ValueError("event revision is from the future")
             if event.parent_hash != head:
                 raise ValueError("stale or foreign orchestration event")
-            seen.add(event.event_id); accepted.append(event); head = event.event_hash
+            seen[event.event_id] = event; accepted.append(event); head = event.event_hash
         return tuple(accepted)
 
     def append_conversation_turn(self, turn: ConversationTurn) -> ConversationTurn:
