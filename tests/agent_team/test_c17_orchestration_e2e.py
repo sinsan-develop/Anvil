@@ -61,7 +61,7 @@ class C17OrchestrationE2E(unittest.TestCase):
         replica.activate("lead")
         self.assertEqual(len(events), len(replica.replay_events(events)))
         self.assertEqual(len(events), len(replica.replay_events(events + events)))
-        foreign = OrchestrationEvent("x", OrchestrationEventType.COST_RECORDED, "outsider", "s17", 2, NOW, (("amount", "1"),))
+        foreign = OrchestrationEvent("x", OrchestrationEventType.COST_RECORDED, "outsider", "s17", 2, NOW, (("amount", "1"),), "root", "", "s17")
         with self.assertRaises(PermissionError):
             self.team.replay_events((foreign,))
 

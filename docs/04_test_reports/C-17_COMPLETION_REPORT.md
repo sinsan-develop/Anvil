@@ -44,3 +44,10 @@ Main Agent가 독립 read-only 검증 후 동일 범위로 병합 여부를 판�
 - 보완 조치: 위 경계를 fail-closed로 추가하고 회귀 테스트를 확장했다.
 - 보완 검증: `pytest tests/agent_team -q` → exit 0, **52 passed**; `compileall` → exit 0; `git diff --check` → exit 0.
 - 오류 횟수: 동일 근본 원인 1회. Main Agent 인수 기준(3회)에 도달하지 않았다.
+
+## 독립 검증 보완 이력 2
+
+- 2회 `FAILURE_REPORT`: replay event의 빈/foreign session 및 subject 결박 보강, pause/terminal 상태의 협업 동작 차단 필요.
+- 보완 조치: event session 필수·정확 일치, participant/subject/receiver 검증, ACTIVE lifecycle guard 및 user/Agent conversation 경계를 추가했다.
+- 보완 검증: `pytest tests/agent_team -q` → exit 0, **52 passed**; `compileall` → exit 0; `git diff --check` → exit 0.
+- 오류 횟수: 동일 근본 원인 2회. Main Agent 인수 기준(3회)에 도달하지 않았다.

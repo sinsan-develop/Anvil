@@ -182,6 +182,7 @@ class TeamOrchestrator:
         self._event_head = "root"
         self._user_ids: set[str] = set()
         self._turns: tuple[ConversationTurn, ...] = ()
+        self._known_subjects: set[str] = {session.session_id, *session.memberships}
 
     @classmethod
     def create_session(cls, *, session_id: str, leader_id: str, baseline_hash: str, budget: int, permissions: frozenset[str] = frozenset({"team:coordinate"}), now: datetime | None = None) -> "TeamOrchestrator":
@@ -298,6 +299,7 @@ class TeamOrchestrator:
         if missing:
             raise ValueError("task dependencies must be registered")
         self._tasks[task.task_id] = task
+        self._known_subjects.add(task.task_id)
         return task
 
     def claim_task(self, agent_id: str, task_id: str, *, baseline_hash: str, revision: int) -> TeamTask:
@@ -321,6 +323,8 @@ class TeamOrchestrator:
         return self._tasks[task_id]
 
     def send_message(self, sender_id: str, receiver_id: str, message_type: TeamMessageType, body: str, *, idempotency_key: str, revision: int | None = None, artifact_refs: tuple[str, ...] = (), now: datetime | None = None) -> TeamMessage:
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("message delivery requires an ACTIVE team")
         self._communicator(sender_id)
         self._communicator(receiver_id)
         if sender_id == receiver_id:
@@ -331,6 +335,7 @@ class TeamOrchestrator:
             raise ValueError("stale or future session revision")
         message = TeamMessage(f"message-{self._counter + 1}", self.session.session_id, sender_id, receiver_id, message_type, body, artifact_refs, idempotency_key, self.session.baseline_hash, message_revision, created)
         self._mailboxes[receiver_id] = self._mailboxes[receiver_id].deliver(message, created)
+        self._known_subjects.add(message.message_id)
         self._event(OrchestrationEventType.MESSAGE_SENT, sender_id, message.message_id, now=created, details=(("receiver_id", receiver_id),))
         return self._mailboxes[receiver_id].messages[-1]
 
@@ -340,6 +345,8 @@ class TeamOrchestrator:
 
     def record_peer_review(self, reviewer_id: str, task_id: str, outcome: str, summary: str, *, now: datetime | None = None) -> PeerReview:
         self._member(reviewer_id)
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("peer review requires an ACTIVE team")
         if task_id not in self._tasks:
             raise ValueError("unknown task")
         if self._tasks[task_id].claimed_by == reviewer_id:
@@ -348,10 +355,13 @@ class TeamOrchestrator:
         _required(summary, "summary")
         review = PeerReview(f"review-{len(self._reviews) + 1}", task_id, reviewer_id, outcome, summary, self._time(now))
         self._reviews += (review,)
+        self._known_subjects.add(review.review_id)
         self._event(OrchestrationEventType.PEER_REVIEWED, reviewer_id, task_id, now=review.created_at)
         return review
 
     def complete_task(self, agent_id: str, task_id: str, *, cost: int = 0, now: datetime | None = None) -> TeamTask:
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("task completion requires an ACTIVE team")
         task = self._tasks[task_id]
         if task.claimed_by != agent_id:
             raise PermissionError("only the claiming agent can complete task")
@@ -364,6 +374,8 @@ class TeamOrchestrator:
 
     def block_task(self, actor_id: str, task_id: str, *, now: datetime | None = None) -> TeamTask:
         self._member(actor_id)
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("task block requires an ACTIVE team")
         task = self._tasks[task_id]
         if task.status is not TeamTaskStatus.CLAIMED:
             raise ValueError("only CLAIMED task can be blocked")
@@ -375,6 +387,8 @@ class TeamOrchestrator:
 
     def resume_task(self, actor_id: str, task_id: str, *, now: datetime | None = None) -> TeamTask:
         self._member(actor_id)
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("task resume requires an ACTIVE team")
         task = self._tasks[task_id]
         if task.status is not TeamTaskStatus.BLOCKED:
             raise ValueError("only BLOCKED task can resume")
@@ -386,11 +400,15 @@ class TeamOrchestrator:
 
     def idle_hook(self, actor_id: str, *, now: datetime | None = None) -> None:
         self._member(actor_id)
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("idle hook requires an ACTIVE team")
         self._hooks += (HookRecord("idle", actor_id, self.session.session_id, self.session.revision),)
         self._event(OrchestrationEventType.HOOK_IDLE, actor_id, self.session.session_id, now=now)
 
     def completion_hook(self, actor_id: str, task_id: str, *, now: datetime | None = None) -> None:
         self._member(actor_id)
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("completion hook requires an ACTIVE team")
         task = self._tasks.get(task_id)
         if task is None or task.status is not TeamTaskStatus.COMPLETED:
             raise ValueError("completion hook requires a completed task")
@@ -426,13 +444,19 @@ class TeamOrchestrator:
                 raise TypeError("events must contain OrchestrationEvent")
             if event.event_id in seen:
                 continue
-            if event.session_id and event.session_id != self.session.session_id:
+            if not event.session_id:
+                raise ValueError("event session_id is required")
+            if event.session_id != self.session.session_id:
                 raise ValueError("event session_id mismatch")
             if event.actor_id not in self._members and event.actor_id not in self._user_ids:
                 raise PermissionError("event actor is not a team member")
-            known_subjects = set(self._tasks) | set(self._members) | set(self._user_ids) | {self.session.session_id}
+            known_subjects = self._known_subjects | set(self._tasks) | set(self._members) | set(self._user_ids)
             if event.subject_id not in known_subjects and not event.subject_id.startswith(("message-", "review-", "turn-", "event-")):
                 raise ValueError("event subject is not a team participant")
+            details = dict(event.details)
+            receiver = details.get("receiver_id")
+            if receiver is not None and receiver not in self._members and receiver not in self._user_ids:
+                raise ValueError("event receiver is not a team participant")
             if event.revision > self.session.revision + 1:
                 raise ValueError("event revision is from the future")
             if event.parent_hash != head:
@@ -441,6 +465,8 @@ class TeamOrchestrator:
         return tuple(accepted)
 
     def append_conversation_turn(self, turn: ConversationTurn) -> ConversationTurn:
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("conversation requires an ACTIVE team")
         if not isinstance(turn, ConversationTurn):
             raise TypeError("turn must be ConversationTurn")
         if turn.session_id != self.session.session_id:
@@ -451,11 +477,14 @@ class TeamOrchestrator:
         if self._turns and turn.sequence != self._turns[-1].sequence + 1:
             raise ValueError("conversation turn sequence is not contiguous")
         self._turns += (turn,)
+        self._known_subjects.add(turn.turn_id)
         self._event(OrchestrationEventType.MESSAGE_SENT, turn.sender_id, turn.turn_id, details=(("receiver_id", turn.receiver_id), ("kind", "conversation")))
         return turn
 
     def record_cost(self, actor_id: str, amount: int) -> int:
         self._member(actor_id)
+        if self.session.state is not TeamSessionState.ACTIVE:
+            raise ValueError("cost recording requires an ACTIVE team")
         if type(amount) is not int or amount < 0:
             raise ValueError("cost must be a non-negative integer")
         if self._spent + amount > self.session.budget:
