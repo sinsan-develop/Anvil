@@ -13,6 +13,10 @@ from .result_envelope import (
     EvidenceReference, ResultEnvelope, ResultReasonCode, ResultTest,
     ResultValidationResult, canonical_hash, canonical_json, validate_result,
 )
+from .failure_report import (
+    FailureReportReasonCode, FailureReportValidationResult,
+    compute_failure_fingerprint, validate_failure_report,
+)
 
 __all__ = [
     "BudgetDenied", "MainAgentKernel", "StepBudget", "StepResult",
@@ -24,4 +28,6 @@ __all__ = [
     "CheckpointHandoff", "LifecycleProjection", "ResumeRejected",
     "EvidenceReference", "ResultEnvelope", "ResultReasonCode", "ResultTest",
     "ResultValidationResult", "canonical_hash", "canonical_json", "validate_result",
+    "FailureReportReasonCode", "FailureReportValidationResult",
+    "compute_failure_fingerprint", "validate_failure_report",
 ]
