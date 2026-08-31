@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 import unittest
 
-from packages.agent_team import TeamMessageType, TeamTask, TeamTaskStatus
+from packages.agent_team import TeamMessageType, TeamTask, TeamTaskStatus, ConversationRole, ConversationTurn
 from packages.agent_team.orchestration import (
     OrchestrationEvent, OrchestrationEventType, TeamOrchestrator,
 )
@@ -63,6 +63,17 @@ class C17OrchestrationE2E(unittest.TestCase):
         self.assertEqual(len(events), len(replica.replay_events(events + events)))
         foreign = OrchestrationEvent("x", OrchestrationEventType.COST_RECORDED, "outsider", "s17", 2, NOW, (("amount", "1"),))
         with self.assertRaises(PermissionError):
+            self.team.replay_events((foreign,))
+
+    def test_user_agent_turn_and_strict_event_binding(self):
+        self.team.register_user("lead", "user")
+        turn = ConversationTurn("turn-1", "s17", "thread-1", 1, "user", ConversationRole.USER, "lead", ConversationRole.LEADER, "design", "rev-1", NOW)
+        self.team.append_conversation_turn(turn)
+        self.assertEqual((turn,), self.team.conversation_turns)
+        with self.assertRaises(ValueError):
+            OrchestrationEvent("bad", OrchestrationEventType.MESSAGE_SENT, "lead", "s17", 1, NOW, (), "sha256:" + "A" * 64)
+        foreign = OrchestrationEvent("foreign", OrchestrationEventType.MESSAGE_SENT, "lead", "s17", 1, NOW, (), "root", "", "other")
+        with self.assertRaises(ValueError):
             self.team.replay_events((foreign,))
 
 

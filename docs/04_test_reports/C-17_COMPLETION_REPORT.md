@@ -37,3 +37,10 @@
 ## 다음 조치
 
 Main Agent가 독립 read-only 검증 후 동일 범위로 병합 여부를 판정한다. C-18 MoA routing은 이 Package 범위에 포함하지 않는다.
+
+## 독립 검증 보완 이력
+
+- 1회 `FAILURE_REPORT`: event enum/parent hash strictness, session·subject·revision binding, lifecycle guard, user↔Agent turn, immutable identity/lease/review/hook schema 보강 필요.
+- 보완 조치: 위 경계를 fail-closed로 추가하고 회귀 테스트를 확장했다.
+- 보완 검증: `pytest tests/agent_team -q` → exit 0, **52 passed**; `compileall` → exit 0; `git diff --check` → exit 0.
+- 오류 횟수: 동일 근본 원인 1회. Main Agent 인수 기준(3회)에 도달하지 않았다.
