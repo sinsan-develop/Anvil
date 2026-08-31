@@ -40,3 +40,9 @@
 ## rollback
 
 C-11 커밋을 revert하면 된다. 기존 C-01~C-10 계약 파일은 변경하지 않았다.
+
+## Main Agent Takeover
+
+- 동일 근본 원인 실패 3회에 도달하여 Developer write lease를 회수하고 Main Agent가 직접 인수했다.
+- 조치: WorkInstruction의 scope·request_analysis_hash 필수화, 실제 content_hash 재계산 검증, objective/risk/egress/prohibited 필수 검증을 추가했다.
+- Main Agent 검증: `C:\Users\cyhuh\anaconda3\python.exe -m pytest -q tests/planning tests/orchestration tests/repository_intelligence tests/action_policy --disable-warnings` → 71 passed, 1 warning; compileall 및 `git diff --check` PASS.

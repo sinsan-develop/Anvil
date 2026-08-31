@@ -170,16 +170,21 @@ def generate_work_instruction(plan: ExecutionPlan, step_id: str, *, analysis: Re
     else:
         prohibited = ("network", "secret", "destructive") if step.write_capable else ("write", "execute")
         risks = step.risk or ("no additional risk",)
-    return WorkInstruction(artifact_id or f"wi-{plan.plan_id}-{step_id}", revision, canonical_content_hash({"plan": plan.content_hash, "step": step.to_dict(), "analysis": analysis.to_dict() if analysis else None}), plan.plan_id, plan.content_hash, step.allowed_paths, (step.kind.value.lower(),), step.completion_conditions or ("step result recorded",), plan.created_at, step.objective, risks, plan.egress_snapshot_hash, prohibited)
+    scope = analysis.scope if analysis is not None else (step.objective,)
+    request_analysis_hash = analysis.content_hash if analysis is not None else plan.request_analysis_hash
+    return WorkInstruction(artifact_id or f"wi-{plan.plan_id}-{step_id}", revision, canonical_content_hash({"plan": plan.content_hash, "step": step.to_dict(), "analysis": analysis.to_dict() if analysis else None}), plan.plan_id, plan.content_hash, step.allowed_paths, (step.kind.value.lower(),), step.completion_conditions or ("step result recorded",), plan.created_at, step.objective, risks, plan.egress_snapshot_hash, prohibited, scope, request_analysis_hash)
 
 
 def validate_work_instruction(instruction: WorkInstruction, plan: ExecutionPlan, step_id: str, *, analysis: RequestAnalysis | None = None) -> bool:
     if not isinstance(instruction, WorkInstruction): return False
     step = next((item for item in plan.steps if item.step_id == step_id), None)
     if step is None or instruction.iteration_plan_hash != plan.content_hash: return False
+    if analysis is not None and (analysis.content_hash != plan.request_analysis_hash or instruction.request_analysis_hash != analysis.content_hash): return False
     expected_risk = tuple(analysis.risk) if analysis is not None else tuple(step.risk or ("no additional risk",))
     expected_prohibited = tuple(analysis.prohibited_actions) if analysis is not None else tuple(instruction.prohibited_actions)
-    return (instruction.objective == step.objective and instruction.egress_snapshot_hash == plan.egress_snapshot_hash and tuple(instruction.allowed_paths) == tuple(step.allowed_paths) and tuple(instruction.completion_conditions) == tuple(step.completion_conditions or ("step result recorded",)) and tuple(instruction.risk) == expected_risk and tuple(instruction.prohibited_actions) == expected_prohibited and tuple(instruction.allowed_actions) == (step.kind.value.lower(),))
+    expected_scope = tuple(analysis.scope) if analysis is not None else tuple(instruction.scope)
+    expected_hash = canonical_content_hash({"plan": plan.content_hash, "step": step.to_dict(), "analysis": analysis.to_dict() if analysis else None})
+    return (instruction.content_hash == expected_hash and instruction.objective == step.objective and instruction.egress_snapshot_hash == plan.egress_snapshot_hash and tuple(instruction.allowed_paths) == tuple(step.allowed_paths) and tuple(instruction.completion_conditions) == tuple(step.completion_conditions or ("step result recorded",)) and tuple(instruction.risk) == expected_risk and tuple(instruction.prohibited_actions) == expected_prohibited and tuple(instruction.allowed_actions) == (step.kind.value.lower(),) and tuple(instruction.scope) == expected_scope)
 
 
 def analyze_request(request_id: str, objective: str, *, scope: tuple[str, ...], completion_conditions: tuple[str, ...], allowed_paths: tuple[str, ...], prohibited_actions: tuple[str, ...], risk: tuple[str, ...], baseline_hash: str, egress_snapshot_hash: str) -> RequestAnalysis:

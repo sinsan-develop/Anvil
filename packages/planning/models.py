@@ -92,6 +92,8 @@ class WorkInstruction:
     risk: tuple[str, ...] = ()
     egress_snapshot_hash: str | None = None
     prohibited_actions: tuple[str, ...] = ()
+    scope: tuple[str, ...] = ()
+    request_analysis_hash: str | None = None
 
     def __post_init__(self) -> None:
         _required(self.artifact_id, "artifact_id")
@@ -108,12 +110,16 @@ class WorkInstruction:
             for value in values:
                 _required(value, field)
         _utc(self.created_at, "created_at")
-        if self.objective is not None:
-            _required(self.objective, "objective")
+        _required(self.objective, "objective")
         for values, field in ((self.risk, "risk"), (self.prohibited_actions, "prohibited_actions")):
-            if not isinstance(values, tuple) or len(values) != len(set(values)):
-                raise ValueError(f"{field} must be a tuple without duplicates")
+            if not isinstance(values, tuple) or not values or len(values) != len(set(values)):
+                raise ValueError(f"{field} must be a non-empty tuple without duplicates")
             for value in values:
                 _required(value, f"{field} item")
-        if self.egress_snapshot_hash is not None:
-            _canonical_hash(self.egress_snapshot_hash, "egress_snapshot_hash")
+        _canonical_hash(self.egress_snapshot_hash, "egress_snapshot_hash")
+        if not isinstance(self.scope, tuple) or not self.scope or len(self.scope) != len(set(self.scope)):
+            raise ValueError("scope must be a non-empty tuple without duplicates")
+        for value in self.scope:
+            _required(value, "scope item")
+        if self.request_analysis_hash is not None:
+            _canonical_hash(self.request_analysis_hash, "request_analysis_hash")
