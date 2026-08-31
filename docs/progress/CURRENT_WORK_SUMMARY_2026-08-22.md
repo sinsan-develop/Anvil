@@ -81,3 +81,15 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - 코드 rollback: 승인된 이전 ReleaseManifest commit으로 `deploy/ysna/rollback.sh` 실행
 - C-32 문서 projection rollback: `f806399` 이전 commit으로 되돌리되 historical event는 삭제하지 않음
 - 운영 DB rollback은 Anvil 전용 `anvil` database만 대상으로 하며 기존 `postgres` 및 타 제품 DB는 변경하지 않음
+
+## 2026-08-31 최신 상태 — C-01
+
+- 원격 `origin/main`의 Phase B Gate `ACCEPTED` 기준선(`9f306f8`)을 동기화했다.
+- C-01 WorkInstruction/InvocationPrompt를 작성하고 전용 branch에서 subagent 1명이 구현했다.
+- C-01 구현을 `3dcab37` 병합 커밋으로 `main`에 통합했다.
+- 변경 범위: `packages/llm_gateway`, `packages/orchestration`, C-01 테스트·완료보고서·WorkInstruction.
+- Main 검증: C-01 수동 계약 테스트 5/5, `compileall` PASS, `git diff --check` PASS.
+- pytest는 환경 제약으로 미실행: `pytest` 모듈 미설치 및 외부 패키지 다운로드 네트워크 차단. 실제 Provider·DB·API·browser·deployment는 범위 외/미실행.
+- Main 검토에서 abort 빈 output 계약 결함 1회를 발견했고 동일 subagent가 최소 수정 후 보완했다. 오류 횟수는 1회이며 3회 인수 기준 미도달.
+- 현재 판정: `C-01 TEST_REVIEW / INDEPENDENT_TESTER_PENDING`; C-02는 C-01 독립 Tester `ACCEPTED` 전까지 시작하지 않는다.
+- 최신 main push 전 최종 검증과 독립 Tester 재검토가 다음 조치다.
