@@ -167,6 +167,14 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-16을 `main`에 병합·push했으며 실제 provider/DB/API/browser/Telegram/deployment는 미검증이다.
 - 다음 미완료 항목은 C-17 Team orchestration·peer communication·협업 E2E다.
 
+## 2026-09-01 C-17 독립 검증 및 Main takeover 수락
+
+- C-17 leader/teammate lifecycle, task claim, peer/user messaging, peer review/hooks, pause/resume, write conflict/stale/cost guard와 협업 E2E를 구현했다.
+- 독립 검토에서 event subject/session 결박과 conflicting duplicate replay 결함이 3회 누적되어 Main Agent가 인수·보완했다.
+- 최종 독립 검증: agent_team 52 passed, 관련 회귀 122 passed·1 skipped, compileall·`git diff --check` PASS.
+- C-17을 `main`에 병합·push했으며 실제 provider/DB/API/browser/Telegram/Docker/WSL/deployment는 미검증이다.
+- 다음 미완료 항목은 C-18 Capability-based MoA Provider/Model routing이다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
