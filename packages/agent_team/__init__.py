@@ -52,6 +52,12 @@ from .orchestration import (
     TeamMember,
     TeamOrchestrator,
 )
+from .remote_control import (
+    AgentStatusSnapshot, ApprovalRequired, ApprovalRequest, ApprovalState,
+    ArtifactReference, AuditEvent, CommandKind, CommandState,
+    ConversationMessage, OfflineQueue, OperatorCommand, ProgressEvent,
+    RemoteControlPlane, RemoteSession,
+)
 
 __all__ = [
     "ConversationRole",
@@ -103,4 +109,8 @@ __all__ = [
     "TaskLease",
     "TeamMember",
     "TeamOrchestrator",
+    "AgentStatusSnapshot", "ApprovalRequired", "ApprovalRequest", "ApprovalState",
+    "ArtifactReference", "AuditEvent", "CommandKind", "CommandState",
+    "ConversationMessage", "OfflineQueue", "OperatorCommand", "ProgressEvent",
+    "RemoteControlPlane", "RemoteSession",
 ]

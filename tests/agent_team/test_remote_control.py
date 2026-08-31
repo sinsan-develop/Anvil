@@ -3,7 +3,8 @@ from unittest import TestCase
 
 from packages.agent_team.remote_control import (
     ApprovalRequired, AgentStatusSnapshot, CommandKind, OfflineQueue,
-    OperatorCommand, ProgressEvent, RemoteControlPlane, RemoteSession,
+    ArtifactReference, CommandState, ConversationMessage, OperatorCommand,
+    ProgressEvent, RemoteControlPlane, RemoteSession,
 )
 
 
@@ -41,7 +42,7 @@ class RemoteControlTests(TestCase):
 
     def test_approval_commands_are_rejected_and_materialized(self):
         with self.assertRaises(ApprovalRequired) as caught:
-            self.plane.execute(command(CommandKind.DEPLOY, key="deploy"), session_id="rs-1", now=NOW)
+            self.plane.execute(OperatorCommand("cmd-deploy", "op-1", CommandKind.DEPLOY, NOW, NOW + timedelta(minutes=5), "deploy", "secret", (("content_hash", "0" * 64),)), session_id="rs-1", now=NOW)
         self.assertEqual(CommandKind.DEPLOY, caught.exception.request.command.kind)
         self.assertEqual(1, len(self.plane.approvals))
         self.assertEqual("APPROVAL_REQUIRED", self.plane.audits[-1].outcome)
@@ -69,6 +70,44 @@ class RemoteControlTests(TestCase):
         with self.assertRaises(ValueError):
             self.plane.execute(future, session_id="rs-1", now=NOW)
         self.assertEqual("FUTURE_ISSUED_AT", self.plane.audits[-1].outcome)
+
+    def test_last_event_id_and_idempotent_replay(self):
+        event = ProgressEvent("e1", "started", 1, "1", "event-key", NOW)
+        self.assertIs(self.plane.publish_event(event), event)
+        self.assertEqual((), self.plane.replay(last_event_id="e1"))
+        with self.assertRaises(ValueError):
+            self.plane.replay(last_event_id="missing")
+        with self.assertRaises(ValueError):
+            self.plane.publish_event(ProgressEvent("e1", "changed", 1, "1", "other", NOW))
+
+    def test_fencing_and_offline_pending_state(self):
+        self.plane.rotate_fencing_token("op-1", "f-2")
+        with self.assertRaises(PermissionError):
+            self.plane.execute(command(key="stale"), session_id="rs-1", now=NOW)
+        queued = OperatorCommand("cmd-2", "op-1", CommandKind.PAUSE, NOW, NOW + timedelta(minutes=5), "offline", "secret", fencing_token="f-2")
+        queue = OfflineQueue(1)
+        queue.enqueue(queued)
+        self.assertEqual(CommandState.PENDING_REMOTE, queue.state("offline"))
+
+    def test_artifact_reference_is_relative_and_conversation_is_immutable(self):
+        ref = ArtifactReference("a-1", "0123456789abcdef" * 4, "docs/report.md", "diff")
+        message = ConversationMessage("m-1", "agent-1", "검토 완료", 1, NOW, (ref,))
+        self.assertEqual("docs/report.md", message.artifact_refs[0].path)
+        with self.assertRaises(ValueError):
+            ArtifactReference("a-2", "not-a-hash", "report.md")
+        with self.assertRaises(ValueError):
+            ArtifactReference("a-3", "0123456789abcdef" * 4, "https://example.invalid/report")
+
+    def test_approval_hash_and_explicit_immutable_decision(self):
+        cmd = OperatorCommand("cmd-deploy-2", "op-1", CommandKind.DEPLOY, NOW, NOW + timedelta(minutes=5), "deploy-2", "secret", (("content_hash", "a" * 64),))
+        with self.assertRaises(ApprovalRequired):
+            self.plane.execute(cmd, session_id="rs-1", now=NOW)
+        request = self.plane.approvals[0]
+        approved = self.plane.approve(request.request_id, actor_id="leader-1", now=NOW)
+        self.assertEqual("a" * 64, approved.target_content_hash)
+        self.assertEqual("leader-1", approved.decided_by)
+        with self.assertRaises(ValueError):
+            self.plane.reject(request.request_id, actor_id="leader-2", now=NOW)
 
 
 if __name__ == "__main__":
