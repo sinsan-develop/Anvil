@@ -97,10 +97,13 @@ class ConversationMessage:
     sequence: int
     sent_at: datetime
     artifact_refs: tuple[ArtifactReference, ...] = ()
+    conversation_id: str = "default"
+    thread_id: str = "default"
 
     def __post_init__(self) -> None:
         for value, field in ((self.message_id, "message_id"), (self.author_id, "author_id"), (self.body, "body")):
             _text(value, field)
+        _text(self.conversation_id, "conversation_id"); _text(self.thread_id, "thread_id")
         if type(self.sequence) is not int or self.sequence < 1:
             raise ValueError("sequence must be a positive integer")
         _utc(self.sent_at, "sent_at")
@@ -211,6 +214,8 @@ class ApprovalRequest:
     created_at: datetime
     state: ApprovalState = ApprovalState.PENDING
     target_content_hash: str = ""
+    decided_by: str = ""
+    decided_at: datetime | None = None
 
     def __post_init__(self) -> None:
         _text(self.request_id, "request_id")
@@ -221,8 +226,14 @@ class ApprovalRequest:
         _utc(self.created_at, "created_at")
         if not isinstance(self.state, ApprovalState):
             raise TypeError("state must be ApprovalState")
-        if self.target_content_hash and (len(self.target_content_hash) < 16 or any(c not in "0123456789abcdefABCDEF" for c in self.target_content_hash)):
-            raise ValueError("target_content_hash must be hexadecimal")
+        if self.target_content_hash and (len(self.target_content_hash) != 64 or any(c not in "0123456789abcdefABCDEF" for c in self.target_content_hash)):
+            raise ValueError("target_content_hash must be a SHA-256 hexadecimal hash")
+        if self.state is ApprovalState.PENDING and (self.decided_by or self.decided_at is not None):
+            raise ValueError("pending approval cannot have a decision")
+        if self.state is not ApprovalState.PENDING:
+            _text(self.decided_by, "decided_by")
+            if self.decided_at is None: raise ValueError("decided_at is required")
+            _utc(self.decided_at, "decided_at")
 
 
 @dataclass(frozen=True, slots=True)
@@ -278,12 +289,29 @@ class RemoteControlPlane:
     def conversation(self) -> tuple[ConversationMessage, ...]: return self._conversation
 
     def publish_message(self, message: ConversationMessage) -> ConversationMessage:
-        if self._conversation and message.sequence <= self._conversation[-1].sequence:
+        same_scope = [m for m in self._conversation if (m.conversation_id, m.thread_id) == (message.conversation_id, message.thread_id)]
+        if same_scope and message.sequence <= same_scope[-1].sequence:
             raise ValueError("conversation sequence must increase")
-        if self._conversation and message.sent_at < self._conversation[-1].sent_at:
+        if same_scope and message.sent_at < same_scope[-1].sent_at:
             raise ValueError("conversation timestamp must not move backwards")
         self._conversation += (message,)
         return message
+
+    def approve(self, request_id: str, *, actor_id: str, now: datetime) -> ApprovalRequest:
+        return self._decide(request_id, actor_id=actor_id, now=now, state=ApprovalState.APPROVED)
+
+    def reject(self, request_id: str, *, actor_id: str, now: datetime) -> ApprovalRequest:
+        return self._decide(request_id, actor_id=actor_id, now=now, state=ApprovalState.REJECTED)
+
+    def _decide(self, request_id: str, *, actor_id: str, now: datetime, state: ApprovalState) -> ApprovalRequest:
+        _text(request_id, "request_id"); _text(actor_id, "actor_id"); _utc(now, "now")
+        request = next((item for item in self._approvals if item.request_id == request_id), None)
+        if request is None: raise KeyError(request_id)
+        if request.state is not ApprovalState.PENDING: raise ValueError("approval is already decided")
+        updated = ApprovalRequest(request.request_id, request.command, request.requested_by, request.reason, request.created_at, state, request.target_content_hash, actor_id, now)
+        self._approvals = tuple(updated if item.request_id == request_id else item for item in self._approvals)
+        self._audit(request.command, "APPROVAL_DECISION", now, (("request_id", request_id), ("actor_id", actor_id), ("state", state.value)))
+        return updated
 
     def register_operator(self, operator_id: str, auth_token: str, valid_until: datetime) -> None:
         _text(operator_id, "operator_id"); _text(auth_token, "auth_token"); _utc(valid_until, "valid_until")
@@ -369,6 +397,9 @@ class RemoteControlPlane:
         self._commands.add(command.idempotency_key)
         if command.kind in APPROVAL_REQUIRED:
             target_hash = next((value for key, value in command.parameters if key == "content_hash"), "")
+            if len(target_hash) != 64 or any(c not in "0123456789abcdefABCDEF" for c in target_hash):
+                self._audit(command, "SUBJECT_HASH_REQUIRED", now)
+                raise ValueError("high-risk command requires a valid subject content hash")
             request = ApprovalRequest(f"approval-{len(self._approvals) + 1}", command, command.operator_id, "remote command requires Leader/Main approval", now, target_content_hash=target_hash)
             self._approvals += (request,)
             self._audit(command, "APPROVAL_REQUIRED", now, (("request_id", request.request_id),))
