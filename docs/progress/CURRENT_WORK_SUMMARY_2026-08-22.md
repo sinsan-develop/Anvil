@@ -206,6 +206,11 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - 외부 변경·배포·webhook 변경·Provider 과금 호출은 수행하지 않았다. 상세 증거는 `docs/04_test_reports/C-21_OPERATIONAL_VALIDATION_REPORT.md`에 기록했다.
 - C-21 판정은 `PARTIAL / OPERATIONAL_BOUNDARY_NOT_VERIFIED`이며, 검증 환경 복구 후 재실행이 필요하다.
 
+### C-21 환경 재확인
+
+- 새 작업 턴에서 `py -3`, `wsl.exe -l -v`, `ssh ysna-server`, `curl https://anvil.sinsan.kr`를 재실행했으나 Python 미설치, WSL `E_ACCESSDENIED`, SSH hostname 해석 실패, HTTPS 443 연결 실패가 동일하게 재현됐다.
+- 따라서 실제 운영 경계는 계속 `NOT_EXECUTED`이며, 환경 복구 전 C-21 완료 승격을 보류한다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
