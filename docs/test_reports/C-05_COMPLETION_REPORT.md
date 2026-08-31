@@ -27,6 +27,14 @@
 - `$env:PYTHONPATH='.'; uv run pytest -q tests/orchestration tests/execution` — 45 passed
 - `git diff --check` — exit 0
 
+### 독립 검증 보완
+
+- EvidenceReference의 `evidence_id`, `checksum`, `kind`는 입력 원시 타입을 변환하지 않고 엄격히 검증한다.
+- unknown top-level field는 `UNKNOWN_FIELD` reason code로 결정론적으로 반환한다.
+- 보완 후 `$env:PYTHONPATH='.'; uv run python -m compileall -q packages tests` — exit 0
+- 보완 후 `$env:PYTHONPATH='.'; uv run pytest -q tests/orchestration/test_result_envelope_c05.py` — 7 passed
+- 보완 후 `git diff --check` — exit 0
+
 ## 미검증·금지 범위
 
 - 실제 subprocess, provider, DB/API, browser, deployment 및 C-06 집계·C-07 resolver는 실행·구현하지 않았다.

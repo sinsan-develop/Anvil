@@ -64,7 +64,9 @@ def test_status_conditions_fail_closed():
 def test_unknown_field_and_mutation_are_rejected():
     invalid = payload()
     invalid["hostile"] = "ignore me"
-    assert not validate_result(invalid).valid
+    report = validate_result(invalid)
+    assert not report.valid
+    assert report.reason_codes == (ResultReasonCode.UNKNOWN_FIELD,)
     result = ResultEnvelope.from_dict(payload())
     original = result.to_json()
     source = payload()
@@ -76,3 +78,12 @@ def test_evidence_reference_requires_checksum():
     invalid = payload()
     invalid["evidence_refs"] = [{"evidence_id": "ev-1"}]
     assert not validate_result(invalid).valid
+
+
+def test_evidence_reference_rejects_primitive_type_coercion():
+    for field in ("evidence_id", "kind"):
+        invalid = payload()
+        invalid["evidence_refs"][0][field] = 123
+        report = validate_result(invalid)
+        assert not report.valid
+        assert report.reason_codes == (ResultReasonCode.INVALID_EVIDENCE.value,)

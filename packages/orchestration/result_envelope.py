@@ -79,7 +79,15 @@ class EvidenceReference:
         required = {"evidence_id", "checksum"}
         if required - set(value):
             raise ValueError("evidence reference required fields missing")
-        return cls(str(value["evidence_id"]), str(value["checksum"]), str(value.get("kind", "artifact")))
+        unknown = set(value) - {"evidence_id", "checksum", "kind"}
+        if unknown:
+            raise ValueError("evidence reference unknown fields: " + ", ".join(sorted(unknown)))
+        # Do not coerce hostile JSON primitives (e.g. 123) to strings.  The
+        # dataclass validators must see the original types and fail closed.
+        try:
+            return cls(value["evidence_id"], value["checksum"], value.get("kind", "artifact"))
+        except (TypeError, ValueError) as error:
+            raise ValueError("evidence reference invalid field: " + str(error)) from error
 
 
 @dataclass(frozen=True, slots=True)
@@ -234,6 +242,8 @@ def validate_result(result: ResultEnvelope | Mapping[str, Any] | None) -> Result
     except (TypeError, ValueError) as error:
         message = str(error)
         reason = ResultReasonCode.REQUIRED_FIELD_MISSING if "required fields missing" in message else ResultReasonCode.INVALID_FIELD
+        if "unknown fields" in message:
+            reason = ResultReasonCode.UNKNOWN_FIELD
         if "status" in message and "invalid" in message: reason = ResultReasonCode.INVALID_STATUS
         if "hash" in message: reason = ResultReasonCode.INVALID_HASH
         if "evidence" in message: reason = ResultReasonCode.INVALID_EVIDENCE
