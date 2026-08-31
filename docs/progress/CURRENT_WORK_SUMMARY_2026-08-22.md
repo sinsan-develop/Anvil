@@ -191,6 +191,14 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-19를 `main`에 병합했다. 실제 SSE/WebSocket/DB/browser/provider/Telegram/deployment는 미검증이며 Python 런타임 경계는 별도 기록했다.
 - 다음 미완료 항목은 C-20 Telegram Notification/Command Adapter다.
 
+## 2026-09-01 C-20 독립 검증 및 수락
+
+- Telegram 보조 Adapter에 canonical HMAC, allowlist, UTC/expiry/future 검증, nonce·command replay 방지, actor/device/session audit, 안전한 Web Console deep link를 구현했다.
+- 고위험 명령은 실행하지 않고 ApprovalRequest와 승인 링크만 반환하며 secret 노출을 차단했다.
+- 독립 검토 최종 PASS(커밋 `8866269`), `git diff --check` PASS. 기본 Python 및 오프라인 의존성 부족으로 pytest/compileall은 미검증이다.
+- C-20을 `main`에 병합했다. 실제 Telegram webhook/DB/browser/provider/deployment는 미검증이다.
+- C-16~C-20 successor 구현 범위를 완료했으며 다음은 전체 통합·브라우저·운영 검증 및 매뉴얼이다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
