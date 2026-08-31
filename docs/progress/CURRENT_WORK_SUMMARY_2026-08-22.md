@@ -153,6 +153,12 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - Phase C canonical trigger에 도달해 `docs/04_test_reports/DIR-2_HOLD_2026-09-01.md`를 기록하고 `DIR_HOLD`로 중단했다.
 - 신산님의 direction Event가 기록되기 전까지 C-16 이후 개발·subagent·제품 write·배포를 시작하지 않는다.
 
+## 2026-09-01 DIR-2 Clear 및 C-16 재개
+
+- 신산님의 명시 지시 `DIR-2 해제하고 계속 진행해`를 `CLEARED` direction Event로 기록했다.
+- C-16 Agent Team durable collaboration primitives를 다음 작업으로 확정하고 구현을 재개한다.
+- 실제 운영 Provider·DB·browser·배포 검증 경계는 계속 미검증으로 유지한다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
