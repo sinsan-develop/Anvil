@@ -13,6 +13,7 @@ from .manifests import detect_manifests
 from .models import ScanRequest, ScanResult
 from .path_guard import contains_path, validate_scan_paths
 from .profile import infer_profile
+from .indexes import build_indexes
 
 
 def _git_metadata_paths(git_dir: Path, common_dir: Path) -> list[tuple[str, Path]]:
@@ -134,6 +135,7 @@ def scan_repository(request: ScanRequest) -> ScanResult:
         repository, allowed_root, output, _temp_root = validate_scan_paths(request)
         pre = _capture_snapshot(repository, allowed_root, request)
         manifests = detect_manifests(pre["inventory"])
+        indexes = build_indexes(repository, pre["inventory"])
         post = _capture_snapshot(repository, allowed_root, request)
         deltas = _deltas(pre, post)
         proof = {
@@ -154,6 +156,7 @@ def scan_repository(request: ScanRequest) -> ScanResult:
                 ),
                 inventory=pre["inventory"],
                 manifests=manifests,
+                symbols=indexes["symbols"], references=indexes["references"], dependencies=indexes["dependencies"], tests=indexes["tests"], impact=indexes["impact"], index_warnings=indexes["warnings"], index_sha256=indexes["index_sha256"],
                 no_write_proof=proof,
                 errors=(
                     ScanError(
@@ -173,6 +176,7 @@ def scan_repository(request: ScanRequest) -> ScanResult:
                 ),
                 inventory=pre["inventory"],
                 manifests=manifests,
+                symbols=indexes["symbols"], references=indexes["references"], dependencies=indexes["dependencies"], tests=indexes["tests"], impact=indexes["impact"], index_warnings=indexes["warnings"], index_sha256=indexes["index_sha256"],
                 no_write_proof=proof,
             )
         if output is not None:
