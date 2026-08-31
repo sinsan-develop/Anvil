@@ -199,6 +199,13 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-20을 `main`에 병합했다. 실제 Telegram webhook/DB/browser/provider/deployment는 미검증이다.
 - C-16~C-20 successor 구현 범위를 완료했으며 다음은 전체 통합·브라우저·운영 검증 및 매뉴얼이다.
 
+## 2026-09-01 C-21 운영 검증 — 부분 완료/환경 차단
+
+- Node 브라우저 계약 14/14 및 `git diff --check`는 PASS했다.
+- Python 3 미설치, WSL `E_ACCESSDENIED`, `ysna-server` SSH/DNS 실패, `anvil.sinsan.kr` 443 연결 실패로 실제 DB·API·SSE·Provider·Telegram webhook 운영 증거는 수집하지 못했다.
+- 외부 변경·배포·webhook 변경·Provider 과금 호출은 수행하지 않았다. 상세 증거는 `docs/04_test_reports/C-21_OPERATIONAL_VALIDATION_REPORT.md`에 기록했다.
+- C-21 판정은 `PARTIAL / OPERATIONAL_BOUNDARY_NOT_VERIFIED`이며, 검증 환경 복구 후 재실행이 필요하다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
