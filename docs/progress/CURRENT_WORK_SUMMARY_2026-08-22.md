@@ -211,6 +211,11 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - 새 작업 턴에서 `py -3`, `wsl.exe -l -v`, `ssh ysna-server`, `curl https://anvil.sinsan.kr`를 재실행했으나 Python 미설치, WSL `E_ACCESSDENIED`, SSH hostname 해석 실패, HTTPS 443 연결 실패가 동일하게 재현됐다.
 - 따라서 실제 운영 경계는 계속 `NOT_EXECUTED`이며, 환경 복구 전 C-21 완료 승격을 보류한다.
 
+### C-21 번들 런타임 재검증
+
+- bundled Python/Node로 `tests/agent_team` 63 passed, `apps/web/tests/*.mjs` 14 passed, compileall·diff-check PASS를 확인했다.
+- FastAPI/SQLAlchemy 기반 API·DB 테스트는 bundled 의존성 부재로 collection 미실행이며, WSL/SSH/HTTPS 운영 경계는 계속 차단 상태다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.

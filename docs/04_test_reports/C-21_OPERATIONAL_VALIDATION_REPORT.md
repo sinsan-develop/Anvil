@@ -64,6 +64,13 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 4. `ysna-server` SSH/DNS 및 `anvil.sinsan.kr` reverse proxy가 복구된 뒤 실제 same-origin health/Network/SSE를 별도 증거로 수집한다.
 5. Provider/Telegram은 credential 값을 출력하거나 변경하지 않고, 승인된 non-billing probe와 signed test fixture 경계를 별도로 승인한 뒤 수행한다.
 
+## 2026-09-01 번들 런타임 재검증
+
+- Codex bundled Python으로 `tests/agent_team`를 재실행해 **63 passed**를 확인했다.
+- bundled Node로 `apps/web/tests/*.mjs`를 재실행해 **14 passed**를 확인했다.
+- bundled Python `compileall -q packages apps/api` 및 `git diff --check`도 PASS했다.
+- FastAPI/SQLAlchemy 의존 테스트는 bundled runtime에 패키지가 없어 collection 단계에서 미실행(`ModuleNotFoundError`)이며, 실제 WSL/DB/API 경계는 여전히 미검증이다.
+
 ## 복구 및 변경 상태
 
 - 제품 코드 변경: 0
