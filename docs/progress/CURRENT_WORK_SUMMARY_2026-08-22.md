@@ -175,3 +175,12 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-08을 `merge: C-08 repository intelligence` 병합 커밋으로 `main`에 통합했다. 구현 커밋은 `4e2dc79`다.
 - 실제 Provider·DB·API·browser·deployment 및 운영 성능은 `NOT_EXECUTED`다.
 - 다음 미완료 항목은 C-09 Git worktree·Docker ExecutionBackend 및 cross-backend path identity·read Tool Gateway다.
+
+## 2026-09-01 C-10 독립 검증 및 수락
+
+- C-10 Action policy와 structured receipt를 구현해 fencing/path/egress/secret/destructive/metadata/redirect/DNS rebinding 경계를 fail-closed로 적용했다.
+- 독립 검토에서 DNS rebinding 및 private/link-local metadata 주소 누락 1회를 보완했다.
+- 최종 독립 검증: action policy·tool gateway·repository·API·orchestration 90 passed, compileall, `git diff --check` PASS.
+- C-10을 `merge: C-10 action policy` 병합 커밋으로 `main`에 통합했다. 최종 구현 커밋은 `df4f726`이다.
+- 실제 secret manager·네트워크·DB·browser·deployment는 미검증이다.
+- 다음 미완료 항목은 C-11 Main Agent Task 분석·ExecutionPlan·WorkInstruction orchestration이다.
