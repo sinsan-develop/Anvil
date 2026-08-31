@@ -109,17 +109,29 @@ class CheckpointHandoff:
     checkpoint_id: str
     checkpoint_hash: str
     state: Mapping[str, Any]
+    session_id: str
+    delegation_id: str
+    packet_hash: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.checkpoint_id, str) or not self.checkpoint_id.strip():
-            raise ValueError("checkpoint_id must be non-empty")
+        for value, field in ((self.checkpoint_id, "checkpoint_id"), (self.session_id, "session_id"), (self.delegation_id, "delegation_id")):
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"{field} must be non-empty")
         _require_hash(self.checkpoint_hash, "checkpoint_hash")
+        _require_hash(self.packet_hash, "packet_hash")
         if not isinstance(self.state, Mapping):
             raise TypeError("state must be a mapping")
         object.__setattr__(self, "state", _freeze(self.state))
 
     def to_dict(self) -> dict[str, Any]:
-        return {"checkpoint_id": self.checkpoint_id, "checkpoint_hash": self.checkpoint_hash, "state": _thaw(self.state)}
+        return {
+            "checkpoint_id": self.checkpoint_id,
+            "checkpoint_hash": self.checkpoint_hash,
+            "session_id": self.session_id,
+            "delegation_id": self.delegation_id,
+            "packet_hash": self.packet_hash,
+            "state": _thaw(self.state),
+        }
 
 
 @dataclass(frozen=True, slots=True)
@@ -304,6 +316,10 @@ class DeveloperLifecycleService:
             raise ResumeRejected("cannot pause a terminal session")
         if current.status is not LifecycleStatus.RUNNING:
             raise InvalidLifecycleTransition("pause requires a RUNNING session")
+        if (checkpoint.session_id, checkpoint.delegation_id, checkpoint.packet_hash) != (
+            current.session_id, current.delegation_id, current.packet_hash
+        ):
+            raise ResumeRejected("checkpoint identity does not match the current session")
         current = self._replace(current, status=LifecycleStatus.PAUSED, checkpoint=checkpoint)
         self._sessions[session_id] = current
         return current

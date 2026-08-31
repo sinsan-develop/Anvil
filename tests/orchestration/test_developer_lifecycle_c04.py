@@ -34,7 +34,7 @@ def test_steer_records_instruction_without_changing_identity():
 def test_pause_resume_restores_checkpoint_and_rejects_different_packet_hash():
     service = DeveloperLifecycleService()
     started(service)
-    checkpoint = CheckpointHandoff("checkpoint-1", "sha256:" + "c" * 64, {"cursor": 4})
+    checkpoint = CheckpointHandoff("checkpoint-1", "sha256:" + "c" * 64, {"cursor": 4}, "c04", "del-1", packet().packet_hash)
     paused = service.pause("c04", checkpoint)
     assert paused.status is LifecycleStatus.PAUSED
     assert service.handoff("c04") == checkpoint
@@ -49,7 +49,7 @@ def test_pause_resume_restores_checkpoint_and_rejects_different_packet_hash():
 def test_pause_and_resume_are_idempotent_for_same_command():
     service = DeveloperLifecycleService()
     started(service)
-    checkpoint = CheckpointHandoff("checkpoint-1", "sha256:" + "c" * 64, {"cursor": 4})
+    checkpoint = CheckpointHandoff("checkpoint-1", "sha256:" + "c" * 64, {"cursor": 4}, "c04", "del-1", packet().packet_hash)
     paused = service.pause("c04", checkpoint)
     assert service.pause("c04", checkpoint) == paused
     resumed = service.resume("c04", packet().packet_hash)
@@ -65,15 +65,23 @@ def test_terminal_commands_are_idempotent_or_rejected_explicitly():
         service.resume("c04", packet().packet_hash)
     assert service.current("c04").status is LifecycleStatus.COMPLETED
     with pytest.raises(ResumeRejected, match="terminal"):
-        service.pause("c04", CheckpointHandoff("checkpoint-2", "sha256:" + "d" * 64, {}))
+        service.pause("c04", CheckpointHandoff("checkpoint-2", "sha256:" + "d" * 64, {}, "c04", "del-1", packet().packet_hash))
 
 
 def test_handoff_projection_is_immutable_and_current_is_json_safe():
     service = DeveloperLifecycleService()
     started(service)
-    checkpoint = CheckpointHandoff("checkpoint-1", "sha256:" + "c" * 64, {"nested": {"ok": True}})
+    checkpoint = CheckpointHandoff("checkpoint-1", "sha256:" + "c" * 64, {"nested": {"ok": True}}, "c04", "del-1", packet().packet_hash)
     service.pause("c04", checkpoint)
     projection = service.current("c04")
     assert projection.to_dict()["checkpoint"]["checkpoint_id"] == "checkpoint-1"
     with pytest.raises(TypeError):
         checkpoint.state["nested"] = {}
+
+
+def test_pause_rejects_handoff_identity_mismatch():
+    service = DeveloperLifecycleService()
+    started(service)
+    checkpoint = CheckpointHandoff("checkpoint-1", "sha256:" + "c" * 64, {}, "other-session", "del-1", packet().packet_hash)
+    with pytest.raises(ResumeRejected, match="identity"):
+        service.pause("c04", checkpoint)

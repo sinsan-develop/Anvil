@@ -49,3 +49,10 @@ exit 0
 
 - 다음 Main Agent 조치: 변경 파일을 diff 검토 후 C-04 branch를 검증·병합.
 - rollback: C-04 병합 커밋을 revert하고 세 변경 파일을 이전 revision으로 복원한다.
+
+## Tester 보완 및 재검증
+
+- 독립 Tester가 `CheckpointHandoff`에 session/delegation/packet identity 결박이 없음을 지적했다.
+- 세 identity 필드를 추가하고 `pause`에서 현재 `DeveloperSession`과의 일치 여부를 검증하도록 수정했다.
+- identity 불일치 회귀 테스트를 추가했다.
+- 재검증: `tests/orchestration` **28 passed**, `compileall` exit 0, `git diff --check` exit 0.
