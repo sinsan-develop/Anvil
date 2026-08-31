@@ -51,7 +51,10 @@ class ProviderModelEntry:
         for name in ("cost","quality","latency"): _number(getattr(self,name),name)
         if type(self.retention_days) is not int or self.retention_days < 0: raise ValueError("retention_days must be non-negative")
         if type(self.probe_ttl_seconds) is not int or self.probe_ttl_seconds <= 0: raise ValueError("probe_ttl_seconds must be positive")
-        if self.probe_at is not None: _iso(self.probe_at,"probe_at")
+        if self.probe_at is not None:
+            _iso(self.probe_at,"probe_at")
+            probe = datetime.fromisoformat(self.probe_at.replace("Z", "+00:00"))
+            if probe.tzinfo is None or probe.utcoffset() is None or probe.utcoffset() != timezone.utc.utcoffset(probe): raise ValueError("probe_at must be timezone-aware UTC")
     @property
     def ref(self) -> ProviderModelRef: return ProviderModelRef(self.provider,self.model)
     def as_dict(self) -> dict[str,object]: return {"provider":self.provider,"model":self.model,"capabilities":sorted(self.capabilities),"healthy":self.healthy,"cost":self.cost,"quality":self.quality,"latency":self.latency,"privacy_classes":sorted(self.privacy_classes),"regions":sorted(self.regions),"retention_days":self.retention_days,"zdr":self.zdr,"probe_at":self.probe_at,"probe_ttl_seconds":self.probe_ttl_seconds}
@@ -68,7 +71,7 @@ class ProviderModelCatalog:
             if entry.ref in refs: raise ValueError("provider/model must be unique")
             refs.add(entry.ref)
     @property
-    def snapshot_hash(self) -> str: return _sha({"revision":self.revision,"entries":[e.as_dict() for e in self.entries]})
+    def snapshot_hash(self) -> str: return _sha({"revision":self.revision,"entries":[e.as_dict() for e in sorted(self.entries,key=lambda e:(e.provider,e.model))]})
     def register(self,entry:ProviderModelEntry)->"ProviderModelCatalog":
         if not isinstance(entry,ProviderModelEntry): raise TypeError("entry must be ProviderModelEntry")
         if any(e.ref == entry.ref for e in self.entries): raise ValueError("provider/model is already registered")
@@ -116,6 +119,7 @@ class CapabilityRouter:
         limit=profile.budget if budget is None else budget
         if limit is not None: _number(limit,"budget")
         current=now or datetime.now(timezone.utc)
+        if current.tzinfo is None or current.utcoffset() is None or current.utcoffset() != timezone.utc.utcoffset(current): raise ValueError("now must be timezone-aware UTC")
         eligible=[e for e in catalog.entries if self._eligible(e,profile,limit,current)]
         if not eligible: raise LookupError("no eligible provider/model route")
         scored=sorted(eligible,key=lambda e:(-self._score(e,profile),e.provider,e.model)); selected=scored[0]; fallbacks=[]
@@ -123,10 +127,11 @@ class CapabilityRouter:
             if fallback_policy.max_attempts is not None and len(fallback_policy.ordered_fallbacks)>fallback_policy.max_attempts: raise ValueError("fallback exceeds max_attempts")
             total=selected.cost
             for ref in fallback_policy.ordered_fallbacks:
+                if ref == selected.ref: raise ValueError("fallback route duplicates primary")
                 entry=catalog.get(ref)
                 if entry is None or not self._eligible(entry,profile,limit,current): raise ValueError("fallback route violates policy")
                 total+=entry.cost
-                if fallback_policy.max_total_cost is not None and total>fallback_policy.max_total_cost: raise ValueError("fallback exceeds total budget")
+                if (fallback_policy.max_total_cost is not None and total>fallback_policy.max_total_cost) or (limit is not None and total>limit): raise ValueError("fallback exceeds total budget")
                 fallbacks.append(ref)
         considered=tuple(dict.fromkeys([e.ref for e in scored]+fallbacks))
         return RoutingProvenance(profile.capability,catalog.revision,selected.ref,self._score(selected,profile),"selected highest deterministic score among eligible routes",considered,(("quality_priority",str(profile.quality_priority)),("cost_priority",str(profile.cost_priority)),("latency_priority",str(profile.latency_priority)),("privacy_class",profile.privacy_class)),catalog.snapshot_hash,tuple(fallbacks))
@@ -139,10 +144,14 @@ class CapabilityRouter:
 
 def validate_benchmark(record:BenchmarkRecord,catalog:ProviderModelCatalog,*,max_age_seconds:int|None=None,now:datetime|None=None)->None:
     if record.snapshot_hash != catalog.snapshot_hash: raise ValueError("benchmark snapshot drift")
-    if catalog.get(record.route) is None: raise ValueError("benchmark route is not registered")
+    entry=catalog.get(record.route)
+    if entry is None: raise ValueError("benchmark route is not registered")
+    if record.capability not in entry.capabilities: raise ValueError("benchmark capability does not match route")
+    current=now or datetime.now(timezone.utc)
+    measured=datetime.fromisoformat(record.measured_at.replace("Z","+00:00"))
+    if measured.tzinfo is None or measured.utcoffset() is None or current.tzinfo is None or current.utcoffset() is None or measured > current: raise ValueError("benchmark measured_at must be timezone-aware and not future")
     if max_age_seconds is not None:
         if type(max_age_seconds) is not int or max_age_seconds<0: raise ValueError("max_age_seconds must be non-negative")
-        measured=datetime.fromisoformat(record.measured_at.replace("Z","+00:00")); current=now or datetime.now(timezone.utc)
         if (current-measured).total_seconds()>max_age_seconds: raise ValueError("benchmark is stale")
 
 __all__=["BenchmarkRecord","CapabilityProfile","CapabilityRouter","FallbackPolicy","ProviderModelCatalog","ProviderModelEntry","ProviderModelRef","RoutingProvenance","validate_benchmark"]

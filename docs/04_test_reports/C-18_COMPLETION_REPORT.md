@@ -49,3 +49,14 @@ Routing layer는 외부 probe를 수행하지 않으며 호출자가 제공한 p
 
 C-18 커밋을 revert하면 된다. 기존 `provider_catalog.py`의 historical catalog와
 Agent Team conversation 계약은 변경하지 않았다.
+
+## 독립 검증 보완 이력
+
+독립 검증 1회에서 발견된 경계 결함을 보완했다. fallback 전체 누적 비용을
+profile budget과 policy 상한 모두에 결박하고 primary 중복 fallback을 거부했다.
+probe_at와 benchmark measured_at은 timezone-aware UTC이며 미래 시각을 거부한다.
+catalog snapshot hash는 provider/model 정렬 후 계산하고, benchmark capability와
+실제 route capability 일치를 검증한다.
+
+보완 후 `pytest tests/agent_team -q`는 **56 passed**, compileall exit 0,
+`git diff --check` exit 0이다.

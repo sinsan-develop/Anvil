@@ -50,3 +50,20 @@ def test_benchmark_cannot_cross_snapshot_or_age_boundary():
     with pytest.raises(ValueError):
         validate_benchmark(record, c, max_age_seconds=60,
                            now=datetime(2026, 9, 1, 0, 2, tzinfo=timezone.utc))
+
+
+def test_adversarial_time_budget_primary_and_capability_checks_fail_closed():
+    with pytest.raises(ValueError):
+        ProviderModelEntry("X", "m", frozenset({"writing"}), probe_at="2026-09-01T00:00:00")
+    with pytest.raises(ValueError):
+        ProviderModelEntry("X", "m", frozenset({"writing"}), probe_at="2026-09-01T00:00:00+09:00")
+    c = catalog()
+    p = CapabilityProfile("writing", privacy_class="private", catalog_revision=7, budget=1)
+    with pytest.raises(ValueError):
+        CapabilityRouter().route(p, c, FallbackPolicy((ProviderModelRef("UPSTAGE", "writer"),)))
+    record = BenchmarkRecord("coding", ProviderModelRef("UPSTAGE", "writer"), .9, 1, 1, "2026-09-01T00:00:00Z").bind(c)
+    with pytest.raises(ValueError):
+        validate_benchmark(record, c)
+    future = BenchmarkRecord("writing", ProviderModelRef("UPSTAGE", "writer"), .9, 1, 1, "2026-09-02T00:00:00Z").bind(c)
+    with pytest.raises(ValueError):
+        validate_benchmark(future, c, max_age_seconds=60, now=datetime(2026, 9, 1, tzinfo=timezone.utc))
