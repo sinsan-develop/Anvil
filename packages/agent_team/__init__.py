@@ -38,6 +38,15 @@ from .collaboration import (
     canonical_hash,
     validate_schema_identity,
 )
+from .orchestration import (
+    HookRecord,
+    OrchestrationEvent,
+    OrchestrationEventType,
+    PeerReview,
+    TaskLease,
+    TeamMember,
+    TeamOrchestrator,
+)
 
 __all__ = [
     "ConversationRole",
@@ -73,4 +82,11 @@ __all__ = [
     "ThreadKind",
     "canonical_hash",
     "validate_schema_identity",
+    "HookRecord",
+    "OrchestrationEvent",
+    "OrchestrationEventType",
+    "PeerReview",
+    "TaskLease",
+    "TeamMember",
+    "TeamOrchestrator",
 ]
