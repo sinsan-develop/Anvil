@@ -22,7 +22,7 @@
 
 ## 검증
 
-시작 기준: branch `codex/c06-failure-validator`, HEAD `bc5d47ddb5c843429510e7b879df1526fded85a1`, 작업 트리 clean.
+구현 기준: branch `codex/c06-failure-validator`, HEAD `4516a2fa310860e55afd443b26a9087dc7453246`, 기능 변경 커밋 완료 후 문서 보완.
 
 - `PYTHONPATH=. uv run pytest -q tests/orchestration/test_failure_report_c06.py tests/orchestration/test_result_envelope_c05.py` — **15 passed**
 - `PYTHONPATH=. uv run pytest -q tests/orchestration tests/execution` — **54 passed**
