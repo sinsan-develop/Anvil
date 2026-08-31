@@ -9,6 +9,8 @@
 - 시작 HEAD: `6b33ffb127b2484b85b36a26d9e40d2d3c9533e2`
 - branch: `codex/c09-execution-backend`
 - 시작 상태: clean
+- 구현 커밋: `f88ce8e` (시작 기준선 이후 C-09 구현)
+- 독립검증 보완 커밋: 본 수정 커밋에서 EOF 형식과 이력 명시를 보완
 - 실제 Git worktree/Docker/WSL/DB/API/browser/배포 호출: 실행하지 않음
 
 ## 변경
@@ -40,4 +42,3 @@ exit 0
 
 - 오류 1회: receipt hash 계산에서 자기참조 재귀가 발생했으며 `_unsigned_dict` 기반 hash로 수정했다. 최종 오류 0.
 - rollback: 본 커밋을 revert하면 C-09 변경만 제거된다.
-

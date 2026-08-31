@@ -39,4 +39,3 @@ class BackendRegistry:
                                network_allowed=spec.network_allowed,
                                writes_allowed=spec.writes_allowed)
         return BackendResult("OBSERVED", receipt)
-
