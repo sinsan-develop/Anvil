@@ -1,0 +1,1 @@
+C-01 WorkInstruction을 기준으로 LLM Gateway·NativeAgentAdapter capability probe와 Minimal Main Agent Kernel을 구현하라. 지정 범위를 벗어나지 말고 deterministic fake adapter 테스트를 포함하라. 완료 후 WorkInstruction의 결과 보고 계약에 따라 구조화된 완료 보고를 제출하라.
