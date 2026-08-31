@@ -47,6 +47,11 @@ class C11PlannerTests(unittest.TestCase):
         with self.assertRaises(PlannerError):
             plan(ExecutionStep("s1", StepKind.READ, "inspect", (), ("src",), ("report",), egress_snapshot_hash=B), ExecutionStep("s2", StepKind.READ, "inspect", ("s1", "s2"), ("src",), ("report",), egress_snapshot_hash=B))
 
+    def test_hashes_reject_uppercase_and_non_hex_values(self):
+        for value in ("sha256:" + "A" * 64, "sha256:" + "g" * 64, "sha256:" + "a" * 63):
+            with self.assertRaises(PlannerError):
+                analyze_request("req", "objective", scope=("x",), completion_conditions=("done",), allowed_paths=("src",), prohibited_actions=("network",), risk=("low",), baseline_hash=value, egress_snapshot_hash=B)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -9,6 +9,10 @@ import re
 
 _HASH = re.compile(r"sha256:[0-9a-f]{64}\Z")
 
+def _canonical_hash(value: str, field: str) -> None:
+    if not isinstance(value, str) or _HASH.fullmatch(value) is None:
+        raise ValueError(f"{field} must be a canonical lowercase sha256 hash")
+
 
 def _required(value: str, field: str) -> None:
     if not isinstance(value, str) or not value.strip() or value != value.strip():
@@ -84,6 +88,10 @@ class WorkInstruction:
     allowed_actions: tuple[str, ...]
     completion_conditions: tuple[str, ...]
     created_at: datetime
+    objective: str | None = None
+    risk: tuple[str, ...] = ()
+    egress_snapshot_hash: str | None = None
+    prohibited_actions: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.artifact_id, "artifact_id")
@@ -100,3 +108,12 @@ class WorkInstruction:
             for value in values:
                 _required(value, field)
         _utc(self.created_at, "created_at")
+        if self.objective is not None:
+            _required(self.objective, "objective")
+        for values, field in ((self.risk, "risk"), (self.prohibited_actions, "prohibited_actions")):
+            if not isinstance(values, tuple) or len(values) != len(set(values)):
+                raise ValueError(f"{field} must be a tuple without duplicates")
+            for value in values:
+                _required(value, f"{field} item")
+        if self.egress_snapshot_hash is not None:
+            _canonical_hash(self.egress_snapshot_hash, "egress_snapshot_hash")

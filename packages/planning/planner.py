@@ -15,6 +15,8 @@ from .hashing import canonical_content_hash
 from .models import WorkInstruction
 from .approval import ApprovalType
 
+_HASH = __import__("re").compile(r"sha256:[0-9a-f]{64}\Z")
+
 
 class PlannerError(ValueError):
     pass
@@ -62,7 +64,7 @@ class RequestAnalysis:
             _tuple_text(value, name)
         for value, name in ((self.egress_snapshot_hash, "egress_snapshot_hash"), (self.baseline_hash, "baseline_hash")):
             _text(value, name)
-            if not value.startswith("sha256:") or len(value) != 71:
+            if _HASH.fullmatch(value) is None:
                 raise PlannerError(f"{name} must be a sha256 hash")
         if set(self.allowed_paths) & set(self.prohibited_actions):
             raise PlannerError("allowed and prohibited path scopes conflict")
@@ -116,7 +118,7 @@ class ExecutionPlan:
         _text(self.plan_id, "plan_id")
         for value, name in ((self.request_analysis_hash, "request_analysis_hash"), (self.baseline_hash, "baseline_hash"), (self.permission_snapshot_hash, "permission_snapshot_hash"), (self.egress_snapshot_hash, "egress_snapshot_hash")):
             _text(value, name)
-            if not value.startswith("sha256:") or len(value) != 71: raise PlannerError(f"{name} must be a sha256 hash")
+            if _HASH.fullmatch(value) is None: raise PlannerError(f"{name} must be a canonical lowercase sha256 hash")
         if type(self.steps) is not tuple or not self.steps: raise PlannerError("steps must be non-empty")
         if len({step.step_id for step in self.steps}) != len(self.steps): raise PlannerError("step_id must be unique")
         ids = {step.step_id for step in self.steps}
@@ -154,7 +156,17 @@ class ScheduleDecision:
 def generate_work_instruction(plan: ExecutionPlan, step_id: str, *, artifact_id: str | None = None, revision: int = 1) -> WorkInstruction:
     step = next((item for item in plan.steps if item.step_id == step_id), None)
     if step is None: raise PlannerError("unknown step")
-    return WorkInstruction(artifact_id or f"wi-{plan.plan_id}-{step_id}", revision, canonical_content_hash({"plan": plan.content_hash, "step": step.to_dict()}), plan.plan_id, plan.content_hash, step.allowed_paths or (".",), (step.kind.value.lower(),), step.completion_conditions or ("step result recorded",), plan.created_at)
+    if step.egress_snapshot_hash != plan.egress_snapshot_hash:
+        raise PlannerError("step egress snapshot is not bound to plan")
+    prohibited = ("network", "secret", "destructive") if step.write_capable else ("write", "execute")
+    return WorkInstruction(artifact_id or f"wi-{plan.plan_id}-{step_id}", revision, canonical_content_hash({"plan": plan.content_hash, "step": step.to_dict()}), plan.plan_id, plan.content_hash, step.allowed_paths, (step.kind.value.lower(),), step.completion_conditions or ("step result recorded",), plan.created_at, step.objective, step.risk or ("no additional risk",), plan.egress_snapshot_hash, prohibited)
+
+
+def validate_work_instruction(instruction: WorkInstruction, plan: ExecutionPlan, step_id: str) -> bool:
+    if not isinstance(instruction, WorkInstruction): return False
+    step = next((item for item in plan.steps if item.step_id == step_id), None)
+    if step is None or instruction.iteration_plan_hash != plan.content_hash: return False
+    return (instruction.objective == step.objective and instruction.egress_snapshot_hash == plan.egress_snapshot_hash and tuple(instruction.allowed_paths) == tuple(step.allowed_paths) and tuple(instruction.risk) == tuple(step.risk or ("no additional risk",)))
 
 
 def analyze_request(request_id: str, objective: str, *, scope: tuple[str, ...], completion_conditions: tuple[str, ...], allowed_paths: tuple[str, ...], prohibited_actions: tuple[str, ...], risk: tuple[str, ...], baseline_hash: str, egress_snapshot_hash: str) -> RequestAnalysis:
@@ -171,4 +183,4 @@ def schedule_ready_steps(plan: ExecutionPlan, *, approval_guard: Any | None = No
     return ScheduleDecision(True, "ALLOWED", "active approval matches canonical execution plan", tuple(step.step_id for step in plan.steps))
 
 
-__all__ = ["PlannerError", "StepKind", "RequestAnalysis", "ExecutionStep", "ExecutionPlan", "ScheduleDecision", "analyze_request", "generate_work_instruction", "schedule_ready_steps"]
+__all__ = ["PlannerError", "StepKind", "RequestAnalysis", "ExecutionStep", "ExecutionPlan", "ScheduleDecision", "analyze_request", "generate_work_instruction", "validate_work_instruction", "schedule_ready_steps"]
