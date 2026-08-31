@@ -1,0 +1,1 @@
+승인된 C-21 WorkInstruction에 따라 read-only 운영 검증을 수행하라. 현재 환경에서 접근 가능한 서비스·DB·브라우저·Provider·Telegram 경계를 확인하고, 외부 변경 없이 증거와 미검증 사유를 `docs/04_test_reports/C-21_OPERATIONAL_VALIDATION_REPORT.md`에 기록하라. 코드 수정은 하지 말라.
