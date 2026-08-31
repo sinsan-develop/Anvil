@@ -213,6 +213,8 @@ def validate_packet(
         message = str(error)
         if "required fields missing" in message:
             return PacketValidationResult(False, ("REQUIRED_FIELD_MISSING",), ())
+        if "must not overlap" in message:
+            return PacketValidationResult(False, ("PATH_SCOPE_CONFLICT",), ())
         if "path" in message:
             return PacketValidationResult(False, ("PATH_NOT_CANONICAL",), ())
         if "hash" in message:

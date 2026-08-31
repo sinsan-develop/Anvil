@@ -97,6 +97,17 @@ def test_hostile_paths_and_scope_conflict_are_rejected():
     with pytest.raises(ValueError, match="must not overlap"):
         replace(packet(), prohibited_actions=("packages/orchestration/**",))
 
+    data = packet().to_dict()
+    data["prohibited_actions"] = ["packages/orchestration/**"]
+    result = validate_packet(
+        data,
+        baseline_hash=HASH,
+        permission_snapshot_hash=HASH,
+        context_snapshot_hash=HASH,
+        egress_snapshot_hash=HASH,
+    )
+    assert result.reason_codes == ("PATH_SCOPE_CONFLICT",)
+
 
 def test_invalid_json_and_missing_packet_fail_closed():
     with pytest.raises(ValueError, match="packet JSON is invalid"):
