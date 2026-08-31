@@ -30,6 +30,24 @@ class TelegramAdapterTests(unittest.TestCase):
                 notification_text(notification, base_url)
             with self.assertRaises(ValueError):
                 TelegramAdapter(allowlisted_identities=frozenset({("chat-1", "user-1")}), signing_secret="secret-value", console_base_url=base_url)
+        for path in ("/sessions/s1?token=secret", "/sessions/../admin", "/sessions/%2e%2e/admin", "/sessions/#fragment"):
+            with self.assertRaises(ValueError):
+                notification_text(TelegramNotification("e1", "상태", "작업 완료", path), "https://console.example")
+
+    def test_identity_metadata_is_signed_and_recorded_without_secret(self):
+        unsigned = TelegramUpdate("cmd-meta", "chat-1", "user-1", "status", NOW, NOW + timedelta(minutes=5), "nonce-meta", "placeholder", (), "actor-1", "mobile-1", "session-1")
+        signed = TelegramUpdate(unsigned.command_id, unsigned.chat_id, unsigned.user_id, unsigned.command, unsigned.issued_at, unsigned.expires_at, unsigned.nonce, TelegramAdapter.sign(unsigned, "secret-value"), unsigned.parameters, unsigned.actor_id, unsigned.device_id, unsigned.session_id)
+        result = self.adapter.process(signed, now=NOW)
+        self.assertEqual(TelegramOutcome.ACCEPTED, result.outcome)
+        self.assertIn(("actor_id", "actor-1"), result.audit.details)
+        self.assertIn(("device_id", "mobile-1"), result.audit.details)
+        self.assertIn(("session_id", "session-1"), result.audit.details)
+
+    def test_noncanonical_parameters_are_rejected(self):
+        with self.assertRaises(ValueError):
+            TelegramUpdate("c", "chat-1", "user-1", "status", NOW, NOW + timedelta(minutes=1), "n", "s", (("z", "1"), ("a", "2")))
+        with self.assertRaises(ValueError):
+            TelegramUpdate("c", "chat-1", "user-1", "status", NOW, NOW + timedelta(minutes=1), "n", "s", (("a", " secret "),))
 
     def test_parameters_are_signed_and_tampering_is_rejected(self):
         original = self.update()
