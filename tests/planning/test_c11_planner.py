@@ -68,6 +68,11 @@ class C11PlannerTests(unittest.TestCase):
         self.assertEqual(("network", "secrets"), instruction.prohibited_actions)
         self.assertTrue(validate_work_instruction(instruction, p, "s1", analysis=analysis))
 
+    def test_instruction_analysis_hash_is_required_even_without_analysis_argument(self):
+        from dataclasses import replace
+        instruction = generate_work_instruction(plan(ExecutionStep("s1", StepKind.READ, "inspect", (), ("src",), ("report",), ("low",), B)), "s1")
+        self.assertFalse(validate_work_instruction(replace(instruction, request_analysis_hash=A), plan(ExecutionStep("s1", StepKind.READ, "inspect", (), ("src",), ("report",), ("low",), B)), "s1"))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -179,6 +179,7 @@ def validate_work_instruction(instruction: WorkInstruction, plan: ExecutionPlan,
     if not isinstance(instruction, WorkInstruction): return False
     step = next((item for item in plan.steps if item.step_id == step_id), None)
     if step is None or instruction.iteration_plan_hash != plan.content_hash: return False
+    if instruction.request_analysis_hash != plan.request_analysis_hash: return False
     if analysis is not None and (analysis.content_hash != plan.request_analysis_hash or instruction.request_analysis_hash != analysis.content_hash): return False
     expected_risk = tuple(analysis.risk) if analysis is not None else tuple(step.risk or ("no additional risk",))
     expected_prohibited = tuple(analysis.prohibited_actions) if analysis is not None else tuple(instruction.prohibited_actions)
