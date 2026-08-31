@@ -1,3 +1,3 @@
-from .gateway import ReadToolGateway, ToolGatewayRejected, ToolReceipt
+from .gateway import ReadToolGateway, ToolGatewayRejected, ToolReceipt, ToolPermissionRegistry
 
-__all__ = ["ReadToolGateway", "ToolGatewayRejected", "ToolReceipt"]
+__all__ = ["ReadToolGateway", "ToolGatewayRejected", "ToolReceipt", "ToolPermissionRegistry"]
