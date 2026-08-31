@@ -111,6 +111,16 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - 외부 Provider·DB·API·browser·deployment 및 C-03 lifecycle은 `NOT_EXECUTED`/다음 Package 범위다.
 - 다음 미완료 항목은 C-03이며, C-02 branch/worktree 정리 후 C-03 WorkInstruction을 발행한다.
 
+## 2026-08-31 C-06 독립 검증 및 수락
+
+- C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
+- 독립 검증은 필수 실패 필드·lineage/fingerprint·evidence·환경/권한/quota 제외 로직과 C-05 연계를 확인했다.
+- 최종 독립 검증: C-06/C-05 15/15, orchestration/execution 회귀 54/54, compileall, `git diff --check` PASS.
+- 완료 보고서 기준 HEAD를 `3369196`으로 정합화했다.
+- C-06을 `5025bc0` 병합 커밋으로 `main`에 통합했다.
+- 실제 subprocess·Provider·DB·API·browser·deployment 및 C-07 집계/takeover는 `NOT_EXECUTED`다.
+- 다음 미완료 항목은 C-07이며 C-06 branch/worktree 정리 후 WorkInstruction을 발행한다.
+
 ## 2026-08-31 C-05 독립 검증 및 수락
 
 - C-05 WorkInstruction/InvocationPrompt를 발행하고 `subagent_result/v1` Result Envelope·fail-closed validator를 구현했다.
