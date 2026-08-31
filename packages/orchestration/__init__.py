@@ -9,6 +9,10 @@ from .developer_lifecycle import (
     ReadOnlyDeveloperRunner, ReadOnlyPolicy, ReadOnlyPolicyRejected,
     CheckpointHandoff, LifecycleProjection, ResumeRejected,
 )
+from .result_envelope import (
+    EvidenceReference, ResultEnvelope, ResultReasonCode, ResultTest,
+    ResultValidationResult, canonical_hash, canonical_json, validate_result,
+)
 
 __all__ = [
     "BudgetDenied", "MainAgentKernel", "StepBudget", "StepResult",
@@ -18,4 +22,6 @@ __all__ = [
     "LifecycleStatus", "PacketRejected", "RawResult", "RawResultEnvelope",
     "ReadOnlyDeveloperRunner", "ReadOnlyPolicy", "ReadOnlyPolicyRejected",
     "CheckpointHandoff", "LifecycleProjection", "ResumeRejected",
+    "EvidenceReference", "ResultEnvelope", "ResultReasonCode", "ResultTest",
+    "ResultValidationResult", "canonical_hash", "canonical_json", "validate_result",
 ]
