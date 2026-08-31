@@ -55,6 +55,11 @@ class ScanResult:
     repository: dict[str, Any] | None = None
     inventory: list[dict[str, Any]] = field(default_factory=list)
     manifests: list[dict[str, Any]] = field(default_factory=list)
+    symbols: list[dict[str, Any]] = field(default_factory=list)
+    dependencies: list[dict[str, Any]] = field(default_factory=list)
+    tests: list[dict[str, Any]] = field(default_factory=list)
+    impact: dict[str, Any] = field(default_factory=dict)
+    index_warnings: list[dict[str, Any]] = field(default_factory=list)
     no_write_proof: dict[str, Any] = field(default_factory=dict)
     errors: tuple[ScanError, ...] = ()
     evidence_types: tuple[str, ...] = ("E-GIT", "E-DIFF")
