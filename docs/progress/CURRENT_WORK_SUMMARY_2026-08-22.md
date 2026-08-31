@@ -159,6 +159,14 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-16 Agent Team durable collaboration primitives를 다음 작업으로 확정하고 구현을 재개한다.
 - 실제 운영 Provider·DB·browser·배포 검증 경계는 계속 미검증으로 유지한다.
 
+## 2026-09-01 C-16 독립 검증 및 수락
+
+- C-16 Agent Team durable collaboration primitives를 구현했다: thread identity, TeamEvent, dependency graph, append-only log, mailbox/conversation projection.
+- 독립 검토에서 foreign actor, parent hash, mutable payload, schema timestamp/parent binding, identity 타입 결함을 2회 보완했다.
+- 최종 독립 검증: 전용 48 passed, 관련 회귀 116 passed, compileall·`git diff --check` PASS.
+- C-16을 `main`에 병합·push했으며 실제 provider/DB/API/browser/Telegram/deployment는 미검증이다.
+- 다음 미완료 항목은 C-17 Team orchestration·peer communication·협업 E2E다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
