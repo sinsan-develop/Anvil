@@ -41,6 +41,12 @@ class PlanningModelTests(unittest.TestCase):
             allowed_actions=("patch", "test"),
             completion_conditions=("focused tests pass",),
             created_at=NOW,
+            objective="issue instruction",
+            risk=("low",),
+            egress_snapshot_hash=HASH,
+            prohibited_actions=("network",),
+            scope=("planning",),
+            request_analysis_hash=HASH,
         )
 
         self.assertEqual("baseline-1", work_plan.design_baseline_id)

@@ -21,6 +21,10 @@ from .outcome_resolver import (
     DelegationOutcomeResolver, DelegationProjection, ResolutionReceipt,
     ResolverEvent, ResolverReasonCode, StepProjection, StepState,
 )
+from packages.planning.planner import (
+    ExecutionPlan, ExecutionStep, PlannerError, RequestAnalysis, ScheduleDecision,
+    StepKind, analyze_request, generate_work_instruction, schedule_ready_steps,
+)
 
 __all__ = [
     "BudgetDenied", "MainAgentKernel", "StepBudget", "StepResult",
@@ -36,4 +40,7 @@ __all__ = [
     "compute_failure_fingerprint", "validate_failure_report",
     "DelegationOutcomeResolver", "DelegationProjection", "ResolutionReceipt",
     "ResolverEvent", "ResolverReasonCode", "StepProjection", "StepState",
+    "ExecutionPlan", "ExecutionStep", "PlannerError", "RequestAnalysis",
+    "ScheduleDecision", "StepKind", "analyze_request", "generate_work_instruction",
+    "schedule_ready_steps",
 ]
