@@ -157,3 +157,13 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-03을 `d995320` 병합 커밋으로 `main`에 통합했다.
 - 실제 subprocess·Provider·DB·API·browser·deployment는 C-03 범위 외로 `NOT_EXECUTED`다.
 - 다음 미완료 항목은 C-04이며 C-03 branch/worktree 정리 후 WorkInstruction을 발행한다.
+
+## 2026-09-01 C-08 독립 검증 및 수락
+
+- C-08 WorkInstruction/InvocationPrompt를 발행하고 Repository Intelligence를 symbol·dependency·test·impact 인덱스로 확장했다.
+- 독립 검토에서 내부 symlink, Python unresolved import, require 상대경로, 참조/impact 및 ScanResult schema 노출 결함을 2회 보완했다. 유효 실패 횟수는 2회이며 3회 인수 조건에는 도달하지 않았다.
+- 최종 독립 검증: 신규 Repository Intelligence 4/4, compileall, `git diff --check` PASS.
+- 관련 A13 테스트는 60개 중 53개 통과, 7개는 C-08 변경과 무관한 기존 evidence/projection baseline 불일치로 미검증 잔여 위험에 기록했다.
+- C-08을 `merge: C-08 repository intelligence` 병합 커밋으로 `main`에 통합했다. 구현 커밋은 `4e2dc79`다.
+- 실제 Provider·DB·API·browser·deployment 및 운영 성능은 `NOT_EXECUTED`다.
+- 다음 미완료 항목은 C-09 Git worktree·Docker ExecutionBackend 및 cross-backend path identity·read Tool Gateway다.
