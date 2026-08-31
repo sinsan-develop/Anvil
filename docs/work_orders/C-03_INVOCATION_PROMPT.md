@@ -1,0 +1,1 @@
+C-03 WorkInstruction에 따라 DelegationPacket 기반 read-only Developer lifecycle(start/wait/stop/raw result)을 구현하라. 실제 subprocess나 외부 시스템은 호출하지 말고 deterministic fake runner와 상태 전이·idempotency·policy 거부 테스트를 포함해 결과를 보고하라.
