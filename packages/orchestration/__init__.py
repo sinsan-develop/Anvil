@@ -7,6 +7,7 @@ from .developer_lifecycle import (
     DeterministicFakeDeveloperRunner, InvalidLifecycleTransition, LifecycleError,
     LifecycleStatus, PacketRejected, RawResult, RawResultEnvelope,
     ReadOnlyDeveloperRunner, ReadOnlyPolicy, ReadOnlyPolicyRejected,
+    CheckpointHandoff, LifecycleProjection, ResumeRejected,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     "DeterministicFakeDeveloperRunner", "InvalidLifecycleTransition", "LifecycleError",
     "LifecycleStatus", "PacketRejected", "RawResult", "RawResultEnvelope",
     "ReadOnlyDeveloperRunner", "ReadOnlyPolicy", "ReadOnlyPolicyRejected",
+    "CheckpointHandoff", "LifecycleProjection", "ResumeRejected",
 ]
