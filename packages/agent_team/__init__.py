@@ -26,6 +26,11 @@ from .provider_catalog import (
     catalog_entries,
     ordered_candidates,
 )
+from .moa import (
+    BenchmarkRecord, CapabilityProfile, CapabilityRouter, FallbackPolicy,
+    ProviderModelCatalog, ProviderModelEntry, ProviderModelRef,
+    RoutingProvenance, validate_benchmark,
+)
 from .runtime_config import credential_reference, runtime_catalog
 from .collaboration import (
     AppendOnlyTeamLog,
@@ -71,6 +76,15 @@ __all__ = [
     "ProviderCatalogEntry",
     "catalog_entries",
     "ordered_candidates",
+    "BenchmarkRecord",
+    "CapabilityProfile",
+    "CapabilityRouter",
+    "FallbackPolicy",
+    "ProviderModelCatalog",
+    "ProviderModelEntry",
+    "ProviderModelRef",
+    "RoutingProvenance",
+    "validate_benchmark",
     "credential_reference",
     "runtime_catalog",
     "AppendOnlyTeamLog",
