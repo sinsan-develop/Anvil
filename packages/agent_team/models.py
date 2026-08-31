@@ -229,6 +229,7 @@ class TeamMessage:
     delivery_state: TeamDeliveryState = TeamDeliveryState.PENDING
     delivered_at: datetime | None = None
     acknowledged_at: datetime | None = None
+    parent_hash: str = LEGACY_PARENT_HASH
 
     def __post_init__(self) -> None:
         for value, field in (
@@ -246,6 +247,8 @@ class TeamMessage:
         _hash(self.baseline_hash, "baseline_hash")
         _positive(self.revision, "revision")
         _utc(self.created_at, "created_at")
+        if self.parent_hash != LEGACY_PARENT_HASH:
+            _hash(self.parent_hash, "parent_hash")
         if not isinstance(self.delivery_state, TeamDeliveryState):
             raise TypeError("delivery_state must be TeamDeliveryState")
         if self.delivered_at is not None:
@@ -351,6 +354,7 @@ class ConversationTurn:
     content: str
     revision_ref: str
     created_at: datetime
+    parent_hash: str = LEGACY_PARENT_HASH
 
     def __post_init__(self) -> None:
         for value, field in (
@@ -369,6 +373,8 @@ class ConversationTurn:
         if not isinstance(self.receiver_role, ConversationRole):
             raise TypeError("receiver_role must be ConversationRole")
         _utc(self.created_at, "created_at")
+        if self.parent_hash != LEGACY_PARENT_HASH:
+            _hash(self.parent_hash, "parent_hash")
         allowed = {
             (ConversationRole.USER, ConversationRole.LEADER),
             (ConversationRole.LEADER, ConversationRole.USER),

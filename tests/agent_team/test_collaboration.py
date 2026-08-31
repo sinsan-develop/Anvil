@@ -61,13 +61,28 @@ class CollaborationPrimitiveTests(unittest.TestCase):
             TeamProgressProjection.replay(self.session, (TeamEvent("x", "s1", 1, TeamEventType.PROGRESS_RECORDED, "outsider", "s1", log.head_hash, {}, NOW),))
 
     def test_legacy_model_defaults_are_explicit_utc_and_root(self):
-        from packages.agent_team import TeamTask, TeamTaskStatus, TeamMailbox, DecisionRequest
+        from packages.agent_team import TeamTask, TeamTaskStatus, TeamMailbox, DecisionRequest, TeamMessage, TeamMessageType, ConversationRole, ConversationTurn
         task = TeamTask("t", "s1", "task", TeamTaskStatus.PENDING, frozenset(), ("src",))
         mailbox = TeamMailbox("m", "s1", "agent", HASH, 1)
         request = DecisionRequest("d", "s1", "agent", "user", "choose", ("yes",), HASH, ("src",), ("x",), ("y",))
-        for schema in (task, mailbox, request):
+        message = TeamMessage("msg", "s1", "leader", "agent", TeamMessageType.CONTEXT, "body", (), "idem", HASH, 1, NOW)
+        turn = ConversationTurn("turn", "s1", "thread", 1, "user", ConversationRole.USER, "leader", ConversationRole.LEADER, "body", "rev", NOW)
+        for schema in (task, mailbox, request, message, turn):
             self.assertIsNotNone(schema.created_at.tzinfo)
             self.assertEqual("root", schema.parent_hash)
+
+    def test_identity_and_dependency_keys_reject_blank_or_non_text_values(self):
+        with self.assertRaises(ValueError):
+            ThreadIdentity("t", "s1", ThreadKind.AGENT_AGENT, "leader", frozenset({"leader", ""}), HASH, NOW)
+        with self.assertRaises(ValueError):
+            DependencyGraph((("a", (" ",)),))
+
+    def test_message_and_turn_parent_hash_are_validated(self):
+        from packages.agent_team import TeamMessage, TeamMessageType, ConversationRole, ConversationTurn
+        with self.assertRaisesRegex(ValueError, "lowercase"):
+            TeamMessage("m", "s1", "leader", "agent", TeamMessageType.CONTEXT, "body", (), "i", HASH, 1, NOW, parent_hash="sha256:" + "B" * 64)
+        with self.assertRaisesRegex(ValueError, "lowercase"):
+            ConversationTurn("t", "s1", "th", 1, "leader", ConversationRole.LEADER, "agent", ConversationRole.TEAMMATE, "body", "rev", NOW, parent_hash="sha256:" + "C" * 64)
 
     def test_projection_replays_events_and_rejects_history_gap(self):
         log = AppendOnlyTeamLog(self.session)

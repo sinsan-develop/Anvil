@@ -41,3 +41,12 @@
 - 기존 TeamSession·TeamTask·TeamMailbox·DecisionRequest·RevisionRequest에 UTC `created_at`과 `parent_hash` 필드를 추가했다. 기존 positional 생성자 호환성을 위해서만 명시적 `1970-01-01T00:00:00Z`/`root` legacy sentinel을 사용한다.
 
 보완 후 재검증: `tests/agent_team` **46 passed**, compileall exit 0, `git diff --check` PASS. 운영 Provider/DB/API/browser/Telegram/Docker/WSL/deployment 경계는 계속 미검증이다.
+
+## 2차 독립 검증 보완 이력
+
+- `TeamMessage`와 `ConversationTurn`에 UTC `created_at` 및 `parent_hash` 계약을 추가하고 canonical hash/root sentinel을 검증했다.
+- `TeamProgressProjection`의 메시지·대화 turn replay에 session identity 검증을 연결했다.
+- `ThreadIdentity.participant_ids` 및 `DependencyGraph` node/dependency key를 canonical 비공백 문자열로 제한했다.
+- 기존 positional 생성자 호환성을 유지하되 legacy `created_at`/`root`는 명시적 sentinel로만 허용했다.
+
+보완 후 재검증: `tests/agent_team` **48 passed**, compileall exit 0, `git diff --check` PASS. 실제 외부 시스템 및 분산 persistence는 미검증이다.

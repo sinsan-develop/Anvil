@@ -85,6 +85,8 @@ class ThreadIdentity:
             raise TypeError("kind must be ThreadKind")
         if not isinstance(self.participant_ids, frozenset) or not self.participant_ids:
             raise ValueError("participant_ids must be a non-empty frozenset")
+        if any(not isinstance(value, str) or not value.strip() or value != value.strip() for value in self.participant_ids):
+            raise ValueError("participant_ids must contain canonical non-empty strings")
         if self.initiator_id not in self.participant_ids:
             raise ValueError("initiator_id must be a participant")
         _parent_hash(self.parent_hash)
@@ -110,10 +112,14 @@ class DependencyGraph:
             raise ValueError("duplicate dependency node")
         nodes = set(keys) | {dep for _, deps in self.dependencies for dep in deps}
         for key, deps in self.dependencies:
+            if not isinstance(key, str) or not key.strip() or key != key.strip():
+                raise ValueError("dependency node identity must be canonical")
             if key in deps:
                 raise ValueError("dependency cycle detected")
             if not isinstance(deps, tuple) or len(set(deps)) != len(deps):
                 raise ValueError("dependencies must be a unique tuple")
+            if any(not isinstance(dep, str) or not dep.strip() or dep != dep.strip() for dep in deps):
+                raise ValueError("dependency identity must be canonical")
         graph = {key: set(deps) for key, deps in self.dependencies}
         visiting: set[str] = set(); visited: set[str] = set()
         def visit(node: str) -> None:
@@ -247,9 +253,13 @@ class TeamProgressProjection:
                 if event.subject_id in completed: raise ValueError("duplicate task progress")
                 completed.append(event.subject_id)
             elif event.event_type is TeamEventType.MESSAGE_APPENDED:
+                if event.payload.get("session_id", session.session_id) != session.session_id:
+                    raise ValueError("message projection has foreign session")
                 if event.subject_id in messages: raise ValueError("duplicate message progress")
                 messages.append(event.subject_id)
             elif event.event_type is TeamEventType.TURN_APPENDED:
+                if event.payload.get("session_id", session.session_id) != session.session_id:
+                    raise ValueError("conversation projection has foreign session")
                 if event.subject_id in turns: raise ValueError("duplicate conversation turn")
                 turns.append(event.subject_id)
             projection = cls(session.session_id, projection.revision + 1, tuple(completed), tuple(messages), tuple(turns), event.event_hash)
