@@ -120,6 +120,14 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - PostgreSQL outbox/repository·실제 API/browser/deployment 및 C-08 Repository Intelligence는 `NOT_EXECUTED`/다음 Package 범위다.
 - 다음 미완료 항목은 C-08이며 C-07 branch/worktree 정리 후 WorkInstruction을 발행한다.
 
+## 2026-09-01 C-09 독립 검증 및 수락
+
+- C-09 WorkInstruction/InvocationPrompt를 발행하고 read-only ExecutionBackend registry, Tool Gateway 계약을 구현했다.
+- 독립 검토에서 EOF 공백과 완료보고서 기준 HEAD 불일치 1회를 보완했다. 최종 독립 검증은 지정 테스트 6/6, compileall, `git diff --check` PASS다.
+- Windows junction·WSL·Docker 실제 연결 및 운영 Git 상태는 미검증으로 유지했다.
+- C-09를 `merge: C-09 execution backend` 병합 커밋으로 `main`에 통합했다. 구현 보완 최종 커밋은 `95dcac4`다.
+- 다음 미완료 항목은 C-10 patch/write/execute Action과 risk·permission·egress·Secret Broker policy다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
