@@ -31,3 +31,11 @@ def test_unsupported_and_hostile_paths_are_reported_without_reading():
 
 def test_hash_is_canonical():
     assert canonical_sha256({"b": 2, "a": 1}) == canonical_sha256({"a": 1, "b": 2})
+
+
+def test_unresolved_python_and_relative_require_are_explicit():
+    root = Path(__file__).parent / "fixtures"
+    rows = [{"path": "app.py", "type": "file"}, {"path": "ui.ts", "type": "file"}]
+    result = build_indexes(root, rows)
+    assert any(row["target"] == "util" and row["unresolved"] for row in result["dependencies"])
+    assert any(row["target"] == "./app" and row["kind"] == "require" and not row["unresolved"] for row in result["dependencies"])

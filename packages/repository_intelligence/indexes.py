@@ -19,6 +19,7 @@ _REQUIRE = re.compile(r"\brequire\s*\(\s*[\"']([^\"']+)[\"']\s*\)")
 _TS_SYMBOL = re.compile(r"^\s*(?:(?:export\s+)?(?:async\s+)?function|(?:export\s+)?class|(?:export\s+)?interface|(?:export\s+)?type|(?:export\s+)?const|(?:export\s+)?let|(?:export\s+)?var)\s+([A-Za-z_$][\w$]*)", re.M)
 _PY_TEST = re.compile(r"^\s*def\s+(test_[A-Za-z0-9_]*)\s*\(", re.M)
 _TS_TEST = re.compile(r"^\s*(?:it|test|describe)\s*\(\s*[\"'`]([^\"'`]+)", re.M)
+_PY_EXTERNAL = {"ast", "asyncio", "json", "os", "pathlib", "re", "sys", "typing", "unittest", "pytest"}
 
 
 def _path_sort(row: dict[str, Any]) -> tuple[bytes, int, bytes]:
@@ -59,7 +60,7 @@ def _python_rows(text: str, path: str) -> tuple[list[dict[str, Any]], list[dict[
         elif isinstance(node, (ast.Import, ast.ImportFrom)):
             names = [a.name for a in node.names]
             module = node.module if isinstance(node, ast.ImportFrom) else names[0]
-            dependencies.append({"path": path, "target": module, "kind": "import", "unresolved": False, "line": node.lineno})
+            dependencies.append({"path": path, "target": module, "kind": "import", "unresolved": True, "external": module.split(".", 1)[0] in _PY_EXTERNAL, "line": node.lineno})
     return symbols, dependencies
 
 
@@ -72,6 +73,18 @@ def build_indexes(repository: Path, inventory: Iterable[dict[str, Any]], impact:
     warnings: list[dict[str, Any]] = []
     files = sorted((str(row["path"]) for row in inventory if row.get("type") == "file" and Path(str(row["path"])).suffix.lower() in _SOURCE), key=lambda x: x.encode())
     known_stems = {Path(path).with_suffix("").as_posix() for path in files}
+
+    def resolve_target(source: str, target: str) -> bool:
+        raw = target.replace("\\", "/")
+        candidates = {raw, raw.lstrip("./")}
+        if raw.startswith("."):
+            candidates.add((Path(source).parent / raw).as_posix())
+        expanded = set(candidates)
+        for candidate in candidates:
+            for suffix in (".ts", ".tsx", ".js", ".jsx", ".py"):
+                expanded.add(candidate + suffix)
+                expanded.add(candidate + "/index" + suffix)
+        return any(candidate in known_stems for candidate in expanded)
     for path in files:
         full, error = _safe_source(repository, path)
         if error:
@@ -93,11 +106,12 @@ def build_indexes(repository: Path, inventory: Iterable[dict[str, Any]], impact:
                 symbols.append({"name": match.group(1), "kind": "symbol", "path": path, "line": text.count("\n", 0, match.start()) + 1})
             for match in _IMPORT.finditer(text):
                 target = match.group(2)
-                resolved = target in known_stems or any((Path(path).parent / target).as_posix() == stem for stem in known_stems)
-                dependencies.append({"path": path, "target": target, "kind": "import", "unresolved": not resolved, "line": text.count("\n", 0, match.start()) + 1})
+                resolved = resolve_target(path, target)
+                dependencies.append({"path": path, "target": target, "kind": "import", "unresolved": not resolved, "external": False, "line": text.count("\n", 0, match.start()) + 1})
             for match in _REQUIRE.finditer(text):
                 target = match.group(1)
-                dependencies.append({"path": path, "target": target, "kind": "require", "unresolved": target not in known_stems, "line": text.count("\n", 0, match.start()) + 1})
+                resolved = resolve_target(path, target)
+                dependencies.append({"path": path, "target": target, "kind": "require", "unresolved": not resolved, "external": not target.startswith("."), "line": text.count("\n", 0, match.start()) + 1})
             for match in _TS_TEST.finditer(text):
                 tests.append({"name": match.group(1), "kind": "test", "path": path, "line": text.count("\n", 0, match.start()) + 1, "targets": []})
         if path.startswith("tests/") or ".test." in path or ".spec." in path:
@@ -106,7 +120,7 @@ def build_indexes(repository: Path, inventory: Iterable[dict[str, Any]], impact:
                     row["targets"] = sorted((p for p in files if p != path and Path(p).stem in Path(path).stem), key=lambda x: x.encode())
     # Resolve Python imports after the complete file set is known.
     for row in dependencies:
-        if row["kind"] == "import" and row["target"] in known_stems:
+        if row["kind"] == "import" and (row.get("external") or resolve_target(row["path"], row["target"].replace(".", "/"))):
             row["unresolved"] = False
     defined = {row["name"] for row in symbols}
     for path in files:

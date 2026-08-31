@@ -32,6 +32,8 @@
 - `FAILURE_REPORT` 1회: 독립 검증에서 내부 symlink 판정, Python unresolved import, JS/TS `require`, 참조 인덱스 및 ScanResult hash/schema 노출, impact의 의존·테스트 연결이 부족하다고 판정했다.
 - 조치: resolve 전 lstat 검사와 경로 경고, known stems 기반 import 판정, require 파싱, `references` 필드, `index_sha256` 및 schema fields 연결, impact 관련 경로 확장을 적용했다.
 - 재검증: 동일 targeted pytest `3 passed`, compileall 및 diff check 통과.
+- `FAILURE_REPORT` 2회차: Python import와 상대 require의 확장자/모듈 경로 해석이 불충분했다.
+- 조치: 표준 외부 모듈 분류, Python known stems 판정, 상대 require의 확장자 및 `index` 후보 정규화를 추가하고 회귀 테스트를 확장했다.
 
 - 외부 parser 없이 보수적으로 분석하므로 난해한 TypeScript 문법은 warning 없이 미색인될 수 있다.
 - 영향 투영은 지정 심볼/경로와 직접 관찰된 행을 중심으로 하며 의미론적 호출 그래프가 아니다.
