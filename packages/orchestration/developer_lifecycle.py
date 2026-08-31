@@ -55,6 +55,17 @@ def _freeze(value: Any) -> Any:
     return value
 
 
+def _thaw(value: Any) -> Any:
+    """Convert the internal immutable payload back to JSON-safe containers."""
+    if isinstance(value, Mapping):
+        return {str(key): _thaw(item) for key, item in value.items()}
+    if isinstance(value, (tuple, list)):
+        return [_thaw(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        return [_thaw(item) for item in value]
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class RawResultEnvelope:
     """Opaque runner output.  Payload is copied on ingress/egress."""
@@ -76,7 +87,7 @@ class RawResultEnvelope:
         return {
             "session_id": self.session_id,
             "status": self.status.value,
-            "payload": deepcopy(dict(self.payload)),
+            "payload": _thaw(self.payload),
         }
 
 

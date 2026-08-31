@@ -4,7 +4,7 @@ import pytest
 
 from packages.orchestration import (
     DeveloperLifecycleService, DeterministicFakeDeveloperRunner,
-    LifecycleStatus, PacketRejected, ReadOnlyPolicyRejected,
+    LifecycleStatus, PacketRejected, RawResultEnvelope, ReadOnlyPolicyRejected,
 )
 from tests.orchestration.test_delegation_packet import packet
 
@@ -64,6 +64,18 @@ def test_raw_result_payload_is_opaque_and_cannot_be_mutated():
     with pytest.raises(TypeError):
         done.raw_result.payload["runner"] = "changed"
     assert done.raw_result.to_dict()["payload"]["runner"] == "deterministic-fake"
+
+
+def test_raw_result_to_dict_thaws_nested_payload():
+    result = RawResultEnvelope(
+        "nested-1", LifecycleStatus.COMPLETED,
+        {"nested": {"items": [{"ok": True}, {"values": ("a", "b")}]}},
+    )
+    assert result.to_dict() == {
+        "session_id": "nested-1",
+        "status": "COMPLETED",
+        "payload": {"nested": {"items": [{"ok": True}, {"values": ["a", "b"]}]}},
+    }
 
 
 def test_read_only_policy_rejects_write_secret_and_out_of_scope_path():
