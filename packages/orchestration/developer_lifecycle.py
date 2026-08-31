@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
 from typing import Any, Mapping, Protocol
+import re
 
 from .delegation import DelegationPacket, PacketValidationResult, validate_packet
 
@@ -20,6 +21,7 @@ class LifecycleStatus(StrEnum):
     PENDING = "PENDING"
     RUNNING = "RUNNING"
     STOP_REQUESTED = "STOP_REQUESTED"
+    PAUSED = "PAUSED"
     COMPLETED = "COMPLETED"
     STOPPED = "STOPPED"
     FAILED = "FAILED"
@@ -41,6 +43,15 @@ class InvalidLifecycleTransition(LifecycleError):
 
 class ReadOnlyPolicyRejected(LifecycleError):
     pass
+
+
+class ResumeRejected(LifecycleError):
+    """A pause/resume command cannot be applied to the current session."""
+
+
+def _require_hash(value: str, field: str) -> None:
+    if not isinstance(value, str) or re.fullmatch(r"sha256:[0-9a-f]{64}", value) is None:
+        raise ValueError(f"{field} must be a canonical sha256 hash")
 
 
 def _freeze(value: Any) -> Any:
@@ -92,12 +103,59 @@ class RawResultEnvelope:
 
 
 @dataclass(frozen=True, slots=True)
+class CheckpointHandoff:
+    """Opaque, immutable state needed to resume the same delegation."""
+
+    checkpoint_id: str
+    checkpoint_hash: str
+    state: Mapping[str, Any]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.checkpoint_id, str) or not self.checkpoint_id.strip():
+            raise ValueError("checkpoint_id must be non-empty")
+        _require_hash(self.checkpoint_hash, "checkpoint_hash")
+        if not isinstance(self.state, Mapping):
+            raise TypeError("state must be a mapping")
+        object.__setattr__(self, "state", _freeze(self.state))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"checkpoint_id": self.checkpoint_id, "checkpoint_hash": self.checkpoint_hash, "state": _thaw(self.state)}
+
+
+@dataclass(frozen=True, slots=True)
 class DeveloperSession:
     session_id: str
     delegation_id: str
     packet_hash: str
     status: LifecycleStatus
     raw_result: RawResultEnvelope | None = None
+    next_instruction: str | None = None
+    checkpoint: CheckpointHandoff | None = None
+    resume_epoch: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class LifecycleProjection:
+    """Framework-neutral public projection for current/handoff views."""
+
+    session_id: str
+    delegation_id: str
+    packet_hash: str
+    status: LifecycleStatus
+    next_instruction: str | None
+    checkpoint: CheckpointHandoff | None
+    resume_epoch: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "session_id": self.session_id,
+            "delegation_id": self.delegation_id,
+            "packet_hash": self.packet_hash,
+            "status": self.status.value,
+            "next_instruction": self.next_instruction,
+            "checkpoint": None if self.checkpoint is None else self.checkpoint.to_dict(),
+            "resume_epoch": self.resume_epoch,
+        }
 
 
 class ReadOnlyPolicy:
@@ -198,7 +256,7 @@ class DeveloperLifecycleService:
 
     def wait(self, session_id: str) -> DeveloperSession:
         current = self._require(session_id)
-        if current.status in {LifecycleStatus.COMPLETED, LifecycleStatus.STOPPED, LifecycleStatus.FAILED}:
+        if current.status in {LifecycleStatus.COMPLETED, LifecycleStatus.STOPPED, LifecycleStatus.FAILED, LifecycleStatus.PAUSED}:
             return current
         if current.status is LifecycleStatus.PENDING:
             current = self._replace(current, status=LifecycleStatus.RUNNING)
@@ -222,6 +280,56 @@ class DeveloperLifecycleService:
         self._sessions[session_id] = current
         return current
 
+    def steer(self, session_id: str, instruction: str) -> DeveloperSession:
+        """Record the next approved instruction while the session is running."""
+        current = self._require(session_id)
+        if current.status is not LifecycleStatus.RUNNING:
+            raise InvalidLifecycleTransition("steer requires a RUNNING session")
+        if not isinstance(instruction, str) or not instruction.strip():
+            raise ValueError("instruction must be non-empty")
+        current = self._replace(current, next_instruction=instruction.strip())
+        self._sessions[session_id] = current
+        return current
+
+    def pause(self, session_id: str, checkpoint: CheckpointHandoff) -> DeveloperSession:
+        """Pause without terminating the runner and bind an immutable checkpoint."""
+        if not isinstance(checkpoint, CheckpointHandoff):
+            raise TypeError("checkpoint must be CheckpointHandoff")
+        current = self._require(session_id)
+        if current.status is LifecycleStatus.PAUSED:
+            if current.checkpoint == checkpoint:
+                return current
+            raise ResumeRejected("paused session already has a different checkpoint")
+        if current.status in {LifecycleStatus.COMPLETED, LifecycleStatus.STOPPED, LifecycleStatus.FAILED}:
+            raise ResumeRejected("cannot pause a terminal session")
+        if current.status is not LifecycleStatus.RUNNING:
+            raise InvalidLifecycleTransition("pause requires a RUNNING session")
+        current = self._replace(current, status=LifecycleStatus.PAUSED, checkpoint=checkpoint)
+        self._sessions[session_id] = current
+        return current
+
+    def resume(self, session_id: str, packet_hash: str) -> DeveloperSession:
+        """Resume only the packet that produced the stored checkpoint."""
+        current = self._require(session_id)
+        if packet_hash != current.packet_hash:
+            raise ResumeRejected("packet hash does not match the checkpoint session")
+        if current.status is LifecycleStatus.RUNNING:
+            return current
+        if current.status is not LifecycleStatus.PAUSED:
+            raise ResumeRejected("cannot resume a terminal or non-paused session")
+        current = self._replace(current, status=LifecycleStatus.RUNNING, resume_epoch=current.resume_epoch + 1)
+        self._sessions[session_id] = current
+        return current
+
+    def current(self, session_id: str) -> LifecycleProjection:
+        current = self._require(session_id)
+        return LifecycleProjection(current.session_id, current.delegation_id, current.packet_hash,
+                                   current.status, current.next_instruction, current.checkpoint,
+                                   current.resume_epoch)
+
+    def handoff(self, session_id: str) -> CheckpointHandoff | None:
+        return self._require(session_id).checkpoint
+
     def authorize(self, session_id: str, action: str, *, path: str | None = None) -> None:
         self._require(session_id)
         self._policy.authorize(action, path=path, packet=self._packets[session_id])
@@ -233,7 +341,16 @@ class DeveloperLifecycleService:
             raise KeyError(f"unknown developer session: {session_id}") from error
 
     def _replace(self, session: DeveloperSession, **changes: Any) -> DeveloperSession:
-        return DeveloperSession(changes.get("session_id", session.session_id), changes.get("delegation_id", session.delegation_id), changes.get("packet_hash", session.packet_hash), changes.get("status", session.status), changes.get("raw_result", session.raw_result))
+        return DeveloperSession(
+            changes.get("session_id", session.session_id),
+            changes.get("delegation_id", session.delegation_id),
+            changes.get("packet_hash", session.packet_hash),
+            changes.get("status", session.status),
+            changes.get("raw_result", session.raw_result),
+            changes.get("next_instruction", session.next_instruction),
+            changes.get("checkpoint", session.checkpoint),
+            changes.get("resume_epoch", session.resume_epoch),
+        )
 
 
 ReadOnlyDeveloperRunner = DeterministicFakeDeveloperRunner
@@ -241,7 +358,7 @@ RawResult = RawResultEnvelope
 
 __all__ = [
     "LifecycleStatus", "LifecycleError", "PacketRejected", "InvalidLifecycleTransition",
-    "ReadOnlyPolicyRejected", "RawResultEnvelope", "RawResult", "DeveloperSession",
+    "ReadOnlyPolicyRejected", "ResumeRejected", "RawResultEnvelope", "RawResult", "CheckpointHandoff", "DeveloperSession", "LifecycleProjection",
     "DeveloperRunner", "DeterministicFakeDeveloperRunner", "ReadOnlyDeveloperRunner",
     "DeveloperLifecycleService", "ReadOnlyPolicy",
 ]
