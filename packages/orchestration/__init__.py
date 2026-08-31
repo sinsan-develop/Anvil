@@ -25,6 +25,10 @@ from .failure_ledger import (
     FailureLedger, FailureLedgerEntry, FailureLedgerProjection,
     FailureLedgerReasonCode, FailureLedgerReceipt,
 )
+from .takeover import (
+    MainAgentTakeoverService, TakeoverAudit, TakeoverPacket, TakeoverReasonCode,
+    TakeoverReceipt, TakeoverService,
+)
 from packages.planning.planner import (
     ExecutionPlan, ExecutionStep, PlannerError, RequestAnalysis, ScheduleDecision,
     StepKind, analyze_request, generate_work_instruction, schedule_ready_steps,
@@ -46,6 +50,8 @@ __all__ = [
     "ResolverEvent", "ResolverReasonCode", "StepProjection", "StepState",
     "FailureLedger", "FailureLedgerEntry", "FailureLedgerProjection",
     "FailureLedgerReasonCode", "FailureLedgerReceipt",
+    "MainAgentTakeoverService", "TakeoverAudit", "TakeoverPacket", "TakeoverReasonCode",
+    "TakeoverReceipt", "TakeoverService",
     "ExecutionPlan", "ExecutionStep", "PlannerError", "RequestAnalysis",
     "ScheduleDecision", "StepKind", "analyze_request", "generate_work_instruction",
     "schedule_ready_steps",

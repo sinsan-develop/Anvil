@@ -1,5 +1,5 @@
 """Worker and write lease domain contracts."""
 
-from .service import LeaseService, StaleFencingToken
+from .service import LeaseService, StaleFencingToken, LeaseError
 
-__all__ = ["LeaseService", "StaleFencingToken"]
+__all__ = ["LeaseService", "StaleFencingToken", "LeaseError"]

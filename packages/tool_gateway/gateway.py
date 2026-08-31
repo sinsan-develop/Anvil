@@ -6,10 +6,43 @@ from pathlib import Path
 import hashlib
 import os
 from typing import Any
+from threading import RLock
 
 
 class ToolGatewayRejected(PermissionError):
     pass
+
+
+class ToolPermissionRegistry:
+    """In-memory tool grants with fail-closed, idempotent revocation."""
+
+    def __init__(self) -> None:
+        self._lock = RLock()
+        self._grants: dict[str, frozenset[str]] = {}
+
+    def grant(self, run_id: str, tools: set[str] | frozenset[str] | tuple[str, ...]) -> None:
+        if not isinstance(run_id, str) or not run_id.strip():
+            raise ToolGatewayRejected("run_id must be non-empty")
+        normalized = frozenset(tools)
+        if any(not isinstance(item, str) or not item.strip() for item in normalized):
+            raise ToolGatewayRejected("tool names must be non-empty strings")
+        with self._lock:
+            self._grants[run_id] = normalized
+
+    def require(self, run_id: str, tool: str) -> None:
+        with self._lock:
+            if tool not in self._grants.get(run_id, frozenset()):
+                raise ToolGatewayRejected("tool permission is not active")
+
+    def revoke(self, run_id: str) -> frozenset[str]:
+        with self._lock:
+            return self._grants.pop(run_id, frozenset())
+
+    def active(self, run_id: str | None = None) -> dict[str, frozenset[str]]:
+        with self._lock:
+            if run_id is None:
+                return dict(self._grants)
+            return {run_id: self._grants[run_id]} if run_id in self._grants else {}
 
 
 def _inside(root: Path, target: Path) -> bool:
