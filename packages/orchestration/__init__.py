@@ -17,6 +17,10 @@ from .failure_report import (
     FailureReportReasonCode, FailureReportValidationResult,
     compute_failure_fingerprint, validate_failure_report,
 )
+from .outcome_resolver import (
+    DelegationOutcomeResolver, DelegationProjection, ResolutionReceipt,
+    ResolverEvent, ResolverReasonCode, StepProjection, StepState,
+)
 
 __all__ = [
     "BudgetDenied", "MainAgentKernel", "StepBudget", "StepResult",
@@ -30,4 +34,6 @@ __all__ = [
     "ResultValidationResult", "canonical_hash", "canonical_json", "validate_result",
     "FailureReportReasonCode", "FailureReportValidationResult",
     "compute_failure_fingerprint", "validate_failure_report",
+    "DelegationOutcomeResolver", "DelegationProjection", "ResolutionReceipt",
+    "ResolverEvent", "ResolverReasonCode", "StepProjection", "StepState",
 ]
