@@ -192,3 +192,10 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-10을 `merge: C-10 action policy` 병합 커밋으로 `main`에 통합했다. 최종 구현 커밋은 `df4f726`이다.
 - 실제 secret manager·네트워크·DB·browser·deployment는 미검증이다.
 - 다음 미완료 항목은 C-11 Main Agent Task 분석·ExecutionPlan·WorkInstruction orchestration이다.
+
+## 2026-09-01 C-12 독립 검증 및 수락
+
+- C-12 valid FAILURE_REPORT lineage/fingerprint ledger를 구현하고 invalid·환경성 보고 제외, replay idempotency, 3회 takeover 후보 신호를 검증했다.
+- 독립 검증: C-12 5/5, orchestration 52/52, compileall, `git diff --check` PASS.
+- C-12를 `main`에 병합·push했으며 실제 lease/tool 회수는 C-13 범위로 미실행이다.
+- 다음 미완료 항목은 C-13 세 번째 실패의 lease·tool 회수와 Main 직접 인수다.
