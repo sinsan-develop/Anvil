@@ -23,15 +23,14 @@
 
 ## 검증
 
-- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/planning/test_c11_planner.py`: 종료 코드 0, 7 passed
-- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/planning tests/orchestration`: 종료 코드 0, 54 passed (기존 계약 회귀 없음)
+- `C:\Users\cyhuh\anaconda3\python.exe -m pytest -q tests/planning tests/orchestration tests/repository_intelligence tests/action_policy --disable-warnings`: 종료 코드 0, 72 passed (경고 2건)
 - `C:\Users\cyhuh\anaconda3\python.exe -m compileall -q packages tests`: 종료 코드 0
 - `git diff --check`: 종료 코드 0
 
 ## 오류 이력
 
-- 정식 실패 2회: 1회차 WorkInstruction binding/hash 정규식 누락, 2회차 dependency READY projection 및 analysis 전달/전체 binding 누락.
-- 조치: 모델·생성/검증·schedule 경로를 보강하고 dependency/analysis/hash 회귀 테스트 추가. 동일 근본 원인 반복 2회(3회 미도달).
+- 정식 실패 4회: WorkInstruction binding/hash, dependency·analysis 전달, 필수 request-analysis hash, analysis=None stale hash 검증 결함.
+- 3회째 동일 근본 원인에서 Developer를 중지하고 Main Agent가 직접 인수했다. 이후 필수 binding과 stale hash 검증을 보완하고 회귀 테스트를 추가했다.
 
 ## 미검증 범위
 
@@ -46,5 +45,5 @@ C-11 커밋을 revert하면 된다. 기존 C-01~C-10 계약 파일은 변경하�
 - 동일 근본 원인 실패 3회에 도달하여 Developer write lease를 회수하고 Main Agent가 직접 인수했다.
 - 조치: WorkInstruction의 scope·request_analysis_hash 필수화, 실제 content_hash 재계산 검증, objective/risk/egress/prohibited 필수 검증을 추가했다.
 - Main Agent 검증: `C:\Users\cyhuh\anaconda3\python.exe -m pytest -q tests/planning tests/orchestration tests/repository_intelligence tests/action_policy --disable-warnings` → 71 passed, 1 warning; compileall 및 `git diff --check` PASS.
-- 추가 잔여 결함 보완: `request_analysis_hash=None` 기본 허용을 제거하고 필수 canonical hash로 강제했다. 동일 targeted 검증을 재실행한다.
+- 추가 잔여 결함 보완: `request_analysis_hash=None` 기본 허용을 제거하고 필수 canonical hash로 강제했다.
 - 추가 보완: `analysis=None` 경로에서도 instruction과 plan의 request-analysis hash가 반드시 일치하도록 fail-closed 검증과 회귀 테스트를 추가했다.
