@@ -14,8 +14,9 @@ import hashlib
 import hmac
 import json
 import re
+from threading import Lock
 from uuid import uuid4
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -40,7 +41,14 @@ def _utc(value: datetime, field: str) -> None:
 
 def _safe_path(path: str) -> str:
     _text(path, "console_path")
-    if not path.startswith("/") or path.startswith("//") or "\\" in path or "\n" in path:
+    parsed = urlparse(path)
+    segments = [unquote(segment) for segment in parsed.path.split("/")]
+    if (
+        not path.startswith("/") or path.startswith("//") or "\\" in path or "\n" in path
+        or parsed.path != path or parsed.query or parsed.fragment
+        or any(segment in {".", ".."} for segment in segments)
+        or any(ord(char) < 0x20 for char in path)
+    ):
         raise ValueError("console_path must be a relative Web Console path")
     return path
 
@@ -99,6 +107,9 @@ class TelegramUpdate:
     nonce: str
     signature: str
     parameters: tuple[tuple[str, str], ...] = ()
+    actor_id: str = ""
+    device_id: str = "telegram"
+    session_id: str = ""
 
     def __post_init__(self) -> None:
         for value, field in ((self.command_id, "command_id"), (self.chat_id, "chat_id"), (self.user_id, "user_id"), (self.command, "command"), (self.nonce, "nonce"), (self.signature, "signature")):
@@ -108,6 +119,16 @@ class TelegramUpdate:
             raise ValueError("expires_at must be after issued_at")
         if not isinstance(self.parameters, tuple) or any(not isinstance(pair, tuple) or len(pair) != 2 or any(not isinstance(v, str) for v in pair) for pair in self.parameters):
             raise ValueError("parameters must be tuple pairs")
+        for key, value in self.parameters:
+            _text(key, "parameters.key")
+            _text(value, "parameters.value")
+        if tuple(sorted(self.parameters)) != self.parameters or len({pair[0] for pair in self.parameters}) != len(self.parameters):
+            raise ValueError("parameters must use sorted unique canonical keys")
+        if self.actor_id and (not isinstance(self.actor_id, str) or self.actor_id != self.actor_id.strip()):
+            raise ValueError("actor_id must be canonical")
+        _text(self.device_id, "device_id")
+        if self.session_id and (not isinstance(self.session_id, str) or self.session_id != self.session_id.strip()):
+            raise ValueError("session_id must be canonical")
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +159,7 @@ class TelegramAdapter:
         self._console_base_url = normalized_console_base_url
         self._state_store = state_store
         self._seen: set[str] = set()
+        self._seen_lock = Lock()
         self._audits: tuple[AuditEvent, ...] = ()
 
     @property
@@ -163,6 +185,9 @@ class TelegramAdapter:
                 "nonce": update.nonce,
                 "parameters": update.parameters,
                 "user_id": update.user_id,
+                "actor_id": update.actor_id,
+                "device_id": update.device_id,
+                "session_id": update.session_id,
             },
             ensure_ascii=False,
             separators=(",", ":"),
@@ -176,7 +201,14 @@ class TelegramAdapter:
     def _audit(self, update: TelegramUpdate | None, outcome: TelegramOutcome, now: datetime) -> AuditEvent:
         command_id = update.command_id if update is not None and isinstance(update.command_id, str) and update.command_id.strip() else "malformed"
         operator_id = update.user_id if update is not None and isinstance(update.user_id, str) and update.user_id.strip() else "unknown"
-        audit = AuditEvent(f"telegram-audit-{uuid4().hex}", command_id, operator_id, "telegram", outcome.value, now)
+        details = ()
+        if update is not None:
+            details = tuple((key, value) for key, value in (
+                ("actor_id", update.actor_id or update.user_id),
+                ("device_id", update.device_id),
+                ("session_id", update.session_id or "telegram"),
+            ) if value)
+        audit = AuditEvent(f"telegram-audit-{uuid4().hex}", command_id, operator_id, "telegram", outcome.value, now, details)
         self._audits += (audit,)
         if self._state_store is not None:
             self._state_store.record_audit(
@@ -211,17 +243,19 @@ class TelegramAdapter:
         if not hmac.compare_digest(update.signature, expected):
             audit = self._audit(update, TelegramOutcome.INVALID_SIGNATURE, now)
             return TelegramResult(False, "서명 검증에 실패했습니다.", TelegramOutcome.INVALID_SIGNATURE, audit)
-        claimed = update.nonce not in self._seen and update.command_id not in self._seen
-        if claimed and self._state_store is not None:
-            claimed = self._state_store.claim_update(
-                nonce=update.nonce, command_id=update.command_id,
-                chat_id=update.chat_id, user_id=update.user_id,
-                first_seen_at=now, expires_at=update.expires_at,
-            )
+        with self._seen_lock:
+            claimed = update.nonce not in self._seen and update.command_id not in self._seen
+            if claimed and self._state_store is not None:
+                claimed = self._state_store.claim_update(
+                    nonce=update.nonce, command_id=update.command_id,
+                    chat_id=update.chat_id, user_id=update.user_id,
+                    first_seen_at=now, expires_at=update.expires_at,
+                )
+            if claimed:
+                self._seen.update((update.nonce, update.command_id))
         if not claimed:
             audit = self._audit(update, TelegramOutcome.REPLAYED, now)
             return TelegramResult(False, "이미 처리된 명령입니다.", TelegramOutcome.REPLAYED, audit)
-        self._seen.update((update.nonce, update.command_id))
         if command in APPROVAL_COMMANDS:
             kind = CommandKind(command)
             operator_command = OperatorCommand(update.command_id, update.user_id, kind, update.issued_at, update.expires_at, update.nonce, "telegram-redacted")
