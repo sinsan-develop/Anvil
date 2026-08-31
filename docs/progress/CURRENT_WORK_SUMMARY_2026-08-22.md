@@ -136,6 +136,14 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-11을 `main`에 병합·원격 push 완료했으며, 실제 DB/API/browser/Provider/외부 실행은 미검증이다.
 - 다음 미완료 항목은 C-12 failure lineage·fingerprint·유효 횟수 집계다.
 
+## 2026-09-01 C-13 독립 검증 및 수락
+
+- C-13 세 번째 유효 failure에서 Developer stop→lease/tool revoke→Main TakeoverPacket/audit 원자 흐름을 구현했다.
+- 독립 검토에서 execution fencing token 누락 허용 1회를 보완해 MISSING/STALE 토큰을 fail-closed로 처리했다.
+- 최종 독립 검증: orchestration·leases·tool gateway 61 passed, 1 skipped, compileall·`git diff --check` PASS.
+- C-13을 `main`에 병합·push했으며 실제 분산 transaction/운영 lease 저장소/Docker·WSL은 미검증이다.
+- 다음 미완료 항목은 C-14 G0~G3 gate·diff review·EvidenceManifest·Apply Approval이다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
