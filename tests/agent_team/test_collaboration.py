@@ -43,6 +43,32 @@ class CollaborationPrimitiveTests(unittest.TestCase):
         with self.assertRaisesRegex(PermissionError, "actor"):
             log.append(foreign)
 
+    def test_event_parent_hash_and_payload_are_immutable_and_canonical(self):
+        log = AppendOnlyTeamLog(self.session)
+        payload = {"nested": {"items": ["a"]}}
+        event = TeamEvent("e1", "s1", 1, TeamEventType.PROGRESS_RECORDED, "leader", "s1", log.head_hash, payload, NOW)
+        payload["nested"]["items"].append("mutated")
+        self.assertEqual(("a",), event.payload["nested"]["items"])
+        with self.assertRaises(TypeError):
+            event.payload["new"] = "nope"
+        with self.assertRaisesRegex(ValueError, "lowercase"):
+            TeamEvent("bad", "s1", 1, TeamEventType.PROGRESS_RECORDED, "leader", "s1", "sha256:" + "A" * 64, {}, NOW)
+
+    def test_replay_rejects_foreign_actor(self):
+        log = AppendOnlyTeamLog(self.session)
+        event = TeamEvent("e1", "s1", 1, TeamEventType.PROGRESS_RECORDED, "leader", "s1", log.head_hash, {}, NOW)
+        with self.assertRaisesRegex(PermissionError, "actor"):
+            TeamProgressProjection.replay(self.session, (TeamEvent("x", "s1", 1, TeamEventType.PROGRESS_RECORDED, "outsider", "s1", log.head_hash, {}, NOW),))
+
+    def test_legacy_model_defaults_are_explicit_utc_and_root(self):
+        from packages.agent_team import TeamTask, TeamTaskStatus, TeamMailbox, DecisionRequest
+        task = TeamTask("t", "s1", "task", TeamTaskStatus.PENDING, frozenset(), ("src",))
+        mailbox = TeamMailbox("m", "s1", "agent", HASH, 1)
+        request = DecisionRequest("d", "s1", "agent", "user", "choose", ("yes",), HASH, ("src",), ("x",), ("y",))
+        for schema in (task, mailbox, request):
+            self.assertIsNotNone(schema.created_at.tzinfo)
+            self.assertEqual("root", schema.parent_hash)
+
     def test_projection_replays_events_and_rejects_history_gap(self):
         log = AppendOnlyTeamLog(self.session)
         e1 = TeamEvent("e1", "s1", 1, TeamEventType.MESSAGE_APPENDED, "leader", "m1", log.head_hash, {}, NOW)

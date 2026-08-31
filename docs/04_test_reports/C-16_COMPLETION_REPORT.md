@@ -31,3 +31,13 @@
 
 허용 경로인 `packages/agent_team/**`, `tests/agent_team/**`, 본 보고서만 변경했다. 복구는 이 작업 브랜치 커밋을 revert하면 된다.
 
+## 독립 검증 보완 이력
+
+독립 검증 FAILURE_REPORT 1회에 따라 다음을 보완했다.
+
+- `TeamProgressProjection.replay`에서 session membership 외 actor를 거부
+- `TeamEvent.parent_hash`를 lowercase `sha256:<64 hex>` 또는 명시적 `root` sentinel로 제한
+- TeamEvent payload를 재귀적으로 immutable mapping/tuple/frozenset으로 동결하여 외부 mutation과 hash 불일치를 차단
+- 기존 TeamSession·TeamTask·TeamMailbox·DecisionRequest·RevisionRequest에 UTC `created_at`과 `parent_hash` 필드를 추가했다. 기존 positional 생성자 호환성을 위해서만 명시적 `1970-01-01T00:00:00Z`/`root` legacy sentinel을 사용한다.
+
+보완 후 재검증: `tests/agent_team` **46 passed**, compileall exit 0, `git diff --check` PASS. 운영 Provider/DB/API/browser/Telegram/Docker/WSL/deployment 경계는 계속 미검증이다.

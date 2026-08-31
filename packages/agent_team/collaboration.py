@@ -10,11 +10,34 @@ from datetime import datetime
 from enum import Enum
 import hashlib
 import json
+from types import MappingProxyType
 from typing import Any, Iterable, Mapping
 
 from .models import ConversationRole, ConversationTurn, TeamMessage, TeamSession, TeamTask
 
 HASH_PREFIX = "sha256:"
+_ROOT_PARENT = "root"
+
+
+def _freeze(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return MappingProxyType({str(key): _freeze(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze(item) for item in value)
+    if isinstance(value, tuple):
+        return tuple(_freeze(item) for item in value)
+    if isinstance(value, (set, frozenset)):
+        return frozenset(_freeze(item) for item in value)
+    return value
+
+
+def _parent_hash(value: str, field: str = "parent_hash") -> None:
+    if not isinstance(value, str) or value == _ROOT_PARENT:
+        if value != _ROOT_PARENT:
+            raise ValueError(f"{field} must be a canonical sha256 hash or root")
+        return
+    if len(value) != 71 or not value.startswith(HASH_PREFIX) or any(char not in "0123456789abcdef" for char in value[len(HASH_PREFIX):]):
+        raise ValueError(f"{field} must be a canonical lowercase sha256 hash")
 
 
 def _plain(value: Any) -> Any:
@@ -64,8 +87,7 @@ class ThreadIdentity:
             raise ValueError("participant_ids must be a non-empty frozenset")
         if self.initiator_id not in self.participant_ids:
             raise ValueError("initiator_id must be a participant")
-        if not self.parent_hash.startswith(HASH_PREFIX) or len(self.parent_hash) != 71:
-            raise ValueError("parent_hash must be a sha256 hash")
+        _parent_hash(self.parent_hash)
         if not isinstance(self.created_at, datetime) or self.created_at.tzinfo is None or self.created_at.utcoffset() is None or self.created_at.utcoffset().total_seconds() != 0:
             raise ValueError("created_at must be UTC")
         if self.kind is ThreadKind.USER_AGENT and len(self.participant_ids) != 2:
@@ -147,8 +169,10 @@ class TeamEvent:
             raise ValueError("sequence must be positive")
         if not isinstance(self.event_type, TeamEventType):
             raise TypeError("event_type must be TeamEventType")
+        _parent_hash(self.parent_hash)
         if not isinstance(self.payload, Mapping):
             raise TypeError("payload must be a mapping")
+        object.__setattr__(self, "payload", _freeze(self.payload))
         if not isinstance(self.created_at, datetime) or self.created_at.tzinfo is None or self.created_at.utcoffset() is None or self.created_at.utcoffset().total_seconds() != 0:
             raise ValueError("created_at must be UTC")
         expected = canonical_hash({"event_id": self.event_id, "session_id": self.session_id, "sequence": self.sequence, "event_type": self.event_type, "actor_id": self.actor_id, "subject_id": self.subject_id, "parent_hash": self.parent_hash, "payload": self.payload, "created_at": self.created_at})
@@ -164,6 +188,7 @@ class AppendOnlyTeamLog:
         self._events: tuple[TeamEvent, ...] = ()
         self._event_ids: set[str] = set()
         self._parent_hash = initial_parent_hash or canonical_hash(session)
+        _parent_hash(self._parent_hash)
         self._actors = set(session.memberships)
 
     @property
@@ -216,6 +241,8 @@ class TeamProgressProjection:
                 raise ValueError("event history sequence is not contiguous")
             if event.session_id != session.session_id or event.parent_hash != projection.last_event_hash:
                 raise ValueError("event history has stale or foreign parent")
+            if event.actor_id not in session.memberships:
+                raise PermissionError("event actor is not a session member")
             if event.event_type is TeamEventType.TASK_UPDATED and event.payload.get("status") == "COMPLETED":
                 if event.subject_id in completed: raise ValueError("duplicate task progress")
                 completed.append(event.subject_id)
@@ -233,8 +260,7 @@ def validate_schema_identity(schema: Any, *, session_id: str, actor_id: str, par
     """Common fail-closed guard for schemas entering the collaboration log."""
     if not isinstance(session_id, str) or not session_id.strip() or not isinstance(actor_id, str) or not actor_id.strip():
         raise ValueError("session and actor identity are required")
-    if not isinstance(parent_hash, str) or not parent_hash.startswith(HASH_PREFIX) or len(parent_hash) != 71:
-        raise ValueError("parent_hash must be a sha256 hash")
+    _parent_hash(parent_hash)
     if getattr(schema, "session_id", None) != session_id:
         raise ValueError("schema session identity mismatch")
     return canonical_hash(schema)

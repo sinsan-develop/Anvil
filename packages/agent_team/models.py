@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 import re
 
@@ -21,6 +21,11 @@ _RESERVED_AUTHORITIES = frozenset(
         "bypass_fencing",
     }
 )
+# Compatibility defaults keep the pre-C-16 positional constructors usable. New
+# callers should supply real values; serializers can distinguish this explicit
+# legacy sentinel from a missing/null value.
+LEGACY_CREATED_AT = datetime(1970, 1, 1, tzinfo=timezone.utc)
+LEGACY_PARENT_HASH = "root"
 
 
 def _required(value: str, field: str) -> None:
@@ -119,6 +124,8 @@ class TeamSession:
     budget: int
     state: TeamSessionState
     revision: int
+    created_at: datetime = LEGACY_CREATED_AT
+    parent_hash: str = LEGACY_PARENT_HASH
 
     def __post_init__(self) -> None:
         _required(self.session_id, "session_id")
@@ -133,6 +140,9 @@ class TeamSession:
         if not isinstance(self.state, TeamSessionState):
             raise TypeError("state must be TeamSessionState")
         _positive(self.revision, "revision")
+        _utc(self.created_at, "created_at")
+        if self.parent_hash != LEGACY_PARENT_HASH:
+            _hash(self.parent_hash, "parent_hash")
         for permission in self.permissions:
             if permission.lower() in _RESERVED_AUTHORITIES:
                 raise ValueError("permissions must not include reserved authority")
@@ -162,6 +172,8 @@ class TeamTask:
     path_scope: tuple[str, ...]
     claimed_by: str | None = None
     completed_by: str | None = None
+    created_at: datetime = LEGACY_CREATED_AT
+    parent_hash: str = LEGACY_PARENT_HASH
 
     def __post_init__(self) -> None:
         _required(self.task_id, "task_id")
@@ -182,6 +194,9 @@ class TeamTask:
         if self.status is TeamTaskStatus.COMPLETED:
             if self.claimed_by is None or self.completed_by is None:
                 raise ValueError("COMPLETED task requires claimed_by and completed_by")
+        _utc(self.created_at, "created_at")
+        if self.parent_hash != LEGACY_PARENT_HASH:
+            _hash(self.parent_hash, "parent_hash")
 
     def claim(self, agent_id: str) -> TeamTask:
         _required(agent_id, "agent_id")
@@ -257,6 +272,8 @@ class TeamMailbox:
     revision: int
     messages: tuple[TeamMessage, ...] = ()
     idempotency_keys: frozenset[str] = frozenset()
+    created_at: datetime = LEGACY_CREATED_AT
+    parent_hash: str = LEGACY_PARENT_HASH
 
     def __post_init__(self) -> None:
         _required(self.mailbox_id, "mailbox_id")
@@ -264,6 +281,9 @@ class TeamMailbox:
         _required(self.owner_id, "owner_id")
         _hash(self.baseline_hash, "baseline_hash")
         _positive(self.revision, "revision")
+        _utc(self.created_at, "created_at")
+        if self.parent_hash != LEGACY_PARENT_HASH:
+            _hash(self.parent_hash, "parent_hash")
         if not isinstance(self.messages, tuple):
             raise ValueError("messages must be a tuple")
         for message in self.messages:
@@ -374,6 +394,8 @@ class DecisionRequest:
     forbidden_changes: tuple[str, ...]
     state: RequestState = RequestState.PENDING
     decided_by: str | None = None
+    created_at: datetime = LEGACY_CREATED_AT
+    parent_hash: str = LEGACY_PARENT_HASH
 
     def __post_init__(self) -> None:
         for value, field in (
@@ -389,6 +411,9 @@ class DecisionRequest:
         _tuple_of_text(self.scope_paths, "scope_paths")
         _tuple_of_text(self.allowed_changes, "allowed_changes")
         _tuple_of_text(self.forbidden_changes, "forbidden_changes")
+        _utc(self.created_at, "created_at")
+        if self.parent_hash != LEGACY_PARENT_HASH:
+            _hash(self.parent_hash, "parent_hash")
         if frozenset(self.allowed_changes) & frozenset(self.forbidden_changes):
             raise ValueError("allowed_changes and forbidden_changes must not overlap")
         if not isinstance(self.state, RequestState):
@@ -427,6 +452,8 @@ class RevisionRequest:
     revision_ref: str
     state: RequestState = RequestState.PENDING
     decided_by: str | None = None
+    created_at: datetime = LEGACY_CREATED_AT
+    parent_hash: str = LEGACY_PARENT_HASH
 
     def __post_init__(self) -> None:
         for value, field in (
@@ -442,6 +469,9 @@ class RevisionRequest:
         _tuple_of_text(self.scope_paths, "scope_paths")
         _tuple_of_text(self.allowed_changes, "allowed_changes")
         _tuple_of_text(self.forbidden_changes, "forbidden_changes")
+        _utc(self.created_at, "created_at")
+        if self.parent_hash != LEGACY_PARENT_HASH:
+            _hash(self.parent_hash, "parent_hash")
         if frozenset(self.allowed_changes) & frozenset(self.forbidden_changes):
             raise ValueError("allowed_changes and forbidden_changes must not overlap")
         if not isinstance(self.state, RequestState):
