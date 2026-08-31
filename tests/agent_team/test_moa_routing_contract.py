@@ -67,3 +67,19 @@ def test_adversarial_time_budget_primary_and_capability_checks_fail_closed():
     future = BenchmarkRecord("writing", ProviderModelRef("UPSTAGE", "writer"), .9, 1, 1, "2026-09-02T00:00:00Z").bind(c)
     with pytest.raises(ValueError):
         validate_benchmark(future, c, max_age_seconds=60, now=datetime(2026, 9, 1, tzinfo=timezone.utc))
+
+
+def test_second_pass_primary_budget_attempt_and_future_probe_guards():
+    c = catalog()
+    p = CapabilityProfile("writing", privacy_class="private", catalog_revision=7)
+    ref = ProviderModelRef("OPENAI", "writer")
+    with pytest.raises(ValueError):
+        CapabilityRouter().route(p, c, FallbackPolicy((ref,), max_total_cost=.5), now=datetime(2026, 9, 1, tzinfo=timezone.utc))
+    with pytest.raises(ValueError):
+        CapabilityRouter().route(p, c, FallbackPolicy((ref,), max_attempts=1), now=datetime(2026, 9, 1, tzinfo=timezone.utc))
+    future_catalog = ProviderModelCatalog((ProviderModelEntry(
+        "UPSTAGE", "future", frozenset({"writing"}), probe_at="2026-09-02T00:00:00Z"),), revision=2)
+    with pytest.raises(LookupError):
+        CapabilityRouter().route(CapabilityProfile("writing", catalog_revision=2, require_fresh_probe=True), future_catalog, now=datetime(2026, 9, 1, tzinfo=timezone.utc))
+    with pytest.raises(ValueError):
+        BenchmarkRecord("writing", ProviderModelRef("UPSTAGE", "writer"), .9, 1, 1, "2026-09-01T09:00:00+09:00")

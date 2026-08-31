@@ -60,3 +60,9 @@ catalog snapshot hash는 provider/model 정렬 후 계산하고, benchmark capab
 
 보완 후 `pytest tests/agent_team -q`는 **56 passed**, compileall exit 0,
 `git diff --check` exit 0이다.
+
+2회차 독립 검증 보완으로 primary 단독 비용도 `max_total_cost`에 적용하고,
+`max_attempts`를 primary를 포함한 총 시도 횟수로 제한했다. route 실행 시
+probe_at 미래 snapshot을 stale로 처리하며, benchmark measured_at은 UTC
+timezone-aware 값만 허용한다. 보완 후 `pytest tests/agent_team -q`는
+**57 passed**, compileall exit 0, `git diff --check` exit 0이다.

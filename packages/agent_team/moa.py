@@ -108,6 +108,8 @@ class BenchmarkRecord:
         _text(self.capability,"capability")
         if not isinstance(self.route,ProviderModelRef): raise TypeError("route must be ProviderModelRef")
         _number(self.quality,"quality"); _number(self.cost,"cost"); _number(self.latency,"latency"); _iso(self.measured_at,"measured_at")
+        measured = datetime.fromisoformat(self.measured_at.replace("Z", "+00:00"))
+        if measured.tzinfo is None or measured.utcoffset() is None or measured.utcoffset() != timezone.utc.utcoffset(measured): raise ValueError("measured_at must be timezone-aware UTC")
         if self.snapshot_hash: _text(self.snapshot_hash,"snapshot_hash")
     def bind(self,catalog:ProviderModelCatalog)->"BenchmarkRecord": return BenchmarkRecord(self.capability,self.route,self.quality,self.cost,self.latency,self.measured_at,catalog.snapshot_hash)
 
@@ -124,8 +126,9 @@ class CapabilityRouter:
         if not eligible: raise LookupError("no eligible provider/model route")
         scored=sorted(eligible,key=lambda e:(-self._score(e,profile),e.provider,e.model)); selected=scored[0]; fallbacks=[]
         if fallback_policy:
-            if fallback_policy.max_attempts is not None and len(fallback_policy.ordered_fallbacks)>fallback_policy.max_attempts: raise ValueError("fallback exceeds max_attempts")
+            if fallback_policy.max_attempts is not None and 1 + len(fallback_policy.ordered_fallbacks)>fallback_policy.max_attempts: raise ValueError("fallback exceeds max_attempts including primary")
             total=selected.cost
+            if fallback_policy.max_total_cost is not None and total>fallback_policy.max_total_cost: raise ValueError("primary exceeds total budget")
             for ref in fallback_policy.ordered_fallbacks:
                 if ref == selected.ref: raise ValueError("fallback route duplicates primary")
                 entry=catalog.get(ref)
@@ -137,7 +140,8 @@ class CapabilityRouter:
         return RoutingProvenance(profile.capability,catalog.revision,selected.ref,self._score(selected,profile),"selected highest deterministic score among eligible routes",considered,(("quality_priority",str(profile.quality_priority)),("cost_priority",str(profile.cost_priority)),("latency_priority",str(profile.latency_priority)),("privacy_class",profile.privacy_class)),catalog.snapshot_hash,tuple(fallbacks))
     @staticmethod
     def _eligible(e:ProviderModelEntry,p:CapabilityProfile,budget:float|None,now:datetime)->bool:
-        fresh=e.probe_at is not None and (now-datetime.fromisoformat(e.probe_at.replace("Z","+00:00"))).total_seconds()<=e.probe_ttl_seconds
+        probe_time = datetime.fromisoformat(e.probe_at.replace("Z", "+00:00")) if e.probe_at is not None else None
+        fresh = probe_time is not None and probe_time <= now and (now-probe_time).total_seconds()<=e.probe_ttl_seconds
         return p.capability in e.capabilities and e.healthy and (not p.allowed_providers or e.provider in p.allowed_providers) and (not p.allowed_models or e.model in p.allowed_models) and (not p.allowed_regions or bool(p.allowed_regions & e.regions)) and p.privacy_class in e.privacy_classes and (p.max_retention_days is None or e.retention_days<=p.max_retention_days) and (not p.require_zdr or e.zdr) and (p.max_latency is None or e.latency<=p.max_latency) and (budget is None or e.cost<=budget) and (not p.require_fresh_probe or fresh)
     @staticmethod
     def _score(e:ProviderModelEntry,p:CapabilityProfile)->float: return p.quality_priority*e.quality-p.cost_priority*e.cost-p.latency_priority*e.latency
