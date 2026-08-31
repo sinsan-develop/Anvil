@@ -69,6 +69,10 @@ def test_incomplete_validation_and_blocking_defect_cannot_release() -> None:
             run.run_id, "RELEASE", "human:owner", True,
             defects=(DefectAssessment("defect:blocking", run.target_hash, True),),
         )
+    with pytest.raises(E2EError, match="EMPTY_VALIDATIONS"):
+        harness.release_decision(run.run_id, "RELEASE", "human:owner", True, validations=())
+    with pytest.raises(E2EError, match="EMPTY_DEFECTS"):
+        harness.release_decision(run.run_id, "RELEASE", "human:owner", True, defects=())
 
 
 def test_release_target_hash_mismatch_is_rejected() -> None:

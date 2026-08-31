@@ -199,9 +199,16 @@ class SyntheticE2EHarness:
         defects: tuple[DefectAssessment, ...] | None = None,
     ) -> None:
         run = self._runs[run_id]
+        # An explicitly supplied empty collection is different from an
+        # omitted collection.  Never silently replace caller evidence with
+        # fixture defaults: this is the API boundary's fail-closed rule.
+        if validations is not None and not validations:
+            raise E2EError("EMPTY_VALIDATIONS")
+        if defects is not None and not defects:
+            raise E2EError("EMPTY_DEFECTS")
         if run.manifest is None: self.complete(run_id)
-        validations = validations or (ProductValidation("criterion:fixture", run.target_hash, "SUITABLE", "tester", "ENV-LOCAL"),)
-        defects = defects or (DefectAssessment("defect:fixture", run.target_hash, False),)
+        validations = validations if validations is not None else (ProductValidation("criterion:fixture", run.target_hash, "SUITABLE", "tester", "ENV-LOCAL"),)
+        defects = defects if defects is not None else (DefectAssessment("defect:fixture", run.target_hash, False),)
         record = self.release.decide(decision_id=f"decision:{run_id}", target_hash=run.target_hash,
                                      decision=ReleaseDecision(decision), actor_id=actor_id, authenticated=authenticated,
                                      manifest=run.manifest, product_validations=validations,

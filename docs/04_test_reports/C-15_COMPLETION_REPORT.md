@@ -62,3 +62,13 @@ deployment, distributed persistence, Telegram 및 외부 네트워크는 호출�
 - 동일 근본 원인 3회 인수: 해당 없음
 - 다음 조치: Main Agent가 diff와 본 보고서를 독립 Tester에게 전달하고,
   독립 PASS 후 main 병합 전 동일 target의 EvidenceManifest를 확인한다.
+
+## 독립 검증 보완 이력
+
+- 1차 독립 검증: `FAILURE_REPORT` — `release_decision`이 명시적 빈
+  validations/defects를 fixture 기본값으로 대체해 fail-open 동작을 할 수
+  있었음.
+- 조치: 명시적 빈 collection은 각각 `EMPTY_VALIDATIONS` 및
+  `EMPTY_DEFECTS`로 거부하고, 생략(`None`)한 경우에만 synthetic 기본값을
+  사용하도록 수정. 미완료 validation·blocking defect 및 두 empty 입력의
+  회귀 테스트를 추가했다.
