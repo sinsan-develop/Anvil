@@ -14,6 +14,7 @@ def test_python_typescript_symbols_dependencies_tests_and_impact():
     root, rows = _fixture()
     result = build_indexes(root, rows, impact="greet")
     assert {row["name"] for row in result["symbols"]} >= {"greet", "prefix", "render"}
+    assert any(row["kind"] == "reference" and row["name"] == "greet" for row in result["references"])
     assert any(row["target"] == "util" for row in result["dependencies"])
     assert any(row["name"] == "test_greet" for row in result["tests"])
     assert "app.py" in result["impact"]["related_paths"]

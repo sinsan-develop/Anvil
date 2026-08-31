@@ -15,6 +15,7 @@ from .inventory import canonical_sha256
 
 _SOURCE = {".py", ".ts", ".tsx", ".js", ".jsx"}
 _IMPORT = re.compile(r"^\s*(?:import\s+(.+?)\s+from\s+|import\s+)([\w./@-]+)", re.M)
+_REQUIRE = re.compile(r"\brequire\s*\(\s*[\"']([^\"']+)[\"']\s*\)")
 _TS_SYMBOL = re.compile(r"^\s*(?:(?:export\s+)?(?:async\s+)?function|(?:export\s+)?class|(?:export\s+)?interface|(?:export\s+)?type|(?:export\s+)?const|(?:export\s+)?let|(?:export\s+)?var)\s+([A-Za-z_$][\w$]*)", re.M)
 _PY_TEST = re.compile(r"^\s*def\s+(test_[A-Za-z0-9_]*)\s*\(", re.M)
 _TS_TEST = re.compile(r"^\s*(?:it|test|describe)\s*\(\s*[\"'`]([^\"'`]+)", re.M)
@@ -25,7 +26,15 @@ def _path_sort(row: dict[str, Any]) -> tuple[bytes, int, bytes]:
 
 
 def _safe_source(repository: Path, relative: str) -> tuple[Path | None, str | None]:
-    candidate = (repository / Path(relative)).resolve(strict=False)
+    raw = repository / Path(relative)
+    try:
+        if raw.is_symlink() or raw.lstat().st_ino != raw.stat().st_ino:
+            return None, "PATH_REPARSE_POINT_DENIED"
+    except FileNotFoundError:
+        pass
+    except OSError:
+        return None, "PATH_UNREADABLE"
+    candidate = raw.resolve(strict=False)
     root = repository.resolve(strict=True)
     try:
         if candidate.is_symlink() or candidate != root and root not in candidate.parents:
@@ -57,6 +66,7 @@ def _python_rows(text: str, path: str) -> tuple[list[dict[str, Any]], list[dict[
 def build_indexes(repository: Path, inventory: Iterable[dict[str, Any]], impact: str | None = None) -> dict[str, Any]:
     """Build source/test/dependency/impact projections without writing files."""
     symbols: list[dict[str, Any]] = []
+    references: list[dict[str, Any]] = []
     dependencies: list[dict[str, Any]] = []
     tests: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
@@ -85,15 +95,45 @@ def build_indexes(repository: Path, inventory: Iterable[dict[str, Any]], impact:
                 target = match.group(2)
                 resolved = target in known_stems or any((Path(path).parent / target).as_posix() == stem for stem in known_stems)
                 dependencies.append({"path": path, "target": target, "kind": "import", "unresolved": not resolved, "line": text.count("\n", 0, match.start()) + 1})
+            for match in _REQUIRE.finditer(text):
+                target = match.group(1)
+                dependencies.append({"path": path, "target": target, "kind": "require", "unresolved": target not in known_stems, "line": text.count("\n", 0, match.start()) + 1})
             for match in _TS_TEST.finditer(text):
                 tests.append({"name": match.group(1), "kind": "test", "path": path, "line": text.count("\n", 0, match.start()) + 1, "targets": []})
         if path.startswith("tests/") or ".test." in path or ".spec." in path:
             for row in tests:
                 if row["path"] == path and not row["targets"]:
                     row["targets"] = sorted((p for p in files if p != path and Path(p).stem in Path(path).stem), key=lambda x: x.encode())
-    symbols.sort(key=_path_sort); dependencies.sort(key=_path_sort); tests.sort(key=_path_sort); warnings.sort(key=lambda x: (x["path"].encode(), x["kind"].encode()))
-    related = sorted({row["path"] for row in symbols + dependencies + tests if impact and (row.get("name") == impact or row.get("path") == impact or row.get("target") == impact)}, key=lambda x: x.encode()) if impact else []
+    # Resolve Python imports after the complete file set is known.
+    for row in dependencies:
+        if row["kind"] == "import" and row["target"] in known_stems:
+            row["unresolved"] = False
+    defined = {row["name"] for row in symbols}
+    for path in files:
+        full, error = _safe_source(repository, path)
+        if not full or error:
+            continue
+        try: text = full.read_text(encoding="utf-8")
+        except (OSError, UnicodeError): continue
+        for name in sorted(defined):
+            for match in re.finditer(r"\b" + re.escape(name) + r"\b", text):
+                line = text.count("\n", 0, match.start()) + 1
+                if not any(row["path"] == path and row["name"] == name and row["line"] == line and row["kind"] in {"function", "class", "symbol"} for row in symbols):
+                    references.append({"name": name, "kind": "reference", "path": path, "line": line})
+    symbols.sort(key=_path_sort); references.sort(key=_path_sort); dependencies.sort(key=_path_sort); tests.sort(key=_path_sort); warnings.sort(key=lambda x: (x["path"].encode(), x["kind"].encode()))
+    related = set()
+    if impact:
+        related.update(row["path"] for row in symbols + references if row.get("name") == impact)
+        related.update(row["path"] for row in dependencies if row.get("target") == impact)
+        impacted_paths = set(related)
+        for row in dependencies:
+            if row.get("target") in impacted_paths or Path(str(row.get("target", ""))).stem in {Path(p).stem for p in impacted_paths}:
+                related.add(row["path"])
+        for row in tests:
+            if set(row.get("targets", [])) & related or any(Path(p).stem in Path(row["path"]).stem for p in related):
+                related.add(row["path"])
+    related = sorted(related, key=lambda x: x.encode())
     risks = [{"code": "UNRESOLVED_DEPENDENCY", "path": row["path"], "target": row["target"], "severity": "medium"} for row in dependencies if row.get("unresolved")]
-    result = {"symbols": symbols, "dependencies": dependencies, "tests": tests, "impact": {"query": impact, "related_paths": related, "risk_evidence": sorted(risks, key=lambda x: (x["path"].encode(), x["target"].encode()))}, "warnings": warnings}
+    result = {"symbols": symbols, "references": references, "dependencies": dependencies, "tests": tests, "impact": {"query": impact, "related_paths": related, "risk_evidence": sorted(risks, key=lambda x: (x["path"].encode(), x["target"].encode()))}, "warnings": warnings}
     result["index_sha256"] = canonical_sha256(result)
     return result

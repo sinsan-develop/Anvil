@@ -156,7 +156,7 @@ def scan_repository(request: ScanRequest) -> ScanResult:
                 ),
                 inventory=pre["inventory"],
                 manifests=manifests,
-                symbols=indexes["symbols"], dependencies=indexes["dependencies"], tests=indexes["tests"], impact=indexes["impact"], index_warnings=indexes["warnings"],
+                symbols=indexes["symbols"], references=indexes["references"], dependencies=indexes["dependencies"], tests=indexes["tests"], impact=indexes["impact"], index_warnings=indexes["warnings"], index_sha256=indexes["index_sha256"],
                 no_write_proof=proof,
                 errors=(
                     ScanError(
@@ -176,7 +176,7 @@ def scan_repository(request: ScanRequest) -> ScanResult:
                 ),
                 inventory=pre["inventory"],
                 manifests=manifests,
-                symbols=indexes["symbols"], dependencies=indexes["dependencies"], tests=indexes["tests"], impact=indexes["impact"], index_warnings=indexes["warnings"],
+                symbols=indexes["symbols"], references=indexes["references"], dependencies=indexes["dependencies"], tests=indexes["tests"], impact=indexes["impact"], index_warnings=indexes["warnings"], index_sha256=indexes["index_sha256"],
                 no_write_proof=proof,
             )
         if output is not None:

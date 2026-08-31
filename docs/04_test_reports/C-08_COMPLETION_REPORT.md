@@ -27,6 +27,12 @@
 
 ## 잔여 위험 및 복구
 
+## 재작업 이력
+
+- `FAILURE_REPORT` 1회: 독립 검증에서 내부 symlink 판정, Python unresolved import, JS/TS `require`, 참조 인덱스 및 ScanResult hash/schema 노출, impact의 의존·테스트 연결이 부족하다고 판정했다.
+- 조치: resolve 전 lstat 검사와 경로 경고, known stems 기반 import 판정, require 파싱, `references` 필드, `index_sha256` 및 schema fields 연결, impact 관련 경로 확장을 적용했다.
+- 재검증: 동일 targeted pytest `3 passed`, compileall 및 diff check 통과.
+
 - 외부 parser 없이 보수적으로 분석하므로 난해한 TypeScript 문법은 warning 없이 미색인될 수 있다.
 - 영향 투영은 지정 심볼/경로와 직접 관찰된 행을 중심으로 하며 의미론적 호출 그래프가 아니다.
 - 롤백은 C-08 커밋을 revert하면 된다. 기존 inventory, manifest, Git 및 no-write proof 동작은 변경하지 않았다.

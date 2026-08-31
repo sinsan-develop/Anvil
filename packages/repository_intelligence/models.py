@@ -60,6 +60,8 @@ class ScanResult:
     tests: list[dict[str, Any]] = field(default_factory=list)
     impact: dict[str, Any] = field(default_factory=dict)
     index_warnings: list[dict[str, Any]] = field(default_factory=list)
+    index_sha256: str | None = None
+    references: list[dict[str, Any]] = field(default_factory=list)
     no_write_proof: dict[str, Any] = field(default_factory=dict)
     errors: tuple[ScanError, ...] = ()
     evidence_types: tuple[str, ...] = ("E-GIT", "E-DIFF")
@@ -72,6 +74,13 @@ class ScanResult:
         "repository",
         "inventory",
         "manifests",
+        "symbols",
+        "references",
+        "dependencies",
+        "tests",
+        "impact",
+        "index_warnings",
+        "index_sha256",
         "no_write_proof",
         "errors",
         "evidence_types",
