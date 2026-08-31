@@ -71,6 +71,12 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - bundled Python `compileall -q packages apps/api` 및 `git diff --check`도 PASS했다.
 - FastAPI/SQLAlchemy 의존 테스트는 bundled runtime에 패키지가 없어 collection 단계에서 미실행(`ModuleNotFoundError`)이며, 실제 WSL/DB/API 경계는 여전히 미검증이다.
 
+## 2026-09-01 프로젝트 venv 재검증
+
+- 프로젝트 `.venv`로 API·persistence fixture 테스트 **16 passed**를 확인했다.
+- 동일 `.venv`에서 `tests/agent_team` **63 passed**, Node 브라우저 계약 **14 passed**, compileall·diff-check PASS를 확인했다.
+- 전체 `tests` 수집은 기존 `yaml` 의존성 부재, 중복 `test_models` 모듈명, fixture `src` import 경로 문제로 7개 collection error가 발생했다. 이는 C-21 변경 코드 실패로 승격하지 않고 전체 suite 미검증으로 분리한다.
+
 ## 복구 및 변경 상태
 
 - 제품 코드 변경: 0
