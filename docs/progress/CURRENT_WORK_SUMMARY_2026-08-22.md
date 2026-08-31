@@ -175,6 +175,14 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - C-17을 `main`에 병합·push했으며 실제 provider/DB/API/browser/Telegram/Docker/WSL/deployment는 미검증이다.
 - 다음 미완료 항목은 C-18 Capability-based MoA Provider/Model routing이다.
 
+## 2026-09-01 C-18 독립 검증 및 수락
+
+- CapabilityProfile·ProviderModelCatalog·CapabilityRouter·FallbackPolicy·RoutingProvenance와 benchmark/drift 검증을 구현했다.
+- 독립 검토에서 primary cost·attempt semantics·future/naive/non-UTC timestamp 경계 결함을 2회 보완했다.
+- 최종 독립 검증: C-18 13 passed, 관련 agent_team/orchestration/execution 125 passed, compileall·`git diff --check` PASS.
+- C-18을 `2845f8d` 병합 커밋으로 `main`에 통합했다. 실제 provider/API/key/network/DB/browser/Docker/WSL/deployment는 미검증이다.
+- 다음 미완료 항목은 C-19 Remote Control Plane·Web Console/PWA다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
