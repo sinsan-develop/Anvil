@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
+import re
 
 
 def _text(value: str, field: str) -> None:
@@ -36,6 +37,17 @@ def _parse_cursor(cursor: str) -> int:
     return int(cursor)
 
 
+def _pairs(values: tuple[tuple[str, str], ...], field: str) -> None:
+    if not isinstance(values, tuple):
+        raise TypeError(f"{field} must be a tuple")
+    for pair in values:
+        if not isinstance(pair, tuple) or len(pair) != 2:
+            raise ValueError(f"{field} must contain key/value pairs")
+        _text(pair[0], f"{field}.key"); _text(pair[1], f"{field}.value")
+    if tuple(sorted(values)) != values or len({pair[0] for pair in values}) != len(values):
+        raise ValueError(f"{field} must use sorted unique canonical keys")
+
+
 class CommandKind(str, Enum):
     PAUSE = "pause"
     RESUME = "resume"
@@ -51,6 +63,49 @@ class ApprovalState(str, Enum):
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
+
+
+class CommandState(str, Enum):
+    PENDING_REMOTE = "PENDING_REMOTE"
+    ACCEPTED = "ACCEPTED"
+    APPROVAL_REQUIRED = "APPROVAL_REQUIRED"
+    REJECTED = "REJECTED"
+    READY_TO_SYNC = "READY_TO_SYNC"
+
+
+@dataclass(frozen=True, slots=True)
+class ArtifactReference:
+    artifact_id: str
+    content_hash: str
+    path: str
+    kind: str = "artifact"
+
+    def __post_init__(self) -> None:
+        for value, field in ((self.artifact_id, "artifact_id"), (self.content_hash, "content_hash"), (self.path, "path"), (self.kind, "kind")):
+            _text(value, field)
+        if len(self.content_hash) < 16 or any(c not in "0123456789abcdefABCDEF" for c in self.content_hash):
+            raise ValueError("content_hash must be hexadecimal")
+        if self.path.startswith(("/", "\\")) or "://" in self.path or re.match(r"^[A-Za-z]:", self.path) or any(part in ("..", ".") for part in re.split(r"[/\\]", self.path)):
+            raise ValueError("artifact path must be a relative reference")
+
+
+@dataclass(frozen=True, slots=True)
+class ConversationMessage:
+    message_id: str
+    author_id: str
+    body: str
+    sequence: int
+    sent_at: datetime
+    artifact_refs: tuple[ArtifactReference, ...] = ()
+
+    def __post_init__(self) -> None:
+        for value, field in ((self.message_id, "message_id"), (self.author_id, "author_id"), (self.body, "body")):
+            _text(value, field)
+        if type(self.sequence) is not int or self.sequence < 1:
+            raise ValueError("sequence must be a positive integer")
+        _utc(self.sent_at, "sent_at")
+        if not all(isinstance(ref, ArtifactReference) for ref in self.artifact_refs):
+            raise TypeError("artifact_refs must contain ArtifactReference values")
 
 
 APPROVAL_REQUIRED = frozenset({
@@ -97,6 +152,7 @@ class AgentStatusSnapshot:
         if self.cursor != _canonical_cursor(self.sequence):
             raise ValueError("cursor must match sequence in canonical form")
         _utc(self.observed_at, "observed_at")
+        _pairs(self.details, "details")
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +173,7 @@ class ProgressEvent:
         if self.cursor != _canonical_cursor(self.sequence):
             raise ValueError("cursor must match sequence in canonical form")
         _utc(self.occurred_at, "occurred_at")
+        _pairs(self.payload, "payload")
 
 
 @dataclass(frozen=True, slots=True)
@@ -129,6 +186,7 @@ class OperatorCommand:
     idempotency_key: str
     auth_token: str
     parameters: tuple[tuple[str, str], ...] = ()
+    fencing_token: str = ""
 
     def __post_init__(self) -> None:
         for value, field in ((self.command_id, "command_id"), (self.operator_id, "operator_id"), (self.idempotency_key, "idempotency_key"), (self.auth_token, "auth_token")):
@@ -139,6 +197,9 @@ class OperatorCommand:
         _utc(self.expires_at, "expires_at")
         if self.expires_at <= self.issued_at:
             raise ValueError("expires_at must be after issued_at")
+        _pairs(self.parameters, "parameters")
+        if self.fencing_token:
+            _text(self.fencing_token, "fencing_token")
 
 
 @dataclass(frozen=True, slots=True)
@@ -149,6 +210,7 @@ class ApprovalRequest:
     reason: str
     created_at: datetime
     state: ApprovalState = ApprovalState.PENDING
+    target_content_hash: str = ""
 
     def __post_init__(self) -> None:
         _text(self.request_id, "request_id")
@@ -159,6 +221,8 @@ class ApprovalRequest:
         _utc(self.created_at, "created_at")
         if not isinstance(self.state, ApprovalState):
             raise TypeError("state must be ApprovalState")
+        if self.target_content_hash and (len(self.target_content_hash) < 16 or any(c not in "0123456789abcdefABCDEF" for c in self.target_content_hash)):
+            raise ValueError("target_content_hash must be hexadecimal")
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,10 +258,13 @@ class RemoteControlPlane:
         self._snapshots: dict[str, AgentStatusSnapshot] = {}
         self._events: tuple[ProgressEvent, ...] = ()
         self._event_keys: set[str] = set()
+        self._event_ids: dict[str, ProgressEvent] = {}
         self._commands: set[str] = set()
         self._audits: tuple[AuditEvent, ...] = ()
         self._approvals: tuple[ApprovalRequest, ...] = ()
         self._offline = OfflineQueue(queue_limit)
+        self._fencing: dict[str, str] = {}
+        self._conversation: tuple[ConversationMessage, ...] = ()
 
     @property
     def events(self) -> tuple[ProgressEvent, ...]: return self._events
@@ -207,10 +274,26 @@ class RemoteControlPlane:
     def approvals(self) -> tuple[ApprovalRequest, ...]: return self._approvals
     @property
     def snapshots(self) -> tuple[AgentStatusSnapshot, ...]: return tuple(self._snapshots.values())
+    @property
+    def conversation(self) -> tuple[ConversationMessage, ...]: return self._conversation
+
+    def publish_message(self, message: ConversationMessage) -> ConversationMessage:
+        if self._conversation and message.sequence <= self._conversation[-1].sequence:
+            raise ValueError("conversation sequence must increase")
+        if self._conversation and message.sent_at < self._conversation[-1].sent_at:
+            raise ValueError("conversation timestamp must not move backwards")
+        self._conversation += (message,)
+        return message
 
     def register_operator(self, operator_id: str, auth_token: str, valid_until: datetime) -> None:
         _text(operator_id, "operator_id"); _text(auth_token, "auth_token"); _utc(valid_until, "valid_until")
         self._operators[operator_id] = (auth_token, valid_until)
+
+    def rotate_fencing_token(self, operator_id: str, token: str) -> None:
+        _text(operator_id, "operator_id"); _text(token, "token")
+        if operator_id not in self._operators:
+            raise KeyError(operator_id)
+        self._fencing[operator_id] = token
 
     def open_session(self, session: RemoteSession, *, auth_token: str, now: datetime) -> RemoteSession:
         _utc(now, "now"); _text(auth_token, "auth_token")
@@ -228,14 +311,30 @@ class RemoteControlPlane:
         return snapshot
 
     def publish_event(self, event: ProgressEvent) -> ProgressEvent:
+        existing = self._event_ids.get(event.event_id)
+        if existing is not None:
+            if existing == event:
+                return existing
+            raise ValueError("event_id collision")
         if event.idempotency_key in self._event_keys:
             raise ValueError("duplicate event rejected")
         if self._events and event.sequence <= self._events[-1].sequence:
             raise ValueError("event sequence must increase")
+        if self._events and event.occurred_at < self._events[-1].occurred_at:
+            raise ValueError("event timestamp must not move backwards")
         self._event_keys.add(event.idempotency_key); self._events += (event,)
+        self._event_ids[event.event_id] = event
         return event
 
-    def replay(self, *, cursor: str = "0", limit: int = 100) -> tuple[ProgressEvent, ...]:
+    def replay(self, *, cursor: str = "0", last_event_id: str | None = None, limit: int = 100) -> tuple[ProgressEvent, ...]:
+        if last_event_id is not None:
+            _text(last_event_id, "last_event_id")
+            if cursor != "0":
+                raise ValueError("cursor and Last-Event-ID cannot both be set")
+            match = next((e for e in self._events if e.event_id == last_event_id), None)
+            if match is None:
+                raise ValueError("unknown Last-Event-ID")
+            cursor = match.cursor
         parsed_cursor = _parse_cursor(cursor)
         known_cursors = {event.cursor for event in self._events}
         if cursor != "0" and cursor not in known_cursors:
@@ -254,6 +353,10 @@ class RemoteControlPlane:
         if registered is None or registered[0] != command.auth_token or registered[1] <= now:
             self._audit(command, "AUTH_FAILED", now)
             raise PermissionError("operator authentication failed")
+        expected_fence = self._fencing.get(command.operator_id)
+        if expected_fence is not None and command.fencing_token != expected_fence:
+            self._audit(command, "FENCING_FAILED", now)
+            raise PermissionError("stale fencing token")
         if command.expires_at <= now:
             self._audit(command, "EXPIRED", now)
             raise ValueError("command is expired")
@@ -265,7 +368,8 @@ class RemoteControlPlane:
             raise ValueError("duplicate command rejected")
         self._commands.add(command.idempotency_key)
         if command.kind in APPROVAL_REQUIRED:
-            request = ApprovalRequest(f"approval-{len(self._approvals) + 1}", command, command.operator_id, "remote command requires Leader/Main approval", now)
+            target_hash = next((value for key, value in command.parameters if key == "content_hash"), "")
+            request = ApprovalRequest(f"approval-{len(self._approvals) + 1}", command, command.operator_id, "remote command requires Leader/Main approval", now, target_content_hash=target_hash)
             self._approvals += (request,)
             self._audit(command, "APPROVAL_REQUIRED", now, (("request_id", request.request_id),))
             raise ApprovalRequired(request)
@@ -290,6 +394,7 @@ class OfflineQueue:
         self._commands: list[OperatorCommand] = []
         self._keys: set[str] = set()
         self._last_drain_outcomes: tuple[tuple[str, str], ...] = ()
+        self._states: dict[str, CommandState] = {}
 
     @property
     def commands(self) -> tuple[OperatorCommand, ...]: return tuple(self._commands)
@@ -303,6 +408,11 @@ class OfflineQueue:
         if command.idempotency_key in self._keys: raise ValueError("duplicate queued command")
         if len(self._commands) >= self.limit: raise OverflowError("offline queue is full")
         self._commands.append(command); self._keys.add(command.idempotency_key)
+        self._states[command.idempotency_key] = CommandState.PENDING_REMOTE
+
+    def state(self, idempotency_key: str) -> CommandState:
+        _text(idempotency_key, "idempotency_key")
+        return self._states.get(idempotency_key, CommandState.REJECTED)
 
     def drain(self, *, now: datetime, seen_keys: frozenset[str] = frozenset()) -> tuple[OperatorCommand, ...]:
         _utc(now, "now")
@@ -312,15 +422,19 @@ class OfflineQueue:
         for command in self._commands:
             if command.idempotency_key in seen_keys:
                 outcomes.append((command.idempotency_key, "DUPLICATE"))
+                self._states[command.idempotency_key] = CommandState.REJECTED
                 continue
             if command.expires_at <= now:
                 outcomes.append((command.idempotency_key, "STALE"))
+                self._states[command.idempotency_key] = CommandState.REJECTED
                 continue
             if command.issued_at > now:
                 outcomes.append((command.idempotency_key, "FUTURE_ISSUED_AT"))
+                self._states[command.idempotency_key] = CommandState.REJECTED
                 continue
             outcomes.append((command.idempotency_key, "READY"))
             ready.append(command)
+            self._states[command.idempotency_key] = CommandState.READY_TO_SYNC
         self._commands.clear(); self._keys.clear()
         self._last_drain_outcomes = tuple(outcomes)
         return tuple(ready)

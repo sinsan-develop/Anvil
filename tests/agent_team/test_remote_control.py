@@ -3,7 +3,8 @@ from unittest import TestCase
 
 from packages.agent_team.remote_control import (
     ApprovalRequired, AgentStatusSnapshot, CommandKind, OfflineQueue,
-    OperatorCommand, ProgressEvent, RemoteControlPlane, RemoteSession,
+    ArtifactReference, CommandState, ConversationMessage, OperatorCommand,
+    ProgressEvent, RemoteControlPlane, RemoteSession,
 )
 
 
@@ -69,6 +70,33 @@ class RemoteControlTests(TestCase):
         with self.assertRaises(ValueError):
             self.plane.execute(future, session_id="rs-1", now=NOW)
         self.assertEqual("FUTURE_ISSUED_AT", self.plane.audits[-1].outcome)
+
+    def test_last_event_id_and_idempotent_replay(self):
+        event = ProgressEvent("e1", "started", 1, "1", "event-key", NOW)
+        self.assertIs(self.plane.publish_event(event), event)
+        self.assertEqual((), self.plane.replay(last_event_id="e1"))
+        with self.assertRaises(ValueError):
+            self.plane.replay(last_event_id="missing")
+        with self.assertRaises(ValueError):
+            self.plane.publish_event(ProgressEvent("e1", "changed", 1, "1", "other", NOW))
+
+    def test_fencing_and_offline_pending_state(self):
+        self.plane.rotate_fencing_token("op-1", "f-2")
+        with self.assertRaises(PermissionError):
+            self.plane.execute(command(key="stale"), session_id="rs-1", now=NOW)
+        queued = OperatorCommand("cmd-2", "op-1", CommandKind.PAUSE, NOW, NOW + timedelta(minutes=5), "offline", "secret", fencing_token="f-2")
+        queue = OfflineQueue(1)
+        queue.enqueue(queued)
+        self.assertEqual(CommandState.PENDING_REMOTE, queue.state("offline"))
+
+    def test_artifact_reference_is_relative_and_conversation_is_immutable(self):
+        ref = ArtifactReference("a-1", "0123456789abcdef", "docs/report.md", "diff")
+        message = ConversationMessage("m-1", "agent-1", "검토 완료", 1, NOW, (ref,))
+        self.assertEqual("docs/report.md", message.artifact_refs[0].path)
+        with self.assertRaises(ValueError):
+            ArtifactReference("a-2", "not-a-hash", "report.md")
+        with self.assertRaises(ValueError):
+            ArtifactReference("a-3", "0123456789abcdef", "https://example.invalid/report")
 
 
 if __name__ == "__main__":
