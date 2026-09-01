@@ -163,3 +163,8 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - 세 테이블 현재 행 수는 각각 0이며, read-only identity 조회는 `anvil|postgres`로 확인했다.
 - 내부 `/openapi.json`은 HTTP 200으로 Control API 계약을 노출한다. 공개 `anvil.sinsan.kr`는 UI preview만 제공하고 `/api/*`는 404이므로 public same-origin API 연결은 별도 미완료다.
 - 실제 Telegram POST, 승인/거부 상태 변경, Provider probe, SSE reconnect는 운영 데이터·외부 호출을 수반하므로 이번 read-only 검증에서는 실행하지 않았다.
+
+### 내부 SSE/Host 보안 재확인
+
+- `ysna-server` 내부 SSE GET(`/api/runs/test/events`, `Last-Event-ID: 0`)은 API의 `HOST_VALIDATION_FAILED` 403을 반환했다. 허용 host 설정 없이 임의 host를 우회하지 않는 fail-closed 동작으로 기록한다.
+- 공개 도메인 fallback은 Nginx Proxy Manager 기본 사이트로 응답해 public API/SSE proxy가 아직 연결되지 않았음을 확인했다.
