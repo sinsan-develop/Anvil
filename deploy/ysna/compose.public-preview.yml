@@ -11,7 +11,7 @@ services:
       ANVIL_UI_MODE: preview
       ANVIL_HOST: 0.0.0.0
       ANVIL_PORT: "3770"
-      ANVIL_API_UPSTREAM: http://anvil-internal-web-1:4173
+      ANVIL_API_UPSTREAM: ${ANVIL_API_UPSTREAM:-http://anvil-internal-web-1:4173}
     expose:
       - "3770"
     networks:
