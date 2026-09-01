@@ -1,0 +1,1 @@
+canonical main의 C-21 R2 WorkInstruction을 기준으로 운영 경계를 검증하라. 먼저 승인 binding과 환경을 확인하고, 승인되지 않았으면 외부 호출을 하지 말고 WAITING_APPROVAL로 보고하라. 승인 후에도 Provider key·Telegram token 원문은 절대 출력하지 말고, 비과금 capability probe·Telegram signed POST 1회·인증 SSE Last-Event-ID 재연결만 수행하라. 각 명령과 결과, 실패·미검증 범위, 감사 데이터 보존 또는 정리 결정을 EvidenceManifest와 작업현황에 기록하라. 배포·schema 변경·webhook 설정 변경·인증 우회는 금지한다.
