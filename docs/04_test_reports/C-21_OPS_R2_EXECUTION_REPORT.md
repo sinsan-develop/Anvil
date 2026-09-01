@@ -58,3 +58,14 @@
 - 원인 분류: 공개 Host가 webhook 경계의 허용 host와 일치하지 않는 설정 불일치 의심
 - read-only 확인: NPM `/integrations` location은 `proxy_set_header Host $host`; 런타임에는 `ANVIL_CONSOLE_BASE_URL=anvil.sinsan.kr`가 설정되어 있으나 `ANVIL_PUBLIC_HOST`는 별도 설정되지 않음
 - 후속 조치: 동일 fixture 재전송 금지. Host 설정 수정은 별도 제품/운영 변경 승인 없이는 수행하지 않음.
+
+## C-21 R3 승인 조치 및 재검증
+
+신산님이 Host 설정 보완과 추가 signed POST 1회를 승인했다. 승인 범위에서 다음을 수행했다.
+
+- ysna-server runtime env에 `ANVIL_PUBLIC_HOST=anvil.sinsan.kr`를 추가하고 기존 env 백업을 생성했다.
+- Nginx Proxy Manager는 재시작하지 않고 Anvil 내부 `web` 서비스만 `--force-recreate`했다.
+- 재배포 후 공개 `anvil.sinsan.kr/integrations/telegram/webhook`에 signed POST를 정확히 1회 추가 실행했다.
+- 추가 POST도 HTTP `400` / `invalid host`로 종료했고, 세 webhook 상태 테이블 행 수는 전후 모두 `0`이었다.
+
+추가 POST 승인 횟수는 소진되었으므로 동일 fixture를 더 이상 재전송하지 않는다. 공개 health/OpenAPI와 일반 API Host 검증은 정상이나 Telegram webhook 경계만 계속 실패한다. 현재 세션에서는 `ysna-server` SSH 별칭이 해석되지 않고 직접 IP SSH도 권한 거부되어 NPM의 실행 중 최종 설정과 API 컨테이너 수신 Host를 추가 read-only로 대조할 수 없다. 따라서 원인은 `UNRESOLVED_EXTERNAL_HOST_PATH`로 분류하며, C-21 acceptance와 C-01 시작은 보류한다.
