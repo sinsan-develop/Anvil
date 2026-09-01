@@ -26,3 +26,11 @@
 - 조치: anvil-web 이미지 ed82e93 배포 및 health/openapi 내부 검증 완료
 - 미충족: NPM Proxy Host와 Let's Encrypt 인증서가 실제 ysna-server 설정에 일치하지 않음
 - 다음 조치: NPM에서 anvil.sinsan.kr 인증서·Proxy Host를 저장/재발급 후 공개 경로 재검증
+
+
+## 공개 Host 보존 수정 2026-09-01
+- 원인: `proxyApiRequest`가 upstream 전달 직전 `Host` 헤더를 삭제하여 API가 내부 컨테이너 호스트를 수신했고 `HOST_VALIDATION_FAILED`(403)를 반환함.
+- 조치: 원 요청의 공개 `Host` 헤더를 upstream 요청에 보존하도록 수정.
+- 담당: preserve-host-fix subagent
+- 검증: `node --check apps/web/server.mjs` PASS; `node --test apps/web/tests/*.mjs` PASS (14/14); `git diff --check` PASS.
+- 오류 횟수: apply_patch ACL 차단 1회; 제한된 정확 치환으로 해결.\n- 미검증: 실제 ysna-server 재배포 후 공개 HTTPS API/SSE 인증 흐름.
