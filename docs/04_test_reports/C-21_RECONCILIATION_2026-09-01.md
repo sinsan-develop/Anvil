@@ -45,6 +45,11 @@
 
 `WI-C-21-OPS-R2`를 발행한다. 범위는 (a) 위 3개 외부 경계의 승인된 최소 probe, (b) 각 결과의 EvidenceManifest 결박, (c) 테스트 데이터 정리 또는 보존 결정 기록으로 한정한다. 배포·schema 변경·credential 출력·Provider 모델 변경은 범위에 포함하지 않는다. R2 결과가 독립 검증되기 전에는 C-01 또는 Provider UI 구현을 시작하지 않는다.
 
+### R2 발행 상태
+
+- `docs/work_orders/C-21_R2_WORK_INSTRUCTION.md` 및 `C-21_R2_INVOCATION_PROMPT.md`를 `d7e3ae1`로 main에 통합·push했다.
+- 실제 Provider/Telegram/SSE 외부 검증은 신산님의 명시 승인 전까지 `WAITING_APPROVAL`로 유지한다.
+
 ## 오류·미검증 기록
 
 - 이전 환경의 Python/WSL/SSH 차단은 최신 권한 승격 운영 증거로 일부 해소됐으나, 해당 과거 실패는 삭제하지 않는다.
