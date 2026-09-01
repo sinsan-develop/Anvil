@@ -308,3 +308,8 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 
 - 공개 root는 200 정적 `Anvil · UI Preview`, webhook 경로는 POST 전용 405, health/OpenAPI/docs/API 경로는 404였다.
 - WSL/Docker에는 기존 PostgreSQL만 있고 Anvil API/`shared-db`가 없어 운영 persistence/API 검증은 계속 미완료다.
+
+### C-21 WSL Anvil checkout 확인
+
+- `/home/daon/deploy/anvil`은 존재하지만 dirty·구버전 checkout(`0f48346`)이며 `docker-compose.local.yml`이 `services: {}`인 예약 파일이다.
+- 실행 가능한 Anvil API/DB를 임의 기동·수정·배포하지 않았고 C-21 운영 PASS로 승격하지 않는다.

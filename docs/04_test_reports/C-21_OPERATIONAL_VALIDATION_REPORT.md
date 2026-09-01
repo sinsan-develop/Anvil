@@ -143,6 +143,12 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - `https://anvil.sinsan.kr/`는 200 정적 `Anvil · UI Preview`, `/integrations/telegram/webhook`는 405 `Allow: POST`, `/health/live`·`/health/ready`·`/api/health`는 404다.
 - `/openapi.json`, `/docs`, `/api`도 404다. 따라서 공개 도메인은 API 운영 배포가 아닌 UI preview로 판정하며 C-21 운영 PASS로 승격하지 않는다.
 
+### WSL Anvil checkout 재확인
+
+- `/home/daon/deploy/anvil` 디렉터리는 존재하지만 dirty checkout이며 기준 commit은 `0f48346`이다.
+- 해당 checkout의 `docker-compose.local.yml`은 `services: {}`인 예약 compose라 실행 가능한 Anvil API/DB를 정의하지 않는다.
+- 운영 API/DB를 임의로 기동하거나 dirty checkout을 수정·배포하지 않았다.
+
 ### 2026-09-01 재개 재확인
 
 - 권한 승격 read-only 재실행에서 공개 root `200`, Telegram webhook `405`를 재현했다.
