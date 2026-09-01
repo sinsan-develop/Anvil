@@ -303,3 +303,8 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 
 - 권한 승격 HTTPS에서 `anvil.sinsan.kr` 응답과 `/integrations/telegram/webhook`의 `POST` 전용 경로를 확인했다.
 - health 경로는 404이고 Anvil `shared-db`/운영 API 컨테이너가 없어 C-21 운영 PASS로 승격하지 않는다. CSP/HSTS 등 보안 응답 헤더는 확인했다.
+
+### C-21 재개 턴 운영망 재확인
+
+- 공개 root는 200 정적 `Anvil · UI Preview`, webhook 경로는 POST 전용 405, health/OpenAPI/docs/API 경로는 404였다.
+- WSL/Docker에는 기존 PostgreSQL만 있고 Anvil API/`shared-db`가 없어 운영 persistence/API 검증은 계속 미완료다.

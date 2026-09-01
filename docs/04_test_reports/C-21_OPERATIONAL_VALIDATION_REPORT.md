@@ -136,3 +136,9 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - `/integrations/telegram/webhook`는 `405 Method Not Allowed`와 `Allow: POST`를 반환해 same-origin webhook 경로가 존재함을 확인했다. 실제 POST·secret 검증·Telegram API 호출은 수행하지 않았다.
 - 응답의 CSP, HSTS, X-Content-Type-Options, X-Frame-Options, `Cache-Control: no-store` 헤더를 확인했다.
 - `ysna-server` SSH alias는 계속 해석되지 않으며, Docker 목록에는 Anvil `shared-db`/운영 API 컨테이너가 없다.
+
+### 2026-09-01 재개 턴 재확인
+
+- 권한 승격 WSL/Docker에서 Ubuntu는 Running이고 기존 PostgreSQL 컨테이너만 존재한다. Anvil API 또는 `shared-db` 컨테이너는 계속 없다.
+- `https://anvil.sinsan.kr/`는 200 정적 `Anvil · UI Preview`, `/integrations/telegram/webhook`는 405 `Allow: POST`, `/health/live`·`/health/ready`·`/api/health`는 404다.
+- `/openapi.json`, `/docs`, `/api`도 404다. 따라서 공개 도메인은 API 운영 배포가 아닌 UI preview로 판정하며 C-21 운영 PASS로 승격하지 않는다.
