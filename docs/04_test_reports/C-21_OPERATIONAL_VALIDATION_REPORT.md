@@ -142,3 +142,9 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - 권한 승격 WSL/Docker에서 Ubuntu는 Running이고 기존 PostgreSQL 컨테이너만 존재한다. Anvil API 또는 `shared-db` 컨테이너는 계속 없다.
 - `https://anvil.sinsan.kr/`는 200 정적 `Anvil · UI Preview`, `/integrations/telegram/webhook`는 405 `Allow: POST`, `/health/live`·`/health/ready`·`/api/health`는 404다.
 - `/openapi.json`, `/docs`, `/api`도 404다. 따라서 공개 도메인은 API 운영 배포가 아닌 UI preview로 판정하며 C-21 운영 PASS로 승격하지 않는다.
+
+### 2026-09-01 재개 재확인
+
+- 권한 승격 read-only 재실행에서 공개 root `200`, Telegram webhook `405`를 재현했다.
+- WSL Docker 목록에 `local-postgres` 계열만 있고 Anvil API/`shared-db`는 계속 없다. `ysna-server` SSH alias도 확인 가능한 운영 호스트로 해석되지 않았다.
+- C-21은 `PARTIAL / OPERATIONAL_BOUNDARY_NOT_VERIFIED`를 유지한다.
