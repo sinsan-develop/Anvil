@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 
@@ -8,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_PATH = ROOT / "deploy" / "ysna" / "compose.public-preview.yml"
 DOCKERFILE_PATH = ROOT / "deploy" / "ysna" / "Dockerfile.web-preview"
 DOCKERIGNORE_PATH = ROOT / "deploy" / "ysna" / "Dockerfile.web-preview.dockerignore"
+README_PATH = ROOT / "deploy" / "ysna" / "README.public-preview.md"
+MANIFEST_PATH = ROOT / "deploy" / "ysna" / "release-manifest.public-preview.json"
 
 
 class AnvilPublicPreviewContractTests(unittest.TestCase):
@@ -22,7 +25,7 @@ class AnvilPublicPreviewContractTests(unittest.TestCase):
         self.assertNotIn("ports", web)
         self.assertEqual({"external": True}, compose["networks"]["proxy-network"])
 
-    def test_public_preview_is_hardened_and_has_no_database_boundary(self):
+    def test_public_preview_is_hardened_and_has_upstream_proxy_boundary(self):
         compose = self.load_compose()
         web = compose["services"]["anvil-web"]
         self.assertEqual("unless-stopped", web["restart"])
@@ -30,6 +33,10 @@ class AnvilPublicPreviewContractTests(unittest.TestCase):
         self.assertEqual(["ALL"], web["cap_drop"])
         self.assertEqual(["no-new-privileges:true"], web["security_opt"])
         self.assertEqual(["/tmp:rw,noexec,nosuid,size=32m"], web["tmpfs"])
+        self.assertEqual(
+            "${ANVIL_API_UPSTREAM:-http://anvil-internal-web-1:4173}",
+            web["environment"]["ANVIL_API_UPSTREAM"],
+        )
         rendered = COMPOSE_PATH.read_text(encoding="utf-8")
         self.assertNotIn("shared-db", rendered)
         self.assertNotIn("DATABASE_URL", rendered)
@@ -48,6 +55,24 @@ class AnvilPublicPreviewContractTests(unittest.TestCase):
         self.assertIn(".git", ignored)
         self.assertIn(".worktrees", ignored)
         self.assertIn("tests", ignored)
+
+    def test_historical_readme_and_manifest_point_to_unified_anvil_web(self):
+        readme = README_PATH.read_text(encoding="utf-8")
+        self.assertIn("historical alias", readme)
+        self.assertIn("ANVIL_API_UPSTREAM", readme)
+        self.assertIn("anvil-web unified", readme)
+
+        manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+        self.assertEqual("anvil-web-public-preview", manifest["release_id"])
+        self.assertEqual("anvil-web", manifest["runtime"]["service"])
+        self.assertEqual(
+            "http://anvil-internal-web-1:4173",
+            manifest["runtime"]["api_upstream"],
+        )
+        self.assertEqual(
+            "HISTORICAL_PUBLIC_PREVIEW_ALIAS",
+            manifest["compatibility"]["public_preview_alias"],
+        )
 
 
 if __name__ == "__main__":

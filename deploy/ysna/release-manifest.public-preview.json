@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "release_id": "anvil-public-ui-preview",
+  "release_id": "anvil-web-public-preview",
   "release_commit_source": "DEPLOY_ARGUMENT_FULL_SHA",
   "release_tag_pattern": "anvil-ui-preview-YYYYMMDD.N",
   "deploy_root": "~/deploy/anvil",
@@ -9,7 +9,8 @@
     "container_port": "3770",
     "network": "proxy-network",
     "public_origin": "https://anvil.sinsan.kr",
-    "api": "NOT_CONNECTED",
+    "api": "SAME_ORIGIN_PROXY",
+    "api_upstream": "http://anvil-internal-web-1:4173",
     "database": "NOT_CONNECTED",
     "llm": "NOT_CONNECTED",
     "agent_runtime": "NOT_CONNECTED"
@@ -22,5 +23,16 @@
     "existing_networks"
   ],
   "rollback": "deploy/ysna/rollback-public-preview.sh",
-  "scope": "READ_ONLY_UI_PREVIEW"
+  "scope": "READ_ONLY_UI_PREVIEW_WITH_SAME_ORIGIN_API_PROXY",
+  "compatibility": {
+    "public_preview_alias": "HISTORICAL_PUBLIC_PREVIEW_ALIAS",
+    "historical_filenames": [
+      "compose.public-preview.yml",
+      "deploy-public-preview.sh",
+      "verify-public-preview.sh",
+      "rollback-public-preview.sh",
+      "README.public-preview.md",
+      "release-manifest.public-preview.json"
+    ]
+  }
 }

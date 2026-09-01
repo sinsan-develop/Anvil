@@ -10,6 +10,42 @@ evidence_dir="$deploy_root/evidence"
 origin_url="git@github.com:cyhuh7950/anvil.git"
 compose_file="deploy/ysna/compose.public-preview.yml"
 compose_project="anvil-public-preview"
+canonical_current_sha_path="$runtime_dir/current-anvil-web-sha"
+legacy_current_sha_path="$runtime_dir/current-public-preview-sha"
+canonical_previous_sha_path="$runtime_dir/previous-anvil-web-sha"
+legacy_previous_sha_path="$runtime_dir/previous-public-preview-sha"
+canonical_current_tag_path="$runtime_dir/current-anvil-web-tag"
+legacy_current_tag_path="$runtime_dir/current-public-preview-tag"
+canonical_protected_ids_path="$runtime_dir/protected-anvil-web-container-ids"
+legacy_protected_ids_path="$runtime_dir/protected-container-ids"
+canonical_deploy_evidence_path="$evidence_dir/anvil-web-deploy.json"
+legacy_deploy_evidence_path="$evidence_dir/public-preview-deploy.json"
+
+write_alias_pair() {
+  local canonical_path="$1"
+  local legacy_path="$2"
+  local value="$3"
+  printf '%s\n' "$value" > "$canonical_path"
+  printf '%s\n' "$value" > "$legacy_path"
+}
+
+read_alias_value() {
+  local canonical_path="$1"
+  local legacy_path="$2"
+  if [[ -f "$canonical_path" ]]; then
+    <"$canonical_path"
+  elif [[ -f "$legacy_path" ]]; then
+    <"$legacy_path"
+  else
+    printf 'none\n'
+  fi
+}
+
+write_evidence_alias() {
+  local payload="$1"
+  printf '%s\n' "$payload" > "$canonical_deploy_evidence_path"
+  printf '%s\n' "$payload" > "$legacy_deploy_evidence_path"
+}
 
 if [[ ! "$release_commit" =~ ^[0-9a-f]{40}$ ]]; then
   echo "release commit must be a full lowercase Git SHA" >&2
@@ -39,15 +75,13 @@ if [[ "$tag_commit" != "$release_commit" ]]; then
   exit 4
 fi
 
-previous_release="none"
-if [[ -f "$runtime_dir/current-public-preview-sha" ]]; then
-  previous_release="$(<"$runtime_dir/current-public-preview-sha")"
-fi
-printf '%s\n' "$previous_release" > "$runtime_dir/previous-public-preview-sha"
+previous_release="$(read_alias_value "$canonical_current_sha_path" "$legacy_current_sha_path")"
+write_alias_pair "$canonical_previous_sha_path" "$legacy_previous_sha_path" "$previous_release"
 
 npm_id="$(docker inspect nginx-proxy-manager --format '{{.Id}}')"
 db_id="$(docker inspect shared-db --format '{{.Id}}')"
-printf '%s\n%s\n' "$npm_id" "$db_id" > "$runtime_dir/protected-container-ids"
+printf '%s\n%s\n' "$npm_id" "$db_id" > "$canonical_protected_ids_path"
+printf '%s\n%s\n' "$npm_id" "$db_id" > "$legacy_protected_ids_path"
 
 git checkout --detach "$release_commit"
 if [[ -n "$(git status --porcelain)" ]]; then
@@ -69,9 +103,11 @@ if [[ "$(docker inspect anvil-web --format '{{.State.Health.Status}}')" != "heal
   exit 6
 fi
 
-printf '%s\n' "$release_commit" > "$runtime_dir/current-public-preview-sha"
-printf '%s\n' "$release_tag" > "$runtime_dir/current-public-preview-tag"
-printf '{"release_commit":"%s","release_tag":"%s","container":"anvil-web","network":"proxy-network","port":"3770","deployed_at":"%s"}\n' \
-  "$release_commit" "$release_tag" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$evidence_dir/public-preview-deploy.json"
+write_alias_pair "$canonical_current_sha_path" "$legacy_current_sha_path" "$release_commit"
+write_alias_pair "$canonical_current_tag_path" "$legacy_current_tag_path" "$release_tag"
+payload=$(printf '{"release_commit":"%s","release_tag":"%s","container":"anvil-web","network":"proxy-network","port":"3770","api_upstream":"%s","compatibility":"HISTORICAL_PUBLIC_PREVIEW_ALIAS","deployed_at":"%s"}' \
+  "$release_commit" "$release_tag" "${ANVIL_API_UPSTREAM:-http://anvil-internal-web-1:4173}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")
+write_evidence_alias "$payload"
 
+echo "ANVIL_WEB_DEPLOYED=$release_commit"
 echo "ANVIL_PUBLIC_PREVIEW_DEPLOYED=$release_commit"
