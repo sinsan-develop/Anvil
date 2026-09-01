@@ -154,3 +154,12 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - 권한 승격 read-only 재실행에서 공개 root `200`, Telegram webhook `405`를 재현했다.
 - WSL Docker 목록에 `local-postgres` 계열만 있고 Anvil API/`shared-db`는 계속 없다. `ysna-server` SSH alias도 확인 가능한 운영 호스트로 해석되지 않았다.
 - C-21은 `PARTIAL / OPERATIONAL_BOUNDARY_NOT_VERIFIED`를 유지한다.
+
+### ysna-server 운영 경계 재검증
+
+- `ysna-server` SSH 접속이 성공했고 Docker에서 `anvil-internal-web-1` 및 `shared-db`가 실행 중임을 확인했다.
+- 내부 API `127.0.0.1:4173/health/live`와 `/health/ready`가 HTTP 200이며 ready 응답의 migration head는 `0011_telegram_webhook_state`다.
+- `shared-db`의 `anvil` 데이터베이스와 `telegram_webhook_updates`, `telegram_webhook_audits`, `telegram_webhook_rate_limits` 테이블이 존재한다.
+- 세 테이블 현재 행 수는 각각 0이며, read-only identity 조회는 `anvil|postgres`로 확인했다.
+- 내부 `/openapi.json`은 HTTP 200으로 Control API 계약을 노출한다. 공개 `anvil.sinsan.kr`는 UI preview만 제공하고 `/api/*`는 404이므로 public same-origin API 연결은 별도 미완료다.
+- 실제 Telegram POST, 승인/거부 상태 변경, Provider probe, SSE reconnect는 운영 데이터·외부 호출을 수반하므로 이번 read-only 검증에서는 실행하지 않았다.

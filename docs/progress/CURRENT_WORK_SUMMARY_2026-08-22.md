@@ -313,3 +313,9 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 
 - `/home/daon/deploy/anvil`은 존재하지만 dirty·구버전 checkout(`0f48346`)이며 `docker-compose.local.yml`이 `services: {}`인 예약 파일이다.
 - 실행 가능한 Anvil API/DB를 임의 기동·수정·배포하지 않았고 C-21 운영 PASS로 승격하지 않는다.
+
+### C-21 ysna-server 내부 운영 증거 확보
+
+- `ysna-server` SSH 및 Docker가 정상이며 `anvil-internal-web-1`, `shared-db`가 실행 중이다.
+- 내부 API live/ready는 200, migration head `0011_telegram_webhook_state`; `anvil` DB와 Telegram webhook 3개 테이블을 확인했다.
+- 공개 도메인은 UI preview이고 `/api/*`는 404다. 실제 Telegram POST·Provider probe·SSE reconnect는 외부 호출/상태 변경 범위라 미실행이다.
