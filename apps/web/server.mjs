@@ -25,10 +25,16 @@ const apiProxyPrefixes=['/api/','/health/','/integrations/'];
 async function proxyApiRequest(request,response,requestUrl) {
   if (!apiUpstream || !(apiProxyPrefixes.some(prefix=>requestUrl.pathname.startsWith(prefix)) || requestUrl.pathname==='/openapi.json')) return false;
   const target=`${apiUpstream}${requestUrl.pathname}${requestUrl.search}`;
-  const headers=new Headers(request.headers);
-  headers.delete('host');
-  const upstream=await fetch(target,{method:request.method,headers,body:['GET','HEAD'].includes(request.method)?undefined:request});
-  response.writeHead(upstream.status,Object.fromEntries(upstream.headers));
+  const headers={...request.headers};
+  // Node fetch rewrites Host to the upstream URL; http.request preserves the public Host.
+  if (request.headers.host) headers.host=request.headers.host;
+  const upstream=await new Promise((resolve,reject)=>{
+    const upstreamRequest=http.request(target,{method:request.method,headers},resolve);
+    upstreamRequest.on('error',reject);
+    if (['GET','HEAD'].includes(request.method)) upstreamRequest.end();
+    else request.pipe(upstreamRequest);
+  });
+  response.writeHead(upstream.statusCode,Object.fromEntries(Object.entries(upstream.headers)));
   if (upstream.body) for await (const chunk of upstream.body) response.write(chunk);
   response.end();
   return true;
