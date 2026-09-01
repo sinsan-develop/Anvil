@@ -41,3 +41,4 @@
 - 추가 조치: http.request 기반 upstream 전달로 전환하고 원 요청 Host를 명시적으로 전달.
 - 추가 검증: 구문검사 PASS; 웹 테스트 14/14 PASS; diff check PASS. 재배포 후 공개 /health/live, /openapi.json, /api/runs/run-1/events 응답을 재확인할 예정.
 >>>>>>> df5ced2
+`n## ysna-server 재배포 검증 2026-09-01`n- 배포: deploy-public-preview.sh로 16552d7 태그 anvil-ui-preview-20260901.5 배포 완료; anvil-web 이미지 16552d7468a8 healthy.`n- 공개 health/openapi/events: Main Agent 재검증 결과 각각 HTTP 200/200/401(이벤트 API는 인증 필요 응답으로 Host 검증 통과).`n- 보호 대상: nginx-proxy-manager 및 shared-db 유지 확인. NPM 재시작·타 서비스 변경 없음.`n- 판정: Host 보존 수정 배포 및 공개 경로 검증 완료; SSE 인증 세부 시나리오는 별도 미검증.`n
