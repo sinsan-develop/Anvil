@@ -1,0 +1,46 @@
+{
+  "manifest_type": "AnvilReleaseManifest",
+  "manifest_version": "1.0",
+  "work_package": "C-21",
+  "status": "PENDING_APPROVAL",
+  "source": {
+    "repository": "git@github.com:cyhuh7950/anvil.git",
+    "commit": "fda94392b03f69d1a21b1030b5425f14ee8a4d95",
+    "branch_at_capture": "main",
+    "working_tree": "CLEAN"
+  },
+  "authority": {
+    "successor_binding": "APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001",
+    "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D"
+  },
+  "evidence": {
+    "focused_tests": {
+      "command": ".venv\\Scripts\\python.exe -m pytest tests/api -q",
+      "result": "PASS",
+      "count": 35
+    },
+    "host_diagnostic_report_sha256": "7BEEDD8A10E57F3DAB14D1A5591FF78FE8AB2730E28DFC0C7671A12119FECC0A",
+    "ops_execution_report_sha256": "BF8817F74F62CF2C223613DC0007D907836E9BE1CA816281275CC7062FC01C4E",
+    "runtime_provider_and_telegram": "PARTIAL_WITH_PROVIDER_ERRORS_AND_INVALID_HOST"
+  },
+  "runtime": {
+    "target_host": "ysna-server",
+    "target_checkout": "~/deploy/anvil/repo",
+    "target_runtime_root": "~/deploy/anvil",
+    "public_domain": "anvil.sinsan.kr",
+    "migration_head": "0011_telegram_webhook_state",
+    "deployment_status": "PENDING_APPROVAL"
+  },
+  "boundaries": {
+    "listener": "127.0.0.1:4173 only",
+    "browser_api": "same-origin relative paths only",
+    "database": "Anvil dedicated database and roles only",
+    "public_exposure": "existing HTTPS host only",
+    "telegram_signed_post": "two approved attempts; both 400 invalid host; no DB rows created",
+    "authenticated_sse_last_event_id": "NOT_EXECUTED"
+  },
+  "approval_required": [
+    "human approval binding for this exact commit and evidence",
+    "standard deploy.sh execution using this manifest"
+  ]
+}
