@@ -6,10 +6,14 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 import hmac
 import json
+import logging
 from typing import Any, Mapping
 
 from packages.agent_team.telegram_adapter import TelegramAdapter, TelegramUpdate
 from packages.persistence.telegram_webhook import SqlAlchemyTelegramStateStore, TelegramStateStore
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,7 +66,15 @@ class TelegramWebhook:
         if len(raw_body) > self.config.max_body_bytes:
             return 413, {"error": "payload too large"}
         host = headers.get("host", "").split(":", 1)[0].lower().strip()
-        if host not in {value.lower().strip() for value in self.config.allowed_hosts}:
+        allowed_hosts = {value.lower().strip() for value in self.config.allowed_hosts}
+        if host not in allowed_hosts:
+            logger.warning(
+                "telegram webhook host rejected",
+                extra={
+                    "received_host": host,
+                    "allowed_hosts": tuple(sorted(allowed_hosts)),
+                },
+            )
             return 400, {"error": "invalid host"}
         if not hmac.compare_digest(headers.get("x-telegram-bot-api-secret-token", ""), self.config.secret_token):
             return 403, {"error": "webhook authentication failed"}

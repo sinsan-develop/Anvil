@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import json
+import logging
 
 from fastapi.testclient import TestClient
 
@@ -63,6 +64,37 @@ def test_webhook_requires_host_and_telegram_secret_only() -> None:
     headers["host"] = "anvil.sinsan.kr"
     headers["x-telegram-bot-api-secret-token"] = "wrong"
     assert webhook.handle(body, headers, now=now)[0] == 403
+
+
+def test_webhook_logs_only_normalized_host_metadata_when_host_is_rejected(caplog: pytest.LogCaptureFixture) -> None:
+    webhook = _webhook(TelegramWebhookConfig(
+        "telegram-secret",
+        "update-secret",
+        allowed_hosts=("ANVIL.SINSAN.KR",),
+    ))
+    now = datetime.now(timezone.utc)
+    raw_body = b'{"credential":"payload-must-not-be-logged"}'
+
+    with caplog.at_level(logging.WARNING, logger="packages.api.telegram_webhook"):
+        status, result = webhook.handle(
+            raw_body,
+            {
+                "host": "Unexpected.EXAMPLE:8443",
+                "x-telegram-bot-api-secret-token": "secret-must-not-be-logged",
+            },
+            now=now,
+        )
+
+    assert status == 400
+    assert result == {"error": "invalid host"}
+    assert len(caplog.records) == 1
+    record = caplog.records[0]
+    assert record.getMessage() == "telegram webhook host rejected"
+    assert record.received_host == "unexpected.example"  # type: ignore[attr-defined]
+    assert record.allowed_hosts == ("anvil.sinsan.kr",)  # type: ignore[attr-defined]
+    rendered_record = repr(record.__dict__)
+    assert "payload-must-not-be-logged" not in rendered_record
+    assert "secret-must-not-be-logged" not in rendered_record
 
 
 def test_webhook_delegates_replay_and_high_risk_denial() -> None:
