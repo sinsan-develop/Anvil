@@ -12,3 +12,9 @@
 - 다음 조치: diff 검토 후 승인된 배포 절차로 이미지 빌드·배포하고 3770 경로별 실제 응답 검증
 - 추가 검증: 로컬 mock upstream으로 /api/health, /health/live, /integrations/telegram/webhook, /openapi.json 200 전달 확인; SSE 스트림 전달 구조 확인
 - 리뷰: Main 독립 diff 검토 완료; 별도 reviewer 무응답으로 미실행
+
+## 운영 배포 검증 2026-09-01
+- tag: anvil-ui-preview-20260901.2 / commit ed82e93
+- ysna-server: anvil-web 이미지 빌드·재기동 완료, health=healthy
+- 컨테이너 3770: /health/live=200, /openapi.json=200, API upstream 전달 확인
+- 미검증: 공개 HTTPS 도메인 라우팅/Telegram signed POST/Provider 호출/SSE 인증 포함 실운영 시나리오
