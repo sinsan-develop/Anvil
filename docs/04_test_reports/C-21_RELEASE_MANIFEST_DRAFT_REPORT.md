@@ -15,6 +15,7 @@
 - Host 진단 보고서 hash: `7BEEDD8A10E57F3DAB14D1A5591FF78FE8AB2730E28DFC0C7671A12119FECC0A`
 - 운영 실행 보고서 hash: `BF8817F74F62CF2C223613DC0007D907836E9BE1CA816281275CC7062FC01C4E`
 - 기존 승인 ReleaseManifest는 변경하지 않았다.
+- 통합 회귀: `.venv\\Scripts\\python.exe -m pytest tests/api tests/agent_team tests/persistence tests/browser -q` → 109 passed (cache warning 1건은 권한 부족으로 미검증 캐시 기록에만 영향)
 
 ## 미충족 조건
 
