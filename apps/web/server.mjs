@@ -19,6 +19,20 @@ const securityHeaders={
   'content-security-policy':"default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'",
   'x-content-type-options':'nosniff','x-frame-options':'DENY','referrer-policy':'no-referrer','cache-control':'no-store'
 };
+const apiUpstream=(process.env.ANVIL_API_UPSTREAM||'').replace(/\/$/,'');
+const apiProxyPrefixes=['/api/','/health/','/integrations/'];
+
+async function proxyApiRequest(request,response,requestUrl) {
+  if (!apiUpstream || !(apiProxyPrefixes.some(prefix=>requestUrl.pathname.startsWith(prefix)) || requestUrl.pathname==='/openapi.json')) return false;
+  const target=`${apiUpstream}${requestUrl.pathname}${requestUrl.search}`;
+  const headers=new Headers(request.headers);
+  headers.delete('host');
+  const upstream=await fetch(target,{method:request.method,headers,body:['GET','HEAD'].includes(request.method)?undefined:request});
+  response.writeHead(upstream.status,Object.fromEntries(upstream.headers));
+  if (upstream.body) for await (const chunk of upstream.body) response.write(chunk);
+  response.end();
+  return true;
+}
 const staticFiles=new Map([
   ['/src/app/workbench.js',['src/app/workbench.js','text/javascript; charset=utf-8']],
   ['/src/api/workbench-client.js',['src/api/workbench-client.js','text/javascript; charset=utf-8']],
@@ -71,6 +85,7 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='f
   const server=http.createServer(async (request,response)=>{
     try {
       const requestUrl=new URL(request.url,'http://fixture.invalid');
+      if (await proxyApiRequest(request,response,requestUrl)) return;
       if (request.method==='GET' && requestUrl.pathname==='/healthz') return send(response,200,{ok:true,service:'anvil-web',mode:runtimeMode});
       if (request.method==='GET' && requestUrl.pathname==='/api/design-flow/config') return send(response,200,{ok:true,csrfToken,runtimeBoundary:'LOCAL_VERIFICATION_ONLY'});
       if (request.method==='POST' && requestUrl.pathname==='/api/design-flow/run') {
