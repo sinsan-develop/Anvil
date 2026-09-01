@@ -122,3 +122,10 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 
 - Main 세션에서 read-only `wsl.exe -l -v`는 `Ubuntu Running (WSL2)`, `wsl.exe -e sh -lc "uname -a"`는 Linux kernel 정보를 반환했다.
 - 따라서 WSL 자체는 권한 승격 경로에서 접근 가능하지만, subagent 기본 세션의 `E_ACCESSDENIED`와 실행 권한 차이가 존재한다. Docker CLI/Anvil runtime과 DB identity는 여전히 미검증이다.
+
+### WSL/Docker read-only 재검증
+
+- 권한 승격 WSL에서 Docker Server `29.1.3`와 실행 컨테이너 목록을 확인했다.
+- `local-postgres` 및 기타 PostgreSQL 컨테이너는 실행 중이나 Anvil 전용 `shared-db` 컨테이너는 존재하지 않았다.
+- `local-postgres`의 database 목록에는 `eoul_gateway` 등 기존 DB가 있으나 `anvil` 데이터베이스는 확인되지 않았다. 따라서 Anvil schema/migration/replay/audit PASS로 승격하지 않는다.
+- WSL 프로젝트 `/home/daon/deploy/eoul-gateway`는 `?? .env` dirty 상태이므로 변경하지 않고 보존했다.

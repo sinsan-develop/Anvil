@@ -221,6 +221,12 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - 프로젝트 `.venv`로 API·persistence fixture 16 passed, agent_team 63 passed, 브라우저 계약 14 passed, compileall·diff-check PASS를 확인했다.
 - 전체 suite는 기존 yaml/fixture import 및 중복 모듈명으로 7개 collection error가 발생해 전체 통합 검증은 미완료로 유지한다.
 
+### C-21 WSL/Docker 재검증
+
+- 권한 승격 WSL에서 Docker Server 29.1.3와 실행 컨테이너를 확인했다.
+- `local-postgres`는 실행 중이나 Anvil 전용 `shared-db`와 `anvil` database는 확인되지 않아 실제 Anvil persistence는 미검증이다.
+- WSL gateway checkout의 기존 `?? .env` dirty는 변경하지 않고 보존했다.
+
 ## 2026-08-31 C-06 독립 검증 및 수락
 
 - C-06 WorkInstruction/InvocationPrompt를 발행하고 정식 `FAILURE_REPORT` fail-closed validator를 구현했다.
