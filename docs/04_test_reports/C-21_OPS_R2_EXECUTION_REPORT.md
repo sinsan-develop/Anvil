@@ -49,3 +49,12 @@
 3. catalog baseline을 확정한 뒤 drift hash를 산출한다.
 4. Telegram signed POST는 별도 승인 범위에서 1회 실행한다.
 
+## Telegram signed POST 1회 실행 결과
+
+신산님 승인 후 테스트 identity `7253893482:7253893482`와 `/status` fixture로 공개 webhook에 POST를 정확히 1회 실행했다. 응답은 HTTP `400` / `invalid host`였으며, 전후 `telegram_webhook_updates`, `telegram_webhook_audits`, `telegram_webhook_rate_limits` 행 수는 모두 `0`이었다. 따라서 감사 side effect와 업무 데이터 변경은 발생하지 않았다.
+
+- 실행 횟수: 1회 (재전송 없음)
+- token·secret·Authorization·원문 payload: 미기록
+- 원인 분류: 공개 Host가 webhook 경계의 허용 host와 일치하지 않는 설정 불일치 의심
+- read-only 확인: NPM `/integrations` location은 `proxy_set_header Host $host`; 런타임에는 `ANVIL_CONSOLE_BASE_URL=anvil.sinsan.kr`가 설정되어 있으나 `ANVIL_PUBLIC_HOST`는 별도 설정되지 않음
+- 후속 조치: 동일 fixture 재전송 금지. Host 설정 수정은 별도 제품/운영 변경 승인 없이는 수행하지 않음.
