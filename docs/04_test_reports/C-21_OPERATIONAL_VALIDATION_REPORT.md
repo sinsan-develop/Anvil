@@ -82,3 +82,43 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - 제품 코드 변경: 0
 - 운영·외부 변경: 0
 - 이 보고서만 추가되었으며, Main Agent 검토 후 C-21 branch 정리 여부를 결정한다.
+
+## 2026-09-01 C-21 재검증 (현재 세션)
+
+### 판정
+
+`PARTIAL / OPERATIONAL_BOUNDARY_NOT_VERIFIED`를 유지한다. 로컬 canonical worktree에서 focused 계약 검증은 재현되었지만, WSL·Docker·실제 Anvil API/DB·외부 운영망은 여전히 확인되지 않았다. 제품 코드와 운영 상태는 변경하지 않았다.
+
+### 실행 증거
+
+| 검증 | 명령 | 결과 |
+|---|---|---|
+| WSL 상태 | `wsl.exe --status`; `wsl.exe --list --verbose` | `Wsl/EnumerateDistro/Service/E_ACCESSDENIED`, 각 exit 0/출력 오류; distro shell 실행 불가 |
+| Docker | `Get-Command docker,docker-compose`; `docker version`; `docker ps` | Docker CLI/compose 명령 미등록, 컨테이너 조회 불가 |
+| 로컬 PostgreSQL 포트 | `Test-NetConnection 127.0.0.1 -Port 5432 -InformationLevel Detailed` | `TcpTestSucceeded=True`; 인증·DB 식별·쿼리·migration은 수행하지 않음 |
+| 로컬 health | `curl.exe --max-time 5 -sS -i http://127.0.0.1:8080/health` | HTTP 200, `{"status":true}`, Uvicorn 응답. 소스의 Anvil API entrypoint는 runtime을 정의하지 않으므로 Anvil 서비스로 식별하지 않음 |
+| canonical focused agent tests | `Push-Location .worktrees/ysna-internal-deploy; .venv\Scripts\python.exe -m pytest -p no:cacheprovider tests/agent_team -q` | `63 passed`, exit 0 |
+| canonical focused API/persistence tests | `.venv\Scripts\python.exe -m pytest -p no:cacheprovider tests/api/test_runtime_app.py tests/api/test_telegram_webhook.py tests/persistence/test_telegram_webhook_state.py -q` | `14 passed`, exit 0 |
+| browser 계약 | `node --test apps/web/tests/*.mjs` | `14 passed`, exit 0 |
+| 정적 검사 | `.venv\Scripts\python.exe -m compileall -q packages apps/api`; `git diff --check` | 각 exit 0 |
+| 운영 SSH | `ssh -o BatchMode=yes -o ConnectTimeout=5 ysna-server true` | hostname 해석 실패, exit 255 |
+| 공개 HTTPS | `curl.exe --max-time 8 -sS -I https://anvil.sinsan.kr` | 연결 실패, exit 7; DNS A `161.33.20.13`은 확인 |
+| Telegram API reachability | `curl.exe --max-time 8 -sS https://api.telegram.org/` | 연결 실패, exit 7; token 미사용 |
+| Provider endpoint DNS | `Resolve-DnsName` for configured provider hosts | DNS A 레코드 확인만 수행; key·TLS authenticated request·billing probe 미실행 |
+
+### 경계 및 해석
+
+- 사용자가 WSL이 Running이라고 보고했지만, 이 검증 세션의 `wsl.exe` 호출은 재현 가능하게 `E_ACCESSDENIED`를 반환했다. WSL service 접근권한 복구나 재시작은 수행하지 않는다.
+- `127.0.0.1:5432`는 TCP listener 존재만 증명한다. PostgreSQL server identity, `shared-db`, schema head, persistence transaction, replay/audit는 미검증이다.
+- `127.0.0.1:8080/health`는 응답하지만 현재 저장소의 `apps/api/anvil_api/main.py`가 예약 entrypoint이며 compose가 `services: {}`이므로 Anvil 운영 health로 간주하지 않는다.
+- 외부 SSH/HTTPS/Telegram은 네트워크 경계에서 실패했다. credential 값 출력, webhook 변경, Provider 호출, 배포, DB 변경은 모두 하지 않았다.
+- focused 로컬 테스트는 PASS이나 실제 운영·브라우저 Network·SSE reconnect/Last-Event-ID·Provider capability/drift·Telegram allowlist/secret/replay/audit를 대체하지 않는다.
+
+### 다음 조치
+
+검증 가능한 호스트에서 WSL service 접근과 Docker/Anvil runtime을 복구한 뒤, 동일한 read-only 명령으로 PostgreSQL identity/migration 및 실제 API/SSE를 먼저 재검증한다. 이후 승인된 non-billing Provider/Telegram probe만 별도 실행한다.
+
+### Main 권한 승격 재확인
+
+- Main 세션에서 read-only `wsl.exe -l -v`는 `Ubuntu Running (WSL2)`, `wsl.exe -e sh -lc "uname -a"`는 Linux kernel 정보를 반환했다.
+- 따라서 WSL 자체는 권한 승격 경로에서 접근 가능하지만, subagent 기본 세션의 `E_ACCESSDENIED`와 실행 권한 차이가 존재한다. Docker CLI/Anvil runtime과 DB identity는 여전히 미검증이다.
