@@ -18,3 +18,11 @@
 - ysna-server: anvil-web 이미지 빌드·재기동 완료, health=healthy
 - 컨테이너 3770: /health/live=200, /openapi.json=200, API upstream 전달 확인
 - 미검증: 공개 HTTPS 도메인 라우팅/Telegram signed POST/Provider 호출/SSE 인증 포함 실운영 시나리오
+
+## 예외 보고 2026-09-01
+- 판정: PUBLIC_TLS_NOT_VERIFIED
+- 이유: ysna-server에서 https://anvil.sinsan.kr/* 요청이 TLS unrecognized name으로 실패
+- 영향: 외부 공개 API/UI 검증 불가; 컨테이너 내부 기능은 정상
+- 조치: anvil-web 이미지 ed82e93 배포 및 health/openapi 내부 검증 완료
+- 미충족: NPM Proxy Host와 Let's Encrypt 인증서가 실제 ysna-server 설정에 일치하지 않음
+- 다음 조치: NPM에서 anvil.sinsan.kr 인증서·Proxy Host를 저장/재발급 후 공개 경로 재검증
