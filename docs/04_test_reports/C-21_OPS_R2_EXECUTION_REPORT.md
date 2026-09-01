@@ -68,4 +68,10 @@
 - 재배포 후 공개 `anvil.sinsan.kr/integrations/telegram/webhook`에 signed POST를 정확히 1회 추가 실행했다.
 - 추가 POST도 HTTP `400` / `invalid host`로 종료했고, 세 webhook 상태 테이블 행 수는 전후 모두 `0`이었다.
 
-추가 POST 승인 횟수는 소진되었으므로 동일 fixture를 더 이상 재전송하지 않는다. 공개 health/OpenAPI와 일반 API Host 검증은 정상이나 Telegram webhook 경계만 계속 실패한다. 현재 세션에서는 `ysna-server` SSH 별칭이 해석되지 않고 직접 IP SSH도 권한 거부되어 NPM의 실행 중 최종 설정과 API 컨테이너 수신 Host를 추가 read-only로 대조할 수 없다. 따라서 원인은 `UNRESOLVED_EXTERNAL_HOST_PATH`로 분류하며, C-21 acceptance와 C-01 시작은 보류한다.
+추가 POST 승인 횟수는 소진되었으므로 동일 fixture를 더 이상 재전송하지 않는다. 공개 health/OpenAPI와 일반 API Host 검증은 정상이나 Telegram webhook 경계만 계속 실패한다.
+
+## 접근 복구 후 read-only 대조
+
+도구 실행 권한을 승인받아 ysna-server read-only 확인을 수행했다. NPM access log는 승인된 POST를 `https anvil.sinsan.kr "/integrations/telegram/webhook"`으로 기록하고, 생성 설정은 `server_name anvil.sinsan.kr`, `/integrations`의 `proxy_pass http://anvil-web:3770`, `proxy_set_header Host $host`로 확인된다. `anvil-internal-web-1`에는 `ANVIL_PUBLIC_HOST=anvil.sinsan.kr`, `ANVIL_CONSOLE_BASE_URL=https://anvil.sinsan.kr`가 전달되어 있다.
+
+DNS/NPM 공개 Host 오기록은 배제되었지만 API handler가 실제 전달받은 Host를 현재 로그에 남기지 않아 추가 POST 없이 최종 원인을 확정할 수 없다. 원인은 `UNRESOLVED_EXTERNAL_HOST_PATH`로 분류하고, C-21 acceptance와 C-01 시작은 보류한다. 다음 조치는 비밀·payload를 남기지 않는 request-host metadata 진단 또는 별도 승인된 재시도다.
