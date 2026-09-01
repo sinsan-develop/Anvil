@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from fastapi.testclient import TestClient
 
 from packages.api.runtime import RuntimeConfigurationError, create_runtime_app
 
@@ -42,3 +43,25 @@ def test_runtime_app_injects_durable_session_store_and_preserves_provider_metada
 def test_runtime_app_rejects_non_callable_session_factory() -> None:
     with pytest.raises(RuntimeConfigurationError, match="session factory"):
         create_runtime_app(environment=_env(), session_factory=object())  # type: ignore[arg-type]
+
+
+def test_runtime_app_allows_public_host_and_console_origin_without_relaxing_defaults() -> None:
+    app = create_runtime_app(environment=_env(), session_factory=lambda: _FakeSession())
+    client = TestClient(app)
+
+    host_allowed = client.get("/api/providers", headers={"host": "anvil.sinsan.kr"})
+    local_default_still_allowed = client.get("/api/providers", headers={"host": "anvil.local"})
+    preflight_allowed = client.options(
+        "/api/providers",
+        headers={
+            "host": "anvil.sinsan.kr",
+            "origin": "https://anvil.sinsan.kr",
+            "access-control-request-method": "GET",
+        },
+    )
+
+    assert host_allowed.status_code == 401
+    assert local_default_still_allowed.status_code == 401
+    assert preflight_allowed.status_code == 204
+    assert preflight_allowed.headers["access-control-allow-origin"] == "https://anvil.sinsan.kr"
+    assert preflight_allowed.headers["access-control-allow-credentials"] == "true"

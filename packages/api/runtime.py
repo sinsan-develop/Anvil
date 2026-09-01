@@ -8,6 +8,7 @@ credential values through application state or responses.
 from __future__ import annotations
 
 import os
+from urllib.parse import urlsplit
 from collections.abc import Mapping
 from typing import Any, Callable
 
@@ -21,6 +22,7 @@ from packages.persistence.config import DatabaseSettings
 
 from .fastapi_app import create_app
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
+from .security import WebSecurityConfig
 
 
 class RuntimeConfigurationError(ValueError):
@@ -81,10 +83,11 @@ def create_runtime_app(
     secret_token = _required(source, "TELEGRAM_WEBHOOK_SECRET")
     signing_secret = _required(source, "TELEGRAM_INTERNAL_SIGNING_SECRET")
     console_base_url = _required(source, "ANVIL_CONSOLE_BASE_URL")
+    public_host = (source.get("ANVIL_PUBLIC_HOST") or urlsplit(console_base_url).hostname or "anvil.local").strip()
     config = TelegramWebhookConfig(
         secret_token=secret_token,
         hmac_secret=signing_secret,
-        allowed_hosts=(source.get("ANVIL_PUBLIC_HOST", "anvil.sinsan.kr").strip(),),
+        allowed_hosts=(public_host,),
     )
     telegram_adapter = adapter or TelegramAdapter(
         allowlisted_identities=_allowlisted_identities(source),
@@ -94,7 +97,11 @@ def create_runtime_app(
     webhook = TelegramWebhook.from_session_factory(
         telegram_adapter, config, session_factory=session_factory,
     )
-    app = create_app(telegram_webhook=webhook, **app_kwargs)
+    web_security = WebSecurityConfig(
+        allowed_hosts=frozenset({public_host, "anvil.local"}),
+        allowed_origins=frozenset({console_base_url.rstrip("/"), "https://anvil.local"}),
+    )
+    app = create_app(telegram_webhook=webhook, security_config=web_security, **app_kwargs)
     # Metadata is deliberately credential-free and useful to health/readiness
     # consumers without turning provider secrets into API data.
     app.state.provider_catalog = runtime_catalog(source)
