@@ -24,10 +24,10 @@
 | GROQ | configured | healthy | 200 | 14 | `openai/gpt-oss-120b`, `qwen/qwen3.8-27b` | 137 | `UNVERIFIED` |
 | MISTRAL | configured | healthy | 200 | 48 | `mistral-large-latest`, `codestral-latest` | 600 | `UNVERIFIED` |
 | OPENROUTER | configured | healthy | 200 | 417 | `deepseek/deepseek-chat`, `google/gemini-2.5-flash` | 149 | `UNVERIFIED` |
-| UPSTAGE | configured | unhealthy | 4xx | - | - | 113 | `UNVERIFIED` |
-| GEMINI | configured | unhealthy | 4xx | - | - | 101 | `UNVERIFIED` |
+| UPSTAGE | configured | unhealthy | 401 | - | - | 113 | `UNVERIFIED` |
+| GEMINI | configured | unhealthy | 400 | - | - | 101 | `UNVERIFIED` |
 | ANTHROPIC | configured | healthy | 200 | 10 | `claude-sonnet-4-6`, `claude-opus-4-6` | 273 | `UNVERIFIED` |
-| OPENAI | configured | unhealthy | 4xx | - | - | 149 | `UNVERIFIED` |
+| OPENAI | configured | unhealthy | 401 | - | - | 149 | `UNVERIFIED` |
 | OLLAMA | not_required | unhealthy | timeout | - | - | 10010 | `UNVERIFIED` |
 
 오류 Provider의 상세 응답 본문과 상태 원인은 비밀·응답정보 노출 방지를 위해 기록하지 않고 `HTTPError`/`URLError` 계열만 확인했다. 모델 catalog 기준 hash 또는 사전 baseline이 없어 drift는 모두 `UNVERIFIED`다.
