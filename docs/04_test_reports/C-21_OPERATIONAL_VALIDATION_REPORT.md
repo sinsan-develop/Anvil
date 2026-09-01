@@ -129,3 +129,10 @@ C-21 WorkInstruction의 read-only 범위에서 확인 가능한 정적·로컬 H
 - `local-postgres` 및 기타 PostgreSQL 컨테이너는 실행 중이나 Anvil 전용 `shared-db` 컨테이너는 존재하지 않았다.
 - `local-postgres`의 database 목록에는 `eoul_gateway` 등 기존 DB가 있으나 `anvil` 데이터베이스는 확인되지 않았다. 따라서 Anvil schema/migration/replay/audit PASS로 승격하지 않는다.
 - WSL 프로젝트 `/home/daon/deploy/eoul-gateway`는 `?? .env` dirty 상태이므로 변경하지 않고 보존했다.
+
+### HTTPS 운영망 재확인
+
+- 권한 승격 `curl`에서 `https://anvil.sinsan.kr`가 HTTPS 응답을 반환했다. `/health/live`, `/health/ready`, `/api/health`는 모두 `404 EMPTY`로 응답해 기대 health 계약은 확인되지 않았다.
+- `/integrations/telegram/webhook`는 `405 Method Not Allowed`와 `Allow: POST`를 반환해 same-origin webhook 경로가 존재함을 확인했다. 실제 POST·secret 검증·Telegram API 호출은 수행하지 않았다.
+- 응답의 CSP, HSTS, X-Content-Type-Options, X-Frame-Options, `Cache-Control: no-store` 헤더를 확인했다.
+- `ysna-server` SSH alias는 계속 해석되지 않으며, Docker 목록에는 Anvil `shared-db`/운영 API 컨테이너가 없다.

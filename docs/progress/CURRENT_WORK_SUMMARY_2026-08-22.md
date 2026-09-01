@@ -298,3 +298,8 @@ Phase B Gate acceptance 전에는 C-01을 시작하지 않는다. C-32 운영 �
 - 최종 독립 검증: 신규 8개 및 verification/orchestration 회귀 65개 통과, compileall·`git diff --check` PASS.
 - C-14를 `main`에 병합·push했으며 실제 DB/API/browser/provider/Docker/WSL/deployment/분산 persistence는 미검증이다.
 - 다음 미완료 항목은 C-15 실제 fixture 전체 Single Developer backend/API E2E다.
+
+## 2026-09-01 C-21 HTTPS 재검증 추가
+
+- 권한 승격 HTTPS에서 `anvil.sinsan.kr` 응답과 `/integrations/telegram/webhook`의 `POST` 전용 경로를 확인했다.
+- health 경로는 404이고 Anvil `shared-db`/운영 API 컨테이너가 없어 C-21 운영 PASS로 승격하지 않는다. CSP/HSTS 등 보안 응답 헤더는 확인했다.
