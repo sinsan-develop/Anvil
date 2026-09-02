@@ -1285,7 +1285,7 @@
   "reporting_decision": {
     "decision": "STOP_AND_REPORT_SCOPE_RISK",
     "reason_codes": [
-      "C21_INDEPENDENT_JUDGMENT_AND_C01_SCOPE_EXPANSION_WAITING_APPROVAL"
+      "C21_LIFECYCLE_RUNTIME_PRODUCTION_SIDE_EFFECT_SCOPE_WAITING_APPROVAL"
     ],
     "stop_before_dialogue_report": true
   },

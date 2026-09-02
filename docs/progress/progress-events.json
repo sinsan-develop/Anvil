@@ -13849,14 +13849,9 @@
         "validated_base_commit": "1ca80d005b7b03cef7311932df4d5319530e98d9",
         "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
         "exact_allowed_paths": [
-          "docs/approvals/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
           "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
-          "docs/governance/schemas/non-semantic-revision-binding.schema.json",
-          "docs/governance/schemas/progress-event.schema.json",
-          "docs/governance/schemas/progress-handoff-detached-digest.schema.json",
           "docs/progress/BUILD_HANDOFF.md",
           "docs/progress/build-progress.json",
-          "docs/progress/non-semantic-revision-bindings.json",
           "docs/progress/progress-events.json",
           "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
         ],
