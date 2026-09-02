@@ -100,3 +100,17 @@
 - 조치: `create_asgi_app()` factory로 명시적 health route 등록을 mount보다 선행하고 fresh import 회귀 테스트 추가.
 - 검증: fresh import `/health/live` 200, `/health/ready` non-404, route order PASS; focused tests 2 passed, compileall PASS, diff-check PASS.
 - 범위 밖: Telegram/remote/DB 변경 없음.
+
+## C-21 NPM stale upstream DNS 진단 — 2026-09-02
+
+- 담당: `npm_dns_refresh_design` read-only subagent.
+- 판정: `anvil-web` recreate 후 NPM worker reload가 없어 literal `proxy_pass`가 이전 Docker IP를 유지할 수 있는 배포 순서 결함이다. Docker DNS의 현재 `getent` 정상 여부만으로 active worker routing은 증명되지 않는다.
+- 실제 구조: NPM `nginx-proxy-manager`와 `anvil-web`은 `proxy-network`에 연결됨. NPM proxy host 8은 `/api`, `/health`, `/integrations`를 `anvil-web:3770`으로 전달한다.
+- legacy override: `/data/nginx/custom/server_proxy.conf`, SHA-256 `406052ff7d4764bd23d03d7bef48db01c9683f801c010dc41ba24c7d2d1593cf`, 145 bytes가 Telegram webhook을 `anvil-internal-web-1:4173`으로 직접 전달한다. 제거 전 Telegram PASS/internal 제거 금지.
+- 영구 조치안: deploy script에 새 web health -> Docker DNS/IP 동일성 -> `nginx -t` -> graceful `nginx -s reload` -> 고유 public probe의 새 web log correlation을 포함한다. 실패 시 이전 release rollback 후 동일 reload/검증, 재실패 시 `DIR/INCIDENT_HOLD`.
+- rollback: custom override는 exact hash guard와 Git versioned migration으로만 제거하고, runtime backup을 byte-identical 복원한 뒤 nginx test/reload한다. 임의 서버 patch 금지.
+- 원격 조치: SSH/Docker/NPM은 읽기 전용 조사만 수행. NPM reload, 파일 변경, container recreate/removal, DB/Telegram mutation 없음.
+- 오류 횟수: PowerShell/SSH quoting 오류 2회는 조사 도구 오류이며 운영 실패로 집계하지 않음. 동일 운영 root cause 수정 시도 0회.
+- 임시 리소스: 새 `D:\tmp` 폴더·worktree·process·port·container·volume·network 생성 없음; 잔여 0건.
+- 필요한 승인: 공유 NPM graceful reload와 exact custom override migration은 운영 설정 변경 승인 필요. exact unified release deploy/rollback 및 internal 제거는 DeployApproval/제거 승인에 결박.
+- 상세: `docs/04_test_reports/C-21_NPM_DNS_REFRESH_DIAGNOSIS.md`.
