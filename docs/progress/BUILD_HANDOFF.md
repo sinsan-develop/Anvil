@@ -424,10 +424,10 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 378,
+  "event_sequence": 379,
   "status": "WAITING_APPROVAL",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_repository_projection_reconciled_post_validation",
+  "last_event_id": "evt_c21_repository_projection_reconciled_fixture_contract",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
   "next_safe_action": "Rotate affected credentials, preserve the existing C-21 evidence without external re-call, then obtain an independent C-21 judgment. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
@@ -443,7 +443,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/build-progress.json",
     "docs/progress/progress-event-contract.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+    "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
+    "tests/fixtures/g05/progress-events-all-categories.json"
   ],
   "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",

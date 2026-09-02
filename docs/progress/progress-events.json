@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 378,
+  "last_sequence": 379,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13795,7 +13795,42 @@
         "historical_phase_b_gate_status": "ACCEPTED",
         "sequence_role": "post-reconciliation repository snapshot"
       }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_fixture_contract",
+      "sequence": 379,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-02T23:30:00+09:00",
+        "reason": "post-reconciliation fixture-contract completion: seq375 immutable historical MAIN_GATE_ACCEPTED remains unchanged, and its registered payload contract is covered by the all-category regression fixture",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-event-contract.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
+          "tests/fixtures/g05/progress-events-all-categories.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "post-reconciliation repository snapshot with contract regression fixture"
+      }
     }
   ],
-  "last_event_id": "evt_c21_repository_projection_reconciled_post_validation"
+  "last_event_id": "evt_c21_repository_projection_reconciled_fixture_contract"
 }

@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
-  "event_sequence": 378,
+  "event_sequence": 379,
   "updated_at": "2026-09-02T23:30:00+09:00",
-  "last_event_id": "evt_c21_repository_projection_reconciled_post_validation",
+  "last_event_id": "evt_c21_repository_projection_reconciled_fixture_contract",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "EF3667C8C74701B059D16A0372C3824A7FADA3F41B09C51C9853DEA274C02034"
+      "sha256": "2013C53AF9BBCE4660CEDD45B4FB23F4850006AAAEFAA0D46245CEB75FD0882A"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1177,7 +1177,8 @@
       "docs/progress/build-progress.json",
       "docs/progress/progress-event-contract.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+      "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
+      "tests/fixtures/g05/progress-events-all-categories.json"
     ],
     "observed_at": "2026-09-02T23:30:00+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: C-21 operational reconciliation evidence-only descendant; no external re-call",
@@ -1351,7 +1352,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "EF3667C8C74701B059D16A0372C3824A7FADA3F41B09C51C9853DEA274C02034"
+      "sha256": "2013C53AF9BBCE4660CEDD45B4FB23F4850006AAAEFAA0D46245CEB75FD0882A"
     }
   },
   "next_work_package": {
@@ -1413,5 +1414,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "47A23C56DCF8C65A78DA252BF1D7AE5AF70A22BD291B511ED837969DEC6F8D76"
+  "snapshot_hash": "AA0C3E886489F02D3B6A913A44D54D73C33486680BE8D5B83FF8411BF1FC39E8"
 }
