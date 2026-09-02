@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 384,
+  "last_sequence": 385,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13995,7 +13995,40 @@
         "historical_phase_b_gate_status": "ACCEPTED",
         "sequence_role": "R3 post-approval-wait evidence-only repository snapshot"
       }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_r3_stage2",
+      "sequence": 385,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:12:25+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:12:25+09:00",
+        "reason": "R3 stage2 evidence-only repository reconciliation: validated base a302d0c contains the separate authority-reference, non-semantic merge-normalization binding, and schema-declaration correction; this descendant contains only current C-21 progress evidence bindings.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "R3 final post-authority-normalization evidence-only repository snapshot"
+      }
     }
   ],
-  "last_event_id": "evt_c21_repository_projection_reconciled_r3"
+  "last_event_id": "evt_c21_repository_projection_reconciled_r3_stage2"
 }

@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
-  "event_sequence": 384,
-  "updated_at": "2026-09-03T00:46:18+09:00",
-  "last_event_id": "evt_c21_repository_projection_reconciled_r3",
+  "event_sequence": 385,
+  "updated_at": "2026-09-03T01:12:25+09:00",
+  "last_event_id": "evt_c21_repository_projection_reconciled_r3_stage2",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "FB5EE7CFAE10F82CE3E66C868A76BE2FECABFC78AFE6DED0ED3BE170D32263BD"
+      "sha256": "904579DE40E5095C612DAC4F43652E5BDAFE922ECB5DD4AA4C3C3414D663C5F4"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1165,27 +1165,22 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037",
+    "validated_base_commit": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "codex/c21-progress-reconcile",
     "upstream": "origin/main",
     "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/approvals/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
       "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
-      "docs/governance/schemas/non-semantic-revision-binding.schema.json",
-      "docs/governance/schemas/progress-event.schema.json",
-      "docs/governance/schemas/progress-handoff-detached-digest.schema.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
-      "docs/progress/non-semantic-revision-bindings.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
     ],
-    "observed_at": "2026-09-03T00:46:18+09:00",
+    "observed_at": "2026-09-03T01:12:25+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: C-21 operational reconciliation evidence-only descendant; no external re-call",
-    "local_head": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037"
+    "local_head": "a302d0cdc6e4743bc6594f9c134f01e21b39030e"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1355,7 +1350,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "FB5EE7CFAE10F82CE3E66C868A76BE2FECABFC78AFE6DED0ED3BE170D32263BD"
+      "sha256": "904579DE40E5095C612DAC4F43652E5BDAFE922ECB5DD4AA4C3C3414D663C5F4"
     }
   },
   "next_work_package": {
@@ -1415,5 +1410,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "FCA0DB1A6469619888C6E4BBEFD515FE55436396C19BA35B7D68C8EDE2517C67"
+  "snapshot_hash": "34A7CDA4F9905F4066FD0FF19A3AC00CEA44D816ACBADE4518E07548927F650A"
 }
