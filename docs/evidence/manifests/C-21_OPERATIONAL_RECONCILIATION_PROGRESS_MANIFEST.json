@@ -1,0 +1,17 @@
+{
+  "artifact_id": "C21-OPERATIONAL-RECONCILIATION-PROGRESS-MANIFEST-20260902-R2",
+  "package_id": "C-21",
+  "manifest_type": "MAIN_PROGRESS_PROJECTION",
+  "target_status": "TEST_REVIEW",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
+      "bytes": 976,
+      "sha256": "F3347D64D9F0BC5B13CA7185F5613B03E0F485842B792DE51BB907B282C2EFDF"
+    }
+  ],
+  "self_reference": false,
+  "scope": "Main-owned C-21 operational reconciliation projection. Existing immutable seq375 MAIN_GATE_ACCEPTED is registered without payload alteration; seq376 records the current repository projection.",
+  "evidence_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+  "safety_boundary": "Credential rotation required; no Provider, Telegram, or SSE external re-call under this reconciliation."
+}

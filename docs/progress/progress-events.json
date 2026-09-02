@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 375,
+  "last_sequence": 378,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13710,7 +13710,92 @@
         "public_exposure": "NOT_EXECUTED",
         "c01_started": false
       }
+    },
+    {
+      "event_id": "evt_c21_operational_projection_reconciled",
+      "sequence": 376,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-02T23:30:00+09:00",
+        "reason": "reconcile C-21 current operational projection to the D canonical main lineage without reopening historical Phase B Gate acceptance",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/non-semantic-revision-bindings.json",
+          "docs/progress/progress-event-contract.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "TEST_REVIEW",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_operational_validation_recorded",
+      "sequence": 377,
+      "event_type": "PRODUCT_VALIDATION_RECORDED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "validation_ref": "docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md",
+        "result": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "evidence_ref": "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+        "approval_status": "WAITING_APPROVAL",
+        "safety_boundary": "credential rotation required; no Provider, Telegram, or SSE external re-call",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "C-21 operational result between immutable seq375 Phase B Gate acceptance and post-reconciliation repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_post_validation",
+      "sequence": 378,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-02T23:30:00+09:00",
+        "reason": "post-validation C-21 repository projection on the D canonical main lineage; seq376 is the pre-reconciliation snapshot and seq377 records the current operational result without reopening historical Phase B Gate acceptance",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-event-contract.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "post-reconciliation repository snapshot"
+      }
     }
   ],
-  "last_event_id": "evt_phase_b_gate_package_accepted"
+  "last_event_id": "evt_c21_repository_projection_reconciled_post_validation"
 }

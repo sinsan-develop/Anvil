@@ -416,46 +416,37 @@
 - seq 207 `MAIN_PACKAGE_ACCEPTED`로 B-01은 `ACCEPTED`, BLK-B01-001/002는 CLOSED, B-02는 `READY`다. active failure count는 0이고 B-01 historical count는 2다.
 - NUL/ZWSP/BOM은 current Python `strip()` 계약 범위일 뿐 hash grammar PASS가 아니다. API·DB·UI·browser·provider·WSL·production·deploy는 `NOT_EXECUTED`다.
 
+## Historical record — Phase B Gate successor projection
+
+The former Phase B Gate successor projection remains historical only. The immutable Phase B Gate acceptance did not start C-01, and it is not a C-21 operational result.
+
+## Current C-21 operational reconciliation projection
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 375,
-  "status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+  "event_sequence": 378,
+  "status": "WAITING_APPROVAL",
   "current_work_package": "C-21",
-  "last_event_id": "evt_phase_b_gate_package_accepted",
-  "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
+  "last_event_id": "evt_c21_repository_projection_reconciled_post_validation",
+  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
   "next_safe_action": "Rotate affected credentials, preserve the existing C-21 evidence without external re-call, then obtain an independent C-21 judgment. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
   "dir_status": "CLEARED",
-  "repository_head": "c49b7534012d97ad130483c1ff255c0db1e99df4",
+  "repository_head": "b07651f266b4439f765489153baacc08c2c95ee1",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "165a9bfff5e085bfec322c748e83464477642f8a",
+  "repository_validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
-    "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json",
-    "docs/evidence/manifests/PHASE_B_GATE_PROGRESS_PROJECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
-    "docs/progress/SESSION_CHECKPOINT_2026-08-21_PHASE_B_GATE.md",
     "docs/progress/build-progress.json",
+    "docs/progress/non-semantic-revision-bindings.json",
+    "docs/progress/progress-event-contract.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-phase-b-gate-start.json",
-    "docs/test_reports/PHASE_B_GATE_INDEPENDENT_TEST_REPORT.md",
-    "docs/validation/PHASE_B_GATE_AUTHORITY_CONFLICT_EVIDENCE.md",
-    "docs/validation/PHASE_B_GATE_VALIDATION.md",
-    "docs/work_orders/PHASE_B_GATE_INVOCATION_PROMPT.md",
-    "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R3.md",
-    "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R2.md",
-    "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
-    "docs/work_orders/PHASE_B_GATE_WORK_INSTRUCTION.md",
-    "scripts/check_phase_b_gate.py",
-    "scripts/check_project_progress.py",
-    "tests/tooling/test_phase_b_gate.py",
-    "tests/tooling/test_project_progress.py"
+    "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
   ],
-  "reporting_decision": "AUTO_CONTINUE",
+  "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
   "phase_b_gate_deferred_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
   "phase_b_gate_undefined_ids": ["AV-STAT-029"],
