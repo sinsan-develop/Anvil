@@ -1,0 +1,49 @@
+{
+  "manifest_version": "1.0.0",
+  "package_id": "C-21-OPS-R3",
+  "classification": "PARTIAL",
+  "target": "ysna-server/anvil.sinsan.kr",
+  "anvil_web_commit": "5b0f338",
+  "migration_head": "0012",
+  "artifacts": [
+    {
+      "path": "docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md",
+      "kind": "operational_report",
+      "status": "RECORDED"
+    }
+  ],
+  "checks": {
+    "telegram_signed_post": {
+      "attempts": 1,
+      "http_status": 400,
+      "classification": "INVALID_HOST",
+      "db_side_effect": false,
+      "payload_recorded": false
+    },
+    "telegram_webhook_updates": {"before": 0, "after": 0},
+    "telegram_webhook_audits": {"before": 0, "after": 0},
+    "telegram_webhook_rate_limits": {"before": 0, "after": 0},
+    "auth_session": {"http_status": 201, "secret_recorded": false},
+    "authenticated_sse": {
+      "http_status": 200,
+      "first_event": "NONE",
+      "timeout_seconds": 8,
+      "last_event_id_successor": "NOT_EXECUTED_NO_EVENT_ID"
+    },
+    "public_root": 200,
+    "public_health_live": 200,
+    "public_health_ready": 200,
+    "public_openapi": 200,
+    "public_api_providers": 401
+  },
+  "not_executed": [
+    "Telegram Bot API send",
+    "Last-Event-ID successor without a first event",
+    "noncanonical event or DB seed",
+    "provider probe rerun",
+    "NPM or other-service mutation"
+  ],
+  "secrets_exposed": false,
+  "rollback_required": false,
+  "failure_fingerprint": "C21-R3-TELEGRAM-HOST-BOUNDARY-400"
+}
