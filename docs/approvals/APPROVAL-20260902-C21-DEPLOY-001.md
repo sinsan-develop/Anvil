@@ -34,3 +34,13 @@
 - 금지 범위: Telegram POST, Provider 호출, NPM 설정 변경, secret 값 출력
 - 승인 문구: “`8ba679e`를 ysna에 배포하고, 기존에 등록한 C-21 테스트 세션 환경변수로 `/auth/session` 발급, authenticated SSE, Last-Event-ID 재개를 검증하는 것을 승인한다.”
 - binding ID: `APPROVAL-20260902-C21-DEPLOY-004`
+
+## Unified Runtime 배포 및 조건부 internal 제거 승인
+
+- 승인일: 2026-09-02 (Asia/Seoul)
+- 대상 runtime 커밋: `a962bdfb6ba0e9c057907be8ee88909793bbf6ce`
+- 승인 범위: `anvil-web:3770` Unified Runtime 배포, UI·API·health·Telegram·SSE 검증, 성공 시 `anvil-internal-web-1` 제거와 잔여 확인
+- 조건: UI·API·health·Telegram·SSE 수직 검증이 모두 성공한 경우에만 internal 컨테이너를 제거한다.
+- 금지 범위: NPM/DNS 변경, secret 출력, 검증 실패 상태의 internal 컨테이너 제거
+- 승인 문구: “Unified Runtime `a962bdf`를 `anvil-web:3770`에 배포하고, UI·API·health·Telegram·SSE를 검증한 뒤 성공 시 `anvil-internal-web-1`을 제거하는 것을 승인한다.”
+- binding ID: `APPROVAL-20260902-C21-DEPLOY-005`
