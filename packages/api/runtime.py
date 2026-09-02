@@ -20,13 +20,24 @@ from packages.agent_team.runtime_config import runtime_catalog
 from packages.agent_team.telegram_adapter import TelegramAdapter
 from packages.persistence.config import DatabaseSettings
 
-from .fastapi_app import create_app
+from .fastapi_app import AuthorizationScope, create_app
+from .local_session import LocalTestSessionConfig, LocalTestSessionService
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
 from .security import WebSecurityConfig
 
 
 class RuntimeConfigurationError(ValueError):
     """Raised when the production boundary cannot be safely constructed."""
+
+
+_TEST_SESSION_REQUIRED = (
+    "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN",
+    "ANVIL_TEST_SESSION_ACTOR_ID",
+    "ANVIL_TEST_SESSION_PROJECT_ID",
+    "ANVIL_TEST_SESSION_ENVIRONMENT_ID",
+    "ANVIL_TEST_SESSION_RUN_IDS",
+)
+_TEST_SESSION_OPTIONAL = ("ANVIL_TEST_SESSION_TTL_SECONDS",)
 
 
 def _required(environment: Mapping[str, str], name: str) -> str:
@@ -47,6 +58,36 @@ def _allowlisted_identities(environment: Mapping[str, str]) -> frozenset[tuple[s
     if not identities:
         raise RuntimeConfigurationError("TELEGRAM_ALLOWED_IDENTITIES is required")
     return frozenset(identities)
+
+
+def _local_test_session_config(
+    environment: Mapping[str, str],
+) -> LocalTestSessionConfig | None:
+    names = _TEST_SESSION_REQUIRED + _TEST_SESSION_OPTIONAL
+    if not any(name in environment for name in names):
+        return None
+    values = {name: _required(environment, name) for name in _TEST_SESSION_REQUIRED}
+    run_ids = frozenset(
+        run_id.strip()
+        for run_id in values["ANVIL_TEST_SESSION_RUN_IDS"].split(",")
+        if run_id.strip()
+    )
+    raw_ttl = environment.get("ANVIL_TEST_SESSION_TTL_SECONDS", "900")
+    try:
+        ttl_seconds = int(raw_ttl)
+    except (TypeError, ValueError) as error:
+        raise RuntimeConfigurationError("ANVIL_TEST_SESSION_TTL_SECONDS is invalid") from error
+    try:
+        return LocalTestSessionConfig(
+            bootstrap_token=values["ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN"],
+            actor_id=values["ANVIL_TEST_SESSION_ACTOR_ID"],
+            project_id=values["ANVIL_TEST_SESSION_PROJECT_ID"],
+            environment_id=values["ANVIL_TEST_SESSION_ENVIRONMENT_ID"],
+            run_ids=run_ids,
+            ttl_seconds=ttl_seconds,
+        )
+    except ValueError as error:
+        raise RuntimeConfigurationError(str(error)) from error
 
 
 def create_runtime_app(
@@ -101,6 +142,35 @@ def create_runtime_app(
         allowed_hosts=frozenset({public_host, "anvil.local"}),
         allowed_origins=frozenset({console_base_url.rstrip("/"), "https://anvil.local"}),
     )
+    local_session_config = _local_test_session_config(source)
+    local_session = (
+        LocalTestSessionService(local_session_config)
+        if local_session_config is not None
+        else None
+    )
+    if local_session is not None:
+        conflicts = {"authenticate", "authorization_resolver", "session_issuer"} & set(app_kwargs)
+        if conflicts:
+            raise RuntimeConfigurationError(
+                "environment test session cannot replace injected authentication ports"
+            )
+
+        def resolve_test_scope(endpoint, path_parameters):
+            if endpoint.key != "GET /api/runs/{id}/events" or not local_session.allows_run(
+                path_parameters.get("id")
+            ):
+                return None
+            return AuthorizationScope(
+                local_session.config.project_id,
+                local_session.config.environment_id,
+                frozenset({"tester"}),
+            )
+
+        app_kwargs.update(
+            authenticate=local_session.authenticate,
+            authorization_resolver=resolve_test_scope,
+            session_issuer=local_session,
+        )
     app = create_app(telegram_webhook=webhook, security_config=web_security, **app_kwargs)
     # Metadata is deliberately credential-free and useful to health/readiness
     # consumers without turning provider secrets into API data.
@@ -109,6 +179,7 @@ def create_runtime_app(
     app.state.database_engine = engine
     app.state.migration_head = "0011_telegram_webhook_state"
     app.state.runtime_database_configured = True
+    app.state.local_test_session_enabled = local_session is not None
     return app
 
 

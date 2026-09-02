@@ -7,7 +7,8 @@ from datetime import datetime, timezone
 import hmac
 import inspect
 import re
-from typing import Any, Callable, Mapping
+from typing import Any, Callable, Mapping, Protocol
+from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
@@ -16,7 +17,14 @@ from packages.events.transition_guard import OptimisticVersionConflict
 
 from .common import ApiContractError, ApplicationRequest, SessionPrincipal, canonical_target_hash
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
-from .security import WebSecurityConfig, effective_host, request_id, security_headers
+from .local_session import IssuedSession
+from .security import (
+    WebSecurityConfig,
+    build_session_cookie,
+    effective_host,
+    request_id,
+    security_headers,
+)
 from .sse import EmptyEventStream, EventStreamPort, encode_sse
 from .telegram_webhook import TelegramWebhook
 
@@ -24,6 +32,10 @@ from .telegram_webhook import TelegramWebhook
 ApplicationPort = Callable[[ApplicationRequest], Any]
 Authenticator = Callable[[str], SessionPrincipal | None]
 _IF_MATCH = re.compile(r'(?:W/)?"?([0-9]+)"?\Z')
+
+
+class SessionIssuer(Protocol):
+    def issue(self, bootstrap_credential: str, *, client_key: str) -> IssuedSession: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +176,70 @@ def _host(request: Request, config: WebSecurityConfig) -> None:
         raise ApiContractError("HOST_VALIDATION_FAILED", "The request host is not allowed.", 403)
 
 
+def _origin(request: Request, config: WebSecurityConfig, *, required: bool) -> None:
+    origin = request.headers.get("origin")
+    if origin is None:
+        if required:
+            raise ApiContractError(
+                "ORIGIN_VALIDATION_FAILED",
+                "The request origin is not allowed.",
+                403,
+            )
+        return
+    if origin not in config.allowed_origins:
+        raise ApiContractError(
+            "ORIGIN_VALIDATION_FAILED",
+            "The request origin is not allowed.",
+            403,
+        )
+
+    headers = {key.lower(): value for key, value in request.headers.items()}
+    client_ip = request.client.host if request.client else None
+    authority = headers.get("host", "").strip().lower()
+    if client_ip in config.trusted_proxy_ips:
+        forwarded = headers.get("x-forwarded-host", "").split(",", 1)[0].strip().lower()
+        authority = forwarded or authority
+    try:
+        parsed_origin = urlsplit(origin)
+        parsed_authority = urlsplit(f"//{authority}")
+        if (
+            parsed_origin.scheme not in {"http", "https"}
+            or parsed_origin.username is not None
+            or parsed_origin.password is not None
+            or parsed_origin.path
+            or parsed_origin.query
+            or parsed_origin.fragment
+            or parsed_origin.hostname is None
+            or parsed_authority.hostname is None
+        ):
+            raise ValueError("invalid origin authority")
+        default_port = 443 if parsed_origin.scheme == "https" else 80
+        origin_port = parsed_origin.port or default_port
+        authority_port = parsed_authority.port or default_port
+    except ValueError as error:
+        raise ApiContractError(
+            "ORIGIN_VALIDATION_FAILED",
+            "The request origin is not allowed.",
+            403,
+        ) from error
+    if parsed_origin.hostname.lower() != parsed_authority.hostname.lower() or origin_port != authority_port:
+        raise ApiContractError(
+            "ORIGIN_VALIDATION_FAILED",
+            "The request origin is not allowed.",
+            403,
+        )
+
+
+def _bootstrap_credential(request: Request) -> str:
+    authorization = request.headers.get("authorization")
+    if not isinstance(authorization, str) or not authorization.startswith("Bearer "):
+        raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
+    credential = authorization.removeprefix("Bearer ")
+    if not credential or credential != credential.strip() or " " in credential:
+        raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
+    return credential
+
+
 def _mutation_security(
     request: Request,
     endpoint: EndpointSpec,
@@ -257,6 +333,7 @@ def _sse_handler(
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
             _host(request, config)
+            _origin(request, config, required=False)
             principal = _principal(request, authenticate, config)
             _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             if "after" in request.query_params:
@@ -309,6 +386,7 @@ def create_app(
     authorization_resolver: AuthorizationResolver | None = None,
     recovery_ports: ApiPorts | None = None,
     telegram_webhook: TelegramWebhook | None = None,
+    session_issuer: SessionIssuer | None = None,
 ) -> FastAPI:
     api_registry = registry or canonical_api_registry()
     base_ports = ports or ApiPorts()
@@ -371,6 +449,38 @@ def create_app(
             )
         )
         app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source])
+    if session_issuer is not None:
+        @app.post("/auth/session", include_in_schema=False, status_code=201)
+        async def issue_session(request: Request) -> JSONResponse:
+            try:
+                _host(request, config)
+                _origin(request, config, required=True)
+                issued = session_issuer.issue(
+                    _bootstrap_credential(request),
+                    client_key=request.client.host if request.client else "unknown-client",
+                )
+                response = JSONResponse(
+                    {
+                        "data": {
+                            "csrf_token": issued.csrf_token,
+                            "expires_at": issued.expires_at.isoformat(),
+                            "expires_in": issued.max_age_seconds,
+                        },
+                        "request_id": request.state.request_id,
+                    },
+                    status_code=201,
+                )
+                response.headers.append(
+                    "set-cookie",
+                    build_session_cookie(
+                        issued.session_token,
+                        max_age_seconds=issued.max_age_seconds,
+                        name=config.session_cookie_name,
+                    ),
+                )
+                return response
+            except ApiContractError as error:
+                return _error_response(request, error)
     if telegram_webhook is not None:
         @app.post("/integrations/telegram/webhook", include_in_schema=False)
         async def telegram_webhook_handler(request: Request) -> JSONResponse:
