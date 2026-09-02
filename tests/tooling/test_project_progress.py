@@ -625,6 +625,12 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_recovery_reporting_decision_stops_only_for_scope_risk_or_dir(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
+        bundle["progress"]["pending_approvals"] = []
+        bundle["progress"]["reporting_decision"] = {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": ["APPROVED_PLAN_ROUTINE_PROGRESS"],
+            "stop_before_dialogue_report": False,
+        }
 
         projection = checker.recovery_projection(bundle)
         self.assertEqual(projection["reporting_decision"], "AUTO_CONTINUE")
@@ -654,6 +660,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
 
         scope_risk = copy.deepcopy(bundle)
+        scope_risk["progress"]["reporting_decision"] = {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": ["APPROVED_PLAN_ROUTINE_PROGRESS"],
+            "stop_before_dialogue_report": False,
+        }
         scope_risk["progress"]["pending_approvals"] = [
             {"approval_id": "pending-risk", "change_classification": "IMPORTANT_RISK_CHANGE"}
         ]
@@ -833,6 +844,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         self.assertTrue(hasattr(checker, "normalize_change_classification"))
+        bundle["progress"]["reporting_decision"] = {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": ["APPROVED_PLAN_ROUTINE_PROGRESS"],
+            "stop_before_dialogue_report": False,
+        }
         bundle["progress"]["pending_approvals"] = [
             {
                 "approval_id": "scope-expansion",
@@ -2236,6 +2252,8 @@ class ProjectProgressContractTests(unittest.TestCase):
         progress.update(
             {
                 "event_sequence": 371,
+                "current_phase": "B",
+                "current_work_package": "PHASE_B_GATE",
                 "status": "ACTIVE",
                 "active_agent": "developer-primary-phase-b-gate",
                 "worker_lease": {
@@ -2257,12 +2275,19 @@ class ProjectProgressContractTests(unittest.TestCase):
                     "status": "ACTIVE",
                     "paths": checker.PHASE_B_GATE_ALLOWED_PATHS,
                 },
-            }
-        )
-        progress["active_work_instruction"].update(
-            {
-                "result_status": "IN_PROGRESS",
-                "independent_tester_status": "PENDING",
+                "active_work_instruction": {
+                    "artifact_id": "WI-PHASE-B-GATE-REWORK-20260821-003",
+                    "result_status": "IN_PROGRESS",
+                    "independent_tester_status": "PENDING",
+                    "assigned_verification_count": 44,
+                    "direct_gate_set": "EXACT44_DEPENDENCY_SAFE",
+                    "deferred_verification_ids": checker.PHASE_B_GATE_DEFERRED_IDS,
+                    "undefined_verification_ids": ["AV-STAT-029"],
+                },
+                "next_work_package": {
+                    "package_id": "C-01",
+                    "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE",
+                },
             }
         )
 
@@ -2294,18 +2319,23 @@ class ProjectProgressContractTests(unittest.TestCase):
         progress.update(
             {
                 "event_sequence": 374,
+                "current_phase": "B",
+                "current_work_package": "PHASE_B_GATE",
                 "status": "TEST_REVIEW",
                 "active_agent": None,
                 "worker_lease": None,
                 "write_lease": None,
-            }
-        )
-        progress["active_work_instruction"].update(
-            {
-                "result_status": "COMPLETED",
-                "package_status": "TEST_REVIEW",
-                "accepted": False,
-                "independent_tester_status": "READY_FOR_MAIN_GATE_DECISION",
+                "active_work_instruction": {
+                    "artifact_id": "WI-PHASE-B-GATE-REWORK-20260821-003",
+                    "result_status": "COMPLETED",
+                    "package_status": "TEST_REVIEW",
+                    "accepted": False,
+                    "independent_tester_status": "READY_FOR_MAIN_GATE_DECISION",
+                },
+                "next_work_package": {
+                    "package_id": "C-01",
+                    "status": "BLOCKED_PENDING_PHASE_B_GATE_ACCEPTANCE",
+                },
             }
         )
 

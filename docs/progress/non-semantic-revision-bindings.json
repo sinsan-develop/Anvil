@@ -19,6 +19,28 @@
       "reconfirmed_at": "2026-08-10T10:30:00+09:00",
       "root_approval_scope": "설계서 v2.6, 작업계획서 v1.3, 검증문서 v1.1, 운영규칙 v1.3, D1~D10 진행 기준",
       "derived_scope": ["Anvil_작업계획서_v1.md"]
+    },
+    {
+      "binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:WORKPLAN-V16-FE0F-00F4-MERGE-NORMALIZATION-001",
+      "parent_baseline_id": "BASELINE-WORKPLAN-V16-SUCCESSOR-FE0F-20260822-001",
+      "derived_baseline_id": "BASELINE-WORKPLAN-V16-MERGE-NORMALIZED-00F4-20260903-001",
+      "root_human_approval_id": "APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001",
+      "root_approval_subject_hash": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
+      "root_authority_path": "docs/governance/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
+      "root_authority_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
+      "machine_readable_reference_path": "docs/approvals/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
+      "artifact_id": "Anvil-WorkPlan-v1.6-successor-merge-normalization",
+      "artifact_path": "Anvil_작업계획서_v1.md",
+      "old_hash": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
+      "new_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+      "semantic_diff_classification": "NON_SEMANTIC",
+      "changed_clauses": ["one status-wording line replacement only"],
+      "impact": "No feature scope, requirement, or important risk change",
+      "rationale": "Merge normalization of one status-wording line replacement only; this records the original authority subject hash and does not create, duplicate, or expand an approval.",
+      "reconfirmed_actor": {"actor_type": "agent", "actor_id": "main-agent-eoul"},
+      "reconfirmed_at": "2026-09-03T00:46:19+09:00",
+      "root_approval_scope": "Agent Teams, capability-based MoA, remote-operation-validation successor documentation, C-16~C-20 prototype evidence, and C-21 operational-validation preparation; no external-system change, deployment, public exposure, or C-01 start",
+      "derived_scope": ["Anvil_작업계획서_v1.md"]
     }
   ]
 }

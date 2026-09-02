@@ -6,8 +6,10 @@
   "required": ["schema_version", "stream_id", "first_sequence", "last_sequence", "events"],
   "properties": {
     "schema_version": {"const": "1.0.0"},
+    "stream_id": {"type": "string", "minLength": 1},
     "first_sequence": {"type": "integer", "minimum": 1},
     "last_sequence": {"type": "integer", "minimum": 1},
+    "last_event_id": {"type": "string", "minLength": 1},
     "events": {
       "type": "array",
       "items": {

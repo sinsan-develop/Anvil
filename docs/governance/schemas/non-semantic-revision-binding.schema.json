@@ -5,6 +5,8 @@
   "type": "object",
   "required": ["schema_version", "registry_id", "bindings"],
   "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "registry_id": {"type": "string", "minLength": 1},
     "bindings": {
       "type": "array",
       "items": {

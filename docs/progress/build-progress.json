@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-phase-b-gate-accepted",
-  "event_sequence": 375,
-  "updated_at": "2026-08-23T00:00:00+09:00",
-  "last_event_id": "evt_phase_b_gate_package_accepted",
+  "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
+  "event_sequence": 388,
+  "updated_at": "2026-09-03T01:58:00+09:00",
+  "last_event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3",
   "plan_version": "1.6",
-  "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
-  "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "current_phase": "B",
-  "current_work_package": "PHASE_B_GATE",
-  "status": "ACCEPTED",
+  "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "current_phase": "C",
+  "current_work_package": "C-21",
+  "status": "WAITING_APPROVAL",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -840,7 +840,7 @@
     },
     {
       "path": "packages/repository_intelligence/models.py",
-      "sha256": "035F71D8E994499CDD4DF272AD60CF0867F75755D88EAED34CEB7B1499D743B9"
+      "sha256": "85023DD9D986216D9A4B920AF2D8477FB4E4D27D4C71D0C0BD663129F91EEC21"
     },
     {
       "path": "packages/repository_intelligence/path_guard.py",
@@ -852,7 +852,7 @@
     },
     {
       "path": "packages/repository_intelligence/scanner.py",
-      "sha256": "E616F4C32018A32276917C5FE291CF359F8B5D6978575AD3E61576FD7A7DAA11"
+      "sha256": "16721A0BCB6906B55EC7BC83B4EE5FEE39E18FFA7B5928AA1E83024DBCDA500C"
     },
     {
       "path": "tests/fixtures/a13/hostile-cases.json",
@@ -964,7 +964,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "32555659A2C2693A23781A5CFF0D9F53E44549423FFB7BBE251BBA3659C42ADC"
+      "sha256": "90DAA0F29D85D0546B3CA71D56023C245394B8EB38CB80D3DC066622610E98ED"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7698C035D617028336BC05108FC9F4147AAC547196DC4A78EB6CA044C320C2C0"
+      "sha256": "75603300FCDB018EE3267FD9A954B53690E3DE877C7EF9FDE543A47C550B13A6"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1039,7 +1039,14 @@
     "path": "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
     "sha256": "D1E9A6A4C8526EC20E118051711B5E9F674B4CAA64FBFB325DAD86134122DB2D"
   },
-  "pending_approvals": [],
+  "pending_approvals": [
+    {
+      "approval_id": "C21-LIFECYCLE-RUNTIME-PRODUCTION-TEST-CHAIN-TEST-SESSION-ALLOWLIST-DEPLOYMENT-EXTERNAL-SIDE-EFFECTS",
+      "status": "WAITING_APPROVAL",
+      "change_classification": "FUNCTION_SCOPE_CHANGE_REQUIRED",
+      "reason": "Approval is required only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. Independent read-only C-21 judgment and a general planned C-01 start are not approval subjects here."
+    }
+  ],
   "dir_review": {
     "checkpoint": "DIR-1",
     "status": "CLEARED",
@@ -1047,7 +1054,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Main Gate decision after frozen-diff, integrity, and commit readiness verification; C-01 remains BLOCKED pending acceptance",
+  "next_safe_action": "Rotate affected credentials and preserve existing C-21 evidence without external re-call. Obtain explicit approval only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1158,39 +1165,22 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "165a9bfff5e085bfec322c748e83464477642f8a",
+    "validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-    "branch": "codex/phase-b-gate-exact44-verification",
+    "branch": "codex/c21-progress-reconcile",
     "upstream": "origin/main",
-    "remote_head": "c49b7534012d97ad130483c1ff255c0db1e99df4",
+    "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
-      "docs/completion_reports/PHASE_B_GATE_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/PHASE_B_GATE_EVIDENCE_MANIFEST.json",
-      "docs/evidence/manifests/PHASE_B_GATE_PROGRESS_PROJECTION_MANIFEST.json",
+      "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
-      "docs/progress/SESSION_CHECKPOINT_2026-08-21_PHASE_B_GATE.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-phase-b-gate-start.json",
-      "docs/test_reports/PHASE_B_GATE_INDEPENDENT_TEST_REPORT.md",
-      "docs/validation/PHASE_B_GATE_AUTHORITY_CONFLICT_EVIDENCE.md",
-      "docs/validation/PHASE_B_GATE_VALIDATION.md",
-      "docs/work_orders/PHASE_B_GATE_INVOCATION_PROMPT.md",
-      "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R2.md",
-      "docs/work_orders/PHASE_B_GATE_REWORK_INVOCATION_PROMPT_R3.md",
-      "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R2.md",
-      "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
-      "docs/work_orders/PHASE_B_GATE_WORK_INSTRUCTION.md",
-      "scripts/check_phase_b_gate.py",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_phase_b_gate.py",
-      "tests/tooling/test_project_progress.py"
+      "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
     ],
-    "observed_at": "2026-08-22T01:00:00+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: Phase B Gate TEST_REVIEW exact44; frozen product mutation 0",
-    "local_head": "c49b7534012d97ad130483c1ff255c0db1e99df4"
+    "observed_at": "2026-09-03T01:58:00+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: C-21 operational reconciliation evidence-only descendant; no external re-call",
+    "local_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1293,11 +1283,11 @@
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
-    "decision": "AUTO_CONTINUE",
+    "decision": "STOP_AND_REPORT_SCOPE_RISK",
     "reason_codes": [
-      "APPROVED_PLAN_ROUTINE_PROGRESS"
+      "C21_LIFECYCLE_RUNTIME_PRODUCTION_SIDE_EFFECT_SCOPE_WAITING_APPROVAL"
     ],
-    "stop_before_dialogue_report": false
+    "stop_before_dialogue_report": true
   },
   "active_work_instruction": null,
   "last_completed_work_instruction": {
@@ -1337,9 +1327,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "PHASE_B_GATE",
-    "path": "docs/progress/progress-handoff-detached-digest-phase-b-gate-start.json",
-    "manifest_path": "docs/evidence/manifests/PHASE_B_GATE_PROGRESS_PROJECTION_MANIFEST.json"
+    "package_id": "C-21",
+    "path": "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
+    "manifest_path": "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1348,7 +1338,7 @@
     },
     "non_semantic_revision_bindings": {
       "path": "docs/progress/non-semantic-revision-bindings.json",
-      "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"
+      "sha256": "D7007FCFE0AF9215BE9071A85526ED2E64AC25181916A017845A55231321E994"
     },
     "dir_checkpoints": {
       "path": "docs/progress/dir-checkpoints.json",
@@ -1356,33 +1346,69 @@
     },
     "progress_event_contract": {
       "path": "docs/progress/progress-event-contract.json",
-      "sha256": "B60E59C60BA15F984DB2070894F9ED8844498B931546DB55F68F2154FA654F7C"
+      "sha256": "213810D37A5BF08265E559D67B84173F54A2A4629F3A2461A77135E24B966970"
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7698C035D617028336BC05108FC9F4147AAC547196DC4A78EB6CA044C320C2C0"
+      "sha256": "75603300FCDB018EE3267FD9A954B53690E3DE877C7EF9FDE543A47C550B13A6"
     }
   },
   "next_work_package": {
     "package_id": "C-01",
-    "status": "READY_FOR_WORK_INSTRUCTION",
-    "condition": "Phase B Gate ACCEPTED; C-01 WorkInstruction 발행 전까지 시작하지 않음",
+    "status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    "condition": "historical Phase B Gate ACCEPTED는 보존한다. C-21 운영 판정이 독립적으로 확정되기 전까지 C-01 WorkInstruction을 발행하거나 시작하지 않음",
     "does_not_unblock": [
       "C-21"
     ]
   },
   "next_successor_work_package": {
     "package_id": "C-21",
-    "status": "READY_FOR_WORK_INSTRUCTION",
-    "purpose": "successor operational validation",
+    "status": "WAITING_APPROVAL",
+    "purpose": "current operational validation reconciliation",
     "requires": [
-      "C-21 WorkInstruction",
-      "independent validation scope"
+      "credential rotation",
+      "independent C-21 judgment",
+      "authenticated SSE event capture before Last-Event-ID replay"
     ],
     "does_not_unblock": [
       "C-01",
       "Phase B Gate acceptance"
     ]
   },
-  "snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
+  "historical_phase_b_gate": {
+    "event_sequence": 375,
+    "event_id": "evt_phase_b_gate_package_accepted",
+    "status": "ACCEPTED",
+    "preservation": "historical record preserved; this operational reconciliation does not reopen, overwrite, or replace the Phase B Gate decision"
+  },
+  "operational_reconciliation": {
+    "revision_id": "C21-PROGRESS-RECONCILE-20260903-R3",
+    "rationale": "Operational-evidence-based current projection reconciliation after the historical Phase B Gate projection. Immutable historical events remain preserved; this record does not execute, authorize, or accept the pending lifecycle-runtime, production-data, write-scope, deployment, or external-side-effect actions.",
+    "current_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+    "confirmed_evidence": {
+      "migration": "0012_run_authority applied and retained",
+      "unified_runtime": "anvil-web:3770 healthy; NPM override removed after backup, nginx -t, and graceful reload",
+      "telegram": "one approved signed POST returned HTTP 200 ACCEPTED with application/NPM/DB correlation; strict pre-count delta is UNKNOWN because the pre-count capture is missing",
+      "provider": "5 healthy; UPSTAGE HTTP 401; GEMINI HTTP 400; OPENAI HTTP 401; OLLAMA timeout",
+      "sse": "authenticated SSE HTTP 200 with zero events; Last-Event-ID replay not executed because no event was captured",
+      "internal_runtime": "anvil-internal-web-1 retained because vertical validation is incomplete"
+    },
+    "safety_boundary": "credential rotation is required; do not re-call Provider, Telegram, or SSE external probes under this reconciliation",
+    "source_reports": [
+      {
+        "path": "docs/04_test_reports/C-21_PRODUCTION_DEPLOY_INCIDENT_20260902.md",
+        "sha256": "35C6F1EB5C9A7AFF68AE60443F37A86478B15F5FAF9446B4DE435DEC120E81F1"
+      },
+      {
+        "path": "docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md",
+        "sha256": "069ABCFF073460479B7E782C2FD3C1DC19F0BD7F21EB16E3DC77B1C6CD5D55B1"
+      },
+      {
+        "path": "docs/04_test_reports/C-21_RECONCILIATION_2026-09-01.md",
+        "sha256": "0102959496AE41D3F24636AED90CF65543124ED28D3A35405308E21CD2B4217C"
+      }
+    ],
+    "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
+  },
+  "snapshot_hash": "EF69D3A726321819883BA8908D18637932CB41B7743EE737A7BFC42DE64D2C03"
 }

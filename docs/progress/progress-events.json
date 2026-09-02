@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 375,
+  "last_sequence": 388,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13710,7 +13710,421 @@
         "public_exposure": "NOT_EXECUTED",
         "c01_started": false
       }
+    },
+    {
+      "event_id": "evt_c21_operational_projection_reconciled",
+      "sequence": 376,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-02T23:30:00+09:00",
+        "reason": "reconcile C-21 current operational projection to the D canonical main lineage without reopening historical Phase B Gate acceptance",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/non-semantic-revision-bindings.json",
+          "docs/progress/progress-event-contract.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "TEST_REVIEW",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_operational_validation_recorded",
+      "sequence": 377,
+      "event_type": "PRODUCT_VALIDATION_RECORDED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "validation_ref": "docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md",
+        "result": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "evidence_ref": "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+        "approval_status": "WAITING_APPROVAL",
+        "safety_boundary": "credential rotation required; no Provider, Telegram, or SSE external re-call",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "C-21 operational result between immutable seq375 Phase B Gate acceptance and post-reconciliation repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_post_validation",
+      "sequence": 378,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-02T23:30:00+09:00",
+        "reason": "post-validation C-21 repository projection on the D canonical main lineage; seq376 is the pre-reconciliation snapshot and seq377 records the current operational result without reopening historical Phase B Gate acceptance",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-event-contract.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "post-reconciliation repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_fixture_contract",
+      "sequence": 379,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-02T23:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-02T23:30:00+09:00",
+        "reason": "post-reconciliation fixture-contract completion: seq375 immutable historical MAIN_GATE_ACCEPTED remains unchanged, and its registered payload contract is covered by the all-category regression fixture",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-event-contract.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
+          "tests/fixtures/g05/progress-events-all-categories.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "post-reconciliation repository snapshot with contract regression fixture"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_stage2",
+      "sequence": 380,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T00:13:44+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "1ca80d005b7b03cef7311932df4d5319530e98d9",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T00:13:44+09:00",
+        "reason": "stage2 evidence-only reconciliation: the fixture and immutable historical event-contract registration are contained in validated base 1ca80d0; this descendant records only current progress, handoff, digest, and manifest rebinding",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "1ca80d005b7b03cef7311932df4d5319530e98d9",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "stage2 post-fixture evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_stage3",
+      "sequence": 381,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T00:23:18+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "262bc08ce1dcfbc7839f43ad80f455b9b0a23967",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T00:23:18+09:00",
+        "reason": "stage3 evidence-only reconciliation: historical and neutral regression fixtures are contained in validated base 262bc08; this descendant records only progress, handoff, digest, and manifest rebinding",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "262bc08ce1dcfbc7839f43ad80f455b9b0a23967",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "stage3 post-regression-fixture evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_stage4",
+      "sequence": 382,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T00:27:47+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "c4406d8f04ccaf17f0aadeb8e6f4d69fb5e3f398",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T00:27:47+09:00",
+        "reason": "stage4 evidence-only reconciliation: the historical synthetic fixture test commit is contained in validated base c4406d8; this descendant refreshes its referenced evidence hash and progress bindings",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "c4406d8f04ccaf17f0aadeb8e6f4d69fb5e3f398",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "stage4 post-referenced-evidence-hash repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_lifecycle_runtime_scope_waiting_approval",
+      "sequence": 383,
+      "event_type": "PACKAGE_WAITING_APPROVAL",
+      "occurred_at": "2026-09-03T00:46:17+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "approval_ref": "PENDING_HUMAN_APPROVAL:C21-LIFECYCLE_RUNTIME_PRODUCTION_TEST_CHAIN_TEST_SESSION_ALLOWLIST_DEPLOYMENT_EXTERNAL_SIDE_EFFECTS",
+        "change_classification": "FUNCTION_SCOPE_CHANGE_REQUIRED",
+        "approval_scope": [
+          "lifecycle API runtime activation",
+          "production DB canonical C-21 test chain creation",
+          "test-session write scope and allowlist",
+          "deployment and external side effects"
+        ],
+        "excluded_from_approval_scope": [
+          "independent read-only C-21 judgment",
+          "general planned C-01 start"
+        ],
+        "reason": "Current C-21 operational evidence is PARTIAL. Only the listed runtime, production-data, write-scope, deployment, and external-side-effect actions require a new function-scope approval."
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_r3",
+      "sequence": 384,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T00:46:18+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T00:46:18+09:00",
+        "reason": "R3 evidence-only reconciliation after the registered C-21 approval-wait transition and the separate WorkPlan FE0F-to-00F4 non-semantic merge-normalization binding; immutable events through seq382 remain preserved.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/approvals/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/governance/schemas/non-semantic-revision-binding.schema.json",
+          "docs/governance/schemas/progress-event.schema.json",
+          "docs/governance/schemas/progress-handoff-detached-digest.schema.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/non-semantic-revision-bindings.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "R3 post-approval-wait evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_r3_stage2",
+      "sequence": 385,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:12:25+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:12:25+09:00",
+        "reason": "R3 stage2 evidence-only repository reconciliation: validated base a302d0c contains the separate authority-reference, non-semantic merge-normalization binding, and schema-declaration correction; this descendant contains only current C-21 progress evidence bindings.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "R3 final post-authority-normalization evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_main_takeover",
+      "sequence": 386,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:47:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:47:00+09:00",
+        "reason": "Main Agent takeover reconciliation after three repeated append-only review failures: the committed seq380 payload was restored byte-equivalent to 8a1815f, the approval-reporting reason was limited to lifecycle runtime and production side effects, and the WorkPlan non-semantic diff description was corrected to one status-wording line replacement.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "Main Agent takeover final evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage2",
+      "sequence": 387,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:53:15+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "52fa9f56c94a950056385fdb844b23e08e40f820",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:53:15+09:00",
+        "reason": "Main Agent takeover stage2 repository reconciliation. It supersedes only the current repository projection metadata from seq386 without altering seq386, and includes the approved restoration commit, takeover report, approval-boundary correction, and WorkPlan diff-description correction in the exact descendant path set.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "52fa9f56c94a950056385fdb844b23e08e40f820",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C21_PROGRESS_RECONCILE_TAKEOVER_20260903.md",
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/non-semantic-revision-bindings.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "Main Agent takeover stage2 final evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3",
+      "sequence": 388,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:58:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:58:00+09:00",
+        "reason": "Final post-commit evidence-only projection. The approved sequence restoration, takeover report, reporting-boundary correction, and WorkPlan diff-description correction are contained in validated base 426a16c; this descendant contains only the five current progress evidence bindings.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "Main Agent takeover stage3 post-commit evidence-only repository snapshot"
+      }
     }
   ],
-  "last_event_id": "evt_phase_b_gate_package_accepted"
+  "last_event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3"
 }
