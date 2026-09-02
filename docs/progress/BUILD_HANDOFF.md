@@ -424,27 +424,25 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 379,
+  "event_sequence": 380,
   "status": "WAITING_APPROVAL",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_repository_projection_reconciled_fixture_contract",
+  "last_event_id": "evt_c21_repository_projection_reconciled_stage2",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
   "next_safe_action": "Rotate affected credentials, preserve the existing C-21 evidence without external re-call, then obtain an independent C-21 judgment. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
   "dir_status": "CLEARED",
-  "repository_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+  "repository_head": "1ca80d005b7b03cef7311932df4d5319530e98d9",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "b07651f266b4439f765489153baacc08c2c95ee1",
+  "repository_validated_base_commit": "1ca80d005b7b03cef7311932df4d5319530e98d9",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
     "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/progress-event-contract.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
-    "tests/fixtures/g05/progress-events-all-categories.json"
+    "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
   ],
   "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
