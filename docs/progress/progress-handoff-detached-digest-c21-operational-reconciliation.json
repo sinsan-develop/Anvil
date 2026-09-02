@@ -2,19 +2,19 @@
   "schema_version": "1.0.0",
   "digest_id": "C21-OPERATIONAL-RECONCILIATION-PROGRESS-HANDOFF-DIGEST-R2",
   "package_id": "C-21",
-  "event_sequence": 380,
+  "event_sequence": 381,
   "algorithm": "SHA-256",
   "progress": {
     "path": "docs/progress/build-progress.json",
     "bytes": 57038,
-    "file_sha256": "8DE9D6587983204022627C8B6FA5262514DFBF500A5BD7C5F78679739C05EFC9",
-    "canonical_json_sha256": "082C4C518FB8DD6EA263EF2D513D3D291EBD837D8BBC8E9598E3C6B0F2FD1659"
+    "file_sha256": "0E8BC6A223887DBD7046275D679D681D8F15E021A405C67ADC18476AAC2FFD42",
+    "canonical_json_sha256": "8ED88A31DFD9C4934C8C3510C43BA9230CBBDFC48AF8918B0135439ED8A70037"
   },
   "handoff": {
     "path": "docs/progress/BUILD_HANDOFF.md",
     "bytes": 124148,
-    "file_sha256": "2E466F03CCFEDF77414B00511DEDA2B435E06511EF1F22C4003204203FCE8B5F",
-    "machine_summary_canonical_sha256": "6DC55AEC98304EA86E044A3A07BDC87801639C86180ADBD1B693044813AC68DF"
+    "file_sha256": "2038161F9E584410CFCA89C74BEAF0578FC78925C6B78B16462830BFA67006B5",
+    "machine_summary_canonical_sha256": "BB21178D60531BD3E90C9D947BFA7A0103BFE9E71034889F99467EE89F64DC22"
   },
   "created_at": "2026-09-02T23:30:00+09:00",
   "scope": "C-21 TEST_REVIEW operational reconciliation: immutable Phase B Gate ACCEPTED is preserved; credential rotation and independent C-21 judgment remain required; C-01 remains blocked."

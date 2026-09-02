@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 380,
+  "last_sequence": 381,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13863,7 +13863,40 @@
         "historical_phase_b_gate_status": "ACCEPTED",
         "sequence_role": "stage2 post-fixture evidence-only repository snapshot"
       }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_stage3",
+      "sequence": 381,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T00:23:18+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "262bc08ce1dcfbc7839f43ad80f455b9b0a23967",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T00:23:18+09:00",
+        "reason": "stage3 evidence-only reconciliation: historical and neutral regression fixtures are contained in validated base 262bc08; this descendant records only progress, handoff, digest, and manifest rebinding",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "262bc08ce1dcfbc7839f43ad80f455b9b0a23967",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "stage3 post-regression-fixture evidence-only repository snapshot"
+      }
     }
   ],
-  "last_event_id": "evt_c21_repository_projection_reconciled_stage2"
+  "last_event_id": "evt_c21_repository_projection_reconciled_stage3"
 }
