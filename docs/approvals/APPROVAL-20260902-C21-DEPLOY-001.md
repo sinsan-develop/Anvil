@@ -13,6 +13,6 @@
 ## 재승인 갱신
 
 - 갱신일: 2026-09-02 (Asia/Seoul)
-- 갱신 대상 커밋: `c7826ca0a28c7db180ad7df1f030d594b74b9d23`
+- 갱신 대상 커밋: `c7826ca20c25d4f5627b2995e4cab479f3ca7fc8`
 - 갱신 승인 문구: “C-21 수정 커밋 `c7826ca`에 대한 DeployApproval binding 갱신과 표준 `deploy.sh` 재배포를 승인한다.”
 - 갱신 binding ID: `APPROVAL-20260902-C21-DEPLOY-002`
