@@ -50,6 +50,71 @@
 - NPM `/data/nginx/custom/server_proxy.conf`(SHA-256 `406052ff7d4764bd23d03d7bef48db01c9683f801c010dc41ba24c7d2d1593cf`)가 Telegram webhook을 internal `4173`으로 직접 우회하므로, 제거·`nginx -t`·graceful reload 승인도 필요하다.
 - 다음 조치: 권위/계보/멱등/동시성 schema migration 및 NPM custom override 제거 승인을 받은 뒤 구현·배포·수직검증한다.
 
+## C-21 Run/Event Main takeover — 2026-09-02
+
+- 동일 권위/phase 계약 실패 3회로 Developer를 중단하고 Main Agent가 직접 인수했다.
+- MERGE FORBIDDEN 계보: `80105db`, `828a56e`; R3 후보 `cc9382f`도 그대로 병합하지 않았다.
+- 직접 수정: root human approval ID + DesignSpecification ID/hash/type exact 결박, durable/receipt phase `ANALYZING` 일치. 최초 2-event 시도는 아래 canonical EventType 보정에서 폐기했다.
+- 회귀: `tests/api tests/persistence` → `72 passed, 5 skipped`; 현재 Main 환경에 격리 PostgreSQL DSN이 없어 PostgreSQL 전용 5건은 skip. 기존 subagent PostgreSQL 15 실증 3 PASS를 별도 증거로 유지하고 PG18은 `UNVERIFIED`.
+- 원격 DB·NPM·Telegram 변경 없음. 다음 조치는 최종 독립 review 후 main 통합이다.
+
+## C-21 Run Authority R2 격리 검증 리소스 계획 — 2026-09-02
+
+- 승인: 신산님이 `SCHEMA_AUTHORITY_GAP` 해제 및 신규 migration, PostgreSQL 15/가능 시 18 검증을 승인했다.
+- 기존 작업공간 재사용: `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\implement-session-auth-sse`; branch `codex/c21-run-event-writer-r2`; 새 `D:\tmp` 폴더 없음.
+- 예정 container: `anvil-c21-pg15-r2` (`postgres:15`, loopback `55432`), `anvil-c21-pg18-r2` (`postgres:18`, loopback `55438`). 목적은 0012 migration과 정상 Run 생성 transaction/idempotency/concurrency 검증, 소유자는 `r3_event_flow_diag`, 사용 기간은 이번 R2 검증 동안이다.
+- 영속 volume/network는 만들지 않는다. 각 container는 `--rm`으로 실행하며 검증 종료 시 explicit stop 후 container/name/port/process를 재조회해 잔여 0을 확인한다.
+- 운영 DB·원격 ysna·NPM·Telegram·Provider에는 연결하거나 변경하지 않는다.
+
+## C-21 정상 Run/Event 생성 R2 완료 대기 — 2026-09-02
+
+- 담당: `r3_event_flow_diag` writer, `run_event_writer_review` independent read-only reviewer.
+- 브랜치: `codex/c21-run-event-writer-r2`; 기준 `main` `a12adc2`; 금지된 R1 commit `80105db`/`828a56e`는 반영하지 않았다.
+- 변경: canonical Run creation API/application port, server-side authority repository, `0012_run_authority` migration, runtime wiring 및 readiness migration head, API/실제 PostgreSQL tests.
+- RED: 신규 port/migration 모듈 부재로 collection failure. GREEN: API/schema 4 passed.
+- 실제 PostgreSQL 15: migration head `0012_run_authority`, atomic/idempotency/rollback/concurrency `3 passed in 1.67s`.
+- 격리 PostgreSQL 18: 실행 출력은 확보했으나 마감 시 독립 증거 재확인을 생략하여 최종 판정은 `UNVERIFIED`.
+- 회귀: `tests/api tests/persistence` 71 passed, 3 skipped in 6.57s. DSN 없는 회귀 실행에서 실제 DB 전용 3건만 의도적으로 skip.
+- 오류 횟수: 동일 구현 실패 0회. PostgreSQL 18 최초 재실행의 고정 fixture PK 충돌 1회는 이전 성공 실행의 test row 잔존이 원인이며 UUID fixture로 보완 후 통과했다.
+- 보안: test session `run:events:read` 권한을 확장하지 않았고 credential/auth 우회를 추가하지 않았다. 정상 운영 인증 부재는 숨기지 않고 route 운영 검증 blocker로 유지한다.
+- 미검증: 운영 DB migration, authenticated 운영 Run 생성, public SSE/Last-Event-ID, Telegram/Provider, ysna 배포.
+- 임시 리소스 정리: `anvil-c21-pg15-r2`, `anvil-c21-pg18-r2` stop 완료; 두 container는 `--rm`으로 제거됐고 name filter 재조회 결과 0건. volume/network 생성 없음.
+- 상세 보고서: `docs/04_test_reports/C-21_RUN_EVENT_WRITER_R2_REPORT.md`.
+- R3 RED: 잘못된 approval type을 허용할 수 있는 계보 query와 hostile ID가 HTTP 500이 되는 계약 결함을 독립 reviewer가 확인했다. API hostile test는 수정 전 `1 failed, 3 passed`로 RED를 재현했다.
+- R3 조치: 각 artifact에 정확한 `approval_type` 결박, 모든 authority/continuation ID를 API boundary에서 canonical 길이·공백 검증 후 4xx 변환, 설계서 1950-1957에 맞춘 202 receipt `ANALYZING` 반환. 당시 2-event 판단은 아래 canonical EventType 보정으로 대체했다.
+
+## C-21 canonical EventType Main takeover 보정 — 2026-09-02
+
+- 담당: Main Agent `어울`; 동일 권위·phase 계보 구현 실패 3회 이후 `developer-primary` write lease를 회수하고 직접 인수했다.
+- 판정: `RUN_CREATED`는 `packages/domain/events.py`의 폐쇄형 `EventType`과 설계서 전이표에 없으므로 canonical event가 아니다. SSE Last-Event-ID 검증 편의를 위해 추가한 비표준 이벤트를 유지할 수 없다.
+- 근거: 설계서의 최초 정상 전이는 `DRAFT + TASK_CONFIRMED -> ANALYZING` 하나이며, 다음 정상 이벤트 `ANALYSIS_COMPLETED`는 실제 분석 완료 뒤에만 생성할 수 있다.
+- Ruling: Run 생성 transaction은 `TASK_CONFIRMED` 1개만 sequence 1로 기록하고 durable/receipt phase를 `ANALYZING`으로 일치시킨다. 실제 후속 이벤트 없이 Last-Event-ID strict successor를 성공으로 만들지 않는다. 이 판단이 틀리면 별도 도메인 이벤트를 설계·승인해야 하며 현재 구현에 임의 문자열을 추가하지 않는다.
+- TDD RED: 격리 PostgreSQL 15에서 단일 `TASK_CONFIRMED`/sequence 1 기대에 기존 구현이 `RUN_CREATED`, `TASK_CONFIRMED`를 반환하여 `1 failed, 4 passed`로 실패했다.
+- GREEN: production repository를 단일 `TASK_CONFIRMED`/sequence 1, Run version 2, 1-event idempotent receipt로 수정했다. 동일 PostgreSQL 15 test `5 passed in 0.83s`, API port `4 passed in 0.76s`.
+- 멱등 replay 추가 RED/GREEN: sequence 1이 canonical `TASK_CONFIRMED`가 아닌 손상 상태를 기존 replay가 수락해 `DID NOT RAISE`로 RED. replay가 sequence 1의 ID/type을 확인하도록 수정 후 PostgreSQL 통합 `6 passed in 0.79s`.
+- 전체 회귀: PostgreSQL 15 DSN을 포함한 `tests/api tests/persistence` `78 passed in 2.59s`; `compileall`과 `git diff --check` PASS.
+- PostgreSQL 18 RC: 새 격리 DB에 migration head `0012_run_authority` 적용 후 실제 Run/Event 통합 `5 passed in 0.79s`.
+- 임시 리소스 정리: `anvil-c21-pg15-r2`, `anvil-c21-pg18-r2`를 stop했고 `--rm`으로 제거됐다. name filter와 loopback `55432`/`55438` listener 재조회 결과 잔여 0건, volume/network 생성 없음.
+- 임시 검증 리소스: 기존 기록된 `anvil-c21-pg15-r2` 이름을 재사용하며, PostgreSQL 15 loopback `55432`, owner Main Agent, 목적은 migration 0012 및 atomic/idempotency/rollback/concurrency RED-GREEN 검증, 기간은 이번 검증 동안, 완료 즉시 `--rm` 제거·잔여 0건 확인이다. 새 volume/network/D:\tmp 폴더는 생성하지 않는다.
+- 현재 미검증: 독립 reviewer 재검토, canonical main 통합, ysna migration/runtime 적용, NPM override 제거/reload, 전체 수직 검증.
+- Main continuation 안전성 보완: 미조정 `pending_writes`가 있는 checkpoint를 거부하고, checkpoint state artifact의 type/run/project/content hash를 명시적으로 재검증한다.
+- RED: pending write가 남은 checkpoint가 continuation을 통과해 `1 failed, 13 passed`를 재현했다.
+- GREEN: PostgreSQL 15 Run creation/continuation `14 passed in 1.44s`; 실제 scratch migration upgrade/downgrade 및 duplicate-active rollback `2 passed in 5.42s`.
+- 독립 최종 review는 EvidenceManifest가 prior Run/Step/project/ExecutionPlan에 직접 결박되지 않아 다른 실행의 동일-hash 증거를 재사용할 수 있는 Important 1건으로 `MERGE_BLOCKED` 판정했다.
+- Main 조치: 0012에 EvidenceManifest `run_id`, `step_id`, `project_id`, `execution_plan_id/hash`, `permission_snapshot_hash`의 all-or-legacy migration/FK/check/index를 추가하고 continuation query를 exact binding으로 강화했다. 다른 project manifest 거부 회귀 테스트를 추가했다.
+- 최종 GREEN: PostgreSQL 15 Run/continuation+migration `17 passed in 6.82s`; API+persistence+planning `107 passed in 8.38s`; compileall 및 `git diff --check` PASS. 독립 재검토 대기.
+- 독립 scoped review: 이전 비표준 `RUN_CREATED` Critical은 `ADDRESSED`. 새 Important로 진행된 Run의 현재 phase/status를 idempotent replay가 반환해 최초 202 receipt를 재현하지 않는 계약 위반을 확인했다.
+- 보정 계획: 후속 event 존재는 허용하되 sequence 1 `TASK_CONFIRMED`를 creation proof로 확인하고, replay receipt는 최초 계약 값 `ANALYZING`/`ACTIVE`를 반환한다. 실제 PostgreSQL progressed-run 회귀 테스트를 RED로 확인한 뒤 production code를 수정한다.
+- 멱등 receipt RED: Run을 `EXECUTION_PLAN_REVIEW`/`WAITING_APPROVAL`로 진행시킨 뒤 같은 key를 replay하면 현재 phase가 반환되어 `1 failed`.
+- 멱등 receipt GREEN: replay query에서 mutable phase/status 의존을 제거하고 최초 계약 값 `ANALYZING`/`ACTIVE` 및 sequence 1 event ID를 반환하도록 수정했다. PostgreSQL 통합 `7 passed in 0.91s`, API+persistence `79 passed in 2.72s`, compileall/diff-check PASS.
+- 최종 whole-branch review: `MERGE_BLOCKED`. Critical 2건은 cross-task/stale checkpoint continuation과 cross-project artifact 결박 부재, Important 2건은 artifact approval vocabulary 미연결과 migration preflight/downgrade 실증 부재였다.
+- Main takeover 보정: `design_baselines.project_id` legacy-nullable anchor를 0012에 추가하고 신규 Run은 Task project와 exact match를 요구한다. API authorization resolver의 project/environment 및 canonical permission snapshot hash를 Run command·durable row·event에 결박했다.
+- Continuation 보정: prior Run same task/baseline/WI/ExecutionPlan/environment/permission, terminal status, checkpoint state artifact same project/run, exact six binding hashes를 검증한다. 완료 Step은 target=delivered, same-run/project output artifact 및 exact design/work/WI/environment EvidenceManifest가 모두 있을 때만 재사용 가능하다.
+- Approval 보정: `DESIGN_SPECIFICATION`, `WORK_PLAN`, `WORK_INSTRUCTION`, `EXECUTION_PLAN`, `EXECUTION_MODE`를 domain/API guard vocabulary에 추가하고 기존 PLAN/운영 승인 lane은 유지했다. 신규 unit RED 후 planning guard `5 passed`.
+- TDD/검증: cross-project schema anchor 부재 RED→repository scope 미검증 RED→GREEN; cross-task/stale-binding/missing-evidence 3 RED 및 verified-evidence success를 추가했다. PostgreSQL Run creation `13 passed`; 실제 scratch DB 0012 upgrade/downgrade round-trip과 duplicate-active preflight 전체 DDL rollback `2 passed`; API+persistence+planning `105 passed in 9.49s`, compileall/diff-check PASS.
+- PostgreSQL 18 RC 재검증: 최신 0012 head 적용 후 Run/continuation 13건과 scratch migration round-trip/preflight 2건, 합계 `15 passed in 6.20s`.
+- 남은 단계: 최종 독립 재리뷰, canonical main squash 통합·push, 표준 3770 deploy의 DB backup/정확한 0012 적용 단계 보완, release binding, ysna 적용/NPM override 제거/수직 검증.
+
 ## C-21 공개 인증 프록시 — 2026-09-02
 
 - 담당: `fix_public_auth_proxy` subagent.

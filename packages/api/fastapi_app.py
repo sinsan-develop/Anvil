@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 
 from packages.events.transition_guard import OptimisticVersionConflict
 
-from .common import ApiContractError, ApplicationRequest, SessionPrincipal, canonical_target_hash
+from .common import ApiContractError, ApplicationRequest, ApplicationResponse, SessionPrincipal, canonical_target_hash
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
 from .local_session import IssuedSession
 from .security import (
@@ -84,7 +84,11 @@ def _resource_id(request: Request) -> str | None:
 
 def _expected_version(request: Request, body: Mapping[str, Any]) -> int:
     header = request.headers.get("if-match")
-    body_value = body.get("expected_state_version")
+    snake_value = body.get("expected_state_version")
+    camel_value = body.get("expectedStateVersion")
+    if snake_value is not None and camel_value is not None and snake_value != camel_value:
+        raise ApiContractError("EXPECTED_VERSION_MISMATCH", "Expected resource versions do not match.", 409)
+    body_value = camel_value if camel_value is not None else snake_value
     if header is None and body_value is None:
         raise ApiContractError("EXPECTED_VERSION_REQUIRED", "An expected resource version is required.")
     parsed: int | None = None
@@ -125,7 +129,7 @@ def _authorize(
     endpoint: EndpointSpec,
     path_parameters: Mapping[str, str],
     resolve_authorization: AuthorizationResolver | None,
-) -> None:
+) -> AuthorizationScope:
     if endpoint.permission not in principal.permissions:
         raise ApiContractError("PERMISSION_DENIED", "Permission is denied.", 403)
     if resolve_authorization is None:
@@ -173,6 +177,7 @@ def _authorize(
             "The environment scope is not allowed for this resource.",
             403,
         )
+    return scope
 
 
 def _host(request: Request, config: WebSecurityConfig) -> None:
@@ -283,7 +288,7 @@ def _endpoint_handler(
         try:
             _host(request, config)
             principal = _principal(request, authenticate, config)
-            _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
+            authorization_scope = _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             body = await _body(request) if endpoint.is_mutation else {}
             expected = target_hash = reason = None
             if endpoint.is_mutation:
@@ -302,10 +307,14 @@ def _endpoint_handler(
                 expected,
                 target_hash,
                 reason,
+                authorization_scope.project_id,
+                authorization_scope.environment_id,
             )
             result = port(application_request)
             if inspect.isawaitable(result):
                 result = await result
+            if isinstance(result, ApplicationResponse):
+                return JSONResponse(dict(result.body), status_code=result.status_code)
             return JSONResponse({"data": result, "request_id": request.state.request_id})
         except OptimisticVersionConflict:
             return _error_response(

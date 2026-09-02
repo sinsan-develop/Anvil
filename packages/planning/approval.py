@@ -29,6 +29,11 @@ def _utc(value: datetime, field: str) -> None:
 
 
 class ApprovalType(str, Enum):
+    DESIGN_SPECIFICATION = "DESIGN_SPECIFICATION"
+    WORK_PLAN = "WORK_PLAN"
+    WORK_INSTRUCTION = "WORK_INSTRUCTION"
+    EXECUTION_PLAN = "EXECUTION_PLAN"
+    EXECUTION_MODE = "EXECUTION_MODE"
     PLAN = "PLAN"
     SCOPE_CHANGE = "SCOPE_CHANGE"
     APPLY = "APPLY"

@@ -28,7 +28,10 @@ class ApprovalGuardRequest:
             raise ValueError("subject_id must be a canonical non-empty string")
         if not isinstance(self.subject_hash, str) or not _HASH.fullmatch(self.subject_hash):
             raise ValueError("subject_hash must be a canonical lowercase sha256 hash")
-        if self.approval_type not in {"PLAN", "SCOPE_CHANGE", "APPLY", "DEPLOY", "DESTRUCTIVE"}:
+        if self.approval_type not in {
+            "DESIGN_SPECIFICATION", "WORK_PLAN", "WORK_INSTRUCTION", "EXECUTION_PLAN", "EXECUTION_MODE",
+            "PLAN", "SCOPE_CHANGE", "APPLY", "DEPLOY", "DESTRUCTIVE",
+        }:
             raise ValueError("approval_type is unsupported")
 
 

@@ -8,6 +8,20 @@ HASH_B = "sha256:" + "b" * 64
 
 
 class ApprovalGuardTests(unittest.TestCase):
+    def test_artifact_approval_types_are_supported_by_domain_and_api_contract(self):
+        from packages.api.planning_contracts import ApprovalGuardRequest
+        from packages.planning.approval import ApprovalType
+
+        for value in (
+            "DESIGN_SPECIFICATION",
+            "WORK_PLAN",
+            "WORK_INSTRUCTION",
+            "EXECUTION_PLAN",
+            "EXECUTION_MODE",
+        ):
+            self.assertEqual(value, ApprovalType(value).value)
+            self.assertEqual(value, ApprovalGuardRequest("artifact-1", HASH_A, value).approval_type)
+
     def test_wrong_type_hash_mismatch_and_expired_approval_fail_closed_or_block(self):
         try:
             from packages.planning.approval import ApprovalRecord, ApprovalType, ApprovalStatus

@@ -20,11 +20,13 @@ from packages.agent_team.runtime_config import runtime_catalog
 from packages.agent_team.telegram_adapter import TelegramAdapter
 from packages.persistence.config import DatabaseSettings
 
-from .fastapi_app import AuthorizationScope, create_app
+from .fastapi_app import ApiPorts, AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
+from .run_creation import RunCreationPort
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
 from .security import WebSecurityConfig
 from .sse import PostgresEventStream
+from packages.persistence.run_creation_repository import SqlAlchemyRunCreationRepository
 
 
 class RuntimeConfigurationError(ValueError):
@@ -139,6 +141,11 @@ def create_runtime_app(
     webhook = TelegramWebhook.from_session_factory(
         telegram_adapter, config, session_factory=session_factory,
     )
+    base_ports = app_kwargs.pop("ports", ApiPorts())
+    key = "POST /api/tasks/{taskId}/runs"
+    if key in base_ports.commands:
+        raise RuntimeConfigurationError("runtime Run creation port cannot replace an injected port")
+    app_kwargs["ports"] = ApiPorts(commands={**base_ports.commands,key:RunCreationPort(SqlAlchemyRunCreationRepository(session_factory))},queries=base_ports.queries)
     web_security = WebSecurityConfig(
         allowed_hosts=frozenset({public_host, "anvil.local"}),
         allowed_origins=frozenset({console_base_url.rstrip("/"), "https://anvil.local"}),
@@ -179,7 +186,7 @@ def create_runtime_app(
     app.state.provider_catalog = runtime_catalog(source)
     app.state.primary_provider = PRIMARY_PROVIDER
     app.state.database_engine = engine
-    app.state.migration_head = "0011_telegram_webhook_state"
+    app.state.migration_head = "0012_run_authority"
     app.state.runtime_database_configured = True
     app.state.event_stream = app_kwargs["event_stream"]
     app.state.local_test_session_enabled = local_session is not None

@@ -49,6 +49,13 @@ class ApplicationRequest:
     expected_version: int | None
     target_hash: str | None
     reason: str | None
+    authorized_project_id: str
+    authorized_environment_id: str
+
+@dataclass(frozen=True, slots=True)
+class ApplicationResponse:
+    body: Mapping[str, Any]
+    status_code: int
 
 
 @dataclass(frozen=True, slots=True)

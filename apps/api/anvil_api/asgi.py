@@ -14,7 +14,7 @@ def create_asgi_app(app: FastAPI) -> FastAPI:
     @app.get("/health/ready", include_in_schema=False)
     async def readiness() -> Response:
         engine = getattr(app.state, "database_engine", None)
-        expected_head = getattr(app.state, "migration_head", "0011_telegram_webhook_state")
+        expected_head = getattr(app.state, "migration_head", "0012_run_authority")
         try:
             with engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
@@ -27,7 +27,10 @@ def create_asgi_app(app: FastAPI) -> FastAPI:
             return Response('{"status":"not_ready","reason":"migration_head_mismatch"}', status_code=503, media_type="application/json")
         if not getattr(app.state, "runtime_database_configured", False) or not getattr(app.state, "provider_catalog", None):
             return Response('{"status":"not_ready","reason":"runtime_refs_missing"}', status_code=503, media_type="application/json")
-        return Response('{"status":"ready","migration_head":"0011_telegram_webhook_state"}', media_type="application/json")
+        return Response(
+            '{"status":"ready","migration_head":"0012_run_authority"}',
+            media_type="application/json",
+        )
 
     # Mount only after every explicit API route so StaticFiles cannot shadow health.
     mount_frontend(app, str(Path(__file__).resolve().parents[3] / "apps" / "web"))
