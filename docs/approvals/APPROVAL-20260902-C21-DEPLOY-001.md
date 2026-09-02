@@ -25,3 +25,12 @@
 - 금지 범위: 추가 Telegram POST, NPM 설정 변경, Provider 호출, secret 값 출력
 - 승인 문구: “`9fd7c46`을 ysna에 배포하고, C-21 검증용 `ANVIL_TEST_SESSION_*` 환경변수를 어울이 생성·등록한 뒤 authenticated SSE와 Last-Event-ID 운영 검증을 수행하는 것을 승인한다.”
 - binding ID: `APPROVAL-20260902-C21-DEPLOY-003`
+
+## 공개 인증 프록시 재승인
+
+- 승인일: 2026-09-02 (Asia/Seoul)
+- 대상 runtime 커밋: `8ba679e72f53e20561e2063f3cdf01c10981a67b`
+- 승인 범위: 표준 `deploy.sh` 배포, 기존 C-21 테스트 세션 환경변수 사용, `/auth/session` 발급·authenticated SSE·`Last-Event-ID` 재개 검증
+- 금지 범위: Telegram POST, Provider 호출, NPM 설정 변경, secret 값 출력
+- 승인 문구: “`8ba679e`를 ysna에 배포하고, 기존에 등록한 C-21 테스트 세션 환경변수로 `/auth/session` 발급, authenticated SSE, Last-Event-ID 재개를 검증하는 것을 승인한다.”
+- binding ID: `APPROVAL-20260902-C21-DEPLOY-004`

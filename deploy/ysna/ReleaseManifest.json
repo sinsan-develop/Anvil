@@ -2,7 +2,7 @@
   "manifest_type": "AnvilReleaseManifest",
   "manifest_version": "1.0",
   "work_package": "C-21",
-  "status": "APPROVAL_PENDING",
+  "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
     "commit": "8ba679e72f53e20561e2063f3cdf01c10981a67b",
@@ -14,7 +14,7 @@
     "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
     "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
     "work_plan_sha256": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
-    "deploy_approval": "PENDING-APPROVAL-8ba679e"
+    "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-004"
   },
   "evidence": {
     "focused_tests": {
