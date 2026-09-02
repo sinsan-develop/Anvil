@@ -74,6 +74,35 @@ class AnvilPublicPreviewScriptTests(unittest.TestCase):
         self.assertNotIn("wget", script)
         self.assertNotIn("curl -fsSI", script)
 
+    def test_deploy_refreshes_nginx_only_after_dns_identity_and_correlated_probe(self):
+        script = self.read("deploy-public-preview.sh")
+        for required in (
+            "docker inspect anvil-web",
+            "getent hosts anvil-web",
+            "nginx -t",
+            "nginx -s reload",
+            "probe_path",
+            "docker logs",
+            "rollback-public-preview.sh",
+            "INCIDENT_HOLD",
+        ):
+            self.assertIn(required, script)
+
+    def test_custom_override_removal_is_exact_hash_guarded_and_recoverable(self):
+        script = self.read("remove-npm-telegram-override.sh")
+        for required in (
+            "/data/nginx/custom/server_proxy.conf",
+            "406052ff7d4764bd23d03d7bef48db01c9683f801c010dc41ba24c7d2d1593cf",
+            "sha256sum",
+            "docker cp",
+            "nginx -t",
+            "nginx -s reload",
+            "restore",
+        ):
+            self.assertIn(required, script)
+        self.assertIn("exit 4", script)
+        self.assertNotIn("TELEGRAM_INTERNAL_SIGNING_SECRET", script)
+
     def test_release_manifest_is_non_secret_and_scope_honest(self):
         manifest = json.loads(self.read("release-manifest.public-preview.json"))
         self.assertEqual("anvil-web-public-preview", manifest["release_id"])

@@ -54,3 +54,9 @@
 - 원인: `mount_frontend()`가 `create_runtime_app()` 직후 실행되어 명시적 health route보다 먼저 등록되는 순서가 canonical에 재도입됐다.
 - 조치: `create_asgi_app()` factory에서 `/health/live`·`/health/ready`를 먼저 등록하고 마지막에 StaticFiles root mount를 수행했다.
 - 검증: fresh import 기준 `/health/live` 200, `/health/ready` non-404 및 route order regression PASS; compileall와 diff-check PASS. 원격/Telegram/DB 변경 없음.
+
+## NPM graceful reload / custom override safety
+
+- `deploy-public-preview.sh`에 web healthy 확인 후 `proxy-network`의 Docker DNS IP와 `docker inspect` IP 일치 확인, NPM `nginx -t`, graceful `nginx -s reload`, 고유 public health probe 및 새 web log correlation 순서를 추가했다. 실패 시 이전 release rollback을 시도하고 `INCIDENT_HOLD`로 종료한다.
+- `remove-npm-telegram-override.sh`는 `/data/nginx/custom/server_proxy.conf`의 SHA-256이 `406052ff7d4764bd23d03d7bef48db01c9683f801c010dc41ba24c7d2d1593cf`와 정확히 일치할 때만 backup 후 제거한다. hash mismatch는 exit 4로 fail closed하며 nginx test/reload 실패 시 원본 복구 후 재검증한다.
+- 구현·스크립트 테스트 6 passed, 두 신규 shell script `bash -n` PASS. 실제 원격/NPM/DB/Telegram 변경 및 스크립트 실행은 하지 않았다.

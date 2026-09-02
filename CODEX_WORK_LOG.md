@@ -110,6 +110,14 @@
 - 검증: fresh import `/health/live` 200, `/health/ready` non-404, route order PASS; focused tests 2 passed, compileall PASS, diff-check PASS.
 - 범위 밖: Telegram/remote/DB 변경 없음.
 
+## C-21 NPM graceful reload / override migration R5 — 2026-09-02
+
+- 담당: `unify_public_runtime` subagent, 단일 writer.
+- 구현: public deploy 후 web healthy → Docker DNS `getent` IP와 `docker inspect` IP 동일성 → NPM `nginx -t` → graceful reload → 고유 public probe/log correlation 순서를 추가. 실패 시 rollback 시도 후 `INCIDENT_HOLD`.
+- 구현: `remove-npm-telegram-override.sh` exact hash guard(`406052ff...1593cf`), backup, 제거, nginx test/reload; 실패 시 원본 restore와 test/reload. hash 불일치 exit 4 fail closed.
+- 검증: deployment script tests 6 passed, `bash -n` 두 신규/변경 script PASS, diff-check PASS.
+- 범위 밖: 실제 원격/NPM/DB/Telegram 변경, script execution, real-time push.
+
 ## C-21 NPM stale upstream DNS 진단 — 2026-09-02
 
 - 담당: `npm_dns_refresh_design` read-only subagent.

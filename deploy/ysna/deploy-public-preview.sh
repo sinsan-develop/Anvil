@@ -47,6 +47,14 @@ write_evidence_alias() {
   printf '%s\n' "$payload" > "$legacy_deploy_evidence_path"
 }
 
+incident_hold() {
+  echo "INCIDENT_HOLD: unified public runtime verification failed" >&2
+  if [[ "${previous_release:-none}" =~ ^[0-9a-f]{40}$ ]]; then
+    bash "$repo_dir/deploy/ysna/rollback-public-preview.sh" || true
+  fi
+  exit 12
+}
+
 if [[ ! "$release_commit" =~ ^[0-9a-f]{40}$ ]]; then
   echo "release commit must be a full lowercase Git SHA" >&2
   exit 2
@@ -112,6 +120,7 @@ fi
 export ANVIL_IMAGE_TAG="${release_commit:0:12}"
 ANVIL_RUNTIME_ENV_FILE="$target_env" docker compose -p "$compose_project" -f "$compose_file" build anvil-web
 ANVIL_RUNTIME_ENV_FILE="$target_env" docker compose -p "$compose_project" -f "$compose_file" up -d --no-deps anvil-web
+deploy_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 for _ in $(seq 1 30); do
   health="$(docker inspect anvil-web --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' 2>/dev/null || true)"
@@ -120,8 +129,18 @@ for _ in $(seq 1 30); do
 done
 if [[ "$(docker inspect anvil-web --format '{{.State.Health.Status}}')" != "healthy" ]]; then
   docker logs --tail 80 anvil-web >&2
-  exit 6
+  incident_hold
 fi
+
+web_ip="$(docker inspect anvil-web --format '{{with index .NetworkSettings.Networks "proxy-network"}}{{.IPAddress}}{{end}}')"
+npm_dns_ip="$(docker exec nginx-proxy-manager getent hosts anvil-web | awk 'NR==1 {print $1}')"
+[[ -n "$web_ip" && "$web_ip" == "$npm_dns_ip" ]] || incident_hold
+docker exec nginx-proxy-manager nginx -t || incident_hold
+docker exec nginx-proxy-manager nginx -s reload || incident_hold
+probe_path="/health/live?deploy_probe=${release_commit}"
+probe_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "https://anvil.sinsan.kr${probe_path}" || true)"
+[[ "$probe_status" == "200" ]] || incident_hold
+docker logs --since "$deploy_started_at" anvil-web | grep -Fq "/health/live?deploy_probe=${release_commit}" || incident_hold
 
 write_alias_pair "$canonical_current_sha_path" "$legacy_current_sha_path" "$release_commit"
 write_alias_pair "$canonical_current_tag_path" "$legacy_current_tag_path" "$release_tag"
