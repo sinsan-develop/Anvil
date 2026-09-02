@@ -9,3 +9,10 @@
 - 롤백: `deploy/ysna/rollback.sh` 및 배포 전 `previous.sha` 사용
 
 신산님은 “C-21 커밋 `fda9439`의 DeployApproval binding 생성과 표준 `deploy.sh` 배포를 승인한다.”고 명시했다. 이 문서는 해당 승인과 대상 hash를 결박한 DeployApproval 기록이다.
+
+## 재승인 갱신
+
+- 갱신일: 2026-09-02 (Asia/Seoul)
+- 갱신 대상 커밋: `c7826ca0a28c7db180ad7df1f030d594b74b9d23`
+- 갱신 승인 문구: “C-21 수정 커밋 `c7826ca`에 대한 DeployApproval binding 갱신과 표준 `deploy.sh` 재배포를 승인한다.”
+- 갱신 binding ID: `APPROVAL-20260902-C21-DEPLOY-002`

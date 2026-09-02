@@ -5,7 +5,7 @@
   "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "fda94392b03f69d1a21b1030b5425f14ee8a4d95",
+    "commit": "c7826ca0a28c7db180ad7df1f030d594b74b9d23",
     "branch_at_capture": "main",
     "working_tree": "CLEAN"
   },
@@ -13,7 +13,8 @@
     "successor_binding": "APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001",
     "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
     "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "work_plan_sha256": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31"
+    "work_plan_sha256": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
+    "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-002"
   },
   "evidence": {
     "focused_tests": {
