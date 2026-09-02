@@ -17,3 +17,4 @@
 - 미검증: 새 커밋의 ysna 재배포, 실제 세션 credential 발급, PostgreSQL EventStream 기반 authenticated SSE, Last-Event-ID 운영 호출.
 - 임시 경로: 새 `D:\tmp` 폴더·프로세스·포트·컨테이너·볼륨·네트워크를 만들지 않았고 기존 worktree를 보존했다. 상세 정책은 `docs/DEVELOPMENT_ENVIRONMENT.md`.
 - 다음 조치: exact `31b8324`에 대한 ReleaseManifest/DeployApproval binding을 갱신한 후, 승인된 표준 `deploy.sh`로 ysna에 재배포하고 세션 발급→authenticated SSE→Last-Event-ID를 검증한다.
+- 추가 확인: ysna `/home/ubuntu/deploy/anvil/.env`에서 `ANVIL_TEST_SESSION_*` 6개 변수는 미설정으로 확인됨(값은 읽지 않음). 원격 환경변수 추가와 `660e6a5` 배포는 새 exact DeployApproval 및 보안 credential 생성·저장 승인이 필요하다.
