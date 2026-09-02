@@ -19,6 +19,14 @@
 - 다음 조치: exact `31b8324`에 대한 ReleaseManifest/DeployApproval binding을 갱신한 후, 승인된 표준 `deploy.sh`로 ysna에 재배포하고 세션 발급→authenticated SSE→Last-Event-ID를 검증한다.
 - 추가 확인: ysna `/home/ubuntu/deploy/anvil/.env`에서 `ANVIL_TEST_SESSION_*` 6개 변수는 미설정으로 확인됨(값은 읽지 않음). 원격 환경변수 추가와 `660e6a5` 배포는 새 exact DeployApproval 및 보안 credential 생성·저장 승인이 필요하다.
 
+## C-21 공개 인증 프록시 보완 — 2026-09-02
+
+- `fix_public_auth_proxy` subagent가 `/auth/*` upstream 전달과 스트리밍 응답 보존을 구현했다.
+- subagent 검증: Node `15 passed`, `node --check` PASS, `git diff --check` PASS.
+- Main cherry-pick 커밋: `8ba679e72f53e20561e2063f3cdf01c10981a67b`.
+- 배포 전 상태: `ReleaseManifest`는 새 hash에 대해 `APPROVAL_PENDING`; 기존 `9fd7c46` 승인 binding은 hash 변경으로 승계하지 않는다.
+- 다음 조치: 새 exact commit 배포 승인 후 표준 deploy 및 session→authenticated SSE→Last-Event-ID 재검증.
+
 ## C-21 공개 인증 프록시 — 2026-09-02
 
 - 담당: `fix_public_auth_proxy` subagent.
