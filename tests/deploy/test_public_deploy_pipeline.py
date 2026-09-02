@@ -25,6 +25,20 @@ def _posix(path: Path) -> str:
     return value
 
 
+def _windows_path_from_posix(value: str) -> str:
+    if len(value) >= 3 and value[0] == "/" and value[1].isalpha() and value[2] == "/":
+        return f"{value[1].upper()}:/{value[3:]}"
+    return value
+
+
+@pytest.mark.parametrize(
+    ("posix_path", "expected"),
+    [("/c/tmp/fixture", "C:/tmp/fixture"), ("/d/tmp/fixture", "D:/tmp/fixture")],
+)
+def test_windows_path_from_posix_supports_drive_letters(posix_path: str, expected: str):
+    assert _windows_path_from_posix(posix_path) == expected
+
+
 @pytest.fixture
 def deployment(tmp_path: Path):
     git_bash = Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / "Git" / "usr" / "bin" / "bash.exe"
@@ -406,7 +420,7 @@ def test_rollback_builds_previous_source_with_target_versioned_dockerfile(deploy
     (runtime / "current-anvil-web-sha").write_text(COMMIT + "\n", encoding="utf-8")
     (runtime / "previous-anvil-web-sha").write_text(PREVIOUS_COMMIT + "\n", encoding="utf-8")
     (runtime / "anvil.env").write_text("ANVIL_DATABASE_URL=redacted\n", encoding="utf-8")
-    assert "org.opencontainers.image.revision" not in Path(env["PREVIOUS_DOCKERFILE"].replace("/c/", "C:/", 1)).read_text(encoding="utf-8")
+    assert "org.opencontainers.image.revision" not in Path(_windows_path_from_posix(env["PREVIOUS_DOCKERFILE"])).read_text(encoding="utf-8")
 
     result = subprocess.run(
         [bash, _posix(repo / "deploy" / "ysna" / "rollback-public-preview.sh")],
@@ -435,7 +449,7 @@ def test_rollback_uses_target_compose_when_previous_compose_omits_runtime_env(de
     (runtime / "current-anvil-web-sha").write_text(COMMIT + "\n", encoding="utf-8")
     (runtime / "previous-anvil-web-sha").write_text(PREVIOUS_COMMIT + "\n", encoding="utf-8")
     (runtime / "anvil.env").write_text("ANVIL_DATABASE_URL=redacted\n", encoding="utf-8")
-    previous_compose = Path(env["PREVIOUS_COMPOSE"].replace("/c/", "C:/", 1)).read_text(encoding="utf-8")
+    previous_compose = Path(_windows_path_from_posix(env["PREVIOUS_COMPOSE"])).read_text(encoding="utf-8")
     assert "env_file:" not in previous_compose
     assert "ANVIL_API_UPSTREAM" in previous_compose
 

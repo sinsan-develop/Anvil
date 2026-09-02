@@ -77,9 +77,16 @@ Desktop local head 32개와 tag 8개(합계 40개)를 `git fetch --no-tags <Desk
 | `git diff --check origin/main..HEAD` 및 working diff check | PASS | 통합 3 commit과 migration 문서의 whitespace 오류 없음 |
 | manifest/receipt JSON parse 및 SHA-256 binding | PASS | `C-21_R3_EVIDENCE_MANIFEST.json`의 receipt checksum `d9ace4c2dadf5029ec9fb90b8c6c197a619414fe7ea46978d5042903b3cd770c`가 실제 파일과 일치 |
 | `bash -n` (bootstrap/deploy/rollback/remove-NPM scripts) | PASS | shell syntax만 검증 |
-| `tests/deploy` | PARTIAL / HARNESS_FAIL | 44건 전체를 D tmp 기준으로 시도: 42 PASS, 2 FAIL. 실패 2건은 rollback test가 `/d/...`를 만든 뒤 `/c/...`만 Windows 경로로 역변환하여 fixture file을 찾지 못한 harness 경로 가정이다. 제품 script 실행 전 발생했으며, 이 migration 범위에서 테스트를 변경하지 않았다. |
+| `tests/deploy` | PASS | D tmp 기준 fresh 분할 실행 46건(26 static + 20 pipeline) PASS. 자세한 harness 보정 이력은 아래에 기록했다. |
 
 `C-21_R3_EVIDENCE_MANIFEST.json`의 운영 증거 분류는 기존대로 `PARTIAL`이며, 이번 migration의 Git·정적·fixture 검증은 실제 운영 deploy, DB/NPM/Telegram/Provider, 브라우저 또는 device PASS가 아니다. 해당 외부 범위는 재실행하지 않았다.
+
+### D drive test harness 보정
+
+- 오류 횟수: 1회. D tmp focused RED에서 rollback fixture 2건이 `FileNotFoundError`로 실패했다.
+- 원인: `_posix()`는 `D:\...`를 `/d/...`로 올바르게 변환하지만, 두 assertion이 `/c/`만 `C:/`로 역변환해 `Path('/d/...')`를 만들었다. 제품 deploy/rollback script 실행 전의 test harness 오류였다.
+- TDD: 기존 2건의 focused RED 후, `/c/tmp/fixture`와 `/d/tmp/fixture` 모두를 검증하는 새 helper contract를 먼저 추가했다. helper 부재 `NameError` RED를 확인한 뒤 `_windows_path_from_posix()`를 최소 구현하고 기존 두 hard-coded `.replace('/c/', ...)` 호출만 교체했다.
+- GREEN: helper + affected rollback focused 4 PASS. 이후 `tests/deploy` fresh 46 PASS(26 static + pipeline 7/2/2/2/4/3)로 전체 회귀를 확인했다. C drive도 새 helper contract로 유지한다.
 
 ## 미수행과 rollback
 

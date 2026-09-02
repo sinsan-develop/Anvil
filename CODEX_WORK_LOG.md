@@ -270,3 +270,11 @@
 - `D:\tmp\anvil-canonical-migration`/`codex/canonical-source-migration`을 최신 origin/main에서 생성하고, descendant 확인과 정확히 3개의 후속 commit 확인 뒤 `desktop-migration/codex/c21-deploy-incident-fix`를 `--ff-only`로 `7d4a15ab62860a38a82c6ef485b035b564f9dde0`까지 반영했다.
 - 검증: JSON parse/checksum, 4개 shell `bash -n`, merged/working `git diff --check` PASS. `tests/deploy`는 D tmp에서 42 PASS/2 harness path-assumption FAIL(`/d`→`/c` only inverse conversion)이며 제품 script 전 failure다. 운영·브라우저·device 증거로 승격하지 않는다.
 - 상세 ref/object/commit/temporary-resource/미수행 경계는 `docs/04_test_reports/CANONICAL_SOURCE_MIGRATION_20260902.md`에 기록했다. commit, push, main merge, Desktop 삭제는 아직 미수행이다.
+
+## Canonical migration D-drive deploy test harness 보정 — 2026-09-02
+
+- 오류 1회: `tests/deploy/test_public_deploy_pipeline.py`의 두 rollback fixture가 D tmp의 `/d/...` POSIX path를 Python `Path`로 재사용할 때 `/c/...`만 하드코딩 역변환하여 `FileNotFoundError`가 발생했다. 제품 deploy/rollback script 실행 전 test harness에서 발생했으며 Desktop/D root 보호 범위와 외부 시스템에는 영향이 없다.
+- TDD RED: affected rollback 2건이 D tmp에서 재현 실패했고, C/D drive POSIX path contract를 먼저 추가하여 helper 부재 `NameError` RED를 확인했다.
+- 조치: `_windows_path_from_posix()`가 drive letter를 일반화해 복원하도록 최소 helper를 추가하고, 두 hard-coded `/c/` replacement만 교체했다. 새 helper contract는 C와 D를 모두 고정한다.
+- GREEN/회귀: focused 4 PASS, fresh `tests/deploy` 46 PASS(26 static + pipeline 20), JSON/checksum·4 shell `bash -n`·merged/working `git diff --check` 재검증 PASS. D tmp test resource는 각 run 종료 시 삭제하며 잔여 0건을 확인한다.
+- 외부 변경: deploy, DB, NPM, Telegram, Provider, Browser, Desktop ref/file, push, main merge 모두 미수행.
