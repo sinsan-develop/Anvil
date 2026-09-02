@@ -33,6 +33,14 @@
 - 조치: 이를 완료로 승격하지 않고, `anvil-web:3770`이 API·health·Telegram·SSE를 직접 처리하고 `4173` 의존성을 제거하는 정식 통합 작업을 시작했다.
 - 미충족: 단일 런타임 구현·검증·internal 컨테이너 제거 전까지 C-21 운영 완료 아님.
 
+## Unified Runtime R3 최종 배포 대기 — 2026-09-02
+
+- 최종 runtime commit: `cb3afcdd5971c7497b4c0044d3ee52479c59da59`.
+- 검증: 전체 `tests/api` 53 PASS, deployment scripts tests 9 PASS, bash syntax와 diff-check PASS.
+- 변경: PostgreSQL SSE replay/Last-Event-ID adapter, health route·healthcheck, unified verify/rollback 계약.
+- 상태: 새 exact hash DeployApproval 대기. 기존 `a962bdf` binding은 무효화했다.
+- 제거 조건: 공개 UI·API·health·Telegram·SSE·Last-Event-ID가 모두 PASS인 경우에만 `anvil-internal-web-1` 제거.
+
 ## C-21 공개 인증 프록시 — 2026-09-02
 
 - 담당: `fix_public_auth_proxy` subagent.
