@@ -39,6 +39,10 @@ image만 되돌리며 검증된 downgrade manifest 없이는 schema를 하향하
 9. runtime start, live/ready/OpenAPI, Docker DNS, NPM config/reload 및 public log
    correlation을 통과한 뒤 versioned NPM Telegram override 제거 스크립트를 실행한다.
 
+공개 live/ready/OpenAPI는 각 호출을 짧은 timeout으로 제한하고 최대 5회 재시도한다.
+고유 live probe의 runtime log correlation도 최대 10회만 확인한다. transient timeout은
+이 bounded 구간에서 흡수하지만 한도를 모두 소진하면 `INCIDENT_HOLD`로 전환한다.
+
 서버 checkout이 이전 revision이어도 target script를 사용하도록 다음 순서로 실행한다.
 
 ```sh
@@ -51,7 +55,9 @@ git -C "$HOME/deploy/anvil/repo" show \
 
 0012 적용 뒤 실패하면 자동 downgrade하지 않는다. application image rollback만
 시도하고 `INCIDENT_HOLD`로 중단하며 `anvil-internal-web-1`은 전체 수직 검증이
-끝날 때까지 보존한다. rollback은 시작 시 target release의 versioned Dockerfile을
-runtime 임시 파일로 exact 보존·검증한 뒤 previous source checkout을 그 Dockerfile로
-직접 build한다. OCI revision과 health가 모두 확인되기 전에는 current alias를 바꾸지
-않으며 임시 Dockerfile은 종료 trap에서 제거한다.
+끝날 때까지 보존한다. rollback은 시작 시 target release의 versioned Dockerfile과
+`compose.public-preview.yml`을 runtime 임시 파일로 exact 보존·검증한 뒤 previous
+source checkout을 보존 Dockerfile로 직접 build하고 보존 compose로 `--no-build`
+기동한다. 따라서 legacy compose의 누락된 runtime env나 preview upstream을 상속하지
+않는다. OCI revision과 health가 모두 확인되기 전에는 current alias를 바꾸지 않으며
+두 임시 파일은 종료 trap에서 제거한다.

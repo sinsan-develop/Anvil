@@ -12,6 +12,7 @@ import pytest
 ROOT = Path(__file__).parents[2]
 SCRIPT = ROOT / "deploy" / "ysna" / "deploy-public-preview.sh"
 BOOTSTRAP = ROOT / "deploy" / "ysna" / "bootstrap-public-deploy.sh"
+TARGET_COMPOSE = ROOT / "deploy" / "ysna" / "compose.public-preview.yml"
 COMMIT = "1" * 40
 PREVIOUS_COMMIT = "2" * 40
 TAG = "anvil-ui-preview-20260902.1"
@@ -54,6 +55,13 @@ def deployment(tmp_path: Path):
     (runtime / "current-anvil-web-sha").write_text(PREVIOUS_COMMIT + "\n", encoding="utf-8")
     previous_dockerfile = fake_root / "previous-Dockerfile.web"
     previous_dockerfile.write_text("FROM python:3.12-slim\n", encoding="utf-8", newline="\n")
+    previous_compose = fake_root / "previous-compose.public-preview.yml"
+    previous_compose.write_text(
+        "services:\n  anvil-web:\n    image: anvil-web:preview\n"
+        "    environment:\n      ANVIL_API_UPSTREAM: http://anvil-internal-web-1:4173\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
     git = fake_bin / "git"
     git.write_text(
@@ -63,6 +71,11 @@ printf 'git %s\\n' "$*" >> "$FAKE_LOG"
 if [[ "$1 $2" == "status --porcelain" ]]; then exit 0; fi
 if [[ "$1" == "show" && "$2" == "$RELEASE_COMMIT:deploy/ysna/deploy-public-preview.sh" ]]; then cat "$TARGET_DEPLOY_SCRIPT"; exit 0; fi
 if [[ "$1" == "show" && "$2" == "$RELEASE_COMMIT:deploy/ysna/Dockerfile.web" ]]; then cat "$TARGET_DOCKERFILE"; exit 0; fi
+if [[ "$1" == "show" && "$2" == "$RELEASE_COMMIT:deploy/ysna/compose.public-preview.yml" ]]; then cat "$TARGET_COMPOSE"; exit 0; fi
+if [[ "$1 $2" == "checkout --detach" && "${FAKE_PREVIOUS_COMPOSE_NO_ENV:-0}" == "1" ]]; then
+  cp "$PREVIOUS_COMPOSE" "$REPO_DIR/deploy/ysna/compose.public-preview.yml"
+  exit 0
+fi
 if [[ "$1 $2" == "rev-parse HEAD" ]]; then printf '%s\\n' "$RELEASE_COMMIT"; exit 0; fi
 if [[ "$1 $2" == "rev-parse anvil-ui-preview-20260902.1^{commit}" ]]; then printf '%s\\n' "$RELEASE_COMMIT"; fi
 """,
@@ -73,6 +86,11 @@ if [[ "$1 $2" == "rev-parse anvil-ui-preview-20260902.1^{commit}" ]]; then print
         """#!/usr/bin/env bash
 set -euo pipefail
 printf 'curl %s\\n' "$*" >> "$FAKE_LOG"
+if [[ "${FAKE_PUBLIC_PERSISTENT_FAILURE:-0}" == "1" ]]; then exit 28; fi
+if [[ "${FAKE_PUBLIC_FIRST_TIMEOUT:-0}" == "1" && ! -f "$FAKE_ROOT/public-first-timeout-seen" ]]; then
+  : > "$FAKE_ROOT/public-first-timeout-seen"
+  exit 28
+fi
 printf '200'
 """,
         encoding="utf-8",
@@ -115,7 +133,16 @@ if [[ "$1" == "inspect" && "$2" == "anvil-web" && "$*" == *"Health.Status"* ]]; 
   exit 0
 fi
 if [[ "$1" == "inspect" && "$2" == "anvil-web" && "$*" == *"proxy-network"* ]]; then printf '10.0.0.9\\n'; exit 0; fi
-if [[ "$1" == "logs" ]]; then printf '/health/live?deploy_probe=%s\\n' "$RELEASE_COMMIT"; exit 0; fi
+if [[ "$1" == "logs" ]]; then
+  if [[ "${FAKE_LOG_PERSISTENT_MISS:-0}" == "1" ]]; then printf 'unrelated\\n'; exit 0; fi
+  if [[ "${FAKE_LOG_FIRST_MISS:-0}" == "1" && ! -f "$FAKE_ROOT/log-first-miss-seen" ]]; then
+    : > "$FAKE_ROOT/log-first-miss-seen"
+    printf 'unrelated\\n'
+    exit 0
+  fi
+  printf '/health/live?deploy_probe=%s\\n' "$RELEASE_COMMIT"
+  exit 0
+fi
 
 if [[ "$1" == "compose" && "$*" == *" run "* && "$*" == *"alembic current"* ]]; then
   if [[ -f "$FAKE_ROOT/migrated" ]]; then printf '0012_run_authority (head)\\n'; else printf '%s\\n' "${FAKE_CURRENT_REVISION:-0011_telegram_webhook_state}"; fi
@@ -126,6 +153,16 @@ if [[ "$1" == "compose" && "$*" == *" run "* && "$*" == *"alembic upgrade 0012_r
   exit 0
 fi
 if [[ "$1" == "compose" && "$*" == *" up "* ]]; then
+  if [[ "${FAKE_PREVIOUS_COMPOSE_NO_ENV:-0}" == "1" && "${ANVIL_RELEASE_COMMIT:-}" == "$PREVIOUS_COMMIT" ]]; then
+    compose=""
+    for ((index=1; index<=$#; index++)); do
+      if [[ "${!index}" == "-f" ]]; then next=$((index + 1)); compose="${!next}"; fi
+    done
+    [[ -n "$compose" ]] || exit 42
+    cmp -s "$compose" "$TARGET_COMPOSE" || exit 43
+    grep -Fq 'env_file:' "$compose" || exit 44
+    grep -Fq 'healthcheck:' "$compose" || exit 45
+  fi
   [[ "${FAKE_RUNTIME_FAILURE:-0}" == "1" ]] && exit 1 || exit 0
 fi
 if [[ "$1" == "compose" ]]; then
@@ -205,7 +242,10 @@ sleep() { :; }
             "PREVIOUS_COMMIT": PREVIOUS_COMMIT,
             "TARGET_DEPLOY_SCRIPT": _posix(SCRIPT),
             "TARGET_DOCKERFILE": _posix(ROOT / "deploy" / "ysna" / "Dockerfile.web"),
+            "TARGET_COMPOSE": _posix(TARGET_COMPOSE),
             "PREVIOUS_DOCKERFILE": _posix(previous_dockerfile),
+            "PREVIOUS_COMPOSE": _posix(previous_compose),
+            "REPO_DIR": _posix(repo),
             "MSYS_NO_PATHCONV": "1",
         }
     )
@@ -241,9 +281,56 @@ def test_deploy_backs_up_and_migrates_before_starting_runtime(deployment):
     assert f"docker image inspect anvil-web:{COMMIT[:12]}" in log
     assert log.index("pg_dump") < log.index("alembic upgrade 0012_run_authority")
     assert log.index("alembic upgrade 0012_run_authority") < log.index(" up -d --no-deps anvil-web")
-    assert "curl -sS -o /dev/null -w %{http_code} --max-time 10 https://anvil.sinsan.kr/health/ready" in log
-    assert "curl -sS -o /dev/null -w %{http_code} --max-time 10 https://anvil.sinsan.kr/openapi.json" in log
+    assert "curl -sS -o /dev/null -w %{http_code} --connect-timeout 2 --max-time 3 https://anvil.sinsan.kr/health/ready" in log
+    assert "curl -sS -o /dev/null -w %{http_code} --connect-timeout 2 --max-time 3 https://anvil.sinsan.kr/openapi.json" in log
     assert log.index("/health/ready") < log.index("rm -- /data/nginx/custom/server_proxy.conf")
+
+
+def test_public_probe_retries_first_timeout_then_succeeds(deployment):
+    run, log_path, *_ = deployment
+
+    result = run(FAKE_PUBLIC_FIRST_TIMEOUT="1")
+
+    assert result.returncode == 0, result.stderr
+    live_url = f"https://anvil.sinsan.kr/health/live?deploy_probe={COMMIT}"
+    live_calls = [line for line in log_path.read_text(encoding="utf-8").splitlines() if live_url in line]
+    assert len(live_calls) == 2
+    assert all("--max-time 3" in line for line in live_calls)
+
+
+def test_public_probe_persistent_failure_is_bounded_and_enters_hold(deployment):
+    run, log_path, *_ = deployment
+
+    result = run(FAKE_PUBLIC_PERSISTENT_FAILURE="1")
+
+    assert result.returncode == 12
+    assert "public live probe failed" in result.stderr
+    log = log_path.read_text(encoding="utf-8")
+    live_url = f"https://anvil.sinsan.kr/health/live?deploy_probe={COMMIT}"
+    assert sum(live_url in line for line in log.splitlines()) == 5
+    assert "rm -- /data/nginx/custom/server_proxy.conf" not in log
+
+
+def test_public_log_correlation_retries_first_miss_then_succeeds(deployment):
+    run, log_path, *_ = deployment
+
+    result = run(FAKE_LOG_FIRST_MISS="1")
+
+    assert result.returncode == 0, result.stderr
+    log_calls = [line for line in log_path.read_text(encoding="utf-8").splitlines() if line.startswith("docker logs --since ")]
+    assert len(log_calls) == 2
+
+
+def test_public_log_correlation_persistent_miss_is_bounded(deployment):
+    run, log_path, *_ = deployment
+
+    result = run(FAKE_LOG_PERSISTENT_MISS="1")
+
+    assert result.returncode == 12
+    assert "public live probe did not correlate" in result.stderr
+    log = log_path.read_text(encoding="utf-8")
+    assert sum(line.startswith("docker logs --since ") for line in log.splitlines()) == 10
+    assert "rm -- /data/nginx/custom/server_proxy.conf" not in log
 
 
 def test_deploy_fails_closed_when_database_is_not_at_0011(deployment):
@@ -323,6 +410,33 @@ def test_rollback_builds_previous_source_with_target_versioned_dockerfile(deploy
     assert log.index("docker build --file") < log.index(f"docker image inspect anvil-web:{PREVIOUS_COMMIT[:12]}")
     assert (runtime / "current-anvil-web-sha").read_text(encoding="utf-8").strip() == PREVIOUS_COMMIT
     assert not list(runtime.glob("rollback-Dockerfile.*"))
+
+
+def test_rollback_uses_target_compose_when_previous_compose_omits_runtime_env(deployment):
+    _, log_path, runtime, env, bash, repo = deployment
+    (runtime / "current-anvil-web-sha").write_text(COMMIT + "\n", encoding="utf-8")
+    (runtime / "previous-anvil-web-sha").write_text(PREVIOUS_COMMIT + "\n", encoding="utf-8")
+    (runtime / "anvil.env").write_text("ANVIL_DATABASE_URL=redacted\n", encoding="utf-8")
+    previous_compose = Path(env["PREVIOUS_COMPOSE"].replace("/c/", "C:/", 1)).read_text(encoding="utf-8")
+    assert "env_file:" not in previous_compose
+    assert "ANVIL_API_UPSTREAM" in previous_compose
+
+    result = subprocess.run(
+        [bash, _posix(repo / "deploy" / "ysna" / "rollback-public-preview.sh")],
+        env=env | {"FAKE_PREVIOUS_COMPOSE_NO_ENV": "1"},
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        capture_output=True,
+        timeout=20,
+    )
+
+    assert result.returncode == 0, result.stderr
+    log = log_path.read_text(encoding="utf-8")
+    rollback_up = [line for line in log.splitlines() if "up -d --no-deps --no-build anvil-web" in line]
+    assert "rollback-compose.public-preview" in rollback_up[-1]
+    assert (runtime / "current-anvil-web-sha").read_text(encoding="utf-8").strip() == PREVIOUS_COMMIT
+    assert not list(runtime.glob("rollback-compose.public-preview.*"))
 
 
 @pytest.mark.parametrize("failure_flag", ["FAKE_ROLLBACK_IMAGE_MISMATCH", "FAKE_ROLLBACK_UNHEALTHY"])

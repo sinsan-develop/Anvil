@@ -129,6 +129,33 @@ backup_database() {
   echo "ANVIL_DATABASE_BACKUP_SHA256=$checksum_path"
 }
 
+probe_public_http_200() {
+  local url="$1"
+  local status attempt
+  for attempt in $(seq 1 5); do
+    status="$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 3 "$url" || true)"
+    [[ "$status" == "200" ]] && return 0
+    if (( attempt < 5 )); then
+      sleep 2
+    fi
+  done
+  return 1
+}
+
+wait_for_public_log_correlation() {
+  local marker="$1"
+  local attempt
+  for attempt in $(seq 1 10); do
+    if docker logs --since "$deploy_started_at" anvil-web | grep -Fq "$marker"; then
+      return 0
+    fi
+    if (( attempt < 10 )); then
+      sleep 1
+    fi
+  done
+  return 1
+}
+
 if [[ ! "$release_commit" =~ ^[0-9a-f]{40}$ ]]; then
   echo "release commit must be a full lowercase Git SHA" >&2
   exit 2
@@ -246,13 +273,10 @@ npm_dns_ip="$(docker exec nginx-proxy-manager getent hosts anvil-web | awk 'NR==
 docker exec nginx-proxy-manager nginx -t || incident_hold "NPM configuration test failed before public probes"
 docker exec nginx-proxy-manager nginx -s reload || incident_hold "NPM graceful reload failed before public probes"
 probe_path="/health/live?deploy_probe=${release_commit}"
-probe_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "https://anvil.sinsan.kr${probe_path}" || true)"
-[[ "$probe_status" == "200" ]] || incident_hold "public live probe failed"
-ready_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "https://anvil.sinsan.kr/health/ready" || true)"
-[[ "$ready_status" == "200" ]] || incident_hold "public readiness probe failed"
-openapi_status="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 "https://anvil.sinsan.kr/openapi.json" || true)"
-[[ "$openapi_status" == "200" ]] || incident_hold "public OpenAPI probe failed"
-docker logs --since "$deploy_started_at" anvil-web | grep -Fq "/health/live?deploy_probe=${release_commit}" || incident_hold "public live probe did not correlate to the deployed runtime"
+probe_public_http_200 "https://anvil.sinsan.kr${probe_path}" || incident_hold "public live probe failed"
+probe_public_http_200 "https://anvil.sinsan.kr/health/ready" || incident_hold "public readiness probe failed"
+probe_public_http_200 "https://anvil.sinsan.kr/openapi.json" || incident_hold "public OpenAPI probe failed"
+wait_for_public_log_correlation "/health/live?deploy_probe=${release_commit}" || incident_hold "public live probe did not correlate to the deployed runtime"
 
 if ! bash "$repo_dir/deploy/ysna/remove-npm-telegram-override.sh"; then
   incident_hold "NPM Telegram override removal failed and was restored"

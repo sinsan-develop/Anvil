@@ -3,7 +3,7 @@
   "package_id": "C-21-OPS-R3",
   "classification": "PARTIAL",
   "target": "ysna-server/anvil.sinsan.kr",
-  "anvil_web_commit": "5b0f338",
+  "anvil_web_commit": "5b0f3389dd6f54d1f7606ac99a36d237feda7b60",
   "migration_head": "0012",
   "artifacts": [
     {
@@ -15,14 +15,32 @@
   "checks": {
     "telegram_signed_post": {
       "attempts": 1,
-      "http_status": 400,
-      "classification": "INVALID_HOST",
-      "db_side_effect": false,
+      "executed_at": "2026-09-02T11:39:09Z",
+      "http_status": 200,
+      "classification": "ACCEPTED",
+      "public_url_direct": true,
+      "resolve_override": false,
+      "connect_to_override": false,
+      "host_override": false,
+      "runtime_revision": "5b0f3389dd6f54d1f7606ac99a36d237feda7b60",
+      "runtime_healthy": true,
+      "npm_path_correlated": true,
+      "application_path_correlated": true,
+      "retransmissions": 0,
+      "strict_dynamic_delta": "UNKNOWN_PRECOUNT_CAPTURE_MISSING",
       "payload_recorded": false
     },
-    "telegram_webhook_updates": {"before": 0, "after": 0},
-    "telegram_webhook_audits": {"before": 0, "after": 0},
-    "telegram_webhook_rate_limits": {"before": 0, "after": 0},
+    "telegram_webhook_updates": {
+      "before": "UNKNOWN",
+      "after": 1,
+      "latest_timestamp": "2026-09-02T11:39:09Z"
+    },
+    "telegram_webhook_audits": {
+      "before": "UNKNOWN",
+      "after": 1,
+      "latest_timestamp": "2026-09-02T11:39:09Z"
+    },
+    "telegram_webhook_rate_limits": {"before": "UNKNOWN", "after": 1},
     "auth_session": {"http_status": 201, "secret_recorded": false},
     "authenticated_sse": {
       "http_status": 200,
@@ -36,6 +54,15 @@
     "public_openapi": 200,
     "public_api_providers": 401
   },
+  "historical_unbound": [
+    {
+      "observed_at": "2026-09-01T22:36:05Z",
+      "http_status": 400,
+      "classification": "INVALID_HOST",
+      "reason_unbound": "OBSERVATION_PRECEDES_5B0_DEPLOY_AT_2026-09-02T11:12Z",
+      "usable_as_current_release_evidence": false
+    }
+  ],
   "not_executed": [
     "Telegram Bot API send",
     "Last-Event-ID successor without a first event",
@@ -45,5 +72,5 @@
   ],
   "secrets_exposed": false,
   "rollback_required": false,
-  "failure_fingerprint": "C21-R3-TELEGRAM-HOST-BOUNDARY-400"
+  "failure_fingerprint": "C21-R3-TELEGRAM-PRECOUNT-CAPTURE-MISSING"
 }

@@ -234,3 +234,18 @@
 - 검증: JSON parse, exact commit/hash 대조, 승인 문구·binding 확인, release tag 미생성 확인, `git diff --check`가 모두 PASS다. scoped diff는 문서 3개만 포함한다.
 - 외부 조치: tag 생성/push, commit, 운영 변경, secret 접근은 수행하지 않는다.
 - release tag 충돌 정정: Main Agent의 원격 `git ls-remote --tags` 확인에서 `anvil-ui-preview-20260902.2`는 `a962bdfb6ba0e9c057907be8ee88909793bbf6ce`, `.3`은 `cb3afcdd5971c7497b4c0044d3ee52479c59da59`에 이미 결박되어 있었다. `anvil-ui-preview-20260902.4`는 원격 ref가 없어 C-21 source `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`용 tag 이름으로 정정했다. 이 writer는 원격 재조회·tag 생성·push를 수행하지 않았다.
+
+## C-21 운영 배포 INCIDENT_HOLD 보완 — 2026-09-02
+
+- 기준선: branch `codex/c21-deploy-incident-fix`, 시작 HEAD `13040fef646460e88bf8b47f54459cdce1855e62`, clean. 담당 `developer-primary` 단일 writer.
+- 운영 FAILURE_REPORT 1회: backup과 DB `0012_run_authority` 적용, target container healthy 뒤 최초 public live curl 10초 timeout으로 `INCIDENT_HOLD`.
+- backup: `/home/ubuntu/deploy/anvil/runtime/db-backups/anvil-20260902T111209Z-5b0f3389dd6f54d1f7606ac99a36d237feda7b60.dump`와 `.sha256` sidecar, `sha256sum -c OK`. 실제 hash 문자열은 미출력이라 기록하지 않았다.
+- rollback compose fingerprint 1회: previous `8ba679e` legacy compose의 runtime env 누락과 preview upstream 상속으로 exact unified image에 `ANVIL_DATABASE_URL`이 주입되지 않아 unhealthy.
+- 운영 복구: Main Agent가 exact target `5b0f338...` image/compose로 `anvil-web` healthy 복구. NPM_TO_WEB/local HTTPS/public live·ready·OpenAPI 모두 200. override backup SHA `406052ff...93cf`, 제거 후 `nginx -t`/graceful reload 성공. 전체 수직 검증 실패로 internal healthy 보존.
+- 보완 구현: target versioned Dockerfile과 compose를 checkout 전에 temp exact 보존·SHA-256 검증하고 previous source direct build + preserved compose `--no-build` 기동. temp 2개 EXIT trap cleanup.
+- probe 구현: public live/ready/OpenAPI는 connect 2초/max 3초/최대 5회/간격 2초, live log correlation은 최대 10회/간격 1초의 bounded retry. 모두 실패하면 기존 `INCIDENT_HOLD` 유지.
+- TDD RED: 첫 timeout/지속 timeout/legacy compose env 누락 `3 failed`, 첫 log miss/지속 log miss `2 failed`로 합계 5건을 재현. GREEN focused `5 passed in 18.32s`, pipeline `14 passed in 38.35s`, 전체 `tests/deploy` fresh `40 passed in 41.96s`. shell 4개 `bash -n` PASS.
+- 잔여 운영 검증 정정: Provider 5 healthy/4 unhealthy(UPSTAGE 401/GEMINI 400/OPENAI 401/OLLAMA timeout). fresh 담당자가 `2026-09-02T11:39:09Z` 공개 URL로 override 없이 Telegram POST를 정확히 1회 실행해 HTTP 200 `ACCEPTED`; post counts updates/audits/rate_limits 각 1, latest update/audit 11:39:09Z, NPM/app correlation 확인. pre-count psql capture는 stdin 오류로 누락되어 strict delta는 `UNKNOWN`, 재전송 0회·추가 POST 금지. auth session 201, SSE 200/event 0, Last-Event-ID 미실행.
+- Telegram evidence binding 정정: 기존 400 파일 timestamp `2026-09-01T22:36:05Z`는 5b0 배포 `2026-09-02T11:12Z` 이전이므로 current 증거에서 제외하고 `HISTORICAL_UNBOUND`로 격리했다. full current revision `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`/healthy를 fresh 실행 시 확인했다.
+- 도구 오류: fixture cleanup 출력용 `Test-Path` parameter typo 1회. 대상 제거는 먼저 수행됐고 후속 read-only 조회로 `C:\tmp\anvil-c21-operational-*` 잔여 0건 확인. 제품 실패 횟수에는 미포함.
+- 외부 변경 경계: 이 코드 수정 작업에서는 운영/SSH/tag/commit/push/DB/NPM/Telegram/Provider 변경을 수행하지 않았다. 상세 `docs/04_test_reports/C-21_PRODUCTION_DEPLOY_INCIDENT_20260902.md`.

@@ -10,10 +10,14 @@ canonical_runtime_prefix="anvil-web"
 legacy_runtime_prefix="public-preview"
 dockerfile_path="deploy/ysna/Dockerfile.web"
 rollback_dockerfile=""
+rollback_compose=""
 
 cleanup() {
   if [[ -n "$rollback_dockerfile" ]]; then
     rm -f -- "$rollback_dockerfile"
+  fi
+  if [[ -n "$rollback_compose" ]]; then
+    rm -f -- "$rollback_compose"
   fi
 }
 trap cleanup EXIT
@@ -82,6 +86,15 @@ actual_dockerfile_sha="$(sha256sum "$rollback_dockerfile" | awk '{print $1}')"
   exit 5
 }
 chmod 600 "$rollback_dockerfile"
+expected_compose_sha="$(git show "$target_release:$compose_file" | sha256sum | awk '{print $1}')"
+rollback_compose="$(mktemp "$runtime_dir/rollback-compose.public-preview.${target_release}.XXXXXX")"
+git show "$target_release:$compose_file" > "$rollback_compose"
+actual_compose_sha="$(sha256sum "$rollback_compose" | awk '{print $1}')"
+[[ -n "$expected_compose_sha" && "$actual_compose_sha" == "$expected_compose_sha" ]] || {
+  echo "rollback compose does not match the current target release" >&2
+  exit 5
+}
+chmod 600 "$rollback_compose"
 git checkout --detach "$previous_release"
 export ANVIL_IMAGE_TAG="${previous_release:0:12}"
 export ANVIL_RELEASE_COMMIT="$previous_release"
@@ -95,7 +108,7 @@ image_revision="$(docker image inspect "anvil-web:$ANVIL_IMAGE_TAG" --format '{{
   echo "rollback image revision does not match previous release" >&2
   exit 6
 }
-if ! ANVIL_RUNTIME_ENV_FILE="$runtime_env" docker compose -p "$compose_project" -f "$compose_file" up -d --no-deps --no-build anvil-web; then
+if ! ANVIL_RUNTIME_ENV_FILE="$runtime_env" docker compose -p "$compose_project" -f "$rollback_compose" up -d --no-deps --no-build anvil-web; then
   echo "rollback runtime start failed" >&2
   exit 7
 fi
