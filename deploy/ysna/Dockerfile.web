@@ -7,10 +7,11 @@ COPY deploy/ysna/requirements-runtime.txt /tmp/requirements-runtime.txt
 RUN /opt/venv/bin/pip install --no-cache-dir -r /tmp/requirements-runtime.txt
 COPY packages ./packages
 COPY apps/api ./apps/api
+COPY apps/web ./apps/web
 COPY migrations ./migrations
 COPY alembic.ini pyproject.toml ./
 RUN useradd --system --uid 10001 --create-home --home-dir /home/anvil anvil && chown -R anvil:anvil /opt/anvil /home/anvil
 USER anvil
-EXPOSE 4173
+EXPOSE 3770
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/opt/venv/bin/uvicorn", "apps.api.anvil_api.asgi:app", "--host", "0.0.0.0", "--port", "4173"]
+CMD ["/opt/venv/bin/uvicorn", "apps.api.anvil_api.asgi:app", "--host", "0.0.0.0", "--port", "3770"]

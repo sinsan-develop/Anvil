@@ -12,6 +12,7 @@ from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from packages.events.transition_guard import OptimisticVersionConflict
 
@@ -30,6 +31,11 @@ from .telegram_webhook import TelegramWebhook
 
 
 ApplicationPort = Callable[[ApplicationRequest], Any]
+
+
+def mount_frontend(app: FastAPI, directory: str) -> None:
+    """Serve the built frontend from the same ASGI listener as the API."""
+    app.mount("/", StaticFiles(directory=directory, html=True), name="frontend")
 Authenticator = Callable[[str], SessionPrincipal | None]
 _IF_MATCH = re.compile(r'(?:W/)?"?([0-9]+)"?\Z')
 

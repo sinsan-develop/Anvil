@@ -9,7 +9,7 @@ runtime_dir="$deploy_root/runtime"
 evidence_dir="$deploy_root/evidence"
 origin_url="git@github.com:cyhuh7950/anvil.git"
 compose_file="deploy/ysna/compose.public-preview.yml"
-compose_project="anvil-public-preview"
+compose_project="anvil"
 canonical_current_sha_path="$runtime_dir/current-anvil-web-sha"
 legacy_current_sha_path="$runtime_dir/current-public-preview-sha"
 canonical_previous_sha_path="$runtime_dir/previous-anvil-web-sha"
@@ -57,6 +57,26 @@ if [[ ! "$release_tag" =~ ^anvil-ui-preview-[0-9]{8}\.[0-9]+$ ]]; then
 fi
 
 mkdir -p "$deploy_root" "$runtime_dir" "$evidence_dir"
+
+source_env="$deploy_root/.env"
+target_env="$runtime_dir/anvil.env"
+prepare_runtime_env() {
+  [[ -f "$source_env" ]] || { echo "server-only secret file missing: $source_env" >&2; exit 4; }
+  local mode
+  mode="$(stat -c '%a' "$source_env")"
+  [[ "$mode" == "600" || "$mode" == "400" ]] || { echo "server-only secret file must be mode 0600 (or stricter): $source_env" >&2; exit 4; }
+  local name
+  for name in ANVIL_DATABASE_URL TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET TELEGRAM_INTERNAL_SIGNING_SECRET TELEGRAM_ALLOWED_IDENTITIES ANVIL_CONSOLE_BASE_URL; do
+    grep -Eq "^${name}=[^[:space:]]" "$source_env" || { echo "required secret reference missing: $name" >&2; exit 4; }
+  done
+  local tmp="$target_env.tmp.$$"
+  umask 077
+  install -m 600 "$source_env" "$tmp"
+  mv -f "$tmp" "$target_env"
+  chmod 600 "$target_env"
+}
+
+prepare_runtime_env
 if [[ ! -d "$repo_dir/.git" ]]; then
   git clone "$origin_url" "$repo_dir"
 fi
@@ -90,8 +110,8 @@ if [[ -n "$(git status --porcelain)" ]]; then
 fi
 
 export ANVIL_IMAGE_TAG="${release_commit:0:12}"
-docker compose -p "$compose_project" -f "$compose_file" build anvil-web
-docker compose -p "$compose_project" -f "$compose_file" up -d --no-deps anvil-web
+ANVIL_RUNTIME_ENV_FILE="$target_env" docker compose -p "$compose_project" -f "$compose_file" build anvil-web
+ANVIL_RUNTIME_ENV_FILE="$target_env" docker compose -p "$compose_project" -f "$compose_file" up -d --no-deps anvil-web
 
 for _ in $(seq 1 30); do
   health="$(docker inspect anvil-web --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' 2>/dev/null || true)"
@@ -105,8 +125,8 @@ fi
 
 write_alias_pair "$canonical_current_sha_path" "$legacy_current_sha_path" "$release_commit"
 write_alias_pair "$canonical_current_tag_path" "$legacy_current_tag_path" "$release_tag"
-payload=$(printf '{"release_commit":"%s","release_tag":"%s","container":"anvil-web","network":"proxy-network","port":"3770","api_upstream":"%s","compatibility":"HISTORICAL_PUBLIC_PREVIEW_ALIAS","deployed_at":"%s"}' \
-  "$release_commit" "$release_tag" "${ANVIL_API_UPSTREAM:-http://anvil-internal-web-1:4173}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")
+payload=$(printf '{"release_commit":"%s","release_tag":"%s","container":"anvil-web","network":"proxy-network","port":"3770","runtime":"UNIFIED_FASTAPI_ASGI","api_upstream":null,"deployed_at":"%s"}' \
+  "$release_commit" "$release_tag" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")
 write_evidence_alias "$payload"
 
 echo "ANVIL_WEB_DEPLOYED=$release_commit"

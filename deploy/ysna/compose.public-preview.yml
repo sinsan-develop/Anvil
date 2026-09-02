@@ -1,4 +1,4 @@
-name: anvil-public-preview
+name: anvil
 
 services:
   anvil-web:
@@ -6,12 +6,11 @@ services:
     image: "anvil-web:${ANVIL_IMAGE_TAG:-preview}"
     build:
       context: ../..
-      dockerfile: deploy/ysna/Dockerfile.web-preview
+      dockerfile: deploy/ysna/Dockerfile.web
+    env_file: ["${ANVIL_RUNTIME_ENV_FILE:?run deploy/ysna/deploy.sh to prepare runtime/anvil.env}"]
     environment:
-      ANVIL_UI_MODE: preview
       ANVIL_HOST: 0.0.0.0
       ANVIL_PORT: "3770"
-      ANVIL_API_UPSTREAM: ${ANVIL_API_UPSTREAM:-http://anvil-internal-web-1:4173}
     expose:
       - "3770"
     networks:
@@ -30,7 +29,7 @@ services:
         - CMD
         - node
         - -e
-        - "fetch('http://127.0.0.1:3770/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        - "fetch('http://127.0.0.1:3770/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
       interval: 15s
       timeout: 5s
       retries: 4

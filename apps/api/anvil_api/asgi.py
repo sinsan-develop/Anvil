@@ -2,8 +2,11 @@
 from fastapi import Response
 from sqlalchemy import text
 from packages.api.runtime import create_runtime_app
+from packages.api.fastapi_app import mount_frontend
+from pathlib import Path
 
 app = create_runtime_app()
+mount_frontend(app, str(Path(__file__).resolve().parents[3] / "apps" / "web"))
 
 @app.get("/health/live", include_in_schema=False)
 async def liveness() -> dict[str, str]:

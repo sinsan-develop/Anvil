@@ -28,6 +28,8 @@
 
 전환 실패 시 이전 승인 commit의 단일 서비스 정의로 rollback한다. 검증 전 내부 컨테이너 삭제, NPM 변경, DB 변경, 서버 직접 patch는 수행하지 않는다. 이번 진단에서는 원격/NPM/DB를 변경하지 않았다.
 
-## 상태
+## 1차 구현 상태
 
-`FAILURE_REPORT / DESIGN_REQUIRED`: 현재 구조에서 직접 처리를 안전하게 구현할 최소 변경은 단순 설정 변경이 아니며, FastAPI 정적 UI 통합과 이미지·배포 계약 변경이 필요한 별도 설계 범위다. 기존 운영 배포는 유지한다.
+`INCOMPLETE / VERTICAL_SLICE_READY`: 별도 Unified Runtime 브랜치에서 FastAPI ASGI에 `mount_frontend()`를 추가하고, `/health/live`와 `/`가 동일 ASGI 앱에서 응답하는 회귀 테스트를 추가했다. `Dockerfile.web`은 UI 파일을 포함하고 3770에서 ASGI를 실행하도록 변경했으며, public compose/deploy는 더 이상 `ANVIL_API_UPSTREAM`을 설정하지 않는다. 원격 배포는 수행하지 않았다.
+
+남은 작업은 `rollback-public-preview.sh` 및 `verify-public-preview.sh`의 unified 명칭/검증 계약 정리, 전체 API/SSE/Telegram 수직 테스트, 공개 운영 배포와 internal 컨테이너 제거 순서 검증이다. 이 단계가 끝나기 전에는 `anvil-internal-web-1`을 중지·삭제하지 않는다.
