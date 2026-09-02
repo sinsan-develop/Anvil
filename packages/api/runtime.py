@@ -24,6 +24,7 @@ from .fastapi_app import AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
 from .security import WebSecurityConfig
+from .sse import PostgresEventStream
 
 
 class RuntimeConfigurationError(ValueError):
@@ -171,6 +172,7 @@ def create_runtime_app(
             authorization_resolver=resolve_test_scope,
             session_issuer=local_session,
         )
+    app_kwargs.setdefault("event_stream", PostgresEventStream(session_factory))
     app = create_app(telegram_webhook=webhook, security_config=web_security, **app_kwargs)
     # Metadata is deliberately credential-free and useful to health/readiness
     # consumers without turning provider secrets into API data.
@@ -179,6 +181,7 @@ def create_runtime_app(
     app.state.database_engine = engine
     app.state.migration_head = "0011_telegram_webhook_state"
     app.state.runtime_database_configured = True
+    app.state.event_stream = app_kwargs["event_stream"]
     app.state.local_test_session_enabled = local_session is not None
     return app
 

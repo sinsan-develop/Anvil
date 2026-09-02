@@ -33,3 +33,11 @@
 `INCOMPLETE / VERTICAL_SLICE_READY`: 별도 Unified Runtime 브랜치에서 FastAPI ASGI에 `mount_frontend()`를 추가하고, `/health/live`와 `/`가 동일 ASGI 앱에서 응답하는 회귀 테스트를 추가했다. `Dockerfile.web`은 UI 파일을 포함하고 3770에서 ASGI를 실행하도록 변경했으며, public compose/deploy는 더 이상 `ANVIL_API_UPSTREAM`을 설정하지 않는다. 원격 배포는 수행하지 않았다.
 
 남은 작업은 `rollback-public-preview.sh` 및 `verify-public-preview.sh`의 unified 명칭/검증 계약 정리, 전체 API/SSE/Telegram 수직 테스트, 공개 운영 배포와 internal 컨테이너 제거 순서 검증이다. 이 단계가 끝나기 전에는 `anvil-internal-web-1`을 중지·삭제하지 않는다.
+
+## R2 구현
+
+- FastAPI `StaticFiles` root mount는 API route 등록 이후에 장착되며, `/health/live` 같은 API 경로를 가리지 않는 회귀 테스트를 추가했다.
+- Python ASGI 이미지에 맞춰 public compose healthcheck를 `/opt/venv/bin/python` 표준 urllib 호출로 변경했다.
+- 신규 migration 없이 기존 `run_events` 테이블을 읽는 `PostgresEventStream`을 추가했다. cursor 없음은 sequence 0부터, `Last-Event-ID`는 동일 run의 엄격한 후속 sequence만 반환하며 unknown/cross-run cursor는 `SSE_CURSOR_INVALID` 409를 반환한다. JSON payload는 mapping으로 보존한다.
+- `create_runtime_app`은 별도 주입이 없을 때 Postgres adapter를 기본으로 사용한다. 실시간 push/운영 배포/DB 변경은 범위 밖이다.
+- 검증: focused API/SSE/Runtime tests 11 passed; compileall, deploy script `bash -n`, `git diff --check` PASS.

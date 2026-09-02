@@ -6,6 +6,8 @@ from dataclasses import dataclass
 import json
 from typing import Any, Iterable, Mapping, Protocol
 
+from sqlalchemy import text
+
 from .common import ApiContractError
 
 
@@ -56,6 +58,46 @@ class InMemoryEventJournal:
 class EmptyEventStream:
     def events_after(self, run_id: str, last_event_id: str | None) -> tuple[StreamEvent, ...]:
         raise ApiContractError("CAPABILITY_NOT_AVAILABLE", "This API capability is not available.", 501)
+
+
+class PostgresEventStream:
+    """Read append-only run events from PostgreSQL without creating a new schema."""
+
+    def __init__(self, session_factory: Any) -> None:
+        if not callable(session_factory):
+            raise TypeError("session_factory must be callable")
+        self._session_factory = session_factory
+
+    def events_after(self, run_id: str, last_event_id: str | None) -> tuple[StreamEvent, ...]:
+        with self._session_factory() as session:
+            if last_event_id:
+                cursor = session.execute(
+                    text("SELECT event_id, run_id, sequence_no FROM run_events WHERE event_id = :event_id"),
+                    {"event_id": last_event_id},
+                ).mappings().one_or_none()
+                if cursor is None or cursor["run_id"] != run_id:
+                    raise ApiContractError("SSE_CURSOR_INVALID", "The event resume cursor is invalid.", 409)
+                minimum_sequence = int(cursor["sequence_no"])
+            else:
+                minimum_sequence = 0
+            rows = session.execute(
+                text(
+                    "SELECT event_id, run_id, sequence_no, event_type, payload "
+                    "FROM run_events WHERE run_id = :run_id AND sequence_no > :minimum_sequence "
+                    "ORDER BY sequence_no ASC"
+                ),
+                {"run_id": run_id, "minimum_sequence": minimum_sequence},
+            ).mappings().all()
+        return tuple(
+            StreamEvent(
+                event_id=str(row["event_id"]),
+                run_id=str(row["run_id"]),
+                sequence_no=int(row["sequence_no"]),
+                event_type=str(row["event_type"]),
+                payload=dict(row["payload"]),
+            )
+            for row in rows
+        )
 
 
 def encode_sse(events: Iterable[StreamEvent]) -> bytes:

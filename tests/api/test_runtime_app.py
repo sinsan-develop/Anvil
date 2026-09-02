@@ -4,6 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from packages.api.runtime import RuntimeConfigurationError, create_runtime_app
+from packages.api.sse import PostgresEventStream
 
 
 def _env() -> dict[str, str]:
@@ -38,6 +39,7 @@ def test_runtime_app_injects_durable_session_store_and_preserves_provider_metada
     assert all(not entry.credential_key.endswith("redacted-test-presence") for entry in app.state.provider_catalog)
     assert app.state.runtime_database_configured is True
     assert any(route.path == "/integrations/telegram/webhook" for route in app.routes)
+    assert isinstance(app.state.event_stream, PostgresEventStream)
 
 
 def test_runtime_app_rejects_non_callable_session_factory() -> None:

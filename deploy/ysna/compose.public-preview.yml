@@ -27,9 +27,9 @@ services:
     healthcheck:
       test:
         - CMD
-        - node
-        - -e
-        - "fetch('http://127.0.0.1:3770/health/live').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3770/health/live', timeout=2)"
       interval: 15s
       timeout: 5s
       retries: 4

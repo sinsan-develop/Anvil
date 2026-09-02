@@ -68,3 +68,12 @@
 - 운영 영향: public compose가 Python ASGI 단일 `anvil-web:3770`을 실행하며 runtime env/DB/Telegram 참조가 필요하다. 원격/NPM/DB 변경은 하지 않았다.
 - internal 제거 조건: public 3770에서 API, health/readiness, Telegram signed ingress, provider capability, authenticated SSE 및 Last-Event-ID를 실제 검증하고 rollback 가능성을 확인한 뒤에만 `anvil-internal-web-1:4173`을 중지·삭제한다.
 - 승인 대기: exact commit에 대한 신규 human DeployApproval binding과 표준 unified deploy 실행 승인이 필요하다.
+
+## C-21 Unified Runtime R2 — 2026-09-02
+
+- 담당: `unify_public_runtime` subagent, 단일 writer.
+- 구현: FastAPI root StaticFiles mount 순서를 API route 뒤로 고정하고 동일 listener `/` + `/health/live` 회귀 테스트 추가. Python ASGI 이미지에 맞춰 public compose healthcheck를 stdlib urllib로 변경.
+- 구현: 기존 `run_events` schema를 읽는 `PostgresEventStream(session_factory)` 추가. cursor 없음 sequence 0, 동일 run strict successor, unknown/cross-run cursor `SSE_CURSOR_INVALID` 409, JSON payload mapping. `create_runtime_app`에 기본 주입.
+- 검증: focused tests 11 passed; compileall PASS; `bash -n deploy/ysna/deploy-public-preview.sh` PASS; `git diff --check` PASS.
+- 범위 밖: real-time push, Telegram 추가 POST, remote/NPM/DB mutation, migration 생성 없음.
+- 잔여: full suite, rollback/verify script unified 계약 검토, 실제 배포·운영 SSE 검증 후에만 internal 4173 제거.
