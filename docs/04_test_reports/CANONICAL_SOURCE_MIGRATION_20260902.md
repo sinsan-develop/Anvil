@@ -95,8 +95,9 @@ Desktop local head 32개와 tag 8개(합계 40개)를 `git fetch --no-tags <Desk
 
 ## 이관 후 실제 상태 기록
 
-- push 전 원격 snapshot: `origin/main`과 `refs/heads/codex/canonical-source-migration`은 모두 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이었다. 이 시점의 migration branch b9f0f44 push는 성공했다.
-- 현재 원격 재확인: `origin/main`은 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`, `refs/heads/codex/canonical-source-migration`은 `628634c5a1101239a12bb69d000bd4dc46b89cae`이다. 원격 main은 문서 commit으로 fast-forward하지 않았다.
+- historical push snapshot: `origin/main`과 `refs/heads/codex/canonical-source-migration`이 모두 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이던 시점의 migration branch b9f0f44 push는 성공했다.
+- `observed_before_this_document_commit`: `origin/main`은 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`, `refs/heads/codex/canonical-source-migration`은 `45bb63b519195e52ffb70ef54028ff4527f5640c`이었다.
+- authoritative current migration ref는 문서에 내장하지 않으며 `git rev-parse origin/codex/canonical-source-migration`의 실행 결과다. 문서 commit push 뒤 이 값은 변할 수 있다. 원격 main은 문서 commit으로 fast-forward하지 않았으므로 `origin/main` `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`은 현 main 기준으로 유지한다.
 - 이후 작업 기준선은 `origin/main` `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이다.
 - D local `main`은 `c49b7534012d97ad130483c1ff255c0db1e99df4`로 stale 상태다. `git branch -f main`은 `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\ysna-internal-deploy`가 `main`을 사용하는 stale D worktree registry 때문에 거부됐다.
 - Desktop 삭제와 Git metadata 강제 제거는 수행하지 않았다. D root/desktop의 보호 dirty·untracked도 변경하지 않았다.
