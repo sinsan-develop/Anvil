@@ -1,6 +1,6 @@
 # C-21 운영 증거 기반 current projection reconciliation (2026-09-03)
 
-- **판정:** `WAITING_APPROVAL / PARTIAL / TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT` (seq383 `PACKAGE_WAITING_APPROVAL`, seq385 final repository projection; `updated_at=2026-09-03T01:12:25+09:00`).
+- **판정:** `WAITING_APPROVAL / PARTIAL / TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT` (seq383 `PACKAGE_WAITING_APPROVAL`, seq388 Main Agent takeover final repository projection; `updated_at=2026-09-03T01:58:00+09:00`).
 - **승인 경계:** lifecycle API runtime 활성화, production DB의 canonical C-21 test chain 생성, test-session write scope·allowlist, deployment 또는 외부 side effect에 대해서만 명시적 승인이 필요하다. 독립 read-only C-21 판단과 일반적인 C-01 시작 계획은 이 승인 대상이 아니다.
 - **보존:** Phase B Gate의 sequence 375 `ACCEPTED` 결정과 B-01~B-12 historical 기록을 재개방하거나 덮어쓰지 않는다.
 - **확인된 운영 사실:** migration `0012_run_authority` 적용·유지, `anvil-web:3770` healthy, NPM custom Telegram override backup 후 제거 및 `nginx -t`/graceful reload 성공, internal runtime 보존.
@@ -426,19 +426,19 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 385,
+  "event_sequence": 388,
   "status": "WAITING_APPROVAL",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_repository_projection_reconciled_r3_stage2",
-  "updated_at": "2026-09-03T01:12:25+09:00",
+  "last_event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3",
+  "updated_at": "2026-09-03T01:58:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
   "next_safe_action": "Rotate affected credentials and preserve existing C-21 evidence without external re-call. Obtain explicit approval only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
   "dir_status": "CLEARED",
-  "repository_head": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
+  "repository_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
+  "repository_validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
     "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",

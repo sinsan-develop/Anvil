@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 385,
+  "last_sequence": 388,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -14023,7 +14023,108 @@
         "historical_phase_b_gate_status": "ACCEPTED",
         "sequence_role": "R3 final post-authority-normalization evidence-only repository snapshot"
       }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_main_takeover",
+      "sequence": 386,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:47:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:47:00+09:00",
+        "reason": "Main Agent takeover reconciliation after three repeated append-only review failures: the committed seq380 payload was restored byte-equivalent to 8a1815f, the approval-reporting reason was limited to lifecycle runtime and production side effects, and the WorkPlan non-semantic diff description was corrected to one status-wording line replacement.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "Main Agent takeover final evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage2",
+      "sequence": 387,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:53:15+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "52fa9f56c94a950056385fdb844b23e08e40f820",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:53:15+09:00",
+        "reason": "Main Agent takeover stage2 repository reconciliation. It supersedes only the current repository projection metadata from seq386 without altering seq386, and includes the approved restoration commit, takeover report, approval-boundary correction, and WorkPlan diff-description correction in the exact descendant path set.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "52fa9f56c94a950056385fdb844b23e08e40f820",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C21_PROGRESS_RECONCILE_TAKEOVER_20260903.md",
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/non-semantic-revision-bindings.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "Main Agent takeover stage2 final evidence-only repository snapshot"
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3",
+      "sequence": 388,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T01:58:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T01:58:00+09:00",
+        "reason": "Final post-commit evidence-only projection. The approved sequence restoration, takeover report, reporting-boundary correction, and WorkPlan diff-description correction are contained in validated base 426a16c; this descendant contains only the five current progress evidence bindings.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "Main Agent takeover stage3 post-commit evidence-only repository snapshot"
+      }
     }
   ],
-  "last_event_id": "evt_c21_repository_projection_reconciled_r3_stage2"
+  "last_event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3"
 }

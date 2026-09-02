@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
-  "event_sequence": 385,
-  "updated_at": "2026-09-03T01:12:25+09:00",
-  "last_event_id": "evt_c21_repository_projection_reconciled_r3_stage2",
+  "event_sequence": 388,
+  "updated_at": "2026-09-03T01:58:00+09:00",
+  "last_event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "904579DE40E5095C612DAC4F43652E5BDAFE922ECB5DD4AA4C3C3414D663C5F4"
+      "sha256": "75603300FCDB018EE3267FD9A954B53690E3DE877C7EF9FDE543A47C550B13A6"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1165,7 +1165,7 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "a302d0cdc6e4743bc6594f9c134f01e21b39030e",
+    "validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "codex/c21-progress-reconcile",
     "upstream": "origin/main",
@@ -1178,9 +1178,9 @@
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
     ],
-    "observed_at": "2026-09-03T01:12:25+09:00",
+    "observed_at": "2026-09-03T01:58:00+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: C-21 operational reconciliation evidence-only descendant; no external re-call",
-    "local_head": "a302d0cdc6e4743bc6594f9c134f01e21b39030e"
+    "local_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1338,7 +1338,7 @@
     },
     "non_semantic_revision_bindings": {
       "path": "docs/progress/non-semantic-revision-bindings.json",
-      "sha256": "203198F540EAFE07598CDB25616D71032408AA7378F3D1799AF0441C32031CC4"
+      "sha256": "D7007FCFE0AF9215BE9071A85526ED2E64AC25181916A017845A55231321E994"
     },
     "dir_checkpoints": {
       "path": "docs/progress/dir-checkpoints.json",
@@ -1350,7 +1350,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "904579DE40E5095C612DAC4F43652E5BDAFE922ECB5DD4AA4C3C3414D663C5F4"
+      "sha256": "75603300FCDB018EE3267FD9A954B53690E3DE877C7EF9FDE543A47C550B13A6"
     }
   },
   "next_work_package": {
@@ -1410,5 +1410,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "34A7CDA4F9905F4066FD0FF19A3AC00CEA44D816ACBADE4518E07548927F650A"
+  "snapshot_hash": "EF69D3A726321819883BA8908D18637932CB41B7743EE737A7BFC42DE64D2C03"
 }
