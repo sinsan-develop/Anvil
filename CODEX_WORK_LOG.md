@@ -27,6 +27,12 @@
 - 배포 전 상태: `ReleaseManifest`는 새 hash에 대해 `APPROVAL_PENDING`; 기존 `9fd7c46` 승인 binding은 hash 변경으로 승계하지 않는다.
 - 다음 조치: 새 exact commit 배포 승인 후 표준 deploy 및 session→authenticated SSE→Last-Event-ID 재검증.
 
+## 운영 구조 재정렬 — 2026-09-02
+
+- 판정: 현재 `anvil-web:3770 → anvil-internal-web-1:4173` 포워딩은 단일 운영 런타임 요구를 충족하지 않는 우회 구조다.
+- 조치: 이를 완료로 승격하지 않고, `anvil-web:3770`이 API·health·Telegram·SSE를 직접 처리하고 `4173` 의존성을 제거하는 정식 통합 작업을 시작했다.
+- 미충족: 단일 런타임 구현·검증·internal 컨테이너 제거 전까지 C-21 운영 완료 아님.
+
 ## C-21 공개 인증 프록시 — 2026-09-02
 
 - 담당: `fix_public_auth_proxy` subagent.
