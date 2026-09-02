@@ -221,3 +221,15 @@
 - 조치: rollback 시작 시 현재 target HEAD의 versioned `Dockerfile.web`을 runtime temp로 추출하고 SHA-256 exact 검증한다. 이후 previous source를 checkout하여 보존 Dockerfile로 `docker build --build-arg ANVIL_RELEASE_COMMIT=<previous> --tag anvil-web:<previous12>`하고 compose up은 `--no-build`로 실행한다. OCI revision·health 성공 후에만 current alias를 갱신하며 temp Dockerfile은 trap으로 정리한다.
 - GREEN: focused `1 passed in 1.21s`; pipeline `9 passed in 16.13s`; byte-exact Dockerfile source assertion 포함 최종 전체 `tests/deploy` fresh `35 passed in 20.27s`; bootstrap/deploy/rollback/NPM removal 4개 `bash -n` PASS. 제품 수정 시도 1회, blocker 없음.
 - 외부/잔여: 운영 변경·이미지 build·배포는 실행하지 않았다. C:\tmp pytest fixture만 생성했고 종료 시 정리한다. 커밋 없음.
+
+## C-21 exact release binding `5b0f338` — 2026-09-02
+
+- 담당: `c21_release_binding_5b0f338` 단일 문서 writer.
+- 작업 브랜치: `codex/c21-release-binding-5b0f338`; 시작 HEAD `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`, 시작 상태 clean.
+- 배포 source: exact commit `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`, release tag 이름 `anvil-ui-preview-20260902.2`.
+- 승인 계보: `docs/approvals/APPROVAL-20260902-C21-DEPLOY-001.md`에 `APPROVAL-20260902-C21-DEPLOY-007`을 append했다. canonical Run/Event migration 적용, NPM Telegram internal override backup/remove, `nginx -t`/graceful reload 및 전체 수직 검증 성공 후 조건부 internal 제거에만 결박했다.
+- Manifest: `deploy/ysna/ReleaseManifest.C21.DRAFT.json`의 source commit/tag, migration head `0012_run_authority`, listener `anvil-web:3770`, authority·script/report hash를 갱신했다. 이 후속 manifest 문서 commit과 배포 source commit을 명시적으로 분리했다.
+- 증거 경계: Provider non-billing probe, Telegram signed POST, authenticated SSE, `Last-Event-ID`, 운영 DB backup/migration, runtime/NPM 변경, internal 제거는 모두 `NOT_EXECUTED`로 유지했다.
+- 변경 범위: ReleaseManifest draft, deploy approval 기록, 이 작업현황 파일만 수정했다. 운영 코드 수정 없음.
+- 검증: JSON parse, exact commit/hash 대조, 승인 문구·binding 확인, release tag 미생성 확인, `git diff --check`가 모두 PASS다. scoped diff는 문서 3개만 포함한다.
+- 외부 조치: tag 생성/push, commit, 운영 변경, secret 접근은 수행하지 않는다.
