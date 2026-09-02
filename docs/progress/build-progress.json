@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
-  "event_sequence": 388,
-  "updated_at": "2026-09-03T01:58:00+09:00",
-  "last_event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3",
+  "event_sequence": 389,
+  "updated_at": "2026-09-03T02:07:35+09:00",
+  "last_event_id": "evt_c21_repository_projection_reconciled_main_integration",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "75603300FCDB018EE3267FD9A954B53690E3DE877C7EF9FDE543A47C550B13A6"
+      "sha256": "F22E5E135753E6096B62B47F9702A1F6ADBA6117E9FCF981BF6B1DFE666DBC70"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1165,11 +1165,11 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "426a16cd21c6dbd06845de1aec677e0d6d362e8c",
+    "validated_base_commit": "376da2649fbecfb524238a4979629cbac89f188f",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-    "branch": "codex/c21-progress-reconcile",
+    "branch": "main",
     "upstream": "origin/main",
-    "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+    "remote_head": "376da2649fbecfb524238a4979629cbac89f188f",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
       "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
@@ -1178,9 +1178,9 @@
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
     ],
-    "observed_at": "2026-09-03T01:58:00+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: C-21 operational reconciliation evidence-only descendant; no external re-call",
-    "local_head": "426a16cd21c6dbd06845de1aec677e0d6d362e8c"
+    "observed_at": "2026-09-03T02:07:35+09:00",
+    "worktree_status": "PUSH_PENDING_MAIN: post-integration C-21 evidence-only main projection; no external re-call",
+    "local_head": "376da2649fbecfb524238a4979629cbac89f188f"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1350,7 +1350,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "75603300FCDB018EE3267FD9A954B53690E3DE877C7EF9FDE543A47C550B13A6"
+      "sha256": "F22E5E135753E6096B62B47F9702A1F6ADBA6117E9FCF981BF6B1DFE666DBC70"
     }
   },
   "next_work_package": {
@@ -1410,5 +1410,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "EF69D3A726321819883BA8908D18637932CB41B7743EE737A7BFC42DE64D2C03"
+  "snapshot_hash": "0832706F1D1036D3F0F47DAD05175EA336939A29E1721B48C23072F025498043"
 }

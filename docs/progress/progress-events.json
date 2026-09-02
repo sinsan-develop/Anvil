@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 388,
+  "last_sequence": 389,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -14124,7 +14124,40 @@
         "historical_phase_b_gate_status": "ACCEPTED",
         "sequence_role": "Main Agent takeover stage3 post-commit evidence-only repository snapshot"
       }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_main_integration",
+      "sequence": 389,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T02:07:35+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "main",
+        "local_head": "376da2649fbecfb524238a4979629cbac89f188f",
+        "remote_head": "376da2649fbecfb524238a4979629cbac89f188f",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T02:07:35+09:00",
+        "reason": "Post-integration main projection after the reviewed C-21 reconciliation merge was pushed and main equaled origin/main at integration commit 376da26.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "376da2649fbecfb524238a4979629cbac89f188f",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "post-integration main repository snapshot"
+      }
     }
   ],
-  "last_event_id": "evt_c21_repository_projection_reconciled_main_takeover_stage3"
+  "last_event_id": "evt_c21_repository_projection_reconciled_main_integration"
 }

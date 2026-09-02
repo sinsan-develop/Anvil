@@ -2,20 +2,20 @@
   "schema_version": "1.0.0",
   "digest_id": "C21-OPERATIONAL-RECONCILIATION-PROGRESS-HANDOFF-DIGEST-R3",
   "package_id": "C-21",
-  "event_sequence": 388,
+  "event_sequence": 389,
   "algorithm": "SHA-256",
   "progress": {
     "path": "docs/progress/build-progress.json",
-    "bytes": 57260,
-    "file_sha256": "BE551CB582BC545303FC38A1C1BF362A15AF300F977FCBCF14EECE30E0752AE5",
-    "canonical_json_sha256": "CCF8C4453336E1E9C8BF27958381461BA11615F710DED3AC2539E9FF80434C55"
+    "bytes": 57227,
+    "file_sha256": "A90103B5C650289FB0E1C6691F0122CA18E928B4EBD8A5F86451966702F737CA",
+    "canonical_json_sha256": "3B310D7BDD6A94049ED653F044B7F4A738C90405793EDB87A6B76E9073CB7C20"
   },
   "handoff": {
     "path": "docs/progress/BUILD_HANDOFF.md",
-    "bytes": 124734,
-    "file_sha256": "C66D393FD9DB72847E4EE455CF99F23A7CC76ED48D3453F0F64BB1179130E75C",
-    "machine_summary_canonical_sha256": "A1CFBD0B140FFB24B4024A1CC30F547A8F0504492BECEA5B18FC9281118E34FF"
+    "bytes": 124726,
+    "file_sha256": "4D09524A58C5546B53B5F9EBC3F77D61403E943E0BB6AFCD5FC7DFD66EA8FAB4",
+    "machine_summary_canonical_sha256": "84E8318DF137012E95FDE87082BF6DD82A05F1BAC774BBA86AA16FB1D6770590"
   },
-  "created_at": "2026-09-03T01:58:01+09:00",
+  "created_at": "2026-09-03T02:07:36+09:00",
   "scope": "C-21 WAITING_APPROVAL operational-evidence-based current projection reconciliation: immutable Phase B Gate ACCEPTED is preserved; approval is limited to lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. Independent read-only C-21 judgment and a general planned C-01 start are not approval subjects; C-01 remains blocked."
 }

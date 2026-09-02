@@ -7,12 +7,12 @@
     {
       "path": "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
       "bytes": 1232,
-      "sha256": "6751DC15CE62BB4477326D231AF52E866195DFB4404AC4B1683BE1F484179A49"
+      "sha256": "4ED2DC57A051BEDA4DA8451F15F1ED98E80B8497DE29FA5892BA5BEFEE45A8A6"
     }
   ],
   "self_reference": false,
-  "created_at": "2026-09-03T01:58:02+09:00",
-  "scope": "Main-owned C-21 operational-evidence-based current projection reconciliation. Existing immutable seq375 MAIN_GATE_ACCEPTED is preserved without payload alteration; seq383 records PACKAGE_WAITING_APPROVAL with the exact approved-action boundary and seq388 records the approved Main Agent takeover final repository projection after restoring seq380 byte-equivalent to 8a1815f.",
+  "created_at": "2026-09-03T02:07:37+09:00",
+  "scope": "Main-owned C-21 operational-evidence-based current projection reconciliation. Existing immutable seq375 MAIN_GATE_ACCEPTED is preserved without payload alteration; seq383 records PACKAGE_WAITING_APPROVAL with the exact approved-action boundary and seq389 records the post-integration main repository projection after main equaled origin/main at 376da26.",
   "evidence_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
   "safety_boundary": "Credential rotation required; no Provider, Telegram, or SSE external re-call under this reconciliation."
 }
