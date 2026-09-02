@@ -1,4 +1,17 @@
-# Phase B Gate MAIN_GATE_ACCEPTED — sequence 375
+# C-21 운영 정합화 — current projection (2026-09-02)
+
+- **판정:** `PARTIAL / TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT`.
+- **비의미 정정:** `C21-PROGRESS-RECONCILE-20260902-R1`은 기능 범위·요구사항·중요 위험을 바꾸지 않는 `MAIN_RECONFIRMED_NON_SEMANTIC` projection correction이다. 새 progress snapshot hash는 `3163B88DB0E3356C640B5CF81A9ED64C840449B4849AEC04813BE2D1DA4DFD3F`이며, 이전 historical snapshot hash `D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092`를 참조한다.
+- **보존:** Phase B Gate의 sequence 375 `ACCEPTED` 결정과 B-01~B-12 historical 기록을 재개방하거나 덮어쓰지 않는다.
+- **확인된 운영 사실:** migration `0012_run_authority` 적용·유지, `anvil-web:3770` healthy, NPM custom Telegram override backup 후 제거 및 `nginx -t`/graceful reload 성공, internal runtime 보존.
+- **Provider:** 5 healthy; UPSTAGE `401`, GEMINI `400`, OPENAI `401`, OLLAMA timeout. credential rotation이 필요하며 이 정합화 범위에서 Provider 재호출은 금지한다.
+- **Telegram:** 승인된 signed POST 1회가 HTTP `200 ACCEPTED`였고 NPM/application/DB correlation이 있다. pre-count capture 누락으로 strict dynamic delta는 `UNKNOWN`; 재전송하지 않는다.
+- **SSE:** authenticated SSE HTTP `200`이나 event는 0건이다. event capture가 없으므로 `Last-Event-ID` 재개 검증은 실행하지 않았다.
+- **C-01 경계:** historical Gate `ACCEPTED`와 별개로, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`이며 C-21 독립 판정 전 WorkInstruction 발행·시작을 금지한다.
+- **근거:** `docs/04_test_reports/C-21_PRODUCTION_DEPLOY_INCIDENT_20260902.md` (`35C6F1EB5C9A7AFF68AE60443F37A86478B15F5FAF9446B4DE435DEC120E81F1`), `docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md` (`069ABCFF073460479B7E782C2FD3C1DC19F0BD7F21EB16E3DC77B1C6CD5D55B1`), `docs/04_test_reports/C-21_RECONCILIATION_2026-09-01.md` (`0102959496AE41D3F24636AED90CF65543124ED28D3A35405308E21CD2B4217C`).
+- **다음 안전 행동:** credential rotation 후 외부 재호출 없이 기존 evidence를 독립 검토하고 C-21 판정을 확정한다.
+
+# Historical record — Phase B Gate MAIN_GATE_ACCEPTED (sequence 375)
 
 - 독립 Tester report SHA `7F98EBD937EC8CF027A307C1D931A5E3CE1E73474E916168CA284AB15CDE8FDE`의 `READY_FOR_MAIN_GATE_DECISION / spec PASS / quality PASS_WITH_EXPECTED_IN_PROGRESS_DIRTY`를 검토해 seq375 `MAIN_GATE_ACCEPTED`로 Phase B Gate를 최종 `ACCEPTED`했다.
 - EXACT44 selector: 51 slots / 50 defined / 44 direct / 6 deferred / 1 undefined. deferred 6건은 각 후속 Package 책임, undefined `AV-STAT-029`는 승격하지 않는다.
@@ -405,13 +418,13 @@
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 374,
-  "status": "TEST_REVIEW",
-  "current_work_package": "PHASE_B_GATE",
-  "last_event_id": "evt_phase_b_gate_package_completed_test_review",
+  "event_sequence": 375,
+  "status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+  "current_work_package": "C-21",
+  "last_event_id": "evt_phase_b_gate_package_accepted",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
   "valid_failure_count": 0,
-  "next_safe_action": "Main Gate decision after frozen-diff, integrity, and commit readiness verification; C-01 remains BLOCKED pending acceptance",
+  "next_safe_action": "Rotate affected credentials, preserve the existing C-21 evidence without external re-call, then obtain an independent C-21 judgment. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
   "dir_status": "CLEARED",
   "repository_head": "c49b7534012d97ad130483c1ff255c0db1e99df4",
   "repository_upstream": "origin/main",

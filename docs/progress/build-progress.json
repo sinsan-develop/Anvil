@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-phase-b-gate-accepted",
+  "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
   "event_sequence": 375,
-  "updated_at": "2026-08-23T00:00:00+09:00",
+  "updated_at": "2026-09-02T00:00:00+09:00",
   "last_event_id": "evt_phase_b_gate_package_accepted",
   "plan_version": "1.6",
   "work_plan_hash": "E6ECCB6AD15F81E97A6D2AA663A0C3621BC7B8BB735666F60E2C424CE8763E0D",
   "design_baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-  "current_phase": "B",
-  "current_work_package": "PHASE_B_GATE",
-  "status": "ACCEPTED",
+  "current_phase": "C",
+  "current_work_package": "C-21",
+  "status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -1047,7 +1047,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Main Gate decision after frozen-diff, integrity, and commit readiness verification; C-01 remains BLOCKED pending acceptance",
+  "next_safe_action": "Rotate affected credentials, preserve the existing C-21 evidence without external re-call, then obtain an independent C-21 judgment. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1365,24 +1365,62 @@
   },
   "next_work_package": {
     "package_id": "C-01",
-    "status": "READY_FOR_WORK_INSTRUCTION",
-    "condition": "Phase B Gate ACCEPTED; C-01 WorkInstruction 발행 전까지 시작하지 않음",
+    "status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    "condition": "historical Phase B Gate ACCEPTED는 보존한다. C-21 운영 판정이 독립적으로 확정되기 전까지 C-01 WorkInstruction을 발행하거나 시작하지 않음",
     "does_not_unblock": [
       "C-21"
     ]
   },
   "next_successor_work_package": {
     "package_id": "C-21",
-    "status": "READY_FOR_WORK_INSTRUCTION",
-    "purpose": "successor operational validation",
+    "status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+    "purpose": "current operational validation reconciliation",
     "requires": [
-      "C-21 WorkInstruction",
-      "independent validation scope"
+      "credential rotation",
+      "independent C-21 judgment",
+      "authenticated SSE event capture before Last-Event-ID replay"
     ],
     "does_not_unblock": [
       "C-01",
       "Phase B Gate acceptance"
     ]
   },
-  "snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
+  "historical_phase_b_gate": {
+    "event_sequence": 375,
+    "event_id": "evt_phase_b_gate_package_accepted",
+    "status": "ACCEPTED",
+    "preservation": "historical record preserved; this operational reconciliation does not reopen, overwrite, or replace the Phase B Gate decision"
+  },
+  "operational_reconciliation": {
+    "revision_id": "C21-PROGRESS-RECONCILE-20260902-R1",
+    "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "semantic_change": false,
+    "rationale": "C-21 operational evidence was recorded after the historical Phase B Gate projection. This correction changes only the current operational projection; it does not change functional scope, requirements, risk acceptance, Gate history, or the C-01 start boundary.",
+    "current_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+    "confirmed_evidence": {
+      "migration": "0012_run_authority applied and retained",
+      "unified_runtime": "anvil-web:3770 healthy; NPM override removed after backup, nginx -t, and graceful reload",
+      "telegram": "one approved signed POST returned HTTP 200 ACCEPTED with application/NPM/DB correlation; strict pre-count delta is UNKNOWN because the pre-count capture is missing",
+      "provider": "5 healthy; UPSTAGE HTTP 401; GEMINI HTTP 400; OPENAI HTTP 401; OLLAMA timeout",
+      "sse": "authenticated SSE HTTP 200 with zero events; Last-Event-ID replay not executed because no event was captured",
+      "internal_runtime": "anvil-internal-web-1 retained because vertical validation is incomplete"
+    },
+    "safety_boundary": "credential rotation is required; do not re-call Provider, Telegram, or SSE external probes under this reconciliation",
+    "source_reports": [
+      {
+        "path": "docs/04_test_reports/C-21_PRODUCTION_DEPLOY_INCIDENT_20260902.md",
+        "sha256": "35C6F1EB5C9A7AFF68AE60443F37A86478B15F5FAF9446B4DE435DEC120E81F1"
+      },
+      {
+        "path": "docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md",
+        "sha256": "069ABCFF073460479B7E782C2FD3C1DC19F0BD7F21EB16E3DC77B1C6CD5D55B1"
+      },
+      {
+        "path": "docs/04_test_reports/C-21_RECONCILIATION_2026-09-01.md",
+        "sha256": "0102959496AE41D3F24636AED90CF65543124ED28D3A35405308E21CD2B4217C"
+      }
+    ],
+    "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
+  },
+  "snapshot_hash": "3163B88DB0E3356C640B5CF81A9ED64C840449B4849AEC04813BE2D1DA4DFD3F"
 }
