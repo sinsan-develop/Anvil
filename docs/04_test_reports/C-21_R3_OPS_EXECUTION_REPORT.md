@@ -42,6 +42,11 @@ timestamp는 모두 `2026-09-02T11:39:09Z`이며 fresh POST 시각과 일치한�
 - DB correlation: post-count는 updates/audits/rate_limits 각각 1, latest update/audit timestamp는 실행 시각과 일치
 - path correlation: NPM과 application 양쪽에서 fresh POST 도달 상관관계 확인
 - 한계: pre-count가 `UNKNOWN`이므로 strict dynamic delta는 미확정
+- evidence: `docs/evidence/runtime/C-21_R3_TELEGRAM_REDACTED_RECEIPT.json`에 sanitized
+  self-report와 NPM/application/DB correlation만 기록하고 SHA-256으로 manifest에 결박
+- 실행 wrapper 한계: local numeric exit code는 보존되지 않았고, remote script는 POST 성공
+  뒤 line 72 `unexpected EOF`로 종료됐다. 따라서 POST acceptance는 server-side correlation으로
+  지지하지만 전체 검증 스크립트 성공은 주장하지 않는다.
 - 결론: current 5b0 공개 경로에서 `ACCEPTED`는 확인했으나 승인된 1회를 모두 사용했으므로 추가 POST 금지
 
 ### Historical-unbound 관측
@@ -88,7 +93,14 @@ fresh Telegram POST는 정확히 1회이며 재전송하지 않았다. 현재 �
 
 ## 설정 변경 및 rollback
 
-이번 최신 R3 실행에서는 소스·컨테이너·NPM 설정 변경이 없었다. 기존 운영 `.env`의 공개 Host 설정은 실행 컨테이너에서 존재 여부만 확인했다. 이전 승인 조치로 생성된 `.env` 백업은 원격에 보존되어 있으며, 환경 변경이 필요할 경우 해당 백업으로 복원한 뒤 internal web만 재기동해야 한다. 본 보고서에는 경로·파일명 외 secret 값은 기록하지 않는다.
+이번 fresh Telegram 증거 수집에서는 소스·컨테이너·NPM 설정을 추가 변경하지 않았다.
+현재 운영 runtime은 unified `anvil-web:3770`이며 server-only 설정은
+`~/deploy/anvil/runtime/anvil.env`를 사용한다. rollback은 target release에서 exact 보존한
+versioned Dockerfile과 `compose.public-preview.yml`로 previous source image를 build·기동하고,
+container health, proxy-network/NPM DNS, `nginx -t`, graceful reload, bounded public live probe와
+container log correlation을 모두 통과한 뒤에만 current alias를 변경해야 한다. legacy
+internal web 재기동이나 preview `ANVIL_API_UPSTREAM` 복원은 rollback 절차가 아니다.
+본 보고서에는 secret 값, identity, payload, update ID를 기록하지 않는다.
 
 ## 다음 조치
 

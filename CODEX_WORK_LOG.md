@@ -249,3 +249,16 @@
 - Telegram evidence binding 정정: 기존 400 파일 timestamp `2026-09-01T22:36:05Z`는 5b0 배포 `2026-09-02T11:12Z` 이전이므로 current 증거에서 제외하고 `HISTORICAL_UNBOUND`로 격리했다. full current revision `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`/healthy를 fresh 실행 시 확인했다.
 - 도구 오류: fixture cleanup 출력용 `Test-Path` parameter typo 1회. 대상 제거는 먼저 수행됐고 후속 read-only 조회로 `C:\tmp\anvil-c21-operational-*` 잔여 0건 확인. 제품 실패 횟수에는 미포함.
 - 외부 변경 경계: 이 코드 수정 작업에서는 운영/SSH/tag/commit/push/DB/NPM/Telegram/Provider 변경을 수행하지 않았다. 상세 `docs/04_test_reports/C-21_PRODUCTION_DEPLOY_INCIDENT_20260902.md`.
+
+## C-21 final review rollback/public evidence 보완 — 2026-09-02
+
+- 기준선: branch `codex/c21-deploy-incident-fix`, 시작 HEAD `71d0f6321d9bfba9a721df232d46134b11799bf4`, clean. 담당 `developer-primary` 단일 writer.
+- TDD RED: rollback의 stale NPM DNS, persistent public probe failure, persistent log correlation failure 3건에서 alias가 잘못 갱신되고, 성공 순서에 DNS/nginx/public/log 검증이 없는 합계 `4 failed` 재현.
+- 구현: previous container healthy 뒤 proxy-network IP와 NPM `getent` exact 비교 → `nginx -t` → graceful reload → bounded public rollback live probe → bounded container log correlation을 검증한 후에만 current alias 갱신. 각 실패는 nonzero이며 alias 유지.
+- bounded 계약: public probe connect 2초/max 3초/최대 5회/간격 2초, log correlation 최대 10회/간격 1초. focused GREEN `4 passed in 10.28s`.
+- R3 rollback 문서를 unified `anvil-web:3770`/`runtime/anvil.env`/versioned Dockerfile+compose 절차로 정정. legacy internal/preview upstream 복원은 rollback이 아님을 명시.
+- Telegram evidence: raw command/response 및 wrapper numeric exit가 보존되지 않아 sanitized correlated self-report receipt만 생성. server-side NPM/application/DB correlation은 HTTP 200 `ACCEPTED`를 지지하지만 remote line 72 `unexpected EOF` 때문에 전체 검증 script 성공은 주장하지 않는다.
+- redaction: secret, payload, identity, update_id, Authorization, signature 원문 미기록. receipt SHA-256을 R3 manifest에 결박했다.
+- 최종 검증: deploy/rollback log fixture를 분리한 회귀 `1 passed in 6.48s`; 전체 `tests/deploy` fresh `44 passed in 58.80s`; shell 4개 `bash -n` PASS; receipt/manifest JSON parse 및 SHA-256 binding PASS.
+- harness 오류 횟수: 동일 test harness 원인 2회. incident 뒤 실행되는 rollback log를 기존 deploy-only persistent flag/count가 함께 집계한 문제로, revision별 log call을 분리해 해결했다. 제품 실패 횟수에는 미포함, 3회 인수 조건 미도달.
+- 외부 변경: 운영/SSH/DB/NPM/Telegram/Provider/tag/commit/push 모두 미수행.

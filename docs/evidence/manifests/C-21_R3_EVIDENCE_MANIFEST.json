@@ -10,6 +10,12 @@
       "path": "docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md",
       "kind": "operational_report",
       "status": "RECORDED"
+    },
+    {
+      "path": "docs/evidence/runtime/C-21_R3_TELEGRAM_REDACTED_RECEIPT.json",
+      "kind": "redacted_correlated_self_report",
+      "status": "RECORDED_WITH_LIMITATIONS",
+      "sha256": "d9ace4c2dadf5029ec9fb90b8c6c197a619414fe7ea46978d5042903b3cd770c"
     }
   ],
   "checks": {
@@ -28,6 +34,14 @@
       "application_path_correlated": true,
       "retransmissions": 0,
       "strict_dynamic_delta": "UNKNOWN_PRECOUNT_CAPTURE_MISSING",
+      "evidence_basis": "SANITIZED_SELF_REPORT_WITH_NPM_APPLICATION_DB_CORRELATION",
+      "raw_receipt_available": false,
+      "raw_receipt_checksum_available": false,
+      "sanitized_receipt_path": "docs/evidence/runtime/C-21_R3_TELEGRAM_REDACTED_RECEIPT.json",
+      "sanitized_receipt_sha256": "d9ace4c2dadf5029ec9fb90b8c6c197a619414fe7ea46978d5042903b3cd770c",
+      "local_wrapper_numeric_exit_code": "UNVERIFIED_NOT_PRESERVED",
+      "remote_session_completion": "POST_SUCCEEDED_THEN_LINE_72_UNEXPECTED_EOF",
+      "full_validation_script_success": false,
       "payload_recorded": false
     },
     "telegram_webhook_updates": {

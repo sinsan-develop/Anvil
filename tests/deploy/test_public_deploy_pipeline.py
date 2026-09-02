@@ -86,6 +86,7 @@ if [[ "$1 $2" == "rev-parse anvil-ui-preview-20260902.1^{commit}" ]]; then print
         """#!/usr/bin/env bash
 set -euo pipefail
 printf 'curl %s\\n' "$*" >> "$FAKE_LOG"
+if [[ "${FAKE_ROLLBACK_PUBLIC_FAILURE:-0}" == "1" && "${ANVIL_RELEASE_COMMIT:-}" == "$PREVIOUS_COMMIT" ]]; then exit 28; fi
 if [[ "${FAKE_PUBLIC_PERSISTENT_FAILURE:-0}" == "1" ]]; then exit 28; fi
 if [[ "${FAKE_PUBLIC_FIRST_TIMEOUT:-0}" == "1" && ! -f "$FAKE_ROOT/public-first-timeout-seen" ]]; then
   : > "$FAKE_ROOT/public-first-timeout-seen"
@@ -134,13 +135,18 @@ if [[ "$1" == "inspect" && "$2" == "anvil-web" && "$*" == *"Health.Status"* ]]; 
 fi
 if [[ "$1" == "inspect" && "$2" == "anvil-web" && "$*" == *"proxy-network"* ]]; then printf '10.0.0.9\\n'; exit 0; fi
 if [[ "$1" == "logs" ]]; then
-  if [[ "${FAKE_LOG_PERSISTENT_MISS:-0}" == "1" ]]; then printf 'unrelated\\n'; exit 0; fi
+  if [[ "${FAKE_ROLLBACK_LOG_FAILURE:-0}" == "1" && "${ANVIL_RELEASE_COMMIT:-}" == "$PREVIOUS_COMMIT" ]]; then printf 'unrelated\\n'; exit 0; fi
+  if [[ "${FAKE_LOG_PERSISTENT_MISS:-0}" == "1" && "${ANVIL_RELEASE_COMMIT:-}" != "$PREVIOUS_COMMIT" ]]; then printf 'unrelated\\n'; exit 0; fi
   if [[ "${FAKE_LOG_FIRST_MISS:-0}" == "1" && ! -f "$FAKE_ROOT/log-first-miss-seen" ]]; then
     : > "$FAKE_ROOT/log-first-miss-seen"
     printf 'unrelated\\n'
     exit 0
   fi
-  printf '/health/live?deploy_probe=%s\\n' "$RELEASE_COMMIT"
+  if [[ "${ANVIL_RELEASE_COMMIT:-}" == "$PREVIOUS_COMMIT" ]]; then
+    printf '/health/live?rollback_probe=%s\\n' "$PREVIOUS_COMMIT"
+  else
+    printf '/health/live?deploy_probe=%s\\n' "$RELEASE_COMMIT"
+  fi
   exit 0
 fi
 
@@ -199,7 +205,14 @@ if [[ "$1" == "cp" && "$2" == shared-db:* ]]; then
   exit 0
 fi
 
-if [[ "$1" == "exec" && "$2" == "nginx-proxy-manager" && "$3" == "getent" ]]; then printf '10.0.0.9 anvil-web\\n'; exit 0; fi
+if [[ "$1" == "exec" && "$2" == "nginx-proxy-manager" && "$3" == "getent" ]]; then
+  if [[ "${FAKE_ROLLBACK_STALE_DNS:-0}" == "1" && "${ANVIL_RELEASE_COMMIT:-}" == "$PREVIOUS_COMMIT" ]]; then
+    printf '10.0.0.8 anvil-web\\n'
+  else
+    printf '10.0.0.9 anvil-web\\n'
+  fi
+  exit 0
+fi
 if [[ "$1" == "exec" && "$2" == "nginx-proxy-manager" && "$3" == "sha256sum" ]]; then
   printf '406052ff7d4764bd23d03d7bef48db01c9683f801c010dc41ba24c7d2d1593cf  %s\\n' "$4"
   exit 0
@@ -329,7 +342,12 @@ def test_public_log_correlation_persistent_miss_is_bounded(deployment):
     assert result.returncode == 12
     assert "public live probe did not correlate" in result.stderr
     log = log_path.read_text(encoding="utf-8")
-    assert sum(line.startswith("docker logs --since ") for line in log.splitlines()) == 10
+    deploy_log_calls = [
+        line
+        for line in log.splitlines()
+        if line.startswith("docker logs --since ") and line.endswith(f"revision={COMMIT}")
+    ]
+    assert len(deploy_log_calls) == 10
     assert "rm -- /data/nginx/custom/server_proxy.conf" not in log
 
 
@@ -437,6 +455,64 @@ def test_rollback_uses_target_compose_when_previous_compose_omits_runtime_env(de
     assert "rollback-compose.public-preview" in rollback_up[-1]
     assert (runtime / "current-anvil-web-sha").read_text(encoding="utf-8").strip() == PREVIOUS_COMMIT
     assert not list(runtime.glob("rollback-compose.public-preview.*"))
+
+
+@pytest.mark.parametrize(
+    "failure_flag",
+    ["FAKE_ROLLBACK_STALE_DNS", "FAKE_ROLLBACK_PUBLIC_FAILURE", "FAKE_ROLLBACK_LOG_FAILURE"],
+)
+def test_rollback_keeps_alias_when_public_route_verification_fails(deployment, failure_flag: str):
+    _, log_path, runtime, env, bash, repo = deployment
+    (runtime / "current-anvil-web-sha").write_text(COMMIT + "\n", encoding="utf-8")
+    (runtime / "previous-anvil-web-sha").write_text(PREVIOUS_COMMIT + "\n", encoding="utf-8")
+    (runtime / "anvil.env").write_text("ANVIL_DATABASE_URL=redacted\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [bash, _posix(repo / "deploy" / "ysna" / "rollback-public-preview.sh")],
+        env=env | {failure_flag: "1"},
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        capture_output=True,
+        timeout=20,
+    )
+
+    assert result.returncode != 0
+    assert (runtime / "current-anvil-web-sha").read_text(encoding="utf-8").strip() == COMMIT
+    log = log_path.read_text(encoding="utf-8")
+    if failure_flag == "FAKE_ROLLBACK_PUBLIC_FAILURE":
+        rollback_url = f"https://anvil.sinsan.kr/health/live?rollback_probe={PREVIOUS_COMMIT}"
+        assert sum(rollback_url in line for line in log.splitlines()) == 5
+    if failure_flag == "FAKE_ROLLBACK_LOG_FAILURE":
+        assert sum(line.startswith("docker logs --since ") for line in log.splitlines()) == 10
+
+
+def test_rollback_verifies_dns_reload_public_probe_and_log_before_alias(deployment):
+    _, log_path, runtime, env, bash, repo = deployment
+    (runtime / "current-anvil-web-sha").write_text(COMMIT + "\n", encoding="utf-8")
+    (runtime / "previous-anvil-web-sha").write_text(PREVIOUS_COMMIT + "\n", encoding="utf-8")
+    (runtime / "anvil.env").write_text("ANVIL_DATABASE_URL=redacted\n", encoding="utf-8")
+
+    result = subprocess.run(
+        [bash, _posix(repo / "deploy" / "ysna" / "rollback-public-preview.sh")],
+        env=env,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        capture_output=True,
+        timeout=20,
+    )
+
+    assert result.returncode == 0, result.stderr
+    log = log_path.read_text(encoding="utf-8")
+    dns = "docker exec nginx-proxy-manager getent hosts anvil-web"
+    nginx_test = "docker exec nginx-proxy-manager nginx -t"
+    nginx_reload = "docker exec nginx-proxy-manager nginx -s reload"
+    public_probe = f"https://anvil.sinsan.kr/health/live?rollback_probe={PREVIOUS_COMMIT}"
+    correlation = "docker logs --since "
+    assert log.index(dns) < log.index(nginx_test) < log.index(nginx_reload)
+    assert log.index(nginx_reload) < log.index(public_probe) < log.index(correlation)
+    assert (runtime / "current-anvil-web-sha").read_text(encoding="utf-8").strip() == PREVIOUS_COMMIT
 
 
 @pytest.mark.parametrize("failure_flag", ["FAKE_ROLLBACK_IMAGE_MISMATCH", "FAKE_ROLLBACK_UNHEALTHY"])

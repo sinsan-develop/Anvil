@@ -1,0 +1,63 @@
+{
+  "receipt_version": "1.0.0",
+  "classification": "REDACTED_CORRELATED_SELF_REPORT",
+  "observed_at": "2026-09-02T11:39:09Z",
+  "target": "https://anvil.sinsan.kr/integrations/telegram/webhook",
+  "source": {
+    "reporter": "current_probe_agent",
+    "raw_command_preserved": false,
+    "raw_response_preserved": false,
+    "local_wrapper": "PowerShell remote heredoc to ssh ysna-server bash -s",
+    "remote_secret_source": "container environment",
+    "local_wrapper_numeric_exit_code": "UNVERIFIED_NOT_PRESERVED",
+    "remote_session_completion": "POST_SUCCEEDED_THEN_LINE_72_UNEXPECTED_EOF",
+    "overall_script_success": false
+  },
+  "request": {
+    "method": "POST",
+    "fixture": "native /status",
+    "attempts": 1,
+    "retransmissions": 0,
+    "resolve_override": false,
+    "connect_to_override": false,
+    "manual_host_override": false
+  },
+  "runtime": {
+    "revision": "5b0f3389dd6f54d1f7606ac99a36d237feda7b60",
+    "healthy": true
+  },
+  "response": {
+    "http_status": 200,
+    "outcome": "ACCEPTED"
+  },
+  "correlation": {
+    "npm_timestamp": "2026-09-02T11:39:09Z",
+    "npm_request_path_matched": true,
+    "npm_first_status": 200,
+    "npm_upstream_status": 200,
+    "npm_sent_to": "anvil-web",
+    "application_path_matched": true,
+    "post_db_counts": {
+      "telegram_webhook_updates": 1,
+      "telegram_webhook_audits": 1,
+      "telegram_webhook_rate_limits": 1
+    },
+    "latest_update_timestamp": "2026-09-02T11:39:09Z",
+    "latest_audit_timestamp": "2026-09-02T11:39:09Z",
+    "pre_db_counts": "UNKNOWN_PSQL_STDIN_CAPTURE_ERROR",
+    "strict_dynamic_delta": "UNVERIFIED"
+  },
+  "claim_boundary": {
+    "post_acceptance_supported_by_server_correlation": true,
+    "full_validation_script_success_supported": false,
+    "reason": "numeric wrapper exit was not preserved and remote post-processing ended with unexpected EOF"
+  },
+  "redacted_fields": [
+    "secret",
+    "payload",
+    "identity",
+    "update_id",
+    "authorization",
+    "signature"
+  ]
+}

@@ -54,6 +54,11 @@ Main Agent 복구 후 확인 상태:
   `2026-09-02T11:39:09Z`; NPM/application path correlation 확인
 - Telegram 한계: pre-count psql capture가 stdin 오류로 누락되어 strict dynamic delta는
   `UNKNOWN`; 재전송 0회이며 추가 POST 금지
+- Telegram receipt: sanitized self-report와 NPM/application/DB correlation을
+  `docs/evidence/runtime/C-21_R3_TELEGRAM_REDACTED_RECEIPT.json`에 기록하고 manifest hash에 결박
+- wrapper 한계: local numeric exit code는 미보존, remote script는 POST 성공 뒤 line 72
+  `unexpected EOF`. POST acceptance는 server-side correlation으로 지지하지만 전체 검증
+  script 성공은 미확정
 - historical-unbound: `2026-09-01T22:36:05Z` HTTP 400 파일은 5b0 배포
   `2026-09-02T11:12Z` 이전이므로 current evidence에서 제외
 - auth session: HTTP 201
@@ -68,10 +73,13 @@ Main Agent 복구 후 확인 상태:
    temp에 각각 추출하고 SHA-256 exact 검증한다.
 2. previous source는 보존 Dockerfile로 직접 build하고, runtime은 보존 compose와
    `ANVIL_RUNTIME_ENV_FILE`을 사용하여 `--no-build`로 기동한다.
-3. public live/ready/OpenAPI probe는 connect timeout 2초, max-time 3초, 최대 5회,
+3. rollback container healthy 뒤 proxy-network IP와 NPM DNS exact 비교, `nginx -t`,
+   graceful reload, bounded public rollback live probe와 container log correlation을
+   통과한 뒤에만 current alias를 갱신한다.
+4. public live/ready/OpenAPI probe는 connect timeout 2초, max-time 3초, 최대 5회,
    재시도 간 2초로 제한한다.
-4. 고유 live probe log correlation은 최대 10회, 재시도 간 1초로 제한한다.
-5. 모든 시도 실패 시 기존과 같이 `INCIDENT_HOLD`로 전환하며 DB downgrade는 하지 않는다.
+5. 고유 live probe log correlation은 최대 10회, 재시도 간 1초로 제한한다.
+6. 모든 시도 실패 시 기존과 같이 `INCIDENT_HOLD`로 전환하며 DB downgrade는 하지 않는다.
 
 ## 로컬 TDD 증거와 경계
 

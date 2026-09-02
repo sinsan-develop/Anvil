@@ -54,6 +54,33 @@ read_runtime_alias() {
   fi
 }
 
+probe_public_http_200() {
+  local url="$1"
+  local status attempt
+  for attempt in $(seq 1 5); do
+    status="$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 2 --max-time 3 "$url" || true)"
+    [[ "$status" == "200" ]] && return 0
+    if (( attempt < 5 )); then
+      sleep 2
+    fi
+  done
+  return 1
+}
+
+wait_for_public_log_correlation() {
+  local marker="$1"
+  local attempt
+  for attempt in $(seq 1 10); do
+    if docker logs --since "$rollback_started_at" anvil-web | grep -Fq "$marker"; then
+      return 0
+    fi
+    if (( attempt < 10 )); then
+      sleep 1
+    fi
+  done
+  return 1
+}
+
 previous_release="$(read_runtime_alias previous-sha)"
 runtime_env="$deploy_root/runtime/anvil.env"
 
@@ -108,6 +135,7 @@ image_revision="$(docker image inspect "anvil-web:$ANVIL_IMAGE_TAG" --format '{{
   echo "rollback image revision does not match previous release" >&2
   exit 6
 }
+rollback_started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 if ! ANVIL_RUNTIME_ENV_FILE="$runtime_env" docker compose -p "$compose_project" -f "$rollback_compose" up -d --no-deps --no-build anvil-web; then
   echo "rollback runtime start failed" >&2
   exit 7
@@ -121,6 +149,29 @@ if [[ "$(docker inspect anvil-web --format '{{.State.Health.Status}}' 2>/dev/nul
   docker logs --tail 80 anvil-web >&2 || true
   echo "rollback runtime did not become healthy" >&2
   exit 8
+fi
+web_ip="$(docker inspect anvil-web --format '{{with index .NetworkSettings.Networks "proxy-network"}}{{.IPAddress}}{{end}}')"
+npm_dns_ip="$(docker exec nginx-proxy-manager getent hosts anvil-web | awk 'NR==1 {print $1}')"
+if [[ -z "$web_ip" || "$web_ip" != "$npm_dns_ip" ]]; then
+  echo "rollback NPM DNS does not match the restored anvil-web address" >&2
+  exit 9
+fi
+if ! docker exec nginx-proxy-manager nginx -t; then
+  echo "rollback NPM configuration test failed" >&2
+  exit 10
+fi
+if ! docker exec nginx-proxy-manager nginx -s reload; then
+  echo "rollback NPM graceful reload failed" >&2
+  exit 11
+fi
+rollback_probe_path="/health/live?rollback_probe=${previous_release}"
+if ! probe_public_http_200 "https://anvil.sinsan.kr${rollback_probe_path}"; then
+  echo "rollback public live probe failed" >&2
+  exit 12
+fi
+if ! wait_for_public_log_correlation "$rollback_probe_path"; then
+  echo "rollback public live probe did not correlate to the restored runtime" >&2
+  exit 13
 fi
 write_runtime_alias current-sha "$previous_release"
 echo "ANVIL_WEB_ROLLED_BACK=$previous_release"
