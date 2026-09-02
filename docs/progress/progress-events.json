@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 382,
+  "last_sequence": 384,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -13849,9 +13849,14 @@
         "validated_base_commit": "1ca80d005b7b03cef7311932df4d5319530e98d9",
         "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
         "exact_allowed_paths": [
+          "docs/approvals/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
           "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/governance/schemas/non-semantic-revision-binding.schema.json",
+          "docs/governance/schemas/progress-event.schema.json",
+          "docs/governance/schemas/progress-handoff-detached-digest.schema.json",
           "docs/progress/BUILD_HANDOFF.md",
           "docs/progress/build-progress.json",
+          "docs/progress/non-semantic-revision-bindings.json",
           "docs/progress/progress-events.json",
           "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
         ],
@@ -13929,7 +13934,68 @@
         "historical_phase_b_gate_status": "ACCEPTED",
         "sequence_role": "stage4 post-referenced-evidence-hash repository snapshot"
       }
+    },
+    {
+      "event_id": "evt_c21_lifecycle_runtime_scope_waiting_approval",
+      "sequence": 383,
+      "event_type": "PACKAGE_WAITING_APPROVAL",
+      "occurred_at": "2026-09-03T00:46:17+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "approval_ref": "PENDING_HUMAN_APPROVAL:C21-LIFECYCLE_RUNTIME_PRODUCTION_TEST_CHAIN_TEST_SESSION_ALLOWLIST_DEPLOYMENT_EXTERNAL_SIDE_EFFECTS",
+        "change_classification": "FUNCTION_SCOPE_CHANGE_REQUIRED",
+        "approval_scope": [
+          "lifecycle API runtime activation",
+          "production DB canonical C-21 test chain creation",
+          "test-session write scope and allowlist",
+          "deployment and external side effects"
+        ],
+        "excluded_from_approval_scope": [
+          "independent read-only C-21 judgment",
+          "general planned C-01 start"
+        ],
+        "reason": "Current C-21 operational evidence is PARTIAL. Only the listed runtime, production-data, write-scope, deployment, and external-side-effect actions require a new function-scope approval."
+      }
+    },
+    {
+      "event_id": "evt_c21_repository_projection_reconciled_r3",
+      "sequence": 384,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T00:46:18+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "branch": "codex/c21-progress-reconcile",
+        "local_head": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037",
+        "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T00:46:18+09:00",
+        "reason": "R3 evidence-only reconciliation after the registered C-21 approval-wait transition and the separate WorkPlan FE0F-to-00F4 non-semantic merge-normalization binding; immutable events through seq382 remain preserved.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/approvals/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
+          "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+          "docs/governance/schemas/non-semantic-revision-binding.schema.json",
+          "docs/governance/schemas/progress-event.schema.json",
+          "docs/governance/schemas/progress-handoff-detached-digest.schema.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/non-semantic-revision-bindings.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "WAITING_APPROVAL",
+        "operational_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+        "next_work_package": "C-01",
+        "next_package_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "historical_phase_b_gate_status": "ACCEPTED",
+        "sequence_role": "R3 post-approval-wait evidence-only repository snapshot"
+      }
     }
   ],
-  "last_event_id": "evt_c21_repository_projection_reconciled_stage4"
+  "last_event_id": "evt_c21_repository_projection_reconciled_r3"
 }

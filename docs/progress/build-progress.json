@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
-  "event_sequence": 382,
-  "updated_at": "2026-09-03T00:27:47+09:00",
-  "last_event_id": "evt_c21_repository_projection_reconciled_stage4",
+  "event_sequence": 384,
+  "updated_at": "2026-09-03T00:46:18+09:00",
+  "last_event_id": "evt_c21_repository_projection_reconciled_r3",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -992,7 +992,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "50927AA49262F9D305D9C8E9D81E75B3AA349926AC6CAD4E69B46067E140E180"
+      "sha256": "FB5EE7CFAE10F82CE3E66C868A76BE2FECABFC78AFE6DED0ED3BE170D32263BD"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1041,10 +1041,10 @@
   },
   "pending_approvals": [
     {
-      "approval_id": "C21-INDEPENDENT-JUDGMENT-AND-C01-SCOPE-EXPANSION",
+      "approval_id": "C21-LIFECYCLE-RUNTIME-PRODUCTION-TEST-CHAIN-TEST-SESSION-ALLOWLIST-DEPLOYMENT-EXTERNAL-SIDE-EFFECTS",
       "status": "WAITING_APPROVAL",
       "change_classification": "FUNCTION_SCOPE_CHANGE_REQUIRED",
-      "reason": "C-21 independent judgment and any C-01 WorkInstruction issuance require an explicit decision; this reconciliation does not authorize functional scope expansion."
+      "reason": "Approval is required only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. Independent read-only C-21 judgment and a general planned C-01 start are not approval subjects here."
     }
   ],
   "dir_review": {
@@ -1054,7 +1054,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Rotate affected credentials, preserve the existing C-21 evidence without external re-call, then obtain an independent C-21 judgment. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
+  "next_safe_action": "Rotate affected credentials and preserve existing C-21 evidence without external re-call. Obtain explicit approval only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1165,22 +1165,27 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "c4406d8f04ccaf17f0aadeb8e6f4d69fb5e3f398",
+    "validated_base_commit": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
     "branch": "codex/c21-progress-reconcile",
     "upstream": "origin/main",
     "remote_head": "b07651f266b4439f765489153baacc08c2c95ee1",
     "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
+      "docs/approvals/APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001.md",
       "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+      "docs/governance/schemas/non-semantic-revision-binding.schema.json",
+      "docs/governance/schemas/progress-event.schema.json",
+      "docs/governance/schemas/progress-handoff-detached-digest.schema.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
+      "docs/progress/non-semantic-revision-bindings.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
     ],
-    "observed_at": "2026-09-03T00:27:47+09:00",
+    "observed_at": "2026-09-03T00:46:18+09:00",
     "worktree_status": "PUSH_PENDING_MAIN: C-21 operational reconciliation evidence-only descendant; no external re-call",
-    "local_head": "c4406d8f04ccaf17f0aadeb8e6f4d69fb5e3f398"
+    "local_head": "8a1815fd27a0c52d7eb7f8aab90c8625994b5037"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1338,7 +1343,7 @@
     },
     "non_semantic_revision_bindings": {
       "path": "docs/progress/non-semantic-revision-bindings.json",
-      "sha256": "6EEC08FF0812CB8E06C4103E4176C98B93A567AA050EBEADD59649177DFA02D3"
+      "sha256": "203198F540EAFE07598CDB25616D71032408AA7378F3D1799AF0441C32031CC4"
     },
     "dir_checkpoints": {
       "path": "docs/progress/dir-checkpoints.json",
@@ -1350,7 +1355,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "50927AA49262F9D305D9C8E9D81E75B3AA349926AC6CAD4E69B46067E140E180"
+      "sha256": "FB5EE7CFAE10F82CE3E66C868A76BE2FECABFC78AFE6DED0ED3BE170D32263BD"
     }
   },
   "next_work_package": {
@@ -1382,10 +1387,8 @@
     "preservation": "historical record preserved; this operational reconciliation does not reopen, overwrite, or replace the Phase B Gate decision"
   },
   "operational_reconciliation": {
-    "revision_id": "C21-PROGRESS-RECONCILE-20260902-R2",
-    "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
-    "semantic_change": false,
-    "rationale": "C-21 operational evidence was recorded after the historical Phase B Gate projection. This correction changes only the current operational projection and restores the missing registry contract for the already immutable seq375 MAIN_GATE_ACCEPTED event; it does not change functional scope, requirements, risk acceptance, Gate history, or the C-01 start boundary.",
+    "revision_id": "C21-PROGRESS-RECONCILE-20260903-R3",
+    "rationale": "Operational-evidence-based current projection reconciliation after the historical Phase B Gate projection. Immutable historical events remain preserved; this record does not execute, authorize, or accept the pending lifecycle-runtime, production-data, write-scope, deployment, or external-side-effect actions.",
     "current_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
     "confirmed_evidence": {
       "migration": "0012_run_authority applied and retained",
@@ -1412,5 +1415,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "C31F6D950C8ECFF57E30A4C93911D5DC6D7AEDA897EEFA7E76AD96B4953CF3F8"
+  "snapshot_hash": "FCA0DB1A6469619888C6E4BBEFD515FE55436396C19BA35B7D68C8EDE2517C67"
 }
