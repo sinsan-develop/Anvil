@@ -102,3 +102,12 @@ Desktop local head 32개와 tag 8개(합계 40개)를 `git fetch --no-tags <Desk
 - D local `main`은 `c49b7534012d97ad130483c1ff255c0db1e99df4`로 stale 상태다. `git branch -f main`은 `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\ysna-internal-deploy`가 `main`을 사용하는 stale D worktree registry 때문에 거부됐다.
 - Desktop 삭제와 Git metadata 강제 제거는 수행하지 않았다. D root/desktop의 보호 dirty·untracked도 변경하지 않았다.
 - 다음 조치: Desktop 폐쇄 후 exact stale worktree entry를 검증하고, 그 다음에만 prune/repair를 수행한 뒤 D local `main`을 `origin/main`으로 fast-forward한다. 이 순서 전의 강제 branch 이동·metadata 제거는 금지한다.
+
+## Canonical cleanup 완료 기록 — 2026-09-02
+
+- 신산님이 승인한 cleanup 범위에서 D common-dir의 stale worktree admin metadata 정확히 3개만 제거했다: `anvil-plan-common-api-menu-order`, `anvil-public-ui-preview-impl`, `ysna-internal-deploy`. 각 D admin directory의 `gitdir`이 Desktop 대상 `.git`을 가리키고, 해당 대상 `.git` backlink 및 `commondir`이 D common-dir이 아니라 Desktop 별도 `.git` common-dir을 가리키는 것을 제거 직전에 다시 확인했다.
+- Desktop 실제 worktree와 Desktop `.git`은 삭제하거나 수정하지 않았다. 제거 후 `git -C D:\Project\Anvil worktree list --porcelain`의 Desktop `C:/Users/cyhuh/Desktop/D Driver/Project/Anvil/.worktrees/*` entry는 0건이고, Desktop 대상 `.git` backlink 3개는 그대로 존재함을 확인했다.
+- `D:\tmp\anvil-canonical-migration` worktree는 clean/`HEAD = origin/main = 3c4e115d9d4bb783a0277a185fd9cf1b3e32ad68`/ancestor 및 원격 migration branch 존재를 확인한 뒤 비강제 Git remove로 정리했다. 이어 local 및 remote `codex/canonical-source-migration` branch도 삭제했다.
+- stale main lock 해제 후 `git branch -f main origin/main`이 성공했고, local `main`과 `origin/main`은 모두 `3c4e115d9d4bb783a0277a185fd9cf1b3e32ad68`이며 양방향 ancestor를 확인했다. D root checkout 자체와 보호 변경 `M AGENTS.md`, `?? packages/agent_team/`, `?? tests/agent_team/`은 변경하지 않았다.
+- 테스트 증거: 최신 code-bearing baseline `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`에서 `tests/deploy` fresh 46 PASS(26 static + 20 pipeline)가 이미 기록되어 있다. `b9f0f44..3c4e115`는 `CODEX_WORK_LOG.md`와 이 migration report의 문서-only diff이고 cleanup은 Git metadata-only 작업이다. 이번 cleanup 재실행은 초기 PyYAML 누락으로 collection 단계에서 중단됐고, 임시 PyYAML 보완 후 Codex 실행 시간 제한이 pytest 하위 프로세스를 남겨 종결 요약을 얻지 못했다. 시작한 정확한 프로세스만 종료했고 PASS로 승격하지 않는다.
+- 이 cleanup은 Git metadata와 기록만 대상으로 하며 deploy, DB, NPM, Telegram, Provider, 브라우저 및 device 검증은 수행하지 않았다.

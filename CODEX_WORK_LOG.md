@@ -288,3 +288,12 @@
 - D local `main` `c49b7534012d97ad130483c1ff255c0db1e99df4`는 stale이다. `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\ysna-internal-deploy`가 `main`을 점유하는 stale D worktree registry 때문에 `git branch -f main`은 거부됐다.
 - Desktop 삭제·Git metadata 강제 제거는 하지 않았고 D root/Desktop의 보호 dirty·untracked를 보존했다.
 - 다음 안전 조치: Desktop 폐쇄 완료 후 exact stale entry 검증 → prune/repair → D local main fast-forward 순서로만 처리한다. 현 단계의 강제 branch 이동/metadata 삭제는 금지한다.
+
+## Canonical cleanup 완료 기록 — 2026-09-02
+
+- 승인 범위: D canonical Git admin metadata cleanup만 수행했다. D root의 보호 dirty/untracked(`M AGENTS.md`, `?? packages/agent_team/`, `?? tests/agent_team/`)와 Desktop 실제 파일·`.git`은 변경하지 않았다.
+- D stale worktree admin metadata `anvil-plan-common-api-menu-order`, `anvil-public-ui-preview-impl`, `ysna-internal-deploy`를 각각의 D admin `gitdir` → Desktop 대상 `.git` → Desktop `.git/worktrees/<name>` backlink → Desktop separate common-dir까지 exact 검증한 뒤에만 제거했다. D valid root metadata나 `.git/worktrees` 상위 디렉터리는 제거하지 않았다.
+- 결과: `git -C D:\Project\Anvil worktree list --porcelain`의 Desktop worktree entry는 0건이다. Desktop 대상 `.git` backlink은 3개 모두 계속 존재한다. stale `main` lock 해제 후 local `main = origin/main = 3c4e115d9d4bb783a0277a185fd9cf1b3e32ad68`을 확인했다.
+- migration cleanup: clean `D:\tmp\anvil-canonical-migration` worktree와 local/remote `codex/canonical-source-migration` branch를 비강제로 제거했다.
+- 테스트 한계: latest code-bearing `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`의 fresh `tests/deploy` 46 PASS가 기존 증거이고 `b9f0f44..3c4e115`는 문서-only, 이번 cleanup은 metadata-only다. cleanup 중 재실행은 PyYAML 누락 collection 중단 뒤 임시 보완을 했으나 Codex 실행 시간 제한 때문에 pytest 하위 프로세스 종료 요약을 얻지 못했다. 시작한 정확한 프로세스만 종료했으며 이번 실행을 PASS로 기록하지 않는다.
+- 외부 미수행: deploy, DB, NPM, Telegram, Provider, 브라우저, device 및 Desktop mutation은 모두 수행하지 않았다.
