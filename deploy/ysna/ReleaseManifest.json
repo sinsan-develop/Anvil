@@ -2,10 +2,10 @@
   "manifest_type": "AnvilReleaseManifest",
   "manifest_version": "1.0",
   "work_package": "C-21",
-  "status": "APPROVED_FOR_DEPLOYMENT",
+  "status": "PENDING_APPROVAL",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "8ba679e72f53e20561e2063f3cdf01c10981a67b",
+    "commit": "a962bdfb6ba0e9c057907be8ee88909793bbf6ce",
     "branch_at_capture": "main",
     "working_tree": "CLEAN"
   },
@@ -14,7 +14,7 @@
     "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
     "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
     "work_plan_sha256": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
-    "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-004"
+    "deploy_approval": null
   },
   "evidence": {
     "focused_tests": {
@@ -26,7 +26,8 @@
     "git_diff_check": "PASS",
     "migration_head": "0011_telegram_webhook_state",
     "migration_file_sha256": "96F851AF011FA2CC373CE8C3939E3517C0EA5675F82093044B4FFAF2E102E343",
-    "runtime_provider_and_telegram": "NOT_EXECUTED"
+    "runtime_provider_and_telegram": "NOT_EXECUTED",
+    "unified_runtime_frontend_same_listener": "PASS (tests/api: 49)"
   },
   "runtime": {
     "target_host": "ysna-server",
@@ -66,12 +67,18 @@
     "ANVIL_TEST_SESSION_TTL_SECONDS"
   ],
   "boundaries": {
-    "listener": "127.0.0.1:4173 only",
+    "listener": "0.0.0.0:3770 unified ASGI (UI + API + Telegram + SSE)",
     "browser_api": "same-origin relative paths only",
     "database": "Anvil dedicated database and roles only; no shared-db mutation in preflight",
-    "public_exposure": "APPROVED_WITH_EXISTING_HTTPS_HOST_ONLY",
+    "public_exposure": "existing HTTPS host only; deployment pending exact approval",
     "forbidden_actions_in_this_manifest": [
-      "public proxy or DNS change"
+      "public proxy or DNS change",
+      "removing anvil-internal-web-1 before unified runtime verification"
     ]
-  }
+  },
+  "approval_required": [
+    "new human approval binding for exact unified runtime commit a962bdfb6ba0e9c057907be8ee88909793bbf6ce",
+    "standard unified public deploy execution",
+    "internal 4173 removal only after public API/health/Telegram/SSE/Last-Event-ID verification"
+  ]
 }

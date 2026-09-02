@@ -57,3 +57,14 @@
 - 외부 조치/승인 필요: exact tag 이름과 `8ba679e` 결박 tag의 GitHub 생성·push 승인, 이후 공개 deploy script 실행 승인. NPM/DNS 변경은 필요하지 않음.
 - 임시 리소스: 새 `D:\tmp` 폴더·프로세스·포트·컨테이너·볼륨·네트워크 생성 없음; 기존 canonical worktree 보존, 잔여 0건.
 - 다음 조치: exact release tag를 승인·생성한 뒤 ysna에서 `deploy-public-preview.sh <full-sha> <tag>`와 `verify-public-preview.sh <full-sha>`를 순서대로 실행한다.
+
+## C-21 Unified Runtime 승인 대기 — 2026-09-02
+
+- 담당: `unify_public_runtime` subagent, Main Agent 검토·통합.
+- 구현: FastAPI ASGI가 3770에서 UI 정적 파일과 API/health/Telegram/SSE를 직접 제공하도록 1차 수직 슬라이스를 통합했다. 기존 Node proxy와 `ANVIL_API_UPSTREAM` 의존은 제거했다.
+- exact commit: `a962bdfb6ba0e9c057907be8ee88909793bbf6ce`.
+- 검증: `tests/api` 49 passed, 신규 동일 listener frontend 테스트 포함; compileall, `bash -n deploy/ysna/deploy-public-preview.sh`, `git diff --check` PASS.
+- Manifest: `ReleaseManifest.json` source를 exact commit으로 갱신하고 `PENDING_APPROVAL`로 변경했다. 기존 C-21 DeployApproval binding은 승계하지 않는다.
+- 운영 영향: public compose가 Python ASGI 단일 `anvil-web:3770`을 실행하며 runtime env/DB/Telegram 참조가 필요하다. 원격/NPM/DB 변경은 하지 않았다.
+- internal 제거 조건: public 3770에서 API, health/readiness, Telegram signed ingress, provider capability, authenticated SSE 및 Last-Event-ID를 실제 검증하고 rollback 가능성을 확인한 뒤에만 `anvil-internal-web-1:4173`을 중지·삭제한다.
+- 승인 대기: exact commit에 대한 신규 human DeployApproval binding과 표준 unified deploy 실행 승인이 필요하다.
