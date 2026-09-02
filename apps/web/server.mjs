@@ -20,7 +20,7 @@ const securityHeaders={
   'x-content-type-options':'nosniff','x-frame-options':'DENY','referrer-policy':'no-referrer','cache-control':'no-store'
 };
 const apiUpstream=(process.env.ANVIL_API_UPSTREAM||'').replace(/\/$/,'');
-const apiProxyPrefixes=['/api/','/health/','/integrations/'];
+const apiProxyPrefixes=['/api/','/health/','/integrations/','/auth/'];
 
 async function proxyApiRequest(request,response,requestUrl) {
   if (!apiUpstream || !(apiProxyPrefixes.some(prefix=>requestUrl.pathname.startsWith(prefix)) || requestUrl.pathname==='/openapi.json')) return false;
@@ -35,7 +35,7 @@ async function proxyApiRequest(request,response,requestUrl) {
     else request.pipe(upstreamRequest);
   });
   response.writeHead(upstream.statusCode,Object.fromEntries(Object.entries(upstream.headers)));
-  if (upstream.body) for await (const chunk of upstream.body) response.write(chunk);
+  for await (const chunk of upstream) response.write(chunk);
   response.end();
   return true;
 }
