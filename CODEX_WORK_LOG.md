@@ -262,3 +262,11 @@
 - 최종 검증: deploy/rollback log fixture를 분리한 회귀 `1 passed in 6.48s`; 전체 `tests/deploy` fresh `44 passed in 58.80s`; shell 4개 `bash -n` PASS; receipt/manifest JSON parse 및 SHA-256 binding PASS.
 - harness 오류 횟수: 동일 test harness 원인 2회. incident 뒤 실행되는 rollback log를 기존 deploy-only persistent flag/count가 함께 집계한 문제로, revision별 log call을 분리해 해결했다. 제품 실패 횟수에는 미포함, 3회 인수 조건 미도달.
 - 외부 변경: 운영/SSH/DB/NPM/Telegram/Provider/tag/commit/push 모두 미수행.
+
+## Canonical source migration — 2026-09-02
+
+- 신산님 승인에 따라 `D:\Project\Anvil`을 canonical source로 확정했다. D root의 `AGENTS.md`, `packages/agent_team/`, `tests/agent_team/` dirty/untracked 보호 범위와 Desktop 원본은 변경하지 않았다.
+- `origin/main`을 `13040fef646460e88bf8b47f54459cdce1855e62`로 fetch(무-prune)했고, Desktop local refs 40개(head 32/tag 8)를 D의 `desktop-migration/*` 격리 namespace에 import했다. 대상 ref pre-state absent, post-import full-SHA/object mismatch 0건이다.
+- `D:\tmp\anvil-canonical-migration`/`codex/canonical-source-migration`을 최신 origin/main에서 생성하고, descendant 확인과 정확히 3개의 후속 commit 확인 뒤 `desktop-migration/codex/c21-deploy-incident-fix`를 `--ff-only`로 `7d4a15ab62860a38a82c6ef485b035b564f9dde0`까지 반영했다.
+- 검증: JSON parse/checksum, 4개 shell `bash -n`, merged/working `git diff --check` PASS. `tests/deploy`는 D tmp에서 42 PASS/2 harness path-assumption FAIL(`/d`→`/c` only inverse conversion)이며 제품 script 전 failure다. 운영·브라우저·device 증거로 승격하지 않는다.
+- 상세 ref/object/commit/temporary-resource/미수행 경계는 `docs/04_test_reports/CANONICAL_SOURCE_MIGRATION_20260902.md`에 기록했다. commit, push, main merge, Desktop 삭제는 아직 미수행이다.
