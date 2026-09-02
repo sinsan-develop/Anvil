@@ -92,3 +92,11 @@ Desktop local head 32개와 tag 8개(합계 40개)를 `git fetch --no-tags <Desk
 
 - push, main merge, release tag 생성, 배포, 외부 서비스 mutation 및 Desktop 삭제는 미수행이다.
 - 이 branch의 rollback은 commit을 사용하지 않은 경우 branch/worktree를 보존하고 검토한다. 승인된 rollback이 필요하면 migration branch만 `origin/main` 기준으로 별도 처리하며, D root·Desktop 원본은 대상이 아니다.
+
+## 이관 후 실제 상태 기록
+
+- 원격 확인: `origin/main`과 `refs/heads/codex/canonical-source-migration`은 모두 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이다. migration branch의 b9f0f44 push는 성공했으며, 원격 main은 이 문서 commit으로 fast-forward하지 않았다.
+- 이후 작업 기준선은 `origin/main` `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이다.
+- D local `main`은 `c49b7534012d97ad130483c1ff255c0db1e99df4`로 stale 상태다. `git branch -f main`은 `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\ysna-internal-deploy`가 `main`을 사용하는 stale D worktree registry 때문에 거부됐다.
+- Desktop 삭제와 Git metadata 강제 제거는 수행하지 않았다. D root/desktop의 보호 dirty·untracked도 변경하지 않았다.
+- 다음 조치: Desktop 폐쇄 후 exact stale worktree entry를 검증하고, 그 다음에만 prune/repair를 수행한 뒤 D local `main`을 `origin/main`으로 fast-forward한다. 이 순서 전의 강제 branch 이동·metadata 제거는 금지한다.
