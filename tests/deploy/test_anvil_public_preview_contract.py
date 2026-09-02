@@ -7,7 +7,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_PATH = ROOT / "deploy" / "ysna" / "compose.public-preview.yml"
-DOCKERFILE_PATH = ROOT / "deploy" / "ysna" / "Dockerfile.web-preview"
+DOCKERFILE_PATH = ROOT / "deploy" / "ysna" / "Dockerfile.web"
 DOCKERIGNORE_PATH = ROOT / "deploy" / "ysna" / "Dockerfile.web-preview.dockerignore"
 README_PATH = ROOT / "deploy" / "ysna" / "README.public-preview.md"
 MANIFEST_PATH = ROOT / "deploy" / "ysna" / "release-manifest.public-preview.json"
@@ -25,7 +25,7 @@ class AnvilPublicPreviewContractTests(unittest.TestCase):
         self.assertNotIn("ports", web)
         self.assertEqual({"external": True}, compose["networks"]["proxy-network"])
 
-    def test_public_preview_is_hardened_and_has_upstream_proxy_boundary(self):
+    def test_public_runtime_is_hardened_and_has_no_upstream_proxy_boundary(self):
         compose = self.load_compose()
         web = compose["services"]["anvil-web"]
         self.assertEqual("unless-stopped", web["restart"])
@@ -33,22 +33,17 @@ class AnvilPublicPreviewContractTests(unittest.TestCase):
         self.assertEqual(["ALL"], web["cap_drop"])
         self.assertEqual(["no-new-privileges:true"], web["security_opt"])
         self.assertEqual(["/tmp:rw,noexec,nosuid,size=32m"], web["tmpfs"])
-        self.assertEqual(
-            "${ANVIL_API_UPSTREAM:-http://anvil-internal-web-1:4173}",
-            web["environment"]["ANVIL_API_UPSTREAM"],
-        )
+        self.assertNotIn("ANVIL_API_UPSTREAM", web.get("environment", {}))
         rendered = COMPOSE_PATH.read_text(encoding="utf-8")
-        self.assertNotIn("shared-db", rendered)
-        self.assertNotIn("DATABASE_URL", rendered)
+        self.assertNotIn("anvil-internal-web-1", rendered)
+        self.assertIn("ANVIL_RUNTIME_ENV_FILE", rendered)
 
     def test_image_is_pinned_and_runs_as_non_root_preview(self):
         dockerfile = DOCKERFILE_PATH.read_text(encoding="utf-8")
-        self.assertIn("node:22-bookworm-slim@sha256:", dockerfile)
+        self.assertIn("python:3.12.8-slim-bookworm", dockerfile)
         self.assertIn("USER anvil", dockerfile)
-        self.assertIn("ANVIL_UI_MODE=preview", dockerfile)
-        self.assertIn("ANVIL_HOST=0.0.0.0", dockerfile)
-        self.assertIn("ANVIL_PORT=3770", dockerfile)
-        self.assertNotIn("npm install", dockerfile)
+        self.assertIn('"--port", "3770"', dockerfile)
+        self.assertIn("COPY apps/web ./apps/web", dockerfile)
 
     def test_image_context_excludes_repository_and_test_state(self):
         ignored = DOCKERIGNORE_PATH.read_text(encoding="utf-8").splitlines()
@@ -59,8 +54,7 @@ class AnvilPublicPreviewContractTests(unittest.TestCase):
     def test_historical_readme_and_manifest_point_to_unified_anvil_web(self):
         readme = README_PATH.read_text(encoding="utf-8")
         self.assertIn("historical alias", readme)
-        self.assertIn("ANVIL_API_UPSTREAM", readme)
-        self.assertIn("anvil-web unified", readme)
+        self.assertIn("unified ASGI", readme)
 
         manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
         self.assertEqual("anvil-web-public-preview", manifest["release_id"])

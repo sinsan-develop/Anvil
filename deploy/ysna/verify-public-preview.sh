@@ -37,22 +37,23 @@ cd "$repo_dir"
 [[ "$(docker inspect anvil-web --format '{{.State.Health.Status}}')" == "healthy" ]]
 docker inspect anvil-web --format '{{json .NetworkSettings.Networks}}' | grep -q 'proxy-network'
 
-internal_health="$(docker exec nginx-proxy-manager curl -fsS http://anvil-web:3770/healthz)"
-printf '%s' "$internal_health" | grep -q '"service":"anvil-web"'
-docker exec nginx-proxy-manager curl -fsS http://anvil-web:3770/health/live | grep -q '"ok":true'
+docker exec nginx-proxy-manager curl -fsS http://anvil-web:3770/health/live | grep -q '"status":"ok"'
+docker exec nginx-proxy-manager curl -fsS http://anvil-web:3770/health/ready | grep -q '"status":"ready"'
 docker exec nginx-proxy-manager curl -fsS http://anvil-web:3770/openapi.json | grep -q 'openapi'
+auth_status="$(docker exec nginx-proxy-manager curl -sS -o /dev/null -w '%{http_code}' http://anvil-web:3770/auth/session)"
+[[ "$auth_status" == "405" ]]
 public_headers="$(curl -fsS -D - -o /dev/null https://anvil.sinsan.kr)"
 printf '%s\n' "$public_headers" | grep -qi '^content-security-policy:'
 printf '%s\n' "$public_headers" | grep -qi '^x-content-type-options: nosniff'
-curl -fsS https://anvil.sinsan.kr | grep -q 'data-preview-shell'
-curl -fsS https://anvil.sinsan.kr/src/features/ui-preview/ui-preview-model.js | grep -q 'agents-automation'
+curl -fsS https://anvil.sinsan.kr | grep -q 'Anvil'
+curl -fsS https://anvil.sinsan.kr/src/app/workbench.js | grep -q 'fetch'
 
 mapfile -t protected_before < "$(protected_ids_path)"
 [[ "${protected_before[0]}" == "$(docker inspect nginx-proxy-manager --format '{{.Id}}')" ]]
 [[ "${protected_before[1]}" == "$(docker inspect shared-db --format '{{.Id}}')" ]]
 
 mkdir -p "$evidence_dir"
-payload=$(printf '{"release_commit":"%s","git_clean":true,"container_healthy":true,"network":"proxy-network","internal_health":true,"public_https":true,"security_headers":true,"api_upstream":true,"protected_resources_unchanged":true,"compatibility":"HISTORICAL_PUBLIC_PREVIEW_ALIAS","verified_at":"%s"}' \
+payload=$(printf '{"release_commit":"%s","git_clean":true,"container_healthy":true,"network":"proxy-network","same_listener":true,"health_live":true,"health_ready":true,"openapi":true,"auth_route_exists":true,"public_https":true,"security_headers":true,"protected_resources_unchanged":true,"runtime":"UNIFIED_FASTAPI_ASGI","verified_at":"%s"}' \
   "$release_commit" "$(date -u +%Y-%m-%dT%H:%M:%SZ)")
 write_evidence_alias "$payload"
 

@@ -77,3 +77,11 @@
 - 검증: focused tests 11 passed; compileall PASS; `bash -n deploy/ysna/deploy-public-preview.sh` PASS; `git diff --check` PASS.
 - 범위 밖: real-time push, Telegram 추가 POST, remote/NPM/DB mutation, migration 생성 없음.
 - 잔여: full suite, rollback/verify script unified 계약 검토, 실제 배포·운영 SSE 검증 후에만 internal 4173 제거.
+
+## C-21 Unified Runtime R3 — 2026-09-02
+
+- 담당: `unify_public_runtime` subagent, 단일 writer.
+- 조치: verify를 same-listener `/health/live`, `/health/ready`, `/openapi.json`, `/auth/session` route existence, UI/HTTPS/security header 검증으로 정리. rollback을 compose project `anvil`, runtime env, 이전 Unified ASGI release 복구로 정리.
+- 안전성: 이전 release 미기록 시 service 삭제를 거부한다. Node proxy, `ANVIL_API_UPSTREAM`, internal 4173 전제를 스크립트에서 제거했다.
+- 검증: deployment contract/scripts 9 passed; 두 shell script `bash -n` PASS; `git diff --check` PASS.
+- 범위 밖: real-time push, remote/NPM/DB/Telegram mutation, 운영 배포.

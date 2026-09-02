@@ -41,3 +41,10 @@
 - 신규 migration 없이 기존 `run_events` 테이블을 읽는 `PostgresEventStream`을 추가했다. cursor 없음은 sequence 0부터, `Last-Event-ID`는 동일 run의 엄격한 후속 sequence만 반환하며 unknown/cross-run cursor는 `SSE_CURSOR_INVALID` 409를 반환한다. JSON payload는 mapping으로 보존한다.
 - `create_runtime_app`은 별도 주입이 없을 때 Postgres adapter를 기본으로 사용한다. 실시간 push/운영 배포/DB 변경은 범위 밖이다.
 - 검증: focused API/SSE/Runtime tests 11 passed; compileall, deploy script `bash -n`, `git diff --check` PASS.
+
+## R3 배포 보조 스크립트 정리
+
+- `verify-public-preview.sh`는 historical preview 확인을 제거하고 3770 동일 listener의 `/health/live`, `/health/ready`, `/openapi.json`, `/auth/session` route 존재(405), UI 및 보안 헤더를 확인한다.
+- `rollback-public-preview.sh`는 compose project `anvil`과 runtime env를 사용하며 이전 Unified ASGI release가 없을 때 service 삭제를 거부한다.
+- 스크립트에는 Node proxy, `ANVIL_API_UPSTREAM`, internal 4173 전제가 없다. real-time push와 운영 실행은 범위 밖이다.
+- 검증: deployment contract/scripts 9 passed; 두 shell script `bash -n` PASS; `git diff --check` PASS. 원격/NPM/DB/Telegram 변경 없음.

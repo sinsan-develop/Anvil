@@ -9,9 +9,9 @@
 - external Docker network: existing `proxy-network`
 - public proxy: Nginx Proxy Manager `anvil.sinsan.kr -> http://anvil-web:3770`
 - persistent root: `~/deploy/anvil`
-- anvil-web unified API proxy: `ANVIL_API_UPSTREAM=${ANVIL_API_UPSTREAM:-http://anvil-internal-web-1:4173}`
-- same-origin upstream paths: `/api/*`, `/health/*`, `/integrations/*`, `/openapi.json`
-- database/LLM/Agent/Provider runtime: `NOT CONNECTED`
+- anvil-web unified ASGI runtime: UI + `/api/*` + `/health/*` + `/integrations/*` + `/auth/*` + `/openapi.json` + SSE
+- API/SSE handling is direct in the same 3770 listener; no `ANVIL_API_UPSTREAM` or internal 4173 dependency
+- database/LLM/Agent/Provider runtime: loaded from the server-owned runtime environment
 
 `shared-db`, NPM, 기존 container/network/volume은 이 Compose의 관리 대상이 아니다. Compose는 host port를 publish하지 않고 NPM과 같은 `proxy-network`에서만 서비스 이름으로 접근된다. 공개 shell은 읽기 전용 UI preview를 유지하면서 필요한 API 경로만 `anvil-web` 내부에서 upstream으로 프록시한다.
 

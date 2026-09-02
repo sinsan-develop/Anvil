@@ -44,7 +44,8 @@ class AnvilPublicPreviewScriptTests(unittest.TestCase):
             "DROP DATABASE",
         ):
             self.assertNotIn(forbidden, scripts)
-        self.assertIn("anvil-public-preview", scripts)
+        self.assertIn('compose_project="anvil"', scripts)
+        self.assertNotIn("anvil-public-preview", scripts)
         self.assertIn("anvil-web", scripts)
         self.assertIn("proxy-network", scripts)
 
@@ -53,9 +54,9 @@ class AnvilPublicPreviewScriptTests(unittest.TestCase):
         for required in (
             "docker inspect anvil-web",
             "proxy-network",
-            "http://anvil-web:3770/healthz",
             "http://anvil-web:3770/health/live",
             "http://anvil-web:3770/openapi.json",
+            "http://anvil-web:3770/auth/session",
             "https://anvil.sinsan.kr",
             "nginx-proxy-manager",
             "shared-db",
@@ -66,8 +67,10 @@ class AnvilPublicPreviewScriptTests(unittest.TestCase):
             "protected-container-ids",
             "anvil-web-verify.json",
             "public-preview-verify.json",
+            "same_listener",
         ):
             self.assertIn(required, script)
+        self.assertNotIn("api_upstream", script)
         self.assertNotIn("wget", script)
         self.assertNotIn("curl -fsSI", script)
 
