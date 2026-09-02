@@ -48,3 +48,13 @@ ysna-server의 `ANVIL_DATABASE_URL`은 `postgresql+psycopg2://` 형식을 사용
 ## 다음 조치
 
 Main Agent가 diff와 테스트 증거를 독립 검토한 뒤 승인된 ReleaseManifest 및 표준 배포 절차로 운영 마이그레이션을 재검증한다.
+
+## C-21 승인 재배포 결과
+
+- DeployApproval 갱신: `APPROVAL-20260902-C21-DEPLOY-002`
+- 표준 deploy.sh 대상: `c7826ca20c25d4f5627b2995e4cab479f3ca7fc8`
+- migration: PASS (Alembic 컨테이너 완료)
+- deployment evidence: status `deployed`, secret values omitted
+- `anvil-internal-web-1`: healthy
+- 공개 검증: `/health/live` 200, `/health/ready` 200, `/openapi.json` 200, `/api/runs/run-1/events` 401 (인증 경계 정상)
+- 추가 Telegram POST: 수행하지 않음(승인된 횟수 소진)
