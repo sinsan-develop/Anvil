@@ -38,3 +38,16 @@
 - 미검증: ysna 재배포 및 실제 NPM authenticated SSE.
 - 다음 조치: Main Agent가 diff 검토·commit 후 exact release manifest/DeployApproval 갱신 및 승인된 배포 절차로 통합한다.
 - 환경: 새 `D:\tmp` 리소스·외부 프로세스·포트·컨테이너·볼륨·네트워크 없음; 잔여 0건.
+
+## C-21 공개 `anvil-web:3770` 배포 경로 진단 — 2026-09-02
+
+- 담당: `diagnose_public_web_deploy` read-only subagent.
+- 판정: `deploy/ysna/deploy.sh`는 `compose.internal.yml`의 `web`/`127.0.0.1:4173`만 배포하므로 공개 `anvil-web:3770` 이미지를 갱신하지 않는다.
+- 공개 경로: `deploy/ysna/deploy-public-preview.sh` + `compose.public-preview.yml`; NPM은 기존 `anvil.sinsan.kr -> anvil-web:3770`을 사용한다.
+- 필수 입력: full SHA와 `anvil-ui-preview-YYYYMMDD.N` release tag. 현재 `8ba679e72f53e20561e2063f3cdf01c10981a67b`에 결박된 공개 release tag가 없어 스크립트 실행 조건이 미충족이다.
+- 변경 파일: `docs/04_test_reports/C-21_PUBLIC_WEB_DEPLOY_DIAGNOSIS.md`, `CODEX_WORK_LOG.md`.
+- 오류 횟수: 동일 근본원인 정식 실패 0회. `rg.exe` stderr 인코딩 오류 1회는 조사 도구 문제이며 코드 실패로 집계하지 않음.
+- 미검증: 공개 tag 생성/원격 push, ysna 공개 컨테이너 재배포·verify, NPM 공개 HTTPS.
+- 외부 조치/승인 필요: exact tag 이름과 `8ba679e` 결박 tag의 GitHub 생성·push 승인, 이후 공개 deploy script 실행 승인. NPM/DNS 변경은 필요하지 않음.
+- 임시 리소스: 새 `D:\tmp` 폴더·프로세스·포트·컨테이너·볼륨·네트워크 생성 없음; 기존 canonical worktree 보존, 잔여 0건.
+- 다음 조치: exact release tag를 승인·생성한 뒤 ysna에서 `deploy-public-preview.sh <full-sha> <tag>`와 `verify-public-preview.sh <full-sha>`를 순서대로 실행한다.
