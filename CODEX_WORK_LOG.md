@@ -281,7 +281,8 @@
 
 ## Canonical migration post-transfer actual state — 2026-09-02
 
-- 원격 확인: `origin/main`과 remote `codex/canonical-source-migration`은 모두 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이다. migration branch b9f0f44 push는 성공했고, remote main은 이 후속 문서 commit으로 fast-forward하지 않는다.
+- push 전 원격 snapshot: `origin/main`과 remote `codex/canonical-source-migration`은 모두 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이었다. 이 시점의 migration branch b9f0f44 push는 성공했다.
+- 현재 원격 재확인: `origin/main`은 `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`, remote `codex/canonical-source-migration`은 `628634c5a1101239a12bb69d000bd4dc46b89cae`이다. remote main은 문서 commit으로 fast-forward하지 않는다.
 - 이후 작업 기준은 `origin/main` `b9f0f44054d4f2574cc8888efa7f627b1d666ca7`이다.
 - D local `main` `c49b7534012d97ad130483c1ff255c0db1e99df4`는 stale이다. `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\ysna-internal-deploy`가 `main`을 점유하는 stale D worktree registry 때문에 `git branch -f main`은 거부됐다.
 - Desktop 삭제·Git metadata 강제 제거는 하지 않았고 D root/Desktop의 보호 dirty·untracked를 보존했다.
