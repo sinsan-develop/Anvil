@@ -54,3 +54,29 @@
 - 금지 범위: NPM/DNS 변경, secret 출력, Provider 호출
 - 승인 문구: “Unified Runtime R3 `cb3afcd`를 `anvil-web:3770`에 배포하고 UI·API·health·Telegram·SSE·Last-Event-ID를 검증한 뒤, 모두 성공하면 `anvil-internal-web-1`을 제거하는 것을 승인한다.”
 - binding ID: `APPROVAL-20260902-C21-DEPLOY-006`
+
+## Canonical Run/Event migration·NPM override 제거·조건부 internal 제거 승인
+
+- 승인일: 2026-09-02 (Asia/Seoul)
+- binding ID: `APPROVAL-20260902-C21-DEPLOY-007`
+- 배포 source commit: `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`
+- 배포 release tag: `anvil-ui-preview-20260902.2` — 위 source commit 하나에만 결박해야 한다.
+- 대상 환경: `ysna-server` / `anvil.sinsan.kr`
+- runtime listener: `anvil-web:3770`
+- 목표 migration head: `0012_run_authority`
+- 승인 범위:
+  - C-21 canonical Run/Event API의 권위·계보·멱등·동시성 migration을 운영 DB에 적용한다.
+  - migration 전 `shared-db/anvil` 전체 backup, backup catalog 확인, container/host SHA-256 일치를 확인하고 현재 revision이 정확히 `0011_telegram_webhook_state`일 때만 `0012_run_authority`를 적용한다.
+  - versioned Git 배포 절차로 exact source commit의 `anvil-web:3770` runtime을 배포한다.
+  - NPM custom Telegram internal override를 exact hash로 확인하고 byte backup한 뒤 제거하며, `nginx -t` 성공 후 graceful reload를 수행한다. 실패 시 원본을 복원하고 다시 test/reload한다.
+  - UI·API·health·Provider non-billing probe·Telegram signed POST·authenticated SSE·`Last-Event-ID` 재개를 실제 운영 경계에서 검증한다.
+  - 위 수직 검증 전체가 실제 PASS인 경우에만 `anvil-internal-web-1`을 제거하고 잔여 상태를 확인한다.
+- 조건 및 금지 범위:
+  - 수직 검증 한 항목이라도 실패·미실행이면 `anvil-internal-web-1`을 보존한다.
+  - migration 적용 뒤 자동 schema downgrade를 수행하지 않는다. 장애 시 backup을 보존하고 application rollback만 허용하며 `INCIDENT_HOLD`로 중단한다.
+  - Provider는 비용이 발생하지 않는 health/capability probe만 허용하고 모델 생성·fallback은 금지한다.
+  - Telegram signed POST는 승인된 검증 fixture 1회로 제한하고 secret·token·Authorization header 원문을 출력하거나 기록하지 않는다.
+  - server-local patch, `scp` source overwrite, dirty checkout 배포, source commit과 다른 tag 사용을 금지한다.
+- 승인 문구: “C-21 canonical Run/Event API를 위한 권위·계보·멱등·동시성 DB migration의 구현 및 적용과, NPM custom Telegram internal override를 백업 후 제거하고 `nginx -t` 및 graceful reload를 수행하는 것을 승인한다. 수직 검증 전체 성공 시에만 `anvil-internal-web-1`을 제거한다.”
+- 현재 실행 상태: release tag 생성·push, 운영 DB backup/migration, runtime 배포, NPM 변경, Provider probe, Telegram POST, authenticated SSE/`Last-Event-ID`, internal 제거는 모두 `NOT_EXECUTED`다.
+- 문서 계보: 이 승인과 ReleaseManifest를 기록하는 후속 문서 commit은 배포 source commit이 아니다. ReleaseManifest의 `source.commit`은 계속 `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`을 가리키며, 배포 시 후속 control/manifest commit에서 이 source commit을 승인한다.
