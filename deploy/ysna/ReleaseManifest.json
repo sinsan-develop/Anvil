@@ -2,7 +2,7 @@
   "manifest_type": "AnvilReleaseManifest",
   "manifest_version": "1.0",
   "work_package": "C-21",
-  "status": "PENDING_APPROVAL",
+  "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
     "commit": "cb3afcdd5971c7497b4c0044d3ee52479c59da59",
@@ -14,7 +14,7 @@
     "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
     "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
     "work_plan_sha256": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
-    "deploy_approval": null
+    "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-006"
   },
   "evidence": {
     "focused_tests": {
@@ -70,14 +70,11 @@
     "listener": "0.0.0.0:3770 unified ASGI (UI + API + Telegram + SSE)",
     "browser_api": "same-origin relative paths only",
     "database": "Anvil dedicated database and roles only; no shared-db mutation in preflight",
-    "public_exposure": "existing HTTPS host only; unified runtime R3 deployment pending approval",
+    "public_exposure": "existing HTTPS host only; unified runtime R3 deployment approved",
     "forbidden_actions_in_this_manifest": [
       "public proxy or DNS change",
       "removing anvil-internal-web-1 before unified runtime verification"
     ]
   },
-  "approval_required": [
-    "new human approval binding for exact unified runtime R3 commit cb3afcdd5971c7497b4c0044d3ee52479c59da59",
-    "internal 4173 removal only after public UI/API/health/Telegram/SSE/Last-Event-ID verification"
-  ]
+  "approval_required": []
 }

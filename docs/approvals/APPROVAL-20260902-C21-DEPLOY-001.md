@@ -44,3 +44,13 @@
 - 금지 범위: NPM/DNS 변경, secret 출력, 검증 실패 상태의 internal 컨테이너 제거
 - 승인 문구: “Unified Runtime `a962bdf`를 `anvil-web:3770`에 배포하고, UI·API·health·Telegram·SSE를 검증한 뒤 성공 시 `anvil-internal-web-1`을 제거하는 것을 승인한다.”
 - binding ID: `APPROVAL-20260902-C21-DEPLOY-005`
+
+## Unified Runtime R3 최종 배포 및 조건부 internal 제거 승인
+
+- 승인일: 2026-09-02 (Asia/Seoul)
+- 대상 runtime 커밋: `cb3afcdd5971c7497b4c0044d3ee52479c59da59`
+- 승인 범위: `anvil-web:3770` Unified Runtime R3 배포, UI·API·health·Telegram·SSE·`Last-Event-ID` 검증, 전 항목 성공 시 `anvil-internal-web-1` 제거
+- 조건: 전 항목 실제 PASS 확인 전 internal 컨테이너 제거 금지
+- 금지 범위: NPM/DNS 변경, secret 출력, Provider 호출
+- 승인 문구: “Unified Runtime R3 `cb3afcd`를 `anvil-web:3770`에 배포하고 UI·API·health·Telegram·SSE·Last-Event-ID를 검증한 뒤, 모두 성공하면 `anvil-internal-web-1`을 제거하는 것을 승인한다.”
+- binding ID: `APPROVAL-20260902-C21-DEPLOY-006`
