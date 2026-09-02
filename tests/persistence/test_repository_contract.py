@@ -1,7 +1,11 @@
 import inspect
 import unittest
 
-from packages.persistence.config import ConfigurationError, DatabaseSettings
+from packages.persistence.config import (
+    ConfigurationError,
+    DatabaseSettings,
+    normalize_postgresql_dsn,
+)
 from packages.persistence.repositories import Repository
 
 
@@ -19,5 +23,16 @@ class RepositoryContractTests(unittest.TestCase):
     def test_unqualified_postgresql_dsn_uses_psycopg3_dialect(self):
         settings = DatabaseSettings("postgresql://user:secret@db/anvil")
         self.assertEqual("postgresql+psycopg://user:secret@db/anvil", settings.dsn)
+
+    def test_psycopg2_postgresql_dsn_uses_psycopg3_dialect(self):
+        settings = DatabaseSettings("postgresql+psycopg2://user:secret@db/anvil")
+        self.assertEqual("postgresql+psycopg://user:secret@db/anvil", settings.dsn)
+
+    def test_dsn_normalization_preserves_other_dialects(self):
+        self.assertEqual(
+            "postgresql+psycopg://user:secret@db/anvil",
+            normalize_postgresql_dsn("postgresql+psycopg://user:secret@db/anvil"),
+        )
+        self.assertEqual("sqlite:///anvil.db", normalize_postgresql_dsn("sqlite:///anvil.db"))
 
 if __name__ == "__main__": unittest.main()
