@@ -93,3 +93,10 @@
 - 안전성: 이전 release 미기록 시 service 삭제를 거부한다. Node proxy, `ANVIL_API_UPSTREAM`, internal 4173 전제를 스크립트에서 제거했다.
 - 검증: deployment contract/scripts 9 passed; 두 shell script `bash -n` PASS; `git diff --check` PASS.
 - 범위 밖: real-time push, remote/NPM/DB/Telegram mutation, 운영 배포.
+
+## C-21 Unified Runtime R4 — 2026-09-02
+
+- 동일 실패 fingerprint `UNIFIED_HEALTH_SHADOWED_BY_ROOT_STATIC_MOUNT` 2회차 원인 확인: ASGI entrypoint에서 root StaticFiles mount가 health route보다 먼저 등록됨.
+- 조치: `create_asgi_app()` factory로 명시적 health route 등록을 mount보다 선행하고 fresh import 회귀 테스트 추가.
+- 검증: fresh import `/health/live` 200, `/health/ready` non-404, route order PASS; focused tests 2 passed, compileall PASS, diff-check PASS.
+- 범위 밖: Telegram/remote/DB 변경 없음.

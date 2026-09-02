@@ -48,3 +48,9 @@
 - `rollback-public-preview.sh`는 compose project `anvil`과 runtime env를 사용하며 이전 Unified ASGI release가 없을 때 service 삭제를 거부한다.
 - 스크립트에는 Node proxy, `ANVIL_API_UPSTREAM`, internal 4173 전제가 없다. real-time push와 운영 실행은 범위 밖이다.
 - 검증: deployment contract/scripts 9 passed; 두 shell script `bash -n` PASS; `git diff --check` PASS. 원격/NPM/DB/Telegram 변경 없음.
+
+## R4 health shadow regression
+
+- 원인: `mount_frontend()`가 `create_runtime_app()` 직후 실행되어 명시적 health route보다 먼저 등록되는 순서가 canonical에 재도입됐다.
+- 조치: `create_asgi_app()` factory에서 `/health/live`·`/health/ready`를 먼저 등록하고 마지막에 StaticFiles root mount를 수행했다.
+- 검증: fresh import 기준 `/health/live` 200, `/health/ready` non-404 및 route order regression PASS; compileall와 diff-check PASS. 원격/Telegram/DB 변경 없음.
