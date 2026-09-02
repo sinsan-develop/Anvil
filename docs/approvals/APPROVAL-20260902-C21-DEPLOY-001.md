@@ -16,3 +16,12 @@
 - 갱신 대상 커밋: `c7826ca20c25d4f5627b2995e4cab479f3ca7fc8`
 - 갱신 승인 문구: “C-21 수정 커밋 `c7826ca`에 대한 DeployApproval binding 갱신과 표준 `deploy.sh` 재배포를 승인한다.”
 - 갱신 binding ID: `APPROVAL-20260902-C21-DEPLOY-002`
+
+## 인증 세션/SSE 재승인
+
+- 승인일: 2026-09-02 (Asia/Seoul)
+- 대상 커밋: `9fd7c46db2d9314bd4ffed825f3fd9e2b656bfd0`
+- 승인 범위: ysna `.env`에 C-21 `ANVIL_TEST_SESSION_*` 환경변수 생성·등록, 표준 `deploy.sh` 배포, authenticated SSE 및 `Last-Event-ID` 운영 검증
+- 금지 범위: 추가 Telegram POST, NPM 설정 변경, Provider 호출, secret 값 출력
+- 승인 문구: “`9fd7c46`을 ysna에 배포하고, C-21 검증용 `ANVIL_TEST_SESSION_*` 환경변수를 어울이 생성·등록한 뒤 authenticated SSE와 Last-Event-ID 운영 검증을 수행하는 것을 승인한다.”
+- binding ID: `APPROVAL-20260902-C21-DEPLOY-003`
