@@ -196,3 +196,28 @@
 - 임시 리소스: 새 `D:\tmp` 폴더·worktree·process·port·container·volume·network 생성 없음; 잔여 0건.
 - 필요한 승인: 공유 NPM graceful reload와 exact custom override migration은 운영 설정 변경 승인 필요. exact unified release deploy/rollback 및 internal 제거는 DeployApproval/제거 승인에 결박.
 - 상세: `docs/04_test_reports/C-21_NPM_DNS_REFRESH_DIAGNOSIS.md`.
+
+## C-21 운영 migration/deploy 표준화 — 2026-09-02
+
+- 담당: `developer-primary` 단일 writer; branch `codex/c21-production-migration-deploy`, 시작 HEAD `104f406d765c1efc57ad4db505a055c2d4035e0c`, clean.
+- 구현: exact OCI commit label 검증 → DB exact 0011 guard → custom-format 전체 backup + `pg_restore -l` + SHA-256 → 같은 image로 explicit 0012 upgrade/postcheck → runtime/DNS/NPM/public readiness → guarded Telegram override removal 순서를 표준 public deploy에 추가했다.
+- 실패 경계: 0012 성공 뒤 자동 downgrade 금지, previous application image만 rollback 시도, `INCIDENT_HOLD`, `anvil-internal-web-1` 보존. internal 제거 코드는 추가하지 않았다.
+- TDD RED: 신규 executable pipeline 4건이 기능부재로 `4 failed`; rollback build가 새 revision을 상속하는 별도 RED `1 failed`.
+- GREEN: 신규 pipeline `4 passed in 6.43s`; 전체 `tests/deploy` 최종 fresh `30 passed in 9.80s`; deploy/rollback/NPM removal `bash -n` 및 `git diff --check` PASS.
+- 추가 수정: runtime alias read가 파일 내용을 반환하지 않던 redirection-only 결함과 rollback alias filename 순서 불일치를 회귀 테스트로 수정했다.
+- 환경 오류: worktree `.venv` 전체 deploy suite는 PyYAML 미설치로 collection 중단. PyYAML 6.0.3이 설치된 기존 Anaconda Python으로 전체 suite를 재실행했다. production 동일 실패 0회.
+- 외부 미실행: ysna/DB/NPM/Telegram/Provider/SSE와 internal 제거는 모두 `NOT_EXECUTED`.
+- 임시 리소스: worktree/C:\\tmp의 C-21 pytest fixture 잔여 0건. container, volume, network, port 생성 없음.
+- 상세: `docs/04_test_reports/C-21_PRODUCTION_MIGRATION_DEPLOY_IMPLEMENTATION.md`.
+- Main review 보완: 실제 `alembic current`의 `0012_run_authority (head)`를 전체 문자열로 비교해 오탐하는 RED `1 failed`를 재현했다. 단일 nonempty line의 첫 token만 canonical revision으로 파싱하도록 수정 후 전체 `tests/deploy` `30 passed in 10.75s`, shell parse와 diff-check PASS.
+- 정식 `FAILURE_REPORT` 1회차 재작업: 최초 승격에서 서버 old checkout을 신뢰하지 않고 target commit의 versioned bootstrap/deploy script를 추출·blob 검증·실행하도록 추가했다. main deploy script도 실행 중 파일 SHA-256과 target Git blob 내용 SHA-256이 다르면 배포 전 중단한다.
+- backup 보완: 컨테이너 custom dump의 SHA-256과 `docker cp` 후 host retained dump SHA-256을 exact 비교한다. corruption 회귀 테스트가 migration 전에 차단됨을 확인했다.
+- rollback 보완: previous SHA image의 OCI revision exact check, compose up, 30회 health wait/final healthy 확인 이후에만 current alias를 갱신한다. image mismatch/unhealthy에서는 기존 alias를 유지하고 nonzero 종료한다.
+- TDD RED/GREEN: 최초 정식 RED `4 failed`(bootstrap 부재, copied backup corruption 미차단, rollback image mismatch 미차단, unhealthy alias 갱신). 보완 후 pipeline `8 passed in 14.18s`; 전체 `tests/deploy` fresh `34 passed in 16.46s`; bootstrap/deploy/rollback/NPM removal 4개 `bash -n` PASS.
+- 오류 횟수: 정식 동일 lineage `FAILURE_REPORT` 1회. Windows Git Bash nested script path harness 오류 1회와 temp ACL 실행 오류는 제품 실패로 집계하지 않았고 `/usr/bin/bash` + `cygpath` 정규화 및 격리 basetemp로 해결했다. blocker 없음.
+- 외부/미검증: ysna/운영 DB/NPM/Telegram/Provider 변경은 수행하지 않았다. ReleaseManifest/DeployApproval exact hash는 Main 통합 SHA 확정 후 갱신해야 한다. `anvil-internal-web-1` 제거 구현·실행 없음.
+- 전체 deploy review 재작업 2차 / 신규 fingerprint `ROLLBACK_PREVIOUS_DOCKERFILE_NO_REVISION_LABEL` 1회: 실제 `0079699` Dockerfile에 OCI revision ARG/LABEL이 없으므로 previous checkout 뒤 compose build가 exact label 검증에서 항상 실패함을 확인했다.
+- TDD RED: label 미지원 previous Dockerfile fixture에서 기존 rollback이 `rollback image revision does not match previous release`, exit 6으로 실패하는 `1 failed`를 재현했다.
+- 조치: rollback 시작 시 현재 target HEAD의 versioned `Dockerfile.web`을 runtime temp로 추출하고 SHA-256 exact 검증한다. 이후 previous source를 checkout하여 보존 Dockerfile로 `docker build --build-arg ANVIL_RELEASE_COMMIT=<previous> --tag anvil-web:<previous12>`하고 compose up은 `--no-build`로 실행한다. OCI revision·health 성공 후에만 current alias를 갱신하며 temp Dockerfile은 trap으로 정리한다.
+- GREEN: focused `1 passed in 1.21s`; pipeline `9 passed in 16.13s`; byte-exact Dockerfile source assertion 포함 최종 전체 `tests/deploy` fresh `35 passed in 20.27s`; bootstrap/deploy/rollback/NPM removal 4개 `bash -n` PASS. 제품 수정 시도 1회, blocker 없음.
+- 외부/잔여: 운영 변경·이미지 build·배포는 실행하지 않았다. C:\tmp pytest fixture만 생성했고 종료 시 정리한다. 커밋 없음.

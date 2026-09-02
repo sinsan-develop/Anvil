@@ -7,6 +7,8 @@ services:
     build:
       context: ../..
       dockerfile: deploy/ysna/Dockerfile.web
+      args:
+        ANVIL_RELEASE_COMMIT: "${ANVIL_RELEASE_COMMIT:?deploy script must bind the image to an exact commit}"
     env_file: ["${ANVIL_RUNTIME_ENV_FILE:?run deploy/ysna/deploy.sh to prepare runtime/anvil.env}"]
     environment:
       ANVIL_HOST: 0.0.0.0
