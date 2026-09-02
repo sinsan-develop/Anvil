@@ -2,10 +2,10 @@
   "manifest_type": "AnvilReleaseManifest",
   "manifest_version": "1.0",
   "work_package": "C-21",
-  "status": "APPROVED_FOR_DEPLOYMENT",
+  "status": "APPROVAL_PENDING",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "c7826ca20c25d4f5627b2995e4cab479f3ca7fc8",
+    "commit": "660e6a51f402c2dce76501de5f9cf3c7e725b6c4",
     "branch_at_capture": "main",
     "working_tree": "CLEAN"
   },
@@ -14,7 +14,7 @@
     "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
     "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
     "work_plan_sha256": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
-    "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-002"
+    "deploy_approval": "PENDING-APPROVAL-31b8324"
   },
   "evidence": {
     "focused_tests": {
@@ -57,7 +57,13 @@
     "TELEGRAM_INTERNAL_SIGNING_SECRET",
     "TELEGRAM_ALLOWED_IDENTITIES",
     "ANVIL_DATABASE_URL",
-    "ANVIL_CONSOLE_BASE_URL"
+    "ANVIL_CONSOLE_BASE_URL",
+    "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN",
+    "ANVIL_TEST_SESSION_ACTOR_ID",
+    "ANVIL_TEST_SESSION_PROJECT_ID",
+    "ANVIL_TEST_SESSION_ENVIRONMENT_ID",
+    "ANVIL_TEST_SESSION_RUN_IDS",
+    "ANVIL_TEST_SESSION_TTL_SECONDS"
   ],
   "boundaries": {
     "listener": "127.0.0.1:4173 only",
