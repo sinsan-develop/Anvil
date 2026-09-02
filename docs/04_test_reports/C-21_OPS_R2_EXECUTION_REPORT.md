@@ -75,3 +75,13 @@
 도구 실행 권한을 승인받아 ysna-server read-only 확인을 수행했다. NPM access log는 승인된 POST를 `https anvil.sinsan.kr "/integrations/telegram/webhook"`으로 기록하고, 생성 설정은 `server_name anvil.sinsan.kr`, `/integrations`의 `proxy_pass http://anvil-web:3770`, `proxy_set_header Host $host`로 확인된다. `anvil-internal-web-1`에는 `ANVIL_PUBLIC_HOST=anvil.sinsan.kr`, `ANVIL_CONSOLE_BASE_URL=https://anvil.sinsan.kr`가 전달되어 있다.
 
 DNS/NPM 공개 Host 오기록은 배제되었지만 API handler가 실제 전달받은 Host를 현재 로그에 남기지 않아 추가 POST 없이 최종 원인을 확정할 수 없다. 원인은 `UNRESOLVED_EXTERNAL_HOST_PATH`로 분류하고, C-21 acceptance와 C-01 시작은 보류한다. 다음 조치는 비밀·payload를 남기지 않는 request-host metadata 진단 또는 별도 승인된 재시도다.
+
+## C-21 승인 재배포 후 검증
+
+- 승인된 수정 커밋 `c7826ca20c25d4f5627b2995e4cab479f3ca7fc8`를 표준 `deploy.sh`로 배포했다.
+- migration과 `anvil-internal-web-1` 재생성은 성공했고 컨테이너는 `healthy`다.
+- 공개 `/health/live`, `/health/ready`, `/openapi.json`은 200이다.
+- 공개 `/api/runs/run-1/events`는 401로 인증 경계를 유지한다.
+- 실행 중 API 컨테이너의 Host 파생값은 `anvil.sinsan.kr`이다.
+- authenticated SSE/Last-Event-ID 운영 검증은 세션 자격증명 부재로 `NOT_EXECUTED`다.
+- Telegram 추가 POST는 승인 횟수 소진으로 수행하지 않았다.
