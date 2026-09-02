@@ -7,7 +7,7 @@
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
     "commit": "5b0f3389dd6f54d1f7606ac99a36d237feda7b60",
-    "tag": "anvil-ui-preview-20260902.2",
+    "tag": "anvil-ui-preview-20260902.4",
     "tag_state": "NOT_CREATED_OR_VERIFIED",
     "branch_at_capture": "main",
     "working_tree": "CLEAN"
@@ -24,7 +24,7 @@
     "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
     "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-007",
     "deploy_approval_path": "docs/approvals/APPROVAL-20260902-C21-DEPLOY-001.md",
-    "deploy_approval_sha256": "2CECE2A1B76C0B1500CE23C23945A9C1D40907F98FDC9AFA815C284899ABB2FB"
+    "deploy_approval_sha256": "036040742CB5210D6D5F58190A8E7236623A4031D5D35B0934EA88198B99B6E8"
   },
   "evidence": {
     "run_event_contract": {
@@ -83,7 +83,7 @@
   "approval_required": [],
   "execution_prerequisites": [
     "commit and publish this control manifest without changing source.commit",
-    "create and push anvil-ui-preview-20260902.2 bound exactly to source.commit",
+    "create and push anvil-ui-preview-20260902.4 bound exactly to source.commit",
     "verify the release tag resolves to source.commit before any deployment mutation"
   ]
 }

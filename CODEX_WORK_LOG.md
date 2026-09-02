@@ -226,10 +226,11 @@
 
 - 담당: `c21_release_binding_5b0f338` 단일 문서 writer.
 - 작업 브랜치: `codex/c21-release-binding-5b0f338`; 시작 HEAD `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`, 시작 상태 clean.
-- 배포 source: exact commit `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`, release tag 이름 `anvil-ui-preview-20260902.2`.
+- 배포 source: exact commit `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`, release tag 이름 `anvil-ui-preview-20260902.4`.
 - 승인 계보: `docs/approvals/APPROVAL-20260902-C21-DEPLOY-001.md`에 `APPROVAL-20260902-C21-DEPLOY-007`을 append했다. canonical Run/Event migration 적용, NPM Telegram internal override backup/remove, `nginx -t`/graceful reload 및 전체 수직 검증 성공 후 조건부 internal 제거에만 결박했다.
 - Manifest: `deploy/ysna/ReleaseManifest.C21.DRAFT.json`의 source commit/tag, migration head `0012_run_authority`, listener `anvil-web:3770`, authority·script/report hash를 갱신했다. 이 후속 manifest 문서 commit과 배포 source commit을 명시적으로 분리했다.
 - 증거 경계: Provider non-billing probe, Telegram signed POST, authenticated SSE, `Last-Event-ID`, 운영 DB backup/migration, runtime/NPM 변경, internal 제거는 모두 `NOT_EXECUTED`로 유지했다.
 - 변경 범위: ReleaseManifest draft, deploy approval 기록, 이 작업현황 파일만 수정했다. 운영 코드 수정 없음.
 - 검증: JSON parse, exact commit/hash 대조, 승인 문구·binding 확인, release tag 미생성 확인, `git diff --check`가 모두 PASS다. scoped diff는 문서 3개만 포함한다.
 - 외부 조치: tag 생성/push, commit, 운영 변경, secret 접근은 수행하지 않는다.
+- release tag 충돌 정정: Main Agent의 원격 `git ls-remote --tags` 확인에서 `anvil-ui-preview-20260902.2`는 `a962bdfb6ba0e9c057907be8ee88909793bbf6ce`, `.3`은 `cb3afcdd5971c7497b4c0044d3ee52479c59da59`에 이미 결박되어 있었다. `anvil-ui-preview-20260902.4`는 원격 ref가 없어 C-21 source `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`용 tag 이름으로 정정했다. 이 writer는 원격 재조회·tag 생성·push를 수행하지 않았다.

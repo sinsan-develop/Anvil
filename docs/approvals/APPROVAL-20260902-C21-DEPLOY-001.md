@@ -60,7 +60,7 @@
 - 승인일: 2026-09-02 (Asia/Seoul)
 - binding ID: `APPROVAL-20260902-C21-DEPLOY-007`
 - 배포 source commit: `5b0f3389dd6f54d1f7606ac99a36d237feda7b60`
-- 배포 release tag: `anvil-ui-preview-20260902.2` — 위 source commit 하나에만 결박해야 한다.
+- 배포 release tag: `anvil-ui-preview-20260902.4` — 위 source commit 하나에만 결박해야 한다.
 - 대상 환경: `ysna-server` / `anvil.sinsan.kr`
 - runtime listener: `anvil-web:3770`
 - 목표 migration head: `0012_run_authority`
