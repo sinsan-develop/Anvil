@@ -441,7 +441,6 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/non-semantic-revision-bindings.json",
     "docs/progress/progress-event-contract.json",
     "docs/progress/progress-events.json",
     "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"

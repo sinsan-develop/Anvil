@@ -1043,7 +1043,7 @@
     {
       "approval_id": "C21-INDEPENDENT-JUDGMENT-AND-C01-SCOPE-EXPANSION",
       "status": "WAITING_APPROVAL",
-      "change_classification": "SEMANTIC",
+      "change_classification": "FUNCTION_SCOPE_CHANGE_REQUIRED",
       "reason": "C-21 independent judgment and any C-01 WorkInstruction issuance require an explicit decision; this reconciliation does not authorize functional scope expansion."
     }
   ],
@@ -1175,7 +1175,6 @@
       "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
-      "docs/progress/non-semantic-revision-bindings.json",
       "docs/progress/progress-event-contract.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
@@ -1414,5 +1413,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "9CEE1452356B68071CBCF6B5B83F85BA556EF10D30E3D2A209636CDE9A6A6C6A"
+  "snapshot_hash": "47A23C56DCF8C65A78DA252BF1D7AE5AF70A22BD291B511ED837969DEC6F8D76"
 }
