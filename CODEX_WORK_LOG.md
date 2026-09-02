@@ -41,6 +41,15 @@
 - 상태: 새 exact hash DeployApproval 대기. 기존 `a962bdf` binding은 무효화했다.
 - 제거 조건: 공개 UI·API·health·Telegram·SSE·Last-Event-ID가 모두 PASS인 경우에만 `anvil-internal-web-1` 제거.
 
+## C-21 정식 Run 생성 경로 예외 — 2026-09-02
+
+- 판정: `SCHEMA_AUTHORITY_GAP / WAITING_APPROVAL`.
+- 독립 리뷰에서 초기 구현 `828a56e`는 승인 artifact 계보 미검증과 canonical API 계약 불일치로 `MERGE_BLOCKED`; main에 반영하지 않았다.
+- 현재 migration에는 `execution_plans`, Task state version, Run의 work-instruction/execution-plan/idempotency/prior-run/resume-checkpoint 계보 컬럼과 active Run unique constraint가 없다.
+- 신규 DB migration 없이 조건을 임의 `true`로 기록하거나 직접 SQL seed를 사용하는 방식은 금지한다.
+- NPM `/data/nginx/custom/server_proxy.conf`(SHA-256 `406052ff7d4764bd23d03d7bef48db01c9683f801c010dc41ba24c7d2d1593cf`)가 Telegram webhook을 internal `4173`으로 직접 우회하므로, 제거·`nginx -t`·graceful reload 승인도 필요하다.
+- 다음 조치: 권위/계보/멱등/동시성 schema migration 및 NPM custom override 제거 승인을 받은 뒤 구현·배포·수직검증한다.
+
 ## C-21 공개 인증 프록시 — 2026-09-02
 
 - 담당: `fix_public_auth_proxy` subagent.
