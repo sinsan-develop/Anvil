@@ -3069,7 +3069,13 @@ class ProjectProgressContractTests(unittest.TestCase):
             "exact_allowed_paths":event454["details"]["exact_allowed_paths"],
         })
         progress["next_successor_work_package"].update({"package_id":"C-21/LR-02C/OPS","status":"ACTIVE_OPERATIONAL_VALIDATION"})
-        self.assertEqual([], checker.validate_c21_lr02c_operational_start_projection(manifest, started))
+        self.assertEqual(
+            {"C21_LR02C_OPERATIONAL_START_MANIFEST_INVALID", "C21_LR02C_OPERATIONAL_RELEASE_MANIFEST_INVALID"},
+            set(checker.validate_c21_lr02c_operational_start_projection(manifest, started)),
+        )
+        frozen_release = next(row for row in manifest["raw_checksums"] if row["path"] == "deploy/ysna/ReleaseManifest.json")
+        self.assertEqual(3785, frozen_release["bytes"])
+        self.assertEqual("715585BCB0F7F0679380186DE83B4C3C26A88ED5B0A5245F59BAD279F061F585", frozen_release["sha256"])
 
         opened = copy.deepcopy(started)
         opened["progress"]["next_work_package"]["status"] = "READY"
@@ -3128,11 +3134,33 @@ class ProjectProgressContractTests(unittest.TestCase):
         manifest = json.loads(
             (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json").read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_backup_portability_rework_start_projection(manifest, bundle))
-        exact_paths = bundle["progress"]["repository"]["exact_allowed_paths"]
+        started = copy.deepcopy(bundle)
+        progress = started["progress"]
+        event464 = next(event for event in started["events"]["events"] if event.get("sequence") == 464)
+        progress.update({
+            "event_sequence": 464,
+            "last_event_id": "evt_c21_lr02c_backup_portability_exact21_repository_reconciled",
+            "active_agent": "developer-primary-c21-backup",
+            "valid_failure_count": 1,
+            "active_failure_lineage": {"step_lineage_id":"C-21/LR-02C/BACKUP-PORTABILITY","failure_fingerprint":"C21_BACKUP_HOST_PG_DUMP_UNAVAILABLE","valid_failure_count":1},
+            "current_progress_evidence_ref": {"package_id":"C-21","path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json","manifest_path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json"},
+        })
+        progress["active_work_instruction"] = copy.deepcopy(progress["accepted_c21_backup_portability_work_instruction"])
+        progress["active_work_instruction"].update({"result_status":"REWORK_IN_PROGRESS","package_status":"ACTIVE_BACKUP_PORTABILITY_REWORK"})
+        progress["worker_lease"] = copy.deepcopy(progress["completed_c21_backup_portability_worker_lease"])
+        progress["worker_lease"]["status"] = "ACTIVE"
+        progress["worker_lease"].pop("revoked_at", None)
+        progress["write_lease"] = copy.deepcopy(progress["completed_c21_backup_portability_write_lease"])
+        progress["write_lease"]["status"] = "ACTIVE"
+        progress["write_lease"].pop("revoked_at", None)
+        progress["repository"].update(event464["details"])
+        progress["repository"]["exact_allowed_paths"] = event464["details"]["exact_allowed_paths"]
+        progress["next_successor_work_package"].update({"package_id":"C-21/LR-02C/BACKUP-PORTABILITY","status":"ACTIVE_BACKUP_PORTABILITY_REWORK"})
+        self.assertEqual([], checker.validate_c21_backup_portability_rework_start_projection(manifest, started))
+        exact_paths = started["progress"]["repository"]["exact_allowed_paths"]
         self.assertEqual(21, len(exact_paths))
         self.assertEqual(sorted(set(exact_paths)), exact_paths)
-        event_tampered = copy.deepcopy(bundle)
+        event_tampered = copy.deepcopy(started)
         event_tampered["events"]["events"][-1]["details"]["exact_allowed_paths"] = exact_paths[:-1]
         self.assertIn(
             "EVENT_EFFECT_MISMATCH",
@@ -3142,12 +3170,35 @@ class ProjectProgressContractTests(unittest.TestCase):
                 event_tampered["progress"],
             ),
         )
-        widened = copy.deepcopy(bundle)
+        widened = copy.deepcopy(started)
         widened["progress"]["write_lease"]["paths"].append("deploy/ysna/compose.production.yml")
         self.assertIn("C21_BACKUP_PORTABILITY_REWORK_FENCING_INVALID", checker.validate_c21_backup_portability_rework_start_projection(manifest, widened))
-        unblocked = copy.deepcopy(bundle)
+        unblocked = copy.deepcopy(started)
         unblocked["progress"]["next_work_package"]["status"] = "READY"
         self.assertIn("C21_BACKUP_PORTABILITY_REWORK_PROJECTION_INVALID", checker.validate_c21_backup_portability_rework_start_projection(manifest, unblocked))
+
+    def test_c21_backup_portability_acceptance_binds_exact24_and_release_checkpoint(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_ACCEPTANCE_MANIFEST_R1.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
+        self.assertEqual(24, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
+        self.assertIsNone(bundle["progress"]["worker_lease"])
+        self.assertIsNone(bundle["progress"]["write_lease"])
+        widened = copy.deepcopy(bundle)
+        widened["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn(
+            "C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID",
+            checker.validate_c21_backup_portability_acceptance_projection(manifest, widened),
+        )
+        release_mutated = copy.deepcopy(bundle)
+        release_mutated["progress"]["accepted_c21_backup_portability_work_instruction"]["release_commit"] = "0" * 40
+        self.assertIn(
+            "C21_BACKUP_PORTABILITY_ACCEPTED_WORK_OR_LEASE_INVALID",
+            checker.validate_c21_backup_portability_acceptance_projection(manifest, release_mutated),
+        )
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LR02C-BACKUP-PORTABILITY-ACCEPTED-R1-DIGEST-20260903",
+  "package_id": "C-21/LR-02C/BACKUP-PORTABILITY",
+  "event_sequence": 469,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 73755,
+    "file_sha256": "2BC88CE6BEE615D80154AD0496DCDF8D36E5435F94EB1AB317D1956CF6DA9074",
+    "canonical_json_sha256": "3728CC83B46B2496ED7D2BA2231C7406F16157B0746CD4380979787FBE9B1290"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 139721,
+    "file_sha256": "095EF40CD19CE7553D29BB72A66F796D1B45498997B769E4F697342DA03F4564",
+    "machine_summary_canonical_sha256": "C3EB70DBD13E76471871E67CE53767111BB21E5278429585AAE268F1583B521F"
+  },
+  "created_at": "2026-09-03T23:06:04+09:00",
+  "scope": "C-21 backup portability accepted; epoch4 revoked; exact24 release binding ready; Telegram and Provider user verification pending; C-01 blocked."
+}

@@ -5,7 +5,7 @@
   "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "f39471a103d35406c3744fd727119072994a0d6a",
+    "commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
     "branch_at_capture": "main",
     "working_tree": "CLEAN"
   },
@@ -22,7 +22,7 @@
     "focused_tests": {
       "command": "python -m pytest -q tests/tooling/test_project_progress.py tests/deploy/test_c21_lr02c_operational_contract.py tests/deploy/test_ysna_scripts_contract.py tests/api",
       "result": "PASS",
-      "count": 202
+      "count": 211
     },
     "compileall": "PASS",
     "git_diff_check": "PASS",
@@ -31,14 +31,15 @@
     "deploy_script_sha256": "5F3C33987A32AEBDCB6E68F5DA88BBAC5725B757EC938F33445AF7BEC77CD339",
     "bootstrap_script_sha256": "A4B25BA03498D051A770D55E32BC3096D72977480CB715F1781F79D854CED34A",
     "verify_script_sha256": "31D10C400A4E1B7E81F0994D1979FF57C5AAB52EA43B83780CCF5FB9061BF3C3",
-    "runtime_provider_and_telegram": "APPROVED_NOT_EXECUTED",
+    "backup_script_sha256": "25AF4CF4C3615E90514539500EC8D4698837D5ED69869B12A9D37E6A01C22A6B",
+    "runtime_provider_and_telegram": "USER_VERIFICATION_PENDING",
     "unified_runtime_frontend_same_listener": "PASS (tests/api: 99)"
   },
   "runtime": {
     "target_host": "ysna-server",
     "target_checkout": "~/deploy/anvil/repo",
     "target_runtime_root": "~/deploy/anvil",
-    "target_expected_commit": "f39471a103d35406c3744fd727119072994a0d6a",
+    "target_expected_commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
     "target_observed_commit": "NOT_EXECUTED",
     "target_preflight": "APPROVED_READY_FOR_EXECUTION",
     "target_checkout_status": "TO_BE_VERIFIED_CLEAN_DETACHED",

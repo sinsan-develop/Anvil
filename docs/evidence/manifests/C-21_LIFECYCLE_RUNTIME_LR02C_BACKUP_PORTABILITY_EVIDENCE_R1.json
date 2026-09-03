@@ -1,0 +1,26 @@
+{
+  "artifact_id": "C21-LR02C-BACKUP-PORTABILITY-EVIDENCE-R1-20260903",
+  "package_id": "C-21/LR-02C/BACKUP-PORTABILITY",
+  "manifest_type": "IMPLEMENTATION_AND_INDEPENDENT_REVIEW_EVIDENCE",
+  "result_status": "PASS",
+  "checkpoint_commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
+  "focused_tests": {
+    "backup_contract": 15,
+    "project_progress_contract": 91,
+    "ysna_scripts_contract": 6,
+    "api": 99,
+    "total": 211
+  },
+  "bash_syntax": "PASS",
+  "git_diff_check": "PASS",
+  "independent_review": "PASS_BLOCKING_FINDINGS_0",
+  "external_side_effects": "NOT_EXECUTED",
+  "telegram_and_provider": "USER_VERIFICATION_PENDING",
+  "raw_checksums": [
+    {"path":"deploy/ysna/backup-c21-db.sh","bytes":3469,"sha256":"25AF4CF4C3615E90514539500EC8D4698837D5ED69869B12A9D37E6A01C22A6B"},
+    {"path":"tests/deploy/test_c21_lr02c_operational_contract.py","bytes":17882,"sha256":"043E5964447E49EB1046A33D9C15D6FE3F03436543BC19D0AB61227E17C73686"},
+    {"path":"docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md","bytes":3846,"sha256":"BF2A0FC98160072B8B61A6E1841445D80B4CC117BF1DDF3C611BC6F5DF38A1B1"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T23:05:00+09:00"
+}

@@ -536,27 +536,37 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - seq458~464에서 epoch3 운영 lease 회수, failure 수락, Developer epoch4 exact2 lease, portability rework 재개와 exact21 repository reconciliation을 append했다.
 - Compose·network·server package를 바꾸지 않고 `backup-c21-db.sh`와 계약 테스트만 수정한다. 완료·독립 검토·새 release binding 전 외부 실행과 C-01은 차단한다.
 
+## 2026-09-03 C-21/LR-02C backup portability rework 수락
+
+- developer exact2 구현을 checkpoint `095e1488ed85ec11986447539d04cf2b494dbd34`로 commit하고 feature 원격에 push했다.
+- focused suite 211 PASS, Bash 문법과 diff 검사 PASS, 독립 reviewer blocking finding 0이다.
+- seq465~469로 epoch4 lease 회수, package 완료·Main 수락, exact24 repository reconciliation을 append했다.
+- ReleaseManifest는 checkpoint `095e148`에 결박하며 다음 단계는 main 통합 후 표준 Git 기반 backup/deploy/verify다.
+- Telegram signed POST와 Provider probe는 신산님 검증 범위로 `USER_VERIFICATION_PENDING`을 유지하고, C-01은 계속 차단한다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 464,
+  "event_sequence": 469,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_backup_portability_exact21_repository_reconciled",
-  "updated_at": "2026-09-03T20:12:00+09:00",
+  "last_event_id": "evt_c21_lr02c_backup_portability_acceptance_exact24_repository_reconciled",
+  "updated_at": "2026-09-03T23:06:04+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 1,
-  "next_safe_action": "developer-primary-c21-backup이 exact2에서 shared-db PostgreSQL 18 backup fallback을 TDD로 구현한다. 외부 실행과 C-01은 차단한다.",
+  "valid_failure_count": 0,
+  "next_safe_action": "ReleaseManifest가 승인한 checkpoint 095e148을 main에 통합한 뒤 Git 기반 ysna backup/deploy/verify를 재개한다. Telegram과 Provider는 신산님 검증 대기이며 C-01은 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "517fb4c39a3a9841eb5a07322235eb71989f1ec4",
+  "repository_head": "095e1488ed85ec11986447539d04cf2b494dbd34",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "517fb4c39a3a9841eb5a07322235eb71989f1ec4",
-  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_C21_BACKUP_PORTABILITY_EXACT21_WORKTREE",
+  "repository_validated_base_commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
+  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_BACKUP_PORTABILITY_ACCEPTED_EXACT24_WORKTREE",
   "repository_exact_allowed_paths": [
     "deploy/ysna/ReleaseManifest.json",
     "deploy/ysna/backup-c21-db.sh",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_ACCEPTANCE_MANIFEST_R1.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_EVIDENCE_R1.json",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_EXECUTION_MANIFEST.json",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json",
@@ -565,6 +575,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-accepted-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json",
     "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md",

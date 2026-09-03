@@ -1,0 +1,25 @@
+{
+  "artifact_id": "C21-LR02C-BACKUP-PORTABILITY-ACCEPTANCE-R1-20260903",
+  "package_id": "C-21/LR-02C/BACKUP-PORTABILITY",
+  "manifest_type": "MAIN_ACCEPTANCE_AND_RELEASE_BINDING_PROJECTION",
+  "target_status": "ACCEPTED_RELEASE_BINDING_READY",
+  "event_sequence": 469,
+  "validated_base_commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
+  "repository_exact_path_count": 24,
+  "focused_test_count": 211,
+  "historical_failure_count": 1,
+  "next_status": "READY_FOR_RELEASE_BINDING_AND_DEPLOYMENT",
+  "external_side_effects": "NOT_EXECUTED",
+  "telegram_and_provider": "USER_VERIFICATION_PENDING",
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-accepted-r1.json","bytes":965,"sha256":"B45A09072C62250DD5631B05F490DE2965F0ED354D6E9F7AE74027953B85AAD0"},
+    {"path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_EVIDENCE_R1.json","bytes":1204,"sha256":"8461E432930E05314289743D0DE5D469CA0B3AC500F146BAE2F62893CE78B9B5"},
+    {"path":"docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md","bytes":3846,"sha256":"BF2A0FC98160072B8B61A6E1841445D80B4CC117BF1DDF3C611BC6F5DF38A1B1"},
+    {"path":"docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md","bytes":3074,"sha256":"FF769632CE7B8ADF5343B274BA860245EE89A69321763EDAD64D1C89AAA767FD"},
+    {"path":"docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md","bytes":2245,"sha256":"1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"},
+    {"path":"deploy/ysna/ReleaseManifest.json","bytes":3885,"sha256":"9BD8BB6425E78737441814A4CFA3983367CC1443812B7EA7A7D3937DAC21A072"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T23:06:04+09:00"
+}
