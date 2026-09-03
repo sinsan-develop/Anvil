@@ -1,0 +1,22 @@
+{
+  "artifact_id": "C21-LR02B-EVIDENCE",
+  "self_reference": false,
+  "status": "COMPLETED",
+  "work_instruction": "WI-C-21-LR-02B-20260903-001",
+  "baseline_git_commit": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+  "external_side_effects": "NOT_EXECUTED",
+  "failure_fingerprint": "C21_LR02B_YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS",
+  "valid_failure_count": 1,
+  "raw_checksums": [
+    {"path":"packages/api/local_session.py","bytes":8034,"sha256":"19986F6759DE458D04505FA6D5B1432E157C7EB01CD6381C76CB8C8DF7EBEAA1"},
+    {"path":"packages/api/runtime.py","bytes":11934,"sha256":"946BC3E27E7A1CD24DDAA58B0074DF92F0B0AC1418E7216DD5E91877893BD385"},
+    {"path":"tests/api/test_local_session.py","bytes":21856,"sha256":"84C8AFD0D319428DA172A7C24577C606A2748EF934988AB238050C86ED1D22A1"},
+    {"path":"deploy/ysna/deploy.sh","bytes":5249,"sha256":"5F3C33987A32AEBDCB6E68F5DA88BBAC5725B757EC938F33445AF7BEC77CD339"},
+    {"path":"deploy/ysna/verify.sh","bytes":5619,"sha256":"273681B3498D713DD59736EB1CEFA4FADC21EC17174A6DF749F6C27B0DF8B1B6"},
+    {"path":"deploy/ysna/ReleaseManifest.C21.DRAFT.json","bytes":4463,"sha256":"D2DA5C94D326D0D65D712B8998C9BF0E8F141EBFEE4E8C9FA0DC949454AE7029"},
+    {"path":"tests/deploy/test_ysna_deployment_contract.py","bytes":5369,"sha256":"3FA21240F1ECC0882CB6D85BF815C829BF9D0EB0C204F44CE959B661A9A06B6C"},
+    {"path":"tests/deploy/test_ysna_scripts_contract.py","bytes":12920,"sha256":"05B27FC86D63E7FBD14179BF3FD4E7D32928902246E1D402DA8FAFB903EF6B96"},
+    {"path":"docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md","bytes":6787,"sha256":"9E1C89B29762D09A4DCF4BD38711FB95DC6400C02DBC95F2337B0E2634181103"},
+    {"path":".superpowers/sdd/Anvil_작업계획서_v1/task-3-report.md","bytes":1170,"sha256":"3ACA3244324737DE0FBA51F108F01B239D96A51869BABFAAFF239E75BC921685"}
+  ]
+}

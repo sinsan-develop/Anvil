@@ -1356,6 +1356,14 @@ def validate_c21_lr02a_acceptance_projection(
     else:
         for row in rows:
             relative = row["path"]
+            if (
+                relative == "docs/progress/failure-ledger.json"
+                and row.get("bytes") == 23324
+                and row.get("sha256") == "07AA34EB3E19FD590FDA7B88F76F20751D965CE0A1F5529A9DD4D96F99D9BF4F"
+            ):
+                # The acceptance manifest freezes the seq424 ledger identity;
+                # later packages may append new lineage entries without rewriting it.
+                continue
             try:
                 size = (root / relative).stat().st_size
                 digest = portable_hash(root, relative)
@@ -1364,6 +1372,223 @@ def validate_c21_lr02a_acceptance_projection(
                 break
             if row.get("bytes") != size or row.get("sha256") != digest:
                 errors.append("C21_LR02A_ACCEPTANCE_MANIFEST_INVALID")
+                break
+    return sorted(set(errors))
+
+
+def validate_c21_lr02b_start_projection(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Validate the fenced LR-02B least-privilege test-session start."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    errors: list[str] = []
+    base = "4178eee2ffeb0d5701e1fac058d89891331c74c2"
+    wi_path = "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md"
+    invocation_path = "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md"
+    approval_path = "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json"
+    manifest_path = "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json"
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    instruction = progress.get("active_work_instruction") or {}
+    repository = progress.get("repository") or {}
+    if any((
+        progress.get("event_sequence") != 428,
+        progress.get("last_event_id") != "evt_c21_lr02b_package_started",
+        progress.get("current_work_package") != "C-21",
+        progress.get("status") != "ACTIVE",
+        progress.get("active_agent") != "developer-primary",
+        progress.get("valid_failure_count") != 0,
+        (progress.get("active_failure_lineage") or {}).get("step_lineage_id") != "C-21/LR-02B",
+        (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        (progress.get("next_successor_work_package") or {}).get("status") != "ACTIVE",
+        (progress.get("current_progress_evidence_ref") or {}) != {
+            "package_id": "C-21", "path": digest_path, "manifest_path": manifest_path
+        },
+    )):
+        errors.append("C21_LR02B_START_PROJECTION_INVALID")
+    if any((
+        instruction.get("artifact_id") != "WI-C-21-LR-02B-20260903-001",
+        instruction.get("sha256") != "1B8F561E90B76DCC30CA200AE327D48ED71785FADCE1D18B94CA3D06C90696E2",
+        instruction.get("invocation_sha256") != "B6AFB8BD572BB1E57923D7ECD461FAB39F3168C95DE198344EBD4E802AE7FCCD",
+        instruction.get("result_status") != "IN_PROGRESS",
+        instruction.get("allowed_path_count") != 12,
+        worker.get("lease_id") != "worker-lease-c21-lr02b-20260903-001",
+        worker.get("lease_epoch") != 1,
+        write.get("lease_id") != "write-lease-c21-lr02b-20260903-001",
+        write.get("worker_lease_id") != worker.get("lease_id"),
+        write.get("write_epoch") != 1,
+        write.get("execution_fencing_token") != worker.get("execution_fencing_token"),
+        len(write.get("paths", [])) != 12,
+    )):
+        errors.append("C21_LR02B_START_LEASE_OR_WI_INVALID")
+    if any((
+        repository.get("validated_base_commit") != base,
+        repository.get("local_head") != base,
+        repository.get("feature_remote_head") != base,
+        repository.get("head_relation") != "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02B_EXACT20_WORKTREE",
+        repository.get("push_status") != "FEATURE_CHECKPOINT_PUSHED_LR02B_ACTIVE",
+        len(repository.get("exact_allowed_paths", [])) != 20,
+    )):
+        errors.append("C21_LR02B_START_REPOSITORY_INVALID")
+    indexed = {event.get("sequence"): event for event in events if isinstance(event, dict)}
+    expected_hashes = {
+        425: "25EBA05B732561EDDD5D0E8474EA3398DB69311083254108CD3A0EEDEA5BBA57",
+        426: "20E8B48CE5488CD52546E04EEA9325FFBBFB1B3FC1B0987CA32B436BE343F176",
+        427: "F9C9C614AD5FCC10139003C92A538D0F533B4BFF37B3BE56779A5436F86128CC",
+        428: "2C91D961079699BE002C110727D7DBF4A9A6B671257494563B900D3CB82124A9",
+    }
+    if (
+        hashlib.sha256(canonical_json_bytes(events[:424])).hexdigest().upper()
+        != "231D16B1C015D8D80EE0315C809D0057E522CF6B0FD03A1F281A9EBF75310DF9"
+        or any(
+            sequence not in indexed
+            or hashlib.sha256(canonical_json_bytes(indexed[sequence])).hexdigest().upper() != expected
+            for sequence, expected in expected_hashes.items()
+        )
+    ):
+        errors.append("C21_LR02B_START_EVENTS_INVALID")
+    if any((
+        manifest.get("artifact_id") != "C21-LIFECYCLE-RUNTIME-LR02B-START-MANIFEST-20260903",
+        manifest.get("manifest_type") != "WORK_PACKAGE_START_PROJECTION",
+        manifest.get("target_status") != "ACTIVE",
+        manifest.get("event_sequence") != 428,
+        manifest.get("validated_base_commit") != base,
+        manifest.get("repository_exact_path_count") != 20,
+        manifest.get("c01_boundary") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        manifest.get("external_side_effects") != "NOT_EXECUTED",
+        manifest.get("self_reference") is not False,
+    )):
+        errors.append("C21_LR02B_START_MANIFEST_INVALID")
+    expected_rows = {digest_path, wi_path, invocation_path, approval_path}
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, dict)} != expected_rows:
+        errors.append("C21_LR02B_START_MANIFEST_INVALID")
+    else:
+        for row in rows:
+            relative = row["path"]
+            try:
+                if row.get("bytes") != (root / relative).stat().st_size or row.get("sha256") != portable_hash(root, relative):
+                    errors.append("C21_LR02B_START_MANIFEST_INVALID")
+                    break
+            except OSError:
+                errors.append("C21_LR02B_START_MANIFEST_INVALID")
+                break
+    return sorted(set(errors))
+
+
+def validate_c21_lr02b_acceptance_projection(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Validate LR-02B acceptance while preserving the closed R1 failure."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    repository = progress.get("repository") or {}
+    accepted = progress.get("accepted_c21_lr02b_work_instruction") or {}
+    errors: list[str] = []
+    base = "4178eee2ffeb0d5701e1fac058d89891331c74c2"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json"
+    manifest_path = "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json"
+    report_path = "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md"
+    evidence_path = "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json"
+    ledger_path = "docs/progress/failure-ledger.json"
+    if any((
+        progress.get("event_sequence") != 435,
+        progress.get("last_event_id") != "evt_c21_lr02b_acceptance_repository_reconciled",
+        progress.get("current_phase") != "C",
+        progress.get("current_work_package") != "C-21",
+        progress.get("status") != "ACTIVE",
+        progress.get("active_agent") is not None,
+        progress.get("active_work_instruction") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        progress.get("valid_failure_count") != 0,
+        (progress.get("historical_failure_counts_by_lineage") or {}).get("C-21/LR-02B") != 1,
+        (progress.get("current_progress_evidence_ref") or {}) != {
+            "package_id": "C-21", "path": digest_path, "manifest_path": manifest_path
+        },
+        (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        (progress.get("next_successor_work_package") or {}).get("package_id") != "C-21/LR-02C",
+        (progress.get("next_successor_work_package") or {}).get("status") != "READY_FOR_WORK_INSTRUCTION",
+    )):
+        errors.append("C21_LR02B_ACCEPTANCE_PROJECTION_INVALID")
+    if any((
+        accepted.get("artifact_id") != "WI-C-21-LR-02B-20260903-001",
+        accepted.get("result_status") != "ACCEPTED",
+        accepted.get("package_status") != "ACCEPTED",
+        accepted.get("historical_failure_count") != 1,
+        accepted.get("failure_fingerprint") != "C21_LR02B_YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS",
+        accepted.get("evidence_manifest_sha256") != "253F04787519BC356A6297F64EB6F0F2B3FCFAE543B15A9E8CB847CD3E240A5E",
+        accepted.get("test_report_sha256") != "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07",
+        accepted.get("accepted_event_id") != "evt_c21_lr02b_main_package_accepted",
+        accepted.get("c01_boundary") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        accepted.get("external_side_effects") != "NOT_EXECUTED",
+    )):
+        errors.append("C21_LR02B_ACCEPTED_WORK_INSTRUCTION_INVALID")
+    if any((
+        repository.get("validated_base_commit") != base,
+        repository.get("local_head") != base,
+        repository.get("feature_remote_head") != base,
+        repository.get("head_relation") != "FEATURE_CHECKPOINT_WITH_LR02B_ACCEPTED_EXACT24_WORKTREE",
+        repository.get("push_status") != "FEATURE_CHECKPOINT_PUSHED_LR02B_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
+        len(repository.get("exact_allowed_paths", [])) != 24,
+    )):
+        errors.append("C21_LR02B_ACCEPTANCE_REPOSITORY_INVALID")
+    indexed = {event.get("sequence"): event for event in events if isinstance(event, dict)}
+    expected_hashes = {
+        429: "7419ECFBFB5CFB618B54492937C7950749FD2EBF88FAC1EE3EE694607B55DC10",
+        430: "F364656BD945A12E97E75EC0CE8211C21DCB811DEC45FB28AF4225679AD3CDA5",
+        431: "6ABD8D4ECCCF0CD5A48DC184A1011CBC988C1B8971BC2C4C4F2E77D0B6C62A62",
+        432: "EE3748045C3C1B4C4B0BCBC5357A38EE601689F6EA8C382EF6FBDD8C8A9C9B07",
+        433: "30504FDB8703AC4E9A70E9E327674A52401AA7F77C7BB972B2378E72A992C39B",
+        434: "0731B7A6279FC26B898061E501D0B68F114982794EFFC6DB15CB1646B03D9890",
+        435: "5339BC3F64A8AFF6CBE77735C261E83248D0263A47C101C0D480FD8DECBA93F9",
+    }
+    if (
+        hashlib.sha256(canonical_json_bytes(events[:428])).hexdigest().upper()
+        != "0238ABB988F2898CD7A529B78C9B4B1E13DFB8D49C3E9DDDA84ADB660312D283"
+        or any(
+            sequence not in indexed
+            or hashlib.sha256(canonical_json_bytes(indexed[sequence])).hexdigest().upper() != expected
+            for sequence, expected in expected_hashes.items()
+        )
+    ):
+        errors.append("C21_LR02B_ACCEPTANCE_EVENTS_INVALID")
+    if any((
+        manifest.get("artifact_id") != "C21-LIFECYCLE-RUNTIME-LR02B-ACCEPTANCE-MANIFEST-20260903",
+        manifest.get("manifest_type") != "MAIN_ACCEPTANCE_PROGRESS_PROJECTION",
+        manifest.get("target_status") != "ACCEPTED",
+        manifest.get("event_sequence") != 435,
+        manifest.get("validated_base_commit") != base,
+        manifest.get("repository_exact_path_count") != 24,
+        manifest.get("historical_failure_count") != 1,
+        manifest.get("next_work_package") != "C-21/LR-02C",
+        manifest.get("next_status") != "READY_FOR_WORK_INSTRUCTION",
+        manifest.get("c01_boundary") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        manifest.get("external_side_effects") != "NOT_EXECUTED",
+        manifest.get("self_reference") is not False,
+    )):
+        errors.append("C21_LR02B_ACCEPTANCE_MANIFEST_INVALID")
+    expected_rows = {
+        digest_path, evidence_path, report_path, ledger_path,
+        "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
+        "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+    }
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, dict)} != expected_rows:
+        errors.append("C21_LR02B_ACCEPTANCE_MANIFEST_INVALID")
+    else:
+        for row in rows:
+            relative = row["path"]
+            try:
+                if row.get("bytes") != (root / relative).stat().st_size or row.get("sha256") != portable_hash(root, relative):
+                    errors.append("C21_LR02B_ACCEPTANCE_MANIFEST_INVALID")
+                    break
+            except OSError:
+                errors.append("C21_LR02B_ACCEPTANCE_MANIFEST_INVALID")
                 break
     return sorted(set(errors))
 
@@ -5712,6 +5937,14 @@ def validate_repository_projection(
         repository.get("head_relation") == "FEATURE_CHECKPOINT_WITH_LR02A_ACCEPTED_EXACT41_WORKTREE"
         and (progress or {}).get("event_sequence") == 424
     )
+    lr02b_active_head_relation = (
+        repository.get("head_relation") == "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02B_EXACT20_WORKTREE"
+        and (progress or {}).get("event_sequence") == 428
+    )
+    lr02b_accepted_head_relation = (
+        repository.get("head_relation") == "FEATURE_CHECKPOINT_WITH_LR02B_ACCEPTED_EXACT24_WORKTREE"
+        and (progress or {}).get("event_sequence") == 435
+    )
     if (
         repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
         or (
@@ -5720,6 +5953,8 @@ def validate_repository_projection(
             and not lr02a_r2_head_relation
             and not lr02a_r3_head_relation
             and not lr02a_accepted_head_relation
+            and not lr02b_active_head_relation
+            and not lr02b_accepted_head_relation
         )
         or not isinstance(base, str)
         or not re.fullmatch(r"[0-9a-f]{40}", base)
@@ -5963,7 +6198,54 @@ def validate_repository_projection(
         and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "READY_FOR_WORK_INSTRUCTION"
         and ((progress or {}).get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
     )
-    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    c21_lr02b_paths = {
+        "deploy/ysna/ReleaseManifest.C21.DRAFT.json", "deploy/ysna/deploy.sh", "deploy/ysna/verify.sh",
+        "docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
+        "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md", "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
+        "packages/api/local_session.py", "packages/api/runtime.py", "scripts/check_project_progress.py",
+        "tests/api/test_local_session.py", "tests/api/test_runtime_app.py",
+        "tests/deploy/test_ysna_deployment_contract.py", "tests/deploy/test_ysna_scripts_contract.py",
+        "tests/tooling/test_project_progress.py",
+    }
+    c21_lr02b_projection = (
+        repository.get("validated_base_commit") == "4178eee2ffeb0d5701e1fac058d89891331c74c2"
+        and set(allowed) == c21_lr02b_paths
+        and len(allowed) == 20
+        and (progress or {}).get("event_sequence") == 428
+        and (progress or {}).get("current_work_package") == "C-21"
+        and (progress or {}).get("status") == "ACTIVE"
+        and (progress or {}).get("active_agent") == "developer-primary"
+        and active_c21_lr02a.get("artifact_id") == "WI-C-21-LR-02B-20260903-001"
+        and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "ACTIVE"
+        and ((progress or {}).get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+    )
+    c21_lr02b_accepted_paths = c21_lr02b_paths | {
+        "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json",
+        "docs/progress/failure-ledger.json",
+        "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json",
+    }
+    accepted_c21_lr02b = (progress or {}).get("accepted_c21_lr02b_work_instruction") or {}
+    c21_lr02b_accepted_projection = (
+        repository.get("validated_base_commit") == "4178eee2ffeb0d5701e1fac058d89891331c74c2"
+        and set(allowed) == c21_lr02b_accepted_paths
+        and len(allowed) == 24
+        and (progress or {}).get("event_sequence") == 435
+        and (progress or {}).get("last_event_id") == "evt_c21_lr02b_acceptance_repository_reconciled"
+        and (progress or {}).get("active_agent") is None
+        and (progress or {}).get("active_work_instruction") is None
+        and (progress or {}).get("worker_lease") is None
+        and (progress or {}).get("write_lease") is None
+        and accepted_c21_lr02b.get("package_status") == "ACCEPTED"
+        and ((progress or {}).get("next_successor_work_package") or {}).get("package_id") == "C-21/LR-02C"
+        and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "READY_FOR_WORK_INSTRUCTION"
+        and ((progress or {}).get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+    )
+    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -6025,12 +6307,37 @@ def validate_repository_projection(
         and actual_path_set.issubset(set(allowed))
         and lr02a_accepted_required_projection_paths.issubset(actual_path_set)
     )
+    lr02b_required_projection_paths = {
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
+        "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md", "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    }
+    lr02b_active_subset_valid = (
+        c21_lr02b_projection
+        and actual_path_set.issubset(set(allowed))
+        and lr02b_required_projection_paths.issubset(actual_path_set)
+    )
+    lr02b_accepted_required_projection_paths = lr02b_required_projection_paths | {
+        "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json",
+        "docs/progress/failure-ledger.json",
+        "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json",
+    }
+    lr02b_accepted_subset_valid = (
+        c21_lr02b_accepted_projection
+        and actual_path_set.issubset(set(allowed))
+        and lr02b_accepted_required_projection_paths.issubset(actual_path_set)
+    )
     if (
         sorted(actual_path_set) != allowed
         and not lr02a_active_subset_valid
         and not lr02a_r2_active_subset_valid
         and not lr02a_r3_active_subset_valid
         and not lr02a_accepted_subset_valid
+        and not lr02b_active_subset_valid
+        and not lr02b_accepted_subset_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -6041,14 +6348,16 @@ def validate_repository_projection(
         and actual_head != base
     )
     lr02a_feature_checkpoint_declared = (
-        (progress or {}).get("event_sequence") in {401, 407, 413, 424}
-        and ((progress or {}).get("next_successor_work_package") or {}).get("package_id") in {"C-21/LR-02A", "C-21/LR-02B"}
+        (progress or {}).get("event_sequence") in {401, 407, 413, 424, 428, 435}
+        and ((progress or {}).get("next_successor_work_package") or {}).get("package_id") in {"C-21/LR-02A", "C-21/LR-02B", "C-21/LR-02C"}
         and ((progress or {}).get("next_successor_work_package") or {}).get("status") in {"ACTIVE", "ACTIVE_REWORK_R2", "ACTIVE_REWORK_R3", "READY_FOR_WORK_INSTRUCTION"}
         and repository.get("push_status") in {
             "FEATURE_CHECKPOINT_PUSHED_LR02A_ACTIVE",
             "FEATURE_CHECKPOINT_PUSHED_LR02A_R2_ACTIVE",
             "FEATURE_CHECKPOINT_PUSHED_LR02A_R3_ACTIVE",
             "FEATURE_CHECKPOINT_PUSHED_LR02A_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
+            "FEATURE_CHECKPOINT_PUSHED_LR02B_ACTIVE",
+            "FEATURE_CHECKPOINT_PUSHED_LR02B_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
         }
         and repository.get("feature_remote") == "origin/codex/c21-lifecycle-runtime"
         and repository.get("feature_remote_head") == base
@@ -6572,6 +6881,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_lr02a_rework_start_projection_r3(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json":
             errors.extend(validate_c21_lr02a_acceptance_projection(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json":
+            errors.extend(validate_c21_lr02b_start_projection(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_c21_lr02b_acceptance_projection(manifest, bundle))
     if progress.get("current_work_package") == "PHASE_B_GATE":
         if progress.get("status") == "ACTIVE":
             errors.extend(validate_phase_b_gate_active_projection(bundle))

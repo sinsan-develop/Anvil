@@ -42,6 +42,7 @@ class ScriptContractTests(unittest.TestCase):
     'ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN':'test-bootstrap-secret', 'ANVIL_TEST_SESSION_ACTOR_ID':'actor-test',
     'ANVIL_TEST_SESSION_PROJECT_ID':'project-test', 'ANVIL_TEST_SESSION_ENVIRONMENT_ID':'environment-test',
     'ANVIL_TEST_SESSION_RUN_IDS':'run-allowed',
+    'ANVIL_TEST_SESSION_PERMISSION_SCOPES':'tasks:write,tasks:read,run:events:read',
    }
    (root/'.env').write_text(''.join(f'{key}={value}\n' for key,value in required.items()), encoding='utf-8', newline='\n')
    (repo/'deploy'/'ysna'/'manifest-guard.sh').write_text('validate_release_manifest() { return 0; }\n', encoding='utf-8', newline='\n')
@@ -137,6 +138,23 @@ class ScriptContractTests(unittest.TestCase):
    self.assertEqual(7,repeated.returncode); self.assertIn('Last-Event-ID was not advanced',repeated.stderr)
    generic_403=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env|{'FAKE_TELEGRAM_GENERIC_403':'1'},text=True,capture_output=True)
    self.assertEqual(6,generic_403.returncode); self.assertIn('Telegram route/auth boundary mismatch',generic_403.stderr)
+   invalid_scopes=required|{'ANVIL_TEST_SESSION_PERMISSION_SCOPES':'tasks:write'}
+   base_env=''.join(f'{key}={value}\n' for key,value in required.items() if key != 'ANVIL_TEST_SESSION_PERMISSION_SCOPES')
+   duplicate_orders=(
+    ('canonical-then-reduced', 'ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read\nANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write\n'),
+    ('reduced-then-canonical', 'ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write\nANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read\n'),
+   )
+   for label, assignments in duplicate_orders:
+    with self.subTest(script='verify', order=label):
+     (runtime/'anvil.env').write_text(base_env+assignments, encoding='utf-8', newline='\n')
+     duplicate_verify=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env,text=True,capture_output=True)
+     self.assertEqual(7,duplicate_verify.returncode)
+     self.assertIn('exactly once',duplicate_verify.stderr)
+   (runtime/'anvil.env').write_text(''.join(f'{key}={value}\n' for key,value in invalid_scopes.items()), encoding='utf-8', newline='\n')
+   rejected_verify=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env,text=True,capture_output=True)
+   self.assertEqual(7,rejected_verify.returncode)
+   self.assertIn('ANVIL_TEST_SESSION_PERMISSION_SCOPES',rejected_verify.stderr)
+   (runtime/'anvil.env').write_text(''.join(f'{key}={value}\n' for key,value in required.items()), encoding='utf-8', newline='\n')
    rollback=subprocess.run([str(bash),str(DEPLOY/'rollback.sh')],env=env,text=True,capture_output=True)
    self.assertEqual(0,rollback.returncode,rollback.stderr)
    self.assertIn('rollback-verified',(root/'verify-invocations.log').read_text())
@@ -149,3 +167,14 @@ class ScriptContractTests(unittest.TestCase):
    self.assertIn('up -d --no-build anvil-web',calls)
    self.assertNotIn('/api/ ',calls); self.assertNotIn('/auth/ ',calls); self.assertNotIn('/integrations/ ',calls)
    self.assertNotIn(required['ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN'],calls+verify.stdout+verify.stderr)
+   invalid_scopes=required|{'ANVIL_TEST_SESSION_PERMISSION_SCOPES':'tasks:write'}
+   (root/'.env').write_text(''.join(f'{key}={value}\n' for key,value in invalid_scopes.items()), encoding='utf-8', newline='\n')
+   rejected_deploy=subprocess.run([str(bash),str(DEPLOY/'deploy.sh'),target_sha],env=env,text=True,capture_output=True)
+   self.assertEqual(4,rejected_deploy.returncode)
+   self.assertIn('ANVIL_TEST_SESSION_PERMISSION_SCOPES',rejected_deploy.stderr)
+   for label, assignments in duplicate_orders:
+    with self.subTest(script='deploy', order=label):
+     (root/'.env').write_text(base_env+assignments, encoding='utf-8', newline='\n')
+     duplicate_deploy=subprocess.run([str(bash),str(DEPLOY/'deploy.sh'),target_sha],env=env,text=True,capture_output=True)
+     self.assertEqual(4,duplicate_deploy.returncode)
+     self.assertIn('exactly once',duplicate_deploy.stderr)

@@ -477,61 +477,59 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - seq420~424는 Main lease 회수, package completion, Main acceptance, repository reconciliation을 append한다. LR-02A만 수락하며 C-21은 ACTIVE, LR-02B는 READY_FOR_WORK_INSTRUCTION다.
 - 실제 Docker/SSH/DB/NPM/DNS/browser/deploy/정상 Telegram/Provider side effect는 실행하지 않았다. C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`로 유지한다.
 
+## 2026-09-03 C-21/LR-02B 최소권한 test-session 시작
+
+- LR-02A checkpoint `4178eee2ffeb0d5701e1fac058d89891331c74c2`를 feature remote에 push한 뒤 이를 새 validated base로 삼았다.
+- seq425~428은 repository reconciliation, epoch1 worker/write lease, LR-02B PACKAGE_STARTED 순서다.
+- Developer exact12는 test-session permission parser, 네 endpoint allowlist, Task authority scope와 ysna env 계약/테스트/증거만 소유한다.
+- migration, Production Task/Run 생성, NPM/DNS/Telegram/Provider, UI/OIDC/RBAC, 배포 및 C-01은 범위 밖이며 외부 side effect는 아직 0이다.
+
+## 2026-09-03 C-21/LR-02B Main acceptance
+
+- Developer는 test-session permission parser, 네 endpoint allowlist, Task/Run authority, SSE run allowlist와 ysna exact scope 계약을 구현했다.
+- 독립 R1 검토에서 중복 scope assignment preflight 우회 1건을 유효 실패로 수락했다. 같은 WI/epoch1 lease의 focused rework 후 canonical→reduced와 reduced→canonical 양방향을 deploy/verify 모두 거부해 fingerprint를 닫았다.
+- 독립 R2와 Main fresh 검증은 전체 API `99 passed`, deploy 계약 `18 passed`, checker PASS, diff-check PASS이며 blocking 0이다.
+- seq429~435는 failure 수락, focused resume, 두 lease 회수, package completion, Main acceptance, repository reconciliation을 append한다. historical failure 1은 보존하고 active failure는 0이다.
+- 실제 ysna/DB/public HTTPS/SSE/Telegram/Provider side effect는 아직 실행하지 않았다. LR-02C를 READY_FOR_WORK_INSTRUCTION으로 전환하고 C-01은 계속 차단한다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 424,
+  "event_sequence": 435,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02a_acceptance_repository_reconciled_r4",
-  "updated_at": "2026-09-03T14:30:04+09:00",
+  "last_event_id": "evt_c21_lr02b_acceptance_repository_reconciled",
+  "updated_at": "2026-09-03T15:30:06+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "LR-02A accepted projection을 검증·checkpoint push한 뒤 C-21/LR-02B 최소권한 test-session WorkInstruction을 발행한다. C-01은 계속 차단한다.",
+  "next_safe_action": "LR-02B checkpoint commit/push 후 LR-02C WorkInstruction을 발행해 production project/repository provisioning과 canonical Task→Run→Event 운영 검증을 수행한다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "repository_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "e57f008d0916953dab3c9425322a1e8942ed0379",
-  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_LR02A_ACCEPTED_EXACT41_WORKTREE",
+  "repository_validated_base_commit": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_LR02B_ACCEPTED_EXACT24_WORKTREE",
   "repository_exact_allowed_paths": [
-    "apps/api/anvil_api/asgi.py",
-    "deploy/ysna/README.md",
     "deploy/ysna/ReleaseManifest.C21.DRAFT.json",
-    "deploy/ysna/bootstrap-deploy.sh",
-    "deploy/ysna/compose.production.yml",
     "deploy/ysna/deploy.sh",
-    "deploy/ysna/rollback.sh",
     "deploy/ysna/verify.sh",
-    "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
-    "docs/04_test_reports/C-21_LR02A_INDEPENDENT_TEST_REPORT.md",
-    "docs/04_test_reports/C-21_LR02A_R2_INDEPENDENT_TEST_REPORT.md",
-    "docs/04_test_reports/C-21_LR02A_R3_INDEPENDENT_TEST_REPORT.md",
-    "docs/04_test_reports/C-21_LR02A_R3_RUNTIME_READINESS_PROGRESS.md",
-    "docs/04_test_reports/C-21_LR02A_R4_INDEPENDENT_TEST_REPORT.md",
-    "docs/04_test_reports/C-21_LR02A_RUNTIME_READINESS_PROGRESS.md",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_R3_EVIDENCE_MANIFEST.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_REWORK_START_PROGRESS_MANIFEST_R2.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_REWORK_START_PROGRESS_MANIFEST_R3.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_START_MANIFEST.json",
+    "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
+    "docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02a-accepted-r4.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02a-rework-start-r2.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02a-rework-start-r3.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02a-start.json",
-    "docs/work_orders/C-21_LR-02A_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_LR-02A_MAIN_TAKEOVER_PACKET_R4.md",
-    "docs/work_orders/C-21_LR-02A_REWORK_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/C-21_LR-02A_REWORK_INVOCATION_PROMPT_R3.md",
-    "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R2.md",
-    "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R3.md",
-    "docs/work_orders/C-21_LR-02A_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
+    "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
+    "packages/api/local_session.py",
+    "packages/api/runtime.py",
     "scripts/check_project_progress.py",
-    "tests/api/test_public_asgi_frontend.py",
-    "tests/deploy/test_public_deploy_pipeline.py",
+    "tests/api/test_local_session.py",
+    "tests/api/test_runtime_app.py",
     "tests/deploy/test_ysna_deployment_contract.py",
     "tests/deploy/test_ysna_scripts_contract.py",
     "tests/tooling/test_project_progress.py"

@@ -23,6 +23,9 @@ from .security import SESSION_MAX_AGE_SECONDS
 
 Clock = Callable[[], datetime]
 TokenFactory = Callable[[], str]
+_ALLOWED_PERMISSION_SCOPES = frozenset(
+    {"tasks:write", "tasks:read", "run:events:read"}
+)
 
 
 def _canonical(value: str, name: str) -> str:
@@ -38,6 +41,7 @@ class LocalTestSessionConfig:
     project_id: str
     environment_id: str
     run_ids: frozenset[str]
+    permission_scopes: frozenset[str] = frozenset({"run:events:read"})
     ttl_seconds: int = 900
     max_failed_attempts: int = 5
     failed_attempt_window_seconds: int = 60
@@ -56,6 +60,12 @@ class LocalTestSessionConfig:
             raise ValueError("run_ids must be an explicit non-empty frozenset")
         for run_id in self.run_ids:
             _canonical(run_id, "run_id")
+        if (
+            not isinstance(self.permission_scopes, frozenset)
+            or not self.permission_scopes
+            or not self.permission_scopes <= _ALLOWED_PERMISSION_SCOPES
+        ):
+            raise ValueError("permission_scopes must contain only supported explicit scopes")
         if type(self.ttl_seconds) is not int or not 0 < self.ttl_seconds <= SESSION_MAX_AGE_SECONDS:
             raise ValueError(f"ttl_seconds must be between 1 and {SESSION_MAX_AGE_SECONDS}")
         if type(self.max_failed_attempts) is not int or self.max_failed_attempts <= 0:
@@ -159,7 +169,7 @@ class LocalTestSessionService:
                 actor_id=self.config.actor_id,
                 actor_role="tester",
                 csrf_token=csrf_token,
-                permissions=frozenset({"run:events:read"}),
+                permissions=self.config.permission_scopes,
                 project_ids=frozenset({self.config.project_id}),
                 environment_ids=frozenset({self.config.environment_id}),
             )

@@ -663,6 +663,34 @@
         "path": "docs/work_orders/C-21_LR-02A_MAIN_TAKEOVER_PACKET_R4.md",
         "sha256": "2D1B9BF1CB74E5C56171640596E96125619B8F92A02CFA1071713B1437EBD63E"
       }
+    },
+    {
+      "entry_id": "failure-c21-lr02b-independent-review-r1",
+      "step_lineage_id": "C-21/LR-02B",
+      "failure_fingerprint": "C21_LR02B_YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS"
+      ],
+      "blocking_severity": "MAJOR",
+      "blocking_defect_count": 1,
+      "evidence_refs": [
+        {
+          "path": "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "READY_FOR_MAIN_ACCEPTANCE",
+      "closed_findings": [
+        "YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS"
+      ],
+      "blocking_defect_count_after_retest": 0,
+      "acceptance_sequence": 434
     }
   ]
 }

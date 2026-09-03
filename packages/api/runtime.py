@@ -41,7 +41,13 @@ _TEST_SESSION_REQUIRED = (
     "ANVIL_TEST_SESSION_ENVIRONMENT_ID",
     "ANVIL_TEST_SESSION_RUN_IDS",
 )
-_TEST_SESSION_OPTIONAL = ("ANVIL_TEST_SESSION_TTL_SECONDS",)
+_TEST_SESSION_OPTIONAL = (
+    "ANVIL_TEST_SESSION_TTL_SECONDS",
+    "ANVIL_TEST_SESSION_PERMISSION_SCOPES",
+)
+_ALLOWED_TEST_SESSION_PERMISSION_SCOPES = frozenset(
+    {"tasks:write", "tasks:read", "run:events:read"}
+)
 
 
 def _required(environment: Mapping[str, str], name: str) -> str:
@@ -77,6 +83,24 @@ def _local_test_session_config(
         if run_id.strip()
     )
     raw_ttl = environment.get("ANVIL_TEST_SESSION_TTL_SECONDS", "900")
+    raw_permission_scopes = environment.get("ANVIL_TEST_SESSION_PERMISSION_SCOPES")
+    if raw_permission_scopes is None:
+        permission_scopes = frozenset({"run:events:read"})
+    else:
+        if not isinstance(raw_permission_scopes, str) or not raw_permission_scopes:
+            raise RuntimeConfigurationError(
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES is invalid"
+            )
+        parsed_scopes = raw_permission_scopes.split(",")
+        if (
+            any(not item or item != item.strip() for item in parsed_scopes)
+            or len(parsed_scopes) != len(set(parsed_scopes))
+            or not set(parsed_scopes) <= _ALLOWED_TEST_SESSION_PERMISSION_SCOPES
+        ):
+            raise RuntimeConfigurationError(
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES is invalid"
+            )
+        permission_scopes = frozenset(parsed_scopes)
     try:
         ttl_seconds = int(raw_ttl)
     except (TypeError, ValueError) as error:
@@ -88,6 +112,7 @@ def _local_test_session_config(
             project_id=values["ANVIL_TEST_SESSION_PROJECT_ID"],
             environment_id=values["ANVIL_TEST_SESSION_ENVIRONMENT_ID"],
             run_ids=run_ids,
+            permission_scopes=permission_scopes,
             ttl_seconds=ttl_seconds,
         )
     except ValueError as error:
@@ -179,9 +204,28 @@ def create_runtime_app(
             )
 
         def resolve_test_scope(endpoint, path_parameters):
-            if endpoint.key != "GET /api/runs/{id}/events" or not local_session.allows_run(
-                path_parameters.get("id")
-            ):
+            if endpoint.key == task_create_key:
+                authorized = (
+                    path_parameters.get("projectId")
+                    == local_session.config.project_id
+                    and path_parameters.get("targetEnvironment")
+                    == local_session.config.environment_id
+                )
+            elif endpoint.key in {task_read_key, run_key}:
+                authority = task_repository.resolve_task_authority(
+                    path_parameters.get("taskId", "")
+                )
+                authorized = (
+                    authority is not None
+                    and authority.project_id == local_session.config.project_id
+                    and authority.target_environment
+                    == local_session.config.environment_id
+                )
+            elif endpoint.key == "GET /api/runs/{id}/events":
+                authorized = local_session.allows_run(path_parameters.get("id"))
+            else:
+                authorized = False
+            if not authorized:
                 return None
             return AuthorizationScope(
                 local_session.config.project_id,

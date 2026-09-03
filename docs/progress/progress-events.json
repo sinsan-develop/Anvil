@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 424,
+  "last_sequence": 435,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -15191,7 +15191,277 @@
         "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
         "external_side_effects": "NOT_EXECUTED"
       }
+    },
+    {
+      "event_id": "evt_c21_lr02b_repository_reconciled_start",
+      "sequence": 425,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T15:15:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "branch": "codex/c21-lifecycle-runtime",
+        "local_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+        "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T15:15:00+09:00",
+        "reason": "LR02A_CHECKPOINT_PUSHED_AND_LR02B_EXACT20_START_PROJECTION",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+        "head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02B_EXACT20_WORKTREE",
+        "exact_allowed_paths": [
+          "deploy/ysna/ReleaseManifest.C21.DRAFT.json",
+          "deploy/ysna/deploy.sh",
+          "deploy/ysna/verify.sh",
+          "docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
+          "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
+          "packages/api/local_session.py",
+          "packages/api/runtime.py",
+          "scripts/check_project_progress.py",
+          "tests/api/test_local_session.py",
+          "tests/api/test_runtime_app.py",
+          "tests/deploy/test_ysna_deployment_contract.py",
+          "tests/deploy/test_ysna_scripts_contract.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_worker_lease_issued",
+      "sequence": 426,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T15:15:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "lease_id": "worker-lease-c21-lr02b-20260903-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "LR-02B",
+        "lease_epoch": 1,
+        "execution_fencing_token": "c21-lr02b-execution-fence-epoch-1-4178eee",
+        "fencing_token": "c21-lr02b-execution-fence-epoch-1-4178eee",
+        "subject_ref": "C-21/LR-02B",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_write_lease_issued",
+      "sequence": 427,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T15:15:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "lease_id": "write-lease-c21-lr02b-20260903-001",
+        "worker_lease_id": "worker-lease-c21-lr02b-20260903-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "LR-02B",
+        "write_epoch": 1,
+        "execution_fencing_token": "c21-lr02b-execution-fence-epoch-1-4178eee",
+        "write_fencing_token": "c21-lr02b-write-fence-epoch-1-4178eee",
+        "fencing_token": "c21-lr02b-write-fence-epoch-1-4178eee",
+        "status": "ACTIVE",
+        "path_scope": [
+          "packages/api/local_session.py",
+          "packages/api/runtime.py",
+          "tests/api/test_local_session.py",
+          "tests/api/test_runtime_app.py",
+          "deploy/ysna/deploy.sh",
+          "deploy/ysna/verify.sh",
+          "deploy/ysna/ReleaseManifest.C21.DRAFT.json",
+          "tests/deploy/test_ysna_deployment_contract.py",
+          "tests/deploy/test_ysna_scripts_contract.py",
+          "docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
+          ".superpowers/sdd/Anvil_작업계획서_v1/task-3-report.md"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_package_started",
+      "sequence": 428,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-09-03T15:15:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "work_instruction_id": "WI-C-21-LR-02B-20260903-001",
+        "package_status": "ACTIVE",
+        "worker_lease_id": "worker-lease-c21-lr02b-20260903-001",
+        "write_lease_id": "write-lease-c21-lr02b-20260903-001",
+        "dispatch_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+        "dispatch_upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "external_side_effects": "NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_r1_failure_report_accepted",
+      "sequence": 429,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-09-03T15:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "entry_id": "failure-c21-lr02b-independent-review-r1",
+        "evidence_ref": {"path": "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md", "sha256": "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07", "bytes": 2789},
+        "report_sha256": "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07",
+        "failure_fingerprint": "C21_LR02B_YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS",
+        "finding_ids": ["YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS"],
+        "blocking_severity": "MAJOR",
+        "blocking_defect_count": 1,
+        "valid_failure_count": 1,
+        "accepted_sequence": 1,
+        "scope_change": false,
+        "requirements_change": false,
+        "material_risk_change": false,
+        "revision": "SAME_WI_FOCUSED_REWORK"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_r1_package_resumed",
+      "sequence": 430,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-09-03T15:30:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "resume_event_ref": "evt_c21_lr02b_r1_failure_report_accepted",
+        "work_instruction_id": "WI-C-21-LR-02B-20260903-001",
+        "failure_fingerprint": "C21_LR02B_YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS",
+        "valid_failure_count": 1,
+        "worker_lease_id": "worker-lease-c21-lr02b-20260903-001",
+        "write_lease_id": "write-lease-c21-lr02b-20260903-001",
+        "result_status": "REWORK_IN_PROGRESS",
+        "package_status": "ACTIVE",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "external_side_effects": "NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_write_lease_revoked",
+      "sequence": 431,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T15:30:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "lease_id": "write-lease-c21-lr02b-20260903-001",
+        "worker_lease_id": "worker-lease-c21-lr02b-20260903-001",
+        "write_epoch": 1,
+        "execution_fencing_token": "c21-lr02b-execution-fence-epoch-1-4178eee",
+        "write_fencing_token": "c21-lr02b-write-fence-epoch-1-4178eee",
+        "fencing_token": "c21-lr02b-write-fence-epoch-1-4178eee",
+        "reason": "LR02B_R2_IMPLEMENTATION_COMPLETE_AND_FROZEN",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_worker_lease_revoked",
+      "sequence": 432,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T15:30:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "lease_id": "worker-lease-c21-lr02b-20260903-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "LR-02B",
+        "lease_epoch": 1,
+        "execution_fencing_token": "c21-lr02b-execution-fence-epoch-1-4178eee",
+        "fencing_token": "c21-lr02b-execution-fence-epoch-1-4178eee",
+        "reason": "LR02B_R2_IMPLEMENTATION_COMPLETE_AND_FROZEN",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_package_completed",
+      "sequence": 433,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-09-03T15:30:04+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "work_instruction_id": "WI-C-21-LR-02B-20260903-001",
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "independent_tester_status": "READY_FOR_MAIN_ACCEPTANCE",
+        "worker_lease": null,
+        "write_lease": null,
+        "evidence_manifest_ref": {"path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json", "sha256": "253F04787519BC356A6297F64EB6F0F2B3FCFAE543B15A9E8CB847CD3E240A5E"},
+        "independent_report_ref": {"path": "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md", "sha256": "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07"},
+        "valid_failure_count": 1,
+        "closed_failure_fingerprint": "C21_LR02B_YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS",
+        "external_side_effects": "NOT_EXECUTED",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_main_package_accepted",
+      "sequence": 434,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "occurred_at": "2026-09-03T15:30:05+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "decision": "ACCEPTED",
+        "test_report_ref": "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
+        "test_report_sha256": "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07",
+        "manifest_ref": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
+        "manifest_sha256": "253F04787519BC356A6297F64EB6F0F2B3FCFAE543B15A9E8CB847CD3E240A5E",
+        "verdict": "READY_FOR_MAIN_ACCEPTANCE",
+        "blocking_findings": 0,
+        "valid_failure_count": 0,
+        "historical_failure_count": 1,
+        "closed_failure_fingerprint": "C21_LR02B_YSNA_DUPLICATE_SCOPE_ASSIGNMENT_PREFLIGHT_BYPASS",
+        "next_work_package": "C-21/LR-02C",
+        "next_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "c21_status": "ACTIVE",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "lr02b_only": true,
+        "external_side_effects": "NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02b_acceptance_repository_reconciled",
+      "sequence": 435,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T15:30:06+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02B",
+      "details": {
+        "branch": "codex/c21-lifecycle-runtime",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T15:30:06+09:00",
+        "reason": "LR02B_ACCEPTANCE_APPEND_ONLY_RECONCILIATION",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "accepted_event_ref": "evt_c21_lr02b_main_package_accepted",
+        "package_status": "ACTIVE/LR02B_ACCEPTED_LR02C_READY",
+        "validated_base_commit": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+        "local_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+        "feature_remote_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+        "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "head_relation": "FEATURE_CHECKPOINT_WITH_LR02B_ACCEPTED_EXACT24_WORKTREE",
+        "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02B_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
+        "repository_exact_path_count": 24,
+        "exact_allowed_paths": ["deploy/ysna/ReleaseManifest.C21.DRAFT.json", "deploy/ysna/deploy.sh", "deploy/ysna/verify.sh", "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md", "docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/failure-ledger.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json", "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json", "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md", "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md", "packages/api/local_session.py", "packages/api/runtime.py", "scripts/check_project_progress.py", "tests/api/test_local_session.py", "tests/api/test_runtime_app.py", "tests/deploy/test_ysna_deployment_contract.py", "tests/deploy/test_ysna_scripts_contract.py", "tests/tooling/test_project_progress.py"],
+        "next_work_package": "C-21/LR-02C",
+        "next_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "external_side_effects": "NOT_EXECUTED"
+      }
     }
   ],
-  "last_event_id": "evt_c21_lr02a_acceptance_repository_reconciled_r4"
+  "last_event_id": "evt_c21_lr02b_acceptance_repository_reconciled"
 }

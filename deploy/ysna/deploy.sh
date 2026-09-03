@@ -16,12 +16,23 @@ prepare_runtime_env() {
     exit 4
   }
   local name
-  for name in ANVIL_DATABASE_URL TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET TELEGRAM_INTERNAL_SIGNING_SECRET TELEGRAM_ALLOWED_IDENTITIES ANVIL_CONSOLE_BASE_URL ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN ANVIL_TEST_SESSION_ACTOR_ID ANVIL_TEST_SESSION_PROJECT_ID ANVIL_TEST_SESSION_ENVIRONMENT_ID ANVIL_TEST_SESSION_RUN_IDS; do
+  for name in ANVIL_DATABASE_URL TELEGRAM_BOT_TOKEN TELEGRAM_WEBHOOK_SECRET TELEGRAM_INTERNAL_SIGNING_SECRET TELEGRAM_ALLOWED_IDENTITIES ANVIL_CONSOLE_BASE_URL ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN ANVIL_TEST_SESSION_ACTOR_ID ANVIL_TEST_SESSION_PROJECT_ID ANVIL_TEST_SESSION_ENVIRONMENT_ID ANVIL_TEST_SESSION_RUN_IDS ANVIL_TEST_SESSION_PERMISSION_SCOPES; do
     grep -Eq "^${name}=[^[:space:]]" "$SOURCE_ENV" || {
       echo "required secret reference missing: $name" >&2
       exit 4
     }
   done
+  local scope_assignment_count permission_scopes
+  scope_assignment_count="$(grep -Ec '^ANVIL_TEST_SESSION_PERMISSION_SCOPES=' "$SOURCE_ENV" || true)"
+  [[ "$scope_assignment_count" == 1 ]] || {
+    echo 'ANVIL_TEST_SESSION_PERMISSION_SCOPES must be assigned exactly once' >&2
+    exit 4
+  }
+  permission_scopes="$(sed -n 's/^ANVIL_TEST_SESSION_PERMISSION_SCOPES=//p' "$SOURCE_ENV")"
+  [[ "$permission_scopes" == 'tasks:write,tasks:read,run:events:read' ]] || {
+    echo 'ANVIL_TEST_SESSION_PERMISSION_SCOPES must equal tasks:write,tasks:read,run:events:read' >&2
+    exit 4
+  }
   local tmp="$TARGET_ENV.tmp.$$"
   umask 077
   install -m 600 "$SOURCE_ENV" "$tmp"

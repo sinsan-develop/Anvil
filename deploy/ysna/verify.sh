@@ -11,6 +11,16 @@ read_runtime_env() {
   local name="$1"
   sed -n "s/^${name}=//p" "$RUNTIME_ENV" | tail -n 1
 }
+scope_assignment_count="$(grep -Ec '^ANVIL_TEST_SESSION_PERMISSION_SCOPES=' "$RUNTIME_ENV" || true)"
+[[ "$scope_assignment_count" == 1 ]] || {
+  echo 'ANVIL_TEST_SESSION_PERMISSION_SCOPES must be assigned exactly once' >&2
+  exit 7
+}
+permission_scopes="$(read_runtime_env ANVIL_TEST_SESSION_PERMISSION_SCOPES)"
+[[ "$permission_scopes" == 'tasks:write,tasks:read,run:events:read' ]] || {
+  echo 'ANVIL_TEST_SESSION_PERMISSION_SCOPES must equal tasks:write,tasks:read,run:events:read' >&2
+  exit 7
+}
 probe https://anvil.sinsan.kr/ >/dev/null
 openapi="$(probe https://anvil.sinsan.kr/openapi.json)"
 for contract_path in '/api/providers' '/api/runs/{id}/events'; do

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02B-START-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02B",
+  "event_sequence": 428,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 63853,
+    "file_sha256": "C8317A64DF1C1C20D8EBE3B34F2E50085FABAC416190F991AFEF677DE6D85A57",
+    "canonical_json_sha256": "30799A3F68089BBE98E1FC4FA2E16265973BD7BF3E74D5CBCE1F6C0F35A57E27"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 132326,
+    "file_sha256": "33DF64234C43A3BD6B58FD158CF1FFE265DDCBB42E2785CFDDA4174F8FCE7F99",
+    "machine_summary_canonical_sha256": "F2825B3210B4D39A7B976EF05CFAD3BE24055994E222BA6E99AFCE95C1EAFC0A"
+  },
+  "created_at": "2026-09-03T15:15:03+09:00",
+  "scope": "C-21/LR-02B least-privilege test-session permission and endpoint allowlist start; external side effects NOT_EXECUTED; C-01 remains blocked."
+}

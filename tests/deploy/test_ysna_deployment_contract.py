@@ -34,7 +34,7 @@ class DeploymentContractTests(unittest.TestCase):
   deploy=(DEPLOY/'deploy.sh').read_text(); compose=(DEPLOY/'compose.production.yml').read_text(); readme=(DEPLOY/'README.md').read_text(encoding='utf-8'); rollback=(DEPLOY/'rollback.sh').read_text()
   self.assertIn('SOURCE_ENV="$ROOT/.env"',deploy); self.assertNotIn('SOURCE_ENV="$REPO/.env"',deploy); self.assertIn('TARGET_ENV="$RUNTIME/anvil.env"',deploy); self.assertIn('install -m 600',deploy); self.assertIn('ANVIL_RUNTIME_ENV_FILE',deploy); self.assertIn('ANVIL_RUNTIME_ENV_FILE',compose)
   for name in ('ANVIL_DATABASE_URL','TELEGRAM_BOT_TOKEN','TELEGRAM_WEBHOOK_SECRET','TELEGRAM_INTERNAL_SIGNING_SECRET','TELEGRAM_ALLOWED_IDENTITIES','ANVIL_CONSOLE_BASE_URL'): self.assertIn(name,deploy)
-  for name in ('ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN','ANVIL_TEST_SESSION_ACTOR_ID','ANVIL_TEST_SESSION_PROJECT_ID','ANVIL_TEST_SESSION_ENVIRONMENT_ID','ANVIL_TEST_SESSION_RUN_IDS'): self.assertIn(name,deploy)
+  for name in ('ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN','ANVIL_TEST_SESSION_ACTOR_ID','ANVIL_TEST_SESSION_PROJECT_ID','ANVIL_TEST_SESSION_ENVIRONMENT_ID','ANVIL_TEST_SESSION_RUN_IDS','ANVIL_TEST_SESSION_PERMISSION_SCOPES'): self.assertIn(name,deploy)
   self.assertIn('runtime secret retained',rollback); self.assertIn('runtime/anvil.env',readme)
  def test_bootstrap_least_privilege(self):
   text=(DEPLOY/'bootstrap-db.sh').read_text();
@@ -58,6 +58,10 @@ class DeploymentContractTests(unittest.TestCase):
   self.assertEqual('anvil-web:3770', draft['runtime']['listener'])
   self.assertEqual('0012_run_authority', draft['runtime']['migration_precondition'])
   self.assertEqual('0013_task_bootstrap_authority', draft['runtime']['migration_head'])
+  self.assertEqual(
+   ['tasks:write', 'tasks:read', 'run:events:read'],
+   draft['runtime']['test_session_permission_scopes'],
+  )
 
  def test_canonical_image_tag_is_bound_to_the_exact_release_commit(self):
   compose=(DEPLOY/'compose.production.yml').read_text()

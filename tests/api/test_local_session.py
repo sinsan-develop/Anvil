@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 from threading import Barrier, Lock
 from time import sleep
 
@@ -11,6 +12,7 @@ import pytest
 from packages.api.common import ApiContractError
 from packages.api.runtime import RuntimeConfigurationError, create_runtime_app
 from packages.api.sse import InMemoryEventJournal, StreamEvent
+from packages.api.task_bootstrap import TaskBootstrapReceipt
 
 
 BOOTSTRAP_TOKEN = "c21-test-bootstrap-token-that-is-at-least-32-bytes"
@@ -34,6 +36,111 @@ def _environment() -> dict[str, str]:
         "ANVIL_TEST_SESSION_ENVIRONMENT_ID": "ysna-validation",
         "ANVIL_TEST_SESSION_RUN_IDS": "run-c21",
         "ANVIL_TEST_SESSION_TTL_SECONDS": "900",
+    }
+
+
+def _write_environment() -> dict[str, str]:
+    environment = _environment()
+    environment["ANVIL_TEST_SESSION_PERMISSION_SCOPES"] = (
+        "tasks:write,tasks:read,run:events:read"
+    )
+    return environment
+
+
+class _ScopedTaskRepository:
+    def __init__(self, _session_factory) -> None:
+        self.authorities = {
+            "task-c21": SimpleNamespace(
+                project_id="project-c21",
+                repository_id="repository-c21",
+                target_environment="ysna-validation",
+                mapping_version=1,
+            ),
+            "task-other-project": SimpleNamespace(
+                project_id="project-other",
+                repository_id="repository-other",
+                target_environment="ysna-validation",
+                mapping_version=1,
+            ),
+            "task-other-environment": SimpleNamespace(
+                project_id="project-c21",
+                repository_id="repository-c21",
+                target_environment="environment-other",
+                mapping_version=1,
+            ),
+        }
+
+    def resolve_task_authority(self, task_id: str):
+        return self.authorities.get(task_id)
+
+    def create(self, command):
+        return TaskBootstrapReceipt(
+            task_id="task-created",
+            project_id=command.project_id,
+            repository_id="repository-c21",
+            objective=command.objective,
+            target_environment=command.target_environment,
+            conversation_message=command.conversation_message,
+            requested_by=command.requested_by,
+            status="DRAFT",
+            version=1,
+            duplicate=False,
+        )
+
+    def get(self, task_id: str, *, project_id: str, environment_id: str):
+        authority = self.resolve_task_authority(task_id)
+        if (
+            authority is None
+            or authority.project_id != project_id
+            or authority.target_environment != environment_id
+        ):
+            return None
+        return TaskBootstrapReceipt(
+            task_id=task_id,
+            project_id=authority.project_id,
+            repository_id=authority.repository_id,
+            objective="Canonical test task",
+            target_environment=authority.target_environment,
+            conversation_message="Validate test-session scope.",
+            requested_by="c21-tester",
+            status="DRAFT",
+            version=1,
+            duplicate=False,
+        )
+
+
+def _scoped_client(monkeypatch) -> TestClient:
+    from packages.api import runtime
+    from packages.persistence import task_bootstrap_repository
+
+    monkeypatch.setattr(
+        task_bootstrap_repository,
+        "SqlAlchemyTaskBootstrapRepository",
+        _ScopedTaskRepository,
+    )
+    monkeypatch.setattr(
+        runtime,
+        "RunCreationPort",
+        lambda _repository: (lambda _request: {"runId": "run-created"}),
+    )
+    app = create_runtime_app(
+        environment=_write_environment(),
+        session_factory=lambda: _FakeSession(),
+        event_stream=_journal(),
+    )
+    return TestClient(app, base_url="https://anvil.sinsan.kr")
+
+
+def _mutation_headers(csrf_token: str, permission: str, version: int) -> dict[str, str]:
+    return {
+        "host": "anvil.sinsan.kr",
+        "origin": "https://anvil.sinsan.kr",
+        "x-csrf-token": csrf_token,
+        "idempotency-key": f"lr02b-{permission}-{version}",
+        "if-match": f'"{version}"',
+        "x-target-hash": "sha256:" + "0" * 64,
+        "x-permission-scope": permission,
+        "x-reason": "validate approved LR-02B test-session scope",
     }
 
 
@@ -213,6 +320,208 @@ def test_partial_or_weak_test_session_configuration_fails_before_route_exposure(
     weak["ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN"] = "too-short"
     with pytest.raises(RuntimeConfigurationError, match="32"):
         create_runtime_app(environment=weak, session_factory=lambda: _FakeSession())
+
+
+@pytest.mark.parametrize(
+    "permission_scopes",
+    (
+        "*",
+        "tasks:write,unknown:scope",
+        "tasks:write,tasks:write",
+        " tasks:write,tasks:read,run:events:read",
+        "tasks:write, tasks:read,run:events:read",
+        "tasks:write,tasks:read,run:events:read ",
+    ),
+)
+def test_test_session_permission_scopes_fail_closed_on_noncanonical_values(
+    permission_scopes: str,
+) -> None:
+    """Ignoring malformed, duplicated, wildcard, or unknown scopes must fail startup."""
+    environment = _environment()
+    environment["ANVIL_TEST_SESSION_PERMISSION_SCOPES"] = permission_scopes
+
+    with pytest.raises(RuntimeConfigurationError, match="ANVIL_TEST_SESSION_PERMISSION_SCOPES"):
+        create_runtime_app(environment=environment, session_factory=lambda: _FakeSession())
+
+
+def test_test_session_principal_uses_explicit_permission_scopes() -> None:
+    """Hard-coding the legacy read-only permission must fail this least-privilege contract."""
+    from packages.api.local_session import LocalTestSessionConfig, LocalTestSessionService
+
+    service = LocalTestSessionService(
+        LocalTestSessionConfig(
+            bootstrap_token=BOOTSTRAP_TOKEN,
+            actor_id="c21-tester",
+            project_id="project-c21",
+            environment_id="ysna-validation",
+            run_ids=frozenset({"run-c21"}),
+            permission_scopes=frozenset(
+                {"tasks:write", "tasks:read", "run:events:read"}
+            ),
+        ),
+        token_factory=iter(("s" * 43, "c" * 43)).__next__,
+    )
+
+    issued = service.issue(BOOTSTRAP_TOKEN, client_key="client-1")
+    principal = service.authenticate(issued.session_token)
+
+    assert principal is not None
+    assert principal.permissions == frozenset(
+        {"tasks:write", "tasks:read", "run:events:read"}
+    )
+
+
+def test_test_session_defaults_to_legacy_read_only_permission() -> None:
+    """Removing the missing-environment fallback must break existing read-only validation."""
+    from packages.api.local_session import LocalTestSessionConfig, LocalTestSessionService
+
+    service = LocalTestSessionService(
+        LocalTestSessionConfig(
+            bootstrap_token=BOOTSTRAP_TOKEN,
+            actor_id="c21-tester",
+            project_id="project-c21",
+            environment_id="ysna-validation",
+            run_ids=frozenset({"run-c21"}),
+        ),
+        token_factory=iter(("s" * 43, "c" * 43)).__next__,
+    )
+
+    issued = service.issue(BOOTSTRAP_TOKEN, client_key="client-1")
+    principal = service.authenticate(issued.session_token)
+
+    assert principal is not None
+    assert principal.permissions == frozenset({"run:events:read"})
+
+
+def test_test_session_allows_only_the_four_explicit_endpoints(monkeypatch) -> None:
+    """Granting every endpoint that shares an allowed permission must fail this allowlist."""
+    client = _scoped_client(monkeypatch)
+    issued = _issue(client)
+    csrf_token = issued.json()["data"]["csrf_token"]
+
+    created = client.post(
+        "/api/projects/project-c21/tasks",
+        headers=_mutation_headers(csrf_token, "tasks:write", 0),
+        json={
+            "objective": "Create the canonical C-21 validation task.",
+            "targetEnvironment": "ysna-validation",
+            "conversationMessage": "Use the approved test-session authority.",
+        },
+    )
+    read = client.get(
+        "/api/tasks/task-c21", headers={"host": "anvil.sinsan.kr"}
+    )
+    run_created = client.post(
+        "/api/tasks/task-c21/runs",
+        headers=_mutation_headers(csrf_token, "tasks:write", 1),
+        json={
+            "workInstructionId": "wi-c21",
+            "executionPlanId": "plan-c21",
+            "expectedStateVersion": 1,
+            "priorRunId": None,
+            "resumeCheckpointId": None,
+        },
+    )
+    events = client.get(
+        "/api/runs/run-c21/events", headers={"host": "anvil.sinsan.kr"}
+    )
+    same_permission_but_not_allowlisted = client.get(
+        "/api/tasks/task-c21/learning-snapshot",
+        headers={"host": "anvil.sinsan.kr"},
+    )
+    provider = client.get("/api/providers", headers={"host": "anvil.sinsan.kr"})
+
+    assert created.status_code == 201
+    assert read.status_code == 200
+    assert run_created.status_code == 200
+    assert events.status_code == 200
+    assert same_permission_but_not_allowlisted.status_code == 403
+    assert same_permission_but_not_allowlisted.json()["error"]["code"] == (
+        "AUTHORIZATION_SCOPE_UNRESOLVED"
+    )
+    assert provider.status_code == 403
+    assert provider.json()["error"]["code"] == "PERMISSION_DENIED"
+
+
+@pytest.mark.parametrize(
+    "method,path,json_body,permission,version",
+    (
+        (
+            "post",
+            "/api/projects/project-other/tasks",
+            {
+                "objective": "Wrong project must fail.",
+                "targetEnvironment": "ysna-validation",
+                "conversationMessage": "Reject it.",
+            },
+            "tasks:write",
+            0,
+        ),
+        (
+            "post",
+            "/api/projects/project-c21/tasks",
+            {
+                "objective": "Wrong environment must fail.",
+                "targetEnvironment": "environment-other",
+                "conversationMessage": "Reject it.",
+            },
+            "tasks:write",
+            0,
+        ),
+        ("get", "/api/tasks/task-other-project", None, "tasks:read", 0),
+        ("get", "/api/tasks/task-other-environment", None, "tasks:read", 0),
+        (
+            "post",
+            "/api/tasks/task-other-project/runs",
+            {
+                "workInstructionId": "wi-c21",
+                "executionPlanId": "plan-c21",
+                "expectedStateVersion": 1,
+                "priorRunId": None,
+                "resumeCheckpointId": None,
+            },
+            "tasks:write",
+            1,
+        ),
+        (
+            "post",
+            "/api/tasks/task-other-environment/runs",
+            {
+                "workInstructionId": "wi-c21",
+                "executionPlanId": "plan-c21",
+                "expectedStateVersion": 1,
+                "priorRunId": None,
+                "resumeCheckpointId": None,
+            },
+            "tasks:write",
+            1,
+        ),
+    ),
+)
+def test_test_session_rejects_task_and_run_authority_mismatch(
+    monkeypatch,
+    method: str,
+    path: str,
+    json_body: dict[str, object] | None,
+    permission: str,
+    version: int,
+) -> None:
+    """Replacing exact Task authority with a blanket test project grant must fail."""
+    client = _scoped_client(monkeypatch)
+    issued = _issue(client)
+    headers = {"host": "anvil.sinsan.kr"}
+    if method == "post":
+        headers = _mutation_headers(
+            issued.json()["data"]["csrf_token"], permission, version
+        )
+
+    if method == "post":
+        response = client.post(path, headers=headers, json=json_body)
+    else:
+        response = client.get(path, headers=headers)
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "AUTHORIZATION_SCOPE_UNRESOLVED"
 
 
 def test_test_session_route_is_absent_when_not_explicitly_configured() -> None:

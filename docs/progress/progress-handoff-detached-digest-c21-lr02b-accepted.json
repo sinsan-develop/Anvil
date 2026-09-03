@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02B-ACCEPTED-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02B",
+  "event_sequence": 435,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 65577,
+    "file_sha256": "A0C9ACF23CDF6D1ED46B5C5444D9FAEC91E5ACDAF37C73BF8E456017809E322E",
+    "canonical_json_sha256": "F695E1A245797926C630C1793E88916A5B48ACE1E700E5D90EAC3206621F102E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 133663,
+    "file_sha256": "439F58145449D15C2CC40B90C70790297060A8BA0522853A0E2A83BE4C41E753",
+    "machine_summary_canonical_sha256": "F79A1F916B0983DF409BAC243B49EC9C6339B01C2C052FC01BE3404FCAA2FA90"
+  },
+  "created_at": "2026-09-03T15:30:06+09:00",
+  "scope": "C-21/LR-02B accepted after one closed valid failure; LR-02C ready; external side effects NOT_EXECUTED; C-01 remains blocked."
+}

@@ -1,0 +1,27 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR02B-START-MANIFEST-20260903",
+  "package_id": "C-21/LR-02B",
+  "manifest_type": "WORK_PACKAGE_START_PROJECTION",
+  "target_status": "ACTIVE",
+  "event_sequence": 428,
+  "validated_base_commit": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+  "feature_remote_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+  "upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "work_instruction_id": "WI-C-21-LR-02B-20260903-001",
+  "worker_lease_id": "worker-lease-c21-lr02b-20260903-001",
+  "write_lease_id": "write-lease-c21-lr02b-20260903-001",
+  "developer_exact_path_count": 12,
+  "repository_exact_path_count": 20,
+  "permission_scope_contract": ["tasks:write", "tasks:read", "run:events:read"],
+  "endpoint_allowlist_count": 4,
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "external_side_effects": "NOT_EXECUTED",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json","bytes":952,"sha256":"676BA639B83243389DF06E62356B0DE70E9E8D02DB34BEC97AE3DE8A7E1897A1"},
+    {"path":"docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md","bytes":3266,"sha256":"1B8F561E90B76DCC30CA200AE327D48ED71785FADCE1D18B94CA3D06C90696E2"},
+    {"path":"docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md","bytes":597,"sha256":"B6AFB8BD572BB1E57923D7ECD461FAB39F3168C95DE198344EBD4E802AE7FCCD"},
+    {"path":"docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md","bytes":2245,"sha256":"1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T15:15:03+09:00"
+}

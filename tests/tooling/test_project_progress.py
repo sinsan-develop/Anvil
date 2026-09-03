@@ -2376,17 +2376,53 @@ class ProjectProgressContractTests(unittest.TestCase):
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json"
             ).read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_lr02a_acceptance_projection(manifest, bundle))
+        accepted_bundle = copy.deepcopy(bundle)
+        accepted_progress = accepted_bundle["progress"]
+        accepted_progress.update(
+            {
+                "event_sequence": 424,
+                "last_event_id": "evt_c21_lr02a_acceptance_repository_reconciled_r4",
+                "active_agent": None,
+                "active_work_instruction": None,
+                "worker_lease": None,
+                "write_lease": None,
+                "valid_failure_count": 0,
+                "current_progress_evidence_ref": {
+                    "package_id": "C-21",
+                    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02a-accepted-r4.json",
+                    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json",
+                },
+                "next_successor_work_package": {
+                    "package_id": "C-21/LR-02B",
+                    "status": "READY_FOR_WORK_INSTRUCTION",
+                },
+            }
+        )
+        accepted_progress["repository"].update(
+            {
+                "validated_base_commit": "e57f008d0916953dab3c9425322a1e8942ed0379",
+                "local_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
+                "feature_remote_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
+                "head_relation": "FEATURE_CHECKPOINT_WITH_LR02A_ACCEPTED_EXACT41_WORKTREE",
+                "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02A_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
+                "exact_allowed_paths": [f"historical-lr02a-path-{index}" for index in range(41)],
+            }
+        )
+        self.assertEqual([], checker.validate_c21_lr02a_acceptance_projection(manifest, accepted_bundle))
 
-        c01_opened = copy.deepcopy(bundle)
+        c01_opened = copy.deepcopy(accepted_bundle)
         c01_opened["progress"]["next_work_package"]["status"] = "READY"
         self.assertIn(
             "C21_LR02A_ACCEPTANCE_PROJECTION_INVALID",
             checker.validate_c21_lr02a_acceptance_projection(manifest, c01_opened),
         )
 
-        mutated_event = copy.deepcopy(bundle)
-        mutated_event["events"]["events"][-2]["details"]["decision"] = "REJECTED"
+        mutated_event = copy.deepcopy(accepted_bundle)
+        next(
+            event
+            for event in mutated_event["events"]["events"]
+            if event.get("sequence") == 423
+        )["details"]["decision"] = "REJECTED"
         self.assertIn(
             "C21_LR02A_ACCEPTANCE_EVENTS_INVALID",
             checker.validate_c21_lr02a_acceptance_projection(manifest, mutated_event),
@@ -2396,7 +2432,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         invalid_manifest["raw_checksums"][0]["sha256"] = "0" * 64
         self.assertIn(
             "C21_LR02A_ACCEPTANCE_MANIFEST_INVALID",
-            checker.validate_c21_lr02a_acceptance_projection(invalid_manifest, bundle),
+            checker.validate_c21_lr02a_acceptance_projection(invalid_manifest, accepted_bundle),
         )
 
         repository = bundle["progress"]["repository"]
@@ -2430,6 +2466,182 @@ class ProjectProgressContractTests(unittest.TestCase):
                 working_tree_mode=True,
                 progress=bundle["progress"],
             ),
+        )
+
+    def test_c21_lr02b_start_binds_leases_events_manifest_and_keeps_c01_blocked(self) -> None:
+        checker = self.require_checker()
+        self.assertTrue(
+            hasattr(checker, "validate_c21_lr02b_start_projection"),
+            "C-21/LR-02B start projection validator is required",
+        )
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        start_bundle = copy.deepcopy(bundle)
+        start_progress = start_bundle["progress"]
+        start_progress.update(
+            {
+                "event_sequence": 428,
+                "last_event_id": "evt_c21_lr02b_package_started",
+                "active_agent": "developer-primary",
+                "valid_failure_count": 0,
+                "active_failure_lineage": {
+                    "step_lineage_id": "C-21/LR-02B",
+                    "failure_fingerprint": None,
+                    "valid_failure_count": 0,
+                },
+                "next_successor_work_package": {
+                    "package_id": "C-21/LR-02B",
+                    "status": "ACTIVE",
+                },
+                "current_progress_evidence_ref": {
+                    "package_id": "C-21",
+                    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
+                    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
+                },
+            }
+        )
+        start_progress["active_work_instruction"] = copy.deepcopy(
+            start_progress["accepted_c21_lr02b_work_instruction"]
+        )
+        start_progress["active_work_instruction"].update(
+            {"result_status": "IN_PROGRESS", "package_status": "ACTIVE"}
+        )
+        start_progress["worker_lease"] = copy.deepcopy(
+            start_progress["completed_c21_lr02b_worker_lease"]
+        )
+        start_progress["worker_lease"]["status"] = "ACTIVE"
+        start_progress["worker_lease"].pop("revoked_at", None)
+        start_progress["write_lease"] = copy.deepcopy(
+            start_progress["completed_c21_lr02b_write_lease"]
+        )
+        start_progress["write_lease"]["status"] = "ACTIVE"
+        start_progress["write_lease"].pop("revoked_at", None)
+        accepted_only = {
+            "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
+            "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json",
+            "docs/progress/failure-ledger.json",
+            "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json",
+        }
+        start_progress["repository"]["exact_allowed_paths"] = [
+            path
+            for path in start_progress["repository"]["exact_allowed_paths"]
+            if path not in accepted_only
+        ]
+        start_progress["repository"].update(
+            {
+                "head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02B_EXACT20_WORKTREE",
+                "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02B_ACTIVE",
+            }
+        )
+        self.assertEqual([], checker.validate_c21_lr02b_start_projection(manifest, start_bundle))
+
+        c01_opened = copy.deepcopy(start_bundle)
+        c01_opened["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn(
+            "C21_LR02B_START_PROJECTION_INVALID",
+            checker.validate_c21_lr02b_start_projection(manifest, c01_opened),
+        )
+
+        mutated_event = copy.deepcopy(start_bundle)
+        next(event for event in mutated_event["events"]["events"] if event.get("sequence") == 428)[
+            "event_type"
+        ] = "PACKAGE_COMPLETED"
+        self.assertIn(
+            "C21_LR02B_START_EVENTS_INVALID",
+            checker.validate_c21_lr02b_start_projection(manifest, mutated_event),
+        )
+
+        invalid_manifest = copy.deepcopy(manifest)
+        invalid_manifest["raw_checksums"][0]["sha256"] = "0" * 64
+        self.assertIn(
+            "C21_LR02B_START_MANIFEST_INVALID",
+            checker.validate_c21_lr02b_start_projection(invalid_manifest, start_bundle),
+        )
+
+        repository = start_bundle["progress"]["repository"]
+        changed_paths = [
+            "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
+            "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md",
+            "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        self.assertNotIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(
+                repository,
+                actual_head=repository["validated_base_commit"],
+                actual_branch=repository["branch"],
+                actual_upstream=repository["upstream"],
+                actual_remote_head=repository["remote_head"],
+                actual_feature_remote_head=repository["feature_remote_head"],
+                base_is_ancestor=True,
+                actual_changed_paths=changed_paths,
+                working_tree_mode=True,
+                progress=start_bundle["progress"],
+            ),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(
+                repository,
+                actual_head=repository["validated_base_commit"],
+                actual_branch=repository["branch"],
+                actual_upstream=repository["upstream"],
+                actual_remote_head=repository["remote_head"],
+                actual_feature_remote_head=repository["feature_remote_head"],
+                base_is_ancestor=True,
+                actual_changed_paths=changed_paths + ["outside.txt"],
+                working_tree_mode=True,
+                progress=start_bundle["progress"],
+            ),
+        )
+
+    def test_c21_lr02b_acceptance_binds_closed_failure_and_keeps_c01_blocked(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_c21_lr02b_acceptance_projection(manifest, bundle))
+
+        c01_opened = copy.deepcopy(bundle)
+        c01_opened["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn(
+            "C21_LR02B_ACCEPTANCE_PROJECTION_INVALID",
+            checker.validate_c21_lr02b_acceptance_projection(manifest, c01_opened),
+        )
+        lost_failure = copy.deepcopy(bundle)
+        lost_failure["progress"]["historical_failure_counts_by_lineage"]["C-21/LR-02B"] = 0
+        self.assertIn(
+            "C21_LR02B_ACCEPTANCE_PROJECTION_INVALID",
+            checker.validate_c21_lr02b_acceptance_projection(manifest, lost_failure),
+        )
+        mutated_event = copy.deepcopy(bundle)
+        next(event for event in mutated_event["events"]["events"] if event.get("sequence") == 434)[
+            "details"
+        ]["decision"] = "REJECTED"
+        self.assertIn(
+            "C21_LR02B_ACCEPTANCE_EVENTS_INVALID",
+            checker.validate_c21_lr02b_acceptance_projection(manifest, mutated_event),
+        )
+        invalid_manifest = copy.deepcopy(manifest)
+        invalid_manifest["raw_checksums"][0]["sha256"] = "0" * 64
+        self.assertIn(
+            "C21_LR02B_ACCEPTANCE_MANIFEST_INVALID",
+            checker.validate_c21_lr02b_acceptance_projection(invalid_manifest, bundle),
         )
 
 if __name__ == "__main__":

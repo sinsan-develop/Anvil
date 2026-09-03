@@ -62,6 +62,11 @@
     "listener": "anvil-web:3770",
     "migration_precondition": "0012_run_authority",
     "migration_head": "0013_task_bootstrap_authority",
+    "test_session_permission_scopes": [
+      "tasks:write",
+      "tasks:read",
+      "run:events:read"
+    ],
     "database_backup": "NOT_EXECUTED",
     "migration_execution": "NOT_EXECUTED",
     "runtime_deployment": "NOT_EXECUTED",
