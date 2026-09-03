@@ -3184,9 +3184,16 @@ class ProjectProgressContractTests(unittest.TestCase):
             (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_ACCEPTANCE_MANIFEST_R1.json").read_text(encoding="utf-8")
         )
         self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
-        self.assertEqual(24, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
-        self.assertIsNone(bundle["progress"]["worker_lease"])
-        self.assertIsNone(bundle["progress"]["write_lease"])
+        self.assertEqual(475, bundle["progress"]["event_sequence"])
+        self.assertEqual(13, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
+        self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
+        self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
+        arbitrary_later = copy.deepcopy(bundle)
+        arbitrary_later["progress"]["event_sequence"] = 476
+        self.assertIn(
+            "C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID",
+            checker.validate_c21_backup_portability_acceptance_projection(manifest, arbitrary_later),
+        )
         widened = copy.deepcopy(bundle)
         widened["progress"]["next_work_package"]["status"] = "READY"
         self.assertIn(
@@ -3198,6 +3205,62 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn(
             "C21_BACKUP_PORTABILITY_ACCEPTED_WORK_OR_LEASE_INVALID",
             checker.validate_c21_backup_portability_acceptance_projection(manifest, release_mutated),
+        )
+
+    def test_c21_operational_r2_rework_preserves_seq469_and_binds_epoch5(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_REWORK_START_R2_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_c21_lr02c_operational_rework_r2_projection(manifest, bundle))
+        events = bundle["events"]["events"]
+        frozen = checker.canonical_json_bytes(events[:469])
+        self.assertEqual(
+            "85EC925F60701C3127C8CE166BBAE59980704925FBD16DBFF875BE3552AC7CEB",
+            hashlib.sha256(frozen).hexdigest().upper(),
+        )
+        self.assertEqual(
+            [
+                "FAILURE_REPORT_ACCEPTED",
+                "WORKER_LEASE_ISSUED",
+                "WRITE_LEASE_ISSUED",
+                "PACKAGE_RESUMED",
+                "REPOSITORY_RECONCILED",
+                "PACKAGE_RESUMED",
+            ],
+            [event["event_type"] for event in events[469:475]],
+        )
+        self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
+        self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
+        self.assertEqual(
+            "USER_VERIFICATION_PENDING",
+            bundle["progress"]["active_work_instruction"]["telegram_and_provider"],
+        )
+        binding = bundle["progress"]["active_work_instruction"]["revision_binding"]
+        self.assertEqual("MAIN_RECONFIRMED_NON_SEMANTIC", bundle["progress"]["active_work_instruction"]["revision_classification"])
+        self.assertEqual("APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001", binding["root_human_approval_id"])
+        self.assertEqual("NONE", binding["semantic_diff"])
+        self.assertFalse(binding["scope_expansion"])
+        self.assertEqual(binding["work_instruction_new_hash"], bundle["progress"]["active_work_instruction"]["sha256"])
+        self.assertEqual(binding["invocation_new_hash"], bundle["progress"]["active_work_instruction"]["invocation_sha256"])
+        rebound = events[474]["details"]
+        self.assertEqual(binding["binding_id"], rebound["binding_id"])
+        self.assertEqual(13, rebound["exact_allowed_path_count"])
+        stale = copy.deepcopy(bundle)
+        stale["progress"]["active_work_instruction"]["revision_binding"]["work_instruction_new_hash"] = "0" * 64
+        self.assertIn(
+            "C21_LR02C_OPERATIONAL_R2_NONSEMANTIC_BINDING_INVALID",
+            checker.validate_c21_lr02c_operational_rework_r2_projection(manifest, stale),
+        )
+        widened = copy.deepcopy(bundle)
+        widened["progress"]["write_lease"]["paths"].append("deploy/ysna/compose.production.yml")
+        self.assertIn(
+            "C21_LR02C_OPERATIONAL_R2_FENCING_INVALID",
+            checker.validate_c21_lr02c_operational_rework_r2_projection(manifest, widened),
         )
 
 if __name__ == "__main__":

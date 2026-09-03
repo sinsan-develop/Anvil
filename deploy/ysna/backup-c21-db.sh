@@ -6,6 +6,19 @@ ROOT="${ANVIL_DEPLOY_ROOT:?ANVIL_DEPLOY_ROOT is required}"
 RELEASE="${ANVIL_RELEASE_COMMIT:?ANVIL_RELEASE_COMMIT is required}"
 [[ "$RELEASE" =~ ^[0-9a-f]{40}$ ]] || { echo 'full release SHA required' >&2; exit 2; }
 
+case "$ANVIL_DATABASE_URL" in
+  postgresql+psycopg2://*)
+    LIBPQ_DATABASE_URL="postgresql://${ANVIL_DATABASE_URL#postgresql+psycopg2://}"
+    ;;
+  postgresql://*|postgres://*)
+    LIBPQ_DATABASE_URL="$ANVIL_DATABASE_URL"
+    ;;
+  *)
+    echo 'ANVIL_DATABASE_URL must use a PostgreSQL scheme' >&2
+    exit 22
+    ;;
+esac
+
 BACKUP_DIR="$ROOT/backups/c21/$RELEASE"
 EVIDENCE_DIR="$ROOT/evidence"
 BACKUP="$BACKUP_DIR/anvil.dump"
@@ -21,7 +34,7 @@ trap 'rm -f "$tmp" "$LISTING.tmp.$$"' EXIT
 host_pg_dump="$(command -v pg_dump || true)"
 host_pg_restore="$(command -v pg_restore || true)"
 if [[ -n "$host_pg_dump" && -n "$host_pg_restore" ]]; then
-  if ! PGDATABASE="$ANVIL_DATABASE_URL" "$host_pg_dump" \
+  if ! PGDATABASE="$LIBPQ_DATABASE_URL" "$host_pg_dump" \
       --format=custom --no-owner --no-acl --file="$tmp" 2>/dev/null; then
     echo 'database backup failed using host PostgreSQL client' >&2
     exit 13
@@ -51,7 +64,7 @@ else
     echo 'ANVIL_DATABASE_URL contains an unsupported line break' >&2
     exit 19
   }
-  if ! printf '%s\n' "$ANVIL_DATABASE_URL" | docker exec -i -u postgres shared-db sh -ceu '
+  if ! printf '%s\n' "$LIBPQ_DATABASE_URL" | docker exec -i -u postgres shared-db sh -ceu '
       IFS= read -r PGDATABASE
       export PGDATABASE
       exec pg_dump --format=custom --no-owner --no-acl --file=-

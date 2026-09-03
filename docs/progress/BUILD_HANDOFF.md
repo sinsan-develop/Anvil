@@ -544,44 +544,46 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - ReleaseManifest는 checkpoint `095e148`에 결박하며 다음 단계는 main 통합 후 표준 Git 기반 backup/deploy/verify다.
 - Telegram signed POST와 Provider probe는 신산님 검증 범위로 `USER_VERIFICATION_PENDING`을 유지하고, C-01은 계속 차단한다.
 
+## 2026-09-03 C-21/LR-02C OPS-R2 운영 실패 수락 및 재작업 시작
+
+- main/origin `ca945dfe4fed9befedc46620aff24729c3898952`, 승인 배포 대상 `095e1488ed85ec11986447539d04cf2b494dbd34`, ysna 관찰 HEAD `8ba679e`를 구분해 보존했다.
+- preflight에서 `INCIDENT_HOLD` 부재, `.env` mode `600`, `shared-db` 존재, `anvil-web` healthy를 확인했으나 permission scope가 누락됐다.
+- backup attempt 1은 exit `20`으로 종료됐다. SQLAlchemy DSN scheme `postgresql+psycopg2://`가 libpq에 그대로 전달되어 database name으로 해석된 것이 근본 원인이다.
+- DB dump와 backup receipt는 생성되지 않았고 deploy/migration은 실행하지 않았다. Telegram/Provider 실호출은 신산님 검증 대기이므로 실행하지 않았다.
+- seq470~474에서 유효 실패 수락, epoch5 worker/write lease 발급, OPS-R2 재개, exact13 repository reconciliation을 append했다. seq1~469와 동결 acceptance 파일은 변경하지 않았다.
+- seq475에서 WI와 invocation의 EOF 여분 빈 줄 제거를 `MAIN_RECONFIRMED_NON_SEMANTIC`으로 재확정했다. 원 human approval 범위와 exact13, 기능 범위·요구사항·중요 위험은 변경하지 않았다.
+- 제품 script와 deploy 계약 테스트의 수정은 다음 Developer TDD 단계로 남아 있다. 새 release binding과 검증 전 외부 재시도 및 C-01은 차단한다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 469,
+  "event_sequence": 475,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_backup_portability_acceptance_exact24_repository_reconciled",
-  "updated_at": "2026-09-03T23:06:04+09:00",
+  "last_event_id": "evt_c21_lr02c_ops_r2_nonsemantic_revision_rebound",
+  "updated_at": "2026-09-04T01:20:45+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 0,
-  "next_safe_action": "ReleaseManifest가 승인한 checkpoint 095e148을 main에 통합한 뒤 Git 기반 ysna backup/deploy/verify를 재개한다. Telegram과 Provider는 신산님 검증 대기이며 C-01은 차단한다.",
+  "valid_failure_count": 1,
+  "active_work_instruction_sha256": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
+  "active_invocation_sha256": "8207996858DE33B542862B4D5C6AEBC1787BC4A0612E1C0052CAC3B637263FC5",
+  "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
+  "next_safe_action": "OPS-R2 epoch5 lease에서 SQLAlchemy PostgreSQL DSN의 libpq scheme 정규화 회귀 테스트와 최소 수정을 완료하고 새 checkpoint·ReleaseManifest를 결박한다. 그 전 운영 backup 재시도는 금지하며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "095e1488ed85ec11986447539d04cf2b494dbd34",
+  "repository_head": "ca945dfe4fed9befedc46620aff24729c3898952",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
-  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_BACKUP_PORTABILITY_ACCEPTED_EXACT24_WORKTREE",
+  "repository_validated_base_commit": "ca945dfe4fed9befedc46620aff24729c3898952",
+  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_EXACT13",
   "repository_exact_allowed_paths": [
-    "deploy/ysna/ReleaseManifest.json",
     "deploy/ysna/backup-c21-db.sh",
-    "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_ACCEPTANCE_MANIFEST_R1.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_EVIDENCE_R1.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_EXECUTION_MANIFEST.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json",
-    "docs/evidence/receipts/C-21_LR02C_OPERATIONAL_EXECUTION_RECEIPT.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_REWORK_START_R2_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-accepted-r1.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json",
-    "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md",
-    "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md",
-    "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-rework-start-r2.json",
+    "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION_R2.md",
     "scripts/check_project_progress.py",
     "tests/deploy/test_c21_lr02c_operational_contract.py",
     "tests/tooling/test_project_progress.py"

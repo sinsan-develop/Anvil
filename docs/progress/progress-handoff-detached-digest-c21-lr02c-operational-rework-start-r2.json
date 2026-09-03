@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LR02C-OPERATIONAL-REWORK-START-R2-DIGEST-20260903",
+  "package_id": "C-21/LR-02C/OPS-R2",
+  "event_sequence": 475,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 78219,
+    "file_sha256": "DE20B97BD4790A9C0404BA34C566D1C8F2871F7701A89881A2BCCF86DACD4E56",
+    "canonical_json_sha256": "C159ADEEFE05579FCFAB02F0DA04D6BE630B4163C01FF2BB85FA031C2431D279"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 140526,
+    "file_sha256": "0B3408AEF71B04ADF4D5AF2A95668A19DE005D68304924178240245766FFEC8E",
+    "machine_summary_canonical_sha256": "06EE9DFD63B7D65E590D0D3504109B5E6AD49805113047A039533F2636C5BDB6"
+  },
+  "created_at": "2026-09-03T23:25:04+09:00",
+  "scope": "C-21 OPS-R2 backup failure accepted; epoch5 exact13 rework active; WI/invocation EOF-only revision MAIN_RECONFIRMED_NON_SEMANTIC; seq1-469 and backup-portability acceptance frozen; external retry blocked; Telegram and Provider user verification pending; C-01 blocked."
+}
