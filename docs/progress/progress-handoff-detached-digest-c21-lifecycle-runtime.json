@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR00-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21",
+  "event_sequence": 393,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 60015,
+    "file_sha256": "BDB1A241B4645760D43BE5729D8C7CCD1819DB6A39F8CE5EF5EE2DA9D65892E0",
+    "canonical_json_sha256": "175F98662D8C9030B21F449C74C92861C7DC19FF65B501B1DACCE034E35A6D5D"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 125562,
+    "file_sha256": "10D610FEA930D6C3221B67E932FCF636FBDDD1A147F3B32C692CA124C1AC6428",
+    "machine_summary_canonical_sha256": "F43F94AF014ACA2C72EEEF87B8BF95A7A6841B4379EF43F8491A837EC4278282"
+  },
+  "created_at": "2026-09-03T02:45:03+09:00",
+  "scope": "C-21 LR-00 approved lifecycle runtime governance binding. seq390 records the authenticated human approval, seq391 and seq392 issue the developer-primary worker/write leases, and seq393 resumes only LR-01 canonical Task bootstrap implementation. C-01 remains blocked."
+}

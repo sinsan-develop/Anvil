@@ -1,0 +1,27 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR00-PROGRESS-MANIFEST-20260903",
+  "package_id": "C-21",
+  "manifest_type": "MAIN_PROGRESS_PROJECTION",
+  "target_status": "ACTIVE",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-lifecycle-runtime.json",
+      "bytes": 1065,
+      "sha256": "860BCBD154C45736DEEB5D7D85A759CEA536DB029A8EA9565FA8DCD7D8A15BEC"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T02:45:03+09:00",
+  "scope": "Main-owned C-21 LR-00 governance projection. It binds the authenticated human approval and exact developer-primary LR-01 lease scope without claiming product, DB, server, deployment, browser, or external-side-effect execution.",
+  "approval_ref": {
+    "path": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+    "approval_id": "APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001",
+    "subject_hash": "3A68623BF9426EB619AC0B8E082028F73442F90F4680FDCE871711B60A6B5FAD"
+  },
+  "work_instruction_ref": {
+    "path": "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+    "artifact_id": "WI-C-21-LR-01-20260903-001",
+    "sha256": "BD32669869300B4BE66491307A642F3E8EB0BA7684A4CA1E0443ACEDA82DB458"
+  },
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+}

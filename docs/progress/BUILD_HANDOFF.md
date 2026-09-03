@@ -1,7 +1,26 @@
-# C-21 운영 증거 기반 current projection reconciliation (2026-09-03)
+# C-21 Lifecycle Runtime LR-01 acceptance projection reconciled (2026-09-03)
 
-- **판정:** `WAITING_APPROVAL / PARTIAL / TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT` (seq383 `PACKAGE_WAITING_APPROVAL`, seq389 post-integration main repository projection; `updated_at=2026-09-03T02:07:35+09:00`).
-- **승인 경계:** lifecycle API runtime 활성화, production DB의 canonical C-21 test chain 생성, test-session write scope·allowlist, deployment 또는 외부 side effect에 대해서만 명시적 승인이 필요하다. 독립 read-only C-21 판단과 일반적인 C-01 시작 계획은 이 승인 대상이 아니다.
+- **판정:** `RECONCILED / LR-01_ACCEPTED` (seq398 `REPOSITORY_RECONCILED`). 기존 seq1~397은 변경하지 않고, LR-01 accepted exact21 저장소 projection과 event stream head를 append-only로 정합화했다.
+- **원인:** seq394~397 append 후 stream `last_sequence`, accepted-state checker predicate, detached-manifest pointer, event/checker hashes가 일부 이전 값으로 남아 checker가 5개 오류를 보고했다.
+- **조치:** 신산님 승인에 따라 seq398을 추가하고 LR-01 accepted exact21 predicate 및 progress/HANDOFF/digest/manifest binding을 재계산한다. 제품·DB·서버·배포·외부 호출은 변경하지 않는다.
+- **다음 안전 행동:** checker와 projection tooling을 통과한 뒤 LR-01 체크포인트 커밋을 만들고 LR-02A WorkInstruction을 발행한다. C-01 차단은 유지한다.
+
+# C-21 Lifecycle Runtime LR-01 accepted (2026-09-03)
+
+- **판정:** `ACCEPTED / LR-02A_READY` (seq394→397 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED → MAIN_PACKAGE_ACCEPTED`). C-21 전체 완료나 C-01 시작을 의미하지 않는다.
+- **독립 검토:** `/root/c21_lr01_r9_review`가 `PASS / READY_FOR_MAIN_ACCEPTANCE`, blocking 0으로 판정했다. direct Task port 권한 오류 403/입력 오류 400, same-origin TLS proxy 경계, project/environment scope, typed 응답, authority hash, replay, GET revoke를 재검증했다.
+- **Main 검증:** 격리 PostgreSQL 16에서 migration `upgrade head → downgrade base → upgrade head`, focused persistence 최신 `5 passed`; 실제 PostgreSQL 포함 API+persistence `100 passed, 17 skipped`; progress checker PASS, projection tooling `82 passed`, diff-check PASS.
+- **정리:** 전용 임시 컨테이너 `anvil-c21-lr01-pg-20260903` 제거 후 exact filter 0건, 별도 volume 0건이다. production DB와 서버는 이 검증에서 변경하지 않았다.
+- **동결 증거:** `docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json`; canonical report `docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md`.
+- **미실행:** WSL 애플리케이션 배포, production DB, browser, test-session write scope, canonical project mapping, Telegram/Provider side effect는 아직 실행하지 않았다.
+- **다음 안전 행동:** `C-21/LR-02A`에서 `anvil-web:3770` readiness 및 deploy migration target을 `0013_task_bootstrap_authority`로 정합화한다. LR-02B test-session 최소권한, LR-02C project/repository provisioning을 순차 처리하며 C-01은 계속 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+
+# C-21 Lifecycle Runtime LR-00 binding (2026-09-03)
+
+- **판정:** `ACTIVE / LR-01_DISPATCHED` (seq390 `APPLY_APPROVAL_RECORDED`, seq391→393 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`; `updated_at=2026-09-03T02:45:03+09:00`).
+- **승인 결박:** 신산님의 정확한 승인 문구를 `APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001`에 기록했다. lifecycle API runtime 활성화, production DB canonical C-21 test chain 생성, test-session write scope·allowlist 변경, 해당 변경 배포 및 검증용 외부 side effect만 포함한다.
+- **LR-01 범위:** `WI-C-21-LR-01-20260903-001`은 일반 Task bootstrap API 구현만 다룬다. production DB test chain, test-session write scope·allowlist, 배포, 외부 side effect는 이 단계에서 실행하지 않는다.
+- **단일 writer:** `developer-primary`만 worker/write epoch-1 fencing token과 exact 10-path set으로 쓴다. Main-owned approval/progress/handoff/manifest는 worker protected scope다.
 - **보존:** Phase B Gate의 sequence 375 `ACCEPTED` 결정과 B-01~B-12 historical 기록을 재개방하거나 덮어쓰지 않는다.
 - **확인된 운영 사실:** migration `0012_run_authority` 적용·유지, `anvil-web:3770` healthy, NPM custom Telegram override backup 후 제거 및 `nginx -t`/graceful reload 성공, internal runtime 보존.
 - **Provider:** 5 healthy; UPSTAGE `401`, GEMINI `400`, OPENAI `401`, OLLAMA timeout. credential rotation이 필요하며 이 정합화 범위에서 Provider 재호출은 금지한다.
@@ -9,7 +28,7 @@
 - **SSE:** authenticated SSE HTTP `200`이나 event는 0건이다. event capture가 없으므로 `Last-Event-ID` 재개 검증은 실행하지 않았다.
 - **C-01 경계:** historical Gate `ACCEPTED`와 별개로, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`이며 C-21 독립 판정 전 WorkInstruction 발행·시작을 금지한다.
 - **근거:** `docs/04_test_reports/C-21_PRODUCTION_DEPLOY_INCIDENT_20260902.md` (`35C6F1EB5C9A7AFF68AE60443F37A86478B15F5FAF9446B4DE435DEC120E81F1`), `docs/04_test_reports/C-21_R3_OPS_EXECUTION_REPORT.md` (`069ABCFF073460479B7E782C2FD3C1DC19F0BD7F21EB16E3DC77B1C6CD5D55B1`), `docs/04_test_reports/C-21_RECONCILIATION_2026-09-01.md` (`0102959496AE41D3F24636AED90CF65543124ED28D3A35405308E21CD2B4217C`).
-- **다음 안전 행동:** credential rotation 후 외부 재호출 없이 기존 evidence를 보존한다. 위 네 가지 기능범위 변경 대상에 한해서만 명시적 승인을 받고, C-01은 여전히 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`로 유지한다.
+- **다음 안전 행동:** developer-primary가 LR-01 RED/GREEN을 수집한다. C-01은 여전히 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`이며 WorkInstruction 발행·시작을 금지한다.
 
 # Historical record — Phase B Gate MAIN_GATE_ACCEPTED (sequence 375)
 
@@ -426,28 +445,44 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 389,
-  "status": "WAITING_APPROVAL",
+  "event_sequence": 398,
+  "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_repository_projection_reconciled_main_integration",
-  "updated_at": "2026-09-03T02:07:35+09:00",
+  "last_event_id": "evt_c21_lr01_acceptance_repository_reconciled",
+  "updated_at": "2026-09-03T04:11:04+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "Rotate affected credentials and preserve existing C-21 evidence without external re-call. Obtain explicit approval only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
+  "next_safe_action": "C-21/LR-02A runtime-readiness WorkInstruction을 발행해 anvil-web:3770의 migration readiness head와 canonical deploy contract를 0013_task_bootstrap_authority에 맞춘다. test-session write scope와 canonical project mapping은 LR-02B/LR-02C에서 순차 처리하며 C-01은 BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT를 유지한다.",
   "dir_status": "CLEARED",
-  "repository_head": "376da2649fbecfb524238a4979629cbac89f188f",
+  "repository_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "376da2649fbecfb524238a4979629cbac89f188f",
+  "repository_validated_base_commit": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
   "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+    "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+    "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR00_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_ACCEPTANCE_PROGRESS_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+    "docs/progress/progress-handoff-detached-digest-c21-lifecycle-runtime.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr01-accepted.json",
+    "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+    "migrations/versions/0013_task_bootstrap_authority.py",
+    "packages/api/fastapi_app.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "packages/api/task_bootstrap.py",
+    "packages/persistence/task_bootstrap_repository.py",
+    "scripts/check_project_progress.py",
+    "tests/api/test_task_bootstrap.py",
+    "tests/persistence/test_task_bootstrap_postgres.py"
   ],
-  "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK",
+  "reporting_decision": "AUTO_CONTINUE",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
   "phase_b_gate_deferred_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
   "phase_b_gate_undefined_ids": ["AV-STAT-029"],

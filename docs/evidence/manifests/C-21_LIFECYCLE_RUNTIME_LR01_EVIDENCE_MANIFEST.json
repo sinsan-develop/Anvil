@@ -1,0 +1,52 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR01-EVIDENCE-MANIFEST-20260903",
+  "package_id": "C-21/LR-01",
+  "manifest_type": "FROZEN_PRODUCT_AND_TEST_EVIDENCE",
+  "target_status": "READY_FOR_MAIN_ACCEPTANCE",
+  "validated_base_commit": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "branch": "codex/c21-lifecycle-runtime",
+  "self_reference": false,
+  "created_at": "2026-09-03T04:10:00+09:00",
+  "approval_ref": {
+    "path": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+    "sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A",
+    "subject_hash": "3A68623BF9426EB619AC0B8E082028F73442F90F4680FDCE871711B60A6B5FAD"
+  },
+  "work_instruction_ref": {
+    "path": "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+    "sha256": "BD32669869300B4BE66491307A642F3E8EB0BA7684A4CA1E0443ACEDA82DB458",
+    "invocation_path": "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
+    "invocation_sha256": "49CE6245EE85590058DAF943A40FA143DA028B04A34075F550DEEA2262224202"
+  },
+  "raw_checksums": [
+    {"path": "packages/api/fastapi_app.py", "bytes": 26200, "sha256": "168F4B65ABEEC7AC229873EE857F20AEEF4603FAA66072FF35DAA138D54AF21A"},
+    {"path": "packages/api/registry.py", "bytes": 8028, "sha256": "4372656F52684365D2510881B78A2C69E8C6AA7589418F7540B5E68FB5C60DC4"},
+    {"path": "packages/api/runtime.py", "bytes": 9961, "sha256": "989196230CA5DE9C5C9A3F9DB16A9BC237761835296DE46DC76D1FF3EB0B6BDB"},
+    {"path": "packages/api/task_bootstrap.py", "bytes": 8264, "sha256": "FA5B5C7C818B9FDEE495DFA8DEB6B869F6DD864CB64500A3E31F2B81F0B69E7B"},
+    {"path": "packages/persistence/task_bootstrap_repository.py", "bytes": 12227, "sha256": "231831A66D9A301D378EDE64F4992BB3B4867C5C2C95A6727B6865677E5C9197"},
+    {"path": "migrations/versions/0013_task_bootstrap_authority.py", "bytes": 3520, "sha256": "6344744E48BCC9735C27767E5A1B157C8E37C017A7251591CEA9FAB0199045C8"},
+    {"path": "tests/api/test_task_bootstrap.py", "bytes": 32541, "sha256": "A80ADB7D097F512D5130A41B0F2DE3797CE345B8461DF040B7CBE5AF7F2A4730"},
+    {"path": "tests/persistence/test_task_bootstrap_postgres.py", "bytes": 14933, "sha256": "49EB666B1AA7FD3D495C4845E0679B791257A852B2D39CA6F8BA5E05AE73AFCA"},
+    {"path": "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md", "bytes": 28634, "sha256": "F3FB0C564BBE4D3E571529A2577B852BC87727531354FE69C04D192AF7F3B0EB"}
+  ],
+  "verification": {
+    "independent_reviewer": "/root/c21_lr01_r9_review",
+    "verdict": "PASS / READY_FOR_MAIN_ACCEPTANCE",
+    "blocking_findings": 0,
+    "main_full_api_persistence_postgresql16": "100 passed, 17 skipped",
+    "main_postgresql16_focused": "5 passed",
+    "progress_checker": "PASS sequence=393 reporting=AUTO_CONTINUE",
+    "progress_tooling": "82 passed",
+    "git_diff_check": "PASS"
+  },
+  "not_executed": [
+    "browser",
+    "WSL deployed application",
+    "production database",
+    "production deployment",
+    "Telegram side effect",
+    "Provider side effect"
+  ],
+  "next_work_package": "C-21/LR-02A",
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+}

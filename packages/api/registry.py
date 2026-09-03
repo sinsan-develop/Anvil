@@ -67,6 +67,8 @@ class ApiRegistry:
 def _permission(method: str, path: str) -> str:
     exact = {
         "GET /api/providers": "provider:read",
+        "POST /api/projects/{projectId}/tasks": "tasks:write",
+        "GET /api/tasks/{taskId}": "tasks:read",
         "GET /api/runs/{id}/events": "run:events:read",
         "POST /api/runs/{id}:pause": "run:pause",
         "POST /api/runs/{id}:resume": "run:resume",
@@ -83,6 +85,8 @@ def _permission(method: str, path: str) -> str:
 
 
 _V1_ENDPOINTS: tuple[tuple[str, str, str], ...] = (
+    ("POST", "/api/projects/{projectId}/tasks", "28.2"),
+    ("GET", "/api/tasks/{taskId}", "28.3"),
     ("POST", "/api/projects/{id}/intents", "47.13"),
     ("GET", "/api/projects/{id}/progress", "47.13"),
     ("POST", "/api/projects/{id}/proposal-sets:generate", "47.13"),

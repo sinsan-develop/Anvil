@@ -1,0 +1,32 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR01-ACCEPTANCE-PROGRESS-MANIFEST-20260903",
+  "package_id": "C-21/LR-01",
+  "manifest_type": "MAIN_ACCEPTANCE_PROGRESS_PROJECTION",
+  "target_status": "ACCEPTED",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-lr01-accepted.json",
+      "bytes": 1028,
+      "sha256": "7F21DBD7316482FFC1C27D32CC27ECE059CFFC300EFA08C759AEAE1DD56C5A87"
+    },
+    {
+      "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+      "bytes": 3077,
+      "sha256": "7798FC63D5DFC7068C40AB4FB32339B8164E50C710A56FC9EAA84A1E8D005033"
+    },
+    {
+      "path": "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+      "bytes": 28634,
+      "sha256": "F3FB0C564BBE4D3E571529A2577B852BC87727531354FE69C04D192AF7F3B0EB"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T04:11:03+09:00",
+  "scope": "Main acceptance projection for C-21/LR-01 only. It does not accept C-21 as a whole, does not unblock C-01, and does not claim WSL application deployment, production DB, browser, Telegram, or Provider execution.",
+  "decision": "ACCEPTED",
+  "independent_reviewer": "/root/c21_lr01_r9_review",
+  "blocking_findings": 0,
+  "next_work_package": "C-21/LR-02A",
+  "next_status": "READY_FOR_WORK_INSTRUCTION",
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+}

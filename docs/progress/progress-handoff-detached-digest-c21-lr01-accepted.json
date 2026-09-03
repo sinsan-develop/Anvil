@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR01-ACCEPTED-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-01",
+  "event_sequence": 398,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 59474,
+    "file_sha256": "6937F920281B238A17612CE62E4440F8914C0435E21476FDB0B3BF98B950EC19",
+    "canonical_json_sha256": "7A869322EB1AB948C7909DF79132F11007C351AE2BB88CACE75797E429ECA15E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 128499,
+    "file_sha256": "9C02A20FCEE33FA549623D3983E89012A2F7CF0F5670C9AB98735DDDEBA14A00",
+    "machine_summary_canonical_sha256": "54124961974C9BACD7824CDD70E4839F2C00B9D489925DBE4E0027493017A518"
+  },
+  "created_at": "2026-09-03T04:11:04+09:00",
+  "scope": "C-21 LR-01 accepted projection after independent R9, Main isolated PostgreSQL 16 verification, and append-only sequence 398 repository reconciliation. LR-02A is ready for WorkInstruction while C-01 remains blocked."
+}

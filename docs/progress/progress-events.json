@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 389,
+  "last_sequence": 398,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -14157,7 +14157,273 @@
         "historical_phase_b_gate_status": "ACCEPTED",
         "sequence_role": "post-integration main repository snapshot"
       }
+    },
+    {
+      "event_id": "evt_c21_lifecycle_runtime_approval_recorded",
+      "sequence": 390,
+      "event_type": "APPLY_APPROVAL_RECORDED",
+      "occurred_at": "2026-09-03T02:45:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "approval_ref": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+        "target_hash": "3A68623BF9426EB619AC0B8E082028F73442F90F4680FDCE871711B60A6B5FAD",
+        "human_actor": "신산님",
+        "approval_id": "APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001",
+        "approved_scope": [
+          "lifecycle API runtime activation",
+          "production DB canonical C-21 test chain creation",
+          "test-session write scope and allowlist change",
+          "deployment and verification external side effects for those changes"
+        ],
+        "excluded_scope": "C-01 start remains blocked"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_worker_lease_issued",
+      "sequence": 391,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T02:45:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "lease_id": "worker-lease-c21-lr01-20260903-001",
+        "fencing_token": "c21-lr01-execution-fence-epoch-1-1573e02",
+        "subject_ref": "C-21/LR-01",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "LR-01",
+        "lease_epoch": 1
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_write_lease_issued",
+      "sequence": 392,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T02:45:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "lease_id": "write-lease-c21-lr01-20260903-001",
+        "fencing_token": "c21-lr01-write-fence-epoch-1-1573e02",
+        "path_scope": [
+          "packages/api/fastapi_app.py",
+          "packages/api/registry.py",
+          "packages/api/runtime.py",
+          "packages/api/task_bootstrap.py",
+          "packages/persistence/task_bootstrap_repository.py",
+          "migrations/versions/0013_task_bootstrap_authority.py",
+          "tests/api/test_task_bootstrap.py",
+          "tests/persistence/test_task_bootstrap_postgres.py",
+          "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+          ".superpowers/sdd/Anvil_작업계획서_v1/task-1-report.md"
+        ],
+        "worker_lease_id": "worker-lease-c21-lr01-20260903-001",
+        "execution_fencing_token": "c21-lr01-execution-fence-epoch-1-1573e02",
+        "write_epoch": 1
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_package_resumed",
+      "sequence": 393,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-09-03T02:45:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21",
+      "details": {
+        "resume_event_ref": "evt_c21_lifecycle_runtime_approval_recorded",
+        "work_instruction_id": "WI-C-21-LR-01-20260903-001",
+        "dispatch_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "dispatch_upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+          "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR00_PROGRESS_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-lifecycle-runtime.json",
+          "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+          "migrations/versions/0013_task_bootstrap_authority.py",
+          "packages/api/fastapi_app.py",
+          "packages/api/registry.py",
+          "packages/api/runtime.py",
+          "packages/api/task_bootstrap.py",
+          "packages/persistence/task_bootstrap_repository.py",
+          "scripts/check_project_progress.py",
+          "tests/api/test_task_bootstrap.py",
+          "tests/persistence/test_task_bootstrap_postgres.py"
+        ],
+        "current_work_package": "C-21",
+        "package_status": "ACTIVE",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_write_lease_revoked",
+      "sequence": 394,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T04:11:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-01",
+      "details": {
+        "lease_id": "write-lease-c21-lr01-20260903-001",
+        "worker_lease_id": "worker-lease-c21-lr01-20260903-001",
+        "write_epoch": 1,
+        "execution_fencing_token": "c21-lr01-execution-fence-epoch-1-1573e02",
+        "write_fencing_token": "c21-lr01-write-fence-epoch-1-1573e02",
+        "fencing_token": "c21-lr01-write-fence-epoch-1-1573e02",
+        "reason": "LR01_IMPLEMENTATION_AND_INDEPENDENT_R9_REVIEW_PASS",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_worker_lease_revoked",
+      "sequence": 395,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T04:11:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-01",
+      "details": {
+        "lease_id": "worker-lease-c21-lr01-20260903-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "LR-01",
+        "lease_epoch": 1,
+        "fencing_token": "c21-lr01-execution-fence-epoch-1-1573e02",
+        "execution_fencing_token": "c21-lr01-execution-fence-epoch-1-1573e02",
+        "reason": "LR01_IMPLEMENTATION_AND_INDEPENDENT_R9_REVIEW_PASS",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_package_completed",
+      "sequence": 396,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-09-03T04:11:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-01",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "independent_tester_status": "READY_FOR_MAIN_ACCEPTANCE",
+        "test_report_ref": "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+        "test_report_sha256": "F3FB0C564BBE4D3E571529A2577B852BC87727531354FE69C04D192AF7F3B0EB",
+        "manifest_ref": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+        "manifest_sha256": "7798FC63D5DFC7068C40AB4FB32339B8164E50C710A56FC9EAA84A1E8D005033",
+        "worker_lease": null,
+        "write_lease": null,
+        "actual_api": "PASS_R9_AND_MAIN",
+        "actual_postgresql16": "PASS_5_AND_FULL_100",
+        "actual_browser_wsl_production_deployment_provider_telegram": "NOT_EXECUTED",
+        "next_work_package": "C-21/LR-02A",
+        "next_package_status": "BLOCKED_PENDING_LR01_MAIN_ACCEPTANCE",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_main_package_accepted",
+      "sequence": 397,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "occurred_at": "2026-09-03T04:11:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-01",
+      "details": {
+        "decision": "ACCEPTED",
+        "verdict": "READY_FOR_MAIN_ACCEPTANCE",
+        "blocking_findings": 0,
+        "test_report_ref": "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+        "test_report_sha256": "F3FB0C564BBE4D3E571529A2577B852BC87727531354FE69C04D192AF7F3B0EB",
+        "manifest_ref": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+        "manifest_sha256": "7798FC63D5DFC7068C40AB4FB32339B8164E50C710A56FC9EAA84A1E8D005033",
+        "next_work_package": "C-21/LR-02A",
+        "next_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "c21_status": "ACTIVE",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "lr01_only": true,
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+          "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR00_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_ACCEPTANCE_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-lifecycle-runtime.json",
+          "docs/progress/progress-handoff-detached-digest-c21-lr01-accepted.json",
+          "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+          "migrations/versions/0013_task_bootstrap_authority.py",
+          "packages/api/fastapi_app.py",
+          "packages/api/registry.py",
+          "packages/api/runtime.py",
+          "packages/api/task_bootstrap.py",
+          "packages/persistence/task_bootstrap_repository.py",
+          "scripts/check_project_progress.py",
+          "tests/api/test_task_bootstrap.py",
+          "tests/persistence/test_task_bootstrap_postgres.py"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_c21_lr01_acceptance_repository_reconciled",
+      "sequence": 398,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T04:11:04+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-01",
+      "details": {
+        "branch": "codex/c21-lifecycle-runtime",
+        "local_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T04:11:04+09:00",
+        "reason": "Post-acceptance exact repository projection for LR-01 before checkpoint commit.",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+          "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR00_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_ACCEPTANCE_PROGRESS_MANIFEST.json",
+          "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-lifecycle-runtime.json",
+          "docs/progress/progress-handoff-detached-digest-c21-lr01-accepted.json",
+          "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+          "migrations/versions/0013_task_bootstrap_authority.py",
+          "packages/api/fastapi_app.py",
+          "packages/api/registry.py",
+          "packages/api/runtime.py",
+          "packages/api/task_bootstrap.py",
+          "packages/persistence/task_bootstrap_repository.py",
+          "scripts/check_project_progress.py",
+          "tests/api/test_task_bootstrap.py",
+          "tests/persistence/test_task_bootstrap_postgres.py"
+        ],
+        "accepted_subtask": "C-21/LR-01",
+        "accepted_event_ref": "evt_c21_lr01_main_package_accepted",
+        "current_work_package": "C-21",
+        "package_status": "ACTIVE/LR01_ACCEPTED_LR02A_READY",
+        "next_work_package": "C-21/LR-02A",
+        "next_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "sequence_role": "LR-01 post-acceptance append-only repository projection"
+      }
     }
   ],
-  "last_event_id": "evt_c21_repository_projection_reconciled_main_integration"
+  "last_event_id": "evt_c21_lr01_acceptance_repository_reconciled"
 }

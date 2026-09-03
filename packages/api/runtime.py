@@ -23,6 +23,7 @@ from packages.persistence.config import DatabaseSettings
 from .fastapi_app import ApiPorts, AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
 from .run_creation import RunCreationPort
+from .task_bootstrap import TaskBootstrapPort
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
 from .security import WebSecurityConfig
 from .sse import PostgresEventStream
@@ -142,10 +143,24 @@ def create_runtime_app(
         telegram_adapter, config, session_factory=session_factory,
     )
     base_ports = app_kwargs.pop("ports", ApiPorts())
-    key = "POST /api/tasks/{taskId}/runs"
-    if key in base_ports.commands:
+    run_key = "POST /api/tasks/{taskId}/runs"
+    task_create_key = "POST /api/projects/{projectId}/tasks"
+    task_read_key = "GET /api/tasks/{taskId}"
+    if run_key in base_ports.commands:
         raise RuntimeConfigurationError("runtime Run creation port cannot replace an injected port")
-    app_kwargs["ports"] = ApiPorts(commands={**base_ports.commands,key:RunCreationPort(SqlAlchemyRunCreationRepository(session_factory))},queries=base_ports.queries)
+    if task_create_key in base_ports.commands or task_read_key in base_ports.queries:
+        raise RuntimeConfigurationError("runtime Task bootstrap ports cannot replace injected ports")
+    from packages.persistence.task_bootstrap_repository import SqlAlchemyTaskBootstrapRepository
+
+    task_repository = SqlAlchemyTaskBootstrapRepository(session_factory)
+    app_kwargs["ports"] = ApiPorts(
+        commands={
+            **base_ports.commands,
+            run_key: RunCreationPort(SqlAlchemyRunCreationRepository(session_factory)),
+            task_create_key: TaskBootstrapPort(task_repository),
+        },
+        queries={**base_ports.queries, task_read_key: TaskBootstrapPort(task_repository)},
+    )
     web_security = WebSecurityConfig(
         allowed_hosts=frozenset({public_host, "anvil.local"}),
         allowed_origins=frozenset({console_base_url.rstrip("/"), "https://anvil.local"}),
@@ -179,6 +194,29 @@ def create_runtime_app(
             authorization_resolver=resolve_test_scope,
             session_issuer=local_session,
         )
+    else:
+        injected_scope_resolver = app_kwargs.get("authorization_resolver")
+
+        def resolve_runtime_scope(endpoint, path_parameters):
+            if injected_scope_resolver is None:
+                return None
+            scope = injected_scope_resolver(endpoint, path_parameters)
+            if endpoint.key == task_create_key:
+                return scope
+            elif endpoint.key == task_read_key:
+                authority = task_repository.resolve_task_authority(path_parameters.get("taskId", ""))
+            else:
+                return scope
+            if authority is None or scope is None:
+                return None
+            if (
+                scope.project_id != authority.project_id
+                or scope.environment_id != authority.target_environment
+            ):
+                return None
+            return scope
+
+        app_kwargs["authorization_resolver"] = resolve_runtime_scope
     app_kwargs.setdefault("event_stream", PostgresEventStream(session_factory))
     app = create_app(telegram_webhook=webhook, security_config=web_security, **app_kwargs)
     # Metadata is deliberately credential-free and useful to health/readiness
@@ -186,7 +224,7 @@ def create_runtime_app(
     app.state.provider_catalog = runtime_catalog(source)
     app.state.primary_provider = PRIMARY_PROVIDER
     app.state.database_engine = engine
-    app.state.migration_head = "0012_run_authority"
+    app.state.migration_head = "0013_task_bootstrap_authority"
     app.state.runtime_database_configured = True
     app.state.event_stream = app_kwargs["event_stream"]
     app.state.local_test_session_enabled = local_session is not None

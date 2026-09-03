@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-operational-reconciliation-20260902",
-  "event_sequence": 389,
-  "updated_at": "2026-09-03T02:07:35+09:00",
-  "last_event_id": "evt_c21_repository_projection_reconciled_main_integration",
+  "snapshot_id": "snapshot-c21-lifecycle-runtime-lr01-accepted-reconciled-20260903",
+  "event_sequence": 398,
+  "updated_at": "2026-09-03T04:11:04+09:00",
+  "last_event_id": "evt_c21_lr01_acceptance_repository_reconciled",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "WAITING_APPROVAL",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -126,6 +126,14 @@
     "B-12": 1
   },
   "latest_evidence_refs": [
+    {
+      "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+      "sha256": "7798FC63D5DFC7068C40AB4FB32339B8164E50C710A56FC9EAA84A1E8D005033"
+    },
+    {
+      "path": "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+      "sha256": "F3FB0C564BBE4D3E571529A2577B852BC87727531354FE69C04D192AF7F3B0EB"
+    },
     {
       "path": "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
       "sha256": "2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA"
@@ -944,7 +952,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "0471A64CF0B1188905BA31589603FCE3BE97662775112841EA262419FDF084B5"
+      "sha256": "FC22C3A7F3F785FFBC320660330CB8BE70DC7C3E2731AFC4C5824215A1344094"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -992,7 +1000,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "F22E5E135753E6096B62B47F9702A1F6ADBA6117E9FCF981BF6B1DFE666DBC70"
+      "sha256": "0217251CD9E118B7616EBA0B2946F7AA1620A990E89020711AE50E8C1542595E"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1039,14 +1047,7 @@
     "path": "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
     "sha256": "D1E9A6A4C8526EC20E118051711B5E9F674B4CAA64FBFB325DAD86134122DB2D"
   },
-  "pending_approvals": [
-    {
-      "approval_id": "C21-LIFECYCLE-RUNTIME-PRODUCTION-TEST-CHAIN-TEST-SESSION-ALLOWLIST-DEPLOYMENT-EXTERNAL-SIDE-EFFECTS",
-      "status": "WAITING_APPROVAL",
-      "change_classification": "FUNCTION_SCOPE_CHANGE_REQUIRED",
-      "reason": "Approval is required only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. Independent read-only C-21 judgment and a general planned C-01 start are not approval subjects here."
-    }
-  ],
+  "pending_approvals": [],
   "dir_review": {
     "checkpoint": "DIR-1",
     "status": "CLEARED",
@@ -1054,7 +1055,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Rotate affected credentials and preserve existing C-21 evidence without external re-call. Obtain explicit approval only for lifecycle API runtime activation, production DB canonical C-21 test-chain creation, test-session write scope and allowlist, and deployment or external side effects. C-01 remains BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT.",
+  "next_safe_action": "C-21/LR-02A runtime-readiness WorkInstruction을 발행해 anvil-web:3770의 migration readiness head와 canonical deploy contract를 0013_task_bootstrap_authority에 맞춘다. test-session write scope와 canonical project mapping은 LR-02B/LR-02C에서 순차 처리하며 C-01은 BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT를 유지한다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1165,22 +1166,38 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "376da2649fbecfb524238a4979629cbac89f188f",
+    "validated_base_commit": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
     "head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
-    "branch": "main",
+    "branch": "codex/c21-lifecycle-runtime",
     "upstream": "origin/main",
-    "remote_head": "376da2649fbecfb524238a4979629cbac89f188f",
-    "push_status": "PUSH_PENDING_MAIN",
+    "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+    "push_status": "LR01_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json",
+      "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+      "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR00_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_ACCEPTANCE_PROGRESS_MANIFEST.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json"
+      "docs/progress/progress-handoff-detached-digest-c21-lifecycle-runtime.json",
+      "docs/progress/progress-handoff-detached-digest-c21-lr01-accepted.json",
+      "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+      "migrations/versions/0013_task_bootstrap_authority.py",
+      "packages/api/fastapi_app.py",
+      "packages/api/registry.py",
+      "packages/api/runtime.py",
+      "packages/api/task_bootstrap.py",
+      "packages/persistence/task_bootstrap_repository.py",
+      "scripts/check_project_progress.py",
+      "tests/api/test_task_bootstrap.py",
+      "tests/persistence/test_task_bootstrap_postgres.py"
     ],
-    "observed_at": "2026-09-03T02:07:35+09:00",
-    "worktree_status": "PUSH_PENDING_MAIN: post-integration C-21 evidence-only main projection; no external re-call",
-    "local_head": "376da2649fbecfb524238a4979629cbac89f188f"
+    "observed_at": "2026-09-03T04:11:04+09:00",
+    "worktree_status": "ACTIVE: LR-01 accepted after R9 and Main verification; worker/write lease revoked; checkpoint commit pending; WSL and production deployment not executed",
+    "local_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1283,11 +1300,34 @@
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
-    "decision": "STOP_AND_REPORT_SCOPE_RISK",
+    "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C21_LIFECYCLE_RUNTIME_PRODUCTION_SIDE_EFFECT_SCOPE_WAITING_APPROVAL"
+      "C21_LR01_ACCEPTED_LR02A_READY"
     ],
-    "stop_before_dialogue_report": true
+    "stop_before_dialogue_report": false
+  },
+  "accepted_c21_lr01_work_instruction": {
+    "artifact_id": "WI-C-21-LR-01-20260903-001",
+    "path": "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
+    "sha256": "BD32669869300B4BE66491307A642F3E8EB0BA7684A4CA1E0443ACEDA82DB458",
+    "invocation_path": "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
+    "invocation_sha256": "49CE6245EE85590058DAF943A40FA143DA028B04A34075F550DEEA2262224202",
+    "approval_ref": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+    "approval_sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A",
+    "approval_subject_hash": "3A68623BF9426EB619AC0B8E082028F73442F90F4680FDCE871711B60A6B5FAD",
+    "result_status": "COMPLETED",
+    "package_status": "ACCEPTED",
+    "independent_tester_status": "READY_FOR_MAIN_ACCEPTANCE",
+    "executor": "developer-primary",
+    "worker_lease_id": "worker-lease-c21-lr01-20260903-001",
+    "write_lease_id": "write-lease-c21-lr01-20260903-001",
+    "allowed_path_count": 10,
+    "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    "test_report_ref": "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
+    "test_report_sha256": "F3FB0C564BBE4D3E571529A2577B852BC87727531354FE69C04D192AF7F3B0EB",
+    "manifest_ref": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+    "manifest_sha256": "7798FC63D5DFC7068C40AB4FB32339B8164E50C710A56FC9EAA84A1E8D005033",
+    "accepted_event_id": "evt_c21_lr01_main_package_accepted"
   },
   "active_work_instruction": null,
   "last_completed_work_instruction": {
@@ -1328,8 +1368,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-operational-reconciliation.json",
-    "manifest_path": "docs/evidence/manifests/C-21_OPERATIONAL_RECONCILIATION_PROGRESS_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-lr01-accepted.json",
+    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_ACCEPTANCE_PROGRESS_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1350,7 +1390,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "F22E5E135753E6096B62B47F9702A1F6ADBA6117E9FCF981BF6B1DFE666DBC70"
+      "sha256": "0217251CD9E118B7616EBA0B2946F7AA1620A990E89020711AE50E8C1542595E"
     }
   },
   "next_work_package": {
@@ -1362,13 +1402,13 @@
     ]
   },
   "next_successor_work_package": {
-    "package_id": "C-21",
-    "status": "WAITING_APPROVAL",
-    "purpose": "current operational validation reconciliation",
+    "package_id": "C-21/LR-02A",
+    "status": "READY_FOR_WORK_INSTRUCTION",
+    "purpose": "canonical anvil-web:3770 runtime and migration readiness alignment",
     "requires": [
-      "credential rotation",
-      "independent C-21 judgment",
-      "authenticated SSE event capture before Last-Event-ID replay"
+      "migration readiness head 0013 alignment",
+      "canonical deploy and verify path alignment",
+      "independent C-21 judgment before C-01"
     ],
     "does_not_unblock": [
       "C-01",
@@ -1383,8 +1423,8 @@
   },
   "operational_reconciliation": {
     "revision_id": "C21-PROGRESS-RECONCILE-20260903-R3",
-    "rationale": "Operational-evidence-based current projection reconciliation after the historical Phase B Gate projection. Immutable historical events remain preserved; this record does not execute, authorize, or accept the pending lifecycle-runtime, production-data, write-scope, deployment, or external-side-effect actions.",
-    "current_status": "PARTIAL/TELEGRAM_ACCEPTED_PRECOUNT_CAPTURE_MISSING_SSE_NO_EVENT",
+    "rationale": "Historical operational evidence remains preserved. LR-01 canonical Task bootstrap runtime is accepted after independent R9 and actual isolated PostgreSQL 16 verification. Production DB, test-session scope/allowlist, deployment, browser, Provider, and Telegram execution remain for LR-02A onward.",
+    "current_status": "ACTIVE/LR01_ACCEPTED_LR02A_READY",
     "confirmed_evidence": {
       "migration": "0012_run_authority applied and retained",
       "unified_runtime": "anvil-web:3770 healthy; NPM override removed after backup, nginx -t, and graceful reload",
@@ -1410,5 +1450,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "0832706F1D1036D3F0F47DAD05175EA336939A29E1721B48C23072F025498043"
+  "snapshot_hash": "5FC79751999C9EB3D86EB4B5CECC775DD79FD9B13768369F03CE4DA180300ECD"
 }

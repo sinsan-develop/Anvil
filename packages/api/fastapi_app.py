@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from packages.events.transition_guard import OptimisticVersionConflict
+from packages.execution.models import TaskStatus
 
 from .common import ApiContractError, ApplicationRequest, ApplicationResponse, SessionPrincipal, canonical_target_hash
 from .registry import ApiRegistry, EndpointSpec, canonical_api_registry
@@ -38,6 +39,7 @@ def mount_frontend(app: FastAPI, directory: str) -> None:
     app.mount("/", StaticFiles(directory=directory, html=True), name="frontend")
 Authenticator = Callable[[str], SessionPrincipal | None]
 _IF_MATCH = re.compile(r'(?:W/)?"?([0-9]+)"?\Z')
+_TASK_READ_STATUSES = tuple(status.value.lower() for status in TaskStatus)
 
 
 class SessionIssuer(Protocol):
@@ -204,36 +206,33 @@ def _origin(request: Request, config: WebSecurityConfig, *, required: bool) -> N
             403,
         )
 
-    headers = {key.lower(): value for key, value in request.headers.items()}
-    client_ip = request.client.host if request.client else None
-    authority = headers.get("host", "").strip().lower()
-    if client_ip in config.trusted_proxy_ips:
-        forwarded = headers.get("x-forwarded-host", "").split(",", 1)[0].strip().lower()
-        authority = forwarded or authority
+    request_scheme = request.url.scheme.lower()
     try:
         parsed_origin = urlsplit(origin)
-        parsed_authority = urlsplit(f"//{authority}")
+        request_host = request.url.hostname
+        request_port = request.url.port
         if (
             parsed_origin.scheme not in {"http", "https"}
+            or (request_scheme == "https" and parsed_origin.scheme != "https")
             or parsed_origin.username is not None
             or parsed_origin.password is not None
             or parsed_origin.path
             or parsed_origin.query
             or parsed_origin.fragment
             or parsed_origin.hostname is None
-            or parsed_authority.hostname is None
+            or request_host is None
         ):
             raise ValueError("invalid origin authority")
         default_port = 443 if parsed_origin.scheme == "https" else 80
         origin_port = parsed_origin.port or default_port
-        authority_port = parsed_authority.port or default_port
+        authority_port = request_port or default_port
     except ValueError as error:
         raise ApiContractError(
             "ORIGIN_VALIDATION_FAILED",
             "The request origin is not allowed.",
             403,
         ) from error
-    if parsed_origin.hostname.lower() != parsed_authority.hostname.lower() or origin_port != authority_port:
+    if parsed_origin.hostname.lower() != request_host.lower() or origin_port != authority_port:
         raise ApiContractError(
             "ORIGIN_VALIDATION_FAILED",
             "The request origin is not allowed.",
@@ -258,9 +257,7 @@ def _mutation_security(
     body: Mapping[str, Any],
     config: WebSecurityConfig,
 ) -> tuple[int, str, str]:
-    origin = request.headers.get("origin")
-    if origin is None or origin not in config.allowed_origins:
-        raise ApiContractError("ORIGIN_VALIDATION_FAILED", "The request origin is not allowed.", 403)
+    _origin(request, config, required=True)
     csrf = request.headers.get("x-csrf-token")
     if csrf is None or not hmac.compare_digest(csrf, principal.csrf_token):
         raise ApiContractError("CSRF_VALIDATION_FAILED", "The CSRF token is invalid.", 403)
@@ -288,8 +285,26 @@ def _endpoint_handler(
         try:
             _host(request, config)
             principal = _principal(request, authenticate, config)
-            authorization_scope = _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             body = await _body(request) if endpoint.is_mutation else {}
+            authorization_parameters = dict(request.path_params)
+            if endpoint.key == "POST /api/projects/{projectId}/tasks":
+                target_environment = body.get("targetEnvironment")
+                if isinstance(target_environment, str):
+                    authorization_parameters["targetEnvironment"] = target_environment
+            authorization_scope = _authorize(principal, endpoint, authorization_parameters, resolve_authorization)
+            if endpoint.key == "POST /api/projects/{projectId}/tasks":
+                if authorization_scope.project_id != request.path_params.get("projectId"):
+                    raise ApiContractError(
+                        "AUTHORIZATION_PROJECT_DENIED",
+                        "The project scope is not allowed for this resource.",
+                        403,
+                    )
+                if authorization_scope.environment_id != body.get("targetEnvironment"):
+                    raise ApiContractError(
+                        "AUTHORIZATION_ENVIRONMENT_DENIED",
+                        "The environment scope is not allowed for this resource.",
+                        403,
+                    )
             expected = target_hash = reason = None
             if endpoint.is_mutation:
                 expected, target_hash, reason = _mutation_security(request, endpoint, principal, body, config)
@@ -314,7 +329,10 @@ def _endpoint_handler(
             if inspect.isawaitable(result):
                 result = await result
             if isinstance(result, ApplicationResponse):
+                _validate_task_response(endpoint, result)
                 return JSONResponse(dict(result.body), status_code=result.status_code)
+            if endpoint.key in {"POST /api/projects/{projectId}/tasks", "GET /api/tasks/{taskId}"}:
+                raise ApiContractError("API_RESPONSE_CONTRACT_INVALID", "The API response contract is invalid.", 500)
             return JSONResponse({"data": result, "request_id": request.state.request_id})
         except OptimisticVersionConflict:
             return _error_response(
@@ -391,6 +409,65 @@ def _declare_path_parameters(handler: Callable[..., Any], path: str) -> None:
     handler.__signature__ = inspect.Signature(parameters, return_annotation=Response)
 
 
+def _task_openapi(endpoint: EndpointSpec) -> dict[str, Any]:
+    create_schema = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["objective", "targetEnvironment", "conversationMessage"],
+        "properties": {
+            "objective": {"type": "string", "minLength": 1},
+            "targetEnvironment": {"type": "string", "minLength": 1},
+            "conversationMessage": {"type": "string", "minLength": 1},
+        },
+    }
+    create_response = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["taskId", "status"],
+        "properties": {"taskId": {"type": "string"}, "status": {"type": "string", "enum": ["draft"]}},
+    }
+    read_response = {
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "taskId", "projectId", "repositoryId", "objective", "targetEnvironment",
+            "status", "version", "requirements", "questions",
+        ],
+        "properties": {
+            "taskId": {"type": "string"}, "projectId": {"type": "string"},
+            "repositoryId": {"type": "string"}, "objective": {"type": "string"},
+            "targetEnvironment": {"type": "string"},
+            "status": {"type": "string", "enum": list(_TASK_READ_STATUSES)},
+            "version": {"type": "integer", "minimum": 1},
+            "requirements": {"type": "array", "items": {"type": "object"}},
+            "questions": {"type": "array", "items": {"type": "object"}},
+        },
+    }
+    if endpoint.key == "POST /api/projects/{projectId}/tasks":
+        return {
+            "status_code": 201,
+            "openapi_extra": {"requestBody": {"required": True, "content": {"application/json": {"schema": create_schema}}}, "responses": {"201": {"description": "Task draft created.", "content": {"application/json": {"schema": create_response}}}}},
+        }
+    if endpoint.key == "GET /api/tasks/{taskId}":
+        return {"openapi_extra": {"responses": {"200": {"description": "Task draft.", "content": {"application/json": {"schema": read_response}}}}}}
+    return {}
+
+
+def _validate_task_response(endpoint: EndpointSpec, result: ApplicationResponse) -> None:
+    body = result.body
+    if not isinstance(body, Mapping):
+        raise ApiContractError("API_RESPONSE_CONTRACT_INVALID", "The API response contract is invalid.", 500)
+    if endpoint.key == "POST /api/projects/{projectId}/tasks":
+        valid = result.status_code == 201 and set(body) == {"taskId", "status"} and isinstance(body.get("taskId"), str) and body.get("status") == "draft"
+    elif endpoint.key == "GET /api/tasks/{taskId}":
+        keys = {"taskId", "projectId", "repositoryId", "objective", "targetEnvironment", "status", "version", "requirements", "questions"}
+        valid = result.status_code == 200 and set(body) == keys and all(isinstance(body.get(key), str) for key in keys - {"status", "version", "requirements", "questions"}) and body.get("status") in _TASK_READ_STATUSES and type(body.get("version")) is int and body["version"] >= 1 and isinstance(body.get("requirements"), list) and isinstance(body.get("questions"), list) and all(isinstance(item, Mapping) for item in body["requirements"]) and all(isinstance(item, Mapping) for item in body["questions"])
+    else:
+        return
+    if not valid:
+        raise ApiContractError("API_RESPONSE_CONTRACT_INVALID", "The API response contract is invalid.", 500)
+
+
 def create_app(
     *,
     registry: ApiRegistry | None = None,
@@ -463,7 +540,7 @@ def create_app(
                 authorization_resolver,
             )
         )
-        app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source])
+        app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source], **_task_openapi(endpoint))
     if session_issuer is not None:
         @app.post("/auth/session", include_in_schema=False, status_code=201)
         async def issue_session(request: Request) -> JSONResponse:
