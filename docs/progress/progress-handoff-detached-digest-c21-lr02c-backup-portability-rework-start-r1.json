@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LR02C-BACKUP-PORTABILITY-REWORK-START-R1-DIGEST-20260903",
+  "package_id": "C-21/LR-02C/BACKUP-PORTABILITY",
+  "event_sequence": 464,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 72910,
+    "file_sha256": "E480E724AC2BF269ECF6B5D872D46C20E4DA3DC87124CBC735E3EDD40BF9644D",
+    "canonical_json_sha256": "E73E51CAAE18624AC983996BF1254F97A0E1CD6891E9D46B3DA15BC4DD395C33"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 138667,
+    "file_sha256": "F92ED478EB948E91542675FACDD04F107D7C9D7364DDE5EA964770B9081B70E7",
+    "machine_summary_canonical_sha256": "40B5783DCA9770F3140E647A71921E763E0DD2B69981768C9A02FC52678307FD"
+  },
+  "created_at": "2026-09-03T20:10:05+09:00",
+  "scope": "C-21 backup portability rework start; epoch3 revoked; epoch4 Developer exact2 active; external execution blocked; C-01 blocked."
+}

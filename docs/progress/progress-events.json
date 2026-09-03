@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 457,
+  "last_sequence": 464,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -15786,7 +15786,70 @@
       "actor": "main-agent-eoul",
       "subject_ref": "C-21/LR-02C/OPS",
       "details": {"work_instruction_id":"WI-C-21-LR-02C-OPS-20260903-001","package_status":"ACTIVE_OPERATIONAL_VALIDATION","worker_lease_id":"worker-lease-c21-lr02c-ops-20260903-003","write_lease_id":"write-lease-c21-lr02c-ops-20260903-003","dispatch_head":"f39471a103d35406c3744fd727119072994a0d6a","dispatch_upstream_head":"f39471a103d35406c3744fd727119072994a0d6a","release_manifest":"deploy/ysna/ReleaseManifest.json","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","external_side_effects":"NOT_EXECUTED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_ops_write_lease_revoked_for_backup_rework",
+      "sequence": 458,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T20:10:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/OPS",
+      "details": {"lease_id":"write-lease-c21-lr02c-ops-20260903-003","worker_lease_id":"worker-lease-c21-lr02c-ops-20260903-003","write_epoch":3,"execution_fencing_token":"c21-lr02c-ops-execution-fence-epoch-3-f39471a","write_fencing_token":"c21-lr02c-ops-write-fence-epoch-3-f39471a","fencing_token":"c21-lr02c-ops-write-fence-epoch-3-f39471a","reason":"BACKUP_HOST_TOOL_PORTABILITY_REWORK_REQUIRED","status":"REVOKED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_ops_worker_lease_revoked_for_backup_rework",
+      "sequence": 459,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T20:10:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/OPS",
+      "details": {"lease_id":"worker-lease-c21-lr02c-ops-20260903-003","agent_id":"main-agent-eoul","work_package_id":"C-21","subtask_id":"LR-02C/OPS","lease_epoch":3,"execution_fencing_token":"c21-lr02c-ops-execution-fence-epoch-3-f39471a","fencing_token":"c21-lr02c-ops-execution-fence-epoch-3-f39471a","reason":"BACKUP_HOST_TOOL_PORTABILITY_REWORK_REQUIRED","status":"REVOKED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_backup_portability_failure_accepted",
+      "sequence": 460,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-09-03T20:10:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/OPS",
+      "details": {"entry_id":"failure-c21-lr02c-backup-portability-r1","evidence_ref":{"path":"docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md","sha256":"BF2A0FC98160072B8B61A6E1841445D80B4CC117BF1DDF3C611BC6F5DF38A1B1","bytes":3846},"failure_fingerprint":"C21_BACKUP_HOST_PG_DUMP_UNAVAILABLE","valid_failure_count":1,"root_cause":"VERSIONED_BACKUP_SCRIPT_REQUIRED_HOST_POSTGRES_TOOLS","database_dump":"NOT_CREATED","database_mutation":"NOT_EXECUTED","docker_mutation":"NOT_EXECUTED","telegram_post_attempts":0,"provider_requests":0,"scope_change":false,"requirements_change":false,"material_risk_change":false,"c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_backup_portability_worker_lease_issued",
+      "sequence": 461,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T20:10:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/BACKUP-PORTABILITY",
+      "details": {"lease_id":"worker-lease-c21-backup-portability-20260903-004","agent_id":"developer-primary-c21-backup","work_package_id":"C-21","subtask_id":"LR-02C/BACKUP-PORTABILITY","subject_ref":"C-21/LR-02C/BACKUP-PORTABILITY","lease_epoch":4,"execution_fencing_token":"c21-backup-portability-execution-fence-epoch-4-517fb4c","fencing_token":"c21-backup-portability-execution-fence-epoch-4-517fb4c","execution_mode":"LOCAL_TDD_NO_EXTERNAL_SIDE_EFFECTS","status":"ACTIVE"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_backup_portability_write_lease_issued",
+      "sequence": 462,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T20:10:04+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/BACKUP-PORTABILITY",
+      "details": {"lease_id":"write-lease-c21-backup-portability-20260903-004","worker_lease_id":"worker-lease-c21-backup-portability-20260903-004","agent_id":"developer-primary-c21-backup","work_package_id":"C-21","subtask_id":"LR-02C/BACKUP-PORTABILITY","write_epoch":4,"execution_fencing_token":"c21-backup-portability-execution-fence-epoch-4-517fb4c","write_fencing_token":"c21-backup-portability-write-fence-epoch-4-517fb4c","fencing_token":"c21-backup-portability-write-fence-epoch-4-517fb4c","status":"ACTIVE","path_scope":["deploy/ysna/backup-c21-db.sh","tests/deploy/test_c21_lr02c_operational_contract.py"]}
+    },
+    {
+      "event_id": "evt_c21_lr02c_backup_portability_package_resumed",
+      "sequence": 463,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-09-03T20:10:05+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/BACKUP-PORTABILITY",
+      "details": {"resume_event_ref":"evt_c21_lr02c_backup_portability_failure_accepted","work_instruction_id":"WI-C-21-LR-02C-BACKUP-PORTABILITY-R1-20260903-001","work_instruction_sha256":"FF769632CE7B8ADF5343B274BA860245EE89A69321763EDAD64D1C89AAA767FD","invocation_sha256":"0ED38BAE68C02B3AC6C48CC74B6CD313250294E5B5D96026975DA757EA3EC541","failure_fingerprint":"C21_BACKUP_HOST_PG_DUMP_UNAVAILABLE","valid_failure_count":1,"package_status":"ACTIVE_BACKUP_PORTABILITY_REWORK","worker_lease_id":"worker-lease-c21-backup-portability-20260903-004","write_lease_id":"write-lease-c21-backup-portability-20260903-004","dispatch_head":"517fb4c39a3a9841eb5a07322235eb71989f1ec4","dispatch_upstream_head":"517fb4c39a3a9841eb5a07322235eb71989f1ec4","repository_exact_path_count":20,"c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","external_side_effects":"BLOCKED_DURING_REWORK"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_backup_portability_exact21_repository_reconciled",
+      "sequence": 464,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T20:12:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/BACKUP-PORTABILITY",
+      "details": {"branch":"codex/c21-operational-execution","upstream":"origin/codex/c21-operational-execution","observed_at":"2026-09-03T20:12:00+09:00","reason":"BACKUP_PORTABILITY_FAILURE_LEDGER_AND_EXACT21_RECONCILIATION","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"517fb4c39a3a9841eb5a07322235eb71989f1ec4","local_head":"517fb4c39a3a9841eb5a07322235eb71989f1ec4","feature_remote":"origin/codex/c21-operational-execution","feature_remote_head":"517fb4c39a3a9841eb5a07322235eb71989f1ec4","remote_head":"517fb4c39a3a9841eb5a07322235eb71989f1ec4","head_relation":"FEATURE_CHECKPOINT_WITH_ACTIVE_C21_BACKUP_PORTABILITY_EXACT21_WORKTREE","push_status":"FEATURE_CHECKPOINT_SYNCED_BACKUP_PORTABILITY_REWORK_ACTIVE","repository_exact_path_count":21,"exact_allowed_paths":["deploy/ysna/ReleaseManifest.json","deploy/ysna/backup-c21-db.sh","docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md","docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_EXECUTION_MANIFEST.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json","docs/evidence/receipts/C-21_LR02C_OPERATIONAL_EXECUTION_RECEIPT.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json","docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md","docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md","docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md","docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md","scripts/check_project_progress.py","tests/deploy/test_c21_lr02c_operational_contract.py","tests/tooling/test_project_progress.py"],"next_work_package":"C-21/LR-02C/BACKUP-PORTABILITY","next_package_status":"ACTIVE","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","external_side_effects":"BLOCKED_DURING_REWORK"}
     }
   ],
-  "last_event_id": "evt_c21_lr02c_ops_package_started"
+  "last_event_id": "evt_c21_lr02c_backup_portability_exact21_repository_reconciled"
 }

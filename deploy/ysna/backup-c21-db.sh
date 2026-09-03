@@ -17,10 +17,56 @@ rm -f "$RECEIPT"
 
 tmp="$BACKUP.tmp.$$"
 trap 'rm -f "$tmp" "$LISTING.tmp.$$"' EXIT
-pg_dump --format=custom --no-owner --no-acl --dbname="$ANVIL_DATABASE_URL" --file="$tmp"
+
+host_pg_dump="$(command -v pg_dump || true)"
+host_pg_restore="$(command -v pg_restore || true)"
+if [[ -n "$host_pg_dump" && -n "$host_pg_restore" ]]; then
+  if ! PGDATABASE="$ANVIL_DATABASE_URL" "$host_pg_dump" \
+      --format=custom --no-owner --no-acl --file="$tmp" 2>/dev/null; then
+    echo 'database backup failed using host PostgreSQL client' >&2
+    exit 13
+  fi
+  if ! "$host_pg_restore" --list "$tmp" > "$LISTING.tmp.$$" 2>/dev/null; then
+    echo 'database backup restore-list validation failed using host PostgreSQL client' >&2
+    exit 14
+  fi
+else
+  command -v docker >/dev/null 2>&1 || {
+    echo 'database backup requires host PostgreSQL clients or Docker' >&2
+    exit 15
+  }
+  [[ "$(docker inspect --format '{{.State.Running}}' shared-db 2>/dev/null || true)" == true ]] || {
+    echo 'database backup requires the running shared-db container' >&2
+    exit 16
+  }
+  docker exec -u postgres shared-db pg_dump --version >/dev/null 2>&1 || {
+    echo 'shared-db pg_dump is unavailable' >&2
+    exit 17
+  }
+  docker exec -u postgres shared-db pg_restore --version >/dev/null 2>&1 || {
+    echo 'shared-db pg_restore is unavailable' >&2
+    exit 18
+  }
+  [[ "$ANVIL_DATABASE_URL" != *$'\n'* && "$ANVIL_DATABASE_URL" != *$'\r'* ]] || {
+    echo 'ANVIL_DATABASE_URL contains an unsupported line break' >&2
+    exit 19
+  }
+  if ! printf '%s\n' "$ANVIL_DATABASE_URL" | docker exec -i -u postgres shared-db sh -ceu '
+      IFS= read -r PGDATABASE
+      export PGDATABASE
+      exec pg_dump --format=custom --no-owner --no-acl --file=-
+    ' > "$tmp" 2>/dev/null; then
+    echo 'database backup failed using shared-db PostgreSQL client' >&2
+    exit 20
+  fi
+  if ! docker exec -i -u postgres shared-db pg_restore --list \
+      < "$tmp" > "$LISTING.tmp.$$" 2>/dev/null; then
+    echo 'database backup restore-list validation failed using shared-db PostgreSQL client' >&2
+    exit 21
+  fi
+fi
 [[ -s "$tmp" ]] || { echo 'database backup is empty' >&2; exit 10; }
 chmod 600 "$tmp"
-pg_restore --list "$tmp" > "$LISTING.tmp.$$"
 [[ -s "$LISTING.tmp.$$" ]] || { echo 'database backup restore list is empty' >&2; exit 11; }
 mv -f "$LISTING.tmp.$$" "$LISTING"
 chmod 600 "$LISTING"

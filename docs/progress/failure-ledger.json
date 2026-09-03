@@ -764,6 +764,31 @@
         "path": "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md",
         "sha256": "4B049CB51B9526BDF490879B6C35C1B146A157769A4A066927A99BB6571B3735"
       }
+    },
+    {
+      "entry_id": "failure-c21-lr02c-backup-portability-r1",
+      "step_lineage_id": "C-21/LR-02C/BACKUP-PORTABILITY",
+      "failure_fingerprint": "C21_BACKUP_HOST_PG_DUMP_UNAVAILABLE",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "HOST_POSTGRES_CLIENT_TOOLS_UNAVAILABLE"
+      ],
+      "blocking_severity": "MAJOR",
+      "blocking_defect_count": 1,
+      "evidence_refs": [
+        {
+          "path": "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
+          "sha256": "BF2A0FC98160072B8B61A6E1841445D80B4CC117BF1DDF3C611BC6F5DF38A1B1"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "BACKUP_PORTABILITY_R1_PENDING",
+      "database_dump": "NOT_CREATED",
+      "external_side_effects_after_preflight": "NOT_EXECUTED"
     }
   ]
 }

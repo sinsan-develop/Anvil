@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import os
@@ -30,6 +31,41 @@ def _executable(directory: Path, name: str, body: str) -> None:
     target = directory / name
     target.write_text("#!/bin/bash\n" + body.lstrip(), encoding="utf-8", newline="\n")
     target.chmod(0o755)
+
+
+def _install_fake_shared_db_docker(fakebin: Path) -> None:
+    _executable(
+        fakebin,
+        "docker",
+        r'''
+printf 'docker %s\n' "$*" >> "$DOCKER_LOG"
+case "$*" in
+  "inspect --format {{.State.Running}} shared-db")
+    printf '%s\n' "${SHARED_DB_RUNNING:-true}"
+    ;;
+  *"shared-db pg_dump --version"*)
+    [[ "${SHARED_DB_PG_DUMP_AVAILABLE:-1}" == 1 ]] || exit 31
+    printf 'pg_dump (PostgreSQL) 18.0\n'
+    ;;
+  *"shared-db pg_restore --version"*)
+    [[ "${SHARED_DB_PG_RESTORE_AVAILABLE:-1}" == 1 ]] || exit 32
+    printf 'pg_restore (PostgreSQL) 18.0\n'
+    ;;
+  *"shared-db sh -ceu"*)
+    IFS= read -r dsn
+    [[ "$dsn" == "$EXPECTED_DSN" ]] || exit 41
+    [[ "${SHARED_DB_DUMP_FAIL:-0}" == 0 ]] || exit 42
+    printf 'container-portable-backup'
+    ;;
+  *"shared-db pg_restore --list"*)
+    [[ "$(cat)" == 'container-portable-backup' ]] || exit 43
+    [[ "${SHARED_DB_RESTORE_FAIL:-0}" == 0 ]] || exit 44
+    printf 'TABLE public tasks\n'
+    ;;
+  *) printf 'unexpected docker invocation\n' >&2; exit 45 ;;
+esac
+''',
+    )
 
 
 def _load_provision_module():
@@ -83,21 +119,194 @@ def test_backup_receipt_proves_dump_restore_listability_and_redacts_dsn() -> Non
         assert "secret-pass" not in rendered
 
 
+@pytest.mark.parametrize("missing_host_tool", ["pg_dump", "pg_restore"])
+def test_backup_uses_running_shared_db_tools_when_a_host_client_is_unavailable(missing_host_tool: str) -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        fakebin = root / "fakebin"
+        fakebin.mkdir()
+        docker_log = root / "docker.log"
+        chmod_log = root / "chmod.log"
+        _install_fake_shared_db_docker(fakebin)
+        _executable(fakebin, "chmod", 'printf "chmod %s\\n" "$*" >> "$CHMOD_LOG"\nexec /usr/bin/chmod "$@"\n')
+        present_host_tool = "pg_restore" if missing_host_tool == "pg_dump" else "pg_dump"
+        _executable(fakebin, present_host_tool, "exit 91\n")
+        dsn = "postgresql://secret-user:secret-pass@shared-db/anvil"
+        env = os.environ | {
+            "ANVIL_DEPLOY_ROOT": _posix(root),
+            "ANVIL_DATABASE_URL": dsn,
+            "ANVIL_RELEASE_COMMIT": "d" * 40,
+            "DOCKER_LOG": _posix(docker_log),
+            "CHMOD_LOG": _posix(chmod_log),
+            "EXPECTED_DSN": dsn,
+            "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
+        }
+
+        result = subprocess.run(
+            [str(_bash()), str(DEPLOY / "backup-c21-db.sh")],
+            env=env,
+            text=True,
+            capture_output=True,
+        )
+
+        assert result.returncode == 0, result.stderr
+        backup = root / "backups" / "c21" / ("d" * 40) / "anvil.dump"
+        listing = root / "backups" / "c21" / ("d" * 40) / "anvil.restore-list.txt"
+        receipt_path = root / "evidence" / "c21-db-backup.json"
+        assert backup.read_bytes() == b"container-portable-backup"
+        assert listing.read_text() == "TABLE public tasks\n"
+        receipt = json.loads(receipt_path.read_text())
+        assert receipt["status"] == "BACKUP_VERIFIED"
+        assert receipt["release_commit"] == "d" * 40
+        assert receipt["bytes"] == len(b"container-portable-backup")
+        assert receipt["sha256"] == hashlib.sha256(b"container-portable-backup").hexdigest()
+        assert receipt["restore_listable"] is True
+        assert receipt["mode"] == "600"
+        chmod_actions = chmod_log.read_text().splitlines()
+        assert f"chmod 600 {_posix(backup)}" in chmod_actions
+        assert f"chmod 600 {_posix(listing)}" in chmod_actions
+        assert any(
+            action.startswith(f"chmod 600 {_posix(receipt_path)}.tmp.")
+            for action in chmod_actions
+        )
+        rendered = result.stdout + result.stderr + docker_log.read_text() + json.dumps(receipt)
+        assert "secret-user" not in rendered
+        assert "secret-pass" not in rendered
+        assert "docker cp" not in rendered
+        assert "docker compose" not in rendered
+
+
+def test_backup_fails_closed_when_shared_db_is_not_running() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        fakebin = root / "fakebin"
+        fakebin.mkdir()
+        docker_log = root / "docker.log"
+        _install_fake_shared_db_docker(fakebin)
+        env = os.environ | {
+            "ANVIL_DEPLOY_ROOT": _posix(root),
+            "ANVIL_DATABASE_URL": "postgresql://secret-user:secret-pass@shared-db/anvil",
+            "ANVIL_RELEASE_COMMIT": "e" * 40,
+            "DOCKER_LOG": _posix(docker_log),
+            "SHARED_DB_RUNNING": "false",
+            "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
+        }
+
+        result = subprocess.run([str(_bash()), str(DEPLOY / "backup-c21-db.sh")], env=env, text=True, capture_output=True)
+
+        assert result.returncode != 0
+        assert "running shared-db container" in result.stderr
+        assert not (root / "evidence" / "c21-db-backup.json").exists()
+        assert not list((root / "backups").rglob("*.tmp.*"))
+
+
+@pytest.mark.parametrize(
+    ("availability_flag", "expected_error"),
+    [
+        ("SHARED_DB_PG_DUMP_AVAILABLE", "shared-db pg_dump is unavailable"),
+        ("SHARED_DB_PG_RESTORE_AVAILABLE", "shared-db pg_restore is unavailable"),
+    ],
+)
+def test_backup_fails_closed_when_a_shared_db_postgresql_tool_is_unavailable(
+    availability_flag: str,
+    expected_error: str,
+) -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        fakebin = root / "fakebin"
+        fakebin.mkdir()
+        docker_log = root / "docker.log"
+        _install_fake_shared_db_docker(fakebin)
+        release = "1" * 40
+        dsn = "postgresql://secret-user:secret-pass@shared-db/anvil"
+        env = os.environ | {
+            "ANVIL_DEPLOY_ROOT": _posix(root),
+            "ANVIL_DATABASE_URL": dsn,
+            "ANVIL_RELEASE_COMMIT": release,
+            "DOCKER_LOG": _posix(docker_log),
+            "EXPECTED_DSN": dsn,
+            availability_flag: "0",
+            "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
+        }
+
+        result = subprocess.run(
+            [str(_bash()), str(DEPLOY / "backup-c21-db.sh")],
+            env=env,
+            text=True,
+            capture_output=True,
+        )
+
+        assert result.returncode != 0
+        assert result.stderr.strip() == expected_error
+        assert not (root / "evidence" / "c21-db-backup.json").exists()
+        assert not (root / "backups" / "c21" / release / "anvil.dump").exists()
+        assert not (root / "backups" / "c21" / release / "anvil.restore-list.txt").exists()
+        assert not list((root / "backups").rglob("*.tmp.*"))
+        rendered = result.stdout + result.stderr + docker_log.read_text()
+        assert "secret-user" not in rendered
+        assert "secret-pass" not in rendered
+
+
+@pytest.mark.parametrize(
+    ("failure_flag", "expected_error"),
+    [
+        ("SHARED_DB_DUMP_FAIL", "backup failed using shared-db"),
+        ("SHARED_DB_RESTORE_FAIL", "restore-list validation failed using shared-db"),
+    ],
+)
+def test_shared_db_backup_failure_never_publishes_success(
+    failure_flag: str,
+    expected_error: str,
+) -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        fakebin = root / "fakebin"
+        fakebin.mkdir()
+        docker_log = root / "docker.log"
+        _install_fake_shared_db_docker(fakebin)
+        dsn = "postgresql://secret-user:secret-pass@shared-db/anvil"
+        env = os.environ | {
+            "ANVIL_DEPLOY_ROOT": _posix(root),
+            "ANVIL_DATABASE_URL": dsn,
+            "ANVIL_RELEASE_COMMIT": "f" * 40,
+            "DOCKER_LOG": _posix(docker_log),
+            "EXPECTED_DSN": dsn,
+            failure_flag: "1",
+            "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
+        }
+
+        result = subprocess.run([str(_bash()), str(DEPLOY / "backup-c21-db.sh")], env=env, text=True, capture_output=True)
+
+        assert result.returncode != 0
+        assert expected_error in result.stderr
+        assert not (root / "evidence" / "c21-db-backup.json").exists()
+        assert not (root / "backups" / "c21" / ("f" * 40) / "anvil.dump").exists()
+        assert not list((root / "backups").rglob("*.tmp.*"))
+        rendered = result.stdout + result.stderr + docker_log.read_text()
+        assert "secret-user" not in rendered
+        assert "secret-pass" not in rendered
+
+
 def test_backup_failure_never_writes_success_receipt() -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
         _executable(fakebin, "pg_dump", "exit 17\n")
+        _executable(fakebin, "pg_restore", "exit 0\n")
+        _executable(fakebin, "docker", 'printf "called" > "$DOCKER_LOG"; exit 99\n')
+        docker_log = root / "docker.log"
         env = os.environ | {
             "ANVIL_DEPLOY_ROOT": _posix(root),
             "ANVIL_DATABASE_URL": "postgresql://secret.invalid/anvil",
             "ANVIL_RELEASE_COMMIT": "b" * 40,
+            "DOCKER_LOG": _posix(docker_log),
             "PATH": _posix(fakebin) + os.pathsep + os.environ.get("PATH", ""),
         }
         result = subprocess.run([str(_bash()), str(DEPLOY / "backup-c21-db.sh")], env=env, text=True, capture_output=True)
         assert result.returncode != 0
         assert not (root / "evidence" / "c21-db-backup.json").exists()
+        assert not docker_log.exists()
 
 
 def test_rebind_is_single_assignment_atomic_and_restorable_without_secret_reflection() -> None:

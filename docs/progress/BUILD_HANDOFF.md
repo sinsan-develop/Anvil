@@ -528,36 +528,51 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - `deploy/ysna/ReleaseManifest.json`은 release commit `f39471a`와 `APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001`에 결박한다.
 - start projection commit·main 통합·push 전에는 외부 실행을 하지 않으며 C-01은 계속 차단한다.
 
+## 2026-09-03 C-21/LR-02C backup portability rework 시작
+
+- operational start projection `517fb4c39a3a9841eb5a07322235eb71989f1ec4`는 main에 통합·push됐다.
+- ysna preflight에서 `INCIDENT_HOLD` 부재와 `shared-db` PostgreSQL 18.4 도구 가용성을 확인했으나, versioned backup script가 host `pg_dump`를 전제하여 dump 전 `command not found`로 종료됐다.
+- DB dump·migration·runtime·public HTTP·Telegram·Provider side effect는 발생하지 않았고 임시 versioned script는 제거했다.
+- seq458~464에서 epoch3 운영 lease 회수, failure 수락, Developer epoch4 exact2 lease, portability rework 재개와 exact21 repository reconciliation을 append했다.
+- Compose·network·server package를 바꾸지 않고 `backup-c21-db.sh`와 계약 테스트만 수정한다. 완료·독립 검토·새 release binding 전 외부 실행과 C-01은 차단한다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 457,
+  "event_sequence": 464,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_ops_package_started",
-  "updated_at": "2026-09-03T19:30:03+09:00",
+  "last_event_id": "evt_c21_lr02c_backup_portability_exact21_repository_reconciled",
+  "updated_at": "2026-09-03T20:12:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 0,
-  "next_safe_action": "operational start projection을 commit·main 통합·push한 뒤 f39471a를 표준 backup/deploy/verify 경로로 1회 검증한다. C-01은 차단한다.",
+  "valid_failure_count": 1,
+  "next_safe_action": "developer-primary-c21-backup이 exact2에서 shared-db PostgreSQL 18 backup fallback을 TDD로 구현한다. 외부 실행과 C-01은 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "f39471a103d35406c3744fd727119072994a0d6a",
+  "repository_head": "517fb4c39a3a9841eb5a07322235eb71989f1ec4",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "f39471a103d35406c3744fd727119072994a0d6a",
-  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_OPERATIONAL_EXACT14_WORKTREE",
+  "repository_validated_base_commit": "517fb4c39a3a9841eb5a07322235eb71989f1ec4",
+  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_C21_BACKUP_PORTABILITY_EXACT21_WORKTREE",
   "repository_exact_allowed_paths": [
     "deploy/ysna/ReleaseManifest.json",
+    "deploy/ysna/backup-c21-db.sh",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_EXECUTION_MANIFEST.json",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json",
     "docs/evidence/receipts/C-21_LR02C_OPERATIONAL_EXECUTION_RECEIPT.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json",
+    "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md",
+    "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md",
     "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
+    "tests/deploy/test_c21_lr02c_operational_contract.py",
     "tests/tooling/test_project_progress.py"
   ],
   "reporting_decision": "AUTO_CONTINUE",

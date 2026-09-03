@@ -1,0 +1,24 @@
+{
+  "artifact_id": "C21-LR02C-BACKUP-PORTABILITY-REWORK-START-R1-20260903",
+  "package_id": "C-21/LR-02C/BACKUP-PORTABILITY",
+  "manifest_type": "BACKUP_PORTABILITY_REWORK_START_PROJECTION",
+  "target_status": "ACTIVE_BACKUP_PORTABILITY_REWORK",
+  "event_sequence": 464,
+  "validated_base_commit": "517fb4c39a3a9841eb5a07322235eb71989f1ec4",
+  "work_instruction_id": "WI-C-21-LR-02C-BACKUP-PORTABILITY-R1-20260903-001",
+  "worker_lease_id": "worker-lease-c21-backup-portability-20260903-004",
+  "write_lease_id": "write-lease-c21-backup-portability-20260903-004",
+  "failure_fingerprint": "C21_BACKUP_HOST_PG_DUMP_UNAVAILABLE",
+  "repository_exact_path_count": 21,
+  "developer_write_path_count": 2,
+  "external_side_effects": "BLOCKED_DURING_REWORK",
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json","bytes":953,"sha256":"F48E54E0FCCEF852ACE173347E7D19D6294D27D65C82DBB3950AC6C56FCD2B13"},
+    {"path":"docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md","bytes":3074,"sha256":"FF769632CE7B8ADF5343B274BA860245EE89A69321763EDAD64D1C89AAA767FD"},
+    {"path":"docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md","bytes":408,"sha256":"0ED38BAE68C02B3AC6C48CC74B6CD313250294E5B5D96026975DA757EA3EC541"},
+    {"path":"docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md","bytes":2245,"sha256":"1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T20:10:05+09:00"
+}

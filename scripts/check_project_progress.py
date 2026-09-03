@@ -1926,6 +1926,11 @@ def validate_c21_lr02c_acceptance_r3_projection(
     else:
         for row in rows:
             relative = row["path"]
+            if relative == ledger_path:
+                if row.get("bytes") != 27519 or row.get("sha256") != "C04E6C5C18E96A0AB8D18B84D0D28697E1C6AF2634A541ABCDE9A91E42984681":
+                    errors.append("C21_LR02C_ACCEPTANCE_R3_MANIFEST_INVALID")
+                    break
+                continue
             try:
                 if row.get("bytes") != (root/relative).stat().st_size or row.get("sha256") != portable_hash(root,relative):
                     errors.append("C21_LR02C_ACCEPTANCE_R3_MANIFEST_INVALID")
@@ -2057,6 +2062,99 @@ def validate_c21_lr02c_operational_start_projection(
             (release.get("runtime") or {}).get("target_expected_commit") != base,
         )):
             errors.append("C21_LR02C_OPERATIONAL_RELEASE_MANIFEST_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_backup_portability_rework_start_projection(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Validate the fenced exact2 backup-tool portability rework start."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"]["events"]
+    repository = progress.get("repository") or {}
+    instruction = progress.get("active_work_instruction") or {}
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    base = "517fb4c39a3a9841eb5a07322235eb71989f1ec4"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json"
+    manifest_path = "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json"
+    wi_path = "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md"
+    invocation_path = "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md"
+    approval_path = "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md"
+    exact_write = ["deploy/ysna/backup-c21-db.sh", "tests/deploy/test_c21_lr02c_operational_contract.py"]
+    errors: list[str] = []
+    if any((
+        progress.get("event_sequence") != 464,
+        progress.get("last_event_id") != "evt_c21_lr02c_backup_portability_exact21_repository_reconciled",
+        progress.get("current_work_package") != "C-21",
+        progress.get("status") != "ACTIVE",
+        progress.get("active_agent") != "developer-primary-c21-backup",
+        progress.get("valid_failure_count") != 1,
+        (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        (progress.get("next_successor_work_package") or {}).get("status") != "ACTIVE_BACKUP_PORTABILITY_REWORK",
+        (progress.get("current_progress_evidence_ref") or {}) != {"package_id":"C-21","path":digest_path,"manifest_path":manifest_path},
+    )):
+        errors.append("C21_BACKUP_PORTABILITY_REWORK_PROJECTION_INVALID")
+    if any((
+        instruction.get("artifact_id") != "WI-C-21-LR-02C-BACKUP-PORTABILITY-R1-20260903-001",
+        instruction.get("path") != wi_path,
+        instruction.get("sha256") != "FF769632CE7B8ADF5343B274BA860245EE89A69321763EDAD64D1C89AAA767FD",
+        instruction.get("invocation_path") != invocation_path,
+        instruction.get("invocation_sha256") != "0ED38BAE68C02B3AC6C48CC74B6CD313250294E5B5D96026975DA757EA3EC541",
+        instruction.get("dispatch_base") != base,
+        instruction.get("result_status") != "REWORK_IN_PROGRESS",
+        instruction.get("package_status") != "ACTIVE_BACKUP_PORTABILITY_REWORK",
+        instruction.get("executor") != "developer-primary-c21-backup",
+        instruction.get("failure_fingerprint") != "C21_BACKUP_HOST_PG_DUMP_UNAVAILABLE",
+    )):
+        errors.append("C21_BACKUP_PORTABILITY_REWORK_INSTRUCTION_INVALID")
+    if any((
+        worker.get("lease_epoch") != 4,
+        worker.get("agent_id") != "developer-primary-c21-backup",
+        worker.get("execution_fencing_token") != "c21-backup-portability-execution-fence-epoch-4-517fb4c",
+        worker.get("status") != "ACTIVE",
+        write.get("write_epoch") != 4,
+        write.get("worker_lease_id") != worker.get("lease_id"),
+        write.get("execution_fencing_token") != worker.get("execution_fencing_token"),
+        write.get("write_fencing_token") != "c21-backup-portability-write-fence-epoch-4-517fb4c",
+        write.get("status") != "ACTIVE",
+        write.get("paths") != exact_write,
+    )):
+        errors.append("C21_BACKUP_PORTABILITY_REWORK_FENCING_INVALID")
+    if any((
+        repository.get("validated_base_commit") != base,
+        repository.get("local_head") != base,
+        repository.get("feature_remote_head") != base,
+        repository.get("remote_head") != base,
+        repository.get("branch") != "codex/c21-operational-execution",
+        repository.get("upstream") != "origin/codex/c21-operational-execution",
+        repository.get("head_relation") != "FEATURE_CHECKPOINT_WITH_ACTIVE_C21_BACKUP_PORTABILITY_EXACT21_WORKTREE",
+        len(repository.get("exact_allowed_paths", [])) != 21,
+    )):
+        errors.append("C21_BACKUP_PORTABILITY_REWORK_REPOSITORY_INVALID")
+    terminal = [event for event in events if 458 <= event.get("sequence", -1) <= 463]
+    if [event.get("event_type") for event in terminal] != [
+        "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "FAILURE_REPORT_ACCEPTED",
+        "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_RESUMED",
+    ]:
+        errors.append("C21_BACKUP_PORTABILITY_REWORK_EVENTS_INVALID")
+    rows = manifest.get("raw_checksums")
+    expected_rows = {digest_path, wi_path, invocation_path, approval_path}
+    if any((
+        manifest.get("artifact_id") != "C21-LR02C-BACKUP-PORTABILITY-REWORK-START-R1-20260903",
+        manifest.get("event_sequence") != 464,
+        manifest.get("validated_base_commit") != base,
+        manifest.get("repository_exact_path_count") != 21,
+        manifest.get("developer_write_path_count") != 2,
+        manifest.get("external_side_effects") != "BLOCKED_DURING_REWORK",
+        manifest.get("self_reference") is not False,
+        not isinstance(rows, list),
+        {row.get("path") for row in rows if isinstance(row, dict)} != expected_rows,
+    )):
+        errors.append("C21_BACKUP_PORTABILITY_REWORK_MANIFEST_INVALID")
+    elif any(not portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256")) for row in rows):
+        errors.append("C21_BACKUP_PORTABILITY_REWORK_MANIFEST_INVALID")
     return sorted(set(errors))
 
 
@@ -6549,6 +6647,10 @@ def validate_repository_projection(
         repository.get("head_relation") == "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_OPERATIONAL_EXACT14_WORKTREE"
         and (progress or {}).get("event_sequence") == 457
     )
+    c21_backup_portability_head_relation = (
+        repository.get("head_relation") == "FEATURE_CHECKPOINT_WITH_ACTIVE_C21_BACKUP_PORTABILITY_EXACT21_WORKTREE"
+        and (progress or {}).get("event_sequence") == 464
+    )
     if (
         repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
         or (
@@ -6564,6 +6666,7 @@ def validate_repository_projection(
             and not lr02c_rework_r3_head_relation
             and not lr02c_accepted_r3_head_relation
             and not lr02c_operational_head_relation
+            and not c21_backup_portability_head_relation
         )
         or not isinstance(base, str)
         or not re.fullmatch(r"[0-9a-f]{40}", base)
@@ -6977,7 +7080,29 @@ def validate_repository_projection(
         and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "ACTIVE_OPERATIONAL_VALIDATION"
         and ((progress or {}).get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
     )
-    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    c21_backup_portability_paths = c21_lr02c_operational_paths | {
+        "deploy/ysna/backup-c21-db.sh",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json",
+        "docs/progress/failure-ledger.json",
+        "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json",
+        "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md",
+        "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md",
+        "tests/deploy/test_c21_lr02c_operational_contract.py",
+    }
+    c21_backup_portability_projection = (
+        repository.get("validated_base_commit") == "517fb4c39a3a9841eb5a07322235eb71989f1ec4"
+        and set(allowed) == c21_backup_portability_paths
+        and len(allowed) == 21
+        and (progress or {}).get("event_sequence") == 464
+        and (progress or {}).get("last_event_id") == "evt_c21_lr02c_backup_portability_exact21_repository_reconciled"
+        and (progress or {}).get("active_agent") == "developer-primary-c21-backup"
+        and active_c21_lr02c.get("artifact_id") == "WI-C-21-LR-02C-BACKUP-PORTABILITY-R1-20260903-001"
+        and ((progress or {}).get("worker_lease") or {}).get("lease_epoch") == 4
+        and ((progress or {}).get("write_lease") or {}).get("write_epoch") == 4
+        and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "ACTIVE_BACKUP_PORTABILITY_REWORK"
+        and ((progress or {}).get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+    )
+    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -7125,6 +7250,21 @@ def validate_repository_projection(
         and actual_path_set.issubset(set(allowed))
         and lr02c_operational_required_projection_paths.issubset(actual_path_set)
     )
+    c21_backup_portability_required_projection_paths = {
+        "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json",
+        "docs/progress/failure-ledger.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-lr02c-backup-portability-rework-start-r1.json",
+        "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_INVOCATION_PROMPT_R1.md",
+        "docs/work_orders/C-21_LR-02C_BACKUP_PORTABILITY_REWORK_WORK_INSTRUCTION_R1.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    }
+    c21_backup_portability_subset_valid = (
+        c21_backup_portability_projection
+        and actual_path_set.issubset(set(allowed))
+        and c21_backup_portability_required_projection_paths.issubset(actual_path_set)
+    )
     if (
         sorted(actual_path_set) != allowed
         and not lr02a_active_subset_valid
@@ -7138,6 +7278,7 @@ def validate_repository_projection(
         and not lr02c_rework_r3_subset_valid
         and not lr02c_accepted_r3_subset_valid
         and not lr02c_operational_subset_valid
+        and not c21_backup_portability_subset_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -7713,6 +7854,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_lr02c_acceptance_r3_projection(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json":
             errors.extend(validate_c21_lr02c_operational_start_projection(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json":
+            errors.extend(validate_c21_backup_portability_rework_start_projection(manifest, bundle))
     if progress.get("current_work_package") == "PHASE_B_GATE":
         if progress.get("status") == "ACTIVE":
             errors.extend(validate_phase_b_gate_active_projection(bundle))

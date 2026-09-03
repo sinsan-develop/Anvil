@@ -3009,6 +3009,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             "event_sequence":453,
             "last_event_id":"evt_c21_lr02c_r3_acceptance_exact34_repository_reconciled",
             "active_agent":None,"active_work_instruction":None,"worker_lease":None,"write_lease":None,
+            "active_failure_lineage":None,"valid_failure_count":0,
             "current_progress_evidence_ref":{"package_id":"C-21","path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json","manifest_path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json"},
         })
         progress["next_successor_work_package"].update({"package_id":"C-21/LR-02C","status":"BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH"})
@@ -3037,23 +3038,54 @@ class ProjectProgressContractTests(unittest.TestCase):
         manifest = json.loads(
             (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json").read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_lr02c_operational_start_projection(manifest, bundle))
+        started = copy.deepcopy(bundle)
+        progress = started["progress"]
+        event454 = next(event for event in started["events"]["events"] if event.get("sequence") == 454)
+        progress.update({
+            "event_sequence":457,
+            "last_event_id":"evt_c21_lr02c_ops_package_started",
+            "active_agent":"main-agent-eoul",
+            "valid_failure_count":0,
+            "current_progress_evidence_ref":{"package_id":"C-21","path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json","manifest_path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json"},
+        })
+        progress["active_work_instruction"] = {
+            "artifact_id":"WI-C-21-LR-02C-OPS-20260903-001","path":"docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md",
+            "invocation_path":"docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md","release_commit":"f39471a103d35406c3744fd727119072994a0d6a",
+            "result_status":"IN_PROGRESS","package_status":"ACTIVE_OPERATIONAL_VALIDATION","executor":"main-agent-eoul","external_side_effects":"NOT_EXECUTED",
+        }
+        progress["worker_lease"] = {
+            "lease_id":"worker-lease-c21-lr02c-ops-20260903-003","agent_id":"main-agent-eoul","lease_epoch":3,
+            "execution_fencing_token":"c21-lr02c-ops-execution-fence-epoch-3-f39471a","execution_mode":"OPERATIONAL_VALIDATION","status":"ACTIVE",
+        }
+        progress["write_lease"] = {
+            "lease_id":"write-lease-c21-lr02c-ops-20260903-003","worker_lease_id":"worker-lease-c21-lr02c-ops-20260903-003","write_epoch":3,
+            "execution_fencing_token":"c21-lr02c-ops-execution-fence-epoch-3-f39471a","write_fencing_token":"c21-lr02c-ops-write-fence-epoch-3-f39471a","status":"ACTIVE",
+            "paths":["docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md","docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_EXECUTION_MANIFEST.json","docs/evidence/receipts/C-21_LR02C_OPERATIONAL_EXECUTION_RECEIPT.json"],
+        }
+        progress["repository"].update({
+            "validated_base_commit":"f39471a103d35406c3744fd727119072994a0d6a","local_head":"f39471a103d35406c3744fd727119072994a0d6a",
+            "remote_head":"f39471a103d35406c3744fd727119072994a0d6a","feature_remote_head":"f39471a103d35406c3744fd727119072994a0d6a",
+            "head_relation":"FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_OPERATIONAL_EXACT14_WORKTREE","push_status":"FEATURE_CHECKPOINT_SYNCED_LR02C_OPERATIONAL_READY",
+            "exact_allowed_paths":event454["details"]["exact_allowed_paths"],
+        })
+        progress["next_successor_work_package"].update({"package_id":"C-21/LR-02C/OPS","status":"ACTIVE_OPERATIONAL_VALIDATION"})
+        self.assertEqual([], checker.validate_c21_lr02c_operational_start_projection(manifest, started))
 
-        opened = copy.deepcopy(bundle)
+        opened = copy.deepcopy(started)
         opened["progress"]["next_work_package"]["status"] = "READY"
         self.assertIn(
             "C21_LR02C_OPERATIONAL_START_PROJECTION_INVALID",
             checker.validate_c21_lr02c_operational_start_projection(manifest, opened),
         )
 
-        widened = copy.deepcopy(bundle)
+        widened = copy.deepcopy(started)
         widened["progress"]["write_lease"]["paths"].append("deploy/ysna/verify.sh")
         self.assertIn(
             "C21_LR02C_OPERATIONAL_START_FENCING_INVALID",
             checker.validate_c21_lr02c_operational_start_projection(manifest, widened),
         )
 
-        release_changed = copy.deepcopy(bundle)
+        release_changed = copy.deepcopy(started)
         release_changed["progress"]["active_work_instruction"]["release_commit"] = "0" * 40
         self.assertIn(
             "C21_LR02C_OPERATIONAL_START_INSTRUCTION_INVALID",
@@ -3073,7 +3105,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             "scripts/check_project_progress.py",
             "tests/tooling/test_project_progress.py",
         ]
-        repository = bundle["progress"]["repository"]
+        repository = started["progress"]["repository"]
         self.assertNotIn(
             "GIT_DESCENDANT_PATH_SET_MISMATCH",
             checker.validate_repository_projection(
@@ -3086,9 +3118,36 @@ class ProjectProgressContractTests(unittest.TestCase):
                 base_is_ancestor=True,
                 actual_changed_paths=required,
                 working_tree_mode=True,
-                progress=bundle["progress"],
+                progress=started["progress"],
             ),
         )
+
+    def test_c21_backup_portability_rework_start_binds_exact2_and_c01_boundary(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_c21_backup_portability_rework_start_projection(manifest, bundle))
+        exact_paths = bundle["progress"]["repository"]["exact_allowed_paths"]
+        self.assertEqual(21, len(exact_paths))
+        self.assertEqual(sorted(set(exact_paths)), exact_paths)
+        event_tampered = copy.deepcopy(bundle)
+        event_tampered["events"]["events"][-1]["details"]["exact_allowed_paths"] = exact_paths[:-1]
+        self.assertIn(
+            "EVENT_EFFECT_MISMATCH",
+            checker.validate_event_stream(
+                event_tampered["events"],
+                event_tampered["event_contract"],
+                event_tampered["progress"],
+            ),
+        )
+        widened = copy.deepcopy(bundle)
+        widened["progress"]["write_lease"]["paths"].append("deploy/ysna/compose.production.yml")
+        self.assertIn("C21_BACKUP_PORTABILITY_REWORK_FENCING_INVALID", checker.validate_c21_backup_portability_rework_start_projection(manifest, widened))
+        unblocked = copy.deepcopy(bundle)
+        unblocked["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn("C21_BACKUP_PORTABILITY_REWORK_PROJECTION_INVALID", checker.validate_c21_backup_portability_rework_start_projection(manifest, unblocked))
 
 if __name__ == "__main__":
     unittest.main()
