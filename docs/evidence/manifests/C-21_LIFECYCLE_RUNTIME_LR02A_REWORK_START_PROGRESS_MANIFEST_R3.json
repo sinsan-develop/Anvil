@@ -1,0 +1,48 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR02A-REWORK-START-MANIFEST-R3-20260903",
+  "package_id": "C-21/LR-02A",
+  "manifest_type": "REWORK_START_PROGRESS_PROJECTION",
+  "target_status": "ACTIVE_REWORK_R3",
+  "validated_base_commit": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "feature_remote_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "failure_fingerprint": "LR02A_CANONICAL_DEPLOY_CONTRACT_NONEXECUTABLE_R1",
+  "valid_failure_count": 2,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-21_LR02A_R2_INDEPENDENT_TEST_REPORT.md",
+      "bytes": 2215,
+      "sha256": "BA5AC0EE351912E9CAB4269B5147F10FE8E00B55AFA23A31DC46BC40BACE2C11"
+    },
+    {
+      "path": "docs/progress/failure-ledger.json",
+      "bytes": 22181,
+      "sha256": "6B1ECC3CE3FBD4A00F1B0E9FCDC9F04A2210C41AF4B913493EE615B2FAE6EA81"
+    },
+    {
+      "path": "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R3.md",
+      "bytes": 3579,
+      "sha256": "1ED38F7B2F2A181174E21C0E16EF4FAE8C100A593C082E40AACCC97AA3D2CEE5"
+    },
+    {
+      "path": "docs/work_orders/C-21_LR-02A_REWORK_INVOCATION_PROMPT_R3.md",
+      "bytes": 566,
+      "sha256": "A9E3D530EFD44A22A08392D3D20A6F75D9FEBB6D8A8DFBD595F60446EF3DB94C"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-lr02a-rework-start-r3.json",
+      "bytes": 912,
+      "sha256": "C369C79A5B182952C655AD4D7C5807C3E9D69C39233C85C2747C28624621F639"
+    }
+  ],
+  "predecessor_start_manifest": {
+    "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_REWORK_START_PROGRESS_MANIFEST_R2.json"
+  },
+  "developer_r3_exact_path_count": 9,
+  "developer_completion_target_count": 7,
+  "repository_exact_path_count": 36,
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "external_side_effects": "NOT_EXECUTED",
+  "self_reference": false,
+  "created_at": "2026-09-03T11:45:05+09:00"
+}

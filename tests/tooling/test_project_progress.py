@@ -2256,6 +2256,10 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "current_work_package": "PHASE_B_GATE",
                 "status": "ACTIVE",
                 "active_agent": "developer-primary-phase-b-gate",
+                "active_failure_lineage": {
+                    "step_lineage_id": "PHASE_B_GATE",
+                    "valid_failure_count": 0,
+                },
                 "worker_lease": {
                     "lease_id": "worker-lease-phase-b-gate-20260821-001",
                     "agent_id": "developer-primary-phase-b-gate",
@@ -2325,6 +2329,10 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "active_agent": None,
                 "worker_lease": None,
                 "write_lease": None,
+                "active_failure_lineage": {
+                    "step_lineage_id": "PHASE_B_GATE",
+                    "valid_failure_count": 0,
+                },
                 "active_work_instruction": {
                     "artifact_id": "WI-PHASE-B-GATE-REWORK-20260821-003",
                     "result_status": "COMPLETED",
@@ -2353,6 +2361,75 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn(
             "PHASE_B_GATE_TEST_REVIEW_RELEASE_INVALID",
             checker.validate_phase_b_gate_test_review_projection(lease_not_revoked),
+        )
+
+    def test_c21_lr02a_r4_acceptance_binds_events_manifest_and_keeps_c01_blocked(self) -> None:
+        checker = self.require_checker()
+        self.assertTrue(
+            hasattr(checker, "validate_c21_lr02a_acceptance_projection"),
+            "C-21/LR-02A R4 acceptance projection validator is required",
+        )
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_c21_lr02a_acceptance_projection(manifest, bundle))
+
+        c01_opened = copy.deepcopy(bundle)
+        c01_opened["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn(
+            "C21_LR02A_ACCEPTANCE_PROJECTION_INVALID",
+            checker.validate_c21_lr02a_acceptance_projection(manifest, c01_opened),
+        )
+
+        mutated_event = copy.deepcopy(bundle)
+        mutated_event["events"]["events"][-2]["details"]["decision"] = "REJECTED"
+        self.assertIn(
+            "C21_LR02A_ACCEPTANCE_EVENTS_INVALID",
+            checker.validate_c21_lr02a_acceptance_projection(manifest, mutated_event),
+        )
+
+        invalid_manifest = copy.deepcopy(manifest)
+        invalid_manifest["raw_checksums"][0]["sha256"] = "0" * 64
+        self.assertIn(
+            "C21_LR02A_ACCEPTANCE_MANIFEST_INVALID",
+            checker.validate_c21_lr02a_acceptance_projection(invalid_manifest, bundle),
+        )
+
+        repository = bundle["progress"]["repository"]
+        projection_paths = list(repository["exact_allowed_paths"])
+        self.assertNotIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(
+                repository,
+                actual_head=repository["validated_base_commit"],
+                actual_branch=repository["branch"],
+                actual_upstream=repository["upstream"],
+                actual_remote_head=repository["remote_head"],
+                actual_feature_remote_head=repository["feature_remote_head"],
+                base_is_ancestor=True,
+                actual_changed_paths=projection_paths,
+                working_tree_mode=True,
+                progress=bundle["progress"],
+            ),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(
+                repository,
+                actual_head=repository["validated_base_commit"],
+                actual_branch=repository["branch"],
+                actual_upstream=repository["upstream"],
+                actual_remote_head=repository["remote_head"],
+                actual_feature_remote_head=repository["feature_remote_head"],
+                base_is_ancestor=True,
+                actual_changed_paths=projection_paths + ["outside.txt"],
+                working_tree_mode=True,
+                progress=bundle["progress"],
+            ),
         )
 
 if __name__ == "__main__":

@@ -1,0 +1,3 @@
+# WI-C-21-LR-02A-20260903-001 Invocation Prompt
+
+`docs/work_orders/C-21_LR-02A_WORK_INSTRUCTION.md`와 active worker/write lease의 exact14만 실행하라. 기준 HEAD `e57f008d0916953dab3c9425322a1e8942ed0379`와 두 fencing token을 확인하고, readiness 0013 및 canonical `anvil-web:3770` deploy contract RED test를 먼저 실패시킨 뒤 최소 구현하라. 활성 표준 경로는 `anvil.sinsan.kr`, `compose.production.yml`, migration `0013_task_bootstrap_authority`만 사용하며 4173/public-preview 실행 의존성을 남기지 마라. historical preview/internal 파일 삭제·실행, SSH/DB/NPM/DNS/Secret/container/deploy/Telegram/Provider 외부 side effect, C-01/test-session/project provisioning, Git commit/push는 금지한다. 결과와 정확한 RED/GREEN/회귀 증거를 두 report에 기록하라.

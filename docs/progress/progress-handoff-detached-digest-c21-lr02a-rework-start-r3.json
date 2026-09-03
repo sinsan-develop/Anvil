@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02A-REWORK-START-R3-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02A",
+  "event_sequence": 413,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 63829,
+    "file_sha256": "C69E90A60D2C49E73575CE834E663909AEEE9600BC20C5730ED9C290D694937D",
+    "canonical_json_sha256": "E01CDC868764B88EC545B819D58C4A2E15262BDD796298D75C2C9AF7FD048FE6"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 132001,
+    "file_sha256": "25C417F243E530F251E9D97BE888D661348430EB42F218C5BAAEDB08007C01F4",
+    "machine_summary_canonical_sha256": "E7F491D2F6BCF06B46DF3B3D84CC50D1C08FD653C16109376C88A99C7DE54690"
+  },
+  "created_at": "2026-09-03T11:45:05+09:00",
+  "scope": "C-21/LR-02A R3 exact9 executable deploy/verify/rollback rework; no external side effects."
+}

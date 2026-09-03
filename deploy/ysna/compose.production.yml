@@ -1,0 +1,41 @@
+name: anvil
+
+services:
+  anvil-web:
+    container_name: anvil-web
+    image: "anvil-web:${ANVIL_RELEASE_COMMIT:?deploy script must bind the image to an exact commit}"
+    build:
+      context: ../..
+      dockerfile: deploy/ysna/Dockerfile.web
+      args:
+        ANVIL_RELEASE_COMMIT: "${ANVIL_RELEASE_COMMIT:?deploy script must bind the image to an exact commit}"
+    env_file: ["${ANVIL_RUNTIME_ENV_FILE:?run deploy/ysna/deploy.sh to prepare runtime/anvil.env}"]
+    environment:
+      ANVIL_HOST: 0.0.0.0
+      ANVIL_PORT: "3770"
+    expose:
+      - "3770"
+    networks:
+      - proxy-network
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    healthcheck:
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3770/health/live', timeout=2)"
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 10s
+
+networks:
+  proxy-network:
+    external: true

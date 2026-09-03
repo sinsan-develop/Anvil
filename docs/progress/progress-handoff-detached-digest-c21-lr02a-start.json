@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02A-START-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02A",
+  "event_sequence": 401,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 61642,
+    "file_sha256": "2C06677BF842CFE34E36076C10E906A106606338ED3BC53EE9A1CE00B8489A62",
+    "canonical_json_sha256": "56F95B8F10161A3CAB58C6DE8DD0F52B75F8FCD131EAEF2989DEFDA5246E44F6"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 129104,
+    "file_sha256": "2144F912AB294BF16BE1D766605A14019E5613447B1A8940E97BEE028B911440",
+    "machine_summary_canonical_sha256": "7EF7542F9EC5CAA7AB600A11DA66FF1AFD42A9B27552507ADCC5D65B39A891A2"
+  },
+  "created_at": "2026-09-03T09:46:02+09:00",
+  "scope": "C-21/LR-02A active exact14 readiness and canonical anvil-web:3770 deploy-contract projection; no external side effects."
+}

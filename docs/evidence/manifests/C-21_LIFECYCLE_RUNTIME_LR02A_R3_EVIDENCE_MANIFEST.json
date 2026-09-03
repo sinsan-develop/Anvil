@@ -1,0 +1,15 @@
+{
+  "artifact_id": "C21-LR02A-R3-EVIDENCE",
+  "self_reference": false,
+  "status": "COMPLETED",
+  "external_side_effects": "NOT_EXECUTED",
+  "raw_checksums": [
+    {"path":"deploy/ysna/deploy.sh","bytes":4633,"sha256":"EC65B0E3AF00AE532A96E2EB4CC7868091B0340DED6E3B51D1A9DD79CD8CCBD6","git_blob":"cb1f8fdcb20920a53bd0691b0b1fbf04768fedca"},
+    {"path":"deploy/ysna/verify.sh","bytes":5121,"sha256":"64972279721BB155E2F67D75566B56E200FCD7F3245423B45F8D78C46872F35A","git_blob":"214ccd1d60e66747a3ee6ca78fc7411ac32c6d98"},
+    {"path":"deploy/ysna/rollback.sh","bytes":1773,"sha256":"58B1C1B77B6B8EEED281D1538907077DD689E38D41B154EA564EC2BBA6DD5FF9","git_blob":"fd35267d746decd3fc3572dc23be0fd5e4cd7f09"},
+    {"path":"tests/deploy/test_public_deploy_pipeline.py","bytes":28303,"sha256":"7705088EFA6C7A1C39AAC97CDC29FB1A358FD228A7C19837404C5116A089F3DE"},
+    {"path":"tests/deploy/test_ysna_deployment_contract.py","bytes":5198,"sha256":"493A5AE1E02D169343A32F9C03A66209F5CA36024B5A2FA4D1D2BF75583BA0CA"},
+    {"path":"tests/deploy/test_ysna_scripts_contract.py","bytes":10452,"sha256":"B81008EF744342677BA2EB13C869A34B29118DADD86412F4FD458C0035764F5B"},
+    {"path":"docs/04_test_reports/C-21_LR02A_R3_RUNTIME_READINESS_PROGRESS.md","bytes":1888,"sha256":"515E2BD391E1FB9014CCFF149025B5ADD58528A511F8A1F6A91C309B8B081652"}
+  ]
+}

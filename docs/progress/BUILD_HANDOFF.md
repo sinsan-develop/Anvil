@@ -1,3 +1,30 @@
+# C-21 Lifecycle Runtime LR-02A R3 rework active (2026-09-03)
+
+- **판정:** `ACTIVE_REWORK_R3` (seq408→413 epoch2 lease revoke → second `FAILURE_REPORT_ACCEPTED` → epoch3 lease issue → `PACKAGE_RESUMED`).
+- **실패 계보:** `C-21/LR-02A | LR02A_CANONICAL_DEPLOY_CONTRACT_NONEXECUTABLE_R1`, valid failure 2, takeover `NOT_REQUIRED`.
+- **R3 blocker:** 최초 전환 rollback asset, canonical deploy/verify/rollback 실행형 harness, 실제 auth session/cookie/run-id/SSE/Last-Event-ID 검증.
+- **R3 writer:** `developer-primary`, exact9, execution/write epoch 3. 동일 유효 실패가 세 번째로 확인되면 Main이 직접 인수한다.
+- **보존:** seq1~407 및 R1/R2 산출물은 불변이다. C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+- **미실행:** Docker/SSH/DB/NPM/DNS/Secret/browser/deploy/container removal/Telegram/Provider side effect.
+
+# C-21 Lifecycle Runtime LR-02A R2 rework active (2026-09-03)
+
+- **판정:** `ACTIVE_REWORK_R2` (seq402→407 old lease revoke → `FAILURE_REPORT_ACCEPTED` → epoch2 lease issue → `PACKAGE_RESUMED`).
+- **실패 계보:** `C-21/LR-02A | LR02A_CANONICAL_DEPLOY_CONTRACT_NONEXECUTABLE_R1`, valid failure 1, takeover `NOT_REQUIRED`.
+- **독립 차단 7건:** bootstrap root, verify/rollback root와 guard 인자, fresh image와 same-0013, durable rollback baseline, observable verify, frozen LR-01 report, DRAFT approval consistency.
+- **R2 writer:** `developer-primary`, exact11, execution/write epoch 2. LR-01 report는 baseline byte 복원만 허용하고 LR-02A 보고서는 고유 경로로 분리한다.
+- **보존:** R1 ASGI/compose/README/API-test 변경과 seq1~401은 불변이다. C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+- **미실행:** Docker/SSH/DB/NPM/DNS/Secret/browser/deploy/container removal/Telegram/Provider side effect.
+
+# C-21 Lifecycle Runtime LR-02A started (2026-09-03)
+
+- **판정:** `ACTIVE / LR-02A` (seq399→401 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`).
+- **기준선:** `codex/c21-lifecycle-runtime@e57f008d0916953dab3c9425322a1e8942ed0379`; 원격 feature checkpoint 동일, upstream `origin/main@1573e0242aa718d0f81f6b6fc936c754b7c75e60`.
+- **목표:** canonical `anvil.sinsan.kr → anvil-web:3770` runtime의 readiness/deploy 계약을 migration `0013_task_bootstrap_authority`에 맞춘다.
+- **단일 writer:** `developer-primary`, exact14, execution/write epoch 1. Main은 lease 동안 제품 경로를 수정하지 않는다.
+- **보존:** LR-01 frozen product/evidence와 seq1~398은 불변이다. C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+- **미실행:** SSH, DB migration, Docker build/deploy, NPM/DNS/Secret 변경, 컨테이너 제거, Telegram/Provider 호출.
+
 # C-21 Lifecycle Runtime LR-01 acceptance projection reconciled (2026-09-03)
 
 - **판정:** `RECONCILED / LR-01_ACCEPTED` (seq398 `REPOSITORY_RECONCILED`). 기존 seq1~397은 변경하지 않고, LR-01 accepted exact21 저장소 projection과 event stream head를 append-only로 정합화했다.
@@ -443,44 +470,71 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ## Current C-21 operational reconciliation projection
 
+## 2026-09-03 C-21/LR-02A Main takeover R4 accepted
+
+- 세 번째 동일 fingerprint 실패 후 Main Agent가 epoch4 lease로 직접 인수했다. rollback image/pointer durability, 실제 canonical script success harness, authenticated SSE 및 Last-Event-ID false-positive 차단을 완료했다.
+- 독립 R4 검토는 `COMPLETED / PASS / READY_FOR_MAIN_ACCEPTANCE`, blocking 0이다. Reviewer 증거는 핵심 66 PASS, 적용 가능한 deploy/API 132 PASS, shell/diff PASS다.
+- seq420~424는 Main lease 회수, package completion, Main acceptance, repository reconciliation을 append한다. LR-02A만 수락하며 C-21은 ACTIVE, LR-02B는 READY_FOR_WORK_INSTRUCTION다.
+- 실제 Docker/SSH/DB/NPM/DNS/browser/deploy/정상 Telegram/Provider side effect는 실행하지 않았다. C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`로 유지한다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 398,
+  "event_sequence": 424,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr01_acceptance_repository_reconciled",
-  "updated_at": "2026-09-03T04:11:04+09:00",
+  "last_event_id": "evt_c21_lr02a_acceptance_repository_reconciled_r4",
+  "updated_at": "2026-09-03T14:30:04+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "C-21/LR-02A runtime-readiness WorkInstruction을 발행해 anvil-web:3770의 migration readiness head와 canonical deploy contract를 0013_task_bootstrap_authority에 맞춘다. test-session write scope와 canonical project mapping은 LR-02B/LR-02C에서 순차 처리하며 C-01은 BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT를 유지한다.",
+  "next_safe_action": "LR-02A accepted projection을 검증·checkpoint push한 뒤 C-21/LR-02B 최소권한 test-session WorkInstruction을 발행한다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "repository_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
-  "repository_head_relation": "EVIDENCE_ONLY_DESCENDANT_PENDING_COMMIT",
+  "repository_validated_base_commit": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_LR02A_ACCEPTED_EXACT41_WORKTREE",
   "repository_exact_allowed_paths": [
+    "apps/api/anvil_api/asgi.py",
+    "deploy/ysna/README.md",
+    "deploy/ysna/ReleaseManifest.C21.DRAFT.json",
+    "deploy/ysna/bootstrap-deploy.sh",
+    "deploy/ysna/compose.production.yml",
+    "deploy/ysna/deploy.sh",
+    "deploy/ysna/rollback.sh",
+    "deploy/ysna/verify.sh",
     "docs/04_test_reports/C-21_LIFECYCLE_RUNTIME_PROGRESS.md",
-    "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR00_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_ACCEPTANCE_PROGRESS_MANIFEST.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
+    "docs/04_test_reports/C-21_LR02A_INDEPENDENT_TEST_REPORT.md",
+    "docs/04_test_reports/C-21_LR02A_R2_INDEPENDENT_TEST_REPORT.md",
+    "docs/04_test_reports/C-21_LR02A_R3_INDEPENDENT_TEST_REPORT.md",
+    "docs/04_test_reports/C-21_LR02A_R3_RUNTIME_READINESS_PROGRESS.md",
+    "docs/04_test_reports/C-21_LR02A_R4_INDEPENDENT_TEST_REPORT.md",
+    "docs/04_test_reports/C-21_LR02A_RUNTIME_READINESS_PROGRESS.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_R3_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_REWORK_START_PROGRESS_MANIFEST_R2.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_REWORK_START_PROGRESS_MANIFEST_R3.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lifecycle-runtime.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr01-accepted.json",
-    "docs/work_orders/C-21_LR-01_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_LR-01_WORK_INSTRUCTION.md",
-    "migrations/versions/0013_task_bootstrap_authority.py",
-    "packages/api/fastapi_app.py",
-    "packages/api/registry.py",
-    "packages/api/runtime.py",
-    "packages/api/task_bootstrap.py",
-    "packages/persistence/task_bootstrap_repository.py",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02a-accepted-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02a-rework-start-r2.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02a-rework-start-r3.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02a-start.json",
+    "docs/work_orders/C-21_LR-02A_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_LR-02A_MAIN_TAKEOVER_PACKET_R4.md",
+    "docs/work_orders/C-21_LR-02A_REWORK_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/C-21_LR-02A_REWORK_INVOCATION_PROMPT_R3.md",
+    "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R2.md",
+    "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R3.md",
+    "docs/work_orders/C-21_LR-02A_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
-    "tests/api/test_task_bootstrap.py",
-    "tests/persistence/test_task_bootstrap_postgres.py"
+    "tests/api/test_public_asgi_frontend.py",
+    "tests/deploy/test_public_deploy_pipeline.py",
+    "tests/deploy/test_ysna_deployment_contract.py",
+    "tests/deploy/test_ysna_scripts_contract.py",
+    "tests/tooling/test_project_progress.py"
   ],
   "reporting_decision": "AUTO_CONTINUE",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",

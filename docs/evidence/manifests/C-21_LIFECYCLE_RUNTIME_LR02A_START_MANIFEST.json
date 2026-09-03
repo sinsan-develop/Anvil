@@ -1,0 +1,37 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR02A-START-MANIFEST-20260903",
+  "package_id": "C-21/LR-02A",
+  "manifest_type": "WORK_PACKAGE_START_PROJECTION",
+  "target_status": "ACTIVE",
+  "validated_base_commit": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "feature_remote_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-lr02a-start.json",
+      "bytes": 932,
+      "sha256": "DB06FBFA06CE626C665A9DB8CB1E8082030247C7FE155EC72E256AA9D01C34E4"
+    },
+    {
+      "path": "docs/work_orders/C-21_LR-02A_WORK_INSTRUCTION.md",
+      "bytes": 3954,
+      "sha256": "B109FC5741D25D8DA285CAEFC7E5EE1D1EA10038E7A426D0EFA6353DA411618A"
+    },
+    {
+      "path": "docs/work_orders/C-21_LR-02A_INVOCATION_PROMPT.md",
+      "bytes": 830,
+      "sha256": "9EC0E710A26C7B1021E8AA4D7F41E8183C21041E238F4A5ED15CDD3B709C18C9"
+    },
+    {
+      "path": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+      "bytes": 2245,
+      "sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T09:46:02+09:00",
+  "developer_exact_path_count": 14,
+  "repository_exact_path_count": 22,
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "external_side_effects": "NOT_EXECUTED"
+}

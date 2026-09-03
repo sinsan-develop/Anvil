@@ -595,3 +595,59 @@ def test_versioned_bootstrap_executes_target_script_from_old_checkout(tmp_path: 
     assert result.returncode == 0, result.stderr
     assert target_marker.is_file()
     assert not old_marker.exists()
+
+
+def test_standard_c21_pipeline_uses_the_single_3770_runtime_contract() -> None:
+    canonical = (
+        ROOT / "deploy" / "ysna" / "bootstrap-deploy.sh",
+        ROOT / "deploy" / "ysna" / "deploy.sh",
+        ROOT / "deploy" / "ysna" / "verify.sh",
+        ROOT / "deploy" / "ysna" / "rollback.sh",
+    )
+    compose_path = ROOT / "deploy" / "ysna" / "compose.production.yml"
+
+    assert all(path.is_file() for path in canonical)
+    compose = compose_path.read_text(encoding="utf-8")
+    scripts = "\n".join(path.read_text(encoding="utf-8") for path in canonical)
+    assert "anvil-web" in compose
+    assert '"3770"' in compose
+    assert "proxy-network" in compose
+    assert "compose.production.yml" in scripts
+    assert "anvil.sinsan.kr" in scripts
+    assert "0013_task_bootstrap_authority" in scripts
+    assert "4173" not in compose + scripts
+    assert "public-preview" not in compose + scripts
+
+
+def test_bootstrap_fake_git_harness_passes_the_canonical_deploy_root(tmp_path: Path):
+    git_bash = Path(os.environ.get("ProgramFiles", r"C:\\Program Files")) / "Git" / "usr" / "bin" / "bash.exe"
+    if not git_bash.is_file():
+        pytest.skip("Git Bash is required")
+    home = tmp_path / "home"
+    repo = home / "deploy" / "anvil" / "repo"
+    (repo / ".git").mkdir(parents=True)
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    marker = tmp_path / "deploy-root.txt"
+    target = tmp_path / "target-deploy.sh"
+    target.write_text(f'#!/usr/bin/env bash\nprintf %s "$ANVIL_DEPLOY_ROOT" > "{_posix(marker)}"\n', encoding="utf-8")
+    fake_git = fake_bin / "git"
+    fake_git.write_text(
+        "#!/usr/bin/env bash\nset -euo pipefail\n"
+        "case \"$*\" in\n"
+        "  *'rev-parse '* ) printf 'fake-blob\\n' ;;\n"
+        "  *'show '* ) cat \"$TARGET_DEPLOY\" ;;\n"
+        "  *'hash-object '* ) printf 'fake-blob\\n' ;;\n"
+        "  * ) exit 0 ;;\n"
+        "esac\n",
+        encoding="utf-8",
+    )
+    os.chmod(fake_git, 0o755)
+    result = subprocess.run(
+        [str(git_bash), _posix(ROOT / "deploy" / "ysna" / "bootstrap-deploy.sh"), COMMIT],
+        env=os.environ | {"HOME": _posix(home), "PATH": f"{_posix(fake_bin)}:/usr/bin", "TARGET_DEPLOY": _posix(target)},
+        text=True, encoding="utf-8", errors="replace", capture_output=True, timeout=20,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert marker.read_text(encoding="utf-8") == _posix(home / "deploy" / "anvil")

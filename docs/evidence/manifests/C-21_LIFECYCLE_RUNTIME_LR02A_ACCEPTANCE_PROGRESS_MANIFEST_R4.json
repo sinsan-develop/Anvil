@@ -1,0 +1,32 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR02A-ACCEPTANCE-MANIFEST-R4-20260903",
+  "package_id": "C-21/LR-02A",
+  "manifest_type": "MAIN_ACCEPTANCE_PROGRESS_PROJECTION",
+  "target_status": "ACCEPTED",
+  "event_sequence": 424,
+  "validated_base_commit": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "feature_remote_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
+  "upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "independent_reviewer": "lr02a_r4_independent_review",
+  "independent_verdict": "READY_FOR_MAIN_ACCEPTANCE",
+  "blocking_findings": 0,
+  "failure_fingerprint": "LR02A_CANONICAL_DEPLOY_CONTRACT_NONEXECUTABLE_R1",
+  "valid_failure_count": 0,
+  "historical_failure_count": 3,
+  "takeover_status": "MAIN_AGENT_TAKEOVER_COMPLETED",
+  "repository_exact_path_count": 41,
+  "next_work_package": "C-21/LR-02B",
+  "next_status": "READY_FOR_WORK_INSTRUCTION",
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "external_side_effects": "NOT_EXECUTED",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-lr02a-accepted-r4.json","bytes":993,"sha256":"1155B0697AF5F4CCF3DF51B9911B47105E509842EA5E09009217321930522578"},
+    {"path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_R3_EVIDENCE_MANIFEST.json","bytes":1330,"sha256":"A47885D5F2CCEBA83E04224340FDD56351644DEBFB8E22A11635DD3D28001D8B"},
+    {"path":"docs/04_test_reports/C-21_LR02A_R4_INDEPENDENT_TEST_REPORT.md","bytes":2872,"sha256":"1E33B6EEA1325C19A548F8AE9261A3736F3632B69613820CC7D2124C1B357371"},
+    {"path":"docs/04_test_reports/C-21_LR02A_R3_INDEPENDENT_TEST_REPORT.md","bytes":1517,"sha256":"7B9DD6BB0E7713FD8F32222410A69732F12916BCF4B53AEF83743826052C723D"},
+    {"path":"docs/work_orders/C-21_LR-02A_MAIN_TAKEOVER_PACKET_R4.md","bytes":1147,"sha256":"2D1B9BF1CB74E5C56171640596E96125619B8F92A02CFA1071713B1437EBD63E"},
+    {"path":"docs/progress/failure-ledger.json","bytes":23324,"sha256":"07AA34EB3E19FD590FDA7B88F76F20751D965CE0A1F5529A9DD4D96F99D9BF4F"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T14:30:04+09:00"
+}

@@ -580,6 +580,89 @@
       ],
       "blocking_defect_count_after_retest": 0,
       "acceptance_sequence": 361
+    },
+    {
+      "entry_id": "failure-c21-lr02a-independent-review-r1",
+      "step_lineage_id": "C-21/LR-02A",
+      "failure_fingerprint": "LR02A_CANONICAL_DEPLOY_CONTRACT_NONEXECUTABLE_R1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "BOOTSTRAP_DEPLOY_ROOT_MISMATCH",
+        "CANONICAL_SCRIPT_ROOT_AND_GUARD_ARGUMENT_MISMATCH",
+        "FRESH_IMAGE_PRECHECK_AND_0013_RERUN_REJECTED",
+        "ROLLBACK_BASELINE_NOT_DURABLE",
+        "CANONICAL_VERIFY_FALSE_POSITIVE",
+        "LR01_FROZEN_REPORT_OVERWRITTEN",
+        "DRAFT_APPROVAL_STATE_CONTRADICTION"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 7,
+      "evidence_refs": [
+        {
+          "path": "docs/04_test_reports/C-21_LR02A_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "A0F71304371042FB8FED7CF3841785121C2B6171913375BD8D4A487FE5A0BB5B"
+        }
+      ],
+      "accepted_sequence": 1,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R2_PENDING"
+    },
+    {
+      "entry_id": "failure-c21-lr02a-independent-review-r2",
+      "step_lineage_id": "C-21/LR-02A",
+      "failure_fingerprint": "LR02A_CANONICAL_DEPLOY_CONTRACT_NONEXECUTABLE_R1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "FRESH_IMAGE_PRECHECK_AND_0013_RERUN_REJECTED",
+        "ROLLBACK_BASELINE_NOT_DURABLE",
+        "CANONICAL_VERIFY_FALSE_POSITIVE"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 3,
+      "evidence_refs": [
+        {
+          "path": "docs/04_test_reports/C-21_LR02A_R2_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "BA5AC0EE351912E9CAB4269B5147F10FE8E00B55AFA23A31DC46BC40BACE2C11"
+        }
+      ],
+      "accepted_sequence": 2,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "R3_PENDING"
+    },
+    {
+      "entry_id": "failure-c21-lr02a-independent-review-r3",
+      "step_lineage_id": "C-21/LR-02A",
+      "failure_fingerprint": "LR02A_CANONICAL_DEPLOY_CONTRACT_NONEXECUTABLE_R1",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "ROLLBACK_BASELINE_NOT_DURABLE",
+        "CANONICAL_SCRIPT_SUCCESS_HARNESS_MISSING",
+        "CANONICAL_VERIFY_FALSE_POSITIVE"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 3,
+      "evidence_refs": [
+        {
+          "path": "docs/04_test_reports/C-21_LR02A_R3_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "7B9DD6BB0E7713FD8F32222410A69732F12916BCF4B53AEF83743826052C723D"
+        }
+      ],
+      "accepted_sequence": 3,
+      "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED",
+      "independent_retest_status": "R4_MAIN_PENDING",
+      "takeover_packet_ref": {
+        "path": "docs/work_orders/C-21_LR-02A_MAIN_TAKEOVER_PACKET_R4.md",
+        "sha256": "2D1B9BF1CB74E5C56171640596E96125619B8F92A02CFA1071713B1437EBD63E"
+      }
     }
   ]
 }

@@ -2,19 +2,19 @@
   "manifest_type": "AnvilReleaseManifest",
   "manifest_version": "1.0",
   "work_package": "C-21",
-  "status": "APPROVED_FOR_DEPLOYMENT",
-  "document_state": "DRAFT_CONTROL_DOCUMENT_NOT_COMMITTED_OR_PUBLISHED",
+  "status": "DRAFT_NOT_APPROVED",
+  "document_state": "DRAFT_NOT_APPROVED_NOT_COMMITTED_OR_PUBLISHED",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "5b0f3389dd6f54d1f7606ac99a36d237feda7b60",
-    "tag": "anvil-ui-preview-20260902.4",
-    "tag_state": "NOT_CREATED_OR_VERIFIED",
-    "branch_at_capture": "main",
-    "working_tree": "CLEAN"
+    "commit": "UNASSIGNED",
+    "tag": "UNASSIGNED",
+    "tag_state": "UNASSIGNED",
+    "branch_at_capture": "UNASSIGNED",
+    "working_tree": "UNASSIGNED"
   },
   "control_document": {
     "path": "deploy/ysna/ReleaseManifest.C21.DRAFT.json",
-    "commit": "NOT_ASSIGNED",
+    "commit": "NOT_APPROVED",
     "relationship": "A later control/manifest commit approves the immutable source.commit; it is not the deployment source commit."
   },
   "authority": {
@@ -22,9 +22,9 @@
     "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
     "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
     "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
-    "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-007",
-    "deploy_approval_path": "docs/approvals/APPROVAL-20260902-C21-DEPLOY-001.md",
-    "deploy_approval_sha256": "036040742CB5210D6D5F58190A8E7236623A4031D5D35B0934EA88198B99B6E8"
+    "deploy_approval": "NOT_APPROVED_REQUIRED",
+    "deploy_approval_path": "NOT_APPROVED_REQUIRED",
+    "deploy_approval_sha256": "NOT_APPROVED_REQUIRED"
   },
   "evidence": {
     "run_event_contract": {
@@ -39,11 +39,11 @@
       "recorded_result": "PASS",
       "recorded_scope": "tests/deploy 35 passed; bootstrap/deploy/rollback/NPM removal shell parse passed"
     },
-    "migration_head": "0012_run_authority",
-    "migration_file_sha256": "E2CF7CF96B22FC4AA7657C2EE357E360CE2A5D1FB7A5248BAC862F413EA9DA68",
-    "deploy_script_sha256": "DB27C8AD792B84F52A0ED5B958E9B0A166B28189D52D07F09CA5FCE13CC137B2",
-    "bootstrap_script_sha256": "FA9A83021BAE1F1B81114E7A71117252A0B95F4DEE11FAAF6D80C40923D93436",
-    "npm_override_removal_script_sha256": "D7645002634544D6D4D1A9A700F034B199338305D6BA8A3FDB95495F2FF91C30",
+    "migration_head": "0013_task_bootstrap_authority",
+    "migration_file_sha256": "UNASSIGNED",
+    "deploy_script_sha256": "UNASSIGNED",
+    "bootstrap_script_sha256": "UNASSIGNED",
+    "npm_override_removal_script_sha256": "UNASSIGNED",
     "production_vertical_verification": {
       "ui": "NOT_EXECUTED",
       "api": "NOT_EXECUTED",
@@ -60,30 +60,32 @@
     "target_runtime_root": "~/deploy/anvil",
     "public_domain": "anvil.sinsan.kr",
     "listener": "anvil-web:3770",
-    "migration_precondition": "0011_telegram_webhook_state",
-    "migration_head": "0012_run_authority",
+    "migration_precondition": "0012_run_authority",
+    "migration_head": "0013_task_bootstrap_authority",
     "database_backup": "NOT_EXECUTED",
     "migration_execution": "NOT_EXECUTED",
     "runtime_deployment": "NOT_EXECUTED",
     "npm_override_backup_and_removal": "NOT_EXECUTED",
     "nginx_test_and_graceful_reload": "NOT_EXECUTED",
-    "internal_runtime_removal": "CONDITIONALLY_APPROVED_NOT_EXECUTED",
-    "deployment_status": "APPROVED_NOT_EXECUTED"
+    "internal_runtime_removal": "NOT_APPROVED_NOT_EXECUTED",
+    "deployment_status": "NOT_APPROVED_NOT_EXECUTED"
   },
   "boundaries": {
     "browser_api": "same-origin relative paths only",
-    "database": "Anvil dedicated database and roles only; verified full backup required before exact 0012 migration",
+    "database": "Anvil dedicated database and roles only; exact 0012 precondition before 0013 migration",
     "public_exposure": "existing HTTPS host only",
     "provider_probe": "non-billing health/capability only; generation and fallback forbidden",
     "telegram_signed_post": "one approved validation fixture only; secret material must not be logged",
     "npm_override": "exact-hash backup before removal; nginx -t and graceful reload required; restore on failure",
     "post_migration_failure": "automatic schema downgrade forbidden; preserve backup and enter INCIDENT_HOLD",
-    "internal_runtime_removal": "remove anvil-internal-web-1 only after every production vertical verification item is actual PASS"
+    "internal_runtime_removal": "outside this draft; no internal runtime is a canonical deploy target"
   },
-  "approval_required": [],
+  "approval_required": [
+    "HUMAN_DEPLOYMENT_APPROVAL_REQUIRED",
+    "EXACT_COMMIT_AND_TAG_APPROVAL_REQUIRED"
+  ],
   "execution_prerequisites": [
-    "commit and publish this control manifest without changing source.commit",
-    "create and push anvil-ui-preview-20260902.4 bound exactly to source.commit",
-    "verify the release tag resolves to source.commit before any deployment mutation"
+    "assign an approved release commit and tag in a later manifest",
+    "bind that release manifest to the exact approved commit before deployment"
   ]
 }
