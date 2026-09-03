@@ -5,7 +5,7 @@
   "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "cb3afcdd5971c7497b4c0044d3ee52479c59da59",
+    "commit": "f39471a103d35406c3744fd727119072994a0d6a",
     "branch_at_capture": "main",
     "working_tree": "CLEAN"
   },
@@ -13,32 +13,37 @@
     "successor_binding": "APPROVAL-20260822-AGENT-TEAMS-MOA-REMOTE-SUCCESSOR-001",
     "successor_binding_sha256": "D4DA936A0DD4E7D595950CEA87874EF3FE94B1C89C7B315EBA9F90B25273C22D",
     "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "work_plan_sha256": "FE0F56CB00C9EE2B8786E36953CEDA3E6E40DB2C718F5FB52D05E2730CD10C31",
-    "deploy_approval": "APPROVAL-20260902-C21-DEPLOY-006"
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "deploy_approval": "APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001",
+    "deploy_approval_path": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+    "deploy_approval_sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"
   },
   "evidence": {
     "focused_tests": {
-      "command": ".venv\\Scripts\\python.exe -m pytest tests/agent_team tests/api tests/persistence tests/browser -q",
+      "command": "python -m pytest -q tests/tooling/test_project_progress.py tests/deploy/test_c21_lr02c_operational_contract.py tests/deploy/test_ysna_scripts_contract.py tests/api",
       "result": "PASS",
-      "count": 81
+      "count": 202
     },
     "compileall": "PASS",
     "git_diff_check": "PASS",
-    "migration_head": "0011_telegram_webhook_state",
-    "migration_file_sha256": "96F851AF011FA2CC373CE8C3939E3517C0EA5675F82093044B4FFAF2E102E343",
-    "runtime_provider_and_telegram": "NOT_EXECUTED",
-    "unified_runtime_frontend_same_listener": "PASS (tests/api: 49)"
+    "migration_head": "0013_task_bootstrap_authority",
+    "migration_file_sha256": "6344744E48BCC9735C27767E5A1B157C8E37C017A7251591CEA9FAB0199045C8",
+    "deploy_script_sha256": "5F3C33987A32AEBDCB6E68F5DA88BBAC5725B757EC938F33445AF7BEC77CD339",
+    "bootstrap_script_sha256": "A4B25BA03498D051A770D55E32BC3096D72977480CB715F1781F79D854CED34A",
+    "verify_script_sha256": "31D10C400A4E1B7E81F0994D1979FF57C5AAB52EA43B83780CCF5FB9061BF3C3",
+    "runtime_provider_and_telegram": "APPROVED_NOT_EXECUTED",
+    "unified_runtime_frontend_same_listener": "PASS (tests/api: 99)"
   },
   "runtime": {
     "target_host": "ysna-server",
     "target_checkout": "~/deploy/anvil/repo",
     "target_runtime_root": "~/deploy/anvil",
-    "target_expected_commit": "348131a6483d851e2ceade43f38bc48a2920863b",
-    "target_observed_commit": "d4cb841464c19817afd79ed7127cc3ad5dc9a4b4",
-    "target_preflight": "APPROVED_TARGET_ALIGNMENT_PENDING",
-    "target_checkout_status": "CLEAN_DETACHED",
-    "compose_available": "docker-compose.local.yml (services: {})",
-    "protected_container_observed": "anvil-web (existing; unchanged)",
+    "target_expected_commit": "f39471a103d35406c3744fd727119072994a0d6a",
+    "target_observed_commit": "NOT_EXECUTED",
+    "target_preflight": "APPROVED_READY_FOR_EXECUTION",
+    "target_checkout_status": "TO_BE_VERIFIED_CLEAN_DETACHED",
+    "compose_available": "deploy/ysna/compose.production.yml",
+    "protected_container_observed": "anvil-web:3770",
     "migration_execution": "NOT_EXECUTED",
     "service_restart": "FORBIDDEN_NOT_EXECUTED",
     "webhook_registration": "FORBIDDEN_NOT_EXECUTED"
@@ -67,13 +72,15 @@
     "ANVIL_TEST_SESSION_TTL_SECONDS"
   ],
   "boundaries": {
-    "listener": "0.0.0.0:3770 unified ASGI (UI + API + Telegram + SSE)",
+    "listener": "anvil-web:3770 unified ASGI (UI + API + Telegram + SSE)",
     "browser_api": "same-origin relative paths only",
-    "database": "Anvil dedicated database and roles only; no shared-db mutation in preflight",
+    "database": "Anvil dedicated database and roles only; verified backup required before approved 0012 to 0013 migration",
     "public_exposure": "existing HTTPS host only; unified runtime R3 deployment approved",
     "forbidden_actions_in_this_manifest": [
       "public proxy or DNS change",
-      "removing anvil-internal-web-1 before unified runtime verification"
+      "secret policy change",
+      "provider generation or billing request",
+      "Telegram replay after uncertain result"
     ]
   },
   "approval_required": []

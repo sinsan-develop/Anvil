@@ -1,0 +1,27 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR02C-OPERATIONAL-START-MANIFEST-20260903",
+  "package_id": "C-21/LR-02C/OPS",
+  "manifest_type": "OPERATIONAL_EXECUTION_START_PROJECTION",
+  "target_status": "ACTIVE_OPERATIONAL_VALIDATION",
+  "event_sequence": 457,
+  "validated_base_commit": "f39471a103d35406c3744fd727119072994a0d6a",
+  "feature_remote_head": "f39471a103d35406c3744fd727119072994a0d6a",
+  "upstream_head": "f39471a103d35406c3744fd727119072994a0d6a",
+  "work_instruction_id": "WI-C-21-LR-02C-OPS-20260903-001",
+  "worker_lease_id": "worker-lease-c21-lr02c-ops-20260903-003",
+  "write_lease_id": "write-lease-c21-lr02c-ops-20260903-003",
+  "evidence_write_path_count": 4,
+  "repository_exact_path_count": 14,
+  "release_commit": "f39471a103d35406c3744fd727119072994a0d6a",
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "external_side_effects": "NOT_EXECUTED",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json","bytes":986,"sha256":"E1E811B840C0F05C2BFE7BD8B02573941AB5CBFC8DFBA34A2D37DBC247249871"},
+    {"path":"docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md","bytes":3169,"sha256":"024F8AC20A2C6D20C593BD7D4FC51033EE9EA2ABBA9B92A803495142AAA86E29"},
+    {"path":"docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md","bytes":440,"sha256":"7138F8AEBEDD19726BF89DEBAC8C023770E8E30269DAE4CE55C9D678A9427077"},
+    {"path":"docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md","bytes":2245,"sha256":"1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"},
+    {"path":"deploy/ysna/ReleaseManifest.json","bytes":3785,"sha256":"715585BCB0F7F0679380186DE83B4C3C26A88ED5B0A5245F59BAD279F061F585"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T19:30:03+09:00"
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02C-OPERATIONAL-START-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02C/OPS",
+  "event_sequence": 457,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 71954,
+    "file_sha256": "7946EE319BBEAEEB532BFCF90279550E888106FDEC077E22D8BFC0CF385F983D",
+    "canonical_json_sha256": "EFE2EB02E06B7B3CAE9AD008BA95F87366886E26236B6E817610871154321F98"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 137223,
+    "file_sha256": "81F0910729245727079CE2E55A3D0E6228A29F9724FAD5A931B469FFC5D86481",
+    "machine_summary_canonical_sha256": "5E152E6B0E04A36D1F415219864151C6C7AE528AC7784213B197AD66E80C3D39"
+  },
+  "created_at": "2026-09-03T19:30:03+09:00",
+  "scope": "C-21/LR-02C operational execution start; f39471a release manifest bound; epoch3 evidence-only lease active; external side effects NOT_EXECUTED; C-01 blocked."
+}

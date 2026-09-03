@@ -1936,6 +1936,130 @@ def validate_c21_lr02c_acceptance_r3_projection(
     return sorted(set(errors))
 
 
+def validate_c21_lr02c_operational_start_projection(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"]["events"]
+    repository = progress.get("repository") or {}
+    instruction = progress.get("active_work_instruction") or {}
+    worker = progress.get("worker_lease") or {}
+    write = progress.get("write_lease") or {}
+    errors: list[str] = []
+    base = "f39471a103d35406c3744fd727119072994a0d6a"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json"
+    manifest_path = "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json"
+    wi_path = "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md"
+    invocation_path = "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md"
+    approval_path = "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md"
+    release_manifest_path = "deploy/ysna/ReleaseManifest.json"
+    evidence_paths = [
+        "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
+        "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_EXECUTION_MANIFEST.json",
+        "docs/evidence/receipts/C-21_LR02C_OPERATIONAL_EXECUTION_RECEIPT.json",
+    ]
+    if any((
+        progress.get("event_sequence") != 457,
+        progress.get("last_event_id") != "evt_c21_lr02c_ops_package_started",
+        progress.get("current_phase") != "C",
+        progress.get("current_work_package") != "C-21",
+        progress.get("status") != "ACTIVE",
+        progress.get("active_agent") != "main-agent-eoul",
+        progress.get("valid_failure_count") != 0,
+        (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        (progress.get("next_successor_work_package") or {}) != {**(progress.get("next_successor_work_package") or {}), "package_id":"C-21/LR-02C/OPS", "status":"ACTIVE_OPERATIONAL_VALIDATION"},
+        (progress.get("current_progress_evidence_ref") or {}) != {"package_id":"C-21","path":digest_path,"manifest_path":manifest_path},
+    )):
+        errors.append("C21_LR02C_OPERATIONAL_START_PROJECTION_INVALID")
+    if any((
+        instruction.get("artifact_id") != "WI-C-21-LR-02C-OPS-20260903-001",
+        instruction.get("path") != wi_path,
+        instruction.get("invocation_path") != invocation_path,
+        instruction.get("release_commit") != base,
+        instruction.get("result_status") != "IN_PROGRESS",
+        instruction.get("package_status") != "ACTIVE_OPERATIONAL_VALIDATION",
+        instruction.get("executor") != "main-agent-eoul",
+        instruction.get("external_side_effects") != "NOT_EXECUTED",
+    )):
+        errors.append("C21_LR02C_OPERATIONAL_START_INSTRUCTION_INVALID")
+    if any((
+        worker.get("lease_id") != "worker-lease-c21-lr02c-ops-20260903-003",
+        worker.get("lease_epoch") != 3,
+        worker.get("agent_id") != "main-agent-eoul",
+        worker.get("execution_mode") != "OPERATIONAL_VALIDATION",
+        worker.get("execution_fencing_token") != "c21-lr02c-ops-execution-fence-epoch-3-f39471a",
+        worker.get("status") != "ACTIVE",
+        write.get("lease_id") != "write-lease-c21-lr02c-ops-20260903-003",
+        write.get("worker_lease_id") != worker.get("lease_id"),
+        write.get("write_epoch") != 3,
+        write.get("execution_fencing_token") != worker.get("execution_fencing_token"),
+        write.get("write_fencing_token") != "c21-lr02c-ops-write-fence-epoch-3-f39471a",
+        write.get("status") != "ACTIVE",
+        write.get("paths") != evidence_paths,
+    )):
+        errors.append("C21_LR02C_OPERATIONAL_START_FENCING_INVALID")
+    if any((
+        repository.get("validated_base_commit") != base,
+        repository.get("local_head") != base,
+        repository.get("feature_remote_head") != base,
+        repository.get("remote_head") != base,
+        repository.get("branch") != "codex/c21-operational-execution",
+        repository.get("upstream") != "origin/codex/c21-operational-execution",
+        repository.get("head_relation") != "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_OPERATIONAL_EXACT14_WORKTREE",
+        repository.get("push_status") != "FEATURE_CHECKPOINT_SYNCED_LR02C_OPERATIONAL_READY",
+        len(repository.get("exact_allowed_paths", [])) != 14,
+    )):
+        errors.append("C21_LR02C_OPERATIONAL_START_REPOSITORY_INVALID")
+    indexed = {event.get("sequence"): event for event in events if isinstance(event, dict)}
+    expected_hashes = {
+        454:"A38A5B851C610B60E8ACC94B8B1AC04FB69B52ABF858CC22C7270C1A9AD0898B",
+        455:"6730230A88A3A4398DD257525DE2EEFC2E716E3B6DE53FFA7259B3D93EC00A5C",
+        456:"45500A103D05889F12414C5FEFD121D7A1B5589118D6D28C05324FB9BC7E455D",
+        457:"D34912F964B1F89DDB00B14A1BFB19087328CF2A21625FEE7772DBF51E02EA0A",
+    }
+    if (
+        hashlib.sha256(canonical_json_bytes(events[:453])).hexdigest().upper() != "287C4660992248FF460A46703E878AB354CC5A13B91F23D80C1C63AED577F481"
+        or any(sequence not in indexed or hashlib.sha256(canonical_json_bytes(indexed[sequence])).hexdigest().upper() != expected for sequence, expected in expected_hashes.items())
+    ):
+        errors.append("C21_LR02C_OPERATIONAL_START_EVENTS_INVALID")
+    expected_rows = {digest_path, wi_path, invocation_path, approval_path, release_manifest_path}
+    rows = manifest.get("raw_checksums")
+    if any((
+        manifest.get("artifact_id") != "C21-LIFECYCLE-RUNTIME-LR02C-OPERATIONAL-START-MANIFEST-20260903",
+        manifest.get("manifest_type") != "OPERATIONAL_EXECUTION_START_PROJECTION",
+        manifest.get("target_status") != "ACTIVE_OPERATIONAL_VALIDATION",
+        manifest.get("event_sequence") != 457,
+        manifest.get("validated_base_commit") != base,
+        manifest.get("repository_exact_path_count") != 14,
+        manifest.get("evidence_write_path_count") != 4,
+        manifest.get("external_side_effects") != "NOT_EXECUTED",
+        manifest.get("self_reference") is not False,
+        not isinstance(rows, list),
+        {row.get("path") for row in rows if isinstance(row, dict)} != expected_rows,
+    )):
+        errors.append("C21_LR02C_OPERATIONAL_START_MANIFEST_INVALID")
+    elif any(not portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256")) for row in rows):
+        errors.append("C21_LR02C_OPERATIONAL_START_MANIFEST_INVALID")
+    try:
+        release = _load_json(root / release_manifest_path)
+    except (OSError, json.JSONDecodeError):
+        errors.append("C21_LR02C_OPERATIONAL_RELEASE_MANIFEST_INVALID")
+    else:
+        if any((
+            release.get("status") != "APPROVED_FOR_DEPLOYMENT",
+            (release.get("source") or {}).get("commit") != base,
+            (release.get("source") or {}).get("working_tree") != "CLEAN",
+            (release.get("authority") or {}).get("deploy_approval") != "APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001",
+            (release.get("authority") or {}).get("deploy_approval_sha256") != "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A",
+            (release.get("evidence") or {}).get("migration_head") != "0013_task_bootstrap_authority",
+            (release.get("runtime") or {}).get("target_expected_commit") != base,
+        )):
+            errors.append("C21_LR02C_OPERATIONAL_RELEASE_MANIFEST_INVALID")
+    return sorted(set(errors))
+
+
 def validate_c21_lr02c_start_projection(
     manifest: Mapping[str, Any], bundle: Mapping[str, Any]
 ) -> list[str]:
@@ -6421,6 +6545,10 @@ def validate_repository_projection(
         repository.get("head_relation") == "FEATURE_CHECKPOINT_WITH_LR02C_ACCEPTED_R3_EXACT34_WORKTREE"
         and (progress or {}).get("event_sequence") == 453
     )
+    lr02c_operational_head_relation = (
+        repository.get("head_relation") == "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_OPERATIONAL_EXACT14_WORKTREE"
+        and (progress or {}).get("event_sequence") == 457
+    )
     if (
         repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
         or (
@@ -6435,6 +6563,7 @@ def validate_repository_projection(
             and not lr02c_takeover_head_relation
             and not lr02c_rework_r3_head_relation
             and not lr02c_accepted_r3_head_relation
+            and not lr02c_operational_head_relation
         )
         or not isinstance(base, str)
         or not re.fullmatch(r"[0-9a-f]{40}", base)
@@ -6821,7 +6950,34 @@ def validate_repository_projection(
         and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH"
         and ((progress or {}).get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
     )
-    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    c21_lr02c_operational_paths = {
+        "deploy/ysna/ReleaseManifest.json",
+        "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
+        "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_EXECUTION_MANIFEST.json",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json",
+        "docs/evidence/receipts/C-21_LR02C_OPERATIONAL_EXECUTION_RECEIPT.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json",
+        "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    }
+    c21_lr02c_operational_projection = (
+        repository.get("validated_base_commit") == "f39471a103d35406c3744fd727119072994a0d6a"
+        and set(allowed) == c21_lr02c_operational_paths
+        and len(allowed) == 14
+        and (progress or {}).get("event_sequence") == 457
+        and (progress or {}).get("last_event_id") == "evt_c21_lr02c_ops_package_started"
+        and (progress or {}).get("active_agent") == "main-agent-eoul"
+        and active_c21_lr02c.get("artifact_id") == "WI-C-21-LR-02C-OPS-20260903-001"
+        and ((progress or {}).get("worker_lease") or {}).get("lease_epoch") == 3
+        and ((progress or {}).get("write_lease") or {}).get("write_epoch") == 3
+        and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "ACTIVE_OPERATIONAL_VALIDATION"
+        and ((progress or {}).get("next_work_package") or {}).get("status") == "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+    )
+    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -6953,6 +7109,22 @@ def validate_repository_projection(
         and actual_path_set.issubset(set(allowed))
         and lr02c_accepted_r3_required_projection_paths.issubset(actual_path_set)
     )
+    lr02c_operational_required_projection_paths = {
+        "deploy/ysna/ReleaseManifest.json",
+        "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
+        "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json",
+        "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    }
+    lr02c_operational_subset_valid = (
+        c21_lr02c_operational_projection
+        and actual_path_set.issubset(set(allowed))
+        and lr02c_operational_required_projection_paths.issubset(actual_path_set)
+    )
     if (
         sorted(actual_path_set) != allowed
         and not lr02a_active_subset_valid
@@ -6965,6 +7137,7 @@ def validate_repository_projection(
         and not lr02c_takeover_subset_valid
         and not lr02c_rework_r3_subset_valid
         and not lr02c_accepted_r3_subset_valid
+        and not lr02c_operational_subset_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -7538,6 +7711,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_lr02c_rework_r3_projection(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json":
             errors.extend(validate_c21_lr02c_acceptance_r3_projection(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json":
+            errors.extend(validate_c21_lr02c_operational_start_projection(manifest, bundle))
     if progress.get("current_work_package") == "PHASE_B_GATE":
         if progress.get("status") == "ACTIVE":
             errors.extend(validate_phase_b_gate_active_projection(bundle))

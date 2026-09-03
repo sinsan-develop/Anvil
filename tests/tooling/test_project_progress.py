@@ -2403,6 +2403,7 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "validated_base_commit": "e57f008d0916953dab3c9425322a1e8942ed0379",
                 "local_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
                 "feature_remote_head": "e57f008d0916953dab3c9425322a1e8942ed0379",
+                "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
                 "head_relation": "FEATURE_CHECKPOINT_WITH_LR02A_ACCEPTED_EXACT41_WORKTREE",
                 "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02A_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
                 "exact_allowed_paths": [f"historical-lr02a-path-{index}" for index in range(41)],
@@ -2856,6 +2857,13 @@ class ProjectProgressContractTests(unittest.TestCase):
         progress["write_lease"] = main_write
         event445 = next(event for event in historical["events"]["events"] if event.get("sequence") == 445)
         progress["repository"].update({
+            "validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "local_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "feature_remote_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+            "branch": "codex/c21-lifecycle-runtime",
+            "upstream": "origin/main",
+            "feature_remote": "origin/codex/c21-lifecycle-runtime",
             "head_relation": event445["details"]["head_relation"],
             "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02C_MAIN_TAKEOVER_ACTIVE",
             "exact_allowed_paths": event445["details"]["exact_allowed_paths"],
@@ -2935,7 +2943,17 @@ class ProjectProgressContractTests(unittest.TestCase):
             "current_progress_evidence_ref": {"package_id":"C-21","path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-rework-start-r3.json","manifest_path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json"},
         })
         progress["next_successor_work_package"]["status"] = "ACTIVE_REWORK_R3_MAIN_TAKEOVER"
-        progress["repository"].update({"head_relation":event447["details"]["head_relation"],"push_status":event447["details"]["push_status"],"exact_allowed_paths":event447["details"]["exact_allowed_paths"]})
+        progress["repository"].update({
+            "validated_base_commit":"dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "local_head":"dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "feature_remote_head":"dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "remote_head":"1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+            "branch":"codex/c21-lifecycle-runtime","upstream":"origin/main",
+            "feature_remote":"origin/codex/c21-lifecycle-runtime",
+            "head_relation":event447["details"]["head_relation"],
+            "push_status":event447["details"]["push_status"],
+            "exact_allowed_paths":event447["details"]["exact_allowed_paths"],
+        })
         manifest = json.loads(
             (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json").read_text(encoding="utf-8")
         )
@@ -2984,13 +3002,93 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
         manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json").read_text(encoding="utf-8"))
-        self.assertEqual([], checker.validate_c21_lr02c_acceptance_r3_projection(manifest, bundle))
-        opened = copy.deepcopy(bundle)
+        accepted = copy.deepcopy(bundle)
+        progress = accepted["progress"]
+        event453 = next(event for event in accepted["events"]["events"] if event.get("sequence") == 453)
+        progress.update({
+            "event_sequence":453,
+            "last_event_id":"evt_c21_lr02c_r3_acceptance_exact34_repository_reconciled",
+            "active_agent":None,"active_work_instruction":None,"worker_lease":None,"write_lease":None,
+            "current_progress_evidence_ref":{"package_id":"C-21","path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json","manifest_path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json"},
+        })
+        progress["next_successor_work_package"].update({"package_id":"C-21/LR-02C","status":"BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH"})
+        progress["repository"].update({
+            "validated_base_commit":"dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "local_head":"dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "feature_remote_head":"dd4cc43452d30511ecf1a152e48408b7122391c0",
+            "remote_head":"1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+            "branch":"codex/c21-lifecycle-runtime","upstream":"origin/main",
+            "feature_remote":"origin/codex/c21-lifecycle-runtime",
+            "head_relation":event453["details"]["head_relation"],
+            "push_status":event453["details"]["push_status"],
+            "exact_allowed_paths":event453["details"]["exact_allowed_paths"],
+        })
+        self.assertEqual([], checker.validate_c21_lr02c_acceptance_r3_projection(manifest, accepted))
+        opened = copy.deepcopy(accepted)
         opened["progress"]["next_work_package"]["status"] = "READY"
         self.assertIn("C21_LR02C_ACCEPTANCE_R3_PROJECTION_INVALID", checker.validate_c21_lr02c_acceptance_r3_projection(manifest, opened))
-        active_lease = copy.deepcopy(bundle)
+        active_lease = copy.deepcopy(accepted)
         active_lease["progress"]["worker_lease"] = {"status":"ACTIVE"}
         self.assertIn("C21_LR02C_ACCEPTANCE_R3_PROJECTION_INVALID", checker.validate_c21_lr02c_acceptance_r3_projection(manifest, active_lease))
+
+    def test_c21_lr02c_operational_start_binds_release_fencing_and_c01_boundary(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_c21_lr02c_operational_start_projection(manifest, bundle))
+
+        opened = copy.deepcopy(bundle)
+        opened["progress"]["next_work_package"]["status"] = "READY"
+        self.assertIn(
+            "C21_LR02C_OPERATIONAL_START_PROJECTION_INVALID",
+            checker.validate_c21_lr02c_operational_start_projection(manifest, opened),
+        )
+
+        widened = copy.deepcopy(bundle)
+        widened["progress"]["write_lease"]["paths"].append("deploy/ysna/verify.sh")
+        self.assertIn(
+            "C21_LR02C_OPERATIONAL_START_FENCING_INVALID",
+            checker.validate_c21_lr02c_operational_start_projection(manifest, widened),
+        )
+
+        release_changed = copy.deepcopy(bundle)
+        release_changed["progress"]["active_work_instruction"]["release_commit"] = "0" * 40
+        self.assertIn(
+            "C21_LR02C_OPERATIONAL_START_INSTRUCTION_INVALID",
+            checker.validate_c21_lr02c_operational_start_projection(manifest, release_changed),
+        )
+
+        required = [
+            "deploy/ysna/ReleaseManifest.json",
+            "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_PROGRESS.md",
+            "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-start.json",
+            "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT.md",
+            "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        repository = bundle["progress"]["repository"]
+        self.assertNotIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(
+                repository,
+                actual_head=repository["validated_base_commit"],
+                actual_branch=repository["branch"],
+                actual_upstream=repository["upstream"],
+                actual_remote_head=repository["remote_head"],
+                actual_feature_remote_head=repository["feature_remote_head"],
+                base_is_ancestor=True,
+                actual_changed_paths=required,
+                working_tree_mode=True,
+                progress=bundle["progress"],
+            ),
+        )
 
 if __name__ == "__main__":
     unittest.main()
