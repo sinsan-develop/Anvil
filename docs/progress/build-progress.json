@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-lifecycle-runtime-lr02b-accepted-20260903",
-  "event_sequence": 435,
-  "updated_at": "2026-09-03T15:30:06+09:00",
-  "last_event_id": "evt_c21_lr02b_acceptance_repository_reconciled",
+  "snapshot_id": "snapshot-c21-lifecycle-runtime-lr02c-accepted-r3-exact34-20260903",
+  "event_sequence": 453,
+  "updated_at": "2026-09-03T18:45:00+09:00",
+  "last_event_id": "evt_c21_lr02c_r3_acceptance_exact34_repository_reconciled",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -50,6 +50,54 @@
   "active_agent": null,
   "write_lease": null,
   "worker_lease": null,
+  "completed_c21_lr02c_main_write_lease": {
+    "lease_id": "write-lease-c21-lr02c-main-takeover-20260903-002",
+    "worker_lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002",
+    "agent_id": "main-agent-eoul",
+    "work_package_id": "C-21",
+    "subtask_id": "LR-02C",
+    "write_epoch": 2,
+    "execution_fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43",
+    "write_fencing_token": "c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43",
+    "fencing_token": "c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43",
+    "status": "REVOKED",
+    "revoked_at": "2026-09-03T18:40:00+09:00"
+  },
+  "completed_c21_lr02c_main_worker_lease": {
+    "lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002",
+    "agent_id": "main-agent-eoul",
+    "work_package_id": "C-21",
+    "subtask_id": "LR-02C",
+    "lease_epoch": 2,
+    "execution_fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43",
+    "fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43",
+    "status": "REVOKED",
+    "revoked_at": "2026-09-03T18:40:01+09:00"
+  },
+  "completed_c21_lr02c_write_lease": {
+    "lease_id": "write-lease-c21-lr02c-20260903-001",
+    "worker_lease_id": "worker-lease-c21-lr02c-20260903-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "LR-02C",
+    "write_epoch": 1,
+    "execution_fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43",
+    "write_fencing_token": "c21-lr02c-write-fence-epoch-1-dd4cc43",
+    "fencing_token": "c21-lr02c-write-fence-epoch-1-dd4cc43",
+    "status": "REVOKED",
+    "revoked_at": "2026-09-03T17:08:01+09:00"
+  },
+  "completed_c21_lr02c_worker_lease": {
+    "lease_id": "worker-lease-c21-lr02c-20260903-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "LR-02C",
+    "lease_epoch": 1,
+    "execution_fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43",
+    "fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43",
+    "status": "REVOKED",
+    "revoked_at": "2026-09-03T17:08:02+09:00"
+  },
   "completed_c21_lr02b_write_lease": {
     "lease_id": "write-lease-c21-lr02b-20260903-001",
     "worker_lease_id": "worker-lease-c21-lr02b-20260903-001",
@@ -139,12 +187,8 @@
   },
   "budget_reservations": [],
   "valid_failure_count": 0,
-  "active_failure_lineage": {
-    "step_lineage_id": "C-21/LR-02C",
-    "failure_fingerprint": null,
-    "valid_failure_count": 0
-  },
-  "historical_accepted_failure_count": 27,
+  "active_failure_lineage": null,
+  "historical_accepted_failure_count": 29,
   "historical_failure_counts_by_lineage": {
     "G-05": 1,
     "G-06": 1,
@@ -162,9 +206,30 @@
     "B-11": 1,
     "B-12": 1,
     "C-21/LR-02A": 3,
-    "C-21/LR-02B": 1
+    "C-21/LR-02B": 1,
+    "C-21/LR-02C": 2
   },
   "latest_evidence_refs": [
+    {
+      "path": "docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md",
+      "sha256": "81A193E03BCEF668D5304623E754FD66A68BA4BD520C603AB9AB01DE92970665"
+    },
+    {
+      "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json",
+      "sha256": "4771BFEE1BAC7B0F6043487D6BD7F1534DCEB01DB7EC33CFE2228EF979339F28"
+    },
+    {
+      "path": "docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md",
+      "sha256": "E215065293F3F8E3A4DFE6C1DC02E0D730E0548E3F1F0AB0C43595755B18C692"
+    },
+    {
+      "path": "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md",
+      "sha256": "5554FA1F7998E826F75F5F999567152935180B515AE4B53DF751FCEB633D2072"
+    },
+    {
+      "path": "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md",
+      "sha256": "4B049CB51B9526BDF490879B6C35C1B146A157769A4A066927A99BB6571B3735"
+    },
     {
       "path": "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
       "sha256": "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07"
@@ -1019,7 +1084,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "4853614DC92F474C5D62F070E6879E945E1A180D4B8B424C468E4CA47BC1DC9B"
+      "sha256": "BB89585FBB92AD69B317CB68E12C189ACBCDCCE287BFC806335BD9701FFC4FC8"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1039,7 +1104,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "58B7913ED01B9037FE44062E3626EE45505A000ED9E0A0497B16974B2BB84225"
+      "sha256": "616FB9C43BFC80AC08596439F98C615215BB114CEAA57E16C51A7E84593F6BF9"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1067,11 +1132,11 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "F9320B48FD2A600DEA2CCB7FF6D15B11C6D166C1358F74F7402FDCA85217B240"
+      "sha256": "0CA23329979AEBF7622DC94C8BB9B3498A09603FA02ED65D686C4EE5759E0335"
     },
     {
       "path": "docs/progress/failure-ledger.json",
-      "sha256": "6CEDA11ED086ECBFC52FADD8FFDCCD9765781583675DFF7B784F83466A076AFA"
+      "sha256": "C04E6C5C18E96A0AB8D18B84D0D28697E1C6AF2634A541ABCDE9A91E42984681"
     },
     {
       "path": "scripts/evidence_portability.py",
@@ -1122,7 +1187,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "LR-02B checkpoint commit/push 후 LR-02C WorkInstruction을 발행해 production project/repository provisioning과 canonical Task→Run→Event 운영 검증을 수행한다. C-01은 계속 차단한다.",
+  "next_safe_action": "LR-02C acceptance checkpoint를 commit·feature push한 뒤 새 commit에 운영 실행 lease를 발행한다. 그 전 외부 side effect와 C-01은 차단한다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1233,43 +1298,53 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
-    "head_relation": "FEATURE_CHECKPOINT_WITH_LR02B_ACCEPTED_EXACT24_WORKTREE",
+    "validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+    "head_relation": "FEATURE_CHECKPOINT_WITH_LR02C_ACCEPTED_R3_EXACT34_WORKTREE",
     "branch": "codex/c21-lifecycle-runtime",
     "upstream": "origin/main",
     "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
     "feature_remote": "origin/codex/c21-lifecycle-runtime",
-    "feature_remote_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
-    "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02B_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
+    "feature_remote_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+    "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02C_ACCEPTED_PENDING_CHECKPOINT_COMMIT",
     "exact_allowed_paths": [
+      ".superpowers/sdd/Anvil_작업계획서_v1/task-4-report.md",
       "deploy/ysna/ReleaseManifest.C21.DRAFT.json",
-      "deploy/ysna/deploy.sh",
+      "deploy/ysna/backup-c21-db.sh",
+      "deploy/ysna/probe-providers.py",
+      "deploy/ysna/provision-c21-validation.py",
+      "deploy/ysna/rebind-c21-test-session.sh",
       "deploy/ysna/verify.sh",
-      "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
-      "docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md",
-      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json",
-      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
-      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
+      "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md",
+      "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md",
+      "docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md",
+      "docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json",
-      "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
-      "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
-      "packages/api/local_session.py",
-      "packages/api/runtime.py",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-rework-start-r3.json",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-start.json",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-takeover-r2.json",
+      "docs/work_orders/C-21_LR-02C_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md",
+      "docs/work_orders/C-21_LR-02C_REWORK_INVOCATION_PROMPT_R3.md",
+      "docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md",
+      "docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
-      "tests/api/test_local_session.py",
-      "tests/api/test_runtime_app.py",
+      "tests/deploy/test_c21_lr02c_operational_contract.py",
       "tests/deploy/test_ysna_deployment_contract.py",
       "tests/deploy/test_ysna_scripts_contract.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-09-03T15:30:06+09:00",
-    "worktree_status": "LR02B_ACCEPTED: exact24 feature checkpoint worktree; LR02C ready; external side effects not executed",
-    "local_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2"
+    "observed_at": "2026-09-03T18:45:00+09:00",
+    "worktree_status": "LR02C_TOOLING_ACCEPTED_R3: exact34 clean-clone-safe feature checkpoint pending commit/push; external side effects not executed",
+    "local_head": "dd4cc43452d30511ecf1a152e48408b7122391c0"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1374,7 +1449,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C21_LR02B_ACCEPTED_LR02C_READY_AUTO_CONTINUE"
+      "C21_LR02C_ACTIVE_AUTO_CONTINUE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1425,6 +1500,29 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": null,
+  "accepted_c21_lr02c_work_instruction": {
+    "artifact_id": "WI-C-21-LR-02C-R3-20260903-001",
+    "path": "docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md",
+    "sha256": "9F33F60B89F3D1BF4AF77AA5540023B7160684E5A55D3D4DE7B096A8B87AAE54",
+    "invocation_path": "docs/work_orders/C-21_LR-02C_REWORK_INVOCATION_PROMPT_R3.md",
+    "invocation_sha256": "311615DC3CEC19FCCA4FE896DC638DEE5257351F62E38C0B0E19C8129FD68029",
+    "approval_ref": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+    "approval_sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A",
+    "result_status": "ACCEPTED",
+    "package_status": "ACCEPTED",
+    "executor": "main-agent-eoul",
+    "independent_tester_status": "READY_FOR_MAIN_ACCEPTANCE",
+    "historical_failure_count": 2,
+    "takeover_status": "MAIN_AGENT_TAKEOVER_COMPLETED",
+    "evidence_manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json",
+    "evidence_manifest_sha256": "4771BFEE1BAC7B0F6043487D6BD7F1534DCEB01DB7EC33CFE2228EF979339F28",
+    "test_report_path": "docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md",
+    "test_report_sha256": "81A193E03BCEF668D5304623E754FD66A68BA4BD520C603AB9AB01DE92970665",
+    "accepted_event_id": "evt_c21_lr02c_r3_main_package_accepted",
+    "allowed_path_count": 12,
+    "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    "external_side_effects": "NOT_EXECUTED"
+  },
   "accepted_c21_lr02a_work_instruction": {
     "artifact_id": "WI-C-21-LR-02A-20260903-003",
     "path": "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R3.md",
@@ -1488,13 +1586,13 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json",
-    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json",
+    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json"
   },
   "registry_refs": {
     "failure_ledger": {
       "path": "docs/progress/failure-ledger.json",
-      "sha256": "6CEDA11ED086ECBFC52FADD8FFDCCD9765781583675DFF7B784F83466A076AFA"
+      "sha256": "C04E6C5C18E96A0AB8D18B84D0D28697E1C6AF2634A541ABCDE9A91E42984681"
     },
     "non_semantic_revision_bindings": {
       "path": "docs/progress/non-semantic-revision-bindings.json",
@@ -1510,7 +1608,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "F9320B48FD2A600DEA2CCB7FF6D15B11C6D166C1358F74F7402FDCA85217B240"
+      "sha256": "0CA23329979AEBF7622DC94C8BB9B3498A09603FA02ED65D686C4EE5759E0335"
     }
   },
   "next_work_package": {
@@ -1523,7 +1621,7 @@
   },
   "next_successor_work_package": {
     "package_id": "C-21/LR-02C",
-    "status": "READY_FOR_WORK_INSTRUCTION",
+    "status": "BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH",
     "purpose": "production project/repository provisioning과 canonical Task→Run→Event 운영 검증",
     "requires": [
       "migration readiness head 0013 alignment",
@@ -1570,5 +1668,5 @@
     ],
     "pre_reconciliation_snapshot_hash": "D7CB5BDE5FD14B22BCFEE476D669D4D4F8C59BB8E8D3E94E2BE78DC913E52092"
   },
-  "snapshot_hash": "6C2C02964EB02AD03F7B8B504A3542720C6B849D517D4E6D01229BBC0370A611"
+  "snapshot_hash": "53FE4A7358CAA1795EB7245BD5561C853320869C9011366BA882DD8A9388EEE5"
 }

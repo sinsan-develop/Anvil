@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02C-START-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02C",
+  "event_sequence": 439,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 67441,
+    "file_sha256": "64FD3E0538A92D296CE679B6CA1E7E7F506EB203E4E662489B58B70FC0D0FF2B",
+    "canonical_json_sha256": "5F78F312DCC51F02CE544936522B4901F62328D77359F04CE26378E5C4D41069"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 134302,
+    "file_sha256": "B6EFBD70E0F22EEEC7681F7ED8310B4773C1622C627AD6DC71521B920FCF91F3",
+    "machine_summary_canonical_sha256": "282E17010CA93EBB48E6E022DF4BBF65F7BDC5BE863A7526E3236EB8989995B0"
+  },
+  "created_at": "2026-09-03T16:00:03+09:00",
+  "scope": "C-21/LR-02C operational tooling start; developer exact12; external side effects NOT_EXECUTED; C-01 remains blocked."
+}

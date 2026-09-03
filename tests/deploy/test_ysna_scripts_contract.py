@@ -1,6 +1,9 @@
 from pathlib import Path
+from hashlib import sha256
+import json
 import os
 import subprocess
+import sys
 import tempfile
 import textwrap
 import unittest
@@ -26,7 +29,7 @@ class ScriptContractTests(unittest.TestCase):
    deploy=subprocess.run([str(bash),str(DEPLOY/'deploy.sh'), 'bad'],env=env,text=True,capture_output=True)
    verify=subprocess.run([str(bash),str(DEPLOY/'verify.sh'), 'bad'],env=env,text=True,capture_output=True)
    rollback=subprocess.run([str(bash),str(DEPLOY/'rollback.sh')],env=env,text=True,capture_output=True)
-  self.assertEqual(2,deploy.returncode); self.assertEqual(4,verify.returncode); self.assertEqual(2,rollback.returncode)
+  self.assertEqual(2,deploy.returncode); self.assertEqual(2,verify.returncode); self.assertEqual(2,rollback.returncode)
 
  def test_canonical_scripts_execute_success_paths_in_isolated_harness(self):
   bash=Path(os.environ.get('ProgramFiles', r'C:\\Program Files'))/'Git'/'usr'/'bin'/'bash.exe'
@@ -44,16 +47,38 @@ class ScriptContractTests(unittest.TestCase):
     'ANVIL_TEST_SESSION_RUN_IDS':'run-allowed',
     'ANVIL_TEST_SESSION_PERMISSION_SCOPES':'tasks:write,tasks:read,run:events:read',
    }
-   (root/'.env').write_text(''.join(f'{key}={value}\n' for key,value in required.items()), encoding='utf-8', newline='\n')
+   original_runtime_env=''.join(f'{key}={value}\n' for key,value in required.items())
+   (root/'.env').write_text(original_runtime_env, encoding='utf-8', newline='\n')
    (repo/'deploy'/'ysna'/'manifest-guard.sh').write_text('validate_release_manifest() { return 0; }\n', encoding='utf-8', newline='\n')
    (repo/'deploy'/'ysna'/'compose.production.yml').write_text('services: {}\n', encoding='utf-8', newline='\n')
    (repo/'deploy'/'ysna'/'verify.sh').write_text('#!/bin/bash\necho rollback-verified >> "$ANVIL_DEPLOY_ROOT/verify-invocations.log"\n', encoding='utf-8', newline='\n')
+   for name in (
+    'rebind-c21-test-session.sh',
+    'provision-c21-validation.py',
+    'probe-providers.py',
+   ):
+    target=repo/'deploy'/'ysna'/name
+    target.write_text((DEPLOY/name).read_text(encoding='utf-8'), encoding='utf-8', newline='\n')
+    target.chmod(0o755)
+   backup=b'portable-c21-backup'
+   backup_file=root/'backups'/'c21'/target_sha/'anvil.dump'; backup_file.parent.mkdir(parents=True)
+   backup_file.write_bytes(backup); backup_file.chmod(0o600)
+   (evidence/'c21-db-backup.json').write_text(json.dumps({
+    'status':'BACKUP_VERIFIED','release_commit':target_sha,'bytes':len(backup),
+    'sha256':sha256(backup).hexdigest(),'restore_listable':True,'mode':'600',
+   }), encoding='utf-8', newline='\n')
+   approval=runtime/'c21-approval-receipt.json'; approval.write_text('{}\n', encoding='utf-8', newline='\n'); approval.chmod(0o600)
    def executable(name, body):
     content=textwrap.dedent(body).lstrip().replace('#!/usr/bin/env bash', '#!/bin/bash', 1)
     path=fakebin/name; path.write_text(content, encoding='utf-8', newline='\n'); path.chmod(0o755)
    executable('stat', '''
     #!/usr/bin/env bash
     printf '600\n'
+   ''')
+   executable('install', '''
+    #!/usr/bin/env bash
+    if [[ "${FAKE_RESTORE_FAIL:-0}" == 1 && "$*" == *"anvil.env.c21-before-"* ]]; then exit 94; fi
+    /usr/bin/install "$@"
    ''')
    executable('git', '''
     #!/usr/bin/env bash
@@ -85,6 +110,9 @@ class ScriptContractTests(unittest.TestCase):
       "image tag sha256:previous-image anvil-web:$OLD_SHA") exit 0 ;;
       *"alembic current"*) printf '0012_run_authority\n' ;;
       *"alembic upgrade 0013_task_bootstrap_authority"*) exit 0 ;;
+      *" up -d --force-recreate anvil-web"*)
+        if [[ "${FAKE_RESTORE_RECREATE_FAIL:-0}" == 1 ]] && grep -q '"status":"RESTORED"' "$ANVIL_DEPLOY_ROOT/evidence/c21-test-session-rebind.json"; then exit 93; fi
+        exit 0 ;;
       *" build anvil-web"*|*" up -d anvil-web"*|*" stop anvil-web"*|*" up -d --no-build anvil-web"*|*" ps --status running anvil-web"*) exit 0 ;;
       *) echo "unexpected docker invocation: $args" >&2; exit 92 ;;
     esac
@@ -102,27 +130,60 @@ class ScriptContractTests(unittest.TestCase):
     done
     printf 'curl %s last_event=%s\n' "$url" "$last_event" >> "$HARNESS_LOG"
     [[ -z "$cookie" ]] || printf 'session-cookie\n' > "$cookie"
-    if [[ "$url" == */openapi.json ]]; then
-      printf '{"paths":{"/api/providers":{"get":{}},"/api/runs/{id}/events":{"get":{}}}}'
-    elif [[ "$url" == */health/ready ]]; then printf '{"migration_head":"0013_task_bootstrap_authority"}'
-    elif [[ "$url" == */integrations/telegram/webhook ]]; then
-      if [[ -n "$body" ]]; then
-        if [[ "${FAKE_TELEGRAM_GENERIC_403:-0}" == 1 ]]; then printf 'forbidden' > "$body"; else printf '{"error":"webhook authentication failed"}' > "$body"; fi
-      fi
-      printf '403'
-    elif [[ "$url" == */api/runs/*/events ]]; then
+     if [[ "$url" == */openapi.json ]]; then
+      printf '{"paths":{"/api/providers":{"get":{}},"/api/projects/{projectId}/tasks":{"post":{}},"/api/tasks/{taskId}":{"get":{}},"/api/tasks/{taskId}/runs":{"post":{}},"/api/runs/{id}/events":{"get":{}}}}'
+     elif [[ "$url" == */health/ready ]]; then printf '{"migration_head":"0013_task_bootstrap_authority"}'
+     elif [[ "$url" == */auth/session ]]; then printf '{"data":{"csrf_token":"csrf-test"}}' > "$body"
+     elif [[ "$url" == */api/projects/*/tasks ]]; then printf '{"data":{"taskId":"task-c21"}}' > "$body"
+     elif [[ "$url" == */api/tasks/*/runs ]]; then printf '{"data":{"runId":"run-c21"}}' > "$body"
+     elif [[ "$url" == */api/tasks/* ]]; then printf '{"data":{"status":"confirmed","version":2}}' > "$body"
+     elif [[ "$url" == */integrations/telegram/webhook ]]; then
+      if [[ "${FAKE_TELEGRAM_GENERIC_403:-0}" == 1 ]]; then printf 'forbidden' > "$body"; printf '403'; else printf '{}' > "$body"; printf '200'; fi
+     elif [[ "$url" == */api/runs/*/events ]]; then
       printf 'HTTP/2 200\r\ncontent-type: text/event-stream; charset=utf-8\r\n\r\n' > "$header"
-      if [[ "$last_event" == 1 && "${FAKE_RESUME_REPEATS:-0}" != 1 ]]; then printf 'id: evt-2\ndata: {}\n\n' > "$body"; else printf 'id: evt-1\ndata: {}\n\n' > "$body"; fi
-    else printf '{}'; fi
+      if [[ "$last_event" == 1 && "${FAKE_RESUME_REPEATS:-0}" != 1 ]]; then : > "$body"; else printf 'id: evt-1\nevent: TASK_CONFIRMED\ndata: {}\n\n' > "$body"; fi
+     else printf '{}'; fi
+    ''')
+   executable('python3', '''
+    script="$1"
+    if [[ "$script" == *provision-c21-validation.py ]]; then
+      action="$2"; shift 2; output=''
+      while [[ $# -gt 0 ]]; do [[ "$1" == '--output' ]] && { output="$2"; break; }; shift; done
+      h="sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      case "$action" in
+        plan) printf '{"project_id":"project-c21","task_authority_hash":"%s","artifact_ids":{"work_instruction":"wi-c21","execution_plan":"plan-c21"},"hashes":{"execution_plan":"%s"}}\n' "$h" "$h" > "$output" ;;
+        prepare) printf '{"status":"PREPARED"}\n' > "$output" ;;
+        confirm) printf '{"status":"TASK_CONFIRMED"}\n' > "$output" ;;
+        telegram-status) printf '{"result":{"update_count":1,"audit_count":1}}\n' > "$output" ;;
+        *) exit 90 ;;
+      esac
+    elif [[ "$script" == *probe-providers.py ]]; then
+      shift; [[ "$1" == '--output' ]] || exit 91
+      if [[ "${FAKE_PROVIDER_ERROR:-0}" == 1 ]]; then
+        printf '{"status":"ERROR","provider_count":9,"generation_requests":0,"secret_values":"omitted"}\n' > "$2"
+        exit 9
+      fi
+      printf '{"status":"COMPLETED","provider_count":9,"generation_requests":0,"secret_values":"omitted"}\n' > "$2"
+    elif [[ "$script" == '-' ]]; then
+      # Windows cannot reproduce the Linux 0600 st_mode check; the focused
+      # backup contract exercises receipt bytes/hash/listability separately.
+      return 0
+    else
+      "$REAL_PYTHON" "$@"
+    fi
    ''')
+   bash_env=root/'bash-env.sh'
+   bash_env.write_text('python3() { source "$HARNESS_PYTHON_SHIM" "$@"; }\n', encoding='utf-8', newline='\n')
    def posix(value):
     value=str(value).replace('\\','/')
     return f'/{value[0].lower()}{value[2:]}' if len(value)>2 and value[1]==':' else value
    log=root/'harness.log'
    env=os.environ|{
     'ANVIL_DEPLOY_ROOT':posix(root), 'ANVIL_RELEASE_MANIFEST_REF':'origin/main',
-    'HOME':posix(root), 'PATH':posix(fakebin)+os.pathsep+os.environ.get('PATH',''),
+    'HOME':posix(root), 'PATH':str(fakebin)+os.pathsep+os.environ.get('PATH',''),
     'HARNESS_LOG':posix(log), 'GIT_STATE':posix(root/'git-head'), 'OLD_SHA':old_sha, 'TARGET_SHA':target_sha,
+    'REAL_PYTHON':posix(Path(sys.executable)), 'BASH_ENV':posix(bash_env),
+    'HARNESS_PYTHON_SHIM':posix(fakebin/'python3'),
    }
    deploy=subprocess.run([str(bash),str(DEPLOY/'deploy.sh'),target_sha],env=env,text=True,capture_output=True)
    self.assertEqual(0,deploy.returncode,deploy.stderr)
@@ -131,13 +192,40 @@ class ScriptContractTests(unittest.TestCase):
    self.assertEqual(posix(rollback_assets),(runtime/'rollback-assets.current').read_text().strip())
    self.assertTrue((rollback_assets/'compose.production.yml').is_file()); self.assertTrue((rollback_assets/'verify.sh').is_file())
    self.assertFalse(list(runtime.glob('rollback-assets.current.tmp.*')))
-   verify=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env,text=True,capture_output=True)
-   self.assertEqual(0,verify.returncode,verify.stderr)
-   verification=(evidence/'verification.json').read_text(); self.assertIn('"status":"verified"',verification); self.assertNotIn(required['ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN'],verification)
+   verify=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env,text=True,encoding='utf-8',errors='replace',capture_output=True)
+   incident_debug=(evidence/'c21-test-session-incident-hold.json').read_text(encoding='utf-8') if (evidence/'c21-test-session-incident-hold.json').exists() else ''
+   self.assertEqual(0,verify.returncode,verify.stderr+'\n'+incident_debug+'\n'+log.read_text(encoding='utf-8'))
+   verification=(evidence/'verification.json').read_text(); self.assertIn('"status":"VERIFIED"',verification); self.assertNotIn(required['ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN'],verification)
+   self.assertIn('"test_session_restore":"RESTORED_RUNTIME_RECREATED"',verification)
+   self.assertEqual(original_runtime_env,(runtime/'anvil.env').read_text(encoding='utf-8'))
+   self.assertEqual(3,log.read_text(encoding='utf-8').count('up -d --force-recreate anvil-web'))
    repeated=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env|{'FAKE_RESUME_REPEATS':'1'},text=True,capture_output=True)
-   self.assertEqual(7,repeated.returncode); self.assertIn('Last-Event-ID was not advanced',repeated.stderr)
+   self.assertEqual(7,repeated.returncode); self.assertIn('Last-Event-ID replayed the only stored event',repeated.stderr)
+   self.assertEqual(original_runtime_env,(runtime/'anvil.env').read_text(encoding='utf-8'))
+   self.assertIn('"status":"FAILED_RESTORED"',(evidence/'verification.json').read_text(encoding='utf-8'))
+   (evidence/'c21-telegram-post.json').unlink()
    generic_403=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env|{'FAKE_TELEGRAM_GENERIC_403':'1'},text=True,capture_output=True)
-   self.assertEqual(6,generic_403.returncode); self.assertIn('Telegram route/auth boundary mismatch',generic_403.stderr)
+   self.assertEqual(8,generic_403.returncode); self.assertIn('Telegram response was uncertain but DB audit was preserved',generic_403.stderr)
+   self.assertEqual(original_runtime_env,(runtime/'anvil.env').read_text(encoding='utf-8'))
+   (evidence/'c21-telegram-post.json').unlink()
+   provider_error=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env|{'FAKE_PROVIDER_ERROR':'1'},text=True,capture_output=True)
+   self.assertEqual(9,provider_error.returncode,provider_error.stderr)
+   self.assertEqual(original_runtime_env,(runtime/'anvil.env').read_text(encoding='utf-8'))
+   (evidence/'c21-telegram-post.json').unlink()
+   restore_recreate_error=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env|{'FAKE_RESTORE_RECREATE_FAIL':'1'},text=True,capture_output=True)
+   self.assertEqual(90,restore_recreate_error.returncode,restore_recreate_error.stderr)
+   incident_path=evidence/'c21-test-session-incident-hold.json'; incident_before=incident_path.read_bytes()
+   self.assertIn(b'"status":"INCIDENT_HOLD"',incident_before)
+   calls_before_blocked_rerun=log.read_bytes()
+   blocked_rerun=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env,text=True,capture_output=True)
+   self.assertEqual(91,blocked_rerun.returncode); self.assertIn('existing INCIDENT_HOLD',blocked_rerun.stderr)
+   self.assertEqual(incident_before,incident_path.read_bytes()); self.assertEqual(calls_before_blocked_rerun,log.read_bytes())
+   incident_path.unlink()  # isolated harness simulates a separately approved operator clearance
+   restore_error=subprocess.run([str(bash),str(DEPLOY/'verify.sh'),target_sha],env=env|{'FAKE_RESUME_REPEATS':'1','FAKE_RESTORE_FAIL':'1'},text=True,capture_output=True)
+   self.assertEqual(90,restore_error.returncode,restore_error.stderr)
+   restore_incident=(evidence/'c21-test-session-incident-hold.json').read_text(encoding='utf-8')
+   self.assertIn('"original_exit_code":7',restore_incident); self.assertIn('"restore_exit_code":94',restore_incident)
+   incident_path.unlink()  # continue unrelated preflight checks after explicit harness clearance
    invalid_scopes=required|{'ANVIL_TEST_SESSION_PERMISSION_SCOPES':'tasks:write'}
    base_env=''.join(f'{key}={value}\n' for key,value in required.items() if key != 'ANVIL_TEST_SESSION_PERMISSION_SCOPES')
    duplicate_orders=(

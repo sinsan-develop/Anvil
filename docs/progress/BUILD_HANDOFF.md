@@ -492,44 +492,83 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - seq429~435는 failure 수락, focused resume, 두 lease 회수, package completion, Main acceptance, repository reconciliation을 append한다. historical failure 1은 보존하고 active failure는 0이다.
 - 실제 ysna/DB/public HTTPS/SSE/Telegram/Provider side effect는 아직 실행하지 않았다. LR-02C를 READY_FOR_WORK_INSTRUCTION으로 전환하고 C-01은 계속 차단한다.
 
+## 2026-09-03 C-21/LR-02C 운영 실행 도구 시작
+
+- LR-02B checkpoint `dd4cc43452d30511ecf1a152e48408b7122391c0`를 feature remote와 동기화하고 이를 새 validated base로 삼았다.
+- seq436~439는 repository reconciliation, epoch1 worker/write lease, LR-02C PACKAGE_STARTED 순서다.
+- Developer exact12는 DB backup, idempotent validation provisioning, test-session run allowlist 원자 rebind, Provider read-only probe, 운영 verify와 계약 테스트/증거만 소유한다.
+- DRAFT Task confirm은 C-21 검증용 CAS transaction으로 제한하고 일반 제품 API PASS로 승격하지 않는다. Last-Event-ID는 단일 event 미재전송으로 검증하며 가짜 successor event를 금지한다.
+- Developer 단계의 외부 SSH/Docker/DB/Telegram/Provider/deploy/commit/push는 금지한다. 검증된 checkpoint 이후 Main Agent만 외부 실행하며 C-01은 계속 차단한다.
+
+## 2026-09-03 C-21/LR-02C R3 독립 PASS 및 tooling acceptance
+
+- 독립 Reviewer R3는 sticky `INCIDENT_HOLD`, restore/recreate finalizer, Telegram exact-one, 9 Provider non-billing, authenticated SSE/Last-Event-ID 계약을 재검증해 차단 결함 0건 `PASS`를 판정했다.
+- seq448~449에서 Main epoch2 write/worker lease를 순서대로 회수하고, seq450~451에서 LR-02C tooling completion과 Main acceptance를 기록했다.
+- seq452는 exact33 acceptance checkpoint를 결박했고, seq453은 ignored 작업보고서를 clean clone에도 보존하도록 exact34로 append-only 보정했다. 이 acceptance는 운영 도구 구현 수락이며 실제 ysna 운영 검증이나 C-21 전체 완료가 아니다.
+- acceptance checkpoint commit·feature push 전까지 외부 side effect와 C-01은 계속 차단한다.
+
+## 2026-09-03 C-21/LR-02C R2 failure 수락 및 Main takeover R3
+
+- 독립 Reviewer가 `INCIDENT_HOLD` receipt가 정상 재실행에서 삭제되어 별도 해제 승인 없이 hold가 자동 해제될 수 있는 신규 blocker를 판정했다.
+- seq446은 두 번째 유효 실패를 수락했고, seq447은 기존 Main epoch2 worker/write lease와 exact12 범위를 재발급 없이 유지한 채 R3를 재개했다.
+- Main R3는 외부 호출 전에 기존 incident receipt를 검사하여 exit 91로 fail-close하고 receipt bytes와 호출 로그를 보존한다. incident receipt 자동 삭제는 제거했다.
+- Windows harness에서 incident 후 재실행 거부, 외부 호출 0회, receipt/log bytes 불변을 검증했다. 외부 side effect와 C-01은 계속 차단한다.
+
+## 2026-09-03 C-21/LR-02C R1 failure 및 Main takeover R2
+
+- 독립 Reviewer는 test-session restore finalizer 누락과 canonical lease 없이 발생한 Main mutation을 blocking 2건으로 판정했다.
+- 동일 Windows backup receipt mode harness 오류가 3회 반복된 시점에 Developer를 중단했으나 lease 회수 Event를 먼저 기록하지 않은 Main 관리 오류를 인정하고 seq440~445로 보정했다.
+- seq440은 유효 실패 1회 수락, seq441~442는 Developer epoch1 lease 회수, seq443~444는 Main epoch2 worker/write lease 발급, seq445는 TakeoverPacket에 따른 `ACTIVE_REWORK_R2` 재개다.
+- Main rework는 기존 exact12만 수정하며 성공·실패 모든 경로의 env restore, runtime recreate, restore 실패 시 INCIDENT_HOLD를 구현한다. 외부 side effect와 C-01은 계속 차단한다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 435,
+  "event_sequence": 453,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02b_acceptance_repository_reconciled",
-  "updated_at": "2026-09-03T15:30:06+09:00",
+  "last_event_id": "evt_c21_lr02c_r3_acceptance_exact34_repository_reconciled",
+  "updated_at": "2026-09-03T18:45:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "LR-02B checkpoint commit/push 후 LR-02C WorkInstruction을 발행해 production project/repository provisioning과 canonical Task→Run→Event 운영 검증을 수행한다. C-01은 계속 차단한다.",
+  "next_safe_action": "LR-02C acceptance checkpoint를 commit·feature push한 뒤 새 commit에 운영 실행 lease를 발행한다. 그 전 외부 side effect와 C-01은 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
+  "repository_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
   "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "4178eee2ffeb0d5701e1fac058d89891331c74c2",
-  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_LR02B_ACCEPTED_EXACT24_WORKTREE",
+  "repository_validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+  "repository_head_relation": "FEATURE_CHECKPOINT_WITH_LR02C_ACCEPTED_R3_EXACT34_WORKTREE",
   "repository_exact_allowed_paths": [
+    ".superpowers/sdd/Anvil_작업계획서_v1/task-4-report.md",
     "deploy/ysna/ReleaseManifest.C21.DRAFT.json",
-    "deploy/ysna/deploy.sh",
+    "deploy/ysna/backup-c21-db.sh",
+    "deploy/ysna/probe-providers.py",
+    "deploy/ysna/provision-c21-validation.py",
+    "deploy/ysna/rebind-c21-test-session.sh",
     "deploy/ysna/verify.sh",
-    "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
-    "docs/04_test_reports/C-21_LR02B_TEST_SESSION_SCOPE_PROGRESS.md",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json",
+    "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md",
+    "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md",
+    "docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md",
+    "docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02b-accepted.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02b-start.json",
-    "docs/work_orders/C-21_LR-02B_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_LR-02B_WORK_INSTRUCTION.md",
-    "packages/api/local_session.py",
-    "packages/api/runtime.py",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-rework-start-r3.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-start.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-takeover-r2.json",
+    "docs/work_orders/C-21_LR-02C_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md",
+    "docs/work_orders/C-21_LR-02C_REWORK_INVOCATION_PROMPT_R3.md",
+    "docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md",
+    "docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
-    "tests/api/test_local_session.py",
-    "tests/api/test_runtime_app.py",
+    "tests/deploy/test_c21_lr02c_operational_contract.py",
     "tests/deploy/test_ysna_deployment_contract.py",
     "tests/deploy/test_ysna_scripts_contract.py",
     "tests/tooling/test_project_progress.py"

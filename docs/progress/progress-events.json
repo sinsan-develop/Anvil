@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 435,
+  "last_sequence": 453,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -15461,7 +15461,292 @@
         "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
         "external_side_effects": "NOT_EXECUTED"
       }
+    },
+    {
+      "event_id": "evt_c21_lr02c_repository_reconciled_start",
+      "sequence": 436,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T16:00:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "branch": "codex/c21-lifecycle-runtime",
+        "local_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+        "remote_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "upstream": "origin/main",
+        "observed_at": "2026-09-03T16:00:00+09:00",
+        "reason": "LR02B_CHECKPOINT_PUSHED_AND_LR02C_EXACT20_START_PROJECTION",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+        "head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_EXACT20_WORKTREE",
+        "exact_allowed_paths": ["deploy/ysna/ReleaseManifest.C21.DRAFT.json", "deploy/ysna/backup-c21-db.sh", "deploy/ysna/probe-providers.py", "deploy/ysna/provision-c21-validation.py", "deploy/ysna/rebind-c21-test-session.sh", "deploy/ysna/verify.sh", "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-c21-lr02c-start.json", "docs/work_orders/C-21_LR-02C_INVOCATION_PROMPT.md", "docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md", "scripts/check_project_progress.py", "tests/deploy/test_c21_lr02c_operational_contract.py", "tests/deploy/test_ysna_deployment_contract.py", "tests/deploy/test_ysna_scripts_contract.py", "tests/tooling/test_project_progress.py"]
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_worker_lease_issued",
+      "sequence": 437,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T16:00:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "lease_id": "worker-lease-c21-lr02c-20260903-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "LR-02C",
+        "lease_epoch": 1,
+        "execution_fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43",
+        "fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43",
+        "subject_ref": "C-21/LR-02C",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_write_lease_issued",
+      "sequence": 438,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T16:00:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "lease_id": "write-lease-c21-lr02c-20260903-001",
+        "worker_lease_id": "worker-lease-c21-lr02c-20260903-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "LR-02C",
+        "write_epoch": 1,
+        "execution_fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43",
+        "write_fencing_token": "c21-lr02c-write-fence-epoch-1-dd4cc43",
+        "fencing_token": "c21-lr02c-write-fence-epoch-1-dd4cc43",
+        "status": "ACTIVE",
+        "path_scope": ["deploy/ysna/backup-c21-db.sh", "deploy/ysna/provision-c21-validation.py", "deploy/ysna/rebind-c21-test-session.sh", "deploy/ysna/probe-providers.py", "deploy/ysna/verify.sh", "deploy/ysna/ReleaseManifest.C21.DRAFT.json", "tests/deploy/test_c21_lr02c_operational_contract.py", "tests/deploy/test_ysna_scripts_contract.py", "tests/deploy/test_ysna_deployment_contract.py", "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json", ".superpowers/sdd/Anvil_작업계획서_v1/task-4-report.md"]
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_package_started",
+      "sequence": 439,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-09-03T16:00:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "work_instruction_id": "WI-C-21-LR-02C-20260903-001",
+        "package_status": "ACTIVE",
+        "worker_lease_id": "worker-lease-c21-lr02c-20260903-001",
+        "write_lease_id": "write-lease-c21-lr02c-20260903-001",
+        "dispatch_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+        "dispatch_upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "external_side_effects": "NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_r1_failure_report_accepted",
+      "sequence": 440,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-09-03T17:08:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "entry_id": "failure-c21-lr02c-independent-review-r1",
+        "evidence_ref": {"path": "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md", "sha256": "5554FA1F7998E826F75F5F999567152935180B515AE4B53DF751FCEB633D2072", "bytes": 1573},
+        "failure_fingerprint": "C21_LR02C_TEST_SESSION_REBIND_NOT_RESTORED_OR_PRESERVATION_UNRECORDED",
+        "finding_ids": ["TEST_SESSION_REBIND_NOT_RESTORED_OR_PRESERVATION_UNRECORDED", "UNFENCED_MAIN_TAKEOVER_WITH_DEVELOPER_LEASE_ACTIVE"],
+        "blocking_severity": "CRITICAL",
+        "blocking_defect_count": 2,
+        "valid_failure_count": 1,
+        "internal_identical_error_count": 3,
+        "internal_error_fingerprint": "WINDOWS_BACKUP_RECEIPT_MODE_HARNESS_MISMATCH",
+        "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED_BY_USER_THREE_ERROR_RULE",
+        "scope_change": false,
+        "requirements_change": false,
+        "material_risk_change": false
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_r1_write_lease_revoked_main_takeover",
+      "sequence": 441,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T17:08:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"lease_id": "write-lease-c21-lr02c-20260903-001", "worker_lease_id": "worker-lease-c21-lr02c-20260903-001", "write_epoch": 1, "execution_fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43", "write_fencing_token": "c21-lr02c-write-fence-epoch-1-dd4cc43", "fencing_token": "c21-lr02c-write-fence-epoch-1-dd4cc43", "reason": "THREE_IDENTICAL_INTERNAL_ERRORS_AND_FENCING_RECONCILIATION", "status": "REVOKED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_r1_worker_lease_revoked_main_takeover",
+      "sequence": 442,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T17:08:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"lease_id": "worker-lease-c21-lr02c-20260903-001", "agent_id": "developer-primary", "work_package_id": "C-21", "subtask_id": "LR-02C", "lease_epoch": 1, "execution_fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43", "fencing_token": "c21-lr02c-execution-fence-epoch-1-dd4cc43", "reason": "THREE_IDENTICAL_INTERNAL_ERRORS_AND_FENCING_RECONCILIATION", "status": "REVOKED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_main_takeover_worker_lease_issued_r2",
+      "sequence": 443,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T17:08:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002", "worker_id": "main-agent-eoul", "agent_id": "main-agent-eoul", "work_package_id": "C-21", "subtask_id": "LR-02C", "lease_epoch": 2, "execution_fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43", "fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43", "subject_ref": "C-21/LR-02C", "status": "ACTIVE", "takeover_mode": "DIRECT_IMPLEMENTATION"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_main_takeover_write_lease_issued_r2",
+      "sequence": 444,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-09-03T17:08:04+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "lease_id": "write-lease-c21-lr02c-main-takeover-20260903-002", "worker_lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002", "worker_id": "main-agent-eoul", "agent_id": "main-agent-eoul", "work_package_id": "C-21", "subtask_id": "LR-02C", "write_epoch": 2, "execution_fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43", "write_fencing_token": "c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43", "fencing_token": "c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43", "status": "ACTIVE", "takeover_mode": "DIRECT_IMPLEMENTATION",
+        "paths": ["deploy/ysna/backup-c21-db.sh", "deploy/ysna/provision-c21-validation.py", "deploy/ysna/rebind-c21-test-session.sh", "deploy/ysna/probe-providers.py", "deploy/ysna/verify.sh", "deploy/ysna/ReleaseManifest.C21.DRAFT.json", "tests/deploy/test_c21_lr02c_operational_contract.py", "tests/deploy/test_ysna_scripts_contract.py", "tests/deploy/test_ysna_deployment_contract.py", "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json", ".superpowers/sdd/Anvil_작업계획서_v1/task-4-report.md"],
+        "path_scope": ["deploy/ysna/backup-c21-db.sh", "deploy/ysna/provision-c21-validation.py", "deploy/ysna/rebind-c21-test-session.sh", "deploy/ysna/probe-providers.py", "deploy/ysna/verify.sh", "deploy/ysna/ReleaseManifest.C21.DRAFT.json", "tests/deploy/test_c21_lr02c_operational_contract.py", "tests/deploy/test_ysna_scripts_contract.py", "tests/deploy/test_ysna_deployment_contract.py", "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json", ".superpowers/sdd/Anvil_작업계획서_v1/task-4-report.md"]
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_main_takeover_resumed_r2",
+      "sequence": 445,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-09-03T17:08:05+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"resume_event_ref": "evt_c21_lr02c_r1_failure_report_accepted", "work_instruction_id": "WI-C-21-LR-02C-20260903-001", "work_instruction_path": "docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md", "takeover_packet_path": "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md", "takeover_packet_sha256": "4B049CB51B9526BDF490879B6C35C1B146A157769A4A066927A99BB6571B3735", "failure_fingerprint": "C21_LR02C_TEST_SESSION_REBIND_NOT_RESTORED_OR_PRESERVATION_UNRECORDED", "valid_failure_count": 1, "internal_identical_error_count": 3, "takeover_status": "MAIN_TAKEOVER", "package_status": "ACTIVE_REWORK_R2", "result_status": "DIRECT_IMPLEMENTATION", "main_actor": "main-agent-eoul", "worker_lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002", "write_lease_id": "write-lease-c21-lr02c-main-takeover-20260903-002", "dispatch_head": "dd4cc43452d30511ecf1a152e48408b7122391c0", "dispatch_upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60", "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT", "validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0", "head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_MAIN_TAKEOVER_EXACT25_WORKTREE", "exact_allowed_paths": ["deploy/ysna/backup-c21-db.sh", "deploy/ysna/probe-providers.py", "deploy/ysna/provision-c21-validation.py", "deploy/ysna/rebind-c21-test-session.sh", "deploy/ysna/ReleaseManifest.C21.DRAFT.json", "deploy/ysna/verify.sh", "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md", "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/failure-ledger.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-c21-lr02c-start.json", "docs/progress/progress-handoff-detached-digest-c21-lr02c-takeover-r2.json", "docs/work_orders/C-21_LR-02C_INVOCATION_PROMPT.md", "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md", "docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md", "scripts/check_project_progress.py", "tests/deploy/test_c21_lr02c_operational_contract.py", "tests/deploy/test_ysna_deployment_contract.py", "tests/deploy/test_ysna_scripts_contract.py", "tests/tooling/test_project_progress.py"], "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT", "external_side_effects": "NOT_EXECUTED", "reporting_decision": "AUTO_CONTINUE"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_r2_failure_report_accepted",
+      "sequence": 446,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-09-03T18:10:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "entry_id": "failure-c21-lr02c-independent-review-r2",
+        "evidence_ref": {"path": "docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md", "sha256": "E215065293F3F8E3A4DFE6C1DC02E0D730E0548E3F1F0AB0C43595755B18C692", "bytes": 1544},
+        "failure_fingerprint": "C21_LR02C_INCIDENT_HOLD_EVIDENCE_ERASED_OR_AUTO_CLEARED_ON_RERUN",
+        "finding_ids": ["INCIDENT_HOLD_EVIDENCE_ERASED_OR_AUTO_CLEARED_ON_RERUN"],
+        "blocking_severity": "CRITICAL",
+        "blocking_defect_count": 1,
+        "prior_valid_failure_count": 1,
+        "valid_failure_count": 2,
+        "accepted_sequence": 1,
+        "takeover_status": "NOT_REQUIRED",
+        "main_takeover_continues": true,
+        "lease_continuity": true,
+        "worker_lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002",
+        "write_lease_id": "write-lease-c21-lr02c-main-takeover-20260903-002",
+        "execution_fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43",
+        "write_fencing_token": "c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43",
+        "scope_change": false,
+        "requirements_change": false,
+        "material_risk_change": false,
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "external_side_effects": "NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_main_takeover_resumed_r3",
+      "sequence": 447,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-09-03T18:10:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "resume_event_ref": "evt_c21_lr02c_r2_failure_report_accepted",
+        "work_instruction_id": "WI-C-21-LR-02C-R3-20260903-001",
+        "work_instruction_path": "docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md",
+        "work_instruction_sha256": "9F33F60B89F3D1BF4AF77AA5540023B7160684E5A55D3D4DE7B096A8B87AAE54",
+        "invocation_path": "docs/work_orders/C-21_LR-02C_REWORK_INVOCATION_PROMPT_R3.md",
+        "invocation_sha256": "311615DC3CEC19FCCA4FE896DC638DEE5257351F62E38C0B0E19C8129FD68029",
+        "approval_ref": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
+        "approval_sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A",
+        "change_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "failure_fingerprint": "C21_LR02C_INCIDENT_HOLD_EVIDENCE_ERASED_OR_AUTO_CLEARED_ON_RERUN",
+        "valid_failure_count": 2,
+        "takeover_status": "MAIN_TAKEOVER",
+        "package_status": "ACTIVE_REWORK_R3",
+        "result_status": "DIRECT_IMPLEMENTATION",
+        "main_actor": "main-agent-eoul",
+        "worker_lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002",
+        "write_lease_id": "write-lease-c21-lr02c-main-takeover-20260903-002",
+        "execution_fencing_token": "c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43",
+        "write_fencing_token": "c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43",
+        "lease_reissued": false,
+        "lease_continuity": true,
+        "main_write_path_count": 12,
+        "dispatch_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+        "dispatch_upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+        "head_relation": "FEATURE_CHECKPOINT_WITH_ACTIVE_LR02C_MAIN_TAKEOVER_R3_EXACT30_WORKTREE",
+        "push_status": "FEATURE_CHECKPOINT_PUSHED_LR02C_MAIN_TAKEOVER_R3_ACTIVE",
+        "exact_allowed_paths": ["deploy/ysna/ReleaseManifest.C21.DRAFT.json", "deploy/ysna/backup-c21-db.sh", "deploy/ysna/probe-providers.py", "deploy/ysna/provision-c21-validation.py", "deploy/ysna/rebind-c21-test-session.sh", "deploy/ysna/verify.sh", "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md", "docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md", "docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json", "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/failure-ledger.json", "docs/progress/progress-events.json", "docs/progress/progress-handoff-detached-digest-c21-lr02c-rework-start-r3.json", "docs/progress/progress-handoff-detached-digest-c21-lr02c-start.json", "docs/progress/progress-handoff-detached-digest-c21-lr02c-takeover-r2.json", "docs/work_orders/C-21_LR-02C_INVOCATION_PROMPT.md", "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md", "docs/work_orders/C-21_LR-02C_REWORK_INVOCATION_PROMPT_R3.md", "docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md", "docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md", "scripts/check_project_progress.py", "tests/deploy/test_c21_lr02c_operational_contract.py", "tests/deploy/test_ysna_deployment_contract.py", "tests/deploy/test_ysna_scripts_contract.py", "tests/tooling/test_project_progress.py"],
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "external_side_effects": "NOT_EXECUTED",
+        "reporting_decision": "AUTO_CONTINUE"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_main_r3_write_lease_revoked",
+      "sequence": 448,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T18:40:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"lease_id":"write-lease-c21-lr02c-main-takeover-20260903-002","worker_lease_id":"worker-lease-c21-lr02c-main-takeover-20260903-002","write_epoch":2,"execution_fencing_token":"c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43","write_fencing_token":"c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43","fencing_token":"c21-lr02c-main-takeover-write-fence-epoch-2-dd4cc43","reason":"MAIN_R3_IMPLEMENTATION_COMPLETE_AND_FROZEN","status":"REVOKED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_main_r3_worker_lease_revoked",
+      "sequence": 449,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-03T18:40:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"lease_id":"worker-lease-c21-lr02c-main-takeover-20260903-002","agent_id":"main-agent-eoul","work_package_id":"C-21","subtask_id":"LR-02C","lease_epoch":2,"execution_fencing_token":"c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43","fencing_token":"c21-lr02c-main-takeover-execution-fence-epoch-2-dd4cc43","reason":"MAIN_R3_IMPLEMENTATION_COMPLETE_AND_FROZEN","status":"REVOKED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_r3_package_completed",
+      "sequence": 450,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-09-03T18:40:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"work_instruction_id":"WI-C-21-LR-02C-R3-20260903-001","result_status":"COMPLETED","package_status":"TEST_REVIEW","accepted":false,"independent_tester_status":"READY_FOR_MAIN_ACCEPTANCE","worker_lease":null,"write_lease":null,"evidence_manifest_ref":{"path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json","sha256":"4771BFEE1BAC7B0F6043487D6BD7F1534DCEB01DB7EC33CFE2228EF979339F28"},"independent_report_ref":{"path":"docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md","sha256":"81A193E03BCEF668D5304623E754FD66A68BA4BD520C603AB9AB01DE92970665"},"valid_failure_count":2,"historical_failure_count":2,"external_side_effects":"NOT_EXECUTED","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_r3_main_package_accepted",
+      "sequence": 451,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "occurred_at": "2026-09-03T18:40:03+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {"decision":"ACCEPTED","test_report_ref":"docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md","test_report_sha256":"81A193E03BCEF668D5304623E754FD66A68BA4BD520C603AB9AB01DE92970665","manifest_ref":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json","manifest_sha256":"4771BFEE1BAC7B0F6043487D6BD7F1534DCEB01DB7EC33CFE2228EF979339F28","verdict":"READY_FOR_MAIN_ACCEPTANCE","blocking_findings":0,"valid_failure_count":0,"historical_failure_count":2,"takeover_status":"MAIN_AGENT_TAKEOVER_COMPLETED","next_work_package":"C-21/LR-02C","next_package_status":"BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH","c21_status":"ACTIVE","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","lr02c_tooling_only":true,"external_side_effects":"NOT_EXECUTED"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_r3_acceptance_repository_reconciled",
+      "sequence": 452,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T18:40:04+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "branch":"codex/c21-lifecycle-runtime","upstream":"origin/main","observed_at":"2026-09-03T18:40:04+09:00","reason":"LR02C_R3_ACCEPTANCE_APPEND_ONLY_RECONCILIATION","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","accepted_event_ref":"evt_c21_lr02c_r3_main_package_accepted","package_status":"ACTIVE/LR02C_TOOLING_ACCEPTED_CHECKPOINT_PENDING","validated_base_commit":"dd4cc43452d30511ecf1a152e48408b7122391c0","local_head":"dd4cc43452d30511ecf1a152e48408b7122391c0","feature_remote_head":"dd4cc43452d30511ecf1a152e48408b7122391c0","remote_head":"1573e0242aa718d0f81f6b6fc936c754b7c75e60","head_relation":"FEATURE_CHECKPOINT_WITH_LR02C_ACCEPTED_R3_EXACT33_WORKTREE","push_status":"FEATURE_CHECKPOINT_PUSHED_LR02C_ACCEPTED_PENDING_CHECKPOINT_COMMIT","repository_exact_path_count":33,
+        "exact_allowed_paths":["deploy/ysna/ReleaseManifest.C21.DRAFT.json","deploy/ysna/backup-c21-db.sh","deploy/ysna/probe-providers.py","deploy/ysna/provision-c21-validation.py","deploy/ysna/rebind-c21-test-session.sh","deploy/ysna/verify.sh","docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md","docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md","docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md","docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-rework-start-r3.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-start.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-takeover-r2.json","docs/work_orders/C-21_LR-02C_INVOCATION_PROMPT.md","docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md","docs/work_orders/C-21_LR-02C_REWORK_INVOCATION_PROMPT_R3.md","docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md","docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md","scripts/check_project_progress.py","tests/deploy/test_c21_lr02c_operational_contract.py","tests/deploy/test_ysna_deployment_contract.py","tests/deploy/test_ysna_scripts_contract.py","tests/tooling/test_project_progress.py"],
+        "next_work_package":"C-21/LR-02C","next_package_status":"BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","external_side_effects":"NOT_EXECUTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_lr02c_r3_acceptance_exact34_repository_reconciled",
+      "sequence": 453,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-03T18:45:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C",
+      "details": {
+        "branch":"codex/c21-lifecycle-runtime","upstream":"origin/main","observed_at":"2026-09-03T18:45:00+09:00","reason":"LR02C_ACCEPTANCE_CLEAN_CLONE_IGNORED_EVIDENCE_PATH_RECONCILIATION","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","accepted_event_ref":"evt_c21_lr02c_r3_main_package_accepted","package_status":"ACTIVE/LR02C_TOOLING_ACCEPTED_CHECKPOINT_PENDING","validated_base_commit":"dd4cc43452d30511ecf1a152e48408b7122391c0","local_head":"dd4cc43452d30511ecf1a152e48408b7122391c0","feature_remote_head":"dd4cc43452d30511ecf1a152e48408b7122391c0","remote_head":"1573e0242aa718d0f81f6b6fc936c754b7c75e60","head_relation":"FEATURE_CHECKPOINT_WITH_LR02C_ACCEPTED_R3_EXACT34_WORKTREE","push_status":"FEATURE_CHECKPOINT_PUSHED_LR02C_ACCEPTED_PENDING_CHECKPOINT_COMMIT","repository_exact_path_count":34,
+        "exact_allowed_paths":[".superpowers/sdd/Anvil_작업계획서_v1/task-4-report.md","deploy/ysna/ReleaseManifest.C21.DRAFT.json","deploy/ysna/backup-c21-db.sh","deploy/ysna/probe-providers.py","deploy/ysna/provision-c21-validation.py","deploy/ysna/rebind-c21-test-session.sh","deploy/ysna/verify.sh","docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md","docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md","docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md","docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-rework-start-r3.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-start.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-takeover-r2.json","docs/work_orders/C-21_LR-02C_INVOCATION_PROMPT.md","docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md","docs/work_orders/C-21_LR-02C_REWORK_INVOCATION_PROMPT_R3.md","docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md","docs/work_orders/C-21_LR-02C_WORK_INSTRUCTION.md","scripts/check_project_progress.py","tests/deploy/test_c21_lr02c_operational_contract.py","tests/deploy/test_ysna_deployment_contract.py","tests/deploy/test_ysna_scripts_contract.py","tests/tooling/test_project_progress.py"],
+        "next_work_package":"C-21/LR-02C","next_package_status":"BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","external_side_effects":"NOT_EXECUTED"
+      }
     }
   ],
-  "last_event_id": "evt_c21_lr02b_acceptance_repository_reconciled"
+  "last_event_id": "evt_c21_lr02c_r3_acceptance_exact34_repository_reconciled"
 }

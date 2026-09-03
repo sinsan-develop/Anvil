@@ -1,0 +1,26 @@
+{
+  "artifact_id": "C21-LR02C-EVIDENCE",
+  "self_reference": false,
+  "status": "REWORK_R3_COMPLETED_PENDING_INDEPENDENT_REREVIEW",
+  "work_instruction": "WI-C-21-LR-02C-20260903-001",
+  "rework_instruction": "WI-C-21-LR-02C-R3-20260903-001",
+  "baseline_git_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+  "execution_owner": "main-agent-eoul-after-three-repeat-takeover",
+  "external_side_effects": "NOT_EXECUTED",
+  "valid_failure_count": 2,
+  "internal_repeat_count": 3,
+  "internal_repeat_reason": "WINDOWS_BACKUP_RECEIPT_MODE_HARNESS_MISMATCH",
+  "raw_checksums": [
+    {"path":"deploy/ysna/backup-c21-db.sh","bytes":1704,"sha256":"14AA8D50705D6E292AA2E64906194D7C6961B302EE0B886225153AE4F5EBCC9A"},
+    {"path":"deploy/ysna/provision-c21-validation.py","bytes":17293,"sha256":"5C77CDA7D53F15B95B3B6873046558BCD0C568162F5A541A3BE7F4603C1C5A7F"},
+    {"path":"deploy/ysna/rebind-c21-test-session.sh","bytes":3565,"sha256":"68DACAD76D79C56E1C572D114AB151211DA4030DE84CE6ED58CC1BCF52F53E02"},
+    {"path":"deploy/ysna/probe-providers.py","bytes":6931,"sha256":"A5444ABE73C29AB20852C2F2CAC1AD3A74BEF014F269A0B9B480ADC385830968"},
+    {"path":"deploy/ysna/verify.sh","bytes":15269,"sha256":"31D10C400A4E1B7E81F0994D1979FF57C5AAB52EA43B83780CCF5FB9061BF3C3"},
+    {"path":"deploy/ysna/ReleaseManifest.C21.DRAFT.json","bytes":4463,"sha256":"D2DA5C94D326D0D65D712B8998C9BF0E8F141EBFEE4E8C9FA0DC949454AE7029"},
+    {"path":"tests/deploy/test_c21_lr02c_operational_contract.py","bytes":9365,"sha256":"977F93A67EB5AB7B5196E43E3C51E88462E7F0CCD303DCABC267372DEF777B5F"},
+    {"path":"tests/deploy/test_ysna_scripts_contract.py","bytes":19284,"sha256":"BF480A1525833C4A3E10F4EF1FFF7659B6EAE90BD53DA41F6489331E448BCB9E"},
+    {"path":"tests/deploy/test_ysna_deployment_contract.py","bytes":5369,"sha256":"3FA21240F1ECC0882CB6D85BF815C829BF9D0EB0C204F44CE959B661A9A06B6C"},
+    {"path":"docs/04_test_reports/C-21_LR02C_OPERATIONAL_PROGRESS.md","bytes":8081,"sha256":"F4663EA5F3F60E863AA1B6D73D0A045724910C701A46ABF2DACB0EEFA9B8E006"},
+    {"path":".superpowers/sdd/Anvil_작업계획서_v1/task-4-report.md","bytes":892,"sha256":"2B36A2E3A4BD7E70E1905945A35378E28D096EA288317097BE1803846406C412"}
+  ]
+}

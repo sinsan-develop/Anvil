@@ -1,0 +1,27 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR02C-ACCEPTANCE-R3-MANIFEST-20260903",
+  "package_id": "C-21/LR-02C",
+  "manifest_type": "MAIN_ACCEPTANCE_PROGRESS_PROJECTION",
+  "target_status": "ACCEPTED_TOOLING_CHECKPOINT_PENDING",
+  "event_sequence": 453,
+  "validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+  "feature_remote_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+  "upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "repository_exact_path_count": 34,
+  "historical_failure_count": 2,
+  "blocking_findings": 0,
+  "next_work_package": "C-21/LR-02C",
+  "next_status": "BLOCKED_PENDING_ACCEPTANCE_CHECKPOINT_COMMIT_PUSH",
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "external_side_effects": "NOT_EXECUTED",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-accepted-r3.json","bytes":1007,"sha256":"48792BF122FD519D6D5F1F52183A825633E68F54229186AE5B5928C19C7BDD33"},
+    {"path":"docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json","bytes":2200,"sha256":"4771BFEE1BAC7B0F6043487D6BD7F1534DCEB01DB7EC33CFE2228EF979339F28"},
+    {"path":"docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md","bytes":2359,"sha256":"81A193E03BCEF668D5304623E754FD66A68BA4BD520C603AB9AB01DE92970665"},
+    {"path":"docs/progress/failure-ledger.json","bytes":27519,"sha256":"C04E6C5C18E96A0AB8D18B84D0D28697E1C6AF2634A541ABCDE9A91E42984681"},
+    {"path":"docs/work_orders/C-21_LR-02C_REWORK_WORK_INSTRUCTION_R3.md","bytes":1543,"sha256":"9F33F60B89F3D1BF4AF77AA5540023B7160684E5A55D3D4DE7B096A8B87AAE54"},
+    {"path":"docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md","bytes":2245,"sha256":"1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T18:40:04+09:00"
+}

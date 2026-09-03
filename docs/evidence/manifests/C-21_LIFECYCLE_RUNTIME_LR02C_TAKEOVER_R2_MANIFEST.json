@@ -1,0 +1,27 @@
+{
+  "artifact_id": "C21-LIFECYCLE-RUNTIME-LR02C-TAKEOVER-R2-MANIFEST-20260903",
+  "package_id": "C-21/LR-02C",
+  "manifest_type": "MAIN_TAKEOVER_START_PROJECTION",
+  "target_status": "ACTIVE_REWORK_R2",
+  "event_sequence": 445,
+  "validated_base_commit": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+  "feature_remote_head": "dd4cc43452d30511ecf1a152e48408b7122391c0",
+  "upstream_head": "1573e0242aa718d0f81f6b6fc936c754b7c75e60",
+  "work_instruction_id": "WI-C-21-LR-02C-20260903-001",
+  "worker_lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002",
+  "write_lease_id": "write-lease-c21-lr02c-main-takeover-20260903-002",
+  "main_write_path_count": 12,
+  "repository_exact_path_count": 25,
+  "valid_failure_count": 1,
+  "internal_identical_error_count": 3,
+  "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "external_side_effects": "NOT_EXECUTED",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-lr02c-takeover-r2.json","bytes":965,"sha256":"B738C859654A7B682DADE0FE8C447810D4AEEA6518E244219064D8AB4F54F38B"},
+    {"path":"docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md","bytes":1573,"sha256":"5554FA1F7998E826F75F5F999567152935180B515AE4B53DF751FCEB633D2072"},
+    {"path":"docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md","bytes":1280,"sha256":"4B049CB51B9526BDF490879B6C35C1B146A157769A4A066927A99BB6571B3735"},
+    {"path":"docs/progress/failure-ledger.json","bytes":25685,"sha256":"51D8329C4952B72C380EF28EBA50B05ABA72A0573F66FBA1938E862FCCB71600"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-03T17:08:05+09:00"
+}

@@ -691,6 +691,79 @@
       ],
       "blocking_defect_count_after_retest": 0,
       "acceptance_sequence": 434
+    },
+    {
+      "entry_id": "failure-c21-lr02c-independent-review-r1",
+      "step_lineage_id": "C-21/LR-02C",
+      "failure_fingerprint": "C21_LR02C_TEST_SESSION_REBIND_NOT_RESTORED_OR_PRESERVATION_UNRECORDED",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "TEST_SESSION_REBIND_NOT_RESTORED_OR_PRESERVATION_UNRECORDED",
+        "UNFENCED_MAIN_TAKEOVER_WITH_DEVELOPER_LEASE_ACTIVE"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 2,
+      "evidence_refs": [
+        {
+          "path": "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "5554FA1F7998E826F75F5F999567152935180B515AE4B53DF751FCEB633D2072"
+        }
+      ],
+      "accepted_sequence": 1,
+      "internal_identical_error_count": 3,
+      "internal_error_fingerprint": "WINDOWS_BACKUP_RECEIPT_MODE_HARNESS_MISMATCH",
+      "takeover_status": "MAIN_AGENT_TAKEOVER_REQUIRED_BY_THREE_IDENTICAL_INTERNAL_ERRORS",
+      "independent_retest_status": "R2_MAIN_PENDING",
+      "closed_findings": [
+        "TEST_SESSION_REBIND_NOT_RESTORED_OR_PRESERVATION_UNRECORDED",
+        "UNFENCED_MAIN_TAKEOVER_WITH_DEVELOPER_LEASE_ACTIVE"
+      ],
+      "blocking_defect_count_after_retest": 0,
+      "acceptance_sequence": 451,
+      "takeover_packet_ref": {
+        "path": "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md",
+        "sha256": "4B049CB51B9526BDF490879B6C35C1B146A157769A4A066927A99BB6571B3735"
+      }
+    },
+    {
+      "entry_id": "failure-c21-lr02c-independent-review-r2",
+      "step_lineage_id": "C-21/LR-02C",
+      "failure_fingerprint": "C21_LR02C_INCIDENT_HOLD_EVIDENCE_ERASED_OR_AUTO_CLEARED_ON_RERUN",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": [
+        "INCIDENT_HOLD_EVIDENCE_ERASED_OR_AUTO_CLEARED_ON_RERUN"
+      ],
+      "blocking_severity": "CRITICAL",
+      "blocking_defect_count": 1,
+      "evidence_refs": [
+        {
+          "path": "docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md",
+          "sha256": "E215065293F3F8E3A4DFE6C1DC02E0D730E0548E3F1F0AB0C43595755B18C692"
+        }
+      ],
+      "accepted_sequence": 1,
+      "internal_identical_error_count": 3,
+      "internal_error_fingerprint": "WINDOWS_BACKUP_RECEIPT_MODE_HARNESS_MISMATCH",
+      "takeover_status": "NOT_REQUIRED",
+      "main_takeover_continues": true,
+      "worker_lease_id": "worker-lease-c21-lr02c-main-takeover-20260903-002",
+      "write_lease_id": "write-lease-c21-lr02c-main-takeover-20260903-002",
+      "independent_retest_status": "READY_FOR_MAIN_ACCEPTANCE",
+      "closed_findings": [
+        "INCIDENT_HOLD_EVIDENCE_ERASED_OR_AUTO_CLEARED_ON_RERUN"
+      ],
+      "blocking_defect_count_after_retest": 0,
+      "acceptance_sequence": 451,
+      "takeover_packet_ref": {
+        "path": "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md",
+        "sha256": "4B049CB51B9526BDF490879B6C35C1B146A157769A4A066927A99BB6571B3735"
+      }
     }
   ]
 }

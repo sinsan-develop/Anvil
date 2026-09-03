@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02C-ACCEPTED-R3-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02C",
+  "event_sequence": 453,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 70770,
+    "file_sha256": "43B132CE2A08532ED441C28C154C70C5989F6127D6B0C53F970ADA6799E343F4",
+    "canonical_json_sha256": "4212297C9B8A35E79D80BD48AB7774B60B8EC498C2F3496DBA922E8A34DDE76B"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 137800,
+    "file_sha256": "B5F176F339CF246990AB7B31C1ECD99FCA358C3A720CBB9F984AE89D65132FC5",
+    "machine_summary_canonical_sha256": "60AD1C2780E1F11B6AA8CF698F06B77EB8A2473BD84D724035266BDCFB622894"
+  },
+  "created_at": "2026-09-03T18:45:00+09:00",
+  "scope": "C-21/LR-02C tooling accepted after independent R3 PASS; Main epoch2 leases revoked; acceptance checkpoint commit and push pending; external side effects NOT_EXECUTED; C-01 remains blocked."
+}

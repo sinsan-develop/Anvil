@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02C-TAKEOVER-R2-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02C",
+  "event_sequence": 445,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 70212,
+    "file_sha256": "317066E72C9AA2B34B80DFE1CABFEF2BA3742FA188F5FB2B551AF33AAAAA7626",
+    "canonical_json_sha256": "640D01247F203D3314CED922D55B9ED043BD84922FF253C39065429CAEC239B6"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 135519,
+    "file_sha256": "BF34915037258D03B114A3A82F707852D8CEDD408705053E4E9EFC1B7ED625BB",
+    "machine_summary_canonical_sha256": "03C5E5E440E0EC8C68CC831C1BC675A9838E8208FEB3338650B02232F24152F8"
+  },
+  "created_at": "2026-09-03T17:08:05+09:00",
+  "scope": "C-21/LR-02C R1 failure accepted; developer epoch1 revoked; Main epoch2 exact12 takeover; external side effects NOT_EXECUTED; C-01 remains blocked."
+}

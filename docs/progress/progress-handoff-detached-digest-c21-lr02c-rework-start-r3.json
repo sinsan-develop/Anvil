@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LIFECYCLE-RUNTIME-LR02C-REWORK-START-R3-PROGRESS-HANDOFF-DIGEST-20260903",
+  "package_id": "C-21/LR-02C",
+  "event_sequence": 447,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 70735,
+    "file_sha256": "E8990D1BA32387E359B9F37DF70E7A00B4A2C9CCFD7E456FA3DEB8C6CC941ACB",
+    "canonical_json_sha256": "2A15CC3EEDFBE3D3AAD1C5F107ACCCCDED82B118DC15C651081C226DC761ED7E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 136620,
+    "file_sha256": "587F07DE95F7E2B52095AC5AF0376BC4C6F85767A5CF870402132B4125573427",
+    "machine_summary_canonical_sha256": "3DBC84D30F581FFF138FC6C225ADCE248A7A2CAC27E672486EA0333A6500E7D5"
+  },
+  "created_at": "2026-09-03T18:10:01+09:00",
+  "scope": "C-21/LR-02C R2 failure accepted; Main epoch2 exact12 lease continuity; sticky INCIDENT_HOLD R3; external side effects NOT_EXECUTED; C-01 remains blocked."
+}
