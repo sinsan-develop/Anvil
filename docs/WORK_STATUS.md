@@ -377,3 +377,18 @@
 - reviewer fix I-1: runtime guard가 derived binding SHA-256 `7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863`와 candidate parent `74ed0d4ac566ccc2877301103663b68272cce5b2`를 exact 비교한다. parent/hash/candidate/ref/manifest checksum을 함께 재결박한 회귀를 거부하며 focused guard `10/10 PASS`, full WSL harness `35 PASS`다. Minor M-1 timestamp는 deferred로 유지한다.
 - 미실행: external push, SSH, WSL, Docker, DB, volume cleanup, Telegram, Provider는 모두 `NOT_EXECUTED`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
 - 다음 안전 조치: seq489 exact11 direct-child commit을 검토한 뒤 별도 외부 push 승인을 받아 exact refs push/ls-remote/fresh recovery를 수행하고, 그 뒤 WSL 검증으로 진행한다.
+
+## 2026-09-05 C-21 seq490 Compose runner candidate rebind projection
+
+- 판정: correction review `SPEC PASS / QUALITY APPROVED`; candidate `830ad98546ed82a59524dd5a6cef0a5b7a6a96b0`는 seq489 control `99e83e4b07df1cffced6a89ff16ff2266ddaa426`의 single-parent child이며 correction exact2/hash `BCF8BC3E409715FF2E470D3BEB977E8E410B388BAC253114310D264FD783AA0F`다.
+- baseline RED: 기존 checker에서 `GIT_DESCENDANT_ORIGIN_MISMATCH`, `GIT_DESCENDANT_PATH_SET_MISMATCH`, `PRG_REFERENCED_HASH_MISMATCH` 3건을 확인했다. 신규 focused unittest는 `seq490 rebind manifest is missing`으로 기대 실패했다.
+- 구현: human approval 네 필드와 exact volume/label/exclusions를 보존한 `MAIN_BOUND_INTERNAL_IMPLEMENTATION_CORRECTION` 파생 binding, exact46 candidate ref, seq490 append-only event와 record-only exact11, precommit/direct-child postcommit checker를 추가한다. seq1~489 raw/canonical prefix 및 모든 historical manifest/digest/commit은 변경하지 않는다.
+- 외부 경계: push, SSH, WSL, Docker, DB, volume cleanup, Telegram, Provider는 모두 `NOT_EXECUTED`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+- 검증 상태: focused/full tooling, full WSL harness, Bash syntax, diff-check, precommit checker 및 commit 후 postcommit 검증을 이 record에서 수행한다.
+
+### seq490 reviewer fix round I-1
+
+- 독립 리뷰는 active progress/HANDOFF가 승인된 개발·테스트 범위의 private push를 별도 프로젝트 승인 대기로 잘못 기록한 `Important I-1`을 확정했다.
+- TDD RED: tooling은 repository `push_status`가 `...BLOCKED_PENDING_EXACT_DESTINATION_APPROVAL`인 것을 검출했고, guard test는 잘못된 private-push policy가 direct-child 검사까지 통과해 policy 전용 거부 사유가 없음을 검출했다.
+- 수정 원칙: seq1~489와 seq490 event 원문은 byte-immutable로 유지한다. active progress/HANDOFF/CandidateReleaseManifest/evidence/checker/guard/tests만 `REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH` 및 `MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE` 계약으로 재결박한다.
+- 외부 push/WSL/Docker/DB/volume cleanup/Telegram/Provider는 이 fix round에서 실행하지 않는다. push 결과는 실행 후 새 append-only checkpoint로 기록한다.

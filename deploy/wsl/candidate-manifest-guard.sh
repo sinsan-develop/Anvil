@@ -4,7 +4,7 @@ set -euo pipefail
 validate_wsl_candidate_manifest() {
   local repo="$1" manifest_ref="$2" expected="$3"
   local control_ref='refs/remotes/origin/codex/c21-operational-execution'
-  local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact44'
+  local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact46'
   [[ "$manifest_ref" == "$control_ref" ]] || { echo 'candidate control ref must be the exact successor remote-tracking ref' >&2; return 20; }
   [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || { echo 'full 40-character SHA required' >&2; return 20; }
   local control_sha
@@ -55,6 +55,8 @@ if authority.get('approval_artifact_sha256') != '92C34A49FA194F52219D76433515779
     raise SystemExit('candidate original approval artifact mismatch')
 if authority.get('approval_binding_sha256') != '2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5':
     raise SystemExit('candidate original approval text mismatch')
+if authority.get('private_push_policy') != 'MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE':
+    raise SystemExit('candidate private push policy mismatch')
 derived = authority.get('derived_binding')
 derived_hash = authority.get('derived_binding_sha256')
 if not isinstance(derived, dict) or not re.fullmatch(r'[0-9A-F]{64}', str(derived_hash)):
@@ -62,11 +64,11 @@ if not isinstance(derived, dict) or not re.fullmatch(r'[0-9A-F]{64}', str(derive
 canonical = json.dumps(derived, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
 if hashlib.sha256(canonical).hexdigest().upper() != derived_hash:
     raise SystemExit('candidate derived binding checksum mismatch')
-expected_candidate_parent = '74ed0d4ac566ccc2877301103663b68272cce5b2'
+expected_candidate_parent = '99e83e4b07df1cffced6a89ff16ff2266ddaa426'
 if derived.get('candidate_parent_commit') != expected_candidate_parent:
     raise SystemExit('candidate parent exact derived binding mismatch')
-expected_paths = ['deploy/wsl/deploy.sh', 'tests/deploy/test_wsl_staging_harness.py']
-expected_path_hash = 'B2E9A41E7E30999A64BBFA85332791EA44F23D2783A064D3CBEEFFFA4DE8BC1F'
+expected_paths = ['deploy/wsl/common.sh', 'tests/deploy/test_wsl_staging_harness.py']
+expected_path_hash = 'BCF8BC3E409715FF2E470D3BEB977E8E410B388BAC253114310D264FD783AA0F'
 if any((
     derived.get('correction_path_count') != 2,
     derived.get('correction_path_list_sha256') != expected_path_hash,
@@ -78,7 +80,7 @@ if any((
     derived.get('parent_approval_id') != authority.get('approval_id'),
     derived.get('parent_approval_artifact_sha256') != authority.get('approval_artifact_sha256'),
     derived.get('parent_approval_binding_sha256') != authority.get('approval_binding_sha256'),
-    derived.get('prior_candidate_commit') != '93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad',
+    derived.get('prior_candidate_commit') != '326476d69a3228f9dfcf64ff1dd056577bcbcf55',
     derived.get('candidate_commit') != expected,
     derived.get('review') != {'spec': 'PASS', 'quality': 'APPROVED'},
     derived.get('scope_change') is not False,
@@ -88,7 +90,7 @@ if any((
     derived.get('execution_exclusions') != ['TELEGRAM_EXECUTION', 'PROVIDER_EXECUTION'],
 )):
     raise SystemExit('candidate derived binding contract mismatch')
-expected_derived_hash = '7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863'
+expected_derived_hash = 'FFEDB1B478DC0493CE3FC585A5324361EA82D83F2E2FCF6D2398CB9ACCB47F9C'
 if derived_hash != expected_derived_hash:
     raise SystemExit('candidate exact derived binding hash mismatch')
 if doc.get('exclusions') != ['TELEGRAM_EXECUTION', 'PROVIDER_EXECUTION']:
@@ -124,7 +126,7 @@ PY
   correction_paths="$(git -C "$repo" diff --name-only "$candidate_parent" "$expected")" || {
     echo 'candidate correction paths are not readable' >&2; return 20;
   }
-  [[ "$correction_paths" == $'deploy/wsl/deploy.sh\ntests/deploy/test_wsl_staging_harness.py' ]] || {
+  [[ "$correction_paths" == $'deploy/wsl/common.sh\ntests/deploy/test_wsl_staging_harness.py' ]] || {
     echo 'candidate correction path set mismatch' >&2; return 21;
   }
   correction_hash="$(ANVIL_CORRECTION_PATHS="$correction_paths" "$python_bin" - <<'PY'
@@ -134,7 +136,7 @@ payload = json.dumps(sorted(paths), ensure_ascii=False, separators=(',', ':')).e
 print(hashlib.sha256(payload).hexdigest().upper())
 PY
 )" || return 20
-  [[ "$correction_hash" == 'B2E9A41E7E30999A64BBFA85332791EA44F23D2783A064D3CBEEFFFA4DE8BC1F' ]] || {
+  [[ "$correction_hash" == 'BCF8BC3E409715FF2E470D3BEB977E8E410B388BAC253114310D264FD783AA0F' ]] || {
     echo 'candidate correction path hash mismatch' >&2; return 21;
   }
   local remote_sha
@@ -144,7 +146,11 @@ PY
   [[ "$remote_sha" == "$expected" ]] || {
     echo 'candidate does not equal the approved feature remote' >&2; return 21;
   }
-  git -C "$repo" merge-base --is-ancestor "$expected" "$control_sha" || {
-    echo 'candidate must be an ancestor of the successor control commit' >&2; return 21;
+  local control_parents
+  control_parents="$(git -C "$repo" show -s --format=%P "$control_sha")" || {
+    echo 'successor control commit parents are not readable' >&2; return 20;
+  }
+  [[ "$control_parents" == "$expected" ]] || {
+    echo 'successor control commit must be the candidate single-parent direct child' >&2; return 21;
   }
 }

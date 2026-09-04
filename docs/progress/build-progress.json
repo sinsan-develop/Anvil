@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-wsl-fresh-clone-candidate-rebind-20260905",
-  "event_sequence": 489,
-  "updated_at": "2026-09-05T09:30:00+09:00",
-  "last_event_id": "evt_c21_wsl_fresh_clone_candidate_rebind_bound",
+  "snapshot_id": "snapshot-c21-wsl-compose-runner-candidate-rebind-20260905",
+  "event_sequence": 490,
+  "updated_at": "2026-09-05T03:40:00+09:00",
+  "last_event_id": "evt_c21_wsl_compose_runner_candidate_rebind_bound",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -1167,7 +1167,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "AA6428BD4C8AF6F032503E246FA76AF711581290C648CE6C3D0B1235EFE7366E"
+      "sha256": "C11C12DEE007094D1B84289BC1BE10C74A652A0DAD2384F39A4F8C0AFCB8262C"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1187,7 +1187,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "E7A250206F2D4FC20AFDC8FBBAED5774089EA233D2529739D4FDE96BDA62D5EF"
+      "sha256": "C7DB3027A5CF41633AB82F4BAB1C4746DC005993A0F177A9ED7D69273BEAC9FC"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1215,7 +1215,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "22129B1AF56EB78F42DFC46C487A2951A0BA05ABE1593976B9E2C56622E365BC"
+      "sha256": "2E7BEF2F4FD6F78376927EE36C4F2E9F2DEB9C6A8620688604D96E1C8E307587"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1247,15 +1247,15 @@
     },
     {
       "path": "deploy/wsl/CandidateReleaseManifest.json",
-      "sha256": "DF12E9CE1BA2D659BA138032012CF2E9CA295C2B35A8B8C3B300CBDB7CCE5BEF"
+      "sha256": "2DB132D3190ADBF9AC91455F7E6D9F4FB22C75280D619E3F9DABCF48D08063DD"
     },
     {
       "path": "deploy/wsl/candidate-manifest-guard.sh",
-      "sha256": "F4C3171346C7AE7DCB8D04B8662A5F81B1885511F0BF9C176B1E69085CA2EA90"
+      "sha256": "D688F74BF006006779003D4A99771466AB8183C98316A6F11D592C6419C904DC"
     },
     {
       "path": "tests/deploy/test_wsl_staging_harness.py",
-      "sha256": "5222F50006FC504A365E9367A3521BFC2AE6DFBBBA1DC1F6D42B09DA53FAF0C9"
+      "sha256": "566369F3A33A2520613705104413BAEB6E2C77AB01F71EACD4D080E457AE52AB"
     }
   ],
   "latest_evidence_manifest_ref": {
@@ -1270,7 +1270,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "seq489 exact11 direct-child commit 검토 후 별도 외부 push 승인 → exact refs push/ls-remote/fresh recovery → WSL 검증. C-01은 계속 차단한다.",
+  "next_safe_action": "seq490 review 완료 후 Main이 승인된 개발·테스트 범위의 private candidate/control refs를 별도 프로젝트 승인 대기 없이 자동 push하고 append-only 결과 checkpoint를 기록한 뒤 WSL 검증으로 진행한다. C-01은 계속 차단한다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1382,13 +1382,13 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_C21_WSL_FRESH_CLONE_CANDIDATE_REBIND_ACTIVE_EXACT44_RECORD11",
+    "head_relation": "FEATURE_WORKTREE_C21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_ACTIVE_EXACT46_RECORD11",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "PRIVATE_CANDIDATE_AND_CONTROL_RECORD_PUSH_BLOCKED_PENDING_EXACT_DESTINATION_APPROVAL",
+    "push_status": "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH",
     "exact_allowed_paths": [
       "deploy/wsl/CandidateReleaseManifest.json",
       "deploy/wsl/Dockerfile.web",
@@ -1414,6 +1414,7 @@
       "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
       "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -1424,6 +1425,7 @@
       "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
       "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
@@ -1435,12 +1437,12 @@
       "tests/deploy/test_wsl_staging_harness.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-09-05T09:30:00+09:00",
-    "worktree_status": "C21_WSL_FRESH_CLONE_CANDIDATE_REBIND_ACTIVE: candidate 326476d exact44 with seq489 record-only exact11 dirty; external actions not executed",
-    "local_head": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
-    "candidate_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
-    "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact44",
-    "candidate_push_status": "BLOCKED_PENDING_EXACT_PRIVATE_DESTINATION_APPROVAL",
+    "observed_at": "2026-09-05T03:40:00+09:00",
+    "worktree_status": "C21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_ACTIVE: candidate 830ad985 exact46 with seq490 record-only exact11 dirty; external actions not executed",
+    "local_head": "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0",
+    "candidate_commit": "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0",
+    "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact46",
+    "candidate_push_status": "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH",
     "control_remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
     "control_commit": "73c39ca03caa615f7207eac3499c668497cecc5a",
     "control_runtime_parent": "5251a0b889f4e1062a5780eea9f03d8e9b9f69bb",
@@ -1481,10 +1483,10 @@
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "candidate_parent_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
-    "predecessor_control_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
+    "candidate_parent_commit": "99e83e4b07df1cffced6a89ff16ff2266ddaa426",
+    "predecessor_control_commit": "99e83e4b07df1cffced6a89ff16ff2266ddaa426",
     "predecessor_runtime_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
-    "predecessor_candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+    "predecessor_candidate_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
     "fresh_clone_candidate_rebind_successor_paths": [
       "deploy/wsl/CandidateReleaseManifest.json",
       "deploy/wsl/candidate-manifest-guard.sh",
@@ -1494,6 +1496,19 @@
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
+      "scripts/check_project_progress.py",
+      "tests/deploy/test_wsl_staging_harness.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "compose_runner_candidate_rebind_successor_paths": [
+      "deploy/wsl/CandidateReleaseManifest.json",
+      "deploy/wsl/candidate-manifest-guard.sh",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
       "scripts/check_project_progress.py",
       "tests/deploy/test_wsl_staging_harness.py",
       "tests/tooling/test_project_progress.py"
@@ -1783,8 +1798,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
-    "manifest_path": "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
+    "manifest_path": "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1805,7 +1820,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "22129B1AF56EB78F42DFC46C487A2951A0BA05ABE1593976B9E2C56622E365BC"
+      "sha256": "2E7BEF2F4FD6F78376927EE36C4F2E9F2DEB9C6A8620688604D96E1C8E307587"
     }
   },
   "next_work_package": {
@@ -1818,7 +1833,7 @@
   },
   "next_successor_work_package": {
     "package_id": "C-21/WSL-EARLY-VALIDATION",
-    "status": "ACTIVE_FRESH_CLONE_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH",
+    "status": "ACTIVE_COMPOSE_RUNNER_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH",
     "purpose": "승인된 WSL Git-only staging 및 PG15/PG18 RC 선행 인수검증",
     "requires": [
       "implementation exact SHA commit and feature push",
@@ -1998,8 +2013,8 @@
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
   "wsl_early_validation": {
-    "event_sequence": 489,
-    "status": "ACTIVE_FRESH_CLONE_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH",
+    "event_sequence": 490,
+    "status": "ACTIVE_COMPOSE_RUNNER_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH",
     "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
     "work_instruction_id": "WI-C-21-WSL-EARLY-VALIDATION-20260904-001",
     "dispatch_commit": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -2009,15 +2024,15 @@
     },
     "bash_syntax": "PASS",
     "candidate_manifest_status": "APPROVED_FOR_STAGING_VALIDATION",
-    "implementation_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+    "implementation_commit": "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0",
     "control_manifest_commit": "73c39ca03caa615f7207eac3499c668497cecc5a",
     "control_runtime_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
     "approval_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
     "approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
-    "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact44",
+    "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact46",
     "control_remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
-    "candidate_push_status": "BLOCKED_PENDING_EXACT_PRIVATE_DESTINATION_APPROVAL",
+    "candidate_push_status": "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH",
     "wsl_access": "NOT_RETRIED_UNTIL_GIT_ONLY_PRECONDITION",
     "postgres_15": "NOT_EXECUTED",
     "postgres_18_rc": "NOT_EXECUTED",
@@ -2033,18 +2048,19 @@
     "rework_iteration": 2,
     "telegram": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
-    "next_action": "REVIEW_SEQ489_EXACT11_DIRECT_CHILD_THEN_REQUEST_EXPLICIT_PRIVATE_PUSH_APPROVAL",
+    "next_action": "COMPLETE_SEQ490_REVIEW_THEN_AUTONOMOUS_PRIVATE_PUSH_WITHOUT_SEPARATE_PROJECT_APPROVAL",
     "record_control_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
-    "candidate_parent_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
-    "predecessor_control_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
+    "candidate_parent_commit": "99e83e4b07df1cffced6a89ff16ff2266ddaa426",
+    "predecessor_control_commit": "99e83e4b07df1cffced6a89ff16ff2266ddaa426",
     "predecessor_runtime_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
-    "predecessor_candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+    "predecessor_candidate_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
     "derived_binding_classification": "MAIN_BOUND_INTERNAL_IMPLEMENTATION_CORRECTION",
-    "derived_binding_sha256": "7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863",
+    "derived_binding_sha256": "FFEDB1B478DC0493CE3FC585A5324361EA82D83F2E2FCF6D2398CB9ACCB47F9C",
     "deployment": "NOT_EXECUTED",
     "database": "NOT_EXECUTED",
     "volume_cleanup": "NOT_EXECUTED",
-    "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+    "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    "predecessor_derived_binding_sha256": "7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863"
   },
-  "snapshot_hash": "073313DCE89BF22F2817400B06BABAD8E30DB9390F23D9039E528185AFB8BB43"
+  "snapshot_hash": "88D0DA78C96BC33CDBA2D20DDC91F101CF554B3C369625663296FA433875E067"
 }

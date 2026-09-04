@@ -4332,13 +4332,39 @@ class ProjectProgressContractTests(unittest.TestCase):
             validate_simulated(ancestor=False),
         )
 
+    def _historical_bundle(self, checker, commit: str):
+        """Load an immutable historical projection without mixing current files."""
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        repo = Path(temp.name) / "historical"
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "core.autocrlf=false",
+                "-c",
+                "core.eol=lf",
+                "clone",
+                "--quiet",
+                "--no-checkout",
+                "--no-hardlinks",
+                str(ROOT),
+                str(repo),
+            ],
+            check=True,
+        )
+        subprocess.run(["git", "checkout", "--quiet", "--detach", commit], cwd=repo, check=True)
+        return checker.load_bundle(repo), repo
+
     def test_c21_wsl_fresh_clone_candidate_rebind_projection_binds_exact_contracts(
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
         manifest_path = (
-            ROOT
+            historical_root
             / "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json"
         )
         self.assertTrue(manifest_path.is_file(), "seq489 rebind manifest is missing")
@@ -4350,7 +4376,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             ),
         )
 
-        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        current_raw = (historical_root / "docs/progress/progress-events.json").read_bytes()
         prefix = checker.raw_event_object_prefix_bytes(current_raw, 488)
         self.assertEqual(792116, len(prefix))
         self.assertEqual(
@@ -4383,7 +4409,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             )
 
         candidate_manifest = json.loads(
-            (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+            (historical_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -4398,10 +4424,12 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
@@ -4449,7 +4477,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
         repository = bundle["progress"]["repository"]
         candidate = "326476d69a3228f9dfcf64ff1dd056577bcbcf55"
         remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
@@ -4519,7 +4549,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
         candidate = "326476d69a3228f9dfcf64ff1dd056577bcbcf55"
         base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
         remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
@@ -4651,6 +4683,259 @@ class ProjectProgressContractTests(unittest.TestCase):
             subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
             subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
             self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(reverted_repo))
+
+
+    def test_c21_wsl_compose_runner_candidate_rebind_projection_binds_exact_contracts(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest_path = (
+            ROOT
+            / "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file(), "seq490 rebind manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_compose_runner_candidate_rebind_projection(
+                bundle, manifest
+            ),
+        )
+        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 489)
+        self.assertEqual(803027, len(prefix))
+        self.assertEqual(
+            "8F3067777D6B906E12A9B5E225F63DE3049CD27BD32B0449C48016327E008539",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "0D7CEDE2D5A539EA321872599D45398F6A3C55629EE2F9708AA98F59A7C5B26D",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:489])
+            ).hexdigest().upper(),
+        )
+        exact46 = checker.c21_wsl_compose_runner_candidate_committed_exact_paths()
+        exact11 = checker.c21_wsl_compose_runner_candidate_rebind_successor_paths()
+        exact48 = checker.c21_wsl_compose_runner_candidate_record_committed_exact_paths()
+        self.assertEqual((46, 11, 48), (len(exact46), len(exact11), len(exact48)))
+        for paths, expected in (
+            (exact46, "F538ABED26C9EB01210C14144CD861889BFF603175A72203CEA717DFC46C1C86"),
+            (exact11, "E439C0A394C536E1825E7C3FCF606BB7CC14D39C0DF29E7B60E648885EB6B110"),
+            (exact48, "2626990127D2830414F77371813D893143C51065B0ACF41D14EAD3FEBBF88288"),
+        ):
+            self.assertEqual(
+                expected,
+                hashlib.sha256(
+                    json.dumps(
+                        sorted(paths), ensure_ascii=False, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest().upper(),
+            )
+
+    def test_c21_wsl_compose_runner_candidate_rebind_routes_private_push_autonomously(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        progress = bundle["progress"]
+        repository = progress["repository"]
+        active = progress["wsl_early_validation"]
+        expected_status = "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH"
+        expected_action = (
+            "COMPLETE_SEQ490_REVIEW_THEN_AUTONOMOUS_PRIVATE_PUSH_"
+            "WITHOUT_SEPARATE_PROJECT_APPROVAL"
+        )
+        expected_safe_action = (
+            "seq490 review 완료 후 Main이 승인된 개발·테스트 범위의 private "
+            "candidate/control refs를 별도 프로젝트 승인 대기 없이 자동 push하고 "
+            "append-only 결과 checkpoint를 기록한 뒤 WSL 검증으로 진행한다. "
+            "C-01은 계속 차단한다."
+        )
+        self.assertEqual(expected_status, repository["push_status"])
+        self.assertEqual(expected_status, repository["candidate_push_status"])
+        self.assertEqual(expected_status, active["candidate_push_status"])
+        self.assertEqual(expected_action, active["next_action"])
+        self.assertEqual(expected_safe_action, progress["next_safe_action"])
+        handoff = checker.extract_handoff_summary(
+            (ROOT / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
+        )
+        self.assertEqual(expected_safe_action, handoff["next_safe_action"])
+        self.assertEqual(expected_status, handoff["repository_push_status"])
+        self.assertEqual(expected_status, handoff["candidate_push_status"])
+        self.assertEqual(expected_action, handoff["next_action"])
+        candidate = json.loads(
+            (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_policy = "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE"
+        self.assertEqual(expected_policy, candidate["authority"]["private_push_policy"])
+        self.assertEqual(expected_policy, manifest["private_push_policy"])
+
+    def test_c21_wsl_compose_runner_candidate_rebind_projection_rejects_mutations(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations: list[tuple[str, dict, dict, str]] = []
+        old_ref = copy.deepcopy(manifest)
+        old_ref["candidate_remote_ref"] = "refs/remotes/origin/candidates/c21-wsl-exact44"
+        mutations.append(("old_ref", bundle, old_ref, "C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID"))
+        wrong_parent = copy.deepcopy(manifest)
+        wrong_parent["candidate_parent_commit"] = "0" * 40
+        mutations.append(("wrong_parent", bundle, wrong_parent, "C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID"))
+        wrong_binding = copy.deepcopy(manifest)
+        wrong_binding["derived_correction_binding_sha256"] = "0" * 64
+        mutations.append(("binding", bundle, wrong_binding, "C21_WSL_COMPOSE_RUNNER_REBIND_BINDING_INVALID"))
+        for paths in (
+            manifest["record_successor_paths"][:-1],
+            manifest["record_successor_paths"] + ["arbitrary.txt"],
+            manifest["record_successor_paths"] + ["deploy/wsl/deploy.sh"],
+        ):
+            wrong_paths = copy.deepcopy(manifest)
+            wrong_paths["record_successor_paths"] = paths
+            mutations.append(("record_paths", bundle, wrong_paths, "C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID"))
+        external = copy.deepcopy(manifest)
+        external["push"] = "EXECUTED"
+        mutations.append(("external", bundle, external, "C21_WSL_COMPOSE_RUNNER_REBIND_BOUNDARY_INVALID"))
+        historical = copy.deepcopy(bundle)
+        historical["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("historical", historical, manifest, "C21_WSL_COMPOSE_RUNNER_REBIND_EVENTS_INVALID"))
+        for scenario, candidate_bundle, candidate_manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_compose_runner_candidate_rebind_projection(
+                        candidate_bundle, candidate_manifest
+                    ),
+                )
+
+    def test_c21_wsl_compose_runner_candidate_rebind_git_projection_is_exact(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        candidate = "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact46 = sorted(checker.c21_wsl_compose_runner_candidate_committed_exact_paths())
+        exact11 = sorted(checker.c21_wsl_compose_runner_candidate_rebind_successor_paths())
+        exact48 = sorted(checker.c21_wsl_compose_runner_candidate_record_committed_exact_paths())
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(common, actual_head=candidate, actual_changed_paths=exact46, control_descendant_paths=exact11, worktree_is_clean=False)
+        postcommit = dict(common, actual_head="f" * 40, actual_changed_paths=exact48, control_descendant_paths=exact11, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **precommit))
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for bad_paths in (exact11[:-1], exact11 + ["arbitrary.txt"], exact11 + ["deploy/wsl/deploy.sh"]):
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **dict(precommit, control_descendant_paths=bad_paths)),
+            )
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **dict(postcommit, control_runtime_record_commit_is_direct=False)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dict(postcommit, worktree_is_clean=False)),
+        )
+
+    def test_c21_wsl_compose_runner_candidate_rebind_real_git_requires_direct_exact11_child(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        candidate = "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(checker.c21_wsl_compose_runner_candidate_rebind_successor_paths())
+
+        def git(repo: Path, *args: str) -> str:
+            return subprocess.check_output(["git", *args], cwd=repo, text=True, encoding="utf-8").strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--no-checkout", "--no-hardlinks", str(ROOT), str(repo)], check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-B", branch, candidate], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "anvil-test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "update-ref", f"refs/remotes/origin/{branch}", remote], cwd=repo, check=True)
+            subprocess.run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            for relative in record_paths:
+                source = ROOT / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            valid_repo = create_fixture(temp_root, "valid")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq490 exact11 record"], cwd=valid_repo, check=True)
+            valid_head = git(valid_repo, "rev-parse", "HEAD")
+            self.assertEqual([candidate], git(valid_repo, "show", "-s", "--format=%P", valid_head).split())
+            self.assertEqual(48, len(git(valid_repo, "diff", "--name-only", base, valid_head).splitlines()))
+            self.assertEqual([], validate(valid_repo))
+
+            second_repo = create_fixture(temp_root, "second")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq490 record"], cwd=second_repo, check=True)
+            with (second_repo / "docs/WORK_STATUS.md").open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write("\nsecond descendant\n")
+            subprocess.run(["git", "add", "docs/WORK_STATUS.md"], cwd=second_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "second descendant"], cwd=second_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(second_repo))
+
+            merge_repo = create_fixture(temp_root, "merge")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq490 record"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-b", "side", candidate], cwd=merge_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "--allow-empty", "-m", "side parent"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", branch], cwd=merge_repo, check=True)
+            subprocess.run(["git", "merge", "--quiet", "--no-ff", "side", "-m", "merge record"], cwd=merge_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(merge_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(["git", "show", f"{candidate}:docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo)
+            )
+            subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
+            self.assertTrue(
+                {
+                    "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                }
+                & set(validate(reverted_repo))
+            )
 
 
 if __name__ == "__main__":

@@ -2240,10 +2240,30 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
     wsl_fresh_clone_rebind_manifest_path = (
         "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json"
     )
+    wsl_compose_runner_rebind_manifest_path = (
+        "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+    )
     wsl_control_manifest_path = "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
     wsl_postcommit_manifest_path = (
         "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json"
     )
+    if (
+        progress.get("event_sequence") == 490
+        and progress.get("last_event_id")
+        == "evt_c21_wsl_compose_runner_candidate_rebind_bound"
+        and current_ref.get("manifest_path") == wsl_compose_runner_rebind_manifest_path
+        and (progress.get("repository") or {}).get("branch")
+        == "codex/c21-operational-execution"
+    ):
+        try:
+            wsl_compose_runner_rebind_manifest = _load_json(
+                bundle["_root"] / wsl_compose_runner_rebind_manifest_path
+            )
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_wsl_compose_runner_candidate_rebind_projection(
+            bundle, wsl_compose_runner_rebind_manifest
+        ) == []
     if (
         progress.get("event_sequence") == 489
         and progress.get("last_event_id")
@@ -3676,6 +3696,36 @@ def c21_wsl_fresh_clone_candidate_record_committed_exact_paths() -> set[str]:
     }
 
 
+def c21_wsl_compose_runner_candidate_committed_exact_paths() -> set[str]:
+    """Return the immutable validated-base to compose-runner candidate exact46 set."""
+    return c21_wsl_fresh_clone_candidate_record_committed_exact_paths()
+
+
+def c21_wsl_compose_runner_candidate_rebind_successor_paths() -> set[str]:
+    """Return the only paths allowed in the seq490 direct-child record commit."""
+    return {
+        "deploy/wsl/CandidateReleaseManifest.json",
+        "deploy/wsl/candidate-manifest-guard.sh",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
+        "scripts/check_project_progress.py",
+        "tests/deploy/test_wsl_staging_harness.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_wsl_compose_runner_candidate_record_committed_exact_paths() -> set[str]:
+    """Return the validated-base to seq490 record/control child exact48 set."""
+    return c21_wsl_compose_runner_candidate_committed_exact_paths() | {
+        "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
+    }
+
+
 def raw_event_object_prefix_bytes(payload: bytes, count: int) -> bytes:
     """Return exact bytes from the first event object through object ``count``."""
     marker = payload.index(b'"events"')
@@ -4595,6 +4645,253 @@ def validate_c21_wsl_fresh_clone_candidate_rebind_projection(
             for row in live_rows
         ):
             errors.append("C21_WSL_FRESH_CLONE_REBIND_MANIFEST_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_wsl_compose_runner_candidate_rebind_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    """Validate seq490 without requiring its not-yet-known record commit SHA."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    repository = progress.get("repository") or {}
+    active = progress.get("wsl_early_validation") or {}
+    base_sha = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+    approved_origin_sha = "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"
+    runtime_sha = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+    prior_candidate_sha = "326476d69a3228f9dfcf64ff1dd056577bcbcf55"
+    predecessor_control_sha = "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+    candidate_sha = "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+    remote_sha = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+    candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact46"
+    control_ref = "refs/remotes/origin/codex/c21-operational-execution"
+    manifest_path = "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json"
+    approval_path = "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md"
+    seq489_manifest_path = "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json"
+    seq489_digest_path = "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json"
+    candidate_manifest_path = "deploy/wsl/CandidateReleaseManifest.json"
+    binding_sha = "FFEDB1B478DC0493CE3FC585A5324361EA82D83F2E2FCF6D2398CB9ACCB47F9C"
+    predecessor_binding_sha = "7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863"
+    private_push_policy = "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE"
+    push_status = "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH"
+    next_action = (
+        "COMPLETE_SEQ490_REVIEW_THEN_AUTONOMOUS_PRIVATE_PUSH_"
+        "WITHOUT_SEPARATE_PROJECT_APPROVAL"
+    )
+    next_safe_action = (
+        "seq490 review 완료 후 Main이 승인된 개발·테스트 범위의 private "
+        "candidate/control refs를 별도 프로젝트 승인 대기 없이 자동 push하고 "
+        "append-only 결과 checkpoint를 기록한 뒤 WSL 검증으로 진행한다. "
+        "C-01은 계속 차단한다."
+    )
+    expected_contracts = {
+        "correction_delta": {"from_commit": predecessor_control_sha, "to_commit": candidate_sha, "path_count": 2, "path_list_sha256": "BCF8BC3E409715FF2E470D3BEB977E8E410B388BAC253114310D264FD783AA0F"},
+        "runtime_to_candidate": {"from_commit": runtime_sha, "to_commit": candidate_sha, "path_count": 15, "path_list_sha256": "63CE0E78CC941DD0480F619EEA858B1604EFF7B3722BA88767295CFAC6879EF9"},
+        "prior_candidate_to_candidate": {"from_commit": prior_candidate_sha, "to_commit": candidate_sha, "path_count": 12, "path_list_sha256": "5BC35F754BFCF269B1A28C4414AB4CAB8A0A42C6D977DA0866AC696221B45A9C"},
+        "candidate_cumulative": {"from_commit": base_sha, "to_commit": candidate_sha, "path_count": 46, "path_list_sha256": "F538ABED26C9EB01210C14144CD861889BFF603175A72203CEA717DFC46C1C86"},
+        "record_successor": {"from_commit": candidate_sha, "to_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT", "path_count": 11, "path_list_sha256": "E439C0A394C536E1825E7C3FCF606BB7CC14D39C0DF29E7B60E648885EB6B110"},
+        "repository_postcommit": {"from_commit": base_sha, "to_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT", "path_count": 48, "path_list_sha256": "2626990127D2830414F77371813D893143C51065B0ACF41D14EAD3FEBBF88288"},
+    }
+
+    def git_path_contract(from_sha: str, to_sha: str) -> tuple[int, str, set[str]]:
+        paths = set(_split_git_paths(_git_value(root, "diff", "--name-only", from_sha, to_sha)))
+        return len(paths), hashlib.sha256(canonical_json_bytes(sorted(paths))).hexdigest().upper(), paths
+
+    errors: list[str] = []
+    try:
+        actual_contracts = [git_path_contract(row["from_commit"], row["to_commit"]) for row in list(expected_contracts.values())[:4]]
+        candidate_parents = (_git_value(root, "show", "-s", "--format=%P", candidate_sha) or "").split()
+        candidate_event_bytes = subprocess.check_output(["git", "show", f"{candidate_sha}:docs/progress/progress-events.json"], cwd=root)
+        committed_prefix = raw_event_object_prefix_bytes(candidate_event_bytes, 489)
+        current_prefix = raw_event_object_prefix_bytes((root / "docs/progress/progress-events.json").read_bytes(), 489)
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        actual_contracts = []
+        candidate_parents = []
+        committed_prefix, current_prefix = b"", b"invalid"
+    expected_values = [(row["path_count"], row["path_list_sha256"]) for row in list(expected_contracts.values())[:4]]
+    if (
+        [(count, digest) for count, digest, _ in actual_contracts] != expected_values
+        or len(actual_contracts) != 4
+        or actual_contracts[-1][2] != c21_wsl_compose_runner_candidate_committed_exact_paths()
+        or candidate_parents != [predecessor_control_sha]
+    ):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_REPOSITORY_INVALID")
+
+    try:
+        candidate_manifest = _load_json(root / candidate_manifest_path)
+        predecessor_manifest = json.loads(subprocess.check_output(["git", "show", f"{candidate_sha}:{seq489_manifest_path}"], cwd=root))
+        predecessor_candidate_manifest = json.loads(subprocess.check_output(["git", "show", f"{predecessor_control_sha}:{candidate_manifest_path}"], cwd=root))
+    except (OSError, subprocess.CalledProcessError, json.JSONDecodeError, TypeError):
+        candidate_manifest = {}
+        predecessor_manifest = {}
+        predecessor_candidate_manifest = {}
+    authority = candidate_manifest.get("authority") or {}
+    derived = authority.get("derived_binding")
+    derived_digest = hashlib.sha256(canonical_json_bytes(derived)).hexdigest().upper() if isinstance(derived, Mapping) else ""
+    if any((
+        not isinstance(derived, Mapping),
+        len(canonical_json_bytes(derived)) != 985 if isinstance(derived, Mapping) else True,
+        derived_digest != binding_sha,
+        authority.get("derived_binding_sha256") != binding_sha,
+        manifest.get("derived_correction_binding") != derived,
+        manifest.get("derived_correction_binding_sha256") != binding_sha,
+        manifest.get("predecessor_derived_binding_sha256") != predecessor_binding_sha,
+        predecessor_manifest.get("derived_correction_binding_sha256") != predecessor_binding_sha,
+        ((predecessor_candidate_manifest.get("authority") or {}).get("derived_binding_sha256")) != predecessor_binding_sha,
+    )):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_BINDING_INVALID")
+    if any((
+        candidate_manifest.get("status") != "APPROVED_FOR_STAGING_VALIDATION",
+        (candidate_manifest.get("source") or {}).get("commit") != candidate_sha,
+        (candidate_manifest.get("source") or {}).get("remote_ref") != candidate_ref,
+        (candidate_manifest.get("source") or {}).get("working_tree") != "CLEAN",
+        authority.get("approval_id") != "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
+        authority.get("approval_path") != approval_path,
+        authority.get("approval_artifact_sha256") != "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
+        authority.get("approval_binding_sha256") != "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
+        authority.get("private_push_policy") != private_push_policy,
+        candidate_manifest.get("exclusions") != ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"],
+        (candidate_manifest.get("rollback") or {}).get("approved_commits") != [candidate_sha],
+    )):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_CANDIDATE_INVALID")
+
+    if any((
+        progress.get("event_sequence") != 490,
+        progress.get("last_event_id") != "evt_c21_wsl_compose_runner_candidate_rebind_bound",
+        progress.get("status") != "ACTIVE",
+        (progress.get("current_progress_evidence_ref") or {}) != {"package_id": "C-21", "path": digest_path, "manifest_path": manifest_path},
+        ((progress.get("next_successor_work_package") or {}).get("status")) != "ACTIVE_COMPOSE_RUNNER_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH",
+        active.get("event_sequence") != 490,
+        active.get("status") != "ACTIVE_COMPOSE_RUNNER_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH",
+        active.get("implementation_commit") != candidate_sha,
+        active.get("record_control_commit") != "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        progress.get("next_safe_action") != next_safe_action,
+        (bundle.get("handoff") or {}).get("next_safe_action") != next_safe_action,
+        (bundle.get("handoff") or {}).get("repository_push_status") != push_status,
+        (bundle.get("handoff") or {}).get("candidate_push_status") != push_status,
+        (bundle.get("handoff") or {}).get("next_action") != next_action,
+        active.get("candidate_push_status") != push_status,
+        active.get("next_action") != next_action,
+    )):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_PROJECTION_INVALID")
+    if any((
+        repository.get("validated_base_commit") != base_sha,
+        repository.get("local_head") != candidate_sha,
+        repository.get("candidate_commit") != candidate_sha,
+        repository.get("candidate_parent_commit") != predecessor_control_sha,
+        repository.get("predecessor_control_commit") != predecessor_control_sha,
+        repository.get("predecessor_runtime_commit") != runtime_sha,
+        repository.get("predecessor_candidate_commit") != prior_candidate_sha,
+        repository.get("branch") != "codex/c21-operational-execution",
+        repository.get("upstream") != "origin/codex/c21-operational-execution",
+        repository.get("remote_head") != remote_sha,
+        repository.get("feature_remote_head") != remote_sha,
+        repository.get("candidate_remote_ref") != candidate_ref,
+        repository.get("control_remote_ref") != control_ref,
+        repository.get("push_status") != push_status,
+        repository.get("candidate_push_status") != push_status,
+        repository.get("head_relation") != "FEATURE_WORKTREE_C21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_ACTIVE_EXACT46_RECORD11",
+        set(repository.get("exact_allowed_paths") or []) != c21_wsl_compose_runner_candidate_committed_exact_paths(),
+        set(repository.get("compose_runner_candidate_rebind_successor_paths") or []) != c21_wsl_compose_runner_candidate_rebind_successor_paths(),
+    )):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_REPOSITORY_INVALID")
+
+    if (
+        len(events) != 490
+        or committed_prefix != current_prefix
+        or len(current_prefix) != 803027
+        or hashlib.sha256(current_prefix).hexdigest().upper() != "8F3067777D6B906E12A9B5E225F63DE3049CD27BD32B0449C48016327E008539"
+        or hashlib.sha256(canonical_json_bytes(events[:489])).hexdigest().upper() != "0D7CEDE2D5A539EA321872599D45398F6A3C55629EE2F9708AA98F59A7C5B26D"
+        or events[-1].get("event_id") != "evt_c21_wsl_compose_runner_candidate_rebind_bound"
+    ):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_EVENTS_INVALID")
+    details = events[-1].get("details") if events else {}
+    if any((
+        not isinstance(details, Mapping),
+        (details or {}).get("branch") != "codex/c21-operational-execution",
+        (details or {}).get("upstream") != "origin/codex/c21-operational-execution",
+        (details or {}).get("local_head") != candidate_sha,
+        (details or {}).get("remote_head") != remote_sha,
+        (details or {}).get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE,
+        (details or {}).get("head_relation") != "FEATURE_WORKTREE_C21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_ACTIVE_EXACT46_RECORD11",
+        set((details or {}).get("exact_allowed_paths") or []) != c21_wsl_compose_runner_candidate_committed_exact_paths(),
+        (details or {}).get("candidate_commit") != candidate_sha,
+        (details or {}).get("candidate_parent_commit") != predecessor_control_sha,
+        (details or {}).get("predecessor_control_commit") != predecessor_control_sha,
+        (details or {}).get("runtime_commit") != runtime_sha,
+        (details or {}).get("prior_candidate_commit") != prior_candidate_sha,
+        (details or {}).get("approved_origin_candidate_commit") != approved_origin_sha,
+        (details or {}).get("validated_base_commit") != base_sha,
+        (details or {}).get("path_contracts") != expected_contracts,
+        set((details or {}).get("candidate_exact_paths") or []) != c21_wsl_compose_runner_candidate_committed_exact_paths(),
+        set((details or {}).get("record_successor_paths") or []) != c21_wsl_compose_runner_candidate_rebind_successor_paths(),
+        (details or {}).get("postcommit_exact_path_count") != 48,
+        (details or {}).get("postcommit_exact_path_list_sha256") != "2626990127D2830414F77371813D893143C51065B0ACF41D14EAD3FEBBF88288",
+        (details or {}).get("candidate_remote_ref") != candidate_ref,
+        (details or {}).get("control_remote_ref") != control_ref,
+        (details or {}).get("derived_binding_classification") != "MAIN_BOUND_INTERNAL_IMPLEMENTATION_CORRECTION",
+        (details or {}).get("derived_binding_sha256") != binding_sha,
+        (details or {}).get("predecessor_derived_binding_sha256") != predecessor_binding_sha,
+        (details or {}).get("historical_event_sequence") != 489,
+        (details or {}).get("historical_raw_event_bytes") != 803027,
+        (details or {}).get("historical_raw_events_sha256") != "8F3067777D6B906E12A9B5E225F63DE3049CD27BD32B0449C48016327E008539",
+        (details or {}).get("historical_events_sha256") != "0D7CEDE2D5A539EA321872599D45398F6A3C55629EE2F9708AA98F59A7C5B26D",
+        (details or {}).get("record_control_commit") != "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+    )):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_EVENTS_INVALID")
+    boundary_fields = ("push", "deployment", "database", "volume_cleanup", "telegram", "provider")
+    if (
+        any((details or {}).get(field) != "NOT_EXECUTED" for field in boundary_fields)
+        or (details or {}).get("c01_status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+        or any(manifest.get(field) != "NOT_EXECUTED" for field in boundary_fields)
+        or manifest.get("c01_status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+    ):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_BOUNDARY_INVALID")
+
+    candidate_rows = manifest.get("candidate_blob_checksums")
+    predecessor_rows = manifest.get("predecessor_raw_checksums")
+    live_rows = manifest.get("raw_checksums")
+    if any((
+        manifest.get("artifact_id") != "C21-WSL-COMPOSE-RUNNER-CANDIDATE-REBIND-20260905",
+        manifest.get("manifest_type") != "WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_PROJECTION",
+        manifest.get("event_sequence") != 490,
+        manifest.get("historical_event_sequence") != 489,
+        manifest.get("historical_raw_event_bytes") != 803027,
+        manifest.get("historical_raw_events_sha256") != "8F3067777D6B906E12A9B5E225F63DE3049CD27BD32B0449C48016327E008539",
+        manifest.get("historical_events_sha256") != "0D7CEDE2D5A539EA321872599D45398F6A3C55629EE2F9708AA98F59A7C5B26D",
+        manifest.get("validated_base_commit") != base_sha,
+        manifest.get("approved_origin_candidate_commit") != approved_origin_sha,
+        manifest.get("prior_candidate_commit") != prior_candidate_sha,
+        manifest.get("runtime_commit") != runtime_sha,
+        manifest.get("predecessor_control_commit") != predecessor_control_sha,
+        manifest.get("candidate_parent_commit") != predecessor_control_sha,
+        manifest.get("candidate_commit") != candidate_sha,
+        manifest.get("candidate_remote_ref") != candidate_ref,
+        manifest.get("control_remote_ref") != control_ref,
+        manifest.get("path_contracts") != expected_contracts,
+        set(manifest.get("candidate_exact_paths") or []) != c21_wsl_compose_runner_candidate_committed_exact_paths(),
+        set(manifest.get("record_successor_paths") or []) != c21_wsl_compose_runner_candidate_rebind_successor_paths(),
+        manifest.get("self_reference") is not False,
+        manifest.get("record_control_commit") != "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        manifest.get("private_push_policy") != private_push_policy,
+        not isinstance(candidate_rows, list),
+        {row.get("path") for row in candidate_rows or [] if isinstance(row, Mapping)} != {"deploy/wsl/common.sh", "tests/deploy/test_wsl_staging_harness.py"},
+        not isinstance(predecessor_rows, list),
+        {row.get("path") for row in predecessor_rows or [] if isinstance(row, Mapping)} != {approval_path, seq489_manifest_path, seq489_digest_path},
+        not isinstance(live_rows, list),
+        {row.get("path") for row in live_rows or [] if isinstance(row, Mapping)} != {candidate_manifest_path, digest_path},
+        any((row or {}).get("path") == manifest_path for row in [*(candidate_rows or []), *(predecessor_rows or []), *(live_rows or [])]),
+    )):
+        errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID")
+    else:
+        if any(not git_blob_row_matches(root, candidate_sha, row) for row in candidate_rows):
+            errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID")
+        if any(not git_blob_row_matches(root, candidate_sha, row) for row in predecessor_rows):
+            errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID")
+        if any(not portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256")) for row in live_rows):
+            errors.append("C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID")
     return sorted(set(errors))
 
 
@@ -9149,6 +9446,11 @@ def validate_repository_projection(
             == "FEATURE_WORKTREE_C21_WSL_FRESH_CLONE_CANDIDATE_REBIND_ACTIVE_EXACT44_RECORD11"
             and (progress or {}).get("event_sequence") == 489
         )
+        or (
+            repository.get("head_relation")
+            == "FEATURE_WORKTREE_C21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_ACTIVE_EXACT46_RECORD11"
+            and (progress or {}).get("event_sequence") == 490
+        )
     )
     if (
         repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
@@ -9783,6 +10085,16 @@ def validate_repository_projection(
                 and ((progress or {}).get("wsl_early_validation") or {}).get("status")
                 == "ACTIVE_FRESH_CLONE_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH"
             )
+            or (
+                set(allowed)
+                == c21_wsl_compose_runner_candidate_committed_exact_paths()
+                and len(allowed) == 46
+                and (progress or {}).get("event_sequence") == 490
+                and (progress or {}).get("last_event_id")
+                == "evt_c21_wsl_compose_runner_candidate_rebind_bound"
+                and ((progress or {}).get("wsl_early_validation") or {}).get("status")
+                == "ACTIVE_COMPOSE_RUNNER_CANDIDATE_REBIND_PENDING_RECORD_COMMIT_AND_PRIVATE_PUSH"
+            )
         )
     )
     if any(not _is_evidence_only_path(path) for path in allowed) and not c21_wsl_control_projection and not c21_wsl_active_projection and not c21_wsl_readiness_projection and not c21_ysna_staging_decision_projection and not c21_ops_r2_conninfo_r4_projection and not c21_ops_r2_main_reconciliation_projection and not c21_ops_r2_release_rebind_projection and not c21_ops_r2_projection and not c21_backup_portability_accepted_projection and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
@@ -10113,9 +10425,53 @@ def validate_repository_projection(
         and actual_feature_remote_head
         == "ca92b7845eda803cff3c432799642e4f9243d4d6"
     )
+    c21_wsl_compose_runner_rebind_precommit_valid = (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 490
+        and repository.get("local_head")
+        == "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+        and actual_head == repository.get("local_head")
+        and control_is_ancestor
+        and actual_path_set == c21_wsl_compose_runner_candidate_committed_exact_paths()
+        and set(control_descendant_paths or [])
+        == c21_wsl_compose_runner_candidate_rebind_successor_paths()
+        and not worktree_is_clean
+        and actual_branch == "codex/c21-operational-execution"
+        and actual_upstream == "origin/codex/c21-operational-execution"
+        and repository.get("remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and repository.get("feature_remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_feature_remote_head
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+    )
+    c21_wsl_compose_runner_rebind_postcommit_descendant_valid = (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 490
+        and repository.get("local_head")
+        == "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+        and actual_head != repository.get("local_head")
+        and control_is_ancestor
+        and control_runtime_record_commit_is_direct
+        and actual_path_set
+        == c21_wsl_compose_runner_candidate_record_committed_exact_paths()
+        and set(control_descendant_paths or [])
+        == c21_wsl_compose_runner_candidate_rebind_successor_paths()
+        and worktree_is_clean
+        and actual_branch == "codex/c21-operational-execution"
+        and actual_upstream == "origin/codex/c21-operational-execution"
+        and repository.get("remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and repository.get("feature_remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_feature_remote_head
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+    )
     if (
         c21_wsl_control_projection
-        and (progress or {}).get("event_sequence") in {488, 489}
+        and (progress or {}).get("event_sequence") in {488, 489, 490}
         and actual_head != repository.get("local_head")
         and control_is_ancestor
         and set(control_descendant_paths or [])
@@ -10123,6 +10479,8 @@ def validate_repository_projection(
             c21_wsl_control_runtime_successor_paths()
             if (progress or {}).get("event_sequence") == 488
             else c21_wsl_fresh_clone_candidate_rebind_successor_paths()
+            if (progress or {}).get("event_sequence") == 489
+            else c21_wsl_compose_runner_candidate_rebind_successor_paths()
         )
         and worktree_is_clean
         and actual_branch == "codex/c21-operational-execution"
@@ -10138,6 +10496,8 @@ def validate_repository_projection(
             c21_wsl_control_runtime_postcommit_descendant_valid
             if (progress or {}).get("event_sequence") == 488
             else c21_wsl_fresh_clone_rebind_postcommit_descendant_valid
+            if (progress or {}).get("event_sequence") == 489
+            else c21_wsl_compose_runner_rebind_postcommit_descendant_valid
         )
     ):
         errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
@@ -10168,6 +10528,8 @@ def validate_repository_projection(
         and not c21_wsl_control_runtime_postcommit_descendant_valid
         and not c21_wsl_fresh_clone_rebind_precommit_valid
         and not c21_wsl_fresh_clone_rebind_postcommit_descendant_valid
+        and not c21_wsl_compose_runner_rebind_precommit_valid
+        and not c21_wsl_compose_runner_rebind_postcommit_descendant_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     if (
@@ -10184,6 +10546,14 @@ def validate_repository_projection(
         and actual_head == repository.get("local_head")
         and not worktree_is_clean
         and not c21_wsl_fresh_clone_rebind_precommit_valid
+    ):
+        errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+    if (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 490
+        and actual_head == repository.get("local_head")
+        and not worktree_is_clean
+        and not c21_wsl_compose_runner_rebind_precommit_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -10267,6 +10637,8 @@ def validate_repository_projection(
         or c21_wsl_control_runtime_postcommit_descendant_valid
         or c21_wsl_fresh_clone_rebind_precommit_valid
         or c21_wsl_fresh_clone_rebind_postcommit_descendant_valid
+        or c21_wsl_compose_runner_rebind_precommit_valid
+        or c21_wsl_compose_runner_rebind_postcommit_descendant_valid
         or (
             c21_wsl_control_projection
             and actual_path_set == set(allowed)
@@ -10282,6 +10654,7 @@ def validate_repository_projection(
         and not c21_wsl_control_postcommit_descendant_valid
         and not c21_wsl_control_runtime_postcommit_descendant_valid
         and not c21_wsl_fresh_clone_rebind_postcommit_descendant_valid
+        and not c21_wsl_compose_runner_rebind_postcommit_descendant_valid
     ):
         errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
     if (
@@ -10292,12 +10665,14 @@ def validate_repository_projection(
         errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
     if (
         c21_wsl_control_projection
-        and (progress or {}).get("event_sequence") in {488, 489}
+        and (progress or {}).get("event_sequence") in {488, 489, 490}
         and not worktree_is_clean
         and not (
             c21_wsl_control_runtime_precommit_valid
             if (progress or {}).get("event_sequence") == 488
             else c21_wsl_fresh_clone_rebind_precommit_valid
+            if (progress or {}).get("event_sequence") == 489
+            else c21_wsl_compose_runner_rebind_precommit_valid
         )
     ):
         errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
@@ -10361,7 +10736,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     )
     control_runtime_record_commit_is_direct = False
     if (
-        bundle["progress"].get("event_sequence") in {488, 489}
+        bundle["progress"].get("event_sequence") in {488, 489, 490}
         and actual_head
         and actual_head != projected_local_head
     ):
@@ -10445,7 +10820,22 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 )
                 == c21_wsl_fresh_clone_candidate_rebind_successor_paths()
             )
-            if dirty_paths and fresh_clone_rebind_precommit_projection:
+            compose_runner_rebind_precommit_projection = (
+                bundle["progress"].get("event_sequence") == 490
+                and actual_head == repository.get("local_head")
+                and set(changed_paths)
+                == c21_wsl_compose_runner_candidate_committed_exact_paths()
+                and set(dirty_paths)
+                == c21_wsl_compose_runner_candidate_rebind_successor_paths()
+                and set(
+                    repository.get("compose_runner_candidate_rebind_successor_paths")
+                    or []
+                )
+                == c21_wsl_compose_runner_candidate_rebind_successor_paths()
+            )
+            if dirty_paths and compose_runner_rebind_precommit_projection:
+                control_descendant_paths = dirty_paths
+            elif dirty_paths and fresh_clone_rebind_precommit_projection:
                 control_descendant_paths = dirty_paths
             elif dirty_paths and control_runtime_precommit_projection:
                 control_descendant_paths = dirty_paths
@@ -10984,6 +11374,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json":
             errors.extend(
                 validate_c21_wsl_fresh_clone_candidate_rebind_projection(bundle, manifest)
+            )
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json":
+            errors.extend(
+                validate_c21_wsl_compose_runner_candidate_rebind_projection(bundle, manifest)
             )
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json":
             try:
