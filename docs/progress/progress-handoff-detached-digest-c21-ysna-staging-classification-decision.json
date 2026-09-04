@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-YSNA-STAGING-CLASSIFICATION-DECISION-DIGEST-20260904",
+  "package_id": "C-21/LR-02C/OPS-R2",
+  "event_sequence": 482,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 81892,
+    "file_sha256": "2067B0F786F0F04D57C78ED397AD3F06D8B853BDF3CD116E44BA8FF8013BDED2",
+    "canonical_json_sha256": "26029F34F8AB2835B1AC66259BDB17BB18ADC0CCB95A2B0D7A2B518CCEE7B72A"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 145164,
+    "file_sha256": "23ED624D20C69887DABE6F1BF5B497BA6234BF73D6BE1DD11729CD4BAD24DA74",
+    "machine_summary_canonical_sha256": "1C597FE4349DF1694462D7612CCF5442E80366E074BA748146164270C7E5C3BA"
+  },
+  "created_at": "2026-09-04T13:55:26+09:00",
+  "scope": "ysna-server and anvil.sinsan.kr are staging and user-acceptance targets until Shinsan explicitly declares production transition; seq1-481 and prior evidence preserved; no server, DB, DNS, TLS, Secret, deletion, or main-merge action executed."
+}

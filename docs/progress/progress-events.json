@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 481,
+  "last_sequence": 482,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -16002,7 +16002,16 @@
       "actor": "main-agent-eoul",
       "subject_ref": "C-21/LR-02C/OPS-R2",
       "details": {"branch":"codex/c21-operational-execution","upstream":"origin/codex/c21-operational-execution","observed_at":"2026-09-04T12:05:02+09:00","reason":"BACKUP_ATTEMPT2_FAILURE_ACCEPTED_AND_CONNINFO_R4_EXACT13_REWORK_ACTIVE","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"eef349682ff5598e3488c9e75163c5e0a99a0bdb","local_head":"eef349682ff5598e3488c9e75163c5e0a99a0bdb","feature_remote":"origin/codex/c21-operational-execution","feature_remote_head":"970680a95a7e2471effc903239548948b3aa6263","remote_head":"970680a95a7e2471effc903239548948b3aa6263","head_relation":"FEATURE_WORKTREE_ACTIVE_OPS_R2_CONNINFO_R4_EXACT13","push_status":"FEATURE_BASE_AHEAD_OF_REMOTE_OPS_R2_CONNINFO_R4_ACTIVE","repository_exact_path_count":13,"exact_allowed_paths":["deploy/ysna/backup-c21-db.sh","docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md","scripts/check_project_progress.py","tests/deploy/test_c21_lr02c_operational_contract.py","tests/tooling/test_project_progress.py"],"next_work_package":"C-21/LR-02C/OPS-R2","next_package_status":"ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4","release_manifest_rebind":"NOT_EXECUTED","backup_attempt3":"NOT_EXECUTED","deployment_status":"NOT_EXECUTED","telegram_and_provider":"USER_VERIFICATION_PENDING","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
+    },
+    {
+      "event_id": "evt_c21_ysna_staging_classification_decision_checkpoint",
+      "sequence": 482,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-04T13:55:26+09:00",
+      "actor": "human-shinsan",
+      "subject_ref": "C-21/YSNA-ENVIRONMENT-CLASSIFICATION",
+      "details": {"branch":"codex/c21-operational-execution","upstream":"origin/codex/c21-operational-execution","observed_at":"2026-09-04T13:55:26+09:00","reason":"YSNA_AND_ANVIL_DOMAIN_CLASSIFIED_AS_STAGING_USER_ACCEPTANCE_UNTIL_EXPLICIT_PRODUCTION_DECLARATION","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"eef349682ff5598e3488c9e75163c5e0a99a0bdb","local_head":"871513d46a19f864190a977380a4c9c5b5d56573","feature_remote":"origin/codex/c21-operational-execution","feature_remote_head":"970680a95a7e2471effc903239548948b3aa6263","remote_head":"970680a95a7e2471effc903239548948b3aa6263","head_relation":"FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15","push_status":"FEATURE_CHECKPOINT_PENDING_C21_YSNA_STAGING_DECISION","exact_allowed_paths":["deploy/ysna/backup-c21-db.sh","docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json","docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json","docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md","scripts/check_project_progress.py","tests/deploy/test_c21_lr02c_operational_contract.py","tests/tooling/test_project_progress.py"],"decision_id":"APPROVAL-20260904-C21-YSNA-STAGING-001","classification":"STAGING_USER_ACCEPTANCE_UNTIL_EXPLICIT_PRODUCTION_DECLARATION","targets":["ysna-server","anvil.sinsan.kr"],"effective_until":"SHINSAN_EXPLICIT_PRODUCTION_TRANSITION_DECLARATION","historical_evidence":"PRESERVED_UNCHANGED","checkpoint_base":"871513d46a19f864190a977380a4c9c5b5d56573","repository_exact_path_count":15,"server_redeploy":"NOT_EXECUTED","server_restart":"NOT_EXECUTED","database_change":"NOT_EXECUTED","dns_change":"NOT_EXECUTED","tls_change":"NOT_EXECUTED","secret_change":"NOT_EXECUTED","existing_material_deletion":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
     }
   ],
-  "last_event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_exact13_repository_reconciled"
+  "last_event_id": "evt_c21_ysna_staging_classification_decision_checkpoint"
 }

@@ -3187,12 +3187,12 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         bundle = checker.load_bundle(ROOT)
         self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
-        self.assertEqual(481, bundle["progress"]["event_sequence"])
-        self.assertEqual(13, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
+        self.assertEqual(482, bundle["progress"]["event_sequence"])
+        self.assertEqual(15, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
         self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
         self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
         arbitrary_later = copy.deepcopy(bundle)
-        arbitrary_later["progress"]["event_sequence"] = 482
+        arbitrary_later["progress"]["event_sequence"] = 483
         self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, arbitrary_later))
         widened = copy.deepcopy(bundle)
         widened["progress"]["next_work_package"]["status"] = "READY"
@@ -3297,31 +3297,52 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_lr02c_ops_r2_main_reconciliation_projection(manifest, arbitrary_path),
         )
 
-        conninfo_manifest = json.loads(
+        decision_manifest = json.loads(
             (
                 ROOT
-                / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json"
+                / "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_lr02c_ops_r2_conninfo_r4_projection(conninfo_manifest, bundle))
+        self.assertEqual([], checker.validate_c21_ysna_staging_decision_projection(decision_manifest, bundle))
         arbitrary_branch = copy.deepcopy(bundle)
         arbitrary_branch["progress"]["repository"]["branch"] = "codex/arbitrary"
         self.assertIn(
-            "C21_OPS_R2_CONNINFO_R4_REPOSITORY_INVALID",
-            checker.validate_c21_lr02c_ops_r2_conninfo_r4_projection(conninfo_manifest, arbitrary_branch),
+            "C21_YSNA_STAGING_DECISION_REPOSITORY_INVALID",
+            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, arbitrary_branch),
         )
         arbitrary_sequence = copy.deepcopy(bundle)
-        arbitrary_sequence["progress"]["event_sequence"] = 482
+        arbitrary_sequence["progress"]["event_sequence"] = 483
         self.assertIn(
-            "C21_OPS_R2_CONNINFO_R4_PROJECTION_INVALID",
-            checker.validate_c21_lr02c_ops_r2_conninfo_r4_projection(conninfo_manifest, arbitrary_sequence),
+            "C21_YSNA_STAGING_DECISION_PROJECTION_INVALID",
+            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, arbitrary_sequence),
         )
         arbitrary_path = copy.deepcopy(bundle)
         arbitrary_path["progress"]["repository"]["exact_allowed_paths"].append("deploy/ysna/compose.production.yml")
         self.assertIn(
-            "C21_OPS_R2_CONNINFO_R4_REPOSITORY_INVALID",
-            checker.validate_c21_lr02c_ops_r2_conninfo_r4_projection(conninfo_manifest, arbitrary_path),
+            "C21_YSNA_STAGING_DECISION_REPOSITORY_INVALID",
+            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, arbitrary_path),
         )
+        changed_decision = copy.deepcopy(bundle)
+        changed_decision["progress"]["environment_classification_decision"]["classification"] = "PRODUCTION"
+        self.assertIn(
+            "C21_YSNA_STAGING_DECISION_BOUNDARY_INVALID",
+            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, changed_decision),
+        )
+        repository = bundle["progress"]["repository"]
+        checkpoint_head = "1" * 40
+        checkpoint_errors = checker.validate_repository_projection(
+            repository,
+            actual_head=checkpoint_head,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=True,
+            progress=bundle["progress"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", checkpoint_errors)
 
 if __name__ == "__main__":
     unittest.main()

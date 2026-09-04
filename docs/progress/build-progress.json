@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-lr02c-ops-r2-conninfo-r4-exact13-20260904",
-  "event_sequence": 481,
-  "updated_at": "2026-09-04T12:05:02+09:00",
-  "last_event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_exact13_repository_reconciled",
+  "snapshot_id": "snapshot-c21-ysna-staging-classification-decision-20260904",
+  "event_sequence": 482,
+  "updated_at": "2026-09-04T13:55:26+09:00",
+  "last_event_id": "evt_c21_ysna_staging_classification_decision_checkpoint",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -1155,7 +1155,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-        "sha256": "3B142AD31C09B86123A1FC0DCA2F2B066E43BB16C9FC871F11A8FC5027C99A0A"
+        "sha256": "8D6743D3A0C434252F5FDA29EC9AC0B9453AC19C51996FE01D1D551420EBE19A"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1175,7 +1175,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-        "sha256": "3C29251DB50D3C83B39BB6B6FB48088DDBD030A3C8D06EB0376FC3BA10B54FB4"
+        "sha256": "5818791A6F86864FE6E703796FA372445B80DE2DDF1DCC1A24681F1F985C250C"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1203,7 +1203,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1F02C6DAF3F84F7CBDB40C571C9689C63C346D766039BD6B46FA06E42335C41D"
+        "sha256": "29A7858D930058521370ED652910EC3D2150D2F6D446B275C0C759B77EA9610E"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1258,7 +1258,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "OPS-R2 conninfo R4 exact13 구현을 검증·checkpoint commit·feature push한다. 새 ReleaseManifest 재결박 전 backup attempt 3·deploy는 금지하며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
+  "next_safe_action": "seq482 ysna staging 분류 checkpoint와 exact15 projection을 검증·checkpoint commit한다. 신산님의 별도 운영 전환 선언 전 ysna-server와 anvil.sinsan.kr는 staging·인수검증 환경이며 서버·DB·DNS·TLS·Secret·기존 자료·main은 변경하지 않는다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1370,31 +1370,33 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_CONNINFO_R4_EXACT13",
+    "head_relation": "FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "970680a95a7e2471effc903239548948b3aa6263",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "970680a95a7e2471effc903239548948b3aa6263",
-    "push_status": "FEATURE_BASE_AHEAD_OF_REMOTE_OPS_R2_CONNINFO_R4_ACTIVE",
+    "push_status": "FEATURE_CHECKPOINT_PENDING_C21_YSNA_STAGING_DECISION",
     "exact_allowed_paths": [
       "deploy/ysna/backup-c21-db.sh",
       "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
       "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+      "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+      "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
       "scripts/check_project_progress.py",
       "tests/deploy/test_c21_lr02c_operational_contract.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-09-04T12:05:02+09:00",
-    "worktree_status": "C21_OPS_R2_CONNINFO_R4_ACTIVE: exact13 against clean eef3496; backup attempt3, release rebind, deploy not executed",
-    "local_head": "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+    "observed_at": "2026-09-04T13:55:26+09:00",
+    "worktree_status": "C21_YSNA_STAGING_DECISION_CHECKPOINT: seq1-481 preserved; exact15 against eef3496 including committed R4 exact13 plus decision manifest/digest; external changes not executed",
+    "local_head": "871513d46a19f864190a977380a4c9c5b5d56573"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1705,8 +1707,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
-    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+    "manifest_path": "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1727,7 +1729,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "1F02C6DAF3F84F7CBDB40C571C9689C63C346D766039BD6B46FA06E42335C41D"
+      "sha256": "29A7858D930058521370ED652910EC3D2150D2F6D446B275C0C759B77EA9610E"
     }
   },
   "next_work_package": {
@@ -1814,7 +1816,7 @@
     "event_sequence": 481,
     "exact_path_count": 13,
     "focused_operational_contract_count": 31,
-    "implementation_status": "GREEN_PENDING_FULL_VERIFICATION_AND_CHECKPOINT",
+    "implementation_status": "GREEN_CHECKPOINT_COMMITTED_PENDING_RELEASE_REBIND",
     "credential_transport": "STDIN_TO_LIBPQ_SERVICE_FD3",
     "release_manifest_rebind": "NOT_EXECUTED",
     "backup_attempt3": "NOT_EXECUTED",
@@ -1850,5 +1852,19 @@
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "repository_exact_path_count": 10
   },
-  "snapshot_hash": "50B08589BB7446756A9D483179A7BFCD6FF862C12A07B5E1CCD6B60987E9532D"
+  "environment_classification_decision": {
+    "decision_id": "APPROVAL-20260904-C21-YSNA-STAGING-001",
+    "event_sequence": 482,
+    "targets": ["ysna-server", "anvil.sinsan.kr"],
+    "classification": "STAGING_USER_ACCEPTANCE_UNTIL_EXPLICIT_PRODUCTION_DECLARATION",
+    "effective_until": "SHINSAN_EXPLICIT_PRODUCTION_TRANSITION_DECLARATION",
+    "historical_evidence": "PRESERVED_UNCHANGED",
+    "checkpoint_base": "871513d46a19f864190a977380a4c9c5b5d56573",
+    "server_redeploy": "NOT_EXECUTED",
+    "server_restart": "NOT_EXECUTED",
+    "database_dns_tls_secret_changes": "NOT_EXECUTED",
+    "existing_material_deletion": "NOT_EXECUTED",
+    "main_merge": "NOT_EXECUTED"
+  },
+  "snapshot_hash": "5581D0867EC68F23EB85790DE8BEFE2AEA7770D48C89C5B81AF8BC2E4042DAC8"
 }

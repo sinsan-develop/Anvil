@@ -2200,6 +2200,17 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
     """Allow historical projections only behind the fully validated seq478 successor."""
     progress = bundle.get("progress") or {}
     current_ref = progress.get("current_progress_evidence_ref") or {}
+    decision_manifest_path = "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
+    if (
+        progress.get("event_sequence") == 482
+        and progress.get("last_event_id") == "evt_c21_ysna_staging_classification_decision_checkpoint"
+        and current_ref.get("manifest_path") == decision_manifest_path
+    ):
+        try:
+            decision_manifest = _load_json(bundle["_root"] / decision_manifest_path)
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_ysna_staging_decision_projection(decision_manifest, bundle) == []
     conninfo_manifest_path = "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json"
     if (
         progress.get("event_sequence") == 481
@@ -3048,6 +3059,99 @@ def validate_c21_lr02c_ops_r2_conninfo_r4_projection(
         errors.append("C21_OPS_R2_CONNINFO_R4_MANIFEST_INVALID")
     elif any(not portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256")) for row in rows):
         errors.append("C21_OPS_R2_CONNINFO_R4_MANIFEST_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_ysna_staging_decision_projection(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Validate the append-only ysna staging classification decision checkpoint."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    repository = progress.get("repository") or {}
+    decision = progress.get("environment_classification_decision") or {}
+    checkpoint = "871513d46a19f864190a977380a4c9c5b5d56573"
+    manifest_path = "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json"
+    predecessor_path = "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json"
+    exact_paths = set((progress.get("write_lease") or {}).get("paths") or []) | {manifest_path, digest_path}
+    errors: list[str] = []
+    if any((
+        progress.get("event_sequence") != 482,
+        progress.get("last_event_id") != "evt_c21_ysna_staging_classification_decision_checkpoint",
+        progress.get("status") != "ACTIVE",
+        progress.get("valid_failure_count") != 2,
+        (progress.get("current_progress_evidence_ref") or {}) != {
+            "package_id": "C-21", "path": digest_path, "manifest_path": manifest_path,
+        },
+        ((progress.get("next_work_package") or {}).get("status")) != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    )):
+        errors.append("C21_YSNA_STAGING_DECISION_PROJECTION_INVALID")
+    if any((
+        decision.get("decision_id") != "APPROVAL-20260904-C21-YSNA-STAGING-001",
+        decision.get("event_sequence") != 482,
+        decision.get("targets") != ["ysna-server", "anvil.sinsan.kr"],
+        decision.get("classification") != "STAGING_USER_ACCEPTANCE_UNTIL_EXPLICIT_PRODUCTION_DECLARATION",
+        decision.get("effective_until") != "SHINSAN_EXPLICIT_PRODUCTION_TRANSITION_DECLARATION",
+        decision.get("historical_evidence") != "PRESERVED_UNCHANGED",
+        decision.get("checkpoint_base") != checkpoint,
+        decision.get("server_redeploy") != "NOT_EXECUTED",
+        decision.get("server_restart") != "NOT_EXECUTED",
+        decision.get("database_dns_tls_secret_changes") != "NOT_EXECUTED",
+        decision.get("existing_material_deletion") != "NOT_EXECUTED",
+        decision.get("main_merge") != "NOT_EXECUTED",
+    )):
+        errors.append("C21_YSNA_STAGING_DECISION_BOUNDARY_INVALID")
+    if any((
+        repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+        repository.get("local_head") != checkpoint,
+        repository.get("branch") != "codex/c21-operational-execution",
+        repository.get("upstream") != "origin/codex/c21-operational-execution",
+        repository.get("remote_head") != "970680a95a7e2471effc903239548948b3aa6263",
+        repository.get("feature_remote_head") != "970680a95a7e2471effc903239548948b3aa6263",
+        repository.get("head_relation") != "FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15",
+        repository.get("push_status") != "FEATURE_CHECKPOINT_PENDING_C21_YSNA_STAGING_DECISION",
+        set(repository.get("exact_allowed_paths") or []) != exact_paths,
+        len(repository.get("exact_allowed_paths") or []) != 15,
+    )):
+        errors.append("C21_YSNA_STAGING_DECISION_REPOSITORY_INVALID")
+    if (
+        len(events) != 482
+        or hashlib.sha256(canonical_json_bytes(events[:481])).hexdigest().upper()
+        != "3E97534028686CEC657BEB2B287A46FD32A92105AA64CDDBC0943142E9F27F66"
+        or events[-1].get("event_type") != "REPOSITORY_RECONCILED"
+        or events[-1].get("event_id") != "evt_c21_ysna_staging_classification_decision_checkpoint"
+        or events[-1].get("details", {}).get("historical_evidence") != "PRESERVED_UNCHANGED"
+    ):
+        errors.append("C21_YSNA_STAGING_DECISION_EVENTS_INVALID")
+    rows = manifest.get("raw_checksums")
+    expected_rows = {digest_path, predecessor_path, "docs/progress/progress-events.json", "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"}
+    if any((
+        manifest.get("artifact_id") != "C21-YSNA-STAGING-CLASSIFICATION-DECISION-20260904",
+        manifest.get("manifest_type") != "ENVIRONMENT_CLASSIFICATION_DECISION_CHECKPOINT",
+        manifest.get("event_sequence") != 482,
+        manifest.get("decision_id") != "APPROVAL-20260904-C21-YSNA-STAGING-001",
+        manifest.get("checkpoint_base") != checkpoint,
+        manifest.get("repository_exact_path_count") != 15,
+        manifest.get("frozen_predecessor_sequence") != 481,
+        manifest.get("frozen_predecessor_events_sha256") != "3E97534028686CEC657BEB2B287A46FD32A92105AA64CDDBC0943142E9F27F66",
+        manifest.get("historical_evidence") != "PRESERVED_UNCHANGED",
+        manifest.get("external_changes") != "NOT_EXECUTED",
+        manifest.get("self_reference") is not False,
+        not isinstance(rows, list),
+        {row.get("path") for row in rows if isinstance(row, dict)} != expected_rows,
+    )):
+        errors.append("C21_YSNA_STAGING_DECISION_MANIFEST_INVALID")
+    else:
+        for row in rows:
+            if row.get("path") == predecessor_path:
+                valid = git_blob_row_matches(root, checkpoint, row)
+            else:
+                valid = portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256"))
+            if not valid:
+                errors.append("C21_YSNA_STAGING_DECISION_MANIFEST_INVALID")
+                break
     return sorted(set(errors))
 
 
@@ -7564,6 +7668,10 @@ def validate_repository_projection(
         repository.get("head_relation") == "FEATURE_WORKTREE_ACTIVE_OPS_R2_CONNINFO_R4_EXACT13"
         and (progress or {}).get("event_sequence") == 481
     )
+    c21_ysna_staging_decision_head_relation = (
+        repository.get("head_relation") == "FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15"
+        and (progress or {}).get("event_sequence") == 482
+    )
     if (
         repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
         or (
@@ -7585,6 +7693,7 @@ def validate_repository_projection(
             and not c21_ops_r2_release_rebind_head_relation
             and not c21_ops_r2_main_reconciliation_head_relation
             and not c21_ops_r2_conninfo_r4_head_relation
+            and not c21_ysna_staging_decision_head_relation
         )
         or not isinstance(base, str)
         or not re.fullmatch(r"[0-9a-f]{40}", base)
@@ -8122,7 +8231,18 @@ def validate_repository_projection(
         and ((progress or {}).get("write_lease") or {}).get("write_epoch") == 5
         and ((progress or {}).get("next_successor_work_package") or {}).get("status") == "ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4"
     )
-    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_ops_r2_conninfo_r4_projection and not c21_ops_r2_main_reconciliation_projection and not c21_ops_r2_release_rebind_projection and not c21_ops_r2_projection and not c21_backup_portability_accepted_projection and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    c21_ysna_staging_decision_paths = c21_ops_r2_conninfo_r4_paths | {
+        "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+    }
+    c21_ysna_staging_decision_projection = (
+        repository.get("validated_base_commit") == "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        and set(allowed) == c21_ysna_staging_decision_paths and len(allowed) == 15
+        and (progress or {}).get("event_sequence") == 482
+        and (progress or {}).get("last_event_id") == "evt_c21_ysna_staging_classification_decision_checkpoint"
+        and ((progress or {}).get("environment_classification_decision") or {}).get("decision_id") == "APPROVAL-20260904-C21-YSNA-STAGING-001"
+    )
+    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_ysna_staging_decision_projection and not c21_ops_r2_conninfo_r4_projection and not c21_ops_r2_main_reconciliation_projection and not c21_ops_r2_release_rebind_projection and not c21_ops_r2_projection and not c21_backup_portability_accepted_projection and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -8334,6 +8454,10 @@ def validate_repository_projection(
         and actual_path_set.issubset(set(allowed))
         and set(allowed).issubset(actual_path_set)
     )
+    c21_ysna_staging_decision_subset_valid = (
+        c21_ysna_staging_decision_projection
+        and actual_path_set == set(allowed)
+    )
     if (
         sorted(actual_path_set) != allowed
         and not lr02a_active_subset_valid
@@ -8353,6 +8477,7 @@ def validate_repository_projection(
         and not c21_ops_r2_release_rebind_subset_valid
         and not c21_ops_r2_main_reconciliation_subset_valid
         and not c21_ops_r2_conninfo_r4_subset_valid
+        and not c21_ysna_staging_decision_subset_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -8391,10 +8516,40 @@ def validate_repository_projection(
         and repository.get("remote_head") == actual_remote_head
         and actual_head == base
     )
+    conninfo_r4_feature_checkpoint_declared = (
+        c21_ops_r2_conninfo_r4_projection
+        and repository.get("feature_remote") == "origin/codex/c21-operational-execution"
+        and actual_head != base
+        and actual_path_set == set(allowed)
+        and actual_remote_head == actual_feature_remote_head
+        and actual_feature_remote_head in {repository.get("feature_remote_head"), actual_head}
+    )
+    ysna_staging_decision_checkpoint_declared = (
+        c21_ysna_staging_decision_projection
+        and actual_path_set == set(allowed)
+        and actual_head != base
+        and actual_remote_head == actual_feature_remote_head
+        and actual_feature_remote_head in {repository.get("feature_remote_head"), actual_head}
+    )
     if working_tree_mode:
-        if actual_head != base or (actual_remote_head != base and not remote_lag_declared and not lr02a_feature_checkpoint_declared and not conninfo_r4_feature_base_declared):
+        if (
+            (actual_head != base and not conninfo_r4_feature_checkpoint_declared and not ysna_staging_decision_checkpoint_declared)
+            or (
+                actual_remote_head != base
+                and not remote_lag_declared
+                and not lr02a_feature_checkpoint_declared
+                and not conninfo_r4_feature_base_declared
+                and not conninfo_r4_feature_checkpoint_declared
+                and not ysna_staging_decision_checkpoint_declared
+            )
+        ):
             errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
-    elif actual_remote_head != actual_head and not remote_lag_declared:
+    elif (
+        actual_remote_head != actual_head
+        and not remote_lag_declared
+        and not conninfo_r4_feature_checkpoint_declared
+        and not ysna_staging_decision_checkpoint_declared
+    ):
         errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
     return sorted(set(errors))
 
@@ -8441,7 +8596,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 and actual_head
                 and _git_returncode(root, "merge-base", "--is-ancestor", base, actual_head) == 0
             )
-            if _working_tree_paths(
+            dirty_paths = _working_tree_paths(
                 _git_value(
                     root,
                     "-c",
@@ -8450,7 +8605,17 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                     "--porcelain=v1",
                     "--untracked-files=all",
                 )
-            ):
+            )
+            decision_precommit_projection = (
+                bundle["progress"].get("event_sequence") == 482
+                and actual_head == repository.get("local_head")
+                and set(changed_paths) | set(dirty_paths)
+                == set(repository.get("exact_allowed_paths") or [])
+                and set(dirty_paths).issubset(set(repository.get("exact_allowed_paths") or []))
+            )
+            if dirty_paths and decision_precommit_projection:
+                changed_paths = sorted(set(changed_paths) | set(dirty_paths))
+            elif dirty_paths:
                 errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
         errors.extend(
             validate_repository_projection(
@@ -8952,6 +9117,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_lr02c_ops_r2_main_reconciliation_projection(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json":
             errors.extend(validate_c21_lr02c_ops_r2_conninfo_r4_projection(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json":
+            errors.extend(validate_c21_ysna_staging_decision_projection(manifest, bundle))
     if progress.get("current_work_package") == "PHASE_B_GATE":
         if progress.get("status") == "ACTIVE":
             errors.extend(validate_phase_b_gate_active_projection(bundle))

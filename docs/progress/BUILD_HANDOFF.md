@@ -1,3 +1,12 @@
+# C-21 ysna staging 분류 결정 checkpoint (2026-09-04)
+
+- **판정:** seq482 `ENVIRONMENT_CLASSIFICATION_DECIDED`; `ysna-server`와 `anvil.sinsan.kr`는 신산님의 별도 실제 운영 전환 선언 전까지 staging·인수검증 환경이다.
+- **기준선:** R4 checkpoint `871513d46a19f864190a977380a4c9c5b5d56573`; seq1~481 및 기존 R4 evidence bytes는 변경하지 않는다.
+- **허용 변경:** current progress, append-only event, 이 HANDOFF, 신규 decision manifest/digest, checker와 계약 테스트만 갱신한다.
+- **오류 인수:** checkpoint 직후 동일 successor 계열 `GIT_DESCENDANT_ORIGIN_MISMATCH`가 재현되어 3회 초과 Main 직접 인수 규칙을 유지한다. exact15 checkpoint/pushed feature descendant만 허용하고 임의 branch/path/sequence는 거부한다.
+- **미실행:** 서버 재배포·재시작, DB·DNS·TLS·Secret 변경, 기존 자료 삭제, main 병합, backup attempt3, Telegram, Provider.
+- **다음:** checker/manifest/checksum을 검증한 뒤 decision checkpoint commit과 feature branch push를 준비한다. C-01은 계속 차단한다.
+
 # C-21 Lifecycle Runtime LR-02A R3 rework active (2026-09-03)
 
 - **판정:** `ACTIVE_REWORK_R3` (seq408→413 epoch2 lease revoke → second `FAILURE_REPORT_ACCEPTED` → epoch3 lease issue → `PACKAGE_RESUMED`).
@@ -579,32 +588,34 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 481,
+  "event_sequence": 482,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_exact13_repository_reconciled",
-  "updated_at": "2026-09-04T12:05:02+09:00",
+  "last_event_id": "evt_c21_ysna_staging_classification_decision_checkpoint",
+  "updated_at": "2026-09-04T13:55:26+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "active_work_instruction_sha256": "CCE5C3D315D101CEAABF30FF0B51D447602E7927B5193CF531D72B3034AACEC5",
   "active_invocation_sha256": "3BB6F14863D00548A5BA22653B1501628F34DCE9E26B2873E9414C202632A27D",
   "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
-  "next_safe_action": "OPS-R2 conninfo R4 exact13 구현을 검증·checkpoint commit·feature push한다. 새 ReleaseManifest 재결박 전 backup attempt 3·deploy는 금지하며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
+  "next_safe_action": "seq482 ysna staging 분류 checkpoint와 exact15 projection을 검증·checkpoint commit한다. 신산님의 별도 운영 전환 선언 전 ysna-server와 anvil.sinsan.kr는 staging·인수검증 환경이며 서버·DB·DNS·TLS·Secret·기존 자료·main은 변경하지 않는다.",
   "dir_status": "CLEARED",
-  "repository_head": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+  "repository_head": "871513d46a19f864190a977380a4c9c5b5d56573",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_CONNINFO_R4_EXACT13",
+  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15",
   "repository_exact_allowed_paths": [
     "deploy/ysna/backup-c21-db.sh",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
     "scripts/check_project_progress.py",
