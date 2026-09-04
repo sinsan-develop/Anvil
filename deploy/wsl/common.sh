@@ -5,6 +5,26 @@ require_exact_sha() {
   [[ "${1:-}" =~ ^[0-9a-f]{40}$ ]] || { echo 'full 40-character SHA required' >&2; return 2; }
 }
 
+require_control_utility_checkout() {
+  local script_dir="$1" root="${ANVIL_WSL_DEPLOY_ROOT:-/srv/anvil-wsl}"
+  local control_repo="${ANVIL_WSL_CONTROL_REPO:-$root/control}"
+  local application_repo="${ANVIL_WSL_APPLICATION_REPO:-$root/repo}"
+  local actual expected application
+  actual="$(cd "$script_dir" && pwd -P)"
+  expected="$(cd "$control_repo/deploy/wsl" && pwd -P)" || {
+    echo 'control utility checkout is missing' >&2; return 3;
+  }
+  application="$(cd "$application_repo" && pwd -P)" || {
+    echo 'candidate application checkout is missing' >&2; return 3;
+  }
+  [[ "$actual" == "$expected" ]] || {
+    echo 'control-plane script must execute from the control utility checkout' >&2; return 3;
+  }
+  [[ "$expected" != "$application/deploy/wsl" ]] || {
+    echo 'control utility checkout must be separate from candidate application checkout' >&2; return 3;
+  }
+}
+
 configure_wsl_target() {
   local target="${1:-}"
   case "$target" in

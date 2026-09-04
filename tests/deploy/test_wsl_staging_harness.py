@@ -5,6 +5,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -141,6 +142,19 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self.assertNotEqual(0, same_commit.returncode)
             self.assertIn("distinct", same_commit.stderr)
 
+    def test_manifest_rejects_rollback_without_the_exact_candidate_approval(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8")); manifest["rollback"]["approved_commits"] = []
+            path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+            self._git(repo, "add", str(path.relative_to(repo))); self._git(repo, "commit", "-m", "remove rollback approval")
+            self._git(repo, "update-ref", control_ref, "HEAD")
+            checksum = hashlib.sha256(subprocess.check_output(["git", "show", f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo)).hexdigest()
+            result = self._validate(repo, control_ref, candidate, checksum)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("rollback approval binding", result.stderr)
+
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required")
 class WslScriptFailClosedTests(unittest.TestCase):
@@ -205,6 +219,416 @@ class WslScriptFailClosedTests(unittest.TestCase):
         guard = verify.index("validate_wsl_candidate_manifest")
         self.assertLess(guard, verify.index("mkdir -p"))
         self.assertIn("ANVIL_CANDIDATE_MANIFEST_SHA256", verify[:guard])
+
+
+@unittest.skipUnless(shutil.which("bash"), "bash is required")
+class WslControlRuntimeTests(unittest.TestCase):
+    def _git(self, cwd: Path, *args: str) -> str:
+        return subprocess.check_output(["git", *args], cwd=cwd, text=True).strip()
+
+    @staticmethod
+    def _posix(path: Path) -> str:
+        value = str(path).replace("\\", "/")
+        if os.name == "nt" and shutil.which("cygpath"):
+            return subprocess.check_output(
+                ["bash", "-c", 'cygpath -u "$1"', "--", str(path)], text=True
+            ).strip()
+        if len(value) > 1 and value[1] == ":":
+            return f"/{value[0].lower()}{value[2:]}"
+        return value
+
+    def test_verify_after_candidate_checkout_executes_the_separate_control_script(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            application = root / "repo"
+            control = root / "control"
+            self._git(root, "init", "-b", "main", str(source))
+            self._git(source, "config", "user.email", "test@example.invalid")
+            self._git(source, "config", "user.name", "wsl-harness-test")
+            candidate_verify = source / "deploy" / "wsl" / "verify.sh"
+            candidate_verify.parent.mkdir(parents=True)
+            candidate_verify.write_text(
+                "#!/usr/bin/env bash\nprintf 'CANDIDATE_ERA_VERIFY\\n'\nexit 79\n",
+                encoding="utf-8",
+            )
+            manifest = source / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            manifest.write_text("{}\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "candidate verification")
+            candidate = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact34", candidate)
+
+            control_verify = source / "deploy" / "wsl" / "verify.sh"
+            control_verify.write_text(
+                "#!/usr/bin/env bash\nprintf 'CONTROL_VERIFY:%s\\n' \"${BASH_SOURCE[0]}\"\n",
+                encoding="utf-8",
+            )
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "control verification")
+            control_sha = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", control_sha)
+            manifest_sha = hashlib.sha256(subprocess.check_output(
+                ["git", "show", f"{control_sha}:deploy/wsl/CandidateReleaseManifest.json"], cwd=source
+            )).hexdigest()
+            verify_sha = hashlib.sha256(subprocess.check_output(
+                ["git", "show", f"{control_sha}:deploy/wsl/verify.sh"], cwd=source
+            )).hexdigest()
+
+            self._git(root, "clone", str(source), str(application))
+            self._git(application, "checkout", "--detach", candidate)
+            stale = subprocess.run(
+                ["bash", str(application / "deploy" / "wsl" / "verify.sh"), candidate],
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertEqual(79, stale.returncode)
+            self.assertIn("CANDIDATE_ERA_VERIFY", stale.stdout)
+
+            result = subprocess.run(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", candidate],
+                env=os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_APPLICATION_REPO": self._posix(application),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_WSL_CONTROL_COMMIT": control_sha,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": manifest_sha,
+                    "ANVIL_WSL_CONTROL_VERIFY_SHA256": verify_sha,
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn("CONTROL_VERIFY:", result.stdout)
+            self.assertIn(self._posix(control), result.stdout.replace("\\", "/"))
+            self.assertNotIn("CANDIDATE_ERA_VERIFY", result.stdout)
+
+            rejected = subprocess.run(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", candidate],
+                env=os.environ | {
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(application),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_WSL_CONTROL_COMMIT": control_sha,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": manifest_sha,
+                    "ANVIL_WSL_CONTROL_VERIFY_SHA256": verify_sha,
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertNotEqual(0, rejected.returncode)
+            self.assertIn("separate from candidate", rejected.stderr)
+
+    def test_rollback_pg18_preflight_failure_makes_zero_compose_mutations(self):
+        temp, repo, candidate, control_ref, checksum = WslCandidateManifestGuardTests()._repo()
+        with temp, tempfile.TemporaryDirectory() as raw:
+            root = Path(raw); control = root / "control"; shutil.copytree(DEPLOY, control / "deploy" / "wsl")
+            for slug, previous in (("pg15", "a" * 40), ("pg18rc", "b" * 40)):
+                path = root / "runtime" / slug; path.mkdir(parents=True, exist_ok=True); (path / "previous.sha").write_text(previous + "\n")
+            env_file = root / ".env"
+            env_file.write_text("\n".join([
+                "ANVIL_WSL_PG_PASSWORD=" + "a" * 48,
+                "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN=" + "b" * 64,
+                "ANVIL_TEST_SESSION_ACTOR_ID=x", "ANVIL_TEST_SESSION_PROJECT_ID=x",
+                "ANVIL_TEST_SESSION_ENVIRONMENT_ID=x", "ANVIL_TEST_SESSION_RUN_IDS=x",
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read", ""
+            ]), encoding="utf-8")
+            subprocess.run(["bash", "-c", f"chmod 600 '{self._posix(env_file)}'"], check=True)
+            bin_dir = root / "bin"; bin_dir.mkdir(); log = root / "docker.log"
+            docker = bin_dir / "docker"
+            docker.write_text("#!/usr/bin/env bash\necho \"$*\" >> \"$ANVIL_DOCKER_LOG\"\n[[ \"$*\" == *anvil-wsl-web:bbbb* ]] && exit 1\nexit 0\n", encoding="utf-8")
+            curl = bin_dir / "curl"; curl.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+            stat = bin_dir / "stat"; stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8")
+            os.chmod(docker, 0o755); os.chmod(curl, 0o755); os.chmod(stat, 0o755)
+            result = subprocess.run(["bash", str(control / "deploy" / "wsl" / "rollback.sh"), candidate], text=True, capture_output=True,
+                env=os.environ | {"PATH": self._posix(bin_dir) + ":" + os.environ["PATH"], "ANVIL_DOCKER_LOG": self._posix(log), "ANVIL_WSL_DEPLOY_ROOT": self._posix(root), "ANVIL_WSL_CONTROL_REPO": self._posix(control), "ANVIL_WSL_APPLICATION_REPO": self._posix(repo), "ANVIL_CANDIDATE_MANIFEST_REF": control_ref, "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum, "ANVIL_PYTHON": self._posix(Path(sys.executable))})
+            self.assertNotEqual(0, result.returncode)
+            self.assertTrue(log.exists(), result.stderr)
+            calls = log.read_text(encoding="utf-8").splitlines()
+            self.assertTrue(any("anvil-wsl-web:aaaaaaaa" in call for call in calls))
+            self.assertTrue(any("anvil-wsl-web:bbbbbbbb" in call for call in calls))
+            self.assertFalse(any(call.startswith("compose") for call in calls))
+
+    def test_rejects_descendant_that_retains_candidate_era_verify_script(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            application = root / "repo"
+            control = root / "control"
+            self._git(root, "init", "-b", "main", str(source))
+            self._git(source, "config", "user.email", "test@example.invalid")
+            self._git(source, "config", "user.name", "wsl-harness-test")
+            verify = source / "deploy" / "wsl" / "verify.sh"
+            verify.parent.mkdir(parents=True)
+            verify.write_text(
+                "#!/usr/bin/env bash\nprintf 'CANDIDATE_ERA_VERIFY\\n'\nexit 79\n",
+                encoding="utf-8",
+            )
+            manifest = source / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            manifest.write_text("{}\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "candidate verification")
+            candidate = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact34", candidate)
+            (source / "control-marker.txt").write_text("descendant\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "stale control descendant")
+            control_sha = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", control_sha)
+            self._git(root, "clone", str(source), str(application))
+            self._git(application, "checkout", "--detach", candidate)
+            trusted_verify_sha = hashlib.sha256(
+                b'#!/usr/bin/env bash\nprintf "CONTROL_VERIFY\\n"\n'
+            ).hexdigest()
+            result = subprocess.run(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", candidate],
+                env=os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_APPLICATION_REPO": self._posix(application),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_WSL_CONTROL_COMMIT": control_sha,
+                    "ANVIL_WSL_CONTROL_VERIFY_SHA256": trusted_verify_sha,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": hashlib.sha256(subprocess.check_output(
+                        ["git", "show", f"{control_sha}:deploy/wsl/CandidateReleaseManifest.json"], cwd=source
+                    )).hexdigest(),
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("control script checksum mismatch", result.stderr)
+            self.assertNotIn("CANDIDATE_ERA_VERIFY", result.stdout)
+
+    def test_failed_validation_removes_current_and_preexisting_non_active_stages(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            application = root / "repo"
+            control = root / "control"
+            self._git(root, "init", "-b", "main", str(source))
+            self._git(source, "config", "user.email", "test@example.invalid")
+            self._git(source, "config", "user.name", "wsl-harness-test")
+            script = source / "deploy" / "wsl" / "verify.sh"
+            script.parent.mkdir(parents=True)
+            script.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+            (script.parent / "CandidateReleaseManifest.json").write_text("{}\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "candidate")
+            candidate = self._git(source, "rev-parse", "HEAD")
+            (source / "control-marker.txt").write_text("control\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "control")
+            self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", "HEAD")
+            (control / "stage.abandoned").mkdir(parents=True)
+
+            result = subprocess.run(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", candidate],
+                env=os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_APPLICATION_REPO": self._posix(application),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_WSL_CONTROL_COMMIT": "0" * 40,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": "0" * 64,
+                    "ANVIL_WSL_CONTROL_VERIFY_SHA256": "0" * 64,
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("trusted control commit mismatch", result.stderr)
+            self.assertEqual([], sorted(path.name for path in control.glob("stage.*")))
+
+    def test_exact_control_commit_rejects_sourced_dependency_only_descendant(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            control = root / "control"
+            self._git(root, "init", "-b", "main", str(source))
+            self._git(source, "config", "user.email", "test@example.invalid")
+            self._git(source, "config", "user.name", "wsl-harness-test")
+            scripts = source / "deploy" / "wsl"
+            scripts.mkdir(parents=True)
+            (scripts / "verify.sh").write_text(
+                "#!/usr/bin/env bash\nsource \"$(dirname \"${BASH_SOURCE[0]}\")/common.sh\"\nprintf 'SAFE_VERIFY\\n'\n",
+                encoding="utf-8",
+            )
+            (scripts / "common.sh").write_text("#!/usr/bin/env bash\ntrue\n", encoding="utf-8")
+            (scripts / "CandidateReleaseManifest.json").write_text("{}\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "candidate")
+            candidate = self._git(source, "rev-parse", "HEAD")
+            (source / "control-marker.txt").write_text("trusted\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "trusted control")
+            trusted_control = self._git(source, "rev-parse", "HEAD")
+            manifest_sha = hashlib.sha256(subprocess.check_output(
+                ["git", "show", f"{trusted_control}:deploy/wsl/CandidateReleaseManifest.json"], cwd=source
+            )).hexdigest()
+            script_sha = hashlib.sha256(subprocess.check_output(
+                ["git", "show", f"{trusted_control}:deploy/wsl/verify.sh"], cwd=source
+            )).hexdigest()
+            (scripts / "common.sh").write_text(
+                "#!/usr/bin/env bash\nprintf 'UNTRUSTED_DEPENDENCY\\n'\n",
+                encoding="utf-8",
+            )
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "dependency-only descendant")
+            self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", "HEAD")
+
+            result = subprocess.run(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", candidate],
+                env=os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_WSL_CONTROL_COMMIT": trusted_control,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": manifest_sha,
+                    "ANVIL_WSL_CONTROL_VERIFY_SHA256": script_sha,
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("trusted control commit mismatch", result.stderr)
+            self.assertNotIn("UNTRUSTED_DEPENDENCY", result.stdout)
+
+    def test_concurrent_invocation_cannot_replace_the_validated_stage_before_execution(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            control = root / "control"
+            started = root / "started"
+            release = root / "release"
+            self._git(root, "init", "-b", "main", str(source))
+            self._git(source, "config", "user.email", "test@example.invalid")
+            self._git(source, "config", "user.name", "wsl-harness-test")
+            scripts = source / "deploy" / "wsl"
+            scripts.mkdir(parents=True)
+            manifest = scripts / "CandidateReleaseManifest.json"
+            manifest.write_text("{}\n", encoding="utf-8")
+            verify = scripts / "verify.sh"
+            verify.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "candidate")
+            candidate = self._git(source, "rev-parse", "HEAD")
+            verify.write_text(
+                "#!/usr/bin/env bash\nprintf x > \"$ANVIL_TEST_STARTED\"\n"
+                "while [[ ! -f \"$ANVIL_TEST_RELEASE\" ]]; do sleep 0.05; done\n"
+                "printf 'CONTROL_ONE:%s\\n' \"${BASH_SOURCE[0]}\"\n",
+                encoding="utf-8",
+            )
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "control one")
+            control_one = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", control_one)
+
+            def trusted_env(control_sha: str, script_sha: str):
+                return os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_WSL_CONTROL_COMMIT": control_sha,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": hashlib.sha256(subprocess.check_output(
+                        ["git", "show", f"{control_sha}:deploy/wsl/CandidateReleaseManifest.json"], cwd=source
+                    )).hexdigest(),
+                    "ANVIL_WSL_CONTROL_VERIFY_SHA256": script_sha,
+                    "ANVIL_TEST_STARTED": self._posix(started),
+                    "ANVIL_TEST_RELEASE": self._posix(release),
+                }
+
+            one_script_sha = hashlib.sha256(subprocess.check_output(
+                ["git", "show", f"{control_one}:deploy/wsl/verify.sh"], cwd=source
+            )).hexdigest()
+            first = subprocess.Popen(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", candidate],
+                env=trusted_env(control_one, one_script_sha),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            deadline = time.time() + 10
+            while not started.exists() and time.time() < deadline:
+                time.sleep(0.05)
+            self.assertTrue(started.exists(), "first control action did not start")
+
+            verify.write_text("#!/usr/bin/env bash\nprintf 'CONTROL_TWO:%s\\n' \"${BASH_SOURCE[0]}\"\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "control two")
+            control_two = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", control_two)
+            two_script_sha = hashlib.sha256(subprocess.check_output(
+                ["git", "show", f"{control_two}:deploy/wsl/verify.sh"], cwd=source
+            )).hexdigest()
+            second = subprocess.Popen(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", candidate],
+                env=trusted_env(control_two, two_script_sha),
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            time.sleep(0.3)
+            self.assertIsNone(second.poll(), "second invocation bypassed the publication lock")
+            release.write_text("go\n", encoding="utf-8")
+            first_out, first_err = first.communicate(timeout=15)
+            second_out, second_err = second.communicate(timeout=15)
+            self.assertEqual(0, first.returncode, first_err)
+            self.assertEqual(0, second.returncode, second_err)
+            self.assertIn("CONTROL_ONE:", first_out)
+            self.assertNotIn("CONTROL_TWO:", first_out)
+            self.assertIn("CONTROL_TWO:", second_out)
+            active = control / (control / "active").read_text(encoding="utf-8").strip()
+            self.assertTrue(active.exists())
+            self.assertEqual([active.name], sorted(path.name for path in control.glob("stage.*")))
+
+    def test_preexisting_publish_lock_fails_within_the_configured_timeout(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            control = root / "control"
+            (control / ".publish.lock").mkdir(parents=True)
+            started = time.monotonic()
+            result = subprocess.run(
+                ["bash", str(DEPLOY / "control-runtime.sh"), "verify", "0" * 40],
+                env=os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(root / "unused"),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_WSL_CONTROL_COMMIT": "1" * 40,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": "2" * 64,
+                    "ANVIL_WSL_CONTROL_VERIFY_SHA256": "3" * 64,
+                    "ANVIL_WSL_CONTROL_LOCK_TIMEOUT_SECONDS": "1",
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=3,
+            )
+            elapsed = time.monotonic() - started
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("control publication lock timeout", result.stderr)
+            self.assertLess(elapsed, 3)
 
 
 class WslCleanupExecutionTests(WslCandidateManifestGuardTests):

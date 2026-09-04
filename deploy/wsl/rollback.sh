@@ -5,8 +5,14 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 require_exact_sha "$EXPECTED" || exit $?
 ROOT="${ANVIL_WSL_DEPLOY_ROOT:-/srv/anvil-wsl}"
-REPO="$ROOT/repo"
+require_control_utility_checkout "$SCRIPT_DIR"
+REPO="${ANVIL_WSL_APPLICATION_REPO:-$ROOT/repo}"
+MANIFEST_REF="${ANVIL_CANDIDATE_MANIFEST_REF:?candidate manifest control ref is required}"
+: "${ANVIL_CANDIDATE_MANIFEST_SHA256:?candidate manifest checksum is required}"
+source "$SCRIPT_DIR/candidate-manifest-guard.sh"
+validate_wsl_candidate_manifest "$REPO" "$MANIFEST_REF" "$EXPECTED"
 load_server_environment "$ROOT/.env"
+declare -A previous_by_target
 for target in 15 18-rc; do
   configure_wsl_target "$target"
   previous_file="$ROOT/runtime/$ANVIL_TARGET_SLUG/previous.sha"
@@ -14,6 +20,11 @@ for target in 15 18-rc; do
   previous="$(tr -d '\r\n' < "$previous_file")"
   require_exact_sha "$previous" || exit $?
   docker image inspect "anvil-wsl-web:$previous" >/dev/null
+  previous_by_target["$target"]="$previous"
+done
+for target in 15 18-rc; do
+  configure_wsl_target "$target"
+  previous="${previous_by_target[$target]}"
   ANVIL_RELEASE_COMMIT="$previous"; export ANVIL_RELEASE_COMMIT
   wsl_compose up -d --no-build --force-recreate anvil-web
   base="http://127.0.0.1:$ANVIL_WSL_HTTP_PORT"

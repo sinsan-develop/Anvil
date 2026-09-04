@@ -296,3 +296,25 @@
 - stable contract: control `73c39ca...` 이후 cumulative exact8 path/content contract는 record-only successor commit 뒤에도 유지돼야 하며, clean committed tree에서만 local descendant를 허용한다.
 - PMO report: parent PMO egress는 safety gate로 `NOT_DELIVERED` 유지다. 재시도/우회하지 않으며, 정확한 재개 조건은 신산님의 destination과 payload에 대한 explicit egress approval이다.
 - commit/push/deploy/Docker/DB/volume/Telegram/Provider는 `NOT_EXECUTED`.
+
+## 2026-09-04 20:23:22 +09:00 C-21 push safety-gate rejection
+
+- current HEAD: `5251a0b889f4e1062a5780eea9f03d8e9b9f69bb`.
+- exact command: `git push development 93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad:refs/heads/candidates/c21-wsl-exact34`.
+- result: `SAFETY_GATE_REJECTED`; user phrase `진행하자` was insufficient explicit payload/destination egress approval. Safety-gate lineage failure count incremented to `2` (not a product failure).
+- no workaround attempted. Control ref push, recovery clone, remote rename, and WSL deploy were not executed.
+- exact resume condition: explicit approval of both full-SHA pushes to `git@github-sinsan-develop:sinsan-develop/Anvil.git` and recovery clone create/verify/delete.
+
+## 2026-09-04 21:40:19 +09:00 C-21 control-runtime hardening takeover
+
+- read-only WSL audit found that candidate checkout could replace the later `verify.sh` command path; runtime execution remained `NOT_EXECUTED`.
+- Developer fix round produced the initial separate control checkout, then independent review reproduced stale-descendant execution and rollback preflight gaps.
+- first rework closed rollback approval/two-target preflight, but dependency-closure and concurrent active-pointer findings remained.
+- the same incomplete condition (required adversarial tests not written before turn end) repeated three consecutive handoffs; Main stopped further Developer dispatch and performed the approved direct takeover. This is a takeover-policy count, not a product-failure count.
+- Main TDD evidence: abandoned-stage cleanup RED failed with residual `stage.abandoned`, then GREEN passed; concurrent invocation RED exposed non-portable active symlink replacement, then the locked atomic text pointer plus exact physical stage execution passed.
+- current local focused evidence: dependency-only descendant rejection, failed-stage cleanup, and serialized concurrent invocation `3/3 PASS`.
+- external push, remote rename, recovery clone, WSL runtime, Docker, DB, Telegram, and Provider remain `NOT_EXECUTED`.
+- final independent review after Main takeover: `SPEC PASS / QUALITY APPROVED`, Critical/Important/Minor residual finding `0`.
+- final local verification: focused stale-lock/dependency/stage-cleanup/concurrency `4/4 PASS`; full WSL harness `24 PASS` in `49.430s`; all WSL shell syntax and `git diff --check` PASS.
+- stale `.publish.lock` now fails within configured `1..600s` instead of waiting forever; ordinary cleanup errors cannot strand an owned lock, and `active.next.*` residues are removed under the lock.
+- next internal action: commit the reviewed harness, then append a non-retroactive successor projection binding the new control commit before any private push or WSL execution.

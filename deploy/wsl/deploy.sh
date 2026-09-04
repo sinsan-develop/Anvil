@@ -5,7 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common.sh"
 require_exact_sha "$EXPECTED" || exit $?
 ROOT="${ANVIL_WSL_DEPLOY_ROOT:-/srv/anvil-wsl}"
-REPO="$ROOT/repo"
+require_control_utility_checkout "$SCRIPT_DIR"
+REPO="${ANVIL_WSL_APPLICATION_REPO:-$ROOT/repo}"
 mkdir -p "$ROOT/runtime" "$ROOT/evidence" "$ROOT/backups"
 load_server_environment "$ROOT/.env"
 if [[ ! -d "$REPO/.git" ]]; then

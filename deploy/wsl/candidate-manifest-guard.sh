@@ -62,6 +62,8 @@ if cleanup.get('required_labels') != {
     'com.anvil.cleanup-scope': 'C21_WSL_ISOLATED_TEST',
 }:
     raise SystemExit('candidate cleanup labels mismatch')
+if doc.get('rollback', {}).get('approved_commits') != [expected]:
+    raise SystemExit('candidate rollback approval binding mismatch')
 print(remote_ref)
 PY
 )" || return 20
