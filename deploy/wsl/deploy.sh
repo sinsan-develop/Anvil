@@ -9,10 +9,15 @@ require_control_utility_checkout "$SCRIPT_DIR"
 REPO="${ANVIL_WSL_APPLICATION_REPO:-$ROOT/repo}"
 mkdir -p "$ROOT/runtime" "$ROOT/evidence" "$ROOT/backups"
 load_server_environment "$ROOT/.env"
+fresh_clone=0
 if [[ ! -d "$REPO/.git" ]]; then
   git clone --no-checkout "${ANVIL_GIT_REMOTE_URL:-https://github.com/cyhuh7950/anvil.git}" "$REPO"
+  fresh_clone=1
 fi
 git -C "$REPO" fetch --prune origin
+if (( fresh_clone )); then
+  git -C "$REPO" checkout --detach "$EXPECTED"
+fi
 [[ -z "$(git -C "$REPO" status --porcelain)" ]] || { echo 'checkout is dirty' >&2; exit 3; }
 MANIFEST_REF="${ANVIL_CANDIDATE_MANIFEST_REF:?candidate manifest control ref is required}"
 source "$SCRIPT_DIR/candidate-manifest-guard.sh"

@@ -237,6 +237,88 @@ class WslControlRuntimeTests(unittest.TestCase):
             return f"/{value[0].lower()}{value[2:]}"
         return value
 
+    def test_fresh_no_checkout_clone_reaches_manifest_guard_with_a_clean_worktree(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / "source"
+            application = root / "repo"
+            control = root / "control"
+            self._git(root, "init", "-b", "main", str(source))
+            self._git(source, "config", "user.email", "test@example.invalid")
+            self._git(source, "config", "user.name", "wsl-harness-test")
+            manifest = source / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text("{}\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "candidate")
+            candidate = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact34", candidate)
+            (source / "control-marker.txt").write_text("control\n", encoding="utf-8")
+            self._git(source, "add", ".")
+            self._git(source, "commit", "-m", "control")
+            control_sha = self._git(source, "rev-parse", "HEAD")
+            self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", control_sha)
+            shutil.copytree(DEPLOY, control / "deploy" / "wsl")
+            application.mkdir()
+            env_file = root / ".env"
+            env_file.write_text("\n".join([
+                "ANVIL_WSL_PG_PASSWORD=" + "a" * 48,
+                "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN=" + "b" * 64,
+                "ANVIL_TEST_SESSION_ACTOR_ID=x", "ANVIL_TEST_SESSION_PROJECT_ID=x",
+                "ANVIL_TEST_SESSION_ENVIRONMENT_ID=x", "ANVIL_TEST_SESSION_RUN_IDS=x",
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read", ""
+            ]), encoding="utf-8")
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            stat = bin_dir / "stat"
+            stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8")
+            subprocess.run(["bash", "-c", f"chmod +x '{self._posix(stat)}'"], check=True)
+            checksum = hashlib.sha256(subprocess.check_output(
+                ["git", "show", f"{control_sha}:deploy/wsl/CandidateReleaseManifest.json"], cwd=source
+            )).hexdigest()
+
+            result = subprocess.run(
+                ["bash", str(control / "deploy" / "wsl" / "deploy.sh"), candidate],
+                env=os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_APPLICATION_REPO": self._posix(application),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
+                    "ANVIL_PYTHON": self._posix(Path(sys.executable)),
+                    "PATH": self._posix(bin_dir) + ":" + os.environ["PATH"],
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("candidate manifest contract mismatch", result.stderr)
+            self.assertEqual("", self._git(application, "status", "--porcelain"))
+
+            (application / "untracked.txt").write_text("dirty\n", encoding="utf-8")
+            rejected = subprocess.run(
+                ["bash", str(control / "deploy" / "wsl" / "deploy.sh"), candidate],
+                env=os.environ | {
+                    "ANVIL_GIT_REMOTE_URL": self._posix(source),
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_APPLICATION_REPO": self._posix(application),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(control),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
+                    "ANVIL_PYTHON": self._posix(Path(sys.executable)),
+                    "PATH": self._posix(bin_dir) + ":" + os.environ["PATH"],
+                },
+                text=True,
+                capture_output=True,
+                encoding="utf-8",
+                errors="replace",
+            )
+            self.assertEqual(3, rejected.returncode)
+            self.assertIn("checkout is dirty", rejected.stderr)
+
     def test_verify_after_candidate_checkout_executes_the_separate_control_script(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
