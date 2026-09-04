@@ -3417,8 +3417,30 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_c21_wsl_active_projection_is_fail_closed_for_candidate_and_repository(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
+        historical_commit = "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"
+        bundle["progress"] = json.loads(
+            subprocess.check_output(
+                ["git", "show", f"{historical_commit}:docs/progress/build-progress.json"],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+            )
+        )
+        bundle["events"] = json.loads(
+            subprocess.check_output(
+                ["git", "show", f"{historical_commit}:docs/progress/progress-events.json"],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+            )
+        )
         candidate = json.loads(
-            (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_text(encoding="utf-8")
+            subprocess.check_output(
+                ["git", "show", f"{historical_commit}:deploy/wsl/CandidateReleaseManifest.json"],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+            )
         )
         self.assertEqual([], checker.validate_c21_wsl_active_projection(candidate, bundle))
 
@@ -3477,6 +3499,117 @@ class ProjectProgressContractTests(unittest.TestCase):
             projected_local_head_is_ancestor=False,
         )
         self.assertIn("GIT_DESCENDANT_ORIGIN_MISMATCH", unrelated)
+
+    def test_c21_wsl_control_successor_binds_immutable_candidate_and_historical_prefix(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        candidate = json.loads(
+            (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_text(encoding="utf-8")
+        )
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_control_successor_projection(
+                candidate, bundle, manifest
+            ),
+        )
+
+        wrong_candidate = copy.deepcopy(candidate)
+        wrong_candidate["source"]["commit"] = "9" * 40
+        self.assertIn(
+            "C21_WSL_CONTROL_CANDIDATE_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                wrong_candidate, bundle, manifest
+            ),
+        )
+        wrong_binding = copy.deepcopy(candidate)
+        wrong_binding["authority"]["approval_binding_sha256"] = "a" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_CANDIDATE_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                wrong_binding, bundle, manifest
+            ),
+        )
+        historical_mutation = copy.deepcopy(bundle)
+        historical_mutation["events"]["events"][0]["event_id"] = "tampered"
+        self.assertIn(
+            "C21_WSL_CONTROL_EVENTS_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                candidate, historical_mutation, manifest
+            ),
+        )
+        path_mutation = copy.deepcopy(bundle)
+        path_mutation["progress"]["repository"]["exact_allowed_paths"].append(
+            "arbitrary.txt"
+        )
+        self.assertIn(
+            "C21_WSL_CONTROL_REPOSITORY_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                candidate, path_mutation, manifest
+            ),
+        )
+
+    def test_c21_wsl_approval_artifact_and_raw_historical_bytes_are_independently_bound(self) -> None:
+        checker = self.require_checker()
+        approval_path = (
+            ROOT
+            / "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md"
+        )
+        approval = approval_path.read_text(encoding="utf-8")
+        self.assertEqual([], checker.validate_c21_wsl_human_approval_artifact(approval))
+        self.assertIn(
+            "C21_WSL_HUMAN_APPROVAL_INVALID",
+            checker.validate_c21_wsl_human_approval_artifact(
+                approval.replace("exact34", "exact35", 1)
+            ),
+        )
+
+        candidate_raw = subprocess.check_output(
+            [
+                "git",
+                "show",
+                "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad:docs/progress/progress-events.json",
+            ],
+            cwd=ROOT,
+        )
+        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        expected = checker.raw_event_object_prefix_bytes(candidate_raw, 485)
+        actual = checker.raw_event_object_prefix_bytes(current_raw, 485)
+        self.assertEqual(expected, actual)
+        self.assertEqual(
+            "39D6D6ECE49C8D8EE0CB9BA0A64FC9BC33231E335DCE84DEB4B4A70D497E60FA",
+            hashlib.sha256(actual).hexdigest().upper(),
+        )
+        mutated = bytearray(actual)
+        whitespace = mutated.index(b" ")
+        mutated[whitespace] = ord("\t")
+        self.assertNotEqual(
+            hashlib.sha256(expected).digest(), hashlib.sha256(mutated).digest()
+        )
+        first_event = checker.raw_event_object_prefix_bytes(current_raw, 1)
+        original_order = (
+            b'"event_id": "evt_g05_legacy_migration",\n'
+            b'      "sequence": 1,'
+        )
+        reordered = (
+            b'"sequence": 1,\n'
+            b'      "event_id": "evt_g05_legacy_migration",'
+        )
+        key_order_mutation = first_event.replace(original_order, reordered, 1)
+        self.assertNotEqual(first_event, key_order_mutation)
+        self.assertEqual(
+            json.loads(first_event.decode("utf-8")),
+            json.loads(key_order_mutation.decode("utf-8")),
+        )
+        self.assertNotEqual(
+            hashlib.sha256(first_event).digest(),
+            hashlib.sha256(key_order_mutation).digest(),
+        )
 
 if __name__ == "__main__":
     unittest.main()

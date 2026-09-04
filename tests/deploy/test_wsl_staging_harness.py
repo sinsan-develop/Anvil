@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import shutil
 import subprocess
@@ -35,14 +36,16 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         self._git(repo, "add", ".")
         self._git(repo, "commit", "-m", "candidate")
         candidate = self._git(repo, "rev-parse", "HEAD")
-        self._git(repo, "update-ref", "refs/remotes/origin/codex/c21", candidate)
+        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact34"
+        control_ref = "refs/remotes/origin/codex/c21-operational-execution"
+        self._git(repo, "update-ref", candidate_ref, candidate)
         manifest = {
             "schema_version": 1,
             "manifest_type": "WSL_STAGING_CANDIDATE",
             "status": "APPROVED_FOR_STAGING_VALIDATION",
             "source": {
                 "commit": candidate,
-                "remote_ref": "refs/remotes/origin/codex/c21",
+                "remote_ref": candidate_ref,
                 "working_tree": "CLEAN",
             },
             "environment": {
@@ -68,42 +71,75 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         }
         (repo / "deploy" / "wsl").mkdir(parents=True)
         (repo / "deploy" / "wsl" / "CandidateReleaseManifest.json").write_text(
-            json.dumps(manifest), encoding="utf-8"
+            json.dumps(manifest) + "\n", encoding="utf-8"
         )
         self._git(repo, "add", ".")
         self._git(repo, "commit", "-m", "approve candidate")
         control = self._git(repo, "rev-parse", "HEAD")
-        return temp, repo, candidate, control
+        self._git(repo, "update-ref", control_ref, control)
+        blob = subprocess.check_output(
+            ["git", "show", f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo
+        )
+        checksum = hashlib.sha256(blob).hexdigest()
+        return temp, repo, candidate, control_ref, checksum
 
-    def _validate(self, repo: Path, control: str, candidate: str):
+    def _validate(self, repo: Path, control_ref: str, candidate: str, checksum: str):
         command = (
             f"source '{self._posix(GUARD)}'; "
-            f"validate_wsl_candidate_manifest '{self._posix(repo)}' {control} {candidate}"
+            f"validate_wsl_candidate_manifest '{self._posix(repo)}' {control_ref} {candidate}"
         )
         return subprocess.run(
             ["bash", "-c", command],
-            env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable))},
+            env=os.environ | {
+                "ANVIL_PYTHON": self._posix(Path(sys.executable)),
+                "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
+            },
             text=True,
             capture_output=True,
         )
 
     def test_feature_candidate_is_accepted_without_origin_main_ancestry(self):
-        temp, repo, candidate, control = self._repo()
+        temp, repo, candidate, control_ref, checksum = self._repo()
         with temp:
-            result = self._validate(repo, control, candidate)
+            result = self._validate(repo, control_ref, candidate, checksum)
             self.assertEqual(0, result.returncode, result.stderr)
 
+    def test_manifest_checksum_hashes_exact_git_blob_bytes_and_rejects_one_byte_change(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            accepted = self._validate(repo, control_ref, candidate, checksum)
+            self.assertEqual(0, accepted.returncode, accepted.stderr)
+            path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            raw = path.read_bytes()
+            path.write_bytes(raw.replace(b"APPROVED", b"BPPROVED", 1))
+            self._git(repo, "add", str(path.relative_to(repo)))
+            self._git(repo, "commit", "-m", "tamper one byte")
+            self._git(repo, "update-ref", control_ref, self._git(repo, "rev-parse", "HEAD"))
+            rejected = self._validate(repo, control_ref, candidate, checksum)
+            self.assertNotEqual(0, rejected.returncode)
+            self.assertIn("checksum mismatch", rejected.stderr)
+
     def test_candidate_must_equal_the_manifest_feature_remote(self):
-        temp, repo, candidate, control = self._repo()
+        temp, repo, candidate, control_ref, checksum = self._repo()
         with temp:
             (repo / "other.txt").write_text("unapproved\n", encoding="utf-8")
             self._git(repo, "add", ".")
             self._git(repo, "commit", "-m", "unapproved descendant")
             unapproved = self._git(repo, "rev-parse", "HEAD")
-            self._git(repo, "update-ref", "refs/remotes/origin/codex/c21", unapproved)
-            result = self._validate(repo, control, candidate)
+            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact34", unapproved)
+            result = self._validate(repo, control_ref, candidate, checksum)
             self.assertNotEqual(0, result.returncode)
             self.assertIn("feature remote", result.stderr)
+
+    def test_control_ref_is_exact_successor_and_candidate_is_its_distinct_ancestor(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            wrong_control = self._validate(repo, candidate, candidate, checksum)
+            self.assertNotEqual(0, wrong_control.returncode)
+            self.assertIn("control ref", wrong_control.stderr)
+            same_commit = self._validate(repo, control_ref, self._git(repo, "rev-parse", control_ref), checksum)
+            self.assertNotEqual(0, same_commit.returncode)
+            self.assertIn("distinct", same_commit.stderr)
 
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required")
@@ -130,10 +166,13 @@ class WslScriptFailClosedTests(unittest.TestCase):
             return f"/{value[0].lower()}{value[2:]}"
         return value
 
-    def test_repository_candidate_manifest_is_draft_until_exact_sha_binding(self):
+    def test_repository_candidate_manifest_is_bound_to_approved_exact_candidate(self):
         manifest = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
-        self.assertEqual("DRAFT_REQUIRES_EXACT_SHA_BINDING", manifest["status"])
-        self.assertEqual("PENDING_EXACT_SHA", manifest["source"]["commit"])
+        candidate = "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"
+        self.assertEqual("APPROVED_FOR_STAGING_VALIDATION", manifest["status"])
+        self.assertEqual(candidate, manifest["source"]["commit"])
+        self.assertEqual([candidate], manifest["rollback"]["approved_commits"])
+        self.assertEqual(64, len(manifest["authority"]["approval_binding_sha256"]))
         self.assertEqual(
             ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"], manifest["exclusions"]
         )
@@ -160,6 +199,69 @@ class WslScriptFailClosedTests(unittest.TestCase):
             self.assertLess(cleanup.index(guard), first_delete)
         self.assertNotIn("rm -rf", cleanup)
         self.assertNotIn("down --volumes", cleanup)
+
+    def test_verify_requires_manifest_guard_before_runtime_state_write(self):
+        verify = (DEPLOY / "verify.sh").read_text(encoding="utf-8")
+        guard = verify.index("validate_wsl_candidate_manifest")
+        self.assertLess(guard, verify.index("mkdir -p"))
+        self.assertIn("ANVIL_CANDIDATE_MANIFEST_SHA256", verify[:guard])
+
+
+class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
+    def _run_cleanup(self, repo: Path, candidate: str, control_ref: str, checksum: str, mismatch: str = ""):
+        log = repo / "docker.log"
+        command = f'''
+source '{self._posix(DEPLOY / "common.sh")}'
+docker() {{
+  echo "docker:$*" >> '{self._posix(log)}'
+  if [[ "$1 $2" == "volume inspect" ]]; then
+    volume="${{@: -1}}"
+    case "$*" in
+      *com.docker.compose.project*) key=project; [[ "$volume" == anvil-wsl-pg15_anvil-db-data ]] && value=anvil-wsl-pg15 || value=anvil-wsl-pg18rc ;;
+      *com.anvil.environment*) key=environment; value=WSL_SERVER_TEST_STAGING ;;
+      *com.anvil.cleanup-scope*) key=scope; value=C21_WSL_ISOLATED_TEST ;;
+    esac
+    [[ "${{key}}:${{volume}}" == "{mismatch}" ]] && value=WRONG
+    echo "$value"
+  fi
+}}
+wsl_compose() {{ echo "compose:$*" >> '{self._posix(log)}'; }}
+cleanup_wsl_test_volumes {candidate} '{self._posix(repo)}' {control_ref}
+'''
+        result = subprocess.run(
+            ["bash", "-c", command], text=True, capture_output=True,
+            env=os.environ | {
+                "ANVIL_PYTHON": self._posix(Path(sys.executable)),
+                "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
+            },
+        )
+        calls = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+        return result, calls
+
+    def test_each_label_and_second_volume_mismatch_delete_nothing(self):
+        for mismatch in (
+            "project:anvil-wsl-pg15_anvil-db-data",
+            "environment:anvil-wsl-pg15_anvil-db-data",
+            "scope:anvil-wsl-pg15_anvil-db-data",
+            "scope:anvil-wsl-pg18rc_anvil-db-data",
+        ):
+            with self.subTest(mismatch=mismatch):
+                temp, repo, candidate, control_ref, checksum = self._repo()
+                with temp:
+                    result, calls = self._run_cleanup(repo, candidate, control_ref, checksum, mismatch)
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertFalse(any(call.startswith("compose:rm") for call in calls))
+                    self.assertFalse(any(call.startswith("docker:volume rm") for call in calls))
+
+    def test_success_deletes_only_two_exact_allowlisted_volumes(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            result, calls = self._run_cleanup(repo, candidate, control_ref, checksum)
+            self.assertEqual(0, result.returncode, result.stderr)
+            removed = [call.removeprefix("docker:volume rm ") for call in calls if call.startswith("docker:volume rm ")]
+            self.assertEqual(
+                ["anvil-wsl-pg15_anvil-db-data", "anvil-wsl-pg18rc_anvil-db-data"], removed
+            )
 
 
 

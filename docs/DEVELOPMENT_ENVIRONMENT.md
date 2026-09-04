@@ -1,16 +1,37 @@
-# 개발 환경 및 임시 작업 경로
+# Anvil 개발환경
 
-## 임시 경로 정책
+## Git 저장소 역할
 
-- `D:\Project` 아래에는 새 worktree, clone, 임시 checkout, QA, 로그, 빌드 폴더를 생성하지 않는다.
-- 새 임시 리소스가 필요하면 작업 전에 `D:\tmp\<task-id>`의 절대 경로, 목적, 소유자, 사용 기간, 정리 방법을 `CODEX_WORK_LOG.md`에 기록하고 승인된 범위에서 생성한다.
-- `D:\tmp`를 사용할 수 없으면 우회하지 않고 작업을 중지해 보고한다.
-- 사용 후 생성한 파일·폴더·프로세스·포트·컨테이너·볼륨·네트워크를 정리하고 동일 조회로 잔여 0건을 확인한다.
+- canonical Windows repository: `D:\Project\Anvil`
+- 현재 C-21 worktree: `D:\tmp\anvil-c21-operational-execution`
+- private development repository: `git@github-sinsan-develop:sinsan-develop/Anvil.git` (브라우저에서 Private 생성 확인)
+- temporary `development` remote access: `VERIFIED`
+- candidate push: `SAFETY_GATE_PENDING_EXACT_DESTINATION_APPROVAL`
+- official release repository: `https://github.com/cyhuh7950/anvil.git`
+- 전환 목표: private development=`origin`, official release=`release`
+- official 저장소에는 실제 배포 allowlist만 clean RC branch로 반영하며 private 전체 history를 mirror하지 않는다.
+- official main 직접 push, history rewrite, force push는 금지한다.
 
-## 이번 작업 기록 (2026-09-02)
+## WSL-server
 
-- 새 `D:\tmp` 리소스: 생성하지 않음.
-- 사용한 기존 작업공간: `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\ysna-internal-deploy` (canonical main), `C:\Users\cyhuh\Desktop\D Driver\Project\Anvil\.worktrees\implement-session-auth-sse` (subagent 결과 검토용 기존 worktree).
-- 소유자: Main Agent 어울 / 구현: `implement_session_auth_sse` subagent.
-- 사용 기간: 현재 C-21 인증/SSE 검토 및 통합 동안.
-- 정리: 기존 사용자 worktree는 삭제·이동하지 않음. 이번 작업에서 생성한 임시 리소스와 외부 프로세스·포트·컨테이너·볼륨·네트워크는 없음(잔여 정리 대상 0건).
+- 역할: Anvil 개발·Test/Staging
+- SSH alias: `WSL-server`
+- GitHub SSH alias 목표: `github-sinsan-develop`
+- WSL-server 전용 private key는 WSL 내부에만 생성·보관하고 public key만 GitHub에 등록한다.
+- Windows private key를 WSL-server로 복사하지 않는다.
+- 실제 endpoint, 사용자, key 원문과 Secret은 이 문서와 Git에 기록하지 않는다.
+
+## C-21 현재 검증 기준
+
+- candidate implementation: `93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad`
+- local checker: PASS sequence 486
+- tooling: 97 PASS
+- WSL harness focused tests: 15 PASS
+- 실제 WSL PG15/PG18 RC 배포 검증은 private Git remote와 exact candidate binding 이후 수행한다.
+- Telegram·Provider 실제 호출은 이번 C-21 WSL 검증에서 제외한다.
+
+## Rollback
+
+- remote 전환 전 기존 공식 URL과 refs를 보존한다.
+- private remote 또는 SSH 검증 실패 시 기존 공식 remote 설정을 변경하지 않고 추가 remote만 제거해 원상 복귀한다.
+- canonical root의 dirty/untracked 자료는 전환과 무관하게 보존한다.

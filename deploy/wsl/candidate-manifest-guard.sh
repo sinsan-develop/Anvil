@@ -3,22 +3,27 @@ set -euo pipefail
 
 validate_wsl_candidate_manifest() {
   local repo="$1" manifest_ref="$2" expected="$3"
-  [[ "$manifest_ref" != -* ]] || { echo 'candidate manifest ref must not begin with a dash' >&2; return 20; }
+  local control_ref='refs/remotes/origin/codex/c21-operational-execution'
+  local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact34'
+  [[ "$manifest_ref" == "$control_ref" ]] || { echo 'candidate control ref must be the exact successor remote-tracking ref' >&2; return 20; }
   [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || { echo 'full 40-character SHA required' >&2; return 20; }
-  git -C "$repo" rev-parse --verify "$manifest_ref^{commit}" >/dev/null || {
+  local control_sha
+  control_sha="$(git -C "$repo" rev-parse --verify "$control_ref^{commit}")" || {
     echo 'candidate manifest ref is not a reachable commit' >&2; return 20;
   }
-  local payload manifest_path='deploy/wsl/CandidateReleaseManifest.json'
-  payload="$(git -C "$repo" show "$manifest_ref:$manifest_path")" || {
+  [[ "$control_sha" != "$expected" ]] || { echo 'candidate and control commits must be distinct' >&2; return 20; }
+  local payload manifest_path='deploy/wsl/CandidateReleaseManifest.json' actual_hash supplied_hash
+  supplied_hash="${ANVIL_CANDIDATE_MANIFEST_SHA256:?candidate manifest checksum is required}"
+  [[ "$supplied_hash" =~ ^[0-9a-fA-F]{64}$ ]] || { echo 'candidate manifest checksum format is invalid' >&2; return 20; }
+  actual_hash="$(git -C "$repo" show "$control_ref:$manifest_path" | sha256sum | cut -d' ' -f1)" || {
+    echo 'CandidateReleaseManifest.json missing from control ref' >&2; return 20;
+  }
+  [[ "${actual_hash,,}" == "${supplied_hash,,}" ]] || {
+    echo 'candidate manifest checksum mismatch' >&2; return 20;
+  }
+  payload="$(git -C "$repo" show "$control_ref:$manifest_path")" || {
     echo 'CandidateReleaseManifest.json missing from manifest ref' >&2; return 20;
   }
-  if [[ -n "${ANVIL_CANDIDATE_MANIFEST_SHA256:-}" ]]; then
-    local actual_hash
-    actual_hash="$(printf '%s' "$payload" | sha256sum | cut -d' ' -f1)"
-    [[ "$actual_hash" == "$ANVIL_CANDIDATE_MANIFEST_SHA256" ]] || {
-      echo 'candidate manifest checksum mismatch' >&2; return 20;
-    }
-  fi
   local remote_ref
   local python_bin="${ANVIL_PYTHON:-python3}"
   command -v "$python_bin" >/dev/null || { echo 'Python 3 is required for candidate validation' >&2; return 20; }
@@ -60,12 +65,15 @@ if cleanup.get('required_labels') != {
 print(remote_ref)
 PY
 )" || return 20
+  [[ "$remote_ref" == "$candidate_ref" ]] || { echo 'candidate feature remote ref must be the exact candidate remote-tracking ref' >&2; return 20; }
   local remote_sha
-  remote_sha="$(git -C "$repo" rev-parse --verify "$remote_ref^{commit}")" || {
+  remote_sha="$(git -C "$repo" rev-parse --verify "$candidate_ref^{commit}")" || {
     echo 'candidate feature remote is not reachable' >&2; return 20;
   }
   [[ "$remote_sha" == "$expected" ]] || {
     echo 'candidate does not equal the approved feature remote' >&2; return 21;
   }
-  git -C "$repo" cat-file -e "$expected^{commit}"
+  git -C "$repo" merge-base --is-ancestor "$expected" "$control_sha" || {
+    echo 'candidate must be an ancestor of the successor control commit' >&2; return 21;
+  }
 }

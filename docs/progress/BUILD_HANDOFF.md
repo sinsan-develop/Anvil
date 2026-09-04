@@ -1,3 +1,12 @@
+# C-21 WSL control successor active (2026-09-04)
+
+- seq486 `REPOSITORY_RECONCILED`를 append하여 immutable candidate `93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad`를 validated base `eef3496...` 대비 cumulative exact34로 결박했다. seq1~485 canonical hash `CC2A98A...DB2CDE8`과 raw event-object bytes hash `39D6D6EC...7E60FA`는 보존한다.
+- `CandidateReleaseManifest.json`은 `APPROVED_FOR_STAGING_VALIDATION`, candidate remote `refs/remotes/origin/candidates/c21-wsl-exact34`, control remote `refs/remotes/origin/codex/c21-operational-execution`, 승인 artifact `docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md`(`92C34A49...60831F`)와 UTF-8/LF 승인 원문 hash `2167308A...753D5`, rollback exact candidate로 확정했다.
+- reviewed harness I1~I3와 private Git transition 문서는 별도 control successor 변경이다. candidate commit 자체는 수정하지 않는다.
+- private push는 대상 저장소에 대한 exact 승인 부족으로 safety gate에서 거부됐고 재시도·우회하지 않았다. control commit/push도 `NOT_EXECUTED`다.
+- PMO routing: 향후 checkpoint·예외·승인·quality gate·완료 후보는 parent PMO task `01a054f5-c2b4-7af0-b31a-c8148ef74642`로 직접 보고한다. legacy `01a027a8-0a37-7821-9980-aa029a33e8fd`는 read-only이며 수신·판단·승인 대상이 아니다.
+- 실제 WSL 배포, Docker, DB, volume 삭제, Telegram, Provider는 모두 `NOT_EXECUTED`; C-01은 계속 차단한다.
+
 # C-21 WSL 선행검증 구현 active (2026-09-04)
 
 - 신산님의 명시 승인으로 seq484 `SCOPE_CHANGE_APPROVED`, seq485 `PACKAGE_STARTED`를 append했다.
@@ -610,23 +619,27 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 485,
+  "event_sequence": 486,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_wsl_early_validation_started",
-  "updated_at": "2026-09-04T15:20:01+09:00",
+  "last_event_id": "evt_c21_wsl_control_successor_bound",
+  "updated_at": "2026-09-04T18:05:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "active_work_instruction_sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
   "active_invocation_sha256": "F6128710A539124F1636CADB20AA94EFE1A87981C4B6C4D3AA23EA3F5B71D531",
   "active_revision_binding_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
-  "next_safe_action": "WSL harness 구현을 검증한 뒤 Main Agent가 implementation exact SHA를 commit/push하고 candidate manifest approval binding을 별도 control commit으로 결박한다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
+  "approval_artifact_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+  "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
+  "approval_text_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
+  "historical_seq1_485_raw_sha256": "39D6D6ECE49C8D8EE0CB9BA0A64FC9BC33231E335DCE84DEB4B4A70D497E60FA",
+  "next_safe_action": "Main Agent가 exact 승인 후 immutable candidate 93c58f7을 private candidate ref로 push하고, 별도 control successor commit을 공식 control ref에 push한 뒤 동일 guard를 통과시킨다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+  "repository_head": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_EARLY_VALIDATION_ACTIVE_EXACT34",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_SUCCESSOR_ACTIVE_EXACT34",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -665,7 +678,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
   ],
   "current_release_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
   "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-  "focused_test_count": 6,
+  "focused_test_count": 15,
   "focused_operational_contract_count": 31,
   "operational_backup_attempt": 2,
   "operational_backup_status": "FAILED_EXIT_20_NO_DUMP_NO_RECEIPT",
