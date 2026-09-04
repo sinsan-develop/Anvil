@@ -610,7 +610,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
   "next_safe_action": "신산님의 명시 승인 전 WSL Phase C 조기실행을 시작하지 않는다. 승인 시에만 deploy/wsl Git-only staging harness와 별도 candidate manifest/guard를 구현하고 Telegram·Provider 제외 PG15/PG18 RC 검증을 수행한다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "894e7b71fc52905e774892844905199401199fb2",
+  "repository_head": "584e4020275ae734a6385dd44e552ec91c4a02b7",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",

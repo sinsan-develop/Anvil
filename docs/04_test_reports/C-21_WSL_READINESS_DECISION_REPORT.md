@@ -39,4 +39,3 @@ WSL-server 선행검증은 현재 C-21 R4 승인 범위의 단순 실행이 아�
 ## 4. 정확한 다음 승인 문구
 
 `C-21 WSL 선행검증을 Phase C successor로 앞당기고, deploy/wsl Git-only staging harness와 별도 candidate ReleaseManifest/guard를 구현한 뒤 WSL-server의 PG15 전용 DB 및 격리 PG18 RC에서 Telegram·Provider를 제외한 migration·API·SSE·same-origin·backup/restore·rollback 검증을 수행하는 것을 승인한다.`
-

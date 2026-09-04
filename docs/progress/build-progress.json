@@ -283,7 +283,7 @@
   "latest_evidence_refs": [
     {
       "path": "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
-      "sha256": "79FC78F0594BC0EA2995EB6697FBC24FC3FDEC10C9F9F6DA1A06B95847884B20"
+      "sha256": "B8B0AB987469D6413C10E3D294E3DDF359656496D638BD0BCCD85023A9E2C4F2"
     },
     {
       "path": "docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md",
@@ -1159,7 +1159,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-        "sha256": "D26889B0B9BE307259D3F5A98CA8063CAD4A9EECDC5CFDBE1119F7C42B625807"
+        "sha256": "FEF6904F2E81D7F168FF3F589814B7B91EE848E50695674FE30B4536FDEB8915"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1387,7 +1387,7 @@
     "remote_head": "894e7b71fc52905e774892844905199401199fb2",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "894e7b71fc52905e774892844905199401199fb2",
-    "push_status": "FEATURE_SYNCED_C21_WSL_READINESS_WAITING_APPROVAL",
+    "push_status": "FEATURE_LOCAL_CHECKPOINT_AHEAD_C21_WSL_READINESS_EOF_NORMALIZATION",
     "exact_allowed_paths": [
       "deploy/ysna/backup-c21-db.sh",
       "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
@@ -1409,8 +1409,8 @@
       "tests/tooling/test_project_progress.py"
     ],
     "observed_at": "2026-09-04T14:40:00+09:00",
-    "worktree_status": "C21_WSL_READINESS_WAITING_APPROVAL: HEAD/upstream synced at 894e7b7; seq1-482 and all prior evidence preserved; exact18 against eef3496; external changes not executed",
-    "local_head": "894e7b71fc52905e774892844905199401199fb2"
+    "worktree_status": "C21_WSL_READINESS_WAITING_APPROVAL: local checkpoint 584e402 is ahead of upstream 894e7b7; report EOF normalization is non-semantic; seq1-483 meaning and prior evidence preserved; exact18 against eef3496; external changes not executed",
+    "local_head": "584e4020275ae734a6385dd44e552ec91c4a02b7"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1901,5 +1901,5 @@
     "report_path": "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
-  "snapshot_hash": "A2C1B6EB6C3A76C4BC318AA8DB6CDAD851E58D69BE1C6B344857AD54D8C79F48"
+  "snapshot_hash": "3657593C215A5CCF79D0260C409B795965A6A60C745EA11342CAF7B6197456AB"
 }

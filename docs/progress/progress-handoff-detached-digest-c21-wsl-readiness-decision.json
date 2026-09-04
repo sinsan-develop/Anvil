@@ -6,15 +6,15 @@
   "algorithm": "SHA-256",
   "progress": {
     "path": "docs/progress/build-progress.json",
-    "bytes": 83985,
-    "file_sha256": "3AAE551B41B33E065B9BA5E5D9C4A8A5EAFA49FFFEFA610A6804E6ECD27C0AC9",
-    "canonical_json_sha256": "02867D72F0C111CDF3DC0A1EEE7A80CCE956870FBAC9F1D3061CCE0FA2ECA82C"
+    "bytes": 84070,
+    "file_sha256": "353CDF7B2CCAAB5B718986FAB23C350EAF51C069D87804D44EBD2F7392BF9D8B",
+    "canonical_json_sha256": "8541B90143D0AE22D8E30D87C192C62CB11FFFF0E6BAD58D82AA5DA20D2D392E"
   },
   "handoff": {
     "path": "docs/progress/BUILD_HANDOFF.md",
     "bytes": 146915,
-    "file_sha256": "F08120201798E66D56E6206E1BE3A44762F920C3383F1697E646BE0D45699385",
-    "machine_summary_canonical_sha256": "F8D8AA87468B4A0FEFC17CAA5046F80716E3F5017012A2190E9263C297D2AD17"
+    "file_sha256": "F999FB3919B0E254686870D8031B4F99E6CA599995A8E71DAD0A33E630E93F10",
+    "machine_summary_canonical_sha256": "8EA01F87CADA25BBF384D1A292506CB0013DB5ACCB29A08B6280C302B3009307"
   },
   "created_at": "2026-09-04T14:40:00+09:00",
   "scope": "WSL Phase C early execution requires explicit approval for scope, order, and important operational risk changes; C-01 remains blocked; seq1-482 and prior evidence preserved; no product, server, DB, DNS, TLS, Secret, deletion, ReleaseManifest rebind, main merge, Telegram, or Provider action executed."

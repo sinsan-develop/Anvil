@@ -3182,6 +3182,7 @@ def validate_c21_wsl_readiness_decision_projection(
     repository = progress.get("repository") or {}
     decision = progress.get("wsl_readiness_decision") or {}
     checkpoint = "894e7b71fc52905e774892844905199401199fb2"
+    local_checkpoint = "584e4020275ae734a6385dd44e552ec91c4a02b7"
     manifest_path = "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
     digest_path = "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json"
     report_path = "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md"
@@ -3235,13 +3236,13 @@ def validate_c21_wsl_readiness_decision_projection(
         errors.append("C21_WSL_READINESS_APPROVAL_BOUNDARY_INVALID")
     if any((
         repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-        repository.get("local_head") != checkpoint,
+        repository.get("local_head") != local_checkpoint,
         repository.get("branch") != "codex/c21-operational-execution",
         repository.get("upstream") != "origin/codex/c21-operational-execution",
         repository.get("remote_head") != checkpoint,
         repository.get("feature_remote_head") != checkpoint,
         repository.get("head_relation") != "FEATURE_WORKTREE_C21_WSL_READINESS_WAITING_APPROVAL_EXACT18",
-        repository.get("push_status") != "FEATURE_SYNCED_C21_WSL_READINESS_WAITING_APPROVAL",
+        repository.get("push_status") != "FEATURE_LOCAL_CHECKPOINT_AHEAD_C21_WSL_READINESS_EOF_NORMALIZATION",
         set(repository.get("exact_allowed_paths") or []) != exact_paths,
         len(repository.get("exact_allowed_paths") or []) != 18,
     )):
@@ -8691,7 +8692,8 @@ def validate_repository_projection(
         c21_wsl_readiness_projection
         and actual_path_set == set(allowed)
         and actual_head != base
-        and actual_remote_head == actual_feature_remote_head == actual_head
+        and actual_head == repository.get("local_head")
+        and actual_remote_head == actual_feature_remote_head == repository.get("remote_head")
     )
     if working_tree_mode:
         if (
