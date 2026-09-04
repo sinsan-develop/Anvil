@@ -625,11 +625,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 487,
+  "event_sequence": 488,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_wsl_control_postcommit_bound",
-  "updated_at": "2026-09-04T18:30:00+09:00",
+  "last_event_id": "evt_c21_wsl_control_runtime_successor_bound",
+  "updated_at": "2026-09-04T22:30:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "active_work_instruction_sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
@@ -639,20 +639,25 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
   "approval_text_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
   "historical_seq1_485_raw_sha256": "39D6D6ECE49C8D8EE0CB9BA0A64FC9BC33231E335DCE84DEB4B4A70D497E60FA",
-  "next_safe_action": "Main Agent가 exact 승인 후 immutable candidate 93c58f7과 committed control 73c39ca를 각각 승인된 private ref에 push한 뒤 동일 guard를 통과시킨다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
+  "historical_seq1_487_raw_bytes": 786441,
+  "historical_seq1_487_raw_sha256": "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
+  "historical_seq1_487_canonical_sha256": "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
+  "next_safe_action": "Main Agent가 seq488 exact8 record를 검토·commit한 뒤 별도 승인 경계에서 immutable candidate 93c58f7과 reviewed control-runtime ead1214를 승인된 private ref에 push한다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "73c39ca03caa615f7207eac3499c668497cecc5a",
+  "repository_head": "ead1214e3f01e68e577c3163e1cf143ee5753490",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_ACTIVE_EXACT39",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_RUNTIME_SUCCESSOR_ACTIVE_EXACT42",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
     "deploy/wsl/bootstrap.sh",
     "deploy/wsl/candidate-manifest-guard.sh",
+    "deploy/wsl/cleanup.sh",
     "deploy/wsl/common.sh",
     "deploy/wsl/compose.wsl.yml",
+    "deploy/wsl/control-runtime.sh",
     "deploy/wsl/deploy.sh",
     "deploy/wsl/requirements-runtime.txt",
     "deploy/wsl/rollback.sh",
@@ -665,6 +670,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/WORK_STATUS.md",
     "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
@@ -687,15 +693,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
+  "candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+  "predecessor_control_commit": "73c39ca03caa615f7207eac3499c668497cecc5a",
+  "runtime_parent_commit": "5251a0b889f4e1062a5780eea9f03d8e9b9f69bb",
+  "control_runtime_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
+  "repository_exact42_path_list_sha256": "11F56564BC0460157FDD9E99BA00FFF7EA0B5EAC0FA5E6C24BC980BBDA08AA99",
+  "record_exact8_path_list_sha256": "E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B",
   "current_release_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
   "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-  "focused_test_count": 15,
+  "focused_test_count": 24,
   "focused_operational_contract_count": 31,
   "operational_backup_attempt": 2,
   "operational_backup_status": "FAILED_EXIT_20_NO_DUMP_NO_RECEIPT",
   "backup_attempt3": "NOT_EXECUTED",
   "release_manifest_rebind": "NOT_EXECUTED",
-  "deployment_status": "NOT_EXECUTED_PENDING_GIT_BINDING",
+  "deployment_status": "NOT_EXECUTED_PENDING_SEQ488_COMMIT_AND_PRIVATE_PUSH",
   "telegram_and_provider": "NOT_EXECUTED_EXCLUDED",
   "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
   "reporting_decision": "AUTO_CONTINUE",
@@ -1245,3 +1257,45 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - `/health/live`와 `/health/ready`는 HTTP 200이며, `/integrations/telegram/webhook` same-origin 경로와 Telegram `setWebhook`/`getWebhookInfo`가 성공했다. pending update는 0이고 잘못된 secret은 HTTP 400으로 거부됐다.
 - 기존 `progress-events.json`, `build-progress.json`의 historical event sequence/hash는 변경하지 않았다. 상세 증거는 `docs/evidence/manifests/C-32_OPERATIONAL_SUCCESSOR_PROJECTION.json`, `docs/completion_reports/C-32_OPERATIONAL_SUCCESSOR_PROJECTION.md`, `docs/progress/progress-handoff-detached-digest-c32-successor.json`에 둔다.
 - 이 successor projection은 Phase B Gate 판정이나 C-01 시작 승인을 대체하지 않는다. 다음 안전 행동은 Main Agent의 historical baseline과 successor evidence 정합성 검토다.
+
+## 2026-09-04 22:30:00 +09:00 C-21 seq488 control-runtime successor projection
+
+- 담당: `developer-primary-wsl`; 상태: `IN_PROGRESS_TDD_GREEN`.
+- 시작 branch/HEAD: `codex/c21-operational-execution` / `ead1214e3f01e68e577c3163e1cf143ee5753490`; 시작 worktree clean, upstream/remote head `ca92b7845eda803cff3c432799642e4f9243d4d6`.
+- TDD RED: `.venv\\Scripts\\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k control_runtime_successor` → exit 1, `2 failed, 100 deselected`; seq488 manifest 부재와 runtime successor Git projection 미지원이 각각 의도한 원인이다.
+- immutable predecessor: seq1~487 raw `786441` bytes / `A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17`, canonical `E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C`; seq1~487 및 기존 manifest/digest는 수정하지 않는다.
+- repository binding: candidate `93c58f7...` exact34, predecessor control `73c39ca...`, runtime parent `5251a0b...`, reviewed control-runtime `ead1214...`; base→runtime exact42, record-only exact8.
+- external push/deployment/DB/volume/Telegram/Provider는 모두 `NOT_EXECUTED`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT` 유지다.
+
+### seq488 completion checkpoint
+
+- 상태: `COMPLETED_FOR_REVIEW`; unknown record commit SHA는 기록하지 않았고 commit/push는 `NOT_EXECUTED`다.
+- focused GREEN: seq488 전용 `2 passed, 100 deselected`; seq487 history/postcommit와 seq488 runtime successor 결합 범위 `4 passed, 98 deselected`.
+- full progress tooling GREEN: `102 passed in 73.62s`; precommit checker GREEN: `PASS sequence=488 reporting=AUTO_CONTINUE`.
+- error lineage: `C21_WSL_CONTROL_RUNTIME_SUCCESSOR_UNBOUND_R1` formal RED 1회 유지. `HISTORICAL_SEQ487_CURRENT_HEAD_PATH_MIX` 1회와 `SEQ488_SELF_REFERENCED_TOOL_HASH_STALE` 1회는 각각 root cause 확인·해소했고 동일 fingerprint 반복 0회다.
+- seq1~487 raw `786441` bytes / `A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17`, canonical `E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C`는 불변이다.
+- exact8 canonical sorted path-list hash는 Main ruling에 따른 실제 64자리 `E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B`; brief의 63자리 `...F00`은 마지막 `B` 전사 누락이며 범위 변경이 아니다.
+- record exact8 외 mutation은 없고 external push/deployment/SSH/WSL/Docker/DB/volume/Telegram/Provider는 모두 `NOT_EXECUTED`; C-01 차단은 유지한다.
+- 다음 안전 조치: Main review 후 별도 승인 경계에서 exact8 record commit/push를 결정한다.
+
+#### seq488 error-ledger completeness note
+
+- 최초 full tooling `97 passed, 5 failed`: `SEQ488_PROGRESS_EVENT_REF_STALE` 1회가 referenced-hash 3건, `HISTORICAL_SEQ487_CURRENT_HEAD_PATH_MIX` 1회가 역사 projection 2건을 발생시켰다.
+- focused fixture 보완 중 `HISTORICAL_SEQ487_NEGATIVE_FIXTURE_CLASSIFICATION` 1회가 추가됐고, 이후 full `99 passed, 3 failed`는 `SEQ488_SELF_REFERENCED_TOOL_HASH_STALE` 1회였다.
+- 각 fingerprint는 root cause별 1회, 동일 fingerprint 반복 0회이며 모두 최종 `102 passed`와 checker PASS로 해소됐다. formal unbound RED는 `C21_WSL_CONTROL_RUNTIME_SUCCESSOR_UNBOUND_R1` 1회 그대로다.
+
+### seq488 reviewer fix round 1
+
+- reviewer finding: 기존 postcommit은 ead1214→HEAD exact8만 보아 base→HEAD exact43 reversion, second exact8 descendant, extra-parent merge를 구분하지 못했다. manifest external/C-01 상태도 event에서만 강제되고 manifest 자체 mutation은 허용됐다.
+- TDD RED: manifest boundary mutation은 `1 failed, 1 passed, 101 deselected`; real Git fixture에서 valid direct exact44는 PASS하고 base→HEAD exact43이 기존 checker에 `[]`로 허용됨을 재현했다.
+- GREEN contract: clean postcommit은 ead1214의 유일한 direct child 1 commit이고, ead1214→HEAD exact8이며, base→HEAD가 runtime exact42와 record exact8의 union인 derived exact44여야 한다. 위반은 `GIT_DESCENDANT_RECORD_COMMIT_INVALID`다.
+- manifest contract: push/deployment/database/volume_cleanup/telegram/provider `NOT_EXECUTED`, C-01 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`를 manifest에서 직접 강제한다.
+- focused GREEN: `3 passed, 100 deselected in 28.87s`.
+- Main의 최초 독립 review dispatch 누락은 `MAIN_REVIEW_DISPATCH_OMISSION_SEQ488_R1` coordination error 1회이며 제품 failure가 아니다. 동일 오류 반복은 0회다.
+- seq1~487, predecessor manifest/digest, product, authority는 불변이고 external action/commit은 `NOT_EXECUTED`다.
+
+#### fix round 1 completion checkpoint
+
+- checker/test current portable hashes와 progress snapshot/digest/manifest를 재결속했다.
+- focused `3 passed, 100 deselected in 30.19s`; full progress tooling `103 passed in 120.82s`; precommit checker `PASS sequence=488 reporting=AUTO_CONTINUE`.
+- 상태는 `COMPLETED_FOR_REVIEW`; record exact8 외 mutation, commit, push, external action은 없다.

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-CONTROL-RUNTIME-SUCCESSOR-DIGEST-20260904",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "event_sequence": 488,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 87890,
+    "file_sha256": "BA330F1AD45D7B10A6E8DEC3F78B37A23642D641CA705B3BD267D2E767552A94",
+    "canonical_json_sha256": "30DF28902C289076A267B1BE12DD07A73B8384F14D0ADF3CD3B4A609E72754EB"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 158030,
+    "file_sha256": "386A6508B207F280CD0C16DA5C849E294C2E0C7DA169DEE36191285EED0682FC",
+    "machine_summary_canonical_sha256": "39F9E80BFA89B65070E60DD199C4CF8DCA083539A78BA4B9DEE2A777F0C21BBB"
+  },
+  "created_at": "2026-09-04T22:30:00+09:00",
+  "scope": "Reviewed control-runtime ead1214 exact42 and immutable seq1..487 are bound by the seq488 record-only exact8 successor; push, deployment, DB, volume cleanup, Telegram, and Provider remain not executed."
+}

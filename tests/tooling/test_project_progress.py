@@ -3618,6 +3618,32 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_c21_wsl_control_postcommit_successor_binds_committed_control(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
+        if bundle["progress"]["event_sequence"] != 487:
+            historical_commit = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+            bundle["progress"] = json.loads(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{historical_commit}:docs/progress/build-progress.json",
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
+            bundle["events"] = json.loads(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{historical_commit}:docs/progress/progress-events.json",
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
         predecessor_manifest = json.loads(
             (
                 ROOT
@@ -3637,19 +3663,12 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_wsl_control_postcommit_projection(bundle, manifest),
         )
         repository = bundle["progress"]["repository"]
-        actual_head = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
-        ).strip()
-        changed_paths = subprocess.check_output(
-            ["git", "diff", "--name-only", f"{repository['validated_base_commit']}..{actual_head}"],
-            cwd=ROOT,
-            text=True,
-        ).splitlines()
-        control_paths = subprocess.check_output(
-            ["git", "diff", "--name-only", f"{repository['local_head']}..{actual_head}"],
-            cwd=ROOT,
-            text=True,
-        ).splitlines()
+        # This is a historical seq487 contract test.  Simulate its clean
+        # exact-path successor rather than mixing the current seq488 HEAD and
+        # its additional runtime commit paths into the historical projection.
+        actual_head = "f" * 40
+        changed_paths = repository["exact_allowed_paths"]
+        control_paths = repository["postcommit_successor_paths"]
         projection_args = {
             "actual_head": actual_head,
             "actual_branch": repository["branch"],
@@ -3673,6 +3692,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         wrong_paths = dict(
             projection_args,
+            actual_changed_paths=changed_paths + ["arbitrary.txt"],
             control_descendant_paths=control_paths + ["arbitrary.txt"],
         )
         self.assertIn(
@@ -3725,9 +3745,477 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_detached_progress_binding(wrong_digest_bundle),
         )
 
+    def test_c21_wsl_control_runtime_successor_binds_reviewed_runtime_and_prefix(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest_path = (
+            ROOT
+            / "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json"
+        )
+        self.assertTrue(
+            manifest_path.is_file(),
+            "seq488 control-runtime successor manifest is missing",
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, manifest
+            ),
+        )
+
+        expected_record_paths = {
+            "docs/WORK_STATUS.md",
+            "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        }
+        self.assertEqual(
+            expected_record_paths,
+            checker.c21_wsl_control_runtime_successor_paths(),
+        )
+        self.assertEqual(
+            "E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B",
+            hashlib.sha256(
+                json.dumps(
+                    sorted(expected_record_paths),
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest().upper(),
+        )
+        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 487)
+        self.assertEqual(786441, len(prefix))
+        self.assertEqual(
+            "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:487])
+            ).hexdigest().upper(),
+        )
+
+        wrong_runtime = copy.deepcopy(manifest)
+        wrong_runtime["runtime_commit"] = "9" * 40
+        self.assertIn(
+            "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, wrong_runtime
+            ),
+        )
+        wrong_prefix = copy.deepcopy(manifest)
+        wrong_prefix["historical_raw_events_sha256"] = "a" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, wrong_prefix
+            ),
+        )
+        for field in (
+            "push",
+            "deployment",
+            "database",
+            "volume_cleanup",
+            "telegram",
+            "provider",
+        ):
+            with self.subTest(manifest_external_boundary=field):
+                wrong_external_boundary = copy.deepcopy(manifest)
+                wrong_external_boundary[field] = "EXECUTED"
+                self.assertIn(
+                    "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+                    checker.validate_c21_wsl_control_runtime_successor_projection(
+                        bundle, wrong_external_boundary
+                    ),
+                )
+        wrong_c01_boundary = copy.deepcopy(manifest)
+        wrong_c01_boundary["c01_status"] = "READY"
+        self.assertIn(
+            "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, wrong_c01_boundary
+            ),
+        )
+
+    def test_c21_wsl_control_runtime_successor_git_projection_is_stable(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        runtime = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact42 = subprocess.check_output(
+            ["git", "diff", "--name-only", base, runtime],
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+        ).splitlines()
+        self.assertEqual(42, len(exact42))
+        self.assertEqual(
+            "11F56564BC0460157FDD9E99BA00FFF7EA0B5EAC0FA5E6C24BC980BBDA08AA99",
+            hashlib.sha256(
+                json.dumps(
+                    sorted(exact42), ensure_ascii=False, separators=(",", ":")
+                ).encode("utf-8")
+            ).hexdigest().upper(),
+        )
+        record_paths = [
+            "docs/WORK_STATUS.md",
+            "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        repository = copy.deepcopy(bundle["progress"]["repository"])
+        repository.update(
+            {
+                "validated_base_commit": base,
+                "head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_RUNTIME_SUCCESSOR_ACTIVE_EXACT42",
+                "branch": "codex/c21-operational-execution",
+                "upstream": "origin/codex/c21-operational-execution",
+                "remote_head": remote,
+                "feature_remote": "origin/codex/c21-operational-execution",
+                "feature_remote_head": remote,
+                "local_head": runtime,
+                "exact_allowed_paths": exact42,
+            }
+        )
+        progress = {
+            "event_sequence": 488,
+            "last_event_id": "evt_c21_wsl_control_runtime_successor_bound",
+            "wsl_early_validation": {
+                "status": "ACTIVE_CONTROL_RUNTIME_SUCCESSOR_PENDING_PUSH"
+            },
+        }
+        common = {
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": progress,
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(
+            common,
+            actual_head=runtime,
+            actual_changed_paths=exact42,
+            control_descendant_paths=record_paths,
+            worktree_is_clean=False,
+        )
+        self.assertEqual(
+            [], checker.validate_repository_projection(repository, **precommit)
+        )
+
+        exact44 = sorted(
+            set(exact42)
+            | {
+                "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+                "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+            }
+        )
+        postcommit = dict(
+            common,
+            actual_head="f" * 40,
+            actual_changed_paths=exact44,
+            control_descendant_paths=record_paths,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual(
+            [], checker.validate_repository_projection(repository, **postcommit)
+        )
+
+        for bad_paths in (
+            record_paths[:-1],
+            record_paths + ["arbitrary.txt"],
+            record_paths + ["deploy/wsl/cleanup.sh"],
+        ):
+            invalid_precommit = dict(precommit, control_descendant_paths=bad_paths)
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(
+                    repository, **invalid_precommit
+                ),
+            )
+            invalid_paths = dict(postcommit, control_descendant_paths=bad_paths)
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **invalid_paths),
+            )
+        wrong_branch = dict(postcommit, actual_branch="codex/arbitrary")
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_branch),
+        )
+        wrong_upstream = dict(postcommit, actual_upstream="origin/arbitrary")
+        self.assertIn(
+            "GIT_UPSTREAM_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_upstream),
+        )
+        wrong_remote = dict(postcommit, actual_remote_head="0" * 40)
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_remote),
+        )
+        nonancestor = dict(
+            postcommit,
+            projected_local_head_is_ancestor=False,
+            control_is_ancestor=False,
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **nonancestor),
+        )
+        dirty_descendant = dict(postcommit, worktree_is_clean=False)
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dirty_descendant),
+        )
+
+    def test_c21_wsl_control_runtime_postcommit_real_git_requires_one_direct_exact44_record_commit(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        runtime = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        runtime_parent = "5251a0b889f4e1062a5780eea9f03d8e9b9f69bb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(
+            {
+                "docs/WORK_STATUS.md",
+                "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+                "docs/progress/BUILD_HANDOFF.md",
+                "docs/progress/build-progress.json",
+                "docs/progress/progress-events.json",
+                "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            }
+        )
+
+        def git(repo: Path, *args: str, input_text: str | None = None) -> str:
+            return subprocess.check_output(
+                ["git", *args],
+                cwd=repo,
+                input=input_text,
+                text=True,
+                encoding="utf-8",
+            ).strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "core.autocrlf=false",
+                    "-c",
+                    "core.eol=lf",
+                    "clone",
+                    "--quiet",
+                    "--no-checkout",
+                    "--no-hardlinks",
+                    str(ROOT),
+                    str(repo),
+                ],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "checkout", "--quiet", "-B", branch, runtime],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True
+            )
+            subprocess.run(
+                ["git", "config", "user.email", "anvil-test@example.invalid"],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "update-ref", f"refs/remotes/origin/{branch}", remote],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "branch", "--set-upstream-to", f"origin/{branch}", branch],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.DEVNULL,
+            )
+            for relative in record_paths:
+                source = ROOT / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def commit_record(repo: Path, message: str) -> str:
+            subprocess.run(
+                ["git", "commit", "--quiet", "-m", message], cwd=repo, check=True
+            )
+            return git(repo, "rev-parse", "HEAD")
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+
+            valid_repo = create_fixture(temp_root, "valid")
+            valid_head = commit_record(valid_repo, "seq488 exact8 record")
+            self.assertEqual(
+                44,
+                len(
+                    git(
+                        valid_repo, "diff", "--name-only", base, valid_head
+                    ).splitlines()
+                ),
+            )
+            self.assertEqual(
+                [runtime],
+                git(valid_repo, "show", "-s", "--format=%P", valid_head).split(),
+            )
+            self.assertEqual([], validate(valid_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(
+                    ["git", "show", f"{base}:docs/progress/BUILD_HANDOFF.md"],
+                    cwd=reverted_repo,
+                )
+            )
+            subprocess.run(
+                ["git", "add", "--", "docs/progress/BUILD_HANDOFF.md"],
+                cwd=reverted_repo,
+                check=True,
+            )
+            reverted_head = commit_record(reverted_repo, "seq488 record with reversion")
+            self.assertEqual(
+                43,
+                len(
+                    git(
+                        reverted_repo, "diff", "--name-only", base, reverted_head
+                    ).splitlines()
+                ),
+            )
+            reverted_errors = validate(reverted_repo)
+
+            second_repo = create_fixture(temp_root, "second-descendant")
+            first_record_head = commit_record(second_repo, "seq488 exact8 record")
+            with (second_repo / "docs/WORK_STATUS.md").open(
+                "a", encoding="utf-8", newline="\n"
+            ) as stream:
+                stream.write("\nsecond descendant mutation\n")
+            subprocess.run(
+                ["git", "add", "--", "docs/WORK_STATUS.md"],
+                cwd=second_repo,
+                check=True,
+            )
+            second_head = commit_record(second_repo, "second exact8 descendant")
+            self.assertEqual(
+                44,
+                len(git(second_repo, "diff", "--name-only", base, second_head).splitlines()),
+            )
+            self.assertEqual(
+                [first_record_head],
+                git(second_repo, "show", "-s", "--format=%P", second_head).split(),
+            )
+            second_descendant_errors = validate(second_repo)
+
+            wrong_parent_repo = create_fixture(temp_root, "wrong-parent")
+            record_tree = git(wrong_parent_repo, "write-tree")
+            side_tree = git(wrong_parent_repo, "rev-parse", f"{runtime_parent}^{{tree}}")
+            side_commit = git(
+                wrong_parent_repo,
+                "commit-tree",
+                side_tree,
+                "-p",
+                runtime_parent,
+                input_text="side parent\n",
+            )
+            wrong_parent_head = git(
+                wrong_parent_repo,
+                "commit-tree",
+                record_tree,
+                "-p",
+                runtime,
+                "-p",
+                side_commit,
+                input_text="seq488 wrong-parent merge\n",
+            )
+            subprocess.run(
+                ["git", "update-ref", "HEAD", wrong_parent_head],
+                cwd=wrong_parent_repo,
+                check=True,
+            )
+            self.assertEqual(
+                44,
+                len(
+                    git(
+                        wrong_parent_repo,
+                        "diff",
+                        "--name-only",
+                        base,
+                        wrong_parent_head,
+                    ).splitlines()
+                ),
+            )
+            self.assertEqual(
+                [runtime, side_commit],
+                git(
+                    wrong_parent_repo,
+                    "show",
+                    "-s",
+                    "--format=%P",
+                    wrong_parent_head,
+                ).split(),
+            )
+            wrong_parent_errors = validate(wrong_parent_repo)
+
+            for scenario, errors in (
+                ("base_to_head_exact43_reversion", reverted_errors),
+                ("second_descendant_commit", second_descendant_errors),
+                ("wrong_parent_merge", wrong_parent_errors),
+            ):
+                with self.subTest(scenario=scenario):
+                    self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", errors)
+
     def test_c21_wsl_postcommit_git_projection_rejects_every_dirty_variant(self) -> None:
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
+        if bundle["progress"]["event_sequence"] != 487:
+            historical_commit = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+            bundle["progress"] = json.loads(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{historical_commit}:docs/progress/build-progress.json",
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
         repository = bundle["progress"]["repository"]
         actual_head = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
@@ -3791,7 +4279,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             validate_simulated(status=" M arbitrary-tracked.txt"),
         )
         self.assertIn(
-            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            "GIT_BRANCH_MISMATCH",
             validate_simulated(branch="codex/arbitrary"),
         )
         self.assertIn(

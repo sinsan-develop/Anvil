@@ -915,6 +915,16 @@ def validate_event_stream(
                     and set(repository.get("exact_allowed_paths") or [])
                     == c21_wsl_control_committed_exact_paths()
                 )
+                or (
+                    progress.get("event_sequence") == 488
+                    and event.get("event_id")
+                    == "evt_c21_wsl_control_runtime_successor_bound"
+                    and details.get("repository_exact_path_count") == 42
+                    and set(details.get("exact_allowed_paths") or [])
+                    == c21_wsl_control_runtime_committed_exact_paths()
+                    and set(repository.get("exact_allowed_paths") or [])
+                    == c21_wsl_control_runtime_committed_exact_paths()
+                )
             )
             if not wsl_waiting_successor and not wsl_control_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
                 errors.append("EVENT_EFFECT_MISMATCH")
@@ -2224,10 +2234,30 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
     """Allow historical projections only behind the fully validated seq478 successor."""
     progress = bundle.get("progress") or {}
     current_ref = progress.get("current_progress_evidence_ref") or {}
+    wsl_control_runtime_manifest_path = (
+        "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json"
+    )
     wsl_control_manifest_path = "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
     wsl_postcommit_manifest_path = (
         "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json"
     )
+    if (
+        progress.get("event_sequence") == 488
+        and progress.get("last_event_id")
+        == "evt_c21_wsl_control_runtime_successor_bound"
+        and current_ref.get("manifest_path") == wsl_control_runtime_manifest_path
+        and (progress.get("repository") or {}).get("branch")
+        == "codex/c21-operational-execution"
+    ):
+        try:
+            wsl_control_runtime_manifest = _load_json(
+                bundle["_root"] / wsl_control_runtime_manifest_path
+            )
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_wsl_control_runtime_successor_projection(
+            bundle, wsl_control_runtime_manifest
+        ) == []
     if (
         progress.get("event_sequence") == 487
         and progress.get("last_event_id") == "evt_c21_wsl_control_postcommit_bound"
@@ -3523,6 +3553,34 @@ def c21_wsl_control_postcommit_successor_paths() -> set[str]:
     }
 
 
+def c21_wsl_control_runtime_committed_exact_paths() -> set[str]:
+    return c21_wsl_control_committed_exact_paths() | {
+        "deploy/wsl/cleanup.sh",
+        "deploy/wsl/control-runtime.sh",
+        "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+    }
+
+
+def c21_wsl_control_runtime_successor_paths() -> set[str]:
+    return {
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_wsl_control_runtime_record_committed_exact_paths() -> set[str]:
+    return (
+        c21_wsl_control_runtime_committed_exact_paths()
+        | c21_wsl_control_runtime_successor_paths()
+    )
+
+
 def raw_event_object_prefix_bytes(payload: bytes, count: int) -> bytes:
     """Return exact bytes from the first event object through object ``count``."""
     marker = payload.index(b'"events"')
@@ -3853,6 +3911,279 @@ def validate_c21_wsl_control_postcommit_projection(
         for row in rows
     ):
         errors.append("C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_wsl_control_runtime_successor_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    """Validate seq488 against the reviewed control-runtime commit and seq487 prefix."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    repository = progress.get("repository") or {}
+    active = progress.get("wsl_early_validation") or {}
+    base_sha = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+    candidate_sha = "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"
+    control_sha = "73c39ca03caa615f7207eac3499c668497cecc5a"
+    runtime_sha = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+    runtime_parent = "5251a0b889f4e1062a5780eea9f03d8e9b9f69bb"
+    remote_sha = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+    manifest_path = (
+        "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json"
+    )
+    digest_path = (
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json"
+    )
+    approval_path = "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md"
+    approval_artifact_sha = "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F"
+    approval_text_sha = "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5"
+    raw_487_sha = "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17"
+    canonical_487_sha = "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C"
+    expected_path_contracts = {
+        "runtime_parent_delta": {
+            "from_commit": runtime_parent,
+            "to_commit": runtime_sha,
+            "path_count": 10,
+            "path_list_sha256": "259291AC6A18AD53B889D47AB7A8D4F5992203FCE0A23483E17D10AB4ABD6C02",
+        },
+        "control_runtime_cumulative": {
+            "from_commit": control_sha,
+            "to_commit": runtime_sha,
+            "path_count": 17,
+            "path_list_sha256": "19575A080EA48D489E044094B30BBD168029F09795C9A8FCABD0D0000AF62670",
+        },
+        "repository_cumulative": {
+            "from_commit": base_sha,
+            "to_commit": runtime_sha,
+            "path_count": 42,
+            "path_list_sha256": "11F56564BC0460157FDD9E99BA00FFF7EA0B5EAC0FA5E6C24BC980BBDA08AA99",
+        },
+        "candidate_cumulative": {
+            "from_commit": base_sha,
+            "to_commit": candidate_sha,
+            "path_count": 34,
+            "path_list_sha256": "72DF14C6925E12C0EE051FB983083D3167A2ED4266FC57B30CC41AABD7B0080D",
+        },
+        "candidate_to_control": {
+            "from_commit": candidate_sha,
+            "to_commit": control_sha,
+            "path_count": 14,
+            "path_list_sha256": "A810194414EE28410CD816CF5EAB5D1D85E1C9D1A1AFCF04ED91C15EAEC1F61F",
+        },
+        "base_to_control": {
+            "from_commit": base_sha,
+            "to_commit": control_sha,
+            "path_count": 39,
+            "path_list_sha256": "2D17A8B4E5E2D332DAD86CE91BC3539D3CFD2795BB69C804DAC4FC7B6CB8F24A",
+        },
+        "record_successor": {
+            "path_count": 8,
+            "path_list_sha256": "E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B",
+        },
+    }
+
+    def path_contract(from_sha: str, to_sha: str) -> tuple[int, str, set[str]]:
+        paths = set(
+            _split_git_paths(
+                _git_value(root, "diff", "--name-only", from_sha, to_sha)
+            )
+        )
+        digest = hashlib.sha256(
+            canonical_json_bytes(sorted(paths))
+        ).hexdigest().upper()
+        return len(paths), digest, paths
+
+    errors: list[str] = []
+    try:
+        runtime_parent_count, runtime_parent_hash, _ = path_contract(
+            runtime_parent, runtime_sha
+        )
+        control_runtime_count, control_runtime_hash, control_runtime_paths = path_contract(
+            control_sha, runtime_sha
+        )
+        repository_count, repository_hash, repository_paths = path_contract(
+            base_sha, runtime_sha
+        )
+        candidate_count, candidate_hash, _ = path_contract(base_sha, candidate_sha)
+        candidate_control_count, candidate_control_hash, _ = path_contract(
+            candidate_sha, control_sha
+        )
+        base_control_count, base_control_hash, _ = path_contract(base_sha, control_sha)
+        runtime_event_bytes = subprocess.check_output(
+            ["git", "show", f"{runtime_sha}:docs/progress/progress-events.json"],
+            cwd=root,
+        )
+        committed_raw_487 = raw_event_object_prefix_bytes(runtime_event_bytes, 487)
+        current_raw_487 = raw_event_object_prefix_bytes(
+            (root / "docs/progress/progress-events.json").read_bytes(), 487
+        )
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        runtime_parent_count, runtime_parent_hash = 0, ""
+        control_runtime_count, control_runtime_hash, control_runtime_paths = 0, "", set()
+        repository_count, repository_hash, repository_paths = 0, "", set()
+        candidate_count, candidate_hash = 0, ""
+        candidate_control_count, candidate_control_hash = 0, ""
+        base_control_count, base_control_hash = 0, ""
+        committed_raw_487, current_raw_487 = b"", b"invalid"
+    actual_contracts = (
+        (runtime_parent_count, runtime_parent_hash),
+        (control_runtime_count, control_runtime_hash),
+        (repository_count, repository_hash),
+        (candidate_count, candidate_hash),
+        (candidate_control_count, candidate_control_hash),
+        (base_control_count, base_control_hash),
+    )
+    expected_contract_values = tuple(
+        (row["path_count"], row["path_list_sha256"])
+        for row in list(expected_path_contracts.values())[:6]
+    )
+    if (
+        actual_contracts != expected_contract_values
+        or control_runtime_paths != c21_wsl_control_postcommit_successor_paths() | {
+            "deploy/wsl/bootstrap.sh",
+            "deploy/wsl/candidate-manifest-guard.sh",
+            "deploy/wsl/cleanup.sh",
+            "deploy/wsl/common.sh",
+            "deploy/wsl/control-runtime.sh",
+            "deploy/wsl/deploy.sh",
+            "deploy/wsl/rollback.sh",
+            "deploy/wsl/verify.sh",
+            "tests/deploy/test_wsl_staging_harness.py",
+        }
+        or repository_paths != c21_wsl_control_runtime_committed_exact_paths()
+    ):
+        errors.append("C21_WSL_CONTROL_RUNTIME_REPOSITORY_INVALID")
+    if any((
+        progress.get("event_sequence") != 488,
+        progress.get("last_event_id")
+        != "evt_c21_wsl_control_runtime_successor_bound",
+        progress.get("status") != "ACTIVE",
+        progress.get("active_agent") != "developer-primary-wsl",
+        (progress.get("current_progress_evidence_ref") or {}) != {
+            "package_id": "C-21",
+            "path": digest_path,
+            "manifest_path": manifest_path,
+        },
+        ((progress.get("next_successor_work_package") or {}).get("status"))
+        != "ACTIVE_CONTROL_RUNTIME_SUCCESSOR_PENDING_PUSH",
+        active.get("event_sequence") != 488,
+        active.get("status") != "ACTIVE_CONTROL_RUNTIME_SUCCESSOR_PENDING_PUSH",
+        active.get("implementation_commit") != candidate_sha,
+        active.get("control_manifest_commit") != control_sha,
+        active.get("control_runtime_commit") != runtime_sha,
+        active.get("approval_artifact_sha256") != approval_artifact_sha,
+        active.get("approval_binding_sha256") != approval_text_sha,
+    )):
+        errors.append("C21_WSL_CONTROL_RUNTIME_PROJECTION_INVALID")
+    if any((
+        repository.get("validated_base_commit") != base_sha,
+        repository.get("local_head") != runtime_sha,
+        repository.get("control_runtime_commit") != runtime_sha,
+        repository.get("control_runtime_parent") != runtime_parent,
+        repository.get("branch") != "codex/c21-operational-execution",
+        repository.get("upstream") != "origin/codex/c21-operational-execution",
+        repository.get("remote_head") != remote_sha,
+        repository.get("feature_remote_head") != remote_sha,
+        repository.get("head_relation")
+        != "FEATURE_WORKTREE_C21_WSL_CONTROL_RUNTIME_SUCCESSOR_ACTIVE_EXACT42",
+        set(repository.get("exact_allowed_paths") or []) != repository_paths,
+        set(repository.get("control_runtime_successor_paths") or [])
+        != c21_wsl_control_runtime_successor_paths(),
+    )):
+        errors.append("C21_WSL_CONTROL_RUNTIME_REPOSITORY_INVALID")
+    if (
+        len(events) != 488
+        or events[-1].get("event_id")
+        != "evt_c21_wsl_control_runtime_successor_bound"
+        or committed_raw_487 != current_raw_487
+        or len(current_raw_487) != 786441
+        or hashlib.sha256(current_raw_487).hexdigest().upper() != raw_487_sha
+        or hashlib.sha256(canonical_json_bytes(events[:487])).hexdigest().upper()
+        != canonical_487_sha
+    ):
+        errors.append("C21_WSL_CONTROL_RUNTIME_EVENTS_INVALID")
+    details = events[-1].get("details") if events else {}
+    if any((
+        not isinstance(details, Mapping),
+        (details or {}).get("manifest_path") != manifest_path,
+        (details or {}).get("runtime_commit") != runtime_sha,
+        (details or {}).get("runtime_parent_commit") != runtime_parent,
+        (details or {}).get("predecessor_control_commit") != control_sha,
+        (details or {}).get("path_contracts") != expected_path_contracts,
+        (details or {}).get("historical_raw_event_bytes") != 786441,
+        (details or {}).get("historical_raw_events_sha256") != raw_487_sha,
+        (details or {}).get("historical_events_sha256") != canonical_487_sha,
+        set((details or {}).get("exact_allowed_paths") or []) != repository_paths,
+        (details or {}).get("record_successor_paths_sha256")
+        != "E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B",
+        any(
+            (details or {}).get(field) != "NOT_EXECUTED"
+            for field in (
+                "push", "deployment", "database", "volume_cleanup", "telegram", "provider"
+            )
+        ),
+        (details or {}).get("c01_status")
+        != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    )):
+        errors.append("C21_WSL_CONTROL_RUNTIME_EVENTS_INVALID")
+    predecessor_rows = manifest.get("predecessor_raw_checksums")
+    expected_predecessor_paths = {
+        "deploy/wsl/CandidateReleaseManifest.json",
+        approval_path,
+        "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
+        "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+    }
+    rows = manifest.get("raw_checksums")
+    if any((
+        manifest.get("artifact_id")
+        != "C21-WSL-CONTROL-RUNTIME-SUCCESSOR-20260904",
+        manifest.get("manifest_type")
+        != "WSL_CANDIDATE_CONTROL_RUNTIME_SUCCESSOR_PROJECTION",
+        manifest.get("event_sequence") != 488,
+        manifest.get("validated_base_commit") != base_sha,
+        manifest.get("candidate_commit") != candidate_sha,
+        manifest.get("predecessor_control_commit") != control_sha,
+        manifest.get("runtime_parent_commit") != runtime_parent,
+        manifest.get("runtime_commit") != runtime_sha,
+        manifest.get("repository_exact_path_count") != 42,
+        manifest.get("path_contracts") != expected_path_contracts,
+        manifest.get("historical_event_sequence") != 487,
+        manifest.get("historical_events_sha256") != canonical_487_sha,
+        manifest.get("historical_raw_event_bytes") != 786441,
+        manifest.get("historical_raw_events_sha256") != raw_487_sha,
+        manifest.get("self_reference") is not False,
+        any(
+            manifest.get(field) != "NOT_EXECUTED"
+            for field in (
+                "push",
+                "deployment",
+                "database",
+                "volume_cleanup",
+                "telegram",
+                "provider",
+            )
+        ),
+        manifest.get("c01_status")
+        != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        not isinstance(predecessor_rows, list),
+        {
+            row.get("path")
+            for row in predecessor_rows or []
+            if isinstance(row, dict)
+        }
+        != expected_predecessor_paths,
+        not isinstance(rows, list),
+        {row.get("path") for row in rows or [] if isinstance(row, dict)}
+        != {digest_path},
+    )):
+        errors.append("C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID")
+    elif any(
+        not portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256"))
+        for row in [*predecessor_rows, *rows]
+    ):
+        errors.append("C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID")
     return sorted(set(errors))
 
 
@@ -8301,6 +8632,7 @@ def validate_repository_projection(
     control_descendant_paths: list[str] | None = None,
     control_is_ancestor: bool = False,
     worktree_is_clean: bool = True,
+    control_runtime_record_commit_is_direct: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     base = repository.get("validated_base_commit")
@@ -8395,6 +8727,11 @@ def validate_repository_projection(
             repository.get("head_relation")
             == "FEATURE_WORKTREE_C21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_ACTIVE_EXACT39"
             and (progress or {}).get("event_sequence") == 487
+        )
+        or (
+            repository.get("head_relation")
+            == "FEATURE_WORKTREE_C21_WSL_CONTROL_RUNTIME_SUCCESSOR_ACTIVE_EXACT42"
+            and (progress or {}).get("event_sequence") == 488
         )
     )
     if (
@@ -9011,6 +9348,15 @@ def validate_repository_projection(
                 and ((progress or {}).get("wsl_early_validation") or {}).get("status")
                 == "ACTIVE_CONTROL_POSTCOMMIT_SUCCESSOR_PENDING_PUSH"
             )
+            or (
+                set(allowed) == c21_wsl_control_runtime_committed_exact_paths()
+                and len(allowed) == 42
+                and (progress or {}).get("event_sequence") == 488
+                and (progress or {}).get("last_event_id")
+                == "evt_c21_wsl_control_runtime_successor_bound"
+                and ((progress or {}).get("wsl_early_validation") or {}).get("status")
+                == "ACTIVE_CONTROL_RUNTIME_SUCCESSOR_PENDING_PUSH"
+            )
         )
     )
     if any(not _is_evidence_only_path(path) for path in allowed) and not c21_wsl_control_projection and not c21_wsl_active_projection and not c21_wsl_readiness_projection and not c21_ysna_staging_decision_projection and not c21_ops_r2_conninfo_r4_projection and not c21_ops_r2_main_reconciliation_projection and not c21_ops_r2_release_rebind_projection and not c21_ops_r2_projection and not c21_backup_portability_accepted_projection and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
@@ -9255,6 +9601,69 @@ def validate_repository_projection(
         and actual_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
         and actual_feature_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
     )
+    c21_wsl_control_runtime_precommit_valid = (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 488
+        and repository.get("local_head")
+        == "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        and actual_head == repository.get("local_head")
+        and control_is_ancestor
+        and set(control_descendant_paths or [])
+        == c21_wsl_control_runtime_successor_paths()
+        and not worktree_is_clean
+        and actual_branch == "codex/c21-operational-execution"
+        and actual_upstream == "origin/codex/c21-operational-execution"
+        and repository.get("remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and repository.get("feature_remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_feature_remote_head
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+    )
+    c21_wsl_control_runtime_postcommit_descendant_valid = (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 488
+        and repository.get("local_head")
+        == "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        and actual_head != repository.get("local_head")
+        and control_is_ancestor
+        and control_runtime_record_commit_is_direct
+        and actual_path_set
+        == c21_wsl_control_runtime_record_committed_exact_paths()
+        and set(control_descendant_paths or [])
+        == c21_wsl_control_runtime_successor_paths()
+        and worktree_is_clean
+        and actual_branch == "codex/c21-operational-execution"
+        and actual_upstream == "origin/codex/c21-operational-execution"
+        and repository.get("remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and repository.get("feature_remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_feature_remote_head
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+    )
+    if (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 488
+        and actual_head != repository.get("local_head")
+        and control_is_ancestor
+        and set(control_descendant_paths or [])
+        == c21_wsl_control_runtime_successor_paths()
+        and worktree_is_clean
+        and actual_branch == "codex/c21-operational-execution"
+        and actual_upstream == "origin/codex/c21-operational-execution"
+        and repository.get("remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and repository.get("feature_remote_head")
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_feature_remote_head
+        == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and not c21_wsl_control_runtime_postcommit_descendant_valid
+    ):
+        errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
     if (
         sorted(actual_path_set) != allowed
         and not lr02a_active_subset_valid
@@ -9279,6 +9688,15 @@ def validate_repository_projection(
         and not c21_wsl_active_subset_valid
         and not c21_wsl_control_subset_valid
         and not c21_wsl_control_postcommit_descendant_valid
+        and not c21_wsl_control_runtime_postcommit_descendant_valid
+    ):
+        errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+    if (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 488
+        and actual_head == repository.get("local_head")
+        and not worktree_is_clean
+        and not c21_wsl_control_runtime_precommit_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -9358,6 +9776,8 @@ def validate_repository_projection(
     )
     wsl_control_checkpoint_declared = (
         c21_wsl_control_postcommit_descendant_valid
+        or c21_wsl_control_runtime_precommit_valid
+        or c21_wsl_control_runtime_postcommit_descendant_valid
         or (
             c21_wsl_control_projection
             and actual_path_set == set(allowed)
@@ -9371,12 +9791,20 @@ def validate_repository_projection(
         and actual_head != repository.get("local_head")
         and not projected_local_head_is_ancestor
         and not c21_wsl_control_postcommit_descendant_valid
+        and not c21_wsl_control_runtime_postcommit_descendant_valid
     ):
         errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
     if (
         c21_wsl_control_projection
         and (progress or {}).get("event_sequence") == 487
         and not worktree_is_clean
+    ):
+        errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
+    if (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 488
+        and not worktree_is_clean
+        and not c21_wsl_control_runtime_precommit_valid
     ):
         errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
     if working_tree_mode:
@@ -9437,6 +9865,18 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if projected_local_head_is_ancestor and actual_head
         else None
     )
+    control_runtime_record_commit_is_direct = False
+    if (
+        bundle["progress"].get("event_sequence") == 488
+        and actual_head
+        and actual_head != projected_local_head
+    ):
+        actual_parent_line = _git_value(
+            root, "show", "-s", "--format=%P", actual_head
+        )
+        control_runtime_record_commit_is_direct = (
+            (actual_parent_line or "").split() == [projected_local_head]
+        )
     if repository.get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE:
         base = repository.get("validated_base_commit")
         working_tree_mode = actual_head == base
@@ -9489,7 +9929,18 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 and set(repository.get("control_successor_paths") or [])
                 == c21_wsl_control_successor_paths()
             )
-            if dirty_paths and control_precommit_projection:
+            control_runtime_precommit_projection = (
+                bundle["progress"].get("event_sequence") == 488
+                and actual_head == repository.get("local_head")
+                and set(changed_paths)
+                == c21_wsl_control_runtime_committed_exact_paths()
+                and set(dirty_paths) == c21_wsl_control_runtime_successor_paths()
+                and set(repository.get("control_runtime_successor_paths") or [])
+                == c21_wsl_control_runtime_successor_paths()
+            )
+            if dirty_paths and control_runtime_precommit_projection:
+                control_descendant_paths = dirty_paths
+            elif dirty_paths and control_precommit_projection:
                 pass
             elif dirty_paths and decision_precommit_projection:
                 changed_paths = sorted(set(changed_paths) | set(dirty_paths))
@@ -9511,6 +9962,9 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 control_descendant_paths=control_descendant_paths,
                 control_is_ancestor=projected_local_head_is_ancestor,
                 worktree_is_clean=not dirty_paths,
+                control_runtime_record_commit_is_direct=(
+                    control_runtime_record_commit_is_direct
+                ),
             )
         )
         if not repository.get("worktree_status"):
@@ -10014,6 +10468,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
                 )
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_wsl_control_postcommit_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json":
+            errors.extend(
+                validate_c21_wsl_control_runtime_successor_projection(bundle, manifest)
+            )
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json":
             try:
                 candidate = _load_json(bundle["_root"] / "deploy/wsl/CandidateReleaseManifest.json")

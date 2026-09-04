@@ -318,3 +318,52 @@
 - final local verification: focused stale-lock/dependency/stage-cleanup/concurrency `4/4 PASS`; full WSL harness `24 PASS` in `49.430s`; all WSL shell syntax and `git diff --check` PASS.
 - stale `.publish.lock` now fails within configured `1..600s` instead of waiting forever; ordinary cleanup errors cannot strand an owned lock, and `active.next.*` residues are removed under the lock.
 - next internal action: commit the reviewed harness, then append a non-retroactive successor projection binding the new control commit before any private push or WSL execution.
+
+## 2026-09-04 C-21 seq488 control-runtime successor projection
+
+- 담당: `developer-primary-wsl`; 시작 branch/HEAD: `codex/c21-operational-execution` / `ead1214e3f01e68e577c3163e1cf143ee5753490`; 시작 worktree clean.
+- 상태: `IN_PROGRESS_TDD_GREEN`; 승인된 brief의 record-only exact8 범위만 수정하며 seq1~487와 historical manifest/digest는 byte-immutable로 보존한다.
+- TDD RED: `.venv\\Scripts\\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k control_runtime_successor` → exit 1, `2 failed, 100 deselected`; `C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json` 부재와 `FEATURE_WORKTREE_C21_WSL_CONTROL_RUNTIME_SUCCESSOR_ACTIVE_EXACT42` 미지원이 의도한 결함이다.
+- 오류 횟수: formal fingerprint `C21_WSL_CONTROL_RUNTIME_SUCCESSOR_UNBOUND_R1` 1회; 동일 오류 반복 0회.
+- 미검증/미실행: GREEN/full tooling/checker/diff는 아직 실행 전이다. commit, push, SSH, WSL, Docker, DB, volume, Telegram, Provider는 `NOT_EXECUTED`; C-01은 계속 차단한다.
+- brief 전사 오류 정정 ledger: brief의 record exact8 hash `...F00`은 63자리로 SHA-256이 될 수 없다. 지정 8경로를 UTF-8 canonical sorted JSON(`separators=(",", ":")`)으로 계산한 실제 값은 `E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B`다. Main은 마지막 `B` 누락을 명백한 전사 오류로 확정하고 64자리 실제값 사용을 ruling했다. 범위·요구사항·중요 위험 변경은 없다.
+
+### seq488 completion checkpoint
+
+- 상태: `COMPLETED_FOR_REVIEW`; record commit SHA는 self-reference 규칙에 따라 기록하지 않았고 commit/push를 실행하지 않았다.
+- TDD GREEN: 동일 focused 명령 → exit 0, `2 passed, 100 deselected`; 역사 seq487와 seq488 postcommit 음성 계약을 함께 확인한 focused 명령은 `4 passed, 98 deselected`다.
+- full tooling progress: `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider` → exit 0, `102 passed in 73.62s`.
+- precommit checker: `.venv\Scripts\python.exe scripts/check_project_progress.py` → exit 0, `G-05 project progress contract: PASS sequence=488 reporting=AUTO_CONTINUE`; HEAD=`ead1214...`와 dirty exact8만 허용됨을 확인했다.
+- 보완 오류 1: `HISTORICAL_SEQ487_CURRENT_HEAD_PATH_MIX` 1회. seq487 역사 projection test가 현재 seq488 HEAD/path를 혼입해 실패했으며 historical commit의 seq487 bundle과 synthetic clean exact8 descendant로 분리해 해소했다. 동일 fingerprint 반복 0회다.
+- 보완 오류 2: `SEQ488_SELF_REFERENCED_TOOL_HASH_STALE` 1회. 변경된 checker/test의 `latest_evidence_refs`가 seq487 hash를 유지해 `PRG_REFERENCED_HASH_MISMATCH` 3건을 냈으며 현재 portable hashes와 snapshot/digest/manifest를 재결속해 해소했다. 동일 fingerprint 반복 0회다.
+- immutable 확인: seq1~487 raw `786441` bytes / `A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17`, canonical `E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C`; historical event/manifest/digest mutation은 0이다.
+- 변경 record exact8: `docs/WORK_STATUS.md`, `docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json`, `docs/progress/BUILD_HANDOFF.md`, `docs/progress/build-progress.json`, `docs/progress/progress-events.json`, `docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json`, `scripts/check_project_progress.py`, `tests/tooling/test_project_progress.py`.
+- 미실행: commit, push, SSH, WSL, Docker, DB, volume cleanup, Telegram, Provider는 모두 `NOT_EXECUTED`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+- 다음 안전 조치: Main이 exact8 diff와 보고서를 검토한 뒤 별도 권한 경계에서 record commit/push 여부를 판단한다.
+
+#### seq488 오류 ledger 보충
+
+- 최초 full tooling은 `97 passed, 5 failed`였다. `SEQ488_PROGRESS_EVENT_REF_STALE` 1회가 `PRG_REFERENCED_HASH_MISMATCH` 3건을, `HISTORICAL_SEQ487_CURRENT_HEAD_PATH_MIX` 1회가 역사 projection 2건을 발생시켰다.
+- 역사 fixture 분리 후 focused 재검증의 `HISTORICAL_SEQ487_NEGATIVE_FIXTURE_CLASSIFICATION` 1회는 extra control path만 바꿔 상위 origin 오류로 분류된 기대값 불일치였다. cumulative path에도 같은 extra path를 주어 exact path-set 음성 계약을 직접 검증하도록 해소했다.
+- 이후 full tooling의 `99 passed, 3 failed`는 `SEQ488_SELF_REFERENCED_TOOL_HASH_STALE` 1회가 변경된 checker/test의 과거 reference hash를 유지한 결과였다. current portable hashes 및 snapshot/digest/manifest를 재결속해 최종 `102 passed`로 해소했다.
+- 위 세 보완 fingerprint와 formal `C21_WSL_CONTROL_RUNTIME_SUCCESSOR_UNBOUND_R1`은 각각 1회이며 동일 fingerprint 연속 반복은 0회다.
+
+## 2026-09-04 C-21 seq488 reviewer fix round 1
+
+- 판정: `COMPLETED_FOR_REVIEW_FIX_ROUND_1`; seq488 event sequence와 record exact8 범위는 유지하고 제품·historical predecessor·authority 문서는 수정하지 않았다.
+- Main coordination error: 최초 seq488 완료 뒤 독립 reviewer dispatch를 누락한 `MAIN_REVIEW_DISPATCH_OMISSION_SEQ488_R1` 1회. 제품 failure가 아니며 review finding을 받은 즉시 fix round 1로 재개했다. 동일 coordination error 반복은 0회다.
+- reviewer finding 1 RED: 실제 임시 Git clone에서 valid direct exact44 record는 PASS했지만, ead1214 direct record가 base content를 복원해 base→HEAD exact43이 된 경우 기존 checker가 `[]`로 허용했다. 동일 fixture는 second exact8 descendant와 ead1214 외 추가 parent를 가진 merge record도 구성한다. fingerprint `SEQ488_POSTCOMMIT_LINEAGE_UNDERCONSTRAINED_R1` 1회.
+- reviewer finding 2 RED: manifest의 `push/deployment/database/volume_cleanup/telegram/provider` 중 하나를 `EXECUTED`로 바꾼 mutation이 기존 validator에서 `[]`로 통과했다. C-01 `READY` mutation도 같은 누락에 포함한다. fingerprint `SEQ488_MANIFEST_EXTERNAL_BOUNDARY_UNGUARDED_R1` 1회.
+- GREEN: postcommit은 ead1214를 유일한 parent로 갖는 단일 record commit, ead1214→HEAD exact8, base→HEAD derived exact44, clean/canonical old-remote 상태를 모두 만족할 때만 허용한다. exact43 reversion, second descendant, extra parent는 `GIT_DESCENDANT_RECORD_COMMIT_INVALID`로 거부한다.
+- manifest GREEN: `push`, `deployment`, `database`, `volume_cleanup`, `telegram`, `provider`는 모두 정확히 `NOT_EXECUTED`, `c01_status`는 정확히 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`여야 한다.
+- focused GREEN: `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k "control_runtime_successor or control_runtime_postcommit_real_git"` → exit 0, `3 passed, 100 deselected in 28.87s`.
+- test/setup 오류: `SEQ488_R1_TOOL_WRAPPER_DECLARATION_TYPO`, `SEQ488_R1_SKILL_REFERENCE_PATH_MISS`, `SEQ488_R1_TEST_FIXTURE_SYNTAX`, `SEQ488_R1_FIXTURE_BASE_PATH_MISSING` 각 1회, 제품 failure 아님, 동일 fingerprint 반복 0회. 각각 wrapper 선언, skill 상대경로, 괄호, base에 존재하지 않는 fixture path를 교정해 해소했다.
+- 미실행: commit, push, SSH, WSL, Docker, DB, volume cleanup, Telegram, Provider는 모두 `NOT_EXECUTED`; C-01 차단 유지.
+- 다음 안전 조치: current checker/test hash와 snapshot/digest/manifest를 재결속하고 full tooling/checker/diff/exact8을 재검증한 뒤 Main re-review로 반환한다.
+
+### seq488 reviewer fix round 1 completion checkpoint
+
+- current checker/test portable hash, progress snapshot, detached digest, manifest raw checksum을 순환 없이 재결속했다.
+- focused: `3 passed, 100 deselected in 30.19s`; full progress tooling: `103 passed in 120.82s`; precommit checker: `PASS sequence=488 reporting=AUTO_CONTINUE`.
+- 변경 범위는 seq488 record exact8뿐이고 scratch report는 `.superpowers` ignore 경로에 별도 유지한다. seq1~487 raw/canonical prefix와 predecessor artifact는 불변이다.
+- 상태: `COMPLETED_FOR_REVIEW`; Main re-review 전 commit/push/external action은 계속 금지한다.
