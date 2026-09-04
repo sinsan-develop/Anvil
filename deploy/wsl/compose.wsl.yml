@@ -39,8 +39,6 @@ services:
       TELEGRAM_WEBHOOK_SECRET: "wsl-validation-placeholder-no-egress"
       TELEGRAM_INTERNAL_SIGNING_SECRET: "wsl-validation-placeholder-no-egress-signing"
       TELEGRAM_ALLOWED_IDENTITIES: "0:0"
-    ports:
-      - "127.0.0.1:${ANVIL_WSL_HTTP_PORT:?target-specific HTTP port is required}:3770"
     depends_on:
       anvil-db:
         condition: service_healthy
@@ -51,6 +49,24 @@ services:
     security_opt: [no-new-privileges:true]
     tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
 
+  anvil-ingress:
+    image: nginx@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236
+    user: "101:101"
+    entrypoint: ["nginx", "-g", "daemon off;"]
+    ports:
+      - "127.0.0.1:${ANVIL_WSL_HTTP_PORT:?target-specific HTTP port is required}:8080"
+    volumes:
+      - ./nginx-wsl.conf:/etc/nginx/nginx.conf:ro
+    networks: [anvil-ingress, anvil-wsl]
+    depends_on: [anvil-web]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    labels:
+      com.anvil.environment: WSL_SERVER_TEST_STAGING
+      com.anvil.cleanup-scope: C21_WSL_ISOLATED_TEST
+
 volumes:
   anvil-db-data:
     labels:
@@ -60,3 +76,8 @@ volumes:
 networks:
   anvil-wsl:
     internal: true
+  anvil-ingress:
+    internal: false
+    labels:
+      com.anvil.environment: WSL_SERVER_TEST_STAGING
+      com.anvil.cleanup-scope: C21_WSL_ISOLATED_TEST

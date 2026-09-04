@@ -752,6 +752,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             root = Path(raw); control = root / "control"; shutil.copytree(DEPLOY, control / "deploy" / "wsl")
             for slug, previous in (("pg15", "a" * 40), ("pg18rc", "b" * 40)):
                 path = root / "runtime" / slug; path.mkdir(parents=True, exist_ok=True); (path / "previous.sha").write_text(previous + "\n")
+                (path / "current.sha").write_text(candidate + "\n")
             env_file = root / ".env"
             env_file.write_text("\n".join([
                 "ANVIL_WSL_PG_PASSWORD=" + "a" * 48,
@@ -763,7 +764,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             subprocess.run(["bash", "-c", f"chmod 600 '{self._posix(env_file)}'"], check=True)
             bin_dir = root / "bin"; bin_dir.mkdir(); log = root / "docker.log"
             docker = bin_dir / "docker"
-            docker.write_text("#!/usr/bin/env bash\necho \"$*\" >> \"$ANVIL_DOCKER_LOG\"\n[[ \"$*\" == *anvil-wsl-web:bbbb* ]] && exit 1\nexit 0\n", encoding="utf-8")
+            docker.write_text("#!/usr/bin/env bash\necho \"$*\" >> \"$ANVIL_DOCKER_LOG\"\n[[ \"$*\" == *anvil-wsl-web:bbbb* ]] && exit 1\n[[ \"$*\" == *anvil-wsl-web:aaaa* ]] && echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nexit 0\n", encoding="utf-8")
             curl = bin_dir / "curl"; curl.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
             stat = bin_dir / "stat"; stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8")
             os.chmod(docker, 0o755); os.chmod(curl, 0o755); os.chmod(stat, 0o755)
@@ -1153,6 +1154,92 @@ class WslComposeRunnerTests(unittest.TestCase):
         self.assertEqual(["docker:compose version"], calls)
 
 
+class WslIngressTests(unittest.TestCase):
+    @unittest.skipUnless(shutil.which("bash"), "bash is required")
+    def test_cleanup_entrypoint_loads_private_environment_before_compose(self):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw)
+            control = root / "control" / "deploy" / "wsl"
+            control.mkdir(parents=True)
+            (root / "repo").mkdir()
+            shutil.copy2(DEPLOY / "cleanup.sh", control / "cleanup.sh")
+            common = (DEPLOY / "common.sh").read_text(encoding="utf-8")
+            common += '\nstat() { echo 600; }\ncleanup_wsl_test_volumes() { [[ "${ANVIL_WSL_PG_PASSWORD:-}" == ' + 'a' * 48 + ' && "${ANVIL_TEST_SESSION_PERMISSION_SCOPES:-}" == tasks:write,tasks:read,run:events:read && "${AUTHORITY_CHECKED:-}" == yes ]]; }\n'
+            (control / "common.sh").write_text(common, encoding="utf-8")
+            (control / "candidate-manifest-guard.sh").write_text('validate_wsl_candidate_manifest() { AUTHORITY_CHECKED=yes; }\n', encoding="utf-8")
+            values = {"ANVIL_WSL_PG_PASSWORD": "a" * 48, "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "b" * 64,
+                      "ANVIL_TEST_SESSION_ACTOR_ID": "x", "ANVIL_TEST_SESSION_PROJECT_ID": "x",
+                      "ANVIL_TEST_SESSION_ENVIRONMENT_ID": "x", "ANVIL_TEST_SESSION_RUN_IDS": "x",
+                      "ANVIL_TEST_SESSION_PERMISSION_SCOPES": "tasks:write,tasks:read,run:events:read"}
+            (root / ".env").write_text("".join(f"{key}={value}\n" for key, value in values.items()), encoding="utf-8")
+            result = subprocess.run(["bash", WslCandidateManifestGuardTests._posix(control / "cleanup.sh"), "c" * 40], capture_output=True, text=True,
+                                    env={key: value for key, value in os.environ.items() if key not in values} | {
+                                        "ANVIL_WSL_DEPLOY_ROOT": WslCandidateManifestGuardTests._posix(root),
+                                        "ANVIL_WSL_CONTROL_REPO": WslCandidateManifestGuardTests._posix(root / "control"),
+                                        "ANVIL_WSL_APPLICATION_REPO": WslCandidateManifestGuardTests._posix(root / "repo"),
+                                        "ANVIL_CANDIDATE_MANIFEST_REF": "fixture-control"})
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertNotIn("a" * 48, result.stdout + result.stderr)
+            self.assertNotIn("b" * 64, result.stdout + result.stderr)
+
+    def test_ingress_configuration_preserves_application_isolation_and_origin(self):
+        compose = (DEPLOY / "compose.wsl.yml").read_text(encoding="utf-8")
+        self.assertIn("  anvil-ingress:", compose)
+        web = compose.split("  anvil-web:", 1)[1].split("  anvil-ingress:", 1)[0]
+        self.assertNotIn("    ports:", web)
+        self.assertIn("networks: [anvil-wsl]", web)
+        ingress = compose.split("  anvil-ingress:", 1)[1].split("\nvolumes:", 1)[0]
+        self.assertIn("networks: [anvil-ingress, anvil-wsl]", ingress)
+        self.assertNotIn("TELEGRAM", ingress)
+        self.assertNotIn("ANVIL_DATABASE_URL", ingress)
+        self.assertIn("nginx@sha256:a8b39bd9cf0f83869a2162827a0caf6137ddf759d50a171451b335cecc87d236", ingress)
+        config = (DEPLOY / "nginx-wsl.conf").read_text(encoding="utf-8")
+        self.assertIn("proxy_set_header Host $http_host;", config)
+        self.assertIn("server anvil-web:3770;", config)
+        self.assertIn("proxy_buffering off;", config)
+        self.assertIn("proxy_cache off;", config)
+        self.assertIn("$request_method = CONNECT", config)
+
+    def test_all_nginx_temp_paths_use_writable_tmpfs(self):
+        config = (DEPLOY / "nginx-wsl.conf").read_text(encoding="utf-8")
+        for module in ("client_body", "proxy", "fastcgi", "uwsgi", "scgi"):
+            self.assertRegex(config, rf"{module}_temp_path /tmp/[a-z_]+;")
+
+    @unittest.skipUnless(shutil.which("bash"), "bash is required")
+    def test_ingress_is_recreated_before_bounded_host_readiness(self):
+        with tempfile.TemporaryDirectory() as raw:
+            log = Path(raw) / "calls"
+            common = WslCandidateManifestGuardTests._posix(DEPLOY / "common.sh")
+            log_path = WslCandidateManifestGuardTests._posix(log)
+            command = f'''
+source '{common}'
+configure_wsl_target 15
+wsl_compose() {{ printf 'compose:%s\\n' "$*" >> '{log_path}'; }}
+curl() {{ printf 'curl:%s\\n' "$*" >> '{log_path}'; echo '{{"status":"ready","migration_head":"0013_task_bootstrap_authority"}}'; }}
+start_wsl_ingress
+'''
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True)
+            self.assertEqual(0, result.returncode, result.stderr)
+            calls = log.read_text().splitlines()
+            self.assertIn("--entrypoint nginx anvil-ingress -t", calls[0])
+            self.assertEqual("compose:up -d --no-build --force-recreate anvil-ingress", calls[1])
+            self.assertIn("http://127.0.0.1:4770/health/ready", calls[2])
+
+    @unittest.skipUnless(shutil.which("bash"), "bash is required")
+    def test_ingress_readiness_failure_is_bounded(self):
+        command = f'''
+source '{WslCandidateManifestGuardTests._posix(DEPLOY / "common.sh")}'
+configure_wsl_target 18-rc
+wsl_compose() {{ return 0; }}
+curl() {{ return 7; }}
+sleep() {{ return 0; }}
+start_wsl_ingress
+'''
+        result = subprocess.run(["bash", "-c", command], text=True, capture_output=True, timeout=5)
+        self.assertEqual(6, result.returncode, result.stderr)
+        self.assertIn("ingress readiness timeout", result.stderr)
+
+
 class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
     def _run_cleanup(self, repo: Path, candidate: str, control_ref: str, checksum: str, mismatch: str = ""):
         log = repo / "docker.log"
@@ -1160,6 +1247,27 @@ class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
 source '{self._posix(DEPLOY / "common.sh")}'
 docker() {{
   echo "docker:$*" >> '{self._posix(log)}'
+  if [[ "$1 $2" == "volume ls" ]]; then
+    [[ '{mismatch}' == absent ]] && return 0
+    printf '%s\\n' anvil-wsl-pg15_anvil-db-data anvil-wsl-pg18rc_anvil-db-data
+  fi
+  if [[ "$1 $2" == "network ls" && '{mismatch}' != absent ]]; then
+    printf '%s\\n' anvil-wsl-pg15_anvil-ingress anvil-wsl-pg18rc_anvil-ingress unrelated-network
+  fi
+  if [[ "$1 $2" == "network inspect" ]]; then
+    network="${{@: -1}}"
+    case "$*" in
+      *com.docker.compose.project*) [[ "$network" == anvil-wsl-pg15_* ]] && echo anvil-wsl-pg15 || echo anvil-wsl-pg18rc ;;
+      *com.docker.compose.network*) [[ '{mismatch}' == network-label ]] && echo WRONG || echo anvil-ingress ;;
+      *com.anvil.environment*) echo WSL_SERVER_TEST_STAGING ;;
+      *com.anvil.cleanup-scope*) echo C21_WSL_ISOLATED_TEST ;;
+      *'.Internal'*) echo false ;;
+      *'len .Containers'*) echo 0 ;;
+      *'range $id'*) [[ '{mismatch}' == unrelated-endpoint ]] && echo other-container ;;
+    esac
+    return 0
+  fi
+  if [[ "$1" == inspect ]]; then echo unrelated-project; fi
   if [[ "$1 $2" == "volume inspect" ]]; then
     volume="${{@: -1}}"
     case "$*" in
@@ -1190,6 +1298,8 @@ cleanup_wsl_test_volumes {candidate} '{self._posix(repo)}' {control_ref}
             "environment:anvil-wsl-pg15_anvil-db-data",
             "scope:anvil-wsl-pg15_anvil-db-data",
             "scope:anvil-wsl-pg18rc_anvil-db-data",
+            "network-label",
+            "unrelated-endpoint",
         ):
             with self.subTest(mismatch=mismatch):
                 temp, repo, candidate, control_ref, checksum = self._repo()
@@ -1208,6 +1318,15 @@ cleanup_wsl_test_volumes {candidate} '{self._posix(repo)}' {control_ref}
             self.assertEqual(
                 ["anvil-wsl-pg15_anvil-db-data", "anvil-wsl-pg18rc_anvil-db-data"], removed
             )
+            removed_networks = [call.removeprefix("docker:network rm ") for call in calls if call.startswith("docker:network rm ")]
+            self.assertEqual(["anvil-wsl-pg15_anvil-ingress", "anvil-wsl-pg18rc_anvil-ingress"], removed_networks)
+
+    def test_already_absent_resources_are_idempotent(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            result, calls = self._run_cleanup(repo, candidate, control_ref, checksum, "absent")
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertFalse(any(call.startswith(("docker:volume rm", "docker:network rm")) for call in calls))
 
 
 

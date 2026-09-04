@@ -15,11 +15,13 @@ load_server_environment "$ROOT/.env"
 declare -A previous_by_target
 for target in 15 18-rc; do
   configure_wsl_target "$target"
+  [[ "$(cat "$ROOT/runtime/$ANVIL_TARGET_SLUG/current.sha")" == "$EXPECTED" ]] || { echo "current application revision mismatch for $target" >&2; exit 4; }
   previous_file="$ROOT/runtime/$ANVIL_TARGET_SLUG/previous.sha"
   [[ -s "$previous_file" ]] || { echo "previous application revision missing for $target" >&2; exit 4; }
   previous="$(tr -d '\r\n' < "$previous_file")"
   require_exact_sha "$previous" || exit $?
-  docker image inspect "anvil-wsl-web:$previous" >/dev/null
+  [[ "$previous" != "$EXPECTED" ]] || { echo 'rollback requires a different previous revision' >&2; exit 4; }
+  [[ "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "anvil-wsl-web:$previous")" == "$previous" ]] || { echo 'previous image revision mismatch' >&2; exit 4; }
   previous_by_target["$target"]="$previous"
 done
 for target in 15 18-rc; do
@@ -27,8 +29,7 @@ for target in 15 18-rc; do
   previous="${previous_by_target[$target]}"
   ANVIL_RELEASE_COMMIT="$previous"; export ANVIL_RELEASE_COMMIT
   wsl_compose up -d --no-build --force-recreate anvil-web
-  base="http://127.0.0.1:$ANVIL_WSL_HTTP_PORT"
-  curl -fsS -H "Host: 127.0.0.1:$ANVIL_WSL_HTTP_PORT" "$base/health/ready" >/dev/null
+  start_wsl_ingress
   printf '%s\n' "$previous" > "$ROOT/runtime/$ANVIL_TARGET_SLUG/current.sha.tmp.$$"
   mv -f "$ROOT/runtime/$ANVIL_TARGET_SLUG/current.sha.tmp.$$" "$ROOT/runtime/$ANVIL_TARGET_SLUG/current.sha"
   printf '{"status":"APPLICATION_ROLLED_BACK","from":"%s","to":"%s","postgres_target":"%s","database_migration":"PRESERVED_NO_AUTOMATIC_DOWNGRADE","secret_values":"omitted"}\n' \

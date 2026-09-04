@@ -86,6 +86,21 @@ if any(receipt.get(key) != value for key, value in required.items()):
 PY
 }
 
+start_wsl_ingress() {
+  local attempt ready base="http://127.0.0.1:$ANVIL_WSL_HTTP_PORT"
+  wsl_compose run --rm --no-deps --entrypoint nginx anvil-ingress -t || return $?
+  # Recreate after every application replacement so static upstream DNS is fresh.
+  wsl_compose up -d --no-build --force-recreate anvil-ingress || return $?
+  for attempt in {1..30}; do
+    if ready="$(curl --noproxy '*' --connect-timeout 2 --max-time 3 -fsS -H "Host: 127.0.0.1:$ANVIL_WSL_HTTP_PORT" "$base/health/ready" 2>/dev/null)"; then
+      [[ "$ready" == *'"status":"ready"'* && "$ready" == *'"migration_head":"0013_task_bootstrap_authority"'* ]] && return 0
+    fi
+    sleep 1
+  done
+  echo "ingress readiness timeout for $ANVIL_TARGET_SLUG" >&2
+  return 6
+}
+
 # Explicit final-stage entrypoint; never called by deploy, verify, or rollback.
 cleanup_wsl_test_volumes() {
   local expected="$1" repo="$2" manifest_ref="$3"
@@ -95,7 +110,9 @@ cleanup_wsl_test_volumes() {
   local -a targets=(15 18-rc)
   local -a projects=(anvil-wsl-pg15 anvil-wsl-pg18rc)
   local -a volumes=(anvil-wsl-pg15_anvil-db-data anvil-wsl-pg18rc_anvil-db-data)
-  local index volume project
+  local index volume project network kind container service inventory volumes_present networks_present containers
+  volumes_present="$(docker volume ls --format '{{.Name}}')" || return $?
+  networks_present="$(docker network ls --format '{{.Name}}')" || return $?
   REPO="$repo"
   ANVIL_RELEASE_COMMIT="$expected"
   export REPO ANVIL_RELEASE_COMMIT
@@ -104,6 +121,32 @@ cleanup_wsl_test_volumes() {
   for index in 0 1; do
     volume="${volumes[$index]}"
     project="${projects[$index]}"
+    containers="$(docker ps -aq --filter "label=com.docker.compose.project=$project")" || return $?
+    for container in $containers; do
+      [[ "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$container")" == "$project" ]] || return 9
+      service="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$container")" || return $?
+      case "$service" in anvil-web|anvil-db|anvil-ingress) ;; *) echo 'unrelated container in cleanup project' >&2; return 9 ;; esac
+    done
+    for kind in anvil-wsl anvil-ingress; do
+      network="${project}_${kind}"
+      grep -Fxq "$network" <<< "$networks_present" || continue
+      [[ "$(docker network inspect --format '{{index .Labels "com.docker.compose.project"}}' "$network")" == "$project" ]] || return 9
+      [[ "$(docker network inspect --format '{{index .Labels "com.docker.compose.network"}}' "$network")" == "$kind" ]] || return 9
+      if [[ "$kind" == anvil-wsl ]]; then
+        [[ "$(docker network inspect --format '{{.Internal}}' "$network")" == true ]] || return 9
+      else
+        [[ "$(docker network inspect --format '{{.Internal}}' "$network")" == false ]] || return 9
+        [[ "$(docker network inspect --format '{{index .Labels "com.anvil.environment"}}' "$network")" == WSL_SERVER_TEST_STAGING ]] || return 9
+        [[ "$(docker network inspect --format '{{index .Labels "com.anvil.cleanup-scope"}}' "$network")" == C21_WSL_ISOLATED_TEST ]] || return 9
+      fi
+      inventory="$(docker network inspect --format '{{range $id, $value := .Containers}}{{$id}} {{end}}' "$network")" || return $?
+      for container in $inventory; do
+        [[ "$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$container")" == "$project" ]] || { echo 'unrelated network endpoint' >&2; return 9; }
+        service="$(docker inspect --format '{{index .Config.Labels "com.docker.compose.service"}}' "$container")" || return $?
+        case "$service" in anvil-web|anvil-db|anvil-ingress) ;; *) return 9 ;; esac
+      done
+    done
+    grep -Fxq "$volume" <<< "$volumes_present" || continue
     [[ "$(docker volume inspect --format '{{ index .Labels "com.docker.compose.project" }}' "$volume")" == "$project" ]] || {
       echo "cleanup Compose project label mismatch: $volume" >&2; return 9;
     }
@@ -117,9 +160,15 @@ cleanup_wsl_test_volumes() {
   for index in 0 1; do
     configure_wsl_target "${targets[$index]}" || return $?
     [[ "$ANVIL_COMPOSE_PROJECT_NAME" == "${projects[$index]}" ]] || { echo 'fixed project mapping mismatch' >&2; return 9; }
-    wsl_compose rm -sf anvil-web anvil-db || return $?
+    wsl_compose rm -sf anvil-ingress anvil-web anvil-db || return $?
+    for kind in anvil-wsl anvil-ingress; do
+      network="${projects[$index]}_${kind}"
+      grep -Fxq "$network" <<< "$networks_present" || continue
+      [[ "$(docker network inspect --format '{{len .Containers}}' "$network")" == 0 ]] || { echo 'network still has endpoints' >&2; return 9; }
+      docker network rm "$network" || return $?
+    done
     volume="${volumes[$index]}"
-    docker volume rm "$volume" || return $?
+    if grep -Fxq "$volume" <<< "$volumes_present"; then docker volume rm "$volume" || return $?; fi
   done
 }
 

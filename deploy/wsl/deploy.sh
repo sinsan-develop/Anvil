@@ -58,6 +58,8 @@ for target in 15 18-rc; do
   wsl_compose build anvil-web
   wsl_compose run --rm anvil-web /opt/venv/bin/alembic upgrade head
   wsl_compose up -d --force-recreate anvil-web
+  wsl_compose pull anvil-ingress
+  start_wsl_ingress
   printf '%s\n' "$EXPECTED" > "$target_root/current.sha.tmp.$$"
   mv -f "$target_root/current.sha.tmp.$$" "$target_root/current.sha"
   docker image inspect --format '{{ index .Config.Labels "org.opencontainers.image.revision" }} {{index .RepoDigests 0}}' "$ANVIL_POSTGRES_IMAGE" \
