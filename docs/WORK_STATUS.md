@@ -288,3 +288,11 @@
 
 - actual `_validate_git_projection` integration simulation에 explicit tracked out-of-contract dirty case ` M arbitrary-tracked.txt`를 추가했다. 기존 partial allowed/current6/extra untracked cases와 동일하게 `GIT_DESCENDANT_WORKTREE_DIRTY`로 fail-closed한다.
 - seq/event/history/workplan은 수정하지 않았고, checker/test hash에 따른 current progress/detached digest/postcommit manifest raw checksum만 재결박했다.
+
+## 2026-09-04 C-21 postcommit evidence checkpoint
+
+- postcommit HEAD: `67c477bed49fe24eea95dbbf4109208a4e96c1a7`; 시작 worktree는 clean이었다.
+- postcommit evidence: checker PASS sequence=487, focused progress `100 PASS`, WSL harness `15 PASS`, `git diff --check` PASS. `C21_WSL_CONTROL_POSTCOMMIT_PROJECTION_UNBOUND_R1` formal round2는 해소됐다.
+- stable contract: control `73c39ca...` 이후 cumulative exact8 path/content contract는 record-only successor commit 뒤에도 유지돼야 하며, clean committed tree에서만 local descendant를 허용한다.
+- PMO report: parent PMO egress는 safety gate로 `NOT_DELIVERED` 유지다. 재시도/우회하지 않으며, 정확한 재개 조건은 신산님의 destination과 payload에 대한 explicit egress approval이다.
+- commit/push/deploy/Docker/DB/volume/Telegram/Provider는 `NOT_EXECUTED`.
