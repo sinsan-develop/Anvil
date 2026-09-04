@@ -819,6 +819,30 @@
       "backup_receipt": "NOT_CREATED",
       "deployment": "NOT_EXECUTED",
       "telegram_and_provider": "USER_VERIFICATION_PENDING"
+    },
+    {
+      "entry_id": "failure-c21-lr02c-ops-r2-backup-attempt-2",
+      "step_lineage_id": "C-21/LR-02C/OPS-R2",
+      "failure_fingerprint": "C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE",
+      "result_status": "FAILURE_REPORT",
+      "accepted": true,
+      "counts_toward_valid_failure": true,
+      "validator_acceptance": true,
+      "finding_ids": ["LIBPQ_URI_STILL_INTERPRETED_AS_LITERAL_DBNAME"],
+      "blocking_severity": "MAJOR",
+      "blocking_defect_count": 1,
+      "evidence_refs": [{"path":"docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","sha256":"205655134D2A49E4CF3426C0D85B2298B10E6A73DDC850FF9FA3C226F8EEE9E8"}],
+      "accepted_sequence": 2,
+      "takeover_status": "NOT_REQUIRED",
+      "independent_retest_status": "OPS_R2_CONNINFO_R4_PENDING",
+      "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+      "backup_attempt": 2,
+      "exit_code": 20,
+      "database_dump": "NOT_COMPLETED",
+      "backup_receipt": "NOT_CREATED",
+      "diagnostics": {"self_dns":"PASS","local_socket":"PASS","direct_tcp_auth":"PASS","pgdatabase_url_connect_dump":"FAIL","service_fd3_connect_schema_dump":"PASS"},
+      "deployment": "NOT_EXECUTED",
+      "telegram_and_provider": "USER_VERIFICATION_PENDING"
     }
   ]
 }

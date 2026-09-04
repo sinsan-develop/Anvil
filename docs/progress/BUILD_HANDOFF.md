@@ -569,39 +569,56 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - ReleaseManifest target `b4858ffb373066b24d7d9ee9bfde810160cacb75`, focused 216 PASS, epoch5 ACTIVE, operational backup attempt2/deploy `NOT_EXECUTED`를 그대로 보존한다.
 - Telegram/Provider는 `USER_VERIFICATION_PENDING`, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다. 이 reconciliation에서 외부 서버 실행은 하지 않았다.
 
+## 2026-09-04 C-21/LR-02C OPS-R2 backup attempt 2 실패 수락 및 conninfo R4 재개
+
+- 승인 release `b4858ffb373066b24d7d9ee9bfde810160cacb75`의 Git blob으로 수행한 backup attempt 2는 exit `20`이었다. normalize 후에도 URI 전체가 literal database name으로 해석됐고 dump·receipt는 생성되지 않았다.
+- self DNS, local socket, direct TCP 인증은 PASS였고 `PGDATABASE` URL connect/dump는 FAIL, 같은 credential을 fd3 `pg_service.conf`로 전달한 connect/schema dump는 PASS였다.
+- 동일 `C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE` lineage의 두 번째 유효 실패로 seq479에 수락했다. seq480은 기존 epoch5 lease를 R4 exact13으로 계속하고 seq481은 feature worktree reconciliation을 기록한다. seq1~478은 불변이다.
+- 제품 TDD는 `ANVIL_DATABASE_URL`을 Python stdlib로 strict parse·percent decode한 뒤 `[anvil_backup]` service bytes를 stdin→fd3로 전달하는 계약을 `31 passed`로 확정했다. credential/URI는 argv·log·receipt·disk에 남기지 않는다.
+- 새 제품 checkpoint 이전 ReleaseManifest rebind와 backup attempt 3·deploy는 `NOT_EXECUTED`; Telegram/Provider는 `USER_VERIFICATION_PENDING`, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 478,
+  "event_sequence": 481,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7",
-  "updated_at": "2026-09-04T11:32:28+09:00",
+  "last_event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_exact13_repository_reconciled",
+  "updated_at": "2026-09-04T12:05:02+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 1,
-  "active_work_instruction_sha256": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
-  "active_invocation_sha256": "8207996858DE33B542862B4D5C6AEBC1787BC4A0612E1C0052CAC3B637263FC5",
+  "valid_failure_count": 2,
+  "active_work_instruction_sha256": "CCE5C3D315D101CEAABF30FF0B51D447602E7927B5193CF531D72B3034AACEC5",
+  "active_invocation_sha256": "3BB6F14863D00548A5BA22653B1501628F34DCE9E26B2873E9414C202632A27D",
   "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
-  "next_safe_action": "승인된 b4858ff ReleaseManifest를 사용한 표준 Git 기반 운영 backup attempt 2와 deploy/verify를 Main이 별도 실행한다. 현재 projection에서는 외부 실행하지 않았으며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
+  "next_safe_action": "OPS-R2 conninfo R4 exact13 구현을 검증·checkpoint commit·feature push한다. 새 ReleaseManifest 재결박 전 backup attempt 3·deploy는 금지하며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "970680a95a7e2471effc903239548948b3aa6263",
-  "repository_upstream": "origin/main",
+  "repository_head": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+  "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "970680a95a7e2471effc903239548948b3aa6263",
-  "repository_head_relation": "MAIN_OPS_R2_POST_MERGE_RECONCILIATION_EXACT7_PENDING_COMMIT",
+  "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_CONNINFO_R4_EXACT13",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json",
+    "deploy/ysna/backup-c21-db.sh",
+    "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
     "scripts/check_project_progress.py",
+    "tests/deploy/test_c21_lr02c_operational_contract.py",
     "tests/tooling/test_project_progress.py"
   ],
   "current_release_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
   "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-  "focused_test_count": 216,
+  "focused_test_count": 230,
+  "focused_operational_contract_count": 31,
   "operational_backup_attempt": 2,
-  "operational_backup_status": "NOT_EXECUTED",
+  "operational_backup_status": "FAILED_EXIT_20_NO_DUMP_NO_RECEIPT",
+  "backup_attempt3": "NOT_EXECUTED",
+  "release_manifest_rebind": "NOT_EXECUTED",
   "deployment_status": "NOT_EXECUTED",
   "telegram_and_provider": "USER_VERIFICATION_PENDING",
   "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",

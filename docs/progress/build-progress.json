@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-lr02c-ops-r2-main-reconciliation-exact7-20260904",
-  "event_sequence": 478,
-  "updated_at": "2026-09-04T11:32:28+09:00",
-  "last_event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7",
+  "snapshot_id": "snapshot-c21-lr02c-ops-r2-conninfo-r4-exact13-20260904",
+  "event_sequence": 481,
+  "updated_at": "2026-09-04T12:05:02+09:00",
+  "last_event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_exact13_repository_reconciled",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -63,10 +63,10 @@
       "deploy/ysna/backup-c21-db.sh",
       "tests/deploy/test_c21_lr02c_operational_contract.py",
       "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
-      "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION_R2.md",
-      "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT_R2.md",
-      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_REWORK_START_R2_MANIFEST.json",
-      "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-rework-start-r2.json",
+      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
       "docs/progress/build-progress.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/progress-events.json",
@@ -251,11 +251,11 @@
     }
   },
   "budget_reservations": [],
-  "valid_failure_count": 1,
+  "valid_failure_count": 2,
   "active_failure_lineage": {
     "step_lineage_id": "C-21/LR-02C/OPS-R2",
     "failure_fingerprint": "C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE",
-    "valid_failure_count": 1
+    "valid_failure_count": 2
   },
   "historical_accepted_failure_count": 31,
   "historical_failure_counts_by_lineage": {
@@ -1155,7 +1155,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "97C1E04D14888B2A16C04A027EDD34B67981EDD2D2C293E624AD7D679A0C9720"
+        "sha256": "3B142AD31C09B86123A1FC0DCA2F2B066E43BB16C9FC871F11A8FC5027C99A0A"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1175,7 +1175,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "DF9CB6F22494FEEB3D7DC561E866890F3947CCEC5445937771CF763760679C33"
+        "sha256": "3C29251DB50D3C83B39BB6B6FB48088DDBD030A3C8D06EB0376FC3BA10B54FB4"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1203,11 +1203,11 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "52CC8705F525483AAF0E7598160811AB15621DBE33C384981A627783FF8F3792"
+      "sha256": "1F02C6DAF3F84F7CBDB40C571C9689C63C346D766039BD6B46FA06E42335C41D"
     },
     {
       "path": "docs/progress/failure-ledger.json",
-      "sha256": "36BF533A25F660BFBCA5CCE6B60D95A0A28859FFDEC00B872C158FFF70D4EA31"
+      "sha256": "C3C6A25E50946664F645FA1E1622555CCB553B57522E2D5BD6FF141B49470A73"
     },
     {
       "path": "scripts/evidence_portability.py",
@@ -1258,7 +1258,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "승인된 b4858ff ReleaseManifest를 사용한 표준 Git 기반 운영 backup attempt 2와 deploy/verify를 Main이 별도 실행한다. 현재 projection에서는 외부 실행하지 않았으며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
+  "next_safe_action": "OPS-R2 conninfo R4 exact13 구현을 검증·checkpoint commit·feature push한다. 새 ReleaseManifest 재결박 전 backup attempt 3·deploy는 금지하며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1369,24 +1369,32 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "970680a95a7e2471effc903239548948b3aa6263",
-    "head_relation": "MAIN_OPS_R2_POST_MERGE_RECONCILIATION_EXACT7_PENDING_COMMIT",
-    "branch": "main",
-    "upstream": "origin/main",
+    "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+    "head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_CONNINFO_R4_EXACT13",
+    "branch": "codex/c21-operational-execution",
+    "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "970680a95a7e2471effc903239548948b3aa6263",
-    "push_status": "PUSH_PENDING_MAIN",
+    "feature_remote": "origin/codex/c21-operational-execution",
+    "feature_remote_head": "970680a95a7e2471effc903239548948b3aa6263",
+    "push_status": "FEATURE_BASE_AHEAD_OF_REMOTE_OPS_R2_CONNINFO_R4_ACTIVE",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json",
+      "deploy/ysna/backup-c21-db.sh",
+      "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
+      "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
+      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
       "scripts/check_project_progress.py",
+      "tests/deploy/test_c21_lr02c_operational_contract.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-09-04T11:32:28+09:00",
-    "worktree_status": "C21_OPS_R2_MAIN_RECONCILIATION_ACTIVE: governance exact7 against clean main 970680a; operational backup attempt2 and deploy not executed",
-    "local_head": "970680a95a7e2471effc903239548948b3aa6263"
+    "observed_at": "2026-09-04T12:05:02+09:00",
+    "worktree_status": "C21_OPS_R2_CONNINFO_R4_ACTIVE: exact13 against clean eef3496; backup attempt3, release rebind, deploy not executed",
+    "local_head": "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1542,13 +1550,13 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-C-21-LR-02C-OPS-R2-20260903-001",
-    "path": "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION_R2.md",
-    "sha256": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
-    "invocation_path": "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT_R2.md",
-    "invocation_sha256": "8207996858DE33B542862B4D5C6AEBC1787BC4A0612E1C0052CAC3B637263FC5",
-    "revision_classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
-    "revision_binding": {
+    "artifact_id": "WI-C-21-LR-02C-OPS-R2-CONNINFO-R4-20260904-001",
+    "path": "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+    "sha256": "CCE5C3D315D101CEAABF30FF0B51D447602E7927B5193CF531D72B3034AACEC5",
+    "invocation_path": "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
+    "invocation_sha256": "3BB6F14863D00548A5BA22653B1501628F34DCE9E26B2873E9414C202632A27D",
+    "revision_classification": "HUMAN_APPROVED_FAILURE_DRIVEN_REWORK",
+    "parent_revision_binding": {
       "binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
       "parent_baseline_id": "WI-C-21-LR-02C-OPS-R2-20260903-001@9FFFEEE723EB50210B0F7406E5C597E338C480268517A3DFA3FF59092EFE1E13",
       "derived_baseline_id": "WI-C-21-LR-02C-OPS-R2-20260903-001@E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
@@ -1572,17 +1580,17 @@
     },
     "approval_ref": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
     "approval_sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A",
-    "dispatch_base": "ca945dfe4fed9befedc46620aff24729c3898952",
-    "failed_release_target": "095e1488ed85ec11986447539d04cf2b494dbd34",
+    "dispatch_base": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+    "failed_release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
     "result_status": "REWORK_IN_PROGRESS",
-    "package_status": "ACTIVE_OPERATIONAL_BACKUP_REWORK_R2",
+    "package_status": "ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4",
     "executor": "developer-primary-c21-ops-r2",
     "worker_lease_id": "worker-lease-c21-lr02c-ops-r2-20260903-005",
     "write_lease_id": "write-lease-c21-lr02c-ops-r2-20260903-005",
     "failure_fingerprint": "C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE",
-    "valid_failure_count": 1,
+    "valid_failure_count": 2,
     "allowed_path_count": 13,
-    "external_retry": "BLOCKED_PENDING_TESTED_FIX_AND_RELEASE_REBIND",
+    "external_retry": "BLOCKED_PENDING_CHECKPOINT_AND_RELEASE_REBIND",
     "telegram_and_provider": "USER_VERIFICATION_PENDING",
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
@@ -1697,13 +1705,13 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json",
-    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json"
   },
   "registry_refs": {
     "failure_ledger": {
       "path": "docs/progress/failure-ledger.json",
-      "sha256": "36BF533A25F660BFBCA5CCE6B60D95A0A28859FFDEC00B872C158FFF70D4EA31"
+      "sha256": "C3C6A25E50946664F645FA1E1622555CCB553B57522E2D5BD6FF141B49470A73"
     },
     "non_semantic_revision_bindings": {
       "path": "docs/progress/non-semantic-revision-bindings.json",
@@ -1719,7 +1727,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "52CC8705F525483AAF0E7598160811AB15621DBE33C384981A627783FF8F3792"
+      "sha256": "1F02C6DAF3F84F7CBDB40C571C9689C63C346D766039BD6B46FA06E42335C41D"
     }
   },
   "next_work_package": {
@@ -1732,10 +1740,11 @@
   },
   "next_successor_work_package": {
     "package_id": "C-21/LR-02C/OPS-R2",
-    "status": "ACTIVE_OPERATIONAL_BACKUP_REWORK_R2",
-    "purpose": "backup script의 SQLAlchemy/libpq DSN scheme 호환 결함을 TDD로 수정하고 새 release binding 준비",
+    "status": "ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4",
+    "purpose": "ANVIL_DATABASE_URL을 strict parse해 fd3 libpq service로 전달하고 credential 비노출 계약을 TDD로 확정",
     "requires": [
-      "DSN scheme regression test and minimal script fix",
+      "conninfo parser/service fd3 operational contract GREEN",
+      "exact13 checkpoint commit and feature push",
       "new checkpoint and ReleaseManifest rebind before external retry",
       "independent C-21 judgment before C-01"
     ],
@@ -1781,15 +1790,37 @@
   },
   "operational_r2_rework": {
     "failure_report_path": "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
-    "failure_report_sha256": "097349B7450B2D93CAB849D2F5CC2CBBF0FE78EE57D5510C9B08DAC0F2549080",
-    "release_target": "095e1488ed85ec11986447539d04cf2b494dbd34",
-    "backup_attempt": 1,
+    "failure_report_sha256": "F3B57EC9EAC4F47B3C8366D966BB68CB29BA48AE2773A2113E856591CA000149",
+    "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+    "backup_attempt": 2,
     "exit_code": 20,
     "failure_fingerprint": "C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE",
+    "valid_failure_count": 2,
+    "diagnostics": {
+      "self_dns": "PASS",
+      "local_socket": "PASS",
+      "direct_tcp_auth": "PASS",
+      "pgdatabase_url_connect_dump": "FAIL",
+      "service_fd3_connect_schema_dump": "PASS"
+    },
     "database_dump": "NOT_COMPLETED",
     "backup_receipt": "NOT_CREATED",
     "deployment": "NOT_EXECUTED",
     "telegram_and_provider": "USER_VERIFICATION_PENDING"
+  },
+  "current_conninfo_rework": {
+    "revision": "R4",
+    "work_instruction_id": "WI-C-21-LR-02C-OPS-R2-CONNINFO-R4-20260904-001",
+    "event_sequence": 481,
+    "exact_path_count": 13,
+    "focused_operational_contract_count": 31,
+    "implementation_status": "GREEN_PENDING_FULL_VERIFICATION_AND_CHECKPOINT",
+    "credential_transport": "STDIN_TO_LIBPQ_SERVICE_FD3",
+    "release_manifest_rebind": "NOT_EXECUTED",
+    "backup_attempt3": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "telegram_and_provider": "USER_VERIFICATION_PENDING",
+    "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
   "current_release_binding": {
     "binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
@@ -1819,5 +1850,5 @@
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "repository_exact_path_count": 10
   },
-  "snapshot_hash": "A0AF15C1EB9891F997D358B3DEF9D22CB141E72EAC5D4CC272F95102D03CD069"
+  "snapshot_hash": "50B08589BB7446756A9D483179A7BFCD6FF862C12A07B5E1CCD6B60987E9532D"
 }

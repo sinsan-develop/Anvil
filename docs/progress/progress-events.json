@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 478,
+  "last_sequence": 481,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -15975,7 +15975,34 @@
       "actor": "main-agent-eoul",
       "subject_ref": "C-21/LR-02C/OPS-R2/MAIN-RECONCILIATION",
       "details": {"branch":"main","upstream":"origin/main","observed_at":"2026-09-04T11:32:28+09:00","reason":"POST_MERGE_CANONICAL_MAIN_REPOSITORY_RECONCILIATION","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"970680a95a7e2471effc903239548948b3aa6263","local_head":"970680a95a7e2471effc903239548948b3aa6263","remote_head":"970680a95a7e2471effc903239548948b3aa6263","head_relation":"MAIN_OPS_R2_POST_MERGE_RECONCILIATION_EXACT7_PENDING_COMMIT","push_status":"PUSH_PENDING_MAIN","repository_exact_path_count":7,"exact_allowed_paths":["docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"release_target":"b4858ffb373066b24d7d9ee9bfde810160cacb75","operational_backup_attempt":2,"operational_backup_status":"NOT_EXECUTED","deployment_status":"NOT_EXECUTED","telegram_and_provider":"USER_VERIFICATION_PENDING","worker_lease_epoch":5,"write_lease_epoch":5,"c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","semantic_diff":"NONE","scope_expansion":false}
+    },
+    {
+      "event_id": "evt_c21_lr02c_ops_r2_backup_attempt2_failure_accepted",
+      "sequence": 479,
+      "event_type": "FAILURE_REPORT_ACCEPTED",
+      "occurred_at": "2026-09-04T12:05:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/OPS-R2",
+      "details": {"entry_id":"failure-c21-lr02c-ops-r2-backup-attempt-2","evidence_ref":{"path":"docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","sha256":"205655134D2A49E4CF3426C0D85B2298B10E6A73DDC850FF9FA3C226F8EEE9E8","bytes":6039},"valid_failure_count":2,"failure_fingerprint":"C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE","root_cause":"LIBPQ_URI_STILL_INTERPRETED_AS_LITERAL_DBNAME","release_target":"b4858ffb373066b24d7d9ee9bfde810160cacb75","backup_attempt":2,"exit_code":20,"diagnostics":{"self_dns":"PASS","local_socket":"PASS","direct_tcp_auth":"PASS","pgdatabase_url_connect_dump":"FAIL","service_fd3_connect_schema_dump":"PASS"},"database_dump":"NOT_COMPLETED","backup_receipt":"NOT_CREATED","deployment":"NOT_EXECUTED","telegram_and_provider":"USER_VERIFICATION_PENDING","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_package_resumed",
+      "sequence": 480,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-09-04T12:05:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/OPS-R2",
+      "details": {"resume_event_ref":"evt_c21_lr02c_ops_r2_backup_attempt2_failure_accepted","work_instruction_id":"WI-C-21-LR-02C-OPS-R2-CONNINFO-R4-20260904-001","work_instruction_sha256":"CCE5C3D315D101CEAABF30FF0B51D447602E7927B5193CF531D72B3034AACEC5","invocation_sha256":"3BB6F14863D00548A5BA22653B1501628F34DCE9E26B2873E9414C202632A27D","failure_fingerprint":"C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE","valid_failure_count":2,"package_status":"ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4","worker_lease_id":"worker-lease-c21-lr02c-ops-r2-20260903-005","write_lease_id":"write-lease-c21-lr02c-ops-r2-20260903-005","worker_lease_epoch":5,"write_lease_epoch":5,"external_retry":"BLOCKED_PENDING_CHECKPOINT_AND_RELEASE_REBIND","telegram_and_provider":"USER_VERIFICATION_PENDING","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_exact13_repository_reconciled",
+      "sequence": 481,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-04T12:05:02+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/OPS-R2",
+      "details": {"branch":"codex/c21-operational-execution","upstream":"origin/codex/c21-operational-execution","observed_at":"2026-09-04T12:05:02+09:00","reason":"BACKUP_ATTEMPT2_FAILURE_ACCEPTED_AND_CONNINFO_R4_EXACT13_REWORK_ACTIVE","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"eef349682ff5598e3488c9e75163c5e0a99a0bdb","local_head":"eef349682ff5598e3488c9e75163c5e0a99a0bdb","feature_remote":"origin/codex/c21-operational-execution","feature_remote_head":"970680a95a7e2471effc903239548948b3aa6263","remote_head":"970680a95a7e2471effc903239548948b3aa6263","head_relation":"FEATURE_WORKTREE_ACTIVE_OPS_R2_CONNINFO_R4_EXACT13","push_status":"FEATURE_BASE_AHEAD_OF_REMOTE_OPS_R2_CONNINFO_R4_ACTIVE","repository_exact_path_count":13,"exact_allowed_paths":["deploy/ysna/backup-c21-db.sh","docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md","scripts/check_project_progress.py","tests/deploy/test_c21_lr02c_operational_contract.py","tests/tooling/test_project_progress.py"],"next_work_package":"C-21/LR-02C/OPS-R2","next_package_status":"ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4","release_manifest_rebind":"NOT_EXECUTED","backup_attempt3":"NOT_EXECUTED","deployment_status":"NOT_EXECUTED","telegram_and_provider":"USER_VERIFICATION_PENDING","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
     }
   ],
-  "last_event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7"
+  "last_event_id": "evt_c21_lr02c_ops_r2_conninfo_r4_exact13_repository_reconciled"
 }
