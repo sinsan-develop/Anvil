@@ -3,13 +3,16 @@
   "manifest_type": "WSL_STAGING_CANDIDATE",
   "status": "APPROVED_FOR_STAGING_VALIDATION",
   "source": {
-    "commit": "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0",
-    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact46",
+    "commit": "324eb169fedbce958d2e8cc29362deb7af433677",
+    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact48",
     "working_tree": "CLEAN"
   },
   "environment": {
     "name": "WSL_SERVER_TEST_STAGING",
-    "postgres_targets": ["15", "18-rc"]
+    "postgres_targets": [
+      "15",
+      "18-rc"
+    ]
   },
   "authority": {
     "approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
@@ -22,13 +25,16 @@
       "parent_approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
       "parent_approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
       "parent_approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
-      "prior_candidate_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
-      "candidate_parent_commit": "99e83e4b07df1cffced6a89ff16ff2266ddaa426",
-      "candidate_commit": "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0",
-      "correction_path_count": 2,
-      "correction_path_list_sha256": "BCF8BC3E409715FF2E470D3BEB977E8E410B388BAC253114310D264FD783AA0F",
+      "prior_candidate_commit": "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0",
+      "candidate_parent_commit": "18fa604531acfd303c10effa528797fbd5b55c8b",
+      "candidate_commit": "324eb169fedbce958d2e8cc29362deb7af433677",
+      "correction_path_count": 5,
+      "correction_path_list_sha256": "63D5B1B57251E3A6680BBE62280A434E28AD9DFCE764A8D0C1BD2B161A1DE14D",
       "correction_paths": [
+        "deploy/wsl/bootstrap.sh",
         "deploy/wsl/common.sh",
+        "deploy/wsl/compose.wsl.yml",
+        "deploy/wsl/deploy.sh",
         "tests/deploy/test_wsl_staging_harness.py"
       ],
       "review": {
@@ -39,11 +45,17 @@
       "requirements_change": false,
       "important_risk_change": false,
       "cleanup_authority": "UNCHANGED_PARENT_APPROVAL",
-      "execution_exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"]
+      "execution_exclusions": [
+        "TELEGRAM_EXECUTION",
+        "PROVIDER_EXECUTION"
+      ]
     },
-    "derived_binding_sha256": "FFEDB1B478DC0493CE3FC585A5324361EA82D83F2E2FCF6D2398CB9ACCB47F9C"
+    "derived_binding_sha256": "C9EC11DE9FCA150F07418449C1A7C554B17909BE8F2647B85C7A763C86D3FA0A"
   },
-  "exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"],
+  "exclusions": [
+    "TELEGRAM_EXECUTION",
+    "PROVIDER_EXECUTION"
+  ],
   "cleanup": {
     "exact_named_volumes": [
       "anvil-wsl-pg15_anvil-db-data",
@@ -55,6 +67,8 @@
     }
   },
   "rollback": {
-    "approved_commits": ["830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"]
+    "approved_commits": [
+      "324eb169fedbce958d2e8cc29362deb7af433677"
+    ]
   }
 }

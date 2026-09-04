@@ -1,5 +1,13 @@
 # Anvil 작업현황
 
+## 2026-09-05 seq491 WSL cold-start 보완 후보
+
+- Main 검토 후 bootstrap Bash 전달, DB health 최대 120초 대기, tmpfs 단일 mount 및 PG18 volume target 보완을 candidate `324eb169fedbce958d2e8cc29362deb7af433677`에 결박했다. parent는 seq490 control `18fa604531acfd303c10effa528797fbd5b55c8b`이며 correction exact5다.
+- 이전 seq490 candidate/control private push와 fresh recovery 검증은 PASS다. 실제 WSL에서는 bootstrap permission error, 최초 DB 준비 전 backup 실패, warm retry에서 backup/image build 성공 후 잘못된 tmpfs로 migration container 생성 실패를 확인했다. PG15 DB는 healthy, migration 실행·web 생성·PG18 실행은 미완료다.
+- 새 후보 배포·DB 검증·volume cleanup·Telegram·Provider는 미실행이다. PG15 warm 성공을 새 후보 cold-start 성공으로 표시하지 않는다.
+- seq1~490 event bytes와 기존 manifest/digest를 보존하며 seq491만 append했다. exact48 후보/exact11 record/누적 exact50, 자동 private push 정책과 기존 cleanup 승인 범위를 유지한다.
+- 담당: developer-primary-wsl 단일 writer. 변경은 successor exact11만. Main review 후 자동 private push/recovery 및 WSL 실제 검증으로 이어간다. C-01은 C-21 독립 판정 전까지 차단한다.
+
 ## 2026-09-04 private 개발 Git 시범 전환
 
 - 담당: Main Agent 어울
@@ -392,3 +400,16 @@
 - TDD RED: tooling은 repository `push_status`가 `...BLOCKED_PENDING_EXACT_DESTINATION_APPROVAL`인 것을 검출했고, guard test는 잘못된 private-push policy가 direct-child 검사까지 통과해 policy 전용 거부 사유가 없음을 검출했다.
 - 수정 원칙: seq1~489와 seq490 event 원문은 byte-immutable로 유지한다. active progress/HANDOFF/CandidateReleaseManifest/evidence/checker/guard/tests만 `REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH` 및 `MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE` 계약으로 재결박한다.
 - 외부 push/WSL/Docker/DB/volume cleanup/Telegram/Provider는 이 fix round에서 실행하지 않는다. push 결과는 실행 후 새 append-only checkpoint로 기록한다.
+
+## 2026-09-05 C-21 seq491 cold-start 및 PG18 volume 경로 보완
+
+- 담당: `developer-primary-wsl` 인수 writer `pg18_binding_resume`. 기존 seq491 dirty exact11은 보존 후 이어서 작업했다. 기존 candidate `ea6f47b33b68d156923528345f6990fd3859b7eb`는 로컬 ref `codex/preserve-c21-ea6f47b-pg18-resume`에 보존했고 dirty binary patch 및 신규 manifest/digest는 `D:\tmp\anvil-seq491-preserve-20260905-pg18-resume`에 checksum과 함께 보존했다.
+- 실제 결함 근거: Main이 확인한 공식 PG18 image는 `PGDATA=/var/lib/postgresql/18/docker`, declared volume `/var/lib/postgresql`이다. 기존 named mount `/var/lib/postgresql/data`는 PG18 데이터 경로를 포함하지 않았다. PG18 DB는 아직 생성되지 않았다.
+- 최소 보완: `configure_wsl_target`이 PG15에는 `/var/lib/postgresql/data`, PG18 RC에는 `/var/lib/postgresql`을 매번 대입·export하고 Compose named volume target은 필수 변수로 받는다. volume 이름·labels·cleanup·server `.env`·PGDATA 설정은 변경하지 않는다.
+- 제품 candidate: `324eb169fedbce958d2e8cc29362deb7af433677`, single parent `18fa604531acfd303c10effa528797fbd5b55c8b`, correction exact5/hash `63D5B1B57251E3A6680BBE62280A434E28AD9DFCE764A8D0C1BD2B161A1DE14D`. 기존 cold-start bootstrap/deploy/tmpfs 보완을 포함한다. seq491 record의 테스트 수정은 candidate에 섞지 않았다.
+- 결박: base→candidate exact48, record exact11, 누적 exact50 유지. derived binding은 1063 bytes/hash `C9EC11DE9FCA150F07418449C1A7C554B17909BE8F2647B85C7A763C86D3FA0A`. seq1~490 raw prefix 814540 bytes/hash `E0A940F4FB2AD3EAE694831599063512339647ECABE64E20C924677A27672B19` 및 historical manifest/digest는 불변이다.
+- 검증 근거: shell 15→18-rc→15 전환 및 자식 프로세스 export 확인, Bash syntax, diff check PASS. Main의 WSL Compose config JSON 두 target 검사도 각 exit0: 정확한 named volume·target·labels·단일 tmpfs 확인. 이는 configuration 검증이며 DB runtime PASS가 아니다. 변경 binding focused 및 필요한 WSL harness 결과는 freeze 직전 추가한다.
+- 오류: 인수 전 테스트 session5384는 사라져 결과 미확인으로 유지한다. PG18 재결박에서 prior candidate→candidate 경로 수가 common.sh 추가로 14→15가 된 점을 처음 누락하여 checker1회 실패했고 실제 Git diff/hash 재계산으로 해소했다. 동일 제품 원인 실패 3회 조건은 발생하지 않았다.
+- 문서 상태: `docs/DEVELOPMENT_ENVIRONMENT.md`의 seq486/93c58 candidate와 승인 대기 문구는 오래된 상태다. 현재 실행 근거는 최신 checkpoint와 CandidateReleaseManifest이며 환경 문서 정정은 후속 정상 문서 checkpoint에서 수행한다.
+- 미검증·다음 조치: 새 candidate의 WSL PG15/PG18 runtime·migration/API/SSE/backup/restore/rollback/cleanup은 아직 미실행이다. 독립 review 뒤 Main이 승인된 private refs push·복구 검증과 WSL gate를 계속한다. Telegram·Provider 실호출은 제외하며 C-01은 C-21 독립 판정 전 차단한다.
+- 최종 관련 검증: seq491 focused 5개와 seq490 immutable content1개 `6 PASS,111 deselected`. WSL harness 첫 실행은 `46 PASS,2 환경 FAIL,1 SKIP`; Windows subprocess의 native PATH와 POSIX separator 혼합이 두 fixture에서 중첩 Bash 실패를 만들었다. Main이 반복 실행 경계를 직접 인수하여 테스트 세 PATH 지점을 `str(bin_dir)+os.pathsep+os.environ['PATH']`로 수정했고 두 실패 node 재검증 `2 PASS,47 deselected`(17.01s, exit0)를 확인했다. 총 48개 node 통과, PyYAML parser1개 skip은 실제 WSL Compose config 두 target PASS로 별도 충족했다. 전체 suite를 반복 실행하지 않았다. Main의 WSL 임시 QA 경로도 rmdir exit0로 정리했다.

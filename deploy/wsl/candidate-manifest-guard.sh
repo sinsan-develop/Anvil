@@ -4,7 +4,7 @@ set -euo pipefail
 validate_wsl_candidate_manifest() {
   local repo="$1" manifest_ref="$2" expected="$3"
   local control_ref='refs/remotes/origin/codex/c21-operational-execution'
-  local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact46'
+  local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact48'
   [[ "$manifest_ref" == "$control_ref" ]] || { echo 'candidate control ref must be the exact successor remote-tracking ref' >&2; return 20; }
   [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || { echo 'full 40-character SHA required' >&2; return 20; }
   local control_sha
@@ -64,13 +64,13 @@ if not isinstance(derived, dict) or not re.fullmatch(r'[0-9A-F]{64}', str(derive
 canonical = json.dumps(derived, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
 if hashlib.sha256(canonical).hexdigest().upper() != derived_hash:
     raise SystemExit('candidate derived binding checksum mismatch')
-expected_candidate_parent = '99e83e4b07df1cffced6a89ff16ff2266ddaa426'
+expected_candidate_parent = '18fa604531acfd303c10effa528797fbd5b55c8b'
 if derived.get('candidate_parent_commit') != expected_candidate_parent:
     raise SystemExit('candidate parent exact derived binding mismatch')
-expected_paths = ['deploy/wsl/common.sh', 'tests/deploy/test_wsl_staging_harness.py']
-expected_path_hash = 'BCF8BC3E409715FF2E470D3BEB977E8E410B388BAC253114310D264FD783AA0F'
+expected_paths = ['deploy/wsl/bootstrap.sh', 'deploy/wsl/common.sh', 'deploy/wsl/compose.wsl.yml', 'deploy/wsl/deploy.sh', 'tests/deploy/test_wsl_staging_harness.py']
+expected_path_hash = '63D5B1B57251E3A6680BBE62280A434E28AD9DFCE764A8D0C1BD2B161A1DE14D'
 if any((
-    derived.get('correction_path_count') != 2,
+    derived.get('correction_path_count') != 5,
     derived.get('correction_path_list_sha256') != expected_path_hash,
     derived.get('correction_paths') != expected_paths,
 )):
@@ -80,7 +80,7 @@ if any((
     derived.get('parent_approval_id') != authority.get('approval_id'),
     derived.get('parent_approval_artifact_sha256') != authority.get('approval_artifact_sha256'),
     derived.get('parent_approval_binding_sha256') != authority.get('approval_binding_sha256'),
-    derived.get('prior_candidate_commit') != '326476d69a3228f9dfcf64ff1dd056577bcbcf55',
+    derived.get('prior_candidate_commit') != '830ad98546ed82a59524dd5a6cef0a5b7a6a96b0',
     derived.get('candidate_commit') != expected,
     derived.get('review') != {'spec': 'PASS', 'quality': 'APPROVED'},
     derived.get('scope_change') is not False,
@@ -90,7 +90,7 @@ if any((
     derived.get('execution_exclusions') != ['TELEGRAM_EXECUTION', 'PROVIDER_EXECUTION'],
 )):
     raise SystemExit('candidate derived binding contract mismatch')
-expected_derived_hash = 'FFEDB1B478DC0493CE3FC585A5324361EA82D83F2E2FCF6D2398CB9ACCB47F9C'
+expected_derived_hash = 'C9EC11DE9FCA150F07418449C1A7C554B17909BE8F2647B85C7A763C86D3FA0A'
 if derived_hash != expected_derived_hash:
     raise SystemExit('candidate exact derived binding hash mismatch')
 if doc.get('exclusions') != ['TELEGRAM_EXECUTION', 'PROVIDER_EXECUTION']:
@@ -126,7 +126,7 @@ PY
   correction_paths="$(git -C "$repo" diff --name-only "$candidate_parent" "$expected")" || {
     echo 'candidate correction paths are not readable' >&2; return 20;
   }
-  [[ "$correction_paths" == $'deploy/wsl/common.sh\ntests/deploy/test_wsl_staging_harness.py' ]] || {
+  [[ "$correction_paths" == $'deploy/wsl/bootstrap.sh\ndeploy/wsl/common.sh\ndeploy/wsl/compose.wsl.yml\ndeploy/wsl/deploy.sh\ntests/deploy/test_wsl_staging_harness.py' ]] || {
     echo 'candidate correction path set mismatch' >&2; return 21;
   }
   correction_hash="$(ANVIL_CORRECTION_PATHS="$correction_paths" "$python_bin" - <<'PY'
@@ -136,7 +136,7 @@ payload = json.dumps(sorted(paths), ensure_ascii=False, separators=(',', ':')).e
 print(hashlib.sha256(payload).hexdigest().upper())
 PY
 )" || return 20
-  [[ "$correction_hash" == 'BCF8BC3E409715FF2E470D3BEB977E8E410B388BAC253114310D264FD783AA0F' ]] || {
+  [[ "$correction_hash" == '63D5B1B57251E3A6680BBE62280A434E28AD9DFCE764A8D0C1BD2B161A1DE14D' ]] || {
     echo 'candidate correction path hash mismatch' >&2; return 21;
   }
   local remote_sha

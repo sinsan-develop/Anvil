@@ -54,8 +54,8 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         )
         self._git(repo, "config", "user.email", "test@example.invalid")
         self._git(repo, "config", "user.name", "wsl-harness-test")
-        candidate = "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
-        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact46"
+        candidate = "324eb169fedbce958d2e8cc29362deb7af433677"
+        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact48"
         control_ref = "refs/remotes/origin/codex/c21-operational-execution"
         self._git(repo, "checkout", "-B", "test-control", candidate)
         shutil.copy2(
@@ -63,7 +63,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             repo / "deploy" / "wsl" / "CandidateReleaseManifest.json",
         )
         self._git(repo, "add", "deploy/wsl/CandidateReleaseManifest.json")
-        self._git(repo, "commit", "-m", "seq490 fixture record")
+        self._git(repo, "commit", "-m", "seq491 fixture record")
         source_head = self._git(repo, "rev-parse", "HEAD")
         self._git(repo, "update-ref", candidate_ref, candidate)
         self._git(repo, "update-ref", control_ref, source_head)
@@ -116,7 +116,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self._git(repo, "add", ".")
             self._git(repo, "commit", "-m", "unapproved descendant")
             unapproved = self._git(repo, "rev-parse", "HEAD")
-            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact46", unapproved)
+            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact48", unapproved)
             result = self._validate(repo, control_ref, candidate, checksum)
             self.assertNotEqual(0, result.returncode)
             self.assertIn("feature remote", result.stderr)
@@ -312,7 +312,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self._git(
                 repo,
                 "update-ref",
-                "refs/remotes/origin/candidates/c21-wsl-exact46",
+                "refs/remotes/origin/candidates/c21-wsl-exact48",
                 tampered_candidate,
             )
             checksum = hashlib.sha256(
@@ -406,18 +406,18 @@ class WslScriptFailClosedTests(unittest.TestCase):
 
     def test_repository_candidate_manifest_is_bound_to_approved_exact_candidate(self):
         manifest = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
-        candidate = "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+        candidate = "324eb169fedbce958d2e8cc29362deb7af433677"
         self.assertEqual("APPROVED_FOR_STAGING_VALIDATION", manifest["status"])
         self.assertEqual(candidate, manifest["source"]["commit"])
         self.assertEqual(
-            "refs/remotes/origin/candidates/c21-wsl-exact46",
+            "refs/remotes/origin/candidates/c21-wsl-exact48",
             manifest["source"]["remote_ref"],
         )
         self.assertEqual([candidate], manifest["rollback"]["approved_commits"])
         binding = manifest["authority"]["derived_binding"]
-        self.assertEqual(985, len(self._canonical(binding)))
+        self.assertEqual(1063, len(self._canonical(binding)))
         self.assertEqual(
-            "FFEDB1B478DC0493CE3FC585A5324361EA82D83F2E2FCF6D2398CB9ACCB47F9C",
+            "C9EC11DE9FCA150F07418449C1A7C554B17909BE8F2647B85C7A763C86D3FA0A",
             manifest["authority"]["derived_binding_sha256"],
         )
         self.assertEqual(
@@ -427,6 +427,24 @@ class WslScriptFailClosedTests(unittest.TestCase):
         self.assertEqual(
             ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"], manifest["exclusions"]
         )
+
+    def test_postgres_volume_target_is_exported_and_resets_between_versions(self):
+        result = subprocess.run(
+            ["bash", "-c", (
+                'source "$1"; '
+                'for version in 15 18-rc 15; do '
+                'configure_wsl_target "$version" || exit; '
+                'bash -c \'printf "%s\\n" "$ANVIL_POSTGRES_VOLUME_TARGET"\'; '
+                'done'
+            ), "volume-target-test", self._posix(DEPLOY / "common.sh")],
+            capture_output=True, text=True, check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual([
+            "/var/lib/postgresql/data", "/var/lib/postgresql", "/var/lib/postgresql/data",
+        ], result.stdout.splitlines())
+        compose = (DEPLOY / "compose.wsl.yml").read_text(encoding="utf-8")
+        self.assertIn("anvil-db-data:${ANVIL_POSTGRES_VOLUME_TARGET:?", compose)
 
     def test_backup_receipt_gate_precedes_migration(self):
         deploy = (DEPLOY / "deploy.sh").read_text(encoding="utf-8")
@@ -570,7 +588,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact46", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact48", candidate)
             (source / "control-marker.txt").write_text("control\n", encoding="utf-8")
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "control")
@@ -605,7 +623,7 @@ class WslControlRuntimeTests(unittest.TestCase):
                     "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
                     "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
                     "ANVIL_PYTHON": self._posix(Path(sys.executable)),
-                    "PATH": self._posix(bin_dir) + ":" + os.environ["PATH"],
+                    "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
                 },
                 text=True,
                 capture_output=True,
@@ -627,7 +645,7 @@ class WslControlRuntimeTests(unittest.TestCase):
                     "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
                     "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
                     "ANVIL_PYTHON": self._posix(Path(sys.executable)),
-                    "PATH": self._posix(bin_dir) + ":" + os.environ["PATH"],
+                    "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
                 },
                 text=True,
                 capture_output=True,
@@ -657,7 +675,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact46", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact48", candidate)
 
             control_verify = source / "deploy" / "wsl" / "verify.sh"
             control_verify.write_text(
@@ -750,7 +768,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             stat = bin_dir / "stat"; stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8")
             os.chmod(docker, 0o755); os.chmod(curl, 0o755); os.chmod(stat, 0o755)
             result = subprocess.run(["bash", str(control / "deploy" / "wsl" / "rollback.sh"), candidate], text=True, capture_output=True,
-                env=os.environ | {"PATH": self._posix(bin_dir) + ":" + os.environ["PATH"], "ANVIL_DOCKER_LOG": self._posix(log), "ANVIL_WSL_DEPLOY_ROOT": self._posix(root), "ANVIL_WSL_CONTROL_REPO": self._posix(control), "ANVIL_WSL_APPLICATION_REPO": self._posix(repo), "ANVIL_CANDIDATE_MANIFEST_REF": control_ref, "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum, "ANVIL_PYTHON": self._posix(Path(sys.executable))})
+                env=os.environ | {"PATH": str(bin_dir) + os.pathsep + os.environ["PATH"], "ANVIL_DOCKER_LOG": self._posix(log), "ANVIL_WSL_DEPLOY_ROOT": self._posix(root), "ANVIL_WSL_CONTROL_REPO": self._posix(control), "ANVIL_WSL_APPLICATION_REPO": self._posix(repo), "ANVIL_CANDIDATE_MANIFEST_REF": control_ref, "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum, "ANVIL_PYTHON": self._posix(Path(sys.executable))})
             self.assertNotEqual(0, result.returncode)
             self.assertTrue(log.exists(), result.stderr)
             calls = log.read_text(encoding="utf-8").splitlines()
@@ -778,7 +796,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact46", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact48", candidate)
             (source / "control-marker.txt").write_text("descendant\n", encoding="utf-8")
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "stale control descendant")
