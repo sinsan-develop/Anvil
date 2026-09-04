@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 477,
+  "last_sequence": 478,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -15966,7 +15966,16 @@
       "actor": "main-agent-eoul",
       "subject_ref": "C-21/LR-02C/OPS-R2/RELEASE-BINDING",
       "details": {"branch":"codex/c21-operational-execution","upstream":"origin/codex/c21-operational-execution","observed_at":"2026-09-04T10:55:51+09:00","reason":"OPS_R2_IMPLEMENTATION_CHECKPOINT_RELEASE_BOUND_WITHOUT_EXTERNAL_EXECUTION","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"b4858ffb373066b24d7d9ee9bfde810160cacb75","local_head":"b4858ffb373066b24d7d9ee9bfde810160cacb75","feature_remote":"origin/codex/c21-operational-execution","feature_remote_head":"b4858ffb373066b24d7d9ee9bfde810160cacb75","remote_head":"b4858ffb373066b24d7d9ee9bfde810160cacb75","head_relation":"FEATURE_WORKTREE_ACTIVE_OPS_R2_RELEASE_REBIND_EXACT10","push_status":"FEATURE_BASE_SYNCED_OPS_R2_RELEASE_REBIND_ACTIVE","repository_exact_path_count":10,"exact_allowed_paths":["deploy/ysna/ReleaseManifest.json","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-release-rebind.json","docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_INVOCATION_PROMPT_R3.md","docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_WORK_INSTRUCTION_R3.md","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"release_target":"b4858ffb373066b24d7d9ee9bfde810160cacb75","operational_backup_attempt":2,"operational_backup_status":"NOT_EXECUTED","deployment_status":"NOT_EXECUTED","telegram_and_provider":"USER_VERIFICATION_PENDING","worker_lease_epoch":5,"write_lease_epoch":5,"c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
+    },
+    {
+      "event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7",
+      "sequence": 478,
+      "event_type": "REPOSITORY_RECONCILED",
+      "occurred_at": "2026-09-04T11:32:28+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/LR-02C/OPS-R2/MAIN-RECONCILIATION",
+      "details": {"branch":"main","upstream":"origin/main","observed_at":"2026-09-04T11:32:28+09:00","reason":"POST_MERGE_CANONICAL_MAIN_REPOSITORY_RECONCILIATION","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"970680a95a7e2471effc903239548948b3aa6263","local_head":"970680a95a7e2471effc903239548948b3aa6263","remote_head":"970680a95a7e2471effc903239548948b3aa6263","head_relation":"MAIN_OPS_R2_POST_MERGE_RECONCILIATION_EXACT7_PENDING_COMMIT","push_status":"PUSH_PENDING_MAIN","repository_exact_path_count":7,"exact_allowed_paths":["docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"],"release_target":"b4858ffb373066b24d7d9ee9bfde810160cacb75","operational_backup_attempt":2,"operational_backup_status":"NOT_EXECUTED","deployment_status":"NOT_EXECUTED","telegram_and_provider":"USER_VERIFICATION_PENDING","worker_lease_epoch":5,"write_lease_epoch":5,"c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","semantic_diff":"NONE","scope_expansion":false}
     }
   ],
-  "last_event_id": "evt_c21_lr02c_ops_r2_release_rebind_exact10_repository_reconciled"
+  "last_event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7"
 }

@@ -562,13 +562,20 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - 기존 OPS-R2 active WorkInstruction과 epoch5 worker/write lease는 ACTIVE로 유지한다. 제품 코드 변경은 없고 operational backup attempt2와 deploy는 `NOT_EXECUTED`다.
 - Telegram signed POST와 Provider probe는 `USER_VERIFICATION_PENDING`, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`를 유지한다.
 
+## 2026-09-04 C-21/LR-02C OPS-R2 canonical main reconciliation
+
+- fast-forward 통합 후 canonical `main`과 `origin/main`이 `970680a95a7e2471effc903239548948b3aa6263`에서 일치한 clean 기준선을 확인했다.
+- seq478은 기능·요구사항·중요 위험을 바꾸지 않는 `MAIN_RECONFIRMED_NON_SEMANTIC` repository reconciliation이며 governance exact7만 허용한다.
+- ReleaseManifest target `b4858ffb373066b24d7d9ee9bfde810160cacb75`, focused 216 PASS, epoch5 ACTIVE, operational backup attempt2/deploy `NOT_EXECUTED`를 그대로 보존한다.
+- Telegram/Provider는 `USER_VERIFICATION_PENDING`, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다. 이 reconciliation에서 외부 서버 실행은 하지 않았다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 477,
+  "event_sequence": 478,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_ops_r2_release_rebind_exact10_repository_reconciled",
-  "updated_at": "2026-09-04T10:55:51+09:00",
+  "last_event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7",
+  "updated_at": "2026-09-04T11:32:28+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 1,
   "active_work_instruction_sha256": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
@@ -576,20 +583,17 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
   "next_safe_action": "승인된 b4858ff ReleaseManifest를 사용한 표준 Git 기반 운영 backup attempt 2와 deploy/verify를 Main이 별도 실행한다. 현재 projection에서는 외부 실행하지 않았으며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-  "repository_upstream": "origin/codex/c21-operational-execution",
+  "repository_head": "970680a95a7e2471effc903239548948b3aa6263",
+  "repository_upstream": "origin/main",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_RELEASE_REBIND_EXACT10",
+  "repository_validated_base_commit": "970680a95a7e2471effc903239548948b3aa6263",
+  "repository_head_relation": "MAIN_OPS_R2_POST_MERGE_RECONCILIATION_EXACT7_PENDING_COMMIT",
   "repository_exact_allowed_paths": [
-    "deploy/ysna/ReleaseManifest.json",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-release-rebind.json",
-    "docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_INVOCATION_PROMPT_R3.md",
-    "docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_WORK_INSTRUCTION_R3.md",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],

@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-lr02c-ops-r2-release-rebind-exact10-20260904",
-  "event_sequence": 477,
-  "updated_at": "2026-09-04T10:55:51+09:00",
-  "last_event_id": "evt_c21_lr02c_ops_r2_release_rebind_exact10_repository_reconciled",
+  "snapshot_id": "snapshot-c21-lr02c-ops-r2-main-reconciliation-exact7-20260904",
+  "event_sequence": 478,
+  "updated_at": "2026-09-04T11:32:28+09:00",
+  "last_event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -1155,7 +1155,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "A57777A63889F8E7DBAF32A6A9923BD1799AC22DB44678141A477E21C1B567D4"
+      "sha256": "97C1E04D14888B2A16C04A027EDD34B67981EDD2D2C293E624AD7D679A0C9720"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1175,7 +1175,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "9D5D0C7C7B1CEF3063CE947F43681E79F70ECDC7ED389891218A580240695B14"
+      "sha256": "DF9CB6F22494FEEB3D7DC561E866890F3947CCEC5445937771CF763760679C33"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1203,7 +1203,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "8131D1B0504077A73A55397DCD3922619E2032E935DAB807E8542C6319805ED9"
+      "sha256": "52CC8705F525483AAF0E7598160811AB15621DBE33C384981A627783FF8F3792"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1369,29 +1369,24 @@
   },
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-    "validated_base_commit": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-    "head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_RELEASE_REBIND_EXACT10",
-    "branch": "codex/c21-operational-execution",
-    "upstream": "origin/codex/c21-operational-execution",
-    "remote_head": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-    "feature_remote": "origin/codex/c21-operational-execution",
-    "feature_remote_head": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-    "push_status": "FEATURE_BASE_SYNCED_OPS_R2_RELEASE_REBIND_ACTIVE",
+    "validated_base_commit": "970680a95a7e2471effc903239548948b3aa6263",
+    "head_relation": "MAIN_OPS_R2_POST_MERGE_RECONCILIATION_EXACT7_PENDING_COMMIT",
+    "branch": "main",
+    "upstream": "origin/main",
+    "remote_head": "970680a95a7e2471effc903239548948b3aa6263",
+    "push_status": "PUSH_PENDING_MAIN",
     "exact_allowed_paths": [
-      "deploy/ysna/ReleaseManifest.json",
-      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-release-rebind.json",
-      "docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_INVOCATION_PROMPT_R3.md",
-      "docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_WORK_INSTRUCTION_R3.md",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-09-04T10:55:51+09:00",
-    "worktree_status": "C21_OPS_R2_RELEASE_REBIND_ACTIVE: governance exact10 against clean b4858ff; operational backup attempt2 and deploy not executed",
-    "local_head": "b4858ffb373066b24d7d9ee9bfde810160cacb75"
+    "observed_at": "2026-09-04T11:32:28+09:00",
+    "worktree_status": "C21_OPS_R2_MAIN_RECONCILIATION_ACTIVE: governance exact7 against clean main 970680a; operational backup attempt2 and deploy not executed",
+    "local_head": "970680a95a7e2471effc903239548948b3aa6263"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1702,8 +1697,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-release-rebind.json",
-    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json",
+    "manifest_path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1724,7 +1719,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "8131D1B0504077A73A55397DCD3922619E2032E935DAB807E8542C6319805ED9"
+      "sha256": "52CC8705F525483AAF0E7598160811AB15621DBE33C384981A627783FF8F3792"
     }
   },
   "next_work_package": {
@@ -1824,5 +1819,5 @@
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "repository_exact_path_count": 10
   },
-  "snapshot_hash": "342F5F1B30439F099300A2F26423F8524EA51B06B9B776BC6AD05BFBE13B9F71"
+  "snapshot_hash": "A0AF15C1EB9891F997D358B3DEF9D22CB141E72EAC5D4CC272F95102D03CD069"
 }

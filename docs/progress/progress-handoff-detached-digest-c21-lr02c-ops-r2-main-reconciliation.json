@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LR02C-OPS-R2-MAIN-RECONCILIATION-DIGEST-20260904",
+  "package_id": "C-21/LR-02C/OPS-R2/MAIN-RECONCILIATION",
+  "event_sequence": 478,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 79394,
+    "file_sha256": "2E0B67E4FBFBF998AD45208167C2FD5A3E79F70342DA68761212B3523400E088",
+    "canonical_json_sha256": "A92949839469C27929C0776C58ABC4D5A3AA90F74A1EA4133273B9011ABB5AE2"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 142045,
+    "file_sha256": "BB1E55C9AD3B4A5BE54EA3C68606130AAC8FCEE85E90B87EAF7A18FC9602D04B",
+    "machine_summary_canonical_sha256": "BC2D882D1627DEEE62387E03F91E750129110BA77E5C04628F9B1E6609C27EE6"
+  },
+  "created_at": "2026-09-04T11:32:28+09:00",
+  "scope": "OPS-R2 post-merge canonical main reconciliation by governance exact7; ReleaseManifest target b4858ff and 216 tests preserved; seq1-477 frozen; epoch5 active; backup attempt2 and deploy not executed; Telegram and Provider user verification pending; C-01 blocked."
+}
