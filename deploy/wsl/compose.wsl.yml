@@ -1,0 +1,62 @@
+name: "${ANVIL_COMPOSE_PROJECT_NAME:?target-specific compose project is required}"
+
+services:
+  anvil-db:
+    image: "${ANVIL_POSTGRES_IMAGE:?exact PostgreSQL validation image is required}"
+    environment:
+      POSTGRES_DB: anvil
+      POSTGRES_USER: anvil_app
+      POSTGRES_PASSWORD: "${ANVIL_WSL_PG_PASSWORD:?server-only PostgreSQL password is required}"
+    volumes:
+      - anvil-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anvil_app -d anvil"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+    networks: [anvil-wsl]
+    restart: unless-stopped
+
+  anvil-web:
+    image: "anvil-wsl-web:${ANVIL_RELEASE_COMMIT:?exact release SHA is required}"
+    build:
+      context: ../..
+      dockerfile: deploy/wsl/Dockerfile.web
+      args:
+        ANVIL_RELEASE_COMMIT: "${ANVIL_RELEASE_COMMIT}"
+    environment:
+      ANVIL_DATABASE_URL: "postgresql+psycopg://anvil_app:${ANVIL_WSL_PG_PASSWORD}@anvil-db:5432/anvil"
+      ANVIL_HOST: 0.0.0.0
+      ANVIL_PORT: "3770"
+      ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN: "${ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN}"
+      ANVIL_TEST_SESSION_ACTOR_ID: "${ANVIL_TEST_SESSION_ACTOR_ID}"
+      ANVIL_TEST_SESSION_PROJECT_ID: "${ANVIL_TEST_SESSION_PROJECT_ID}"
+      ANVIL_TEST_SESSION_ENVIRONMENT_ID: "${ANVIL_TEST_SESSION_ENVIRONMENT_ID}"
+      ANVIL_TEST_SESSION_RUN_IDS: "${ANVIL_TEST_SESSION_RUN_IDS}"
+      ANVIL_TEST_SESSION_PERMISSION_SCOPES: "${ANVIL_TEST_SESSION_PERMISSION_SCOPES}"
+      ANVIL_CONSOLE_BASE_URL: "http://127.0.0.1:${ANVIL_WSL_HTTP_PORT}"
+      ANVIL_PUBLIC_HOST: "127.0.0.1"
+      TELEGRAM_WEBHOOK_SECRET: "wsl-validation-placeholder-no-egress"
+      TELEGRAM_INTERNAL_SIGNING_SECRET: "wsl-validation-placeholder-no-egress-signing"
+      TELEGRAM_ALLOWED_IDENTITIES: "0:0"
+    ports:
+      - "127.0.0.1:${ANVIL_WSL_HTTP_PORT:?target-specific HTTP port is required}:3770"
+    depends_on:
+      anvil-db:
+        condition: service_healthy
+    networks: [anvil-wsl]
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+
+volumes:
+  anvil-db-data:
+    labels:
+      com.anvil.environment: "WSL_SERVER_TEST_STAGING"
+      com.anvil.cleanup-scope: "C21_WSL_ISOLATED_TEST"
+
+networks:
+  anvil-wsl:
+    internal: true

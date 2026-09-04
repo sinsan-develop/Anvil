@@ -1,3 +1,13 @@
+# C-21 WSL 선행검증 구현 active (2026-09-04)
+
+- 신산님의 명시 승인으로 seq484 `SCOPE_CHANGE_APPROVED`, seq485 `PACKAGE_STARTED`를 append했다.
+- `deploy/wsl` 독립 Git-only harness, candidate manifest/guard, PG15·PG18 RC 격리 Compose, migration 전 backup gate, authenticated SSE/Last-Event-ID, same-origin, scratch restore, application-only rollback을 구현했다.
+- local TDD는 최초 4 tests `failures=6/errors=1` RED 뒤 4/4 PASS, Bash syntax와 diff whitespace PASS다.
+- 현재 candidate manifest는 의도적으로 `DRAFT_REQUIRES_EXACT_SHA_BINDING`이다. Main Agent가 implementation commit을 만든 뒤 그 exact SHA와 approval binding을 별도 control commit으로 결박·push하기 전에는 WSL 배포를 실행하지 않는다.
+- 실제 WSL PG15/PG18 RC/API/SSE/backup-restore/rollback은 `NOT_EXECUTED`; Telegram·Provider도 승인대로 `NOT_EXECUTED`다.
+- 오류는 `WSL_HARNESS_MISSING`, `GIT_BASH_PYTHON3_UNAVAILABLE`, `TEST_EXPECTED_WRONG_FAILURE_BRANCH` 각 1회이며 모두 닫혔다. 동일 근본 원인 3회가 아니다.
+- C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`를 유지한다.
+
 # C-21 WSL readiness 승인 대기 checkpoint (2026-09-04)
 
 - seq483 checkpoint 커밋 후 반복된 `GIT_DESCENDANT_ORIGIN_MISMATCH`는 동일 successor 근본 원인 4회차로 기록하고 Main Agent가 직접 인수했다. exact18과 projected local checkpoint ancestry가 모두 일치하는 후속 governance commit만 허용한다.
@@ -600,28 +610,40 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 483,
-  "status": "WAITING_APPROVAL",
+  "event_sequence": 485,
+  "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_wsl_readiness_waiting_approval",
-  "updated_at": "2026-09-04T14:40:00+09:00",
+  "last_event_id": "evt_c21_wsl_early_validation_started",
+  "updated_at": "2026-09-04T15:20:01+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
-  "active_work_instruction_sha256": "CCE5C3D315D101CEAABF30FF0B51D447602E7927B5193CF531D72B3034AACEC5",
-  "active_invocation_sha256": "3BB6F14863D00548A5BA22653B1501628F34DCE9E26B2873E9414C202632A27D",
-  "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
-  "next_safe_action": "신산님의 명시 승인 전 WSL Phase C 조기실행을 시작하지 않는다. 승인 시에만 deploy/wsl Git-only staging harness와 별도 candidate manifest/guard를 구현하고 Telegram·Provider 제외 PG15/PG18 RC 검증을 수행한다. C-01은 계속 차단한다.",
+  "active_work_instruction_sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
+  "active_invocation_sha256": "F6128710A539124F1636CADB20AA94EFE1A87981C4B6C4D3AA23EA3F5B71D531",
+  "active_revision_binding_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
+  "next_safe_action": "WSL harness 구현을 검증한 뒤 Main Agent가 implementation exact SHA를 commit/push하고 candidate manifest approval binding을 별도 control commit으로 결박한다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "584e4020275ae734a6385dd44e552ec91c4a02b7",
+  "repository_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_READINESS_WAITING_APPROVAL_EXACT18",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_EARLY_VALIDATION_ACTIVE_EXACT34",
   "repository_exact_allowed_paths": [
+    "deploy/wsl/CandidateReleaseManifest.json",
+    "deploy/wsl/Dockerfile.web",
+    "deploy/wsl/bootstrap.sh",
+    "deploy/wsl/candidate-manifest-guard.sh",
+    "deploy/wsl/common.sh",
+    "deploy/wsl/compose.wsl.yml",
+    "deploy/wsl/deploy.sh",
+    "deploy/wsl/requirements-runtime.txt",
+    "deploy/wsl/rollback.sh",
+    "deploy/wsl/verify.sh",
     "deploy/ysna/backup-c21-db.sh",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
     "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
     "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
@@ -629,26 +651,30 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+    "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/deploy/test_c21_lr02c_operational_contract.py",
+    "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
   "current_release_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
   "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-  "focused_test_count": 230,
+  "focused_test_count": 6,
   "focused_operational_contract_count": 31,
   "operational_backup_attempt": 2,
   "operational_backup_status": "FAILED_EXIT_20_NO_DUMP_NO_RECEIPT",
   "backup_attempt3": "NOT_EXECUTED",
   "release_manifest_rebind": "NOT_EXECUTED",
-  "deployment_status": "NOT_EXECUTED",
-  "telegram_and_provider": "USER_VERIFICATION_PENDING",
+  "deployment_status": "NOT_EXECUTED_PENDING_GIT_BINDING",
+  "telegram_and_provider": "NOT_EXECUTED_EXCLUDED",
   "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
-  "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK",
+  "reporting_decision": "AUTO_CONTINUE",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
   "phase_b_gate_deferred_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
   "phase_b_gate_undefined_ids": ["AV-STAT-029"],

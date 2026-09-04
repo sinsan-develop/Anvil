@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-EARLY-VALIDATION-START-DIGEST-20260904",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "event_sequence": 485,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 84392,
+    "file_sha256": "CFB0609D31AB2AE73C854C91A9ED70EF3057C5DD21C951CA6E444FC2FFF1A81B",
+    "canonical_json_sha256": "E0A2EB2E207ECC607323F54C9A3211E50CDED6E9CA4000B1F19434DAD197B390"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 149200,
+    "file_sha256": "6805261EAC0BCD16296F791DFBAD97DFB2A5E791D6E47117DB01437EE401A954",
+    "machine_summary_canonical_sha256": "34A235222B228E235F96BD4A8FC1A33C2825A72881F014AD0D289871AC8D0A40"
+  },
+  "created_at": "2026-09-04T15:20:01+09:00",
+  "scope": "C-21 WSL early validation implementation active; exact34 cumulative projection; candidate Git binding and runtime validation pending; Telegram and Provider not executed."
+}

@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-wsl-readiness-waiting-approval-20260904",
-  "event_sequence": 483,
-  "updated_at": "2026-09-04T14:40:00+09:00",
-  "last_event_id": "evt_c21_wsl_readiness_waiting_approval",
+  "snapshot_id": "snapshot-c21-wsl-early-validation-active-20260904",
+  "event_sequence": 485,
+  "updated_at": "2026-09-04T15:20:01+09:00",
+  "last_event_id": "evt_c21_wsl_early_validation_started",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "WAITING_APPROVAL",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -47,43 +47,47 @@
     "B-11",
     "B-12"
   ],
-  "active_agent": "developer-primary-c21-ops-r2",
+  "active_agent": "developer-primary-wsl",
   "write_lease": {
-    "lease_id": "write-lease-c21-lr02c-ops-r2-20260903-005",
-    "worker_lease_id": "worker-lease-c21-lr02c-ops-r2-20260903-005",
-    "agent_id": "developer-primary-c21-ops-r2",
+    "lease_id": "write-lease-c21-wsl-successor-20260904-001",
+    "worker_lease_id": "worker-lease-c21-wsl-successor-20260904-001",
+    "agent_id": "developer-primary-wsl",
     "work_package_id": "C-21",
-    "subtask_id": "LR-02C/OPS-R2",
-    "write_epoch": 5,
-    "execution_fencing_token": "c21-lr02c-ops-r2-execution-fence-epoch-5-ca945df",
-    "write_fencing_token": "c21-lr02c-ops-r2-write-fence-epoch-5-ca945df",
-    "fencing_token": "c21-lr02c-ops-r2-write-fence-epoch-5-ca945df",
+    "subtask_id": "WSL-EARLY-VALIDATION",
+    "write_epoch": 1,
+    "execution_fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
+    "write_fencing_token": "c21-wsl-write-fence-epoch-1-ca92b78",
+    "fencing_token": "c21-wsl-write-fence-epoch-1-ca92b78",
     "status": "ACTIVE",
     "paths": [
-      "deploy/ysna/backup-c21-db.sh",
-      "tests/deploy/test_c21_lr02c_operational_contract.py",
-      "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
-      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
-      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
-      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
-      "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+      "deploy/wsl/CandidateReleaseManifest.json",
+      "deploy/wsl/Dockerfile.web",
+      "deploy/wsl/bootstrap.sh",
+      "deploy/wsl/candidate-manifest-guard.sh",
+      "deploy/wsl/common.sh",
+      "deploy/wsl/compose.wsl.yml",
+      "deploy/wsl/deploy.sh",
+      "deploy/wsl/requirements-runtime.txt",
+      "deploy/wsl/rollback.sh",
+      "deploy/wsl/verify.sh",
+      "tests/deploy/test_wsl_staging_harness.py",
+      "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
+      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
       "docs/progress/build-progress.json",
       "docs/progress/BUILD_HANDOFF.md",
-      "docs/progress/progress-events.json",
-      "docs/progress/failure-ledger.json",
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_project_progress.py"
+      "docs/progress/progress-events.json"
     ]
   },
   "worker_lease": {
-    "lease_id": "worker-lease-c21-lr02c-ops-r2-20260903-005",
-    "agent_id": "developer-primary-c21-ops-r2",
+    "lease_id": "worker-lease-c21-wsl-successor-20260904-001",
+    "agent_id": "developer-primary-wsl",
     "work_package_id": "C-21",
-    "subtask_id": "LR-02C/OPS-R2",
-    "lease_epoch": 5,
-    "execution_fencing_token": "c21-lr02c-ops-r2-execution-fence-epoch-5-ca945df",
-    "fencing_token": "c21-lr02c-ops-r2-execution-fence-epoch-5-ca945df",
-    "execution_mode": "LOCAL_TDD_NO_EXTERNAL_SIDE_EFFECTS",
+    "subtask_id": "WSL-EARLY-VALIDATION",
+    "lease_epoch": 1,
+    "execution_fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
+    "fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
+    "execution_mode": "LOCAL_TDD_THEN_GIT_ONLY_WSL_STAGING",
     "status": "ACTIVE"
   },
   "completed_c21_backup_portability_write_lease": {
@@ -1159,7 +1163,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-        "sha256": "B1EC7372068AD3D83A335B7D5B119E0A5189FC4622DA29E0652D738176CAB4F2"
+        "sha256": "B07929509C86D4977B8DAC24339FD7C758DC145667F222A840EEE4C574DC846E"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1179,7 +1183,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-        "sha256": "EA830C041B9144B1D1B66ADDDFA5989C649CC5AF1CE85FB43EC7DB3EF67F2FE3"
+        "sha256": "A24F8CBA8FD6F8D7D3CB9C8138AD96311AE8FE98C8A0D3A27676FB79235F52F9"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1207,7 +1211,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-        "sha256": "16288089FB36DD5F4AC74004A16EC9C041B9A95CDCAFD76A24F4CB26EEB43000"
+        "sha256": "DAEB1E0D15A5F04E3EEBE9205865A460DD4D892EF092D07DE67DEADC300C209C"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1254,14 +1258,7 @@
     "path": "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
     "sha256": "D1E9A6A4C8526EC20E118051711B5E9F674B4CAA64FBFB325DAD86134122DB2D"
   },
-  "pending_approvals": [
-    {
-      "approval_ref": "PENDING_SHINSAN_EXPLICIT_APPROVAL",
-      "package_id": "C-21/WSL-READINESS",
-      "change_classification": "IMPORTANT_RISK_CHANGE",
-      "reason": "WSL Phase C successor early execution changes feature scope, work order, and important operational risk"
-    }
-  ],
+  "pending_approvals": [],
   "dir_review": {
     "checkpoint": "DIR-1",
     "status": "CLEARED",
@@ -1269,7 +1266,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "신산님의 명시 승인 전 WSL Phase C 조기실행을 시작하지 않는다. 승인 시에만 deploy/wsl Git-only staging harness와 별도 candidate manifest/guard를 구현하고 Telegram·Provider 제외 PG15/PG18 RC 검증을 수행한다. C-01은 계속 차단한다.",
+  "next_safe_action": "WSL harness 구현을 검증한 뒤 Main Agent가 implementation exact SHA를 commit/push하고 candidate manifest approval binding을 별도 control commit으로 결박한다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1381,18 +1378,30 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_C21_WSL_READINESS_WAITING_APPROVAL_EXACT18",
+    "head_relation": "FEATURE_WORKTREE_C21_WSL_EARLY_VALIDATION_ACTIVE_EXACT34",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
-    "remote_head": "894e7b71fc52905e774892844905199401199fb2",
+    "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "feature_remote": "origin/codex/c21-operational-execution",
-    "feature_remote_head": "894e7b71fc52905e774892844905199401199fb2",
-    "push_status": "FEATURE_LOCAL_CHECKPOINT_AHEAD_C21_WSL_READINESS_EOF_NORMALIZATION",
+    "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+    "push_status": "FEATURE_BASE_SYNCED_C21_WSL_EARLY_VALIDATION_ACTIVE",
     "exact_allowed_paths": [
+      "deploy/wsl/CandidateReleaseManifest.json",
+      "deploy/wsl/Dockerfile.web",
+      "deploy/wsl/bootstrap.sh",
+      "deploy/wsl/candidate-manifest-guard.sh",
+      "deploy/wsl/common.sh",
+      "deploy/wsl/compose.wsl.yml",
+      "deploy/wsl/deploy.sh",
+      "deploy/wsl/requirements-runtime.txt",
+      "deploy/wsl/rollback.sh",
+      "deploy/wsl/verify.sh",
       "deploy/ysna/backup-c21-db.sh",
       "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+      "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
       "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
       "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+      "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
       "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
@@ -1400,17 +1409,21 @@
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
       "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/deploy/test_c21_lr02c_operational_contract.py",
+      "tests/deploy/test_wsl_staging_harness.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-09-04T14:40:00+09:00",
-    "worktree_status": "C21_WSL_READINESS_WAITING_APPROVAL: local checkpoint 584e402 is ahead of upstream 894e7b7; report EOF normalization is non-semantic; seq1-483 meaning and prior evidence preserved; exact18 against eef3496; external changes not executed",
-    "local_head": "584e4020275ae734a6385dd44e552ec91c4a02b7"
+    "observed_at": "2026-09-04T15:20:01+09:00",
+    "worktree_status": "C21_WSL_EARLY_VALIDATION_ACTIVE: cumulative implementation worktree exact34 against eef3496; runtime blocked until implementation and control manifest commits are pushed; Telegram and Provider not executed",
+    "local_head": "ca92b7845eda803cff3c432799642e4f9243d4d6"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1513,11 +1526,11 @@
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
-    "decision": "STOP_AND_REPORT_SCOPE_RISK",
+    "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C21_WSL_PHASE_C_EARLY_EXECUTION_APPROVAL_REQUIRED"
+      "C21_WSL_EARLY_VALIDATION_APPROVED_AND_ACTIVE"
     ],
-    "stop_before_dialogue_report": true
+    "stop_before_dialogue_report": false
   },
   "accepted_c21_lr01_work_instruction": {
     "artifact_id": "WI-C-21-LR-01-20260903-001",
@@ -1566,48 +1579,23 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-C-21-LR-02C-OPS-R2-CONNINFO-R4-20260904-001",
-    "path": "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
-    "sha256": "CCE5C3D315D101CEAABF30FF0B51D447602E7927B5193CF531D72B3034AACEC5",
-    "invocation_path": "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
-    "invocation_sha256": "3BB6F14863D00548A5BA22653B1501628F34DCE9E26B2873E9414C202632A27D",
-    "revision_classification": "HUMAN_APPROVED_FAILURE_DRIVEN_REWORK",
-    "parent_revision_binding": {
-      "binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
-      "parent_baseline_id": "WI-C-21-LR-02C-OPS-R2-20260903-001@9FFFEEE723EB50210B0F7406E5C597E338C480268517A3DFA3FF59092EFE1E13",
-      "derived_baseline_id": "WI-C-21-LR-02C-OPS-R2-20260903-001@E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
-      "root_human_approval_id": "APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001",
-      "root_approval_subject_hash": "3A68623BF9426EB619AC0B8E082028F73442F90F4680FDCE871711B60A6B5FAD",
-      "work_instruction_old_hash": "9FFFEEE723EB50210B0F7406E5C597E338C480268517A3DFA3FF59092EFE1E13",
-      "work_instruction_new_hash": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
-      "invocation_old_hash": "0F0DCA44CAFAA9AB747B908720511456298FC82A0237A1397C75175A381A031A",
-      "invocation_new_hash": "8207996858DE33B542862B4D5C6AEBC1787BC4A0612E1C0052CAC3B637263FC5",
-      "semantic_diff": "NONE",
-      "changed_clauses": [
-        "one surplus EOF blank line removed from each new work-order artifact"
-      ],
-      "impact": "No feature scope, requirement, important risk, write scope, or execution boundary change",
-      "scope_expansion": false,
-      "reconfirmed_actor": {
-        "actor_type": "agent",
-        "actor_id": "main-agent-eoul"
-      },
-      "reconfirmed_at": "2026-09-04T01:20:45+09:00"
-    },
-    "approval_ref": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
-    "approval_sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A",
-    "dispatch_base": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "failed_release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-    "result_status": "REWORK_IN_PROGRESS",
-    "package_status": "ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4",
-    "executor": "developer-primary-c21-ops-r2",
-    "worker_lease_id": "worker-lease-c21-lr02c-ops-r2-20260903-005",
-    "write_lease_id": "write-lease-c21-lr02c-ops-r2-20260903-005",
-    "failure_fingerprint": "C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE",
-    "valid_failure_count": 2,
-    "allowed_path_count": 13,
-    "external_retry": "BLOCKED_PENDING_CHECKPOINT_AND_RELEASE_REBIND",
-    "telegram_and_provider": "USER_VERIFICATION_PENDING",
+    "artifact_id": "WI-C-21-WSL-EARLY-VALIDATION-20260904-001",
+    "path": "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
+    "sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
+    "invocation_path": "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
+    "invocation_sha256": "F6128710A539124F1636CADB20AA94EFE1A87981C4B6C4D3AA23EA3F5B71D531",
+    "revision_classification": "HUMAN_APPROVED_SCOPE_ORDER_AND_IMPORTANT_RISK_CHANGE",
+    "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
+    "dispatch_base": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+    "result_status": "IN_PROGRESS",
+    "package_status": "ACTIVE_IMPLEMENTATION_PENDING_GIT_BINDING",
+    "executor": "developer-primary-wsl",
+    "worker_lease_id": "worker-lease-c21-wsl-successor-20260904-001",
+    "write_lease_id": "write-lease-c21-wsl-successor-20260904-001",
+    "allowed_path_count": 17,
+    "runtime_validation": "NOT_EXECUTED_PENDING_IMPLEMENTATION_COMMIT_AND_CONTROL_BINDING_PUSH",
+    "telegram": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
   "accepted_c21_backup_portability_work_instruction": {
@@ -1721,8 +1709,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
-    "manifest_path": "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
+    "manifest_path": "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1743,7 +1731,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "16288089FB36DD5F4AC74004A16EC9C041B9A95CDCAFD76A24F4CB26EEB43000"
+      "sha256": "DAEB1E0D15A5F04E3EEBE9205865A460DD4D892EF092D07DE67DEADC300C209C"
     }
   },
   "next_work_package": {
@@ -1755,11 +1743,12 @@
     ]
   },
   "next_successor_work_package": {
-    "package_id": "C-21/WSL-READINESS",
-    "status": "WAITING_APPROVAL_WSL_PHASE_C_EARLY_EXECUTION",
-    "purpose": "Phase C successor를 앞당기는 WSL Git-only staging 및 PG15/PG18 RC 인수검증 범위의 사람 승인 대기",
+    "package_id": "C-21/WSL-EARLY-VALIDATION",
+    "status": "ACTIVE_IMPLEMENTATION_PENDING_GIT_BINDING",
+    "purpose": "승인된 WSL Git-only staging 및 PG15/PG18 RC 선행 인수검증",
     "requires": [
-      "human approval for scope, order, and important operational risk change",
+      "implementation exact SHA commit and feature push",
+      "candidate manifest approval binding control commit and push",
       "deploy/wsl Git-only staging harness and separate candidate ReleaseManifest/guard",
       "WSL PostgreSQL 15 dedicated DB and isolated PostgreSQL 18 RC validation",
       "independent C-21 judgment before C-01"
@@ -1881,8 +1870,9 @@
     "main_merge": "NOT_EXECUTED"
   },
   "wsl_readiness_decision": {
-    "event_sequence": 483,
-    "decision_status": "WAITING_APPROVAL",
+    "event_sequence": 484,
+    "decision_status": "APPROVED",
+    "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
     "reason": "WSL_PHASE_C_EARLY_EXECUTION_CHANGES_SCOPE_ORDER_AND_IMPORTANT_OPERATIONAL_RISK",
     "checkpoint_base": "894e7b71fc52905e774892844905199401199fb2",
     "head_upstream": "SYNCED",
@@ -1891,7 +1881,7 @@
     "release_manifest_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
     "release_manifest_status": "STALE_FOR_CURRENT_HEAD",
     "manifest_guard": "ORIGIN_MAIN_ANCESTOR_REQUIRED",
-    "wsl_harness": "MISSING_ONLY_GITKEEP",
+    "wsl_harness": "IMPLEMENTED_LOCAL_PENDING_GIT_BINDING",
     "ysna_verify_reuse": "UNSUITABLE_COUPLED_TO_PUBLIC_DOMAIN_TELEGRAM_PROVIDER",
     "plan_owners": ["F-16", "F-17"],
     "requested_successor": "PHASE_C_SUCCESSOR_WSL_EARLY_VALIDATION",
@@ -1906,5 +1896,33 @@
     "projection_review_resolution": "POST_PUSH_ANCESTRY_NEGATIVE_CONTRACT_ENFORCED",
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
-  "snapshot_hash": "E67095F78B00F6A71EEC9E9256D68047B6F9CD7114B4FD58FAD992C7C808A5F8"
+  "wsl_early_validation": {
+    "event_sequence": 485,
+    "status": "ACTIVE_IMPLEMENTATION_PENDING_GIT_BINDING",
+    "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
+    "work_instruction_id": "WI-C-21-WSL-EARLY-VALIDATION-20260904-001",
+    "dispatch_commit": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+    "local_contract_tests": {"passed": 6, "failed": 0},
+    "bash_syntax": "PASS",
+    "candidate_manifest_status": "DRAFT_REQUIRES_EXACT_SHA_BINDING",
+    "implementation_commit": "PENDING_MAIN_AGENT_COMMIT",
+    "control_manifest_commit": "PENDING_MAIN_AGENT_BINDING_COMMIT",
+    "wsl_access": "NOT_RETRIED_UNTIL_GIT_ONLY_PRECONDITION",
+    "postgres_15": "NOT_EXECUTED",
+    "postgres_18_rc": "NOT_EXECUTED",
+    "migration": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "authenticated_sse": "NOT_EXECUTED",
+    "last_event_id": "NOT_EXECUTED",
+    "same_origin": "NOT_EXECUTED",
+    "backup_restore": "NOT_EXECUTED",
+    "application_rollback": "NOT_EXECUTED",
+    "backup_receipt_gate": "IMPLEMENTED_LOCAL_CONTRACT_PASS",
+    "isolated_volume_cleanup": "IMPLEMENTED_EXACT_NAMES_AND_MULTILABEL_GUARD_NOT_EXECUTED",
+    "rework_iteration": 2,
+    "telegram": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "next_action": "MAIN_COMMIT_IMPLEMENTATION_THEN_BIND_AND_PUSH_CANDIDATE_MANIFEST"
+  },
+  "snapshot_hash": "B20A24FC1C98A6C7F6059DD235FEA9D444463977258237BA3777397A243972DA"
 }

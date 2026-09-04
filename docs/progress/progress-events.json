@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 483,
+  "last_sequence": 485,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -16020,7 +16020,25 @@
       "actor": "main-agent-eoul",
       "subject_ref": "C-21/WSL-READINESS",
       "details": {"approval_ref":"PENDING_SHINSAN_EXPLICIT_APPROVAL","change_classification":"SCOPE_ORDER_AND_IMPORTANT_OPERATIONAL_RISK_CHANGE","decision_status":"WAITING_APPROVAL","reason":"WSL_PHASE_C_EARLY_EXECUTION_CHANGES_SCOPE_ORDER_AND_IMPORTANT_OPERATIONAL_RISK","checkpoint_base":"894e7b71fc52905e774892844905199401199fb2","head_upstream":"SYNCED","frozen_predecessor_sequence":482,"frozen_predecessor_events_sha256":"7E15CC44779B362A444C0B34D560F20F7E68150252DA5D6DB535C158925AEA3A","release_manifest_target":"b4858ffb373066b24d7d9ee9bfde810160cacb75","release_manifest_status":"STALE_FOR_CURRENT_HEAD","manifest_guard":"ORIGIN_MAIN_ANCESTOR_REQUIRED","wsl_harness":"MISSING_ONLY_GITKEEP","ysna_verify_reuse":"UNSUITABLE_COUPLED_TO_PUBLIC_DOMAIN_TELEGRAM_PROVIDER","plan_owners":["F-16","F-17"],"requested_successor":"PHASE_C_SUCCESSOR_WSL_EARLY_VALIDATION","required_scope":["deploy/wsl Git-only staging harness","separate candidate ReleaseManifest and guard","WSL PostgreSQL 15 dedicated DB validation","isolated PostgreSQL 18 RC validation","migration","API","SSE","same-origin","backup/restore","rollback"],"excluded_actions":["SERVER_REDEPLOY","SERVER_RESTART","DATABASE_CHANGE","DNS_CHANGE","TLS_CHANGE","SECRET_CHANGE","EXISTING_MATERIAL_DELETION","MAIN_MERGE","RELEASE_MANIFEST_REBIND","TELEGRAM_EXECUTION","PROVIDER_EXECUTION"],"historical_evidence":"PRESERVED_UNCHANGED","repository_exact_path_count":18,"c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
+    },
+    {
+      "event_id": "evt_c21_wsl_early_validation_approved",
+      "sequence": 484,
+      "event_type": "PACKAGE_RESUMED",
+      "occurred_at": "2026-09-04T15:20:00+09:00",
+      "actor": "human-shinsan",
+      "subject_ref": "C-21/WSL-EARLY-VALIDATION",
+      "details": {"resume_event_ref":"evt_c21_wsl_readiness_waiting_approval","approval_id":"APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001","approval_text":"C-21 WSL 선행검증을 Phase C successor로 앞당기고, deploy/wsl Git-only staging harness와 별도 candidate ReleaseManifest/guard를 구현한 뒤 WSL-server의 PG15 전용 DB 및 격리 PG18 RC에서 Telegram·Provider를 제외한 migration·API·SSE·same-origin·backup/restore·rollback 검증을 수행하는 것을 승인한다.","approved_scope":["GIT_ONLY_WSL_STAGING_HARNESS","CANDIDATE_MANIFEST_GUARD","PG15_DEDICATED_DATABASE","PG18_RC_ISOLATED_DATABASE","MIGRATION","API","AUTHENTICATED_SSE","LAST_EVENT_ID","SAME_ORIGIN","BACKUP_RESTORE","APPLICATION_ROLLBACK"],"excluded_actions":["TELEGRAM_EXECUTION","PROVIDER_EXECUTION","SCP_DEPLOYMENT","SERVER_DIRECT_PATCH","DIRTY_CHECKOUT_DEPLOYMENT","SHARED_SCHEMA_AUTOMATIC_DOWNGRADE","MAIN_MERGE"],"predecessor_event_id":"evt_c21_wsl_readiness_waiting_approval"}
+    },
+    {
+      "event_id": "evt_c21_wsl_early_validation_started",
+      "sequence": 485,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-09-04T15:20:01+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/WSL-EARLY-VALIDATION",
+      "details": {"approval_id":"APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001","work_instruction_id":"WI-C-21-WSL-EARLY-VALIDATION-20260904-001","work_instruction_sha256":"52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8","invocation_sha256":"F6128710A539124F1636CADB20AA94EFE1A87981C4B6C4D3AA23EA3F5B71D531","dispatch_commit":"ca92b7845eda803cff3c432799642e4f9243d4d6","dispatch_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","dispatch_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"eef349682ff5598e3488c9e75163c5e0a99a0bdb","head_relation":"FEATURE_WORKTREE_C21_WSL_EARLY_VALIDATION_ACTIVE_EXACT34","exact_allowed_paths":["deploy/wsl/CandidateReleaseManifest.json","deploy/wsl/Dockerfile.web","deploy/wsl/bootstrap.sh","deploy/wsl/candidate-manifest-guard.sh","deploy/wsl/common.sh","deploy/wsl/compose.wsl.yml","deploy/wsl/deploy.sh","deploy/wsl/requirements-runtime.txt","deploy/wsl/rollback.sh","deploy/wsl/verify.sh","deploy/ysna/backup-c21-db.sh","docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md","docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md","docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md","docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json","docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json","docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json","docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/failure-ledger.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json","docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json","docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json","docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md","docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md","docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md","docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md","scripts/check_project_progress.py","tests/deploy/test_c21_lr02c_operational_contract.py","tests/deploy/test_wsl_staging_harness.py","tests/tooling/test_project_progress.py"],"worker_lease_id":"worker-lease-c21-wsl-successor-20260904-001","write_lease_id":"write-lease-c21-wsl-successor-20260904-001","package_status":"ACTIVE_IMPLEMENTATION","candidate_manifest_status":"DRAFT_REQUIRES_EXACT_SHA_BINDING","runtime_validation":"BLOCKED_UNTIL_IMPLEMENTATION_COMMIT_AND_CONTROL_BINDING_PUSH","telegram":"NOT_EXECUTED","provider":"NOT_EXECUTED","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"}
     }
   ],
-  "last_event_id": "evt_c21_wsl_readiness_waiting_approval"
+  "last_event_id": "evt_c21_wsl_early_validation_started"
 }

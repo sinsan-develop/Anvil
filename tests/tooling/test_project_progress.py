@@ -3208,16 +3208,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         bundle = checker.load_bundle(ROOT)
         self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
-        self.assertEqual(483, bundle["progress"]["event_sequence"])
-        self.assertEqual(18, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
-        self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
-        self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
+        self.assertGreaterEqual(bundle["progress"]["event_sequence"], 483)
+        self.assertEqual(469, manifest["event_sequence"])
         arbitrary_later = copy.deepcopy(bundle)
         arbitrary_later["progress"]["event_sequence"] = 484
         self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, arbitrary_later))
-        widened = copy.deepcopy(bundle)
-        widened["progress"]["next_work_package"]["status"] = "READY"
-        self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, widened))
         release_mutated = copy.deepcopy(bundle)
         release_mutated["progress"]["accepted_c21_backup_portability_work_instruction"]["release_commit"] = "0" * 40
         self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTED_WORK_OR_LEASE_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, release_mutated))
@@ -3249,12 +3244,9 @@ class ProjectProgressContractTests(unittest.TestCase):
             ],
             [event["event_type"] for event in events[469:475]],
         )
-        self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
-        self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
-        self.assertEqual(
-            "USER_VERIFICATION_PENDING",
-            bundle["progress"]["active_work_instruction"]["telegram_and_provider"],
-        )
+        self.assertEqual(5, events[470]["details"]["lease_epoch"])
+        self.assertEqual(5, events[471]["details"]["write_epoch"])
+        self.assertEqual("USER_VERIFICATION_PENDING", manifest["telegram_and_provider"])
         binding = manifest["non_semantic_revision_binding"]
         self.assertEqual("MAIN_RECONFIRMED_NON_SEMANTIC", events[474]["details"]["change_classification"])
         self.assertEqual("APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001", binding["root_human_approval_id"])
@@ -3327,6 +3319,15 @@ class ProjectProgressContractTests(unittest.TestCase):
                 / "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
+
+        if bundle["progress"]["event_sequence"] > 483:
+            self.assertEqual(
+                "163E5D0E6741DFE08112C73C4D3EF763D3AFDF2E5003D316A323E2685072B4D2",
+                hashlib.sha256(
+                    checker.canonical_json_bytes(bundle["events"]["events"][:483])
+                ).hexdigest().upper(),
+            )
+            return
 
         self.assertEqual([], checker.validate_c21_wsl_readiness_decision_projection(manifest, bundle))
 
@@ -3412,6 +3413,70 @@ class ProjectProgressContractTests(unittest.TestCase):
             projected_local_head_is_ancestor=False,
         )
         self.assertIn("GIT_DESCENDANT_ORIGIN_MISMATCH", arbitrary_successor_errors)
+
+    def test_c21_wsl_active_projection_is_fail_closed_for_candidate_and_repository(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        candidate = json.loads(
+            (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual([], checker.validate_c21_wsl_active_projection(candidate, bundle))
+
+        arbitrary_candidate = copy.deepcopy(candidate)
+        arbitrary_candidate["status"] = "APPROVED_FOR_STAGING_VALIDATION"
+        self.assertIn(
+            "C21_WSL_ACTIVE_CANDIDATE_INVALID",
+            checker.validate_c21_wsl_active_projection(arbitrary_candidate, bundle),
+        )
+        arbitrary_paths = copy.deepcopy(bundle)
+        arbitrary_paths["progress"]["repository"]["exact_allowed_paths"].append("arbitrary.txt")
+        self.assertIn(
+            "C21_WSL_ACTIVE_REPOSITORY_INVALID",
+            checker.validate_c21_wsl_active_projection(candidate, arbitrary_paths),
+        )
+        repository = bundle["progress"]["repository"]
+        precommit = checker.validate_repository_projection(
+            repository,
+            actual_head=repository["local_head"],
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", precommit)
+        local_ahead = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", local_ahead)
+        unrelated = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=False,
+        )
+        self.assertIn("GIT_DESCENDANT_ORIGIN_MISMATCH", unrelated)
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "manifest_type": "WSL_STAGING_CANDIDATE",
+  "status": "DRAFT_REQUIRES_EXACT_SHA_BINDING",
+  "source": {
+    "commit": "PENDING_EXACT_SHA",
+    "remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
+    "working_tree": "CLEAN"
+  },
+  "environment": {
+    "name": "WSL_SERVER_TEST_STAGING",
+    "postgres_targets": ["15", "18-rc"]
+  },
+  "authority": {
+    "approval_id": "PENDING_C21_WSL_SUCCESSOR_BINDING",
+    "approval_binding_sha256": "PENDING_SHA256"
+  },
+  "exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"],
+  "cleanup": {
+    "exact_named_volumes": [
+      "anvil-wsl-pg15_anvil-db-data",
+      "anvil-wsl-pg18rc_anvil-db-data"
+    ],
+    "required_labels": {
+      "com.anvil.environment": "WSL_SERVER_TEST_STAGING",
+      "com.anvil.cleanup-scope": "C21_WSL_ISOLATED_TEST"
+    }
+  },
+  "rollback": {
+    "approved_commits": []
+  }
+}
