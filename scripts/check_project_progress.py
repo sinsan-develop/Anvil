@@ -899,10 +899,22 @@ def validate_event_stream(
                 and event.get("event_id") == "evt_c21_ysna_staging_classification_decision_checkpoint"
             )
             wsl_control_successor = (
-                progress.get("event_sequence") == 486
-                and event.get("event_id") == "evt_c21_wsl_control_successor_bound"
-                and details.get("repository_exact_path_count") == 34
-                and set(repository.get("exact_allowed_paths") or []) == c21_wsl_active_exact_paths()
+                (
+                    progress.get("event_sequence") == 486
+                    and event.get("event_id") == "evt_c21_wsl_control_successor_bound"
+                    and details.get("repository_exact_path_count") == 34
+                    and set(repository.get("exact_allowed_paths") or [])
+                    == c21_wsl_active_exact_paths()
+                )
+                or (
+                    progress.get("event_sequence") == 487
+                    and event.get("event_id") == "evt_c21_wsl_control_postcommit_bound"
+                    and details.get("repository_exact_path_count") == 39
+                    and set(details.get("exact_allowed_paths") or [])
+                    == c21_wsl_control_committed_exact_paths()
+                    and set(repository.get("exact_allowed_paths") or [])
+                    == c21_wsl_control_committed_exact_paths()
+                )
             )
             if not wsl_waiting_successor and not wsl_control_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
                 errors.append("EVENT_EFFECT_MISMATCH")
@@ -2213,6 +2225,23 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
     progress = bundle.get("progress") or {}
     current_ref = progress.get("current_progress_evidence_ref") or {}
     wsl_control_manifest_path = "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
+    wsl_postcommit_manifest_path = (
+        "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json"
+    )
+    if (
+        progress.get("event_sequence") == 487
+        and progress.get("last_event_id") == "evt_c21_wsl_control_postcommit_bound"
+        and current_ref.get("manifest_path") == wsl_postcommit_manifest_path
+        and (progress.get("repository") or {}).get("branch")
+        == "codex/c21-operational-execution"
+    ):
+        try:
+            wsl_control_manifest = _load_json(bundle["_root"] / wsl_postcommit_manifest_path)
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_wsl_control_postcommit_projection(
+            bundle, wsl_control_manifest
+        ) == []
     if (
         progress.get("event_sequence") == 486
         and progress.get("last_event_id") == "evt_c21_wsl_control_successor_bound"
@@ -3471,6 +3500,29 @@ def c21_wsl_control_successor_paths() -> set[str]:
     }
 
 
+def c21_wsl_control_committed_exact_paths() -> set[str]:
+    return c21_wsl_active_exact_paths() | {
+        "docs/DEVELOPMENT_ENVIRONMENT.md",
+        "docs/WORK_STATUS.md",
+        "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+        "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+    }
+
+
+def c21_wsl_control_postcommit_successor_paths() -> set[str]:
+    return {
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
 def raw_event_object_prefix_bytes(payload: bytes, count: int) -> bytes:
     """Return exact bytes from the first event object through object ``count``."""
     marker = payload.index(b'"events"')
@@ -3686,6 +3738,121 @@ def validate_c21_wsl_control_successor_projection(
         for row in rows
     ):
         errors.append("C21_WSL_CONTROL_MANIFEST_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_wsl_control_postcommit_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    """Validate seq487 against the immutable candidate and committed control SHA."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    repository = progress.get("repository") or {}
+    active = progress.get("wsl_early_validation") or {}
+    candidate_sha = "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"
+    control_sha = "73c39ca03caa615f7207eac3499c668497cecc5a"
+    base_sha = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+    approval_path = "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md"
+    approval_artifact_sha = "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F"
+    approval_text_sha = "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5"
+    control_paths_sha = "A810194414EE28410CD816CF5EAB5D1D85E1C9D1A1AFCF04ED91C15EAEC1F61F"
+    raw_485_sha = "39D6D6ECE49C8D8EE0CB9BA0A64FC9BC33231E335DCE84DEB4B4A70D497E60FA"
+    raw_486_sha = "784A0DC5BBDF916A752B8766E8DA89BB5B5FBC824765713DFB30C31E5269B053"
+    expected_control_paths = c21_wsl_control_successor_paths()
+    expected_committed_paths = c21_wsl_control_committed_exact_paths()
+    errors: list[str] = []
+    try:
+        actual_control_paths = set(
+            _split_git_paths(_git_value(root, "diff", "--name-only", candidate_sha, control_sha))
+        )
+        actual_committed_paths = set(
+            _split_git_paths(_git_value(root, "diff", "--name-only", base_sha, control_sha))
+        )
+        control_event_bytes = subprocess.check_output(
+            ["git", "show", f"{control_sha}:docs/progress/progress-events.json"],
+            cwd=root,
+        )
+        committed_raw_486 = raw_event_object_prefix_bytes(control_event_bytes, 486)
+        current_raw_486 = raw_event_object_prefix_bytes(
+            (root / "docs/progress/progress-events.json").read_bytes(), 486
+        )
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        actual_control_paths = set()
+        actual_committed_paths = set()
+        committed_raw_486 = b""
+        current_raw_486 = b"invalid"
+    if any((
+        progress.get("event_sequence") != 487,
+        progress.get("last_event_id") != "evt_c21_wsl_control_postcommit_bound",
+        repository.get("local_head") != control_sha,
+        repository.get("validated_base_commit") != base_sha,
+        set(repository.get("exact_allowed_paths") or []) != expected_committed_paths,
+        set(repository.get("control_successor_paths") or []) != expected_control_paths,
+        set(repository.get("postcommit_successor_paths") or [])
+        != c21_wsl_control_postcommit_successor_paths(),
+        active.get("event_sequence") != 487,
+        active.get("status") != "ACTIVE_CONTROL_POSTCOMMIT_SUCCESSOR_PENDING_PUSH",
+        active.get("implementation_commit") != candidate_sha,
+        active.get("control_manifest_commit") != control_sha,
+        active.get("approval_artifact_sha256") != approval_artifact_sha,
+        active.get("approval_binding_sha256") != approval_text_sha,
+    )):
+        errors.append("C21_WSL_CONTROL_POSTCOMMIT_PROJECTION_INVALID")
+    if any((
+        actual_control_paths != expected_control_paths,
+        actual_committed_paths != expected_committed_paths,
+        len(actual_control_paths) != 14,
+        len(actual_committed_paths) != 39,
+        hashlib.sha256(canonical_json_bytes(sorted(actual_control_paths))).hexdigest().upper()
+        != control_paths_sha,
+    )):
+        errors.append("C21_WSL_CONTROL_POSTCOMMIT_REPOSITORY_INVALID")
+    if (
+        len(events) != 487
+        or events[-1].get("event_id") != "evt_c21_wsl_control_postcommit_bound"
+        or committed_raw_486 != current_raw_486
+        or len(current_raw_486) != 782389
+        or hashlib.sha256(current_raw_486).hexdigest().upper() != raw_486_sha
+    ):
+        errors.append("C21_WSL_CONTROL_POSTCOMMIT_EVENTS_INVALID")
+    details = events[-1].get("details") if events else {}
+    if any((
+        not isinstance(details, Mapping),
+        (details or {}).get("manifest_path")
+        != "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+        (details or {}).get("control_commit") != control_sha,
+        (details or {}).get("control_commit_path_count") != 14,
+        (details or {}).get("control_commit_paths_sha256") != control_paths_sha,
+        (details or {}).get("approval_artifact_sha256") != approval_artifact_sha,
+        (details or {}).get("historical_raw_events_sha256") != raw_485_sha,
+        (details or {}).get("postcommit_historical_raw_events_sha256") != raw_486_sha,
+        set((details or {}).get("exact_allowed_paths") or []) != expected_committed_paths,
+    )):
+        errors.append("C21_WSL_CONTROL_POSTCOMMIT_EVENTS_INVALID")
+    if any((
+        manifest.get("event_sequence") != 487,
+        manifest.get("control_commit") != control_sha,
+        manifest.get("control_commit_base") != candidate_sha,
+        manifest.get("control_commit_path_count") != 14,
+        set(manifest.get("control_commit_paths") or []) != expected_control_paths,
+        manifest.get("control_commit_paths_sha256") != control_paths_sha,
+        manifest.get("repository_exact_path_count") != 39,
+        manifest.get("approval_path") != approval_path,
+        manifest.get("approval_artifact_sha256") != approval_artifact_sha,
+        manifest.get("approval_binding_sha256") != approval_text_sha,
+        manifest.get("historical_raw_events_sha256") != raw_485_sha,
+        manifest.get("postcommit_historical_event_sequence") != 486,
+        manifest.get("postcommit_historical_raw_event_bytes") != 782389,
+        manifest.get("postcommit_historical_raw_events_sha256") != raw_486_sha,
+    )):
+        errors.append("C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID")
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or any(
+        not portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256"))
+        for row in rows
+    ):
+        errors.append("C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID")
     return sorted(set(errors))
 
 
@@ -8216,8 +8383,16 @@ def validate_repository_projection(
         and (progress or {}).get("event_sequence") == 485
     )
     c21_wsl_control_head_relation = (
-        repository.get("head_relation") == "FEATURE_WORKTREE_C21_WSL_CONTROL_SUCCESSOR_ACTIVE_EXACT34"
-        and (progress or {}).get("event_sequence") == 486
+        (
+            repository.get("head_relation")
+            == "FEATURE_WORKTREE_C21_WSL_CONTROL_SUCCESSOR_ACTIVE_EXACT34"
+            and (progress or {}).get("event_sequence") == 486
+        )
+        or (
+            repository.get("head_relation")
+            == "FEATURE_WORKTREE_C21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_ACTIVE_EXACT39"
+            and (progress or {}).get("event_sequence") == 487
+        )
     )
     if (
         repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
@@ -8814,11 +8989,26 @@ def validate_repository_projection(
     )
     c21_wsl_control_projection = (
         repository.get("validated_base_commit") == "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
-        and set(allowed) == c21_wsl_active_exact_paths() and len(allowed) == 34
-        and (progress or {}).get("event_sequence") == 486
-        and (progress or {}).get("last_event_id") == "evt_c21_wsl_control_successor_bound"
-        and ((progress or {}).get("wsl_early_validation") or {}).get("status")
-        == "ACTIVE_CONTROL_SUCCESSOR_PENDING_COMMIT_PUSH"
+        and (
+            (
+                set(allowed) == c21_wsl_active_exact_paths()
+                and len(allowed) == 34
+                and (progress or {}).get("event_sequence") == 486
+                and (progress or {}).get("last_event_id")
+                == "evt_c21_wsl_control_successor_bound"
+                and ((progress or {}).get("wsl_early_validation") or {}).get("status")
+                == "ACTIVE_CONTROL_SUCCESSOR_PENDING_COMMIT_PUSH"
+            )
+            or (
+                set(allowed) == c21_wsl_control_committed_exact_paths()
+                and len(allowed) == 39
+                and (progress or {}).get("event_sequence") == 487
+                and (progress or {}).get("last_event_id")
+                == "evt_c21_wsl_control_postcommit_bound"
+                and ((progress or {}).get("wsl_early_validation") or {}).get("status")
+                == "ACTIVE_CONTROL_POSTCOMMIT_SUCCESSOR_PENDING_PUSH"
+            )
+        )
     )
     if any(not _is_evidence_only_path(path) for path in allowed) and not c21_wsl_control_projection and not c21_wsl_active_projection and not c21_wsl_readiness_projection and not c21_ysna_staging_decision_projection and not c21_ops_r2_conninfo_r4_projection and not c21_ops_r2_main_reconciliation_projection and not c21_ops_r2_release_rebind_projection and not c21_ops_r2_projection and not c21_backup_portability_accepted_projection and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
@@ -9265,7 +9455,15 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 and set(repository.get("control_successor_paths") or [])
                 == c21_wsl_control_successor_paths()
             )
-            if dirty_paths and control_precommit_projection:
+            control_postcommit_projection = (
+                bundle["progress"].get("event_sequence") == 487
+                and actual_head == repository.get("local_head")
+                and set(changed_paths) == set(repository.get("exact_allowed_paths") or [])
+                and set(dirty_paths) == c21_wsl_control_postcommit_successor_paths()
+                and set(repository.get("postcommit_successor_paths") or [])
+                == c21_wsl_control_postcommit_successor_paths()
+            )
+            if dirty_paths and (control_precommit_projection or control_postcommit_projection):
                 pass
             elif dirty_paths and decision_precommit_projection:
                 changed_paths = sorted(set(changed_paths) | set(dirty_paths))
@@ -9785,6 +9983,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
                 errors.extend(
                     validate_c21_wsl_control_successor_projection(candidate, bundle, manifest)
                 )
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json":
+            errors.extend(validate_c21_wsl_control_postcommit_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json":
             try:
                 candidate = _load_json(bundle["_root"] / "deploy/wsl/CandidateReleaseManifest.json")

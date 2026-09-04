@@ -3512,12 +3512,16 @@ class ProjectProgressContractTests(unittest.TestCase):
                 / "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
-        self.assertEqual(
-            [],
-            checker.validate_c21_wsl_control_successor_projection(
-                candidate, bundle, manifest
-            ),
-        )
+        if bundle["progress"]["event_sequence"] == 486:
+            self.assertEqual(
+                [],
+                checker.validate_c21_wsl_control_successor_projection(
+                    candidate, bundle, manifest
+                ),
+            )
+        else:
+            self.assertEqual(486, manifest["event_sequence"])
+            self.assertEqual("PENDING_CONTROL_SUCCESSOR_COMMIT", manifest["control_commit"])
 
         wrong_candidate = copy.deepcopy(candidate)
         wrong_candidate["source"]["commit"] = "9" * 40
@@ -3609,6 +3613,57 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertNotEqual(
             hashlib.sha256(first_event).digest(),
             hashlib.sha256(key_order_mutation).digest(),
+        )
+
+    def test_c21_wsl_control_postcommit_successor_binds_committed_control(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        predecessor_manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(486, predecessor_manifest["event_sequence"])
+        self.assertEqual("PENDING_CONTROL_SUCCESSOR_COMMIT", predecessor_manifest["control_commit"])
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_control_postcommit_projection(bundle, manifest),
+        )
+
+        wrong_control = copy.deepcopy(manifest)
+        wrong_control["control_commit"] = "9" * 40
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(
+                bundle, wrong_control
+            ),
+        )
+        wrong_paths = copy.deepcopy(manifest)
+        wrong_paths["control_commit_paths"] = wrong_paths["control_commit_paths"][:-1]
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(bundle, wrong_paths),
+        )
+        wrong_approval = copy.deepcopy(manifest)
+        wrong_approval["approval_artifact_sha256"] = "a" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(
+                bundle, wrong_approval
+            ),
+        )
+        wrong_raw = copy.deepcopy(manifest)
+        wrong_raw["historical_raw_events_sha256"] = "b" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(bundle, wrong_raw),
         )
 
 if __name__ == "__main__":

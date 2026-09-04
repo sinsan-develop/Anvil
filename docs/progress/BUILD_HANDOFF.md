@@ -1,3 +1,9 @@
+# C-21 WSL control post-commit successor (2026-09-04)
+
+- seq487 `REPOSITORY_RECONCILED`는 committed control `73c39ca03caa615f7207eac3499c668497cecc5a`를 candidate `93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad` 위 exact14, validated base `eef3496...` 위 cumulative exact39로 독립 결박한다.
+- candidate exact34, 승인 artifact path/file hash와 LF 승인 원문 hash, seq1~485 raw bytes/hash 및 committed seq1~486 raw bytes/hash는 모두 별도 검증한다. `Anvil_작업계획서_v1.md`는 `AUTHORITY_DOC_MUTATION_EXCLUDED`로 유지한다.
+- candidate/control push, WSL 배포, Docker, DB, volume 삭제, Telegram, Provider는 `NOT_EXECUTED`이며 C-01 차단은 유지한다.
+
 # C-21 WSL control successor active (2026-09-04)
 
 - seq486 `REPOSITORY_RECONCILED`를 append하여 immutable candidate `93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad`를 validated base `eef3496...` 대비 cumulative exact34로 결박했다. seq1~485 canonical hash `CC2A98A...DB2CDE8`과 raw event-object bytes hash `39D6D6EC...7E60FA`는 보존한다.
@@ -619,11 +625,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 486,
+  "event_sequence": 487,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_wsl_control_successor_bound",
-  "updated_at": "2026-09-04T18:05:00+09:00",
+  "last_event_id": "evt_c21_wsl_control_postcommit_bound",
+  "updated_at": "2026-09-04T18:30:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "active_work_instruction_sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
@@ -633,13 +639,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
   "approval_text_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
   "historical_seq1_485_raw_sha256": "39D6D6ECE49C8D8EE0CB9BA0A64FC9BC33231E335DCE84DEB4B4A70D497E60FA",
-  "next_safe_action": "Main Agent가 exact 승인 후 immutable candidate 93c58f7을 private candidate ref로 push하고, 별도 control successor commit을 공식 control ref에 push한 뒤 동일 guard를 통과시킨다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
+  "next_safe_action": "Main Agent가 exact 승인 후 immutable candidate 93c58f7과 committed control 73c39ca를 각각 승인된 private ref에 push한 뒤 동일 guard를 통과시킨다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+  "repository_head": "73c39ca03caa615f7207eac3499c668497cecc5a",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_SUCCESSOR_ACTIVE_EXACT34",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_ACTIVE_EXACT39",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -655,7 +661,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
     "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
     "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+    "docs/DEVELOPMENT_ENVIRONMENT.md",
+    "docs/WORK_STATUS.md",
+    "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
     "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
@@ -664,6 +674,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",

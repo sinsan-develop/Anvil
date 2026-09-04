@@ -2,20 +2,20 @@
   "schema_version": "1.0.0",
   "digest_id": "C21-WSL-CONTROL-SUCCESSOR-DIGEST-20260904",
   "package_id": "C-21/WSL-EARLY-VALIDATION",
-  "event_sequence": 486,
+  "event_sequence": 487,
   "algorithm": "SHA-256",
   "progress": {
     "path": "docs/progress/build-progress.json",
-    "bytes": 86303,
-    "file_sha256": "530BFD8CEE98BFAD86569186906A84373058856645955F113A0A3D86D6419313",
-    "canonical_json_sha256": "4AEDADB0CBDEF00907A668EDA79028988451A815B5ACFBE492BDCCE1BD9B0AA8"
+    "bytes": 87018,
+    "file_sha256": "B455A7DA263FAE3FFA7C8005E97055100B6A52020E7DEB48026574F7686C12CC",
+    "canonical_json_sha256": "CE473A5F31FD6A2E135EBFE698B72C770B149086348D4299EB437D6C968AA4FC"
   },
   "handoff": {
     "path": "docs/progress/BUILD_HANDOFF.md",
-    "bytes": 151091,
-    "file_sha256": "41585367C98586E13EE9B791776BED66DDF36AD4F13119CAB3DCEAA6E0C6DC70",
-    "machine_summary_canonical_sha256": "6FA6D60505B10887454FADC54F765D9D66B4FF4F18572D4850F7F36BD2758A96"
+    "bytes": 152053,
+    "file_sha256": "2820E5BCF9C158F0D1786B03204D48FB7DFBA29557DA86095B8139C1922399F4",
+    "machine_summary_canonical_sha256": "9690B453AC8DF487B9BE47DA5D89D2FF991CED15EC53864474F8DA2EDE1505A2"
   },
-  "created_at": "2026-09-04T18:05:00+09:00",
-  "scope": "Immutable exact34 WSL candidate bound to reviewed control successor; private candidate and control pushes pending; no deployment, Docker, DB, or volume deletion executed."
+  "created_at": "2026-09-04T18:30:00+09:00",
+  "scope": "Immutable candidate exact34 and committed control exact39 are independently bound by the seq487 successor; private candidate and control pushes pending; no deployment, Docker, DB, or volume deletion executed."
 }

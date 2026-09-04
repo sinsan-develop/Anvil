@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-wsl-control-successor-20260904",
-  "event_sequence": 486,
-  "updated_at": "2026-09-04T18:05:00+09:00",
-  "last_event_id": "evt_c21_wsl_control_successor_bound",
+  "event_sequence": 487,
+  "updated_at": "2026-09-04T18:30:00+09:00",
+  "last_event_id": "evt_c21_wsl_control_postcommit_bound",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -1167,7 +1167,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "1236AF49939C77E6A4CFBF985FA215A98646ECFD875FC769E69DE1052610AD8A"
+      "sha256": "98316436EADC185149449A4F74FC9387D8819BD22D248BAE416E555781AD47A3"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1187,7 +1187,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "86BAEECA3D23FAB038BD5BC00A89AC98D08C7F94F1242A8D50DCA6F5956B2571"
+      "sha256": "02290DAAE6B45B0EA826A1504327712B03FA4D8220B366E944C093A20973A8E5"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1215,7 +1215,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "F614F97014BA6A3CAE03974E5154341BBDC3F0FA77E3E93F727961E95D995E35"
+      "sha256": "978E941901DB627CCA0904A0292708CF65C60710FE0D340D716BAAB6BA8938BA"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1270,7 +1270,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Main Agent가 exact 승인 후 immutable candidate 93c58f7을 private candidate ref로 push하고, 별도 control successor commit을 공식 control ref에 push한 뒤 동일 guard를 통과시킨다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
+  "next_safe_action": "Main Agent가 exact 승인 후 immutable candidate 93c58f7과 committed control 73c39ca를 각각 승인된 private ref에 push한 뒤 동일 guard를 통과시킨다. 그 전에는 WSL 실제 배포를 시작하지 않는다. C-01은 계속 차단한다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1382,13 +1382,13 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_SUCCESSOR_ACTIVE_EXACT34",
+    "head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_ACTIVE_EXACT39",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "PRIVATE_CANDIDATE_PUSH_BLOCKED_PENDING_EXACT_DESTINATION_APPROVAL_CONTROL_SUCCESSOR_UNCOMMITTED",
+    "push_status": "PRIVATE_CANDIDATE_AND_CONTROL_PUSH_BLOCKED_PENDING_EXACT_DESTINATION_APPROVAL",
     "exact_allowed_paths": [
       "deploy/wsl/CandidateReleaseManifest.json",
       "deploy/wsl/Dockerfile.web",
@@ -1404,7 +1404,11 @@
       "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
       "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
       "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+      "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "docs/WORK_STATUS.md",
+      "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
       "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+      "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
       "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
@@ -1413,6 +1417,7 @@
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
       "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
@@ -1426,13 +1431,13 @@
       "tests/tooling/test_project_progress.py"
     ],
     "observed_at": "2026-09-04T15:20:01+09:00",
-    "worktree_status": "C21_WSL_CONTROL_SUCCESSOR_ACTIVE: immutable candidate 93c58f7 exact34 against eef3496; reviewed harness and Git transition docs are uncommitted control changes; private push safety rejected; no runtime side effect executed",
-    "local_head": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+    "worktree_status": "C21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_ACTIVE: immutable candidate 93c58f7 exact34 and committed control 73c39ca exact39 against eef3496; private push safety rejected; no runtime side effect executed",
+    "local_head": "73c39ca03caa615f7207eac3499c668497cecc5a",
     "candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
     "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact34",
     "candidate_push_status": "BLOCKED_PENDING_EXACT_PRIVATE_DESTINATION_APPROVAL",
     "control_remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
-    "control_commit": "PENDING_CONTROL_SUCCESSOR_COMMIT",
+    "control_commit": "73c39ca03caa615f7207eac3499c668497cecc5a",
     "control_successor_paths": [
       "deploy/wsl/CandidateReleaseManifest.json",
       "deploy/wsl/candidate-manifest-guard.sh",
@@ -1447,6 +1452,16 @@
       "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
       "scripts/check_project_progress.py",
       "tests/deploy/test_wsl_staging_harness.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "postcommit_successor_paths": [
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+      "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ]
   },
@@ -1735,7 +1750,7 @@
   "current_progress_evidence_ref": {
     "package_id": "C-21",
     "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
-    "manifest_path": "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
+    "manifest_path": "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1756,7 +1771,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "F614F97014BA6A3CAE03974E5154341BBDC3F0FA77E3E93F727961E95D995E35"
+      "sha256": "978E941901DB627CCA0904A0292708CF65C60710FE0D340D716BAAB6BA8938BA"
     }
   },
   "next_work_package": {
@@ -1922,8 +1937,8 @@
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
   "wsl_early_validation": {
-    "event_sequence": 486,
-    "status": "ACTIVE_CONTROL_SUCCESSOR_PENDING_COMMIT_PUSH",
+    "event_sequence": 487,
+    "status": "ACTIVE_CONTROL_POSTCOMMIT_SUCCESSOR_PENDING_PUSH",
     "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
     "work_instruction_id": "WI-C-21-WSL-EARLY-VALIDATION-20260904-001",
     "dispatch_commit": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -1931,7 +1946,7 @@
     "bash_syntax": "PASS",
     "candidate_manifest_status": "APPROVED_FOR_STAGING_VALIDATION",
     "implementation_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
-    "control_manifest_commit": "PENDING_CONTROL_SUCCESSOR_COMMIT",
+    "control_manifest_commit": "73c39ca03caa615f7207eac3499c668497cecc5a",
     "approval_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
     "approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
@@ -1953,7 +1968,7 @@
     "rework_iteration": 2,
     "telegram": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
-    "next_action": "MAIN_PUSH_IMMUTABLE_PRIVATE_CANDIDATE_THEN_COMMIT_AND_PUSH_CONTROL_SUCCESSOR"
+    "next_action": "MAIN_PUSH_IMMUTABLE_PRIVATE_CANDIDATE_AND_COMMITTED_CONTROL"
   },
-  "snapshot_hash": "065649895EC6BDE77408911B91F6374AD650091F6263F46BC61BC0A52CD55CD3"
+  "snapshot_hash": "9390B8FE4E373AD48AC30244DBFE55C24993114CFC02161FAD80C1487CB5C117"
 }
