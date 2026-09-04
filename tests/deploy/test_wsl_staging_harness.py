@@ -887,6 +887,110 @@ class WslControlRuntimeTests(unittest.TestCase):
             self.assertLess(elapsed, 3)
 
 
+@unittest.skipUnless(shutil.which("bash"), "bash is required")
+class WslComposeRunnerTests(unittest.TestCase):
+    @staticmethod
+    def _posix(path: Path) -> str:
+        value = str(path).replace("\\", "/")
+        if len(value) > 1 and value[1] == ":":
+            return f"/{value[0].lower()}{value[2:]}"
+        return value
+
+    def _run_compose(
+        self, docker_script: str, standalone_script: str | None = None
+    ) -> tuple[subprocess.CompletedProcess[str], list[str], str]:
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            bin_dir = root / "bin"
+            bin_dir.mkdir()
+            log = root / "compose.log"
+            repo = root / "repo"
+            compose_file = repo / "deploy" / "wsl" / "compose.wsl.yml"
+            compose_file.parent.mkdir(parents=True)
+            compose_file.write_text("services: {}\n", encoding="utf-8")
+
+            bash = shutil.which("bash")
+            assert bash is not None
+            docker = bin_dir / "docker"
+            docker.write_text(f"#!/bin/bash\n{docker_script}", encoding="utf-8")
+            os.chmod(docker, 0o755)
+            if standalone_script is not None:
+                standalone = bin_dir / "docker-compose"
+                standalone.write_text(
+                    f"#!/bin/bash\n{standalone_script}", encoding="utf-8"
+                )
+                os.chmod(standalone, 0o755)
+
+            result = subprocess.run(
+                [
+                    bash,
+                    "-c",
+                    (
+                        f"source '{self._posix(DEPLOY / 'common.sh')}'; "
+                        f"REPO='{self._posix(repo)}'; "
+                        "ANVIL_RELEASE_COMMIT='a'$(printf 'a%.0s' {1..39}); "
+                        "wsl_compose config"
+                    ),
+                ],
+                env=os.environ
+                | {
+                    "ANVIL_COMPOSE_LOG": self._posix(log),
+                    "PATH": self._posix(bin_dir),
+                },
+                text=True,
+                capture_output=True,
+            )
+            calls = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+            return result, calls, self._posix(compose_file)
+
+    def test_falls_back_to_standalone_compose_when_plugin_is_unavailable(self):
+        result, calls, compose_file = self._run_compose(
+            'printf "docker:%s\\n" "$*" >> "$ANVIL_COMPOSE_LOG"\n'
+            '[[ "$1 $2" == "compose version" ]] && exit 1\n'
+            "exit 97\n",
+            'printf "standalone:%s:%s\\n" "$ANVIL_RELEASE_COMMIT" "$*" >> "$ANVIL_COMPOSE_LOG"\n',
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertIn("docker:compose version", calls)
+        self.assertEqual(
+            [
+                "docker:compose version",
+                f"standalone:{'a' * 40}:-f {compose_file} config",
+            ],
+            calls,
+        )
+
+    def test_prefers_the_docker_compose_plugin_when_available(self):
+        result, calls, compose_file = self._run_compose(
+            'if [[ "$1 $2" == "compose version" ]]; then\n'
+            '  printf "docker:%s\\n" "$*" >> "$ANVIL_COMPOSE_LOG"\n'
+            "  exit 0\n"
+            "fi\n"
+            'printf "docker-runner:%s:%s\\n" "$ANVIL_RELEASE_COMMIT" "$*" >> "$ANVIL_COMPOSE_LOG"\n'
+        )
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(
+            [
+                "docker:compose version",
+                f"docker-runner:{'a' * 40}:compose -f {compose_file} config",
+            ],
+            calls,
+        )
+
+    def test_fails_closed_when_no_compose_runner_is_available(self):
+        result, calls, _ = self._run_compose(
+            'printf "docker:%s\\n" "$*" >> "$ANVIL_COMPOSE_LOG"\n'
+            '[[ "$1 $2" == "compose version" ]] && exit 1\n'
+            "exit 97\n"
+        )
+
+        self.assertEqual(127, result.returncode)
+        self.assertIn("neither docker compose nor docker-compose is available", result.stderr)
+        self.assertEqual(["docker:compose version"], calls)
+
+
 class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
     def _run_cleanup(self, repo: Path, candidate: str, control_ref: str, checksum: str, mismatch: str = ""):
         log = repo / "docker.log"

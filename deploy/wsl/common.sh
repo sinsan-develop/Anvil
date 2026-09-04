@@ -122,5 +122,12 @@ cleanup_wsl_test_volumes() {
 }
 
 wsl_compose() {
-  ANVIL_RELEASE_COMMIT="$ANVIL_RELEASE_COMMIT" docker compose -f "$REPO/deploy/wsl/compose.wsl.yml" "$@"
+  if docker compose version >/dev/null 2>&1; then
+    ANVIL_RELEASE_COMMIT="$ANVIL_RELEASE_COMMIT" docker compose -f "$REPO/deploy/wsl/compose.wsl.yml" "$@"
+  elif command -v docker-compose >/dev/null 2>&1; then
+    ANVIL_RELEASE_COMMIT="$ANVIL_RELEASE_COMMIT" docker-compose -f "$REPO/deploy/wsl/compose.wsl.yml" "$@"
+  else
+    echo 'Docker Compose runner unavailable: neither docker compose nor docker-compose is available' >&2
+    return 127
+  fi
 }
