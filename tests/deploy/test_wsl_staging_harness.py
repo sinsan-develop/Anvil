@@ -17,6 +17,12 @@ GUARD = DEPLOY / "candidate-manifest-guard.sh"
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required")
 class WslCandidateManifestGuardTests(unittest.TestCase):
+    @staticmethod
+    def _canonical(value: object) -> bytes:
+        return json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+
     def _git(self, cwd: Path, *args: str) -> str:
         return subprocess.check_output(["git", *args], cwd=cwd, text=True).strip()
 
@@ -29,55 +35,32 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
 
     def _repo(self):
         temp = tempfile.TemporaryDirectory()
-        repo = Path(temp.name)
-        self._git(repo, "init", "-b", "main")
+        repo = Path(temp.name) / "repo"
+        source_head = self._git(ROOT, "rev-parse", "HEAD")
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "core.autocrlf=false",
+                "-c",
+                "core.eol=lf",
+                "clone",
+                "--quiet",
+                "--no-checkout",
+                "--no-hardlinks",
+                str(ROOT),
+                str(repo),
+            ],
+            check=True,
+        )
         self._git(repo, "config", "user.email", "test@example.invalid")
         self._git(repo, "config", "user.name", "wsl-harness-test")
-        (repo / "payload.txt").write_text("candidate\n", encoding="utf-8")
-        self._git(repo, "add", ".")
-        self._git(repo, "commit", "-m", "candidate")
-        candidate = self._git(repo, "rev-parse", "HEAD")
-        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact34"
+        self._git(repo, "checkout", "-B", "test-control", source_head)
+        candidate = "326476d69a3228f9dfcf64ff1dd056577bcbcf55"
+        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact44"
         control_ref = "refs/remotes/origin/codex/c21-operational-execution"
         self._git(repo, "update-ref", candidate_ref, candidate)
-        manifest = {
-            "schema_version": 1,
-            "manifest_type": "WSL_STAGING_CANDIDATE",
-            "status": "APPROVED_FOR_STAGING_VALIDATION",
-            "source": {
-                "commit": candidate,
-                "remote_ref": candidate_ref,
-                "working_tree": "CLEAN",
-            },
-            "environment": {
-                "name": "WSL_SERVER_TEST_STAGING",
-                "postgres_targets": ["15", "18-rc"],
-            },
-            "authority": {
-                "approval_id": "APPROVAL-C21-WSL-TEST",
-                "approval_binding_sha256": "a" * 64,
-            },
-            "exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"],
-            "cleanup": {
-                "exact_named_volumes": [
-                    "anvil-wsl-pg15_anvil-db-data",
-                    "anvil-wsl-pg18rc_anvil-db-data",
-                ],
-                "required_labels": {
-                    "com.anvil.environment": "WSL_SERVER_TEST_STAGING",
-                    "com.anvil.cleanup-scope": "C21_WSL_ISOLATED_TEST",
-                },
-            },
-            "rollback": {"approved_commits": [candidate]},
-        }
-        (repo / "deploy" / "wsl").mkdir(parents=True)
-        (repo / "deploy" / "wsl" / "CandidateReleaseManifest.json").write_text(
-            json.dumps(manifest) + "\n", encoding="utf-8"
-        )
-        self._git(repo, "add", ".")
-        self._git(repo, "commit", "-m", "approve candidate")
-        control = self._git(repo, "rev-parse", "HEAD")
-        self._git(repo, "update-ref", control_ref, control)
+        self._git(repo, "update-ref", control_ref, source_head)
         blob = subprocess.check_output(
             ["git", "show", f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo
         )
@@ -127,7 +110,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self._git(repo, "add", ".")
             self._git(repo, "commit", "-m", "unapproved descendant")
             unapproved = self._git(repo, "rev-parse", "HEAD")
-            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact34", unapproved)
+            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact44", unapproved)
             result = self._validate(repo, control_ref, candidate, checksum)
             self.assertNotEqual(0, result.returncode)
             self.assertIn("feature remote", result.stderr)
@@ -155,9 +138,187 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertIn("rollback approval binding", result.stderr)
 
+    def test_manifest_rejects_derived_binding_payload_or_hash_tamper(self):
+        temp, repo, candidate, control_ref, _ = self._repo()
+        with temp:
+            path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            manifest["authority"]["derived_binding"]["review"]["quality"] = "REJECTED"
+            path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+            self._git(repo, "add", str(path.relative_to(repo)))
+            self._git(repo, "commit", "-m", "tamper derived binding")
+            self._git(repo, "update-ref", control_ref, "HEAD")
+            checksum = hashlib.sha256(
+                subprocess.check_output(
+                    ["git", "show", f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"],
+                    cwd=repo,
+                )
+            ).hexdigest()
+            result = self._validate(repo, control_ref, candidate, checksum)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("derived binding", result.stderr)
+
+    def test_manifest_rejects_old_candidate_ref(self):
+        temp, repo, candidate, control_ref, _ = self._repo()
+        with temp:
+            path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            manifest["source"]["remote_ref"] = (
+                "refs/remotes/origin/candidates/c21-wsl-exact34"
+            )
+            path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+            self._git(repo, "add", str(path.relative_to(repo)))
+            self._git(repo, "commit", "-m", "use old candidate ref")
+            self._git(repo, "update-ref", control_ref, "HEAD")
+            checksum = hashlib.sha256(
+                subprocess.check_output(
+                    ["git", "show", f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"],
+                    cwd=repo,
+                )
+            ).hexdigest()
+            result = self._validate(repo, control_ref, candidate, checksum)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("exact candidate remote-tracking ref", result.stderr)
+
+    def test_manifest_rejects_wrong_candidate_parent(self):
+        temp, repo, candidate, control_ref, _ = self._repo()
+        with temp:
+            path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            binding = manifest["authority"]["derived_binding"]
+            binding["candidate_parent_commit"] = "0" * 40
+            manifest["authority"]["derived_binding_sha256"] = hashlib.sha256(
+                self._canonical(binding)
+            ).hexdigest().upper()
+            path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+            self._git(repo, "add", str(path.relative_to(repo)))
+            self._git(repo, "commit", "-m", "wrong candidate parent")
+            self._git(repo, "update-ref", control_ref, "HEAD")
+            checksum = hashlib.sha256(
+                subprocess.check_output(
+                    ["git", "show", f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"],
+                    cwd=repo,
+                )
+            ).hexdigest()
+            result = self._validate(repo, control_ref, candidate, checksum)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("candidate parent", result.stderr)
+
+    def test_manifest_rejects_coherently_rebound_candidate_parent_and_hash(self):
+        temp, repo, candidate, control_ref, _ = self._repo()
+        with temp:
+            candidate_parent = self._git(repo, "rev-parse", f"{candidate}^")
+            self._git(repo, "checkout", "-b", "coherent-tamper", candidate_parent)
+            self._git(repo, "commit", "--allow-empty", "-m", "alternate parent")
+            tampered_parent = self._git(repo, "rev-parse", "HEAD")
+            (repo / "deploy" / "wsl" / "deploy.sh").write_text(
+                "coherently tampered deploy\n", encoding="utf-8"
+            )
+            (repo / "tests" / "deploy" / "test_wsl_staging_harness.py").write_text(
+                "coherently tampered test\n", encoding="utf-8"
+            )
+            self._git(repo, "add", ".")
+            self._git(repo, "commit", "-m", "alternate exact2 candidate")
+            tampered_candidate = self._git(repo, "rev-parse", "HEAD")
+
+            manifest = json.loads(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json",
+                    ],
+                    cwd=repo,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
+            binding = manifest["authority"]["derived_binding"]
+            binding["candidate_parent_commit"] = tampered_parent
+            binding["candidate_commit"] = tampered_candidate
+            manifest["authority"]["derived_binding_sha256"] = hashlib.sha256(
+                self._canonical(binding)
+            ).hexdigest().upper()
+            manifest["source"]["commit"] = tampered_candidate
+            manifest["rollback"]["approved_commits"] = [tampered_candidate]
+            path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+            path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+            self._git(repo, "add", str(path.relative_to(repo)))
+            self._git(repo, "commit", "-m", "coherently rebound manifest")
+            self._git(repo, "update-ref", control_ref, "HEAD")
+            self._git(
+                repo,
+                "update-ref",
+                "refs/remotes/origin/candidates/c21-wsl-exact44",
+                tampered_candidate,
+            )
+            checksum = hashlib.sha256(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json",
+                    ],
+                    cwd=repo,
+                )
+            ).hexdigest()
+
+            result = self._validate(
+                repo, control_ref, tampered_candidate, checksum
+            )
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("exact derived binding", result.stderr)
+
+    def test_manifest_rejects_correction_path_subset_or_superset(self):
+        for correction_paths in (
+            ["deploy/wsl/deploy.sh"],
+            [
+                "deploy/wsl/deploy.sh",
+                "tests/deploy/test_wsl_staging_harness.py",
+                "arbitrary.txt",
+            ],
+        ):
+            with self.subTest(correction_paths=correction_paths):
+                temp, repo, candidate, control_ref, _ = self._repo()
+                with temp:
+                    path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
+                    manifest = json.loads(path.read_text(encoding="utf-8"))
+                    binding = manifest["authority"]["derived_binding"]
+                    binding["correction_paths"] = correction_paths
+                    binding["correction_path_count"] = len(correction_paths)
+                    binding["correction_path_list_sha256"] = hashlib.sha256(
+                        self._canonical(sorted(correction_paths))
+                    ).hexdigest().upper()
+                    manifest["authority"]["derived_binding_sha256"] = hashlib.sha256(
+                        self._canonical(binding)
+                    ).hexdigest().upper()
+                    path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+                    self._git(repo, "add", str(path.relative_to(repo)))
+                    self._git(repo, "commit", "-m", "wrong correction paths")
+                    self._git(repo, "update-ref", control_ref, "HEAD")
+                    checksum = hashlib.sha256(
+                        subprocess.check_output(
+                            [
+                                "git",
+                                "show",
+                                f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json",
+                            ],
+                            cwd=repo,
+                        )
+                    ).hexdigest()
+                    result = self._validate(repo, control_ref, candidate, checksum)
+                    self.assertNotEqual(0, result.returncode)
+                    self.assertIn("correction path", result.stderr)
+
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required")
 class WslScriptFailClosedTests(unittest.TestCase):
+    @staticmethod
+    def _canonical(value: object) -> bytes:
+        return json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+
     def test_entrypoints_reject_non_exact_sha_before_creating_runtime_state(self):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
@@ -182,11 +343,24 @@ class WslScriptFailClosedTests(unittest.TestCase):
 
     def test_repository_candidate_manifest_is_bound_to_approved_exact_candidate(self):
         manifest = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
-        candidate = "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"
+        candidate = "326476d69a3228f9dfcf64ff1dd056577bcbcf55"
         self.assertEqual("APPROVED_FOR_STAGING_VALIDATION", manifest["status"])
         self.assertEqual(candidate, manifest["source"]["commit"])
+        self.assertEqual(
+            "refs/remotes/origin/candidates/c21-wsl-exact44",
+            manifest["source"]["remote_ref"],
+        )
         self.assertEqual([candidate], manifest["rollback"]["approved_commits"])
-        self.assertEqual(64, len(manifest["authority"]["approval_binding_sha256"]))
+        binding = manifest["authority"]["derived_binding"]
+        self.assertEqual(985, len(self._canonical(binding)))
+        self.assertEqual(
+            "7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863",
+            manifest["authority"]["derived_binding_sha256"],
+        )
+        self.assertEqual(
+            manifest["authority"]["derived_binding_sha256"],
+            hashlib.sha256(self._canonical(binding)).hexdigest().upper(),
+        )
         self.assertEqual(
             ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"], manifest["exclusions"]
         )
@@ -252,7 +426,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact34", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact44", candidate)
             (source / "control-marker.txt").write_text("control\n", encoding="utf-8")
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "control")
@@ -339,7 +513,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact34", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact44", candidate)
 
             control_verify = source / "deploy" / "wsl" / "verify.sh"
             control_verify.write_text(
@@ -460,7 +634,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact34", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact44", candidate)
             (source / "control-marker.txt").write_text("descendant\n", encoding="utf-8")
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "stale control descendant")

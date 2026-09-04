@@ -1,0 +1,196 @@
+{
+  "artifact_id": "C21-WSL-FRESH-CLONE-CANDIDATE-REBIND-20260905",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "manifest_type": "WSL_FRESH_CLONE_CANDIDATE_REBIND_PROJECTION",
+  "event_sequence": 489,
+  "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+  "prior_candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+  "runtime_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
+  "predecessor_control_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
+  "candidate_parent_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
+  "candidate_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+  "record_control_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+  "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact44",
+  "control_remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
+  "repository_exact_path_count": 44,
+  "path_contracts": {
+    "correction_delta": {
+      "from_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
+      "to_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+      "path_count": 2,
+      "path_list_sha256": "B2E9A41E7E30999A64BBFA85332791EA44F23D2783A064D3CBEEFFFA4DE8BC1F"
+    },
+    "runtime_to_candidate": {
+      "from_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
+      "to_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+      "path_count": 10,
+      "path_list_sha256": "187D8E457B32E61AB426111DDC6BBE85D6E177B3CEE285BAE587116AEF236237"
+    },
+    "prior_candidate_to_candidate": {
+      "from_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+      "to_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+      "path_count": 23,
+      "path_list_sha256": "A625AE193FAF8583EDFAD5C02CA84379A36DB55C2C9AD6FD2D950A0247A74D5E"
+    },
+    "candidate_cumulative": {
+      "from_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+      "to_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+      "path_count": 44,
+      "path_list_sha256": "A6D1C6AC386639995DA003F6934D9C24ACF81EE860FCCB094AAA731BD8A88E6B"
+    },
+    "record_successor": {
+      "from_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+      "to_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+      "path_count": 11,
+      "path_list_sha256": "C4DDBACD49E01E710FDC93D83B6247C0BCBFA484C2FBA8317BEF83CF14C3885A"
+    },
+    "repository_postcommit": {
+      "from_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+      "to_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+      "path_count": 46,
+      "path_list_sha256": "F538ABED26C9EB01210C14144CD861889BFF603175A72203CEA717DFC46C1C86"
+    }
+  },
+  "candidate_exact_paths": [
+    "deploy/wsl/CandidateReleaseManifest.json",
+    "deploy/wsl/Dockerfile.web",
+    "deploy/wsl/bootstrap.sh",
+    "deploy/wsl/candidate-manifest-guard.sh",
+    "deploy/wsl/cleanup.sh",
+    "deploy/wsl/common.sh",
+    "deploy/wsl/compose.wsl.yml",
+    "deploy/wsl/control-runtime.sh",
+    "deploy/wsl/deploy.sh",
+    "deploy/wsl/requirements-runtime.txt",
+    "deploy/wsl/rollback.sh",
+    "deploy/wsl/verify.sh",
+    "deploy/ysna/backup-c21-db.sh",
+    "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
+    "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+    "docs/DEVELOPMENT_ENVIRONMENT.md",
+    "docs/WORK_STATUS.md",
+    "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
+    "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+    "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/deploy/test_c21_lr02c_operational_contract.py",
+    "tests/deploy/test_wsl_staging_harness.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "record_successor_paths": [
+    "deploy/wsl/CandidateReleaseManifest.json",
+    "deploy/wsl/candidate-manifest-guard.sh",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
+    "scripts/check_project_progress.py",
+    "tests/deploy/test_wsl_staging_harness.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "historical_event_sequence": 488,
+  "historical_raw_event_bytes": 792116,
+  "historical_raw_events_sha256": "842F518F9F935402BE41BA9E873EDAFE57973D86C87A37AFFD77482F173B7A7D",
+  "historical_events_sha256": "CC651FA094FCD1873450DDB9C6E57F1EDF019A6373712756129ADC86FEA9B6C9",
+  "historical_evidence": "PRESERVED_UNCHANGED",
+  "derived_correction_binding": {
+    "classification": "MAIN_BOUND_INTERNAL_IMPLEMENTATION_CORRECTION",
+    "parent_approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
+    "parent_approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
+    "parent_approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
+    "prior_candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+    "candidate_parent_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
+    "candidate_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+    "correction_path_count": 2,
+    "correction_path_list_sha256": "B2E9A41E7E30999A64BBFA85332791EA44F23D2783A064D3CBEEFFFA4DE8BC1F",
+    "correction_paths": [
+      "deploy/wsl/deploy.sh",
+      "tests/deploy/test_wsl_staging_harness.py"
+    ],
+    "review": {
+      "spec": "PASS",
+      "quality": "APPROVED"
+    },
+    "scope_change": false,
+    "requirements_change": false,
+    "important_risk_change": false,
+    "cleanup_authority": "UNCHANGED_PARENT_APPROVAL",
+    "execution_exclusions": [
+      "TELEGRAM_EXECUTION",
+      "PROVIDER_EXECUTION"
+    ]
+  },
+  "derived_correction_binding_sha256": "7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863",
+  "push": "NOT_EXECUTED",
+  "deployment": "NOT_EXECUTED",
+  "database": "NOT_EXECUTED",
+  "volume_cleanup": "NOT_EXECUTED",
+  "telegram": "NOT_EXECUTED",
+  "provider": "NOT_EXECUTED",
+  "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "candidate_blob_checksums": [
+    {
+      "path": "deploy/wsl/deploy.sh",
+      "bytes": 3459,
+      "sha256": "C23273DF301CD69FF7E961EE90264EFBF59C6442B81655B08B5BBE5AFF780587"
+    },
+    {
+      "path": "tests/deploy/test_wsl_staging_harness.py",
+      "bytes": 41374,
+      "sha256": "B1F96868D5B5DD8E0046DFE6A4B1F5712CEDB29798545C994EF6A006A1DE4A82"
+    }
+  ],
+  "predecessor_raw_checksums": [
+    {
+      "path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+      "bytes": 2142,
+      "sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F"
+    },
+    {
+      "path": "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+      "bytes": 4534,
+      "sha256": "7E2C255634CBE2B970839DF219AFC9E8572A5D71CBED4734565ECBB30CD2EA3D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+      "bytes": 1010,
+      "sha256": "0D3519AEEF849854F39CB9AA20ED416739F2AEC1D0DD990EC8446B654F5A6421"
+    }
+  ],
+  "raw_checksums": [
+    {
+      "path": "deploy/wsl/CandidateReleaseManifest.json",
+      "bytes": 2494,
+      "sha256": "DF12E9CE1BA2D659BA138032012CF2E9CA295C2B35A8B8C3B300CBDB7CCE5BEF"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
+      "bytes": 1026,
+      "sha256": "C20FF44674C9FDB2C6D41AF12C3888A97198B063330E6F1C74E4CCEFD62070E0"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-05T09:30:00+09:00"
+}

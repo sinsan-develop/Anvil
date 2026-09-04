@@ -367,3 +367,13 @@
 - focused: `3 passed, 100 deselected in 30.19s`; full progress tooling: `103 passed in 120.82s`; precommit checker: `PASS sequence=488 reporting=AUTO_CONTINUE`.
 - 변경 범위는 seq488 record exact8뿐이고 scratch report는 `.superpowers` ignore 경로에 별도 유지한다. seq1~487 raw/canonical prefix와 predecessor artifact는 불변이다.
 - 상태: `COMPLETED_FOR_REVIEW`; Main re-review 전 commit/push/external action은 계속 금지한다.
+
+## 2026-09-05 C-21 seq489 fresh-clone candidate rebind projection
+
+- 판정: correction review `SPEC PASS / QUALITY APPROVED`; candidate `326476d69a3228f9dfcf64ff1dd056577bcbcf55`는 seq488 control `74ed0d4ac566ccc2877301103663b68272cce5b2`의 single-parent child이며 correction exact2/hash `B2E9A41E7E30999A64BBFA85332791EA44F23D2783A064D3CBEEFFFA4DE8BC1F`다.
+- TDD RED: 기준선 checker는 candidate로 이동한 HEAD와 exact44 누적 경로를 seq488 projection으로 해석해 `GIT_DESCENDANT_ORIGIN_MISMATCH`, `GIT_DESCENDANT_PATH_SET_MISMATCH`를 냈다. 신규 focused unittest는 seq489 manifest 부재와 기존 candidate `93c58f7...` 결박 때문에 2건 실패했다.
+- 구현: human approval 네 필드를 보존한 `MAIN_BOUND_INTERNAL_IMPLEMENTATION_CORRECTION` 파생 binding, exact44 private candidate ref, seq489 append-only event와 record-only exact11, precommit/direct-child postcommit checker를 추가했다. seq1~488 raw/canonical prefix와 seq488 manifest/digest는 변경하지 않는다.
+- 검증: seq488+seq489 focused tooling `7/7 PASS`, guard 음성 계약 `9/9 PASS`, full progress tooling `107 PASS`, full WSL harness `33 PASS`, 전체 `deploy/wsl/*.sh` Bash syntax와 `git diff --check` PASS, precommit checker `PASS sequence=489`다. direct-child/second-child/merge/reversion 실제 Git fixture도 GREEN이며 clean postcommit checker는 record commit 직후 재검증한다.
+- reviewer fix I-1: runtime guard가 derived binding SHA-256 `7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863`와 candidate parent `74ed0d4ac566ccc2877301103663b68272cce5b2`를 exact 비교한다. parent/hash/candidate/ref/manifest checksum을 함께 재결박한 회귀를 거부하며 focused guard `10/10 PASS`, full WSL harness `35 PASS`다. Minor M-1 timestamp는 deferred로 유지한다.
+- 미실행: external push, SSH, WSL, Docker, DB, volume cleanup, Telegram, Provider는 모두 `NOT_EXECUTED`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+- 다음 안전 조치: seq489 exact11 direct-child commit을 검토한 뒤 별도 외부 push 승인을 받아 exact refs push/ls-remote/fresh recovery를 수행하고, 그 뒤 WSL 검증으로 진행한다.

@@ -3,8 +3,8 @@
   "manifest_type": "WSL_STAGING_CANDIDATE",
   "status": "APPROVED_FOR_STAGING_VALIDATION",
   "source": {
-    "commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
-    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact34",
+    "commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact44",
     "working_tree": "CLEAN"
   },
   "environment": {
@@ -15,7 +15,32 @@
     "approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
     "approval_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
-    "approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5"
+    "approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
+    "derived_binding": {
+      "classification": "MAIN_BOUND_INTERNAL_IMPLEMENTATION_CORRECTION",
+      "parent_approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
+      "parent_approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
+      "parent_approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
+      "prior_candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+      "candidate_parent_commit": "74ed0d4ac566ccc2877301103663b68272cce5b2",
+      "candidate_commit": "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+      "correction_path_count": 2,
+      "correction_path_list_sha256": "B2E9A41E7E30999A64BBFA85332791EA44F23D2783A064D3CBEEFFFA4DE8BC1F",
+      "correction_paths": [
+        "deploy/wsl/deploy.sh",
+        "tests/deploy/test_wsl_staging_harness.py"
+      ],
+      "review": {
+        "spec": "PASS",
+        "quality": "APPROVED"
+      },
+      "scope_change": false,
+      "requirements_change": false,
+      "important_risk_change": false,
+      "cleanup_authority": "UNCHANGED_PARENT_APPROVAL",
+      "execution_exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"]
+    },
+    "derived_binding_sha256": "7C0078AD0EACA441088017A6A4C0FF25B85464F198AFC48A177B09C85304D863"
   },
   "exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"],
   "cleanup": {
@@ -29,6 +54,6 @@
     }
   },
   "rollback": {
-    "approved_commits": ["93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"]
+    "approved_commits": ["326476d69a3228f9dfcf64ff1dd056577bcbcf55"]
   }
 }
