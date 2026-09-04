@@ -1,3 +1,13 @@
+# C-21 WSL readiness 승인 대기 checkpoint (2026-09-04)
+
+- 판정: seq483 `PACKAGE_WAITING_APPROVAL`. WSL-server 선행검증은 Phase C successor 조기실행이며 기능 범위·작업 순서·중요 운영 위험 변경 승인이 필요하다.
+- 저장소: `codex/c21-operational-execution`의 HEAD/upstream은 `894e7b71fc52905e774892844905199401199fb2`로 동기화됐다. seq1~482 및 모든 기존 evidence bytes는 보존한다.
+- 감사 결과: ReleaseManifest는 이전 `b4858ff` 후보에 고정, guard는 `origin/main` 조상만 허용, R4 §5는 feature push 이후 rebind/main/deploy를 금지한다. `deploy/wsl`은 `.gitkeep`뿐이고 ysna verify는 공개 도메인·Telegram·Provider에 결합돼 있다.
+- 작업계획 경계: F-16이 Git-only WSL staging harness/manifest를, F-17이 PG15 및 격리 PG18 RC 실제 검증을 소유한다.
+- 현재 상태: `WAITING_APPROVAL_WSL_PHASE_C_EARLY_EXECUTION`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT` 유지.
+- 수행하지 않음: 제품 코드, 서버 재배포·재시작, DB·DNS·TLS·Secret, 기존 자료 삭제, ReleaseManifest rebind, main 병합, Telegram, Provider.
+- 다음 승인 문구: `C-21 WSL 선행검증을 Phase C successor로 앞당기고, deploy/wsl Git-only staging harness와 별도 candidate ReleaseManifest/guard를 구현한 뒤 WSL-server의 PG15 전용 DB 및 격리 PG18 RC에서 Telegram·Provider를 제외한 migration·API·SSE·same-origin·backup/restore·rollback 검증을 수행하는 것을 승인한다.`
+
 # C-21 ysna staging 분류 결정 checkpoint (2026-09-04)
 
 - **판정:** seq482 `ENVIRONMENT_CLASSIFICATION_DECIDED`; `ysna-server`와 `anvil.sinsan.kr`는 신산님의 별도 실제 운영 전환 선언 전까지 staging·인수검증 환경이다.
@@ -588,33 +598,36 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 482,
-  "status": "ACTIVE",
+  "event_sequence": 483,
+  "status": "WAITING_APPROVAL",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_ysna_staging_classification_decision_checkpoint",
-  "updated_at": "2026-09-04T13:55:26+09:00",
+  "last_event_id": "evt_c21_wsl_readiness_waiting_approval",
+  "updated_at": "2026-09-04T14:40:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "active_work_instruction_sha256": "CCE5C3D315D101CEAABF30FF0B51D447602E7927B5193CF531D72B3034AACEC5",
   "active_invocation_sha256": "3BB6F14863D00548A5BA22653B1501628F34DCE9E26B2873E9414C202632A27D",
   "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
-  "next_safe_action": "seq482 ysna staging 분류 checkpoint와 exact15 projection을 검증·checkpoint commit한다. 신산님의 별도 운영 전환 선언 전 ysna-server와 anvil.sinsan.kr는 staging·인수검증 환경이며 서버·DB·DNS·TLS·Secret·기존 자료·main은 변경하지 않는다.",
+  "next_safe_action": "신산님의 명시 승인 전 WSL Phase C 조기실행을 시작하지 않는다. 승인 시에만 deploy/wsl Git-only staging harness와 별도 candidate manifest/guard를 구현하고 Telegram·Provider 제외 PG15/PG18 RC 검증을 수행한다. C-01은 계속 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "871513d46a19f864190a977380a4c9c5b5d56573",
+  "repository_head": "894e7b71fc52905e774892844905199401199fb2",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_READINESS_WAITING_APPROVAL_EXACT18",
   "repository_exact_allowed_paths": [
     "deploy/ysna/backup-c21-db.sh",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
     "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
@@ -633,7 +646,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "deployment_status": "NOT_EXECUTED",
   "telegram_and_provider": "USER_VERIFICATION_PENDING",
   "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
-  "reporting_decision": "AUTO_CONTINUE",
+  "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
   "phase_b_gate_deferred_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
   "phase_b_gate_undefined_ids": ["AV-STAT-029"],

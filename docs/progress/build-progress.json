@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-ysna-staging-classification-decision-20260904",
-  "event_sequence": 482,
-  "updated_at": "2026-09-04T13:55:26+09:00",
-  "last_event_id": "evt_c21_ysna_staging_classification_decision_checkpoint",
+  "snapshot_id": "snapshot-c21-wsl-readiness-waiting-approval-20260904",
+  "event_sequence": 483,
+  "updated_at": "2026-09-04T14:40:00+09:00",
+  "last_event_id": "evt_c21_wsl_readiness_waiting_approval",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "ACTIVE",
+  "status": "WAITING_APPROVAL",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -281,6 +281,10 @@
     "C-21/LR-02C/OPS-R2": 1
   },
   "latest_evidence_refs": [
+    {
+      "path": "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+      "sha256": "79FC78F0594BC0EA2995EB6697FBC24FC3FDEC10C9F9F6DA1A06B95847884B20"
+    },
     {
       "path": "docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md",
       "sha256": "81A193E03BCEF668D5304623E754FD66A68BA4BD520C603AB9AB01DE92970665"
@@ -1155,7 +1159,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-        "sha256": "8D6743D3A0C434252F5FDA29EC9AC0B9453AC19C51996FE01D1D551420EBE19A"
+        "sha256": "D26889B0B9BE307259D3F5A98CA8063CAD4A9EECDC5CFDBE1119F7C42B625807"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1175,7 +1179,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-        "sha256": "5818791A6F86864FE6E703796FA372445B80DE2DDF1DCC1A24681F1F985C250C"
+        "sha256": "CE6327CD7678C1D8CFA26E87F139B4D6AEC39DB8313D471AC258A29D1DF184A7"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1203,7 +1207,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-        "sha256": "29A7858D930058521370ED652910EC3D2150D2F6D446B275C0C759B77EA9610E"
+        "sha256": "16288089FB36DD5F4AC74004A16EC9C041B9A95CDCAFD76A24F4CB26EEB43000"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1250,7 +1254,14 @@
     "path": "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
     "sha256": "D1E9A6A4C8526EC20E118051711B5E9F674B4CAA64FBFB325DAD86134122DB2D"
   },
-  "pending_approvals": [],
+  "pending_approvals": [
+    {
+      "approval_ref": "PENDING_SHINSAN_EXPLICIT_APPROVAL",
+      "package_id": "C-21/WSL-READINESS",
+      "change_classification": "IMPORTANT_RISK_CHANGE",
+      "reason": "WSL Phase C successor early execution changes feature scope, work order, and important operational risk"
+    }
+  ],
   "dir_review": {
     "checkpoint": "DIR-1",
     "status": "CLEARED",
@@ -1258,7 +1269,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "seq482 ysna staging 분류 checkpoint와 exact15 projection을 검증·checkpoint commit한다. 신산님의 별도 운영 전환 선언 전 ysna-server와 anvil.sinsan.kr는 staging·인수검증 환경이며 서버·DB·DNS·TLS·Secret·기존 자료·main은 변경하지 않는다.",
+  "next_safe_action": "신산님의 명시 승인 전 WSL Phase C 조기실행을 시작하지 않는다. 승인 시에만 deploy/wsl Git-only staging harness와 별도 candidate manifest/guard를 구현하고 Telegram·Provider 제외 PG15/PG18 RC 검증을 수행한다. C-01은 계속 차단한다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1370,23 +1381,26 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15",
+    "head_relation": "FEATURE_WORKTREE_C21_WSL_READINESS_WAITING_APPROVAL_EXACT18",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
-    "remote_head": "970680a95a7e2471effc903239548948b3aa6263",
+    "remote_head": "894e7b71fc52905e774892844905199401199fb2",
     "feature_remote": "origin/codex/c21-operational-execution",
-    "feature_remote_head": "970680a95a7e2471effc903239548948b3aa6263",
-    "push_status": "FEATURE_CHECKPOINT_PENDING_C21_YSNA_STAGING_DECISION",
+    "feature_remote_head": "894e7b71fc52905e774892844905199401199fb2",
+    "push_status": "FEATURE_SYNCED_C21_WSL_READINESS_WAITING_APPROVAL",
     "exact_allowed_paths": [
       "deploy/ysna/backup-c21-db.sh",
       "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+      "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
       "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+      "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
       "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
       "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
       "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
@@ -1394,9 +1408,9 @@
       "tests/deploy/test_c21_lr02c_operational_contract.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "observed_at": "2026-09-04T13:55:26+09:00",
-    "worktree_status": "C21_YSNA_STAGING_DECISION_CHECKPOINT: seq1-481 preserved; exact15 against eef3496 including committed R4 exact13 plus decision manifest/digest; external changes not executed",
-    "local_head": "871513d46a19f864190a977380a4c9c5b5d56573"
+    "observed_at": "2026-09-04T14:40:00+09:00",
+    "worktree_status": "C21_WSL_READINESS_WAITING_APPROVAL: HEAD/upstream synced at 894e7b7; seq1-482 and all prior evidence preserved; exact18 against eef3496; external changes not executed",
+    "local_head": "894e7b71fc52905e774892844905199401199fb2"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1499,11 +1513,11 @@
     "package_status": "ACCEPTED"
   },
   "reporting_decision": {
-    "decision": "AUTO_CONTINUE",
+    "decision": "STOP_AND_REPORT_SCOPE_RISK",
     "reason_codes": [
-      "C21_LR02C_OPERATIONAL_EXECUTION_ACTIVE_AUTO_CONTINUE"
+      "C21_WSL_PHASE_C_EARLY_EXECUTION_APPROVAL_REQUIRED"
     ],
-    "stop_before_dialogue_report": false
+    "stop_before_dialogue_report": true
   },
   "accepted_c21_lr01_work_instruction": {
     "artifact_id": "WI-C-21-LR-01-20260903-001",
@@ -1707,8 +1721,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
-    "manifest_path": "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
+    "manifest_path": "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1729,7 +1743,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "29A7858D930058521370ED652910EC3D2150D2F6D446B275C0C759B77EA9610E"
+      "sha256": "16288089FB36DD5F4AC74004A16EC9C041B9A95CDCAFD76A24F4CB26EEB43000"
     }
   },
   "next_work_package": {
@@ -1741,13 +1755,13 @@
     ]
   },
   "next_successor_work_package": {
-    "package_id": "C-21/LR-02C/OPS-R2",
-    "status": "ACTIVE_OPERATIONAL_BACKUP_CONNINFO_REWORK_R4",
-    "purpose": "ANVIL_DATABASE_URL을 strict parse해 fd3 libpq service로 전달하고 credential 비노출 계약을 TDD로 확정",
+    "package_id": "C-21/WSL-READINESS",
+    "status": "WAITING_APPROVAL_WSL_PHASE_C_EARLY_EXECUTION",
+    "purpose": "Phase C successor를 앞당기는 WSL Git-only staging 및 PG15/PG18 RC 인수검증 범위의 사람 승인 대기",
     "requires": [
-      "conninfo parser/service fd3 operational contract GREEN",
-      "exact13 checkpoint commit and feature push",
-      "new checkpoint and ReleaseManifest rebind before external retry",
+      "human approval for scope, order, and important operational risk change",
+      "deploy/wsl Git-only staging harness and separate candidate ReleaseManifest/guard",
+      "WSL PostgreSQL 15 dedicated DB and isolated PostgreSQL 18 RC validation",
       "independent C-21 judgment before C-01"
     ],
     "does_not_unblock": [
@@ -1866,5 +1880,26 @@
     "existing_material_deletion": "NOT_EXECUTED",
     "main_merge": "NOT_EXECUTED"
   },
-  "snapshot_hash": "5581D0867EC68F23EB85790DE8BEFE2AEA7770D48C89C5B81AF8BC2E4042DAC8"
+  "wsl_readiness_decision": {
+    "event_sequence": 483,
+    "decision_status": "WAITING_APPROVAL",
+    "reason": "WSL_PHASE_C_EARLY_EXECUTION_CHANGES_SCOPE_ORDER_AND_IMPORTANT_OPERATIONAL_RISK",
+    "checkpoint_base": "894e7b71fc52905e774892844905199401199fb2",
+    "head_upstream": "SYNCED",
+    "frozen_predecessor_sequence": 482,
+    "frozen_predecessor_events_sha256": "7E15CC44779B362A444C0B34D560F20F7E68150252DA5D6DB535C158925AEA3A",
+    "release_manifest_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+    "release_manifest_status": "STALE_FOR_CURRENT_HEAD",
+    "manifest_guard": "ORIGIN_MAIN_ANCESTOR_REQUIRED",
+    "wsl_harness": "MISSING_ONLY_GITKEEP",
+    "ysna_verify_reuse": "UNSUITABLE_COUPLED_TO_PUBLIC_DOMAIN_TELEGRAM_PROVIDER",
+    "plan_owners": ["F-16", "F-17"],
+    "requested_successor": "PHASE_C_SUCCESSOR_WSL_EARLY_VALIDATION",
+    "decision_axes": ["FEATURE_SCOPE", "WORK_ORDER", "IMPORTANT_OPERATIONAL_RISK"],
+    "excluded_actions": ["SERVER_REDEPLOY", "SERVER_RESTART", "DATABASE_CHANGE", "DNS_CHANGE", "TLS_CHANGE", "SECRET_CHANGE", "EXISTING_MATERIAL_DELETION", "MAIN_MERGE", "RELEASE_MANIFEST_REBIND", "TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"],
+    "historical_evidence": "PRESERVED_UNCHANGED",
+    "report_path": "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+    "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+  },
+  "snapshot_hash": "A2C1B6EB6C3A76C4BC318AA8DB6CDAD851E58D69BE1C6B344857AD54D8C79F48"
 }

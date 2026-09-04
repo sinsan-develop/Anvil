@@ -892,7 +892,13 @@ def validate_event_stream(
                         "exact_allowed_paths",
                     ]
                 )
-            if any(details.get(field) != repository.get(field) for field in projection_fields):
+            wsl_waiting_successor = (
+                progress.get("event_sequence") == 483
+                and progress.get("last_event_id") == "evt_c21_wsl_readiness_waiting_approval"
+                and ((progress.get("wsl_readiness_decision") or {}).get("decision_status")) == "WAITING_APPROVAL"
+                and event.get("event_id") == "evt_c21_ysna_staging_classification_decision_checkpoint"
+            )
+            if not wsl_waiting_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
                 errors.append("EVENT_EFFECT_MISMATCH")
     return sorted(set(errors))
 
@@ -2200,6 +2206,17 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
     """Allow historical projections only behind the fully validated seq478 successor."""
     progress = bundle.get("progress") or {}
     current_ref = progress.get("current_progress_evidence_ref") or {}
+    wsl_manifest_path = "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
+    if (
+        progress.get("event_sequence") == 483
+        and progress.get("last_event_id") == "evt_c21_wsl_readiness_waiting_approval"
+        and current_ref.get("manifest_path") == wsl_manifest_path
+    ):
+        try:
+            wsl_manifest = _load_json(bundle["_root"] / wsl_manifest_path)
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_wsl_readiness_decision_projection(wsl_manifest, bundle) == []
     decision_manifest_path = "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
     if (
         progress.get("event_sequence") == 482
@@ -3151,6 +3168,123 @@ def validate_c21_ysna_staging_decision_projection(
                 valid = portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256"))
             if not valid:
                 errors.append("C21_YSNA_STAGING_DECISION_MANIFEST_INVALID")
+                break
+    return sorted(set(errors))
+
+
+def validate_c21_wsl_readiness_decision_projection(
+    manifest: Mapping[str, Any], bundle: Mapping[str, Any]
+) -> list[str]:
+    """Validate the WSL early-execution readiness checkpoint and approval hold."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    repository = progress.get("repository") or {}
+    decision = progress.get("wsl_readiness_decision") or {}
+    checkpoint = "894e7b71fc52905e774892844905199401199fb2"
+    manifest_path = "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json"
+    report_path = "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md"
+    predecessor_path = "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
+    excluded_actions = [
+        "SERVER_REDEPLOY", "SERVER_RESTART", "DATABASE_CHANGE", "DNS_CHANGE",
+        "TLS_CHANGE", "SECRET_CHANGE", "EXISTING_MATERIAL_DELETION", "MAIN_MERGE",
+        "RELEASE_MANIFEST_REBIND", "TELEGRAM_EXECUTION", "PROVIDER_EXECUTION",
+    ]
+    exact_paths = set((progress.get("write_lease") or {}).get("paths") or []) | {
+        "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+        report_path,
+        manifest_path,
+        digest_path,
+    }
+    errors: list[str] = []
+    if any((
+        progress.get("event_sequence") != 483,
+        progress.get("last_event_id") != "evt_c21_wsl_readiness_waiting_approval",
+        progress.get("status") != "WAITING_APPROVAL",
+        progress.get("valid_failure_count") != 2,
+        (progress.get("current_progress_evidence_ref") or {}) != {
+            "package_id": "C-21", "path": digest_path, "manifest_path": manifest_path,
+        },
+        ((progress.get("next_work_package") or {}).get("status")) != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        ((progress.get("next_successor_work_package") or {}).get("status")) != "WAITING_APPROVAL_WSL_PHASE_C_EARLY_EXECUTION",
+    )):
+        errors.append("C21_WSL_READINESS_PROJECTION_INVALID")
+    if any((
+        decision.get("event_sequence") != 483,
+        decision.get("decision_status") != "WAITING_APPROVAL",
+        decision.get("reason") != "WSL_PHASE_C_EARLY_EXECUTION_CHANGES_SCOPE_ORDER_AND_IMPORTANT_OPERATIONAL_RISK",
+        decision.get("checkpoint_base") != checkpoint,
+        decision.get("head_upstream") != "SYNCED",
+        decision.get("frozen_predecessor_sequence") != 482,
+        decision.get("frozen_predecessor_events_sha256") != "7E15CC44779B362A444C0B34D560F20F7E68150252DA5D6DB535C158925AEA3A",
+        decision.get("release_manifest_target") != "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+        decision.get("release_manifest_status") != "STALE_FOR_CURRENT_HEAD",
+        decision.get("manifest_guard") != "ORIGIN_MAIN_ANCESTOR_REQUIRED",
+        decision.get("wsl_harness") != "MISSING_ONLY_GITKEEP",
+        decision.get("ysna_verify_reuse") != "UNSUITABLE_COUPLED_TO_PUBLIC_DOMAIN_TELEGRAM_PROVIDER",
+        decision.get("plan_owners") != ["F-16", "F-17"],
+        decision.get("requested_successor") != "PHASE_C_SUCCESSOR_WSL_EARLY_VALIDATION",
+        decision.get("decision_axes") != ["FEATURE_SCOPE", "WORK_ORDER", "IMPORTANT_OPERATIONAL_RISK"],
+        decision.get("excluded_actions") != excluded_actions,
+        decision.get("historical_evidence") != "PRESERVED_UNCHANGED",
+        decision.get("report_path") != report_path,
+        decision.get("c01_status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    )):
+        errors.append("C21_WSL_READINESS_APPROVAL_BOUNDARY_INVALID")
+    if any((
+        repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+        repository.get("local_head") != checkpoint,
+        repository.get("branch") != "codex/c21-operational-execution",
+        repository.get("upstream") != "origin/codex/c21-operational-execution",
+        repository.get("remote_head") != checkpoint,
+        repository.get("feature_remote_head") != checkpoint,
+        repository.get("head_relation") != "FEATURE_WORKTREE_C21_WSL_READINESS_WAITING_APPROVAL_EXACT18",
+        repository.get("push_status") != "FEATURE_SYNCED_C21_WSL_READINESS_WAITING_APPROVAL",
+        set(repository.get("exact_allowed_paths") or []) != exact_paths,
+        len(repository.get("exact_allowed_paths") or []) != 18,
+    )):
+        errors.append("C21_WSL_READINESS_REPOSITORY_INVALID")
+    if (
+        len(events) != 483
+        or hashlib.sha256(canonical_json_bytes(events[:482])).hexdigest().upper()
+        != "7E15CC44779B362A444C0B34D560F20F7E68150252DA5D6DB535C158925AEA3A"
+        or events[-1].get("event_type") != "PACKAGE_WAITING_APPROVAL"
+        or events[-1].get("event_id") != "evt_c21_wsl_readiness_waiting_approval"
+        or events[-1].get("details", {}).get("decision_status") != "WAITING_APPROVAL"
+        or events[-1].get("details", {}).get("historical_evidence") != "PRESERVED_UNCHANGED"
+    ):
+        errors.append("C21_WSL_READINESS_EVENTS_INVALID")
+    rows = manifest.get("raw_checksums")
+    expected_rows = {
+        digest_path, report_path, predecessor_path, "docs/progress/progress-events.json",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    }
+    if any((
+        manifest.get("artifact_id") != "C21-WSL-READINESS-DECISION-20260904",
+        manifest.get("manifest_type") != "WSL_EARLY_EXECUTION_WAITING_APPROVAL_CHECKPOINT",
+        manifest.get("event_sequence") != 483,
+        manifest.get("decision_status") != "WAITING_APPROVAL",
+        manifest.get("checkpoint_base") != checkpoint,
+        manifest.get("repository_exact_path_count") != 18,
+        manifest.get("frozen_predecessor_sequence") != 482,
+        manifest.get("frozen_predecessor_events_sha256") != "7E15CC44779B362A444C0B34D560F20F7E68150252DA5D6DB535C158925AEA3A",
+        manifest.get("historical_evidence") != "PRESERVED_UNCHANGED",
+        manifest.get("excluded_actions") != excluded_actions,
+        manifest.get("self_reference") is not False,
+        not isinstance(rows, list),
+        {row.get("path") for row in rows if isinstance(row, dict)} != expected_rows,
+    )):
+        errors.append("C21_WSL_READINESS_MANIFEST_INVALID")
+    else:
+        for row in rows:
+            if row.get("path") == predecessor_path:
+                valid = git_blob_row_matches(root, checkpoint, row)
+            else:
+                valid = portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256"))
+            if not valid:
+                errors.append("C21_WSL_READINESS_MANIFEST_INVALID")
                 break
     return sorted(set(errors))
 
@@ -7672,6 +7806,10 @@ def validate_repository_projection(
         repository.get("head_relation") == "FEATURE_WORKTREE_ACTIVE_C21_YSNA_STAGING_DECISION_EXACT15"
         and (progress or {}).get("event_sequence") == 482
     )
+    c21_wsl_readiness_head_relation = (
+        repository.get("head_relation") == "FEATURE_WORKTREE_C21_WSL_READINESS_WAITING_APPROVAL_EXACT18"
+        and (progress or {}).get("event_sequence") == 483
+    )
     if (
         repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
         or (
@@ -7694,6 +7832,7 @@ def validate_repository_projection(
             and not c21_ops_r2_main_reconciliation_head_relation
             and not c21_ops_r2_conninfo_r4_head_relation
             and not c21_ysna_staging_decision_head_relation
+            and not c21_wsl_readiness_head_relation
         )
         or not isinstance(base, str)
         or not re.fullmatch(r"[0-9a-f]{40}", base)
@@ -8242,7 +8381,19 @@ def validate_repository_projection(
         and (progress or {}).get("last_event_id") == "evt_c21_ysna_staging_classification_decision_checkpoint"
         and ((progress or {}).get("environment_classification_decision") or {}).get("decision_id") == "APPROVAL-20260904-C21-YSNA-STAGING-001"
     )
-    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_ysna_staging_decision_projection and not c21_ops_r2_conninfo_r4_projection and not c21_ops_r2_main_reconciliation_projection and not c21_ops_r2_release_rebind_projection and not c21_ops_r2_projection and not c21_backup_portability_accepted_projection and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
+    c21_wsl_readiness_paths = c21_ysna_staging_decision_paths | {
+        "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+        "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
+    }
+    c21_wsl_readiness_projection = (
+        repository.get("validated_base_commit") == "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        and set(allowed) == c21_wsl_readiness_paths and len(allowed) == 18
+        and (progress or {}).get("event_sequence") == 483
+        and (progress or {}).get("last_event_id") == "evt_c21_wsl_readiness_waiting_approval"
+        and ((progress or {}).get("wsl_readiness_decision") or {}).get("decision_status") == "WAITING_APPROVAL"
+    )
+    if any(not _is_evidence_only_path(path) for path in allowed) and not c21_wsl_readiness_projection and not c21_ysna_staging_decision_projection and not c21_ops_r2_conninfo_r4_projection and not c21_ops_r2_main_reconciliation_projection and not c21_ops_r2_release_rebind_projection and not c21_ops_r2_projection and not c21_backup_portability_accepted_projection and not c21_backup_portability_projection and not c21_lr02c_operational_projection and not c21_lr02c_accepted_r3_projection and not c21_lr02c_rework_r3_projection and not c21_lr02c_takeover_projection and not c21_lr02c_projection and not c21_lr02b_accepted_projection and not c21_lr02b_projection and not c21_lr02a_accepted_projection and not c21_lr02a_r3_projection and not c21_lr02a_r2_projection and not c21_lr02a_start_projection and not c21_lr01_projection and not c21_lr01_accepted_projection and not phase_b_projection and not b12_completion_projection and not b12_start_projection and not b11_acceptance_projection and not b11_rework_projection and not b11_completion_projection and not b11_start_projection and not b10_acceptance_projection and not b10_rework_projection and not b10_completion_projection and not b10_start_projection and not b01_start_projection and not b01_completion_projection and not b01_rework_start_projection and not b01_rework_completion_projection and not b01_r3_rework_start_projection and not b01_r3_rework_completion_projection and not b01_r3_acceptance_projection and not b02_start_projection and not b02_completion_projection and not b02_rework_projection and not b02_rework_completion_projection and not b02_r2_acceptance_projection and not b03_start_projection and not b03_completion_projection and not b03_rework_start_projection and not b03_rework_completion_projection and not b03_r3_rework_start_projection and not b03_r3_rework_completion_projection and not b03_r3_acceptance_projection and not b04_start_projection and not b04_completion_projection and not b04_acceptance_projection and not workplan_v16_successor_projection and not b05_start_projection and not b05_rebind_projection and not b05_completion_projection and not b05_acceptance_projection and not b06_start_projection and not b06_completion_projection and not b07_start_projection and not b08_start_projection and not b08_completion_projection and not b08_acceptance_projection and not b09_start_projection and not b09_completion_projection and not b09_r5_rework_projection and not b09_r5_completion_projection and not b09_r5_acceptance_projection:
         errors.append("GIT_DESCENDANT_PRODUCT_PATH_FORBIDDEN")
     if repository.get("branch") != actual_branch:
         errors.append("GIT_BRANCH_MISMATCH")
@@ -8458,6 +8609,10 @@ def validate_repository_projection(
         c21_ysna_staging_decision_projection
         and actual_path_set == set(allowed)
     )
+    c21_wsl_readiness_subset_valid = (
+        c21_wsl_readiness_projection
+        and actual_path_set == set(allowed)
+    )
     if (
         sorted(actual_path_set) != allowed
         and not lr02a_active_subset_valid
@@ -8478,6 +8633,7 @@ def validate_repository_projection(
         and not c21_ops_r2_main_reconciliation_subset_valid
         and not c21_ops_r2_conninfo_r4_subset_valid
         and not c21_ysna_staging_decision_subset_valid
+        and not c21_wsl_readiness_subset_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -8531,9 +8687,15 @@ def validate_repository_projection(
         and actual_remote_head == actual_feature_remote_head
         and actual_feature_remote_head in {repository.get("feature_remote_head"), actual_head}
     )
+    wsl_readiness_checkpoint_declared = (
+        c21_wsl_readiness_projection
+        and actual_path_set == set(allowed)
+        and actual_head != base
+        and actual_remote_head == actual_feature_remote_head == actual_head
+    )
     if working_tree_mode:
         if (
-            (actual_head != base and not conninfo_r4_feature_checkpoint_declared and not ysna_staging_decision_checkpoint_declared)
+            (actual_head != base and not conninfo_r4_feature_checkpoint_declared and not ysna_staging_decision_checkpoint_declared and not wsl_readiness_checkpoint_declared)
             or (
                 actual_remote_head != base
                 and not remote_lag_declared
@@ -8541,6 +8703,7 @@ def validate_repository_projection(
                 and not conninfo_r4_feature_base_declared
                 and not conninfo_r4_feature_checkpoint_declared
                 and not ysna_staging_decision_checkpoint_declared
+                and not wsl_readiness_checkpoint_declared
             )
         ):
             errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
@@ -8549,6 +8712,7 @@ def validate_repository_projection(
         and not remote_lag_declared
         and not conninfo_r4_feature_checkpoint_declared
         and not ysna_staging_decision_checkpoint_declared
+        and not wsl_readiness_checkpoint_declared
     ):
         errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
     return sorted(set(errors))
@@ -8607,7 +8771,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 )
             )
             decision_precommit_projection = (
-                bundle["progress"].get("event_sequence") == 482
+                bundle["progress"].get("event_sequence") in {482, 483}
                 and actual_head == repository.get("local_head")
                 and set(changed_paths) | set(dirty_paths)
                 == set(repository.get("exact_allowed_paths") or [])
@@ -9119,6 +9283,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_lr02c_ops_r2_conninfo_r4_projection(manifest, bundle))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json":
             errors.extend(validate_c21_ysna_staging_decision_projection(manifest, bundle))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json":
+            errors.extend(validate_c21_wsl_readiness_decision_projection(manifest, bundle))
     if progress.get("current_work_package") == "PHASE_B_GATE":
         if progress.get("status") == "ACTIVE":
             errors.extend(validate_phase_b_gate_active_projection(bundle))

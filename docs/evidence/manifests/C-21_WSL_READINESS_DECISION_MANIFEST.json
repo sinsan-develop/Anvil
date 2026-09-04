@@ -1,0 +1,51 @@
+{
+  "artifact_id": "C21-WSL-READINESS-DECISION-20260904",
+  "package_id": "C-21/WSL-READINESS",
+  "manifest_type": "WSL_EARLY_EXECUTION_WAITING_APPROVAL_CHECKPOINT",
+  "event_sequence": 483,
+  "decision_status": "WAITING_APPROVAL",
+  "decision_reason": "WSL_PHASE_C_EARLY_EXECUTION_CHANGES_SCOPE_ORDER_AND_IMPORTANT_OPERATIONAL_RISK",
+  "checkpoint_base": "894e7b71fc52905e774892844905199401199fb2",
+  "repository_exact_path_count": 18,
+  "frozen_predecessor_sequence": 482,
+  "frozen_predecessor_events_sha256": "7E15CC44779B362A444C0B34D560F20F7E68150252DA5D6DB535C158925AEA3A",
+  "historical_evidence": "PRESERVED_UNCHANGED",
+  "plan_owners": ["F-16", "F-17"],
+  "release_manifest_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+  "required_approval": "C-21 WSL 선행검증을 Phase C successor로 앞당기고, deploy/wsl Git-only staging harness와 별도 candidate ReleaseManifest/guard를 구현한 뒤 WSL-server의 PG15 전용 DB 및 격리 PG18 RC에서 Telegram·Provider를 제외한 migration·API·SSE·same-origin·backup/restore·rollback 검증을 수행하는 것을 승인한다.",
+  "excluded_actions": ["SERVER_REDEPLOY", "SERVER_RESTART", "DATABASE_CHANGE", "DNS_CHANGE", "TLS_CHANGE", "SECRET_CHANGE", "EXISTING_MATERIAL_DELETION", "MAIN_MERGE", "RELEASE_MANIFEST_REBIND", "TELEGRAM_EXECUTION", "PROVIDER_EXECUTION"],
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
+      "bytes": 1096,
+      "sha256": "C1DB9305024DA1B404FE776152418095B7185035C9260B0DD34A2403B1DB691E"
+    },
+    {
+      "path": "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+      "bytes": 2515,
+      "sha256": "79FC78F0594BC0EA2995EB6697FBC24FC3FDEC10C9F9F6DA1A06B95847884B20"
+    },
+    {
+      "path": "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
+      "bytes": 2089,
+      "sha256": "6D43D2C08D5024836BE4C0C5C208852B3BD1B8E2578B2D8C21D7AEEC3DEAA7C5"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 776068,
+      "sha256": "16288089FB36DD5F4AC74004A16EC9C041B9A95CDCAFD76A24F4CB26EEB43000"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 749268,
+      "sha256": "D26889B0B9BE307259D3F5A98CA8063CAD4A9EECDC5CFDBE1119F7C42B625807"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 191912,
+      "sha256": "CE6327CD7678C1D8CFA26E87F139B4D6AEC39DB8313D471AC258A29D1DF184A7"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-04T14:40:00+09:00"
+}

@@ -19,6 +19,18 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 
+
+def _restore_pre_wsl_approval_state(progress: dict) -> None:
+    """Remove the current seq483 approval hold from synthetic historical projections."""
+    progress["status"] = "ACTIVE"
+    progress["pending_approvals"] = []
+    progress["reporting_decision"] = {
+        "decision": "AUTO_CONTINUE",
+        "reason_codes": ["C21_LR02C_OPERATIONAL_EXECUTION_ACTIVE_AUTO_CONTINUE"],
+        "stop_before_dialogue_report": False,
+    }
+    progress.pop("wsl_readiness_decision", None)
+
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     if progress.get("event_sequence", 0) > 346:
@@ -2380,6 +2392,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         accepted_bundle = copy.deepcopy(bundle)
         accepted_progress = accepted_bundle["progress"]
+        _restore_pre_wsl_approval_state(accepted_progress)
         accepted_progress.update(
             {
                 "event_sequence": 424,
@@ -2486,6 +2499,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         start_bundle = copy.deepcopy(bundle)
         start_progress = start_bundle["progress"]
+        _restore_pre_wsl_approval_state(start_progress)
         start_progress.update(
             {
                 "event_sequence": 428,
@@ -2616,6 +2630,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         acceptance_bundle = copy.deepcopy(bundle)
         acceptance_progress = acceptance_bundle["progress"]
+        _restore_pre_wsl_approval_state(acceptance_progress)
         event435 = next(
             event for event in acceptance_bundle["events"]["events"] if event.get("sequence") == 435
         )
@@ -2693,6 +2708,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         start_bundle = copy.deepcopy(bundle)
         start_progress = start_bundle["progress"]
+        _restore_pre_wsl_approval_state(start_progress)
         event436 = next(
             event for event in start_bundle["events"]["events"] if event.get("sequence") == 436
         )
@@ -2820,6 +2836,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
         historical = copy.deepcopy(bundle)
         progress = historical["progress"]
+        _restore_pre_wsl_approval_state(progress)
         progress["event_sequence"] = 445
         progress["last_event_id"] = "evt_c21_lr02c_main_takeover_resumed_r2"
         progress["valid_failure_count"] = 1
@@ -2916,6 +2933,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         bundle = checker.load_bundle(ROOT)
         historical = copy.deepcopy(bundle)
         progress = historical["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event444 = next(event for event in historical["events"]["events"] if event.get("sequence") == 444)
         event447 = next(event for event in historical["events"]["events"] if event.get("sequence") == 447)
         worker = copy.deepcopy(progress["completed_c21_lr02c_main_worker_lease"])
@@ -3006,6 +3024,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json").read_text(encoding="utf-8"))
         accepted = copy.deepcopy(bundle)
         progress = accepted["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event453 = next(event for event in accepted["events"]["events"] if event.get("sequence") == 453)
         progress.update({
             "event_sequence":453,
@@ -3042,6 +3061,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         started = copy.deepcopy(bundle)
         progress = started["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event454 = next(event for event in started["events"]["events"] if event.get("sequence") == 454)
         progress.update({
             "event_sequence":457,
@@ -3139,6 +3159,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         started = copy.deepcopy(bundle)
         progress = started["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event464 = next(event for event in started["events"]["events"] if event.get("sequence") == 464)
         progress.update({
             "event_sequence": 464,
@@ -3187,12 +3208,12 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         bundle = checker.load_bundle(ROOT)
         self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
-        self.assertEqual(482, bundle["progress"]["event_sequence"])
-        self.assertEqual(15, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
+        self.assertEqual(483, bundle["progress"]["event_sequence"])
+        self.assertEqual(18, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
         self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
         self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
         arbitrary_later = copy.deepcopy(bundle)
-        arbitrary_later["progress"]["event_sequence"] = 483
+        arbitrary_later["progress"]["event_sequence"] = 484
         self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, arbitrary_later))
         widened = copy.deepcopy(bundle)
         widened["progress"]["next_work_package"]["status"] = "READY"
@@ -3297,52 +3318,40 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_lr02c_ops_r2_main_reconciliation_projection(manifest, arbitrary_path),
         )
 
-        decision_manifest = json.loads(
+    def test_c21_wsl_readiness_requires_explicit_scope_order_and_risk_approval(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
             (
                 ROOT
-                / "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json"
+                / "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_ysna_staging_decision_projection(decision_manifest, bundle))
-        arbitrary_branch = copy.deepcopy(bundle)
-        arbitrary_branch["progress"]["repository"]["branch"] = "codex/arbitrary"
+
+        self.assertEqual([], checker.validate_c21_wsl_readiness_decision_projection(manifest, bundle))
+
+        approved_without_human = copy.deepcopy(bundle)
+        approved_without_human["progress"]["wsl_readiness_decision"]["decision_status"] = "APPROVED"
         self.assertIn(
-            "C21_YSNA_STAGING_DECISION_REPOSITORY_INVALID",
-            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, arbitrary_branch),
+            "C21_WSL_READINESS_APPROVAL_BOUNDARY_INVALID",
+            checker.validate_c21_wsl_readiness_decision_projection(manifest, approved_without_human),
         )
-        arbitrary_sequence = copy.deepcopy(bundle)
-        arbitrary_sequence["progress"]["event_sequence"] = 483
+
+        expanded_scope = copy.deepcopy(bundle)
+        expanded_scope["progress"]["wsl_readiness_decision"]["excluded_actions"] = []
         self.assertIn(
-            "C21_YSNA_STAGING_DECISION_PROJECTION_INVALID",
-            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, arbitrary_sequence),
+            "C21_WSL_READINESS_APPROVAL_BOUNDARY_INVALID",
+            checker.validate_c21_wsl_readiness_decision_projection(manifest, expanded_scope),
         )
+
         arbitrary_path = copy.deepcopy(bundle)
-        arbitrary_path["progress"]["repository"]["exact_allowed_paths"].append("deploy/ysna/compose.production.yml")
+        arbitrary_path["progress"]["repository"]["exact_allowed_paths"].append(
+            "deploy/wsl/compose.yml"
+        )
         self.assertIn(
-            "C21_YSNA_STAGING_DECISION_REPOSITORY_INVALID",
-            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, arbitrary_path),
+            "C21_WSL_READINESS_REPOSITORY_INVALID",
+            checker.validate_c21_wsl_readiness_decision_projection(manifest, arbitrary_path),
         )
-        changed_decision = copy.deepcopy(bundle)
-        changed_decision["progress"]["environment_classification_decision"]["classification"] = "PRODUCTION"
-        self.assertIn(
-            "C21_YSNA_STAGING_DECISION_BOUNDARY_INVALID",
-            checker.validate_c21_ysna_staging_decision_projection(decision_manifest, changed_decision),
-        )
-        repository = bundle["progress"]["repository"]
-        checkpoint_head = "1" * 40
-        checkpoint_errors = checker.validate_repository_projection(
-            repository,
-            actual_head=checkpoint_head,
-            actual_branch=repository["branch"],
-            actual_upstream=repository["upstream"],
-            actual_remote_head=repository["remote_head"],
-            base_is_ancestor=True,
-            actual_changed_paths=repository["exact_allowed_paths"],
-            working_tree_mode=True,
-            progress=bundle["progress"],
-            actual_feature_remote_head=repository["feature_remote_head"],
-        )
-        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", checkpoint_errors)
 
 if __name__ == "__main__":
     unittest.main()
