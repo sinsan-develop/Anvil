@@ -7731,6 +7731,7 @@ def validate_repository_projection(
     working_tree_mode: bool,
     progress: Mapping[str, Any] | None = None,
     actual_feature_remote_head: str | None = None,
+    projected_local_head_is_ancestor: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     base = repository.get("validated_base_commit")
@@ -8692,8 +8693,13 @@ def validate_repository_projection(
         c21_wsl_readiness_projection
         and actual_path_set == set(allowed)
         and actual_head != base
-        and actual_head == repository.get("local_head")
-        and actual_remote_head == actual_feature_remote_head == repository.get("remote_head")
+        and (
+            actual_head == repository.get("local_head")
+            or projected_local_head_is_ancestor
+        )
+        and actual_remote_head == actual_feature_remote_head
+        and actual_feature_remote_head
+        in {repository.get("remote_head"), actual_head}
     )
     if working_tree_mode:
         if (
@@ -8735,6 +8741,14 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         _git_value(root, "rev-parse", feature_remote)
         if isinstance(feature_remote, str) and feature_remote.startswith("origin/")
         else None
+    )
+    projected_local_head = repository.get("local_head")
+    projected_local_head_is_ancestor = bool(
+        isinstance(projected_local_head, str)
+        and actual_head
+        and _git_returncode(
+            root, "merge-base", "--is-ancestor", projected_local_head, actual_head
+        ) == 0
     )
     if repository.get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE:
         base = repository.get("validated_base_commit")
@@ -8795,6 +8809,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 actual_changed_paths=changed_paths,
                 working_tree_mode=working_tree_mode,
                 progress=bundle["progress"],
+                projected_local_head_is_ancestor=projected_local_head_is_ancestor,
             )
         )
         if not repository.get("worktree_status"):

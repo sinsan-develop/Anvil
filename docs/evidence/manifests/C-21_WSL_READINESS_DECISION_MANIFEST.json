@@ -18,12 +18,12 @@
     {
       "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
       "bytes": 1096,
-      "sha256": "2E39E3B92FC4D37E530ADEDC500853D1C99F0D7B36DEFFCCEA00E687AA668DC7"
+      "sha256": "FF9EA24DD4C19AC105F9BA9BF7BF0C9E967C6700E8A7D31A821A3D6F42CC530D"
     },
     {
       "path": "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
-      "bytes": 2514,
-      "sha256": "B8B0AB987469D6413C10E3D294E3DDF359656496D638BD0BCCD85023A9E2C4F2"
+      "bytes": 2990,
+      "sha256": "59CE1DC25056EDCD51C9BB31D824768B2A9DEC17900ABCA1EC9052C674FE4443"
     },
     {
       "path": "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
@@ -37,13 +37,13 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 749431,
-      "sha256": "FEF6904F2E81D7F168FF3F589814B7B91EE848E50695674FE30B4536FDEB8915"
+      "bytes": 750004,
+      "sha256": "FA6B5B7B036EE36D023DE4B81AA52B3E35900A167A8600A8E138B122B5599D31"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "bytes": 191912,
-      "sha256": "CE6327CD7678C1D8CFA26E87F139B4D6AEC39DB8313D471AC258A29D1DF184A7"
+      "bytes": 193985,
+      "sha256": "972F2D2D4D57A4660CFDA2E74E27DD3F917B7B0FD24890F3953F388F49855FE3"
     }
   ],
   "self_reference": false,

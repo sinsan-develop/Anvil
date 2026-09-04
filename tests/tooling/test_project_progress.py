@@ -3353,5 +3353,49 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_wsl_readiness_decision_projection(manifest, arbitrary_path),
         )
 
+        repository = bundle["progress"]["repository"]
+        successor_errors = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", successor_errors)
+        pushed_successor_errors = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head="9" * 40,
+            actual_feature_remote_head="9" * 40,
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", pushed_successor_errors)
+        arbitrary_successor_errors = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=False,
+        )
+        self.assertIn("GIT_DESCENDANT_ORIGIN_MISMATCH", arbitrary_successor_errors)
+
 if __name__ == "__main__":
     unittest.main()
