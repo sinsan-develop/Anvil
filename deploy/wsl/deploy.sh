@@ -42,7 +42,7 @@ for target in 15 18-rc; do
     fi
   fi
   wsl_compose pull anvil-db
-  wsl_compose up -d anvil-db
+  wsl_compose up -d --wait --wait-timeout 120 anvil-db
   pre_dump="$ROOT/backups/$ANVIL_TARGET_SLUG/$EXPECTED/pre-migration.dump"
   mkdir -p "$(dirname "$pre_dump")"
   umask 077

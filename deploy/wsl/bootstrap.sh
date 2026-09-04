@@ -22,4 +22,4 @@ EOF
   chmod 600 "$ENV_FILE.tmp.$$"
   mv -f "$ENV_FILE.tmp.$$" "$ENV_FILE"
 fi
-exec "$SCRIPT_DIR/control-runtime.sh" deploy "$EXPECTED"
+exec bash "$SCRIPT_DIR/control-runtime.sh" deploy "$EXPECTED"

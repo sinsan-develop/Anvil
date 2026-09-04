@@ -459,6 +459,87 @@ class WslScriptFailClosedTests(unittest.TestCase):
 
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required")
+class WslColdStartTests(unittest.TestCase):
+    def test_web_tmpfs_is_one_mount_with_all_security_options(self):
+        runner = None
+        if shutil.which("docker") and subprocess.run(["docker", "compose", "version"], capture_output=True).returncode == 0:
+            runner = ["docker", "compose"]
+        elif shutil.which("docker-compose"):
+            runner = ["docker-compose"]
+        if runner is None:
+            self.skipTest("Compose parser is required; run this contract on WSL")
+        env = os.environ | {"ANVIL_COMPOSE_PROJECT_NAME": "anvil-fixture", "ANVIL_POSTGRES_IMAGE": "postgres:15",
+            "ANVIL_WSL_PG_PASSWORD": "synthetic", "ANVIL_RELEASE_COMMIT": "a" * 40, "ANVIL_WSL_HTTP_PORT": "13770"}
+        result = subprocess.run([*runner, "-f", str(DEPLOY / "compose.wsl.yml"), "config", "--format", "json"],
+                                env=env, text=True, capture_output=True)
+        self.assertEqual(0, result.returncode, result.stderr)
+        compose = json.loads(result.stdout)
+        self.assertEqual(["/tmp:rw,noexec,nosuid,size=32m"], compose["services"]["anvil-web"]["tmpfs"])
+
+    def test_bootstrap_forwards_valid_sha_through_bash_and_preserves_environment(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            shutil.copyfile(DEPLOY / "bootstrap.sh", root / "bootstrap.sh")
+            child = root / "control-runtime.sh"
+            # The false shebang makes implicit OS execution observable even on
+            # Windows filesystems that do not enforce mode 0644.
+            child.write_text('#!/bin/false\n[[ "$1" == deploy && "$2" == "' + "a" * 40 + '" ]] || exit 9\nexit 37\n', encoding="utf-8")
+            os.chmod(child, 0o644)
+            (root / ".env").write_text("preserved\n", encoding="utf-8")
+            result = subprocess.run(["bash", str(root / "bootstrap.sh"), "a" * 40],
+                                    env=os.environ | {"ANVIL_WSL_DEPLOY_ROOT": WslControlRuntimeTests._posix(root)},
+                                    capture_output=True, text=True)
+            self.assertEqual(37, result.returncode, result.stderr)
+            self.assertEqual("preserved\n", (root / ".env").read_text())
+
+    def test_database_readiness_failure_prevents_backup_and_build(self):
+        self._deploy_readiness(False)
+
+    def test_database_readiness_success_precedes_backup(self):
+        self._deploy_readiness(True)
+
+    def _deploy_readiness(self, ready):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            scripts = root / "scripts"
+            scripts.mkdir()
+            shutil.copyfile(DEPLOY / "deploy.sh", scripts / "deploy.sh")
+            (root / "repo" / ".git").mkdir(parents=True)
+            (scripts / "candidate-manifest-guard.sh").write_text("validate_wsl_candidate_manifest() { :; }\n", encoding="utf-8")
+            (scripts / "common.sh").write_text('''require_exact_sha() { :; }
+require_control_utility_checkout() { :; }
+load_server_environment() { :; }
+configure_wsl_target() { ANVIL_TARGET_SLUG=pg15; }
+git() { [[ "$*" == *'rev-parse HEAD'* ]] && printf '%s\\n' "$EXPECTED"; return 0; }
+wsl_compose() {
+  printf '%s\\n' "$*" >> "$ANVIL_TEST_LOG"
+  case "$1" in
+    images|pull) return 0;;
+    up)
+      [[ " $* " == *' --wait '* && " $* " == *' --wait-timeout '* ]] || return 0
+      [[ "$ANVIL_TEST_READY" == yes ]] || return 17
+      touch "$ROOT/ready";;
+    exec) [[ -f "$ROOT/ready" ]] || return 19; return 23;;
+    *) return 29;;
+  esac
+}
+''', encoding="utf-8")
+            log = root / "calls"
+            result = subprocess.run(["bash", str(scripts / "deploy.sh"), "a" * 40],
+                env=os.environ | {"ANVIL_WSL_DEPLOY_ROOT": WslControlRuntimeTests._posix(root),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": "fixture", "ANVIL_TEST_LOG": WslControlRuntimeTests._posix(log),
+                    "ANVIL_TEST_READY": "yes" if ready else "no"}, capture_output=True, text=True)
+            calls = log.read_text().splitlines()
+            if ready:
+                self.assertEqual(23, result.returncode, result.stderr)
+                self.assertTrue((root / "ready").exists())
+                self.assertTrue(any("pg_dump" in call for call in calls))
+            else:
+                self.assertEqual(17, result.returncode, result.stderr)
+                self.assertFalse(any("pg_dump" in call or "build" in call for call in calls))
+
+
+@unittest.skipUnless(shutil.which("bash"), "bash is required")
 class WslControlRuntimeTests(unittest.TestCase):
     def _git(self, cwd: Path, *args: str) -> str:
         return subprocess.check_output(["git", *args], cwd=cwd, text=True).strip()

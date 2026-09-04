@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: anvil_app
       POSTGRES_PASSWORD: "${ANVIL_WSL_PG_PASSWORD:?server-only PostgreSQL password is required}"
     volumes:
-      - anvil-db-data:/var/lib/postgresql/data
+      - "anvil-db-data:${ANVIL_POSTGRES_VOLUME_TARGET:?target-specific PostgreSQL volume target is required}"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U anvil_app -d anvil"]
       interval: 2s
@@ -49,7 +49,7 @@ services:
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
-    tmpfs: [/tmp:rw,noexec,nosuid,size=32m]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=32m"]
 
 volumes:
   anvil-db-data:
