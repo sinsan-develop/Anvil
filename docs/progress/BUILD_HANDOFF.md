@@ -1,6 +1,7 @@
 # C-21 WSL readiness 승인 대기 checkpoint (2026-09-04)
 
 - seq483 checkpoint 커밋 후 반복된 `GIT_DESCENDANT_ORIGIN_MISMATCH`는 동일 successor 근본 원인 4회차로 기록하고 Main Agent가 직접 인수했다. exact18과 projected local checkpoint ancestry가 모두 일치하는 후속 governance commit만 허용한다.
+- read-only review에서 post-push remote=HEAD ancestry 우회 결함 1건을 발견해 WSL projection 전용 음성 계약으로 차단했다.
 - 판정: seq483 `PACKAGE_WAITING_APPROVAL`. WSL-server 선행검증은 Phase C successor 조기실행이며 기능 범위·작업 순서·중요 운영 위험 변경 승인이 필요하다.
 - 저장소: `codex/c21-operational-execution`의 HEAD/upstream은 `894e7b71fc52905e774892844905199401199fb2`로 동기화됐다. seq1~482 및 모든 기존 evidence bytes는 보존한다.
 - 감사 결과: ReleaseManifest는 이전 `b4858ff` 후보에 고정, guard는 `origin/main` 조상만 허용, R4 §5는 feature push 이후 rebind/main/deploy를 금지한다. `deploy/wsl`은 `.gitkeep`뿐이고 ysna verify는 공개 도메인·Telegram·Provider에 결합돼 있다.

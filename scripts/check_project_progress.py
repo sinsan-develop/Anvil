@@ -8701,6 +8701,12 @@ def validate_repository_projection(
         and actual_feature_remote_head
         in {repository.get("remote_head"), actual_head}
     )
+    if (
+        c21_wsl_readiness_projection
+        and actual_head != repository.get("local_head")
+        and not projected_local_head_is_ancestor
+    ):
+        errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
     if working_tree_mode:
         if (
             (actual_head != base and not conninfo_r4_feature_checkpoint_declared and not ysna_staging_decision_checkpoint_declared and not wsl_readiness_checkpoint_declared)

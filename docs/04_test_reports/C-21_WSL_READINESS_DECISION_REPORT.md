@@ -45,3 +45,4 @@ WSL-server 선행검증은 현재 C-21 R4 승인 범위의 단순 실행이 아�
 - seq483 checkpoint 커밋 뒤 동일 계열 `GIT_DESCENDANT_ORIGIN_MISMATCH`가 다시 발생했다.
 - C-21 successor projection에서 같은 근본 원인이 3회 이상 반복된 상태이므로 Main Agent가 직접 인수했다.
 - 실제 제품·범위·event 변경 없이, projected local checkpoint가 실제 HEAD의 조상이고 exact18·branch·upstream·remote가 모두 일치할 때만 정상 governance successor를 허용한다.
+- 독립 read-only review에서 push 후 remote=HEAD인 경우 ancestry=false가 일반 successor 규칙으로 우회되는 결함 1건을 발견했고, WSL projection에 ancestry를 별도 강제하는 음성 계약으로 보완했다.
