@@ -3636,6 +3636,59 @@ class ProjectProgressContractTests(unittest.TestCase):
             [],
             checker.validate_c21_wsl_control_postcommit_projection(bundle, manifest),
         )
+        repository = bundle["progress"]["repository"]
+        actual_head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+        changed_paths = subprocess.check_output(
+            ["git", "diff", "--name-only", f"{repository['validated_base_commit']}..{actual_head}"],
+            cwd=ROOT,
+            text=True,
+        ).splitlines()
+        control_paths = subprocess.check_output(
+            ["git", "diff", "--name-only", f"{repository['local_head']}..{actual_head}"],
+            cwd=ROOT,
+            text=True,
+        ).splitlines()
+        projection_args = {
+            "actual_head": actual_head,
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": changed_paths,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_descendant_paths": control_paths,
+            "control_is_ancestor": True,
+            "worktree_is_clean": True,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **projection_args))
+        wrong_branch = dict(projection_args, actual_branch="codex/arbitrary")
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_branch),
+        )
+        wrong_paths = dict(
+            projection_args,
+            control_descendant_paths=control_paths + ["arbitrary.txt"],
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_paths),
+        )
+        dirty = dict(projection_args, worktree_is_clean=False)
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dirty),
+        )
+        nonancestor = dict(projection_args, control_is_ancestor=False)
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **nonancestor),
+        )
 
         wrong_control = copy.deepcopy(manifest)
         wrong_control["control_commit"] = "9" * 40
@@ -3664,6 +3717,90 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn(
             "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
             checker.validate_c21_wsl_control_postcommit_projection(bundle, wrong_raw),
+        )
+        wrong_digest_bundle = copy.deepcopy(bundle)
+        wrong_digest_bundle["detached_digest"]["progress"]["file_sha256"] = "a" * 64
+        self.assertIn(
+            "DETACHED_DIGEST_MISMATCH",
+            checker.validate_detached_progress_binding(wrong_digest_bundle),
+        )
+
+    def test_c21_wsl_postcommit_git_projection_rejects_every_dirty_variant(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        actual_head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+        expected_upstream = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+
+        def validate_simulated(
+            *,
+            status: str = "",
+            branch: str = "codex/c21-operational-execution",
+            remote: str = expected_upstream,
+            ancestor: bool = True,
+        ) -> list[str]:
+            with tempfile.TemporaryDirectory() as temp:
+                simulated_root = Path(temp)
+                (simulated_root / ".git").write_text("gitdir: simulated\n", encoding="utf-8")
+
+                def fake_git_value(_root: Path, *args: str) -> str | None:
+                    if args == ("rev-parse", "HEAD"):
+                        return actual_head
+                    if args == ("branch", "--show-current"):
+                        return branch
+                    if args == ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"):
+                        return "origin/codex/c21-operational-execution"
+                    if args == ("rev-parse", "@{u}"):
+                        return remote
+                    if args == ("rev-parse", repository["feature_remote"]):
+                        return remote
+                    if args[:2] == ("diff", "--name-only"):
+                        revision_range = args[2]
+                        if revision_range.startswith(repository["local_head"]):
+                            return "\n".join(repository["postcommit_successor_paths"])
+                        return "\n".join(repository["exact_allowed_paths"])
+                    if args[-2:] == ("status", "--porcelain=v1") or "status" in args:
+                        return status
+                    return None
+
+                simulated = copy.deepcopy(bundle)
+                simulated["_root"] = simulated_root
+                with mock.patch.object(checker, "_git_value", side_effect=fake_git_value), mock.patch.object(
+                    checker, "_git_returncode", return_value=0 if ancestor else 1
+                ):
+                    return checker._validate_git_projection(simulated)
+
+        self.assertEqual([], validate_simulated())
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status=" M docs/WORK_STATUS.md"),
+        )
+        current_six = repository["postcommit_successor_paths"][:6]
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status="\n".join(f" M {path}" for path in current_six)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status="?? arbitrary-untracked.txt"),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status=" M arbitrary-tracked.txt"),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            validate_simulated(branch="codex/arbitrary"),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            validate_simulated(remote="f" * 40),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            validate_simulated(ancestor=False),
         )
 
 if __name__ == "__main__":

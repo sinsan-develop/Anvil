@@ -8298,6 +8298,9 @@ def validate_repository_projection(
     progress: Mapping[str, Any] | None = None,
     actual_feature_remote_head: str | None = None,
     projected_local_head_is_ancestor: bool = False,
+    control_descendant_paths: list[str] | None = None,
+    control_is_ancestor: bool = False,
+    worktree_is_clean: bool = True,
 ) -> list[str]:
     errors: list[str] = []
     base = repository.get("validated_base_commit")
@@ -9238,6 +9241,20 @@ def validate_repository_projection(
         c21_wsl_control_projection
         and actual_path_set == set(allowed)
     )
+    c21_wsl_control_postcommit_descendant_valid = (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 487
+        and repository.get("local_head") == "73c39ca03caa615f7207eac3499c668497cecc5a"
+        and control_is_ancestor
+        and set(control_descendant_paths or [])
+        == c21_wsl_control_postcommit_successor_paths()
+        and actual_branch == "codex/c21-operational-execution"
+        and actual_upstream == "origin/codex/c21-operational-execution"
+        and repository.get("remote_head") == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and repository.get("feature_remote_head") == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        and actual_feature_remote_head == "ca92b7845eda803cff3c432799642e4f9243d4d6"
+    )
     if (
         sorted(actual_path_set) != allowed
         and not lr02a_active_subset_valid
@@ -9261,6 +9278,7 @@ def validate_repository_projection(
         and not c21_wsl_readiness_subset_valid
         and not c21_wsl_active_subset_valid
         and not c21_wsl_control_subset_valid
+        and not c21_wsl_control_postcommit_descendant_valid
     ):
         errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
     remote_lag_declared = (
@@ -9339,18 +9357,28 @@ def validate_repository_projection(
         in {repository.get("remote_head"), actual_head}
     )
     wsl_control_checkpoint_declared = (
-        c21_wsl_control_projection
-        and actual_path_set == set(allowed)
-        and actual_head == repository.get("local_head")
-        and actual_remote_head == actual_feature_remote_head
-        and actual_feature_remote_head == repository.get("remote_head")
+        c21_wsl_control_postcommit_descendant_valid
+        or (
+            c21_wsl_control_projection
+            and actual_path_set == set(allowed)
+            and actual_head == repository.get("local_head")
+            and actual_remote_head == actual_feature_remote_head
+            and actual_feature_remote_head == repository.get("remote_head")
+        )
     )
     if (
         (c21_wsl_readiness_projection or c21_wsl_active_projection or c21_wsl_control_projection)
         and actual_head != repository.get("local_head")
         and not projected_local_head_is_ancestor
+        and not c21_wsl_control_postcommit_descendant_valid
     ):
         errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+    if (
+        c21_wsl_control_projection
+        and (progress or {}).get("event_sequence") == 487
+        and not worktree_is_clean
+    ):
+        errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
     if working_tree_mode:
         if (
             (actual_head != base and not conninfo_r4_feature_checkpoint_declared and not ysna_staging_decision_checkpoint_declared and not wsl_readiness_checkpoint_declared and not wsl_active_checkpoint_declared and not wsl_control_checkpoint_declared)
@@ -9404,9 +9432,15 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
             root, "merge-base", "--is-ancestor", projected_local_head, actual_head
         ) == 0
     )
+    control_descendant_paths = _split_git_paths(
+        _git_value(root, "diff", "--name-only", f"{projected_local_head}..{actual_head}")
+        if projected_local_head_is_ancestor and actual_head
+        else None
+    )
     if repository.get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE:
         base = repository.get("validated_base_commit")
         working_tree_mode = actual_head == base
+        dirty_paths: list[str] = []
         if working_tree_mode:
             changed_paths = _working_tree_paths(
                 _git_value(
@@ -9455,15 +9489,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 and set(repository.get("control_successor_paths") or [])
                 == c21_wsl_control_successor_paths()
             )
-            control_postcommit_projection = (
-                bundle["progress"].get("event_sequence") == 487
-                and actual_head == repository.get("local_head")
-                and set(changed_paths) == set(repository.get("exact_allowed_paths") or [])
-                and set(dirty_paths) == c21_wsl_control_postcommit_successor_paths()
-                and set(repository.get("postcommit_successor_paths") or [])
-                == c21_wsl_control_postcommit_successor_paths()
-            )
-            if dirty_paths and (control_precommit_projection or control_postcommit_projection):
+            if dirty_paths and control_precommit_projection:
                 pass
             elif dirty_paths and decision_precommit_projection:
                 changed_paths = sorted(set(changed_paths) | set(dirty_paths))
@@ -9482,6 +9508,9 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
                 working_tree_mode=working_tree_mode,
                 progress=bundle["progress"],
                 projected_local_head_is_ancestor=projected_local_head_is_ancestor,
+                control_descendant_paths=control_descendant_paths,
+                control_is_ancestor=projected_local_head_is_ancestor,
+                worktree_is_clean=not dirty_paths,
             )
         )
         if not repository.get("worktree_status"):

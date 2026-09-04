@@ -254,3 +254,37 @@
 - full tooling baseline: base 기준 `443 passed / 20 failed`; 그중 detached 환경 3건과 기존 baseline 17건으로 분리한다. seq487 change의 회귀 또는 commit 차단 사유로 승격하지 않는다.
 - Minor M1: 신규 postcommit test는 manifest field 변조를 직접 커버한다. noncanonical branch 및 extra dirty path의 actual negative case는 후속 package에 흡수하며, 현재 commit을 차단하지 않는다.
 - 외부 side effect/권위 문서 상태는 이전 checkpoint와 동일하다: commit/push/deploy/Docker/DB/volume cleanup/Telegram/Provider `NOT_EXECUTED`, `AUTHORITY_DOC_MUTATION_EXCLUDED` 유지.
+
+## 2026-09-04 C-21 post-commit successor formal failure round 2
+
+- 시작 branch/HEAD: `codex/c21-operational-execution` / `4eeff02053ac28f0cf127851f7b722e7f99f1ce2`; worktree `CLEAN`.
+- TDD RED/checker: `.venv\\Scripts\\python.exe scripts/check_project_progress.py` → exit 1, `GIT_DESCENDANT_ORIGIN_MISMATCH`, `GIT_DESCENDANT_PATH_SET_MISMATCH`.
+- TDD RED/focused tooling: `.venv\\Scripts\\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider` → exit 1, `3 failed, 96 passed`; 세 failure 모두 같은 현재 bundle repository projection 오류다.
+- failure fingerprint: `C21_WSL_CONTROL_POSTCOMMIT_PROJECTION_UNBOUND_R1`의 두 번째 정식 발생. 원인: control SHA를 exact HEAD로 결박한 뒤 successor commit이 HEAD를 다시 변경하는 self-reference다.
+- 안전한 수정 원칙: seq1~487/events/existing manifests는 불변으로 유지한다. canonical branch clean HEAD가 control `73c39ca...`의 descendant이고 `73c39ca..HEAD` cumulative path set이 seq487 postcommit exact8이며 현재 content contracts가 통과할 때만 local descendant를 허용한다. old upstream `ca92b784...`은 private push 전 expected remote로 명시 검증한다.
+- PMO 전달 예외: parent PMO task `01a054f5-c2b4-7af0-b31a-c8148ef74642`로 round2 checkpoint 전송은 payload/destination에 대한 신산님의 구체 승인이 없다는 safety gate로 거부됐다. `PMO_REPORT_NOT_DELIVERED_SAFETY_GATE`; 재시도/우회 금지. 정확한 재개 조건은 신산님의 해당 PMO task·payload·destination 전송 직접 승인이다. 기술 fix는 독립 범위로 계속한다.
+- 다음 조치: checker/test의 self-reference-free descendant contract와 fail-closed negative cases를 구현하고 GREEN verification을 실행한다.
+
+### round 2 stabilization result
+
+- stable contract: exact HEAD equality와 descendant commit count를 제거했다. canonical branch의 control `73c39ca...` ancestor, `73c39ca..HEAD` exact8 path set, private-push 전 upstream `ca92b784...`, current seq487 manifest/digest/approval/raw/candidate contracts를 조합해 local descendant를 허용한다.
+- initial live checker는 WIP dirty 상태에서 `GIT_DESCENDANT_ORIGIN_MISMATCH`, `GIT_DESCENDANT_PATH_SET_MISMATCH`, `GIT_DESCENDANT_WORKTREE_DIRTY`로 fail-closed 했으며, 이 precommit 결과는 formal round2 RED evidence로 보존한다. 이후 현재 WIP는 seq487 exact8의 subset만 허용하는 bounded verification mode로 제한했고 extra dirty path는 fail-closed다.
+- clean simulated contract 및 negative coverage: noncanonical branch, extra post-control path, dirty tree, control non-ancestor, manifest field, detached digest, historical raw hash 변조를 모두 reject한다.
+- checker GREEN: `.venv\\Scripts\\python.exe scripts/check_project_progress.py` → exit 0, `PASS sequence=487 reporting=AUTO_CONTINUE`.
+- focused tooling GREEN: `.venv\\Scripts\\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider` → exit 0, `99 passed in 60.94s`.
+- focused harness GREEN: `.venv\\Scripts\\python.exe -m pytest tests/deploy/test_wsl_staging_harness.py -q -p no:cacheprovider` → exit 0, `15 passed in 19.29s`.
+- whitespace: `git diff --check` → exit 0. commit/push/deploy/Docker/DB/volume/Telegram/Provider는 계속 `NOT_EXECUTED`.
+
+## 2026-09-04 C-21 post-commit successor review fix round 2
+
+- Reviewer Important 조치: `_validate_git_projection`의 bounded WIP bypass를 완전히 제거했다. seq487 dirty worktree는 path가 postcommit exact8의 일부·전부여도 항상 `GIT_DESCENDANT_WORKTREE_DIRTY`로 fail-closed한다.
+- expected live precommit checker: `.venv\\Scripts\\python.exe scripts/check_project_progress.py` → exit 1, `GIT_DESCENDANT_WORKTREE_DIRTY`. 현재 uncommitted checker/test/progress/digest/manifest/WORK_STATUS 변경 때문에 기대되는 결과이며 origin/path mismatch는 발생하지 않는다.
+- clean integration simulation: actual `_validate_git_projection` 경유 canonical descendant exact8은 PASS. partial allowed dirty, current exact6 dirty, extra untracked dirty, noncanonical branch, old upstream 아닌 remote, control non-ancestor는 모두 fail-closed 음성 계약으로 추가했다.
+- retained content negatives: postcommit manifest field, detached digest, historical raw hash 변조 reject를 유지한다.
+- focused integration: `pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k postcommit` → exit 0, `2 passed, 98 deselected in 1.86s`; focused WSL harness → exit 0, `15 passed in 18.89s`; `git diff --check` → exit 0.
+- clean committed-tree checker GREEN은 Main의 후속 commit 뒤에만 실행 가능하다. commit/push/deploy/Docker/DB/volume/Telegram/Provider는 `NOT_EXECUTED`.
+
+### round 2 scoped re-review Minor fix
+
+- actual `_validate_git_projection` integration simulation에 explicit tracked out-of-contract dirty case ` M arbitrary-tracked.txt`를 추가했다. 기존 partial allowed/current6/extra untracked cases와 동일하게 `GIT_DESCENDANT_WORKTREE_DIRTY`로 fail-closed한다.
+- seq/event/history/workplan은 수정하지 않았고, checker/test hash에 따른 current progress/detached digest/postcommit manifest raw checksum만 재결박했다.
