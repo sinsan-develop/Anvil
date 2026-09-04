@@ -5,10 +5,12 @@ from __future__ import annotations
 import copy
 import hashlib
 import importlib.util
+import io
 import json
 import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
 from pathlib import Path
@@ -3179,37 +3181,37 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_backup_portability_acceptance_binds_exact24_and_release_checkpoint(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
         manifest = json.loads(
             (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_ACCEPTANCE_MANIFEST_R1.json").read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
-        self.assertEqual(475, bundle["progress"]["event_sequence"])
-        self.assertEqual(13, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
-        self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
-        self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
-        arbitrary_later = copy.deepcopy(bundle)
-        arbitrary_later["progress"]["event_sequence"] = 476
-        self.assertIn(
-            "C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID",
-            checker.validate_c21_backup_portability_acceptance_projection(manifest, arbitrary_later),
-        )
-        widened = copy.deepcopy(bundle)
-        widened["progress"]["next_work_package"]["status"] = "READY"
-        self.assertIn(
-            "C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID",
-            checker.validate_c21_backup_portability_acceptance_projection(manifest, widened),
-        )
-        release_mutated = copy.deepcopy(bundle)
-        release_mutated["progress"]["accepted_c21_backup_portability_work_instruction"]["release_commit"] = "0" * 40
-        self.assertIn(
-            "C21_BACKUP_PORTABILITY_ACCEPTED_WORK_OR_LEASE_INVALID",
-            checker.validate_c21_backup_portability_acceptance_projection(manifest, release_mutated),
-        )
+        archive = subprocess.run(["git", "archive", "HEAD"], cwd=ROOT, check=True, stdout=subprocess.PIPE)
+        with tempfile.TemporaryDirectory() as tmp:
+            historical_root = Path(tmp)
+            with tarfile.open(fileobj=io.BytesIO(archive.stdout), mode="r:") as exported:
+                exported.extractall(historical_root)
+            bundle = checker.load_bundle(historical_root)
+            self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
+            self.assertEqual(475, bundle["progress"]["event_sequence"])
+            self.assertEqual(13, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
+            self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
+            self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
+            arbitrary_later = copy.deepcopy(bundle)
+            arbitrary_later["progress"]["event_sequence"] = 476
+            self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, arbitrary_later))
+            widened = copy.deepcopy(bundle)
+            widened["progress"]["next_work_package"]["status"] = "READY"
+            self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, widened))
+            release_mutated = copy.deepcopy(bundle)
+            release_mutated["progress"]["accepted_c21_backup_portability_work_instruction"]["release_commit"] = "0" * 40
+            self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTED_WORK_OR_LEASE_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, release_mutated))
 
     def test_c21_operational_r2_rework_preserves_seq469_and_binds_epoch5(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        historical_tree = tempfile.TemporaryDirectory()
+        archive = subprocess.run(["git", "archive", "HEAD"], cwd=ROOT, check=True, stdout=subprocess.PIPE)
+        with tarfile.open(fileobj=io.BytesIO(archive.stdout), mode="r:") as exported:
+            exported.extractall(Path(historical_tree.name))
+        bundle = checker.load_bundle(Path(historical_tree.name))
         manifest = json.loads(
             (
                 ROOT
@@ -3261,6 +3263,17 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn(
             "C21_LR02C_OPERATIONAL_R2_FENCING_INVALID",
             checker.validate_c21_lr02c_operational_rework_r2_projection(manifest, widened),
+        )
+        current_bundle = checker.load_bundle(ROOT)
+        current_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_lr02c_ops_r2_release_rebind_projection(current_manifest, current_bundle))
+        self.assertEqual(["RELEASE_MANIFEST_CREATED", "REPOSITORY_RECONCILED"], [event["event_type"] for event in current_bundle["events"]["events"][475:477]])
+        self.assertEqual(475, current_manifest["predecessor_r2_binding"]["event_sequence"])
+        predecessor_tampered = copy.deepcopy(current_manifest)
+        predecessor_tampered["predecessor_r2_binding"]["event_sequence"] = 474
+        self.assertIn(
+            "C21_OPS_R2_RELEASE_REBIND_PREDECESSOR_INVALID",
+            checker.validate_c21_lr02c_ops_r2_release_rebind_projection(predecessor_tampered, current_bundle),
         )
 
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LR02C-OPS-R2-RELEASE-REBIND-DIGEST-20260904",
+  "package_id": "C-21/LR-02C/OPS-R2/RELEASE-BINDING",
+  "event_sequence": 477,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 79804,
+    "file_sha256": "3C89D6DAF06C7E1036B1C05B0FEEEAEAED0751DD1051F79B5A86ACD44EE20270",
+    "canonical_json_sha256": "48ECA475FBF9B31617693E32A8AB76D545C7D519C0F49EE7068E870C846761BD"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 141539,
+    "file_sha256": "083873C2894BFEEA4D28E836BB2D1331F917057EB135E10702C88487F1299422",
+    "machine_summary_canonical_sha256": "40660BBB6277C6E0C55098D24DB39305BE2A401B7D98CE036C33A93E82447E73"
+  },
+  "created_at": "2026-09-04T10:55:51+09:00",
+  "scope": "OPS-R2 implementation checkpoint b4858ff release-bound by governance exact10; 216 tests passed; seq1-475 frozen; epoch5 active; backup attempt2 and deploy not executed; Telegram and Provider user verification pending; C-01 blocked."
+}

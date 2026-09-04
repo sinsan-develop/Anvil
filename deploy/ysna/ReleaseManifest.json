@@ -5,8 +5,8 @@
   "status": "APPROVED_FOR_DEPLOYMENT",
   "source": {
     "repository": "git@github.com:cyhuh7950/anvil.git",
-    "commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
-    "branch_at_capture": "main",
+    "commit": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+    "branch_at_capture": "codex/c21-operational-execution",
     "working_tree": "CLEAN"
   },
   "authority": {
@@ -18,11 +18,32 @@
     "deploy_approval_path": "docs/approvals/APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001.md",
     "deploy_approval_sha256": "1CB18CA1492D624EE950769AD8AEB4165E52F4C1DB30A4D04965E244BDDB407A"
   },
+  "release_binding": {
+    "binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
+    "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "parent_work_instruction_id": "WI-C-21-LR-02C-OPS-R2-20260903-001",
+    "parent_work_instruction_sha256": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
+    "work_instruction_id": "WI-C-21-LR-02C-OPS-R2-RELEASE-BINDING-20260904-001",
+    "work_instruction_sha256": "F6E6285F6644FF185206BEAF5B99FC86D4C191F8BEA2028CFCADEAAA0F979CE2",
+    "invocation_sha256": "1796FEF612A8665832E486F6C492CBB435FA778BFB32503F111048D13E23D0BB",
+    "root_human_approval_id": "APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001",
+    "root_approval_subject_hash": "3A68623BF9426EB619AC0B8E082028F73442F90F4680FDCE871711B60A6B5FAD",
+    "semantic_diff": "NONE",
+    "scope_expansion": false,
+    "reconfirmed_actor": "main-agent-eoul",
+    "reconfirmed_at": "2026-09-04T10:55:50+09:00"
+  },
   "evidence": {
     "focused_tests": {
       "command": "python -m pytest -q tests/tooling/test_project_progress.py tests/deploy/test_c21_lr02c_operational_contract.py tests/deploy/test_ysna_scripts_contract.py tests/api",
       "result": "PASS",
-      "count": 211
+      "count": 216,
+      "suite_counts": {
+        "tooling_project_progress": 93,
+        "backup_operational_contract": 18,
+        "ysna_scripts_contract": 6,
+        "api": 99
+      }
     },
     "compileall": "PASS",
     "git_diff_check": "PASS",
@@ -31,7 +52,11 @@
     "deploy_script_sha256": "5F3C33987A32AEBDCB6E68F5DA88BBAC5725B757EC938F33445AF7BEC77CD339",
     "bootstrap_script_sha256": "A4B25BA03498D051A770D55E32BC3096D72977480CB715F1781F79D854CED34A",
     "verify_script_sha256": "31D10C400A4E1B7E81F0994D1979FF57C5AAB52EA43B83780CCF5FB9061BF3C3",
-    "backup_script_sha256": "25AF4CF4C3615E90514539500EC8D4698837D5ED69869B12A9D37E6A01C22A6B",
+    "backup_script_sha256": "10274A1A7F10121FC4CD367C86AEED982A6C96309FFCD2F3B5C27BE1969459F2",
+    "project_progress_checker_sha256": "A57777A63889F8E7DBAF32A6A9923BD1799AC22DB44678141A477E21C1B567D4",
+    "project_progress_test_sha256": "9D5D0C7C7B1CEF3063CE947F43681E79F70ECDC7ED389891218A580240695B14",
+    "backup_contract_test_sha256": "7020E31A8E85E13D398C74BC9225C86969B1C8332D946B1AC950B52B01CB116A",
+    "ysna_scripts_contract_test_sha256": "BF480A1525833C4A3E10F4EF1FFF7659B6EAE90BD53DA41F6489331E448BCB9E",
     "runtime_provider_and_telegram": "USER_VERIFICATION_PENDING",
     "unified_runtime_frontend_same_listener": "PASS (tests/api: 99)"
   },
@@ -39,10 +64,14 @@
     "target_host": "ysna-server",
     "target_checkout": "~/deploy/anvil/repo",
     "target_runtime_root": "~/deploy/anvil",
-    "target_expected_commit": "095e1488ed85ec11986447539d04cf2b494dbd34",
+    "target_expected_commit": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
     "target_observed_commit": "NOT_EXECUTED",
     "target_preflight": "APPROVED_READY_FOR_EXECUTION",
     "target_checkout_status": "TO_BE_VERIFIED_CLEAN_DETACHED",
+    "operational_backup_attempt": 2,
+    "operational_backup_status": "NOT_EXECUTED",
+    "deployment_status": "NOT_EXECUTED",
+    "provider_and_telegram_status": "USER_VERIFICATION_PENDING",
     "compose_available": "deploy/ysna/compose.production.yml",
     "protected_container_observed": "anvil-web:3770",
     "migration_execution": "NOT_EXECUTED",

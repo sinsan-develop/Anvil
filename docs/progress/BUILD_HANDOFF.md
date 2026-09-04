@@ -554,40 +554,53 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - seq475에서 WI와 invocation의 EOF 여분 빈 줄 제거를 `MAIN_RECONFIRMED_NON_SEMANTIC`으로 재확정했다. 원 human approval 범위와 exact13, 기능 범위·요구사항·중요 위험은 변경하지 않았다.
 - 제품 script와 deploy 계약 테스트의 수정은 다음 Developer TDD 단계로 남아 있다. 새 release binding과 검증 전 외부 재시도 및 C-01은 차단한다.
 
+## 2026-09-04 C-21/LR-02C OPS-R2 release checkpoint 결박
+
+- OPS-R2 구현 checkpoint `b4858ffb373066b24d7d9ee9bfde810160cacb75`를 ReleaseManifest의 source와 runtime target에 결박했다.
+- 실제 검증은 tooling 93, backup contract 18, ysna scripts 6, API 99로 합계 216 PASS다.
+- seq476은 release manifest binding, seq477은 governance exact10 repository reconciliation이다. seq1~475는 불변이다.
+- 기존 OPS-R2 active WorkInstruction과 epoch5 worker/write lease는 ACTIVE로 유지한다. 제품 코드 변경은 없고 operational backup attempt2와 deploy는 `NOT_EXECUTED`다.
+- Telegram signed POST와 Provider probe는 `USER_VERIFICATION_PENDING`, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`를 유지한다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 475,
+  "event_sequence": 477,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_ops_r2_nonsemantic_revision_rebound",
-  "updated_at": "2026-09-04T01:20:45+09:00",
+  "last_event_id": "evt_c21_lr02c_ops_r2_release_rebind_exact10_repository_reconciled",
+  "updated_at": "2026-09-04T10:55:51+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 1,
   "active_work_instruction_sha256": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
   "active_invocation_sha256": "8207996858DE33B542862B4D5C6AEBC1787BC4A0612E1C0052CAC3B637263FC5",
   "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
-  "next_safe_action": "OPS-R2 epoch5 lease에서 SQLAlchemy PostgreSQL DSN의 libpq scheme 정규화 회귀 테스트와 최소 수정을 완료하고 새 checkpoint·ReleaseManifest를 결박한다. 그 전 운영 backup 재시도는 금지하며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
+  "next_safe_action": "승인된 b4858ff ReleaseManifest를 사용한 표준 Git 기반 운영 backup attempt 2와 deploy/verify를 Main이 별도 실행한다. 현재 projection에서는 외부 실행하지 않았으며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "ca945dfe4fed9befedc46620aff24729c3898952",
+  "repository_head": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "ca945dfe4fed9befedc46620aff24729c3898952",
-  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_EXACT13",
+  "repository_validated_base_commit": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+  "repository_head_relation": "FEATURE_WORKTREE_ACTIVE_OPS_R2_RELEASE_REBIND_EXACT10",
   "repository_exact_allowed_paths": [
-    "deploy/ysna/backup-c21-db.sh",
-    "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_REWORK_START_R2_MANIFEST.json",
+    "deploy/ysna/ReleaseManifest.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
-    "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02c-operational-rework-start-r2.json",
-    "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/C-21_LR-02C_OPERATIONAL_EXECUTION_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-release-rebind.json",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_INVOCATION_PROMPT_R3.md",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_RELEASE_BINDING_WORK_INSTRUCTION_R3.md",
     "scripts/check_project_progress.py",
-    "tests/deploy/test_c21_lr02c_operational_contract.py",
     "tests/tooling/test_project_progress.py"
   ],
+  "current_release_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
+  "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
+  "focused_test_count": 216,
+  "operational_backup_attempt": 2,
+  "operational_backup_status": "NOT_EXECUTED",
+  "deployment_status": "NOT_EXECUTED",
+  "telegram_and_provider": "USER_VERIFICATION_PENDING",
+  "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
   "reporting_decision": "AUTO_CONTINUE",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
   "phase_b_gate_deferred_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
