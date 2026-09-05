@@ -926,7 +926,13 @@ def validate_event_stream(
                     == c21_wsl_control_runtime_committed_exact_paths()
                 )
             )
-            if not wsl_waiting_successor and not wsl_control_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
+            wsl_qa_result_successor = (
+                progress.get("event_sequence") == 495
+                and event.get("sequence") == 494
+                and progress.get("last_event_id")
+                == "evt_c21_wsl_qa_execution_result_recorded"
+            )
+            if not wsl_waiting_successor and not wsl_control_successor and not wsl_qa_result_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
                 errors.append("EVENT_EFFECT_MISMATCH")
     return sorted(set(errors))
 
@@ -2327,6 +2333,12 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
         return validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(
             bundle, wsl_rollback_allowlist_rebind_manifest
         ) == []
+    if (progress.get("event_sequence") == 495 and progress.get("last_event_id") == "evt_c21_wsl_qa_execution_result_recorded" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"):
+        try:
+            result_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json")
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_wsl_qa_execution_result_projection(bundle, result_manifest) == []
     if (
         progress.get("event_sequence") == 494
         and progress.get("last_event_id")
@@ -3870,6 +3882,19 @@ def c21_wsl_rollback_allowlist_candidate_record_committed_exact_paths() -> set[s
 
 def c21_wsl_qa_resume_candidate_record_committed_exact_paths() -> set[str]:
     return {'deploy/wsl/CandidateReleaseManifest.json', 'deploy/wsl/Dockerfile.web', 'deploy/wsl/bootstrap.sh', 'deploy/wsl/candidate-manifest-guard.sh', 'deploy/wsl/cleanup.sh', 'deploy/wsl/common.sh', 'deploy/wsl/compose.wsl.yml', 'deploy/wsl/control-runtime.sh', 'deploy/wsl/deploy.sh', 'deploy/wsl/nginx-wsl.conf', 'deploy/wsl/requirements-runtime.txt', 'deploy/wsl/rollback.sh', 'deploy/wsl/verify.sh', 'deploy/ysna/backup-c21-db.sh', 'docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md', 'docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md', 'docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md', 'docs/DEVELOPMENT_ENVIRONMENT.md', 'docs/WORK_STATUS.md', 'docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md', 'docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md', 'docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json', 'docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json', 'docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json', 'docs/progress/BUILD_HANDOFF.md', 'docs/progress/build-progress.json', 'docs/progress/failure-ledger.json', 'docs/progress/progress-events.json', 'docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-ingress-candidate-rebind.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json', 'docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json', 'docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md', 'docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md', 'docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md', 'docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md', 'scripts/check_project_progress.py', 'tests/deploy/test_c21_lr02c_operational_contract.py', 'tests/deploy/test_wsl_staging_harness.py', 'tests/tooling/test_project_progress.py'}
+
+
+
+def c21_wsl_qa_execution_result_parent_paths() -> set[str]:
+    return {'docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json', 'docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md', 'tests/deploy/test_wsl_staging_harness.py', 'deploy/wsl/CandidateReleaseManifest.json', 'deploy/ysna/backup-c21-db.sh', 'docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json', 'docs/WORK_STATUS.md', 'docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json', 'docs/progress/BUILD_HANDOFF.md', 'docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json', 'deploy/wsl/compose.wsl.yml', 'deploy/wsl/requirements-runtime.txt', 'docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json', 'deploy/wsl/deploy.sh', 'tests/tooling/test_project_progress.py', 'docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md', 'deploy/wsl/nginx-wsl.conf', 'deploy/wsl/candidate-manifest-guard.sh', 'docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md', 'docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md', 'docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json', 'docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md', 'tests/deploy/test_c21_lr02c_operational_contract.py', 'docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json', 'docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md', 'deploy/wsl/cleanup.sh', 'docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json', 'scripts/check_project_progress.py', 'docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json', 'deploy/wsl/Dockerfile.web', 'deploy/wsl/verify.sh', 'docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md', 'docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json', 'docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json', 'docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json', 'docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json', 'docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json', 'docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md', 'docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-ingress-candidate-rebind.json', 'docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json', 'deploy/wsl/common.sh', 'docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json', 'docs/progress/build-progress.json', 'docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json', 'deploy/wsl/bootstrap.sh', 'docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json', 'docs/DEVELOPMENT_ENVIRONMENT.md', 'docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md', 'docs/progress/progress-events.json', 'deploy/wsl/rollback.sh', 'docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json', 'docs/progress/failure-ledger.json', 'docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json', 'deploy/wsl/control-runtime.sh'}
+
+
+def c21_wsl_qa_execution_result_successor_paths() -> set[str]:
+    return {'docs/progress/build-progress.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json', 'tests/tooling/test_project_progress.py', 'docs/WORK_STATUS.md', 'docs/DEVELOPMENT_ENVIRONMENT.md', 'docs/progress/BUILD_HANDOFF.md', 'docs/progress/progress-events.json', 'scripts/check_project_progress.py', 'docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json', 'docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md'}
+
+
+def c21_wsl_qa_execution_result_record_paths() -> set[str]:
+    return {'docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json', 'docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md', 'tests/deploy/test_wsl_staging_harness.py', 'deploy/wsl/CandidateReleaseManifest.json', 'deploy/ysna/backup-c21-db.sh', 'docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json', 'docs/WORK_STATUS.md', 'docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json', 'docs/progress/BUILD_HANDOFF.md', 'docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json', 'deploy/wsl/compose.wsl.yml', 'deploy/wsl/requirements-runtime.txt', 'docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json', 'deploy/wsl/deploy.sh', 'docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json', 'tests/tooling/test_project_progress.py', 'docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md', 'deploy/wsl/nginx-wsl.conf', 'deploy/wsl/candidate-manifest-guard.sh', 'docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md', 'docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md', 'docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json', 'docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md', 'tests/deploy/test_c21_lr02c_operational_contract.py', 'docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json', 'docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md', 'deploy/wsl/cleanup.sh', 'docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json', 'scripts/check_project_progress.py', 'docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json', 'deploy/wsl/Dockerfile.web', 'deploy/wsl/verify.sh', 'docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md', 'docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json', 'docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json', 'docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json', 'docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json', 'docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json', 'docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json', 'docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md', 'docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-ingress-candidate-rebind.json', 'docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json', 'deploy/wsl/common.sh', 'docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json', 'docs/progress/build-progress.json', 'docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json', 'deploy/wsl/bootstrap.sh', 'docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json', 'docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json', 'docs/DEVELOPMENT_ENVIRONMENT.md', 'docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md', 'docs/progress/progress-events.json', 'deploy/wsl/rollback.sh', 'docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json', 'docs/progress/failure-ledger.json', 'docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json', 'docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md', 'deploy/wsl/control-runtime.sh'}
 
 
 def raw_event_object_prefix_bytes(payload: bytes, count: int) -> bytes:
@@ -10500,6 +10525,33 @@ def validate_repository_projection(
     worktree_is_clean: bool = True,
     control_runtime_record_commit_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 495:
+        result_errors: list[str] = []
+        if (
+            repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE
+            or repository.get("head_relation")
+            != "FEATURE_WORKTREE_C21_WSL_QA_EXECUTION_RESULT_PARENT_EXACT58_RECORD10"
+            or repository.get("validated_base_commit")
+            != "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+            or repository.get("branch") != "codex/c21-operational-execution"
+            or repository.get("upstream")
+            != "origin/codex/c21-operational-execution"
+            or repository.get("remote_head")
+            != "ca92b7845eda803cff3c432799642e4f9243d4d6"
+            or repository.get("feature_remote")
+            != "origin/codex/c21-operational-execution"
+            or repository.get("feature_remote_head")
+            != "ca92b7845eda803cff3c432799642e4f9243d4d6"
+            or repository.get("exact_allowed_paths")
+            != sorted(c21_wsl_qa_execution_result_parent_paths())
+            or repository.get("qa_execution_result_successor_paths")
+            != sorted(c21_wsl_qa_execution_result_successor_paths())
+        ):
+            result_errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        result_errors.extend(validate_c21_wsl_qa_execution_result_git(repository, actual_head=actual_head, actual_branch=actual_branch, actual_upstream=actual_upstream, actual_remote_head=actual_remote_head, actual_changed_paths=actual_changed_paths, control_descendant_paths=control_descendant_paths, worktree_is_clean=worktree_is_clean, record_commit_is_direct=control_runtime_record_commit_is_direct))
+        if not base_is_ancestor:
+            result_errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(result_errors))
     errors: list[str] = []
     base = repository.get("validated_base_commit")
     allowed = repository.get("exact_allowed_paths")
@@ -12201,6 +12253,35 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if isinstance(feature_remote, str) and feature_remote.startswith("origin/")
         else None
     )
+    if bundle["progress"].get("event_sequence") == 495:
+        parent = repository.get("local_head")
+        base = repository.get("validated_base_commit")
+        changed = _split_git_paths(_git_value(root,"diff","--name-only",base,actual_head))
+        dirty = _working_tree_paths(_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"))
+        direct = False
+        if actual_head and actual_head != parent:
+            direct = (_git_value(root,"show","-s","--format=%P",actual_head) or "").split() == [parent]
+        descendants = dirty if actual_head == parent else _split_git_paths(_git_value(root,"diff","--name-only",f"{parent}..{actual_head}"))
+        base_is_ancestor = bool(
+            base == "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+            and actual_head
+            and _git_returncode(root, "merge-base", "--is-ancestor", str(base), actual_head) == 0
+        )
+        return validate_repository_projection(
+            repository,
+            actual_head=actual_head,
+            actual_branch=actual_branch,
+            actual_upstream=actual_upstream,
+            actual_remote_head=actual_remote_head,
+            actual_feature_remote_head=actual_feature_remote_head,
+            base_is_ancestor=base_is_ancestor,
+            actual_changed_paths=changed,
+            working_tree_mode=bool(dirty),
+            progress=bundle["progress"],
+            control_descendant_paths=descendants,
+            worktree_is_clean=not dirty,
+            control_runtime_record_commit_is_direct=direct,
+        )
     projected_local_head = repository.get("local_head")
     projected_local_head_is_ancestor = bool(
         isinstance(projected_local_head, str)
@@ -12935,6 +13016,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(
                 validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest)
             )
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json":
+            errors.extend(
+                validate_c21_wsl_qa_execution_result_projection(bundle, manifest)
+            )
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json":
             try:
                 candidate = _load_json(bundle["_root"] / "deploy/wsl/CandidateReleaseManifest.json")
@@ -12957,6 +13042,99 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
         if progress.get("current_work_package") == "G-05":
             errors.extend(validate_accepted_evidence_chain(historical_g05_manifest, bundle))
     errors.extend(validate_schema_catalog(bundle["schema_catalog"], bundle["_root"]))
+    return sorted(set(errors))
+
+
+
+def validate_c21_wsl_qa_execution_result_git(
+    repository: Mapping[str, Any], *, actual_head: str | None, actual_branch: str | None,
+    actual_upstream: str | None, actual_remote_head: str | None, actual_changed_paths: list[str],
+    control_descendant_paths: list[str] | None, worktree_is_clean: bool,
+    record_commit_is_direct: bool,
+) -> list[str]:
+    parent = "772afbd5eb55791ca7b5002d58378437ea496750"
+    precommit = actual_head == parent and set(actual_changed_paths) == c21_wsl_qa_execution_result_parent_paths() and set(control_descendant_paths or []) == c21_wsl_qa_execution_result_successor_paths() and not worktree_is_clean
+    postcommit = actual_head != parent and record_commit_is_direct and set(actual_changed_paths) == c21_wsl_qa_execution_result_record_paths() and set(control_descendant_paths or []) == c21_wsl_qa_execution_result_successor_paths() and worktree_is_clean
+    errors = []
+    if actual_branch != "codex/c21-operational-execution" or actual_upstream != "origin/codex/c21-operational-execution" or actual_remote_head != "ca92b7845eda803cff3c432799642e4f9243d4d6": errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+    if not (precommit or postcommit): errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+    if actual_head != parent and not record_commit_is_direct: errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_wsl_qa_execution_result_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]; progress = bundle["progress"]; events = bundle["events"].get("events", []); active = progress.get("wsl_early_validation") or {}; repository = progress.get("repository") or {}; handoff = bundle.get("handoff") or {}
+    errors: list[str] = []
+    manifest_path = "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json"
+    try:
+        raw = (root / "docs/progress/progress-events.json").read_bytes(); prefix = raw_event_object_prefix_bytes(raw, 494)
+    except (OSError, ValueError): prefix = b""
+    if len(events) != 495 or len(prefix) != 874441 or hashlib.sha256(prefix).hexdigest().upper() != "A8D822B390A8D5C96014EA80691E59ECB33E0FFE3B0A428B4741B0BEF8340862" or hashlib.sha256(canonical_json_bytes(events[:494])).hexdigest().upper() != "6970AE6EC2B73B8BDE35B8DB113609270F4374BD8D59A6B808FADFFD471971A8": errors.append("C21_WSL_QA_RESULT_HISTORY_INVALID")
+    details = events[-1].get("details") if events else {}
+    expected_core = {"validation_ref":"C-21/WSL-EARLY-VALIDATION","result":"SUITABLE","validation_scope":"C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY","accepted":False,"independent_tester_status":"PENDING","package_status":"TEST_REVIEW_PENDING_INDEPENDENT_JUDGMENT","c01_status":"BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT","dir2_status":"NOT_TRIGGERED"}
+    if not isinstance(details, Mapping) or events[-1].get("event_id") != "evt_c21_wsl_qa_execution_result_recorded" or events[-1].get("event_type") != "PRODUCT_VALIDATION_RECORDED" or any(details.get(k) != v for k,v in expected_core.items()) or details.get("evidence_ref") != manifest_path: errors.append("C21_WSL_QA_RESULT_EVENT_INVALID")
+    expected_execution_result = {
+        "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
+        "control_commit": "772afbd5eb55791ca7b5002d58378437ea496750",
+        "environment": "WSL_SERVER_TEST_STAGING",
+        "targets": ["POSTGRESQL_15", "POSTGRESQL_18_RC"],
+        "private_atomic_push": "PASS",
+        "fresh_remote_recovery": "PASS",
+        "deploy_attempts": [
+            {"attempt": 1, "result": "PREMUTATION_ENVIRONMENT_FAILURE", "exit_code": 1, "reason": "ROOT_GIT_SSH_ALIAS_MISSING", "product_valid_failure": False},
+            {"attempt": 2, "result": "PREMUTATION_ENVIRONMENT_FAILURE", "exit_code": 1, "reason": "INNER_STAGE_GIT_SSH_ALIAS_MISSING", "product_valid_failure": False, "cleanup_trap": "PASS", "current_preserved": "324eb169fedbce958d2e8cc29362deb7af433677"},
+            {"attempt": 3, "result": "PASS", "exit_code": 0, "ssh_config": "/home/daon/.ssh/config"},
+        ],
+        "candidate_deploy": {"first": "PASS", "return_after_rollback": "PASS"},
+        "verification": {"first": "PASS", "second": "PASS", "migration": "0013_task_bootstrap_authority", "authenticated_sse": "PASS", "last_event_id": "PASS", "same_origin": "PASS", "backup_restore": "PASS"},
+        "rollback": {"result": "PASS", "from": "a342d62391a44b349733d1468ac3b180761155ab", "to": "324eb169fedbce958d2e8cc29362deb7af433677", "database_migration": "PRESERVED_NO_AUTOMATIC_DOWNGRADE", "independent_observation": "PASS"},
+        "rollback_observation": {"targets": 2, "runtime_commit": "324eb169fedbce958d2e8cc29362deb7af433677", "ui_status": 200, "health_status": 200, "openapi_status": 200, "session_status": 201, "sse_status": 200, "last_event_id_body_bytes": 0, "database_counts_before_after": "1|1|1_UNCHANGED"},
+        "cleanup": {"result": "PASS", "containers": 0, "networks": 0, "volumes": 0, "receipt": "NOT_CREATED_BY_SCRIPT_DESIGN"},
+        "final_state": {"application_current": "a342d62391a44b349733d1468ac3b180761155ab", "application_previous": "324eb169fedbce958d2e8cc29362deb7af433677", "application_checkout": "CLEAN", "env_mode": "600", "env_owner": "root", "env_content": "UNCHANGED"},
+        "excluded": {"telegram": "NOT_EXECUTED", "provider": "NOT_EXECUTED", "ysna": "NOT_EXECUTED", "browser_network": "NOT_EXECUTED", "main_merge": "NOT_EXECUTED"},
+        "evidence": {"preflight_scratch_sha256": "F1847AC0D03AB814704AA8D1982DA7C2426A4C01C1F4723BFC3F170DD93FFB07", "rollback_observer_scratch_sha256": "12A975797B4600031D1427FAA1010CDDF7100C1F297FAE6B3CCD80DF606F03B2", "server_receipt_raw_hash": "NOT_COPIED_LOCALLY_NOT_ASSERTED"},
+    }
+    expected_result = manifest.get("execution_result")
+    docs = [manifest, details, active]
+    if expected_result != expected_execution_result or any(doc.get("execution_result") != expected_execution_result for doc in docs): errors.append("C21_WSL_QA_RESULT_EXECUTION_INVALID")
+    if any(doc.get("product_validation") != "SUITABLE" or doc.get("validation_scope") != "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY" or doc.get("accepted") is not False or doc.get("independent_tester_status") != "PENDING" or doc.get("c01_status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT" or doc.get("dir2_status") != "NOT_TRIGGERED" for doc in docs): errors.append("C21_WSL_QA_RESULT_DECISION_BOUNDARY_INVALID")
+    if progress.get("event_sequence") != 495 or progress.get("last_event_id") != "evt_c21_wsl_qa_execution_result_recorded" or progress.get("status") != "TEST_REVIEW" or progress.get("runtime_safety_gate") != "WSL_QA_COMPLETE_PENDING_INDEPENDENT_JUDGMENT" or progress.get("runtime_next_action") != "HOLD_WRITES_PENDING_INDEPENDENT_JUDGMENT" or (progress.get("current_progress_evidence_ref") or {}) != {"package_id":"C-21","path":digest_path,"manifest_path":manifest_path}: errors.append("C21_WSL_QA_RESULT_PROJECTION_INVALID")
+    expected_recovery = {
+        "candidate_push_status": "PASS_PRIVATE_ATOMIC_EXACT56_CANDIDATE",
+        "wsl_access": "PASS_DIRECT_WSL",
+        "postgres_15": "PASS",
+        "postgres_18_rc": "PASS",
+        "migration": "PASS_0013_TASK_BOOTSTRAP_AUTHORITY",
+        "api": "PASS",
+        "authenticated_sse": "PASS",
+        "last_event_id": "PASS",
+        "same_origin": "PASS",
+        "backup_restore": "PASS",
+        "application_rollback": "PASS_GENUINE_RUNTIME_324",
+        "deployment": "PASS_CANDIDATE_RESTORED",
+        "database": "PASS_PG15_AND_PG18_RC",
+        "volume_cleanup": "PASS_EXACT_PROJECT_RESIDUE_ZERO",
+        "runtime_safety_gate": "WSL_QA_COMPLETE_PENDING_INDEPENDENT_JUDGMENT",
+        "runtime_next_action": "HOLD_WRITES_PENDING_INDEPENDENT_JUDGMENT",
+    }
+    if any(active.get(key) != value for key, value in expected_recovery.items()) or (active.get("local_product_evidence") or {}).get("external_execution") != "PASS_APPROVED_WSL_QA_SCOPE": errors.append("C21_WSL_QA_RESULT_ACTIVE_RECOVERY_INVALID")
+    expected_handoff = {
+        "event_sequence": 495,
+        "status": "TEST_REVIEW",
+        "repository_push_status": "PASS_PRIVATE_ATOMIC_EXACT56_CONTROL_AND_CANDIDATE",
+        "candidate_push_status": "PASS_PRIVATE_ATOMIC_EXACT56_CANDIDATE",
+        "deployment_status": "PASS_CANDIDATE_RESTORED",
+        "runtime_safety_gate": "WSL_QA_COMPLETE_PENDING_INDEPENDENT_JUDGMENT",
+        "runtime_next_action": "HOLD_WRITES_PENDING_INDEPENDENT_JUDGMENT",
+        "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+        "dir2_status": "NOT_TRIGGERED",
+    }
+    if any(handoff.get(key) != value for key, value in expected_handoff.items()): errors.append("C21_WSL_QA_RESULT_HANDOFF_RECOVERY_INVALID")
+    if repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE or repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb" or repository.get("head_relation") != "FEATURE_WORKTREE_C21_WSL_QA_EXECUTION_RESULT_PARENT_EXACT58_RECORD10" or repository.get("local_head") != "772afbd5eb55791ca7b5002d58378437ea496750" or repository.get("branch") != "codex/c21-operational-execution" or repository.get("upstream") != "origin/codex/c21-operational-execution" or repository.get("remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6" or repository.get("feature_remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6" or repository.get("exact_allowed_paths") != sorted(c21_wsl_qa_execution_result_parent_paths()) or repository.get("qa_execution_result_successor_paths") != sorted(c21_wsl_qa_execution_result_successor_paths()): errors.append("C21_WSL_QA_RESULT_REPOSITORY_INVALID")
+    rows=manifest.get("raw_checksums"); expected_rows={digest_path,"docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"}
+    if manifest.get("artifact_id") != "C21-WSL-QA-EXECUTION-RESULT-20260905" or manifest.get("package_id") != "C-21/WSL-EARLY-VALIDATION" or manifest.get("manifest_type") != "WSL_QA_EXECUTION_RESULT_PROJECTION" or manifest.get("event_sequence") != 495 or manifest.get("historical_event_sequence") != 494 or manifest.get("historical_raw_event_bytes") != 874441 or manifest.get("historical_raw_events_sha256") != "A8D822B390A8D5C96014EA80691E59ECB33E0FFE3B0A428B4741B0BEF8340862" or manifest.get("historical_events_sha256") != "6970AE6EC2B73B8BDE35B8DB113609270F4374BD8D59A6B808FADFFD471971A8" or manifest.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb" or manifest.get("record_parent_commit") != "772afbd5eb55791ca7b5002d58378437ea496750" or manifest.get("candidate_commit") != "a342d62391a44b349733d1468ac3b180761155ab" or manifest.get("runtime_commit") != "324eb169fedbce958d2e8cc29362deb7af433677" or manifest.get("product_validation") != "SUITABLE" or manifest.get("validation_scope") != "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY" or manifest.get("accepted") is not False or manifest.get("independent_tester_status") != "PENDING" or manifest.get("package_status") != "TEST_REVIEW_PENDING_INDEPENDENT_JUDGMENT" or manifest.get("c01_status") != "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT" or manifest.get("dir2_status") != "NOT_TRIGGERED" or manifest.get("record_successor_paths") != sorted(c21_wsl_qa_execution_result_successor_paths()) or manifest.get("record_successor_path_count") != 10 or manifest.get("record_successor_path_list_sha256") != "0CEDE4184ABEF2911EBA37F06B4323134822A930775858D305ADAC501897EBB5" or manifest.get("postcommit_exact_path_count") != 61 or manifest.get("postcommit_exact_path_list_sha256") != "6DD88D7F86ECE8302CB2072CB127E6FEF20D993F20812CDDF84FA1264ED828CC" or manifest.get("self_reference") is not False or not isinstance(rows,list) or {r.get("path") for r in rows if isinstance(r,Mapping)} != expected_rows: errors.append("C21_WSL_QA_RESULT_MANIFEST_INVALID")
+    elif any(not portable_row_matches(root,r["path"],r.get("bytes"),r.get("sha256")) for r in rows): errors.append("C21_WSL_QA_RESULT_MANIFEST_INVALID")
     return sorted(set(errors))
 
 

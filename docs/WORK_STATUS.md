@@ -1,3 +1,20 @@
+# C-21 WSL QA 실행 결과 — seq495
+
+- 담당: `seq495_result_binding`; 상태: `TEST_REVIEW_PENDING_INDEPENDENT_JUDGMENT`; ProductValidation=`SUITABLE` (승인된 WSL 범위만).
+- `a342d62391a44b349733d1468ac3b180761155ab`를 PG15/PG18RC에 배포·2회 verify하고 genuine `324eb169fedbce958d2e8cc29362deb7af433677` rollback/독립 관찰/candidate 복귀/cleanup을 완료했다. exact project residue는 container/network/volume `0/0/0`.
+- 환경 오류: pre-mutation SSH alias 2회, PowerShell quoting 1회, 로컬 PowerShell `@{u}` parse 1회; 모두 product valid failure 0이며 해소했다. 외부 SSH flood는 Main failure가 아니다.
+- 미실행: Telegram, Provider, ysna, browser Network, main merge. C-01 차단 유지, DIR-2 미발생.
+- 다음: frozen seq495 exact10을 독립 Tester가 판정한 뒤 Main이 acceptance/lease 회수 여부를 별도 event로 결정한다.
+- TDD: 신규 manifest 부재 RED 1건을 확인한 뒤 seq495 focused 3/3 PASS와 checker PASS를 확인했다. 첫 전체 tooling은 `142 tests / 467.659s / 13 failures`; seq495-current와 seq494 historical fixture 혼합 및 fast-path의 generic reason-code 누락으로 분류했다. 보완 후 실패목록 focused는 12건 중 11 PASS/1 FAIL, 남은 base ancestry reason-code를 복원한 단일 focused는 PASS다. 최종 전체 tooling 재실행 결과는 후속 마감 행에 기록한다.
+- 비제품 실행 오류: 로컬 Python 미설치 확인 2회, WSL 재호출 권한 거부 1회(재호출 금지 유지), D:\tmp sandbox write 거부 1회는 번들 Python 및 승인된 canonical worktree write로 해소했다. 동일 제품 실패로 집계하지 않는다.
+- 최종 전체 tooling 재실행: `142 tests / 540.521s / OK / exit0`. Windows global ignore 접근 경고는 있었으나 test failure/error는 0이다.
+- 독립 리뷰 C0/I2 REWORK: active recovery와 HANDOFF machine summary의 실행 전 legacy 값 모순, 3문서 coherent evidence 및 repository projection 변조 fail-open을 재현했다. reviewer mutation 회귀 테스트를 먼저 추가했고 projection-mode/base/head-relation 3개 RED를 확인했다.
+- Main verification 명칭 오타 1회: focused 실행 시 실제 클래스 `ProjectProgressContractTests` 대신 `ProjectProgressTest`를 지정해 3 loader error/exit1이 발생했다. 테스트 선택 오류이며 제품 실패 0; 정확한 클래스명으로 즉시 재실행해 위 RED를 확인했다.
+- REWORK 검증 명령 범위 오류 1회: 기존 seq495 전체 tooling 기준인 `tests.tooling.test_project_progress` 대신 `unittest discover -s tests/tooling`을 실행해 unrelated historical A13/A14/B12/G07 suite와 npm-cache까지 포함했다. 결과 `510 tests / 897.234s / 16 failures + 1 error / exit1`; npm-cache `EPERM` 1건과 historical fixture/current-tree·encoding mismatch 16건으로, reviewer focused 6 PASS 및 project checker PASS와 분리한다. 이 실패는 삭제하지 않고 올바른 project-progress 전체 파일 재실행 결과를 후속 기록한다.
+- REWORK 정식 검증: reviewer mutation table 포함 focused `6 tests / 2.529s / OK / exit0`; seq495 정식 전체 범위 `tests.tooling.test_project_progress`는 `145 tests / 642.358s / OK / exit0`. Windows global ignore 접근 경고 외 failure/error 0이다.
+- real-Git `_validate_git_projection` 잔여 fast-path도 공통 구조 guard를 경유하도록 보완한 뒤 focused `6 tests / 3.822s / OK / exit0`, 최종 정식 전체 `145 tests / 779.577s / OK / exit0`을 fresh 재확인했다.
+- 최종 마감 명령의 inline secret-pattern regex에서 PowerShell quote parser error 1회/exit1이 발생했다. 파일 변경·secret 출력·제품 실행은 없었고, regex를 제거한 안전한 read-only 마감 명령으로 history/exact/checker/diff를 재확인했다. 제품 실패 0이다.
+
 # Anvil 작업현황
 
 ## seq494 로컬 검증 마감 / 2026-09-05

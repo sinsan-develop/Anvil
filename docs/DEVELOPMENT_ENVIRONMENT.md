@@ -1,3 +1,10 @@
+# 2026-09-05 C-21 WSL 실제 실행 상태 (seq495)
+
+- 이 항목은 아래의 과거 준비/부분검증 기록을 삭제하거나 소급 수정하지 않고 후속 실행 사실만 추가한다.
+- WSL Test/Staging에서 candidate `a342d62391a44b349733d1468ac3b180761155ab`의 PG15/PG18RC deploy·verify 2회, genuine `324eb169fedbce958d2e8cc29362deb7af433677` application rollback과 독립 관찰, candidate 복귀가 PASS다.
+- cleanup 후 exact Compose project container/network/volume residue는 `0/0/0`; application current=candidate, previous=runtime324, checkout clean이다.
+- `.env`는 mode 600/owner root/content unchanged이며 Secret 원문을 기록하지 않았다. Telegram·Provider·ysna·browser Network는 실행하지 않았다.
+
 # Anvil 개발환경
 
 ## seq494 로컬 검증 마감 / 2026-09-05

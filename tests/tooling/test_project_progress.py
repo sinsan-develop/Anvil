@@ -2451,7 +2451,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_lr02a_acceptance_projection(invalid_manifest, accepted_bundle),
         )
 
-        repository = bundle["progress"]["repository"]
+        repository = accepted_bundle["progress"]["repository"]
         projection_paths = list(repository["exact_allowed_paths"])
         self.assertNotIn(
             "GIT_DESCENDANT_PATH_SET_MISMATCH",
@@ -2465,7 +2465,7 @@ class ProjectProgressContractTests(unittest.TestCase):
                 base_is_ancestor=True,
                 actual_changed_paths=projection_paths,
                 working_tree_mode=True,
-                progress=bundle["progress"],
+                progress=accepted_bundle["progress"],
             ),
         )
         self.assertIn(
@@ -5721,9 +5721,11 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
         manifest_path = (
-            ROOT
+            historical_root
             / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json"
         )
         self.assertTrue(manifest_path.is_file(), "seq494 rebind manifest is missing")
@@ -5769,7 +5771,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
         progress = bundle["progress"]
         repository = progress["repository"]
         active = progress["wsl_early_validation"]
@@ -5782,7 +5786,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(expected_action, active["next_action"])
         self.assertEqual(expected_safe_action, progress["next_safe_action"])
         handoff = checker.extract_handoff_summary(
-            (ROOT / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
+            (historical_root / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
         )
         self.assertEqual(expected_safe_action, handoff["next_safe_action"])
         self.assertEqual(expected_status, handoff["repository_push_status"])
@@ -5795,7 +5799,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
@@ -5807,10 +5811,12 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
@@ -5851,7 +5857,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
         repository = bundle["progress"]["repository"]
         candidate = "a342d62391a44b349733d1468ac3b180761155ab"
         remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
@@ -5891,7 +5899,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         self,
     ) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
         candidate = "a342d62391a44b349733d1468ac3b180761155ab"
         base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
         remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
@@ -5964,16 +5974,17 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_wsl_qa_resume_ready_gate_cannot_be_replaced_by_unrestricted_allowed(self):
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual("READY_FOR_APPROVED_WSL_QA", manifest["runtime_safety_gate"])
         manifest["runtime_safety_gate"] = "ALLOWED"
         self.assertIn("C21_WSL_QA_RESUME_REBIND_RUNTIME_GATE_INVALID", checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
 
     def test_c21_wsl_qa_resume_coherent_local_evidence_cannot_claim_external_success(self):
         checker = self.require_checker()
-        bundle = copy.deepcopy(checker.load_bundle(ROOT))
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+        historical_bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+        bundle = copy.deepcopy(historical_bundle)
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
         for document in (bundle["progress"]["wsl_early_validation"], bundle["events"]["events"][-1]["details"], manifest):
             document["local_product_evidence"]["external_execution"] = "PASS"
@@ -5981,8 +5992,9 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_wsl_qa_resume_coherent_predecessor_recovery_cannot_claim_new_candidate_push(self):
         checker = self.require_checker()
-        bundle = copy.deepcopy(checker.load_bundle(ROOT))
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+        historical_bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+        bundle = copy.deepcopy(historical_bundle)
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
         for doc in (bundle["progress"]["wsl_early_validation"], bundle["events"]["events"][-1]["details"], manifest):
             doc["predecessor_private_recovery"]["current_candidate_push"] = "PASS"
@@ -5993,13 +6005,263 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         for value in ("MAIN_DISPATCH_DEPLOY_NOW_WITHOUT_SCOPE_RECONFIRMATION", "OTHER_HOLD", " ", None):
             with self.subTest(value=value):
-                bundle = copy.deepcopy(checker.load_bundle(ROOT))
-                manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+                historical_bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+                bundle = copy.deepcopy(historical_bundle)
+                manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
                 self.assertEqual([], checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
                 for doc in (bundle["progress"]["wsl_early_validation"], bundle["events"]["events"][-1]["details"], manifest, bundle["handoff"]):
                     if value is None: doc.pop("runtime_next_action", None)
                     else: doc["runtime_next_action"] = value
                 self.assertIn("C21_WSL_QA_RESUME_REBIND_RUNTIME_NEXT_ACTION_INVALID", checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+
+    def test_c21_wsl_qa_execution_result_projection_is_strictly_scoped(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest_path = (
+            ROOT
+            / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_qa_execution_result_projection(bundle, manifest),
+        )
+        self.assertEqual("SUITABLE", manifest["product_validation"])
+        self.assertEqual(
+            "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY",
+            manifest["validation_scope"],
+        )
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("PENDING", manifest["independent_tester_status"])
+        self.assertEqual(
+            "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+            manifest["c01_status"],
+        )
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+
+    def test_c21_wsl_qa_execution_result_projection_rejects_evidence_promotion(self) -> None:
+        checker = self.require_checker()
+        original_bundle = checker.load_bundle(ROOT)
+        original_manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations = []
+        promoted = copy.deepcopy(original_manifest)
+        promoted["accepted"] = True
+        mutations.append(("accepted", copy.deepcopy(original_bundle), promoted, "C21_WSL_QA_RESULT_DECISION_BOUNDARY_INVALID"))
+        external = copy.deepcopy(original_manifest)
+        external["execution_result"]["excluded"]["provider"] = "PASS"
+        mutations.append(("provider", copy.deepcopy(original_bundle), external, "C21_WSL_QA_RESULT_EXECUTION_INVALID"))
+        residue = copy.deepcopy(original_manifest)
+        residue["execution_result"]["cleanup"]["volumes"] = 1
+        mutations.append(("residue", copy.deepcopy(original_bundle), residue, "C21_WSL_QA_RESULT_EXECUTION_INVALID"))
+        product_failure = copy.deepcopy(original_manifest)
+        product_failure["execution_result"]["deploy_attempts"][0]["product_valid_failure"] = True
+        mutations.append(("premutation_failure", copy.deepcopy(original_bundle), product_failure, "C21_WSL_QA_RESULT_EXECUTION_INVALID"))
+        history = copy.deepcopy(original_bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("history", history, copy.deepcopy(original_manifest), "C21_WSL_QA_RESULT_HISTORY_INVALID"))
+        for scenario, bundle, manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, manifest),
+                )
+
+    def test_c21_wsl_qa_execution_result_git_projection_is_exact(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+        }
+        precommit = dict(
+            common,
+            actual_head="772afbd5eb55791ca7b5002d58378437ea496750",
+            actual_changed_paths=sorted(checker.c21_wsl_qa_execution_result_parent_paths()),
+            control_descendant_paths=sorted(checker.c21_wsl_qa_execution_result_successor_paths()),
+            worktree_is_clean=False,
+            record_commit_is_direct=False,
+        )
+        self.assertEqual([], checker.validate_c21_wsl_qa_execution_result_git(repository, **precommit))
+        bad = dict(precommit, control_descendant_paths=precommit["control_descendant_paths"] + ["arbitrary.txt"])
+        self.assertIn("GIT_DESCENDANT_PATH_SET_MISMATCH", checker.validate_c21_wsl_qa_execution_result_git(repository, **bad))
+        postcommit = dict(
+            common,
+            actual_head="f" * 40,
+            actual_changed_paths=sorted(checker.c21_wsl_qa_execution_result_record_paths()),
+            control_descendant_paths=sorted(checker.c21_wsl_qa_execution_result_successor_paths()),
+            worktree_is_clean=True,
+            record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_c21_wsl_qa_execution_result_git(repository, **postcommit))
+        self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", checker.validate_c21_wsl_qa_execution_result_git(repository, **dict(postcommit, record_commit_is_direct=False)))
+
+    def test_c21_wsl_qa_execution_result_rejects_coherent_evidence_mutations(self) -> None:
+        checker = self.require_checker()
+        original_bundle = checker.load_bundle(ROOT)
+        original_manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json").read_text(encoding="utf-8")
+        )
+
+        def mutate_all(path, value):
+            bundle = copy.deepcopy(original_bundle)
+            manifest = copy.deepcopy(original_manifest)
+            for result in (
+                manifest["execution_result"],
+                bundle["events"]["events"][-1]["details"]["execution_result"],
+                bundle["progress"]["wsl_early_validation"]["execution_result"],
+            ):
+                target = result
+                for part in path[:-1]:
+                    target = target[part]
+                target[path[-1]] = value
+            return bundle, manifest
+
+        mutations = [
+            (("candidate_commit",), "0" * 40),
+            (("control_commit",), "0" * 40),
+            (("environment",), "PRODUCTION"),
+            (("targets",), ["POSTGRESQL_15"]),
+            (("deploy_attempts", 0, "reason"), "OTHER"),
+            (("deploy_attempts", 1, "cleanup_trap"), "FAIL"),
+            (("deploy_attempts", 2, "ssh_config"), "/tmp/config"),
+            (("candidate_deploy", "return_after_rollback"), "FAIL"),
+            (("verification", "migration"), "0012_run_authority"),
+            (("rollback", "from"), "0" * 40),
+            (("rollback_observation", "database_counts_before_after"), "2|1|1_CHANGED"),
+            (("final_state", "env_content"), "CHANGED"),
+            (("excluded", "telegram"), "PASS"),
+            (("evidence", "rollback_observer_scratch_sha256"), "0" * 64),
+        ]
+        for path, value in mutations:
+            with self.subTest(path=path):
+                bundle, manifest = mutate_all(path, value)
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, manifest),
+                    path,
+                )
+
+    def test_c21_wsl_qa_execution_result_rejects_manifest_and_recovery_mutations(self) -> None:
+        checker = self.require_checker()
+        original_bundle = checker.load_bundle(ROOT)
+        original_manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json").read_text(encoding="utf-8")
+        )
+        manifest_mutations = {
+            "record_parent_commit": "0" * 40,
+            "candidate_commit": "0" * 40,
+            "runtime_commit": "0" * 40,
+            "historical_raw_event_bytes": 1,
+            "historical_raw_events_sha256": "0" * 64,
+            "historical_events_sha256": "0" * 64,
+            "record_successor_path_count": 9,
+            "record_successor_path_list_sha256": "0" * 64,
+            "postcommit_exact_path_count": 60,
+            "postcommit_exact_path_list_sha256": "0" * 64,
+        }
+        for field, value in manifest_mutations.items():
+            with self.subTest(field=field):
+                manifest = copy.deepcopy(original_manifest)
+                manifest[field] = value
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(copy.deepcopy(original_bundle), manifest),
+                    field,
+                )
+        recovery_mutations = {
+            "candidate_push_status": "NOT_EXECUTED",
+            "wsl_access": "NOT_EXECUTED",
+            "postgres_15": "NOT_EXECUTED",
+            "postgres_18_rc": "NOT_EXECUTED",
+            "migration": "NOT_EXECUTED",
+            "api": "NOT_EXECUTED",
+            "authenticated_sse": "NOT_EXECUTED",
+            "last_event_id": "NOT_EXECUTED",
+            "same_origin": "NOT_EXECUTED",
+            "backup_restore": "NOT_EXECUTED",
+            "application_rollback": "NOT_EXECUTED",
+            "deployment": "NOT_EXECUTED",
+            "database": "NOT_EXECUTED",
+            "volume_cleanup": "NOT_EXECUTED",
+            "runtime_safety_gate": "READY_FOR_APPROVED_WSL_QA",
+            "runtime_next_action": "DISPATCH_NOW",
+        }
+        for field, value in recovery_mutations.items():
+            with self.subTest(field=field):
+                bundle = copy.deepcopy(original_bundle)
+                bundle["progress"]["wsl_early_validation"][field] = value
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, copy.deepcopy(original_manifest)),
+                    field,
+                )
+        handoff_mutations = {
+            "status": "ACTIVE",
+            "repository_push_status": "NOT_EXECUTED",
+            "candidate_push_status": "NOT_EXECUTED",
+            "deployment_status": "NOT_EXECUTED",
+            "runtime_safety_gate": "READY_FOR_APPROVED_WSL_QA",
+            "runtime_next_action": "DISPATCH_NOW",
+            "c01_status": "STARTED",
+            "dir2_status": "TRIGGERED",
+        }
+        for field, value in handoff_mutations.items():
+            with self.subTest(handoff_field=field):
+                bundle = copy.deepcopy(original_bundle)
+                bundle["handoff"][field] = value
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, copy.deepcopy(original_manifest)),
+                    field,
+                )
+
+    def test_c21_wsl_qa_execution_result_fast_path_preserves_generic_repository_guards(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        common = {
+            "actual_head": "772afbd5eb55791ca7b5002d58378437ea496750",
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            "base_is_ancestor": True,
+            "actual_changed_paths": sorted(checker.c21_wsl_qa_execution_result_parent_paths()),
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": sorted(checker.c21_wsl_qa_execution_result_successor_paths()),
+            "worktree_is_clean": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        cases = [
+            ("projection_mode", "TAMPERED", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("validated_base_commit", "0" * 40, "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("head_relation", "TAMPERED", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("branch", "other", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("upstream", "origin/other", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("remote_head", "0" * 40, "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("feature_remote_head", "0" * 40, "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1], "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("qa_execution_result_successor_paths", repository["qa_execution_result_successor_paths"][:-1], "GIT_DESCENDANT_PROJECTION_INVALID"),
+        ]
+        for field, value, reason in cases:
+            with self.subTest(field=field):
+                mutated = copy.deepcopy(repository)
+                mutated[field] = value
+                self.assertIn(reason, checker.validate_repository_projection(mutated, **common))
+        self.assertIn(
+            "GIT_VALIDATED_BASE_NOT_ANCESTOR",
+            checker.validate_repository_projection(repository, **dict(common, base_is_ancestor=False)),
+        )
+        real_git_bundle = copy.deepcopy(bundle)
+        real_git_bundle["progress"]["repository"]["projection_mode"] = "TAMPERED"
+        self.assertIn(
+            "GIT_DESCENDANT_PROJECTION_INVALID",
+            checker._validate_git_projection(real_git_bundle),
+        )
 
 if __name__ == "__main__":
     unittest.main()
