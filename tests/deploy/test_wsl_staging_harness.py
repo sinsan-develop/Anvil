@@ -817,7 +817,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             fixture_rollback.write_text(fixture_rollback.read_text(encoding="utf-8").replace(
                 'validate_wsl_candidate_manifest "$REPO" "$MANIFEST_REF" "$EXPECTED"',
                 'validate_wsl_candidate_binding "$REPO" "$MANIFEST_REF" "$EXPECTED"'), encoding="utf-8")
-            for slug, previous in (("pg15", "a" * 40), ("pg18rc", "b" * 40)):
+            for slug, previous in (("pg15", "324eb169fedbce958d2e8cc29362deb7af433677"), ("pg18rc", "324eb169fedbce958d2e8cc29362deb7af433677")):
                 path = root / "runtime" / slug; path.mkdir(parents=True, exist_ok=True); (path / "previous.sha").write_text(previous + "\n")
                 (path / "current.sha").write_text(candidate + "\n")
             env_file = root / ".env"
@@ -831,7 +831,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             subprocess.run(["bash", "-c", f"chmod 600 '{self._posix(env_file)}'"], check=True)
             bin_dir = root / "bin"; bin_dir.mkdir(); log = root / "docker.log"
             docker = bin_dir / "docker"
-            docker.write_text("#!/usr/bin/env bash\necho \"$*\" >> \"$ANVIL_DOCKER_LOG\"\n[[ \"$*\" == *anvil-wsl-web:bbbb* ]] && exit 1\n[[ \"$*\" == *anvil-wsl-web:aaaa* ]] && echo aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\nexit 0\n", encoding="utf-8")
+            docker.write_text("#!/usr/bin/env bash\necho \"$ANVIL_TARGET_SLUG:$*\" >> \"$ANVIL_DOCKER_LOG\"\n[[ \"$ANVIL_TARGET_SLUG\" == pg18rc ]] && exit 1\necho 324eb169fedbce958d2e8cc29362deb7af433677\nexit 0\n", encoding="utf-8")
             curl = bin_dir / "curl"; curl.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8")
             stat = bin_dir / "stat"; stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8")
             os.chmod(docker, 0o755); os.chmod(curl, 0o755); os.chmod(stat, 0o755)
@@ -840,9 +840,9 @@ class WslControlRuntimeTests(unittest.TestCase):
             self.assertNotEqual(0, result.returncode)
             self.assertTrue(log.exists(), result.stderr)
             calls = log.read_text(encoding="utf-8").splitlines()
-            self.assertTrue(any("anvil-wsl-web:aaaaaaaa" in call for call in calls))
-            self.assertTrue(any("anvil-wsl-web:bbbbbbbb" in call for call in calls))
-            self.assertFalse(any(call.startswith("compose") for call in calls))
+            self.assertTrue(any(call.startswith("pg15:image inspect") for call in calls))
+            self.assertTrue(any(call.startswith("pg18rc:image inspect") for call in calls))
+            self.assertFalse(any(":compose" in call for call in calls))
 
     def test_rejects_descendant_that_retains_candidate_era_verify_script(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -1405,6 +1405,66 @@ cleanup_wsl_test_volumes {candidate} '{self._posix(repo)}' {control_ref}
 
 
 
+
+class WslRollbackAllowlistUnitTests(unittest.TestCase):
+    PREVIOUS = "324eb169fedbce958d2e8cc29362deb7af433677"
+    EXPECTED = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
+
+    def _case(self, scenario):
+        with tempfile.TemporaryDirectory() as raw:
+            root = Path(raw); repo = root / "repo"; repo.mkdir()
+            control = root / "control" / "deploy" / "wsl"; control.mkdir(parents=True)
+            helper = WslCandidateManifestGuardTests()
+            git = lambda *args: helper._git(repo, *args)
+            git("init", "-b", "test-control"); git("config", "user.name", "Anvil Unit"); git("config", "user.email", "unit@example.invalid")
+            path = repo / "deploy/wsl/CandidateReleaseManifest.json"; path.parent.mkdir(parents=True)
+            doc = {"source": {"commit": self.EXPECTED}, "rollback": {"approved_commits": [self.EXPECTED, self.PREVIOUS]}}
+            if scenario == "malformed_allowlist": doc["rollback"]["approved_commits"] = "not-a-list"
+            if scenario == "malformed_sha": doc["rollback"]["approved_commits"] = [self.EXPECTED, "bad-sha"]
+            payload = b"not-json\n" if scenario == "malformed_json" else (json.dumps(doc) + "\n").encode()
+            if scenario != "missing_manifest": path.write_bytes(payload)
+            (repo / "fixture.txt").write_text("unit\n")
+            git("add", "."); git("commit", "-m", "immutable control")
+            ref = "refs/heads/test-control"; immutable = git("rev-parse", "HEAD")
+            checksum = "0" * 64 if scenario == "checksum_tamper" else hashlib.sha256(payload).hexdigest()
+            shutil.copy2(DEPLOY / "rollback.sh", control / "rollback.sh")
+            # Only the authorization/runtime gate is substituted in this isolated unit.
+            # Actual production guard exit22 and no-side-effect entrypoint tests remain separate.
+            (control / "candidate-manifest-guard.sh").write_text("validate_wsl_candidate_manifest() { return 0; }\n")
+            if scenario == "control_ref_race":
+                alternate = git("commit-tree", git("rev-parse", "HEAD^{tree}"), "-p", immutable, "-m", "racing control")
+                (control / "candidate-manifest-guard.sh").write_text(f'validate_wsl_candidate_manifest() {{ git -C "$1" update-ref "$2" {alternate}; }}\n')
+            common = (DEPLOY / "common.sh").read_text(encoding="utf-8")
+            common += '\nload_server_environment() { return 0; }\nstart_wsl_ingress() { return 0; }\nwsl_compose() { echo "compose:$ANVIL_TARGET_SLUG:$*" >> "$ANVIL_UNIT_LOG"; }\ndocker() { local image="${@: -1}"; printf "%s\\n" "${image#anvil-wsl-web:}"; }\n'
+            (control / "common.sh").write_text(common, encoding="utf-8")
+            for slug in ("pg15", "pg18rc"):
+                runtime = root / "runtime" / slug; runtime.mkdir(parents=True)
+                previous = "d" * 40 if scenario == "unapproved" or (scenario == "second_unapproved" and slug == "pg18rc") else self.PREVIOUS
+                (runtime / "previous.sha").write_text(previous + "\n"); (runtime / "current.sha").write_text(self.EXPECTED + "\n")
+            evidence = root / "evidence"; evidence.mkdir(); (evidence / "preserved.json").write_text("{}\n")
+            snapshot = lambda: {str(p.relative_to(root)): p.read_bytes() for directory in (root / "runtime", evidence) for p in directory.rglob("*") if p.is_file()}
+            before = snapshot(); log = root / "calls.log"
+            result = subprocess.run(["bash", helper._posix(control / "rollback.sh"), self.EXPECTED], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_WSL_DEPLOY_ROOT": helper._posix(root), "ANVIL_WSL_CONTROL_REPO": helper._posix(root / "control"),
+                    "ANVIL_WSL_APPLICATION_REPO": helper._posix(repo), "ANVIL_CANDIDATE_MANIFEST_REF": ref,
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum, "ANVIL_PYTHON": helper._posix(Path(sys.executable)), "ANVIL_UNIT_LOG": helper._posix(log)})
+            calls = log.read_text().splitlines() if log.exists() else []
+            if scenario == "approved":
+                self.assertEqual(0, result.returncode, result.stderr); self.assertEqual(2, len(calls))
+                for slug in ("pg15", "pg18rc"): self.assertEqual(self.PREVIOUS, (root / "runtime" / slug / "current.sha").read_text().strip())
+            else:
+                self.assertNotEqual(0, result.returncode, scenario)
+                self.assertEqual([], calls, scenario); self.assertEqual(before, snapshot(), scenario)
+
+    def test_approved_previous_is_accepted(self): self._case("approved")
+    def test_unapproved_well_formed_image_is_rejected(self): self._case("unapproved")
+    def test_second_target_unapproved_preserves_both_targets(self): self._case("second_unapproved")
+    def test_missing_manifest_is_rejected(self): self._case("missing_manifest")
+    def test_malformed_manifest_is_rejected(self): self._case("malformed_json")
+    def test_malformed_allowlist_is_rejected(self): self._case("malformed_allowlist")
+    def test_manifest_checksum_tamper_is_rejected(self): self._case("checksum_tamper")
+    def test_malformed_sha_allowlist_is_rejected(self): self._case("malformed_sha")
+    def test_control_ref_change_during_validation_is_rejected(self): self._case("control_ref_race")
 
 if __name__ == "__main__":
     unittest.main()

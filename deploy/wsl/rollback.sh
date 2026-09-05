@@ -10,7 +10,37 @@ REPO="${ANVIL_WSL_APPLICATION_REPO:-$ROOT/repo}"
 MANIFEST_REF="${ANVIL_CANDIDATE_MANIFEST_REF:?candidate manifest control ref is required}"
 : "${ANVIL_CANDIDATE_MANIFEST_SHA256:?candidate manifest checksum is required}"
 source "$SCRIPT_DIR/candidate-manifest-guard.sh"
+# Pin once before validation; subsequent policy reads never follow a mutable ref.
+CONTROL_COMMIT="$(git -C "$REPO" rev-parse --verify "$MANIFEST_REF^{commit}")" || exit 4
+require_exact_sha "$CONTROL_COMMIT" || exit $?
 validate_wsl_candidate_manifest "$REPO" "$MANIFEST_REF" "$EXPECTED"
+[[ "$(git -C "$REPO" rev-parse --verify "$MANIFEST_REF^{commit}")" == "$CONTROL_COMMIT" ]] || { echo 'control revision changed during rollback validation' >&2; exit 4; }
+PYTHON_BIN="${ANVIL_PYTHON:-python3}"
+APPROVED_COMMITS="$(git -C "$REPO" show "$CONTROL_COMMIT:deploy/wsl/CandidateReleaseManifest.json" | "$PYTHON_BIN" -c '
+import hashlib, json, re, sys
+raw = sys.stdin.buffer.read()
+expected, checksum = sys.argv[1:]
+if not re.fullmatch(r"[0-9a-fA-F]{64}", checksum) or hashlib.sha256(raw).hexdigest().lower() != checksum.lower():
+    raise SystemExit("rollback manifest checksum mismatch")
+try:
+    def unique_object(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate manifest key")
+            result[key] = value
+        return result
+    doc = json.loads(raw, object_pairs_hook=unique_object)
+    approved = doc["rollback"]["approved_commits"]
+    source_commit = doc["source"]["commit"]
+except (ValueError, KeyError, TypeError):
+    raise SystemExit("rollback manifest is malformed")
+if (not isinstance(approved, list) or not approved
+    or any(not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{40}", value) for value in approved)
+    or len(set(approved)) != len(approved) or expected not in approved or source_commit != expected):
+    raise SystemExit("rollback approved commit list is invalid")
+print("\n".join(approved))
+' "$EXPECTED" "$ANVIL_CANDIDATE_MANIFEST_SHA256")" || { echo 'rollback allowlist validation failed' >&2; exit 4; }
 load_server_environment "$ROOT/.env"
 declare -A previous_by_target
 for target in 15 18-rc; do
@@ -21,6 +51,7 @@ for target in 15 18-rc; do
   previous="$(tr -d '\r\n' < "$previous_file")"
   require_exact_sha "$previous" || exit $?
   [[ "$previous" != "$EXPECTED" ]] || { echo 'rollback requires a different previous revision' >&2; exit 4; }
+  grep -Fxq "$previous" <<< "$APPROVED_COMMITS" || { echo "previous application revision is not approved for $target" >&2; exit 4; }
   [[ "$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "anvil-wsl-web:$previous")" == "$previous" ]] || { echo 'previous image revision mismatch' >&2; exit 4; }
   previous_by_target["$target"]="$previous"
 done
