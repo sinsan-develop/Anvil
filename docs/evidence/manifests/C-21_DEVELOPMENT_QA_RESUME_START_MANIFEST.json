@@ -1,0 +1,83 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C21_DEVELOPMENT_QA_RESUME_START_PROJECTION",
+  "manifest_id": "C21-DEVELOPMENT-QA-RESUME-START-20260905",
+  "event_sequence": 501,
+  "appended_event_count": 3,
+  "created_at": "2026-09-05T20:30:00+09:00",
+  "parent_commit": "4178ae78db2c48e176e8543364d09787e54bb4ad",
+  "historical_event_sequence": 498,
+  "historical_full_file_bytes": 882505,
+  "historical_full_file_sha256": "B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78",
+  "historical_event_object_prefix_bytes": 882302,
+  "historical_event_object_prefix_sha256": "3659A9808E97F6927E983CFCCD617BF5B1740D60CCDFE16D39D8107C8780C955",
+  "historical_events_canonical_sha256": "5BF5777954E769602CD70D9B27AE74836ABD5FF3FEE63A85DD1FDABF2D761BE0",
+  "proposal_classification": "SCRATCH_ONLY_MAIN_REVIEW_INPUT_NOT_AUTHORITY",
+  "execution_authority_path": "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
+  "execution_authority_sha256": "2A666150A935D57715B5CA6876D5CD594E35B8EC7710CD65E8F893237313DA2B",
+  "start_exact_path_count": 10,
+  "start_exact_path_list_sha256": "9BD9DDE432F5E4855B2AF284E00DEDEF8DC45CC70CC22E7B230B917BB975B058",
+  "start_exact_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
+    "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "developer_exact_path_count": 7,
+  "developer_exact_path_list_sha256": "15F82A54E7A377DB724273185BF8F03C20C9CBB689A43C1B04A3794A89914DE9",
+  "developer_exact_paths": [
+    "deploy/wsl/verify-c21-development-boundaries.sh",
+    "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
+    "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
+    "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
+    "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+    "tests/api/test_c21_telegram_outbound_free_qa.py",
+    "tests/browser/c21-network-probe.mjs"
+  ],
+  "worker_lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+  "write_lease_id": "write-lease-c21-development-qa-resume-20260905-001",
+  "execution_fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+  "write_fencing_token": "c21-development-qa-write-fence-epoch-1-4178ae7",
+  "status": "ACTIVE_DEVELOPMENT_QA",
+  "accepted": false,
+  "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+  "dir2_status": "NOT_TRIGGERED",
+  "provider_runtime_status_port": "NOT_IMPLEMENTED_RUNTIME_PROVIDER_STATUS_PORT",
+  "browser_scope": "PAGE_EVALUATE_FETCH_SCOPE_ONLY",
+  "telegram_scope": "OUTBOUND_FREE_SCOPE_ONLY",
+  "external_execution": "NOT_EXECUTED",
+  "raw_checksums": [
+    {
+      "path": "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
+      "bytes": 2563,
+      "sha256": "2A666150A935D57715B5CA6876D5CD594E35B8EC7710CD65E8F893237313DA2B"
+    },
+    {
+      "path": "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
+      "bytes": 436,
+      "sha256": "1A368B584880FE61272D7884139C6034E64678C3CA6A7C3A572FB9BFD4EFD220"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
+      "bytes": 907,
+      "sha256": "2BC5F8A26F0CAF183189E7D29AF33B21179A52740B15C0A1DA0A771697982790"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 1045954,
+      "sha256": "50D80CDC04486417F0079B1997E4CF194C90D86F57925D7228CBEC352475EB0E"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 360300,
+      "sha256": "E8B9E51C59D93545CD866854C8EF2193DD0F0AC35C121A5B1203AD8C72B35E6D"
+    }
+  ],
+  "self_reference": false
+}

@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-wsl-qa_resume-candidate-rebind-20260905",
-  "event_sequence": 498,
-  "updated_at": "2026-09-05T19:15:00+09:00",
-  "last_event_id": "evt_c21_independent_test_judgment_recorded",
+  "snapshot_id": "snapshot-c21-development-qa-resume-seq501",
+  "event_sequence": 501,
+  "updated_at": "2026-09-05T20:30:00+09:00",
+  "last_event_id": "evt_c21_development_qa_package_resumed",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "TEST_REVIEW",
+  "status": "ACTIVE_DEVELOPMENT_QA",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -47,9 +47,47 @@
     "B-11",
     "B-12"
   ],
-  "active_agent": null,
-  "write_lease": null,
-  "worker_lease": null,
+  "active_agent": "developer-primary",
+  "write_lease": {
+    "lease_id": "write-lease-c21-development-qa-resume-20260905-001",
+    "worker_lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "DEVELOPMENT-QA-RESUME",
+    "write_epoch": 1,
+    "execution_fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+    "write_fencing_token": "c21-development-qa-write-fence-epoch-1-4178ae7",
+    "fencing_token": "c21-development-qa-write-fence-epoch-1-4178ae7",
+    "status": "ACTIVE",
+    "path_scope": [
+      "deploy/wsl/verify-c21-development-boundaries.sh",
+      "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
+      "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
+      "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+      "tests/api/test_c21_telegram_outbound_free_qa.py",
+      "tests/browser/c21-network-probe.mjs"
+    ],
+    "paths": [
+      "deploy/wsl/verify-c21-development-boundaries.sh",
+      "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
+      "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
+      "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+      "tests/api/test_c21_telegram_outbound_free_qa.py",
+      "tests/browser/c21-network-probe.mjs"
+    ]
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "DEVELOPMENT-QA-RESUME",
+    "lease_epoch": 1,
+    "fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+    "execution_fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+    "status": "ACTIVE"
+  },
   "completed_c21_backup_portability_write_lease": {
     "lease_id": "write-lease-c21-backup-portability-20260903-004",
     "worker_lease_id": "worker-lease-c21-backup-portability-20260903-004",
@@ -1127,7 +1165,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "B81E6C0889BC2763CE0A0A3BA2461C8F94723A2B08353808B8775AD8E9AE3AC8"
+      "sha256": "50D80CDC04486417F0079B1997E4CF194C90D86F57925D7228CBEC352475EB0E"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1147,7 +1185,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "755B2145D179002DE41C6C928E61B7FC4D92336897ECB02A77575B36BED6ACA7"
+      "sha256": "E8B9E51C59D93545CD866854C8EF2193DD0F0AC35C121A5B1203AD8C72B35E6D"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1175,7 +1213,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78"
+      "sha256": "8AB734F3186E7583D2A1FB41C3197D2D80F0E1798F923BD6394CBF81B5CE508C"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1230,7 +1268,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "신산님의 browser Network, Provider, Telegram 검증 evidence를 받은 뒤 C-21 전체를 재판정한다. C-01과 DIR-2는 시작하지 않는다.",
+  "next_safe_action": "developer-primary가 exact7 범위에서 outbound-free C-21 개발 QA를 수행한다. C-01, DIR-2, ysna, main, 실제 Provider/Telegram 외부 호출은 시작하지 않는다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1342,7 +1380,7 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_C21_INDEPENDENT_JUDGMENT_PARENT_EXACT61_RECORD9",
+    "head_relation": "FEATURE_WORKTREE_C21_DEVELOPMENT_QA_RESUME_PARENT_EXACT64_RECORD10",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -1373,6 +1411,7 @@
       "docs/WORK_STATUS.md",
       "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
       "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
       "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
       "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
@@ -1392,6 +1431,7 @@
       "docs/progress/build-progress.json",
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
       "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
       "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
@@ -1406,6 +1446,8 @@
       "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
       "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+      "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
       "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
       "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
@@ -1416,8 +1458,8 @@
       "tests/tooling/test_project_progress.py"
     ],
     "observed_at": "2026-09-05T12:24:24+09:00",
-    "worktree_status": "SEQ498_INDEPENDENT_JUDGMENT_EXACT9_DIRTY_PENDING_DIRECT_CHILD_COMMIT",
-    "local_head": "9a7a6144bcd0a7d38fce291610f40e9608a38309",
+    "worktree_status": "SEQ501_DEVELOPMENT_QA_RESUME_EXACT10_DIRTY",
+    "local_head": "4178ae78db2c48e176e8543364d09787e54bb4ad",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact56",
     "candidate_push_status": "NOT_EXECUTED_PENDING_LOCAL_SEQ494_COMMIT_EXTERNAL_SCOPE_RECONFIRMATION",
@@ -1585,6 +1627,27 @@
       "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
+    ],
+    "development_qa_resume_start_successor_paths": [
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
+      "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "development_qa_exact_paths": [
+      "deploy/wsl/verify-c21-development-boundaries.sh",
+      "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
+      "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
+      "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+      "tests/api/test_c21_telegram_outbound_free_qa.py",
+      "tests/browser/c21-network-probe.mjs"
     ]
   },
   "a01_precondition": {
@@ -1690,7 +1753,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C21_WSL_EARLY_VALIDATION_APPROVED_AND_ACTIVE"
+      "C21_DEVELOPMENT_QA_RESUMED_WITHIN_APPROVED_SCOPE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1741,35 +1804,27 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-C-21-WSL-EARLY-VALIDATION-20260904-001",
-    "path": "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
-    "sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
-    "invocation_path": "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
-    "invocation_sha256": "F6128710A539124F1636CADB20AA94EFE1A87981C4B6C4D3AA23EA3F5B71D531",
-    "revision_classification": "HUMAN_APPROVED_SCOPE_ORDER_AND_IMPORTANT_RISK_CHANGE",
-    "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
-    "dispatch_base": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "result_status": "TEST_REVIEW",
-    "package_status": "BLOCKED_NOT_ACCEPTED",
-    "executor": "developer-primary-wsl",
-    "worker_lease_id": "worker-lease-c21-wsl-successor-20260904-001",
-    "write_lease_id": "write-lease-c21-wsl-successor-20260904-001",
-    "allowed_path_count": 17,
-    "runtime_validation": "WSL_QA_COMPLETED_SCOPE_LIMITED",
-    "telegram": "NOT_EXECUTED",
-    "provider": "NOT_EXECUTED",
+    "artifact_id": "WI-C-21-DEVELOPMENT-QA-RESUME-20260905-001",
+    "path": "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
+    "sha256": "2A666150A935D57715B5CA6876D5CD594E35B8EC7710CD65E8F893237313DA2B",
+    "invocation_path": "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
+    "invocation_sha256": "1A368B584880FE61272D7884139C6034E64678C3CA6A7C3A572FB9BFD4EFD220",
+    "revision_classification": "MAIN_INTERNAL_IMPLEMENTATION_AND_QA_CONTINUATION",
+    "dispatch_base": "4178ae78db2c48e176e8543364d09787e54bb4ad",
+    "result_status": "IN_PROGRESS",
+    "package_status": "ACTIVE_DEVELOPMENT_QA",
+    "executor": "developer-primary",
+    "worker_lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+    "write_lease_id": "write-lease-c21-development-qa-resume-20260905-001",
+    "allowed_path_count": 7,
+    "runtime_validation": "PENDING_DEVELOPMENT_QA",
+    "provider": "NONBILLING_TEST_DOUBLE_ONLY",
+    "telegram": "OUTBOUND_FREE_ONLY",
+    "browser": "PAGE_EVALUATE_FETCH_SCOPE_ONLY",
     "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
-    "independent_tester_status": "BLOCKED_NOT_ACCEPTED",
+    "dir2_status": "NOT_TRIGGERED",
     "accepted": false,
-    "runtime_next_action": "HOLD_USER_VALIDATION_REQUIRED",
-    "criteria": {
-      "1": "PASS_SCOPE_LIMITED",
-      "2": "PARTIAL_BLOCKED",
-      "3": "PARTIAL_BLOCKED",
-      "4": "BLOCKED_NOT_EXECUTED",
-      "5": "BLOCKED_NOT_EXECUTED",
-      "6": "PASS"
-    }
+    "runtime_next_action": "EXECUTE_C21_DEVELOPMENT_QA_EXACT7"
   },
   "accepted_c21_backup_portability_work_instruction": {
     "artifact_id": "WI-C-21-LR-02C-BACKUP-PORTABILITY-R1-20260903-001",
@@ -1882,8 +1937,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
-    "manifest_path": "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
+    "manifest_path": "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1904,7 +1959,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78"
+      "sha256": "8AB734F3186E7583D2A1FB41C3197D2D80F0E1798F923BD6394CBF81B5CE508C"
     }
   },
   "next_work_package": {
@@ -2304,9 +2359,9 @@
       "6": "PASS"
     }
   },
-  "runtime_safety_gate": "C21_BLOCKED_NOT_ACCEPTED",
-  "snapshot_hash": "ECB8EB1749AECF2F6DCCD4E9AA864ADDAF8D792847E4BC77B94EC71592492895",
-  "runtime_next_action": "HOLD_USER_VALIDATION_REQUIRED",
+  "runtime_safety_gate": "ACTIVE_DEVELOPMENT_QA_EXACT7",
+  "snapshot_hash": "9E0AFEF35AE6B8172F0D25BDED9947D9973240146333D48C5A17A26D78B4D47D",
+  "runtime_next_action": "EXECUTE_C21_DEVELOPMENT_QA_EXACT7",
   "c21_independent_judgment": {
     "verdict": "BLOCKED_NOT_ACCEPTED",
     "accepted": false,
@@ -2336,5 +2391,21 @@
     "event_sequence": 498,
     "report_path": "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
     "manifest_path": "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
+  },
+  "development_qa_resume": {
+    "event_sequence": 501,
+    "status": "ACTIVE_DEVELOPMENT_QA",
+    "accepted": false,
+    "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+    "dir2_status": "NOT_TRIGGERED",
+    "runtime_next_action": "EXECUTE_C21_DEVELOPMENT_QA_EXACT7",
+    "provider_runtime_status_port": "NOT_IMPLEMENTED_RUNTIME_PROVIDER_STATUS_PORT",
+    "provider_scope": "PASS_ELIGIBLE_SCOPE_LIMITED_TEST_DOUBLE",
+    "browser_scope": "PAGE_EVALUATE_FETCH_SCOPE_ONLY",
+    "telegram_scope": "OUTBOUND_FREE_SCOPE_ONLY",
+    "external_provider_calls": "NOT_EXECUTED",
+    "external_telegram_outbound": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "main_merge": "NOT_EXECUTED"
   }
 }

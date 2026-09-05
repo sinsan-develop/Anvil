@@ -4360,6 +4360,17 @@ class ProjectProgressContractTests(unittest.TestCase):
         subprocess.run(["git", "checkout", "--quiet", "--detach", commit], cwd=repo, check=True)
         return checker.load_bundle(repo), repo
 
+    def _independent_judgment_bundle(self, checker):
+        """Load seq498 plus its intentionally untracked tester authority source."""
+        bundle, repo = self._historical_bundle(
+            checker, "4178ae78db2c48e176e8543364d09787e54bb4ad"
+        )
+        source = Path(".superpowers/sdd/Anvil_작업계획서_v1/seq496-c21-independent-judgment.md")
+        destination = repo / source
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / source, destination)
+        return bundle, repo
+
     def test_c21_wsl_fresh_clone_candidate_rebind_projection_binds_exact_contracts(
         self,
     ) -> None:
@@ -6275,8 +6286,8 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_independent_judgment_projection_is_blocked_not_accepted(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest_path = ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
+        bundle, historical_root = self._independent_judgment_bundle(checker)
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
         self.assertTrue(manifest_path.is_file())
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_independent_judgment_projection(bundle, manifest))
@@ -6289,8 +6300,8 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_independent_judgment_rejects_revocation_order_and_lease_mutations(self) -> None:
         checker = self.require_checker()
-        original = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        original, historical_root = self._independent_judgment_bundle(checker)
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_independent_judgment_projection(original, manifest))
         mutations = []
         swapped = copy.deepcopy(original)
@@ -6323,8 +6334,8 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_independent_judgment_rejects_coherent_decision_promotion(self) -> None:
         checker = self.require_checker()
-        original = checker.load_bundle(ROOT)
-        original_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        original, historical_root = self._independent_judgment_bundle(checker)
+        original_manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
 
         def mutate_all(field, value):
             bundle = copy.deepcopy(original)
@@ -6354,8 +6365,8 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_independent_judgment_rejects_history_hash_and_repository_mutations(self) -> None:
         checker = self.require_checker()
-        original = checker.load_bundle(ROOT)
-        original_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        original, historical_root = self._independent_judgment_bundle(checker)
+        original_manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
         history = copy.deepcopy(original)
         history["events"]["events"][0]["event_id"] += "-tampered"
         self.assertTrue(checker.validate_c21_independent_judgment_projection(history, copy.deepcopy(original_manifest)))
@@ -6386,8 +6397,8 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_independent_judgment_rejects_all_binding_event_and_digest_mutations(self) -> None:
         checker = self.require_checker()
-        original = checker.load_bundle(ROOT)
-        original_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        original, historical_root = self._independent_judgment_bundle(checker)
+        original_manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
         for field, value in (
             ("judgment_source_sha256", "0" * 64),
             ("work_instruction_sha256", "0" * 64),
@@ -6418,7 +6429,7 @@ class ProjectProgressContractTests(unittest.TestCase):
                 for part in parts[:-1]: target = target[part]
                 target[parts[-1]] = value
                 self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, copy.deepcopy(original_manifest)))
-        digest = json.loads((ROOT / "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json").read_text(encoding="utf-8"))
+        digest = json.loads((historical_root / "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json").read_text(encoding="utf-8"))
         for path, value in (
             (("progress", "bytes"), 1), (("progress", "canonical_json_sha256"), "0" * 64),
             (("handoff", "bytes"), 1), (("handoff", "machine_summary_canonical_sha256"), "0" * 64),
@@ -6433,7 +6444,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_independent_judgment_real_git_fast_path_preserves_structural_guards(self) -> None:
         checker = self.require_checker()
-        original = checker.load_bundle(ROOT)
+        original, _ = self._independent_judgment_bundle(checker)
         mutations = (
             ("feature_remote", "origin/tampered"),
             ("feature_remote_head", "0" * 40),
@@ -6457,6 +6468,169 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertIn("## 근거", text)
         self.assertIn("## lease 종료와 경계", text)
         self.assertFalse(any(line.startswith("+") for line in text.splitlines()))
+
+    def test_c21_development_qa_resume_start_projection_activates_exact_leases(self) -> None:
+        checker = self.require_checker()
+        manifest_path = ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file(), "development QA resume start manifest is missing")
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        self.assertEqual(501, bundle["progress"]["event_sequence"])
+        self.assertEqual("ACTIVE_DEVELOPMENT_QA", bundle["progress"]["status"])
+        self.assertEqual("developer-primary", bundle["progress"]["active_agent"])
+        self.assertEqual(
+            "worker-lease-c21-development-qa-resume-20260905-001",
+            bundle["progress"]["worker_lease"]["lease_id"],
+        )
+        self.assertEqual(
+            "write-lease-c21-development-qa-resume-20260905-001",
+            bundle["progress"]["write_lease"]["lease_id"],
+        )
+
+    def test_c21_development_qa_resume_rejects_event_fencing_and_decision_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        mutations = []
+        for index, path, value in (
+            (-3, "event_type", "PACKAGE_RESUMED"),
+            (-3, "details.execution_fencing_token", "tampered"),
+            (-2, "details.write_fencing_token", "tampered"),
+            (-2, "details.paths", ["other"]),
+            (-1, "details.reason", "tampered"),
+        ):
+            mutated = copy.deepcopy(bundle)
+            target = mutated["events"]["events"][index]
+            parts = path.split(".")
+            for part in parts[:-1]:
+                target = target[part]
+            target[parts[-1]] = value
+            mutations.append((path, mutated, copy.deepcopy(manifest)))
+        for field, value in (
+            ("status", "TEST_REVIEW"),
+            ("active_agent", None),
+            ("worker_lease", None),
+            ("write_lease", None),
+        ):
+            mutated = copy.deepcopy(bundle)
+            mutated["progress"][field] = value
+            mutations.append((field, mutated, copy.deepcopy(manifest)))
+        for field, value in (
+            ("accepted", True),
+            ("c01_status", "STARTED"),
+            ("dir2_status", "TRIGGERED"),
+            ("runtime_next_action", "HOLD_USER_VALIDATION_REQUIRED"),
+        ):
+            mutated = copy.deepcopy(bundle)
+            mutated["progress"]["development_qa_resume"][field] = value
+            mutations.append((field, mutated, copy.deepcopy(manifest)))
+        for scenario, mutated_bundle, mutated_manifest in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(mutated_bundle, mutated_manifest))
+
+    def test_c21_development_qa_resume_rejects_history_manifest_and_exact_scope_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        history = copy.deepcopy(bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(history, copy.deepcopy(manifest)))
+        for field, value in (
+            ("historical_full_file_bytes", 1),
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_bytes", 1),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("historical_events_canonical_sha256", "0" * 64),
+            ("start_exact_path_count", 9),
+            ("start_exact_path_list_sha256", "0" * 64),
+            ("developer_exact_path_count", 6),
+            ("developer_exact_path_list_sha256", "0" * 64),
+        ):
+            mutated = copy.deepcopy(manifest)
+            mutated[field] = value
+            self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(copy.deepcopy(bundle), mutated), field)
+
+    def test_c21_development_qa_resume_distinguishes_full_blob_prefix_and_execution_authority(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        self.assertNotIn("proposal_sha256", manifest)
+        self.assertEqual("SCRATCH_ONLY_MAIN_REVIEW_INPUT_NOT_AUTHORITY", manifest["proposal_classification"])
+        self.assertEqual(882505, manifest["historical_full_file_bytes"])
+        self.assertEqual("B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78", manifest["historical_full_file_sha256"])
+        self.assertEqual(882302, manifest["historical_event_object_prefix_bytes"])
+        self.assertEqual("3659A9808E97F6927E983CFCCD617BF5B1740D60CCDFE16D39D8107C8780C955", manifest["historical_event_object_prefix_sha256"])
+        self.assertEqual("docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md", manifest["execution_authority_path"])
+        for field, value in (
+            ("proposal_classification", "APPROVED_AUTHORITY"),
+            ("historical_full_file_bytes", 1),
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_bytes", 1),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("execution_authority_path", "other"),
+            ("execution_authority_sha256", "0" * 64),
+        ):
+            with self.subTest(field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = value
+                self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(copy.deepcopy(bundle), mutated))
+
+    def test_c21_development_qa_resume_public_and_real_git_paths_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        exact64 = sorted(checker.c21_independent_judgment_record_paths())
+        exact10 = sorted(checker.c21_development_qa_resume_start_paths())
+        common = {
+            "actual_head": repository["local_head"],
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact64,
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": exact10,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        for field, value in (
+            ("remote_head", "0" * 40),
+            ("feature_remote", "origin/tampered"),
+            ("feature_remote_head", "0" * 40),
+            ("branch", "other"),
+            ("upstream", "origin/other"),
+            ("local_head", "0" * 40),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("worktree_status", "CLEAN"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                mutated = copy.deepcopy(repository)
+                mutated[field] = value
+                self.assertTrue(checker.validate_repository_projection(mutated, **common))
+                real = copy.deepcopy(bundle)
+                real["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(real))
+        for field, value in (
+            ("actual_remote_head", "0" * 40),
+            ("actual_feature_remote_head", "0" * 40),
+            ("actual_changed_paths", exact64[:-1]),
+            ("working_tree_mode", False),
+            ("control_descendant_paths", exact10[:-1]),
+            ("worktree_is_clean", True),
+            ("base_is_ancestor", False),
+            ("control_runtime_record_commit_is_direct", True),
+        ):
+            with self.subTest(actual_field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(common, **{field: value})))
 
 if __name__ == "__main__":
     unittest.main()

@@ -572,3 +572,42 @@
 - 문서 상태: `docs/DEVELOPMENT_ENVIRONMENT.md`의 seq486/93c58 candidate와 승인 대기 문구는 오래된 상태다. 현재 실행 근거는 최신 checkpoint와 CandidateReleaseManifest이며 환경 문서 정정은 후속 정상 문서 checkpoint에서 수행한다.
 - 미검증·다음 조치: 새 candidate의 WSL PG15/PG18 runtime·migration/API/SSE/backup/restore/rollback/cleanup은 아직 미실행이다. 독립 review 뒤 Main이 승인된 private refs push·복구 검증과 WSL gate를 계속한다. Telegram·Provider 실호출은 제외하며 C-01은 C-21 독립 판정 전 차단한다.
 - 최종 관련 검증: seq491 focused 5개와 seq490 immutable content1개 `6 PASS,111 deselected`. WSL harness 첫 실행은 `46 PASS,2 환경 FAIL,1 SKIP`; Windows subprocess의 native PATH와 POSIX separator 혼합이 두 fixture에서 중첩 Bash 실패를 만들었다. Main이 반복 실행 경계를 직접 인수하여 테스트 세 PATH 지점을 `str(bin_dir)+os.pathsep+os.environ['PATH']`로 수정했고 두 실패 node 재검증 `2 PASS,47 deselected`(17.01s, exit0)를 확인했다. 총 48개 node 통과, PyYAML parser1개 skip은 실제 WSL Compose config 두 target PASS로 별도 충족했다. 전체 suite를 반복 실행하지 않았다. Main의 WSL 임시 QA 경로도 rmdir exit0로 정리했다.
+# C-21 seq499 개발 QA 재개 start projection 진행
+
+- 담당: `seq499_qa_resume`; 상태: `IN_PROGRESS_TDD_RED_PREPARATION`; 기준 HEAD `4178ae78db2c48e176e8543364d09787e54bb4ad`.
+- Main 검토 입력: scratch proposal SHA-256 `9A4DAFF9E2D6A86553AB88977D7AEBD56967FA862C12C8C3A18DA7D0985B3837`. 이는 `SCRATCH_ONLY_MAIN_REVIEW_INPUT_NOT_AUTHORITY`이며 승인 기준이나 실행 권위가 아니다. tracked `C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md`가 exact7 실행의 canonical authority다.
+- 현재 변경: start exact10 중 WorkInstruction, invocation prompt, WORK_STATUS. seq499~501 Event·lease와 manifest/digest/checker/test는 아직 materialize하지 않았다.
+- Provider runtime 9-status/model/capability/drift port는 `NOT_IMPLEMENTED_RUNTIME_PROVIDER_STATUS_PORT`; browser는 page.evaluate/fetch scope only; Telegram은 outbound-free scope only다.
+- 외부 실행, commit, push, WSL/DB/browser/Provider/Telegram/ysna/main은 `NOT_EXECUTED`; 기존 seq1~498은 불변이다.
+- 오류: 없음. 다음 조치: RED mutation 계약 추가 후 seq499→501 start projection을 생성하고 full fresh 검증한다.
+
+### seq501 start projection 인수 및 full tooling 보완
+
+- 인수 기준: `4178ae78db2c48e176e8543364d09787e54bb4ad`; 기존 dirty exact10과 seq1~498 bytes를 보존했다.
+- `SEQ501_DTMP_SANDBOX_WRITE_DENIED` 1회: materializer 최초 실행이 `docs/progress/build-progress.json` 쓰기에서 `PermissionError`로 중단됐다. 제품 실패가 아니며 승인된 `D:\tmp` 격리 worktree 쓰기 권한으로 같은 generator를 재실행해 해소했다.
+- `SEQ501_HISTORICAL_SEQ498_CURRENT_BUNDLE_MIX` 1회: full tooling 최초 실행은 `151 passed, 4 failed in 582.51s`였다. seq498 독립 판정 계약 네 개가 현재 seq501 bundle을 읽어 과거 판정과 재개 projection을 혼합한 fixture 오류였다.
+- TDD 보완: 네 실패를 RED로 확인한 뒤 `4178ae7` detached historical bundle과 checksum이 결박된 untracked tester authority source를 함께 구성하는 fixture로 분리했다. 관련 focused 재검증은 `4 passed, 151 deselected in 27.95s`다.
+- 위 두 fingerprint는 각각 1회이며 동일 유효 제품 실패 3회 조건은 발생하지 않았다. commit, push, WSL, DB, browser, Provider, Telegram 외부 실행은 하지 않았다.
+
+#### seq501 start projection 완료 검증
+
+- checker/focused 재결박: `G-05 project progress contract: PASS sequence=501 reporting=AUTO_CONTINUE`; seq501 및 보완 대상 focused `7 passed, 148 deselected in 27.56s`.
+- full tooling 재실행: `155 passed in 590.28s`, exit 0. 최초 4개 historical fixture 실패는 모두 해소됐다.
+- generator 두 번째 cycle은 exact10 전체 `IDEMPOTENCE_CHANGED=0`; `git diff --check` PASS, dirty path는 start projection exact10과 일치한다.
+- 상태: `COMPLETED_FOR_MAIN_REVIEW`; commit, push, WSL/DB/browser/Provider/Telegram 실행은 금지대로 수행하지 않았다. 다음 안전 조치는 Main의 diff·계보 검토 후 developer-primary에게 exact7 QA를 전달하는 것이다.
+
+### seq501 독립 review I-1/I-2 rework
+
+- 판정 입력: independent review `SPEC FAIL / QUALITY REWORK_REQUIRED / C0 / I2`를 수락했다.
+- `SEQ501_SCRATCH_PROPOSAL_AUTHORITY_FAIL_OPEN_I1` 1회: 비권위 scratch proposal hash가 manifest에 dangling field로 남고 WORK_STATUS가 이를 승인 기준으로 오표기했다. proposal hash binding을 제거하고 scratch를 Main 검토 입력으로, tracked WI를 canonical execution authority로 분리한다.
+- history scope를 분리한다. seq498 Git blob 전체는 `882505` bytes / `B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78`; 현재 append-only 파일의 seq1~498 event-object prefix는 `882302` bytes / `3659A9808E97F6927E983CFCCD617BF5B1740D60CCDFE16D39D8107C8780C955`; canonical events는 `5BF5777954E769602CD70D9B27AE74836ABD5FF3FEE63A85DD1FDABF2D761BE0`다.
+- `SEQ501_GIT_FAST_PATH_UNDERCONSTRAINED_I2` 1회: seq501 public validator가 remote/committed exact64/working-tree mode 일부 mutation을 허용했다. 신규 mutation test RED `2 failed, 155 deselected`; checksum stale을 제거한 재실행에서도 I1 proposal 잔존과 I2 fail-open을 정확히 검출했다.
+- 동일 fingerprint 반복은 각각 1회다. commit, push, WSL, DB, browser, Provider, Telegram 외부 실행은 계속 금지한다.
+
+#### seq501 I-1/I-2 rework 완료 검증
+
+- GREEN: scratch proposal hash binding을 제거하고 비권위 검토 입력으로 고정했다. manifest는 tracked WI path/hash를 실행 권위로 결박하고 seq498 full Git blob, append-only event-object prefix, canonical event hash를 서로 다른 필드로 검증한다.
+- GREEN: seq501 public/real-Git 경로는 branch/upstream/remote/feature remote/base/local HEAD/head relation/worktree status, committed exact64, dirty exact10, working-tree mode, clean 상태, record-direct 플래그를 fail-closed한다.
+- 필드명 전환 보완 1회: 기존 mutation test가 제거된 `historical_raw_event_bytes`를 계속 변조해 `1 failed, 4 passed`가 발생했다. 신규 full-file/prefix/canonical 필드 mutation으로 교정했으며 제품 실패가 아니다.
+- focused: `5 passed, 152 deselected in 9.80s`; checker `PASS sequence=501`; full tooling fresh `157 passed in 590.78s`; `git diff --check` PASS.
+- 상태: `COMPLETED_FOR_INDEPENDENT_REREVIEW`; commit, push, WSL, DB, browser, Provider, Telegram 외부 실행은 하지 않았다.
