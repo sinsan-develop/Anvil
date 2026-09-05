@@ -54,16 +54,20 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         )
         self._git(repo, "config", "user.email", "test@example.invalid")
         self._git(repo, "config", "user.name", "wsl-harness-test")
-        candidate = "324eb169fedbce958d2e8cc29362deb7af433677"
-        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact48"
+        candidate = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
+        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact51"
         control_ref = "refs/remotes/origin/codex/c21-operational-execution"
         self._git(repo, "checkout", "-B", "test-control", candidate)
         shutil.copy2(
             DEPLOY / "CandidateReleaseManifest.json",
             repo / "deploy" / "wsl" / "CandidateReleaseManifest.json",
         )
+        approval_relative = 'docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md'
+        (repo / approval_relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / approval_relative, repo / approval_relative)
+        self._git(repo, "add", approval_relative)
         self._git(repo, "add", "deploy/wsl/CandidateReleaseManifest.json")
-        self._git(repo, "commit", "-m", "seq491 fixture record")
+        self._git(repo, "commit", "-m", "seq492 fixture record")
         source_head = self._git(repo, "rev-parse", "HEAD")
         self._git(repo, "update-ref", candidate_ref, candidate)
         self._git(repo, "update-ref", control_ref, source_head)
@@ -76,7 +80,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
     def _validate(self, repo: Path, control_ref: str, candidate: str, checksum: str):
         command = (
             f"source '{self._posix(GUARD)}'; "
-            f"validate_wsl_candidate_manifest '{self._posix(repo)}' {control_ref} {candidate}"
+            f"validate_wsl_candidate_binding '{self._posix(repo)}' {control_ref} {candidate}"
         )
         return subprocess.run(
             ["bash", "-c", command],
@@ -93,6 +97,56 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         with temp:
             result = self._validate(repo, control_ref, candidate, checksum)
             self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_ingress_approval_and_derived_coherent_rewrite_is_rejected(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            relative = "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md"
+            approval = repo / relative
+            approval.write_bytes(approval.read_bytes() + b"\nUNAPPROVED_EGRESS_EXTENSION\n")
+            path = repo / "deploy/wsl/CandidateReleaseManifest.json"
+            manifest = json.loads(path.read_text(encoding="utf-8"))
+            derived = manifest["authority"]["derived_binding"]
+            derived["exception_approval"]["sha256"] = hashlib.sha256(approval.read_bytes()).hexdigest().upper()
+            manifest["authority"]["derived_binding_sha256"] = hashlib.sha256(self._canonical(derived)).hexdigest().upper()
+            path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            self._git(repo, "add", relative, "deploy/wsl/CandidateReleaseManifest.json")
+            self._git(repo, "commit", "--amend", "--no-edit")
+            self._git(repo, "update-ref", control_ref, self._git(repo, "rev-parse", "HEAD"))
+            checksum = hashlib.sha256(subprocess.check_output(["git", "show", f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo)).hexdigest()
+            result = self._validate(repo, control_ref, candidate, checksum)
+            self.assertNotEqual(0, result.returncode)
+            self.assertIn("ingress exception approval checksum mismatch", result.stderr)
+
+    def test_binding_pass_does_not_authorize_runtime_execution(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            self.assertEqual(0, self._validate(repo, control_ref, candidate, checksum).returncode)
+            command = f"source '{self._posix(GUARD)}'; docker() {{ echo UNEXPECTED_DOCKER; return 97; }}; validate_wsl_candidate_manifest '{self._posix(repo)}' {control_ref} {candidate}"
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
+            self.assertEqual(22, result.returncode, result.stderr)
+            self.assertIn("BLOCKED_IMPORTANT_I3", result.stderr)
+            self.assertNotIn("UNEXPECTED_DOCKER", result.stdout + result.stderr)
+
+    def test_cleanup_entrypoint_i3_hold_prevents_docker_and_file_mutations(self):
+        temp, repo, candidate, control_ref, checksum = self._repo()
+        with temp:
+            control = repo / "entry-control" / "deploy" / "wsl"
+            control.mkdir(parents=True)
+            for name in ("cleanup.sh", "common.sh", "candidate-manifest-guard.sh"):
+                shutil.copy2(DEPLOY / name, control / name)
+            before = {str(path.relative_to(repo)): path.read_bytes() for path in repo.rglob("*") if path.is_file() and ".git" not in path.parts}
+            command = f"docker() {{ echo UNEXPECTED_DOCKER; return 97; }}; export -f docker; bash '{self._posix(control / 'cleanup.sh')}' {candidate}"
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
+                    "ANVIL_CANDIDATE_MANIFEST_REF": control_ref, "ANVIL_WSL_DEPLOY_ROOT": self._posix(repo),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(repo / "entry-control"), "ANVIL_WSL_APPLICATION_REPO": self._posix(repo)})
+            self.assertEqual(22, result.returncode, result.stderr)
+            self.assertIn("BLOCKED_IMPORTANT_I3", result.stderr)
+            self.assertNotIn("UNEXPECTED_DOCKER", result.stdout + result.stderr)
+            after = {str(path.relative_to(repo)): path.read_bytes() for path in repo.rglob("*") if path.is_file() and ".git" not in path.parts}
+            self.assertEqual(before, after)
 
     def test_manifest_checksum_hashes_exact_git_blob_bytes_and_rejects_one_byte_change(self):
         temp, repo, candidate, control_ref, checksum = self._repo()
@@ -116,7 +170,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self._git(repo, "add", ".")
             self._git(repo, "commit", "-m", "unapproved descendant")
             unapproved = self._git(repo, "rev-parse", "HEAD")
-            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact48", unapproved)
+            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact51", unapproved)
             result = self._validate(repo, control_ref, candidate, checksum)
             self.assertNotEqual(0, result.returncode)
             self.assertIn("feature remote", result.stderr)
@@ -306,13 +360,17 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             manifest["rollback"]["approved_commits"] = [tampered_candidate]
             path = repo / "deploy" / "wsl" / "CandidateReleaseManifest.json"
             path.write_text(json.dumps(manifest) + "\n", encoding="utf-8")
+            approval_relative = "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md"
+            (repo / approval_relative).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / approval_relative, repo / approval_relative)
+            self._git(repo, "add", approval_relative)
             self._git(repo, "add", str(path.relative_to(repo)))
             self._git(repo, "commit", "-m", "coherently rebound manifest")
             self._git(repo, "update-ref", control_ref, "HEAD")
             self._git(
                 repo,
                 "update-ref",
-                "refs/remotes/origin/candidates/c21-wsl-exact48",
+                "refs/remotes/origin/candidates/c21-wsl-exact51",
                 tampered_candidate,
             )
             checksum = hashlib.sha256(
@@ -406,18 +464,18 @@ class WslScriptFailClosedTests(unittest.TestCase):
 
     def test_repository_candidate_manifest_is_bound_to_approved_exact_candidate(self):
         manifest = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
-        candidate = "324eb169fedbce958d2e8cc29362deb7af433677"
+        candidate = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
         self.assertEqual("APPROVED_FOR_STAGING_VALIDATION", manifest["status"])
         self.assertEqual(candidate, manifest["source"]["commit"])
         self.assertEqual(
-            "refs/remotes/origin/candidates/c21-wsl-exact48",
+            "refs/remotes/origin/candidates/c21-wsl-exact51",
             manifest["source"]["remote_ref"],
         )
-        self.assertEqual([candidate], manifest["rollback"]["approved_commits"])
+        self.assertEqual([candidate, "324eb169fedbce958d2e8cc29362deb7af433677"], manifest["rollback"]["approved_commits"])
         binding = manifest["authority"]["derived_binding"]
-        self.assertEqual(1063, len(self._canonical(binding)))
+        self.assertEqual(1634, len(self._canonical(binding)))
         self.assertEqual(
-            "C9EC11DE9FCA150F07418449C1A7C554B17909BE8F2647B85C7A763C86D3FA0A",
+            "8FE8DCD4D90A91393E777E0FABCF60E51A68B93DB2B77197E12FC6445EF2D5EE",
             manifest["authority"]["derived_binding_sha256"],
         )
         self.assertEqual(
@@ -588,8 +646,11 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact48", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact51", candidate)
             (source / "control-marker.txt").write_text("control\n", encoding="utf-8")
+            approval_relative = "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md"
+            (source / approval_relative).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(ROOT / approval_relative, source / approval_relative)
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "control")
             control_sha = self._git(source, "rev-parse", "HEAD")
@@ -675,7 +736,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact48", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact51", candidate)
 
             control_verify = source / "deploy" / "wsl" / "verify.sh"
             control_verify.write_text(
@@ -746,10 +807,16 @@ class WslControlRuntimeTests(unittest.TestCase):
             self.assertNotEqual(0, rejected.returncode)
             self.assertIn("separate from candidate", rejected.stderr)
 
-    def test_rollback_pg18_preflight_failure_makes_zero_compose_mutations(self):
+    def test_rollback_unit_pg18_preflight_failure_makes_zero_compose_mutations(self):
         temp, repo, candidate, control_ref, checksum = WslCandidateManifestGuardTests()._repo()
         with temp, tempfile.TemporaryDirectory() as raw:
             root = Path(raw); control = root / "control"; shutil.copytree(DEPLOY, control / "deploy" / "wsl")
+            # Isolate the existing rollback algorithm from runtime authorization.
+            # Product files remain unchanged; real runtime I-3 exit 22 is tested separately.
+            fixture_rollback = control / "deploy" / "wsl" / "rollback.sh"
+            fixture_rollback.write_text(fixture_rollback.read_text(encoding="utf-8").replace(
+                'validate_wsl_candidate_manifest "$REPO" "$MANIFEST_REF" "$EXPECTED"',
+                'validate_wsl_candidate_binding "$REPO" "$MANIFEST_REF" "$EXPECTED"'), encoding="utf-8")
             for slug, previous in (("pg15", "a" * 40), ("pg18rc", "b" * 40)):
                 path = root / "runtime" / slug; path.mkdir(parents=True, exist_ok=True); (path / "previous.sha").write_text(previous + "\n")
                 (path / "current.sha").write_text(candidate + "\n")
@@ -797,7 +864,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact48", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact51", candidate)
             (source / "control-marker.txt").write_text("descendant\n", encoding="utf-8")
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "stale control descendant")
@@ -1243,8 +1310,16 @@ start_wsl_ingress
 class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
     def _run_cleanup(self, repo: Path, candidate: str, control_ref: str, checksum: str, mismatch: str = ""):
         log = repo / "docker.log"
+        # Exercise cleanup algorithm in an isolated fixture, not runtime authorization.
+        # The real public guard is separately proven to stop before Docker with exit 22.
+        fixture_common = repo / "cleanup-unit" / "common.sh"
+        fixture_common.parent.mkdir()
+        fixture_common.write_text((DEPLOY / "common.sh").read_text(encoding="utf-8").replace(
+            'validate_wsl_candidate_manifest "$repo" "$manifest_ref" "$expected"',
+            'validate_wsl_candidate_binding "$repo" "$manifest_ref" "$expected"'), encoding="utf-8")
+        shutil.copy2(GUARD, fixture_common.parent / "candidate-manifest-guard.sh")
         command = f'''
-source '{self._posix(DEPLOY / "common.sh")}'
+source '{self._posix(fixture_common)}'
 docker() {{
   echo "docker:$*" >> '{self._posix(log)}'
   if [[ "$1 $2" == "volume ls" ]]; then

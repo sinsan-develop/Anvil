@@ -1,5 +1,71 @@
 # Anvil 작업현황
 
+## 2026-09-05 Main 최종 전수 검증과 마지막 fixture 보완
+
+- Main frozen 전체 tooling session87925는 exit0, 123 PASS(394.63s). 전체 harness session59377은 exit1, 1 FAIL/59 PASS/1 SKIP(360.62s)였다. 유일 실패는 새 runtime HOLD가 rollback 알고리즘 fixture보다 먼저 exit22하여 기존 docker log 검증에 도달하지 못한 테스트 경계 문제다.
+- Main의 한정 지시에 따라 복사된 rollback 단위 fixture의 guard 호출만 binding 전용으로 계측하고 테스트 이름/주석에 단위 경계를 명시했다. 실제 제품 rollback.sh와 runtime exit22는 변경하지 않았다. 기존 PG15/PG18 image 사전검사 및 Compose 변경0 assertion을 유지했다.
+- 보완 단일 node `test_rollback_unit_pg18_preflight_failure_makes_zero_compose_mutations`는 exit0, 1 PASS/60 deselected(6.84s). Main 전체 실패 결과를 단일 전체 PASS로 덮어쓰지 않는다. 최종 결과는 tooling 전수123 PASS, harness 전수59 PASS/1 FAIL/1 SKIP 이후 해당1건 focused PASS로 구분한다. parser SKIP는 기존 실제 WSL Compose 두 target GREEN 증거와 별도다.
+- 기록/HANDOFF와 checksum만 마감 재결박한다. candidate ccf5109 제품/과거491 evidence 불변, I-3 미해결 및 runtime BLOCKED_IMPORTANT_I3/exit22 유지. 새 후보 배포·rollback·cleanup·Provider·Telegram은 미실행이고 Main 기록 commit을 위한 최종freeze 상태로 인계한다.
+
+## 2026-09-05 seq492 최종 보완·독립 검증 인계
+
+- 판정: seq492 결박 보완의 writer 검증 완료, Main 독립 전수 검증·기록 commit 전 상태. 새 candidate ccf5109는 미push·미배포다. runtime은 `BLOCKED_IMPORTANT_I3`이며 제품 rollback allowlist 보완이 필요하다. 기존 SPEC PASS/QUALITY APPROVED는 I-3 발견 전 검토다.
+- 전체 실행 결과는 tooling5 FAIL/117 PASS(322.92s), harness3 FAIL/53 PASS/1 SKIP(281.38s) 그대로 보존한다. 원인은 historical helper tuple 처리5건과 새 approval blob이 없는 fixture3건으로 서로 다른 테스트 구성 문제다. guard 판정을 완화하지 않고 fixture·helper만 보완했다.
+- 보완 후 focused: historical491+seq492 tooling10 PASS/112 deselected(111.53s), harness10 PASS/49 deselected(135.64s), 실제cleanup.sh I-3 진입차단2 PASS/59 deselected(35.99s), HOLD→ALLOWED 변조거부1 PASS/122 deselected(1.51s), 모두exit0. 이를 단일 전체 실행 PASS로 표시하지 않는다. 최종 전체 tooling/harness는 Main이 freeze 이후 독립 수행한다.
+- 정합성 함수와 runtime 함수를 분리했다. 정상binding은 PASS지만 실제runtime 진입은 고정exit22로 거부하며 bypass가 없다. 실제cleanup.sh fixture 진입에서 Docker호출0·파일변경0을 확인했다. 삭제 알고리즘 테스트는 별도 계측 fixture의 단위 검증이며 실제cleanup 성공이 아니다.
+- Main 독립 감사: historical491 raw827250/hash7BE4FFEF2DC5B38FA84974BB296712E25AB8E346D274B1523C7B134804083F71 및 canonical8453BE8410EE21BBED0EAC04F75C2DA3FB02CDA41FF1D731590FD149057AF7D7 보존. 기존 evidence/approval237개 raw bytes가 후보 Git blob과 모두 동일(session64111 exit0). candidate 제품은 수정하지 않았다.
+- 변경은 exact13 record 범위이며 HANDOFF·환경문서에 deployed324/control3f52와 미배포localccf/seq492를 구분했다. I-3 최소2파일 후속 제품 제안은 scratch seq492-i3-rollback-proposal.md에 기록했다. 다음은 Main 독립검증·기록 검토 후 별도 I-3 제품 수정 승인·검증이며 자동 deploy/rollback/cleanup 또는 C-01 시작은 금지한다.
+
+## 2026-09-05 seq492 생성·append 검증 진행
+
+- 신산님의 정확한 명시 승인 및 Main 정적 검토 후 require_escalated build exit0. candidate ccf5109/record 계획은51/13/54, derived binding은1634 bytes·8FE8DCD4D90A91393E777E0FABCF60E51A68B93DB2B77197E12FC6445EF2D5EE다. 생성 AST4/guard Bash syntax와 finalizer의 historical491 raw/canonical prefix·last-id assertions 통과 후 seq492 한 행을 append했다.
+- 신규 focused 초기2 PASS/1 FAIL은 seq492 head_relation 허용 분기 누락으로 확인하여 기존491을 유지하고492만 추가했다. 해당 회귀1 PASS 후 progress checker492/AUTO_CONTINUE PASS. guard positive 및 approval/derived 동시 재계산 변조 거부는4 PASS(18.69s).
+- 별도 audit exit0: exact51/13/54, historical491 raw827250/hash7BE4FFEF2DC5B38FA84974BB296712E25AB8E346D274B1523C7B134804083F71, 기존manifest/digest와 이전 WSL validator AST, 후보 제품 파일 불변 PASS. 전체 tooling43279/harness2406는 각각1회 실행 중이고 일부 실패가 관찰되어 상세 결과 확인 전 완료로 판정하지 않는다.
+- Main이 기존324 배포의 mutable server receipt4개를 읽기 전용으로 별도 보존했다. 이는 후속 표준 배포에서 갱신될 옛 receipt 보존이며 새 후보 검증 성공이나 Git historical evidence를 대체하지 않는다. 새 candidate push/deploy/DB/cleanup/Provider/Telegram 실제 실행은 여전히 NOT_EXECUTED다.
+
+## 2026-09-05 seq492 정확 범위 명시 승인 후 재개
+
+- 신산님이 seq1~491/historical evidence 보존, ccf5109용 checker·guard·manifest·승인 binding·finalizer/관련 생성기·계약 테스트 보완과 이벤트 append·계보·변조 거부·checksum 검증을 명시 승인했다. 기존 ingress 원승인 범위와 새 후보 외부실행 NOT_EXECUTED를 유지한다.
+- 정식 심사로 scratch generator 정적6항목 보완이 이번에는 승인·적용됐다. actual approval Git blob hash pin, rollback2SHA/fixtureapproval, raw491 불변/id assertions, 491/492 gate분기, actual09:59:29시각/legacyanchor와 private remote 분리, 증거승격금지를 반영했다. 새 approval draft에는 실제ccf후보와 후속 명시승인 원문을 기록했다.
+- AST 파싱만 실행하여 GENERATOR_AST_PASS_NO_EXECUTION exit0, git diff --check exit0. generator build와 보호 checker/guard/manifest/events 변경은 아직 미실행이다. exact51/13/54 변경계획을 Main에 제출하여 실행 전 검토 대기한다. 이전 거절3회는 삭제하지 않으며 새 명시승인에 따른 정상 재개와 구분한다.
+
+## 2026-09-05 09:38 seq492 재개 지시 후 플랫폼 재심사 결과
+
+- 신산님의 현재 `계속 진행하자`를 전달받아 동일 seq492 작업의 scratch 정적 제안 보완만 정식 재심사했다. generator build는 실행하지 않았으며 checker/guard/manifest/events 등 보호 파일을 변경하지 않았다.
+- scratch `rebind_seq492.py` 단일 파일에 6개 미완성 항목을 보완하는 apply_patch 1회도 플랫폼이 거절했다. 원문: “패치가 단순 정적 검토를 넘어 향후 checker·guard·manifest·approval binding을 재작성하는 생성기의 보안·권한 경계를 확장하지만, 사용자는 해당 구체적 변경을 명시적으로 승인하지 않았습니다.”
+- 패치는 전체 미적용이다. 이번 재개 후 거절1회이며 기존 거절2회와 구분한다. 같은 요청 재시도·다른 도구 우회·생성기 실행을 하지 않고 Main에 정확한 원문을 즉시 전달했다.
+- 실제 clock 관찰은 2026-09-05T09:38:06+09:00이다. generator의 미래10:00 문구를 포함한 정적 미완성 사항은 여전히 남아 있어 실행할 수 없다. 다음은 구체적 checker/guard/manifest/approval binding/finalizer 보완·seq492 append에 대한 사용자 명시 승인과 플랫폼 재심사이며, 새 기능·push·배포·서버 변경은 포함하지 않는다.
+- 권한 거절은 누적3회이며 제품 정식 FAILURE_REPORT 횟수와 별개다. Main 지시에 따라 추가 generator/code 수정·재시도를 중단한다. 코드와 보안 허용 조건을 변경하는 다음 정확한 승인 문구가 필요하다: “기존 seq1~491 및 historical evidence를 보존하면서 ccf5109용 seq492 checker·guard·manifest·승인 binding·finalizer와 관련 생성기·계약 테스트를 보완하고, seq492 append 및 계보·변조 거부·checksum 검증을 수행하는 것을 승인한다.” 이는 아직 검증되지 않은 새 candidate의 성공 선언을 허용하지 않는다.
+
+## 2026-09-05 seq492 결박 실행 플랫폼 거절 checkpoint
+
+- 판정: 제품 candidate `ccf5109d0640bf28c461e7754ad56e0821fd77be` exact7 구현·기본 검증 완료. 아직 push·배포하지 않았고 C-21 완료가 아니다. 이전 `3cc869e`는 복구용 보존ref에만 남은 미배포 중간 후보다.
+- 담당: Main이 권한 판단과 외부 실행 담당, pg18_binding_resume 단일 writer는 보호 대상 쓰기·재시도를 중단했다.
+- seq492 신규 tooling 계약 테스트는 manifest 없음으로 기대 RED를 확인했다. generator build 요청은 checker·manifest·guard·approval binding 변경의 명시 승인 근거 부족으로 플랫폼에서 거절됐고, 후속 scratch-only 보완 패치도 같은 이유로 거절됐다. 거절2회이며 우회 실행하지 않았다.
+- 보호 대상 checker·guard·CandidateReleaseManifest·events 변경은0이다. 현재 dirty는 기존 docs/WORK_STATUS.md와 docs/DEVELOPMENT_ENVIRONMENT.md, 새 approval artifact, 신규 tooling tests다. historical seq1~491 및 기존 evidence는 그대로 보존했다.
+- generator는 현재 미완성이므로 실행 금지: 실제 exception approval Git blob hash pin, rollback 두SHA fixture, raw491→492 id 확인, 실제 관찰시각 적용(현재 draft의 미래10:00 제거), seq492 gate/routing 분기 정합성 보완이 남아 있다. 새 approval draft의 중간3cc candidate 표기도 최종ccf5109로 정정해야 한다.
+- 다음 정확한 승인 대상: 기존 seq1~491 원문·hash와 historical evidence를 보존하면서 candidate `ccf5109`의 seq492용 checker/guard/manifest/새 approval binding/finalizer를 보완하고 seq492를 append한 뒤 계보·변조 거부·checksum을 검증하는 작업이다. 플랫폼의 명시적 재승인 전 이를 자동 승인된 것으로 간주하지 않는다.
+- 현재 이 checkpoint 외 파일 쓰기·generator 실행·재시도는 하지 않는다. Main의 실제 WSL full-suite 결과는 수신 후 별도로 기록하며 미수신 결과를 PASS로 표시하지 않는다.
+- Main 추가 검증 실제 결과: full harness session27234는 exit1, 9 FAIL/45 PASS/1 SKIP(263.41s). 실패 상세는 D:\tmp tempdir 설정이 적용되지 않아 C:/Users/.../Temp로 fallback되고 Bash mkdir /c/Users/cyhuh Permission denied로 cold-start log 미생성/control startup 미진입한 환경 경계다. 최종 제품 검증 PASS로 처리하지 않는다.
+- Main은 코드 변경 없이 정식 require_escalated 테스트 재검증 session5210을 시작했다. 선택 범위는 `WslColdStartTests or WslControlRuntimeTests` 12개 node이며 실제 결과 대기 중이다. 이 테스트 전용 권한 재검증은 checker/guard/manifest 보호 변경 거절의 우회가 아니다. 보호 대상 및 신규 field/부정 case 생성 쓰기 금지를 유지한다.
+- Main 최종 환경 진단: 같은 TEMP 설정에서도 기본 권한은 configured D:\tmp와 달리 selected C:/Users/.../Temp였고, require_escalated에서는 selected D:\tmp와 일치했다. 임시 경로 접근의 실행 환경 원인을 확인했다. 동일 제품 코드의 session5210 재검증은 11 PASS/1 parser SKIP/43 deselected(27.27s, exit0)이며 앞선 실패9개를 모두 포함해 해소했다.
+- 종합 검증은 서로 다른 실행의 고유 node 기준54 PASS/1 parser SKIP다. 단일 전체 실행에서54 PASS한 것으로 표시하지 않는다. parser SKIP는 별도의 실제 WSL Compose 두 target GREEN 증거와 구분한다. 제품 `ccf5109` exact7을 유지하며 실제 새 WSL 배포는 수행하지 않았다.
+- 현재 유일한 차단은 seq492 checker/guard/manifest/approval binding/finalizer 보완·append를 위한 플랫폼 예외 권한이다. 미완성 정적 제안 보완을 포함한 정확한 사용자 명시 승인이 필요하다. Main이 최종 보고하며, 이 checkpoint 이후 다른 파일 쓰기·재시도·서버 변경을 하지 않는다.
+
+## 2026-09-05 seq491 실제 검증 후 WSL ingress 예외 승인·seq492 준비
+
+- 기준선: clean record/control `3f52d26a61e49543dd3d3121f5cc62a04f809a3d`, candidate `324eb169fedbce958d2e8cc29362deb7af433677`. private push/fresh recovery PASS 후 Main 실제 deploy exit0, PG15/PG18 named volume1씩/anonymous0, migration0013 PASS.
+- 보조 runner exit0: PG15/PG18 INTERNAL_BRIDGE_API_CONTRACT에서 authenticated SSE/Last-Event-ID/backupRestore PASS. 정식 verify는 loopback4770 connection refused, rollback은 previous15 없음 preflight로 무변경 종료했다. host/browser ingress 및 genuine rollback/cleanup은 아직 미완료다.
+- Main의 restore scratch DB read-only 조회는 두 target 모두0건이며, 임시 cookie/session evidence 디렉터리 조회도0건이다. 샌드박스 WSL E_ACCESSDENIED는 승인된 동일 read-only 재실행 성공으로 해소됐으며 WSL 서비스 장애로 판정하지 않았다.
+- 신규 예외: Main은 WI outbound 경계를 ingress까지 적용하고 non-internal망을 새 예외로 분류했다. 신산님의 현재 `승인해`가 직전 제안한 WSL QA ingress-only non-internal망 예외와 구현·검증에 적용됐다. ingress2 container/2 dedicated network만 추가하고 app/DB internal-only, loopback4770/4870, Git-only candidate/control, Provider·Telegram 실제호출 금지, ysna 변경금지를 유지한다.
+- writer: `pg18_binding_resume` 단일 writer. 승인된 최소 compose/nginx/deploy/rollback/cleanup/회귀 보완과 환경 문서 정정 진행. seq1~491 events 및 historical evidence는 수정하지 않는다. 현재 문서·제품 dirty는 기준선3f52에서 보존하고 검증·새 candidate 확정 후 seq492만 append한다. 그 전 checker projection mismatch를 숨기거나 PASS로 표시하지 않는다.
+- 다음: ingress 정식 host 검증→genuine previous324 rollback→candidate 복귀→후속cleanup/잔류0→C-21 독립 판정. 활성 gate 때문에 C-01과 종속 C-02~20 구현은 아직 시작하지 않는다. 독립 증거/명세/환경 문서 작업은 계속한다.
+- 구현 검증 진행: 신규 ingress TDD 3 RED 후 최소 구현, 초기 focused 19 PASS/33 deselected. cleanup network label·unrelated endpoint·absent 추가 케이스를 포함한 관련 전체 harness 실행 중. Bash syntax 3파일 및 diff-check PASS. Main Windows→WSL wildcard 인용 오류1건은 원문/Secret 전송 없이 단일 health 재실행 exit0로 해소; 제품 실패와 구분한다.
+- 구현 검증 마감: 관련 harness52 PASS/1 parser SKIP(188.16s), 추가 nginx temp 회귀1 PASS. 실제 Main nginx configcheck는 비root/read-only 조건에서 fastcgi temp 기본경로 오류1회→temp3개 /tmp 명시 후 동일 조건 exit0 PASS. 제품 exact6 freeze, 문서2개는 후속 record로 분리. 아직 실제 host/SSE/rollback 배포 검증과 새 projection은 미완료다.
+- Main 독립 실제 WSL docker-compose config --quiet는 PG15/PG18-rc 각각 exit0(dummy 환경, 자원생성 없음). PyYAML parser SKIP와 구분하여 실제 Compose 파싱 증거를 확보했고 bash3/diff-check도 독립 exit0 확인했다.
+- 후속 cleanup entrypoint의 .env 미로드를 Main 실제 no-env Compose RED로 확인하여 cleanup.sh에 권위 검증 후 기존 loader를 추가했다. 신규 실행 fixture의 Windows/Bash 경로원인2회는 Main이 테스트 write lease를 인수하여 처리 중이며 통과로 처리하지 않는다. `3cc869e`는 unpublished 중간 후보이고 Main 소유 보존ref `codex/preserve-c21-ingress-3cc869e`에 복구 가능하다. 목적은 candidate amend 전 보존, 새 후보 원격 복구 확인 후 정리를 검토한다. 최종 exact7 candidate SHA 수신 전 seq492 projection은 보류하고 승인 artifact만 새로 준비했다.
+- Main 직접 인수 종료: fixture POSIX script arg로 환경경계 수정. load1줄 제거 기대RED1건→복원 후 ingress class5 PASS, cleanup syntax/diff PASS. 전체 관련55node는54 PASS/1 parser SKIP(실제 WSL parser2 target 별도 PASS). exact7 제품 freeze, actual cleanup/새 candidate 배포는 미실행이며 최종 amended SHA를 기다린다.
+
 ## 2026-09-05 seq491 WSL cold-start 보완 후보
 
 - Main 검토 후 bootstrap Bash 전달, DB health 최대 120초 대기, tmpfs 단일 mount 및 PG18 volume target 보완을 candidate `324eb169fedbce958d2e8cc29362deb7af433677`에 결박했다. parent는 seq490 control `18fa604531acfd303c10effa528797fbd5b55c8b`이며 correction exact5다.

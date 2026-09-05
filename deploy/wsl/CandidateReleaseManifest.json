@@ -2,9 +2,10 @@
   "schema_version": 1,
   "manifest_type": "WSL_STAGING_CANDIDATE",
   "status": "APPROVED_FOR_STAGING_VALIDATION",
+  "runtime_safety_gate": "BLOCKED_IMPORTANT_I3",
   "source": {
-    "commit": "324eb169fedbce958d2e8cc29362deb7af433677",
-    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact48",
+    "commit": "ccf5109d0640bf28c461e7754ad56e0821fd77be",
+    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact51",
     "working_tree": "CLEAN"
   },
   "environment": {
@@ -21,20 +22,22 @@
     "approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
     "private_push_policy": "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE",
     "derived_binding": {
-      "classification": "MAIN_BOUND_INTERNAL_IMPLEMENTATION_CORRECTION",
+      "classification": "HUMAN_APPROVED_WSL_INGRESS_EXCEPTION",
       "parent_approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
       "parent_approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
       "parent_approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
-      "prior_candidate_commit": "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0",
-      "candidate_parent_commit": "18fa604531acfd303c10effa528797fbd5b55c8b",
-      "candidate_commit": "324eb169fedbce958d2e8cc29362deb7af433677",
-      "correction_path_count": 5,
-      "correction_path_list_sha256": "63D5B1B57251E3A6680BBE62280A434E28AD9DFCE764A8D0C1BD2B161A1DE14D",
+      "prior_candidate_commit": "324eb169fedbce958d2e8cc29362deb7af433677",
+      "candidate_parent_commit": "3f52d26a61e49543dd3d3121f5cc62a04f809a3d",
+      "candidate_commit": "ccf5109d0640bf28c461e7754ad56e0821fd77be",
+      "correction_path_count": 7,
+      "correction_path_list_sha256": "9B0C95AF74AF4822788DBAB498B4D141E81142332B437EF95108E93B65DCE995",
       "correction_paths": [
-        "deploy/wsl/bootstrap.sh",
+        "deploy/wsl/cleanup.sh",
         "deploy/wsl/common.sh",
         "deploy/wsl/compose.wsl.yml",
         "deploy/wsl/deploy.sh",
+        "deploy/wsl/nginx-wsl.conf",
+        "deploy/wsl/rollback.sh",
         "tests/deploy/test_wsl_staging_harness.py"
       ],
       "review": {
@@ -43,14 +46,35 @@
       },
       "scope_change": false,
       "requirements_change": false,
-      "important_risk_change": false,
-      "cleanup_authority": "UNCHANGED_PARENT_APPROVAL",
+      "important_risk_change": true,
+      "cleanup_authority": "PARENT_VOLUME_APPROVAL_AND_INGRESS_EXCEPTION",
       "execution_exclusions": [
         "TELEGRAM_EXECUTION",
         "PROVIDER_EXECUTION"
-      ]
+      ],
+      "exception_approval": {
+        "id": "APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001",
+        "path": "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+        "sha256": "C046CF9C390E6F0A3A3BA3F1BC0859CAACD33B28F7DEDB03868545A66570C87C"
+      },
+      "ingress_boundary": {
+        "services": [
+          "anvil-wsl-pg15/anvil-ingress",
+          "anvil-wsl-pg18rc/anvil-ingress"
+        ],
+        "networks": [
+          "anvil-wsl-pg15_anvil-ingress",
+          "anvil-wsl-pg18rc_anvil-ingress"
+        ],
+        "loopback_ports": [
+          4770,
+          4870
+        ],
+        "application_database_internal_only": true,
+        "provider_telegram_execution": false
+      }
     },
-    "derived_binding_sha256": "C9EC11DE9FCA150F07418449C1A7C554B17909BE8F2647B85C7A763C86D3FA0A"
+    "derived_binding_sha256": "8FE8DCD4D90A91393E777E0FABCF60E51A68B93DB2B77197E12FC6445EF2D5EE"
   },
   "exclusions": [
     "TELEGRAM_EXECUTION",
@@ -68,6 +92,7 @@
   },
   "rollback": {
     "approved_commits": [
+      "ccf5109d0640bf28c461e7754ad56e0821fd77be",
       "324eb169fedbce958d2e8cc29362deb7af433677"
     ]
   }
