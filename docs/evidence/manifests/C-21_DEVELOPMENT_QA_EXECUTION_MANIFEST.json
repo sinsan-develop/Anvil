@@ -1,0 +1,112 @@
+{
+  "artifact_id": "C21-DEVELOPMENT-QA-EXECUTION-R3-20260905",
+  "work_instruction": "WI-C-21-DEVELOPMENT-QA-RESUME-20260905-001",
+  "worker": "developer-primary",
+  "revision": 3,
+  "status": "COMPLETED_FOR_INDEPENDENT_REVIEW",
+  "start_head": "580ed9d7b202383a107b5e0bda0f53b2066cddc5",
+  "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
+  "control_commit": "772afbd5eb55791ca7b5002d58378437ea496750",
+  "receipt_canonicalization": {
+    "algorithm": "RFC8259_JSON_OBJECT_TO_UTF8_SHA256",
+    "input_schema": "Parse receipt; json.dumps(ensure_ascii=True, sort_keys=True, separators=(',', ':')); encode UTF-8 without trailing newline; SHA-256; uppercase hex.",
+    "excluded_from_input": ["canonical_sha256", "capture_note"]
+  },
+  "provider": {
+    "canonical_count": 9,
+    "primary": "UPSTAGE",
+    "provider_adapter_protocol_runtime_check": "PASS",
+    "deterministic_fake_adapter_probe_generate": "PASS",
+    "native_agent_adapter_probe_generate": "PASS",
+    "network_io": "DENIED_BY_TEST",
+    "recorded_fixture_test": "PASS",
+    "runtime_status_port": "NOT_IMPLEMENTED_RUNTIME_PROVIDER_STATUS_PORT",
+    "actual_credentials_health_models_cost": "NOT_EXECUTED"
+  },
+  "control_binding": {
+    "active_head": "772afbd5eb55791ca7b5002d58378437ea496750",
+    "candidate_ancestor": true,
+    "manifest_sha256": "456a5240cd8be8a7739e9ac898b478ade5b8a2d68a67ced21b0fa023a30b120b",
+    "deploy_sha256": "7b6ee6a02bed857299423f78c73d746b6f8ac8c0cc40e3a611ece06e43e1c1c0",
+    "verify_sha256": "93e882d35c055535a7d989962fe0ee0ec49b91542eb462b655f1477dd2562a36",
+    "cleanup_sha256": "65e8aa6f5f02ab554ecf3f4fba1ceb16bd96616e952eb4d64d1285f183cc462d",
+    "wrong_root_negative_exit": 9
+  },
+  "commands": [
+    {"step":"deploy","exit_code":0,"command_id":"SSH_WSL_SUDO_CONTROL_BOOTSTRAP_CANDIDATE_A342_CONTROL_772","command":"ssh WSL-server 'sudo -n env <approved Git SSH env and immutable hashes> bash /srv/anvil-wsl/repo/deploy/wsl/bootstrap-c21-git-only-staging.sh a342d62391a44b349733d1468ac3b180761155ab'"},
+    {"step":"verify","exit_code":0,"command_id":"SSH_WSL_SUDO_CONTROL_VERIFY_CANDIDATE_A342_CONTROL_772","command":"ssh WSL-server 'sudo -n env <approved Git SSH env and immutable hashes> bash /srv/anvil-wsl/repo/deploy/wsl/control-c21-git-only-staging.sh verify a342d62391a44b349733d1468ac3b180761155ab'"},
+    {"step":"control_positive","exit_code":0,"command_id":"STDIN_BOUNDARY_VERIFY_CONTROL","command":"cmd /d /c ssh WSL-server sudo -n bash -s -- --verify-control < deploy\\wsl\\verify-c21-development-boundaries.sh"},
+    {"step":"control_negative","exit_code":9,"command_id":"STDIN_BOUNDARY_VERIFY_CONTROL_WITH_WRONG_ROOT","command":"cmd /d /c ssh WSL-server sudo -n env ANVIL_WSL_DEPLOY_ROOT=/srv/anvil-wsl/repo bash -s -- --verify-control < deploy\\wsl\\verify-c21-development-boundaries.sh"},
+    {"step":"telegram_server_receipt","exit_code":0,"command_id":"STDIN_BOUNDARY_VERIFY_RUNNING","command":"cmd /d /c ssh WSL-server sudo -n bash -s -- --verify-running < deploy\\wsl\\verify-c21-development-boundaries.sh"},
+    {"step":"browser_pg15","exit_code":0,"command_id":"BUNDLED_NODE_C21_NETWORK_PROBE_4770","command":"$env:ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN=<process-only>; $env:ANVIL_TEST_SESSION_RUN_ID=c21-wsl-run; $env:ANVIL_CHROMIUM_EXECUTABLE=<approved headless shell>; & $env:CODEX_MCP_NODE_PATH tests/browser/c21-network-probe.mjs --base-url http://127.0.0.1:4770 --expected-event-id c21-wsl-event --project anvil-wsl-pg15"},
+    {"step":"browser_pg18rc","exit_code":0,"command_id":"BUNDLED_NODE_C21_NETWORK_PROBE_4870","command":"$env:ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN=<process-only>; $env:ANVIL_TEST_SESSION_RUN_ID=c21-wsl-run; $env:ANVIL_CHROMIUM_EXECUTABLE=<approved headless shell>; & $env:CODEX_MCP_NODE_PATH tests/browser/c21-network-probe.mjs --base-url http://127.0.0.1:4870 --expected-event-id c21-wsl-event --project anvil-wsl-pg18rc"},
+    {"step":"cleanup","exit_code":0,"command_id":"SSH_WSL_SUDO_CONTROL_CLEANUP_CANDIDATE_A342_CONTROL_772","command":"ssh WSL-server 'sudo -n env <approved Git SSH env and immutable hashes> bash /srv/anvil-wsl/repo/deploy/wsl/control-c21-git-only-staging.sh cleanup a342d62391a44b349733d1468ac3b180761155ab'"},
+    {"step":"residue","exit_code":0,"command_id":"STDIN_BOUNDARY_RESIDUE_ZERO","command":"cmd /d /c ssh WSL-server sudo -n bash -s -- --residue-zero < deploy\\wsl\\verify-c21-development-boundaries.sh"}
+  ],
+  "revision3_browser_reexecution": {
+    "finding": "C0_I1_PROJECT_NOT_PRESENT_IN_RAW_STDOUT",
+    "red_exit_code": 1,
+    "deploy_exit_code": 0,
+    "verify_exit_code": 0,
+    "browser_pg15_exit_code": 0,
+    "browser_pg18rc_exit_code": 0,
+    "cleanup_exit_code": 0,
+    "residue_exit_code": 0,
+    "raw_stdout_contract": "JSON_PARSE_ONLY_NO_POST_PROCESS_FIELD_INJECTION",
+    "telegram_provider_reexecuted": false
+  },
+  "receipts": {
+    "telegram_server_pg15": {
+      "receipt": {"audit":{"count":3,"records":[{"audit_id":"telegram-audit-2130e8550bed47008cf397e8ea102723","command_id":"telegram-update-19830","outcome":"ACCEPTED"},{"audit_id":"telegram-audit-5140b6de504f49b0a8ff566e01408220","command_id":"telegram-update-19830","outcome":"REPLAYED"},{"audit_id":"telegram-audit-416a62db38fb44a18ac020b6bbff597f","command_id":"telegram-update-19831","outcome":"APPROVAL_REQUIRED"}]},"candidate":"a342d62391a44b349733d1468ac3b180761155ab","control":"772afbd5eb55791ca7b5002d58378437ea496750","control_action_binding":"PASS","migration":"0013_task_bootstrap_authority","project":"anvil-wsl-pg15","runtime_revision":"a342d62391a44b349733d1468ac3b180761155ab","server_log":{"auth_requests":3,"errors":0,"secret_exposure":0,"sse_requests":6,"telegram_requests":9},"telegram":"PASS"},
+      "canonical_sha256": "8ACD5BA7FBE1ACBF0624759ECD604A321B91465AB6BB65E14E9267F0C4FD76AF"
+    },
+    "telegram_server_pg18rc": {
+      "receipt": {"audit":{"count":3,"records":[{"audit_id":"telegram-audit-3bda60130d334d4880f2a69848361dde","command_id":"telegram-update-19930","outcome":"ACCEPTED"},{"audit_id":"telegram-audit-feccbfef5a854d74b5a190fe7343429d","command_id":"telegram-update-19930","outcome":"REPLAYED"},{"audit_id":"telegram-audit-8d5a9e75f38d4c18bddf74f2172efeee","command_id":"telegram-update-19931","outcome":"APPROVAL_REQUIRED"}]},"candidate":"a342d62391a44b349733d1468ac3b180761155ab","control":"772afbd5eb55791ca7b5002d58378437ea496750","control_action_binding":"PASS","migration":"0013_task_bootstrap_authority","project":"anvil-wsl-pg18rc","runtime_revision":"a342d62391a44b349733d1468ac3b180761155ab","server_log":{"auth_requests":3,"errors":0,"secret_exposure":0,"sse_requests":6,"telegram_requests":9},"telegram":"PASS"},
+      "canonical_sha256": "A8781951B9DAF9FCA997ACFBB1AE99506CCFABC43BCF4908B524180D168C3589"
+    },
+    "browser_pg15": {
+      "receipt": {"eventId":"c21-wsl-event","evidenceTier":"PAGE_EVALUATE_FETCH_SCOPE_ONLY","initialContentType":"text/event-stream; charset=utf-8","initialStatus":200,"project":"anvil-wsl-pg15","requests":[{"method":"GET","path":"/","phase":"request","resourceType":"document","sameOrigin":true},{"method":"GET","path":"/","phase":"response","resourceType":"document","sameOrigin":true,"status":200},{"method":"GET","path":"/src/styles/workbench.css","phase":"request","resourceType":"stylesheet","sameOrigin":true},{"method":"GET","path":"/src/app/workbench.js","phase":"request","resourceType":"script","sameOrigin":true},{"method":"GET","path":"/src/styles/workbench.css","phase":"response","resourceType":"stylesheet","sameOrigin":true,"status":200},{"method":"GET","path":"/src/app/workbench.js","phase":"response","resourceType":"script","sameOrigin":true,"status":200},{"method":"GET","path":"/src/api/workbench-client.js","phase":"request","resourceType":"script","sameOrigin":true},{"method":"GET","path":"/src/features/workbench/workbench-state.js","phase":"request","resourceType":"script","sameOrigin":true},{"method":"GET","path":"/src/api/workbench-client.js","phase":"response","resourceType":"script","sameOrigin":true,"status":200},{"method":"GET","path":"/src/features/workbench/workbench-state.js","phase":"response","resourceType":"script","sameOrigin":true,"status":200},{"method":"GET","path":"/api/workbench/config","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/api/workbench/config","phase":"response","resourceType":"fetch","sameOrigin":true,"status":404},{"method":"POST","path":"/auth/session","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"POST","path":"/auth/session","phase":"response","resourceType":"fetch","sameOrigin":true,"status":201},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"response","resourceType":"fetch","sameOrigin":true,"status":200},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"response","resourceType":"fetch","sameOrigin":true,"status":200},{"method":"GET","path":"/network-failure","phase":"request","resourceType":"fetch","sameOrigin":true},{"error":"NETWORK_FAILURE","method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"requestfailed","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/network-failure","phase":"response","resourceType":"fetch","sameOrigin":true,"status":404}],"resumedBodyBytes":0,"resumedStatus":200,"sessionStatus":201,"uiClickEvidence":false},
+      "canonical_sha256": "7C0289FC0358C1A2D7A20DAAB1A1E79DC40D0C9CCF4DBF78F0091E6F780F0777",
+      "capture_note": "PARSED_DIRECTLY_FROM_REVISION3_RAW_STDOUT_NO_FIELD_INJECTION"
+    },
+    "browser_pg18rc": {
+      "receipt": {"eventId":"c21-wsl-event","evidenceTier":"PAGE_EVALUATE_FETCH_SCOPE_ONLY","initialContentType":"text/event-stream; charset=utf-8","initialStatus":200,"project":"anvil-wsl-pg18rc","requests":[{"method":"GET","path":"/","phase":"request","resourceType":"document","sameOrigin":true},{"method":"GET","path":"/","phase":"response","resourceType":"document","sameOrigin":true,"status":200},{"method":"GET","path":"/src/styles/workbench.css","phase":"request","resourceType":"stylesheet","sameOrigin":true},{"method":"GET","path":"/src/app/workbench.js","phase":"request","resourceType":"script","sameOrigin":true},{"method":"GET","path":"/src/styles/workbench.css","phase":"response","resourceType":"stylesheet","sameOrigin":true,"status":200},{"method":"GET","path":"/src/app/workbench.js","phase":"response","resourceType":"script","sameOrigin":true,"status":200},{"method":"GET","path":"/src/api/workbench-client.js","phase":"request","resourceType":"script","sameOrigin":true},{"method":"GET","path":"/src/features/workbench/workbench-state.js","phase":"request","resourceType":"script","sameOrigin":true},{"method":"GET","path":"/src/api/workbench-client.js","phase":"response","resourceType":"script","sameOrigin":true,"status":200},{"method":"GET","path":"/src/features/workbench/workbench-state.js","phase":"response","resourceType":"script","sameOrigin":true,"status":200},{"method":"GET","path":"/api/workbench/config","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/api/workbench/config","phase":"response","resourceType":"fetch","sameOrigin":true,"status":404},{"method":"POST","path":"/auth/session","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"POST","path":"/auth/session","phase":"response","resourceType":"fetch","sameOrigin":true,"status":201},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"response","resourceType":"fetch","sameOrigin":true,"status":200},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"request","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"response","resourceType":"fetch","sameOrigin":true,"status":200},{"method":"GET","path":"/network-failure","phase":"request","resourceType":"fetch","sameOrigin":true},{"error":"NETWORK_FAILURE","method":"GET","path":"/api/runs/c21-wsl-run/events","phase":"requestfailed","resourceType":"fetch","sameOrigin":true},{"method":"GET","path":"/network-failure","phase":"response","resourceType":"fetch","sameOrigin":true,"status":404}],"resumedBodyBytes":0,"resumedStatus":200,"sessionStatus":201,"uiClickEvidence":false},
+      "canonical_sha256": "F62E2F6BCFCE8378F209B82667F7C9D2653F53D0EB8965F4B4F2E395ABFCB09D",
+      "capture_note": "PARSED_DIRECTLY_FROM_REVISION3_RAW_STDOUT_NO_FIELD_INJECTION"
+    },
+    "cleanup": {
+      "receipt": {"cleanup":"PASS","containers":0,"networks":0,"volumes":0},
+      "canonical_sha256": "0BDCCA4F5F16195072B6300B20FFC2CFA0814E1076996AC3F30C10BE6FAC811F",
+      "non_active_control_stages": 0,
+      "retained_active_control": "772afbd5eb55791ca7b5002d58378437ea496750"
+    }
+  },
+  "local_verification": {
+    "provider_new_tests": 4,
+    "telegram_new_tests": 7,
+    "focused": {"passed":46,"failed":0,"exit_code":0,"duration_seconds":1.33},
+    "broader": {"passed":195,"skipped":20,"failed":0,"exit_code":0,"duration_seconds":5.80},
+    "browser_self_test":"PASS",
+    "failed_cross_origin_rejection":"PASS",
+    "bash_syntax_contract":"PASS",
+    "receipt_hashes_verified":5,
+    "artifact_hashes_verified":4
+  },
+  "revision3_local_verification": {
+    "broader": {"passed":195,"skipped":20,"failed":0,"exit_code":0,"duration_seconds":5.35},
+    "browser_self_test":"PASS",
+    "failed_cross_origin_rejection":"PASS",
+    "bash_syntax_contract":"PASS"
+  },
+  "excluded": ["YSNA","ANVIL_SINSAN_KR","MAIN","ACTUAL_PROVIDER_CALLS","ACTUAL_TELEGRAM_OUTBOUND","PRODUCTION_SECRETS","UI_CLICK_EVIDENCE"],
+  "artifacts": [
+    {"path":"deploy/wsl/verify-c21-development-boundaries.sh","bytes":9003,"sha256":"CB03CBE38EB0A59DDC4C45BBBFD88A26373DB5E24153D736294D6E9FACB40B8B"},
+    {"path":"tests/agent_team/test_c21_provider_nonbilling_qa.py","bytes":5018,"sha256":"ED5D2309510A3DD87C4D27E5678ECC61A71D8EC4E9B52EC01EDE3EB0E02E052C"},
+    {"path":"tests/api/test_c21_telegram_outbound_free_qa.py","bytes":3596,"sha256":"592018D4B61AFF8E15E989820464643F48E3E975579893EB7BCEB4B4DDE49E28"},
+    {"path":"tests/browser/c21-network-probe.mjs","bytes":7634,"sha256":"27F50434178CAA3BD74FB4FBBE9AABA40A3225C0C7160AD6CB4B0E030A3DEDFB"}
+  ],
+  "historical_events_modified": false,
+  "progress_handoff_modified": false,
+  "commit_push": "NOT_EXECUTED",
+  "created_at": "2026-09-05T22:44:01+09:00"
+}
