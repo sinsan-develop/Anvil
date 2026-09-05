@@ -6600,6 +6600,29 @@ class ProjectProgressContractTests(unittest.TestCase):
             "control_runtime_record_commit_is_direct": False,
         }
         self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        postcommit = dict(
+            common,
+            actual_head="34eb1725b47c544b6ec314a28428b364a029f3eb",
+            actual_changed_paths=sorted(set(exact64) | set(exact10)),
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=False,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for field, value in (
+            ("control_is_ancestor", False),
+            ("actual_changed_paths", sorted(set(exact64) | set(exact10))[:-1]),
+            ("control_descendant_paths", exact10[:-1]),
+            ("working_tree_mode", True),
+            ("worktree_is_clean", False),
+        ):
+            with self.subTest(postcommit_field=field):
+                self.assertTrue(
+                    checker.validate_repository_projection(
+                        repository, **dict(postcommit, **{field: value})
+                    )
+                )
         for field, value in (
             ("remote_head", "0" * 40),
             ("feature_remote", "origin/tampered"),

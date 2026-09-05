@@ -10557,6 +10557,22 @@ def validate_repository_projection(
         expected_successor = c21_development_qa_resume_start_paths()
         expected_committed = c21_independent_judgment_record_paths()
         expected_cumulative = c21_independent_judgment_record_paths() | expected_successor
+        precommit_projection = (
+            actual_head == repository.get("local_head")
+            and set(actual_changed_paths) == expected_committed
+            and set(control_descendant_paths or []) == expected_successor
+            and working_tree_mode
+            and not worktree_is_clean
+            and not control_runtime_record_commit_is_direct
+        )
+        postcommit_projection = (
+            actual_head != repository.get("local_head")
+            and control_is_ancestor
+            and set(actual_changed_paths) == expected_cumulative
+            and set(control_descendant_paths or []) == expected_successor
+            and not working_tree_mode
+            and worktree_is_clean
+        )
         if any((
             repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE,
             repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
@@ -10572,13 +10588,13 @@ def validate_repository_projection(
             set(repository.get("development_qa_resume_start_successor_paths") or []) != expected_successor,
         )):
             errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
-        if actual_head != repository.get("local_head") or actual_branch != repository.get("branch") or actual_upstream != repository.get("upstream"):
+        if (not precommit_projection and not postcommit_projection) or actual_branch != repository.get("branch") or actual_upstream != repository.get("upstream"):
             errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
         if actual_remote_head != repository.get("remote_head") or actual_feature_remote_head != repository.get("feature_remote_head"):
             errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
-        if set(actual_changed_paths) != expected_committed or set(control_descendant_paths or []) != expected_successor or not working_tree_mode or worktree_is_clean:
+        if not precommit_projection and not postcommit_projection:
             errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
-        if control_runtime_record_commit_is_direct:
+        if precommit_projection and control_runtime_record_commit_is_direct:
             errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
         if not base_is_ancestor:
             errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
@@ -12330,6 +12346,11 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if actual_head and actual_head != parent:
             direct = (_git_value(root,"show","-s","--format=%P",actual_head) or "").split() == [parent]
         descendants = dirty if actual_head == parent else _split_git_paths(_git_value(root,"diff","--name-only",f"{parent}..{actual_head}"))
+        parent_is_ancestor = bool(
+            isinstance(parent, str)
+            and actual_head
+            and _git_returncode(root, "merge-base", "--is-ancestor", parent, actual_head) == 0
+        )
         base_is_ancestor = bool(
             base == "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
             and actual_head
@@ -12347,6 +12368,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
             working_tree_mode=bool(dirty),
             progress=bundle["progress"],
             control_descendant_paths=descendants,
+            control_is_ancestor=parent_is_ancestor,
             worktree_is_clean=not dirty,
             control_runtime_record_commit_is_direct=direct,
         )

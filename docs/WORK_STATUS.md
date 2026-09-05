@@ -611,3 +611,10 @@
 - 필드명 전환 보완 1회: 기존 mutation test가 제거된 `historical_raw_event_bytes`를 계속 변조해 `1 failed, 4 passed`가 발생했다. 신규 full-file/prefix/canonical 필드 mutation으로 교정했으며 제품 실패가 아니다.
 - focused: `5 passed, 152 deselected in 9.80s`; checker `PASS sequence=501`; full tooling fresh `157 passed in 590.78s`; `git diff --check` PASS.
 - 상태: `COMPLETED_FOR_INDEPENDENT_REREVIEW`; commit, push, WSL, DB, browser, Provider, Telegram 외부 실행은 하지 않았다.
+
+### seq501 post-commit projection Main 직접 인수
+
+- 시작 기록 exact10을 `34eb1725b47c544b6ec314a28428b364a029f3eb`로 커밋한 직후 checker가 `GIT_DESCENDANT_ORIGIN_MISMATCH`, `GIT_DESCENDANT_PATH_SET_MISMATCH`, `GIT_DESCENDANT_RECORD_COMMIT_INVALID`를 반환했다. Git 객체와 `git fsck --no-dangling`은 정상이며 원인은 seq501 validator가 pre-commit dirty 상태만 허용하고 동일 exact10의 post-commit clean descendant를 허용하지 않은 계약 누락이다.
+- 이 mismatch 계열은 이전 projection에서도 반복된 유형이므로 AGENTS.md의 동일 오류 3회 Main 인수 원칙을 적용해 `developer-primary` 재시도를 중단하고 Main이 직접 인수했다.
+- 조치: validated base ancestry, projected parent ancestry, cumulative exact68, descendant exact10, clean worktree, branch/upstream/remote 고정을 모두 만족하는 post-commit 경로만 허용했다. content/hash 검증은 그대로 유지하며 허용 경로 밖 변경은 계속 fail-closed한다.
+- focused 계약 검증: `1 passed, 156 deselected`; 실제 checker PASS는 raw checksum·snapshot·digest 재결박 및 보완 commit 후 확인한다. 제품 QA exact7, WSL/DB/browser/Provider/Telegram, push, ysna, main은 아직 시작하지 않았다.

@@ -1165,7 +1165,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "50D80CDC04486417F0079B1997E4CF194C90D86F57925D7228CBEC352475EB0E"
+      "sha256": "07CBB325A27E0E33B59C253A30FCEBAF4F07A3B90038ED64E352C05FF7CEC004"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1185,7 +1185,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "E8B9E51C59D93545CD866854C8EF2193DD0F0AC35C121A5B1203AD8C72B35E6D"
+      "sha256": "F1BCABF5CA919202661783ED265DC4B65CA73F5D4F442425FDB5275B11057EC9"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -2360,7 +2360,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_DEVELOPMENT_QA_EXACT7",
-  "snapshot_hash": "9E0AFEF35AE6B8172F0D25BDED9947D9973240146333D48C5A17A26D78B4D47D",
+  "snapshot_hash": "7F78D2C7A136D75EEB49FDFB5C769A089432AB560385F0A8543991D2D81794B5",
   "runtime_next_action": "EXECUTE_C21_DEVELOPMENT_QA_EXACT7",
   "c21_independent_judgment": {
     "verdict": "BLOCKED_NOT_ACCEPTED",

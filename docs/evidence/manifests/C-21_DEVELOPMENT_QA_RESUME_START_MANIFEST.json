@@ -66,17 +66,17 @@
     {
       "path": "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
       "bytes": 907,
-      "sha256": "2BC5F8A26F0CAF183189E7D29AF33B21179A52740B15C0A1DA0A771697982790"
+      "sha256": "E4BF39A3491C98EE7A2883DC51CFE2763224876A3F239EFA6DB42E28C1CF0768"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 1045954,
-      "sha256": "50D80CDC04486417F0079B1997E4CF194C90D86F57925D7228CBEC352475EB0E"
+      "bytes": 1046864,
+      "sha256": "07CBB325A27E0E33B59C253A30FCEBAF4F07A3B90038ED64E352C05FF7CEC004"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "bytes": 360300,
-      "sha256": "E8B9E51C59D93545CD866854C8EF2193DD0F0AC35C121A5B1203AD8C72B35E6D"
+      "bytes": 361325,
+      "sha256": "F1BCABF5CA919202661783ED265DC4B65CA73F5D4F442425FDB5275B11057EC9"
     }
   ],
   "self_reference": false
