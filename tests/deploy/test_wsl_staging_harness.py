@@ -54,8 +54,8 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         )
         self._git(repo, "config", "user.email", "test@example.invalid")
         self._git(repo, "config", "user.name", "wsl-harness-test")
-        candidate = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
-        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact51"
+        candidate = "5f8c301e18c332e3353092dab9efe5c32d0fda84"
+        candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact54"
         control_ref = "refs/remotes/origin/codex/c21-operational-execution"
         self._git(repo, "checkout", "-B", "test-control", candidate)
         shutil.copy2(
@@ -67,7 +67,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         shutil.copy2(ROOT / approval_relative, repo / approval_relative)
         self._git(repo, "add", approval_relative)
         self._git(repo, "add", "deploy/wsl/CandidateReleaseManifest.json")
-        self._git(repo, "commit", "-m", "seq492 fixture record")
+        self._git(repo, "commit", "-m", "seq493 fixture record")
         source_head = self._git(repo, "rev-parse", "HEAD")
         self._git(repo, "update-ref", candidate_ref, candidate)
         self._git(repo, "update-ref", control_ref, source_head)
@@ -126,10 +126,10 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
                 env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
             self.assertEqual(22, result.returncode, result.stderr)
-            self.assertIn("BLOCKED_IMPORTANT_I3", result.stderr)
+            self.assertIn("BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE", result.stderr)
             self.assertNotIn("UNEXPECTED_DOCKER", result.stdout + result.stderr)
 
-    def test_cleanup_entrypoint_i3_hold_prevents_docker_and_file_mutations(self):
+    def test_cleanup_entrypoint_external_scope_hold_prevents_docker_and_file_mutations(self):
         temp, repo, candidate, control_ref, checksum = self._repo()
         with temp:
             control = repo / "entry-control" / "deploy" / "wsl"
@@ -143,7 +143,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
                     "ANVIL_CANDIDATE_MANIFEST_REF": control_ref, "ANVIL_WSL_DEPLOY_ROOT": self._posix(repo),
                     "ANVIL_WSL_CONTROL_REPO": self._posix(repo / "entry-control"), "ANVIL_WSL_APPLICATION_REPO": self._posix(repo)})
             self.assertEqual(22, result.returncode, result.stderr)
-            self.assertIn("BLOCKED_IMPORTANT_I3", result.stderr)
+            self.assertIn("BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE", result.stderr)
             self.assertNotIn("UNEXPECTED_DOCKER", result.stdout + result.stderr)
             after = {str(path.relative_to(repo)): path.read_bytes() for path in repo.rglob("*") if path.is_file() and ".git" not in path.parts}
             self.assertEqual(before, after)
@@ -170,7 +170,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self._git(repo, "add", ".")
             self._git(repo, "commit", "-m", "unapproved descendant")
             unapproved = self._git(repo, "rev-parse", "HEAD")
-            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact51", unapproved)
+            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact54", unapproved)
             result = self._validate(repo, control_ref, candidate, checksum)
             self.assertNotEqual(0, result.returncode)
             self.assertIn("feature remote", result.stderr)
@@ -370,7 +370,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self._git(
                 repo,
                 "update-ref",
-                "refs/remotes/origin/candidates/c21-wsl-exact51",
+                "refs/remotes/origin/candidates/c21-wsl-exact54",
                 tampered_candidate,
             )
             checksum = hashlib.sha256(
@@ -464,18 +464,18 @@ class WslScriptFailClosedTests(unittest.TestCase):
 
     def test_repository_candidate_manifest_is_bound_to_approved_exact_candidate(self):
         manifest = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
-        candidate = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
+        candidate = "5f8c301e18c332e3353092dab9efe5c32d0fda84"
         self.assertEqual("APPROVED_FOR_STAGING_VALIDATION", manifest["status"])
         self.assertEqual(candidate, manifest["source"]["commit"])
         self.assertEqual(
-            "refs/remotes/origin/candidates/c21-wsl-exact51",
+            "refs/remotes/origin/candidates/c21-wsl-exact54",
             manifest["source"]["remote_ref"],
         )
         self.assertEqual([candidate, "324eb169fedbce958d2e8cc29362deb7af433677"], manifest["rollback"]["approved_commits"])
         binding = manifest["authority"]["derived_binding"]
-        self.assertEqual(1634, len(self._canonical(binding)))
+        self.assertEqual(1833, len(self._canonical(binding)))
         self.assertEqual(
-            "8FE8DCD4D90A91393E777E0FABCF60E51A68B93DB2B77197E12FC6445EF2D5EE",
+            "EBA968E47874CD67FE6A0B64A0327EC4436F4F6FE86757C2AF95224FD44335F2",
             manifest["authority"]["derived_binding_sha256"],
         )
         self.assertEqual(
@@ -646,7 +646,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact51", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact54", candidate)
             (source / "control-marker.txt").write_text("control\n", encoding="utf-8")
             approval_relative = "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md"
             (source / approval_relative).parent.mkdir(parents=True, exist_ok=True)
@@ -736,7 +736,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact51", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact54", candidate)
 
             control_verify = source / "deploy" / "wsl" / "verify.sh"
             control_verify.write_text(
@@ -864,7 +864,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "candidate verification")
             candidate = self._git(source, "rev-parse", "HEAD")
-            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact51", candidate)
+            self._git(source, "update-ref", "refs/heads/candidates/c21-wsl-exact54", candidate)
             (source / "control-marker.txt").write_text("descendant\n", encoding="utf-8")
             self._git(source, "add", ".")
             self._git(source, "commit", "-m", "stale control descendant")

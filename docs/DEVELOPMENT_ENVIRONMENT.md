@@ -1,5 +1,22 @@
 # Anvil 개발환경
 
+
+## seq493 로컬 결박 검증 완료 / 2026-09-05
+
+- 최종 producer 전체 tooling130 PASS/445.50s, harness69 PASS/1 Compose parser SKIP/399.44s(exit0, 각1회). Main 독립 critical3 PASS/36.72s와 historical raw239파일 감사 PASS, reviewer archive402/기존 validator AST 보존 PASS. 이는 로컬 개발·기록 검증이며 이번 WSL/서버 실행 결과가 아니다.
+- 현재 local candidate5f8c301/parent48fbad8를 seq493 exact12로 결박했다. 실제 잔류 runtime324eb169/control3f52d26 및 이전 미배포 candidateccf5109/control48fbad8는 서로 다르다. 로컬 I-3 보완 완료와 `BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE`/public guard22를 함께 유지한다.
+- 같은 생성기+finalizer 재실행 결과12파일 hash 동일/이벤트493 byte 불변(exit0). 최종 Main 기록 검토에 인계하며 외부 push/merge/배포/DB/rollback/cleanup/Telegram/Provider는 하지 않았다.
+
+### 아래는 seq493 준비 시점의 누적 상태
+
+- 담당: Main 어울 관리, 단일 writer pg18_binding_resume. 제품 후보 `5f8c301e18c332e3353092dab9efe5c32d0fda84`, parent `48fbad8be35c7e826dd31363464c7c477d9ca9e8`, correction exact2. 내부 기록 예상 exact12, validated base 누적 candidate54 / record 후56.
+- I-3 rollback approved_commits membership 누락은 기존 승인 계약의 제품 구현 결함으로 보완됐다. Producer focused10 PASS(21.78s), 전체 harness69 PASS/1 parser SKIP(346.77s, exit0), Main 독립 focused10 PASS(25.19s), SPEC PASS/QUALITY APPROVED는 로컬 제품 증거다. 새 seq493 결박 테스트는 아직 미완료이며 이전 결과로 대신하지 않는다.
+- 직전 로컬 ccf5109 candidate/48fbad8 control은 미push·미배포. 실제 WSL 잔류는 candidate324eb169/control3f52d26이며 보조 internal transport의 API·SSE·Last-Event-ID·backup/restore 성공과 정식 localhost ingress 실패는 과거 증거 그대로 유지한다.
+- 현재 gate는 `BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE`. public guard는 고정 exit22로 실행을 거부한다. 제품 I-3의 로컬 보완과 외부 실행 허용은 별개이며 이번 기록 범위에서 push/merge/배포/실제 rollback/cleanup/DB/Telegram/Provider를 수행하지 않는다. C-21 완료나 C-01 시작으로 승격하지 않는다.
+- 기존 seq1~492와 historical evidence/approval 원문은 보존하며 seq493 이벤트 단1개만 append한다. cleanup·ingress human approval hash를 유지하고 seq492 derived hash를 부모로 새 내부 구현 수정 binding을 연결한다. 원격 관측은 09:59의 3f52/324 확인이며 새 원격 관측으로 표현하지 않는다.
+- 다음: seq493 정적 원문 검토 → focused RED/GREEN → tooling/harness 각1회 → checksum/계보/변조 거부 확인 및 Main 검토. 서버·네트워크·Secret 변경은 없다.
+
+
 ## 2026-09-05 seq492 최신 checkpoint
 
 - 실제 WSL deployed candidate/control은 `324eb169fedbce958d2e8cc29362deb7af433677` / `3f52d26a61e49543dd3d3121f5cc62a04f809a3d`다. PG15/PG18 migration 및 internal-bridge 보조 API/SSE/restore는 확인했지만 canonical host ingress/실제 rollback은 미완료다.

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-ROLLBACK_ALLOWLIST-CANDIDATE-REBIND-DIGEST-20260905",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "event_sequence": 493,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 96270,
+    "file_sha256": "7DF9AB3751C50EBA2EFE20A8CAF1AA53BEB82B7172667284D7A74CC2B899FEC7",
+    "canonical_json_sha256": "96611E4BC1913F35FF9FE291A31B9BE7FBD3F423DBBF2001452A9BD6A235EC1B"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 165318,
+    "file_sha256": "FBEBCD662951D5D20132118398478707F9DE2667910B667B83643BD986499CAE",
+    "machine_summary_canonical_sha256": "8F8863FE1EAF180DEDFBF0FFC72F17183E038410EF1C448A2D6A6F66532725E0"
+  },
+  "created_at": "2026-09-05T10:58:07+09:00",
+  "scope": "Candidate 5f8c301 exact54 and immutable seq1..492 are bound by the seq493 record-only exact12 successor. New candidate execution is not performed; actual seq491 runtime324 partial WSL execution; prior local ccf/control48f were not executed are recorded separately.",
+  "self_reference": false
+}

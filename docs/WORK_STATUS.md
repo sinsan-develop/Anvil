@@ -1,5 +1,26 @@
 # Anvil 작업현황
 
+## seq493 결박 구현·로컬 검증 완료 / Main 최종 동결 검토 인계
+
+- 기록 대상은 candidate `5f8c301e18c332e3353092dab9efe5c32d0fda84`의 exact12 direct-child 후속 기록이며 candidate54 / 기록 후 누적56이다. 제품 I-3는 로컬 보완·검증됐고 과거492 및 approval/evidence는 불변이다.
+- Producer 새 계약 RED: 1 FAIL/129 deselected/0.60s(493 manifest 부재). 보완 후 focused tooling13 PASS/94.70s와 guard16 PASS/122.05s. 최종 전체 tooling130 PASS/445.50s(exit0,8061), harness69 PASS/1 parser SKIP/399.44s(exit0,23190)를 각각 1회 실행했다. SKIP는 Windows Compose parser 부재이며 이번 실제 WSL 실행 증거로 대체하지 않는다.
+- Main 독립 critical3 PASS/36.72s(exit0,39021): actual Git exact12 direct-child, runtime HOLD 및 coherent local evidence 외부 성공 승격 거부. Main raw 감사239파일/492 prefix841414 bytes/hash F38EA939…C063/unique493/rollback 제품 byte 불변 PASS. Reviewer 별도 archive402파일·기존 WSL validator AST 보존 PASS/finding0.
+- 동일 최종 generator build+finalizer 재실행 비교는 exact12 hash 모두 동일, Changed=[]/Idempotent=true(exit0,7941). event493도 byte 불변으로 이중 append나 기록 rollback이 없었다. 기존492 generator/finalizer는 실행·수정하지 않았다.
+- 현재 `BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE`, public guard return22. 현재 private push 상태는 NOT_EXECUTED_EXTERNAL_SCOPE_HOLD다. 실제 push/merge/배포/rollback/cleanup/DB/Telegram/Provider는 하지 않았으며 C-21 완료·C-01 시작으로 승격하지 않는다. Main 최종 기록 commit 검토 전 checksum만 마감한다.
+
+### 아래는 seq493 준비 단계의 누적 기록
+
+
+## seq493 rollback allowlist 제품 후속 결박 진행 / 2026-09-05
+
+- 담당: Main 어울 관리, 단일 writer pg18_binding_resume. 제품 후보 `5f8c301e18c332e3353092dab9efe5c32d0fda84`, parent `48fbad8be35c7e826dd31363464c7c477d9ca9e8`, correction exact2. 내부 기록 예상 exact12, validated base 누적 candidate54 / record 후56.
+- I-3 rollback approved_commits membership 누락은 기존 승인 계약의 제품 구현 결함으로 보완됐다. Producer focused10 PASS(21.78s), 전체 harness69 PASS/1 parser SKIP(346.77s, exit0), Main 독립 focused10 PASS(25.19s), SPEC PASS/QUALITY APPROVED는 로컬 제품 증거다. 새 seq493 결박 테스트는 아직 미완료이며 이전 결과로 대신하지 않는다.
+- 직전 로컬 ccf5109 candidate/48fbad8 control은 미push·미배포. 실제 WSL 잔류는 candidate324eb169/control3f52d26이며 보조 internal transport의 API·SSE·Last-Event-ID·backup/restore 성공과 정식 localhost ingress 실패는 과거 증거 그대로 유지한다.
+- 현재 gate는 `BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE`. public guard는 고정 exit22로 실행을 거부한다. 제품 I-3의 로컬 보완과 외부 실행 허용은 별개이며 이번 기록 범위에서 push/merge/배포/실제 rollback/cleanup/DB/Telegram/Provider를 수행하지 않는다. C-21 완료나 C-01 시작으로 승격하지 않는다.
+- 기존 seq1~492와 historical evidence/approval 원문은 보존하며 seq493 이벤트 단1개만 append한다. cleanup·ingress human approval hash를 유지하고 seq492 derived hash를 부모로 새 내부 구현 수정 binding을 연결한다. 원격 관측은 09:59의 3f52/324 확인이며 새 원격 관측으로 표현하지 않는다.
+- 다음: seq493 정적 원문 검토 → focused RED/GREEN → tooling/harness 각1회 → checksum/계보/변조 거부 확인 및 Main 검토. 서버·네트워크·Secret 변경은 없다.
+
+
 ## 2026-09-05 Main 최종 전수 검증과 마지막 fixture 보완
 
 - Main frozen 전체 tooling session87925는 exit0, 123 PASS(394.63s). 전체 harness session59377은 exit1, 1 FAIL/59 PASS/1 SKIP(360.62s)였다. 유일 실패는 새 runtime HOLD가 rollback 알고리즘 fixture보다 먼저 exit22하여 기존 docker log 검증에 도달하지 못한 테스트 경계 문제다.

@@ -4,7 +4,7 @@ set -euo pipefail
 validate_wsl_candidate_binding() {
   local repo="$1" manifest_ref="$2" expected="$3"
   local control_ref='refs/remotes/origin/codex/c21-operational-execution'
-  local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact51'
+  local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact54'
   [[ "$manifest_ref" == "$control_ref" ]] || { echo 'candidate control ref must be the exact successor remote-tracking ref' >&2; return 20; }
   [[ "$expected" =~ ^[0-9a-f]{40}$ ]] || { echo 'full 40-character SHA required' >&2; return 20; }
   local control_sha
@@ -38,7 +38,7 @@ if doc.get('schema_version') != 1 or doc.get('manifest_type') != 'WSL_STAGING_CA
     raise SystemExit('candidate manifest contract mismatch')
 if doc.get('status') != 'APPROVED_FOR_STAGING_VALIDATION':
     raise SystemExit('candidate manifest is not approved for WSL staging')
-if doc.get('runtime_safety_gate') != 'BLOCKED_IMPORTANT_I3':
+if doc.get('runtime_safety_gate') != 'BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE':
     raise SystemExit('candidate runtime safety gate mismatch')
 source = doc.get('source', {})
 if source.get('commit') != expected or source.get('working_tree') != 'CLEAN':
@@ -69,33 +69,33 @@ if not isinstance(derived, dict) or not re.fullmatch(r'[0-9A-F]{64}', str(derive
 canonical = json.dumps(derived, sort_keys=True, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
 if hashlib.sha256(canonical).hexdigest().upper() != derived_hash:
     raise SystemExit('candidate derived binding checksum mismatch')
-expected_candidate_parent = '3f52d26a61e49543dd3d3121f5cc62a04f809a3d'
+expected_candidate_parent = '48fbad8be35c7e826dd31363464c7c477d9ca9e8'
 if derived.get('candidate_parent_commit') != expected_candidate_parent:
     raise SystemExit('candidate parent exact derived binding mismatch')
-expected_paths = ['deploy/wsl/cleanup.sh', 'deploy/wsl/common.sh', 'deploy/wsl/compose.wsl.yml', 'deploy/wsl/deploy.sh', 'deploy/wsl/nginx-wsl.conf', 'deploy/wsl/rollback.sh', 'tests/deploy/test_wsl_staging_harness.py']
-expected_path_hash = '9B0C95AF74AF4822788DBAB498B4D141E81142332B437EF95108E93B65DCE995'
+expected_paths = ['deploy/wsl/rollback.sh', 'tests/deploy/test_wsl_staging_harness.py']
+expected_path_hash = '1B52054411C4290276A61F915C28F36CA9A2B97407C0056ADF83025EF36E2FAA'
 if any((
-    derived.get('correction_path_count') != 7,
+    derived.get('correction_path_count') != 2,
     derived.get('correction_path_list_sha256') != expected_path_hash,
     derived.get('correction_paths') != expected_paths,
 )):
     raise SystemExit('candidate correction path contract mismatch')
 if any((
-    derived.get('classification') != 'HUMAN_APPROVED_WSL_INGRESS_EXCEPTION',
+    derived.get('classification') != 'MAIN_BOUND_INTERNAL_CONTRACT_IMPLEMENTATION_CORRECTION',
     derived.get('parent_approval_id') != authority.get('approval_id'),
     derived.get('parent_approval_artifact_sha256') != authority.get('approval_artifact_sha256'),
     derived.get('parent_approval_binding_sha256') != authority.get('approval_binding_sha256'),
-    derived.get('prior_candidate_commit') != '324eb169fedbce958d2e8cc29362deb7af433677',
+    derived.get('prior_candidate_commit') != 'ccf5109d0640bf28c461e7754ad56e0821fd77be',
     derived.get('candidate_commit') != expected,
     derived.get('review') != {'spec': 'PASS', 'quality': 'APPROVED'},
     derived.get('scope_change') is not False,
     derived.get('requirements_change') is not False,
-    derived.get('important_risk_change') is not True,
+    derived.get('important_risk_change') is not False,
     derived.get('cleanup_authority') != 'PARENT_VOLUME_APPROVAL_AND_INGRESS_EXCEPTION',
     derived.get('execution_exclusions') != ['TELEGRAM_EXECUTION', 'PROVIDER_EXECUTION'],
 )):
     raise SystemExit('candidate derived binding contract mismatch')
-expected_derived_hash = '8FE8DCD4D90A91393E777E0FABCF60E51A68B93DB2B77197E12FC6445EF2D5EE'
+expected_derived_hash = 'EBA968E47874CD67FE6A0B64A0327EC4436F4F6FE86757C2AF95224FD44335F2'
 if derived_hash != expected_derived_hash:
     raise SystemExit('candidate exact derived binding hash mismatch')
 if doc.get('exclusions') != ['TELEGRAM_EXECUTION', 'PROVIDER_EXECUTION']:
@@ -131,7 +131,7 @@ PY
   correction_paths="$(git -C "$repo" diff --name-only "$candidate_parent" "$expected")" || {
     echo 'candidate correction paths are not readable' >&2; return 20;
   }
-  [[ "$correction_paths" == $'deploy/wsl/cleanup.sh\ndeploy/wsl/common.sh\ndeploy/wsl/compose.wsl.yml\ndeploy/wsl/deploy.sh\ndeploy/wsl/nginx-wsl.conf\ndeploy/wsl/rollback.sh\ntests/deploy/test_wsl_staging_harness.py' ]] || {
+  [[ "$correction_paths" == $'deploy/wsl/rollback.sh\ntests/deploy/test_wsl_staging_harness.py' ]] || {
     echo 'candidate correction path set mismatch' >&2; return 21;
   }
   correction_hash="$(ANVIL_CORRECTION_PATHS="$correction_paths" "$python_bin" - <<'PY'
@@ -141,7 +141,7 @@ payload = json.dumps(sorted(paths), ensure_ascii=False, separators=(',', ':')).e
 print(hashlib.sha256(payload).hexdigest().upper())
 PY
 )" || return 20
-  [[ "$correction_hash" == '9B0C95AF74AF4822788DBAB498B4D141E81142332B437EF95108E93B65DCE995' ]] || {
+  [[ "$correction_hash" == '1B52054411C4290276A61F915C28F36CA9A2B97407C0056ADF83025EF36E2FAA' ]] || {
     echo 'candidate correction path hash mismatch' >&2; return 21;
   }
   local remote_sha
@@ -161,9 +161,9 @@ PY
 }
 
 # Existing runtime entrypoint: binding acceptance is not execution authorization.
-# No bypass flag: a successor must fix and review I-3 before this boundary changes.
+# No bypass flag: external execution requires a separate in-scope instruction.
 validate_wsl_candidate_manifest() {
   validate_wsl_candidate_binding "$@" || return $?
-  echo 'runtime execution blocked: BLOCKED_IMPORTANT_I3; rollback allowlist enforcement requires a reviewed product successor' >&2
+  echo 'runtime execution blocked: BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE; external execution is outside the current instruction scope' >&2
   return 22
 }
