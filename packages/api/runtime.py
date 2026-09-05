@@ -22,6 +22,7 @@ from packages.persistence.config import DatabaseSettings
 
 from .fastapi_app import ApiPorts, AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
+from .provider_status import ProviderStatusPort
 from .run_creation import RunCreationPort
 from .task_bootstrap import TaskBootstrapPort
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
@@ -171,10 +172,14 @@ def create_runtime_app(
     run_key = "POST /api/tasks/{taskId}/runs"
     task_create_key = "POST /api/projects/{projectId}/tasks"
     task_read_key = "GET /api/tasks/{taskId}"
+    provider_status_port = ProviderStatusPort(source)
+    provider_query_ports = provider_status_port.query_ports()
     if run_key in base_ports.commands:
         raise RuntimeConfigurationError("runtime Run creation port cannot replace an injected port")
     if task_create_key in base_ports.commands or task_read_key in base_ports.queries:
         raise RuntimeConfigurationError("runtime Task bootstrap ports cannot replace injected ports")
+    if set(provider_query_ports) & set(base_ports.queries):
+        raise RuntimeConfigurationError("runtime Provider status ports cannot replace injected ports")
     from packages.persistence.task_bootstrap_repository import SqlAlchemyTaskBootstrapRepository
 
     task_repository = SqlAlchemyTaskBootstrapRepository(session_factory)
@@ -184,7 +189,11 @@ def create_runtime_app(
             run_key: RunCreationPort(SqlAlchemyRunCreationRepository(session_factory)),
             task_create_key: TaskBootstrapPort(task_repository),
         },
-        queries={**base_ports.queries, task_read_key: TaskBootstrapPort(task_repository)},
+        queries={
+            **base_ports.queries,
+            task_read_key: TaskBootstrapPort(task_repository),
+            **provider_query_ports,
+        },
     )
     web_security = WebSecurityConfig(
         allowed_hosts=frozenset({public_host, "anvil.local"}),

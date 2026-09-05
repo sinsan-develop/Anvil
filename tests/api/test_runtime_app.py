@@ -4,6 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from packages.api.runtime import RuntimeConfigurationError, create_runtime_app
+from packages.api.common import SessionPrincipal
+from packages.api.fastapi_app import AuthorizationScope
 from packages.api.sse import PostgresEventStream
 
 
@@ -67,3 +69,27 @@ def test_runtime_app_allows_public_host_and_console_origin_without_relaxing_defa
     assert preflight_allowed.status_code == 204
     assert preflight_allowed.headers["access-control-allow-origin"] == "https://anvil.sinsan.kr"
     assert preflight_allowed.headers["access-control-allow-credentials"] == "true"
+
+
+def test_runtime_app_binds_provider_reads_without_exposing_credential_values() -> None:
+    """Leaving production Provider queries unbound or reflecting a secret must fail."""
+    principal = SessionPrincipal(
+        "tester-1", "tester", "unused", frozenset({"provider:read"}),
+        frozenset({"project-1"}), frozenset({"env-local"}),
+    )
+    app = create_runtime_app(
+        environment=_env(),
+        session_factory=lambda: _FakeSession(),
+        authenticate=lambda token: principal if token == "session" else None,
+        authorization_resolver=lambda _endpoint, _params: AuthorizationScope(
+            "project-1", "env-local", frozenset({"tester"})
+        ),
+    )
+    client = TestClient(app, base_url="https://anvil.sinsan.kr")
+    client.cookies.set("anvil_session", "session")
+
+    response = client.get("/api/providers/upstage", headers={"host": "anvil.sinsan.kr"})
+
+    assert response.status_code == 200
+    assert response.json()["data"]["credential_status"] == "REGISTERED"
+    assert "redacted-test-presence" not in response.text
