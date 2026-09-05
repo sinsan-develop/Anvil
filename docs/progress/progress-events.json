@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 501,
+  "last_sequence": 506,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -17771,7 +17771,97 @@
         "worker_lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
         "write_lease_id": "write-lease-c21-development-qa-resume-20260905-001"
       }
+    },
+{
+      "event_id": "evt_c21_development_qa_write_lease_revoked",
+      "sequence": 502,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-05T23:15:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/DEVELOPMENT-QA-RESUME",
+      "details": {
+        "lease_id": "write-lease-c21-development-qa-resume-20260905-001",
+        "worker_lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+        "execution_fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+        "write_fencing_token": "c21-development-qa-write-fence-epoch-1-4178ae7",
+        "reason": "DEVELOPMENT_QA_EXACT7_COMPLETED",
+        "replacement_write_lease": null
+      }
+    },
+{
+      "event_id": "evt_c21_development_qa_worker_lease_revoked",
+      "sequence": 503,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-05T23:15:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/DEVELOPMENT-QA-RESUME",
+      "details": {
+        "lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+        "execution_fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+        "reason": "WRITE_LEASE_REVOKED_AND_DEVELOPMENT_QA_COMPLETED",
+        "precondition_event_id": "evt_c21_development_qa_write_lease_revoked",
+        "replacement_worker_lease": null
+      }
+    },
+{
+      "event_id": "evt_c21_development_qa_package_completed",
+      "sequence": 504,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-09-05T23:15:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/DEVELOPMENT-QA-RESUME",
+      "details": {
+        "commit": "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
+        "parent_commit": "580ed9d7b202383a107b5e0bda0f53b2066cddc5",
+        "developer_exact_path_count": 7,
+        "developer_exact_path_list_sha256": "15F82A54E7A377DB724273185BF8F03C20C9CBB689A43C1B04A3794A89914DE9",
+        "execution_manifest_sha256": "7CBAC578A54E25A15B0947D09AA023F5B45A3CC19713B5C82221017D213F4EE8",
+        "result_status": "COMPLETED_FOR_INDEPENDENT_REVIEW",
+        "package_status": "PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING",
+        "accepted": false
+      }
+    },
+{
+      "event_id": "evt_c21_development_qa_independent_review_recorded",
+      "sequence": 505,
+      "event_type": "INDEPENDENT_TEST_REVIEW_RECORDED",
+      "occurred_at": "2026-09-05T23:15:00+09:00",
+      "actor": "independent-reviewer",
+      "subject_ref": "C-21/DEVELOPMENT-QA-RESUME",
+      "details": {
+        "verdict": "SPEC_PASS",
+        "quality": "APPROVED",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "developer_commit": "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
+        "review_report_sha256": "66B0B3AB295E352E49E6FE772E6DB5C7A0E7AC5AAD804F5202F52EF27C6B45F4"
+      }
+    },
+{
+      "event_id": "evt_c21_development_qa_test_judgment_recorded",
+      "sequence": 506,
+      "event_type": "TEST_JUDGMENT_RECORDED",
+      "occurred_at": "2026-09-05T23:15:00+09:00",
+      "actor": "independent-tester",
+      "subject_ref": "C-21/DEVELOPMENT-QA-RESUME",
+      "details": {
+        "verdict": "PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING",
+        "accepted": false,
+        "critical_findings": 0,
+        "important_findings": 2,
+        "reason_codes": [
+          "PROVIDER_RUNTIME_STATUS_PORT_501",
+          "WORKBENCH_CONFIG_404_UI_CLICK_NOT_PROVEN"
+        ],
+        "provider_runtime_status_port": "HTTP_501_NOT_IMPLEMENTED",
+        "workbench_config": "HTTP_404",
+        "ui_click_evidence": false,
+        "external_provider_telegram_current_gate": false,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "runtime_next_action": "ISSUE_C21_RUNTIME_UI_REWORK_WI"
+      }
     }
   ],
-  "last_event_id": "evt_c21_independent_test_judgment_recorded"
+  "last_event_id": "evt_c21_development_qa_test_judgment_recorded"
 }

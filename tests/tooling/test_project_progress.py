@@ -2383,10 +2383,12 @@ class ProjectProgressContractTests(unittest.TestCase):
             hasattr(checker, "validate_c21_lr02a_acceptance_projection"),
             "C-21/LR-02A R4 acceptance projection validator is required",
         )
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "4178eee2ffeb0d5701e1fac058d89891331c74c2"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json"
             ).read_text(encoding="utf-8")
         )
@@ -2468,9 +2470,7 @@ class ProjectProgressContractTests(unittest.TestCase):
                 progress=accepted_bundle["progress"],
             ),
         )
-        self.assertIn(
-            "GIT_DESCENDANT_PATH_SET_MISMATCH",
-            checker.validate_repository_projection(
+        outside_path_errors = checker.validate_repository_projection(
                 repository,
                 actual_head=repository["validated_base_commit"],
                 actual_branch=repository["branch"],
@@ -2480,8 +2480,12 @@ class ProjectProgressContractTests(unittest.TestCase):
                 base_is_ancestor=True,
                 actual_changed_paths=projection_paths + ["outside.txt"],
                 working_tree_mode=True,
-                progress=bundle["progress"],
-            ),
+                progress=accepted_bundle["progress"],
+            )
+        self.assertTrue(
+            {"GIT_DESCENDANT_PATH_SET_MISMATCH", "GIT_DESCENDANT_PROJECTION_INVALID"}
+            & set(outside_path_errors),
+            outside_path_errors,
         )
 
     def test_c21_lr02b_start_binds_leases_events_manifest_and_keeps_c01_blocked(self) -> None:
@@ -2490,10 +2494,12 @@ class ProjectProgressContractTests(unittest.TestCase):
             hasattr(checker, "validate_c21_lr02b_start_projection"),
             "C-21/LR-02B start projection validator is required",
         )
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "dd4cc43452d30511ecf1a152e48408b7122391c0"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
@@ -2621,10 +2627,12 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02b_acceptance_binds_closed_failure_and_keeps_c01_blocked(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "dd4cc43452d30511ecf1a152e48408b7122391c0"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
@@ -2699,10 +2707,12 @@ class ProjectProgressContractTests(unittest.TestCase):
             hasattr(checker, "validate_c21_lr02c_start_projection"),
             "C-21/LR-02C start projection validator is required",
         )
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
@@ -2833,7 +2843,9 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_takeover_r2_binds_failure_revocation_and_main_epoch2(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
         historical = copy.deepcopy(bundle)
         progress = historical["progress"]
         _restore_pre_wsl_approval_state(progress)
@@ -2894,17 +2906,17 @@ class ProjectProgressContractTests(unittest.TestCase):
         }
         progress["next_successor_work_package"]["status"] = "ACTIVE_REWORK_R2_MAIN_TAKEOVER"
         stored_manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json").read_text(encoding="utf-8")
         )
         self.assertIn(
             "C21_LR02C_TAKEOVER_R2_MANIFEST_INVALID",
             checker.validate_c21_lr02c_takeover_r2_projection(stored_manifest, historical),
         )
         manifest = copy.deepcopy(stored_manifest)
-        ledger_path = ROOT / "docs/progress/failure-ledger.json"
+        ledger_path = historical_root / "docs/progress/failure-ledger.json"
         ledger_row = next(row for row in manifest["raw_checksums"] if row["path"] == "docs/progress/failure-ledger.json")
         ledger_row["bytes"] = ledger_path.stat().st_size
-        ledger_row["sha256"] = checker.portable_hash(ROOT, "docs/progress/failure-ledger.json")
+        ledger_row["sha256"] = checker.portable_hash(historical_root, "docs/progress/failure-ledger.json")
         self.assertEqual([], checker.validate_c21_lr02c_takeover_r2_projection(manifest, historical))
 
         stale_developer = copy.deepcopy(historical)
@@ -2930,7 +2942,9 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_rework_r3_binds_sticky_incident_and_continuous_epoch2(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
         historical = copy.deepcopy(bundle)
         progress = historical["progress"]
         _restore_pre_wsl_approval_state(progress)
@@ -2975,12 +2989,12 @@ class ProjectProgressContractTests(unittest.TestCase):
             "exact_allowed_paths":event447["details"]["exact_allowed_paths"],
         })
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json").read_text(encoding="utf-8")
         )
-        ledger_path = ROOT / "docs/progress/failure-ledger.json"
+        ledger_path = historical_root / "docs/progress/failure-ledger.json"
         ledger_row = next(row for row in manifest["raw_checksums"] if row["path"] == "docs/progress/failure-ledger.json")
         ledger_row["bytes"] = ledger_path.stat().st_size
-        ledger_row["sha256"] = checker.portable_hash(ROOT, "docs/progress/failure-ledger.json")
+        ledger_row["sha256"] = checker.portable_hash(historical_root, "docs/progress/failure-ledger.json")
         self.assertEqual([], checker.validate_c21_lr02c_rework_r3_projection(manifest, historical))
 
         downgraded = copy.deepcopy(historical)
@@ -3020,8 +3034,10 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_acceptance_r3_keeps_operations_and_c01_blocked(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json").read_text(encoding="utf-8"))
         accepted = copy.deepcopy(bundle)
         progress = accepted["progress"]
         _restore_pre_wsl_approval_state(progress)
@@ -3055,9 +3071,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_operational_start_binds_release_fencing_and_c01_boundary(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "ca945dfe4fed9befedc46620aff24729c3898952"
+        )
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json").read_text(encoding="utf-8")
         )
         started = copy.deepcopy(bundle)
         progress = started["progress"]
@@ -3153,9 +3171,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_backup_portability_rework_start_binds_exact2_and_c01_boundary(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "ca945dfe4fed9befedc46620aff24729c3898952"
+        )
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json").read_text(encoding="utf-8")
         )
         started = copy.deepcopy(bundle)
         progress = started["progress"]
@@ -6471,9 +6491,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_resume_start_projection_activates_exact_leases(self) -> None:
         checker = self.require_checker()
-        manifest_path = ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json"
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json"
         self.assertTrue(manifest_path.is_file(), "development QA resume start manifest is missing")
-        bundle = checker.load_bundle(ROOT)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
         self.assertEqual(501, bundle["progress"]["event_sequence"])
@@ -6490,8 +6512,10 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_resume_rejects_event_fencing_and_decision_mutations(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
         mutations = []
         for index, path, value in (
@@ -6532,8 +6556,10 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_resume_rejects_history_manifest_and_exact_scope_mutations(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
         history = copy.deepcopy(bundle)
         history["events"]["events"][0]["event_id"] += "-tampered"
@@ -6555,8 +6581,10 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_resume_distinguishes_full_blob_prefix_and_execution_authority(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
         self.assertNotIn("proposal_sha256", manifest)
         self.assertEqual("SCRATCH_ONLY_MAIN_REVIEW_INPUT_NOT_AUTHORITY", manifest["proposal_classification"])
@@ -6581,7 +6609,9 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_resume_public_and_real_git_paths_fail_closed(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
         repository = bundle["progress"]["repository"]
         exact64 = sorted(checker.c21_independent_judgment_record_paths())
         exact10 = sorted(checker.c21_development_qa_resume_start_paths())
@@ -6648,6 +6678,138 @@ class ProjectProgressContractTests(unittest.TestCase):
             ("actual_changed_paths", exact64[:-1]),
             ("working_tree_mode", False),
             ("control_descendant_paths", exact10[:-1]),
+            ("worktree_is_clean", True),
+            ("base_is_ancestor", False),
+            ("control_runtime_record_commit_is_direct", True),
+        ):
+            with self.subTest(actual_field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(common, **{field: value})))
+
+    def test_c21_development_qa_review_successor_projects_rework_without_external_hold(self) -> None:
+        checker = self.require_checker()
+        manifest_path = ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file(), "development QA review successor manifest is missing")
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
+        self.assertEqual(506, bundle["progress"]["event_sequence"])
+        self.assertEqual("REWORK_REQUIRED", bundle["progress"]["status"])
+        self.assertEqual("ISSUE_C21_RUNTIME_UI_REWORK_WI", bundle["progress"]["runtime_next_action"])
+        self.assertIsNone(bundle["progress"]["active_agent"])
+        self.assertIsNone(bundle["progress"]["worker_lease"])
+        self.assertIsNone(bundle["progress"]["write_lease"])
+
+    def test_c21_development_qa_review_successor_rejects_decision_and_history_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
+        history = copy.deepcopy(bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(history, copy.deepcopy(manifest)))
+        for field, value in (
+            ("verdict", "BLOCKED_NOT_ACCEPTED"),
+            ("accepted", True),
+            ("c01_status", "STARTED"),
+            ("dir2_status", "TRIGGERED"),
+            ("runtime_next_action", "HOLD_USER_VALIDATION_REQUIRED"),
+            ("provider_runtime_status_port", "PASS"),
+            ("workbench_config", "PASS"),
+            ("ui_click_evidence", True),
+            ("actual_provider_calls", "EXECUTED"),
+            ("actual_telegram_outbound", "EXECUTED"),
+        ):
+            with self.subTest(field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = value
+                self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(copy.deepcopy(bundle), mutated))
+
+    def test_c21_development_qa_review_successor_rejects_event_and_binding_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
+        for index, path, value in (
+            (-5, "event_type", "PACKAGE_COMPLETED"),
+            (-5, "details.write_fencing_token", "tampered"),
+            (-4, "details.execution_fencing_token", "tampered"),
+            (-3, "details.commit", "0" * 40),
+            (-2, "details.verdict", "SPEC_FAIL"),
+            (-1, "details.verdict", "BLOCKED_NOT_ACCEPTED"),
+            (-1, "details.runtime_next_action", "HOLD_USER_VALIDATION_REQUIRED"),
+        ):
+            with self.subTest(event=index, path=path):
+                mutated = copy.deepcopy(bundle)
+                target = mutated["events"]["events"][index]
+                parts = path.split(".")
+                for part in parts[:-1]:
+                    target = target[part]
+                target[parts[-1]] = value
+                self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(mutated, copy.deepcopy(manifest)))
+        for field, value in (
+            ("historical_full_file_bytes", 1),
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_bytes", 1),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("historical_events_canonical_ascii_sha256", "0" * 64),
+            ("developer_commit", "0" * 40),
+            ("developer_exact_path_list_sha256", "0" * 64),
+            ("cumulative_exact_path_list_sha256", "0" * 64),
+            ("record_exact_path_list_sha256", "0" * 64),
+            ("record_commit", "0" * 40),
+            ("record_commit_mode", "SELF_BOUND"),
+        ):
+            with self.subTest(manifest_field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = value
+                self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(copy.deepcopy(bundle), mutated))
+
+    def test_c21_development_qa_review_successor_public_and_real_git_paths_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        exact75 = sorted(checker.c21_development_qa_review_predecessor_paths())
+        exact9 = sorted(checker.c21_development_qa_review_successor_paths())
+        common = {
+            "actual_head": repository["local_head"],
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact75,
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": exact9,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        for field, value in (
+            ("remote_head", "0" * 40),
+            ("feature_remote", "origin/tampered"),
+            ("feature_remote_head", "0" * 40),
+            ("branch", "other"),
+            ("upstream", "origin/other"),
+            ("local_head", "0" * 40),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("worktree_status", "CLEAN"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                mutated = copy.deepcopy(repository)
+                mutated[field] = value
+                self.assertTrue(checker.validate_repository_projection(mutated, **common))
+                real = copy.deepcopy(bundle)
+                real["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(real))
+        for field, value in (
+            ("actual_remote_head", "0" * 40),
+            ("actual_feature_remote_head", "0" * 40),
+            ("actual_changed_paths", exact75[:-1]),
+            ("working_tree_mode", False),
+            ("control_descendant_paths", exact9[:-1]),
             ("worktree_is_clean", True),
             ("base_is_ancestor", False),
             ("control_runtime_record_commit_is_direct", True),

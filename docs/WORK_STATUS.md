@@ -1,3 +1,21 @@
+# C-21 Development QA review successor — seq502~506
+
+- 담당: `seq506_successor_writer`; 상태: `REWORK_REQUIRED`; 기준 clean HEAD `3c6774f98e25bf3b8473575d88da3fcac8fbca59`.
+- TDD RED: successor manifest/helper 부재로 focused `4 failed, 157 deselected`; 의도한 계약 실패이며 제품 failure가 아니다.
+- exact7 독립 판정: `SPEC_PASS / QUALITY_APPROVED / C0 / I0`; 580ed9d→3c6774f direct exact7 hash `15F82A54...14DE9`.
+- 전체 판정: `PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING / C0 / I2`. `PROVIDER_RUNTIME_STATUS_PORT_501`, `WORKBENCH_CONFIG_404_UI_CLICK_NOT_PROVEN`이 남았다.
+- seq502→506: write lease 회수 → worker lease 회수 → package 완료 → exact7 독립 review → C-21 test judgment. active agent/lease는 모두 null이다.
+- seq1~501 보존: full file `891334` bytes / `8AB734F3...E508C`; event-object prefix `891131` bytes / `80B5A599...E2AB`; canonical ASCII `5616162D...E7288`.
+- repository: eef3496→3c6774f exact75 hash `DA55B1DE...FBE3`; record exact9 hash `4B44F07D...2AAE`; postcommit cumulative exact78 hash `4BB888F6...E946`.
+- 외부 actual Provider/Telegram, ysna, main, release/install은 `NOT_EXECUTED`; 현재 gate가 아니며 사용자 대기로 전환하지 않는다.
+- 다음: `ISSUE_C21_RUNTIME_UI_REWORK_WI`; C-01은 `BLOCKED_PENDING_C21_ACCEPTANCE`, DIR-2는 `NOT_TRIGGERED`.
+- 오류 fingerprint `D_TMP_CANONICAL_WRITE_PERMISSION_R1` 1회: 기본 sandbox에서 canonical D:\tmp worktree write가 거부됐고 승인된 동일 generator 실행으로 해소했다. 제품 failure는 아니다.
+- 오류 fingerprint `SEQ506_GENERIC_EVENT_AND_REF_BINDING_R1` 1회: 신규 event type/effect와 checksum registry 결박 누락을 checker가 거부했고 exact9 checker/refs 보완 후 focused와 checker가 PASS했다.
+- 오류 fingerprint `SEQ506_FULL_OUTPUT_TRUNCATED_R1` 1회: 최초 full tooling 종료 출력이 도구 context에서 truncate되어 최종 counts를 회수하지 못했다. 동일 fresh run으로 실제 결과를 다시 확보했으며 제품 failure는 아니다.
+- 오류 fingerprint `SEQ506_HISTORICAL_FIXTURE_CURRENT_BUNDLE_MIX_R1` 1회: fresh full tooling `14 failed, 147 passed / 706.52s`에서 seq424~501 과거 projection tests가 current seq506 ROOT bundle을 사용한 fixture 혼합을 검출했다. checker·historical evidence를 완화/수정하지 않고 각 검증된 historical commit의 detached bundle/root로 분리했으며 실패군 focused `14 passed, 147 deselected / 87.97s`와 잔여 3건 focused `3 passed, 158 deselected / 15.53s`를 확인했다.
+- generator는 historical event prefix 불변과 exact hash를 assert하며 checksum 재결박 후 idempotent 재실행한다. 최종 full tooling 결과는 아래 마감 checkpoint에 추가한다.
+- 최종 마감 checkpoint: fresh full tooling `161 passed, F=0, E=0 / 719.16s / exit0`; JUnit `D:\tmp\anvil-seq506-full161.xml`. 신규 seq506 focused `4 passed, 157 deselected / 12.31s`, checker `PASS sequence=506 reporting=AUTO_CONTINUE`, historical 실패군 focused `14 passed, 147 deselected / 87.97s`다.
+
 # C-21 독립 판정 projection — seq496~498
 
 - 담당: `seq498_result_writer`; 상태: `COMPLETED_FOR_REVIEW`; 기준 HEAD `9a7a6144bcd0a7d38fce291610f40e9608a38309`.

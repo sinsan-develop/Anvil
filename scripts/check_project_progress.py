@@ -767,6 +767,22 @@ def validate_event_stream(
             "required_details": ["verdict", "criteria", "evidence_ref"],
             "effect": "records fail-closed independent test judgment",
         }
+    if any(
+        isinstance(event, dict)
+        and event.get("sequence") == 506
+        and event.get("event_type") == "TEST_JUDGMENT_RECORDED"
+        for event in stream.get("events", [])
+    ):
+        payload_contracts = dict(payload_contracts or {})
+        event_types.update({"INDEPENDENT_TEST_REVIEW_RECORDED", "TEST_JUDGMENT_RECORDED"})
+        payload_contracts["INDEPENDENT_TEST_REVIEW_RECORDED"] = {
+            "required_details": ["verdict", "quality", "developer_commit", "review_report_sha256"],
+            "effect": "records independent exact7 specification and quality review",
+        }
+        payload_contracts["TEST_JUDGMENT_RECORDED"] = {
+            "required_details": ["verdict", "reason_codes", "runtime_next_action"],
+            "effect": "records fail-closed C-21 development QA judgment",
+        }
     if not isinstance(payload_contracts, dict) or set(payload_contracts) != event_types:
         errors.append("EVENT_PAYLOAD_CONTRACT_SET_INVALID")
         payload_contracts = {}
@@ -878,7 +894,13 @@ def validate_event_stream(
             )
             b11_r2_completion = progress.get("event_sequence") == 346 and event.get("event_id") == "evt_b11_r2_package_completed"
             b12_r2_completion = progress.get("event_sequence") == 360 and event.get("event_id") == "evt_b12_r2_package_completed"
-            if not b03_lf_followup and not b03_r3_rework_start and not b11_r2_completion and not b12_r2_completion and (
+            c21_development_qa_review_successor = (
+                progress.get("event_sequence") == 506
+                and event.get("sequence") == 501
+                and event.get("event_id") == "evt_c21_development_qa_package_resumed"
+                and progress.get("last_event_id") == "evt_c21_development_qa_test_judgment_recorded"
+            )
+            if not b03_lf_followup and not b03_r3_rework_start and not b11_r2_completion and not b12_r2_completion and not c21_development_qa_review_successor and (
                 observed_local != repository.get("local_head")
                 or observed_remote != repository.get("remote_head")
                 or details.get("projection_mode") != repository.get("projection_mode")
@@ -939,12 +961,13 @@ def validate_event_stream(
                 )
             )
             wsl_qa_result_successor = (
-                progress.get("event_sequence") in {495, 498}
+                progress.get("event_sequence") in {495, 498, 506}
                 and event.get("sequence") == 494
                 and progress.get("last_event_id")
                 in {
                     "evt_c21_wsl_qa_execution_result_recorded",
                     "evt_c21_independent_test_judgment_recorded",
+                    "evt_c21_development_qa_test_judgment_recorded",
                 }
             )
             if not wsl_waiting_successor and not wsl_control_successor and not wsl_qa_result_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
@@ -2348,6 +2371,12 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
         return validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(
             bundle, wsl_rollback_allowlist_rebind_manifest
         ) == []
+    if (progress.get("event_sequence") == 506 and progress.get("last_event_id") == "evt_c21_development_qa_test_judgment_recorded" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json"):
+        try:
+            review_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json")
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_development_qa_review_successor_projection(bundle, review_manifest) == []
     if (progress.get("event_sequence") == 501 and progress.get("last_event_id") == "evt_c21_development_qa_package_resumed" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json"):
         try:
             resume_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json")
@@ -10552,6 +10581,54 @@ def validate_repository_projection(
     worktree_is_clean: bool = True,
     control_runtime_record_commit_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 506:
+        errors: list[str] = []
+        expected_successor = c21_development_qa_review_successor_paths()
+        expected_committed = c21_development_qa_review_predecessor_paths()
+        expected_cumulative = expected_committed | expected_successor
+        precommit_projection = (
+            actual_head == repository.get("local_head")
+            and set(actual_changed_paths) == expected_committed
+            and set(control_descendant_paths or []) == expected_successor
+            and working_tree_mode
+            and not worktree_is_clean
+            and not control_runtime_record_commit_is_direct
+        )
+        postcommit_projection = (
+            actual_head != repository.get("local_head")
+            and control_is_ancestor
+            and control_runtime_record_commit_is_direct
+            and set(actual_changed_paths) == expected_cumulative
+            and set(control_descendant_paths or []) == expected_successor
+            and not working_tree_mode
+            and worktree_is_clean
+        )
+        if any((
+            repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE,
+            repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+            repository.get("head_relation") != "FEATURE_WORKTREE_C21_DEVELOPMENT_QA_REVIEW_PARENT_EXACT75_RECORD9",
+            repository.get("branch") != "codex/c21-operational-execution",
+            repository.get("upstream") != "origin/codex/c21-operational-execution",
+            repository.get("remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("feature_remote") != "origin/codex/c21-operational-execution",
+            repository.get("local_head") != "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
+            repository.get("feature_remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("worktree_status") != "SEQ506_DEVELOPMENT_QA_REVIEW_EXACT9_DIRTY",
+            set(repository.get("exact_allowed_paths") or []) != expected_cumulative,
+            set(repository.get("development_qa_review_successor_paths") or []) != expected_successor,
+        )):
+            errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        if (not precommit_projection and not postcommit_projection) or actual_branch != repository.get("branch") or actual_upstream != repository.get("upstream"):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if actual_remote_head != repository.get("remote_head") or actual_feature_remote_head != repository.get("feature_remote_head"):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if not precommit_projection and not postcommit_projection:
+            errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+        if actual_head != repository.get("local_head") and not control_runtime_record_commit_is_direct:
+            errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+        if not base_is_ancestor:
+            errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(errors))
     if (progress or {}).get("event_sequence") == 501:
         errors: list[str] = []
         expected_successor = c21_development_qa_resume_start_paths()
@@ -12337,7 +12414,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if isinstance(feature_remote, str) and feature_remote.startswith("origin/")
         else None
     )
-    if bundle["progress"].get("event_sequence") in {495, 498, 501}:
+    if bundle["progress"].get("event_sequence") in {495, 498, 501, 506}:
         parent = repository.get("local_head")
         base = repository.get("validated_base_commit")
         changed = _split_git_paths(_git_value(root,"diff","--name-only",base,actual_head))
@@ -13112,6 +13189,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             )
         elif current_manifest_relative == "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json":
             errors.extend(validate_c21_independent_judgment_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
+            errors.extend(validate_c21_development_qa_review_successor_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json":
             errors.extend(validate_c21_development_qa_resume_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json":
@@ -14008,6 +14087,293 @@ def validate_c21_development_qa_resume_start_projection(bundle: Mapping[str, Any
         progress_raw=(root/"docs/progress/build-progress.json").read_bytes(); handoff_raw=(root/"docs/progress/BUILD_HANDOFF.md").read_bytes()
         if digest.get("event_sequence")!=501 or digest.get("self_reference") is not False or digest.get("progress")!={"path":"docs/progress/build-progress.json","bytes":len(progress_raw),"file_sha256":hashlib.sha256(progress_raw).hexdigest().upper(),"canonical_json_sha256":hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper()} or digest.get("handoff")!={"path":"docs/progress/BUILD_HANDOFF.md","bytes":len(handoff_raw),"file_sha256":hashlib.sha256(handoff_raw).hexdigest().upper(),"machine_summary_canonical_sha256":hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper()}:
             errors.append("C21_DEVELOPMENT_QA_RESUME_DIGEST_INVALID")
+    return sorted(set(errors))
+
+
+def c21_development_qa_review_successor_paths() -> set[str]:
+    return {
+        "docs/04_test_reports/C-21_DEVELOPMENT_QA_INDEPENDENT_REVIEW_REPORT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_development_qa_review_predecessor_paths() -> set[str]:
+    return (
+        c21_independent_judgment_record_paths()
+        | c21_development_qa_resume_start_paths()
+        | c21_development_qa_exact_paths()
+    )
+
+
+def _canonical_ascii_json_bytes(value: Any) -> bytes:
+    return json.dumps(
+        value,
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+
+
+def validate_c21_development_qa_review_successor_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    handoff = bundle.get("handoff") or {}
+    errors: list[str] = []
+    report_path = "docs/04_test_reports/C-21_DEVELOPMENT_QA_INDEPENDENT_REVIEW_REPORT.md"
+    execution_manifest_path = "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json"
+    validation_path = "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json"
+    try:
+        raw = (root / "docs/progress/progress-events.json").read_bytes()
+        historical_prefix = raw_event_object_prefix_bytes(raw, 501)
+        historical_blob = subprocess.check_output(
+            ["git", "show", "3c6774f98e25bf3b8473575d88da3fcac8fbca59:docs/progress/progress-events.json"],
+            cwd=root,
+        )
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        historical_prefix = b""
+        historical_blob = b""
+    historical_ascii = (
+        hashlib.sha256(_canonical_ascii_json_bytes(events[:501])).hexdigest().upper()
+        if len(events) >= 501
+        else ""
+    )
+    if any((
+        len(events) != 506,
+        len(historical_blob) != 891334,
+        hashlib.sha256(historical_blob).hexdigest().upper() != "8AB734F3186E7583D2A1FB41C3197D2D80F0E1798F923BD6394CBF81B5CE508C",
+        len(historical_prefix) != 891131,
+        hashlib.sha256(historical_prefix).hexdigest().upper() != "80B5A5994BEBA5E2CB1BE4BA723E298F16406C938613561A43098DF439F2E2AB",
+        historical_ascii != "5616162D211D306F9351AD977BBB1A27860A2F50D09BEAFBA4349DB7564E7288",
+    )):
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_HISTORY_INVALID")
+
+    terminal = events[-5:] if len(events) >= 5 else []
+    if [event.get("sequence") for event in terminal] != [502, 503, 504, 505, 506] or [event.get("event_type") for event in terminal] != [
+        "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED",
+        "INDEPENDENT_TEST_REVIEW_RECORDED", "TEST_JUDGMENT_RECORDED",
+    ]:
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_EVENT_ORDER_INVALID")
+    report_hash = hashlib.sha256((root / report_path).read_bytes()).hexdigest().upper() if (root / report_path).is_file() else ""
+    execution_manifest_hash = hashlib.sha256((root / execution_manifest_path).read_bytes()).hexdigest().upper() if (root / execution_manifest_path).is_file() else ""
+    expected_event_details = [
+        {
+            "lease_id": "write-lease-c21-development-qa-resume-20260905-001",
+            "worker_lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+            "execution_fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+            "write_fencing_token": "c21-development-qa-write-fence-epoch-1-4178ae7",
+            "reason": "DEVELOPMENT_QA_EXACT7_COMPLETED",
+            "replacement_write_lease": None,
+        },
+        {
+            "lease_id": "worker-lease-c21-development-qa-resume-20260905-001",
+            "execution_fencing_token": "c21-development-qa-execution-fence-epoch-1-4178ae7",
+            "reason": "WRITE_LEASE_REVOKED_AND_DEVELOPMENT_QA_COMPLETED",
+            "precondition_event_id": "evt_c21_development_qa_write_lease_revoked",
+            "replacement_worker_lease": None,
+        },
+        {
+            "commit": "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
+            "parent_commit": "580ed9d7b202383a107b5e0bda0f53b2066cddc5",
+            "developer_exact_path_count": 7,
+            "developer_exact_path_list_sha256": "15F82A54E7A377DB724273185BF8F03C20C9CBB689A43C1B04A3794A89914DE9",
+            "execution_manifest_sha256": execution_manifest_hash,
+            "result_status": "COMPLETED_FOR_INDEPENDENT_REVIEW",
+            "package_status": "PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING",
+            "accepted": False,
+        },
+        {
+            "verdict": "SPEC_PASS",
+            "quality": "APPROVED",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "developer_commit": "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
+            "review_report_sha256": report_hash,
+        },
+        {
+            "verdict": "PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING",
+            "accepted": False,
+            "critical_findings": 0,
+            "important_findings": 2,
+            "reason_codes": ["PROVIDER_RUNTIME_STATUS_PORT_501", "WORKBENCH_CONFIG_404_UI_CLICK_NOT_PROVEN"],
+            "provider_runtime_status_port": "HTTP_501_NOT_IMPLEMENTED",
+            "workbench_config": "HTTP_404",
+            "ui_click_evidence": False,
+            "external_provider_telegram_current_gate": False,
+            "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+            "dir2_status": "NOT_TRIGGERED",
+            "runtime_next_action": "ISSUE_C21_RUNTIME_UI_REWORK_WI",
+        },
+    ]
+    if len(terminal) == 5:
+        expected_actors = ["main-agent-eoul", "main-agent-eoul", "main-agent-eoul", "independent-reviewer", "independent-tester"]
+        expected_ids = [
+            "evt_c21_development_qa_write_lease_revoked",
+            "evt_c21_development_qa_worker_lease_revoked",
+            "evt_c21_development_qa_package_completed",
+            "evt_c21_development_qa_independent_review_recorded",
+            "evt_c21_development_qa_test_judgment_recorded",
+        ]
+        for index, event in enumerate(terminal):
+            if any((
+                event.get("event_id") != expected_ids[index],
+                event.get("actor") != expected_actors[index],
+                event.get("subject_ref") != "C-21/DEVELOPMENT-QA-RESUME",
+                event.get("details") != expected_event_details[index],
+            )):
+                errors.append("C21_DEVELOPMENT_QA_REVIEW_EVENT_INVALID")
+
+    decision = progress.get("development_qa_review") or {}
+    instruction = progress.get("active_work_instruction") or {}
+    if any((
+        progress.get("event_sequence") != 506,
+        progress.get("last_event_id") != "evt_c21_development_qa_test_judgment_recorded",
+        progress.get("current_work_package") != "C-21",
+        progress.get("status") != "REWORK_REQUIRED",
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        progress.get("runtime_next_action") != "ISSUE_C21_RUNTIME_UI_REWORK_WI",
+        (progress.get("next_work_package") or {}).get("status") != "BLOCKED_PENDING_C21_ACCEPTANCE",
+    )):
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_PROJECTION_INVALID")
+    expected_decision = {
+        "event_sequence": 506,
+        "status": "REWORK_REQUIRED",
+        "verdict": "PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING",
+        "accepted": False,
+        "critical_findings": 0,
+        "important_findings": 2,
+        "reason_codes": ["PROVIDER_RUNTIME_STATUS_PORT_501", "WORKBENCH_CONFIG_404_UI_CLICK_NOT_PROVEN"],
+        "provider_runtime_status_port": "HTTP_501_NOT_IMPLEMENTED",
+        "workbench_config": "HTTP_404",
+        "ui_click_evidence": False,
+        "actual_provider_calls": "NOT_EXECUTED",
+        "actual_telegram_outbound": "NOT_EXECUTED",
+        "external_provider_telegram_current_gate": False,
+        "wsl_boundary": "PASS_PG15_PG18RC_RESIDUE_ZERO",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "runtime_next_action": "ISSUE_C21_RUNTIME_UI_REWORK_WI",
+    }
+    if decision != expected_decision:
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_DECISION_INVALID")
+    if any((
+        instruction.get("artifact_id") != "WI-C-21-DEVELOPMENT-QA-RESUME-20260905-001",
+        instruction.get("result_status") != "COMPLETED",
+        instruction.get("package_status") != "PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING",
+        instruction.get("independent_tester_status") != "REWORK_REQUIRED",
+        instruction.get("accepted") is not False,
+        instruction.get("c01_boundary") != "BLOCKED_PENDING_C21_ACCEPTANCE",
+        instruction.get("dir2_status") != "NOT_TRIGGERED",
+        instruction.get("runtime_next_action") != "ISSUE_C21_RUNTIME_UI_REWORK_WI",
+    )):
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_WORK_INSTRUCTION_INVALID")
+
+    record_paths = sorted(c21_development_qa_review_successor_paths())
+    predecessor_paths = sorted(c21_development_qa_review_predecessor_paths())
+    cumulative_paths = sorted(set(predecessor_paths) | set(record_paths))
+    expected_manifest = {
+        "manifest_type": "C21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_PROJECTION",
+        "event_sequence": 506,
+        "appended_event_count": 5,
+        "historical_event_sequence": 501,
+        "historical_full_file_bytes": 891334,
+        "historical_full_file_sha256": "8AB734F3186E7583D2A1FB41C3197D2D80F0E1798F923BD6394CBF81B5CE508C",
+        "historical_event_object_prefix_bytes": 891131,
+        "historical_event_object_prefix_sha256": "80B5A5994BEBA5E2CB1BE4BA723E298F16406C938613561A43098DF439F2E2AB",
+        "historical_events_canonical_ascii_sha256": "5616162D211D306F9351AD977BBB1A27860A2F50D09BEAFBA4349DB7564E7288",
+        "developer_parent_commit": "580ed9d7b202383a107b5e0bda0f53b2066cddc5",
+        "developer_commit": "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
+        "developer_exact_path_count": 7,
+        "developer_exact_path_list_sha256": "15F82A54E7A377DB724273185BF8F03C20C9CBB689A43C1B04A3794A89914DE9",
+        "predecessor_exact_path_count": 75,
+        "predecessor_exact_path_list_sha256": "DA55B1DEB46135B2BBA2F55F7670953068D45972EAB7F3100B9F3302BB2CFBE3",
+        "record_exact_path_count": 9,
+        "record_exact_path_list_sha256": "4B44F07D53DCE77522D0C6B303ED77AAEBEABD050D7E69F6D90B8E9836082AAE",
+        "cumulative_exact_path_count": 78,
+        "cumulative_exact_path_list_sha256": "4BB888F60E77124899C8FA5F5BE9DC5E0E9653628235C256A510D76D6B30E946",
+        "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        "record_commit_mode": "PARENT_PLUS_RUNTIME_DIRECT_CHILD_CHECK",
+        "verdict": "PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING",
+        "accepted": False,
+        "critical_findings": 0,
+        "important_findings": 2,
+        "reason_codes": ["PROVIDER_RUNTIME_STATUS_PORT_501", "WORKBENCH_CONFIG_404_UI_CLICK_NOT_PROVEN"],
+        "provider_runtime_status_port": "HTTP_501_NOT_IMPLEMENTED",
+        "workbench_config": "HTTP_404",
+        "ui_click_evidence": False,
+        "actual_provider_calls": "NOT_EXECUTED",
+        "actual_telegram_outbound": "NOT_EXECUTED",
+        "external_provider_telegram_current_gate": False,
+        "wsl_boundary": "PASS_PG15_PG18RC_RESIDUE_ZERO",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "runtime_next_action": "ISSUE_C21_RUNTIME_UI_REWORK_WI",
+        "developer_execution_manifest_sha256": execution_manifest_hash,
+        "review_report_sha256": report_hash,
+        "record_exact_paths": record_paths,
+        "predecessor_exact_paths": predecessor_paths,
+        "cumulative_exact_paths": cumulative_paths,
+        "self_reference": False,
+    }
+    for field, expected in expected_manifest.items():
+        if manifest.get(field) != expected:
+            errors.append("C21_DEVELOPMENT_QA_REVIEW_MANIFEST_INVALID")
+    if "record_commit_sha256" in manifest:
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_MANIFEST_INVALID")
+    rows = manifest.get("raw_checksums")
+    expected_rows = {report_path, execution_manifest_path, validation_path, digest_path, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"}
+    if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_rows:
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_RAW_SET_INVALID")
+    else:
+        for row in rows:
+            path = root / row["path"]
+            if not path.is_file() or row.get("bytes") != path.stat().st_size or row.get("sha256") != hashlib.sha256(path.read_bytes()).hexdigest().upper():
+                errors.append("C21_DEVELOPMENT_QA_REVIEW_RAW_INVALID")
+    if any((
+        handoff.get("event_sequence") != 506,
+        handoff.get("status") != "REWORK_REQUIRED",
+        handoff.get("active_agent") is not None,
+        handoff.get("worker_lease") is not None,
+        handoff.get("write_lease") is not None,
+        handoff.get("accepted") is not False,
+        handoff.get("c01_status") != "BLOCKED_PENDING_C21_ACCEPTANCE",
+        handoff.get("dir2_status") != "NOT_TRIGGERED",
+        handoff.get("runtime_next_action") != "ISSUE_C21_RUNTIME_UI_REWORK_WI",
+    )):
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_HANDOFF_INVALID")
+    try:
+        digest = _load_json(root / digest_path)
+    except (OSError, json.JSONDecodeError, TypeError):
+        errors.append("C21_DEVELOPMENT_QA_REVIEW_DIGEST_INVALID")
+    else:
+        progress_raw = (root / "docs/progress/build-progress.json").read_bytes()
+        handoff_raw = (root / "docs/progress/BUILD_HANDOFF.md").read_bytes()
+        if any((
+            digest.get("schema_version") != "1.0.0",
+            digest.get("digest_id") != "C21-DEVELOPMENT-QA-REVIEW-DIGEST-20260905",
+            digest.get("package_id") != "C-21",
+            digest.get("event_sequence") != 506,
+            digest.get("algorithm") != "SHA-256",
+            digest.get("created_at") != "2026-09-05T23:15:00+09:00",
+            digest.get("scope") != "C-21 development QA reviewed; runtime UI rework required; no external Provider/Telegram gate or user hold.",
+            digest.get("self_reference") is not False,
+            digest.get("progress") != {"path": "docs/progress/build-progress.json", "bytes": len(progress_raw), "file_sha256": hashlib.sha256(progress_raw).hexdigest().upper(), "canonical_json_sha256": hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper()},
+            digest.get("handoff") != {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": len(handoff_raw), "file_sha256": hashlib.sha256(handoff_raw).hexdigest().upper(), "machine_summary_canonical_sha256": hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper()},
+        )):
+            errors.append("C21_DEVELOPMENT_QA_REVIEW_DIGEST_INVALID")
     return sorted(set(errors))
 
 

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-DEVELOPMENT-QA-REVIEW-DIGEST-20260905",
+  "package_id": "C-21",
+  "event_sequence": 506,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-05T23:15:00+09:00",
+  "scope": "C-21 development QA reviewed; runtime UI rework required; no external Provider/Telegram gate or user hold.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 106673,
+    "file_sha256": "4C62308536F2ACF3AD9299B4088F12309505D729F5177E606502CB65E2850F3F",
+    "canonical_json_sha256": "256BFE89FEC51C9381192A8E683E8491B906A7E4265EFA7A0657745741B11220"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 172461,
+    "file_sha256": "DB86083D398356D926D24928B7228825FACCD50AA4DACEB77296B4161FC17FB1",
+    "machine_summary_canonical_sha256": "C254F9E8671512D4458F25180A11330FB2432B44C16FF37C0DC478F6DE6E0019"
+  }
+}

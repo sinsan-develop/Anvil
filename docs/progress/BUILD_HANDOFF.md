@@ -1,3 +1,11 @@
+# C-21 Development QA review successor — seq506
+
+- exact7 commit `3c6774f98e25bf3b8473575d88da3fcac8fbca59` is `SPEC_PASS / QUALITY_APPROVED / C0 / I0`.
+- Overall C-21 remains unaccepted: `PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING / C0 / I2`.
+- Open findings are runtime Provider status HTTP 501 and Workbench config HTTP 404/no UI-click evidence.
+- WSL PG15/PG18RC boundary QA and cleanup passed; actual Provider calls and Telegram outbound are not the current gate and remain unexecuted.
+- Status is `REWORK_REQUIRED`; next action is `ISSUE_C21_RUNTIME_UI_REWORK_WI`, not a user/external approval hold.
+
 # C-21 개발 QA 재개 — seq501
 
 - seq499→501로 developer-primary worker/write lease를 발급하고 `ACTIVE_DEVELOPMENT_QA`로 재개했다.
@@ -680,11 +688,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 501,
-  "status": "ACTIVE_DEVELOPMENT_QA",
+  "event_sequence": 506,
+  "status": "REWORK_REQUIRED",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_development_qa_package_resumed",
-  "updated_at": "2026-09-05T20:30:00+09:00",
+  "last_event_id": "evt_c21_development_qa_test_judgment_recorded",
+  "updated_at": "2026-09-05T23:15:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "active_work_instruction_sha256": "2A666150A935D57715B5CA6876D5CD594E35B8EC7710CD65E8F893237313DA2B",
@@ -697,13 +705,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "historical_seq1_487_raw_bytes": 786441,
   "historical_seq1_487_raw_sha256": "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
   "historical_seq1_487_canonical_sha256": "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
-  "next_safe_action": "developer-primary가 exact7 범위에서 outbound-free C-21 개발 QA를 수행한다. C-01, DIR-2, ysna, main, 실제 Provider/Telegram 외부 호출은 시작하지 않는다.",
+  "next_safe_action": "Issue the C-21 runtime Provider status and Workbench UI rework WorkInstruction; do not wait for external Provider or Telegram validation.",
   "dir_status": "CLEARED",
-  "repository_head": "4178ae78db2c48e176e8543364d09787e54bb4ad",
+  "repository_head": "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_DEVELOPMENT_QA_RESUME_PARENT_EXACT64_RECORD10",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_DEVELOPMENT_QA_REVIEW_PARENT_EXACT75_RECORD9",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -717,8 +725,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "deploy/wsl/nginx-wsl.conf",
     "deploy/wsl/requirements-runtime.txt",
     "deploy/wsl/rollback.sh",
+    "deploy/wsl/verify-c21-development-boundaries.sh",
     "deploy/wsl/verify.sh",
     "deploy/ysna/backup-c21-db.sh",
+    "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
+    "docs/04_test_reports/C-21_DEVELOPMENT_QA_INDEPENDENT_REVIEW_REPORT.md",
     "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
     "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
@@ -728,7 +739,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/WORK_STATUS.md",
     "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+    "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
     "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
@@ -749,6 +762,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
     "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
+    "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json",
     "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
@@ -763,6 +777,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+    "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
@@ -770,6 +785,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
+    "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+    "tests/api/test_c21_telegram_outbound_free_qa.py",
+    "tests/browser/c21-network-probe.mjs",
     "tests/deploy/test_c21_lr02c_operational_contract.py",
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
@@ -827,7 +845,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "record_exact13_path_list_sha256": "F17A6B348C9A88343FCB9DE019A80429698293C62E7C2D35ADCBD9D23C049DEF",
   "postcommit_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
   "runtime_safety_gate": "ACTIVE_DEVELOPMENT_QA_EXACT7",
-  "runtime_next_action": "EXECUTE_C21_DEVELOPMENT_QA_EXACT7",
+  "runtime_next_action": "ISSUE_C21_RUNTIME_UI_REWORK_WI",
   "repository_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
   "record_exact12_path_list_sha256": "315FA23EA1B82C16252A749802C3CE94E611BDF3618BF55837A2FBEA187185F5",
   "postcommit_exact56_path_list_sha256": "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714",
@@ -838,9 +856,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "postcommit_exact64_path_list_sha256": "00293DE61AD5E4DDEB88DE1F62384EFC2044501E0024B9507FF1306BE32E9A10",
   "c21_verdict": "BLOCKED_NOT_ACCEPTED",
   "accepted": false,
-  "worker_lease": "worker-lease-c21-development-qa-resume-20260905-001",
-  "write_lease": "write-lease-c21-development-qa-resume-20260905-001",
-  "active_agent": "developer-primary",
+  "worker_lease": null,
+  "write_lease": null,
+  "active_agent": null,
   "criteria": {
     "1": "PASS_SCOPE_LIMITED",
     "2": "PARTIAL_BLOCKED",
@@ -854,9 +872,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "validation_scope": "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY",
   "seq495_manifest_sha256": "58CA650E6D413801C849F8F5290CFA3C642F1F9B74941DFD0E5CDD26C09DC32E",
   "seq495_report_sha256": "5ED610214E923F2B51F42B3465954066043D782AFD3EB8FC855F34B24E1D5961",
-  "provider_runtime_status_port": "NOT_IMPLEMENTED_RUNTIME_PROVIDER_STATUS_PORT",
+  "provider_runtime_status_port": "HTTP_501_NOT_IMPLEMENTED",
   "browser_scope": "PAGE_EVALUATE_FETCH_SCOPE_ONLY",
-  "telegram_scope": "OUTBOUND_FREE_SCOPE_ONLY"
+  "telegram_scope": "OUTBOUND_FREE_SCOPE_ONLY",
+  "workbench_config": "HTTP_404",
+  "ui_click_evidence": false,
+  "actual_provider_calls": "NOT_EXECUTED",
+  "actual_telegram_outbound": "NOT_EXECUTED"
 }
 ```
 
