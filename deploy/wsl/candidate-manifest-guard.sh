@@ -3,6 +3,7 @@ set -euo pipefail
 
 validate_wsl_candidate_binding() {
   local repo="$1" manifest_ref="$2" expected="$3"
+  local pinned_control_sha="${4:-}"
   local control_ref='refs/remotes/origin/codex/c21-operational-execution'
   local candidate_ref='refs/remotes/origin/candidates/c21-wsl-exact54'
   [[ "$manifest_ref" == "$control_ref" ]] || { echo 'candidate control ref must be the exact successor remote-tracking ref' >&2; return 20; }
@@ -11,21 +12,22 @@ validate_wsl_candidate_binding() {
   control_sha="$(git -C "$repo" rev-parse --verify "$control_ref^{commit}")" || {
     echo 'candidate manifest ref is not a reachable commit' >&2; return 20;
   }
+  [[ -z "$pinned_control_sha" || "$control_sha" == "$pinned_control_sha" ]] || { echo 'pinned control revision mismatch' >&2; return 20; }
   [[ "$control_sha" != "$expected" ]] || { echo 'candidate and control commits must be distinct' >&2; return 20; }
   local payload manifest_path='deploy/wsl/CandidateReleaseManifest.json' actual_hash supplied_hash
   supplied_hash="${ANVIL_CANDIDATE_MANIFEST_SHA256:?candidate manifest checksum is required}"
   [[ "$supplied_hash" =~ ^[0-9a-fA-F]{64}$ ]] || { echo 'candidate manifest checksum format is invalid' >&2; return 20; }
-  actual_hash="$(git -C "$repo" show "$control_ref:$manifest_path" | sha256sum | cut -d' ' -f1)" || {
+  actual_hash="$(git -C "$repo" show "$control_sha:$manifest_path" | sha256sum | cut -d' ' -f1)" || {
     echo 'CandidateReleaseManifest.json missing from control ref' >&2; return 20;
   }
   [[ "${actual_hash,,}" == "${supplied_hash,,}" ]] || {
     echo 'candidate manifest checksum mismatch' >&2; return 20;
   }
-  payload="$(git -C "$repo" show "$control_ref:$manifest_path")" || {
+  payload="$(git -C "$repo" show "$control_sha:$manifest_path")" || {
     echo 'CandidateReleaseManifest.json missing from manifest ref' >&2; return 20;
   }
   local exception_hash
-  exception_hash="$(git -C "$repo" show "$control_ref:docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md" | sha256sum | cut -d' ' -f1)" || { echo 'ingress exception approval missing' >&2; return 20; }
+  exception_hash="$(git -C "$repo" show "$control_sha:docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md" | sha256sum | cut -d' ' -f1)" || { echo 'ingress exception approval missing' >&2; return 20; }
   [[ "${exception_hash^^}" == 'C046CF9C390E6F0A3A3BA3F1BC0859CAACD33B28F7DEDB03868545A66570C87C' ]] || { echo 'ingress exception approval checksum mismatch' >&2; return 20; }
   local remote_ref candidate_parent
   local python_bin="${ANVIL_PYTHON:-python3}"
@@ -160,10 +162,73 @@ PY
   }
 }
 
-# Existing runtime entrypoint: binding acceptance is not execution authorization.
-# No bypass flag: external execution requires a separate in-scope instruction.
+# State validation is separate from candidate binding. Runtime callers use only
+# the public function below, which validates both against the pinned control.
+validate_wsl_execution_resume() {
+  local repo="$1" control_sha="$2" expected="$3"
+  local python_bin="${ANVIL_PYTHON:-python3}"
+  local checksum="${ANVIL_CANDIDATE_MANIFEST_SHA256:-}"
+  [[ "$control_sha" =~ ^[0-9a-f]{40}$ && "$expected" =~ ^[0-9a-f]{40}$ ]] || return 22
+  "$python_bin" - "$repo" "$control_sha" "$expected" "$checksum" <<'PY' || return 22
+import hashlib, json, re, subprocess, sys
+repo, control, expected, checksum = sys.argv[1:]
+def reject(reason):
+    raise SystemExit('runtime execution blocked: ' + reason)
+def git_blob(path):
+    try:
+        return subprocess.check_output(['git', 'show', f'{control}:{path}'], cwd=repo, stderr=subprocess.DEVNULL)
+    except (OSError, subprocess.CalledProcessError):
+        reject('required immutable control blob missing')
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError('duplicate manifest key')
+        result[key] = value
+    return result
+raw = git_blob('deploy/wsl/CandidateReleaseManifest.json')
+if not re.fullmatch(r'[0-9a-fA-F]{64}', checksum) or hashlib.sha256(raw).hexdigest().lower() != checksum.lower():
+    reject('manifest checksum mismatch')
+try:
+    doc = json.loads(raw, object_pairs_hook=unique_object)
+    gate = doc.get('runtime_safety_gate')
+    if gate != 'READY_FOR_APPROVED_WSL_QA':
+        reject(gate if gate in ('BLOCKED_IMPORTANT_I3', 'BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE') else 'missing or unknown execution state')
+    authority = doc['authority']
+    derived = authority['derived_binding']
+    canonical = json.dumps(derived, ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode('utf-8')
+    if hashlib.sha256(canonical).hexdigest().upper() != authority['derived_binding_sha256']:
+        reject('derived binding checksum mismatch')
+    if doc['source']['commit'] != expected or derived['candidate_commit'] != expected:
+        reject('execution candidate binding mismatch')
+    resume = derived['execution_resume']
+except (ValueError, KeyError, TypeError, AttributeError):
+    reject('execution resume binding missing or malformed')
+required = {
+    'work_instruction_path': 'docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md',
+    'work_instruction_sha256': '52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8',
+    'predecessor_control_commit': 'ad3355baf0aa94da27b8cb6b5ee5a90215ee5994',
+    'environment': 'WSL_SERVER_TEST_STAGING',
+    'postgres_targets': ['15', '18-rc'],
+    'actions': ['deploy', 'verify', 'rollback', 'cleanup'],
+    'exclusions': ['TELEGRAM_EXECUTION', 'PROVIDER_EXECUTION', 'YSNA_EXECUTION', 'MAIN_MERGE'],
+}
+if resume != required:
+    reject('execution resume scope mismatch')
+if hashlib.sha256(git_blob(required['work_instruction_path'])).hexdigest().upper() != required['work_instruction_sha256']:
+    reject('work instruction checksum mismatch')
+PY
+}
+
+# Binding acceptance alone never authorizes execution. A live HOLD manifest
+# remains blocked; the reviewed successor must carry the exact resume contract.
 validate_wsl_candidate_manifest() {
-  validate_wsl_candidate_binding "$@" || return $?
-  echo 'runtime execution blocked: BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE; external execution is outside the current instruction scope' >&2
-  return 22
+  local repo="$1" manifest_ref="$2" expected="$3" control_sha current_control
+  local manifest_checksum="${ANVIL_CANDIDATE_MANIFEST_SHA256:-}"
+  control_sha="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ "$control_sha" =~ ^[0-9a-f]{40}$ ]] || return 20
+  validate_wsl_candidate_binding "$repo" "$manifest_ref" "$expected" "$control_sha" || return $?
+  current_control="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ "$current_control" == "$control_sha" ]] || { echo 'control revision changed during runtime validation' >&2; return 20; }
+  ANVIL_CANDIDATE_MANIFEST_SHA256="$manifest_checksum" validate_wsl_execution_resume "$repo" "$control_sha" "$expected"
 }

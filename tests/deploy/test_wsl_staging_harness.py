@@ -1466,5 +1466,131 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
     def test_malformed_sha_allowlist_is_rejected(self): self._case("malformed_sha")
     def test_control_ref_change_during_validation_is_rejected(self): self._case("control_ref_race")
 
+@unittest.skipUnless(shutil.which("bash"), "bash is required")
+class WslExecutionResumeStateUnitTests(unittest.TestCase):
+    """State helper fixtures only: not full READY guard or actual WSL execution."""
+    WI = "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md"
+    EXPECTED = "a" * 40
+    CONTRACT = {
+        "work_instruction_path": WI,
+        "work_instruction_sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
+        "predecessor_control_commit": "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994",
+        "environment": "WSL_SERVER_TEST_STAGING",
+        "postgres_targets": ["15", "18-rc"],
+        "actions": ["deploy", "verify", "rollback", "cleanup"],
+        "exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION", "YSNA_EXECUTION", "MAIN_MERGE"],
+    }
+
+    def _case(self, scenario):
+        with tempfile.TemporaryDirectory() as raw:
+            repo = Path(raw) / "repo"
+            repo.mkdir()
+            def git(*args):
+                return subprocess.check_output(["git", *args], cwd=repo).decode().strip()
+            git("init", "--quiet")
+            git("config", "core.autocrlf", "false")
+            git("config", "user.name", "Anvil State Unit")
+            git("config", "user.email", "state-unit@example.invalid")
+            wi = repo / self.WI
+            wi.parent.mkdir(parents=True)
+            wi.write_bytes((ROOT / self.WI).read_bytes())
+            doc = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
+            doc["source"]["commit"] = self.EXPECTED
+            doc["runtime_safety_gate"] = "READY_FOR_APPROVED_WSL_QA"
+            binding = doc["authority"]["derived_binding"]
+            binding["candidate_commit"] = self.EXPECTED
+            binding["execution_resume"] = json.loads(json.dumps(self.CONTRACT))
+            if scenario in ("BLOCKED_IMPORTANT_I3", "BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE", "UNKNOWN"):
+                doc["runtime_safety_gate"] = scenario
+            elif scenario == "missing_gate": del doc["runtime_safety_gate"]
+            elif scenario == "gate_only": del binding["execution_resume"]
+            elif scenario == "parent": binding["execution_resume"]["predecessor_control_commit"] = "b" * 40
+            elif scenario == "actions": binding["execution_resume"]["actions"].append("publish")
+            elif scenario == "exclusions": binding["execution_resume"]["exclusions"] = []
+            elif scenario == "environment": binding["execution_resume"]["environment"] = "YSNA"
+            elif scenario == "targets": binding["execution_resume"]["postgres_targets"] = ["15"]
+            elif scenario == "wi_hash": binding["execution_resume"]["work_instruction_sha256"] = "F" * 64
+            elif scenario == "wi_blob": wi.write_bytes(wi.read_bytes() + b"\nUNAPPROVED\n")
+            doc["authority"]["derived_binding_sha256"] = hashlib.sha256(WslCandidateManifestGuardTests._canonical(binding)).hexdigest().upper()
+            if scenario == "derived_hash": doc["authority"]["derived_binding_sha256"] = "0" * 64
+            manifest = repo / "deploy/wsl/CandidateReleaseManifest.json"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            git("add", ".")
+            git("commit", "--quiet", "-m", "isolated state fixture")
+            control = git("rev-parse", "HEAD")
+            checksum = hashlib.sha256(subprocess.check_output(["git", "show", f"{control}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo)).hexdigest()
+            if scenario == "raw_checksum": checksum = "0" * 64
+            posix = WslCandidateManifestGuardTests._posix
+            command = f"source '{posix(GUARD)}'; validate_wsl_execution_resume '{posix(repo)}' {control} {self.EXPECTED}"
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_PYTHON": posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
+            self.assertEqual(0 if scenario == "ready" else 22, result.returncode, result.stderr)
+
+    def test_ready_state_requires_exact_existing_instruction_scope(self): self._case("ready")
+    def test_blocked_or_missing_gate_stays_blocked(self):
+        for scenario in ("BLOCKED_IMPORTANT_I3", "BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE", "UNKNOWN", "missing_gate"):
+            with self.subTest(scenario=scenario): self._case(scenario)
+    def test_gate_only_or_coherent_scope_promotion_is_rejected(self):
+        for scenario in ("gate_only", "parent", "actions", "exclusions", "environment", "targets", "wi_hash"):
+            with self.subTest(scenario=scenario): self._case(scenario)
+    def test_instruction_blob_and_manifest_checksums_are_verified(self):
+        for scenario in ("wi_blob", "derived_hash", "raw_checksum"):
+            with self.subTest(scenario=scenario): self._case(scenario)
+
+    def test_public_runtime_rejects_control_ref_changed_by_binding_validation(self):
+        helper = WslCandidateManifestGuardTests()
+        temp, repo, candidate, control_ref, checksum = helper._repo()
+        with temp:
+            # Isolate ref-race behavior; only the binding collaborator is instrumented.
+            command = (f"source '{helper._posix(GUARD)}'; "
+                f"validate_wsl_candidate_binding() {{ git -C '{helper._posix(repo)}' update-ref {control_ref} {candidate}; }}; "
+                f"validate_wsl_candidate_manifest '{helper._posix(repo)}' {control_ref} {candidate}")
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_PYTHON": helper._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
+            self.assertEqual(20, result.returncode, result.stderr)
+            self.assertIn("control revision changed", result.stderr)
+
+    def test_public_runtime_rechecks_original_raw_checksum_after_binding(self):
+        helper = WslCandidateManifestGuardTests()
+        temp, repo, candidate, control_ref, _ = helper._repo()
+        with temp:
+            # Instrument only binding to reach the public runtime checksum boundary.
+            command = (f"source '{helper._posix(GUARD)}'; validate_wsl_candidate_binding() {{ return 0; }}; "
+                f"validate_wsl_candidate_manifest '{helper._posix(repo)}' {control_ref} {candidate}")
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_PYTHON": helper._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": "0" * 64})
+            self.assertEqual(22, result.returncode, result.stderr)
+            self.assertIn("manifest checksum mismatch", result.stderr)
+
+    def test_public_runtime_rejects_aba_control_capture_during_binding(self):
+        helper = WslCandidateManifestGuardTests()
+        temp, repo, candidate, control_ref, checksum = helper._repo()
+        with temp:
+            original = helper._git(repo, "rev-parse", control_ref)
+            sibling = helper._git(repo, "commit-tree", helper._git(repo, "rev-parse", "HEAD^{tree}"), "-p", candidate, "-m", "same-tree sibling for ABA fixture")
+            counter = helper._posix(repo / ".git" / "control-lookups")
+            command = f'''source '{helper._posix(GUARD)}'
+git() {{
+  if [[ "$*" == *'rev-parse --verify {control_ref}^{{commit}}' ]]; then
+    count=0; [[ ! -f '{counter}' ]] || read -r count < '{counter}'
+    count=$((count+1)); printf '%s\\n' "$count" > '{counter}'
+    if [[ "$count" == 2 ]]; then
+      command git -C '{helper._posix(repo)}' update-ref {control_ref} {sibling}
+      command git "$@"
+      command git -C '{helper._posix(repo)}' update-ref {control_ref} {original}
+      return 0
+    fi
+  fi
+  command git "$@"
+}}
+validate_wsl_candidate_manifest '{helper._posix(repo)}' {control_ref} {candidate}
+'''
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_PYTHON": helper._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
+            self.assertEqual(original, helper._git(repo, "rev-parse", control_ref))
+            self.assertEqual(20, result.returncode, result.stderr)
+            self.assertIn("pinned control revision mismatch", result.stderr)
+
 if __name__ == "__main__":
     unittest.main()
