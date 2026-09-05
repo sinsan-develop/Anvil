@@ -6687,9 +6687,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_review_successor_projects_rework_without_external_hold(self) -> None:
         checker = self.require_checker()
-        manifest_path = ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json"
+        bundle, historical_root = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json"
         self.assertTrue(manifest_path.is_file(), "development QA review successor manifest is missing")
-        bundle = checker.load_bundle(ROOT)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
         self.assertEqual(506, bundle["progress"]["event_sequence"])
@@ -6701,8 +6703,10 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_review_successor_rejects_decision_and_history_mutations(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
         history = copy.deepcopy(bundle)
         history["events"]["events"][0]["event_id"] += "-tampered"
@@ -6726,8 +6730,10 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_review_successor_rejects_event_and_binding_mutations(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
         for index, path, value in (
             (-5, "event_type", "PACKAGE_COMPLETED"),
@@ -6766,7 +6772,9 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_development_qa_review_successor_public_and_real_git_paths_fail_closed(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
         repository = bundle["progress"]["repository"]
         exact75 = sorted(checker.c21_development_qa_review_predecessor_paths())
         exact9 = sorted(checker.c21_development_qa_review_successor_paths())
@@ -6816,6 +6824,164 @@ class ProjectProgressContractTests(unittest.TestCase):
         ):
             with self.subTest(actual_field=field):
                 self.assertTrue(checker.validate_repository_projection(repository, **dict(common, **{field: value})))
+
+    def test_c21_provider_status_read_start_projects_exact_leases_and_boundaries(self) -> None:
+        checker = self.require_checker()
+        manifest_path = ROOT / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file(), "Provider status READ start manifest is missing")
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_provider_status_read_start_projection(bundle, manifest))
+        self.assertEqual(10, len(checker.c21_provider_status_read_start_paths()))
+        self.assertEqual(18, len(checker.c21_provider_status_read_lease_paths()))
+        self.assertEqual(
+            "300FEF86F8357958E74BEAAA9440CA4B7F56240CC1C9B51A115A58B48B4122E8",
+            checker._path_list_sha256(checker.c21_provider_status_read_lease_paths()),
+        )
+        self.assertEqual("ACTIVE_PROVIDER_STATUS_READ", bundle["progress"]["status"])
+        self.assertEqual("developer-primary", bundle["progress"]["active_agent"])
+        self.assertFalse(bundle["progress"]["provider_status_read"]["accepted"])
+        prompt_sha = hashlib.sha256(
+            (ROOT / "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md").read_bytes()
+        ).hexdigest().upper()
+        self.assertEqual(prompt_sha, bundle["progress"]["active_work_instruction"]["invocation_sha256"])
+        self.assertEqual(prompt_sha, bundle["handoff"]["active_invocation_sha256"])
+
+    def test_c21_provider_status_read_start_rejects_event_lease_history_and_boundary_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_provider_status_read_start_projection(bundle, manifest))
+        mutations = []
+        for index, path, value in (
+            (-3, "event_type", "PACKAGE_STARTED"),
+            (-3, "details.execution_fencing_token", "tampered"),
+            (-2, "details.write_fencing_token", "tampered"),
+            (-2, "details.paths", ["other"]),
+            (-1, "details.runtime_next_action", "WAIT_FOR_EXTERNAL_PROVIDER"),
+        ):
+            changed = copy.deepcopy(bundle)
+            target = changed["events"]["events"][index]
+            parts = path.split(".")
+            for part in parts[:-1]:
+                target = target[part]
+            target[parts[-1]] = value
+            mutations.append((path, changed, copy.deepcopy(manifest)))
+        for field, value in (
+            ("status", "WAITING_APPROVAL"),
+            ("active_agent", None),
+            ("worker_lease", None),
+            ("write_lease", None),
+        ):
+            changed = copy.deepcopy(bundle)
+            changed["progress"][field] = value
+            mutations.append((field, changed, copy.deepcopy(manifest)))
+        for field, value in (
+            ("accepted", True),
+            ("c01_status", "READY"),
+            ("dir2_status", "TRIGGERED"),
+            ("actual_provider_calls", "EXECUTED"),
+            ("database_migration", "EXECUTED"),
+            ("runtime_next_action", "EXECUTE_WORKBENCH_UI_REWORK"),
+        ):
+            changed = copy.deepcopy(bundle)
+            changed["progress"]["provider_status_read"][field] = value
+            mutations.append((field, changed, copy.deepcopy(manifest)))
+        history = copy.deepcopy(bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("history", history, copy.deepcopy(manifest)))
+        for field, value in (
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("historical_events_canonical_ascii_sha256", "0" * 64),
+            ("start_exact_path_list_sha256", "0" * 64),
+            ("lease_exact_path_list_sha256", "0" * 64),
+            ("execution_authority_sha256", "0" * 64),
+        ):
+            changed_manifest = copy.deepcopy(manifest)
+            changed_manifest[field] = value
+            mutations.append((field, copy.deepcopy(bundle), changed_manifest))
+        for scenario, changed_bundle, changed_manifest in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertTrue(checker.validate_c21_provider_status_read_start_projection(changed_bundle, changed_manifest))
+        stale_handoff = copy.deepcopy(bundle)
+        stale_handoff["handoff"]["active_invocation_sha256"] = "0" * 64
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_HANDOFF_INVALID",
+            checker.validate_c21_provider_status_read_start_projection(stale_handoff, copy.deepcopy(manifest)),
+        )
+
+    def test_c21_provider_status_read_start_public_and_real_git_paths_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        exact78 = sorted(checker.c21_development_qa_review_predecessor_paths() | checker.c21_development_qa_review_successor_paths())
+        exact10 = sorted(checker.c21_provider_status_read_start_paths())
+        common = {
+            "actual_head": repository["local_head"],
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact78,
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": exact10,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        postcommit = dict(
+            common,
+            actual_head="e" * 40,
+            actual_changed_paths=sorted(set(exact78) | set(exact10)),
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for field, value in (
+            ("actual_changed_paths", sorted(set(exact78) | set(exact10))[:-1]),
+            ("control_descendant_paths", exact10[:-1]),
+            ("working_tree_mode", True),
+            ("control_is_ancestor", False),
+            ("worktree_is_clean", False),
+            ("control_runtime_record_commit_is_direct", False),
+        ):
+            with self.subTest(postcommit_field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(postcommit, **{field: value})))
+        for field, value in (
+            ("actual_remote_head", "0" * 40),
+            ("actual_feature_remote_head", "0" * 40),
+            ("actual_changed_paths", exact78[:-1]),
+            ("control_descendant_paths", exact10[:-1]),
+            ("working_tree_mode", False),
+            ("worktree_is_clean", True),
+            ("base_is_ancestor", False),
+        ):
+            with self.subTest(field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(common, **{field: value})))
+        for field, value in (
+            ("branch", "other"),
+            ("upstream", "origin/other"),
+            ("remote_head", "0" * 40),
+            ("feature_remote", "origin/other"),
+            ("feature_remote_head", "0" * 40),
+            ("validated_base_commit", "0" * 40),
+            ("local_head", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("worktree_status", "CLEAN"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                changed = copy.deepcopy(repository)
+                changed[field] = value
+                self.assertTrue(checker.validate_repository_projection(changed, **common))
+                changed_bundle = copy.deepcopy(bundle)
+                changed_bundle["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(changed_bundle))
 
 if __name__ == "__main__":
     unittest.main()

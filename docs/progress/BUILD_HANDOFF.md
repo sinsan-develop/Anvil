@@ -1,3 +1,10 @@
+# C-21 Provider status READ start — seq507~509
+
+- `developer-primary` exact18 write lease가 활성화됐다. actual 변경은 lease subset이어야 하며 모든 READ semantics를 충족한다.
+- 9개 canonical lowercase ID, uppercase display, UPSTAGE primary, env presence-only와 fail-closed MoA를 구현한다.
+- GET list/detail/models만 이번 slice다. configure/test/refresh POST는 501로 유지하고 Workbench UI는 다음 slice다.
+- 실제 Provider/Telegram, DB migration, ysna/main/release/install은 실행하지 않는다. C-21 accepted=false, C-01 차단, DIR-2 미발생이다.
+
 # C-21 Development QA review successor — seq506
 
 - exact7 commit `3c6774f98e25bf3b8473575d88da3fcac8fbca59` is `SPEC_PASS / QUALITY_APPROVED / C0 / I0`.
@@ -688,15 +695,15 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 506,
-  "status": "REWORK_REQUIRED",
+  "event_sequence": 509,
+  "status": "ACTIVE_PROVIDER_STATUS_READ",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_development_qa_test_judgment_recorded",
-  "updated_at": "2026-09-05T23:15:00+09:00",
+  "last_event_id": "evt_c21_provider_status_read_package_started",
+  "updated_at": "2026-09-06T00:50:00+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
-  "active_work_instruction_sha256": "2A666150A935D57715B5CA6876D5CD594E35B8EC7710CD65E8F893237313DA2B",
-  "active_invocation_sha256": "1A368B584880FE61272D7884139C6034E64678C3CA6A7C3A572FB9BFD4EFD220",
+  "active_work_instruction_sha256": "336B5C84F6319DF823A1F432F785FD7A0D28730832E806F8F67ACC39DBB8D495",
+  "active_invocation_sha256": "7D906D5E0194363D57F8CBC034089B79DB2913A30A1C269F4B2F02C3976C191B",
   "active_revision_binding_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
   "approval_artifact_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
   "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
@@ -705,13 +712,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "historical_seq1_487_raw_bytes": 786441,
   "historical_seq1_487_raw_sha256": "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
   "historical_seq1_487_canonical_sha256": "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
-  "next_safe_action": "Issue the C-21 runtime Provider status and Workbench UI rework WorkInstruction; do not wait for external Provider or Telegram validation.",
+  "next_safe_action": "developer-primary implements Provider status READ within exact18 lease; then independent review and Workbench UI rework.",
   "dir_status": "CLEARED",
-  "repository_head": "3c6774f98e25bf3b8473575d88da3fcac8fbca59",
+  "repository_head": "aa116e2044671628011b46d190de014ad7fd0af4",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_DEVELOPMENT_QA_REVIEW_PARENT_EXACT75_RECORD9",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_PROVIDER_STATUS_READ_PARENT_EXACT78_RECORD10",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -744,6 +751,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
     "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
@@ -765,6 +773,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json",
     "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
@@ -782,6 +791,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+    "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
@@ -845,7 +856,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "record_exact13_path_list_sha256": "F17A6B348C9A88343FCB9DE019A80429698293C62E7C2D35ADCBD9D23C049DEF",
   "postcommit_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
   "runtime_safety_gate": "ACTIVE_DEVELOPMENT_QA_EXACT7",
-  "runtime_next_action": "ISSUE_C21_RUNTIME_UI_REWORK_WI",
+  "runtime_next_action": "IMPLEMENT_PROVIDER_STATUS_READ_EXACT18_LEASE_SUBSET",
   "repository_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
   "record_exact12_path_list_sha256": "315FA23EA1B82C16252A749802C3CE94E611BDF3618BF55837A2FBEA187185F5",
   "postcommit_exact56_path_list_sha256": "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714",
@@ -856,9 +867,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "postcommit_exact64_path_list_sha256": "00293DE61AD5E4DDEB88DE1F62384EFC2044501E0024B9507FF1306BE32E9A10",
   "c21_verdict": "BLOCKED_NOT_ACCEPTED",
   "accepted": false,
-  "worker_lease": null,
-  "write_lease": null,
-  "active_agent": null,
+  "worker_lease": "worker-lease-c21-provider-status-read-20260906-001",
+  "write_lease": "write-lease-c21-provider-status-read-20260906-001",
+  "active_agent": "developer-primary",
   "criteria": {
     "1": "PASS_SCOPE_LIMITED",
     "2": "PARTIAL_BLOCKED",
@@ -878,7 +889,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "workbench_config": "HTTP_404",
   "ui_click_evidence": false,
   "actual_provider_calls": "NOT_EXECUTED",
-  "actual_telegram_outbound": "NOT_EXECUTED"
+  "actual_telegram_outbound": "NOT_EXECUTED",
+  "database_migration": "NOT_EXECUTED_ZERO"
 }
 ```
 

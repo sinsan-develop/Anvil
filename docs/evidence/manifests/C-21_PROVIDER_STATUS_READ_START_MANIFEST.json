@@ -1,0 +1,96 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C21_PROVIDER_STATUS_READ_START_PROJECTION",
+  "manifest_id": "C21-PROVIDER-STATUS-READ-START-20260906",
+  "event_sequence": 509,
+  "appended_event_count": 3,
+  "created_at": "2026-09-06T00:50:00+09:00",
+  "parent_commit": "aa116e2044671628011b46d190de014ad7fd0af4",
+  "historical_event_sequence": 506,
+  "historical_full_file_bytes": 895160,
+  "historical_full_file_sha256": "5517EAA32C345680C0FBB628792CEA1F679EE88AE795AFFC2976AAB2E5C0FAB0",
+  "historical_event_object_prefix_bytes": 894954,
+  "historical_event_object_prefix_sha256": "7D6BE1D013ED94B12385924D731F2857C7DA90F27AE8A721B99F6E20985834C3",
+  "historical_events_canonical_ascii_sha256": "5CCAE8CD1BFC256F4E20837CC7F8EBA0DFA55250431A1B3790E8ED135B1AC6F8",
+  "execution_authority_path": "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
+  "execution_authority_sha256": "336B5C84F6319DF823A1F432F785FD7A0D28730832E806F8F67ACC39DBB8D495",
+  "start_exact_path_count": 10,
+  "start_exact_path_list_sha256": "3F575DB5A3DBBBFC17807118957E898089EC9C7F8A9F8B1BFC097CFF51EDA1B6",
+  "start_exact_paths": [
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
+    "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "lease_exact_path_count": 18,
+  "lease_exact_path_list_sha256": "300FEF86F8357958E74BEAAA9440CA4B7F56240CC1C9B51A115A58B48B4122E8",
+  "lease_exact_paths": [
+    "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+    "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
+    "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/provider_catalog.py",
+    "packages/agent_team/provider_status.py",
+    "packages/agent_team/runtime_config.py",
+    "packages/api/fastapi_app.py",
+    "packages/api/provider_status.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+    "tests/agent_team/test_provider_status.py",
+    "tests/api/test_local_session.py",
+    "tests/api/test_provider_status.py",
+    "tests/api/test_registry_openapi.py",
+    "tests/api/test_runtime_app.py",
+    "tests/api/test_web_security.py"
+  ],
+  "actual_changed_path_policy": "LEASE_SUBSET_WITH_ALL_SEMANTICS_REQUIRED",
+  "fastapi_app": "OPTIONAL_BUT_WITHIN_LEASE",
+  "predecessor_exact_path_count": 78,
+  "predecessor_exact_path_list_sha256": "4BB888F60E77124899C8FA5F5BE9DC5E0E9653628235C256A510D76D6B30E946",
+  "cumulative_exact_path_count": 82,
+  "cumulative_exact_path_list_sha256": "6A6A51D64C367E64712108237548B92ABCA560668F8B1345A36A036366DADD63",
+  "accepted": false,
+  "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+  "dir2_status": "NOT_TRIGGERED",
+  "actual_provider_calls": "NOT_EXECUTED",
+  "actual_telegram_outbound": "NOT_EXECUTED",
+  "database_migration": "NOT_EXECUTED_ZERO",
+  "ysna": "NOT_EXECUTED",
+  "main_merge": "NOT_EXECUTED",
+  "next_slice": "WORKBENCH_UI_REWORK",
+  "raw_checksums": [
+    {
+      "path": "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
+      "bytes": 3404,
+      "sha256": "336B5C84F6319DF823A1F432F785FD7A0D28730832E806F8F67ACC39DBB8D495"
+    },
+    {
+      "path": "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md",
+      "bytes": 786,
+      "sha256": "7D906D5E0194363D57F8CBC034089B79DB2913A30A1C269F4B2F02C3976C191B"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
+      "bytes": 928,
+      "sha256": "8D7B0740273DD0E84C2ECDFE7A93D39196430D05EE8D1DA9E51CC4343A180EE1"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 1084238,
+      "sha256": "905B9917DCAE198C166AE99398D0A57E4017B3C6A31B2F69AA56B099A9C79F63"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 379146,
+      "sha256": "02268198DD5F1985C867058EA4792AFD794614BC2192893C6A4409481000354D"
+    }
+  ],
+  "self_reference": false
+}

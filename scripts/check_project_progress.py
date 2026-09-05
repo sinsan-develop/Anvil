@@ -2371,6 +2371,12 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
         return validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(
             bundle, wsl_rollback_allowlist_rebind_manifest
         ) == []
+    if (progress.get("event_sequence") == 509 and progress.get("last_event_id") == "evt_c21_provider_status_read_package_started" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json"):
+        try:
+            provider_start_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json")
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_provider_status_read_start_projection(bundle, provider_start_manifest) == []
     if (progress.get("event_sequence") == 506 and progress.get("last_event_id") == "evt_c21_development_qa_test_judgment_recorded" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json"):
         try:
             review_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json")
@@ -10581,6 +10587,51 @@ def validate_repository_projection(
     worktree_is_clean: bool = True,
     control_runtime_record_commit_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 509:
+        errors: list[str] = []
+        expected_successor = c21_provider_status_read_start_paths()
+        expected_committed = c21_development_qa_review_predecessor_paths() | c21_development_qa_review_successor_paths()
+        expected_cumulative = expected_committed | expected_successor
+        precommit_projection = (
+            actual_head == repository.get("local_head")
+            and set(actual_changed_paths) == expected_committed
+            and set(control_descendant_paths or []) == expected_successor
+            and working_tree_mode and not worktree_is_clean
+            and not control_runtime_record_commit_is_direct
+        )
+        postcommit_projection = (
+            actual_head != repository.get("local_head") and control_is_ancestor
+            and control_runtime_record_commit_is_direct
+            and set(actual_changed_paths) == expected_cumulative
+            and set(control_descendant_paths or []) == expected_successor
+            and not working_tree_mode and worktree_is_clean
+        )
+        if any((
+            repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE,
+            repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+            repository.get("head_relation") != "FEATURE_WORKTREE_C21_PROVIDER_STATUS_READ_PARENT_EXACT78_RECORD10",
+            repository.get("branch") != "codex/c21-operational-execution",
+            repository.get("upstream") != "origin/codex/c21-operational-execution",
+            repository.get("remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("feature_remote") != "origin/codex/c21-operational-execution",
+            repository.get("feature_remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("local_head") != "aa116e2044671628011b46d190de014ad7fd0af4",
+            repository.get("worktree_status") != "SEQ509_PROVIDER_STATUS_READ_START_EXACT10_DIRTY",
+            set(repository.get("exact_allowed_paths") or []) != expected_cumulative,
+            set(repository.get("provider_status_read_start_successor_paths") or []) != expected_successor,
+        )):
+            errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        if (not precommit_projection and not postcommit_projection) or actual_branch != repository.get("branch") or actual_upstream != repository.get("upstream"):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if actual_remote_head != repository.get("remote_head") or actual_feature_remote_head != repository.get("feature_remote_head"):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if not precommit_projection and not postcommit_projection:
+            errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+        if actual_head != repository.get("local_head") and not control_runtime_record_commit_is_direct:
+            errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+        if not base_is_ancestor:
+            errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(errors))
     if (progress or {}).get("event_sequence") == 506:
         errors: list[str] = []
         expected_successor = c21_development_qa_review_successor_paths()
@@ -12414,7 +12465,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if isinstance(feature_remote, str) and feature_remote.startswith("origin/")
         else None
     )
-    if bundle["progress"].get("event_sequence") in {495, 498, 501, 506}:
+    if bundle["progress"].get("event_sequence") in {495, 498, 501, 506, 509}:
         parent = repository.get("local_head")
         base = repository.get("validated_base_commit")
         changed = _split_git_paths(_git_value(root,"diff","--name-only",base,actual_head))
@@ -13189,6 +13240,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             )
         elif current_manifest_relative == "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json":
             errors.extend(validate_c21_independent_judgment_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json":
+            errors.extend(validate_c21_provider_status_read_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_development_qa_review_successor_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json":
@@ -14087,6 +14140,105 @@ def validate_c21_development_qa_resume_start_projection(bundle: Mapping[str, Any
         progress_raw=(root/"docs/progress/build-progress.json").read_bytes(); handoff_raw=(root/"docs/progress/BUILD_HANDOFF.md").read_bytes()
         if digest.get("event_sequence")!=501 or digest.get("self_reference") is not False or digest.get("progress")!={"path":"docs/progress/build-progress.json","bytes":len(progress_raw),"file_sha256":hashlib.sha256(progress_raw).hexdigest().upper(),"canonical_json_sha256":hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper()} or digest.get("handoff")!={"path":"docs/progress/BUILD_HANDOFF.md","bytes":len(handoff_raw),"file_sha256":hashlib.sha256(handoff_raw).hexdigest().upper(),"machine_summary_canonical_sha256":hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper()}:
             errors.append("C21_DEVELOPMENT_QA_RESUME_DIGEST_INVALID")
+    return sorted(set(errors))
+
+
+def _path_list_sha256(paths: Iterable[str]) -> str:
+    return hashlib.sha256(canonical_json_bytes(sorted(set(paths)))).hexdigest().upper()
+
+
+def c21_provider_status_read_start_paths() -> set[str]:
+    return {
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
+        "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_provider_status_read_lease_paths() -> set[str]:
+    return {
+        "packages/agent_team/provider_catalog.py",
+        "packages/agent_team/runtime_config.py",
+        "packages/agent_team/provider_status.py",
+        "packages/agent_team/__init__.py",
+        "packages/api/provider_status.py",
+        "packages/api/registry.py",
+        "packages/api/runtime.py",
+        "packages/api/fastapi_app.py",
+        "tests/agent_team/test_provider_status.py",
+        "tests/api/test_provider_status.py",
+        "tests/api/test_runtime_app.py",
+        "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+        "tests/api/test_registry_openapi.py",
+        "tests/api/test_web_security.py",
+        "tests/api/test_local_session.py",
+        "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+        "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
+        "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
+    }
+
+
+def validate_c21_provider_status_read_start_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]; events=bundle["events"].get("events",[]); handoff=bundle.get("handoff") or {}; errors: list[str]=[]
+    try:
+        raw=(root/"docs/progress/progress-events.json").read_bytes()
+        prefix=raw_event_object_prefix_bytes(raw,506)
+        historical_blob=subprocess.check_output(["git","show","aa116e2044671628011b46d190de014ad7fd0af4:docs/progress/progress-events.json"],cwd=root)
+    except (OSError,ValueError,subprocess.CalledProcessError):
+        prefix=b""; historical_blob=b""
+    canonical=hashlib.sha256(_canonical_ascii_json_bytes(events[:506])).hexdigest().upper() if len(events)>=506 else ""
+    if any((len(events)!=509,len(historical_blob)!=895160,hashlib.sha256(historical_blob).hexdigest().upper()!="5517EAA32C345680C0FBB628792CEA1F679EE88AE795AFFC2976AAB2E5C0FAB0",len(prefix)!=894954,hashlib.sha256(prefix).hexdigest().upper()!="7D6BE1D013ED94B12385924D731F2857C7DA90F27AE8A721B99F6E20985834C3",canonical!="5CCAE8CD1BFC256F4E20837CC7F8EBA0DFA55250431A1B3790E8ED135B1AC6F8")):
+        errors.append("C21_PROVIDER_STATUS_READ_HISTORY_INVALID")
+    terminal=events[-3:] if len(events)>=3 else []
+    if [e.get("sequence") for e in terminal]!=[507,508,509] or [e.get("event_type") for e in terminal]!=["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"]:
+        errors.append("C21_PROVIDER_STATUS_READ_EVENT_ORDER_INVALID")
+    worker_id="worker-lease-c21-provider-status-read-20260906-001"; write_id="write-lease-c21-provider-status-read-20260906-001"; execution="c21-provider-status-read-execution-fence-epoch-1-aa116e2"; write_fence="c21-provider-status-read-write-fence-epoch-1-aa116e2"
+    expected_worker={"lease_id":worker_id,"agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"PROVIDER-STATUS-READ","lease_epoch":1,"fencing_token":execution,"execution_fencing_token":execution,"status":"ACTIVE"}
+    lease_paths=sorted(c21_provider_status_read_lease_paths())
+    expected_write={"lease_id":write_id,"worker_lease_id":worker_id,"agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"PROVIDER-STATUS-READ","write_epoch":1,"execution_fencing_token":execution,"write_fencing_token":write_fence,"fencing_token":write_fence,"status":"ACTIVE","path_scope":lease_paths,"paths":lease_paths}
+    if progress.get("worker_lease")!=expected_worker: errors.append("C21_PROVIDER_STATUS_READ_WORKER_LEASE_INVALID")
+    if progress.get("write_lease")!=expected_write: errors.append("C21_PROVIDER_STATUS_READ_WRITE_LEASE_INVALID")
+    active=progress.get("provider_status_read") or {}; wi=progress.get("active_work_instruction") or {}
+    expected_active={"event_sequence":509,"status":"ACTIVE_PROVIDER_STATUS_READ","accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider_ids":"canonical_lowercase_9_with_uppercase_display","primary_provider":"UPSTAGE","credential_surface":"ENV_PRESENCE_ONLY","actual_provider_calls":"NOT_EXECUTED","actual_telegram_outbound":"NOT_EXECUTED","database_migration":"NOT_EXECUTED_ZERO","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","runtime_next_action":"IMPLEMENT_PROVIDER_STATUS_READ_EXACT18_LEASE_SUBSET"}
+    if active!=expected_active: errors.append("C21_PROVIDER_STATUS_READ_BOUNDARY_INVALID")
+    if any((progress.get("event_sequence")!=509,progress.get("last_event_id")!="evt_c21_provider_status_read_package_started",progress.get("current_work_package")!="C-21",progress.get("status")!="ACTIVE_PROVIDER_STATUS_READ",progress.get("active_agent")!="developer-primary",progress.get("runtime_next_action")!="IMPLEMENT_PROVIDER_STATUS_READ_EXACT18_LEASE_SUBSET")):
+        errors.append("C21_PROVIDER_STATUS_READ_PROJECTION_INVALID")
+    if any((wi.get("artifact_id")!="WI-C-21-PROVIDER-STATUS-READ-20260906-001",wi.get("result_status")!="IN_PROGRESS",wi.get("package_status")!="ACTIVE_PROVIDER_STATUS_READ",wi.get("executor")!="developer-primary",wi.get("worker_lease_id")!=worker_id,wi.get("write_lease_id")!=write_id,wi.get("allowed_path_count")!=18,wi.get("allowed_path_list_sha256")!="300FEF86F8357958E74BEAAA9440CA4B7F56240CC1C9B51A115A58B48B4122E8",wi.get("accepted") is not False,wi.get("c01_boundary")!="BLOCKED_PENDING_C21_ACCEPTANCE",wi.get("dir2_status")!="NOT_TRIGGERED")):
+        errors.append("C21_PROVIDER_STATUS_READ_WORK_INSTRUCTION_INVALID")
+    if len(terminal)==3:
+        w,x,s=terminal
+        if any((w.get("event_id")!="evt_c21_provider_status_read_worker_lease_issued",w.get("actor")!="main-agent-eoul",w.get("subject_ref")!="C-21/PROVIDER-STATUS-READ",w.get("details")!=expected_worker)): errors.append("C21_PROVIDER_STATUS_READ_WORKER_EVENT_INVALID")
+        if any((x.get("event_id")!="evt_c21_provider_status_read_write_lease_issued",x.get("actor")!="main-agent-eoul",x.get("subject_ref")!="C-21/PROVIDER-STATUS-READ",x.get("details")!=expected_write)): errors.append("C21_PROVIDER_STATUS_READ_WRITE_EVENT_INVALID")
+        expected_started={"work_instruction_id":"WI-C-21-PROVIDER-STATUS-READ-20260906-001","package_status":"ACTIVE_PROVIDER_STATUS_READ","worker_lease_id":worker_id,"write_lease_id":write_id,"dispatch_head":"aa116e2044671628011b46d190de014ad7fd0af4","dispatch_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":"VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT","validated_base_commit":"eef349682ff5598e3488c9e75163c5e0a99a0bdb","head_relation":"FEATURE_WORKTREE_C21_PROVIDER_STATUS_READ_PARENT_EXACT78_RECORD10","exact_allowed_paths":sorted(c21_development_qa_review_predecessor_paths()|c21_development_qa_review_successor_paths()|c21_provider_status_read_start_paths()),"accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","database_migration":"NOT_EXECUTED_ZERO","actual_provider_calls":"NOT_EXECUTED","actual_telegram_outbound":"NOT_EXECUTED","runtime_next_action":"IMPLEMENT_PROVIDER_STATUS_READ_EXACT18_LEASE_SUBSET"}
+        if any((s.get("event_id")!="evt_c21_provider_status_read_package_started",s.get("actor")!="main-agent-eoul",s.get("subject_ref")!="C-21/PROVIDER-STATUS-READ",s.get("details")!=expected_started)): errors.append("C21_PROVIDER_STATUS_READ_PACKAGE_EVENT_INVALID")
+    start_paths=sorted(c21_provider_status_read_start_paths()); predecessor=c21_development_qa_review_predecessor_paths()|c21_development_qa_review_successor_paths(); cumulative=predecessor|set(start_paths)
+    authority_path="docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md"; authority=(root/authority_path)
+    expected_fields={"manifest_type":"C21_PROVIDER_STATUS_READ_START_PROJECTION","event_sequence":509,"appended_event_count":3,"historical_event_sequence":506,"historical_full_file_bytes":895160,"historical_full_file_sha256":"5517EAA32C345680C0FBB628792CEA1F679EE88AE795AFFC2976AAB2E5C0FAB0","historical_event_object_prefix_bytes":894954,"historical_event_object_prefix_sha256":"7D6BE1D013ED94B12385924D731F2857C7DA90F27AE8A721B99F6E20985834C3","historical_events_canonical_ascii_sha256":"5CCAE8CD1BFC256F4E20837CC7F8EBA0DFA55250431A1B3790E8ED135B1AC6F8","parent_commit":"aa116e2044671628011b46d190de014ad7fd0af4","execution_authority_path":authority_path,"execution_authority_sha256":hashlib.sha256(authority.read_bytes()).hexdigest().upper() if authority.is_file() else "","start_exact_path_count":10,"start_exact_path_list_sha256":_path_list_sha256(start_paths),"start_exact_paths":start_paths,"lease_exact_path_count":18,"lease_exact_path_list_sha256":"300FEF86F8357958E74BEAAA9440CA4B7F56240CC1C9B51A115A58B48B4122E8","lease_exact_paths":lease_paths,"predecessor_exact_path_count":78,"predecessor_exact_path_list_sha256":"4BB888F60E77124899C8FA5F5BE9DC5E0E9653628235C256A510D76D6B30E946","cumulative_exact_path_count":82,"cumulative_exact_path_list_sha256":"6A6A51D64C367E64712108237548B92ABCA560668F8B1345A36A036366DADD63","accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","actual_provider_calls":"NOT_EXECUTED","actual_telegram_outbound":"NOT_EXECUTED","database_migration":"NOT_EXECUTED_ZERO","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","self_reference":False}
+    if any(manifest.get(k)!=v for k,v in expected_fields.items()): errors.append("C21_PROVIDER_STATUS_READ_MANIFEST_INVALID")
+    rows=manifest.get("raw_checksums"); expected_rows={authority_path,"docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md","docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"}
+    if not isinstance(rows,list) or {r.get("path") for r in rows if isinstance(r,Mapping)}!=expected_rows: errors.append("C21_PROVIDER_STATUS_READ_RAW_SET_INVALID")
+    else:
+        for row in rows:
+            p=root/row["path"]
+            if not p.is_file() or row.get("bytes")!=p.stat().st_size or row.get("sha256")!=hashlib.sha256(p.read_bytes()).hexdigest().upper(): errors.append("C21_PROVIDER_STATUS_READ_RAW_INVALID")
+    invocation_path=root/"docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md"
+    invocation_sha=hashlib.sha256(invocation_path.read_bytes()).hexdigest().upper() if invocation_path.is_file() else ""
+    if any((handoff.get("event_sequence")!=509,handoff.get("status")!="ACTIVE_PROVIDER_STATUS_READ",handoff.get("active_agent")!="developer-primary",handoff.get("worker_lease")!=worker_id,handoff.get("write_lease")!=write_id,handoff.get("accepted") is not False,handoff.get("c01_status")!="BLOCKED_PENDING_C21_ACCEPTANCE",handoff.get("dir2_status")!="NOT_TRIGGERED",handoff.get("runtime_next_action")!="IMPLEMENT_PROVIDER_STATUS_READ_EXACT18_LEASE_SUBSET",handoff.get("active_invocation_sha256")!=invocation_sha,wi.get("invocation_sha256")!=invocation_sha)):
+        errors.append("C21_PROVIDER_STATUS_READ_HANDOFF_INVALID")
+    try: digest=_load_json(root/"docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json")
+    except (OSError,json.JSONDecodeError,TypeError): errors.append("C21_PROVIDER_STATUS_READ_DIGEST_INVALID")
+    else:
+        pr=(root/"docs/progress/build-progress.json").read_bytes(); hr=(root/"docs/progress/BUILD_HANDOFF.md").read_bytes()
+        if any((digest.get("event_sequence")!=509,digest.get("self_reference") is not False,digest.get("progress")!={"path":"docs/progress/build-progress.json","bytes":len(pr),"file_sha256":hashlib.sha256(pr).hexdigest().upper(),"canonical_json_sha256":hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper()},digest.get("handoff")!={"path":"docs/progress/BUILD_HANDOFF.md","bytes":len(hr),"file_sha256":hashlib.sha256(hr).hexdigest().upper(),"machine_summary_canonical_sha256":hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper()})): errors.append("C21_PROVIDER_STATUS_READ_DIGEST_INVALID")
     return sorted(set(errors))
 
 

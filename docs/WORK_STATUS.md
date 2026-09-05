@@ -1,3 +1,24 @@
+# C-21 Provider status READ start — seq507~509
+
+- commit 전 cached diff-check의 `new blank line at EOF` 2건(WI line58, invocation line11)을 비의미 correction으로 확정했다. 문서 의미·제품 범위·lease exact18은 불변이며 EOF LF 1개로 정규화한 뒤 WI/prompt 3-way hash와 manifest/raw refs/digest/progress/HANDOFF snapshot만 재결박한다. full164 R3 결과는 유효하고 focused 검증으로 마감한다.
+- 독립 review I1 `SEQ509_HANDOFF_INVOCATION_HASH_STALE` 1회: 실제 prompt와 build-progress는 `9CB42A75...3251`인데 HANDOFF machine summary만 이전 invocation `1A368B58...D220`을 유지했다. TDD RED는 raw checksum stale 포함 focused `2 failed, 1 passed`; 직접 3-way 비교로 stale을 확인했다. checker가 실제 prompt raw hash = active WorkInstruction invocation hash = HANDOFF invocation hash를 강제하도록 보완하고 digest/manifest/snapshot을 재결박한다.
+- I1 GREEN: focused `3 passed, 161 deselected in 11.89s`; full tooling fresh R3 `164 passed in 919.47s`, exit 0. JUnit `D:\tmp\anvil-seq509-full164-r3.xml`. HANDOFF invocation은 실제 prompt/build-progress와 `9CB42A75...3251`로 일치한다.
+- 담당: `provider_status_start`; 상태: `ACTIVE_PROVIDER_STATUS_READ`; 기준 clean HEAD `aa116e2044671628011b46d190de014ad7fd0af4`.
+- TDD RED: 신규 start manifest/helper 부재로 focused `3 failed, 161 deselected`; 기대된 계약 실패다.
+- seq507 worker lease → seq508 exact18 write lease → seq509 package start를 append한다.
+- product lease exact18 hash `300FEF86...122E8`; start exact10 hash `3F575DB5...A1B6`; predecessor exact78 hash `4BB888F6...E946`; cumulative exact82 hash `6A6A51D6...DD63`.
+- seq1~506 보존: full `895160` bytes/`5517EAA3...FAB0`; raw prefix `894954` bytes/`7D6BE1D0...34C3`; canonical `5CCAE8CD...C6F8`.
+- 구현 목표: canonical lowercase 9/uppercase display/UPSTAGE primary, env presence-only, GET list/detail/models 200, unknown·mixed 404, auth/RBAC, MoA no-eligible fail-closed. POST configure/test/refresh는 honest 501로 유지한다.
+- actual Provider/Telegram, DB migration, ysna/main/release/install은 `NOT_EXECUTED`; C-21 accepted=false, C-01 차단, DIR-2 미발생.
+- 오류 fingerprint `C21_PROVIDER_STATUS_START_MISSING_RED` 1회(의도된 RED), 동일 유효 제품 오류 반복 0회.
+- `C21_SEQ509_DTMP_SANDBOX_WRITE_DENIED` 1회: 최초 materializer가 `D:\tmp` progress-events 쓰기에서 sandbox `PermissionError`로 중단됐다. 승인된 exact worktree 쓰기로 재실행해 해소했으며 제품 실패가 아니다.
+- `C21_SEQ509_PACKAGE_STARTED_PAYLOAD_INCOMPLETE` 1회: 첫 생성본의 `PACKAGE_STARTED`에 공통 계약의 work-instruction/package-status 및 repository effect field가 빠져 checker가 2건을 거부했다. Main 승인에 따라 이번 turn의 미커밋 progress-events 단일 파일만 HEAD blob으로 원자 복원하고, seq1~506 full/prefix/canonical hash 불변을 확인한 뒤 필수 payload를 포함해 seq507~509를 처음부터 재생성했다. 과거 event를 인플레이스 수정하지 않았다.
+- `C21_SEQ509_HISTORICAL_SEQ506_CURRENT_BUNDLE_MIX` 1회: full tooling 첫 fresh 실행은 `160 passed, 4 failed in 772.64s`였다. seq506 historical 계약 4건이 seq509 current bundle을 읽은 fixture 혼합이며 제품 실패가 아니다. 3개 validator fixture와 Git fixture를 동일 detached `aa116e2` snapshot bundle로 분리해 seq506 계약을 유지했다.
+- fixture 보완 중 `SEQ509_SEQ506_POSTCOMMIT_DUPLICATE_TEST_BLOCK_TYPO` 1회: seq509용 postcommit block이 seq506 test에도 중복 삽입돼 미정의 `exact78/exact10`으로 focused 1건이 실패했다. 잘못 삽입된 duplicate block만 제거하고 seq506 기존 계약과 seq509 별도 postcommit 계약은 유지한다.
+- fixture 교정 focused: seq506 detached coherent bundle 4건과 seq509 신규 계약 3건 `7 passed, 157 deselected in 56.48s`; checker/diff-check PASS.
+- full tooling fresh R2: `164 passed in 946.22s`, exit 0. JUnit `D:\tmp\anvil-seq509-full164-r2.xml`; 최초 R1의 historical fixture 4건은 모두 해소됐다.
+- 다음: governance exact10 검증·commit 후 `developer-primary`가 exact18 lease subset에서 구현하고, 이어 Workbench UI rework로 진행한다.
+
 # C-21 Development QA review successor — seq502~506
 
 - 담당: `seq506_successor_writer`; 상태: `REWORK_REQUIRED`; 기준 clean HEAD `3c6774f98e25bf3b8473575d88da3fcac8fbca59`.

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-STATUS-READ-START-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 509,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T00:50:00+09:00",
+  "scope": "C-21 Provider status READ internal rework start; no external calls, migration, deployment, release, or main merge.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 111816,
+    "file_sha256": "CBF6D2460653C4039B687E8CAB51E5582673509FAFE7EAFB43DDEE5C481CD0A0",
+    "canonical_json_sha256": "71A13ADCE838BF99B239926F90B1988894A8EB6A667514A5D29C77D418FE554D"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 173533,
+    "file_sha256": "A05182CD29EB5369BAACB7E4C431E26C5EF07E4ECF415C58F0324F3380D96747",
+    "machine_summary_canonical_sha256": "16B498C6DBE5F7B7E5871A2239A7F4DFBAE6E8C112B21812332547B4594C2FDB"
+  }
+}
