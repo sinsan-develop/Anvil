@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-wsl-qa_resume-candidate-rebind-20260905",
-  "event_sequence": 495,
-  "updated_at": "2026-09-05T17:20:00+09:00",
-  "last_event_id": "evt_c21_wsl_qa_execution_result_recorded",
+  "event_sequence": 498,
+  "updated_at": "2026-09-05T19:15:00+09:00",
+  "last_event_id": "evt_c21_independent_test_judgment_recorded",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -47,49 +47,9 @@
     "B-11",
     "B-12"
   ],
-  "active_agent": "developer-primary-wsl",
-  "write_lease": {
-    "lease_id": "write-lease-c21-wsl-successor-20260904-001",
-    "worker_lease_id": "worker-lease-c21-wsl-successor-20260904-001",
-    "agent_id": "developer-primary-wsl",
-    "work_package_id": "C-21",
-    "subtask_id": "WSL-EARLY-VALIDATION",
-    "write_epoch": 1,
-    "execution_fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
-    "write_fencing_token": "c21-wsl-write-fence-epoch-1-ca92b78",
-    "fencing_token": "c21-wsl-write-fence-epoch-1-ca92b78",
-    "status": "ACTIVE",
-    "paths": [
-      "deploy/wsl/CandidateReleaseManifest.json",
-      "deploy/wsl/Dockerfile.web",
-      "deploy/wsl/bootstrap.sh",
-      "deploy/wsl/candidate-manifest-guard.sh",
-      "deploy/wsl/common.sh",
-      "deploy/wsl/compose.wsl.yml",
-      "deploy/wsl/deploy.sh",
-      "deploy/wsl/requirements-runtime.txt",
-      "deploy/wsl/rollback.sh",
-      "deploy/wsl/verify.sh",
-      "tests/deploy/test_wsl_staging_harness.py",
-      "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
-      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
-      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
-      "docs/progress/build-progress.json",
-      "docs/progress/BUILD_HANDOFF.md",
-      "docs/progress/progress-events.json"
-    ]
-  },
-  "worker_lease": {
-    "lease_id": "worker-lease-c21-wsl-successor-20260904-001",
-    "agent_id": "developer-primary-wsl",
-    "work_package_id": "C-21",
-    "subtask_id": "WSL-EARLY-VALIDATION",
-    "lease_epoch": 1,
-    "execution_fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
-    "fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
-    "execution_mode": "LOCAL_TDD_THEN_GIT_ONLY_WSL_STAGING",
-    "status": "ACTIVE"
-  },
+  "active_agent": null,
+  "write_lease": null,
+  "worker_lease": null,
   "completed_c21_backup_portability_write_lease": {
     "lease_id": "write-lease-c21-backup-portability-20260903-004",
     "worker_lease_id": "worker-lease-c21-backup-portability-20260903-004",
@@ -1167,7 +1127,7 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "1F7091BEAB52B228FA93144021DA5E472CFAEB619A319BCCF9BBE3363A454EDF"
+      "sha256": "B81E6C0889BC2763CE0A0A3BA2461C8F94723A2B08353808B8775AD8E9AE3AC8"
     },
     {
       "path": "tests/tooling/test_a13_repository_scan.py",
@@ -1187,7 +1147,7 @@
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "55D6D6D91E2CD69C21F43B015BC0DCF48DBCC994A78FFC2F2A0B8ED18CE22236"
+      "sha256": "755B2145D179002DE41C6C928E61B7FC4D92336897ECB02A77575B36BED6ACA7"
     },
     {
       "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
@@ -1215,7 +1175,7 @@
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7225C691168534FE0875D49E3B26F12FFB649492458748B6468A20C91ECF49D8"
+      "sha256": "B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78"
     },
     {
       "path": "docs/progress/failure-ledger.json",
@@ -1259,8 +1219,8 @@
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
-    "sha256": "D1E9A6A4C8526EC20E118051711B5E9F674B4CAA64FBFB325DAD86134122DB2D"
+    "path": "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
+    "artifact_id": "C21-INDEPENDENT-JUDGMENT-20260905"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -1270,7 +1230,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "seq495 exact10 실행 결과를 동결하고 독립 Tester 판정을 기다린다. Main acceptance, C-01 시작, DIR-2, Telegram, Provider, ysna, browser Network, main merge는 수행하지 않는다.",
+  "next_safe_action": "신산님의 browser Network, Provider, Telegram 검증 evidence를 받은 뒤 C-21 전체를 재판정한다. C-01과 DIR-2는 시작하지 않는다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1382,7 +1342,7 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_C21_WSL_QA_EXECUTION_RESULT_PARENT_EXACT58_RECORD10",
+    "head_relation": "FEATURE_WORKTREE_C21_INDEPENDENT_JUDGMENT_PARENT_EXACT61_RECORD9",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -1404,13 +1364,16 @@
       "deploy/wsl/rollback.sh",
       "deploy/wsl/verify.sh",
       "deploy/ysna/backup-c21-db.sh",
+      "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
       "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
       "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
+      "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
       "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
       "docs/DEVELOPMENT_ENVIRONMENT.md",
       "docs/WORK_STATUS.md",
       "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
       "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+      "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
       "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
       "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
@@ -1420,6 +1383,7 @@
       "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json",
@@ -1428,6 +1392,7 @@
       "docs/progress/build-progress.json",
       "docs/progress/failure-ledger.json",
       "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
       "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
@@ -1436,6 +1401,7 @@
       "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-ingress-candidate-rebind.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
@@ -1450,8 +1416,8 @@
       "tests/tooling/test_project_progress.py"
     ],
     "observed_at": "2026-09-05T12:24:24+09:00",
-    "worktree_status": "SEQ495_RESULT_RECORD_EXACT10_DIRTY_PENDING_DIRECT_CHILD_COMMIT",
-    "local_head": "772afbd5eb55791ca7b5002d58378437ea496750",
+    "worktree_status": "SEQ498_INDEPENDENT_JUDGMENT_EXACT9_DIRTY_PENDING_DIRECT_CHILD_COMMIT",
+    "local_head": "9a7a6144bcd0a7d38fce291610f40e9608a38309",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact56",
     "candidate_push_status": "NOT_EXECUTED_PENDING_LOCAL_SEQ494_COMMIT_EXTERNAL_SCOPE_RECONFIRMATION",
@@ -1608,7 +1574,18 @@
     ],
     "private_atomic_push": "PASS",
     "private_control_head": "772afbd5eb55791ca7b5002d58378437ea496750",
-    "private_candidate_head": "a342d62391a44b349733d1468ac3b180761155ab"
+    "private_candidate_head": "a342d62391a44b349733d1468ac3b180761155ab",
+    "independent_judgment_successor_paths": [
+      "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ]
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1772,16 +1749,27 @@
     "revision_classification": "HUMAN_APPROVED_SCOPE_ORDER_AND_IMPORTANT_RISK_CHANGE",
     "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
     "dispatch_base": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "result_status": "IN_PROGRESS",
-    "package_status": "ACTIVE_CONTROL_SUCCESSOR_PENDING_COMMIT_PUSH",
+    "result_status": "TEST_REVIEW",
+    "package_status": "BLOCKED_NOT_ACCEPTED",
     "executor": "developer-primary-wsl",
     "worker_lease_id": "worker-lease-c21-wsl-successor-20260904-001",
     "write_lease_id": "write-lease-c21-wsl-successor-20260904-001",
     "allowed_path_count": 17,
-    "runtime_validation": "NOT_EXECUTED_PENDING_IMPLEMENTATION_COMMIT_AND_CONTROL_BINDING_PUSH",
+    "runtime_validation": "WSL_QA_COMPLETED_SCOPE_LIMITED",
     "telegram": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
-    "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
+    "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
+    "independent_tester_status": "BLOCKED_NOT_ACCEPTED",
+    "accepted": false,
+    "runtime_next_action": "HOLD_USER_VALIDATION_REQUIRED",
+    "criteria": {
+      "1": "PASS_SCOPE_LIMITED",
+      "2": "PARTIAL_BLOCKED",
+      "3": "PARTIAL_BLOCKED",
+      "4": "BLOCKED_NOT_EXECUTED",
+      "5": "BLOCKED_NOT_EXECUTED",
+      "6": "PASS"
+    }
   },
   "accepted_c21_backup_portability_work_instruction": {
     "artifact_id": "WI-C-21-LR-02C-BACKUP-PORTABILITY-R1-20260903-001",
@@ -1894,8 +1882,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json",
-    "manifest_path": "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
+    "manifest_path": "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1916,7 +1904,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7225C691168534FE0875D49E3B26F12FFB649492458748B6468A20C91ECF49D8"
+      "sha256": "B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78"
     }
   },
   "next_work_package": {
@@ -2097,8 +2085,8 @@
     "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT"
   },
   "wsl_early_validation": {
-    "event_sequence": 495,
-    "status": "TEST_REVIEW_PENDING_INDEPENDENT_JUDGMENT",
+    "event_sequence": 498,
+    "status": "TEST_REVIEW",
     "approval_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
     "work_instruction_id": "WI-C-21-WSL-EARLY-VALIDATION-20260904-001",
     "dispatch_commit": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -2132,7 +2120,7 @@
     "rework_iteration": 2,
     "telegram": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
-    "next_action": "INDEPENDENT_TESTER_JUDGMENT_ON_FROZEN_SEQ495_EXACT10",
+    "next_action": "HOLD_USER_VALIDATION_REQUIRED",
     "record_control_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
     "candidate_parent_commit": "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994",
     "predecessor_control_commit": "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994",
@@ -2143,7 +2131,7 @@
     "deployment": "PASS_CANDIDATE_RESTORED",
     "database": "PASS_PG15_AND_PG18_RC",
     "volume_cleanup": "PASS_EXACT_PROJECT_RESIDUE_ZERO",
-    "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+    "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
     "predecessor_derived_binding_sha256": "EBA968E47874CD67FE6A0B64A0327EC4436F4F6FE86757C2AF95224FD44335F2",
     "previous_attempt": {
       "candidate_commit": "324eb169fedbce958d2e8cc29362deb7af433677",
@@ -2166,7 +2154,7 @@
       "provider": "NOT_EXECUTED"
     },
     "runtime_safety_gate": "WSL_QA_COMPLETE_PENDING_INDEPENDENT_JUDGMENT",
-    "runtime_next_action": "HOLD_WRITES_PENDING_INDEPENDENT_JUDGMENT",
+    "runtime_next_action": "HOLD_USER_VALIDATION_REQUIRED",
     "local_product_evidence": {
       "product_commit": "a342d62391a44b349733d1468ac3b180761155ab",
       "correction_paths": [
@@ -2208,10 +2196,10 @@
       "current_candidate_push": "NOT_EXECUTED",
       "current_candidate_external_execution": "NOT_EXECUTED"
     },
-    "product_validation": "SUITABLE",
+    "product_validation": "PASS_SCOPE_LIMITED",
     "validation_scope": "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY",
     "accepted": false,
-    "independent_tester_status": "PENDING",
+    "independent_tester_status": "BLOCKED_NOT_ACCEPTED",
     "dir2_status": "NOT_TRIGGERED",
     "execution_result": {
       "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
@@ -2305,9 +2293,48 @@
         "rollback_observer_scratch_sha256": "12A975797B4600031D1427FAA1010CDDF7100C1F297FAE6B3CCD80DF606F03B2",
         "server_receipt_raw_hash": "NOT_COPIED_LOCALLY_NOT_ASSERTED"
       }
+    },
+    "package_status": "BLOCKED_NOT_ACCEPTED",
+    "criteria": {
+      "1": "PASS_SCOPE_LIMITED",
+      "2": "PARTIAL_BLOCKED",
+      "3": "PARTIAL_BLOCKED",
+      "4": "BLOCKED_NOT_EXECUTED",
+      "5": "BLOCKED_NOT_EXECUTED",
+      "6": "PASS"
     }
   },
-  "runtime_safety_gate": "WSL_QA_COMPLETE_PENDING_INDEPENDENT_JUDGMENT",
-  "snapshot_hash": "E617D9F9622B7CD3ECC680B8E37CCE866E5B35CE250540A839B751EEBC281B68",
-  "runtime_next_action": "HOLD_WRITES_PENDING_INDEPENDENT_JUDGMENT"
+  "runtime_safety_gate": "C21_BLOCKED_NOT_ACCEPTED",
+  "snapshot_hash": "ECB8EB1749AECF2F6DCCD4E9AA864ADDAF8D792847E4BC77B94EC71592492895",
+  "runtime_next_action": "HOLD_USER_VALIDATION_REQUIRED",
+  "c21_independent_judgment": {
+    "verdict": "BLOCKED_NOT_ACCEPTED",
+    "accepted": false,
+    "product_validation": "PASS_SCOPE_LIMITED",
+    "validation_scope": "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY",
+    "criteria": {
+      "1": "PASS_SCOPE_LIMITED",
+      "2": "PARTIAL_BLOCKED",
+      "3": "PARTIAL_BLOCKED",
+      "4": "BLOCKED_NOT_EXECUTED",
+      "5": "BLOCKED_NOT_EXECUTED",
+      "6": "PASS"
+    },
+    "blockers": {
+      "browser_network": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "telegram": "NOT_EXECUTED",
+      "audit_contract": "PARTIAL_BLOCKED"
+    },
+    "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+    "dir2_status": "NOT_TRIGGERED",
+    "runtime_next_action": "HOLD_USER_VALIDATION_REQUIRED",
+    "seq495_manifest_sha256": "58CA650E6D413801C849F8F5290CFA3C642F1F9B74941DFD0E5CDD26C09DC32E",
+    "seq495_report_sha256": "5ED610214E923F2B51F42B3465954066043D782AFD3EB8FC855F34B24E1D5961",
+    "judgment_source_sha256": "67B7D70633DECA23FD5716EA7902AE30FB043AD082AC55B4DA4459C825D66460",
+    "work_instruction_sha256": "640D9693BA851C45464B118BD1CC7CC50068093EFCD922891327BF9EF5A6200A",
+    "event_sequence": 498,
+    "report_path": "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
+    "manifest_path": "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
+  }
 }

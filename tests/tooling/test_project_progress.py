@@ -3283,14 +3283,18 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_ops_r2_post_merge_main_reconciliation_rejects_arbitrary_branch(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_lr02c_ops_r2_main_reconciliation_projection(manifest, bundle))
+        # Break the historical projection's self-routing compatibility path so
+        # this test exercises the original seq478 negative guards directly.
+        bundle["progress"]["current_progress_evidence_ref"] = {}
         arbitrary_branch = copy.deepcopy(bundle)
         arbitrary_branch["progress"]["repository"]["branch"] = "codex/arbitrary"
         self.assertIn(
@@ -6016,9 +6020,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_wsl_qa_execution_result_projection_is_strictly_scoped(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "9a7a6144bcd0a7d38fce291610f40e9608a38309"
+        )
         manifest_path = (
-            ROOT
+            historical_root
             / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"
         )
         self.assertTrue(manifest_path.is_file())
@@ -6105,9 +6111,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_wsl_qa_execution_result_rejects_coherent_evidence_mutations(self) -> None:
         checker = self.require_checker()
-        original_bundle = checker.load_bundle(ROOT)
+        original_bundle, historical_root = self._historical_bundle(
+            checker, "9a7a6144bcd0a7d38fce291610f40e9608a38309"
+        )
         original_manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json").read_text(encoding="utf-8")
         )
 
         def mutate_all(path, value):
@@ -6221,7 +6229,9 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_wsl_qa_execution_result_fast_path_preserves_generic_repository_guards(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "9a7a6144bcd0a7d38fce291610f40e9608a38309"
+        )
         repository = bundle["progress"]["repository"]
         common = {
             "actual_head": "772afbd5eb55791ca7b5002d58378437ea496750",
@@ -6262,6 +6272,191 @@ class ProjectProgressContractTests(unittest.TestCase):
             "GIT_DESCENDANT_PROJECTION_INVALID",
             checker._validate_git_projection(real_git_bundle),
         )
+
+    def test_c21_independent_judgment_projection_is_blocked_not_accepted(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest_path = ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_independent_judgment_projection(bundle, manifest))
+        self.assertEqual("TEST_REVIEW", bundle["progress"]["status"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["verdict"])
+        self.assertFalse(manifest["accepted"])
+        self.assertIsNone(bundle["progress"]["worker_lease"])
+        self.assertIsNone(bundle["progress"]["write_lease"])
+        self.assertIsNone(bundle["progress"]["active_agent"])
+
+    def test_c21_independent_judgment_rejects_revocation_order_and_lease_mutations(self) -> None:
+        checker = self.require_checker()
+        original = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_independent_judgment_projection(original, manifest))
+        mutations = []
+        swapped = copy.deepcopy(original)
+        swapped["events"]["events"][-3], swapped["events"]["events"][-2] = swapped["events"]["events"][-2], swapped["events"]["events"][-3]
+        mutations.append(("order", swapped))
+        duplicate = copy.deepcopy(original)
+        duplicate["events"]["events"][-2]["event_type"] = "WRITE_LEASE_REVOKED"
+        mutations.append(("duplicate", duplicate))
+        lease_id = copy.deepcopy(original)
+        lease_id["events"]["events"][-3]["details"]["lease_id"] = "other"
+        mutations.append(("lease_id", lease_id))
+        fencing = copy.deepcopy(original)
+        fencing["events"]["events"][-2]["details"]["execution_fencing_token"] = "other"
+        mutations.append(("fencing", fencing))
+        write_active = copy.deepcopy(original)
+        write_active["progress"]["write_lease"] = {"status": "ACTIVE"}
+        mutations.append(("write_active", write_active))
+        worker_active = copy.deepcopy(original)
+        worker_active["progress"]["worker_lease"] = {"status": "ACTIVE"}
+        mutations.append(("worker_active", worker_active))
+        agent_active = copy.deepcopy(original)
+        agent_active["progress"]["active_agent"] = "developer-primary-wsl"
+        mutations.append(("agent_active", agent_active))
+        stale_wi = copy.deepcopy(original)
+        stale_wi["progress"]["active_work_instruction"]["result_status"] = "IN_PROGRESS"
+        mutations.append(("stale_wi", stale_wi))
+        for scenario, bundle in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, copy.deepcopy(manifest)))
+
+    def test_c21_independent_judgment_rejects_coherent_decision_promotion(self) -> None:
+        checker = self.require_checker()
+        original = checker.load_bundle(ROOT)
+        original_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+
+        def mutate_all(field, value):
+            bundle = copy.deepcopy(original)
+            manifest = copy.deepcopy(original_manifest)
+            docs = [manifest, bundle["events"]["events"][-1]["details"], bundle["progress"]["c21_independent_judgment"], bundle["handoff"]]
+            for doc in docs:
+                doc[field] = value
+            return bundle, manifest
+
+        for field, value in (
+            ("verdict", "PASS"),
+            ("accepted", True),
+            ("c01_status", "STARTED"),
+            ("dir2_status", "TRIGGERED"),
+            ("runtime_next_action", "DISPATCH_NOW"),
+        ):
+            with self.subTest(field=field):
+                bundle, manifest = mutate_all(field, value)
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, manifest))
+        for criterion in ("2", "3", "4", "5"):
+            with self.subTest(criterion=criterion):
+                bundle = copy.deepcopy(original)
+                manifest = copy.deepcopy(original_manifest)
+                for doc in (manifest, bundle["events"]["events"][-1]["details"], bundle["progress"]["c21_independent_judgment"]):
+                    doc["criteria"][criterion] = "PASS"
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, manifest))
+
+    def test_c21_independent_judgment_rejects_history_hash_and_repository_mutations(self) -> None:
+        checker = self.require_checker()
+        original = checker.load_bundle(ROOT)
+        original_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        history = copy.deepcopy(original)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        self.assertTrue(checker.validate_c21_independent_judgment_projection(history, copy.deepcopy(original_manifest)))
+        for field, value in (
+            ("historical_raw_event_bytes", 1),
+            ("historical_raw_events_sha256", "0" * 64),
+            ("historical_events_sha256", "0" * 64),
+            ("record_successor_path_count", 8),
+            ("record_successor_path_list_sha256", "0" * 64),
+            ("postcommit_exact_path_count", 63),
+            ("postcommit_exact_path_list_sha256", "0" * 64),
+        ):
+            with self.subTest(field=field):
+                manifest = copy.deepcopy(original_manifest)
+                manifest[field] = value
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(copy.deepcopy(original), manifest))
+        for field, value in (
+            ("projection_mode", "TAMPERED"),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("remote_head", "0" * 40),
+            ("exact_allowed_paths", original["progress"]["repository"]["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                bundle = copy.deepcopy(original)
+                bundle["progress"]["repository"][field] = value
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, copy.deepcopy(original_manifest)))
+
+    def test_c21_independent_judgment_rejects_all_binding_event_and_digest_mutations(self) -> None:
+        checker = self.require_checker()
+        original = checker.load_bundle(ROOT)
+        original_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        for field, value in (
+            ("judgment_source_sha256", "0" * 64),
+            ("work_instruction_sha256", "0" * 64),
+            ("revocation_events", ["other"]),
+            ("judgment_event_id", "other"),
+        ):
+            with self.subTest(manifest_field=field):
+                manifest = copy.deepcopy(original_manifest)
+                manifest[field] = value
+                self.assertIn("C21_JUDGMENT_MANIFEST_INVALID", checker.validate_c21_independent_judgment_projection(copy.deepcopy(original), manifest))
+        event_mutations = (
+            (-3, "actor", "other"), (-3, "subject_ref", "other"),
+            (-3, "occurred_at", "other"), (-3, "details.execution_fencing_token", "other"),
+            (-3, "details.worker_lease_id", "other"), (-3, "details.reason", "other"),
+            (-2, "actor", "other"), (-2, "subject_ref", "other"),
+            (-2, "details.reason", "other"), (-1, "actor", "other"),
+            (-1, "subject_ref", "other"), (-1, "details.judgment_source_sha256", "0" * 64),
+            (-1, "details.work_instruction_sha256", "0" * 64),
+            (-1, "details.evidence_ref", "other"),
+            (-1, "details.write_revocation_event_id", "other"),
+            (-1, "details.worker_revocation_event_id", "other"),
+        )
+        for index, path, value in event_mutations:
+            with self.subTest(event=index, path=path):
+                bundle = copy.deepcopy(original)
+                target = bundle["events"]["events"][index]
+                parts = path.split(".")
+                for part in parts[:-1]: target = target[part]
+                target[parts[-1]] = value
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, copy.deepcopy(original_manifest)))
+        digest = json.loads((ROOT / "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json").read_text(encoding="utf-8"))
+        for path, value in (
+            (("progress", "bytes"), 1), (("progress", "canonical_json_sha256"), "0" * 64),
+            (("handoff", "bytes"), 1), (("handoff", "machine_summary_canonical_sha256"), "0" * 64),
+            (("scope",), "other"), (("self_reference",), True),
+        ):
+            with self.subTest(digest_path=path):
+                mutated = copy.deepcopy(digest); target = mutated
+                for part in path[:-1]: target = target[part]
+                target[path[-1]] = value
+                with mock.patch.object(checker, "_load_json", return_value=mutated):
+                    self.assertIn("C21_JUDGMENT_DIGEST_INVALID", checker.validate_c21_independent_judgment_projection(copy.deepcopy(original), copy.deepcopy(original_manifest)))
+
+    def test_c21_independent_judgment_real_git_fast_path_preserves_structural_guards(self) -> None:
+        checker = self.require_checker()
+        original = checker.load_bundle(ROOT)
+        mutations = (
+            ("feature_remote", "origin/tampered"),
+            ("feature_remote_head", "0" * 40),
+            ("projection_mode", "TAMPERED"),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("local_head", "0" * 40),
+            ("worktree_status", "TAMPERED"),
+            ("exact_allowed_paths", original["progress"]["repository"]["exact_allowed_paths"][:-1]),
+        )
+        for field, value in mutations:
+            with self.subTest(field=field):
+                bundle = copy.deepcopy(original)
+                bundle["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(bundle), field)
+
+    def test_c21_independent_judgment_report_is_valid_markdown(self) -> None:
+        text = (ROOT / "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md").read_text(encoding="utf-8")
+        self.assertIn("## 판정", text)
+        self.assertIn("- 전체 C-21: `TEST_REVIEW / BLOCKED_NOT_ACCEPTED`", text)
+        self.assertIn("## 근거", text)
+        self.assertIn("## lease 종료와 경계", text)
+        self.assertFalse(any(line.startswith("+") for line in text.splitlines()))
 
 if __name__ == "__main__":
     unittest.main()

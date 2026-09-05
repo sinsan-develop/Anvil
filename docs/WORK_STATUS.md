@@ -1,3 +1,31 @@
+# C-21 독립 판정 projection — seq496~498
+
+- 담당: `seq498_result_writer`; 상태: `COMPLETED_FOR_REVIEW`; 기준 HEAD `9a7a6144bcd0a7d38fce291610f40e9608a38309`.
+- TDD RED: focused `4 failed, 145 deselected`; 원인: manifest/validator 부재. 동일 formal product failure가 아니라 의도한 계약 실패 1회다.
+- 구현: WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → INDEPENDENT_TEST_JUDGMENT_RECORDED. 최종 lease/agent null, C-21 BLOCKED_NOT_ACCEPTED, C-01 blocked, DIR-2 NOT_TRIGGERED.
+- 미실행: commit, push, WSL/DB, Provider, Telegram, ysna, browser, main merge.
+- 검증 결과와 추가 오류는 완료 checkpoint에 이어서 기록한다.
+
+## seq498 completion checkpoint
+
+- focused RED: `4 failed, 145 deselected`; 신규 manifest/validator 부재를 의도대로 검출했다.
+- focused GREEN: `4 passed, 145 deselected`; historical fixture 보완 관련 focused: `8 passed, 141 deselected`.
+- 첫 full tooling: `145 passed, 4 failed, E=0` / `521.59s`. 기존 seq478/seq495 테스트가 current seq498 bundle을 과거 projection fixture로 사용한 `HISTORICAL_CURRENT_BUNDLE_MIX_SEQ498_R1` 1회이며 제품 failure가 아니다.
+- immutable historical commit fixture로 분리 후 두 번째 full tooling: `149 passed, F=0, E=0` / `555.48s`.
+- project checker: `PASS sequence=498 reporting=AUTO_CONTINUE` (full suite 재실행 전). 최종 checksum 재결박 후 checker/diff/history/exact9/64/idempotence를 다시 확인한다.
+- 구현 오류 ledger: `D_TMP_SANDBOX_WRITE_PERMISSION` 1회, `SEQ495_RAW_PREFIX_RESERIALIZED` 1회, `HANDOFF_CORE_DECISION_OMISSION` 1회, `EVENT_CONTRACT_REPOSITORY_EFFECT_HANDOFF_MISMATCH` 1회. 모두 해소했으며 동일 fingerprint 3회 반복은 없다.
+- 외부 실행, commit, push, WSL/DB, Provider, Telegram, ysna, browser, main merge는 `NOT_EXECUTED`다.
+- 최종 마감: checker `PASS sequence=498 reporting=AUTO_CONTINUE`; `git diff --check` PASS; dirty exact9 hash `83E130DB...D232`; base 대비 union exact64 hash `00293DE6...9A10`; seq1~495 raw/canonical 불변; secret 원문 패턴 0; generator/finalizer before→cycle1 및 cycle1→cycle2 bytes 동일.
+
+### seq498 independent review rework
+
+- 독립 review: `SPEC FAIL / QUALITY REWORK / C0 / I3`. I-1 exact binding/event/digest fail-closed 누락, I-2 real-Git fast-path structural guard 우회, I-3 판정보고서 리터럴 `+` 손상을 수락했다.
+- TDD RED: seq498 focused `5 failed, 2 passed`; manifest mutation, feature remote mutation, Markdown `^+`를 실제 재현했다.
+- GREEN: manifest/source/WI, 세 event 전체 envelope/details, digest bytes/canonical/scope/self-reference를 exact 검증하고 공통 repository structural helper를 public Git 경로에 합성했다. 보고서는 정상 Markdown으로 재생성했다.
+- focused GREEN: `7 passed, 145 deselected`; checker와 diff-check PASS. full fresh 및 최종 멱등 검증은 아래 재작업 마감에서 기록한다.
+- 재작업 full fresh: `152 passed`, `F=0`, `E=0`, `545.42s`, exit0.
+- 재작업 오류 fingerprint `SEQ498_REVIEW_I1_I2_I3`은 RED 1회 후 GREEN으로 해소했으며 반복 3회 조건은 없다.
+
 # C-21 WSL QA 실행 결과 — seq495
 
 - 담당: `seq495_result_binding`; 상태: `TEST_REVIEW_PENDING_INDEPENDENT_JUDGMENT`; ProductValidation=`SUITABLE` (승인된 WSL 범위만).

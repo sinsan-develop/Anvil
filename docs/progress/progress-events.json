@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 495,
+  "last_sequence": 498,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -17551,7 +17551,76 @@
         "historical_raw_events_sha256": "A8D822B390A8D5C96014EA80691E59ECB33E0FFE3B0A428B4741B0BEF8340862",
         "historical_events_sha256": "6970AE6EC2B73B8BDE35B8DB113609270F4374BD8D59A6B808FADFFD471971A8"
       }
+    },
+    {
+      "event_id": "evt_c21_wsl_write_lease_revoked_for_independent_judgment",
+      "sequence": 496,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-05T19:15:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/WSL-EARLY-VALIDATION",
+      "details": {
+        "lease_id": "write-lease-c21-wsl-successor-20260904-001",
+        "worker_lease_id": "worker-lease-c21-wsl-successor-20260904-001",
+        "execution_fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
+        "write_fencing_token": "c21-wsl-write-fence-epoch-1-ca92b78",
+        "reason": "WSL_QA_COMPLETED_ENTERING_BLOCKED_TEST_REVIEW",
+        "replacement_write_lease": null
+      }
+    },
+    {
+      "event_id": "evt_c21_wsl_worker_lease_revoked_for_independent_judgment",
+      "sequence": 497,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-05T19:15:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/WSL-EARLY-VALIDATION",
+      "details": {
+        "lease_id": "worker-lease-c21-wsl-successor-20260904-001",
+        "execution_fencing_token": "c21-wsl-execution-fence-epoch-1-ca92b78",
+        "reason": "WRITE_LEASE_REVOKED_AND_INDEPENDENT_JUDGMENT_RECORDED",
+        "precondition_event_id": "evt_c21_wsl_write_lease_revoked_for_independent_judgment",
+        "replacement_worker_lease": null
+      }
+    },
+    {
+      "event_id": "evt_c21_independent_test_judgment_recorded",
+      "sequence": 498,
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "occurred_at": "2026-09-05T19:15:00+09:00",
+      "actor": "independent-tester",
+      "subject_ref": "C-21",
+      "details": {
+        "verdict": "BLOCKED_NOT_ACCEPTED",
+        "accepted": false,
+        "product_validation": "PASS_SCOPE_LIMITED",
+        "validation_scope": "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY",
+        "criteria": {
+          "1": "PASS_SCOPE_LIMITED",
+          "2": "PARTIAL_BLOCKED",
+          "3": "PARTIAL_BLOCKED",
+          "4": "BLOCKED_NOT_EXECUTED",
+          "5": "BLOCKED_NOT_EXECUTED",
+          "6": "PASS"
+        },
+        "blockers": {
+          "browser_network": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "audit_contract": "PARTIAL_BLOCKED"
+        },
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "runtime_next_action": "HOLD_USER_VALIDATION_REQUIRED",
+        "seq495_manifest_sha256": "58CA650E6D413801C849F8F5290CFA3C642F1F9B74941DFD0E5CDD26C09DC32E",
+        "seq495_report_sha256": "5ED610214E923F2B51F42B3465954066043D782AFD3EB8FC855F34B24E1D5961",
+        "judgment_source_sha256": "67B7D70633DECA23FD5716EA7902AE30FB043AD082AC55B4DA4459C825D66460",
+        "work_instruction_sha256": "640D9693BA851C45464B118BD1CC7CC50068093EFCD922891327BF9EF5A6200A",
+        "evidence_ref": "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
+        "write_revocation_event_id": "evt_c21_wsl_write_lease_revoked_for_independent_judgment",
+        "worker_revocation_event_id": "evt_c21_wsl_worker_lease_revoked_for_independent_judgment"
+      }
     }
   ],
-  "last_event_id": "evt_c21_wsl_qa_execution_result_recorded"
+  "last_event_id": "evt_c21_independent_test_judgment_recorded"
 }

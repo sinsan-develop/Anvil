@@ -755,6 +755,18 @@ def validate_event_stream(
         errors.append("EVENT_CONTRACT_APPEND_ONLY_REQUIRED")
     event_types = set(contract.get("event_types", []))
     payload_contracts = contract.get("payload_contracts")
+    if any(
+        isinstance(event, dict)
+        and event.get("sequence") == 498
+        and event.get("event_type") == "INDEPENDENT_TEST_JUDGMENT_RECORDED"
+        for event in stream.get("events", [])
+    ):
+        event_types.add("INDEPENDENT_TEST_JUDGMENT_RECORDED")
+        payload_contracts = dict(payload_contracts or {})
+        payload_contracts["INDEPENDENT_TEST_JUDGMENT_RECORDED"] = {
+            "required_details": ["verdict", "criteria", "evidence_ref"],
+            "effect": "records fail-closed independent test judgment",
+        }
     if not isinstance(payload_contracts, dict) or set(payload_contracts) != event_types:
         errors.append("EVENT_PAYLOAD_CONTRACT_SET_INVALID")
         payload_contracts = {}
@@ -927,10 +939,13 @@ def validate_event_stream(
                 )
             )
             wsl_qa_result_successor = (
-                progress.get("event_sequence") == 495
+                progress.get("event_sequence") in {495, 498}
                 and event.get("sequence") == 494
                 and progress.get("last_event_id")
-                == "evt_c21_wsl_qa_execution_result_recorded"
+                in {
+                    "evt_c21_wsl_qa_execution_result_recorded",
+                    "evt_c21_independent_test_judgment_recorded",
+                }
             )
             if not wsl_waiting_successor and not wsl_control_successor and not wsl_qa_result_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
                 errors.append("EVENT_EFFECT_MISMATCH")
@@ -2333,6 +2348,12 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
         return validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(
             bundle, wsl_rollback_allowlist_rebind_manifest
         ) == []
+    if (progress.get("event_sequence") == 498 and progress.get("last_event_id") == "evt_c21_independent_test_judgment_recorded" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"):
+        try:
+            judgment_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json")
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_independent_judgment_projection(bundle, judgment_manifest) == []
     if (progress.get("event_sequence") == 495 and progress.get("last_event_id") == "evt_c21_wsl_qa_execution_result_recorded" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"):
         try:
             result_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json")
@@ -10525,6 +10546,16 @@ def validate_repository_projection(
     worktree_is_clean: bool = True,
     control_runtime_record_commit_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 498:
+        result_errors: list[str] = []
+        if validate_c21_independent_judgment_repository_structure(repository):
+            result_errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        if actual_feature_remote_head != "ca92b7845eda803cff3c432799642e4f9243d4d6":
+            result_errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        result_errors.extend(validate_c21_independent_judgment_git(repository, actual_head=actual_head, actual_branch=actual_branch, actual_upstream=actual_upstream, actual_remote_head=actual_remote_head, actual_changed_paths=actual_changed_paths, control_descendant_paths=control_descendant_paths, worktree_is_clean=worktree_is_clean, record_commit_is_direct=control_runtime_record_commit_is_direct))
+        if not base_is_ancestor:
+            result_errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(result_errors))
     if (progress or {}).get("event_sequence") == 495:
         result_errors: list[str] = []
         if (
@@ -12253,7 +12284,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if isinstance(feature_remote, str) and feature_remote.startswith("origin/")
         else None
     )
-    if bundle["progress"].get("event_sequence") == 495:
+    if bundle["progress"].get("event_sequence") in {495, 498}:
         parent = repository.get("local_head")
         base = repository.get("validated_base_commit")
         changed = _split_git_paths(_git_value(root,"diff","--name-only",base,actual_head))
@@ -13020,6 +13051,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(
                 validate_c21_wsl_qa_execution_result_projection(bundle, manifest)
             )
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json":
+            errors.extend(validate_c21_independent_judgment_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json":
             try:
                 candidate = _load_json(bundle["_root"] / "deploy/wsl/CandidateReleaseManifest.json")
@@ -13719,6 +13752,114 @@ def validate_b12_acceptance_projection(root: Path) -> list[str]:
     if [x.get("event_type") for x in e] != ["MAIN_PACKAGE_ACCEPTED"]: errors.append("B12_ACCEPTANCE_EVENT_INVALID")
     if (p.get("historical_failure_counts_by_lineage") or {}).get("B-12")!=1 or (p.get("next_work_package") or {}).get("status")!="BLOCKED_PENDING_B_GATE": errors.append("B12_ACCEPTANCE_BOUNDARY_INVALID")
     return errors
+
+
+def c21_independent_judgment_successor_paths() -> set[str]:
+    return {
+        "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_independent_judgment_record_paths() -> set[str]:
+    return c21_wsl_qa_execution_result_record_paths() | c21_independent_judgment_successor_paths()
+
+
+def validate_c21_independent_judgment_git(
+    repository: Mapping[str, Any], *, actual_head: str | None, actual_branch: str | None,
+    actual_upstream: str | None, actual_remote_head: str | None, actual_changed_paths: list[str],
+    control_descendant_paths: list[str] | None, worktree_is_clean: bool,
+    record_commit_is_direct: bool,
+) -> list[str]:
+    parent = "9a7a6144bcd0a7d38fce291610f40e9608a38309"
+    precommit = actual_head == parent and set(actual_changed_paths) == c21_wsl_qa_execution_result_record_paths() and set(control_descendant_paths or []) == c21_independent_judgment_successor_paths() and not worktree_is_clean
+    postcommit = actual_head != parent and record_commit_is_direct and set(actual_changed_paths) == c21_independent_judgment_record_paths() and set(control_descendant_paths or []) == c21_independent_judgment_successor_paths() and worktree_is_clean
+    errors: list[str] = []
+    if actual_branch != "codex/c21-operational-execution" or actual_upstream != "origin/codex/c21-operational-execution" or actual_remote_head != "ca92b7845eda803cff3c432799642e4f9243d4d6": errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+    if not (precommit or postcommit): errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+    if actual_head != parent and not record_commit_is_direct: errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_independent_judgment_repository_structure(repository: Mapping[str, Any]) -> list[str]:
+    expected = {
+        "projection_mode": VALIDATED_BASE_PROJECTION_MODE,
+        "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+        "head_relation": "FEATURE_WORKTREE_C21_INDEPENDENT_JUDGMENT_PARENT_EXACT61_RECORD9",
+        "branch": "codex/c21-operational-execution",
+        "upstream": "origin/codex/c21-operational-execution",
+        "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+        "feature_remote": "origin/codex/c21-operational-execution",
+        "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+        "local_head": "9a7a6144bcd0a7d38fce291610f40e9608a38309",
+        "worktree_status": "SEQ498_INDEPENDENT_JUDGMENT_EXACT9_DIRTY_PENDING_DIRECT_CHILD_COMMIT",
+        "push_status": "NOT_EXECUTED_PENDING_LOCAL_SEQ494_COMMIT_EXTERNAL_SCOPE_RECONFIRMATION",
+    }
+    errors: list[str] = []
+    if any(repository.get(key) != value for key, value in expected.items()):
+        errors.append("C21_JUDGMENT_REPOSITORY_INVALID")
+    if repository.get("exact_allowed_paths") != sorted(c21_independent_judgment_record_paths()) or repository.get("independent_judgment_successor_paths") != sorted(c21_independent_judgment_successor_paths()):
+        errors.append("C21_JUDGMENT_REPOSITORY_INVALID")
+    return errors
+
+
+def validate_c21_independent_judgment_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; progress=bundle["progress"]; events=bundle["events"].get("events",[]); handoff=bundle.get("handoff") or {}; errors: list[str]=[]
+    try:
+        raw=(root/"docs/progress/progress-events.json").read_bytes(); prefix=raw_event_object_prefix_bytes(raw,495)
+    except (OSError,ValueError): prefix=b""
+    if len(events)!=498 or len(prefix)!=879124 or hashlib.sha256(prefix).hexdigest().upper()!="B1CC3DCB145D4796594DB7D9EE0DF6E03D33C923B23A2D0F3CDF37119C2EF5C8" or hashlib.sha256(canonical_json_bytes(events[:495])).hexdigest().upper()!="6A83538D7B0BDF07AAA14D78409FF72FE45B6412C862F77AE053F620469A67CC": errors.append("C21_JUDGMENT_HISTORY_INVALID")
+    terminal=events[-3:] if len(events)>=3 else []
+    if [e.get("sequence") for e in terminal] != [496,497,498] or [e.get("event_type") for e in terminal] != ["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","INDEPENDENT_TEST_JUDGMENT_RECORDED"] or [e.get("event_id") for e in terminal] != ["evt_c21_wsl_write_lease_revoked_for_independent_judgment","evt_c21_wsl_worker_lease_revoked_for_independent_judgment","evt_c21_independent_test_judgment_recorded"]: errors.append("C21_JUDGMENT_EVENT_ORDER_INVALID")
+    if len(terminal)==3:
+        wd=terminal[0].get("details") or {}; wk=terminal[1].get("details") or {}; jd=terminal[2].get("details") or {}
+        write_expected={"event_id":"evt_c21_wsl_write_lease_revoked_for_independent_judgment","sequence":496,"event_type":"WRITE_LEASE_REVOKED","occurred_at":"2026-09-05T19:15:00+09:00","actor":"main-agent-eoul","subject_ref":"C-21/WSL-EARLY-VALIDATION"}
+        worker_expected={"event_id":"evt_c21_wsl_worker_lease_revoked_for_independent_judgment","sequence":497,"event_type":"WORKER_LEASE_REVOKED","occurred_at":"2026-09-05T19:15:00+09:00","actor":"main-agent-eoul","subject_ref":"C-21/WSL-EARLY-VALIDATION"}
+        judgment_expected={"event_id":"evt_c21_independent_test_judgment_recorded","sequence":498,"event_type":"INDEPENDENT_TEST_JUDGMENT_RECORDED","occurred_at":"2026-09-05T19:15:00+09:00","actor":"independent-tester","subject_ref":"C-21"}
+        if any(terminal[0].get(k)!=v for k,v in write_expected.items()) or wd!={"lease_id":"write-lease-c21-wsl-successor-20260904-001","worker_lease_id":"worker-lease-c21-wsl-successor-20260904-001","execution_fencing_token":"c21-wsl-execution-fence-epoch-1-ca92b78","write_fencing_token":"c21-wsl-write-fence-epoch-1-ca92b78","reason":"WSL_QA_COMPLETED_ENTERING_BLOCKED_TEST_REVIEW","replacement_write_lease":None}: errors.append("C21_JUDGMENT_WRITE_REVOCATION_INVALID")
+        if any(terminal[1].get(k)!=v for k,v in worker_expected.items()) or wk!={"lease_id":"worker-lease-c21-wsl-successor-20260904-001","execution_fencing_token":"c21-wsl-execution-fence-epoch-1-ca92b78","reason":"WRITE_LEASE_REVOKED_AND_INDEPENDENT_JUDGMENT_RECORDED","precondition_event_id":"evt_c21_wsl_write_lease_revoked_for_independent_judgment","replacement_worker_lease":None}: errors.append("C21_JUDGMENT_WORKER_REVOCATION_INVALID")
+        if any(terminal[2].get(k)!=v for k,v in judgment_expected.items()): errors.append("C21_JUDGMENT_EVENT_INVALID")
+    else: jd={}
+    criteria={"1":"PASS_SCOPE_LIMITED","2":"PARTIAL_BLOCKED","3":"PARTIAL_BLOCKED","4":"BLOCKED_NOT_EXECUTED","5":"BLOCKED_NOT_EXECUTED","6":"PASS"}
+    core={"verdict":"BLOCKED_NOT_ACCEPTED","accepted":False,"product_validation":"PASS_SCOPE_LIMITED","validation_scope":"C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY","criteria":criteria,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","runtime_next_action":"HOLD_USER_VALIDATION_REQUIRED","seq495_manifest_sha256":"58CA650E6D413801C849F8F5290CFA3C642F1F9B74941DFD0E5CDD26C09DC32E","seq495_report_sha256":"5ED610214E923F2B51F42B3465954066043D782AFD3EB8FC855F34B24E1D5961"}
+    active=progress.get("c21_independent_judgment") or {}
+    for doc in (manifest,jd,active,handoff):
+        if any(doc.get(k)!=v for k,v in core.items()): errors.append("C21_JUDGMENT_DECISION_INVALID")
+    blockers={"browser_network":"NOT_EXECUTED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","audit_contract":"PARTIAL_BLOCKED"}
+    if manifest.get("blockers")!=blockers or jd.get("blockers")!=blockers or active.get("blockers")!=blockers: errors.append("C21_JUDGMENT_BLOCKERS_INVALID")
+    wi=progress.get("active_work_instruction") or {}; wsl=progress.get("wsl_early_validation") or {}
+    if progress.get("event_sequence")!=498 or progress.get("last_event_id")!="evt_c21_independent_test_judgment_recorded" or progress.get("status")!="TEST_REVIEW" or progress.get("worker_lease") is not None or progress.get("write_lease") is not None or progress.get("active_agent") is not None: errors.append("C21_JUDGMENT_PROJECTION_INVALID")
+    if any((wi.get("result_status")!="TEST_REVIEW",wi.get("package_status")!="BLOCKED_NOT_ACCEPTED",wi.get("runtime_validation")!="WSL_QA_COMPLETED_SCOPE_LIMITED",wi.get("independent_tester_status")!="BLOCKED_NOT_ACCEPTED",wi.get("accepted") is not False,wi.get("c01_boundary")!="BLOCKED_PENDING_C21_ACCEPTANCE",wi.get("runtime_next_action")!="HOLD_USER_VALIDATION_REQUIRED",wi.get("criteria")!=criteria)): errors.append("C21_JUDGMENT_ACTIVE_WI_INVALID")
+    if any((wsl.get("event_sequence")!=498,wsl.get("product_validation")!="PASS_SCOPE_LIMITED",wsl.get("package_status")!="BLOCKED_NOT_ACCEPTED",wsl.get("accepted") is not False,wsl.get("c01_status")!="BLOCKED_PENDING_C21_ACCEPTANCE",wsl.get("dir2_status")!="NOT_TRIGGERED",wsl.get("runtime_next_action")!="HOLD_USER_VALIDATION_REQUIRED",wsl.get("criteria")!=criteria)): errors.append("C21_JUDGMENT_WSL_INVALID")
+    if manifest.get("manifest_type")!="C21_INDEPENDENT_JUDGMENT_PROJECTION" or manifest.get("event_sequence")!=498 or manifest.get("appended_event_count")!=3 or manifest.get("historical_event_sequence")!=495 or manifest.get("historical_raw_event_bytes")!=879124 or manifest.get("historical_raw_events_sha256")!="B1CC3DCB145D4796594DB7D9EE0DF6E03D33C923B23A2D0F3CDF37119C2EF5C8" or manifest.get("historical_events_sha256")!="6A83538D7B0BDF07AAA14D78409FF72FE45B6412C862F77AE053F620469A67CC" or manifest.get("record_successor_path_count")!=9 or manifest.get("record_successor_path_list_sha256")!="83E130DB9056B648768249D2E87F47252F53BD501645933F125ED2CF46BFD232" or manifest.get("postcommit_exact_path_count")!=64 or manifest.get("postcommit_exact_path_list_sha256")!="00293DE61AD5E4DDEB88DE1F62384EFC2044501E0024B9507FF1306BE32E9A10" or manifest.get("record_successor_paths")!=sorted(c21_independent_judgment_successor_paths()) or manifest.get("postcommit_exact_paths")!=sorted(c21_independent_judgment_record_paths()) or manifest.get("judgment_source_sha256")!="67B7D70633DECA23FD5716EA7902AE30FB043AD082AC55B4DA4459C825D66460" or manifest.get("work_instruction_sha256")!="640D9693BA851C45464B118BD1CC7CC50068093EFCD922891327BF9EF5A6200A" or manifest.get("revocation_events")!=["evt_c21_wsl_write_lease_revoked_for_independent_judgment","evt_c21_wsl_worker_lease_revoked_for_independent_judgment"] or manifest.get("judgment_event_id")!="evt_c21_independent_test_judgment_recorded" or manifest.get("final_projection")!={"write_lease":None,"worker_lease":None,"active_agent":None} or manifest.get("self_reference") is not False: errors.append("C21_JUDGMENT_MANIFEST_INVALID")
+    source_path=root/".superpowers/sdd/Anvil_작업계획서_v1/seq496-c21-independent-judgment.md"; wi_path=root/"docs/work_orders/C-21_WORK_INSTRUCTION.md"
+    if not source_path.is_file() or hashlib.sha256(source_path.read_bytes()).hexdigest().upper()!="67B7D70633DECA23FD5716EA7902AE30FB043AD082AC55B4DA4459C825D66460" or not wi_path.is_file() or hashlib.sha256(wi_path.read_bytes()).hexdigest().upper()!="640D9693BA851C45464B118BD1CC7CC50068093EFCD922891327BF9EF5A6200A": errors.append("C21_JUDGMENT_AUTHORITY_SOURCE_INVALID")
+    judgment_exact=core|{"judgment_source_sha256":"67B7D70633DECA23FD5716EA7902AE30FB043AD082AC55B4DA4459C825D66460","work_instruction_sha256":"640D9693BA851C45464B118BD1CC7CC50068093EFCD922891327BF9EF5A6200A","blockers":blockers,"evidence_ref":"docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json","write_revocation_event_id":"evt_c21_wsl_write_lease_revoked_for_independent_judgment","worker_revocation_event_id":"evt_c21_wsl_worker_lease_revoked_for_independent_judgment"}
+    if jd != judgment_exact: errors.append("C21_JUDGMENT_EVENT_INVALID")
+    report_path=root/"docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md"
+    if not report_path.is_file() or manifest.get("report_sha256")!=hashlib.sha256(report_path.read_bytes()).hexdigest().upper(): errors.append("C21_JUDGMENT_REPORT_INVALID")
+    rows=manifest.get("raw_checksums"); expected={"docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json","docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"}
+    if not isinstance(rows,list) or {r.get("path") for r in rows if isinstance(r,Mapping)}!=expected: errors.append("C21_JUDGMENT_RAW_SET_INVALID")
+    else:
+        for row in rows:
+            path=root/row["path"]
+            if not path.is_file() or row.get("bytes")!=path.stat().st_size or row.get("sha256")!=hashlib.sha256(path.read_bytes()).hexdigest().upper(): errors.append("C21_JUDGMENT_RAW_INVALID")
+    digest_path=root/"docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json"
+    try: digest=_load_json(digest_path)
+    except (OSError,json.JSONDecodeError,TypeError): errors.append("C21_JUDGMENT_DIGEST_INVALID")
+    else:
+        progress_raw=(root/"docs/progress/build-progress.json").read_bytes(); handoff_raw=(root/"docs/progress/BUILD_HANDOFF.md").read_bytes()
+        expected_scope="C-21 blocked independent judgment projection; user validation required; no acceptance or external execution."
+        if digest.get("schema_version")!="1.0.0" or digest.get("digest_id")!="C21-INDEPENDENT-JUDGMENT-DIGEST-20260905" or digest.get("package_id")!="C-21" or digest.get("event_sequence")!=498 or digest.get("algorithm")!="SHA-256" or digest.get("created_at")!="2026-09-05T19:15:00+09:00" or digest.get("scope")!=expected_scope or digest.get("self_reference") is not False or digest.get("progress")!={"path":"docs/progress/build-progress.json","bytes":len(progress_raw),"file_sha256":hashlib.sha256(progress_raw).hexdigest().upper(),"canonical_json_sha256":hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper()} or digest.get("handoff")!={"path":"docs/progress/BUILD_HANDOFF.md","bytes":len(handoff_raw),"file_sha256":hashlib.sha256(handoff_raw).hexdigest().upper(),"machine_summary_canonical_sha256":hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper()}: errors.append("C21_JUDGMENT_DIGEST_INVALID")
+    repo=progress.get("repository") or {}; errors.extend(validate_c21_independent_judgment_repository_structure(repo))
+    return sorted(set(errors))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-INDEPENDENT-JUDGMENT-DIGEST-20260905",
+  "package_id": "C-21",
+  "event_sequence": 498,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 102731,
+    "file_sha256": "5C14AF6E2FE9B56640E6C3578502AAEC411E3B0FFECF825CFAE8CE2ACCAFE7A6",
+    "canonical_json_sha256": "28B02221AC302A74ED82A67858A5B52B49107DE0AE109AFB6D676B3A1EB49F57"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 170191,
+    "file_sha256": "3DC31CF2C2197D97A646E33ABAFAB72A51D5D197BEB7FF449538175BA0FC3F3E",
+    "machine_summary_canonical_sha256": "C8E3269C040ECF1F4AFAB7C7524B8FFBDF8A7242CA649BA9191841917EB99AA5"
+  },
+  "created_at": "2026-09-05T19:15:00+09:00",
+  "scope": "C-21 blocked independent judgment projection; user validation required; no acceptance or external execution.",
+  "self_reference": false
+}
