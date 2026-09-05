@@ -1,5 +1,6 @@
-import json
+import base64
 import hashlib
+import json
 import os
 import shutil
 import subprocess
@@ -612,21 +613,124 @@ class WslColdStartTests(unittest.TestCase):
         compose = json.loads(result.stdout)
         self.assertEqual(["/tmp:rw,noexec,nosuid,size=32m"], compose["services"]["anvil-web"]["tmpfs"])
 
-    def test_bootstrap_forwards_valid_sha_through_bash_and_preserves_environment(self):
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            shutil.copyfile(DEPLOY / "bootstrap.sh", root / "bootstrap.sh")
-            child = root / "control-runtime.sh"
-            # The false shebang makes implicit OS execution observable even on
-            # Windows filesystems that do not enforce mode 0644.
-            child.write_text('#!/bin/false\n[[ "$1" == deploy && "$2" == "' + "a" * 40 + '" ]] || exit 9\nexit 37\n', encoding="utf-8")
-            os.chmod(child, 0o644)
-            (root / ".env").write_text("preserved\n", encoding="utf-8")
-            result = subprocess.run(["bash", str(root / "bootstrap.sh"), "a" * 40],
-                                    env=os.environ | {"ANVIL_WSL_DEPLOY_ROOT": WslControlRuntimeTests._posix(root)},
-                                    capture_output=True, text=True)
-            self.assertEqual(37, result.returncode, result.stderr)
-            self.assertEqual("preserved\n", (root / ".env").read_text())
+    def test_bootstrap_rebind_preserves_bytes_secure_mode_and_cleans_failed_temp_on_posix_permissions(self):
+        script = r'''set -euo pipefail
+root="$(mktemp -d)"
+trap 'rm -rf -- "$root"' EXIT
+cp "$1" "$root/bootstrap.sh"
+printf '#!/usr/bin/env bash\nexit 37\n' > "$root/control-runtime.sh"
+printf '%s' "$2" | base64 -d > "$root/.env"
+chmod "$4" "$root/.env"
+[[ "$(stat -c '%a' "$root/.env")" == "$4" ]] || exit 78
+printf '%s' "$3" | base64 -d > "$root/expected"
+mkdir "$root/bin"
+cat > "$root/bin/mv" <<'SH'
+#!/usr/bin/env bash
+if [[ "$1" == -f && "$3" == "$ANVIL_WSL_DEPLOY_ROOT/.env" ]]; then
+  stat -c '%a' "$2" > "$ANVIL_TEST_MOVE_LOG"
+  [[ "${ANVIL_TEST_MV_EXIT:-0}" == 0 ]] || exit "$ANVIL_TEST_MV_EXIT"
+fi
+exec /usr/bin/mv "$@"
+SH
+chmod 755 "$root/bin/mv"
+export ANVIL_WSL_DEPLOY_ROOT="$root" ANVIL_TEST_MOVE_LOG="$root/move-mode"
+set +e
+PATH="$root/bin:$PATH" bash "$root/bootstrap.sh" aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+status=$?
+set -e
+[[ "$status" == 37 ]]
+cmp -s "$root/expected" "$root/.env"
+[[ "$(cat "$root/move-mode")" == "$4" ]]
+[[ "$(stat -c '%a' "$root/.env")" == "$4" ]]
+cp "$root/.env" "$root/before-failure"
+set +e
+ANVIL_TEST_MV_EXIT=93 PATH="$root/bin:$PATH" bash "$root/bootstrap.sh" aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+status=$?
+set -e
+[[ "$status" == 93 ]]
+cmp -s "$root/before-failure" "$root/.env"
+[[ -z "$(find "$root" -maxdepth 1 -name '.env.tmp.*' -print -quit)" ]]
+'''
+        for ending in (b"\n", b"\r\n"):
+            for final_newline in (False, True):
+                for mode in ("600", "400"):
+                    with self.subTest(ending=ending, final_newline=final_newline, mode=mode):
+                        original = (
+                            b"ANVIL_WSL_PG_PASSWORD=preserve=this=byte" + ending
+                            + b"ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read" + ending
+                            + b"UNRELATED_SECRET=preserve=all=bytes"
+                            + (ending if final_newline else b"")
+                        )
+                        expected = original.replace(
+                            b"ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read",
+                            b"ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read,provider:read",
+                        )
+                        result = subprocess.run(
+                            [
+                                "bash", "-c", script, "--",
+                                WslControlRuntimeTests._posix(DEPLOY / "bootstrap.sh"),
+                                base64.b64encode(original).decode("ascii"),
+                                base64.b64encode(expected).decode("ascii"), mode,
+                            ],
+                            capture_output=True,
+                            text=True,
+                        )
+                        if result.returncode == 78:
+                            self.skipTest("Git Bash/NTFS cannot represent POSIX 0600/0400 modes; run on candidate WSL")
+                        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_bootstrap_temp_security_contract_is_ordered_before_secret_writes(self):
+        source = (DEPLOY / "bootstrap.sh").read_text(encoding="utf-8")
+
+        trap_index = source.index("trap cleanup_temp EXIT")
+        signal_cleanup_index = source.index("trap 'cleanup_temp; exit 130' HUP INT TERM")
+        secure_temp_index = source.index("create_secure_temp()")
+        first_secret_write = source.index('cat > "$TEMP_FILE"')
+        existing_env_transform = source.index('"$python_bin" - "$ENV_FILE" "$TEMP_FILE"')
+
+        self.assertLess(trap_index, secure_temp_index)
+        self.assertLess(signal_cleanup_index, secure_temp_index)
+        self.assertLess(trap_index, first_secret_write)
+        self.assertLess(trap_index, existing_env_transform)
+        self.assertIn("  umask 077\n  TEMP_FILE=\"$(mktemp \"$ENV_FILE.tmp.XXXXXX\")\"", source)
+        new_file_chmod = source.index('chmod 600 "$TEMP_FILE"')
+        self.assertLess(new_file_chmod, source.index('mv -f "$TEMP_FILE" "$ENV_FILE"', new_file_chmod))
+        chmod_index = source.index('chmod "$mode" "$TEMP_FILE"')
+        self.assertLess(chmod_index, source.index('mv -f "$TEMP_FILE" "$ENV_FILE"', chmod_index))
+
+    def test_bootstrap_scope_transform_preserves_lf_crlf_and_final_newline_bytes(self):
+        source = (DEPLOY / "bootstrap.sh").read_text(encoding="utf-8")
+        transform = source.split("<<'PY'\n", 1)[1].split("\nPY\n", 1)[0]
+        scope = b"ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read,provider:read"
+
+        for ending in (b"\n", b"\r\n"):
+            for final_newline in (False, True):
+                for contains_scope in (False, True):
+                    with self.subTest(ending=ending, final_newline=final_newline, contains_scope=contains_scope):
+                        original_lines = [b"ANVIL_WSL_PG_PASSWORD=preserve=this=byte"]
+                        if contains_scope:
+                            original_lines.append(b"ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read")
+                        original_lines.append(b"UNRELATED_SECRET=preserve=all=bytes")
+                        original = ending.join(original_lines) + (ending if final_newline else b"")
+                        expected = (
+                            original.replace(
+                                b"ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read",
+                                scope,
+                            )
+                            if contains_scope
+                            else original + (ending if original and not original.endswith(b"\n") else b"") + scope + ending
+                        )
+                        with tempfile.TemporaryDirectory() as temp:
+                            source_path = Path(temp) / ".env"
+                            target_path = Path(temp) / ".env.tmp"
+                            source_path.write_bytes(original)
+                            result = subprocess.run(
+                                [sys.executable, "-c", transform, str(source_path), str(target_path)],
+                                capture_output=True,
+                                text=True,
+                            )
+                            self.assertEqual(0, result.returncode, result.stderr)
+                            self.assertEqual(expected, target_path.read_bytes())
 
     def test_database_readiness_failure_prevents_backup_and_build(self):
         self._deploy_readiness(False)
@@ -723,7 +827,7 @@ class WslControlRuntimeTests(unittest.TestCase):
                 "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN=" + "b" * 64,
                 "ANVIL_TEST_SESSION_ACTOR_ID=x", "ANVIL_TEST_SESSION_PROJECT_ID=x",
                 "ANVIL_TEST_SESSION_ENVIRONMENT_ID=x", "ANVIL_TEST_SESSION_RUN_IDS=x",
-                "ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read", ""
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read,provider:read", ""
             ]), encoding="utf-8")
             bin_dir = root / "bin"
             bin_dir.mkdir()
@@ -886,7 +990,7 @@ class WslControlRuntimeTests(unittest.TestCase):
                 "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN=" + "b" * 64,
                 "ANVIL_TEST_SESSION_ACTOR_ID=x", "ANVIL_TEST_SESSION_PROJECT_ID=x",
                 "ANVIL_TEST_SESSION_ENVIRONMENT_ID=x", "ANVIL_TEST_SESSION_RUN_IDS=x",
-                "ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read", ""
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES=tasks:write,tasks:read,run:events:read,provider:read", ""
             ]), encoding="utf-8")
             subprocess.run(["bash", "-c", f"chmod 600 '{self._posix(env_file)}'"], check=True)
             bin_dir = root / "bin"; bin_dir.mkdir(); log = root / "docker.log"
@@ -1291,13 +1395,13 @@ class WslIngressTests(unittest.TestCase):
             (root / "repo").mkdir()
             shutil.copy2(DEPLOY / "cleanup.sh", control / "cleanup.sh")
             common = (DEPLOY / "common.sh").read_text(encoding="utf-8")
-            common += '\nstat() { echo 600; }\ncleanup_wsl_test_volumes() { [[ "${ANVIL_WSL_PG_PASSWORD:-}" == ' + 'a' * 48 + ' && "${ANVIL_TEST_SESSION_PERMISSION_SCOPES:-}" == tasks:write,tasks:read,run:events:read && "${AUTHORITY_CHECKED:-}" == yes ]]; }\n'
+            common += '\nstat() { echo 600; }\ncleanup_wsl_test_volumes() { [[ "${ANVIL_WSL_PG_PASSWORD:-}" == ' + 'a' * 48 + ' && "${ANVIL_TEST_SESSION_PERMISSION_SCOPES:-}" == tasks:write,tasks:read,run:events:read,provider:read && "${AUTHORITY_CHECKED:-}" == yes ]]; }\n'
             (control / "common.sh").write_text(common, encoding="utf-8")
             (control / "candidate-manifest-guard.sh").write_text('validate_wsl_candidate_manifest() { AUTHORITY_CHECKED=yes; }\n', encoding="utf-8")
             values = {"ANVIL_WSL_PG_PASSWORD": "a" * 48, "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "b" * 64,
                       "ANVIL_TEST_SESSION_ACTOR_ID": "x", "ANVIL_TEST_SESSION_PROJECT_ID": "x",
                       "ANVIL_TEST_SESSION_ENVIRONMENT_ID": "x", "ANVIL_TEST_SESSION_RUN_IDS": "x",
-                      "ANVIL_TEST_SESSION_PERMISSION_SCOPES": "tasks:write,tasks:read,run:events:read"}
+                      "ANVIL_TEST_SESSION_PERMISSION_SCOPES": "tasks:write,tasks:read,run:events:read,provider:read"}
             (root / ".env").write_text("".join(f"{key}={value}\n" for key, value in values.items()), encoding="utf-8")
             result = subprocess.run(["bash", WslCandidateManifestGuardTests._posix(control / "cleanup.sh"), "c" * 40], capture_output=True, text=True,
                                     env={key: value for key, value in os.environ.items() if key not in values} | {

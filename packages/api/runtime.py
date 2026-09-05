@@ -14,6 +14,7 @@ from typing import Any, Callable
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from fastapi.responses import Response
 
 from packages.agent_team.provider_catalog import PRIMARY_PROVIDER
 from packages.agent_team.runtime_config import runtime_catalog
@@ -47,8 +48,17 @@ _TEST_SESSION_OPTIONAL = (
     "ANVIL_TEST_SESSION_PERMISSION_SCOPES",
 )
 _ALLOWED_TEST_SESSION_PERMISSION_SCOPES = frozenset(
-    {"tasks:write", "tasks:read", "run:events:read"}
+    {"tasks:write", "tasks:read", "run:events:read", "provider:read"}
 )
+_PROVIDER_TRAILING_SLASH_PATHS = (
+    "/api/providers/",
+    "/api/providers/{providerId}/",
+    "/api/providers/{providerId}/models/",
+)
+
+
+def _provider_trailing_slash_denied() -> Response:
+    return Response(status_code=404)
 
 
 def _required(environment: Mapping[str, str], name: str) -> str:
@@ -212,6 +222,14 @@ def create_runtime_app(
                 "environment test session cannot replace injected authentication ports"
             )
 
+        provider_read_keys = frozenset(
+            {
+                "GET /api/providers",
+                "GET /api/providers/{providerId}",
+                "GET /api/providers/{providerId}/models",
+            }
+        )
+
         def resolve_test_scope(endpoint, path_parameters):
             if endpoint.key == task_create_key:
                 authorized = (
@@ -232,6 +250,8 @@ def create_runtime_app(
                 )
             elif endpoint.key == "GET /api/runs/{id}/events":
                 authorized = local_session.allows_run(path_parameters.get("id"))
+            elif endpoint.key in provider_read_keys:
+                authorized = True
             else:
                 authorized = False
             if not authorized:
@@ -272,6 +292,13 @@ def create_runtime_app(
         app_kwargs["authorization_resolver"] = resolve_runtime_scope
     app_kwargs.setdefault("event_stream", PostgresEventStream(session_factory))
     app = create_app(telegram_webhook=webhook, security_config=web_security, **app_kwargs)
+    for path in _PROVIDER_TRAILING_SLASH_PATHS:
+        app.add_api_route(
+            path,
+            _provider_trailing_slash_denied,
+            methods=["GET"],
+            include_in_schema=False,
+        )
     # Metadata is deliberately credential-free and useful to health/readiness
     # consumers without turning provider secrets into API data.
     app.state.provider_catalog = runtime_catalog(source)

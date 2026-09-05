@@ -60,7 +60,7 @@ load_server_environment() {
   done
   [[ "$ANVIL_WSL_PG_PASSWORD" =~ ^[0-9a-f]{48}$ ]] || { echo 'PostgreSQL password format is invalid' >&2; return 4; }
   [[ "$ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN" =~ ^[0-9a-f]{64}$ ]] || { echo 'bootstrap token format is invalid' >&2; return 4; }
-  [[ "$ANVIL_TEST_SESSION_PERMISSION_SCOPES" == 'tasks:write,tasks:read,run:events:read' ]] || { echo 'test session scope mismatch' >&2; return 4; }
+  [[ "$ANVIL_TEST_SESSION_PERMISSION_SCOPES" == 'tasks:write,tasks:read,run:events:read,provider:read' ]] || { echo 'test session scope mismatch' >&2; return 4; }
 }
 
 verify_backup_receipt() {

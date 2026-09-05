@@ -24,7 +24,7 @@ from .security import SESSION_MAX_AGE_SECONDS
 Clock = Callable[[], datetime]
 TokenFactory = Callable[[], str]
 _ALLOWED_PERMISSION_SCOPES = frozenset(
-    {"tasks:write", "tasks:read", "run:events:read"}
+    {"tasks:write", "tasks:read", "run:events:read", "provider:read"}
 )
 
 
