@@ -1,3 +1,14 @@
+## seq494 로컬 검증 마감 / 2026-09-05
+
+- 담당: Main 어울 관리, pg18_binding_resume 구현 후 seq494_local_finish가 단일 writer 인수. candidate a342d62391a44b349733d1468ac3b180761155ab, candidate56 / record12 / 누적58. Main의 최종 문서 검토·record commit·clean postcommit 검증은 아직 전이며 외부 실행은 하지 않는다.
+- tooling 전체 139 PASS/471.73s/exit0은 직전 writer의 실제 결과를 Main에게서 인수했으며 중복 실행하지 않았다. 기존 harness session8103 최종 결과는 세션 소실로 미확인이고 제품 실패나 PASS로 계상하지 않는다.
+- 인수 후 frozen harness만 1회 재실행: session96554, 80 PASS / 1 Compose parser SKIP / 428.42s / exit0. stdout·exit는 D:/tmp/anvil-seq494-harness-resume-6fa1d981bdb54491a32aab02a9375c66에 보존했다. SKIP는 로컬 parser 환경 한계이며 실제 WSL 검증 성공이 아니다. 프로세스 확인이 실행 후 이뤄진 인수 절차 누락은 기록했고 이전 suite 잔존 없이 현재 launcher/worker 한 쌍만 확인했다.
+- Main 독립 B 검증: I1 보완 직전 핵심 Git/public READY/ABA 4 PASS/53.45s/exit0(session34066), 보완 후 runtime_next_action coherent 변조 거부 1 PASS/7.03s/exit0(session67752). Reviewer I1 해소 후 SPEC PASS / QUALITY APPROVED, Critical 0 / Important 0. 전체 검증 후 문서 마감 검토는 별도다.
+- 정상 exact HOLD는 PASS하고 임의 dispatch·다른 HOLD·빈 문자열·필드 누락은 FAIL하는 계약을 유지한다. event494 canonical SHA 644592AE2E1FE61A074455358F786BC84AE4BA28D71D1EEF3AF87154B02314D2, derived2320 bytes/hash2A57298FA53B8D16AA399DEB9DE695620A20581B5FA85845B4C0EEE573647BE6 및 seq1~493·기존 approval/evidence는 변경하지 않는다.
+- READY는 기술 준비 상태일 뿐 dispatch 허가가 아니다. runtime_next_action은 HOLD_EXTERNAL_EXECUTION_PENDING_SCOPE_RECONFIRMATION_AFTER_LOCAL_SEQ494_COMMIT 그대로다. private push·WSL·DB·실제 rollback/cleanup·Provider·Telegram·ysna·main 병합은 하지 않았다. 다음은 로컬 기록 마감 후 정확한 candidate/control/ref 및 실행 범위에 대한 외부 재개 조건 확인이다.
+
+### 아래는 준비 당시의 누적 기록
+
 # C-21 WSL rollback allowlist binding (2026-09-05, seq493)
 
 - 최종 producer 전체 tooling130 PASS/445.50s(exit0,8061), harness69 PASS/1 parser SKIP/399.44s(exit0,23190), 각1회. Focused tooling13 PASS/94.70s, guard16 PASS/122.05s. Parser SKIP는 Windows Compose parser 부재이며 실제 WSL 검증으로 승격하지 않는다.
@@ -651,11 +662,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 493,
+  "event_sequence": 494,
   "status": "ACTIVE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_wsl_rollback_allowlist_candidate_rebind_bound",
-  "updated_at": "2026-09-05T10:58:07+09:00",
+  "last_event_id": "evt_c21_wsl_qa_resume_candidate_rebind_bound",
+  "updated_at": "2026-09-05T12:24:24+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "active_work_instruction_sha256": "52AA197F724F1D0AB59F061D187EFE3744ED86AFC52E5E504DA0E26C4BE04FF8",
@@ -668,13 +679,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "historical_seq1_487_raw_bytes": 786441,
   "historical_seq1_487_raw_sha256": "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
   "historical_seq1_487_canonical_sha256": "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
-  "next_safe_action": "seq493 내부 결박·검토를 마감한다. I-3는 로컬 제품 검증에서 보완됐으나 이번 범위에 외부 실행은 없으므로 push/배포/rollback/cleanup은 수행하지 않으며 C-01은 계속 차단한다.",
+  "next_safe_action": "seq494 로컬 검토·direct-child commit과 clean postcommit 검증까지만 완료한다. 최신 PMO 지시에 따라 private push·WSL·DB·rollback·cleanup 등 외부 실행은 금지하며 이후 외부 범위를 재확인한다. READY는 기술적 준비 상태일 뿐 현재 dispatch 권한이나 실제 성공이 아니다. Telegram·Provider·ysna·main 병합은 제외하고 C-01은 독립 판정까지 차단한다.",
   "dir_status": "CLEARED",
-  "repository_head": "5f8c301e18c332e3353092dab9efe5c32d0fda84",
+  "repository_head": "a342d62391a44b349733d1468ac3b180761155ab",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_ACTIVE_EXACT54_RECORD12",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_WSL_QA_RESUME_CANDIDATE_REBIND_ACTIVE_EXACT56_RECORD12",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -707,6 +718,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
@@ -721,6 +733,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-ingress-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
@@ -731,8 +744,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "candidate_commit": "5f8c301e18c332e3353092dab9efe5c32d0fda84",
-  "predecessor_control_commit": "48fbad8be35c7e826dd31363464c7c477d9ca9e8",
+  "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
+  "predecessor_control_commit": "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994",
   "runtime_parent_commit": "5251a0b889f4e1062a5780eea9f03d8e9b9f69bb",
   "control_runtime_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
   "repository_exact42_path_list_sha256": "11F56564BC0460157FDD9E99BA00FFF7EA0B5EAC0FA5E6C24BC980BBDA08AA99",
@@ -745,7 +758,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "operational_backup_status": "FAILED_EXIT_20_NO_DUMP_NO_RECEIPT",
   "backup_attempt3": "NOT_EXECUTED",
   "release_manifest_rebind": "NOT_EXECUTED",
-  "deployment_status": "NOT_EXECUTED_EXTERNAL_SCOPE_HOLD",
+  "deployment_status": "NOT_EXECUTED_PENDING_LOCAL_SEQ494_COMMIT_EXTERNAL_SCOPE_RECONFIRMATION",
   "telegram_and_provider": "NOT_EXECUTED_EXCLUDED",
   "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
   "reporting_decision": "AUTO_CONTINUE",
@@ -764,10 +777,10 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "phase_b_gate_approval_ref": "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
   "phase_b_gate_work_instruction": "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
   "phase_b_gate_status": "TEST_REVIEW_EXACT44",
-  "candidate_parent_commit": "48fbad8be35c7e826dd31363464c7c477d9ca9e8",
+  "candidate_parent_commit": "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994",
   "predecessor_runtime_commit": "324eb169fedbce958d2e8cc29362deb7af433677",
-  "predecessor_candidate_commit": "ccf5109d0640bf28c461e7754ad56e0821fd77be",
-  "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact54",
+  "predecessor_candidate_commit": "5f8c301e18c332e3353092dab9efe5c32d0fda84",
+  "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact56",
   "control_remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
   "repository_exact44_path_list_sha256": "A6D1C6AC386639995DA003F6934D9C24ACF81EE860FCCB094AAA731BD8A88E6B",
   "record_exact11_path_list_sha256": "D7016A7C101CE330EECD91A12A4FB093628969D3B19158A6950FF398401D1952",
@@ -775,19 +788,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "record_control_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
   "repository_exact46_path_list_sha256": "F538ABED26C9EB01210C14144CD861889BFF603175A72203CEA717DFC46C1C86",
   "postcommit_exact48_path_list_sha256": "2626990127D2830414F77371813D893143C51065B0ACF41D14EAD3FEBBF88288",
-  "repository_push_status": "NOT_EXECUTED_EXTERNAL_SCOPE_HOLD",
-  "candidate_push_status": "NOT_EXECUTED_EXTERNAL_SCOPE_HOLD",
-  "next_action": "COMPLETE_SEQ493_RECORD_REVIEW_THEN_HOLD_EXTERNAL_EXECUTION_OUTSIDE_CURRENT_SCOPE",
+  "repository_push_status": "NOT_EXECUTED_PENDING_LOCAL_SEQ494_COMMIT_EXTERNAL_SCOPE_RECONFIRMATION",
+  "candidate_push_status": "NOT_EXECUTED_PENDING_LOCAL_SEQ494_COMMIT_EXTERNAL_SCOPE_RECONFIRMATION",
+  "next_action": "COMPLETE_SEQ494_LOCAL_REVIEW_AND_COMMIT_THEN_RECONFIRM_EXTERNAL_SCOPE",
   "repository_exact48_path_list_sha256": "2626990127D2830414F77371813D893143C51065B0ACF41D14EAD3FEBBF88288",
   "postcommit_exact50_path_list_sha256": "9D28888908150BC834FC8931D12A35A9265C7D589ED2D89EAD7F2248E2D179EE",
   "repository_exact51_path_list_sha256": "F3AD3734333F4D40E2C3AC7B00C59AB0D91F06574C2CBBFCA8AAA79B49217EF2",
   "record_exact13_path_list_sha256": "F17A6B348C9A88343FCB9DE019A80429698293C62E7C2D35ADCBD9D23C049DEF",
   "postcommit_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
-  "runtime_safety_gate": "BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE",
-  "runtime_next_action": "EXTERNAL_EXECUTION_REQUIRES_SEPARATE_IN_SCOPE_INSTRUCTION",
+  "runtime_safety_gate": "READY_FOR_APPROVED_WSL_QA",
+  "runtime_next_action": "HOLD_EXTERNAL_EXECUTION_PENDING_SCOPE_RECONFIRMATION_AFTER_LOCAL_SEQ494_COMMIT",
   "repository_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
-  "record_exact12_path_list_sha256": "6A7D0BE483A2B9C119B6566FAB91D6B3D7A4377544DAAEC5D6C07E3359AAE183",
-  "postcommit_exact56_path_list_sha256": "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714"
+  "record_exact12_path_list_sha256": "315FA23EA1B82C16252A749802C3CE94E611BDF3618BF55837A2FBEA187185F5",
+  "postcommit_exact56_path_list_sha256": "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714",
+  "repository_exact56_path_list_sha256": "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714",
+  "postcommit_exact58_path_list_sha256": "6F3B6CFA9DD2EA91B40A277D3199084947B0FE2C74744849FC59CF2A52647BC4"
 }
 ```
 
