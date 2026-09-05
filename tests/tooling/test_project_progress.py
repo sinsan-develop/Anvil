@@ -3378,7 +3378,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_wsl_readiness_decision_projection(manifest, arbitrary_path),
         )
 
-        repository = bundle["progress"]["repository"]
+        repository = copy.deepcopy(bundle["progress"]["repository"])
         successor_errors = checker.validate_repository_projection(
             repository,
             actual_head="9" * 40,
@@ -6827,9 +6827,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_provider_status_read_start_projects_exact_leases_and_boundaries(self) -> None:
         checker = self.require_checker()
-        manifest_path = ROOT / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json"
+        bundle, historical_root = self._historical_bundle(
+            checker, "51ed9d852a1fb48d24d7112cc900485de2f8011e"
+        )
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json"
         self.assertTrue(manifest_path.is_file(), "Provider status READ start manifest is missing")
-        bundle = checker.load_bundle(ROOT)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_provider_status_read_start_projection(bundle, manifest))
         self.assertEqual(10, len(checker.c21_provider_status_read_start_paths()))
@@ -6842,15 +6844,17 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual("developer-primary", bundle["progress"]["active_agent"])
         self.assertFalse(bundle["progress"]["provider_status_read"]["accepted"])
         prompt_sha = hashlib.sha256(
-            (ROOT / "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md").read_bytes()
+            (historical_root / "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md").read_bytes()
         ).hexdigest().upper()
         self.assertEqual(prompt_sha, bundle["progress"]["active_work_instruction"]["invocation_sha256"])
         self.assertEqual(prompt_sha, bundle["handoff"]["active_invocation_sha256"])
 
     def test_c21_provider_status_read_start_rejects_event_lease_history_and_boundary_mutations(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "51ed9d852a1fb48d24d7112cc900485de2f8011e"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_provider_status_read_start_projection(bundle, manifest))
         mutations = []
         for index, path, value in (
@@ -6911,9 +6915,116 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_provider_status_read_start_projection(stale_handoff, copy.deepcopy(manifest)),
         )
 
-    def test_c21_provider_status_read_start_public_and_real_git_paths_fail_closed(self) -> None:
+    def test_c21_provider_status_read_review_successor_accepts_only_exact_record_projection(self) -> None:
+        """A committed exact13 plus any record path outside exact8 must fail closed."""
         checker = self.require_checker()
         bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        exact95 = sorted(
+            checker.c21_development_qa_review_predecessor_paths()
+            | checker.c21_development_qa_review_successor_paths()
+            | checker.c21_provider_status_read_start_paths()
+            | checker.c21_provider_status_read_actual_paths()
+        )
+        exact8 = sorted(checker.c21_provider_status_read_review_successor_paths())
+        repository.update(
+            local_head="13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+            head_relation="FEATURE_WORKTREE_C21_PROVIDER_STATUS_READ_COMMITTED_EXACT95_REVIEW_RECORD8",
+            worktree_status="SEQ513_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_DIRTY",
+            exact_allowed_paths=sorted(set(exact95) | set(exact8)),
+            provider_status_read_review_successor_paths=exact8,
+        )
+        progress = copy.deepcopy(bundle["progress"])
+        progress["event_sequence"] = 513
+        common = {
+            "actual_head": "13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact95,
+            "working_tree_mode": True,
+            "progress": progress,
+            "control_descendant_paths": exact8,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        tampered = dict(common, control_descendant_paths=exact8 + ["outside.txt"])
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(repository, **tampered),
+        )
+        postcommit = dict(
+            common,
+            actual_head="a" * 40,
+            actual_changed_paths=sorted(set(exact95) | set(exact8)),
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        wrong_parent = dict(postcommit, control_runtime_record_commit_is_direct=False)
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **wrong_parent),
+        )
+
+    def test_c21_provider_status_read_review_successor_fails_closed_on_binding_mutation(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            [],
+            checker.validate_c21_provider_status_read_review_successor_projection(bundle, manifest),
+        )
+        mutated_manifest = copy.deepcopy(manifest)
+        mutated_manifest["product_exact_paths"].append("outside.txt")
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_REVIEW_MANIFEST_INVALID",
+            checker.validate_c21_provider_status_read_review_successor_projection(bundle, mutated_manifest),
+        )
+        for field in (
+            "manifest_id",
+            "appended_event_count",
+            "product_parent_commit",
+            "review_report_sha256",
+            "record_commit",
+            "record_commit_mode",
+        ):
+            mutated_provenance = copy.deepcopy(manifest)
+            mutated_provenance[field] = "tampered"
+            self.assertIn(
+                "C21_PROVIDER_STATUS_READ_REVIEW_MANIFEST_INVALID",
+                checker.validate_c21_provider_status_read_review_successor_projection(
+                    bundle, mutated_provenance
+                ),
+                field,
+            )
+        mutated_progress = copy.deepcopy(bundle)
+        mutated_progress["progress"]["provider_status_read"]["actual_provider_calls"] = "PASS"
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_REVIEW_BOUNDARY_INVALID",
+            checker.validate_c21_provider_status_read_review_successor_projection(mutated_progress, manifest),
+        )
+        mutated_events = copy.deepcopy(bundle)
+        mutated_events["events"]["events"][508]["event_id"] = "tampered"
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_REVIEW_HISTORY_INVALID",
+            checker.validate_c21_provider_status_read_review_successor_projection(mutated_events, manifest),
+        )
+
+    def test_c21_provider_status_read_start_public_and_real_git_paths_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "51ed9d852a1fb48d24d7112cc900485de2f8011e"
+        )
         repository = bundle["progress"]["repository"]
         exact78 = sorted(checker.c21_development_qa_review_predecessor_paths() | checker.c21_development_qa_review_successor_paths())
         exact10 = sorted(checker.c21_provider_status_read_start_paths())

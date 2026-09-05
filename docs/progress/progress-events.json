@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 509,
+  "last_sequence": 513,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -18049,7 +18049,80 @@
         "actual_telegram_outbound": "NOT_EXECUTED",
         "runtime_next_action": "IMPLEMENT_PROVIDER_STATUS_READ_EXACT18_LEASE_SUBSET"
       }
+    },
+    {
+      "event_id": "evt_c21_provider_status_read_write_lease_revoked",
+      "sequence": 510,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-06T02:35:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-STATUS-READ",
+      "details": {
+        "lease_id": "write-lease-c21-provider-status-read-20260906-001",
+        "worker_lease_id": "worker-lease-c21-provider-status-read-20260906-001",
+        "execution_fencing_token": "c21-provider-status-read-execution-fence-epoch-1-aa116e2",
+        "write_fencing_token": "c21-provider-status-read-write-fence-epoch-1-aa116e2",
+        "reason": "PROVIDER_STATUS_READ_EXACT13_COMPLETED",
+        "replacement_write_lease": null
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_status_read_worker_lease_revoked",
+      "sequence": 511,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-06T02:35:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-STATUS-READ",
+      "details": {
+        "lease_id": "worker-lease-c21-provider-status-read-20260906-001",
+        "execution_fencing_token": "c21-provider-status-read-execution-fence-epoch-1-aa116e2",
+        "reason": "WRITE_LEASE_REVOKED_AND_PROVIDER_STATUS_READ_COMPLETED",
+        "precondition_event_id": "evt_c21_provider_status_read_write_lease_revoked",
+        "replacement_worker_lease": null
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_status_read_package_completed",
+      "sequence": 512,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-09-06T02:35:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-STATUS-READ",
+      "details": {
+        "commit": "13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+        "parent_commit": "51ed9d852a1fb48d24d7112cc900485de2f8011e",
+        "developer_exact_path_count": 13,
+        "developer_exact_path_list_sha256": "B7DC7CA4195FE3FEA1AC3618A89FF3EF298C109750A8B0E554D686B2DD43F2B5",
+        "execution_manifest_sha256": "AD7CB2410442A1D312E9B8BE5A3B09E2D084C0D918747BAD5935B369A1986EFB",
+        "result_status": "COMPLETED_FOR_INDEPENDENT_REVIEW",
+        "package_status": "LOCAL_IMPLEMENTED_PENDING_CANDIDATE_WSL",
+        "accepted": false
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_status_read_independent_review_recorded",
+      "sequence": 513,
+      "event_type": "INDEPENDENT_TEST_REVIEW_RECORDED",
+      "occurred_at": "2026-09-06T02:35:00+09:00",
+      "actor": "independent-reviewer",
+      "subject_ref": "C-21/PROVIDER-STATUS-READ",
+      "details": {
+        "verdict": "SPEC_PASS",
+        "quality": "APPROVED",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_commit": "13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+        "reviewed_path_count": 13,
+        "reviewed_path_list_sha256": "B7DC7CA4195FE3FEA1AC3618A89FF3EF298C109750A8B0E554D686B2DD43F2B5",
+        "main_broad_test": "192_PASSED",
+        "review_report_sha256": "D474C38F8077F0A49D089EF611691442F6C53DB9B3A78DCD62013EB1BA807757",
+        "accepted": false,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "runtime_next_action": "ISSUE_C21_PROVIDER_WSL_AUTH_SUCCESSOR"
+      }
     }
   ],
-  "last_event_id": "evt_c21_provider_status_read_package_started"
+  "last_event_id": "evt_c21_provider_status_read_independent_review_recorded"
 }

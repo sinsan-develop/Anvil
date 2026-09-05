@@ -783,6 +783,18 @@ def validate_event_stream(
             "required_details": ["verdict", "reason_codes", "runtime_next_action"],
             "effect": "records fail-closed C-21 development QA judgment",
         }
+    if any(
+        isinstance(event, dict)
+        and event.get("sequence") == 513
+        and event.get("event_type") == "INDEPENDENT_TEST_REVIEW_RECORDED"
+        for event in stream.get("events", [])
+    ):
+        payload_contracts = dict(payload_contracts or {})
+        event_types.add("INDEPENDENT_TEST_REVIEW_RECORDED")
+        payload_contracts["INDEPENDENT_TEST_REVIEW_RECORDED"] = {
+            "required_details": ["verdict", "quality", "developer_commit", "review_report_sha256"],
+            "effect": "records independent Provider status READ specification and quality review",
+        }
     if not isinstance(payload_contracts, dict) or set(payload_contracts) != event_types:
         errors.append("EVENT_PAYLOAD_CONTRACT_SET_INVALID")
         payload_contracts = {}
@@ -799,7 +811,13 @@ def validate_event_stream(
         if isinstance(event, dict)
         and event.get("event_type") in {"PACKAGE_STARTED", "PACKAGE_COMPLETED", "PACKAGE_RESUMED", "MAIN_PACKAGE_ACCEPTED", "PHASE_GATE_DECIDED", "EVIDENCE_MANIFEST_CREATED"}
         and isinstance(event.get("details"), dict)
-        and event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
+        and (
+            event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
+            or (
+                event.get("sequence") == 512
+                and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
+            )
+        )
     ]
     current_repository_event = max(
         repository_events + projection_events,
@@ -900,7 +918,13 @@ def validate_event_stream(
                 and event.get("event_id") == "evt_c21_development_qa_package_resumed"
                 and progress.get("last_event_id") == "evt_c21_development_qa_test_judgment_recorded"
             )
-            if not b03_lf_followup and not b03_r3_rework_start and not b11_r2_completion and not b12_r2_completion and not c21_development_qa_review_successor and (
+            c21_provider_status_read_review_successor = (
+                progress.get("event_sequence") == 513
+                and event.get("sequence") == 512
+                and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
+                and progress.get("last_event_id") == "evt_c21_provider_status_read_independent_review_recorded"
+            )
+            if not b03_lf_followup and not b03_r3_rework_start and not b11_r2_completion and not b12_r2_completion and not c21_development_qa_review_successor and not c21_provider_status_read_review_successor and (
                 observed_local != repository.get("local_head")
                 or observed_remote != repository.get("remote_head")
                 or details.get("projection_mode") != repository.get("projection_mode")
@@ -961,13 +985,14 @@ def validate_event_stream(
                 )
             )
             wsl_qa_result_successor = (
-                progress.get("event_sequence") in {495, 498, 506}
+                progress.get("event_sequence") in {495, 498, 506, 513}
                 and event.get("sequence") == 494
                 and progress.get("last_event_id")
                 in {
                     "evt_c21_wsl_qa_execution_result_recorded",
                     "evt_c21_independent_test_judgment_recorded",
                     "evt_c21_development_qa_test_judgment_recorded",
+                    "evt_c21_provider_status_read_independent_review_recorded",
                 }
             )
             if not wsl_waiting_successor and not wsl_control_successor and not wsl_qa_result_successor and any(details.get(field) != repository.get(field) for field in projection_fields):
@@ -2371,6 +2396,12 @@ def _c21_ops_r2_main_reconciliation_successor_valid(bundle: Mapping[str, Any]) -
         return validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(
             bundle, wsl_rollback_allowlist_rebind_manifest
         ) == []
+    if (progress.get("event_sequence") == 513 and progress.get("last_event_id") == "evt_c21_provider_status_read_independent_review_recorded" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json"):
+        try:
+            provider_review_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json")
+        except (OSError, json.JSONDecodeError, TypeError):
+            return False
+        return validate_c21_provider_status_read_review_successor_projection(bundle, provider_review_manifest) == []
     if (progress.get("event_sequence") == 509 and progress.get("last_event_id") == "evt_c21_provider_status_read_package_started" and current_ref.get("manifest_path") == "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json"):
         try:
             provider_start_manifest = _load_json(bundle["_root"] / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json")
@@ -10587,6 +10618,59 @@ def validate_repository_projection(
     worktree_is_clean: bool = True,
     control_runtime_record_commit_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 513:
+        errors: list[str] = []
+        expected_record = c21_provider_status_read_review_successor_paths()
+        expected_committed = (
+            c21_development_qa_review_predecessor_paths()
+            | c21_development_qa_review_successor_paths()
+            | c21_provider_status_read_start_paths()
+            | c21_provider_status_read_actual_paths()
+        )
+        expected_cumulative = expected_committed | expected_record
+        precommit_projection = (
+            actual_head == repository.get("local_head")
+            and set(actual_changed_paths) == expected_committed
+            and set(control_descendant_paths or []) == expected_record
+            and working_tree_mode
+            and not worktree_is_clean
+            and not control_runtime_record_commit_is_direct
+        )
+        postcommit_projection = (
+            actual_head != repository.get("local_head")
+            and control_is_ancestor
+            and control_runtime_record_commit_is_direct
+            and set(actual_changed_paths) == expected_cumulative
+            and set(control_descendant_paths or []) == expected_record
+            and not working_tree_mode
+            and worktree_is_clean
+        )
+        if any((
+            repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE,
+            repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+            repository.get("head_relation") != "FEATURE_WORKTREE_C21_PROVIDER_STATUS_READ_COMMITTED_EXACT95_REVIEW_RECORD8",
+            repository.get("branch") != "codex/c21-operational-execution",
+            repository.get("upstream") != "origin/codex/c21-operational-execution",
+            repository.get("remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("feature_remote") != "origin/codex/c21-operational-execution",
+            repository.get("feature_remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("local_head") != "13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+            repository.get("worktree_status") != "SEQ513_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_DIRTY",
+            set(repository.get("exact_allowed_paths") or []) != expected_cumulative,
+            set(repository.get("provider_status_read_review_successor_paths") or []) != expected_record,
+        )):
+            errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        if (not precommit_projection and not postcommit_projection) or actual_branch != repository.get("branch") or actual_upstream != repository.get("upstream"):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if actual_remote_head != repository.get("remote_head") or actual_feature_remote_head != repository.get("feature_remote_head"):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if not precommit_projection and not postcommit_projection:
+            errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+        if actual_head != repository.get("local_head") and not control_runtime_record_commit_is_direct:
+            errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+        if not base_is_ancestor:
+            errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(errors))
     if (progress or {}).get("event_sequence") == 509:
         errors: list[str] = []
         expected_successor = c21_provider_status_read_start_paths()
@@ -12465,7 +12549,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if isinstance(feature_remote, str) and feature_remote.startswith("origin/")
         else None
     )
-    if bundle["progress"].get("event_sequence") in {495, 498, 501, 506, 509}:
+    if bundle["progress"].get("event_sequence") in {495, 498, 501, 506, 509, 513}:
         parent = repository.get("local_head")
         base = repository.get("validated_base_commit")
         changed = _split_git_paths(_git_value(root,"diff","--name-only",base,actual_head))
@@ -13242,6 +13326,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_independent_judgment_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json":
             errors.extend(validate_c21_provider_status_read_start_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json":
+            errors.extend(validate_c21_provider_status_read_review_successor_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_development_qa_review_successor_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json":
@@ -14183,6 +14269,251 @@ def c21_provider_status_read_lease_paths() -> set[str]:
         "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
         "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
     }
+
+
+def c21_provider_status_read_actual_paths() -> set[str]:
+    return {
+        "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+        "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
+        "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
+        "packages/agent_team/__init__.py",
+        "packages/agent_team/provider_catalog.py",
+        "packages/agent_team/provider_status.py",
+        "packages/api/provider_status.py",
+        "packages/api/registry.py",
+        "packages/api/runtime.py",
+        "tests/agent_team/test_provider_status.py",
+        "tests/api/test_provider_status.py",
+        "tests/api/test_registry_openapi.py",
+        "tests/api/test_runtime_app.py",
+    }
+
+
+def c21_provider_status_read_review_successor_paths() -> set[str]:
+    return {
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def validate_c21_provider_status_read_review_successor_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    handoff = bundle.get("handoff") or {}
+    errors: list[str] = []
+    product_commit = "13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0"
+    product_paths = sorted(c21_provider_status_read_actual_paths())
+    record_paths = sorted(c21_provider_status_read_review_successor_paths())
+    cumulative_paths = sorted(
+        c21_development_qa_review_predecessor_paths()
+        | c21_development_qa_review_successor_paths()
+        | c21_provider_status_read_start_paths()
+        | c21_provider_status_read_actual_paths()
+        | c21_provider_status_read_review_successor_paths()
+    )
+    try:
+        raw = (root / "docs/progress/progress-events.json").read_bytes()
+        prefix = raw_event_object_prefix_bytes(raw, 509)
+        historical_blob = subprocess.check_output(
+            ["git", "show", "51ed9d852a1fb48d24d7112cc900485de2f8011e:docs/progress/progress-events.json"],
+            cwd=root,
+        )
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        prefix = b""
+        historical_blob = b""
+    canonical = (
+        hashlib.sha256(_canonical_ascii_json_bytes(events[:509])).hexdigest().upper()
+        if len(events) >= 509
+        else ""
+    )
+    if any((
+        len(events) != 513,
+        len(historical_blob) != 906028,
+        hashlib.sha256(historical_blob).hexdigest().upper() != "B3E5CFEB5F3F4DCD5EA12B8F86D84BB4905AE0F754794B14644D604047CB4B42",
+        len(prefix) != 905823,
+        hashlib.sha256(prefix).hexdigest().upper() != "8F4452F020CF39C475E86AB9FC8C8885184A2709C8BF150D04C2F407186015CF",
+        canonical != "5804C074092DE0E06B576E2709E72665F82A85C491990EABB21D8671227A2A00",
+    )):
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_HISTORY_INVALID")
+    terminal = events[-4:] if len(events) >= 4 else []
+    if [event.get("sequence") for event in terminal] != [510, 511, 512, 513] or [
+        event.get("event_type") for event in terminal
+    ] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED", "INDEPENDENT_TEST_REVIEW_RECORDED"]:
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_EVENT_ORDER_INVALID")
+    if len(terminal) == 4:
+        completed = terminal[2]
+        reviewed = terminal[3]
+        expected_completed = {
+            "commit": product_commit,
+            "parent_commit": "51ed9d852a1fb48d24d7112cc900485de2f8011e",
+            "developer_exact_path_count": 13,
+            "developer_exact_path_list_sha256": "B7DC7CA4195FE3FEA1AC3618A89FF3EF298C109750A8B0E554D686B2DD43F2B5",
+            "execution_manifest_sha256": "AD7CB2410442A1D312E9B8BE5A3B09E2D084C0D918747BAD5935B369A1986EFB",
+            "result_status": "COMPLETED_FOR_INDEPENDENT_REVIEW",
+            "package_status": "LOCAL_IMPLEMENTED_PENDING_CANDIDATE_WSL",
+            "accepted": False,
+        }
+        expected_reviewed = {
+            "verdict": "SPEC_PASS",
+            "quality": "APPROVED",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_commit": product_commit,
+            "reviewed_path_count": 13,
+            "reviewed_path_list_sha256": "B7DC7CA4195FE3FEA1AC3618A89FF3EF298C109750A8B0E554D686B2DD43F2B5",
+            "main_broad_test": "192_PASSED",
+            "review_report_sha256": "D474C38F8077F0A49D089EF611691442F6C53DB9B3A78DCD62013EB1BA807757",
+            "accepted": False,
+            "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+            "dir2_status": "NOT_TRIGGERED",
+            "runtime_next_action": "ISSUE_C21_PROVIDER_WSL_AUTH_SUCCESSOR",
+        }
+        if completed.get("details") != expected_completed:
+            errors.append("C21_PROVIDER_STATUS_READ_COMPLETION_EVENT_INVALID")
+        if reviewed.get("details") != expected_reviewed:
+            errors.append("C21_PROVIDER_STATUS_READ_REVIEW_EVENT_INVALID")
+    provider = progress.get("provider_status_read") or {}
+    expected_provider = {
+        "event_sequence": 513,
+        "status": "LOCAL_IMPLEMENTED_PENDING_CANDIDATE_WSL",
+        "accepted": False,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "provider_ids": "canonical_lowercase_9_with_uppercase_display",
+        "primary_provider": "UPSTAGE",
+        "credential_surface": "ENV_PRESENCE_ONLY",
+        "actual_provider_calls": "NOT_EXECUTED",
+        "actual_telegram_outbound": "NOT_EXECUTED",
+        "database_migration": "NOT_EXECUTED_ZERO",
+        "ysna": "NOT_EXECUTED",
+        "main_merge": "NOT_EXECUTED",
+        "local_commit": product_commit,
+        "independent_review": "SPEC_PASS_QUALITY_APPROVED_C0_I0_M0",
+        "wsl_pg15_pg18rc": "PENDING",
+        "runtime_next_action": "ISSUE_C21_PROVIDER_WSL_AUTH_SUCCESSOR",
+    }
+    if provider != expected_provider:
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_BOUNDARY_INVALID")
+    current_ref = progress.get("current_progress_evidence_ref") or {}
+    expected_ref = {
+        "package_id": "C-21",
+        "path": "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
+        "manifest_path": "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
+    }
+    if any((
+        progress.get("event_sequence") != 513,
+        progress.get("last_event_id") != "evt_c21_provider_status_read_independent_review_recorded",
+        progress.get("status") != "LOCAL_IMPLEMENTED_PENDING_CANDIDATE_WSL",
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        progress.get("active_work_instruction") is not None,
+        progress.get("runtime_next_action") != "ISSUE_C21_PROVIDER_WSL_AUTH_SUCCESSOR",
+        current_ref != expected_ref,
+    )):
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_PROJECTION_INVALID")
+    expected_manifest = {
+        "manifest_id": "C21-PROVIDER-STATUS-READ-REVIEW-SUCCESSOR-20260906",
+        "manifest_type": "C21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR",
+        "event_sequence": 513,
+        "appended_event_count": 4,
+        "historical_event_sequence": 509,
+        "historical_full_file_bytes": 906028,
+        "historical_full_file_sha256": "B3E5CFEB5F3F4DCD5EA12B8F86D84BB4905AE0F754794B14644D604047CB4B42",
+        "historical_event_object_prefix_bytes": 905823,
+        "historical_event_object_prefix_sha256": "8F4452F020CF39C475E86AB9FC8C8885184A2709C8BF150D04C2F407186015CF",
+        "historical_events_canonical_ascii_sha256": "5804C074092DE0E06B576E2709E72665F82A85C491990EABB21D8671227A2A00",
+        "product_parent_commit": "51ed9d852a1fb48d24d7112cc900485de2f8011e",
+        "product_commit": product_commit,
+        "product_exact_path_count": 13,
+        "product_exact_path_list_sha256": "B7DC7CA4195FE3FEA1AC3618A89FF3EF298C109750A8B0E554D686B2DD43F2B5",
+        "product_exact_paths": product_paths,
+        "record_exact_path_count": 8,
+        "record_exact_path_list_sha256": _path_list_sha256(record_paths),
+        "record_exact_paths": record_paths,
+        "cumulative_exact_path_count": 97,
+        "cumulative_exact_path_list_sha256": "08396E903A3DE05C82992A0A91D72A6171DF05C8C1BF7FD16B8FD9C2DA1D809D",
+        "cumulative_exact_paths": cumulative_paths,
+        "review_verdict": "SPEC_PASS",
+        "quality": "APPROVED",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "review_report_sha256": "D474C38F8077F0A49D089EF611691442F6C53DB9B3A78DCD62013EB1BA807757",
+        "accepted": False,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "actual_provider_calls": "NOT_EXECUTED",
+        "actual_telegram_outbound": "NOT_EXECUTED",
+        "wsl_pg15_pg18rc": "NOT_EXECUTED",
+        "ysna": "NOT_EXECUTED",
+        "main_merge": "NOT_EXECUTED",
+        "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        "record_commit_mode": "PRODUCT_DIRECT_CHILD_EXACT8",
+        "self_reference": False,
+    }
+    if any(manifest.get(key) != value for key, value in expected_manifest.items()):
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_MANIFEST_INVALID")
+    expected_rows = {
+        "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+        "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_rows:
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_RAW_SET_INVALID")
+    elif any(
+        not portable_row_matches(root, row["path"], row.get("bytes"), row.get("sha256"))
+        for row in rows
+    ):
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_RAW_INVALID")
+    if any((
+        handoff.get("event_sequence") != 513,
+        handoff.get("status") != "LOCAL_IMPLEMENTED_PENDING_CANDIDATE_WSL",
+        handoff.get("active_agent") is not None,
+        handoff.get("worker_lease") is not None,
+        handoff.get("write_lease") is not None,
+        handoff.get("runtime_next_action") != "ISSUE_C21_PROVIDER_WSL_AUTH_SUCCESSOR",
+        handoff.get("repository_head") != product_commit,
+    )):
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_HANDOFF_INVALID")
+    try:
+        digest = _load_json(root / "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json")
+    except (OSError, json.JSONDecodeError, TypeError):
+        errors.append("C21_PROVIDER_STATUS_READ_REVIEW_DIGEST_INVALID")
+    else:
+        progress_raw = (root / "docs/progress/build-progress.json").read_bytes()
+        handoff_raw = (root / "docs/progress/BUILD_HANDOFF.md").read_bytes()
+        if any((
+            digest.get("event_sequence") != 513,
+            digest.get("self_reference") is not False,
+            digest.get("progress") != {
+                "path": "docs/progress/build-progress.json",
+                "bytes": len(progress_raw),
+                "file_sha256": hashlib.sha256(progress_raw).hexdigest().upper(),
+                "canonical_json_sha256": hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper(),
+            },
+            digest.get("handoff") != {
+                "path": "docs/progress/BUILD_HANDOFF.md",
+                "bytes": len(handoff_raw),
+                "file_sha256": hashlib.sha256(handoff_raw).hexdigest().upper(),
+                "machine_summary_canonical_sha256": hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper(),
+            },
+        )):
+            errors.append("C21_PROVIDER_STATUS_READ_REVIEW_DIGEST_INVALID")
+    return sorted(set(errors))
 
 
 def validate_c21_provider_status_read_start_projection(

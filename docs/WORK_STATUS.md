@@ -657,3 +657,12 @@
 - 이 mismatch 계열은 이전 projection에서도 반복된 유형이므로 AGENTS.md의 동일 오류 3회 Main 인수 원칙을 적용해 `developer-primary` 재시도를 중단하고 Main이 직접 인수했다.
 - 조치: validated base ancestry, projected parent ancestry, cumulative exact68, descendant exact10, clean worktree, branch/upstream/remote 고정을 모두 만족하는 post-commit 경로만 허용했다. content/hash 검증은 그대로 유지하며 허용 경로 밖 변경은 계속 fail-closed한다.
 - focused 계약 검증: `1 passed, 156 deselected`; 실제 checker PASS는 raw checksum·snapshot·digest 재결박 및 보완 commit 후 확인한다. 제품 QA exact7, WSL/DB/browser/Provider/Telegram, push, ysna, main은 아직 시작하지 않았다.
+# C-21 Provider 상태 조회 독립 검토 successor — sequence 513
+
+- 담당: Main Agent 직접 인수(무결성 projection), 제품 구현 `developer-primary`, 독립 검토 `provider_status_review`.
+- 제품 commit `13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0`은 Provider 9종의 상태·credential 존재 여부·model 조회 READ 계약을 exact13으로 구현했다.
+- Main broad 검증은 `192 passed`; 독립 검토는 `SPEC_PASS / QUALITY_APPROVED / Critical 0 / Important 0 / Minor 0`이다.
+- 기존 일반 Git projection에서 같은 `GIT_DESCENDANT_ORIGIN_MISMATCH`·`GIT_DESCENDANT_PATH_SET_MISMATCH`가 3회 반복되어 Main Agent가 인수했다. 신산님이 seq513 전용 predicate의 선행 적용을 승인했으며 exact commit·경로·ancestor·direct-child·clean/dirty 검증은 유지한다.
+- 기존 sequence 1~509와 historical evidence는 변경하지 않고 sequence 510~513을 append했다. 제품 exact13과 record exact8 외 경로 변경은 허용하지 않는다.
+- 실제 Provider 호출, Telegram outbound, WSL PG15/PG18RC, ysna 배포, main 병합은 모두 `NOT_EXECUTED`; C-21은 아직 수락되지 않았고 C-01은 차단 상태다.
+- 다음 안전 조치: 개발/WSL 전용 test session에 `provider:read`를 exact endpoint allowlist로 추가하는 successor를 발행하고 로컬 검증 후 Git-only PG15/PG18RC candidate를 결박한다.
