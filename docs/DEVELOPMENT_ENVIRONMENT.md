@@ -118,3 +118,12 @@
 - 실행 대상은 기존 `WSL_SERVER_TEST_STAGING`, PostgreSQL 15 및 격리 PostgreSQL 18 RC다.
 - 실제 runtime dispatch는 K direct-child commit과 Main exact binding 후에만 허용한다.
 - 이 준비 단계에서는 WSL/Docker/DB/Provider/Telegram/ysna를 실행하지 않는다.
+# C-21 seq542 WSL exact runtime binding
+
+- Local push authority: remote `development` → `git@github-sinsan-develop:sinsan-develop/Anvil.git`.
+- WSL fresh clone/fetch authority: remote `origin` → 같은 private Git URL. public origin은 push authority가 아니다.
+- Application repository: `/srv/anvil-wsl/repo`, clean detached 상태.
+- Observed initial tuple: HEAD/current `a342d62391a44b349733d1468ac3b180761155ab`, previous `324eb169fedbce958d2e8cc29362deb7af433677`.
+- Candidate tuple: HEAD/current `a6dca0da5a37e64491e91813895268e78ecb78b2`, previous `324eb169fedbce958d2e8cc29362deb7af433677`.
+- Rolled-back tuple: HEAD `a6dca0da5a37e64491e91813895268e78ecb78b2`, current/previous `324eb169fedbce958d2e8cc29362deb7af433677`.
+- 위 tuple 및 필요한 image revision이 다르면 deploy/verify/rollback mutation 전에 중단한다.

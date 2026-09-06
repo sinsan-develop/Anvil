@@ -220,3 +220,170 @@ validate_wsl_candidate_manifest() {
   [[ "$current_control" == "$control_sha" ]] || { echo 'control revision changed during runtime validation' >&2; return 20; }
   validate_wsl_execution_resume "$repo" "$control_sha" "$expected"
 }
+
+# seq542 exact private-authority/runtime binding. Historical definitions above
+# remain visible for audit; these final definitions are the active contract.
+readonly C21_EXACT_START_CONTROL='71d6747c0b713bedf1a1bc6724a5771d6ae33c60'
+readonly C21_EXACT_RESUME_BOUND='3501c37b25274c2c3b406a15bc8a57aa03a162e7'
+readonly C21_EXACT_OBSERVED_RUNTIME='a342d62391a44b349733d1468ac3b180761155ab'
+readonly C21_EXACT_OBSERVED_PREVIOUS='324eb169fedbce958d2e8cc29362deb7af433677'
+readonly C21_EXACT_RUNTIME_CONTROL_REF='refs/remotes/origin/codex/c21-operational-execution'
+readonly C21_EXACT_RUNTIME_CANDIDATE_REF='refs/remotes/origin/candidates/c21-wsl-exact107'
+readonly C21_EXACT_PRIVATE_URL='git@github-sinsan-develop:sinsan-develop/Anvil.git'
+
+_c21_exact_manifest_contract() {
+  local payload="$1" python_bin="${ANVIL_PYTHON:-python3}"
+  command -v "$python_bin" >/dev/null || { echo 'Python 3 is required for exact candidate validation' >&2; return 20; }
+  ANVIL_C21_MANIFEST="$payload" "$python_bin" - <<'PY' || return 20
+import hashlib, json, os, re
+def unique(pairs):
+    out={}
+    for key,value in pairs:
+        if key in out: raise ValueError('duplicate manifest key')
+        out[key]=value
+    return out
+def nonfinite(value): raise ValueError('nonfinite manifest value')
+doc=json.loads(os.environ['ANVIL_C21_MANIFEST'], object_pairs_hook=unique, parse_constant=nonfinite)
+candidate='a6dca0da5a37e64491e91813895268e78ecb78b2'
+observed='a342d62391a44b349733d1468ac3b180761155ab'
+previous='324eb169fedbce958d2e8cc29362deb7af433677'
+private='git@github-sinsan-develop:sinsan-develop/Anvil.git'
+if not isinstance(doc,dict) or doc.get('schema_version')!=1 or doc.get('manifest_type')!='WSL_STAGING_CANDIDATE': raise SystemExit(1)
+if (doc.get('status'),doc.get('runtime_safety_gate'))!=('APPROVED_FOR_STAGING_VALIDATION','READY_FOR_APPROVED_WSL_QA'): raise SystemExit(1)
+if doc.get('source')!={'commit':candidate,'remote_ref':'refs/remotes/origin/candidates/c21-wsl-exact107','working_tree':'CLEAN','branch':'codex/c21-operational-execution','upstream':'origin/codex/c21-operational-execution'}: raise SystemExit(1)
+authority=doc.get('authority')
+if not isinstance(authority,dict): raise SystemExit(1)
+derived=authority.get('derived_binding'); derived_sha=authority.get('derived_binding_sha256')
+if not isinstance(derived,dict) or not re.fullmatch(r'[A-F0-9]{64}',str(derived_sha)): raise SystemExit(1)
+if hashlib.sha256(json.dumps(derived,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest().upper()!=derived_sha: raise SystemExit(1)
+binding={'push_remote':'development','push_url':private,
+ 'control_ref':'refs/remotes/development/codex/c21-operational-execution',
+ 'candidate_ref':'refs/remotes/development/candidates/c21-wsl-exact107',
+ 'observed_control':'772afbd5eb55791ca7b5002d58378437ea496750','observed_candidate':'ABSENT',
+ 'control_compare_and_swap':True,'candidate_compare_and_swap':True,
+ 'runtime_fetch_remote':'origin','runtime_fetch_url':private,
+ 'runtime_control_ref':'refs/remotes/origin/codex/c21-operational-execution',
+ 'runtime_candidate_ref':'refs/remotes/origin/candidates/c21-wsl-exact107',
+ 'public_origin_is_push_authority':False}
+if authority.get('exact_private_git_binding')!=binding: raise SystemExit(1)
+tuples=[{'application_head':observed,'current':observed,'previous':previous},
+ {'application_head':candidate,'current':candidate,'previous':previous},
+ {'application_head':candidate,'current':previous,'previous':previous}]
+runtime={'host':'SINSAN','application_repo':'/srv/anvil-wsl/repo','application_repo_state':'CLEAN_DETACHED',
+ 'application_origin':private,'observed_application_head':observed,'observed_pg15_current':observed,
+ 'observed_pg18rc_current':observed,'observed_previous':previous,
+ 'rollback_allowlist':[candidate,observed,previous],'allowed_lifecycle_tuples':tuples,
+ 'fail_closed_before_mutation':True}
+if doc.get('runtime_binding')!=runtime: raise SystemExit(1)
+if doc.get('rollback')!={'approved_commits':[candidate,observed,previous],'runtime_observation_required':True}: raise SystemExit(1)
+if doc.get('environment')!={'name':'WSL_SERVER_TEST_STAGING','postgres_targets':['15','18-rc']}: raise SystemExit(1)
+if doc.get('exclusions')!=['TELEGRAM_EXECUTION','PROVIDER_EXECUTION','YSNA_EXECUTION','MAIN_MERGE']: raise SystemExit(1)
+PY
+}
+
+validate_c21_exact_runtime_state() {
+  local root="$1" application_head="$2" target slug current previous tuple
+  [[ "$application_head" =~ ^[0-9a-f]{40}$ ]] || { echo 'runtime state drift: application HEAD is malformed' >&2; return 23; }
+  for target in 15 18-rc; do
+    [[ "$target" == 15 ]] && slug=pg15 || slug=pg18rc
+    [[ -s "$root/runtime/$slug/current.sha" && -s "$root/runtime/$slug/previous.sha" ]] || {
+      echo "runtime state drift: state file missing for $target" >&2; return 23;
+    }
+    current="$(tr -d '\r\n' < "$root/runtime/$slug/current.sha")"
+    previous="$(tr -d '\r\n' < "$root/runtime/$slug/previous.sha")"
+    tuple="$application_head:$current:$previous"
+    case "$tuple" in
+      "$C21_EXACT_OBSERVED_RUNTIME:$C21_EXACT_OBSERVED_RUNTIME:$C21_EXACT_OBSERVED_PREVIOUS"|\
+      "$C21_RESUME_CANDIDATE:$C21_RESUME_CANDIDATE:$C21_EXACT_OBSERVED_PREVIOUS"|\
+      "$C21_RESUME_CANDIDATE:$C21_EXACT_OBSERVED_PREVIOUS:$C21_EXACT_OBSERVED_PREVIOUS") ;;
+      *) echo "runtime state drift: unapproved lifecycle tuple for $target" >&2; return 23 ;;
+    esac
+  done
+}
+
+_c21_exact_image_revision_exists() {
+  local revision="$1" image actual
+  while IFS= read -r image; do
+    [[ -n "$image" ]] || continue
+    actual="$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$image" 2>/dev/null || true)"
+    [[ "$actual" == "$revision" ]] && return 0
+  done < <(docker image ls -q 2>/dev/null | sort -u)
+  return 1
+}
+
+validate_c21_exact_runtime_images() {
+  local root="$1" slug current previous revision
+  declare -A required=()
+  for slug in pg15 pg18rc; do
+    current="$(tr -d '\r\n' < "$root/runtime/$slug/current.sha")" || return 23
+    previous="$(tr -d '\r\n' < "$root/runtime/$slug/previous.sha")" || return 23
+    required["$current"]=1; required["$previous"]=1
+  done
+  for revision in "${!required[@]}"; do
+    _c21_exact_image_revision_exists "$revision" || {
+      echo "runtime image drift: approved revision image missing" >&2; return 23;
+    }
+  done
+}
+
+validate_wsl_candidate_binding() {
+  local repo="$1" manifest_ref="$2" expected="$3" pinned_control_sha="${4:-}"
+  local control_sha current_control payload supplied_hash actual_hash head status_raw origin
+  [[ "$manifest_ref" == "$C21_EXACT_RUNTIME_CONTROL_REF" ]] || { echo 'candidate control ref must be the exact runtime private ref' >&2; return 20; }
+  [[ "$expected" == "$C21_RESUME_CANDIDATE" ]] || { echo 'candidate source must be the exact107 commit' >&2; return 20; }
+  control_sha="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ -z "$pinned_control_sha" || "$control_sha" == "$pinned_control_sha" ]] || { echo 'pinned control revision mismatch' >&2; return 20; }
+  [[ "$(git -C "$repo" rev-parse --verify "$C21_EXACT_RUNTIME_CANDIDATE_REF^{commit}")" == "$expected" ]] || { echo 'candidate remote ref mismatch' >&2; return 21; }
+  supplied_hash="${ANVIL_CANDIDATE_MANIFEST_SHA256:?candidate manifest checksum is required}"
+  [[ "$supplied_hash" =~ ^[0-9a-fA-F]{64}$ ]] || return 20
+  payload="$(git -C "$repo" show "$control_sha:deploy/wsl/CandidateReleaseManifest.json")" || return 20
+  actual_hash="$(printf '%s\n' "$payload" | sha256sum | cut -d' ' -f1)" || return 20
+  [[ "${actual_hash,,}" == "${supplied_hash,,}" ]] || { echo 'candidate manifest checksum mismatch' >&2; return 20; }
+  _c21_exact_manifest_contract "$payload" || { echo 'candidate manifest contract mismatch' >&2; return 20; }
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_RESUME_CANDIDATE")" == "$C21_RESUME_CANDIDATE_PARENT" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_RESUME_GIT_ONLY_CONTROL")" == "$C21_RESUME_CANDIDATE" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_RESUME_START_CONTROL")" == "$C21_RESUME_GIT_ONLY_CONTROL" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_EXACT_RESUME_BOUND")" == "$C21_RESUME_START_CONTROL" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_EXACT_START_CONTROL")" == "$C21_EXACT_RESUME_BOUND" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$control_sha")" == "$C21_EXACT_START_CONTROL" ]] || { echo 'exact control must be a single direct child' >&2; return 21; }
+  _c21_resume_assert_paths candidate "$repo" "$control_sha" 10 87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2 || return $?
+  _c21_resume_assert_paths git-only "$repo" "$control_sha" 12 6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765 || return $?
+  _c21_resume_assert_paths start "$repo" "$control_sha" 10 0FCFCE1A57E7A806B9E94B495DBE7CF3AEFD720FB6B8ACFF029DA0CEBB7EA070 || return $?
+  _c21_resume_assert_paths bound "$repo" "$C21_EXACT_RESUME_BOUND" 14 3A67A5443BBCD92B125E5168442B5EB46A1FBA4EA0A9AE061411FB655921C09B || return $?
+  local paths
+  paths="$(git -C "$repo" diff --name-only "$C21_EXACT_RESUME_BOUND" "$C21_EXACT_START_CONTROL")" || return 20
+  [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 10 && "$(_c21_path_hash "$paths")" == '410EB4E3EB843BFF2FE9D332505445286986BE8572A288DF713E388DAF587B62' ]] || return 21
+  paths="$(git -C "$repo" diff --name-only "$C21_EXACT_START_CONTROL" "$control_sha")" || return 20
+  [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 14 && "$(_c21_path_hash "$paths")" == 'B570C707DBEA3594C6AC57B0D44DBD0F64BBDEE26A037FC954FF03CFD78A133E' ]] || return 21
+  paths="$(git -C "$repo" diff --name-only "$C21_RESUME_BASE" "$control_sha")" || return 20
+  [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 125 && "$(_c21_path_hash "$paths")" == 'E95EDFDE234D91C7F667B699991332E5FF3A8FDDBCDB2EADAF15087BB3501F76' ]] || return 21
+  status_raw="$(git -C "$repo" status --porcelain=v1 --untracked-files=all)" || return 20
+  [[ -z "$status_raw" ]] || { echo 'candidate working tree is not clean' >&2; return 21; }
+  head="$(git -C "$repo" rev-parse --verify HEAD)" || return 20
+  [[ "$head" == "$C21_EXACT_OBSERVED_RUNTIME" || "$head" == "$expected" || "$head" == "$control_sha" ]] || { echo 'runtime application HEAD mismatch' >&2; return 21; }
+  if [[ -n "${ROOT:-}" ]]; then
+    [[ -z "$(git -C "$repo" branch --show-current)" ]] || { echo 'runtime application repo must be detached' >&2; return 21; }
+    origin="$(git -C "$repo" remote get-url origin)" || return 20
+    [[ "$origin" == "$C21_EXACT_PRIVATE_URL" ]] || { echo 'runtime origin authority mismatch' >&2; return 21; }
+  fi
+  current_control="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ "$current_control" == "$control_sha" ]] || { echo 'control revision changed during binding validation' >&2; return 20; }
+}
+
+validate_wsl_execution_resume() {
+  local repo="$1" control_sha="$2" expected="$3" root="${ROOT:-}"
+  [[ -n "$root" ]] || return 0
+  local head
+  head="$(git -C "$repo" rev-parse --verify HEAD)" || return 22
+  validate_c21_exact_runtime_state "$root" "$head" || return $?
+  validate_c21_exact_runtime_images "$root" || return $?
+}
+
+validate_wsl_candidate_manifest() {
+  local repo="$1" manifest_ref="$2" expected="$3" control_sha current_control
+  control_sha="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  validate_wsl_candidate_binding "$repo" "$manifest_ref" "$expected" "$control_sha" || return $?
+  current_control="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ "$current_control" == "$control_sha" ]] || { echo 'control revision changed during runtime validation' >&2; return 20; }
+  validate_wsl_execution_resume "$repo" "$control_sha" "$expected"
+}

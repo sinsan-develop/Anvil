@@ -7988,7 +7988,10 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_provider_wsl_execution_resume_candidate_manifest_raw_contract_is_frozen(self):
         checker = self.require_checker()
-        raw = (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_bytes()
+        raw = subprocess.check_output(
+            ["git", "show", "3501c37b25274c2c3b406a15bc8a57aa03a162e7:deploy/wsl/CandidateReleaseManifest.json"],
+            cwd=ROOT,
+        )
         self.assertEqual(checker.C21_RESUME_BOUND_CANDIDATE_SHA, hashlib.sha256(raw).hexdigest().upper())
         self.assertNotEqual(checker.C21_RESUME_BOUND_CANDIDATE_SHA, hashlib.sha256(raw + b" ").hexdigest().upper())
 
@@ -8039,6 +8042,52 @@ class ProjectProgressContractTests(unittest.TestCase):
         ):
             with self.subTest(field=field):
                 self.assertTrue(checker._validate_c21_resume_bound_repository(repository, **dict(post, **{field: value})))
+
+
+    def test_c21_provider_wsl_exact_binding_completion_is_forward_only(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_exact_binding_artifacts"))
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{checker.C21_EXACT_BINDING_START_COMMIT}:{path}"], cwd=ROOT)
+            for path in (checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E, checker.C21_EXACT_BINDING_H)
+        }
+        files = {
+            path: (ROOT / path).read_bytes()
+            for path in checker.c21_provider_wsl_exact_binding_paths()
+            if path not in {
+                checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E, checker.C21_EXACT_BINDING_H,
+                checker.C21_EXACT_BINDING_BOUND_D, checker.C21_EXACT_BINDING_BOUND_M,
+            } and (ROOT / path).is_file()
+        }
+        artifacts = checker.c21_provider_wsl_exact_binding_artifacts(historical, files)
+        progress = json.loads(artifacts[checker.C21_EXACT_BINDING_P])
+        events = json.loads(artifacts[checker.C21_EXACT_BINDING_E])
+        manifest = json.loads(artifacts[checker.C21_EXACT_BINDING_BOUND_M])
+        self.assertEqual(542, progress["event_sequence"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual([540, 541, 542], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-3:]],
+        )
+        self.assertEqual("READY_FOR_EXACT_PRIVATE_PUSH_AND_WSL_QA", manifest["status"])
+        self.assertEqual(
+            [
+                "a6dca0da5a37e64491e91813895268e78ecb78b2",
+                "a342d62391a44b349733d1468ac3b180761155ab",
+                "324eb169fedbce958d2e8cc29362deb7af433677",
+            ],
+            manifest["runtime_binding"]["rollback_allowlist"],
+        )
+        for key in ("commit", "push", "wsl", "docker", "database", "provider", "telegram", "ysna", "main_merge"):
+            self.assertEqual("NOT_EXECUTED", manifest[key])
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_artifacts(historical, files, artifacts))
+        changed = dict(artifacts)
+        tampered = copy.deepcopy(manifest)
+        tampered["runtime_binding"]["observed_previous"] = "0" * 40
+        changed[checker.C21_EXACT_BINDING_BOUND_M] = json.dumps(tampered).encode()
+        self.assertTrue(checker.validate_c21_provider_wsl_exact_binding_artifacts(historical, files, changed))
 
 
 if __name__ == "__main__":

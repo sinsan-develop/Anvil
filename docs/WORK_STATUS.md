@@ -972,3 +972,31 @@
 - 이전 `194 passed, 1 failed`는 보완 전 유효 실패 증거로 그대로 보존한다. 이번 PASS는 로컬 tooling 계약만 증명하며 WSL·Docker·DB·Provider·Telegram·ysna 운영 검증으로 승격하지 않는다.
 - 다음 안전 행동은 문서 결과를 pure builder로 재결박하고 reviewer가 마지막 checker 변경을 재확인한 뒤 exact10/누적 exact121/history bytes/live checker를 확인하여 seq539 S direct-child commit을 만드는 것이다.
 - 최종 Reviewer 재검토는 `COMMIT_READY / C0 / I0 / M0`다. status 수집 실패의 `GIT_STATUS_COLLECTION_FAILED` 보존, exact10/누적 exact121, seq1~536 raw history, deterministic projection, live checker와 diff-check를 재확인했다.
+## C-21 seq540~542 Provider WSL exact binding K
+
+- 담당 agent: `developer-primary`; 상태: `IN_PROGRESS_TDD_GREEN`.
+- 기준: `71d6747c0b713bedf1a1bc6724a5771d6ae33c60`, exact14 write lease.
+- TDD RED: focused 4 FAIL — completion builder, private exact authority, lifecycle validator가 아직 없어서 의도대로 실패했다.
+- 반영: private `development` push와 WSL `origin` fetch 권위를 분리하고, clean detached runtime 및 initial/deployed/rolledback tuple을 결박한다.
+- analyst 보완: 실제 rollback은 candidate 배포 전 `previous.sha=324eb169...`를 유지하므로 rollback allowlist를 `a6dca0d...`, `a342d623...`, `324eb169...` 3개로 구성한다.
+- 오류 횟수: `C21_EXACT_BINDING_COMPLETION_MISSING_R1` 1회(TDD RED), 동일 근본 원인 반복 0회.
+- 미실행: commit, push, SSH/WSL mutation, Docker, DB, Provider, Telegram, ysna, main merge.
+- 다음 조치: pure seq540~542 projection과 strict checker를 완성하고 focused/full 검증 후 Main에 writer lease를 반환한다.
+
+### seq542 동일 ancestry 오류 반복에 따른 Main 인수
+
+- Developer 확대 회귀는 `14 passed, 285 deselected`, 신규 focused는 `5 passed, 295 deselected`, live checker는 당시 PASS542였다.
+- 첫 병렬 전체 결과는 tooling `193 passed, 3 failed in 869.22s`, deploy `100 passed, 2 skipped, 2 failed in 888.65s`였다. 실패 결과는 최종 PASS로 대체하지 않고 그대로 보존한다.
+- tooling 3건은 (1) seq536 historical manifest가 current 파일을 읽은 fixture drift `SEQ536_HISTORICAL_GUARD_FIXTURE_DRIFT_R1` 1회, (2) seq542 status 수집 오류코드 회귀 1회, (3) seq542 declared-base ancestry 누락 1회다. Developer가 historical blob 고정, `GIT_STATUS_COLLECTION_FAILED`, declared base 실제 ancestor 검사를 적용했다.
+- declared-base ancestry 누락은 seq533·seq536·seq539에 이어 다시 발생한 동일 근본 원인이다. 규칙에 따라 Main이 추가 Developer write를 중단하고 exact14 writer lease를 직접 인수했다. Developer는 `INCOMPLETE_TAKEOVER_PACKET`을 제출했고 실행 중 pytest/python 잔류는 없었다.
+- deploy 2건은 legacy Windows fixture에서 mock `stat` 디렉터리를 POSIX Bash PATH로 전달하지 못해 guard 전 `server-only environment mode`로 실패한 환경 fixture 오류였다. Main이 해당 PATH 3곳을 POSIX 목록으로 고정했다. 직렬 재현에서 1건은 새 guard의 오류 문자열이 기존 `candidate source must be the exact107 commit` 계약을 축약한 호환성 회귀로 드러나 기존 문자열을 복원했다.
+- Main 보완 후 두 legacy deploy fixture는 `2 passed in 25.87s`, exit 0이다. 외부 commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 계속 `NOT_EXECUTED`다.
+- 현재 파생 P/E/H/D/M은 마지막 코드·문서 변경 전 materialization일 수 있으므로 pure builder 재결박이 필요하다. 이후 live checker, 영향 focused, 직렬 전체 tooling/deploy, independent review, exact14/누적 exact125를 다시 검증한다.
+
+### seq542 Main 최종 검증 마감
+
+- Main 보완·재결박 후 live checker는 `PASS sequence=542`, tooling 영향 집중은 `3 passed, 193 deselected`, deploy 영향 집중은 `6 passed, 98 deselected`, diff-check는 PASS였다.
+- 동일 final code diff의 직렬 전체 tooling은 `196 passed in 925.73s (0:15:25)`, exit 0이다.
+- 동일 final code diff의 직렬 전체 deploy 계약은 `102 passed, 2 skipped in 1043.36s (0:17:23)`, exit 0이다. skip 2건은 Git Bash/NTFS가 POSIX 0600/0400 mode를 표현하지 못하는 항목과 Compose parser가 필요한 WSL 전용 항목이며 실제 WSL PASS로 승격하지 않는다.
+- 독립 Reviewer 판정은 `COMMIT_READY / C0 / I0 / M0`다. exact14/누적 exact125, seq1~539 raw history, deterministic projection, private development push와 WSL origin fetch 권위/CAS, a6/a342/324 lifecycle·rollback allowlist, runtime/image drift fail-closed, historical seq536 isolation과 Git 오류코드를 확인했다.
+- 다음 안전 행동은 최종 문서 결과를 pure builder로 재결박한 뒤 live checker, exact14/누적 exact125/history, direct-child/clean 상태를 확인하여 seq542 K commit을 생성하는 것이다. 외부 push·WSL/Docker/DB·Provider/Telegram·ysna/main은 여전히 `NOT_EXECUTED`다.

@@ -963,7 +963,9 @@ class WslControlRuntimeTests(unittest.TestCase):
                     "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
                     "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
                     "ANVIL_PYTHON": self._posix(Path(sys.executable)),
-                    "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
+                    "PATH": ":".join([self._posix(bin_dir), *[
+                        self._posix(Path(item)) for item in os.environ["PATH"].split(os.pathsep) if item
+                    ]]),
                 },
                 text=True,
                 capture_output=True,
@@ -985,7 +987,9 @@ class WslControlRuntimeTests(unittest.TestCase):
                     "ANVIL_CANDIDATE_MANIFEST_REF": "refs/remotes/origin/codex/c21-operational-execution",
                     "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
                     "ANVIL_PYTHON": self._posix(Path(sys.executable)),
-                    "PATH": str(bin_dir) + os.pathsep + os.environ["PATH"],
+                    "PATH": ":".join([self._posix(bin_dir), *[
+                        self._posix(Path(item)) for item in os.environ["PATH"].split(os.pathsep) if item
+                    ]]),
                 },
                 text=True,
                 capture_output=True,
@@ -1116,7 +1120,9 @@ class WslControlRuntimeTests(unittest.TestCase):
             stat = bin_dir / "stat"; stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8", newline="\n")
             os.chmod(docker, 0o755); os.chmod(curl, 0o755); os.chmod(stat, 0o755)
             result = subprocess.run(["bash", str(control / "deploy" / "wsl" / "rollback.sh"), candidate], text=True, capture_output=True,
-                env=os.environ | {"PATH": str(bin_dir) + os.pathsep + os.environ["PATH"], "ANVIL_DOCKER_LOG": self._posix(log), "ANVIL_WSL_DEPLOY_ROOT": self._posix(root), "ANVIL_WSL_CONTROL_REPO": self._posix(control), "ANVIL_WSL_APPLICATION_REPO": self._posix(repo), "ANVIL_CANDIDATE_MANIFEST_REF": control_ref, "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum, "ANVIL_PYTHON": self._posix(Path(sys.executable))})
+                env=os.environ | {"PATH": ":".join([self._posix(bin_dir), *[
+                    self._posix(Path(item)) for item in os.environ["PATH"].split(os.pathsep) if item
+                ]]), "ANVIL_DOCKER_LOG": self._posix(log), "ANVIL_WSL_DEPLOY_ROOT": self._posix(root), "ANVIL_WSL_CONTROL_REPO": self._posix(control), "ANVIL_WSL_APPLICATION_REPO": self._posix(repo), "ANVIL_CANDIDATE_MANIFEST_REF": control_ref, "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum, "ANVIL_PYTHON": self._posix(Path(sys.executable))})
             self.assertNotEqual(0, result.returncode)
             self.assertTrue(log.exists(), result.stderr)
             calls = log.read_text(encoding="utf-8").splitlines()
@@ -1787,12 +1793,19 @@ class WslProviderExecutionResumeBoundGuardTests(unittest.TestCase):
             "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json",
             "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-bound.json",
         }
+        historical_seq536 = "3501c37b25274c2c3b406a15bc8a57aa03a162e7"
+        historical_guard = repo.parent / "historical-seq536-guard.sh"
+        historical_guard.write_bytes(subprocess.check_output(
+            ["git", "show", f"{historical_seq536}:deploy/wsl/candidate-manifest-guard.sh"], cwd=ROOT
+        ))
         for relative in self.EXACT14:
             target = repo / relative; target.parent.mkdir(parents=True, exist_ok=True)
             if relative in generated:
                 target.write_text('{"seq536_fixture":true}\n', encoding="utf-8", newline="\n")
             else:
-                shutil.copy2(ROOT / relative, target)
+                target.write_bytes(subprocess.check_output(
+                    ["git", "show", f"{historical_seq536}:{relative}"], cwd=ROOT
+                ))
         self._git(repo, "add", *self.EXACT14)
         self._git(repo, "commit", "--quiet", "-m", "isolated seq536 exact14")
         control = self._git(repo, "rev-parse", "HEAD")
@@ -1802,7 +1815,8 @@ class WslProviderExecutionResumeBoundGuardTests(unittest.TestCase):
         raw = subprocess.check_output(["git", "show", f"{control}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo)
         return temp, repo, control, hashlib.sha256(raw).hexdigest()
 
-    def _run_bound(self, repo, control, checksum, guard=GUARD):
+    def _run_bound(self, repo, control, checksum, guard=None):
+        guard = guard or repo.parent / "historical-seq536-guard.sh"
         command = f"source '{self._posix(guard)}'; validate_wsl_candidate_manifest '{self._posix(repo)}' refs/remotes/origin/codex/c21-operational-execution {self.CANDIDATE}"
         return subprocess.run(["bash", "-c", command], text=True, capture_output=True,
             env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
@@ -1895,7 +1909,7 @@ class WslProviderExecutionResumeBoundGuardTests(unittest.TestCase):
             self._git(repo, "add", str(instruction.relative_to(repo)))
             self._git(repo, "commit", "--amend", "--no-edit", "--quiet")
             tampered = self._git(repo, "rev-parse", "HEAD")
-            command = f"source '{self._posix(GUARD)}'; validate_wsl_execution_resume '{self._posix(repo)}' {tampered} {self.CANDIDATE}"
+            command = f"source '{self._posix(repo.parent / 'historical-seq536-guard.sh')}'; validate_wsl_execution_resume '{self._posix(repo)}' {tampered} {self.CANDIDATE}"
             result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
                 env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
             self.assertEqual(22, result.returncode, result.stderr)
@@ -1925,7 +1939,7 @@ class WslProviderExecutionResumeBoundGuardTests(unittest.TestCase):
   command git "$@"
 }}
 '''
-                command = f"source '{self._posix(GUARD)}'; {injected} validate_wsl_candidate_manifest '{self._posix(repo)}' {ref} {self.CANDIDATE}"
+                command = f"source '{self._posix(repo.parent / 'historical-seq536-guard.sh')}'; {injected} validate_wsl_candidate_manifest '{self._posix(repo)}' {ref} {self.CANDIDATE}"
                 result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
                     env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
                 self.assertEqual(20, result.returncode, result.stderr)
@@ -2058,6 +2072,90 @@ validate_wsl_candidate_manifest '{helper._posix(repo)}' {control_ref} {candidate
             self.assertEqual(original, helper._git(repo, "rev-parse", control_ref))
             self.assertEqual(20, result.returncode, result.stderr)
             self.assertIn("pinned control revision mismatch", result.stderr)
+
+@unittest.skipUnless(shutil.which("bash"), "bash is required")
+class WslProviderExactBindingRuntimeStateTests(unittest.TestCase):
+    CANDIDATE = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+    OBSERVED = "a342d62391a44b349733d1468ac3b180761155ab"
+    PREVIOUS = "324eb169fedbce958d2e8cc29362deb7af433677"
+
+    @staticmethod
+    def _posix(path: Path) -> str:
+        value = str(path).replace("\\", "/")
+        return f"/{value[0].lower()}{value[2:]}" if len(value) > 1 and value[1] == ":" else value
+
+    def _state(self, head: str, current: str, previous: str):
+        with tempfile.TemporaryDirectory(prefix="anvil-seq542-state-", dir="D:/tmp") as raw:
+            root = Path(raw)
+            for slug in ("pg15", "pg18rc"):
+                target = root / "runtime" / slug
+                target.mkdir(parents=True)
+                (target / "current.sha").write_text(current + "\n", encoding="utf-8", newline="\n")
+                (target / "previous.sha").write_text(previous + "\n", encoding="utf-8", newline="\n")
+            command = (
+                f"source '{self._posix(GUARD)}'; "
+                f"validate_c21_exact_runtime_state '{self._posix(root)}' '{head}'"
+            )
+            return subprocess.run(["bash", "-c", command], text=True, capture_output=True)
+
+    def test_seq542_runtime_state_accepts_only_observed_lifecycle_tuples(self):
+        for head, current, previous in (
+            (self.OBSERVED, self.OBSERVED, self.PREVIOUS),
+            (self.CANDIDATE, self.CANDIDATE, self.PREVIOUS),
+            (self.CANDIDATE, self.PREVIOUS, self.PREVIOUS),
+        ):
+            with self.subTest(head=head, current=current):
+                result = self._state(head, current, previous)
+                self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_seq542_runtime_state_rejects_drift_before_mutation(self):
+        for head, current, previous in (
+            ("0" * 40, self.OBSERVED, self.PREVIOUS),
+            (self.OBSERVED, self.CANDIDATE, self.PREVIOUS),
+            (self.CANDIDATE, self.PREVIOUS, self.OBSERVED),
+        ):
+            with self.subTest(head=head, current=current, previous=previous):
+                result = self._state(head, current, previous)
+                self.assertNotEqual(0, result.returncode)
+                self.assertIn("runtime state drift", result.stderr)
+
+    def test_seq542_manifest_separates_private_push_and_runtime_fetch_authority(self):
+        doc = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
+        binding = doc["authority"]["exact_private_git_binding"]
+        self.assertEqual("development", binding["push_remote"])
+        self.assertEqual("origin", binding["runtime_fetch_remote"])
+        self.assertFalse(binding["public_origin_is_push_authority"])
+        self.assertEqual(
+            [self.CANDIDATE, self.OBSERVED, self.PREVIOUS],
+            doc["rollback"]["approved_commits"],
+        )
+
+    def test_seq542_runtime_image_revision_check_is_fail_closed(self):
+        with tempfile.TemporaryDirectory(prefix="anvil-seq542-images-", dir="D:/tmp") as raw:
+            root = Path(raw)
+            for slug in ("pg15", "pg18rc"):
+                target = root / "runtime" / slug
+                target.mkdir(parents=True)
+                (target / "current.sha").write_text(self.CANDIDATE + "\n", encoding="utf-8", newline="\n")
+                (target / "previous.sha").write_text(self.PREVIOUS + "\n", encoding="utf-8", newline="\n")
+            script = self._posix(GUARD)
+            path = self._posix(root)
+            accepted = f'''source '{script}'
+docker() {{
+  if [[ "$*" == "image ls -q" ]]; then printf 'candidate-image\\nprevious-image\\n'; return 0; fi
+  if [[ "$*" == *'candidate-image' ]]; then printf '{self.CANDIDATE}\\n'; return 0; fi
+  if [[ "$*" == *'previous-image' ]]; then printf '{self.PREVIOUS}\\n'; return 0; fi
+  return 1
+}}
+validate_c21_exact_runtime_images '{path}'
+'''
+            result = subprocess.run(["bash", "-c", accepted], text=True, capture_output=True)
+            self.assertEqual(0, result.returncode, result.stderr)
+            rejected = accepted.replace(f"printf '{self.PREVIOUS}\\n'", "printf '0000000000000000000000000000000000000000\\n'")
+            result = subprocess.run(["bash", "-c", rejected], text=True, capture_output=True)
+            self.assertEqual(23, result.returncode, result.stderr)
+            self.assertIn("runtime image drift", result.stderr)
+
 
 if __name__ == "__main__":
     unittest.main()

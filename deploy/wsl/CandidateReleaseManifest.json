@@ -17,6 +17,21 @@
     "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
     "approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
     "private_push_policy": "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE",
+    "exact_private_git_binding": {
+      "push_remote": "development",
+      "push_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+      "control_ref": "refs/remotes/development/codex/c21-operational-execution",
+      "candidate_ref": "refs/remotes/development/candidates/c21-wsl-exact107",
+      "observed_control": "772afbd5eb55791ca7b5002d58378437ea496750",
+      "observed_candidate": "ABSENT",
+      "control_compare_and_swap": true,
+      "candidate_compare_and_swap": true,
+      "runtime_fetch_remote": "origin",
+      "runtime_fetch_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+      "runtime_control_ref": "refs/remotes/origin/codex/c21-operational-execution",
+      "runtime_candidate_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
+      "public_origin_is_push_authority": false
+    },
     "derived_binding": {
       "classification": "MAIN_RESUMED_APPROVED_WSL_QA",
       "parent_approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
@@ -65,8 +80,29 @@
     "exact_named_volumes": ["anvil-wsl-pg15_anvil-db-data", "anvil-wsl-pg18rc_anvil-db-data"],
     "required_labels": {"com.anvil.environment": "WSL_SERVER_TEST_STAGING", "com.anvil.cleanup-scope": "C21_WSL_ISOLATED_TEST"}
   },
+  "runtime_binding": {
+    "host": "SINSAN",
+    "application_repo": "/srv/anvil-wsl/repo",
+    "application_repo_state": "CLEAN_DETACHED",
+    "application_origin": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+    "observed_application_head": "a342d62391a44b349733d1468ac3b180761155ab",
+    "observed_pg15_current": "a342d62391a44b349733d1468ac3b180761155ab",
+    "observed_pg18rc_current": "a342d62391a44b349733d1468ac3b180761155ab",
+    "observed_previous": "324eb169fedbce958d2e8cc29362deb7af433677",
+    "rollback_allowlist": [
+      "a6dca0da5a37e64491e91813895268e78ecb78b2",
+      "a342d62391a44b349733d1468ac3b180761155ab",
+      "324eb169fedbce958d2e8cc29362deb7af433677"
+    ],
+    "allowed_lifecycle_tuples": [
+      {"application_head": "a342d62391a44b349733d1468ac3b180761155ab", "current": "a342d62391a44b349733d1468ac3b180761155ab", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"},
+      {"application_head": "a6dca0da5a37e64491e91813895268e78ecb78b2", "current": "a6dca0da5a37e64491e91813895268e78ecb78b2", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"},
+      {"application_head": "a6dca0da5a37e64491e91813895268e78ecb78b2", "current": "324eb169fedbce958d2e8cc29362deb7af433677", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"}
+    ],
+    "fail_closed_before_mutation": true
+  },
   "rollback": {
-    "approved_commits": ["a6dca0da5a37e64491e91813895268e78ecb78b2", "e4cccf3ce99e29005103cea3bd76fa0eede36f28"],
+    "approved_commits": ["a6dca0da5a37e64491e91813895268e78ecb78b2", "a342d62391a44b349733d1468ac3b180761155ab", "324eb169fedbce958d2e8cc29362deb7af433677"],
     "runtime_observation_required": true
   }
 }
