@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-WSL-EXACT-BINDING-START-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 539,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T21:01:48+09:00",
+  "scope": "seq539 exact-binding start; seq1-536 raw preserved; no external mutation.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 137784,
+    "file_sha256": "A2AC8D5117FD1E161314E0173E7C331A8C49C35F07C2EF4A2220D2F92C1814D9",
+    "canonical_json_sha256": "E7AA246220DA081609985DF12D1732D97119B0FA400854FB3ACAE52E43D63C0B"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 203474,
+    "file_sha256": "3E4D7BF8E57024EC824D5F91303EAF7D58BADD50814A0626A206C848C74749BC",
+    "machine_summary_canonical_sha256": "237155B5EB604BF23E49C1614EF99F731E8EC81B241EEC8439320DF8E6DCEE2B"
+  }
+}

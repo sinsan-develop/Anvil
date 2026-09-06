@@ -936,3 +936,39 @@
 - 현재 판정은 로컬 K exact14 구현·계약 검증 완료, `READY_FOR_APPROVED_WSL_QA`다. actual WSL/Docker/DB/Provider/Telegram/ysna/push/main은 모두 `NOT_EXECUTED`; 다음 안전 행동은 exact14/path hash와 누적 exact117을 재확인한 뒤 Main이 K direct-child commit을 만들고 별도 exact binding을 생성하는 것이다.
 - HANDOFF builder와 마지막 tooling assertion을 반영한 뒤 fresh 전체 tooling을 다시 실행해 `192 passed in 682.23s`, exit0을 확인했다. 이 실행 중 파일 수정0이다.
 - 독립 Reviewer 최종 판정은 `CLEAN_REVIEW / SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`, commit 가능이다. 독립 focused는 execution-resume tooling11 PASS와 seq536 guard7 PASS이며 exact14/exact117/history/ref 부재/rollback/raw SHA/dispatch 차단을 재확인했다.
+
+## C-21 Provider WSL exact-binding S 시작 — seq537~539 준비
+
+- 담당: `developer-primary`; 기준 branch/HEAD: `codex/c21-operational-execution` / `3501c37b25274c2c3b406a15bc8a57aa03a162e7`; 시작 clean.
+- TDD RED: `pytest ... -k exact_binding_start_contract_is_frozen` → exit 1, `1 failed, 192 deselected`; builder 부재가 의도한 원인이다. fingerprint `C21_PROVIDER_WSL_EXACT_BINDING_START_MISSING_R1`, 1회.
+- S exact10 path hash `410EB4E3EB843BFF2FE9D332505445286986BE8572A288DF713E388DAF587B62`; post-S cumulative exact121 hash `8A7D4AA0124FBC49DD67D48DBF10C9CCC586BB43AB4A9A4473604C1E2F43B429`.
+- 실측 authority는 WSL `SINSAN`, clean detached runtime `/srv/anvil-wsl/repo@a342d623...`, private `sinsan-develop/Anvil.git`, missing control repo/candidate ref, FF-eligible old control `772afbd...`, PG current/previous `a342d623...`/`324eb169...`, containers 없음, exact two volumes 없음, images 3종 있음, `.env` 0600/필수7 key 각1이다. secret 값은 기록하지 않았다.
+- 이번 S의 commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 `NOT_EXECUTED`다. 다음 K exact14는 detached runtime 허용, private exact refs/CAS, rollback `a6dca0d...` + observed current `a342d623...`, mutation 전 runtime drift fail-closed를 구현해야 한다.
+- TDD GREEN: exact-binding focused `3 passed, 192 deselected`; raw history 보존, exact10/exact121, 후속 K exact14/hash, artifact tamper와 Git direct-child/private authority 거부를 확인했다. `py_compile`, `git diff --check`도 PASS했다.
+- 첫 materialization live checker는 `EVENT_EFFECT_MISMATCH`였다. root cause는 seq539 `PACKAGE_STARTED` details에 공통 repository reducer가 요구하는 upstream/projection/base/relation 필드가 누락된 것이다. 이를 재현하는 direct field TDD RED 1건을 추가하고 source projection과 동일한 값으로 보완했다. fingerprint `SEQ539_EVENT_REDUCER_FIELDS_MISSING_R1` 1회.
+- 전체 tooling 직렬 실행은 Main이 장시간 무응답으로 중단했다. 중단 전 점 53개만 출력됐고 exit/final summary가 없으므로 PASS로 집계하지 않는다. worktree 전용 잔류 PID `41160`/`8204`만 종료하고 잔류0을 확인했다. `SEQ539_FULL_TOOLING_MAIN_INTERRUPT` 1회는 정식 제품 실패가 아니다.
+- 60초 이하 분할 최종 검증: exact-binding focused `3 passed`, 공통 recovery/malformed `2 passed`, live checker `PASS sequence=539`, `py_compile`, `git diff --check`, exact10 hash와 raw seq1~536 prefix 동일성 PASS. full tooling은 `INTERRUPTED_NOT_COUNTED`다.
+- canonical exact10만 dirty이며 commit하지 않았다. Developer writer 실행은 완료보고와 함께 Main에 반환한다. 후속 K exact14의 실제 mutation은 Main의 exact binding/dispatch 전까지 금지한다.
+
+### seq539 Main 집중 검증 동일 ancestry 오류 3회 인수
+
+- Main 영향 집중 검증에서 live checker PASS539 뒤 `test_git_and_authority_bindings_are_checked_against_workspace`가 `1 failed, 13 passed, 181 deselected`였다. seq539 collector가 mutated `validated_base_commit` 대신 상수 base로 ancestry를 검사해 `GIT_VALIDATED_BASE_NOT_ANCESTOR`를 누락했다.
+- 이 근본 원인은 seq533·seq536에서 이미 각각 교정된 뒤 seq539에 다시 발생해 누적 3회다. 규칙에 따라 Developer 재지시 없이 Main이 직접 writer를 인수했다.
+- 수정: repository가 선언한 base의 40자 SHA 형식과 실제 ancestor 관계를 검사한다. 예상 projection 상수 불일치는 기존 `GIT_EXACT_BINDING_PROJECTION_INVALID`로 별도 유지한다.
+- 수정 전 실패를 PASS로 대체하지 않는다. 수정 후 동일 영향 테스트와 projection 재결박·전체 tooling을 다시 검증한다.
+
+### seq539 Main 전체 tooling 회귀 보완
+
+- Main ancestry 수정·재결박 후 Codex 번들 Python 집중 검증은 `3 passed, 192 deselected`였다. 시스템 Python 3.14 실행에서는 자식 `git` 캡처 핸들 복제 오류 `WinError 6`가 두 번 발생했으며 제품·계약 실패로 집계하지 않는다.
+- fresh 전체 tooling은 `194 passed, 1 failed in 1072.08s`, exit 1이었다. 실패는 `test_c21_provider_wsl_git_only_candidate_bound_status_collection_fails_closed` 한 건이며 fingerprint `SEQ539_STATUS_COLLECTION_ERROR_CODE_REGRESSION_R1`, 오류 횟수 1회다.
+- 원인은 seq539 전용 collector가 `git status` 수집 실패를 기존 계약의 `GIT_STATUS_COLLECTION_FAILED` 대신 포괄 오류 `GIT_REQUIRED_COLLECTION_FAILED`로 반환한 회귀다. status 수집을 별도로 검사해 기존 fail-closed 오류 코드를 그대로 유지하도록 수정했다.
+- 수정 전 전체 실패는 PASS로 대체하지 않는다. 파생 projection을 다시 결박한 뒤 해당 회귀·집중 계약·live checker를 먼저 검증하고, 최종 fresh 전체 tooling을 재실행한다.
+- 독립 Reviewer의 수정 전 최종 판정은 `CLEAN_REVIEW / COMMIT_READY / C0 / I0 / M0`였으나 이 추가 checker 변경 후 재확인이 필요하다. commit·push·WSL·Docker·DB·Provider·Telegram·ysna·main은 계속 `NOT_EXECUTED`다.
+
+### seq539 Main 최종 전체 tooling PASS
+
+- status 수집 오류코드 회귀 보완·projection 재결박 후 live checker는 `PASS sequence=539`, 영향 집중 검증은 `4 passed, 191 deselected`, `git diff --check`는 PASS였다.
+- 동일 final diff에 대한 fresh 전체 tooling 명령은 Codex 번들 Python으로 `195 passed in 997.74s (0:16:37)`, exit 0이다. 실행 중 파일 수정은 없었다.
+- 이전 `194 passed, 1 failed`는 보완 전 유효 실패 증거로 그대로 보존한다. 이번 PASS는 로컬 tooling 계약만 증명하며 WSL·Docker·DB·Provider·Telegram·ysna 운영 검증으로 승격하지 않는다.
+- 다음 안전 행동은 문서 결과를 pure builder로 재결박하고 reviewer가 마지막 checker 변경을 재확인한 뒤 exact10/누적 exact121/history bytes/live checker를 확인하여 seq539 S direct-child commit을 만드는 것이다.
+- 최종 Reviewer 재검토는 `COMMIT_READY / C0 / I0 / M0`다. status 수집 실패의 `GIT_STATUS_COLLECTION_FAILED` 보존, exact10/누적 exact121, seq1~536 raw history, deterministic projection, live checker와 diff-check를 재확인했다.

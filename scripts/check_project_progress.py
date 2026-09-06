@@ -10651,6 +10651,16 @@ def validate_repository_projection(
     control_runtime_record_commit_is_direct: bool = False,
     product_commit_parent_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 539:
+        authority = (progress or {}).get("provider_wsl_exact_binding", {}).get("private_git_authority", {})
+        return validate_c21_provider_wsl_exact_binding_repository(repository,
+            actual_head=actual_head, actual_branch=actual_branch, actual_upstream=actual_upstream,
+            actual_changed_paths=actual_changed_paths, dirty_paths=control_descendant_paths or [],
+            source_parent=C21_EXACT_BINDING_PARENT if product_commit_parent_is_direct else None,
+            source_is_ancestor=control_is_ancestor, base_is_ancestor=base_is_ancestor,
+            record_commit_is_direct=control_runtime_record_commit_is_direct, worktree_is_clean=worktree_is_clean,
+            private_remote_url=authority.get("url"), private_control=authority.get("observed_control"),
+            private_candidate_ref="", private_control_is_ancestor=True)
     if (progress or {}).get("event_sequence") == 536:
         return _validate_c21_resume_bound_repository(repository, actual_head=actual_head,
             actual_branch=actual_branch, actual_upstream=actual_upstream,
@@ -12777,6 +12787,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 539:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_exact_binding_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 536:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13617,6 +13631,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_provider_wsl_execution_resume_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_execution_resume_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_START_MANIFEST.json":
+            errors.extend(validate_c21_provider_wsl_exact_binding_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_git_only_candidate_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
@@ -15325,6 +15341,347 @@ def _collect_c21_resume_bound_git(bundle: Mapping[str, Any]) -> list[str]:
                                   and _git_returncode(root, "merge-base", "--is-ancestor", declared_base, head) == 0))
     except (OSError, ValueError, TypeError, KeyError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_EXACT_BINDING_SOURCE = "3501c37b25274c2c3b406a15bc8a57aa03a162e7"
+C21_EXACT_BINDING_PARENT = "d442d4584516e1a673fd2edde55a2fe1330e9394"
+C21_EXACT_BINDING_BASE = C21_RESUME_BASE
+C21_EXACT_BINDING_AT = "2026-09-06T21:01:48+09:00"
+C21_EXACT_BINDING_STATUS = "ACTIVE_PROVIDER_WSL_EXACT_BINDING_PREPARATION"
+C21_EXACT_BINDING_NEXT = "EXECUTE_C21_PROVIDER_WSL_EXACT_BINDING_EXACT14"
+C21_EXACT_BINDING_BLOCKER = "BLOCKED_PENDING_EXACT_BINDING_K_DIRECT_CHILD_COMMIT"
+C21_EXACT_BINDING_WI_ID = "WI-C-21-PROVIDER-WSL-EXACT-BINDING-20260906-001"
+C21_EXACT_BINDING_WORKER = "worker-lease-c21-provider-wsl-exact-binding-20260906-001"
+C21_EXACT_BINDING_WRITE = "write-lease-c21-provider-wsl-exact-binding-20260906-001"
+C21_EXACT_BINDING_EXEC_FENCE = "c21-provider-wsl-exact-binding-execution-fence-epoch-1-3501c37"
+C21_EXACT_BINDING_WRITE_FENCE = "c21-provider-wsl-exact-binding-write-fence-epoch-1-3501c37"
+C21_EXACT_BINDING_P = "docs/progress/build-progress.json"
+C21_EXACT_BINDING_E = "docs/progress/progress-events.json"
+C21_EXACT_BINDING_H = "docs/progress/BUILD_HANDOFF.md"
+C21_EXACT_BINDING_D = "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-exact-binding-start.json"
+C21_EXACT_BINDING_M = "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_START_MANIFEST.json"
+C21_EXACT_BINDING_WI = "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_WORK_INSTRUCTION.md"
+C21_EXACT_BINDING_PROMPT = "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_INVOCATION_PROMPT.md"
+C21_EXACT_BINDING_HISTORY_BYTES = 997445
+C21_EXACT_BINDING_HISTORY_SHA = "106825F159FBDAAA695F758010F50159D62245C7B14AC1C3876F18E884B664B0"
+C21_EXACT_BINDING_PREFIX_BYTES = 997229
+C21_EXACT_BINDING_PREFIX_SHA = "94486A0DD8835CCF26D97319B7621BC0C751A03433AA98BAB1A2B0726F977A4E"
+C21_EXACT_BINDING_CANONICAL_SHA = "9C29C1A447C03150DC0B965E93FA4F545CE439E7ABCA73AA4894DF0D6304B323"
+
+
+def c21_provider_wsl_exact_binding_start_paths() -> set[str]:
+    return {
+        "docs/WORK_STATUS.md", C21_EXACT_BINDING_M, C21_EXACT_BINDING_H,
+        C21_EXACT_BINDING_P, C21_EXACT_BINDING_E, C21_EXACT_BINDING_D,
+        C21_EXACT_BINDING_PROMPT, C21_EXACT_BINDING_WI,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_provider_wsl_exact_binding_paths() -> set[str]:
+    return {
+        "deploy/wsl/CandidateReleaseManifest.json", "deploy/wsl/candidate-manifest-guard.sh",
+        "docs/04_test_reports/C-21_PROVIDER_WSL_EXACT_BINDING_REPORT.md", "docs/DEVELOPMENT_ENVIRONMENT.md",
+        "docs/WORK_STATUS.md", "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-exact-binding-bound.json",
+        "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md", "scripts/check_project_progress.py",
+        "tests/deploy/test_wsl_staging_harness.py", "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_provider_wsl_exact_binding_path_metadata() -> dict[str, Any]:
+    source = c21_provider_wsl_execution_resume_path_metadata()["post_successor_cumulative_exact_paths"]
+    start = sorted(c21_provider_wsl_exact_binding_start_paths())
+    cumulative = sorted(set(source) | set(start))
+    successor = sorted(c21_provider_wsl_exact_binding_paths())
+    if (len(start) != 10 or path_list_lf_sha256(start) != "410EB4E3EB843BFF2FE9D332505445286986BE8572A288DF713E388DAF587B62"
+        or len(source) != 117 or path_list_lf_sha256(source) != "6E50421CAB8A0E2A99B1ED1A074A4CAB487B8A0C4EA5D77F526343C3402DABA1"
+        or len(cumulative) != 121 or path_list_lf_sha256(cumulative) != "8A7D4AA0124FBC49DD67D48DBF10C9CCC586BB43AB4A9A4473604C1E2F43B429"
+        or len(successor) != 14 or path_list_lf_sha256(successor) != "B570C707DBEA3594C6AC57B0D44DBD0F64BBDEE26A037FC954FF03CFD78A133E"):
+        raise ValueError("C21_EXACT_BINDING_PATH_METADATA_INVALID")
+    return {"source_exact_paths": source, "source_exact_path_count": 117,
+        "source_exact_path_list_sha256": "6E50421CAB8A0E2A99B1ED1A074A4CAB487B8A0C4EA5D77F526343C3402DABA1",
+        "start_exact_paths": start, "start_exact_path_count": 10,
+        "start_exact_path_list_sha256": "410EB4E3EB843BFF2FE9D332505445286986BE8572A288DF713E388DAF587B62",
+        "successor_exact_paths": successor, "successor_exact_path_count": 14,
+        "successor_exact_path_list_sha256": "B570C707DBEA3594C6AC57B0D44DBD0F64BBDEE26A037FC954FF03CFD78A133E",
+        "post_start_cumulative_exact_paths": cumulative, "post_start_cumulative_exact_path_count": 121,
+        "post_start_cumulative_exact_path_list_sha256": "8A7D4AA0124FBC49DD67D48DBF10C9CCC586BB43AB4A9A4473604C1E2F43B429"}
+
+
+def c21_provider_wsl_exact_binding_event_bytes(historical: bytes, appended: list[dict]) -> bytes:
+    old = _c21_resume_json(historical)
+    prefix = raw_event_object_prefix_bytes(historical, 536)
+    header = (b'{\n  "schema_version": "1.0.0",\n  "stream_id": "anvil-build-main",\n'
+              b'  "first_sequence": 1,\n  "last_sequence": 536,\n  "events": [\n    ')
+    footer = b'\n  ],\n  "last_event_id": "evt_c21_provider_wsl_execution_resume_package_completed"\n}\n'
+    if (len(historical) != C21_EXACT_BINDING_HISTORY_BYTES or _c21_resume_sha(historical) != C21_EXACT_BINDING_HISTORY_SHA
+        or len(prefix) != C21_EXACT_BINDING_PREFIX_BYTES or _c21_resume_sha(prefix) != C21_EXACT_BINDING_PREFIX_SHA
+        or historical != header + prefix + footer or len(old.get("events", [])) != 536
+        or _c21_resume_sha(_canonical_ascii_json_bytes(old["events"])) != C21_EXACT_BINDING_CANONICAL_SHA):
+        raise ValueError("C21_EXACT_BINDING_HISTORY_INVALID")
+    ids = ["evt_c21_provider_wsl_exact_binding_" + value for value in ("worker_lease_issued", "write_lease_issued", "package_started")]
+    if (not isinstance(appended, list) or len(appended) != 3 or any(not isinstance(row, dict) for row in appended)
+        or [row.get("sequence") for row in appended] != [537, 538, 539]
+        or [row.get("event_type") for row in appended] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]
+        or [row.get("event_id") for row in appended] != ids):
+        raise ValueError("C21_EXACT_BINDING_EVENT_INVALID")
+    added = b""
+    for event in appended:
+        lines = json.dumps(event, ensure_ascii=False, indent=2, allow_nan=False).splitlines()
+        added += b",\n" + "\n".join("    " + line for line in lines).encode("utf-8")
+    return (header.replace(b'"last_sequence": 536', b'"last_sequence": 539') + prefix + added
+        + footer.replace(b"evt_c21_provider_wsl_execution_resume_package_completed", b"evt_c21_provider_wsl_exact_binding_package_started"))
+
+
+def c21_provider_wsl_exact_binding_start_spec(source: Mapping[str, Any], instruction_sha: str, prompt_sha: str) -> dict[str, Any]:
+    metadata = c21_provider_wsl_exact_binding_path_metadata()
+    if (source.get("event_sequence") != 536 or source.get("status") != "READY_FOR_APPROVED_WSL_QA"
+        or source.get("repository", {}).get("exact_allowed_paths") != metadata["source_exact_paths"]
+        or source.get("active_work_instruction", {}).get("result_status") != "COMPLETED"
+        or not re.fullmatch("[A-F0-9]{64}", instruction_sha) or not re.fullmatch("[A-F0-9]{64}", prompt_sha)):
+        raise ValueError("C21_EXACT_BINDING_SOURCE_INVALID")
+    external = {key: "NOT_EXECUTED" for key in ("commit", "push", "wsl", "docker", "database", "provider", "telegram", "ysna", "main_merge")}
+    observation = {"host": "SINSAN", "runtime_repo": "/srv/anvil-wsl/repo", "runtime_state": "CLEAN_DETACHED",
+        "runtime_head": "a342d62391a44b349733d1468ac3b180761155ab", "runtime_origin": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+        "control_repo": "MISSING", "pg15_current": "a342d62391a44b349733d1468ac3b180761155ab",
+        "pg18rc_current": "a342d62391a44b349733d1468ac3b180761155ab", "previous": "324eb169fedbce958d2e8cc29362deb7af433677",
+        "containers": "NONE", "exact_test_volumes": "MISSING", "images": ["a342d623", "324eb169", "830"],
+        "env_mode": "0600", "required_key_count": 7, "required_keys_each_once": True, "secret_values_recorded": False}
+    private = {"remote": "development", "url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+        "observed_control": "772afbd5eb55791ca7b5002d58378437ea496750", "candidate_ref_state": "ABSENT",
+        "control_is_ancestor_of_source": True, "fast_forward_eligible": True, "public_origin_is_push_authority": False}
+    k_contract = {"preserve_prior_k_exact14": True, "allow_clean_detached_runtime_repo": True,
+        "private_exact_refs": True, "compare_and_swap": True,
+        "rollback_allowlist": ["a6dca0da5a37e64491e91813895268e78ecb78b2", "a342d62391a44b349733d1468ac3b180761155ab"],
+        "fail_closed_before_mutation_on_runtime_drift": True}
+    worker = {"lease_id": C21_EXACT_BINDING_WORKER, "agent_id": "developer-primary", "work_package_id": "C-21",
+        "subtask_id": "PROVIDER-WSL-EXACT-BINDING", "lease_epoch": 1, "fencing_token": C21_EXACT_BINDING_EXEC_FENCE,
+        "execution_fencing_token": C21_EXACT_BINDING_EXEC_FENCE, "status": "ACTIVE"}
+    write = {"lease_id": C21_EXACT_BINDING_WRITE, "worker_lease_id": C21_EXACT_BINDING_WORKER, "agent_id": "developer-primary",
+        "work_package_id": "C-21", "subtask_id": "PROVIDER-WSL-EXACT-BINDING", "write_epoch": 1,
+        "execution_fencing_token": C21_EXACT_BINDING_EXEC_FENCE, "write_fencing_token": C21_EXACT_BINDING_WRITE_FENCE,
+        "fencing_token": C21_EXACT_BINDING_WRITE_FENCE, "status": "ACTIVE",
+        "path_scope": metadata["successor_exact_paths"], "paths": metadata["successor_exact_paths"]}
+    instruction = {"artifact_id": C21_EXACT_BINDING_WI_ID, "artifact_path": C21_EXACT_BINDING_WI, "artifact_sha256": instruction_sha,
+        "invocation_path": C21_EXACT_BINDING_PROMPT, "invocation_sha256": prompt_sha, "executor": "developer-primary",
+        "dispatch_base": C21_EXACT_BINDING_SOURCE, "result_status": "IN_PROGRESS", "package_status": C21_EXACT_BINDING_STATUS,
+        "worker_lease_id": C21_EXACT_BINDING_WORKER, "write_lease_id": C21_EXACT_BINDING_WRITE,
+        "allowed_path_count": 14, "allowed_path_list_sha256": metadata["successor_exact_path_list_sha256"],
+        "allowed_paths": metadata["successor_exact_paths"],
+        "accepted": False, "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+        "approval_binding": "MAIN_INTERNAL_EXACT_BINDING_REVISION"}
+    subject = "C-21/PROVIDER-WSL-EXACT-BINDING"
+    details = [worker | {"work_instruction_id": C21_EXACT_BINDING_WI_ID, "subject_ref": subject},
+        write | {"work_instruction_id": C21_EXACT_BINDING_WI_ID, "path_count": 14,
+                 "path_list_sha256": metadata["successor_exact_path_list_sha256"]},
+        {"work_instruction_id": C21_EXACT_BINDING_WI_ID, "dispatch_head": C21_EXACT_BINDING_SOURCE,
+         "dispatch_upstream_head": source["repository"]["remote_head"],
+         "projection_mode": source["repository"]["projection_mode"],
+         "validated_base_commit": C21_EXACT_BINDING_BASE,
+         "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXACT_BINDING_SOURCE_EXACT117_START_RECORD10",
+         "historical_parent_commit": C21_EXACT_BINDING_PARENT, "exact_allowed_paths": metadata["post_start_cumulative_exact_paths"],
+         "result_status": "IN_PROGRESS", "package_status": C21_EXACT_BINDING_STATUS,
+         "wsl_observation": observation, "private_git_authority": private, "successor_contract": k_contract,
+         "accepted": False, "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED", **external}]
+    events = [{"event_id": "evt_c21_provider_wsl_exact_binding_" + suffix, "sequence": seq, "event_type": kind,
+        "occurred_at": C21_EXACT_BINDING_AT, "actor": "main-agent-eoul", "subject_ref": subject, "details": detail}
+        for seq, kind, suffix, detail in zip((537,538,539), ("WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"),
+        ("worker_lease_issued","write_lease_issued","package_started"), details)]
+    repository = dict(source["repository"])
+    repository.update({"local_head": C21_EXACT_BINDING_SOURCE, "product_parent_commit": C21_EXACT_BINDING_PARENT,
+        "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXACT_BINDING_SOURCE_EXACT117_START_RECORD10",
+        "worktree_status": "SEQ539_PROVIDER_WSL_EXACT_BINDING_START_EXACT10_DIRTY",
+        "exact_allowed_paths": metadata["post_start_cumulative_exact_paths"],
+        "exact_allowed_path_list_sha256": metadata["post_start_cumulative_exact_path_list_sha256"],
+        "provider_wsl_exact_binding_start_paths": metadata["start_exact_paths"], "push_status": "NOT_EXECUTED"})
+    active = {"event_sequence": 539, "status": C21_EXACT_BINDING_STATUS, "source_commit": C21_EXACT_BINDING_SOURCE,
+        "historical_parent_commit": C21_EXACT_BINDING_PARENT, "wsl_observation": observation,
+        "private_git_authority": private, "successor_contract": k_contract, "runtime_dispatch": C21_EXACT_BINDING_BLOCKER,
+        "accepted": False, "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED", **metadata, **external}
+    updates = {"updated_at": C21_EXACT_BINDING_AT, "event_sequence": 539, "last_event_id": events[-1]["event_id"],
+        "status": C21_EXACT_BINDING_STATUS, "active_agent": "developer-primary", "worker_lease": worker, "write_lease": write,
+        "completed_work_instruction": source["active_work_instruction"], "active_work_instruction": instruction,
+        "repository": repository, "provider_wsl_exact_binding": active, "runtime_next_action": C21_EXACT_BINDING_NEXT,
+        "next_safe_action": C21_EXACT_BINDING_NEXT,
+        "current_progress_evidence_ref": {"package_id":"C-21","path":C21_EXACT_BINDING_D,"manifest_path":C21_EXACT_BINDING_M},
+        "latest_evidence_manifest_ref": {"path":C21_EXACT_BINDING_M,"artifact_id":"C21-PROVIDER-WSL-EXACT-BINDING-START-20260906"},
+        "reporting_decision": {"decision":"AUTO_CONTINUE","reason_codes":["C21_INTERNAL_PROVIDER_WSL_EXACT_BINDING_START_ACTIVE"],"stop_before_dialogue_report":False}}
+    handoff = {"event_sequence":539,"last_event_id":events[-1]["event_id"],"status":C21_EXACT_BINDING_STATUS,
+        "current_phase":source["current_phase"],"current_work_package":"C-21","active_agent":"developer-primary",
+        "worker_lease":C21_EXACT_BINDING_WORKER,"write_lease":C21_EXACT_BINDING_WRITE,
+        "execution_fencing_token":C21_EXACT_BINDING_EXEC_FENCE,"write_fencing_token":C21_EXACT_BINDING_WRITE_FENCE,
+        "active_work_instruction":C21_EXACT_BINDING_WI_ID,"active_work_instruction_sha256":instruction_sha,
+        "active_invocation_sha256":prompt_sha,"repository_head":C21_EXACT_BINDING_SOURCE,
+        "repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],
+        "repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],
+        "repository_exact_allowed_paths":repository["exact_allowed_paths"],"design_baseline_hash":source["design_baseline_hash"],
+        "valid_failure_count":source["valid_failure_count"],"dir_status":source["dir_review"]["status"],
+        "next_safe_action":C21_EXACT_BINDING_NEXT,"runtime_next_action":C21_EXACT_BINDING_NEXT,"reporting_decision":"AUTO_CONTINUE",
+        "wsl_observation":observation,"private_git_authority":private,"successor_contract":k_contract,
+        "runtime_dispatch":C21_EXACT_BINDING_BLOCKER,**metadata,"accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status":"NOT_TRIGGERED",**external}
+    manifest = {"schema_version":"1.0.0","manifest_type":"C21_PROVIDER_WSL_EXACT_BINDING_START_PROJECTION",
+        "artifact_id":"C21-PROVIDER-WSL-EXACT-BINDING-START-20260906","created_at":C21_EXACT_BINDING_AT,
+        "event_sequence":539,"appended_event_count":3,"historical_event_sequence":536,
+        "historical_commit":C21_EXACT_BINDING_SOURCE,"historical_parent_commit":C21_EXACT_BINDING_PARENT,
+        "historical_full_file_bytes":C21_EXACT_BINDING_HISTORY_BYTES,"historical_full_file_sha256":C21_EXACT_BINDING_HISTORY_SHA,
+        "historical_event_object_prefix_bytes":C21_EXACT_BINDING_PREFIX_BYTES,"historical_event_object_prefix_sha256":C21_EXACT_BINDING_PREFIX_SHA,
+        "historical_events_canonical_ascii_sha256":C21_EXACT_BINDING_CANONICAL_SHA,
+        "terminal_events_canonical_sha256":_c21_resume_sha(canonical_json_bytes(events)),
+        "execution_authority_path":C21_EXACT_BINDING_WI,"execution_authority_sha256":instruction_sha,
+        "invocation_path":C21_EXACT_BINDING_PROMPT,"invocation_sha256":prompt_sha,"work_instruction_id":C21_EXACT_BINDING_WI_ID,
+        "worker_lease_id":C21_EXACT_BINDING_WORKER,"write_lease_id":C21_EXACT_BINDING_WRITE,
+        "execution_fencing_token":C21_EXACT_BINDING_EXEC_FENCE,"write_fencing_token":C21_EXACT_BINDING_WRITE_FENCE,
+        "status":C21_EXACT_BINDING_STATUS,"wsl_observation":observation,"private_git_authority":private,
+        "successor_contract":k_contract,"record_commit":"PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        "record_commit_mode":"SOURCE_DIRECT_CHILD_EXACT10","self_reference":False,**metadata,
+        "accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**external}
+    return {"progress_updates":updates,"events":events,"handoff":handoff,"manifest":manifest}
+
+
+def c21_provider_wsl_exact_binding_start_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    source = _c21_resume_json(historical[C21_EXACT_BINDING_P])
+    spec = c21_provider_wsl_exact_binding_start_spec(source, _c21_resume_sha(files[C21_EXACT_BINDING_WI]), _c21_resume_sha(files[C21_EXACT_BINDING_PROMPT]))
+    events_raw = c21_provider_wsl_exact_binding_event_bytes(historical[C21_EXACT_BINDING_E], spec["events"])
+    source.update(spec["progress_updates"])
+    source["registry_refs"]["progress_events"] = {"path":C21_EXACT_BINDING_E,"sha256":_c21_resume_sha(events_raw)}
+    latest = {path:files[path] for path in ("docs/WORK_STATUS.md",C21_EXACT_BINDING_WI,C21_EXACT_BINDING_PROMPT,"scripts/check_project_progress.py","tests/tooling/test_project_progress.py")}
+    latest[C21_EXACT_BINDING_E] = events_raw
+    source["latest_evidence_refs"] = [{"path":path,"sha256":_c21_resume_sha(raw)} for path,raw in sorted(latest.items())]
+    source["snapshot_hash"] = compute_snapshot_hash(source)
+    progress_raw = _c21_resume_json_bytes(source)
+    text = files[C21_EXACT_BINDING_H].decode("utf-8")
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(spec["handoff"]).decode() + "```"
+    text,count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,text,flags=re.DOTALL)
+    if count != 1: raise ValueError("C21_EXACT_BINDING_HANDOFF_INVALID")
+    handoff_raw = text.encode("utf-8")
+    digest = {"schema_version":"1.0.0","digest_id":"C21-PROVIDER-WSL-EXACT-BINDING-START-DIGEST-20260906",
+        "package_id":"C-21","event_sequence":539,"algorithm":"SHA-256","created_at":C21_EXACT_BINDING_AT,
+        "scope":"seq539 exact-binding start; seq1-536 raw preserved; no external mutation.","self_reference":False,
+        "progress":{"path":C21_EXACT_BINDING_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(source))},
+        "handoff":{"path":C21_EXACT_BINDING_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(spec["handoff"]))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    raw_files = {path:files[path] for path in (C21_EXACT_BINDING_WI,C21_EXACT_BINDING_PROMPT,"scripts/check_project_progress.py","tests/tooling/test_project_progress.py")}
+    raw_files[C21_EXACT_BINDING_D] = digest_raw
+    manifest = spec["manifest"] | {"raw_checksums":[{"path":path,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for path,raw in sorted(raw_files.items())]}
+    return {C21_EXACT_BINDING_P:progress_raw,C21_EXACT_BINDING_E:events_raw,C21_EXACT_BINDING_H:handoff_raw,
+        C21_EXACT_BINDING_D:digest_raw,C21_EXACT_BINDING_M:_c21_resume_json_bytes(manifest)}
+
+
+def validate_c21_provider_wsl_exact_binding_start_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes], artifacts: Mapping[str, bytes]) -> list[str]:
+    try:
+        required = c21_provider_wsl_exact_binding_start_artifacts(historical, files)
+    except (OSError, ValueError, TypeError, KeyError, UnicodeError):
+        return ["C21_PROVIDER_WSL_EXACT_BINDING_START_INPUT_INVALID"]
+    if set(artifacts) != set(required):
+        return ["C21_PROVIDER_WSL_EXACT_BINDING_START_ARTIFACT_SET_INVALID"]
+    return (["C21_PROVIDER_WSL_EXACT_BINDING_START_ARTIFACT_INVALID"]
+            if any(not isinstance(artifacts.get(path), bytes) or artifacts[path] != raw for path, raw in required.items()) else [])
+
+
+def validate_c21_provider_wsl_exact_binding_repository(repository: Mapping[str, Any], *, actual_head: str | None,
+        actual_branch: str | None, actual_upstream: str | None, actual_changed_paths: list[str], dirty_paths: list[str],
+        source_parent: str | None, source_is_ancestor: bool, base_is_ancestor: bool, record_commit_is_direct: bool,
+        worktree_is_clean: bool, private_remote_url: str | None, private_control: str | None,
+        private_candidate_ref: str | None, private_control_is_ancestor: bool) -> list[str]:
+    errors: list[str] = []
+    metadata = c21_provider_wsl_exact_binding_path_metadata()
+    if not isinstance(repository, Mapping): return ["GIT_EXACT_BINDING_REPOSITORY_INVALID"]
+    if (repository.get("branch") != "codex/c21-operational-execution" or repository.get("upstream") != "origin/codex/c21-operational-execution"
+        or repository.get("local_head") != C21_EXACT_BINDING_SOURCE or repository.get("validated_base_commit") != C21_EXACT_BINDING_BASE
+        or repository.get("head_relation") != "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXACT_BINDING_SOURCE_EXACT117_START_RECORD10"
+        or repository.get("exact_allowed_paths") != metadata["post_start_cumulative_exact_paths"]
+        or repository.get("exact_allowed_path_list_sha256") != metadata["post_start_cumulative_exact_path_list_sha256"]):
+        errors.append("GIT_EXACT_BINDING_PROJECTION_INVALID")
+    at_source = actual_head == C21_EXACT_BINDING_SOURCE
+    expected_changed = metadata["source_exact_paths"] if at_source else metadata["post_start_cumulative_exact_paths"]
+    if actual_branch != repository.get("branch") or actual_upstream != repository.get("upstream"):
+        errors.append("GIT_EXACT_BINDING_CHECKOUT_INVALID")
+    if sorted(actual_changed_paths) != expected_changed or sorted(dirty_paths) != (metadata["start_exact_paths"] if at_source else []):
+        errors.append("GIT_EXACT_BINDING_PATH_SET_MISMATCH")
+    if source_parent != C21_EXACT_BINDING_PARENT or not source_is_ancestor:
+        errors.append("GIT_EXACT_BINDING_LINEAGE_INVALID")
+    if not base_is_ancestor:
+        errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+    if at_source:
+        if worktree_is_clean or record_commit_is_direct: errors.append("GIT_EXACT_BINDING_WORKTREE_INVALID")
+    elif not worktree_is_clean or not record_commit_is_direct:
+        errors.append("GIT_EXACT_BINDING_RECORD_COMMIT_INVALID")
+    if (private_remote_url != "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+        or private_control != "772afbd5eb55791ca7b5002d58378437ea496750" or private_candidate_ref != ""
+        or not private_control_is_ancestor):
+        errors.append("GIT_EXACT_BINDING_PRIVATE_AUTHORITY_INVALID")
+    return sorted(set(errors))
+
+
+def validate_c21_provider_wsl_exact_binding_start_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    prefix = "C21_PROVIDER_WSL_EXACT_BINDING_START_"
+    if not isinstance(bundle, Mapping) or not isinstance(manifest, Mapping):
+        return [prefix + "STRUCTURE_INVALID"]
+    root = bundle.get("_root")
+    if not isinstance(root, Path): return [prefix + "ROOT_INVALID"]
+    try:
+        historical = {path: subprocess.check_output(["git","show",f"{C21_EXACT_BINDING_SOURCE}:{path}"],cwd=root)
+                      for path in (C21_EXACT_BINDING_P,C21_EXACT_BINDING_E)}
+        files = {path:(root/path).read_bytes() for path in ("docs/WORK_STATUS.md",C21_EXACT_BINDING_H,
+            C21_EXACT_BINDING_WI,C21_EXACT_BINDING_PROMPT,"scripts/check_project_progress.py","tests/tooling/test_project_progress.py")}
+        required = c21_provider_wsl_exact_binding_start_artifacts(historical, files)
+    except (OSError, ValueError, TypeError, KeyError, UnicodeError, subprocess.CalledProcessError):
+        return [prefix + "INPUT_INVALID"]
+    errors: list[str] = []
+    supplied = {C21_EXACT_BINDING_P:bundle.get("progress"),C21_EXACT_BINDING_E:bundle.get("events"),
+                C21_EXACT_BINDING_D:bundle.get("detached_digest"),C21_EXACT_BINDING_M:manifest}
+    for path,name in ((C21_EXACT_BINDING_P,"PROJECTION"),(C21_EXACT_BINDING_E,"EVENT"),
+                      (C21_EXACT_BINDING_D,"DIGEST"),(C21_EXACT_BINDING_M,"MANIFEST")):
+        try:
+            actual = _c21_resume_json((root/path).read_bytes()); expected = _c21_resume_json(required[path])
+            if actual != expected or supplied[path] != expected or (root/path).read_bytes() != required[path]:
+                errors.append(prefix + name + "_INVALID")
+        except (OSError, ValueError, TypeError): errors.append(prefix + name + "_INVALID")
+    try:
+        actual_h = extract_handoff_summary((root/C21_EXACT_BINDING_H).read_text(encoding="utf-8"))
+        expected_h = extract_handoff_summary(required[C21_EXACT_BINDING_H].decode())
+        if actual_h != expected_h or bundle.get("handoff") != expected_h: errors.append(prefix + "HANDOFF_INVALID")
+    except (OSError, ValueError, TypeError, AttributeError, UnicodeError): errors.append(prefix + "HANDOFF_INVALID")
+    return sorted(set(errors))
+
+
+def _collect_c21_exact_binding_git(bundle: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]; repository = bundle["progress"]["repository"]
+    declared_base = repository.get("validated_base_commit")
+    metadata = c21_provider_wsl_exact_binding_path_metadata()
+    def required(*args):
+        value = _git_value(root,*args)
+        if value is None: raise ValueError("GIT_REQUIRED_COLLECTION_FAILED")
+        return value
+    try:
+        head = required("rev-parse","HEAD")
+        branch = required("branch","--show-current")
+        upstream = required("rev-parse","--abbrev-ref","--symbolic-full-name","@{u}")
+        status = _git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all")
+        if status is None:
+            return ["GIT_STATUS_COLLECTION_FAILED"]
+        dirty = _working_tree_paths(status)
+        source_parent = required("show","-s","--format=%P",C21_EXACT_BINDING_SOURCE)
+        changed = _c21_resume_git_paths(required("diff","--name-only",C21_EXACT_BINDING_BASE,head))
+        direct = False
+        if head != C21_EXACT_BINDING_SOURCE:
+            direct = required("show","-s","--format=%P",head).split() == [C21_EXACT_BINDING_SOURCE]
+            dirty = _working_tree_paths(status)
+        remote_url = required("remote","get-url","development")
+        private_control = required("rev-parse","development/codex/c21-operational-execution")
+        candidate = required("for-each-ref","--format=%(refname) %(objectname)","refs/remotes/development/candidates/c21-wsl-exact107")
+        return validate_c21_provider_wsl_exact_binding_repository(repository,actual_head=head,actual_branch=branch,
+            actual_upstream=upstream,actual_changed_paths=changed,dirty_paths=dirty,source_parent=source_parent,
+            source_is_ancestor=_git_returncode(root,"merge-base","--is-ancestor",C21_EXACT_BINDING_SOURCE,head)==0,
+            base_is_ancestor=bool(isinstance(declared_base, str) and re.fullmatch(r"[0-9a-f]{40}", declared_base)
+                                  and _git_returncode(root,"merge-base","--is-ancestor",declared_base,head)==0),
+            record_commit_is_direct=direct,worktree_is_clean=not dirty,private_remote_url=remote_url,
+            private_control=private_control,private_candidate_ref=candidate,
+            private_control_is_ancestor=_git_returncode(root,"merge-base","--is-ancestor",private_control,C21_EXACT_BINDING_SOURCE)==0)
+    except (OSError, ValueError, TypeError, KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
 def c21_provider_wsl_git_only_candidate_paths() -> set[str]:

@@ -7641,6 +7641,104 @@ class ProjectProgressContractTests(unittest.TestCase):
         manifest = json.loads(artifacts[checker.C21_RESUME_M])
         return checker, bundle, manifest, historical
 
+    def test_c21_provider_wsl_exact_binding_start_contract_is_frozen(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_exact_binding_start_artifacts"))
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_exact_binding_start_paths"))
+        paths = sorted(checker.c21_provider_wsl_exact_binding_start_paths())
+        self.assertEqual(10, len(paths))
+        self.assertEqual(
+            "410EB4E3EB843BFF2FE9D332505445286986BE8572A288DF713E388DAF587B62",
+            checker.path_list_lf_sha256(paths),
+        )
+        source = "3501c37b25274c2c3b406a15bc8a57aa03a162e7"
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
+            for path in ("docs/progress/build-progress.json", "docs/progress/progress-events.json")
+        }
+        files = {
+            "docs/WORK_STATUS.md": (ROOT / "docs/WORK_STATUS.md").read_bytes(),
+            "docs/progress/BUILD_HANDOFF.md": (ROOT / "docs/progress/BUILD_HANDOFF.md").read_bytes(),
+            "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_WORK_INSTRUCTION.md": b"binding wi\n",
+            "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_INVOCATION_PROMPT.md": b"binding prompt\n",
+            "scripts/check_project_progress.py": (ROOT / "scripts/check_project_progress.py").read_bytes(),
+            "tests/tooling/test_project_progress.py": (ROOT / "tests/tooling/test_project_progress.py").read_bytes(),
+        }
+        artifacts = checker.c21_provider_wsl_exact_binding_start_artifacts(historical, files)
+        progress = json.loads(artifacts[checker.C21_EXACT_BINDING_P])
+        events = json.loads(artifacts[checker.C21_EXACT_BINDING_E])
+        self.assertEqual(539, progress["event_sequence"])
+        self.assertEqual([537, 538, 539], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(
+            "8A7D4AA0124FBC49DD67D48DBF10C9CCC586BB43AB4A9A4473604C1E2F43B429",
+            progress["repository"]["exact_allowed_path_list_sha256"],
+        )
+        self.assertEqual("NOT_EXECUTED", progress["provider_wsl_exact_binding"]["push"])
+        self.assertEqual("SINSAN", progress["provider_wsl_exact_binding"]["wsl_observation"]["host"])
+        started = events["events"][-1]["details"]
+        for event_field, repository_field in (
+            ("dispatch_head", "local_head"), ("dispatch_upstream_head", "remote_head"),
+            ("projection_mode", "projection_mode"), ("validated_base_commit", "validated_base_commit"),
+            ("head_relation", "head_relation"),
+        ):
+            self.assertEqual(progress["repository"][repository_field], started[event_field])
+
+    def test_c21_provider_wsl_exact_binding_start_preserves_history_and_rejects_tamper(self):
+        checker = self.require_checker()
+        source = checker.C21_EXACT_BINDING_SOURCE
+        historical = {path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
+                      for path in (checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E)}
+        files = {path: (ROOT / path).read_bytes() for path in (
+            "docs/WORK_STATUS.md", checker.C21_EXACT_BINDING_H, checker.C21_EXACT_BINDING_WI,
+            checker.C21_EXACT_BINDING_PROMPT, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+        artifacts = checker.c21_provider_wsl_exact_binding_start_artifacts(historical, files)
+        old, new = historical[checker.C21_EXACT_BINDING_E], artifacts[checker.C21_EXACT_BINDING_E]
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 536), checker.raw_event_object_prefix_bytes(new, 536))
+        self.assertEqual(539, json.loads(new)["last_sequence"])
+        metadata = checker.c21_provider_wsl_exact_binding_path_metadata()
+        self.assertEqual(14, metadata["successor_exact_path_count"])
+        self.assertEqual("B570C707DBEA3594C6AC57B0D44DBD0F64BBDEE26A037FC954FF03CFD78A133E",
+                         metadata["successor_exact_path_list_sha256"])
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_start_artifacts(historical, files, artifacts))
+        for path in artifacts:
+            changed = dict(artifacts)
+            changed[path] = artifacts[path] + b" "
+            with self.subTest(path=path):
+                self.assertTrue(checker.validate_c21_provider_wsl_exact_binding_start_artifacts(historical, files, changed))
+        corrupted = dict(historical)
+        corrupted[checker.C21_EXACT_BINDING_E] += b" "
+        with self.assertRaises(ValueError):
+            checker.c21_provider_wsl_exact_binding_start_artifacts(corrupted, files)
+
+    def test_c21_provider_wsl_exact_binding_git_contract_requires_direct_child_and_private_authority(self):
+        checker = self.require_checker()
+        metadata = checker.c21_provider_wsl_exact_binding_path_metadata()
+        repository = {
+            "branch": "codex/c21-operational-execution", "upstream": "origin/codex/c21-operational-execution",
+            "local_head": checker.C21_EXACT_BINDING_SOURCE, "validated_base_commit": checker.C21_EXACT_BINDING_BASE,
+            "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXACT_BINDING_SOURCE_EXACT117_START_RECORD10",
+            "exact_allowed_paths": metadata["post_start_cumulative_exact_paths"],
+            "exact_allowed_path_list_sha256": metadata["post_start_cumulative_exact_path_list_sha256"],
+        }
+        common = dict(actual_head=checker.C21_EXACT_BINDING_SOURCE,
+            actual_branch="codex/c21-operational-execution", actual_upstream="origin/codex/c21-operational-execution",
+            actual_changed_paths=metadata["source_exact_paths"], dirty_paths=metadata["start_exact_paths"],
+            source_parent=checker.C21_EXACT_BINDING_PARENT, source_is_ancestor=True, base_is_ancestor=True,
+            record_commit_is_direct=False, worktree_is_clean=False,
+            private_remote_url="git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            private_control="772afbd5eb55791ca7b5002d58378437ea496750", private_candidate_ref="",
+            private_control_is_ancestor=True)
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_repository(repository, **common))
+        child = dict(common, actual_head="a" * 40,
+            actual_changed_paths=metadata["post_start_cumulative_exact_paths"], dirty_paths=[],
+            record_commit_is_direct=True, worktree_is_clean=True)
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_repository(repository, **child))
+        for field, value in (("record_commit_is_direct", False), ("source_is_ancestor", False),
+                             ("base_is_ancestor", False), ("private_candidate_ref", "unexpected"),
+                             ("private_control_is_ancestor", False), ("private_remote_url", "git@github.com:public/Anvil.git")):
+            with self.subTest(field=field):
+                self.assertTrue(checker.validate_c21_provider_wsl_exact_binding_repository(repository, **dict(child, **{field:value})))
+
     def test_c21_provider_wsl_execution_resume_event_bytes_freeze_header_and_history(self):
         checker, bundle, manifest, historical = self._execution_resume_fixture()
         raw = (bundle["_root"] / checker.C21_RESUME_E).read_bytes()
