@@ -1,3 +1,12 @@
+# C-21 Provider WSL Git-only candidate 시작 — seq525~527
+
+- HEAD `e4cccf3ce99e29005103cea3bd76fa0eede36f28`의 committed exact103에 start exact10을 더한 cumulative exact107 dirty projection이다.
+- `developer-primary` worker/write lease를 발급했고 후속 제품 write scope는 exact12 (`6DE878D2...2765`)로 고정했다.
+- 기존 seq1~524와 historical evidence는 byte-immutable이며, 실제 push/WSL/Docker/DB/Provider/Telegram/ysna/main 병합은 모두 `NOT_EXECUTED`다.
+- 다음 안전 조치는 exact12의 로컬 TDD 구현이다. C-21 accepted=false, C-01 차단, DIR-2 미발생을 유지한다.
+- seq527 Reviewer Important 1 보완은 Git status collector가 `None`을 clean 상태로 해석하지 않도록 `GIT_STATUS_COLLECTION_FAILED`로 fail-closed한다. 이전 developer usage-limit 중단은 유효 failure가 아니며, 외부 실행·commit·push는 하지 않는다.
+- 독립 Reviewer 재검토는 `CLEAN_REVIEW / C0 / I0 / M0`, focused `11 passed`로 Important 1 해소를 확인했다. 코드 변경이 없으므로 fresh 전체 tooling `175 passed in 884.84s`를 재사용하고, seq527/exact10·C-21 accepted=false·외부 `NOT_EXECUTED` 경계를 유지한다.
+
 # C-21 Provider status READ start — seq507~509
 
 - `developer-primary` exact18 write lease가 활성화됐다. actual 변경은 lease subset이어야 하며 모든 READ semantics를 충족한다.
@@ -695,15 +704,22 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 524,
-  "status": "LOCAL_IMPLEMENTED_PENDING_GIT_ONLY_CANDIDATE",
+  "event_sequence": 527,
+  "status": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+  "independent_review": "CLEAN_REVIEW/C0/I0/M0",
+  "independent_focused": "11_PASSED",
+  "reviewer_important_1": "RESOLVED_STATUS_COLLECTION_FAIL_CLOSED",
+  "full_tooling": "175_PASSED_REUSED_NO_CODE_CHANGE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_provider_wsl_auth_final_review_recorded",
-  "updated_at": "2026-09-06T09:07:23+09:00",
+  "last_event_id": "evt_c21_provider_wsl_git_only_candidate_package_started",
+  "updated_at": "2026-09-06T12:25:13+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
-  "active_work_instruction_sha256": "0A36A2974CD5E3A6553FEDBC520AA001DB04AD2019B44F351623DF905D75A0C5",
-  "active_invocation_sha256": "286CAB760B9A352ECC292747C12EA1ED52E3C20B50CCCB2568103FF4B30884E7",
+  "active_agent": "developer-primary",
+  "worker_lease": "worker-lease-c21-provider-wsl-git-only-candidate-20260906-001",
+  "write_lease": "write-lease-c21-provider-wsl-git-only-candidate-20260906-001",
+  "active_work_instruction_sha256": "B5DB178577AE9BD1FD4E5AA8C4DBC7EE8AA275CD55E2C7266A300ADEA449A63B",
+  "active_invocation_sha256": "31B101E27AD3E1E8C8F6DC307C36BD113695BDBC000A4FC15E4D7D2171FCCC23",
   "active_revision_binding_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
   "approval_artifact_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
   "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
@@ -712,13 +728,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "historical_seq1_487_raw_bytes": 786441,
   "historical_seq1_487_raw_sha256": "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
   "historical_seq1_487_canonical_sha256": "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
-  "next_safe_action": "Prepare the Git-only C-21 Provider WSL candidate manifest and guard for isolated WSL PG15 and PG18RC verification.",
+  "next_safe_action": "Execute the C-21 Provider WSL Git-only candidate exact12 locally; do not push or invoke WSL/external systems in Stage S.",
   "dir_status": "CLEARED",
-  "repository_head": "0f70afeabe9a031e7960d49cfe27c808c0770d16",
+  "repository_head": "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_AUTH_PRODUCT_EXACT99_REVIEW_RECORD10",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT103_START_RECORD10",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -756,6 +772,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
@@ -780,6 +797,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
@@ -802,6 +820,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
@@ -840,7 +860,14 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "release_manifest_rebind": "NOT_EXECUTED",
   "deployment_status": "PASS_CANDIDATE_RESTORED",
   "telegram_and_provider": "NOT_EXECUTED_EXCLUDED",
+  "start_exact10_path_list_sha256": "87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2",
+  "source_cumulative_exact107_path_list_sha256": "E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70",
+  "developer_exact12_path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+  "post_developer_cumulative_exact109_path_list_sha256": "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E",
+  "runtime_next_action": "EXECUTE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EXACT12",
+  "accepted": false,
   "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+  "dir2_status": "NOT_TRIGGERED",
   "reporting_decision": "AUTO_CONTINUE",
   "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
   "phase_b_gate_deferred_ids": [
@@ -877,7 +904,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "record_exact13_path_list_sha256": "F17A6B348C9A88343FCB9DE019A80429698293C62E7C2D35ADCBD9D23C049DEF",
   "postcommit_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
   "runtime_safety_gate": "LOCAL_IMPLEMENTED_PENDING_GIT_ONLY_CANDIDATE",
-  "runtime_next_action": "PREPARE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE",
+  "runtime_next_action": "EXECUTE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EXACT12",
   "provider_wsl_auth_product_commit": "0f70afeabe9a031e7960d49cfe27c808c0770d16",
   "provider_wsl_auth_product_parent": "b85d2b48e14f513e326054bc0be28009f269a827",
   "provider_wsl_auth_product_exact7_path_list_sha256": "43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A",
@@ -893,9 +920,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "postcommit_exact64_path_list_sha256": "00293DE61AD5E4DDEB88DE1F62384EFC2044501E0024B9507FF1306BE32E9A10",
   "c21_verdict": "BLOCKED_NOT_ACCEPTED",
   "accepted": false,
-  "worker_lease": null,
-  "write_lease": null,
-  "active_agent": null,
+  "worker_lease": "worker-lease-c21-provider-wsl-git-only-candidate-20260906-001",
+  "write_lease": "write-lease-c21-provider-wsl-git-only-candidate-20260906-001",
+  "active_agent": "developer-primary",
   "criteria": {
     "1": "PASS_SCOPE_LIMITED",
     "2": "PARTIAL_BLOCKED",

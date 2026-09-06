@@ -9746,8 +9746,8 @@ def _validate_referenced_hashes(bundle: Mapping[str, Any]) -> list[str]:
             references.append(item)
     errors: list[str] = []
     for reference in references:
-        path = reference.get("path")
-        expected = reference.get("sha256")
+        path = reference.get("path", reference.get("artifact_path"))
+        expected = reference.get("sha256", reference.get("artifact_sha256"))
         if path is None or expected is None:
             continue
         try:
@@ -10651,6 +10651,71 @@ def validate_repository_projection(
     control_runtime_record_commit_is_direct: bool = False,
     product_commit_parent_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 527:
+        errors: list[str] = []
+        expected_record = c21_provider_wsl_git_only_candidate_start_paths()
+        expected_committed = (
+            c21_development_qa_review_predecessor_paths()
+            | c21_development_qa_review_successor_paths()
+            | c21_provider_status_read_start_paths()
+            | c21_provider_status_read_actual_paths()
+            | c21_provider_status_read_review_successor_paths()
+            | c21_provider_wsl_auth_product_paths()
+            | c21_provider_wsl_auth_reviewed_paths()
+        )
+        expected_cumulative = expected_committed | expected_record
+        precommit_projection = (
+            actual_head == repository.get("local_head")
+            and set(actual_changed_paths) == expected_committed
+            and set(control_descendant_paths or []) == expected_record
+            and working_tree_mode
+            and not worktree_is_clean
+            and not control_runtime_record_commit_is_direct
+        )
+        postcommit_projection = (
+            actual_head != repository.get("local_head")
+            and control_is_ancestor
+            and control_runtime_record_commit_is_direct
+            and set(actual_changed_paths) == expected_cumulative
+            and set(control_descendant_paths or []) == expected_record
+            and not working_tree_mode
+            and worktree_is_clean
+        )
+        if any((
+            repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE,
+            repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+            repository.get("head_relation") != "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT103_START_RECORD10",
+            repository.get("branch") != "codex/c21-operational-execution",
+            repository.get("upstream") != "origin/codex/c21-operational-execution",
+            repository.get("remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("feature_remote") != "origin/codex/c21-operational-execution",
+            repository.get("feature_remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("local_head") != "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
+            repository.get("worktree_status") != "SEQ527_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_EXACT10_DIRTY",
+            set(repository.get("exact_allowed_paths") or []) != expected_cumulative,
+            set(repository.get("provider_wsl_git_only_candidate_start_paths") or []) != expected_record,
+            repository.get("predecessor_remote_control") != "772afbd5eb55791ca7b5002d58378437ea496750",
+            repository.get("candidate_remote_ref") != "refs/remotes/origin/candidates/c21-wsl-exact107",
+        )):
+            errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        if (
+            (not precommit_projection and not postcommit_projection)
+            or actual_branch != repository.get("branch")
+            or actual_upstream != repository.get("upstream")
+        ):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if (
+            actual_remote_head != repository.get("remote_head")
+            or actual_feature_remote_head != repository.get("feature_remote_head")
+        ):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if not precommit_projection and not postcommit_projection:
+            errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+        if actual_head != repository.get("local_head") and not control_runtime_record_commit_is_direct:
+            errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+        if not base_is_ancestor:
+            errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(errors))
     if (progress or {}).get("event_sequence") == 524:
         errors: list[str] = []
         expected_record = c21_provider_wsl_auth_reviewed_paths()
@@ -12640,11 +12705,22 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         if isinstance(feature_remote, str) and feature_remote.startswith("origin/")
         else None
     )
-    if bundle["progress"].get("event_sequence") in {495, 498, 501, 506, 509, 513, 524}:
+    event_sequence = bundle["progress"].get("event_sequence")
+    if event_sequence in {495, 498, 501, 506, 509, 513, 524, 527}:
         parent = repository.get("local_head")
         base = repository.get("validated_base_commit")
         changed = _split_git_paths(_git_value(root,"diff","--name-only",base,actual_head))
-        dirty = _working_tree_paths(_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"))
+        status_raw = _git_value(
+            root,
+            "-c",
+            "core.quotePath=false",
+            "status",
+            "--porcelain=v1",
+            "--untracked-files=all",
+        )
+        if event_sequence == 527 and status_raw is None:
+            return ["GIT_STATUS_COLLECTION_FAILED"]
+        dirty = _working_tree_paths(status_raw)
         direct = False
         if actual_head and actual_head != parent:
             direct = (_git_value(root,"show","-s","--format=%P",actual_head) or "").split() == [parent]
@@ -13430,6 +13506,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_provider_status_read_review_successor_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_auth_reviewed_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
+            errors.extend(validate_c21_provider_wsl_git_only_candidate_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_development_qa_review_successor_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json":
@@ -14368,6 +14446,38 @@ def c21_provider_wsl_auth_product_paths() -> set[str]:
     }
 
 
+def c21_provider_wsl_git_only_candidate_start_paths() -> set[str]:
+    return {
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
+        "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_provider_wsl_git_only_candidate_paths() -> set[str]:
+    return {
+        "deploy/wsl/CandidateReleaseManifest.json",
+        "deploy/wsl/candidate-manifest-guard.sh",
+        "docs/DEVELOPMENT_ENVIRONMENT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
+        "scripts/check_project_progress.py",
+        "tests/deploy/test_wsl_staging_harness.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
 def c21_provider_status_read_start_paths() -> set[str]:
     return {
         "docs/WORK_STATUS.md",
@@ -14435,6 +14545,394 @@ def c21_provider_status_read_review_successor_paths() -> set[str]:
         "scripts/check_project_progress.py",
         "tests/tooling/test_project_progress.py",
     }
+
+
+def validate_c21_provider_wsl_git_only_candidate_start_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    handoff = bundle.get("handoff") or {}
+    repository = progress.get("repository") or {}
+    errors: list[str] = []
+    occurred_at = "2026-09-06T12:25:13+09:00"
+    source_commit = "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+    predecessor_control = "772afbd5eb55791ca7b5002d58378437ea496750"
+    candidate_ref = "refs/remotes/origin/candidates/c21-wsl-exact107"
+    work_instruction_id = "WI-C-21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-20260906-001"
+    worker_id = "worker-lease-c21-provider-wsl-git-only-candidate-20260906-001"
+    write_id = "write-lease-c21-provider-wsl-git-only-candidate-20260906-001"
+    execution_fence = "c21-provider-wsl-git-only-candidate-execution-fence-epoch-1-e4cccf3"
+    write_fence = "c21-provider-wsl-git-only-candidate-write-fence-epoch-1-e4cccf3"
+    manifest_path = "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json"
+    work_instruction_path = "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md"
+    invocation_path = "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md"
+    start_paths = sorted(c21_provider_wsl_git_only_candidate_start_paths())
+    developer_paths = sorted(c21_provider_wsl_git_only_candidate_paths())
+    committed_paths = sorted(
+        c21_development_qa_review_predecessor_paths()
+        | c21_development_qa_review_successor_paths()
+        | c21_provider_status_read_start_paths()
+        | c21_provider_status_read_actual_paths()
+        | c21_provider_status_read_review_successor_paths()
+        | c21_provider_wsl_auth_product_paths()
+        | c21_provider_wsl_auth_reviewed_paths()
+    )
+    cumulative_paths = sorted(set(committed_paths) | set(start_paths))
+    post_developer_paths = sorted(set(cumulative_paths) | set(developer_paths))
+    try:
+        current_raw = (root / "docs/progress/progress-events.json").read_bytes()
+        historical_blob = subprocess.check_output(
+            ["git", "show", f"{source_commit}:docs/progress/progress-events.json"],
+            cwd=root,
+        )
+        current_prefix = raw_event_object_prefix_bytes(current_raw, 524)
+        historical_prefix = raw_event_object_prefix_bytes(historical_blob, 524)
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        historical_blob = b""
+        current_prefix = b""
+        historical_prefix = b"historical-prefix-unavailable"
+    historical_canonical = (
+        hashlib.sha256(_canonical_ascii_json_bytes(events[:524])).hexdigest().upper()
+        if len(events) >= 524
+        else ""
+    )
+    if any((
+        len(events) != 527,
+        len(historical_blob) != 918383,
+        hashlib.sha256(historical_blob).hexdigest().upper()
+        != "6CA5E70011C18974C91116229A137CB9D5366F13114312064AD5EBA80D852AE0",
+        current_prefix != historical_prefix,
+        historical_canonical
+        != "8BB534A2C4D67BF0A8998E0B60FDA864A09068DCEB736D94C313604C6907BCD6",
+    )):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_HISTORY_INVALID")
+    worker = {
+        "lease_id": worker_id,
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+        "lease_epoch": 1,
+        "fencing_token": execution_fence,
+        "execution_fencing_token": execution_fence,
+        "status": "ACTIVE",
+    }
+    write = {
+        "lease_id": write_id,
+        "worker_lease_id": worker_id,
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+        "write_epoch": 1,
+        "execution_fencing_token": execution_fence,
+        "write_fencing_token": write_fence,
+        "fencing_token": write_fence,
+        "status": "ACTIVE",
+        "path_scope": developer_paths,
+        "paths": developer_paths,
+    }
+    expected_events = [
+        {
+            "event_id": "evt_c21_provider_wsl_git_only_candidate_worker_lease_issued",
+            "sequence": 525,
+            "event_type": "WORKER_LEASE_ISSUED",
+            "occurred_at": occurred_at,
+            "actor": "main-agent-eoul",
+            "subject_ref": "C-21/PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+            "details": {
+                "lease_id": worker_id,
+                "agent_id": "developer-primary",
+                "work_instruction_id": work_instruction_id,
+                "fencing_token": execution_fence,
+                "execution_fencing_token": execution_fence,
+                "lease_epoch": 1,
+                "status": "ACTIVE",
+                "subject_ref": "C-21/PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+            },
+        },
+        {
+            "event_id": "evt_c21_provider_wsl_git_only_candidate_write_lease_issued",
+            "sequence": 526,
+            "event_type": "WRITE_LEASE_ISSUED",
+            "occurred_at": occurred_at,
+            "actor": "main-agent-eoul",
+            "subject_ref": "C-21/PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+            "details": {
+                "lease_id": write_id,
+                "worker_lease_id": worker_id,
+                "agent_id": "developer-primary",
+                "work_instruction_id": work_instruction_id,
+                "fencing_token": write_fence,
+                "execution_fencing_token": execution_fence,
+                "write_fencing_token": write_fence,
+                "write_epoch": 1,
+                "path_scope": developer_paths,
+                "paths": developer_paths,
+                "path_count": 12,
+                "path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+                "status": "ACTIVE",
+            },
+        },
+        {
+            "event_id": "evt_c21_provider_wsl_git_only_candidate_package_started",
+            "sequence": 527,
+            "event_type": "PACKAGE_STARTED",
+            "occurred_at": occurred_at,
+            "actor": "main-agent-eoul",
+            "subject_ref": "C-21/PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+            "details": {
+                "work_instruction_id": work_instruction_id,
+                "worker_lease_id": worker_id,
+                "write_lease_id": write_id,
+                "dispatch_head": source_commit,
+                "dispatch_upstream_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+                "projection_mode": VALIDATED_BASE_PROJECTION_MODE,
+                "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+                "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT103_START_RECORD10",
+                "exact_allowed_paths": cumulative_paths,
+                "predecessor_remote_control": predecessor_control,
+                "candidate_ref": candidate_ref,
+                "source_committed_exact_path_count": 103,
+                "source_committed_exact_path_list_sha256": "A46103D23EC42AD4F0431A979601964FA846913555C568DE4947605411787880",
+                "start_exact_path_count": 10,
+                "start_exact_path_list_sha256": "87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2",
+                "source_cumulative_exact_path_count": 107,
+                "source_cumulative_exact_path_list_sha256": "E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70",
+                "developer_exact_path_count": 12,
+                "developer_exact_path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+                "post_developer_cumulative_exact_path_count": 109,
+                "post_developer_cumulative_exact_path_list_sha256": "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E",
+                "result_status": "IN_PROGRESS",
+                "package_status": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+                "accepted": False,
+                "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+                "dir2_status": "NOT_TRIGGERED",
+                "push": "NOT_EXECUTED",
+                "wsl": "NOT_EXECUTED",
+                "docker": "NOT_EXECUTED",
+                "database": "NOT_EXECUTED",
+                "provider": "NOT_EXECUTED",
+                "telegram": "NOT_EXECUTED",
+                "ysna": "NOT_EXECUTED",
+                "main_merge": "NOT_EXECUTED",
+            },
+        },
+    ]
+    if events[524:] != expected_events:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_EVENT_INVALID")
+    active = progress.get("provider_wsl_git_only_candidate") or {}
+    expected_active = {
+        "event_sequence": 527,
+        "status": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+        "accepted": False,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "source_commit": source_commit,
+        "predecessor_remote_control": predecessor_control,
+        "candidate_ref": candidate_ref,
+        "source_cumulative_exact_path_count": 107,
+        "source_cumulative_exact_path_list_sha256": "E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70",
+        "developer_exact_path_count": 12,
+        "developer_exact_path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+        "post_developer_cumulative_exact_path_count": 109,
+        "post_developer_cumulative_exact_path_list_sha256": "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E",
+        "actual_push": "NOT_EXECUTED",
+        "actual_wsl": "NOT_EXECUTED",
+        "actual_docker": "NOT_EXECUTED",
+        "actual_database": "NOT_EXECUTED",
+        "actual_provider_calls": "NOT_EXECUTED",
+        "actual_telegram_outbound": "NOT_EXECUTED",
+        "ysna": "NOT_EXECUTED",
+        "main_merge": "NOT_EXECUTED",
+        "runtime_next_action": "EXECUTE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EXACT12",
+    }
+    if active != expected_active:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_BOUNDARY_INVALID")
+    instruction = progress.get("active_work_instruction") or {}
+    instruction_sha = hashlib.sha256((root / work_instruction_path).read_bytes()).hexdigest().upper()
+    invocation_sha = hashlib.sha256((root / invocation_path).read_bytes()).hexdigest().upper()
+    if any((
+        progress.get("event_sequence") != 527,
+        progress.get("last_event_id") != expected_events[-1]["event_id"],
+        progress.get("status") != "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+        progress.get("active_agent") != "developer-primary",
+        progress.get("worker_lease") != worker,
+        progress.get("write_lease") != write,
+        progress.get("runtime_next_action") != "EXECUTE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EXACT12",
+        progress.get("current_progress_evidence_ref") != {
+            "package_id": "C-21",
+            "path": digest_path,
+            "manifest_path": manifest_path,
+        },
+        progress.get("latest_evidence_manifest_ref") != {
+            "path": manifest_path,
+            "artifact_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-START-20260906",
+        },
+    )):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_PROJECTION_INVALID")
+    if any((
+        instruction.get("artifact_id") != work_instruction_id,
+        instruction.get("artifact_path") != work_instruction_path,
+        instruction.get("artifact_sha256") != instruction_sha,
+        instruction.get("invocation_path") != invocation_path,
+        instruction.get("invocation_sha256") != invocation_sha,
+        instruction.get("executor") != "developer-primary",
+        instruction.get("dispatch_base") != source_commit,
+        instruction.get("result_status") != "IN_PROGRESS",
+        instruction.get("package_status") != "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+        instruction.get("worker_lease_id") != worker_id,
+        instruction.get("write_lease_id") != write_id,
+        instruction.get("allowed_path_count") != 12,
+        instruction.get("allowed_path_list_sha256") != "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+        instruction.get("allowed_paths") != developer_paths,
+        instruction.get("accepted") is not False,
+        instruction.get("c01_boundary") != "BLOCKED_PENDING_C21_ACCEPTANCE",
+        instruction.get("dir2_status") != "NOT_TRIGGERED",
+    )):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_WORK_INSTRUCTION_INVALID")
+    expected_manifest = {
+        "schema_version": "1.0.0",
+        "manifest_type": "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_PROJECTION",
+        "artifact_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-START-20260906",
+        "created_at": occurred_at,
+        "event_sequence": 527,
+        "appended_event_count": 3,
+        "historical_event_sequence": 524,
+        "historical_commit": source_commit,
+        "historical_full_file_bytes": len(historical_blob),
+        "historical_full_file_sha256": hashlib.sha256(historical_blob).hexdigest().upper(),
+        "historical_event_object_prefix_bytes": len(historical_prefix),
+        "historical_event_object_prefix_sha256": hashlib.sha256(historical_prefix).hexdigest().upper(),
+        "historical_events_canonical_ascii_sha256": historical_canonical,
+        "execution_authority_path": work_instruction_path,
+        "execution_authority_sha256": instruction_sha,
+        "invocation_path": invocation_path,
+        "invocation_sha256": invocation_sha,
+        "dispatch_source": source_commit,
+        "predecessor_remote_control": predecessor_control,
+        "candidate_ref": candidate_ref,
+        "source_committed_exact_path_count": 103,
+        "source_committed_exact_path_list_sha256": "A46103D23EC42AD4F0431A979601964FA846913555C568DE4947605411787880",
+        "source_committed_exact_paths": committed_paths,
+        "start_exact_path_count": 10,
+        "start_exact_path_list_sha256": "87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2",
+        "start_exact_paths": start_paths,
+        "source_cumulative_exact_path_count": 107,
+        "source_cumulative_exact_path_list_sha256": "E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70",
+        "source_cumulative_exact_paths": cumulative_paths,
+        "developer_exact_path_count": 12,
+        "developer_exact_path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+        "developer_exact_paths": developer_paths,
+        "post_developer_cumulative_exact_path_count": 109,
+        "post_developer_cumulative_exact_path_list_sha256": "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E",
+        "post_developer_cumulative_exact_paths": post_developer_paths,
+        "worker_lease_id": worker_id,
+        "write_lease_id": write_id,
+        "execution_fencing_token": execution_fence,
+        "write_fencing_token": write_fence,
+        "status": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+        "accepted": False,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "push": "NOT_EXECUTED",
+        "wsl": "NOT_EXECUTED",
+        "docker": "NOT_EXECUTED",
+        "database": "NOT_EXECUTED",
+        "provider": "NOT_EXECUTED",
+        "telegram": "NOT_EXECUTED",
+        "ysna": "NOT_EXECUTED",
+        "main_merge": "NOT_EXECUTED",
+        "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        "record_commit_mode": "SOURCE_DIRECT_CHILD_EXACT10",
+        "self_reference": False,
+    }
+    if any(manifest.get(key) != value for key, value in expected_manifest.items()):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST_INVALID")
+    expected_raw = {
+        work_instruction_path,
+        invocation_path,
+        digest_path,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_raw:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST_INVALID")
+    elif any(
+        not isinstance(row, Mapping)
+        or not (root / str(row.get("path"))).is_file()
+        or row.get("bytes") != (root / str(row.get("path"))).stat().st_size
+        or row.get("sha256") != hashlib.sha256((root / str(row.get("path"))).read_bytes()).hexdigest().upper()
+        for row in rows
+    ):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST_INVALID")
+    ref_by_path = {
+        row.get("path"): row.get("sha256")
+        for row in progress.get("latest_evidence_refs", [])
+        if isinstance(row, Mapping)
+    }
+    # The detached digest binds progress bytes, so putting its own hash back into
+    # progress would create an impossible circular fixed-point. It is bound by
+    # the manifest raw row and current_progress_evidence_ref instead.
+    for relative in (expected_raw - {digest_path}) | {"docs/progress/progress-events.json"}:
+        if ref_by_path.get(relative) != _sha256(root / relative):
+            errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_LATEST_REF_INVALID")
+    if any((
+        handoff.get("event_sequence") != 527,
+        handoff.get("status") != "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+        handoff.get("active_agent") != "developer-primary",
+        handoff.get("worker_lease") != worker_id,
+        handoff.get("write_lease") != write_id,
+        handoff.get("active_work_instruction_sha256") != instruction_sha,
+        handoff.get("active_invocation_sha256") != invocation_sha,
+        handoff.get("repository_head") != source_commit,
+        handoff.get("repository_head_relation") != "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT103_START_RECORD10",
+        handoff.get("start_exact10_path_list_sha256") != "87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2",
+        handoff.get("source_cumulative_exact107_path_list_sha256") != "E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70",
+        handoff.get("developer_exact12_path_list_sha256") != "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+        handoff.get("post_developer_cumulative_exact109_path_list_sha256") != "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E",
+        handoff.get("runtime_next_action") != "EXECUTE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EXACT12",
+        handoff.get("accepted") is not False,
+        handoff.get("c01_status") != "BLOCKED_PENDING_C21_ACCEPTANCE",
+        handoff.get("dir2_status") != "NOT_TRIGGERED",
+    )):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_HANDOFF_INVALID")
+    try:
+        digest = bundle["detached_digest"]
+        if not isinstance(digest, Mapping):
+            raise TypeError("detached digest must be an object")
+        progress_raw = (root / "docs/progress/build-progress.json").read_bytes()
+        handoff_raw = (root / "docs/progress/BUILD_HANDOFF.md").read_bytes()
+    except (KeyError, OSError, TypeError):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_DIGEST_INVALID")
+    else:
+        expected_digest = {
+            "schema_version": "1.0.0",
+            "digest_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-START-DIGEST-20260906",
+            "package_id": "C-21",
+            "event_sequence": 527,
+            "algorithm": "SHA-256",
+            "created_at": occurred_at,
+            "scope": "Provider WSL Git-only candidate start projection; seq1-524 preserved; exact12 execution and all external actions pending.",
+            "self_reference": False,
+            "progress": {
+                "path": "docs/progress/build-progress.json",
+                "bytes": len(progress_raw),
+                "file_sha256": hashlib.sha256(progress_raw).hexdigest().upper(),
+                "canonical_json_sha256": hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper(),
+            },
+            "handoff": {
+                "path": "docs/progress/BUILD_HANDOFF.md",
+                "bytes": len(handoff_raw),
+                "file_sha256": hashlib.sha256(handoff_raw).hexdigest().upper(),
+                "machine_summary_canonical_sha256": hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper(),
+            },
+        }
+        if digest != expected_digest:
+            errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_DIGEST_INVALID")
+    return sorted(set(errors))
 
 
 def validate_c21_provider_wsl_auth_reviewed_projection(

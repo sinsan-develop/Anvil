@@ -699,3 +699,53 @@
 - 현재 미충족: 변경된 checker/test hash와 progress snapshot/detached digest 재결박, 전체 tooling 재검증, 독립 재검토. seq1~513 historical evidence와 제품 exact7은 변경하지 않았다.
 - 해소 검증: Main 재결박 후 focused `5 passed, 166 deselected`, live checker `PASS sequence=524`, 전체 tooling `171 passed in 711.92s`를 확인했다. checker/test hash와 progress snapshot/detached digest 재결박 및 전체 tooling 미충족은 해소됐다.
 - 독립 재검토 최종 판정은 `SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`이며 exact10 record commit을 허용한다. seq514~524의 이전 11개 event details 변조는 `C21_PROVIDER_WSL_AUTH_REVIEW_EVENT_INVALID`, manifest/digest metadata 변조는 각 지정 오류로 모두 fail-closed 거부됨을 확인했다.
+
+### C-21 Provider WSL Git-only candidate start — 플랫폼 승인 대기
+
+- 기준선은 clean `e4cccf3ce99e29005103cea3bd76fa0eede36f28`; seq1~524 historical event/evidence는 변경하지 않았다.
+- 계획 초안의 path hash 불일치는 canonical helper로 정정했다: S exact10 `87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2`, 누적 exact107 `E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70`, K exact12 `6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765`, 누적 exact109 `16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E`.
+- 시스템 안전 fingerprint `PLATFORM_SEQ527_GOVERNANCE_GATE_APPROVAL_REQUIRED` 2회: 두 writer의 seq527 전용 predicate patch가 지속적 무결성 gate 확장으로 분류돼 차단됐다. 제품 실패 횟수에는 포함하지 않으며 우회하지 않았다.
+- 현재 변경은 Work Order 2개, checker path helper, RED 계약 테스트와 이 상태 기록뿐이다. RED `-k git_only_candidate_start`는 `2 failed, 1 passed`; projection predicate/validator가 아직 없어 의도대로 실패한다.
+- 재개 조건: 신산님이 seq527 전용 predicate/validator의 구현을 직접 승인하면 subagent가 기존 RED에서 재개한다. 실제 WSL·Docker·DB·Provider·Telegram·push·ysna·main은 아직 실행하지 않는다.
+
+### seq527 start projection 구현·검증 진행
+
+- 판정: `IN_PROGRESS_FINAL_VERIFICATION`. 최신 직접 지시 `계속하자`와 교체된 AGENTS 5.1에 따라 승인된 계획 내부 start projection을 재개했다. 담당은 `developer-primary`, branch `codex/c21-operational-execution`, HEAD `e4cccf3ce99e29005103cea3bd76fa0eede36f28`, upstream `origin/codex/c21-operational-execution`, remote head `ca92b7845eda803cff3c432799642e4f9243d4d6`다.
+- 변경 exact set: S exact10 전부만 dirty다. 기존 수정 6개(`docs/WORK_STATUS.md`, `docs/progress/BUILD_HANDOFF.md`, `docs/progress/build-progress.json`, `docs/progress/progress-events.json`, `scripts/check_project_progress.py`, `tests/tooling/test_project_progress.py`)와 신규 4개(start manifest, detached digest, WorkInstruction, invocation prompt)다. seq1~524 raw event object와 historical evidence는 byte-immutable이다.
+- projection: seq527 specialized Git predicate를 일반 projection보다 먼저 적용하고 seq524 full validator를 유지했다. precommit은 HEAD `e4cccf3...` + committed exact103 + dirty start exact10만, postcommit은 그 direct single-parent child + exact107 clean만 허용한다. branch/upstream/remote, base ancestry, exact paths, clean/dirty, candidate ref와 predecessor control을 fail-closed한다.
+- lease/event: seq525 `WORKER_LEASE_ISSUED`, seq526 `WRITE_LEASE_ISSUED`, seq527 `PACKAGE_STARTED`를 append했다. active developer write scope는 K exact12/hash `6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765`; 이후 누적 exact109 hash는 `16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E`다.
+- canonical path helper 재감사: source exact103=`A46103D23EC42AD4F0431A979601964FA846913555C568DE4947605411787880`, S exact10=`87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2`, 누적 exact107=`E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70`, K exact12=`6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765`, 누적 exact109=`16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E`. 기존 계획 감사의 `E095...`, `14D594...`, `A356...`, `8904...` 값은 범위 의미 변경이 아니라 canonical helper를 쓰지 않은 비의미 계산 오류였으며 위 값으로 정정했다.
+- TDD RED: `-k git_only_candidate_start` 최초 `2 failed, 1 passed, 171 deselected in 0.73s`, exit1. fingerprint `C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_UNBOUND_R1` 1회로, 전용 validator 부재와 일반 projection이 seq527 exact103/start10을 구분하지 못한 의도한 원인이다.
+- 구현 중 focused: start manifest/digest/progress/handoff materialize 뒤 첫 실행은 `1 failed, 2 passed, 171 deselected in 0.79s`, event canonical order·handoff 마지막 중복 키·latest refs·projection 결박을 보완했다. 다음 실행은 `1 failed, 2 passed, 171 deselected in 0.33s`, last_event_id 축약 오기 1건을 exact PACKAGE_STARTED id로 교정했다. 최종 focused는 `3 passed, 171 deselected in 3.41s`, exit0이다. 각 integration fingerprint는 1회이며 동일 근본 원인 3회가 아니다.
+- 전체 tooling 1차: `3 failed, 171 passed in 897.36s`, exit1. `HISTORICAL_BACKUP_ACCEPTANCE_CURRENT_BUNDLE_DRIFT`, `HISTORICAL_OPS_R2_CURRENT_BUNDLE_DRIFT`, `GENERIC_ACTIVE_WI_HASH_KEY_DRIFT` 각 1회다. 앞 두 개는 seq527 current bundle을 과거 validator에 혼합한 fixture 오류라 immutable `e4cccf3...` historical bundle로 분리했고, 마지막은 generic referenced-hash validator가 새 `artifact_path`/`artifact_sha256` alias를 읽도록 최소 보완했다. 제품 실패로 계상하지 않는다.
+- fixture 보완 검증: 1차 `1 failed, 2 passed, 171 deselected in 14.49s`에서 같은 historical test 내부 후속 release-rebind current bundle 잔존을 발견했고 같은 historical bundle로 고정했다. 2차 `3 passed, 171 deselected in 14.57s`, exit0이다. 이 잔존 fixture fingerprint도 1회이며 반복 제품 오류가 아니다.
+- 도구/편집 절차 오류: D:\tmp sandbox deny, apply_patch batch newline 전달, unified hunk range 문맥 실패, PowerShell quoting 1회, event comma 누락 1회는 모두 제품 실패가 아니며 승인된 direct apply_patch CLI와 JSON parse로 즉시 해소했다. 같은 제품 근본 실패의 유효 반복 횟수는 0이다.
+- 실제 Provider 호출, Telegram outbound, WSL, Docker, DB, ysna, main 병합, push는 모두 `NOT_EXECUTED`. commit도 지시대로 `NOT_EXECUTED`다. C-21 accepted=false, C-01 차단, DIR-2 미발생을 유지한다.
+- 남은 조치: final checker/test hash와 snapshot/digest/manifest 결박 후 seq527 focused, 전체 tooling fresh, live checker, `git diff --check`, exact10 Git status를 검증한다. 다음 package action은 developer-primary가 lease exact12를 로컬 TDD로 구현하는 것이며 이 start task에서는 실행하지 않는다.
+
+#### seq527 start projection 최종 검증 마감
+
+- 판정: `COMPLETED`. final hash 재결박 뒤 seq527 focused `3 passed, 171 deselected in 3.23s`, exit0; 전체 `tests/tooling/test_project_progress.py` fresh 재실행 `174 passed in 920.81s`, exit0이다.
+- live checker: `.venv\Scripts\python.exe scripts/check_project_progress.py` → exit0, `G-05 project progress contract: PASS sequence=527 reporting=AUTO_CONTINUE`.
+- 정적·Git 검사: `.venv\Scripts\python.exe -m py_compile scripts/check_project_progress.py tests/tooling/test_project_progress.py` exit0; `git diff --check` exit0. dirty는 S exact10만이며 canonical path-list hash `87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2`와 일치한다.
+- 역사 무결성: HEAD `e4cccf3...`의 progress-events 원본은 `918383` bytes / `6CA5E70011C18974C91116229A137CB9D5366F13114312064AD5EBA80D852AE0`; 현재 seq1~524 event-object prefix는 `918175` bytes / `7976E9A81F28A7293552C4D18556AD506A0450C46B620D28F1B74A112EED2EAA`이며 Git blob에서 추출한 같은 prefix와 byte-equal이다.
+- 변경 영향: seq527 start projection과 이후 exact12 write lease만 활성화했다. Provider/Telegram/WSL/Docker/DB/ysna/main/push/commit은 모두 `NOT_EXECUTED`; 해당 실제 검증이나 배포 PASS를 주장하지 않는다.
+- rollback: 아직 commit하지 않았으므로 Main이 S exact10 diff를 검토한 뒤 승인하지 않으면 이 exact10만 복구 대상으로 삼는다. 사용자 자료·다른 dirty 경로·historical evidence는 rollback 대상이 아니다.
+- 다음 안전 조치: Main의 exact10 diff 검토 후 별도 후속 작업자가 active lease의 K exact12를 로컬 TDD로 구현한다. 이 seq527 start task 자체의 추가 제품 write, commit, push, WSL/외부 호출은 하지 않는다.
+
+#### seq527 Reviewer Important 1 fail-closed 보완
+
+- 인수 사유: 이전 developer의 중단은 usage limit이며 유효한 `FAILURE_REPORT`가 아니다. 동일 제품 근본 실패의 유효 반복 횟수는 계속 `0`이다.
+- Reviewer Important 1 재현: seq527 clean postcommit projection에서 Git status 수집값 `None`이 `_working_tree_paths(None) -> []`로 바뀌어 clean direct-child/exact107 projection을 통과할 수 있었다.
+- 조치: valid direct-child/exact107 응답과 status `None`을 분리 mock한 collector-boundary 회귀 계약을 유지하고, seq527에만 `GIT_STATUS_COLLECTION_FAILED`를 반환하도록 fail-closed했다. seq524 및 generic/historical projection은 변경하지 않았다.
+- 상태: focused GREEN 뒤 관련 historical·전체 tooling·live checker·정적/Git 무결성 재검증을 진행한다. Provider/Telegram/WSL/Docker/DB/ysna/main/commit/push는 계속 `NOT_EXECUTED`다.
+- 검증: collector-boundary focused `3 passed, 172 deselected` exit 0, 인접 historical focused exit 0, 전체 `tests/tooling/test_project_progress.py` fresh `175 passed in 884.84s` exit 0, live checker `PASS sequence=527`, `py_compile` exit 0, `git diff --check` exit 0을 확인했다.
+- 최종 무결성: Git status 기준 dirty는 S exact10만이며 path-list SHA-256 `87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2`; 누적 exact107은 `E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70`; seq1~524 raw event-object prefix `918175` bytes는 HEAD historical blob과 byte-equal이다.
+- 완료 범위: seq527 status collection fail-closed 보완과 기존 manifest/digest 결박 정합성만 수정했다. commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 실행하지 않았다.
+
+#### seq527 exact10 CLEAN_REVIEW 마감
+
+- 독립 Reviewer 재검토 판정은 `CLEAN_REVIEW / C0 / I0 / M0`이며 Reviewer Important 1 status-collector fail-closed 결함은 해소됐다.
+- 독립 focused 검증은 `11 passed`로 종료했다. 코드 변경이 없는 review 마감이므로 직전 fresh 전체 tooling `175 passed in 884.84s` 결과를 유지하며 전체 suite는 재실행하지 않는다.
+- 재확인 대상: live checker `PASS sequence=527`, `py_compile` 및 `git diff --check` exit 0, S exact10 hash `87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2`, cumulative exact107 hash `E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70`, seq1~524 raw prefix byte-equal을 최종 마감 조건으로 유지한다.
+- 범위·상태: 새 event를 append하지 않으며 seq527, `ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION`, S exact10과 C-21 accepted=false/C-01 차단/DIR-2 미발생을 보존한다. commit/push와 WSL/Docker/DB/Provider/Telegram/ysna/main은 `NOT_EXECUTED`다.

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-START-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 527,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T12:25:13+09:00",
+  "scope": "Provider WSL Git-only candidate start projection; seq1-524 preserved; exact12 execution and all external actions pending.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 122427,
+    "file_sha256": "6B58D694865004B7D1BF468604B05C90BAC25CC25B53EB55A29064025A831D05",
+    "canonical_json_sha256": "8B63AF1CD7E6C1F4AAC8D6C2C3CE9E98E6F52E32C0A1CACFD54233854517B783"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 180667,
+    "file_sha256": "E291DECDD390E17A3CAD0C7DC2121043D6181E0733555256A15348433639A27E",
+    "machine_summary_canonical_sha256": "17373A2A0F528DB25F67E71627DC503959FDE76C8394B80E4923DA07E5F850AB"
+  }
+}
