@@ -12787,6 +12787,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 548:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_verify_scope_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 542:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13639,6 +13643,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_provider_wsl_exact_binding_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_exact_binding_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json":
+            errors.extend(validate_c21_provider_wsl_verify_scope_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_git_only_candidate_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
@@ -17410,6 +17416,257 @@ def _collect_c21_exact_binding_bound_git(bundle: Mapping[str, Any]) -> list[str]
             if dirty or parents!=[C21_EXACT_BINDING_START_COMMIT]: return ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
         return []
     except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_VERIFY_SCOPE_PARENT = "c330d34ea7d0acc7e423a978f9c558c94c159118"
+C21_VERIFY_SCOPE_AT = "2026-09-06T23:30:00+09:00"
+C21_VERIFY_SCOPE_STATUS = "READY_FOR_PROVIDER_EXCLUDED_WSL_QA_RETRY"
+C21_VERIFY_SCOPE_P = "docs/progress/build-progress.json"
+C21_VERIFY_SCOPE_E = "docs/progress/progress-events.json"
+C21_VERIFY_SCOPE_H = "docs/progress/BUILD_HANDOFF.md"
+C21_VERIFY_SCOPE_D = "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json"
+C21_VERIFY_SCOPE_M = "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json"
+C21_VERIFY_SCOPE_WI = "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md"
+C21_VERIFY_SCOPE_PROMPT = "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md"
+C21_VERIFY_SCOPE_WI_ID = "WI-C-21-PROVIDER-WSL-VERIFY-SCOPE-CORRECTION-20260906-001"
+C21_VERIFY_SCOPE_WORKER = "lease-c21-provider-wsl-verify-scope-worker-epoch1"
+C21_VERIFY_SCOPE_WRITE = "lease-c21-provider-wsl-verify-scope-write-epoch1"
+C21_VERIFY_SCOPE_EXEC = "exec-c21-provider-wsl-verify-scope-epoch1"
+C21_VERIFY_SCOPE_FENCE = "write-c21-provider-wsl-verify-scope-epoch1"
+
+
+def c21_provider_wsl_verify_scope_paths() -> list[str]:
+    return sorted({
+        "deploy/wsl/CandidateReleaseManifest.json", "deploy/wsl/candidate-manifest-guard.sh",
+        "deploy/wsl/verify.sh", "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
+        "docs/WORK_STATUS.md", C21_VERIFY_SCOPE_M, C21_VERIFY_SCOPE_H, C21_VERIFY_SCOPE_P,
+        C21_VERIFY_SCOPE_E, C21_VERIFY_SCOPE_D,
+        "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+        C21_VERIFY_SCOPE_PROMPT, C21_VERIFY_SCOPE_WI, "scripts/check_project_progress.py",
+        "tests/api/test_provider_status.py", "tests/deploy/test_wsl_staging_harness.py",
+        "tests/tooling/test_project_progress.py",
+    })
+
+
+def c21_provider_wsl_verify_scope_metadata() -> dict[str, Any]:
+    exact = c21_provider_wsl_verify_scope_paths()
+    cumulative = sorted(set(c21_provider_wsl_exact_binding_path_metadata()["post_successor_cumulative_exact_paths"]) | set(exact))
+    windows_hash = lambda paths: hashlib.sha256("".join(
+        f"{path}\n" for path in sorted(set(paths), key=lambda value: value.casefold().replace("_", ","))
+    ).encode("utf-8")).hexdigest().upper()
+    return {"developer_exact_paths":exact,"developer_exact_path_count":17,
+        "developer_exact_path_list_sha256":windows_hash(exact),
+        "cumulative_exact_paths":cumulative,"cumulative_exact_path_count":131,
+        "cumulative_exact_path_list_sha256":windows_hash(cumulative)}
+
+
+def _c21_verify_scope_attempt() -> dict[str, Any]:
+    return {"deploy":"PASS","pg15":"STOPPED_AT_LOCAL_PROVIDER_ENVELOPE",
+        "pg15_sse":"NOT_REACHED","pg15_backup_restore":"NOT_REACHED","pg18rc":"NOT_STARTED",
+        "local_provider_status":"ATTEMPTED","external_provider_billing":"NOT_EXECUTED",
+        "telegram":"NOT_EXECUTED"}
+
+
+def c21_provider_wsl_verify_scope_events() -> list[dict[str, Any]]:
+    metadata=c21_provider_wsl_verify_scope_metadata()
+    common={"occurred_at":C21_VERIFY_SCOPE_AT,"actor":"developer-primary",
+            "subject_ref":"C-21/PROVIDER-WSL-VERIFY-SCOPE-CORRECTION"}
+    worker={"lease_id":C21_VERIFY_SCOPE_WORKER,"agent_id":"developer-primary","work_package_id":"C-21",
+        "subtask_id":"PROVIDER-WSL-VERIFY-SCOPE-CORRECTION","lease_epoch":1,
+        "execution_fencing_token":C21_VERIFY_SCOPE_EXEC,"fencing_token":C21_VERIFY_SCOPE_EXEC,"status":"ACTIVE",
+        "work_instruction_id":C21_VERIFY_SCOPE_WI_ID,"subject_ref":"C-21/PROVIDER-WSL-VERIFY-SCOPE-CORRECTION"}
+    write={"lease_id":C21_VERIFY_SCOPE_WRITE,"worker_lease_id":C21_VERIFY_SCOPE_WORKER,"agent_id":"developer-primary",
+        "work_package_id":"C-21","subtask_id":"PROVIDER-WSL-VERIFY-SCOPE-CORRECTION","write_epoch":1,
+        "execution_fencing_token":C21_VERIFY_SCOPE_EXEC,"write_fencing_token":C21_VERIFY_SCOPE_FENCE,
+        "fencing_token":C21_VERIFY_SCOPE_FENCE,"status":"ACTIVE","path_scope":metadata["developer_exact_paths"],
+        "paths":metadata["developer_exact_paths"],"work_instruction_id":C21_VERIFY_SCOPE_WI_ID,
+        "path_count":17,"path_list_sha256":metadata["developer_exact_path_list_sha256"]}
+    return [
+        {"event_id":"evt_c21_provider_wsl_verify_scope_worker_lease_issued","sequence":543,
+         "event_type":"WORKER_LEASE_ISSUED",**common,"details":worker},
+        {"event_id":"evt_c21_provider_wsl_verify_scope_write_lease_issued","sequence":544,
+         "event_type":"WRITE_LEASE_ISSUED",**common,"details":write},
+        {"event_id":"evt_c21_provider_wsl_verify_scope_package_started","sequence":545,
+         "event_type":"PACKAGE_STARTED",**common,"details":{"work_instruction_id":C21_VERIFY_SCOPE_WI_ID,
+         "dispatch_head":C21_VERIFY_SCOPE_PARENT,"dispatch_upstream_head":C21_RESUME_REMOTE,
+         "projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,
+         "head_relation":"FEATURE_WORKTREE_C21_VERIFY_SCOPE_PARENT_EXACT125_SUCCESSOR_RECORD17",
+         "exact_allowed_paths":metadata["cumulative_exact_paths"],"result_status":"IN_PROGRESS",
+         "package_status":"ACTIVE_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION","runtime_attempt":_c21_verify_scope_attempt(),
+         "valid_failure_count":2,"scope":"PROVIDER_AND_TELEGRAM_EXCLUDED",**metadata}},
+        {"event_id":"evt_c21_provider_wsl_verify_scope_write_lease_revoked","sequence":546,
+         "event_type":"WRITE_LEASE_REVOKED",**common,"details":dict(write,status="REVOKED",reason="RESULT_HANDOFF")},
+        {"event_id":"evt_c21_provider_wsl_verify_scope_worker_lease_revoked","sequence":547,
+         "event_type":"WORKER_LEASE_REVOKED",**common,"details":dict(worker,status="REVOKED",reason="RESULT_HANDOFF")},
+        {"event_id":"evt_c21_provider_wsl_verify_scope_package_completed","sequence":548,
+         "event_type":"PACKAGE_COMPLETED",**common,"details":{"work_instruction_id":C21_VERIFY_SCOPE_WI_ID,
+         "result_status":"COMPLETED","package_status":C21_VERIFY_SCOPE_STATUS,"accepted":False,
+         "completion_head":C21_VERIFY_SCOPE_PARENT,"completion_upstream_head":C21_RESUME_REMOTE,
+         "projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,
+         "head_relation":"FEATURE_WORKTREE_C21_VERIFY_SCOPE_PARENT_EXACT125_SUCCESSOR_RECORD17",
+         "exact_allowed_paths":metadata["cumulative_exact_paths"],"independent_tester_status":"PENDING",
+         "runtime_attempt":_c21_verify_scope_attempt(),"valid_failure_count":2,
+         "provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED",**metadata}},
+    ]
+
+
+def _c21_provider_wsl_verify_scope_event_bytes(historical: bytes) -> bytes:
+    parsed=_c21_resume_json(historical)
+    if parsed.get("last_sequence")!=542 or len(parsed.get("events",[]))!=542:
+        raise ValueError("C21_VERIFY_SCOPE_HISTORY_INVALID")
+    prefix=raw_event_object_prefix_bytes(historical,542)
+    header=(b'{\n  "schema_version": "1.0.0",\n  "stream_id": "anvil-build-main",\n'
+            b'  "first_sequence": 1,\n  "last_sequence": 542,\n  "events": [\n    ')
+    footer=b'\n  ],\n  "last_event_id": "evt_c21_provider_wsl_exact_binding_package_completed"\n}\n'
+    if historical != header+prefix+footer:
+        raise ValueError("C21_VERIFY_SCOPE_HISTORY_INVALID")
+    raw=b""
+    for event in c21_provider_wsl_verify_scope_events():
+        lines=json.dumps(event,ensure_ascii=False,indent=2,allow_nan=False).splitlines()
+        raw += b",\n" + "\n".join("    "+line for line in lines).encode("utf-8")
+    return (header.replace(b'"last_sequence": 542',b'"last_sequence": 548')+prefix+raw+
+        footer.replace(b"evt_c21_provider_wsl_exact_binding_package_completed",
+                       b"evt_c21_provider_wsl_verify_scope_package_completed"))
+
+
+def c21_provider_wsl_verify_scope_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    raw_scope=set(c21_provider_wsl_verify_scope_paths())-{C21_VERIFY_SCOPE_P,C21_VERIFY_SCOPE_E,C21_VERIFY_SCOPE_H,C21_VERIFY_SCOPE_D,C21_VERIFY_SCOPE_M}
+    if set(files)!=raw_scope: raise ValueError("C21_VERIFY_SCOPE_FILE_SET_INVALID")
+    source=_c21_resume_json(historical[C21_VERIFY_SCOPE_P]); candidate=_c21_resume_json(files["deploy/wsl/CandidateReleaseManifest.json"])
+    if source.get("event_sequence")!=542 or source.get("valid_failure_count")!=2: raise ValueError("C21_VERIFY_SCOPE_SOURCE_INVALID")
+    scope=candidate.get("verification_scope")
+    if not isinstance(scope,dict) or scope.get("mode")!="PROVIDER_AND_TELEGRAM_EXCLUDED": raise ValueError("C21_VERIFY_SCOPE_CANDIDATE_INVALID")
+    metadata=c21_provider_wsl_verify_scope_metadata(); events=c21_provider_wsl_verify_scope_events()
+    events_raw=_c21_provider_wsl_verify_scope_event_bytes(historical[C21_VERIFY_SCOPE_E])
+    wi_sha=_c21_resume_sha(files[C21_VERIFY_SCOPE_WI]); prompt_sha=_c21_resume_sha(files[C21_VERIFY_SCOPE_PROMPT])
+    instruction={"artifact_id":C21_VERIFY_SCOPE_WI_ID,"artifact_path":C21_VERIFY_SCOPE_WI,
+        "artifact_sha256":wi_sha,"invocation_path":C21_VERIFY_SCOPE_PROMPT,"invocation_sha256":prompt_sha,
+        "result_status":"COMPLETED","package_status":C21_VERIFY_SCOPE_STATUS,"executor":"developer-primary",
+        "independent_tester_status":"PENDING","accepted":False,"c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status":"NOT_TRIGGERED","runtime_next_action":"BIND_EXACT17_DIRECT_CHILD_THEN_ATOMIC_PRIVATE_PUSH"}
+    progress=dict(source); repository=dict(progress["repository"])
+    repository.update({"local_head":C21_VERIFY_SCOPE_PARENT,
+        "head_relation":"FEATURE_WORKTREE_C21_VERIFY_SCOPE_PARENT_EXACT125_SUCCESSOR_RECORD17",
+        "worktree_status":"SEQ548_PROVIDER_WSL_VERIFY_SCOPE_EXACT17_DIRTY",
+        "exact_allowed_paths":metadata["cumulative_exact_paths"],"provider_wsl_verify_scope_paths":metadata["developer_exact_paths"],
+        "push_status":"NOT_EXECUTED"})
+    runtime_attempt=_c21_verify_scope_attempt()
+    boundary={"accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",
+        "commit":"NOT_EXECUTED","push":"NOT_EXECUTED","wsl_mutation":"NOT_EXECUTED","docker_mutation":"NOT_EXECUTED",
+        "database_mutation":"NOT_EXECUTED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED"}
+    progress.update({"updated_at":C21_VERIFY_SCOPE_AT,"event_sequence":548,"last_event_id":events[-1]["event_id"],
+        "status":C21_VERIFY_SCOPE_STATUS,"active_agent":None,"worker_lease":None,"write_lease":None,
+        "active_work_instruction":instruction,"completed_work_instruction":instruction,"repository":repository,
+        "provider_wsl_verify_scope_correction":{"event_sequence":548,"status":C21_VERIFY_SCOPE_STATUS,
+        "source_commit":C21_VERIFY_SCOPE_PARENT,"verification_scope":scope,"runtime_attempt":runtime_attempt,
+        "valid_failure_count":2,**metadata,**boundary},"runtime_next_action":"BIND_EXACT17_DIRECT_CHILD_THEN_ATOMIC_PRIVATE_PUSH",
+        "next_safe_action":"BIND_EXACT17_DIRECT_CHILD_THEN_ATOMIC_PRIVATE_PUSH",
+        "current_progress_evidence_ref":{"package_id":"C-21","path":C21_VERIFY_SCOPE_D,"manifest_path":C21_VERIFY_SCOPE_M},
+        "latest_evidence_manifest_ref":{"path":C21_VERIFY_SCOPE_M,"artifact_id":"C21-PROVIDER-WSL-VERIFY-SCOPE-CORRECTION-20260906"},
+        "reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["C21_PROVIDER_EXCLUDED_WSL_QA_RETRY_READY"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":C21_VERIFY_SCOPE_E,"sha256":_c21_resume_sha(events_raw)}
+    latest=dict(files);latest[C21_VERIFY_SCOPE_E]=events_raw
+    progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(r)} for p,r in sorted(latest.items())]
+    progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":548,"last_event_id":events[-1]["event_id"],"status":C21_VERIFY_SCOPE_STATUS,
+        "current_phase":source["current_phase"],"current_work_package":"C-21","active_agent":None,"worker_lease":None,
+        "write_lease":None,"execution_fencing_token":None,"write_fencing_token":None,
+        "active_work_instruction":C21_VERIFY_SCOPE_WI_ID,"active_work_instruction_sha256":wi_sha,
+        "active_invocation_sha256":prompt_sha,"repository_head":C21_VERIFY_SCOPE_PARENT,
+        "repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],
+        "repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],
+        "repository_exact_allowed_paths":metadata["cumulative_exact_paths"],"valid_failure_count":2,
+        "design_baseline_hash":source["design_baseline_hash"],"dir_status":source["dir_review"]["status"],
+        "runtime_attempt":runtime_attempt,"verification_scope":scope,"next_safe_action":"BIND_EXACT17_DIRECT_CHILD_THEN_ATOMIC_PRIVATE_PUSH",
+        "runtime_next_action":"BIND_EXACT17_DIRECT_CHILD_THEN_ATOMIC_PRIVATE_PUSH","reporting_decision":"AUTO_CONTINUE",**metadata,**boundary}
+    htext=("# C-21 Provider 제외 WSL verify scope correction — seq548 Developer 완료\n\n"
+        "- Provider/Telegram runtime은 제외하고 migration·API·SSE·same-origin·backup/restore를 유지한다.\n"
+        "- 이전 실행은 PG15 local Provider envelope에서 중단했으며 SSE/backup은 NOT_REACHED, PG18RC는 NOT_STARTED다.\n\n"+
+        historical[C21_VERIFY_SCOPE_H].decode("utf-8"))
+    replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"
+    htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count!=1: raise ValueError("C21_VERIFY_SCOPE_HANDOFF_INVALID")
+    handoff_raw=htext.encode("utf-8")
+    digest={"schema_version":"1.0.0","digest_id":"C21-PROVIDER-WSL-VERIFY-SCOPE-CORRECTION-DIGEST-20260906",
+        "package_id":"C-21","event_sequence":548,"algorithm":"SHA-256","created_at":C21_VERIFY_SCOPE_AT,
+        "scope":"seq543-548 append-only Provider-excluded WSL verify correction; seq1-542 preserved; exact17.",
+        "self_reference":False,"progress":{"path":C21_VERIFY_SCOPE_P,"bytes":len(progress_raw),
+        "file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff":{"path":C21_VERIFY_SCOPE_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),
+        "machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw=_c21_resume_json_bytes(digest); raw_files=dict(files);raw_files[C21_VERIFY_SCOPE_D]=digest_raw
+    manifest={"schema_version":"1.0.0","manifest_type":"C21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_PROJECTION",
+        "artifact_id":"C21-PROVIDER-WSL-VERIFY-SCOPE-CORRECTION-20260906","created_at":C21_VERIFY_SCOPE_AT,
+        "event_sequence":548,"appended_event_count":6,"historical_event_sequence":542,
+        "historical_commit":C21_VERIFY_SCOPE_PARENT,"historical_progress_bytes":len(historical[C21_VERIFY_SCOPE_P]),
+        "historical_progress_sha256":_c21_resume_sha(historical[C21_VERIFY_SCOPE_P]),
+        "historical_full_file_bytes":len(historical[C21_VERIFY_SCOPE_E]),"historical_full_file_sha256":_c21_resume_sha(historical[C21_VERIFY_SCOPE_E]),
+        "historical_events_canonical_ascii_sha256":_c21_resume_sha(_canonical_ascii_json_bytes(_c21_resume_json(historical[C21_VERIFY_SCOPE_E])["events"])),
+        "execution_authority_path":C21_VERIFY_SCOPE_WI,"execution_authority_sha256":wi_sha,
+        "work_instruction_id":C21_VERIFY_SCOPE_WI_ID,"status":C21_VERIFY_SCOPE_STATUS,"record_commit":"PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        "record_commit_mode":"PARENT_DIRECT_CHILD_EXACT17","verification_scope":scope,"runtime_attempt":runtime_attempt,
+        "valid_failure_count":2,"private_ref_cas":{"control_ref":"refs/remotes/development/codex/c21-operational-execution",
+        "observed_control":C21_VERIFY_SCOPE_PARENT,"candidate_ref":"refs/remotes/development/candidates/c21-wsl-exact107",
+        "observed_candidate":C21_RESUME_PARENT},"self_reference":False,**metadata,**boundary}
+    manifest["raw_checksums"]=[{"path":p,"bytes":len(r),"sha256":_c21_resume_sha(r)} for p,r in sorted(raw_files.items())]
+    return {C21_VERIFY_SCOPE_P:progress_raw,C21_VERIFY_SCOPE_E:events_raw,C21_VERIFY_SCOPE_H:handoff_raw,
+        C21_VERIFY_SCOPE_D:digest_raw,C21_VERIFY_SCOPE_M:_c21_resume_json_bytes(manifest)}
+
+
+def validate_c21_provider_wsl_verify_scope_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes], artifacts: Mapping[str, bytes]) -> list[str]:
+    try: expected=c21_provider_wsl_verify_scope_artifacts(historical,files)
+    except (OSError,ValueError,TypeError,KeyError,UnicodeError): return ["C21_PROVIDER_WSL_VERIFY_SCOPE_INPUT_INVALID"]
+    if set(artifacts)!=set(expected): return ["C21_PROVIDER_WSL_VERIFY_SCOPE_ARTIFACT_SET_INVALID"]
+    return ["C21_PROVIDER_WSL_VERIFY_SCOPE_ARTIFACT_INVALID"] if any(artifacts[p]!=r for p,r in expected.items()) else []
+
+
+def validate_c21_provider_wsl_verify_scope_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    root=bundle.get("_root")
+    if not isinstance(root,Path): return ["C21_PROVIDER_WSL_VERIFY_SCOPE_ROOT_INVALID"]
+    try:
+        historical={p:subprocess.check_output(["git","show",f"{C21_VERIFY_SCOPE_PARENT}:{p}"],cwd=root) for p in (C21_VERIFY_SCOPE_P,C21_VERIFY_SCOPE_E,C21_VERIFY_SCOPE_H)}
+        raw_scope=set(c21_provider_wsl_verify_scope_paths())-{C21_VERIFY_SCOPE_P,C21_VERIFY_SCOPE_E,C21_VERIFY_SCOPE_H,C21_VERIFY_SCOPE_D,C21_VERIFY_SCOPE_M}
+        files={p:(root/p).read_bytes() for p in raw_scope}; expected=c21_provider_wsl_verify_scope_artifacts(historical,files)
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError): return ["C21_PROVIDER_WSL_VERIFY_SCOPE_INPUT_INVALID"]
+    supplied={C21_VERIFY_SCOPE_P:bundle.get("progress"),C21_VERIFY_SCOPE_E:bundle.get("events"),C21_VERIFY_SCOPE_D:bundle.get("detached_digest"),C21_VERIFY_SCOPE_M:manifest}
+    errors=[]
+    for p,obj in supplied.items():
+        try:
+            if _c21_resume_json((root/p).read_bytes())!=_c21_resume_json(expected[p]) or obj!=_c21_resume_json(expected[p]): errors.append("C21_PROVIDER_WSL_VERIFY_SCOPE_PROJECTION_INVALID")
+        except (OSError,ValueError,TypeError): errors.append("C21_PROVIDER_WSL_VERIFY_SCOPE_PROJECTION_INVALID")
+    try:
+        if extract_handoff_summary((root/C21_VERIFY_SCOPE_H).read_text(encoding="utf-8"))!=extract_handoff_summary(expected[C21_VERIFY_SCOPE_H].decode()): errors.append("C21_PROVIDER_WSL_VERIFY_SCOPE_HANDOFF_INVALID")
+    except (OSError,ValueError,TypeError,UnicodeError): errors.append("C21_PROVIDER_WSL_VERIFY_SCOPE_HANDOFF_INVALID")
+    return sorted(set(errors))
+
+
+def _collect_c21_verify_scope_git(bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; metadata=c21_provider_wsl_verify_scope_metadata(); repository=bundle["progress"]["repository"]
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}")
+        status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all")
+        dev_url=_git_value(root,"remote","get-url","development"); dev_control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution")
+        dev_candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact107")
+        if status is None:return ["GIT_STATUS_COLLECTION_FAILED"]
+        if None in (head,branch,upstream,dev_url,dev_control,dev_candidate):return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution":return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if dev_url!="git@github-sinsan-develop:sinsan-develop/Anvil.git" or dev_control!=C21_VERIFY_SCOPE_PARENT or dev_candidate!=C21_RESUME_PARENT:return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared_base=repository.get("validated_base_commit")
+        if (not isinstance(declared_base,str) or not re.fullmatch(r"[0-9a-f]{40}",declared_base)
+            or _git_returncode(root,"merge-base","--is-ancestor",declared_base,head)!=0):
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=_working_tree_paths(status); at_parent=head==C21_VERIFY_SCOPE_PARENT
+        descendants=dirty if at_parent else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_VERIFY_SCOPE_PARENT,head) or "")
+        committed=_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or "")
+        changed=sorted(set(committed)|set(dirty)) if at_parent else committed
+        if descendants!=metadata["developer_exact_paths"] or changed!=metadata["cumulative_exact_paths"]:return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if at_parent:
+            if not dirty:return ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        else:
+            parents=(_git_value(root,"show","-s","--format=%P",head) or "").split()
+            if dirty or parents!=[C21_VERIFY_SCOPE_PARENT]:return ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+        return []
+    except (OSError,ValueError,TypeError,KeyError):return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
 if __name__ == "__main__":

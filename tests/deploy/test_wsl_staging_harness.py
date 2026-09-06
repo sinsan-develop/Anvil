@@ -709,6 +709,22 @@ class WslScriptFailClosedTests(unittest.TestCase):
         self.assertLess(guard, verify.index("mkdir -p"))
         self.assertIn("ANVIL_CANDIDATE_MANIFEST_SHA256", verify[:guard])
 
+    def test_verify_excludes_every_provider_runtime_probe(self):
+        verify = (DEPLOY / "verify.sh").read_text(encoding="utf-8")
+
+        for forbidden in (
+            "/api/providers",
+            'providers="$(mktemp)"',
+            'provider="$(mktemp)"',
+            'models="$(mktemp)"',
+            "Provider status validation",
+            "Provider response envelope mismatch",
+            'provider":"READ_ONLY_STATUS_PASS',
+        ):
+            self.assertNotIn(forbidden, verify)
+        self.assertIn('provider":"NOT_EXECUTED', verify)
+        self.assertIn('telegram":"NOT_EXECUTED', verify)
+
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required")
 class WslColdStartTests(unittest.TestCase):
@@ -935,6 +951,14 @@ class WslControlRuntimeTests(unittest.TestCase):
             control_sha = self._git(source, "rev-parse", "HEAD")
             self._git(source, "update-ref", "refs/heads/codex/c21-operational-execution", control_sha)
             shutil.copytree(DEPLOY, control / "deploy" / "wsl")
+            # Keep this permission fixture independent of Windows PATH command resolution.
+            fixture_common = control / "deploy" / "wsl" / "common.sh"
+            fixture_common.write_text(
+                fixture_common.read_text(encoding="utf-8")
+                + '\nstat() { printf "600\\n"; }\n',
+                encoding="utf-8",
+                newline="\n",
+            )
             application.mkdir()
             env_file = root / ".env"
             env_file.write_text("\n".join([
@@ -947,7 +971,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             bin_dir = root / "bin"
             bin_dir.mkdir()
             stat = bin_dir / "stat"
-            stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8", newline="\n")
+            stat.write_text("#!/usr/bin/env bash\nprintf 600\n", encoding="utf-8", newline="\n")
             subprocess.run(["bash", "-c", f"chmod +x '{self._posix(stat)}'"], check=True)
             checksum = hashlib.sha256(subprocess.check_output(
                 ["git", "show", f"{control_sha}:deploy/wsl/CandidateReleaseManifest.json"], cwd=source
@@ -1094,6 +1118,14 @@ class WslControlRuntimeTests(unittest.TestCase):
         temp, repo, candidate, control_ref, checksum = WslCandidateManifestGuardTests()._repo()
         with temp, tempfile.TemporaryDirectory() as raw:
             root = Path(raw); control = root / "control"; shutil.copytree(DEPLOY, control / "deploy" / "wsl")
+            # Keep this permission fixture independent of Windows PATH command resolution.
+            fixture_common = control / "deploy" / "wsl" / "common.sh"
+            fixture_common.write_text(
+                fixture_common.read_text(encoding="utf-8")
+                + '\nstat() { printf "600\\n"; }\n',
+                encoding="utf-8",
+                newline="\n",
+            )
             shutil.copy2(repo.parent / "historical-seq494-guard.sh", control / "deploy/wsl/candidate-manifest-guard.sh")
             # Isolate the existing rollback algorithm from runtime authorization.
             # Product files remain unchanged; real runtime I-3 exit 22 is tested separately.
@@ -1117,7 +1149,7 @@ class WslControlRuntimeTests(unittest.TestCase):
             docker = bin_dir / "docker"
             docker.write_text("#!/usr/bin/env bash\necho \"$ANVIL_TARGET_SLUG:$*\" >> \"$ANVIL_DOCKER_LOG\"\n[[ \"$ANVIL_TARGET_SLUG\" == pg18rc ]] && exit 1\necho 324eb169fedbce958d2e8cc29362deb7af433677\nexit 0\n", encoding="utf-8", newline="\n")
             curl = bin_dir / "curl"; curl.write_text("#!/usr/bin/env bash\nexit 0\n", encoding="utf-8", newline="\n")
-            stat = bin_dir / "stat"; stat.write_text("#!/usr/bin/env bash\necho 600\n", encoding="utf-8", newline="\n")
+            stat = bin_dir / "stat"; stat.write_text("#!/usr/bin/env bash\nprintf 600\n", encoding="utf-8", newline="\n")
             os.chmod(docker, 0o755); os.chmod(curl, 0o755); os.chmod(stat, 0o755)
             result = subprocess.run(["bash", str(control / "deploy" / "wsl" / "rollback.sh"), candidate], text=True, capture_output=True,
                 env=os.environ | {"PATH": ":".join([self._posix(bin_dir), *[

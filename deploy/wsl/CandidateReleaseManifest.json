@@ -11,6 +11,12 @@
     "upstream": "origin/codex/c21-operational-execution"
   },
   "environment": {"name": "WSL_SERVER_TEST_STAGING", "postgres_targets": ["15", "18-rc"]},
+  "verification_scope": {
+    "mode": "PROVIDER_AND_TELEGRAM_EXCLUDED",
+    "included": ["migration", "api", "authenticated_sse", "last_event_id", "same_origin", "backup_restore", "rollback"],
+    "excluded": ["provider_runtime", "provider_external", "provider_billing", "telegram"],
+    "evidence": {"provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED"}
+  },
   "authority": {
     "approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
     "approval_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",

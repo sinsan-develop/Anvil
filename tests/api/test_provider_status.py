@@ -42,6 +42,9 @@ def test_provider_list_detail_and_models_are_authenticated_read_contracts() -> N
     )
 
     assert listed.status_code == detailed.status_code == models.status_code == 200
+    for response in (listed, detailed, models):
+        assert set(response.json()) == {"data", "request_id"}
+        assert response.json()["request_id"] == response.headers["x-request-id"]
     assert [item["provider_id"] for item in listed.json()["data"]] == [
         "cerebras", "groq", "mistral", "openrouter", "upstage",
         "gemini", "anthropic", "openai", "ollama",

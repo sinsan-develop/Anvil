@@ -8090,5 +8090,43 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertTrue(checker.validate_c21_provider_wsl_exact_binding_artifacts(historical, files, changed))
 
 
+class C21ProviderWslVerifyScopeCorrectionTests(unittest.TestCase):
+    def test_seq548_builder_preserves_history_and_freezes_provider_exclusion(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_verify_scope_artifacts"))
+        historical = {
+            path: subprocess.check_output(
+                ["git", "show", f"{checker.C21_VERIFY_SCOPE_PARENT}:{path}"], cwd=ROOT
+            )
+            for path in (checker.C21_VERIFY_SCOPE_P, checker.C21_VERIFY_SCOPE_E, checker.C21_VERIFY_SCOPE_H)
+        }
+        raw_scope = set(checker.c21_provider_wsl_verify_scope_paths()) - {
+            checker.C21_VERIFY_SCOPE_P, checker.C21_VERIFY_SCOPE_E,
+            checker.C21_VERIFY_SCOPE_H, checker.C21_VERIFY_SCOPE_D,
+            checker.C21_VERIFY_SCOPE_M,
+        }
+        files = {path: (ROOT / path).read_bytes() for path in raw_scope}
+        artifacts = checker.c21_provider_wsl_verify_scope_artifacts(historical, files)
+        events = json.loads(artifacts[checker.C21_VERIFY_SCOPE_E])["events"]
+        manifest = json.loads(artifacts[checker.C21_VERIFY_SCOPE_M])
+
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_VERIFY_SCOPE_E], 542),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_VERIFY_SCOPE_E], 542),
+        )
+        self.assertEqual(list(range(543, 549)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual("PROVIDER_AND_TELEGRAM_EXCLUDED", manifest["verification_scope"]["mode"])
+        self.assertEqual("ATTEMPTED", manifest["runtime_attempt"]["local_provider_status"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_attempt"]["external_provider_billing"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_attempt"]["telegram"])
+        self.assertEqual(2, manifest["valid_failure_count"])
+        self.assertEqual(17, manifest["developer_exact_path_count"])
+        self.assertEqual("78D7DFC8B684F2F295D4507931128E48D67017276D85941F534BEC5A1F839502", manifest["developer_exact_path_list_sha256"])
+        self.assertEqual(131, manifest["cumulative_exact_path_count"])
+        self.assertEqual("984F9276F0FBAC94CED5B3BC47D794948BA6D551520D77B2144B8A340A5C574A", manifest["cumulative_exact_path_list_sha256"])
+        self.assertEqual([], checker.validate_c21_provider_wsl_verify_scope_artifacts(historical, files, artifacts))
+
+
 if __name__ == "__main__":
     unittest.main()

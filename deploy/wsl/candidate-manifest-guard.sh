@@ -224,6 +224,9 @@ validate_wsl_candidate_manifest() {
 # seq542 exact private-authority/runtime binding. Historical definitions above
 # remain visible for audit; these final definitions are the active contract.
 readonly C21_EXACT_START_CONTROL='71d6747c0b713bedf1a1bc6724a5771d6ae33c60'
+readonly C21_VERIFY_SCOPE_PARENT='c330d34ea7d0acc7e423a978f9c558c94c159118'
+readonly C21_VERIFY_SCOPE_PATH_HASH='78D7DFC8B684F2F295D4507931128E48D67017276D85941F534BEC5A1F839502'
+readonly C21_VERIFY_SCOPE_CUMULATIVE_HASH='984F9276F0FBAC94CED5B3BC47D794948BA6D551520D77B2144B8A340A5C574A'
 readonly C21_EXACT_RESUME_BOUND='3501c37b25274c2c3b406a15bc8a57aa03a162e7'
 readonly C21_EXACT_OBSERVED_RUNTIME='a342d62391a44b349733d1468ac3b180761155ab'
 readonly C21_EXACT_OBSERVED_PREVIOUS='324eb169fedbce958d2e8cc29362deb7af433677'
@@ -277,6 +280,10 @@ runtime={'host':'SINSAN','application_repo':'/srv/anvil-wsl/repo','application_r
 if doc.get('runtime_binding')!=runtime: raise SystemExit(1)
 if doc.get('rollback')!={'approved_commits':[candidate,observed,previous],'runtime_observation_required':True}: raise SystemExit(1)
 if doc.get('environment')!={'name':'WSL_SERVER_TEST_STAGING','postgres_targets':['15','18-rc']}: raise SystemExit(1)
+if doc.get('verification_scope')!={'mode':'PROVIDER_AND_TELEGRAM_EXCLUDED',
+ 'included':['migration','api','authenticated_sse','last_event_id','same_origin','backup_restore','rollback'],
+ 'excluded':['provider_runtime','provider_external','provider_billing','telegram'],
+ 'evidence':{'provider':'NOT_EXECUTED','telegram':'NOT_EXECUTED'}}: raise SystemExit(1)
 if doc.get('exclusions')!=['TELEGRAM_EXECUTION','PROVIDER_EXECUTION','YSNA_EXECUTION','MAIN_MERGE']: raise SystemExit(1)
 PY
 }
@@ -326,6 +333,17 @@ validate_c21_exact_runtime_images() {
   done
 }
 
+_c21_windows_path_hash() {
+  local paths="$1" python_bin="${ANVIL_PYTHON:-python3}"
+  command -v "$python_bin" >/dev/null || return 20
+  ANVIL_C21_PATHS="$paths" "$python_bin" - <<'PY'
+import hashlib, os
+paths=sorted(filter(None,os.environ['ANVIL_C21_PATHS'].splitlines()),
+             key=lambda value:value.casefold().replace('_',','))
+print(hashlib.sha256(''.join(f'{path}\n' for path in paths).encode()).hexdigest().upper())
+PY
+}
+
 validate_wsl_candidate_binding() {
   local repo="$1" manifest_ref="$2" expected="$3" pinned_control_sha="${4:-}"
   local control_sha current_control payload supplied_hash actual_hash head status_raw origin
@@ -345,7 +363,8 @@ validate_wsl_candidate_binding() {
   [[ "$(git -C "$repo" show -s --format=%P "$C21_RESUME_START_CONTROL")" == "$C21_RESUME_GIT_ONLY_CONTROL" ]] || return 21
   [[ "$(git -C "$repo" show -s --format=%P "$C21_EXACT_RESUME_BOUND")" == "$C21_RESUME_START_CONTROL" ]] || return 21
   [[ "$(git -C "$repo" show -s --format=%P "$C21_EXACT_START_CONTROL")" == "$C21_EXACT_RESUME_BOUND" ]] || return 21
-  [[ "$(git -C "$repo" show -s --format=%P "$control_sha")" == "$C21_EXACT_START_CONTROL" ]] || { echo 'exact control must be a single direct child' >&2; return 21; }
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_VERIFY_SCOPE_PARENT")" == "$C21_EXACT_START_CONTROL" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$control_sha")" == "$C21_VERIFY_SCOPE_PARENT" ]] || { echo 'verify-scope control must be a single direct child' >&2; return 21; }
   _c21_resume_assert_paths candidate "$repo" "$control_sha" 10 87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2 || return $?
   _c21_resume_assert_paths git-only "$repo" "$control_sha" 12 6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765 || return $?
   _c21_resume_assert_paths start "$repo" "$control_sha" 10 0FCFCE1A57E7A806B9E94B495DBE7CF3AEFD720FB6B8ACFF029DA0CEBB7EA070 || return $?
@@ -353,10 +372,12 @@ validate_wsl_candidate_binding() {
   local paths
   paths="$(git -C "$repo" diff --name-only "$C21_EXACT_RESUME_BOUND" "$C21_EXACT_START_CONTROL")" || return 20
   [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 10 && "$(_c21_path_hash "$paths")" == '410EB4E3EB843BFF2FE9D332505445286986BE8572A288DF713E388DAF587B62' ]] || return 21
-  paths="$(git -C "$repo" diff --name-only "$C21_EXACT_START_CONTROL" "$control_sha")" || return 20
+  paths="$(git -C "$repo" diff --name-only "$C21_EXACT_START_CONTROL" "$C21_VERIFY_SCOPE_PARENT")" || return 20
   [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 14 && "$(_c21_path_hash "$paths")" == 'B570C707DBEA3594C6AC57B0D44DBD0F64BBDEE26A037FC954FF03CFD78A133E' ]] || return 21
+  paths="$(git -C "$repo" diff --name-only "$C21_VERIFY_SCOPE_PARENT" "$control_sha")" || return 20
+  [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 17 && "$(_c21_windows_path_hash "$paths")" == "$C21_VERIFY_SCOPE_PATH_HASH" ]] || return 21
   paths="$(git -C "$repo" diff --name-only "$C21_RESUME_BASE" "$control_sha")" || return 20
-  [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 125 && "$(_c21_path_hash "$paths")" == 'E95EDFDE234D91C7F667B699991332E5FF3A8FDDBCDB2EADAF15087BB3501F76' ]] || return 21
+  [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 131 && "$(_c21_windows_path_hash "$paths")" == "$C21_VERIFY_SCOPE_CUMULATIVE_HASH" ]] || return 21
   status_raw="$(git -C "$repo" status --porcelain=v1 --untracked-files=all)" || return 20
   [[ -z "$status_raw" ]] || { echo 'candidate working tree is not clean' >&2; return 21; }
   head="$(git -C "$repo" rev-parse --verify HEAD)" || return 20

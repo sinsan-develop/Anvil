@@ -44,36 +44,10 @@ INSERT INTO run_events (event_id,run_id,sequence_no,event_type,actor_type,actor_
 VALUES ('c21-wsl-event',:'run_id',1,'TASK_CONFIRMED','HUMAN','c21-wsl-validator','c21-wsl-correlation','c21-wsl-idempotency',0,1,:'request_hash','{}',CURRENT_TIMESTAMP)
 ON CONFLICT (event_id) DO NOTHING;
 SQL
-  cookie="$(mktemp)"; session="$(mktemp)"; headers="$(mktemp)"; body="$(mktemp)"; resume="$(mktemp)"; unauthenticated="$(mktemp)"; providers="$(mktemp)"; provider="$(mktemp)"; models="$(mktemp)"
-  trap 'rm -f "$cookie" "$session" "$headers" "$body" "$resume" "$unauthenticated" "$providers" "$provider" "$models"' EXIT
-  unauthenticated_status="$(curl --noproxy '*' -sS -o "$unauthenticated" -w '%{http_code}' -H "Host: 127.0.0.1:$ANVIL_WSL_HTTP_PORT" "$base/api/providers")"
-  [[ "$unauthenticated_status" == 401 ]] || { echo 'unauthenticated Provider status must return 401' >&2; exit 7; }
+  cookie="$(mktemp)"; session="$(mktemp)"; headers="$(mktemp)"; body="$(mktemp)"; resume="$(mktemp)"
+  trap 'rm -f "$cookie" "$session" "$headers" "$body" "$resume"' EXIT
   curl -fsS -c "$cookie" -o "$session" -X POST -H "Host: 127.0.0.1:$ANVIL_WSL_HTTP_PORT" -H "Origin: $origin" \
     -H "Authorization: Bearer $ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN" "$base/auth/session"
-  curl --noproxy '*' -fsS -b "$cookie" -o "$providers" -H "Host: 127.0.0.1:$ANVIL_WSL_HTTP_PORT" "$base/api/providers"
-  curl --noproxy '*' -fsS -b "$cookie" -o "$provider" -H "Host: 127.0.0.1:$ANVIL_WSL_HTTP_PORT" "$base/api/providers/upstage"
-  curl --noproxy '*' -fsS -b "$cookie" -o "$models" -H "Host: 127.0.0.1:$ANVIL_WSL_HTTP_PORT" "$base/api/providers/upstage/models"
-  python_bin="${ANVIL_PYTHON:-python3}"
-  command -v "$python_bin" >/dev/null || { echo 'Python 3 is required for Provider status validation' >&2; exit 7; }
-  "$python_bin" - "$providers" "$provider" "$models" <<'PY'
-import json
-import sys
-
-provider_envelopes = [json.load(open(path, encoding="utf-8")) for path in sys.argv[1:]]
-if any(set(payload) != {"data"} for payload in provider_envelopes):
-    raise SystemExit("Provider response envelope mismatch")
-providers, provider, models = (payload["data"] for payload in provider_envelopes)
-expected_ids = ["cerebras", "groq", "mistral", "openrouter", "upstage", "gemini", "anthropic", "openai", "ollama"]
-if not isinstance(providers, list) or [item.get("provider_id") for item in providers] != expected_ids:
-    raise SystemExit("Provider catalog contract mismatch")
-if provider.get("provider_id") != "upstage" or provider.get("primary") is not True or provider.get("credential_status") != "MISSING":
-    raise SystemExit("UPSTAGE credential-free status mismatch")
-if models != {"provider_id": "upstage", "models": [], "moa_eligible": False}:
-    raise SystemExit("UPSTAGE empty-model contract mismatch")
-for payload in (providers, provider, models):
-    if "endpoint" in json.dumps(payload, separators=(",", ":")).lower():
-        raise SystemExit("Provider status exposed an internal endpoint")
-PY
   curl -fsS -b "$cookie" -D "$headers" -o "$body" -H 'Accept: text/event-stream' "$base/api/runs/$run_id/events"
   grep -Eqi '^content-type:[[:space:]]*text/event-stream' "$headers" || { echo 'SSE content type mismatch' >&2; exit 7; }
   [[ "$(grep -c '^event: TASK_CONFIRMED$' "$body")" == 1 ]] || { echo 'initial SSE event mismatch' >&2; exit 7; }
@@ -93,8 +67,8 @@ PY
   restored="$(wsl_compose exec -T anvil-db psql -U anvil_app -d "$scratch" -Atqc "select count(*) from run_events where run_id='$run_id'")"
   [[ "$restored" == 1 ]] || { echo "restore round trip mismatch for $target" >&2; exit 8; }
   wsl_compose exec -T anvil-db dropdb -U anvil_app "$scratch"
-  rm -f "$cookie" "$session" "$headers" "$body" "$resume" "$unauthenticated" "$providers" "$provider" "$models"; trap - EXIT
-  printf '{"status":"VERIFIED","release_commit":"%s","postgres_target":"%s","migration_head":"0013_task_bootstrap_authority","authenticated_sse":"PASS","last_event_id":"PASS","same_origin":"PASS","backup_restore":"PASS","telegram":"NOT_EXECUTED","provider":"READ_ONLY_STATUS_PASS","secret_values":"omitted"}\n' \
+  rm -f "$cookie" "$session" "$headers" "$body" "$resume"; trap - EXIT
+  printf '{"status":"VERIFIED","release_commit":"%s","postgres_target":"%s","migration_head":"0013_task_bootstrap_authority","authenticated_sse":"PASS","last_event_id":"PASS","same_origin":"PASS","backup_restore":"PASS","telegram":"NOT_EXECUTED","provider":"NOT_EXECUTED","secret_values":"omitted"}\n' \
     "$EXPECTED" "$target" > "$ROOT/evidence/$ANVIL_TARGET_SLUG-verification.json.tmp.$$"
   mv -f "$ROOT/evidence/$ANVIL_TARGET_SLUG-verification.json.tmp.$$" "$ROOT/evidence/$ANVIL_TARGET_SLUG-verification.json"
 done

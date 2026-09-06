@@ -1000,3 +1000,43 @@
 - 동일 final code diff의 직렬 전체 deploy 계약은 `102 passed, 2 skipped in 1043.36s (0:17:23)`, exit 0이다. skip 2건은 Git Bash/NTFS가 POSIX 0600/0400 mode를 표현하지 못하는 항목과 Compose parser가 필요한 WSL 전용 항목이며 실제 WSL PASS로 승격하지 않는다.
 - 독립 Reviewer 판정은 `COMMIT_READY / C0 / I0 / M0`다. exact14/누적 exact125, seq1~539 raw history, deterministic projection, private development push와 WSL origin fetch 권위/CAS, a6/a342/324 lifecycle·rollback allowlist, runtime/image drift fail-closed, historical seq536 isolation과 Git 오류코드를 확인했다.
 - 다음 안전 행동은 최종 문서 결과를 pure builder로 재결박한 뒤 live checker, exact14/누적 exact125/history, direct-child/clean 상태를 확인하여 seq542 K commit을 생성하는 것이다. 외부 push·WSL/Docker/DB·Provider/Telegram·ysna/main은 여전히 `NOT_EXECUTED`다.
+
+## 2026-09-07 C-21 seq543~548 Provider 제외 WSL verify scope correction
+
+- 담당 agent: `developer-primary` (subagent `/root/developer_seq548_verify_scope`)
+- 기준: clean `c330d34ea7d0acc7e423a978f9c558c94c159118`, private control CAS도 동일, candidate ref `a6dca0da5a37e64491e91813895268e78ecb78b2`.
+- 상태: exact17 구현 및 seq548 projection 생성 단계.
+- 런타임 사실: deploy `PASS`; PG15는 local Provider envelope에서 중단; PG15 SSE/backup `NOT_REACHED`; PG18RC `NOT_STARTED`; local Provider status `ATTEMPTED`; external Provider/billing 및 Telegram `NOT_EXECUTED`.
+- TDD RED `C21_WSL_VERIFY_PROVIDER_RUNTIME_SCOPE_LEAK_R1` 1회: `verify.sh`에 `/api/providers` 호출과 Provider 전용 temp/parser/assertion이 남아 focused `1 failed, 1 passed`.
+- 조치: 모든 Provider runtime 호출과 전용 parser를 제거하고 auth session, SSE, Last-Event-ID, same-origin, migration, backup/restore는 유지. focused `2 passed`와 `bash -n` PASS.
+- 구현 오류 `C21_VERIFY_SCOPE_BUILDER_UNDEFINED_SYMBOL_R1` 1회: 새 builder가 미정의 상수 `C21_RESUME_CANDIDATE`를 참조해 NameError. canonical `C21_RESUME_PARENT`로 수정, 반복 0.
+- 테스트 오류 `C21_VERIFY_SCOPE_HISTORY_ASSERTION_R1` 1회: 최초 테스트가 JSON 내부 comma로 history prefix를 잘못 분리. production helper `raw_event_object_prefix_bytes(..., 542)` 비교로 정정, 반복 0.
+- hash 산식 차이 `C21_VERIFY_SCOPE_WINDOWS_SORT_HASH_R1` 1회: 승인 hash는 Windows `Sort-Object` 문화권 정렬이고 기존 Python ordinal 정렬과 달랐다. underscore/hyphen collation을 재현한 deterministic helper로 exact17 `78D7...9502`, cumulative131 `984F...574A`를 모두 검증하도록 보완.
+- valid failure count: 기존 `2` 유지. 위 항목은 구현·테스트 도구 오류이며 정식 동일 runtime failure로 증분하지 않는다.
+- 외부 side effect: commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main 모두 `NOT_EXECUTED`.
+
+### seq548 전체 회귀 및 환경 진단
+
+- API full: `8 passed`.
+- deploy full 최초 실행: `27 passed, 1 skipped, 77 failed in 698.76s`.
+- 환경 fingerprint `BASH_D_DRIVE_MOUNT_UNAVAILABLE_R1` 2회 확인: 모든 실패가 `/d/tmp/...` 또는 `/d/tmp/.../candidate-manifest-guard.sh` 부재로 exit 127이었다. read-only 진단은 Git Bash cwd `/mnt/d/tmp/anvil-c21-operational-execution`, `/d/tmp=MISSING`, `/d/tmp/.../guard=MISSING`를 확인했다. 제품 assertion failure가 아니며 제품 코드를 이 환경에 맞춰 우회 수정하지 않는다.
+- tooling full 최초 실행: `195 passed, 2 failed in 812.52s`.
+- `C21_VERIFY_SCOPE_HANDOFF_PATH_FIELDS_R1` 1회: 새 active instruction에 공통 `artifact_path`/`invocation_path`가 없어 historical missing-file test가 KeyError. 두 필드를 canonical 경로로 추가했다.
+- `C21_VERIFY_SCOPE_DECLARED_BASE_ANCESTRY_R1` 1회: seq548 전용 Git predicate가 declared base mutation을 전용 projection mismatch로만 거부하고 공통 named error `GIT_VALIDATED_BASE_NOT_ANCESTOR`를 반환하지 않았다. 기존 seq539/542와 동일한 fail-closed ancestry 검사를 추가했다.
+- 각 제품/contract fingerprint 반복은 1회이며 수정 후 focused 및 전체 tooling 재검증 대상으로 둔다.
+
+### seq548 동일 fixture 오류 3회 및 Main takeover
+
+- deploy Git Bash 전체 재검증은 `101 passed, 2 skipped, 2 failed in 898.48s`였다. 두 실패는 제품 런타임이 아니라 Windows fixture의 fake `stat`가 `.env` mode를 전달하지 못해 보안 게이트에서 선행 중단한 동일 fingerprint `BASH_ENV_MODE_SHIM_R1`이다.
+- 동일 fingerprint는 전체 실행 1회, focused 재현 1회, `echo 600`을 `printf 600`으로 바꾼 뒤 focused 재검증 1회로 총 3회 반복됐다. 프로젝트 규칙에 따라 Developer Subagent는 추가 수정을 중단하고 `FAILURE_REPORT`와 write lease를 Main Agent에 반환했다.
+- Main Agent가 writer를 인수했다. 원인은 외부 명령 PATH에 의존한 fake executable이 Git Bash/Windows 경계에서 안정적으로 선택되지 않은 fixture 설계다. 제품 `common.sh`의 mode 검사는 정상적으로 fail-closed했다.
+- 조치: 해당 두 테스트의 격리된 control checkout에만 `stat()` shell function을 주입해 POSIX mode 결과를 결정적으로 고정한다. 제품 파일과 실제 WSL 권한 검사는 변경하지 않는다.
+- 인수 시 검증 기준: API `8 passed`, tooling `197 passed in 829.99s`, live checker `PASS sequence=548`; deploy 2건은 수정 후 focused 및 전체 재검증이 필요하다.
+- commit, push, WSL/Docker/DB, Provider, Telegram, ysna, main은 인수 시점까지 `NOT_EXECUTED`다.
+- Main 수정 후 동일 두 테스트는 Git Bash 고정 환경에서 `2 passed in 28.11s`, exit 0이다. `BASH_ENV_MODE_SHIM_R1`은 제품 우회 없이 격리 fixture의 shell function으로 해소됐다.
+- final exact17 재결박 후 live checker는 `PASS sequence=548`, 영향 집중 회귀는 `4 passed, 306 deselected in 30.35s`, `git diff --check`는 PASS였다.
+- 동일 final diff의 API 전체 검증은 `8 passed in 1.66s`, exit 0이다.
+- 동일 final diff의 deploy 전체 검증은 Git Bash 고정 환경에서 `103 passed, 2 skipped in 1224.87s`, exit 0이다. skip 2건은 Windows/NTFS가 POSIX 0600/0400 mode를 표현하지 못하는 항목과 WSL 전용 Compose parser 항목이며 실제 WSL PASS로 승격하지 않는다.
+- 동일 final diff의 tooling 전체 검증은 `197 passed in 961.27s`, exit 0이다.
+- Reviewer 1차 판정의 Important 1건은 전체 결과가 아직 문서·projection에 결박되지 않았다는 증거 정합성 항목이었다. 위 결과를 WORK_STATUS·validation·report에 기록하고 P/E/H/D/M을 다시 생성한 뒤 재검토한다.
+- 다음 조치: final evidence 재결박, live checker·exact17/누적 exact131/history byte 재확인, Reviewer 재검토 후 direct-child commit 준비다.
