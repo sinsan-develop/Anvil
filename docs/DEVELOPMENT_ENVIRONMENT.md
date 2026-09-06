@@ -1,3 +1,10 @@
+# 2026-09-06 C-21 Provider Git-only 후보 결박 (seq530)
+
+- 현재 로컬 source는 a6dca0da5a37e64491e91813895268e78ecb78b2(exact107), parent는 e4cccf3ce99e29005103cea3bd76fa0eede36f28이며 후속 control은 single direct-child exact12 / 누적 exact109 계약이다.
+- candidate ref는 refs/remotes/origin/candidates/c21-wsl-exact107이며 이 작업에서 아직 게시하지 않았다. runtime guard는 BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE / exit22로 외부 실행을 차단한다.
+- Windows 검증은 PATH 선두 C:/Program Files/Git/usr/bin, PYTHONUTF8=1, TEMP=TMP=D:/tmp, PYTHONDONTWRITEBYTECODE=1을 사용한다. WindowsApps/bash.exe app alias는 사용하지 않는다. 테스트가 생성하는 Unix fixture는 LF로 고정한다.
+- 아래 seq495 실제 WSL 증거는 당시 후보에 대한 역사 기록이다. 이번 candidate의 실제 WSL/Docker/DB/Provider/Telegram/ysna/main/commit/push는 NOT_EXECUTED다.
+
 # 2026-09-05 C-21 WSL 실제 실행 상태 (seq495)
 
 - 이 항목은 아래의 과거 준비/부분검증 기록을 삭제하거나 소급 수정하지 않고 후속 실행 사실만 추가한다.
@@ -99,3 +106,9 @@
 - remote 전환 전 기존 공식 URL과 refs를 보존한다.
 - private remote 또는 SSH 검증 실패 시 기존 공식 remote 설정을 변경하지 않고 추가 remote만 제거해 원상 복귀한다.
 - canonical root의 dirty/untracked 자료는 전환과 무관하게 보존한다.
+
+### C-21 Provider WSL Git-only candidate local binding
+
+- source=`a6dca0da5a37e64491e91813895268e78ecb78b2`, parent=`e4cccf3ce99e29005103cea3bd76fa0eede36f28`, candidate ref=`refs/remotes/origin/candidates/c21-wsl-exact107`이다.
+- guard는 manifest Git blob checksum, source/control single direct-child, exact path hash, branch/upstream, clean tree를 fail-closed로 요구한다.
+- 이 local Git-only binding은 push/WSL/Docker/DB/Provider/Telegram/ysna/main 실행 권한이 아니며 runtime gate는 `BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE`다.

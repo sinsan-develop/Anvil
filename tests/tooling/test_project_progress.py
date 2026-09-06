@@ -5832,7 +5832,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         self.assertEqual(expected_status, handoff["candidate_push_status"])
         self.assertEqual(expected_action, handoff["next_action"])
         candidate = json.loads(
-            (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+            (historical_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -7119,7 +7119,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_provider_wsl_git_only_candidate_start_git_projection_is_fail_closed(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, snapshot_root = self._historical_bundle(checker, "a6dca0da5a37e64491e91813895268e78ecb78b2")
         repository = copy.deepcopy(bundle["progress"]["repository"])
         committed = sorted(
             checker.c21_development_qa_review_predecessor_paths()
@@ -7173,7 +7173,7 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_c21_provider_wsl_git_only_candidate_postcommit_rejects_missing_status_collection(self) -> None:
         """A failed status collector must not be interpreted as a clean seq527 worktree."""
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, snapshot_root = self._historical_bundle(checker, "a6dca0da5a37e64491e91813895268e78ecb78b2")
         repository = bundle["progress"]["repository"]
         parent = "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
         child = "a" * 40
@@ -7215,9 +7215,9 @@ class ProjectProgressContractTests(unittest.TestCase):
         checker = self.require_checker()
         self.assertTrue(hasattr(checker, "validate_c21_provider_wsl_git_only_candidate_start_projection"))
         validator = checker.validate_c21_provider_wsl_git_only_candidate_start_projection
-        bundle = checker.load_bundle(ROOT)
+        bundle, snapshot_root = self._historical_bundle(checker, "a6dca0da5a37e64491e91813895268e78ecb78b2")
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json").read_text(
+            (snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json").read_text(
                 encoding="utf-8"
             )
         )
@@ -7283,6 +7283,150 @@ class ProjectProgressContractTests(unittest.TestCase):
         changed = copy.deepcopy(bundle)
         changed["progress"]["snapshot_hash"] = "0" * 64
         self.assertIn("PRG_SNAPSHOT_HASH_MISMATCH", checker.validate_bundle(changed))
+
+    def test_c21_provider_wsl_git_only_candidate_bound_projection_rejects_mutations(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        validator = checker.validate_c21_provider_wsl_git_only_candidate_projection
+        self.assertEqual([], validator(bundle, manifest))
+        for section, field, value in (
+            ("provider_wsl_git_only_candidate", "actual_push", "EXECUTED"),
+            ("provider_wsl_git_only_candidate", "candidate_ref", "refs/remotes/origin/other"),
+            ("active_work_instruction", "artifact_sha256", "0" * 64),
+            ("repository", "local_head", "0" * 40),
+        ):
+            with self.subTest(section=section, field=field):
+                changed = copy.deepcopy(bundle)
+                changed["progress"][section][field] = value
+                self.assertTrue(validator(changed, manifest))
+        for offset in (-3, -2, -1):
+            changed = copy.deepcopy(bundle)
+            changed["events"]["events"][offset]["details"]["unexpected_authority"] = True
+            self.assertIn("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EVENT_INVALID", validator(changed, manifest))
+        for field in ("created_at", "historical_full_file_sha256", "developer_exact_paths", "execution_authority_sha256", "raw_checksums"):
+            changed = copy.deepcopy(manifest)
+            changed[field] = "tampered"
+            self.assertTrue(validator(bundle, changed), field)
+        changed = copy.deepcopy(bundle)
+        changed["detached_digest"]["scope"] = "tampered"
+        self.assertIn("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID", validator(changed, manifest))
+        changed = copy.deepcopy(bundle)
+        changed["handoff"]["accepted"] = True
+        self.assertTrue(validator(changed, manifest))
+
+
+    def test_c21_provider_wsl_git_only_candidate_bound_malformed_digest_fails_closed(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        for case in ("missing", "null", "list", "progress_null", "progress_list", "handoff_null", "handoff_list"):
+            with self.subTest(case=case):
+                changed = copy.deepcopy(bundle)
+                if case == "missing":
+                    del changed["detached_digest"]
+                elif case in ("null", "list"):
+                    changed["detached_digest"] = None if case == "null" else []
+                else:
+                    section, shape = case.split("_")
+                    changed["detached_digest"][section] = None if shape == "null" else []
+                self.assertIn(
+                    "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID",
+                    checker.validate_c21_provider_wsl_git_only_candidate_projection(changed, manifest),
+                )
+
+    def test_c21_provider_wsl_git_only_candidate_bound_history_unavailable_fails_closed(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        original = subprocess.check_output
+        for relative in ("docs/progress/progress-events.json", "docs/progress/build-progress.json"):
+            for payload in (None, b"not-json", b"null", b"[]", b"{}"):
+                with self.subTest(relative=relative, payload=payload):
+                    def read_history(command, *args, **kwargs):
+                        if command == ["git", "show", "a6dca0da5a37e64491e91813895268e78ecb78b2:" + relative]:
+                            if payload is None:
+                                raise subprocess.CalledProcessError(128, command)
+                            return payload
+                        return original(command, *args, **kwargs)
+                    with mock.patch.object(subprocess, "check_output", side_effect=read_history):
+                        self.assertIn(
+                            "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HISTORY_INVALID",
+                            checker.validate_c21_provider_wsl_git_only_candidate_projection(bundle, manifest),
+                        )
+
+    def test_c21_provider_wsl_git_only_candidate_bound_missing_files_fail_closed(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        original = Path.read_bytes
+        instruction = bundle["progress"]["active_work_instruction"]
+        for relative, expected in (
+            ("docs/progress/progress-events.json", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HISTORY_INVALID"),
+            ("docs/progress/build-progress.json", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID"),
+            ("docs/progress/BUILD_HANDOFF.md", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID"),
+            ("deploy/wsl/CandidateReleaseManifest.json", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_LATEST_REF_INVALID"),
+            (instruction["artifact_path"], "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_LATEST_REF_INVALID"),
+            (instruction["invocation_path"], "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_LATEST_REF_INVALID"),
+        ):
+            with self.subTest(relative=relative):
+                def read_evidence(path):
+                    if path == ROOT / relative:
+                        raise FileNotFoundError(str(path))
+                    return original(path)
+                with mock.patch.object(Path, "read_bytes", read_evidence):
+                    self.assertIn(
+                        expected,
+                        checker.validate_c21_provider_wsl_git_only_candidate_projection(bundle, manifest),
+                    )
+
+    def test_c21_provider_wsl_git_only_candidate_bound_status_collection_fails_closed(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        original = checker._git_value
+        def collect(root, *arguments):
+            if arguments == ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"):
+                return None
+            return original(root, *arguments)
+        with mock.patch.object(checker, "_git_value", side_effect=collect):
+            self.assertIn("GIT_STATUS_COLLECTION_FAILED", checker._validate_git_projection(bundle))
+
+    def test_c21_provider_wsl_git_only_candidate_bound_git_projection_is_exact(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        source_paths = set(repository["exact_allowed_paths"]) - {
+            "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+            "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
+        }
+        arguments = dict(
+            actual_head="a6dca0da5a37e64491e91813895268e78ecb78b2",
+            actual_branch="codex/c21-operational-execution",
+            actual_upstream="origin/codex/c21-operational-execution",
+            actual_remote_head="ca92b7845eda803cff3c432799642e4f9243d4d6",
+            actual_feature_remote_head="ca92b7845eda803cff3c432799642e4f9243d4d6",
+            base_is_ancestor=True, actual_changed_paths=sorted(source_paths),
+            working_tree_mode=True, progress=bundle["progress"],
+            control_descendant_paths=sorted(checker.c21_provider_wsl_git_only_candidate_paths()),
+            worktree_is_clean=False, product_commit_parent_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **arguments))
+        for field, value in (
+            ("actual_branch", "main"), ("actual_upstream", None),
+            ("actual_remote_head", "0" * 40), ("base_is_ancestor", False),
+            ("product_commit_parent_is_direct", False), ("worktree_is_clean", True),
+            ("actual_changed_paths", sorted(source_paths)[:-1]),
+            ("control_descendant_paths", sorted(checker.c21_provider_wsl_git_only_candidate_paths()) + ["extra.txt"]),
+        ):
+            self.assertTrue(checker.validate_repository_projection(repository, **(arguments | {field: value})), field)
+        committed = arguments | dict(
+            actual_head="1" * 40, actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False, worktree_is_clean=True,
+            control_is_ancestor=True, control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **committed))
+        for field, value in (("control_runtime_record_commit_is_direct", False), ("worktree_is_clean", False), ("control_is_ancestor", False)):
+            self.assertTrue(checker.validate_repository_projection(repository, **(committed | {field: value})), field)
 
     def test_c21_provider_status_read_review_successor_accepts_only_exact_record_projection(self) -> None:
         """A committed exact13 plus any record path outside exact8 must fail closed."""

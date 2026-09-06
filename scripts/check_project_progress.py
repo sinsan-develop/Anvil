@@ -10651,6 +10651,74 @@ def validate_repository_projection(
     control_runtime_record_commit_is_direct: bool = False,
     product_commit_parent_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 530:
+        errors: list[str] = []
+        expected_record = c21_provider_wsl_git_only_candidate_paths()
+        expected_committed = (
+            c21_development_qa_review_predecessor_paths()
+            | c21_development_qa_review_successor_paths()
+            | c21_provider_status_read_start_paths()
+            | c21_provider_status_read_actual_paths()
+            | c21_provider_status_read_review_successor_paths()
+            | c21_provider_wsl_auth_product_paths()
+            | c21_provider_wsl_auth_reviewed_paths()
+            | c21_provider_wsl_git_only_candidate_start_paths()
+        )
+        expected_cumulative = expected_committed | expected_record
+        precommit_projection = (
+            actual_head == repository.get("local_head")
+            and set(actual_changed_paths) == expected_committed
+            and set(control_descendant_paths or []) == expected_record
+            and working_tree_mode
+            and not worktree_is_clean
+            and not control_runtime_record_commit_is_direct
+        )
+        postcommit_projection = (
+            actual_head != repository.get("local_head")
+            and control_is_ancestor
+            and control_runtime_record_commit_is_direct
+            and set(actual_changed_paths) == expected_cumulative
+            and set(control_descendant_paths or []) == expected_record
+            and not working_tree_mode
+            and worktree_is_clean
+        )
+        if any((
+            repository.get("projection_mode") != VALIDATED_BASE_PROJECTION_MODE,
+            repository.get("validated_base_commit") != "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+            repository.get("head_relation") != "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT107_BOUND_RECORD12",
+            repository.get("branch") != "codex/c21-operational-execution",
+            repository.get("upstream") != "origin/codex/c21-operational-execution",
+            repository.get("remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("feature_remote") != "origin/codex/c21-operational-execution",
+            repository.get("feature_remote_head") != "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            repository.get("local_head") != "a6dca0da5a37e64491e91813895268e78ecb78b2",
+            repository.get("worktree_status") != "SEQ530_PROVIDER_WSL_GIT_ONLY_CANDIDATE_BOUND_EXACT12_DIRTY",
+            set(repository.get("exact_allowed_paths") or []) != expected_cumulative,
+            set(repository.get("provider_wsl_git_only_candidate_bound_paths") or []) != expected_record,
+            repository.get("predecessor_remote_control") != "772afbd5eb55791ca7b5002d58378437ea496750",
+            repository.get("candidate_remote_ref") != "refs/remotes/origin/candidates/c21-wsl-exact107",
+        )):
+            errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+        if (
+            (not precommit_projection and not postcommit_projection)
+            or actual_branch != repository.get("branch")
+            or actual_upstream != repository.get("upstream")
+        ):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if (
+            actual_remote_head != repository.get("remote_head")
+            or actual_feature_remote_head != repository.get("feature_remote_head")
+        ):
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+        if not precommit_projection and not postcommit_projection:
+            errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+        if actual_head != repository.get("local_head") and not control_runtime_record_commit_is_direct:
+            errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+        if not product_commit_parent_is_direct:
+            errors.append("GIT_SOURCE_DIRECT_CHILD_INVALID")
+        if not base_is_ancestor:
+            errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(errors))
     if (progress or {}).get("event_sequence") == 527:
         errors: list[str] = []
         expected_record = c21_provider_wsl_git_only_candidate_start_paths()
@@ -12706,7 +12774,7 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
         else None
     )
     event_sequence = bundle["progress"].get("event_sequence")
-    if event_sequence in {495, 498, 501, 506, 509, 513, 524, 527}:
+    if event_sequence in {495, 498, 501, 506, 509, 513, 524, 527, 530}:
         parent = repository.get("local_head")
         base = repository.get("validated_base_commit")
         changed = _split_git_paths(_git_value(root,"diff","--name-only",base,actual_head))
@@ -12718,8 +12786,19 @@ def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
             "--porcelain=v1",
             "--untracked-files=all",
         )
-        if event_sequence == 527 and status_raw is None:
+        if event_sequence in {527, 530} and status_raw is None:
             return ["GIT_STATUS_COLLECTION_FAILED"]
+        if event_sequence == 530:
+            source = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+            source_parent = "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+            source_paths = _git_value(root, "diff", "--name-only", source_parent, source)
+            if source_paths is None or set(_split_git_paths(source_paths)) != c21_provider_wsl_git_only_candidate_start_paths():
+                return ["GIT_SOURCE_DIRECT_CHILD_INVALID"]
+            # The ref has not been pushed in this slice. A missing ref is the
+            # declared state; a preexisting wrong ref must never be ignored.
+            candidate = _git_value(root, "rev-parse", "--verify", "refs/remotes/origin/candidates/c21-wsl-exact107^{commit}")
+            if candidate is not None:
+                return ["GIT_CANDIDATE_REMOTE_PREMATURE_OR_MISMATCH"]
         dirty = _working_tree_paths(status_raw)
         direct = False
         if actual_head and actual_head != parent:
@@ -13506,6 +13585,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_provider_status_read_review_successor_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_auth_reviewed_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json":
+            errors.extend(validate_c21_provider_wsl_git_only_candidate_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_git_only_candidate_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
@@ -14932,6 +15013,212 @@ def validate_c21_provider_wsl_git_only_candidate_start_projection(
         }
         if digest != expected_digest:
             errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_DIGEST_INVALID")
+    return sorted(set(errors))
+
+
+def c21_provider_wsl_git_only_candidate_bound_repository(predecessor: Mapping[str, Any]) -> dict[str, Any]:
+    repository = dict(predecessor)
+    repository.update({
+        "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT107_BOUND_RECORD12",
+        "local_head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+        "product_parent_commit": "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
+        "worktree_status": "SEQ530_PROVIDER_WSL_GIT_ONLY_CANDIDATE_BOUND_EXACT12_DIRTY",
+        "exact_allowed_paths": sorted(set(predecessor["exact_allowed_paths"]) | c21_provider_wsl_git_only_candidate_paths()),
+        "provider_wsl_git_only_candidate_bound_paths": sorted(c21_provider_wsl_git_only_candidate_paths()),
+        "push_status": "NOT_EXECUTED",
+    })
+    return repository
+
+
+def c21_provider_wsl_git_only_candidate_bound_events(predecessor: Mapping[str, Any]) -> list[dict[str, Any]]:
+    events = []
+    for sequence, lease_key, event_type in (
+        (528, "write_lease", "WRITE_LEASE_REVOKED"),
+        (529, "worker_lease", "WORKER_LEASE_REVOKED"),
+    ):
+        lease = predecessor[lease_key]
+        events.append({
+            "event_id": f"evt_c21_provider_wsl_git_only_candidate_{lease_key}_revoked",
+            "sequence": sequence, "event_type": event_type,
+            "occurred_at": "2026-09-06T15:33:13+09:00", "actor": "developer-primary",
+            "subject_ref": "C-21/PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+            "details": {
+                "lease_id": lease["lease_id"], "agent_id": "developer-primary",
+                "execution_fencing_token": lease["execution_fencing_token"],
+                "fencing_token": lease["fencing_token"], "status": "REVOKED",
+                "reason": "LOCAL_EXACT12_RESULT_HANDOFF_FOR_MAIN_REVIEW",
+            },
+        })
+    events.append({
+        "event_id": "evt_c21_provider_wsl_git_only_candidate_package_completed",
+        "sequence": 530, "event_type": "PACKAGE_COMPLETED",
+        "occurred_at": "2026-09-06T15:33:13+09:00", "actor": "developer-primary",
+        "subject_ref": "C-21/PROVIDER-WSL-GIT-ONLY-CANDIDATE",
+        "details": {
+            "work_instruction_id": predecessor["active_work_instruction"]["artifact_id"],
+            "result_status": "COMPLETED", "package_status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH",
+            "accepted": False, "independent_tester_status": "PENDING",
+            "source_commit": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+            "candidate_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
+            "completion_head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+            "completion_upstream_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            "projection_mode": VALIDATED_BASE_PROJECTION_MODE,
+            "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+            "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT107_BOUND_RECORD12",
+            "exact_allowed_paths": c21_provider_wsl_git_only_candidate_bound_repository(predecessor["repository"])["exact_allowed_paths"],
+            "developer_exact_paths": sorted(c21_provider_wsl_git_only_candidate_paths()),
+            "developer_exact_path_count": 12,
+            "developer_exact_path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+            "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+            **{name: "NOT_EXECUTED" for name in ("commit", "push", "wsl", "docker", "database", "provider", "telegram", "ysna", "main_merge")},
+        },
+    })
+    return events
+
+
+def validate_c21_provider_wsl_git_only_candidate_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    """Validate the exact12 local candidate record without promoting external work."""
+    root = bundle["_root"]
+    progress = bundle["progress"]
+    events = bundle["events"].get("events", [])
+    handoff = bundle.get("handoff") or {}
+    errors: list[str] = []
+    source = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+    manifest_path = "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json"
+    digest_path = "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json"
+    try:
+        raw = (root / "docs/progress/progress-events.json").read_bytes()
+        historical = subprocess.check_output(["git", "show", f"{source}:docs/progress/progress-events.json"], cwd=root)
+        historical_prefix = raw_event_object_prefix_bytes(historical, 527)
+        historical_events = json.loads(historical)["events"]
+        if not isinstance(historical_events, list):
+            raise ValueError("historical events must be a list")
+        preserved = raw_event_object_prefix_bytes(raw, 527) == historical_prefix
+    except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+        return ["C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HISTORY_INVALID"]
+    if preserved and events[:527] != historical_events:
+        preserved = False
+    terminal = events[527:] if len(events) >= 527 else []
+    expected_ids = [
+        "evt_c21_provider_wsl_git_only_candidate_write_lease_revoked",
+        "evt_c21_provider_wsl_git_only_candidate_worker_lease_revoked",
+        "evt_c21_provider_wsl_git_only_candidate_package_completed",
+    ]
+    if not preserved or len(events) != 530 or [event.get("sequence") for event in terminal] != [528, 529, 530] or [event.get("event_id") for event in terminal] != expected_ids or [event.get("event_type") for event in terminal] != ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HISTORY_INVALID")
+    active = progress.get("provider_wsl_git_only_candidate") or {}
+    expected_active = {
+        "event_sequence": 530, "status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH", "accepted": False,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+        "source_commit": source, "candidate_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
+        "source_cumulative_exact_path_count": 107, "source_cumulative_exact_path_list_sha256": "E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70",
+        "developer_exact_path_count": 12, "developer_exact_path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+        "post_developer_cumulative_exact_path_count": 109, "post_developer_cumulative_exact_path_list_sha256": "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E",
+        "actual_push": "NOT_EXECUTED", "actual_wsl": "NOT_EXECUTED", "actual_docker": "NOT_EXECUTED", "actual_database": "NOT_EXECUTED", "actual_provider_calls": "NOT_EXECUTED", "actual_telegram_outbound": "NOT_EXECUTED", "ysna": "NOT_EXECUTED", "main_merge": "NOT_EXECUTED",
+        "runtime_next_action": "PUSH_AND_EXECUTE_C21_WSL_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION",
+    }
+    if active != expected_active:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_BOUNDARY_INVALID")
+    if any((
+        progress.get("event_sequence") != 530,
+        progress.get("last_event_id") != expected_ids[-1],
+        progress.get("status") != "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH",
+        progress.get("active_agent") is not None,
+        progress.get("worker_lease") is not None,
+        progress.get("write_lease") is not None,
+        progress.get("runtime_next_action") != expected_active["runtime_next_action"],
+        progress.get("current_progress_evidence_ref") != {"package_id": "C-21", "path": digest_path, "manifest_path": manifest_path},
+    )):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_PROJECTION_INVALID")
+    expected_manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_BOUND_PROJECTION",
+        "artifact_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-BOUND-20260906", "event_sequence": 530,
+        "historical_event_sequence": 527, "historical_commit": source,
+        "candidate_source_commit": source, "candidate_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
+        "developer_exact_path_count": 12, "developer_exact_path_list_sha256": "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+        "post_developer_cumulative_exact_path_count": 109, "post_developer_cumulative_exact_path_list_sha256": "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E",
+        "push": "NOT_EXECUTED", "wsl": "NOT_EXECUTED", "docker": "NOT_EXECUTED", "database": "NOT_EXECUTED", "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "ysna": "NOT_EXECUTED", "main_merge": "NOT_EXECUTED", "self_reference": False,
+    }
+    if any(manifest.get(key) != value for key, value in expected_manifest.items()):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST_INVALID")
+    try:
+        digest = bundle["detached_digest"]
+        progress_raw = (root / "docs/progress/build-progress.json").read_bytes()
+        handoff_raw = (root / "docs/progress/BUILD_HANDOFF.md").read_bytes()
+    except (KeyError, OSError, json.JSONDecodeError, TypeError):
+        return sorted(set(errors + ["C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID"]))
+    else:
+        if not isinstance(digest, Mapping) or not isinstance(digest.get("progress"), Mapping) or not isinstance(digest.get("handoff"), Mapping):
+            return sorted(set(errors + ["C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID"]))
+        if digest.get("event_sequence") != 530 or digest.get("self_reference") is not False or digest["progress"].get("file_sha256") != hashlib.sha256(progress_raw).hexdigest().upper() or digest["handoff"].get("file_sha256") != hashlib.sha256(handoff_raw).hexdigest().upper():
+            errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID")
+    if any((handoff.get("event_sequence") != 530, handoff.get("status") != "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH", handoff.get("active_agent") is not None, handoff.get("worker_lease") is not None, handoff.get("write_lease") is not None, handoff.get("runtime_next_action") != expected_active["runtime_next_action"], handoff.get("accepted") is not False)):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HANDOFF_INVALID")
+    try:
+        historical_progress = json.loads(subprocess.check_output(["git", "show", f"{source}:docs/progress/build-progress.json"], cwd=root))
+        expected_terminal = c21_provider_wsl_git_only_candidate_bound_events(historical_progress)
+        original_instruction = historical_progress["active_work_instruction"]
+        expected_repository = c21_provider_wsl_git_only_candidate_bound_repository(historical_progress["repository"])
+        if not all(isinstance(original_instruction.get(key), str) for key in ("artifact_path", "artifact_sha256", "invocation_path", "invocation_sha256")):
+            raise ValueError("historical instruction references must be strings")
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.CalledProcessError):
+        return sorted(set(errors + ["C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HISTORY_INVALID"]))
+    if terminal != expected_terminal:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EVENT_INVALID")
+    if progress.get("active_work_instruction") != {**original_instruction, "result_status": "COMPLETED", "package_status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH"}:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INSTRUCTION_INVALID")
+    if progress.get("repository") != expected_repository:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_REPOSITORY_INVALID")
+    metadata = {
+        "created_at": "2026-09-06T15:33:13+09:00", "appended_event_count": 3,
+        "historical_full_file_bytes": len(historical),
+        "historical_full_file_sha256": hashlib.sha256(historical).hexdigest().upper(),
+        "historical_event_object_prefix_bytes": len(historical_prefix),
+        "historical_event_object_prefix_sha256": hashlib.sha256(historical_prefix).hexdigest().upper(),
+        "historical_events_canonical_ascii_sha256": hashlib.sha256(_canonical_ascii_json_bytes(historical_events)).hexdigest().upper(),
+        "terminal_events_canonical_sha256": hashlib.sha256(canonical_json_bytes(expected_terminal)).hexdigest().upper(),
+        "execution_authority_path": original_instruction["artifact_path"],
+        "execution_authority_sha256": original_instruction["artifact_sha256"],
+        "invocation_path": original_instruction["invocation_path"],
+        "invocation_sha256": original_instruction["invocation_sha256"],
+        "developer_exact_paths": sorted(c21_provider_wsl_git_only_candidate_paths()),
+        "post_developer_cumulative_exact_paths": expected_repository["exact_allowed_paths"],
+        "accepted": False, "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+    }
+    if any(manifest.get(key) != value for key, value in metadata.items()):
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST_INVALID")
+    expected_raw = (c21_provider_wsl_git_only_candidate_paths() - {manifest_path, "docs/progress/build-progress.json", "docs/progress/BUILD_HANDOFF.md"}) | {original_instruction["artifact_path"], original_instruction["invocation_path"]}
+    rows = manifest.get("raw_checksums")
+    if not isinstance(rows, list) or len(rows) != len(expected_raw) or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_raw:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST_INVALID")
+    else:
+        for row in rows:
+            try:
+                payload = (root / row["path"]).read_bytes()
+                valid = row == {"path": row["path"], "bytes": len(payload), "sha256": hashlib.sha256(payload).hexdigest().upper()}
+            except (OSError, KeyError, TypeError):
+                valid = False
+            if not valid:
+                errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_RAW_INVALID")
+    latest = {row.get("path"): row.get("sha256") for row in progress.get("latest_evidence_refs", []) if isinstance(row, Mapping)}
+    for relative in expected_raw - {digest_path}:
+        try:
+            valid = latest.get(relative) == _sha256(root / relative)
+        except (OSError, ValueError, TypeError):
+            valid = False
+        if not valid:
+            errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_LATEST_REF_INVALID")
+    expected_digest = {
+        "schema_version": "1.0.0", "digest_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-BOUND-DIGEST-20260906",
+        "package_id": "C-21", "event_sequence": 530, "algorithm": "SHA-256", "created_at": "2026-09-06T15:33:13+09:00",
+        "scope": "Provider WSL Git-only exact12 local binding; seq1-527 preserved; external execution NOT_EXECUTED.", "self_reference": False,
+        "progress": {"path": "docs/progress/build-progress.json", "bytes": len(progress_raw), "file_sha256": hashlib.sha256(progress_raw).hexdigest().upper(), "canonical_json_sha256": hashlib.sha256(canonical_json_bytes(progress)).hexdigest().upper()},
+        "handoff": {"path": "docs/progress/BUILD_HANDOFF.md", "bytes": len(handoff_raw), "file_sha256": hashlib.sha256(handoff_raw).hexdigest().upper(), "machine_summary_canonical_sha256": hashlib.sha256(canonical_json_bytes(handoff)).hexdigest().upper()},
+    }
+    if bundle.get("detached_digest") != expected_digest:
+        errors.append("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID")
     return sorted(set(errors))
 
 

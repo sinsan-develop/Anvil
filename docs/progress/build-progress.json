@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c21-provider-wsl-git-only-candidate-start-seq527",
-  "event_sequence": 527,
-  "updated_at": "2026-09-06T12:25:13+09:00",
-  "last_event_id": "evt_c21_provider_wsl_git_only_candidate_package_started",
+  "snapshot_id": "snapshot-c21-provider-wsl-git-only-candidate-bound-seq530",
+  "event_sequence": 530,
+  "updated_at": "2026-09-06T15:33:13+09:00",
+  "last_event_id": "evt_c21_provider_wsl_git_only_candidate_package_completed",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+  "status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -47,47 +47,8 @@
     "B-11",
     "B-12"
   ],
-  "active_agent": "developer-primary",
-  "write_lease": {
-    "lease_id": "write-lease-c21-provider-wsl-git-only-candidate-20260906-001",
-    "worker_lease_id": "worker-lease-c21-provider-wsl-git-only-candidate-20260906-001",
-    "agent_id": "developer-primary",
-    "work_package_id": "C-21",
-    "subtask_id": "PROVIDER-WSL-GIT-ONLY-CANDIDATE",
-    "write_epoch": 1,
-    "execution_fencing_token": "c21-provider-wsl-git-only-candidate-execution-fence-epoch-1-e4cccf3",
-    "write_fencing_token": "c21-provider-wsl-git-only-candidate-write-fence-epoch-1-e4cccf3",
-    "fencing_token": "c21-provider-wsl-git-only-candidate-write-fence-epoch-1-e4cccf3",
-    "status": "ACTIVE",
-    "path_scope": [
-      "deploy/wsl/CandidateReleaseManifest.json",
-      "deploy/wsl/candidate-manifest-guard.sh",
-      "docs/DEVELOPMENT_ENVIRONMENT.md",
-      "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
-      "docs/progress/BUILD_HANDOFF.md",
-      "docs/progress/build-progress.json",
-      "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
-      "scripts/check_project_progress.py",
-      "tests/deploy/test_wsl_staging_harness.py",
-      "tests/tooling/test_project_progress.py"
-    ],
-    "paths": [
-      "deploy/wsl/CandidateReleaseManifest.json",
-      "deploy/wsl/candidate-manifest-guard.sh",
-      "docs/DEVELOPMENT_ENVIRONMENT.md",
-      "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
-      "docs/progress/BUILD_HANDOFF.md",
-      "docs/progress/build-progress.json",
-      "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
-      "scripts/check_project_progress.py",
-      "tests/deploy/test_wsl_staging_harness.py",
-      "tests/tooling/test_project_progress.py"
-    ]
-  },
+  "active_agent": null,
+  "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -119,16 +80,7 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": {
-    "lease_id": "worker-lease-c21-provider-wsl-git-only-candidate-20260906-001",
-    "agent_id": "developer-primary",
-    "work_package_id": "C-21",
-    "subtask_id": "PROVIDER-WSL-GIT-ONLY-CANDIDATE",
-    "lease_epoch": 1,
-    "fencing_token": "c21-provider-wsl-git-only-candidate-execution-fence-epoch-1-e4cccf3",
-    "execution_fencing_token": "c21-provider-wsl-git-only-candidate-execution-fence-epoch-1-e4cccf3",
-    "status": "ACTIVE"
-  },
+  "worker_lease": null,
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -336,997 +288,49 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
-      "sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F"
-    },
-    {
-      "path": "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
-      "sha256": "CE92250CD9D4AB3D42453BD7E73CAD73A79395DCE346B641BB06131993A7C1F2"
-    },
-    {
-      "path": "docs/04_test_reports/C-21_LR02C_R3_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "81A193E03BCEF668D5304623E754FD66A68BA4BD520C603AB9AB01DE92970665"
-    },
-    {
-      "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_EVIDENCE_MANIFEST.json",
-      "sha256": "4771BFEE1BAC7B0F6043487D6BD7F1534DCEB01DB7EC33CFE2228EF979339F28"
-    },
-    {
-      "path": "docs/04_test_reports/C-21_LR02C_R2_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "E215065293F3F8E3A4DFE6C1DC02E0D730E0548E3F1F0AB0C43595755B18C692"
-    },
-    {
-      "path": "docs/04_test_reports/C-21_LR02C_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "5554FA1F7998E826F75F5F999567152935180B515AE4B53DF751FCEB633D2072"
-    },
-    {
-      "path": "docs/work_orders/C-21_LR-02C_MAIN_TAKEOVER_PACKET_R2.md",
-      "sha256": "4B049CB51B9526BDF490879B6C35C1B146A157769A4A066927A99BB6571B3735"
-    },
-    {
-      "path": "docs/04_test_reports/C-21_LR02B_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "01D23AE5845FD8639532F059CBA7E528D90C565264CF9600660D0CE5B5EB2C07"
-    },
-    {
-      "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_EVIDENCE_MANIFEST.json",
-      "sha256": "253F04787519BC356A6297F64EB6F0F2B3FCFAE543B15A9E8CB847CD3E240A5E"
-    },
-    {
-      "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR01_EVIDENCE_MANIFEST.json",
-      "sha256": "7798FC63D5DFC7068C40AB4FB32339B8164E50C710A56FC9EAA84A1E8D005033"
-    },
-    {
-      "path": "docs/04_test_reports/C-21_LR02A_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "A0F71304371042FB8FED7CF3841785121C2B6171913375BD8D4A487FE5A0BB5B"
-    },
-    {
-      "path": "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R2.md",
-      "sha256": "5D22ED99F3084F0312F58DB58FBB330449FE637F9D468EA3B95EDF25F57B7927"
-    },
-    {
-      "path": "docs/work_orders/C-21_LR-02A_REWORK_INVOCATION_PROMPT_R2.md",
-      "sha256": "959E6BF663E9DC701D059FAF2B3AF1A692F496E81B39245A261B4B2BE8FF8A19"
-    },
-    {
-      "path": "docs/04_test_reports/C-21_LR02A_R2_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "BA5AC0EE351912E9CAB4269B5147F10FE8E00B55AFA23A31DC46BC40BACE2C11"
-    },
-    {
-      "path": "docs/work_orders/C-21_LR-02A_REWORK_WORK_INSTRUCTION_R3.md",
-      "sha256": "1ED38F7B2F2A181174E21C0E16EF4FAE8C100A593C082E40AACCC97AA3D2CEE5"
-    },
-    {
-      "path": "docs/work_orders/C-21_LR-02A_REWORK_INVOCATION_PROMPT_R3.md",
-      "sha256": "A9E3D530EFD44A22A08392D3D20A6F75D9FEBB6D8A8DFBD595F60446EF3DB94C"
-    },
-    {
-      "path": "docs/evidence/manifests/B-12_EVIDENCE_MANIFEST.json",
-      "sha256": "2A4A944B08A3837D8774D4917A0C4E91F9DA3F5F7C16F55A2B893AC3FFEADDAA"
-    },
-    {
-      "path": "docs/completion_reports/B-12_COMPLETION_REPORT.md",
-      "sha256": "FC173A2DA32C45EDACB64E49D32A08A5DABF7B8129A1D979B79F20123DECA745"
-    },
-    {
-      "path": "docs/validation/B-12_RECOVERY_VALIDATION.md",
-      "sha256": "6CE84526712D337018FE2E44596AC609306987CD2A5EB332B539FE29D048ECD1"
-    },
-    {
-      "path": "docs/work_orders/B-12_WORK_INSTRUCTION.md",
-      "sha256": "C588069F8F735DF32AC908F3E2F27F9BE5D2E6E18E0C2F67CBAF36202BA4C3EE"
-    },
-    {
-      "path": "docs/work_orders/B-12_INVOCATION_PROMPT.md",
-      "sha256": "3E2A28FECB4E0A64FDF30BDAD8E0D3DD9546E98F84F010C95924B18D8A41D7DF"
-    },
-    {
-      "path": "docs/evidence/manifests/B-11_EVIDENCE_MANIFEST.json",
-      "sha256": "3F60EAE9A978EA8ED0ABB83CEB77EB0B1828251895AB0B323C5CC4C8481B8C23"
-    },
-    {
-      "path": "docs/test_reports/B-11_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "F925ECC0C70E4DC4EE2E0F5BF883E94FD9D5AA666A801448B2044CBF8B6819E5"
-    },
-    {
-      "path": "docs/work_orders/B-11_REWORK_WORK_INSTRUCTION_R2.md",
-      "sha256": "1B72ABC408EF8B4C8A3CAE657201F3D1C1A00D1000D1E417D61942F457941002"
-    },
-    {
-      "path": "docs/work_orders/B-11_REWORK_INVOCATION_PROMPT_R2.md",
-      "sha256": "DE63A51A7E1A1A7AAE0A0B865D0C3BF7483EA6860261F78A5DC4CD6C129CF094"
-    },
-    {
-      "path": "docs/work_orders/B-11_WORK_INSTRUCTION.md",
-      "sha256": "B015056A38BD70A995D6F886231BC1733988D6D0ECCD6C2B71E4EA0B04B4B45F"
-    },
-    {
-      "path": "docs/work_orders/B-11_INVOCATION_PROMPT.md",
-      "sha256": "1FCD913209A2B06EA0E88B752A760DC933F84656F3FCE03768C570FAA64C6A07"
-    },
-    {
-      "path": "docs/test_reports/B-10_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "D884388D180FB746632DBE3B77C34533D875566619F05CFCF6FB093F43D35FFA"
-    },
-    {
-      "path": "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R3.md",
-      "sha256": "193734C3AD871D8042C0440342763A289DDCA70E1F862A143B357A1B8AABCF2D"
-    },
-    {
-      "path": "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R3.md",
-      "sha256": "27D14DCAAF638FF6D0637A266BCCB64DB93D0D633925703F8C47ECC5F8E3A642"
-    },
-    {
-      "path": "docs/evidence/manifests/B-10_EVIDENCE_MANIFEST.json",
-      "sha256": "5F0922A70F63E19D51306CCF43B67902BF9B82354E1F229616404DB5C2DB02A8"
-    },
-    {
-      "path": "docs/completion_reports/B-10_COMPLETION_REPORT.md",
-      "sha256": "DA13B0098B167B9780089A5A3583BE21FC7C1313CA4B281E817F8F54269C40D2"
-    },
-    {
-      "path": "docs/validation/B-10_INTERVENTION_BUDGET_VALIDATION.md",
-      "sha256": "39EC79721DE34C22F330C464C95D387702CFAFADA6F2A2F69E151A7784F94718"
-    },
-    {
-      "path": "docs/work_orders/B-10_REWORK_WORK_INSTRUCTION_R2.md",
-      "sha256": "DFFCE00D420BC0DDC04C48B18856D111397C8DDC67155EE3DE702B8C379E6D21"
-    },
-    {
-      "path": "docs/work_orders/B-10_REWORK_INVOCATION_PROMPT_R2.md",
-      "sha256": "489222E413D61AEBEC177E42CDBBCA88AE4380644F5A6534511BC5B12C0F9674"
-    },
-    {
-      "path": "docs/work_orders/B-10_WORK_INSTRUCTION.md",
-      "sha256": "A1CE280DA209D0542C8F476C83B5DFB2A08A14086BA11F38C9D210C2E983B34F"
-    },
-    {
-      "path": "docs/work_orders/B-10_INVOCATION_PROMPT.md",
-      "sha256": "E8BF31253E56809A13F76DF7E51125A222A23919C498623093F29AE028D60351"
-    },
-    {
-      "path": "docs/test_reports/B-09_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "A84E6FE92F11F987D987E7787344D8A81125ECF977168DBDA0641BD6DB4D732D"
-    },
-    {
-      "path": "docs/work_orders/B-09_MAIN_TAKEOVER_PACKET_R4.md",
-      "sha256": "7EEE02F6A09CB0E63E2D4B4D3082BDAB77D7216286A8CFD666688193F90885D3"
-    },
-    {
-      "path": "docs/test_reports/B-08_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "EF8976924169E5267F9DD028C5ACAFAF836EDA0834069C0134E49C3618934DE9"
-    },
-    {
-      "path": "docs/work_orders/B-08_WORK_INSTRUCTION.md",
-      "sha256": "655E40B3FE2C5834F3D7E143348DC99B411A2992A3381B3C45D6B36FB2AE2406"
-    },
-    {
-      "path": "docs/work_orders/B-08_INVOCATION_PROMPT.md",
-      "sha256": "4E7A0CF3AE60C154A8837E271526224310E4CC5B79E0D92450F8563E9BE0F0B3"
-    },
-    {
-      "path": "docs/test_reports/B-07_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "B278C498DB599FE7FF67940996705758C9AECEF70466035B40F9FB7F36E1903C"
-    },
-    {
-      "path": "docs/work_orders/B-07_WORK_INSTRUCTION.md",
-      "sha256": "4809891FD6EADFB7CD5A147D879257FC61C3AD7D20B63081814DF46F59E0741F"
-    },
-    {
-      "path": "docs/work_orders/B-07_INVOCATION_PROMPT.md",
-      "sha256": "E5F71C33D8909AF2D662D08EC5C68EA55C5825DBA40E019000BAD766B98B6A4E"
-    },
-    {
-      "path": "docs/test_reports/B-06_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "8D19FC784223B24BBF082C815C2BB196321658F0896427D84E1F4A9DBB4AC1A5"
-    },
-    {
-      "path": "docs/completion_reports/B-06_COMPLETION_REPORT.md",
-      "sha256": "2641528F3F97CDE1AA9011804E55F6E426B7F0C71D695194719E408ED8012CA1"
-    },
-    {
-      "path": "docs/evidence/manifests/B-06_EVIDENCE_MANIFEST.json",
-      "sha256": "CB14005DAE3D4E89C1BCD1320969477C47BFF2C4172BFC8329B884FF52548F07"
-    },
-    {
-      "path": "docs/validation/B-06_EVENT_STORE_VALIDATION.md",
-      "sha256": "2A6805CDC9C78D9B1EB3EB81CB4C6A26997251F494F7531E3D38C4860339ED7E"
-    },
-    {
-      "path": "migrations/versions/0005_event_store.py",
-      "sha256": "DEBC6D14C895567F6C4A528AD5572992756CE7AD59DDC2D33BF4D05DFF0599BE"
-    },
-    {
-      "path": "packages/api/event_contracts.py",
-      "sha256": "8C80FE1324056568F03432B9821519408F9826EA7AC9D04559A965D9152814DA"
-    },
-    {
-      "path": "packages/events/__init__.py",
-      "sha256": "9FC464A47CAFB945B99448B636CBD58D9272080915E40ED87522CF808990F101"
-    },
-    {
-      "path": "packages/events/models.py",
-      "sha256": "097F576122CA65F2549D0C7D5BB82E7764D085B9B2E706502634FCEBC34B4C34"
-    },
-    {
-      "path": "packages/events/reducer.py",
-      "sha256": "DE3EDA56F635FFFDF7A8B2EA166F772F3C3419C2C5EA809800E49AD6E26C33C8"
-    },
-    {
-      "path": "packages/events/store.py",
-      "sha256": "FE8E241D23E5CACD2C27DA2B74F177126F7360AEFBEEDCC8FBC090472CA0A610"
-    },
-    {
-      "path": "packages/events/transition_guard.py",
-      "sha256": "DC81A252886E3E85601C0C42D224C2251CCD59F0B0A8D3918002D1E2BEE953F3"
-    },
-    {
-      "path": "packages/persistence/event_repository.py",
-      "sha256": "9A79F35979E6AB233CA54BD98929315AD9753E898D904D1BCF7240B7CB9A82F2"
-    },
-    {
-      "path": "tests/events/test_event_store.py",
-      "sha256": "AFE74CA3F00EB611EFBC8DE28F01E2DDC86CA3DC7A4B8A18751FDF008C754CD8"
-    },
-    {
-      "path": "tests/events/test_idempotency.py",
-      "sha256": "7AB3E0F3F2D814E5DD979A31FF810725C2DAFBDC1803BF77A6BD599975760F44"
-    },
-    {
-      "path": "tests/events/test_navigation_guard.py",
-      "sha256": "5AAB1DF2B0F7C534BBFFBEDB48494794B011946CE5B1EAF00F40A31809CA7302"
-    },
-    {
-      "path": "tests/events/test_transition_guard.py",
-      "sha256": "9B562496C1E9A687EB4670BB1DF64B2295DCDDCF8B83DE5B146727DF3C7C5192"
-    },
-    {
-      "path": "docs/work_orders/B-06_WORK_INSTRUCTION.md",
-      "sha256": "C52B192E88B581B44B47D2A07DC7E293119BE9F60732988393C99795A03DB827"
-    },
-    {
-      "path": "docs/work_orders/B-06_INVOCATION_PROMPT.md",
-      "sha256": "5AEBDFE2167788AB52BC2873194A7253CDD960119BD1D9C4F993ADC09D1B8B58"
-    },
-    {
-      "path": "docs/test_reports/B-05_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "122D901CEC44AFF20EC238F03B33BC1E98806C28C1FD5D2984224448E49184AE"
-    },
-    {
-      "path": "docs/completion_reports/B-05_COMPLETION_REPORT.md",
-      "sha256": "C469AB735953820E539FE992437F1EA0CE1298D6954DCC8C015B7B813ED0EFC1"
-    },
-    {
-      "path": "docs/evidence/manifests/B-05_EVIDENCE_MANIFEST.json",
-      "sha256": "262B9AB8AEBB5A940594A92000B9AA66E1F1C5908D5700C8AE5D0DEA55BE8E16"
-    },
-    {
-      "path": "docs/validation/B-05_EXECUTION_RELEASE_VALIDATION.md",
-      "sha256": "2C82A27CB2122BCAACF0ECB0E60E2379D03D6B05CB77D6A82F3F99C0DB168819"
-    },
-    {
-      "path": "migrations/versions/0004_execution_release.py",
-      "sha256": "715084BD716D83D429496EA6F4BEF24C130A68E11C31ACDAABCBFAF6A2A89CAF"
-    },
-    {
-      "path": "packages/api/execution_contracts.py",
-      "sha256": "47DF3816AEBF8BF746A17D048F7081E6512D62DE19DA488558D6781E9526368E"
-    },
-    {
-      "path": "packages/execution/__init__.py",
-      "sha256": "6270671B55337E035E8B2A14F177FFB637DFEBCFDB82BCC2B8455158DF3F097A"
-    },
-    {
-      "path": "packages/execution/dir_guard.py",
-      "sha256": "A58475A7F1FB62ECBD398A68EF56BAFF7B414875CF80CFB09BBE427322F4E61D"
-    },
-    {
-      "path": "packages/execution/integrity.py",
-      "sha256": "FA028D5C71BEC227D29645BA6AF61FB58E131D550AF036654BADF2E85E66C5AD"
-    },
-    {
-      "path": "packages/execution/models.py",
-      "sha256": "F14C4426BF27CB62CD8424581E2781C31DB2E55EB5643F7829FF1EACF1527436"
-    },
-    {
-      "path": "packages/execution/release.py",
-      "sha256": "F69D4690D3B6DE221DCDC1B3CF3AC920CF4B076E93AA68E1F8F550515A730C93"
-    },
-    {
-      "path": "packages/persistence/execution_repository.py",
-      "sha256": "B980BE27FBC84BC311903C18AFDC155AB2D9B3BDB847BFF358D2905D721C385F"
-    },
-    {
-      "path": "tests/execution/test_attempt_integrity.py",
-      "sha256": "E96D3BA7A58FDFA5FFB20A374744ADEC8503E6DE11AFCFA146AD772BF3BE05A0"
-    },
-    {
-      "path": "tests/execution/test_dir_guard.py",
-      "sha256": "2A29F100F95EDA44CAC3E7BA3366674373F568A22DA3C1AE754AA7D88531C4ED"
-    },
-    {
-      "path": "tests/execution/test_models.py",
-      "sha256": "B6FD70969210B652544C2280660043F36EC662D17E856A8056897E1C2846514B"
-    },
-    {
-      "path": "tests/execution/test_release_guard.py",
-      "sha256": "7C8AA7CC0198D5B6545B79FA8593619ECB91640D50D20F952EC4D6E79546CC62"
-    },
-    {
-      "path": "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md",
-      "sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236"
-    },
-    {
-      "path": "docs/validation/WORKPLAN_V16_SUCCESSOR_VALIDATION.md",
-      "sha256": "2A6F3E2136F33E01A579892C0C2E422300DED5AA327DC7DA3F0B5913888E3E88"
-    },
-    {
-      "path": "docs/test_reports/B-04_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "343CAF908D2360D47220408F2127E56F355E3431A9FE0165E2CA84DC88C93A38"
-    },
-    {
-      "path": "docs/evidence/manifests/B-04_EVIDENCE_MANIFEST.json",
-      "sha256": "D1E9A6A4C8526EC20E118051711B5E9F674B4CAA64FBFB325DAD86134122DB2D"
-    },
-    {
-      "path": "docs/validation/B-04_PLANNING_APPROVAL_VALIDATION.md",
-      "sha256": "391844C04FFFC37A5E81B55D19B6596AC880084223073E7B7DFA6333414127E4"
-    },
-    {
-      "path": "docs/completion_reports/B-04_COMPLETION_REPORT.md",
-      "sha256": "57FAE7CA9C307D53ECD076CED4075CC043A28DB8E56412060537361FA513F49D"
-    },
-    {
-      "path": "docs/approvals/APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001.md",
-      "sha256": "6E76E85D2895207F80639B6DE0D027A4CB08A61FA025968D0EC14C13960BB562"
-    },
-    {
-      "path": "docs/approvals/APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001.md",
-      "sha256": "9D440C46B0CD8F0F44C46B3143FCB1B4DF7322BF9A7E0BD0A52BCE8D873FA18F"
-    },
-    {
-      "path": "docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md",
-      "sha256": "E5A6E3B64CAAF48F6CDE51A1E8431A553C2CA2E4EF66DC7E5EE085D6F017E008"
-    },
-    {
-      "path": "docs/onboarding/developer-primary-ack.md",
-      "sha256": "931ED3D4A4A351F47FB48ED459270565E63889E8049EC4587032E2C640782B90"
-    },
-    {
-      "path": "scripts/check_a01_journey.py",
-      "sha256": "EB6B9DA5581869E53B1E24D1FB82A5286B78DA7C9C062611FF6DD7BE4AAF3C45"
-    },
-    {
-      "path": "tests/tooling/test_a01_journey.py",
-      "sha256": "0BCF68618F3BEF75B5BECF9BF8733F454AD98C54E0E16DF09A57C3B04CF5A82D"
-    },
-    {
-      "path": "scripts/check_a02_tokens.py",
-      "sha256": "F063221B5B500FF22FFA475097A47DE070015322DBE391696F3EF3F2E917C5AA"
-    },
-    {
-      "path": "tests/tooling/test_a02_tokens.py",
-      "sha256": "8C4A96E53423740E96B921E5E41F3DDCD19AF71B3A73889772B558350128CA82"
-    },
-    {
-      "path": "docs/completion_reports/A-02_COMPLETION_REPORT.md",
-      "sha256": "CE92C4A06F4E130D61B024ADAA09DA62B63ADAAF57405D232878B0090120FFF6"
-    },
-    {
-      "path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST.json",
-      "sha256": "FC2D3BD61BA7014CB74635D96AF68C3CCEE970E9FEAC52327A020570A52E5269"
-    },
-    {
-      "path": "docs/evidence/manifests/A-02_EVIDENCE_MANIFEST_R2.json",
-      "sha256": "779A92F0E97BACB85BBA91CA825B0483B0D1CB65266EFA6AFA3A0FBC12445168"
-    },
-    {
-      "path": "docs/test_reports/A-02_TEST_REPORT.md",
-      "sha256": "1732C036F79FBE05DF9EBF1BB59B67E621DAE8CC40259D30585714C01F73FAF8"
-    },
-    {
-      "path": "docs/test_reports/A-02_TEST_REPORT_R2.md",
-      "sha256": "C2E545EE3B60921030EFB5F1267F86EAB7AF4EB63220B99154FBC960D762354D"
-    },
-    {
-      "path": "docs/completion_reports/A-01_COMPLETION_REPORT.md",
-      "sha256": "25E3CE647B7C7A8464C2E3FA1CE3708B179C456F520717C71882847599ADDFC5"
-    },
-    {
-      "path": "docs/test_reports/A-01_TEST_REPORT_R2.md",
-      "sha256": "9DD0EE2626800E28420DB5AC3597BE3D3717586632E7441938904E946EBCF620"
-    },
-    {
-      "path": "docs/evidence/manifests/A-01_EVIDENCE_MANIFEST_R2.json",
-      "sha256": "BB184388A47A31C9A238AE081C441A8A149815AE45F4B196E3421B1B7C5A95A4"
-    },
-    {
-      "path": "docs/test_reports/A-01_PRECONDITION_TEST_REPORT.md",
-      "sha256": "9555428AF1FA22C05A74010849564F3DA6160DAD9C1C736DBE5E0B3EBD998369"
-    },
-    {
-      "path": "docs/evidence/manifests/A-01_PRECONDITION_TEST_ENTRY_MANIFEST.json",
-      "sha256": "388F117408CF41F0889C7362807A17289AF2FA73DC3159777B0DEA8827216791"
-    },
-    {
-      "path": "docs/evidence/manifests/A-01_PRECONDITION_CHECKPOINT_MANIFEST_R2.json",
-      "sha256": "4296CFA7E36FAB06AB697109FD6775AEE5D6D985E934DF092F474EE8ABDC8640"
-    },
-    {
-      "path": "docs/progress/progress-handoff-detached-digest-a01-post-push.json",
-      "sha256": "10B9648576F6FDE790EB382DCB6FA2DE5732B558A4C12C03C08D03BC276A2079"
-    },
-    {
-      "path": "docs/work_orders/PHASE_G_GATE_WORK_INSTRUCTION.md",
-      "sha256": "5F0172B7CADDBBA9086428AE5DD294F67F6D5BADD44573D4730E84E76D1BB7D7"
-    },
-    {
-      "path": "docs/work_orders/PHASE_G_GATE_INVOCATION_PROMPT.md",
-      "sha256": "BBD3F49B6E395A6F9BE460488C88B76283FCE1D2E8EBF12229AA811C6B031076"
-    },
-    {
-      "path": "docs/test_reports/PHASE_G_GATE_TEST_REPORT_R2.md",
-      "sha256": "1A0A852EAC34450BA1CB815C756096673CF2917B6915118F2BA2B46B9941B6DD"
-    },
-    {
-      "path": "docs/decisions/PHASE_G_GATE_DECISION_RECORD.json",
-      "sha256": "525EEDBAFE79E14795AFB26290EA0C4C58EA8C10A9579AFA110B4E3F46DDB9FD"
-    },
-    {
-      "path": "docs/evidence/manifests/PHASE_G_GATE_EVIDENCE_MANIFEST.json",
-      "sha256": "8B35F13522A216EB1929282239D86DC5D8D62714E10CCFDCF4D74322ED4D3884"
-    },
-    {
-      "path": "docs/completion_reports/A-03_COMPLETION_REPORT.md",
-      "sha256": "E6514469EDBE0A631E5B43420E48C4CD6A3C4279A355E65A0BD553106DD73B72"
-    },
-    {
-      "path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST.json",
-      "sha256": "9C3E9C70B61C7D477736B15502F5F3061493A5C8718F26D0B091FE23CB66F1CC"
-    },
-    {
-      "path": "docs/evidence/manifests/A-03_EVIDENCE_MANIFEST_R2.json",
-      "sha256": "772B609D003E162395FF983C0688F46C2B8857FA0EC40A0C1FCC0A66F4A2CFEE"
-    },
-    {
-      "path": "scripts/check_a03_onboarding.py",
-      "sha256": "CA0437B15E6565F5EC47F743B33C0114D46F3822D820913796CAE97FD1AE0CC2"
-    },
-    {
-      "path": "tests/tooling/test_a03_onboarding.py",
-      "sha256": "B6C026531DAEF8B5D76C5AE8AEF1B0E2976D7A70ED49A258B441DAE050D05227"
-    },
-    {
-      "path": "docs/test_reports/A-03_TEST_REPORT.md",
-      "sha256": "DD89EB18AB4F16FB46C752734870DBC125D11AC38512EC1F79B25D47EEDC00D6"
-    },
-    {
-      "path": "docs/test_reports/A-03_TEST_REPORT_R2.md",
-      "sha256": "0D16D409B87B161F96811E9297A2F3877398B5124FA5D9D20D648C0235C07C2F"
-    },
-    {
-      "path": "docs/work_orders/A-03_REWORK_WORK_INSTRUCTION_R2.md",
-      "sha256": "6FBED907089748236B8CF7FA119E517EFB55CA92A693738F0BB20A93781C35ED"
-    },
-    {
-      "path": "docs/work_orders/A-03_REWORK_INVOCATION_PROMPT_R2.md",
-      "sha256": "6B97D0A0773F396BD9C2AD1AED2FF406555A116BE03B643485A8DF5C8692886A"
-    },
-    {
-      "path": "docs/work_orders/A-04_WORK_INSTRUCTION.md",
-      "sha256": "1B8CE8809EC6546ED483D0E48294CC547F0767A5D0D31D120B08787290ED753E"
-    },
-    {
-      "path": "docs/work_orders/A-04_INVOCATION_PROMPT.md",
-      "sha256": "DE5A605C7CDB3F84725C4792F612B0455AC00E5C669E8509C1FFF6F0A3F62CDB"
-    },
-    {
-      "path": "docs/evidence/manifests/A-04_EVIDENCE_MANIFEST.json",
-      "sha256": "C44A699D237C35FDE28E4EEE9E033F1B35CDFC3839967698CDCD6C5A759AA0EB"
-    },
-    {
-      "path": "docs/completion_reports/A-04_COMPLETION_REPORT.md",
-      "sha256": "388B07B9E5D4D448A342DDCC82962DA85FBCD72087C6F7C2A2FCA94256FC411E"
-    },
-    {
-      "path": "scripts/check_a04_workbench.py",
-      "sha256": "9AD2EFA4C5164D6DB9617F87FA2CE0B5AB8CF8D2C8CCA37F060487CBF8F65998"
-    },
-    {
-      "path": "tests/tooling/test_a04_workbench.py",
-      "sha256": "9F7F01BE479EFA38338821FF74CD8570F6BDCDC59B64E2A1EA0422E2D4C8DC76"
-    },
-    {
-      "path": "docs/test_reports/A-04_TEST_REPORT.md",
-      "sha256": "3C809FF5F8C31ABB349A19CAFE5151F403437A9757D0C6FC4BA5BC4A1BC4C1B3"
-    },
-    {
-      "path": "docs/work_orders/A-05_WORK_INSTRUCTION.md",
-      "sha256": "F80E1641704BD0FD436F220A13228463FFEC6E2585F083A0405075B2C5E8375C"
-    },
-    {
-      "path": "docs/work_orders/A-05_INVOCATION_PROMPT.md",
-      "sha256": "68FC8350B726DE793A8F5DC8B6A988730A09E7B8C214579D49176D342B3C9F29"
-    },
-    {
-      "path": "docs/evidence/manifests/A-05_EVIDENCE_MANIFEST.json",
-      "sha256": "90C6AA195FC1DB6AB48D02B4A6403BBE242488177045F393C05E17EAF76085F1"
-    },
-    {
-      "path": "docs/completion_reports/A-05_COMPLETION_REPORT.md",
-      "sha256": "48C41226134475913A43AF82A9E2B25DD27DE5E5245700DE7B613E115692937B"
-    },
-    {
-      "path": "scripts/check_a05_design_decisions.py",
-      "sha256": "A2953EF102738D292B523462DA912A2B7F9B31330D1ACE5358A0B318F422941B"
-    },
-    {
-      "path": "tests/tooling/test_a05_design_decisions.py",
-      "sha256": "1B0842B7178E217567A8D09B7FAA75656C495ED1E0F4C33F32636945981C734A"
-    },
-    {
-      "path": "docs/test_reports/A-05_TEST_REPORT.md",
-      "sha256": "AA36A92E883DC8DA39ED01B2F5DF8E9855B166183386986B63B93BF0D79165BA"
-    },
-    {
-      "path": "docs/work_orders/A-06_WORK_INSTRUCTION.md",
-      "sha256": "83B1F04472D28631CF73645486D8EC138BBB75B7F8EE8679BDA4F8B0C37AECC6"
-    },
-    {
-      "path": "docs/work_orders/A-06_INVOCATION_PROMPT.md",
-      "sha256": "B4DBBD9937DEFD6F569585D0C3BDDCACD36262C199563E8A651E46B8E84765A1"
-    },
-    {
-      "path": "docs/evidence/manifests/A-06_EVIDENCE_MANIFEST.json",
-      "sha256": "A6F2B8B2E866A4F4AF6E2BAD8BAA2D005217071E263BA52FE63F35C935844449"
-    },
-    {
-      "path": "docs/completion_reports/A-06_COMPLETION_REPORT.md",
-      "sha256": "0704C201C1FFAB4C0187A3E8D4DF92A3BDF331A6D33B8D01191E48F93B6DFE07"
-    },
-    {
-      "path": "scripts/check_a06_planning_approvals.py",
-      "sha256": "07D1AD17AF269D122FF7A726DBC77E2F68636079D40E50EB4E81F5158847747C"
-    },
-    {
-      "path": "tests/tooling/test_a06_planning_approvals.py",
-      "sha256": "4BD8066CDEA9AC4150DD9AADA612C519F82882C7A227004C573F680C9B7EC5F0"
-    },
-    {
-      "path": "docs/test_reports/A-06_TEST_REPORT.md",
-      "sha256": "F27D15DA8068117710CE3551FAF839F3A4BA28AE9F3EF186DD39641F5E1CC560"
-    },
-    {
-      "path": "docs/work_orders/A-07_WORK_INSTRUCTION.md",
-      "sha256": "240371EB038AECE4F2613E83613871A737D4831B5FE9A832CB6534A558730799"
-    },
-    {
-      "path": "docs/work_orders/A-07_INVOCATION_PROMPT.md",
-      "sha256": "1F6476D9F0B0D6EC571FA7456744160BC5CE04A4DBDB7A089A8E092289ABCD8F"
-    },
-    {
-      "path": "docs/evidence/manifests/A-07_EVIDENCE_MANIFEST.json",
-      "sha256": "796B40512FBB0D6EAA596409B3464190455E772246FF361F6EC056D701DEA3E7"
-    },
-    {
-      "path": "docs/completion_reports/A-07_COMPLETION_REPORT.md",
-      "sha256": "286DD6DBA62B41535340FD3F65AEB9327FFFB9857DCED2D4A84DB987C866DE7A"
-    },
-    {
-      "path": "docs/test_reports/A-07_TEST_REPORT.md",
-      "sha256": "A5352696B24E95FE8BD86E845AD8B4A0171C805B7521F21F3543461A8C628506"
-    },
-    {
-      "path": "scripts/check_a07_execution_control.py",
-      "sha256": "4B3ACC4C601025024DB7C9740B292D5D7993D32BC3A8DCB7C654AA2BD7E2246B"
-    },
-    {
-      "path": "tests/tooling/test_a07_execution_control.py",
-      "sha256": "D84432685D28E035E6C47CA6517B5CE224CEA24068B8092BA272C844BBC32682"
-    },
-    {
-      "path": "docs/work_orders/A-08_WORK_INSTRUCTION.md",
-      "sha256": "E418BE54E9AC98BEF61F782B127A83332C75ADD1A60CCCFE8DA8766634CC489E"
-    },
-    {
-      "path": "docs/work_orders/A-08_INVOCATION_PROMPT.md",
-      "sha256": "5BB5F8C23B7CD90CCB478E023F8ECE3A1867768FDE9D56941292E9D0FD0C11CF"
-    },
-    {
-      "path": "docs/evidence/manifests/A-08_EVIDENCE_MANIFEST.json",
-      "sha256": "73CC3936D3AF55674412C746B1CB95D53F08B3C8BDA927765286F3E60BE6C9A5"
-    },
-    {
-      "path": "docs/completion_reports/A-08_COMPLETION_REPORT.md",
-      "sha256": "45D57AD6B65768CC344EBCEA0252E932C7C4C9FB44172117CA0136E8DEC70751"
-    },
-    {
-      "path": "scripts/check_a08_completion_validation.py",
-      "sha256": "0035DF8EAF6951B0BEDAB514D2BD15D9FF27232C7CE8F283FE25532CF64E1402"
-    },
-    {
-      "path": "tests/tooling/test_a08_completion_validation.py",
-      "sha256": "F0B1BC63B3D709A5450B04D5B1B22D085845B0706F9279EA08DFB3FC20A78D15"
-    },
-    {
-      "path": "docs/test_reports/A-08_TEST_REPORT.md",
-      "sha256": "74D97BB4CBA10151918EDBB49C859936FF2AB3835CAA60986BAFF5B21FFF155A"
-    },
-    {
-      "path": "docs/evidence/manifests/A-09_EVIDENCE_MANIFEST.json",
-      "sha256": "A917008E376E34F51BFADE8E74FE1B6E065D7FDBAC79C748D3DC0424A4E23EA3"
-    },
-    {
-      "path": "docs/completion_reports/A-09_COMPLETION_REPORT.md",
-      "sha256": "CBB57AECCF510876BA1B907624A2B52C6F7141E469D6FC6CFED9DEC9D039AB19"
-    },
-    {
-      "path": "scripts/check_a09_learning_automation.py",
-      "sha256": "03B16639E703C4C8324311482BBCDC12BCAA953AD70B92CD517C7E4C1F26930D"
-    },
-    {
-      "path": "tests/tooling/test_a09_learning_automation.py",
-      "sha256": "5CF95D8139F19A2FD92A52AB489419813C82F79E99B42629F25D45D53B5B3065"
-    },
-    {
-      "path": "docs/test_reports/A-09_TEST_REPORT.md",
-      "sha256": "99F0B25764286668F709D221BE294D1A1F21BA2638EDAF5F0A4D5D7909DCF98F"
-    },
-    {
-      "path": "docs/work_orders/A-10_WORK_INSTRUCTION.md",
-      "sha256": "A7D527B3AA9B50F30589526EDC1D790B75A778D96C47A959B7C966418BFECCF5"
-    },
-    {
-      "path": "docs/work_orders/A-10_INVOCATION_PROMPT.md",
-      "sha256": "5E7A236BF98C80B881F6B9C4FEFDAD2C047EE0A4FF758FEE0289B42D2343AD9E"
-    },
-    {
-      "path": "docs/evidence/manifests/A-10_EVIDENCE_MANIFEST.json",
-      "sha256": "C9667081B8BEA555C32F8833D7F28BCF3528882324814CCE08CAAEAA27DE6A84"
-    },
-    {
-      "path": "docs/completion_reports/A-10_COMPLETION_REPORT.md",
-      "sha256": "86B180E916E04352D945A9077E11C283C9D01DC7C7159964C7FE27546469C196"
-    },
-    {
-      "path": "scripts/check_a10_provider_routing.py",
-      "sha256": "7122264EF4497D35630F5A230D23C509A856BA752CB3C3BB82A2DE79B7954BE0"
-    },
-    {
-      "path": "tests/tooling/test_a10_provider_routing.py",
-      "sha256": "1774198F5C67AFED753D813938E3CB3B0874739F911D01A15E585649ECFE5D6C"
-    },
-    {
-      "path": "docs/test_reports/A-10_TEST_REPORT.md",
-      "sha256": "B1B51F68561805B3C12355D6A7A939063EA1AB77EF45553C22E036F4D1682045"
-    },
-    {
-      "path": "docs/work_orders/A-11_WORK_INSTRUCTION.md",
-      "sha256": "CDDBF40709CCE174F79EBDF64408783AEFAC4F0F471238782A2A5637BF9C65F0"
-    },
-    {
-      "path": "docs/work_orders/A-11_INVOCATION_PROMPT.md",
-      "sha256": "2A3CEF1D7FB9A3E045067E32276861FCBD324E59DE7AB5A6AB4A25F3D639D36B"
-    },
-    {
-      "path": "docs/evidence/manifests/A-11_EVIDENCE_MANIFEST.json",
-      "sha256": "23280C4FD8EA6C3FCEF814D8D429A4BA45FA0BE940E88E8237008B60FDBADFC0"
-    },
-    {
-      "path": "docs/completion_reports/A-11_COMPLETION_REPORT.md",
-      "sha256": "5207DB8E53F9AC2F403E79B582B67D5FB7C806B5919CDF87116E4B243183B979"
-    },
-    {
-      "path": "scripts/check_a11_operations_monitoring.py",
-      "sha256": "0EA43907E7C640F5C82C70907533F3B8CB430A0C25E8333914C4B1216320D913"
-    },
-    {
-      "path": "tests/tooling/test_a11_operations_monitoring.py",
-      "sha256": "99666403F069E2E929325C0314B9E9168B609F6FE9870C148CD67549CD288DA3"
-    },
-    {
-      "path": "docs/test_reports/A-11_TEST_REPORT.md",
-      "sha256": "1A4F7B02016E03A14F185CC8B847D496848EFADA3F4B6950C80640D99CA00275"
-    },
-    {
-      "path": "docs/work_orders/A-12_WORK_INSTRUCTION.md",
-      "sha256": "9D2061A6F62C3101A4138A32642DB4C4AC9178B38B421B2C77B3E3A2FF37840F"
-    },
-    {
-      "path": "docs/work_orders/A-12_INVOCATION_PROMPT.md",
-      "sha256": "C36FD20AC9D39A756C90B61887640C0F05AC91140E604241D738826C9056070A"
-    },
-    {
-      "path": "docs/architecture/a12/A-12_SCREEN_STATE_CATALOG.json",
-      "sha256": "ACF3212EEDD70BBF82C696B08CB4D0311C9E9E4BF3BFC98370A752DBD1F30226"
-    },
-    {
-      "path": "docs/architecture/a12/A-12_SCREEN_STATES.md",
-      "sha256": "75D3671F6134CBAF035560CF2497B0F178F9A55F0D4535720725533BC35D62C5"
-    },
-    {
-      "path": "docs/architecture/a12/A-12_SCREEN_STATES_STATIC_RENDER.svg",
-      "sha256": "0453144BBF59BF56E2DAFE333344CAF3D21E57F2095911FA0CEA107F59FD0A90"
-    },
-    {
-      "path": "docs/completion_reports/A-12_COMPLETION_REPORT.md",
-      "sha256": "BB715F4480C6C5566D1820D2C6F10A9E50E3FAE71098D7A2C55D3B7EB1D43F5B"
-    },
-    {
-      "path": "docs/evidence/manifests/A-12_EVIDENCE_MANIFEST.json",
-      "sha256": "269F925328145C86F99B5B9622419DDCCAE1A37D50DEF78E5965FF0CCF282015"
-    },
-    {
-      "path": "docs/validation/A-12_SCREEN_STATES_VALIDATION.md",
-      "sha256": "0A35913F36C8FF965F72D0241FB37F42C80B7A9085970FD032D639CBDEEA6C3E"
-    },
-    {
-      "path": "scripts/check_a12_screen_states.py",
-      "sha256": "B9305300438E507BC88987EA6ED58836578F7376FDD7F142B6F0117CF8196B57"
-    },
-    {
-      "path": "tests/fixtures/a12/hostile-mutations.json",
-      "sha256": "BB92B2F898330E0D965FD72A9056FADCE4C57D2E5A28F9BBFBEB90C5A742DA19"
-    },
-    {
-      "path": "tests/tooling/test_a12_screen_states.py",
-      "sha256": "9FC82F991CF88489CF406C9AFB9702027BCFEDB51585C37915D254834C8474E3"
-    },
-    {
-      "path": "docs/architecture/a13/A-13_REPOSITORY_SCAN.md",
-      "sha256": "2E1D7BAABBA9587EC8CC0B2BDF6822D4E42396F3A2E2687C28A9342BA5C3FF58"
-    },
-    {
-      "path": "docs/architecture/a13/A-13_REPOSITORY_SCAN_CONTRACT.json",
-      "sha256": "8756FD483535CEAEAFE938C03C88930525C0CFBF627DB41623F8DCE11BAAAF5E"
-    },
-    {
-      "path": "docs/completion_reports/A-13_COMPLETION_REPORT.md",
-      "sha256": "D11E2F7A2CDB2D5B699441E095268066E83015405559E6C7BDB627257927F7CA"
-    },
-    {
-      "path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json",
-      "sha256": "BA2522405B707D0D17673BB029DCAF456D7891F76F09B60B03214DF8043FD2DE"
-    },
-    {
-      "path": "docs/validation/A-13_REPOSITORY_SCAN_VALIDATION.md",
-      "sha256": "D8267B790E962280A9AF2A75B542730EBC4D057D9C92C684D121E5D0D1B97684"
-    },
-    {
-      "path": "packages/repository_intelligence/__init__.py",
-      "sha256": "873CAAEB9DF9ECFF02345EAEC23054FBEC77C700740629B8454B37BD6BCB5E03"
-    },
-    {
-      "path": "packages/repository_intelligence/errors.py",
-      "sha256": "67943E28F99FC8BD77188976F949A35ADF27F06C17D3CC264B5EB4EE288DAD5C"
-    },
-    {
-      "path": "packages/repository_intelligence/git_readonly.py",
-      "sha256": "B718C08611DFCC4412B2651340100F71771C17DC24CAD629AF96B94241135EEF"
-    },
-    {
-      "path": "packages/repository_intelligence/inventory.py",
-      "sha256": "6696947FBEE7299A6D5231D07B3FA494DAAF61FB5453876EFD9AAF8AF02643CC"
-    },
-    {
-      "path": "packages/repository_intelligence/manifests.py",
-      "sha256": "8F056CFA8300BAB4AE15D1DA21A32518D8CE1A0FB77E7D4921CA552B6A7D2FBD"
-    },
-    {
-      "path": "packages/repository_intelligence/models.py",
-      "sha256": "85023DD9D986216D9A4B920AF2D8477FB4E4D27D4C71D0C0BD663129F91EEC21"
-    },
-    {
-      "path": "packages/repository_intelligence/path_guard.py",
-      "sha256": "6382A612F2F2FF73B0A5C75C7722C78F06D099C3BC793C38560960835E1DE514"
-    },
-    {
-      "path": "packages/repository_intelligence/profile.py",
-      "sha256": "B78ABE7641CD5FCB04D017E64E9DC5A67C8374897368B9C0497A244C001E0C65"
-    },
-    {
-      "path": "packages/repository_intelligence/scanner.py",
-      "sha256": "16721A0BCB6906B55EC7BC83B4EE5FEE39E18FFA7B5928AA1E83024DBCDA500C"
-    },
-    {
-      "path": "tests/fixtures/a13/hostile-cases.json",
-      "sha256": "785B860DE86BBB0A18DEAC9C900101AFBBF11A3C0DCBDE4EEBB873F70B3AF927"
-    },
-    {
-      "path": "docs/test_reports/A-13_TEST_REPORT.md",
-      "sha256": "90765FDA6C240AE04A7548B265BC4E2506E9E1878F93DE353ECFEE1AD736A986"
-    },
-    {
-      "path": "docs/work_orders/A-13_REWORK_WORK_INSTRUCTION_R2.md",
-      "sha256": "A803A7A2C0810EB9E9F8521AEE1E5A66B99D71246888ECDAD193D233582EB46B"
-    },
-    {
-      "path": "docs/work_orders/A-13_REWORK_INVOCATION_PROMPT_R2.md",
-      "sha256": "0AE9CFFFAB917EA9BC050598A2D3DABD5C2B76B190B78A311ADC860E813860ED"
-    },
-    {
-      "path": "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json",
-      "sha256": "4D06E7D449B14711E8CF1AB98171DE4310CFD8CDF46F4095557A38BB9FF21771"
-    },
-    {
-      "path": "docs/test_reports/A-13_RETEST_REPORT_R2.md",
-      "sha256": "277B7F55EED69C3FDA112C6D8033674B5FC9AD63D39CDD89C2133865CBF66B86"
-    },
-    {
-      "path": "docs/test_reports/A-14_RETEST_REPORT_R3.md",
-      "sha256": "D40A0FA0A64CF7FDA8DFBEF5605A3434941464614FD0BB3D3838385B00A30C69"
-    },
-    {
-      "path": "docs/progress/WSL_ENVIRONMENT_MIGRATION_HANDOFF_2026-08-12.md",
-      "sha256": "7FDDD3FE2FBE2D31AD81BC21E8731D62C1823CC6B30DCF2491090B0857277942"
-    },
-    {
-      "path": "docs/work_orders/A-14_REWORK_WORK_INSTRUCTION_R3.md",
-      "sha256": "EA5C9CBB8D9A8107D5EE4845B578D995C3F4EA77017CBDDE7952DC8212E5896C"
-    },
-    {
-      "path": "docs/work_orders/A-14_REWORK_INVOCATION_PROMPT_R3.md",
-      "sha256": "075C42C6315EC0C721915D435302612ECD91645017828E67D7337261C018EEE3"
-    },
-    {
-      "path": "apps/web/src/app/workbench.js",
-      "sha256": "17BC52B8C718ACE1291DD8ED721D8D9228435A6406194A7948902322547CB492"
-    },
-    {
-      "path": "apps/web/src/features/workbench/workbench-state.js",
-      "sha256": "EB8E7CA7F33A68E7641675D9AF972EF57C3FD441B9D761A061856A45FA4B44F7"
-    },
-    {
-      "path": "apps/web/tests/workbench.test.mjs",
-      "sha256": "560FD17AB637B6609885A5325665CC52D93B3E3690347B4779A1308329ADA9F3"
-    },
-    {
-      "path": "docs/architecture/a14/A-14_WORKBENCH_CONTRACT.json",
-      "sha256": "9D3C6DE99DE6F319F5CEC7A51E82A23F4A1ECED21AEAF0F9437FA220AB7DEC6F"
-    },
-    {
-      "path": "docs/architecture/a14/A-14_WORKBENCH_PROTOTYPE.md",
-      "sha256": "1A153180A83B69C169002751ED532B3F993AA201800ED102F1420B6063559D18"
-    },
-    {
-      "path": "docs/completion_reports/A-14_COMPLETION_REPORT.md",
-      "sha256": "D7AC9F8BD4F7A6A262C1C1442F0495F323D6BFBA2508103D71CA93937A3B52A9"
-    },
-    {
-      "path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST_R3.json",
-      "sha256": "830A16580403C0A29AFC23DDD29F921AFF0BDF116538E5675F2011185213AE25"
-    },
-    {
-      "path": "docs/validation/A-14_WORKBENCH_PROTOTYPE_VALIDATION.md",
-      "sha256": "990221A4E99C036AD26E1FFC07B91D6B3E6B0F11B1B7146E7BA97684A0B7658D"
-    },
-    {
-      "path": "scripts/check_a13_repository_scan.py",
-      "sha256": "4995A573BE1190214AB8FF843C2C4F6EC6B0CA18B49597D4F831C6EF933EB0D7"
-    },
-    {
-      "path": "scripts/check_a14_workbench_prototype.py",
-      "sha256": "281BAFAF930641F4FCA6DD302A3DD9A82D48038CAA9CDAAAB3F3CFF070C3A122"
-    },
-    {
-      "path": "scripts/check_g07_baseline.py",
-      "sha256": "E4E8C0FB17B2C8045BCDA5884ED7D45C16939720F3923765720ABFDCA3833AC7"
-    },
-    {
-      "path": "scripts/check_phase_g_gate.py",
-      "sha256": "0BF0ACBE336F33FA941352989535660E1F5BC8E31508507E3ED3CD06AEB6CC4A"
-    },
-    {
-      "path": "scripts/check_project_progress.py",
-      "sha256": "53D312C17632167ADD3764C3C9CBDAE6556B13D40A91BD0F7C29CE18AD02691E"
-    },
-    {
-      "path": "tests/tooling/test_a13_repository_scan.py",
-      "sha256": "65EF0E5562E96BC51255BEB09D07AC45AC2AB662B1A017DC49DE42BC4230FFDF"
-    },
-    {
-      "path": "tests/tooling/test_a14_workbench_prototype.py",
-      "sha256": "0341223A8703E4D86A50A7F7C569371B6F9416BF8D92DF1457731E6EB9A0A2C6"
-    },
-    {
-      "path": "tests/tooling/test_g07_baseline.py",
-      "sha256": "CE4D7BA2385AEDAF4B015A386F253FD2A85ADF717453C96F6CD095300F068DF0"
-    },
-    {
-      "path": "tests/tooling/test_phase_g_gate.py",
-      "sha256": "988E92CF69C61D64EB06ECFCAA3D57C248A587546E64771F33601BFEC837206E"
-    },
-    {
-      "path": "tests/tooling/test_project_progress.py",
-      "sha256": "C9B77B303ABE4F4A5A55F1467F1F831A5E84704033AF40CD61CFBA6FD60AE255"
-    },
-    {
-      "path": "docs/test_reports/A-14_RETEST_REPORT_R4.md",
-      "sha256": "10D591A1D87AD760BFACD7FCA70FD7A020DA87589DB12F035A8A59C6F207A2D9"
-    },
-    {
-      "path": "docs/work_orders/A-14_MAIN_TAKEOVER_PACKET_R4.md",
-      "sha256": "42B3F92672203CCD90E0F00B3AC257036E05794FB9CCABE66DB98C0C86B33263"
-    },
-    {
-      "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_EVIDENCE_R4.json",
-      "sha256": "77CA2CDC385E089DCCA5414C1CF7152DFE77B70B79A78C5C0C6F9E270D237381"
-    },
-    {
-      "path": "docs/test_reports/A-14_RETEST_REPORT_R5.md",
-      "sha256": "3E0C98FDB01772F8446FAE7763C6D4EC786655AA32DD22BF73A37F338743667B"
-    },
-    {
-      "path": "docs/test_reports/A-14_RETEST_REPORT_R6.md",
-      "sha256": "04EF9AE33F5823829A30E0E9C41EA35F594A00DB09610BD890E23414DB500792"
-    },
-    {
-      "path": "docs/evidence/manifests/A-14_MAIN_TAKEOVER_COMPLETION_MANIFEST_R4.json",
-      "sha256": "52D4C769AEE757580FDC987B074EDF1EFA6A9C7462732216E46FD77BC7B75746"
-    },
-    {
-      "path": "docs/progress/progress-events.json",
-      "sha256": "3086E9E764AEE7E4A0AF53B2C1F675549BCC1EA446ED4722EA6F97F4A5A48AA7"
-    },
-    {
-      "path": "docs/progress/failure-ledger.json",
-      "sha256": "C3C6A25E50946664F645FA1E1622555CCB553B57522E2D5BD6FF141B49470A73"
-    },
-    {
-      "path": "scripts/evidence_portability.py",
-      "sha256": "ED08FF08CAB3C5740DC0669F2F4885B76A06216506CF1DC574146396529D535D"
-    },
-    {
-      "path": "docs/evidence/manifests/A-14_A11_SUCCESSOR_R5.json",
-      "sha256": "F55C0472156989BC9203EB89DC7C054C265EB21BC8B80170A62CB68C00EB830A"
-    },
-    {
-      "path": "docs/evidence/manifests/A-14_A13_SUCCESSOR_R5.json",
-      "sha256": "D81BA87F8D78DC4FC061F1A2D2CA08E3A72DE7AB58C87FB2F093996743219A92"
-    },
-    {
-      "path": "docs/evidence/manifests/GIT_EOL_PORTABILITY_R1.json",
-      "sha256": "7DEC88AF047A14F3C7D11E12F4D247556075675A8E71C36143F698214184E3BE"
-    },
-    {
-      "path": "docs/progress/progress-handoff-detached-digest-a14-main-takeover-completion-r4.json",
-      "sha256": "4CA455F90401C7F51305EB326C289A577F2038BF7D6751B1B6BE008DF24A3213"
-    },
-    {
-      "path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
-      "sha256": "44ECD1D3A22ACD6E189CE4046E2F6023E7D864E9782279C4A3ADB263F128D20F"
-    },
-    {
       "path": "deploy/wsl/CandidateReleaseManifest.json",
-      "sha256": "456A5240CD8BE8A7739E9AC898B478ADE5B8A2D68A67CED21B0FA023A30B120B"
+      "sha256": "5A255EA7C42129B51D457A766381D3B69584C064143B86B8C010B4162F0E9ED8"
     },
     {
       "path": "deploy/wsl/candidate-manifest-guard.sh",
-      "sha256": "459E35FB7AF845A9414A560D62C2CA898462F8D4E3305F9666D7C6A30D88ADFC"
+      "sha256": "9C7F4DACC4626B0179BE2216103A6DEA06EB092A4CE4B76474A318B50D9DA419"
     },
     {
-      "path": "tests/deploy/test_wsl_staging_harness.py",
-      "sha256": "E35418312CF5DC9D6056AF9DEAC1ECC339A7AFBD211AA2A5CA2D9558ED708B3E"
+      "path": "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "sha256": "CBBED8EBA50F9049D1941AA98E43984961403455DCB5D49707F14EEF2A4061EB"
     },
     {
-      "path": "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
-      "sha256": "B5DB178577AE9BD1FD4E5AA8C4DBC7EE8AA275CD55E2C7266A300ADEA449A63B"
+      "path": "docs/WORK_STATUS.md",
+      "sha256": "DF82F031DBD5A72C30B344CFEAD5CD3AB07A407DF93986D907293763F4ADB530"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "sha256": "2B1B29ACF178595EEF3C2C2CEB22BE3529BB61E7BB27567CC9601474C5CE7B36"
     },
     {
       "path": "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
       "sha256": "31B101E27AD3E1E8C8F6DC307C36BD113695BDBC000A4FC15E4D7D2171FCCC23"
     },
     {
-      "path": "docs/WORK_STATUS.md",
-      "sha256": "3B1D78719B56294A0804755194C0FF67FFF8F49D1AA1124B3558C08FC8DE68C7"
+      "path": "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+      "sha256": "B5DB178577AE9BD1FD4E5AA8C4DBC7EE8AA275CD55E2C7266A300ADEA449A63B"
     },
     {
-      "path": "docs/progress/BUILD_HANDOFF.md",
-      "sha256": "E291DECDD390E17A3CAD0C7DC2121043D6181E0733555256A15348433639A27E"
+      "path": "scripts/check_project_progress.py",
+      "sha256": "5BBFD7CFF04653B0F984B9E31C8D42B23931B959E83AB5AA6AB13EE327531F45"
+    },
+    {
+      "path": "tests/deploy/test_wsl_staging_harness.py",
+      "sha256": "9C395B29A872AFBF6626A9DAB0379C4F90ECD9ECBEA16A1DBDE5C5D0BD633C6C"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "sha256": "1F206554BDEE8D2FC664D7CF581495B63862EAE3FECD2C0CB1412F71C5308366"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
-    "artifact_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-START-20260906"
+    "path": "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+    "artifact_id": "C21-PROVIDER-WSL-GIT-ONLY-CANDIDATE-BOUND-20260906"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -1336,7 +340,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "Execute the C-21 Provider WSL Git-only candidate exact12 locally; do not push or invoke WSL/external systems in Stage S.",
+  "next_safe_action": "Main이 exact12 로컬 검증과 diff를 검토한다. commit/push/WSL 및 외부 실행은 아직 수행하지 않는다.",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -1448,13 +452,13 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT103_START_RECORD10",
+    "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_SOURCE_EXACT107_BOUND_RECORD12",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "NOT_EXECUTED_STAGE_S",
+    "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
       "deploy/wsl/CandidateReleaseManifest.json",
       "deploy/wsl/Dockerfile.web",
@@ -1492,6 +496,7 @@
       "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
       "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
       "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
@@ -1517,6 +522,7 @@
       "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
       "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
@@ -1577,10 +583,10 @@
       "tests/tooling/test_project_progress.py"
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
-  "observed_at": "2026-09-06T12:25:13+09:00",
-  "worktree_status": "SEQ527_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_EXACT10_DIRTY",
-  "local_head": "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
-  "product_parent_commit": "b85d2b48e14f513e326054bc0be28009f269a827",
+    "observed_at": "2026-09-06T12:25:13+09:00",
+    "worktree_status": "SEQ530_PROVIDER_WSL_GIT_ONLY_CANDIDATE_BOUND_EXACT12_DIRTY",
+    "local_head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+    "product_parent_commit": "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
     "candidate_push_status": "NOT_EXECUTED_STAGE_S",
@@ -1842,6 +848,20 @@
       "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
+    ],
+    "provider_wsl_git_only_candidate_bound_paths": [
+      "deploy/wsl/CandidateReleaseManifest.json",
+      "deploy/wsl/candidate-manifest-guard.sh",
+      "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
+      "scripts/check_project_progress.py",
+      "tests/deploy/test_wsl_staging_harness.py",
+      "tests/tooling/test_project_progress.py"
     ]
   },
   "a01_precondition": {
@@ -2005,8 +1025,8 @@
     "invocation_sha256": "31B101E27AD3E1E8C8F6DC307C36BD113695BDBC000A4FC15E4D7D2171FCCC23",
     "executor": "developer-primary",
     "dispatch_base": "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
-    "result_status": "IN_PROGRESS",
-    "package_status": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+    "result_status": "COMPLETED",
+    "package_status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH",
     "worker_lease_id": "worker-lease-c21-provider-wsl-git-only-candidate-20260906-001",
     "write_lease_id": "write-lease-c21-provider-wsl-git-only-candidate-20260906-001",
     "allowed_path_count": 12,
@@ -2164,8 +1184,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
-    "manifest_path": "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
+    "manifest_path": "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -2186,7 +1206,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "3086E9E764AEE7E4A0AF53B2C1F675549BCC1EA446ED4722EA6F97F4A5A48AA7"
+      "sha256": "2B1B29ACF178595EEF3C2C2CEB22BE3529BB61E7BB27567CC9601474C5CE7B36"
     }
   },
   "next_work_package": {
@@ -2587,8 +1607,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "690550C5C16752530E9F7EF1879DB593A8E4998E2FEEB188FA4ED42CFB926012",
-  "runtime_next_action": "EXECUTE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EXACT12",
+  "snapshot_hash": "2429F3374DC215DC3256EAD4F2691E06CA054E51E3792D569E5D5D5B504AE61D",
+  "runtime_next_action": "PUSH_AND_EXECUTE_C21_WSL_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2710,13 +1730,12 @@
     "runtime_next_action": "PREPARE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE"
   },
   "provider_wsl_git_only_candidate": {
-    "event_sequence": 527,
-    "status": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
+    "event_sequence": 530,
+    "status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PUSH",
     "accepted": false,
     "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
     "dir2_status": "NOT_TRIGGERED",
-    "source_commit": "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
-    "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
+    "source_commit": "a6dca0da5a37e64491e91813895268e78ecb78b2",
     "candidate_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
     "source_cumulative_exact_path_count": 107,
     "source_cumulative_exact_path_list_sha256": "E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70",
@@ -2732,6 +1751,6 @@
     "actual_telegram_outbound": "NOT_EXECUTED",
     "ysna": "NOT_EXECUTED",
     "main_merge": "NOT_EXECUTED",
-    "runtime_next_action": "EXECUTE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EXACT12"
+    "runtime_next_action": "PUSH_AND_EXECUTE_C21_WSL_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION"
   }
 }

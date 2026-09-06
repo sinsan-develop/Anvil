@@ -749,3 +749,94 @@
 - 독립 focused 검증은 `11 passed`로 종료했다. 코드 변경이 없는 review 마감이므로 직전 fresh 전체 tooling `175 passed in 884.84s` 결과를 유지하며 전체 suite는 재실행하지 않는다.
 - 재확인 대상: live checker `PASS sequence=527`, `py_compile` 및 `git diff --check` exit 0, S exact10 hash `87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2`, cumulative exact107 hash `E9AA3CF3DCC4B5E651691E53A3201FE29A76B1D269B409FA99468FF0D1A28E70`, seq1~524 raw prefix byte-equal을 최종 마감 조건으로 유지한다.
 - 범위·상태: 새 event를 append하지 않으며 seq527, `ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION`, S exact10과 C-21 accepted=false/C-01 차단/DIR-2 미발생을 보존한다. commit/push와 WSL/Docker/DB/Provider/Telegram/ysna/main은 `NOT_EXECUTED`다.
+
+## 2026-09-06 C-21 Provider WSL Git-only candidate exact12
+
+- 상태: `IN_PROGRESS`; 시작 기준은 `a6dca0da5a37e64491e91813895268e78ecb78b2`, source parent는 `e4cccf3ce99e29005103cea3bd76fa0eede36f28`이다.
+- RED: existing manifest source mismatch와 completion validator 부재를 각각 재현했다. 최소 GREEN은 source/ref contract와 validator 노출까지 확인했다.
+- 외부 범위: commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 모두 `NOT_EXECUTED`다.
+- 다음 조치: seq528~530 forward-only record와 progress/evidence/digest 재결박 뒤 전체 검증을 수행한다.
+
+
+### exact12 미완성 인수 및 seq530 플랫폼 승인 심사 차단
+
+- 담당: developer-primary 역할의 developer_c21_candidate_finish. 시작 HEAD a6dca0da5a37e64491e91813895268e78ecb78b2, branch codex/c21-operational-execution, 기존 dirty8을 그대로 인수했다. 이전 INCOMPLETE는 유효 FAILURE_REPORT가 아니며 제품 실패 횟수에 더하지 않는다.
+- 인수 검토: CandidateReleaseManifest/guard/test의 역사 seq494 fixture 혼합, seq530 validator의 event details/WI/raw checksum/detached metadata 결박 미완성을 확인했다.
+- 새 RED 명령: TEMP=TMP=D:/tmp, PYTHONDONTWRITEBYTECODE=1, .venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k git_only_candidate_bound. 실제 결과 exit1, 2 failed/175 deselected/0.42s. 원인은 seq530 Git projection 및 신규 manifest 미완성이다.
+- 적용한 변경: tests/tooling의 seq530 mutation/direct-child 계약 테스트와 checker의 seq530 exact107+exact12 pre/postcommit predicate, status collection None 차단, source direct-child path 및 미게시 candidate ref 검사. 전체 seq530 validator와 projection artifact는 아직 미완성이다.
+- 플랫폼 fingerprint PLATFORM_SEQ530_INTEGRITY_GATE_APPROVAL_REQUIRED 3회. 1차 terminal/WI/raw/digest 보강 patch가 seq510~513 승인 범위 초과로 거절됐고, 2차 현행 WI exact12를 근거로 제시한 helper 단일 patch도 WI가 사용자 승인으로 인정되지 않아 거절됐다. 3차 사용자 계속하자 및 사용자 제공 AGENTS와 역사 불변 근거를 제시한 3줄 역사 in-memory 변조 거부 patch도 같은 사유로 거절됐다. 모두 실제 codex --codex-run-as-apply-patch를 require_escalated로 요청했으며 실행 전 거절되어 해당 patch는 적용되지 않았다. 이는 제품 실패가 아니고 우회하거나 추가 반복하지 않는다.
+- 정확한 최소 차단 patch: validate_c21_provider_wsl_git_only_candidate_projection의 terminal 계산 직전에 if preserved and events[:527] != json.loads(historical)["events"]: preserved = False를 추가하는 변경이다. Main에 3회 사유와 patch를 전달했다.
+- 안전한 재개 조건: Main이 seq528~530 checker/progress/evidence/digest 구현에 대한 시스템 승인 경계를 해소하면 같은 dirty8에서 계속한다. 그 전에는 영향 없는 guard와 historical harness 보완을 수행한다. 새 seq528~530 event는 아직 append하지 않았다.
+- 실제 commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 모두 NOT_EXECUTED이며, 기존 seq1~527 및 historical evidence 원본은 불변이다. 현재 RED 또는 미완성 결과를 PASS/COMPLETED로 표시하지 않는다.
+
+
+### exact12 인수 후 validator·fixture 보완 및 focused GREEN
+
+- Main이 child의 시스템 승인 거절을 인수하여 checker history guard, seq528~530 expected helper/validator, candidate guard 및 governance materialization을 실제 apply_patch로 적용했다. child에서는 Main 인수 뒤 helper 1회, deploy guard 1회, events append 1회가 각각 추가 거절되어 정확한 patch와 생성 변환을 Main에 전달했고 같은 요청을 반복하지 않았다.
+- Main materializer 첫 실행은 expected_terminal 지역변수 누락으로 1회 실패했고 즉시 수정 재실행 exit0으로 해소됐다. live 오류 3종은 events envelope last_sequence=527 잔존, terminal projection metadata 누락으로 seq527 event가 최신 repository event로 선택됨, registry_refs.progress_events hash 잔존이었다. Main이 last_sequence=530, terminal530 exact metadata와 registry hash를 반영했다.
+- child 최초 historical deploy focused는 5 failed/82 deselected/19.25s exit1. PATH 첫 bash가 WindowsApps app alias라 return127 및 cp949 reader 오류가 발생했다. 서비스/WSL QA 실행 성공이 아니며 Git Bash exe로 PATH를 고정하고 PYTHONUTF8=1로 교정했다.
+- 환경 교정 후 관련 focused는 3 failed/6 passed/78 deselected/47.08s exit1. 원인은 historical guard를 fixture tracked 경로로 복사해 dirty를 만든 점(두 inherited test)과 synthetic stat의 Windows CRLF 출력이었다. historical guard를 fixture repo의 sibling으로 분리하고 Unix fixture write_text에 newline LF를 명시했다. 제품 코드 변경으로 우회하지 않았다.
+- 보완 focused session83789는 11 passed/80 deselected/80.13s exit0. 이어 historical READY/cleanup helper도 immutable a6dca0d Git guard로 분리한 focused session50381은 18 passed/73 deselected/103.89s exit0이다.
+- 최신 guard 검증은 실제 로컬 Git clone에서 nominal binding PASS, public runtime exit22, branch/upstream drift, failed Git status collection, candidate remote drift, exact12를 유지한 누적109 reversion 거부를 포함한다. 기존 seq494/rollback/cleanup의 역사 계약은 당시 Git blob으로 유지하며 실제 외부 실행 증거로 승격하지 않는다.
+- seq1~527 raw prefix byte-equal을 직접 확인했다. 현재 남은 일은 마지막 exact12 잘못된 집합/두 번째 descendant focused, 최종 자료 재결박, full tooling/deploy, shell syntax, py_compile, diff-check 및 exact12/exact109 hash 감사다.
+- 모든 오류는 원인별 보완/환경/플랫폼 기록이며 이번 인수의 유효한 FAILURE_REPORT 반복은 0이다. Main 검토·전체 필수 검증이 끝나기 전 C-21 또는 이번 exact12를 최종 완료로 주장하지 않는다.
+- 마지막 current guard exact12 집합/second descendant focused(session83888)는 2 passed/91 deselected/15.95s exit0이다. 코드/fixture 및 전체 suite 전 기록을 마감했으며 다음은 Main 재결박 뒤 전체 검증이다. git diff --check exit0.
+
+
+### seq530 전체 검증 1차 및 테스트-only 잔존 보완
+
+- 최종 재결박 후 live checker는 PASS sequence=530 / AUTO_CONTINUE였고 후보 focused는 7 passed/171 deselected/16.70s exit0(session89317)이었다.
+- 전체 fresh 1차 tooling(session19334): 1 failed, 177 passed in 687.94s, exit1. test_c21_wsl_qa_resume_candidate_rebind_separates_ready_from_actual_execution만 실패했다. seq494 historical bundle을 사용하면서 CandidateReleaseManifest만 최신 ROOT에서 읽어 private_push_policy KeyError가 난 참조 혼합이었다. 해당 한 줄을 historical_root로 고정했다.
+- 전체 fresh 1차 deploy(session25037): 1 failed, 90 passed, 2 skipped in 680.36s, exit1. test_fresh_no_checkout_clone_reaches_manifest_guard_with_a_clean_worktree만 실패했다. 현재 guard가 exact107 source 검사에서 먼저 거부하는데 과거 manifest contract mismatch 진단을 기대했다. 현재 정확한 candidate source must be the exact107 commit 문구로 기대값 한 줄만 정정했으며 clean-tree/dirty-tree 검증은 유지했다.
+- 수정 후 focused(session30131): 2 passed, 2 skipped, 267 deselected in 6.80s, exit0. 두 실패의 원인은 테스트-only 참조/기대 문구이며 제품 checker/guard 추가 변경은 0이다. 최초 full의 실패를 통째 PASS로 재분류하지 않는다.
+- SKIP2는 Compose parser 부재와 Git Bash/NTFS의 POSIX0600/0400 mode 표현 불가다. 이 Windows-local slice에서 actual WSL/Docker/DB/Provider/Telegram/ysna/main을 실행하거나 SKIP를 실제 QA PASS로 승격하지 않았다.
+- 정적/무결성: Python3파일 py_compile PASS, Git Bash -n guard PASS, diff-check PASS; dirty exact12 SHA6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765, cumulative exact109 SHA16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E, seq1~527 raw prefix931700bytes SHA E8171085938267B003285688E97C76FEC5D2D1173533EED0CBF5BC854C47788F byte-equal을 확인했다. py_compile 임시 출력은 자동 정리되고 잔류0이다.
+- 다음 조치: Main 재결박 후 전체 tooling/deploy를 각 fresh 재실행해 최종 GREEN 증거를 남긴다. 현재 accepted=false 및 외부 NOT_EXECUTED 경계는 불변이다.
+
+
+### seq530 exact12 최종 fresh 검증 마감
+
+- 판정: 로컬 구현/기본 검증 COMPLETED, Main 최종 검토 및 문서 결과 재결박 후 무결성 확인 대기다. C-21 전체 수락 또는 외부 실행 완료를 의미하지 않는다.
+- 재결박 후 live checker: .venv/Scripts/python.exe scripts/check_project_progress.py → PASS sequence=530 reporting=AUTO_CONTINUE, exit0. 후보 focused: .venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k git_only_candidate → 7 passed, 171 deselected in 17.22s, exit0(session33579).
+- 전체 fresh tooling: .venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -rs -p no:cacheprovider → 178 passed in 664.70s, exit0(session67778).
+- 전체 fresh deploy: .venv/Scripts/python.exe -m pytest tests/deploy/test_wsl_staging_harness.py -q -rs -p no:cacheprovider → 91 passed, 2 skipped in 649.93s, exit0(session10125). SKIP2는 Git Bash/NTFS POSIX0600/0400 표현 한계와 Compose parser 부재다. 두 full suite의 실패는 0이나 SKIP를 실제 WSL PASS로 승격하지 않는다.
+- 실행 환경: PATH 선두 C:/Program Files/Git/usr/bin, PYTHONUTF8=1, TEMP=TMP=D:/tmp, PYTHONDONTWRITEBYTECODE=1. 두 suite 실행 중 제품/기록 파일은 수정하지 않았다. 테스트가 사용하는 disposable Git fixture만 로컬에서 생성/정리했으며 실제 commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 NOT_EXECUTED다.
+- 보존 경계: source a6dca0da5a37e64491e91813895268e78ecb78b2와 K exact12 dirty만 유지한다. seq1~527 및 historical evidence를 변경하지 않는다. accepted=false, C-01 차단, DIR-2 미발생, 실행 허가 HOLD는 불변이다.
+- 다음 안전 조치: 이 문서 결과 기록을 Main이 manifest/progress/digest에 재결박하고 live checker, diff-check, exact12/exact109 및 역사 raw byte 불변을 최종 확인한다. 코드/테스트는 전체 fresh 실행 이후 변경하지 않았다. 이후 Main이 exact12 diff와 증거를 검토하며 이 child는 commit/push/외부 실행을 하지 않는다.
+- rollback: 미커밋 exact12를 그대로 보존해 Main이 승인된 diff 단위로 처리한다. 임의 reset/clean/stash, 다른 dirty 또는 historical evidence 삭제는 하지 않는다. 유효 FAILURE_REPORT 반복은 0이며 초기 실패/환경/플랫폼 오류 기록은 위에 누적 보존했다.
+
+
+### seq530 Reviewer Important 1 — 손상/누락 evidence fail-closed 재작업
+
+- 인수: 최종 local COMPLETED 뒤 Reviewer가 신규 seq530 validator의 missing/corrupt evidence 예외를 Important1로 제기했다. detached_digest None/list/누락, historical events/progress Git blob 누락·손상, current progress/HANDOFF 누락, CandidateManifest/WI 누락에서 오류 목록 대신 AttributeError/UnboundLocalError/CalledProcessError/JSONDecodeError/FileNotFoundError가 날 수 있다. 동일 지적 첫 재작업이며 유효 FAILURE_REPORT 반복은0이다.
+- 원인: 역사 조회/파일 읽기 실패를 기록한 뒤 미초기화 raw 변수를 재사용하고, digest 및 역사 projection의 구조를 확인하지 않은 채 중첩 get/helper를 호출했다. latest evidence hash loop는 IO 예외를 처리하지 않았다.
+- TDD: tests/tooling/test_project_progress.py에 malformed digest7행, historical Git missing/invalid JSON/null/list/empty object10행, current events/progress/HANDOFF/CandidateManifest/WI/prompt missing6행의 table-driven adversarial 회귀3개를 추가했다. 실제 파일은 삭제하지 않고 해당 read_bytes/git-show 경계만 mock한다.
+- RED 명령: 고정 Git Bash/PYTHONUTF8/TEMP D:/tmp 환경에서 .venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k 'bound_malformed_digest or bound_history_unavailable or bound_missing_files' → 3 failed,178 deselected in2.33s, exit1. 실제 historical 및 progress_raw 미초기화 예외를 확인했다.
+- 설계: 역사 필수 입력 오류는 HISTORY_INVALID, digest shape/필수 raw 읽기 실패는 DIGEST_INVALID로 후속 미초기화 사용 전에 반환하고 latest 파일 hash IO 실패는 LATEST_REF_INVALID로 누적한다. 정상 정확 결박 조건과 seq1~527 역사 원본은 변경하지 않는다.
+- 플랫폼: checker 최소 patch를 실제 codex --codex-run-as-apply-patch require_escalated로1회 요청했으나 seq510~513 승인 밖 영속 gate 변경이라는 사유로 실행 전 거절됐다. 반복/우회 없이 정확 unified diff를 Main에 전달했다. 이는 제품 실패 횟수에 더하지 않는다.
+- 다음 조치: Main 시스템 승인 적용 후 adversarial 전 행과 관련 focused를 확인하고 기록/hash를 재결박한다. Main 지시에 따라 전체 검증 및 독립 재검토를 진행한다. commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 계속 NOT_EXECUTED다.
+
+- Main이 제시한 최소 fail-closed patch를 시스템 승인으로 적용했다. child 재검증에서 adversarial3개/23행은 3 passed,178 deselected in3.02s exit0이다. 누락/손상 입력을 PASS로 처리하지 않고 명시 C21_HISTORY_INVALID/C21_DIGEST_INVALID/C21_LATEST_REF_INVALID를 반환하는 것을 각 행에서 검사했다.
+- 관련 focused 명령: .venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k 'git_only_candidate and not bound_projection_rejects_mutations' → 9 passed,172 deselected in15.32s exit0(session33975). 현재 기록/코드/test raw hash가 재결박 전이므로 정상 전체 baseline 비교1개는 의도적으로 이 실행에서 제외했다. 이를 전체 candidate 또는 전체 tooling PASS로 주장하지 않는다.
+- 정상 전체 candidate 비교와 live checker는 Main의 재결박 직후 실행한다. 이전 full178P/91P2S는 I1 보완 전 증거로 보존하며 최신 코드의 full로 재사용하지 않는다. focused와 독립 Reviewer 재검토가 끝나기 전 전체 suite는 재실행하지 않는다.
+
+
+### seq530 Reviewer I1 CLEAN_REVIEW 및 최종 전체 검증 마감
+
+- 판정: COMPLETED / CLEAN_REVIEW / C0 / I0 / M0. 독립 Reviewer 최종 판정과 commit 허용은 Main이 전달한 결과다. child가 독립 Reviewer 역할을 수행하거나 자체 승인한 것이 아니다.
+- I1 후 재결박 검증: live checker PASS sequence=530 reporting=AUTO_CONTINUE, 정상 baseline 포함 candidate focused10 passed,171 deselected in17.70s exit0(session42329). adversarial23행은 명시 오류 목록을 반환하며 예외가 없다.
+- I1 후 전체 fresh tooling 명령: .venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -rs -p no:cacheprovider → 181 passed in664.59s(11:04), exit0(session76370).
+- I1 후 전체 fresh deploy 명령: .venv/Scripts/python.exe -m pytest tests/deploy/test_wsl_staging_harness.py -q -rs -p no:cacheprovider → 91 passed,2 skipped in642.84s(10:42), exit0(session43244).
+- SKIP 한계: Git Bash/NTFS에서 POSIX0600/0400 mode 표현 불가 및 Compose parser 부재다. Windows-local full 결과이며 실제 WSL/Docker/DB/Provider/Telegram/ysna/main PASS를 의미하지 않는다. Gate의 별도 실제 실행 경계를 넓히거나 SKIP를 PASS로 바꾸지 않았다.
+- 환경/불변: Git Bash PATH 선두, PYTHONUTF8=1, TEMP=TMP=D:/tmp, PYTHONDONTWRITEBYTECODE=1. 두 full 실행 중과 종료 결과 보고까지 파일 수정0이며 이후 이 WORK_STATUS/HANDOFF 기록만 수정했다. 코드/테스트는 full 실행 이후 불변이다.
+- commit 허용: Main 지시에 따라 승인된 K exact12의 로컬 commit을 허용하는 review 마감 상태로 기록한다. 실제 commit은 child가 실행하지 않았으며 Main의 최종 재결박/무결성 확인 후 수행한다. push 및 WSL/Docker/DB/Provider/Telegram/ysna/main 외부 실행은 계속 NOT_EXECUTED이고 별도 실행 승인 경계를 유지한다.
+- 다음 안전 조치: Main이 기록 결과를 manifest/progress/digest에 최종 재결박하고 live checker 및 exact12/exact109/역사 raw 불변을 확인한다. 최종 로컬 commit/후속 조치는 Main이 관리한다. C-21 accepted=false, C-01 차단, DIR-2 미발생은 불변이다.
+- 기록 마감 중 도구 wrapper JavaScript 괄호 오류1회(SyntaxError Unexpected token)는 shell 실행 전에 발생했고, 괄호를 바로잡은 동일 문서 patch 재실행 exit0으로 해소했다. 제품/테스트 실패나 파일 손상은 없으며 유효 실패 횟수에 더하지 않는다.
+
+
+### seq530 Main focused 환경 오류 및 교정 결과
+
+- Main 전달 실행 증거: 첫 focused는 PATH/PYTHONUTF8 고정 누락으로 WindowsApps bash가 선택되어 8 failed(rc127) 및 cp949 reader warnings가 발생했다. 이 결과는 Windows-local launcher/encoding 환경 오류이며 제품 기능 실패나 실제 WSL 실행 증거가 아니다.
+- Main이 즉시 PATH 선두 Git Bash, PYTHONUTF8=1, TEMP=TMP=D:/tmp로 고정해 재실행한 결과는 16 passed,258 deselected in79.41s, exit0이다. 최초 오류를 숨기거나 PASS로 바꾸지 않고 교정 실행과 분리해 기록한다.
+- Main 지시에 따라 HANDOFF machine independent_focused를 PASS_MAIN_16_AND_REVIEWER_20_ADVERSARIAL로 갱신한다. 이는 Main이 전달한 독립 검증 증거이며 child가 Reviewer20을 직접 실행했다는 뜻은 아니다.
+- 이번 보완은 WORK_STATUS/HANDOFF 기록만 변경한다. 코드/테스트는 최종 전체 tooling181P 및 deploy91P2S 이후 불변이다. 외부 실행/commit/push는 child에서 하지 않았고 Main 최종 재결박을 기다린다.
