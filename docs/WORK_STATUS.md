@@ -840,3 +840,58 @@
 - Main이 즉시 PATH 선두 Git Bash, PYTHONUTF8=1, TEMP=TMP=D:/tmp로 고정해 재실행한 결과는 16 passed,258 deselected in79.41s, exit0이다. 최초 오류를 숨기거나 PASS로 바꾸지 않고 교정 실행과 분리해 기록한다.
 - Main 지시에 따라 HANDOFF machine independent_focused를 PASS_MAIN_16_AND_REVIEWER_20_ADVERSARIAL로 갱신한다. 이는 Main이 전달한 독립 검증 증거이며 child가 Reviewer20을 직접 실행했다는 뜻은 아니다.
 - 이번 보완은 WORK_STATUS/HANDOFF 기록만 변경한다. 코드/테스트는 최종 전체 tooling181P 및 deploy91P2S 이후 불변이다. 외부 실행/commit/push는 child에서 하지 않았고 Main 최종 재결박을 기다린다.
+
+
+### seq533 Provider WSL execution-resume S 시작 projection
+
+- 시작 기준: `codex/c21-operational-execution` / `e6c562cf07bc2c35e24addb60efa9d90fae08046`, clean이며 parent는 `a6dca0da5a37e64491e91813895268e78ecb78b2`다. seq527 CLEAN_REVIEW C0/I0/M0와 seq530 `commit=NOT_EXECUTED` 사실을 보존한다.
+- S exact10은 `0FCFCE1A57E7A806B9E94B495DBE7CF3AEFD720FB6B8ACFF029DA0CEBB7EA070`, 후속 K exact14는 `3A67A5443BBCD92B125E5168442B5EB46A1FBA4EA0A9AE061411FB655921C09B`로 결박한다. 외부 실행, commit, push는 모두 `NOT_EXECUTED`다.
+- TDD RED: execution-resume path helper 부재를 AssertionError로 확인했다. GREEN: path helper focused 1 passed. full tooling/checker/py_compile/diff-check는 projection 재결박 전이므로 아직 미실행이다.
+- 플랫폼 오류: canonical progress의 active WorkInstruction/lease 전환 patch는 영속 운영 상태 변경으로 2회 거절됐다. 제품 실패가 아니며 해당 오류를 PASS로 승격하지 않는다. Main의 승인 binding 또는 시스템 적용 뒤 seq531~533, handoff/digest, live checker를 재결박한다.
+- 미검증: K direct-child commit, Main exact binding, actual current/previous runtime 관측 및 WSL/Docker/DB/Provider/Telegram/ysna/main은 수행하지 않았다. rollback은 미래 dispatch에서 관측해야 하며 추측하지 않는다.
+
+### seq533 S validator writer 인수 및 집중 검증
+
+- 담당 `developer-primary` 역할의 `developer_seq533_validator`; 인수 HEAD `e6c562cf07bc2c35e24addb60efa9d90fae08046`, branch `codex/c21-operational-execution`, 기존 dirty7 보존. 변경은 S exact10 안의 checker/test/WI/prompt/WORK_STATUS/HANDOFF이며 제품·외부 실행·commit/push는 0이다.
+- TDD RED: `-k execution_resume` → `4 failed,1 passed,181 deselected`, exit1. 순수 artifact builder와 seq533 validator 부재가 원인이다. 이후 strict JSON, raw header/footer·prefix, 역사 progress 보존, 정확한 manifest raw5/latest6, Git direct-child·scope·ref 수집 계약을 구현했다.
+- 로컬 환경 오류 `SEQ533_TMPDIR_SANDBOX_PERMISSION_LOOP` 1개 원인: 첫 일반 권한 테스트와 진단 실행에서 Python tempfile.mkdtemp가 D:/tmp 생성 거부를 재시도했다. 두 실행을 중단하고 faulthandler 1회로 해당 위치를 확인했다. 별도 실행한 진단도 즉시 중단했다. 외부 실행 또는 제품 실패가 아니며 유효 FAILURE_REPORT 횟수에 포함하지 않는다. 승인된 D:/tmp fixture 생성/자동 정리만 require_escalated로 실행해 해소했다.
+- 첫 GREEN: `.venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k execution_resume` → `5 passed,181 deselected in6.68s`, exit0.
+- 추가 RED: Git 실행 OSError가 밖으로 전파되고 duplicate/malformed path helper가 없는 것을 `2 failed,185 deselected in1.91s`, exit1로 확인했다. 수집 실패를 `GIT_REQUIRED_COLLECTION_FAILED`로 반환하고 중복/경로 변조를 거부했다.
+- 최신 GREEN: 같은 focused 명령 → `6 passed,181 deselected in8.67s`, exit0. 누락/손상/nonobject/duplicate JSON/nonfinite/invalid UTF-8 evidence, duplicate rows, refs/status/ref collection 실패, dirty widen/narrow, second descendant, merge, source parent, 누적 reversion을 확인했다. 실제 WSL/DB/Provider/브라우저 성공 증거가 아니다.
+- canonical P/E/D 영속 쓰기는 Main의 기존 동일 원인 플랫폼 거절 3회 후 Main takeover 지시에 따라 이 writer가 시도하지 않았다. Main에 순수 `c21_provider_wsl_execution_resume_start_artifacts`와 정확한 입력 mapping을 전달한다. 현재 machine projection/manifest/digest는 재결박 전이므로 seq533 live checker PASS를 주장하지 않는다.
+- 다음 안전 행동: Main이 기록 마감 후 E/P/H/D/M bytes를 재생성하여 apply_patch로 적용하고 live checker, exact10/exact113, historical raw 불변과 독립 검토를 수행한다. S/K의 모든 외부 필드는 NOT_EXECUTED이고 runtime은 K direct-child commit 및 Main exact binding 전까지 차단한다.
+
+#### seq533 공통 복구 계약 보완 및 writer 마감
+
+- 관련 회귀 `-k 'execution_resume or git_only_candidate_start or git_only_candidate_postcommit'`는 `10 passed,177 deselected in22.88s`, exit0이다. 이 결과는 아래 공통 HANDOFF 필드 보완 전 증거이며 최신 전체 tooling PASS로 표시하지 않는다.
+- 추가 TDD RED `execution_resume_matches_shared`는 `1 failed,187 deselected in0.97s`, exit1이었다. 새 machine summary에서 기존 공통 validator가 요구하는 baseline/failure/next action/DIR/upstream/projection/base/path 필드8개가 누락돼 실제 불일치를 재현했다. source progress 기준으로 필드를 보존하고 next_safe_action은 K exact14 준비로 맞췄다. Event/reporting/detached/manifest 공통 계약은 유지했다.
+- 최종 focused `-k execution_resume`는 `7 passed,181 deselected in8.55s`, exit0이다. source seq530 validator, Git predicate If와 collector 내부 seq530 If의 AST는 불변 True였다. 두 Python 파일의 in-memory compile 및 git diff --check PASS. raw checksum과 portable checksum도 current latest 파일5개에서 일치했다.
+- `D:/tmp/anvil-seq533-*` 테스트 fixture 잔류0을 확인했다. canonical P/E/D 쓰기0, commit/push/외부 실행0. 현재 dirty7이며 Main의 5개 artifact 적용 뒤 S exact10이 된다. manifest 초안과 HANDOFF machine block도 같은 builder 결과로 함께 교체해야 한다.
+- 완료 판정은 `INCOMPLETE_MAIN_MATERIALIZATION_REQUIRED`다. 구현·집중 계약은 완료했고, canonical 적용/live checker/실제 Git precommit projection/전체 tooling·독립 검토는 Main의 영속 기록 인수 후 검증한다. 열린 제품 finding을 없다고 선언하지 않는다.
+
+#### seq533 Main materialization 후 registry hash 보완
+
+- Main이 S exact10을 적용한 뒤 live checker에서 `PRG_REGISTRY_HASH_MISMATCH` 1건을 전달했다. read-only 진단 결과 `registry_refs.progress_events.sha256`가 source E hash `2B1B29ACF178595EEF3C2C2CEB22BE3529BB61E7BB27567CC9601474C5CE7B36`에 남아 있었고 실제 E hash는 `29DC6F22D130E4AB29FB4683C3883F8490EA713EF1DEB779FB8847C2321CB9EC`이었다.
+- 원인 `SEQ533_REGISTRY_EVENTS_HASH_NOT_REBOUND` 1회. builder에서 새 E를 latest refs에만 반영하고 registry 참조를 갱신하지 않은 누락이다. 기존 공통 `_validate_registry_refs`를 공유 복구 계약 테스트에 포함해 `1 failed,187 deselected in1.01s`, exit1로 동일 오류를 재현했다.
+- 수정: artifact builder가 generated E의 실제 SHA-256을 `registry_refs.progress_events`에 갱신한다. source의 다른 registry refs는 보존한다. checker/test/이 기록만 수정했고 canonical P/E/D는 쓰지 않았다.
+- 최신 GREEN: `.venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k execution_resume` → `7 passed,181 deselected in8.83s`, exit0. `-k execution_resume_start`는 path helper1개만 선택하므로 전체 seq533 집중 검증으로 사용하지 않는다.
+- 다음 안전 조치: Main이 current6 입력으로 E/P/H/D/M을 다시 materialize하고 live checker를 실행한다. live PASS는 아직 확인하지 않았으며 commit/push/외부 실행0을 유지한다.
+
+#### seq533 전체 tooling 3F와 Reviewer I1 재작업
+
+- Main 재결박 후 live checker PASS와 execution_resume7 PASS를 전달받고 파일 수정 없이 fresh full tooling을 실행했다. 명령 `.venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -rs -p no:cacheprovider`, PYTHONUTF8=1/PYTHONDONTWRITEBYTECODE=1/TEMP=TMP=D:/tmp/PATH Git Bash 선두. 결과 `3 failed,185 passed in565.15s (9:25)`, exit1(session2176). 실행 중 파일 수정0이며 이 실패를 전체 PASS로 대체하지 않는다.
+- full 실패 중 `...git_only_candidate_bound_git_projection_is_exact`, `...git_only_candidate_bound_projection_rejects_mutations`는 live seq533 bundle과 historical seq530 source/manifest를 혼합한 fixture 오류였다. 두 테스트를 immutable `e6c562cf07bc2c35e24addb60efa9d90fae08046`의 seq530 bundle/manifest로 옮겼으며 기존 정상·음성 assertion은 보존했다.
+- full 나머지 `test_git_and_authority_bindings_are_checked_against_workspace`는 mutated validated_base_commit에 대한 실제 ancestry 수집이 상수 base를 사용해 예상 `GIT_VALIDATED_BASE_NOT_ANCESTOR`를 누락했다. seq533 collector는 repository에 기재된 base로 ancestry를 조회하며, 예상 exact base와의 불일치는 별도 projection 오류로 유지한다.
+- Reviewer I1은 public main→load_bundle 경로에서 P/E/M의 nonobject/null/nested corruption이 sequence 전용 validator 앞에서 AttributeError/TypeError를 발생시킨 문제다. 공개 main 테스트로 P/E/M 각각 []/null/nested corruption 총9행을 추가했다. main 경계가 구조 오류를 `LOAD_ERROR:INVALID_STRUCTURE:<error type>`와 exit1로 반환해 traceback 없이 fail-closed하도록 보완했다.
+- 수정 전 RED: 공개 main 및 영향3개 선택자는 `4 failed,185 deselected in2.85s`, exit1. 최신 GREEN: `-k 'execution_resume or git_and_authority_bindings_are_checked_against_workspace or git_only_candidate_bound_git_projection_is_exact or git_only_candidate_bound_projection_rejects_mutations'` → `11 passed,178 deselected in21.35s`, exit0(session57492).
+- source seq530 validator, Git predicate If, collector 내부 seq530 If의 AST 불변3개 True; in-memory compile/diff-check PASS. runtime 외부 실행·commit/push와 canonical P/E/D 쓰기는 0이다. checker/test/WORK_STATUS/HANDOFF를 마감한 뒤 Main이 기존 pure builder로5 artifacts를 재결박하고 live checker 및 Reviewer I1 독립 재검토를 수행한다. 보완 후 fresh full tooling은 아직 미실행이다.
+
+#### seq533 최종 전체 검증·독립 검토 마감
+
+- 판정: `full_tooling=PASS_189`, `independent_review=CLEAN_REVIEW_C0_I0_M0`, `independent_focused=PASS_REVIEWER_18_MAIN_15`. 독립 Reviewer 결과와 Main15 증거는 Main이 전달한 검토 판정이며 이 writer가 독립 Reviewer를 겸한 결과가 아니다.
+- I1 보완·최종 재결박 후 fresh 전체 tooling 명령 `.venv/Scripts/python.exe -m pytest tests/tooling/test_project_progress.py -q -rs -p no:cacheprovider` → `189 passed in729.23s (12:09)`, exit0(session81020). Git Bash PATH 선두, PYTHONUTF8=1, PYTHONDONTWRITEBYTECODE=1, TEMP=TMP=D:/tmp를 고정했다. 전체 실행 시작부터 결과 회수까지 파일 수정0, 재실행0이다. 이전 full185P/3F는 보완 전 기록으로 그대로 보존한다.
+- Main 전달 독립 증거: Reviewer CLEAN_REVIEW / C0 / I0 / M0, related18과 Main15 PASS. 공개 main malformed P/E/M []/null/nested9행은 exit1/error/no traceback으로 거부한다. Git adversarial은 source/direct-child/extra-parent/second-descendant/ref 수집실패/dirty widen-narrow/cumulative reversion을 거부한다. 검증 전용 잔류0을 확인했다.
+- 이번 마감 변경은 `docs/WORK_STATUS.md`, `docs/progress/BUILD_HANDOFF.md` 두 문서뿐이다. 제품·검증 코드와 historical seq1~530은 변경하지 않았다. 세 결과 값은 본문에 기록하며 strict machine summary의 schema 변경은 하지 않는다.
+- Main 지시에 따라 seq533 S exact10의 로컬 commit 허용 상태를 기록한다. 실제 commit은 Main이 최종 재결박/live checker/무결성을 확인한 뒤 수행하며 writer는 commit/push를 실행하지 않았다. 이는 K runtime 실행이나 외부 배포 승인으로 확대되지 않는다.
+- C-21 accepted=false, C-01 차단, DIR-2 미발생을 유지한다. WSL/Docker/DB/Provider/Telegram/ysna/main/push는 NOT_EXECUTED다. runtime dispatch는 K direct-child commit 및 Main exact binding 전까지 차단한다.
+- 다음 안전 행동: Main이 마감된 WORK_STATUS/HANDOFF를 포함한 current6 raw input으로 E/P/H/D/M을 재결박하고 live checker 및 로컬 commit 직전 exact10을 확인한다. 이번 문서 마감 자체를 새로운 실제 WSL/브라우저/DB PASS로 표시하지 않는다.

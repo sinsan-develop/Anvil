@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-WSL-EXECUTION-RESUME-START-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 533,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T17:55:29+09:00",
+  "scope": "seq533 시작 기록; seq1-530 보존; K exact14 준비 및 외부 실행 미실행.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 115306,
+    "file_sha256": "94E635A076D3D9F059B30F4451EF7E47CAC5BC9B9CB5FFE78F12567781B9D5D4",
+    "canonical_json_sha256": "DC368E8F09068E655414C48C9A09EEBA9B2C7561C6D888C25FA25197B25589F9"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 206197,
+    "file_sha256": "061C6D22D964C295B762D10954A1F35646EAF4E96720A60E51E71ECD6B0EF0B6",
+    "machine_summary_canonical_sha256": "7825299187D4086FEB6F86F1A17247598B1EBE27B1106DF0B3AD9AAE8F7E0268"
+  }
+}

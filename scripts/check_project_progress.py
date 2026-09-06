@@ -10651,6 +10651,15 @@ def validate_repository_projection(
     control_runtime_record_commit_is_direct: bool = False,
     product_commit_parent_is_direct: bool = False,
 ) -> list[str]:
+    if (progress or {}).get("event_sequence") == 533:
+        return _validate_c21_resume_repository(repository, actual_head=actual_head,
+            actual_branch=actual_branch, actual_upstream=actual_upstream,
+            actual_remote_head=actual_remote_head, actual_feature_remote_head=actual_feature_remote_head,
+            base_is_ancestor=base_is_ancestor, actual_changed_paths=actual_changed_paths,
+            working_tree_mode=working_tree_mode, control_descendant_paths=control_descendant_paths,
+            control_is_ancestor=control_is_ancestor, worktree_is_clean=worktree_is_clean,
+            control_runtime_record_commit_is_direct=control_runtime_record_commit_is_direct,
+            product_commit_parent_is_direct=product_commit_parent_is_direct)
     if (progress or {}).get("event_sequence") == 530:
         errors: list[str] = []
         expected_record = c21_provider_wsl_git_only_candidate_paths()
@@ -12759,6 +12768,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 533:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_resume_git(bundle)
     if not (root / ".git").exists():
         return []
     repository = bundle["progress"].get("repository", {})
@@ -13587,6 +13600,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_provider_wsl_auth_reviewed_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_git_only_candidate_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_START_MANIFEST.json":
+            errors.extend(validate_c21_provider_wsl_execution_resume_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_git_only_candidate_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json":
@@ -13719,6 +13734,11 @@ def main(argv: list[str] | None = None) -> int:
         errors = validate_bundle(bundle)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         print(f"LOAD_ERROR:{exc}")
+        return 1
+    except (AttributeError, TypeError, KeyError, IndexError) as exc:
+        # Malformed object shapes can fail before the sequence-specific validator.
+        # The CLI must fail closed without exposing a Python traceback.
+        print(f"LOAD_ERROR:INVALID_STRUCTURE:{type(exc).__name__}")
         return 1
     if errors:
         for reason_code in errors:
@@ -14538,6 +14558,406 @@ def c21_provider_wsl_git_only_candidate_start_paths() -> set[str]:
         "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
         "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
         "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+C21_RESUME_SOURCE = "e6c562cf07bc2c35e24addb60efa9d90fae08046"
+C21_RESUME_PARENT = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+C21_RESUME_BASE = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+C21_RESUME_REMOTE = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+C21_RESUME_AT = "2026-09-06T17:55:29+09:00"
+C21_RESUME_STATUS = "ACTIVE_PROVIDER_WSL_EXECUTION_RESUME_PREPARATION"
+C21_RESUME_NEXT = "EXECUTE_C21_PROVIDER_WSL_EXECUTION_RESUME_EXACT14"
+C21_RESUME_BLOCKER = "BLOCKED_PENDING_K_DIRECT_CHILD_COMMIT_AND_MAIN_EXACT_BINDING"
+C21_RESUME_RELATION = "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXECUTION_RESUME_SOURCE_EXACT109_START_RECORD10"
+C21_RESUME_CANDIDATE_REF = "refs/remotes/origin/candidates/c21-wsl-exact107"
+C21_RESUME_P = "docs/progress/build-progress.json"
+C21_RESUME_E = "docs/progress/progress-events.json"
+C21_RESUME_H = "docs/progress/BUILD_HANDOFF.md"
+C21_RESUME_D = "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-start.json"
+C21_RESUME_M = "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_START_MANIFEST.json"
+C21_RESUME_WI = "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md"
+C21_RESUME_PROMPT = "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md"
+C21_RESUME_WI_ID = "WI-C-21-PROVIDER-WSL-EXECUTION-RESUME-20260906-001"
+C21_RESUME_WORKER = "worker-lease-c21-provider-wsl-execution-resume-20260906-001"
+C21_RESUME_WRITE = "write-lease-c21-provider-wsl-execution-resume-20260906-001"
+C21_RESUME_EXEC_FENCE = "c21-provider-wsl-execution-resume-execution-fence-epoch-1-e6c562c"
+C21_RESUME_WRITE_FENCE = "c21-provider-wsl-execution-resume-write-fence-epoch-1-e6c562c"
+C21_RESUME_HISTORY_SHA = "2B1B29ACF178595EEF3C2C2CEB22BE3529BB61E7BB27567CC9601474C5CE7B36"
+C21_RESUME_PREFIX_SHA = "202F50F09DD6BA9F5D7E46DEFBB960F76A0E254416D3C18250617C6AA2B5B195"
+C21_RESUME_CANONICAL_SHA = "BE6D46279351D3791B849F7668BD000709DE991B0F602FFA6F9F337E7E08CE55"
+
+
+def _c21_resume_sha(raw: bytes) -> str:
+    return hashlib.sha256(raw).hexdigest().upper()
+
+
+def _c21_resume_json(raw: bytes | str) -> dict[str, Any]:
+    """Strict object parser local to seq533; historical validators stay unchanged."""
+    def unique(pairs):
+        result = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON key")
+            result[key] = value
+        return result
+    def reject_constant(value):
+        raise ValueError("nonfinite JSON constant")
+    value = json.loads(raw, object_pairs_hook=unique, parse_constant=reject_constant)
+    if not isinstance(value, dict):
+        raise ValueError("JSON object required")
+    return value
+
+
+def _c21_resume_json_bytes(value: Any) -> bytes:
+    return (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n").encode("utf-8")
+
+
+def c21_provider_wsl_execution_resume_path_metadata() -> dict[str, Any]:
+    source = (c21_development_qa_review_predecessor_paths()
+        | c21_development_qa_review_successor_paths() | c21_provider_status_read_start_paths()
+        | c21_provider_status_read_actual_paths() | c21_provider_status_read_review_successor_paths()
+        | c21_provider_wsl_auth_product_paths() | c21_provider_wsl_auth_reviewed_paths()
+        | c21_provider_wsl_git_only_candidate_start_paths() | c21_provider_wsl_git_only_candidate_paths())
+    start = c21_provider_wsl_execution_resume_start_paths()
+    successor = c21_provider_wsl_execution_resume_paths()
+    metadata: dict[str, Any] = {}
+    for name, paths, count, sha in (
+        ("source_cumulative", source, 109, "16B35029243DAEF7A18A73DDBAA45C5E3150C7AF5B1863287CD823EAAA6DCB2E"),
+        ("start", start, 10, "0FCFCE1A57E7A806B9E94B495DBE7CF3AEFD720FB6B8ACFF029DA0CEBB7EA070"),
+        ("successor", successor, 14, "3A67A5443BBCD92B125E5168442B5EB46A1FBA4EA0A9AE061411FB655921C09B"),
+        ("post_start_cumulative", source | start, 113, "3823FE6C7839D6E306A16C0CD765AF1105422ECAAEBEEA340DA7C18652A8CA5D"),
+        ("post_successor_cumulative", source | start | successor, 117, "6E50421CAB8A0E2A99B1ED1A074A4CAB487B8A0C4EA5D77F526343C3402DABA1"),
+    ):
+        if len(paths) != count or path_list_lf_sha256(sorted(paths)) != sha:
+            raise ValueError("C21_RESUME_PATH_METADATA_INVALID")
+        metadata.update({name + "_exact_paths": sorted(paths), name + "_exact_path_count": count,
+                         name + "_exact_path_list_sha256": sha})
+    return metadata
+
+
+def c21_provider_wsl_execution_resume_event_bytes(historical: bytes, appended: list[dict]) -> bytes:
+    old = _c21_resume_json(historical)
+    prefix = raw_event_object_prefix_bytes(historical, 530)
+    header = (b'{\n  "schema_version": "1.0.0",\n  "stream_id": "anvil-build-main",\n'
+              b'  "first_sequence": 1,\n  "last_sequence": 530,\n  "events": [\n    ')
+    footer = b'\n  ],\n  "last_event_id": "evt_c21_provider_wsl_git_only_candidate_package_completed"\n}\n'
+    if (len(historical) != 943712 or _c21_resume_sha(historical) != C21_RESUME_HISTORY_SHA
+        or len(prefix) != 943494 or _c21_resume_sha(prefix) != C21_RESUME_PREFIX_SHA
+        or historical != header + prefix + footer or len(old.get("events", [])) != 530
+        or _c21_resume_sha(_canonical_ascii_json_bytes(old["events"])) != C21_RESUME_CANONICAL_SHA):
+        raise ValueError("C21_RESUME_HISTORY_INVALID")
+    if (not isinstance(appended, list) or len(appended) != 3
+        or any(not isinstance(row, dict) for row in appended)
+        or [row.get("sequence") for row in appended] != [531, 532, 533]
+        or [row.get("event_type") for row in appended] != ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"]
+        or [row.get("event_id") for row in appended] != ["evt_c21_provider_wsl_execution_resume_" + suffix for suffix in ("worker_lease_issued", "write_lease_issued", "package_started")]):
+        raise ValueError("C21_RESUME_EVENT_INVALID")
+    new = b""
+    for event in appended:
+        lines = json.dumps(event, ensure_ascii=False, indent=2, allow_nan=False).splitlines()
+        new += b",\n" + "\n".join("    " + line for line in lines).encode("utf-8")
+    return (header.replace(b'"last_sequence": 530', b'"last_sequence": 533') + prefix + new
+        + footer.replace(b"evt_c21_provider_wsl_git_only_candidate_package_completed", b"evt_c21_provider_wsl_execution_resume_package_started"))
+
+
+def c21_provider_wsl_execution_resume_start_spec(historical_progress: Mapping[str, Any], instruction_sha: str, prompt_sha: str) -> dict[str, Any]:
+    metadata = c21_provider_wsl_execution_resume_path_metadata()
+    if (historical_progress.get("event_sequence") != 530
+        or historical_progress.get("repository", {}).get("exact_allowed_paths") != metadata["source_cumulative_exact_paths"]
+        or historical_progress.get("active_work_instruction", {}).get("result_status") != "COMPLETED"
+        or not re.fullmatch("[A-F0-9]{64}", instruction_sha) or not re.fullmatch("[A-F0-9]{64}", prompt_sha)):
+        raise ValueError("C21_RESUME_SOURCE_PROJECTION_INVALID")
+    external = {key: "NOT_EXECUTED" for key in ("commit", "push", "wsl", "docker", "database", "provider", "telegram", "ysna", "main_merge")}
+    boundary = {"accepted": False, "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+        "runtime_dispatch": C21_RESUME_BLOCKER, "approval_binding": "MAIN_RESUMED_APPROVED_WSL_QA", **external}
+    worker = {"lease_id": C21_RESUME_WORKER, "agent_id": "developer-primary", "work_package_id": "C-21",
+        "subtask_id": "PROVIDER-WSL-EXECUTION-RESUME", "lease_epoch": 1, "fencing_token": C21_RESUME_EXEC_FENCE,
+        "execution_fencing_token": C21_RESUME_EXEC_FENCE, "status": "ACTIVE"}
+    write = {"lease_id": C21_RESUME_WRITE, "worker_lease_id": C21_RESUME_WORKER, "agent_id": "developer-primary",
+        "work_package_id": "C-21", "subtask_id": "PROVIDER-WSL-EXECUTION-RESUME", "write_epoch": 1,
+        "execution_fencing_token": C21_RESUME_EXEC_FENCE, "write_fencing_token": C21_RESUME_WRITE_FENCE,
+        "fencing_token": C21_RESUME_WRITE_FENCE, "status": "ACTIVE",
+        "path_scope": metadata["successor_exact_paths"], "paths": metadata["successor_exact_paths"]}
+    instruction = {"artifact_id": C21_RESUME_WI_ID, "artifact_path": C21_RESUME_WI, "artifact_sha256": instruction_sha,
+        "invocation_path": C21_RESUME_PROMPT, "invocation_sha256": prompt_sha, "executor": "developer-primary",
+        "dispatch_base": C21_RESUME_SOURCE, "result_status": "IN_PROGRESS", "package_status": C21_RESUME_STATUS,
+        "worker_lease_id": C21_RESUME_WORKER, "write_lease_id": C21_RESUME_WRITE,
+        "allowed_path_count": 14, "allowed_path_list_sha256": metadata["successor_exact_path_list_sha256"],
+        "allowed_paths": metadata["successor_exact_paths"], "accepted": False,
+        "c01_boundary": boundary["c01_status"], "dir2_status": "NOT_TRIGGERED", "approval_binding": boundary["approval_binding"]}
+    repository = dict(historical_progress["repository"])
+    repository.update({"local_head": C21_RESUME_SOURCE, "product_parent_commit": C21_RESUME_PARENT,
+        "head_relation": C21_RESUME_RELATION, "worktree_status": "SEQ533_PROVIDER_WSL_EXECUTION_RESUME_START_EXACT10_DIRTY",
+        "exact_allowed_paths": metadata["post_start_cumulative_exact_paths"],
+        "provider_wsl_execution_resume_start_paths": metadata["start_exact_paths"],
+        "provider_wsl_execution_resume_paths": metadata["successor_exact_paths"],
+        "candidate_remote_ref": C21_RESUME_CANDIDATE_REF, "push_status": "NOT_EXECUTED"})
+    subject = "C-21/PROVIDER-WSL-EXECUTION-RESUME"
+    details = [
+        {"lease_id": C21_RESUME_WORKER, "agent_id": "developer-primary", "work_instruction_id": C21_RESUME_WI_ID,
+         "fencing_token": C21_RESUME_EXEC_FENCE, "execution_fencing_token": C21_RESUME_EXEC_FENCE,
+         "lease_epoch": 1, "status": "ACTIVE", "subject_ref": subject},
+        {key: value for key, value in write.items() if key not in ("work_package_id", "subtask_id")}
+            | {"work_instruction_id": C21_RESUME_WI_ID, "path_count": 14, "path_list_sha256": metadata["successor_exact_path_list_sha256"]},
+        {"work_instruction_id": C21_RESUME_WI_ID, "worker_lease_id": C21_RESUME_WORKER, "write_lease_id": C21_RESUME_WRITE,
+         "dispatch_head": C21_RESUME_SOURCE, "dispatch_upstream_head": C21_RESUME_REMOTE,
+         "projection_mode": VALIDATED_BASE_PROJECTION_MODE, "validated_base_commit": C21_RESUME_BASE,
+         "head_relation": C21_RESUME_RELATION, "exact_allowed_paths": metadata["post_start_cumulative_exact_paths"],
+         "historical_parent_commit": C21_RESUME_PARENT, "candidate_ref": C21_RESUME_CANDIDATE_REF,
+         "result_status": "IN_PROGRESS", "package_status": C21_RESUME_STATUS, **metadata, **boundary},
+    ]
+    events = [{"event_id": "evt_c21_provider_wsl_execution_resume_" + suffix, "sequence": sequence,
+        "event_type": kind, "occurred_at": C21_RESUME_AT, "actor": "main-agent-eoul", "subject_ref": subject, "details": detail}
+        for sequence, kind, suffix, detail in zip((531, 532, 533), ("WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"),
+        ("worker_lease_issued", "write_lease_issued", "package_started"), details)]
+    active = {"event_sequence": 533, "status": C21_RESUME_STATUS, "source_commit": C21_RESUME_SOURCE,
+        "historical_parent_commit": C21_RESUME_PARENT, "candidate_ref": C21_RESUME_CANDIDATE_REF,
+        "runtime_next_action": C21_RESUME_NEXT, "seq527_clean_review": "PRESERVED_C0_I0_M0", **metadata, **boundary}
+    progress_updates = {"updated_at": C21_RESUME_AT, "event_sequence": 533, "last_event_id": events[-1]["event_id"],
+        "status": C21_RESUME_STATUS, "active_agent": "developer-primary", "worker_lease": worker, "write_lease": write,
+        "completed_work_instruction": historical_progress["active_work_instruction"], "active_work_instruction": instruction,
+        "repository": repository, "provider_wsl_execution_resume": active, "runtime_next_action": C21_RESUME_NEXT,
+        "next_safe_action": C21_RESUME_NEXT,
+        "current_progress_evidence_ref": {"package_id": "C-21", "path": C21_RESUME_D, "manifest_path": C21_RESUME_M},
+        "latest_evidence_manifest_ref": {"path": C21_RESUME_M, "artifact_id": "C21-PROVIDER-WSL-EXECUTION-RESUME-START-20260906"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C21_INTERNAL_PROVIDER_WSL_EXECUTION_RESUME_START_ACTIVE"], "stop_before_dialogue_report": False}}
+    handoff = {"event_sequence": 533, "last_event_id": events[-1]["event_id"], "status": C21_RESUME_STATUS,
+        "current_phase": historical_progress["current_phase"], "current_work_package": "C-21", "active_agent": "developer-primary",
+        "worker_lease": C21_RESUME_WORKER, "write_lease": C21_RESUME_WRITE, "execution_fencing_token": C21_RESUME_EXEC_FENCE,
+        "write_fencing_token": C21_RESUME_WRITE_FENCE, "active_work_instruction": C21_RESUME_WI_ID,
+        "active_work_instruction_sha256": instruction_sha, "active_invocation_sha256": prompt_sha,
+        "repository_head": C21_RESUME_SOURCE, "repository_head_relation": C21_RESUME_RELATION,
+        "repository_upstream": repository["upstream"], "repository_projection_mode": repository["projection_mode"],
+        "repository_validated_base_commit": repository["validated_base_commit"],
+        "repository_exact_allowed_paths": repository["exact_allowed_paths"],
+        "design_baseline_hash": historical_progress["design_baseline_hash"],
+        "valid_failure_count": historical_progress["valid_failure_count"],
+        "dir_status": historical_progress["dir_review"]["status"], "next_safe_action": C21_RESUME_NEXT,
+        "runtime_next_action": C21_RESUME_NEXT, "reporting_decision": "AUTO_CONTINUE", "seq527_clean_review": "PRESERVED_C0_I0_M0",
+        "current_runtime": "NOT_OBSERVED_IN_S", "previous_runtime": "NOT_OBSERVED_IN_S", "rollback": "OBSERVATION_REQUIRED_AT_FUTURE_DISPATCH",
+        **metadata, **boundary}
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C21_PROVIDER_WSL_EXECUTION_RESUME_START_PROJECTION",
+        "artifact_id": "C21-PROVIDER-WSL-EXECUTION-RESUME-START-20260906", "created_at": C21_RESUME_AT,
+        "event_sequence": 533, "appended_event_count": 3, "historical_event_sequence": 530,
+        "historical_commit": C21_RESUME_SOURCE, "historical_parent_commit": C21_RESUME_PARENT,
+        "historical_full_file_bytes": 943712, "historical_full_file_sha256": C21_RESUME_HISTORY_SHA,
+        "historical_event_object_prefix_bytes": 943494, "historical_event_object_prefix_sha256": C21_RESUME_PREFIX_SHA,
+        "historical_events_canonical_ascii_sha256": C21_RESUME_CANONICAL_SHA,
+        "terminal_events_canonical_sha256": _c21_resume_sha(canonical_json_bytes(events)),
+        "execution_authority_path": C21_RESUME_WI, "execution_authority_sha256": instruction_sha,
+        "invocation_path": C21_RESUME_PROMPT, "invocation_sha256": prompt_sha, "work_instruction_id": C21_RESUME_WI_ID,
+        "worker_lease_id": C21_RESUME_WORKER, "write_lease_id": C21_RESUME_WRITE,
+        "execution_fencing_token": C21_RESUME_EXEC_FENCE, "write_fencing_token": C21_RESUME_WRITE_FENCE,
+        "seq527_clean_review": "PRESERVED_C0_I0_M0", "status": C21_RESUME_STATUS,
+        "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT", "record_commit_mode": "SOURCE_DIRECT_CHILD_EXACT10",
+        "self_reference": False, **metadata, **boundary}
+    return {"progress_updates": progress_updates, "events": events, "handoff": handoff, "manifest": manifest}
+
+
+def c21_provider_wsl_execution_resume_start_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    """Return deterministic S evidence bytes for review; never write or dispatch."""
+    progress = _c21_resume_json(historical[C21_RESUME_P])
+    spec = c21_provider_wsl_execution_resume_start_spec(progress, _c21_resume_sha(files[C21_RESUME_WI]), _c21_resume_sha(files[C21_RESUME_PROMPT]))
+    events_raw = c21_provider_wsl_execution_resume_event_bytes(historical[C21_RESUME_E], spec["events"])
+    progress.update(spec["progress_updates"])
+    progress["registry_refs"]["progress_events"] = {"path": C21_RESUME_E, "sha256": _c21_resume_sha(events_raw)}
+    latest_files = {path: files[path] for path in ("docs/WORK_STATUS.md", C21_RESUME_WI, C21_RESUME_PROMPT,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    latest_files[C21_RESUME_E] = events_raw
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)} for path, raw in sorted(latest_files.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    text = files[C21_RESUME_H].decode("utf-8")
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(spec["handoff"]).decode() + "```"
+    text, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda match: replacement, text, flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C21_RESUME_HANDOFF_INVALID")
+    handoff_raw = text.encode("utf-8")
+    digest = {"schema_version": "1.0.0", "digest_id": "C21-PROVIDER-WSL-EXECUTION-RESUME-START-DIGEST-20260906",
+        "package_id": "C-21", "event_sequence": 533, "algorithm": "SHA-256", "created_at": C21_RESUME_AT,
+        "scope": "seq533 시작 기록; seq1-530 보존; K exact14 준비 및 외부 실행 미실행.", "self_reference": False,
+        "progress": {"path": C21_RESUME_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C21_RESUME_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(spec["handoff"]))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    raw_files = {path: files[path] for path in (C21_RESUME_WI, C21_RESUME_PROMPT, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    raw_files[C21_RESUME_D] = digest_raw
+    manifest = spec["manifest"] | {"raw_checksums": [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)} for path, raw in sorted(raw_files.items())]}
+    return {C21_RESUME_P: progress_raw, C21_RESUME_E: events_raw, C21_RESUME_H: handoff_raw,
+        C21_RESUME_D: digest_raw, C21_RESUME_M: _c21_resume_json_bytes(manifest)}
+
+
+def validate_c21_provider_wsl_execution_resume_start_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    """Validate disk and caller views against immutable source, with named failures."""
+    errors: list[str] = []
+    prefix = "C21_PROVIDER_WSL_EXECUTION_RESUME_START_"
+    try:
+        root = bundle["_root"]
+        historical = {path: subprocess.check_output(["git", "show", f"{C21_RESUME_SOURCE}:{path}"], cwd=root)
+                      for path in (C21_RESUME_P, C21_RESUME_E)}
+        _c21_resume_json(historical[C21_RESUME_P])
+        _c21_resume_json(historical[C21_RESUME_E])
+    except (OSError, ValueError, TypeError, KeyError, subprocess.CalledProcessError):
+        return [prefix + "HISTORY_INVALID"]
+    files = {}
+    for path in c21_provider_wsl_execution_resume_start_paths():
+        try:
+            files[path] = (root / path).read_bytes()
+        except OSError:
+            errors.append(prefix + "EVIDENCE_MISSING")
+    if errors:
+        return sorted(set(errors))
+    try:
+        expected = c21_provider_wsl_execution_resume_start_artifacts(historical, files)
+    except (ValueError, TypeError, KeyError, AttributeError, IndexError):
+        return [prefix + "HISTORY_OR_INPUT_INVALID"]
+    for path, name, supplied in ((C21_RESUME_P, "PROJECTION", bundle.get("progress")),
+        (C21_RESUME_E, "EVENT", bundle.get("events")), (C21_RESUME_D, "DIGEST", bundle.get("detached_digest")),
+        (C21_RESUME_M, "MANIFEST", manifest)):
+        try:
+            actual = _c21_resume_json(files[path])
+            required = _c21_resume_json(expected[path])
+            if actual != required or supplied != required or files[path] != expected[path]:
+                errors.append(prefix + name + "_INVALID")
+        except (ValueError, TypeError):
+            errors.append(prefix + name + "_INVALID")
+    try:
+        match = re.search(r"```json anvil-recovery-summary\s*(\{.*?\})\s*```", files[C21_RESUME_H].decode(), re.DOTALL)
+        actual_handoff = _c21_resume_json(match.group(1)) if match else None
+        expected_handoff = extract_handoff_summary(expected[C21_RESUME_H].decode())
+        if actual_handoff != expected_handoff or bundle.get("handoff") != expected_handoff:
+            errors.append(prefix + "HANDOFF_INVALID")
+    except (ValueError, TypeError, AttributeError):
+        errors.append(prefix + "HANDOFF_INVALID")
+    return sorted(set(errors))
+
+
+def _validate_c21_resume_repository(repository: Mapping[str, Any], **state: Any) -> list[str]:
+    metadata = c21_provider_wsl_execution_resume_path_metadata()
+    errors = []
+    expected = {"projection_mode": VALIDATED_BASE_PROJECTION_MODE, "validated_base_commit": C21_RESUME_BASE,
+        "head_relation": C21_RESUME_RELATION, "local_head": C21_RESUME_SOURCE, "product_parent_commit": C21_RESUME_PARENT,
+        "branch": "codex/c21-operational-execution", "upstream": "origin/codex/c21-operational-execution",
+        "feature_remote": "origin/codex/c21-operational-execution", "remote_head": C21_RESUME_REMOTE,
+        "feature_remote_head": C21_RESUME_REMOTE, "candidate_remote_ref": C21_RESUME_CANDIDATE_REF,
+        "worktree_status": "SEQ533_PROVIDER_WSL_EXECUTION_RESUME_START_EXACT10_DIRTY",
+        "exact_allowed_paths": metadata["post_start_cumulative_exact_paths"],
+        "provider_wsl_execution_resume_start_paths": metadata["start_exact_paths"],
+        "provider_wsl_execution_resume_paths": metadata["successor_exact_paths"], "push_status": "NOT_EXECUTED"}
+    if any(repository.get(key) != value for key, value in expected.items()):
+        errors.append("GIT_DESCENDANT_PROJECTION_INVALID")
+    for actual, key in (("actual_branch", "branch"), ("actual_upstream", "upstream"),
+        ("actual_remote_head", "remote_head"), ("actual_feature_remote_head", "feature_remote_head")):
+        if state[actual] != expected[key]:
+            errors.append("GIT_DESCENDANT_ORIGIN_MISMATCH")
+    at_source = state["actual_head"] == C21_RESUME_SOURCE
+    paths = state["actual_changed_paths"]
+    descendants = state["control_descendant_paths"]
+    expected_paths = metadata["source_cumulative_exact_paths" if at_source else "post_start_cumulative_exact_paths"]
+    if (not isinstance(paths, list) or sorted(paths) != expected_paths
+        or not isinstance(descendants, list) or sorted(descendants) != metadata["start_exact_paths"]):
+        errors.append("GIT_DESCENDANT_PATH_SET_MISMATCH")
+    if at_source:
+        if not state["working_tree_mode"] or state["worktree_is_clean"] or state["control_runtime_record_commit_is_direct"]:
+            errors.append("GIT_DESCENDANT_WORKTREE_DIRTY")
+    elif (not state["actual_head"] or not state["control_is_ancestor"] or not state["control_runtime_record_commit_is_direct"]
+        or state["working_tree_mode"] or not state["worktree_is_clean"]):
+        errors.append("GIT_DESCENDANT_RECORD_COMMIT_INVALID")
+    if not state["product_commit_parent_is_direct"]:
+        errors.append("GIT_SOURCE_DIRECT_CHILD_INVALID")
+    if not state["base_is_ancestor"]:
+        errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+    return sorted(set(errors))
+
+
+def _c21_resume_git_paths(raw: str) -> list[str]:
+    paths = raw.splitlines()
+    if len(paths) != len(set(paths)) or any(
+        not path or path != path.strip() or path.startswith(("/", "\\"))
+        or "\\" in path or any(part in ("", ".", "..") for part in path.split("/"))
+        for path in paths
+    ):
+        raise ValueError("GIT_PATH_COLLECTION_INVALID")
+    return sorted(paths)
+
+
+def _collect_c21_resume_git(bundle: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]
+    declared_base = bundle["progress"]["repository"].get("validated_base_commit")
+    def required(*arguments):
+        result = _git_value(root, *arguments)
+        if result is None:
+            raise ValueError("GIT_REQUIRED_COLLECTION_FAILED")
+        return result
+    try:
+        head = required("rev-parse", "HEAD")
+        branch = required("branch", "--show-current")
+        upstream = required("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+        remote = required("rev-parse", "@{u}")
+        feature = required("rev-parse", "origin/codex/c21-operational-execution")
+        status = _git_value(root, "-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        if status is None:
+            return ["GIT_STATUS_COLLECTION_FAILED"]
+        if any(len(row) < 4 or row[2] != " " or any(character not in " MADRCU?!" for character in row[:2]) for row in status.splitlines()):
+            return ["GIT_STATUS_COLLECTION_FAILED"]
+        candidate = _git_value(root, "for-each-ref", "--format=%(refname) %(objectname)", C21_RESUME_CANDIDATE_REF)
+        if candidate is None:
+            return ["GIT_CANDIDATE_REF_COLLECTION_FAILED"]
+        if candidate != "":
+            return ["GIT_CANDIDATE_REMOTE_PREMATURE_OR_MISMATCH"]
+        source_parent = required("show", "-s", "--format=%P", C21_RESUME_SOURCE)
+        source_paths = required("diff", "--name-only", C21_RESUME_PARENT, C21_RESUME_SOURCE)
+        if source_parent.split() != [C21_RESUME_PARENT] or _c21_resume_git_paths(source_paths) != sorted(c21_provider_wsl_git_only_candidate_paths()):
+            return ["GIT_SOURCE_DIRECT_CHILD_INVALID"]
+        changed = _c21_resume_git_paths(required("diff", "--name-only", C21_RESUME_BASE, head))
+        dirty = _working_tree_paths(status)
+        direct = False
+        descendants = dirty
+        if head != C21_RESUME_SOURCE:
+            direct = required("show", "-s", "--format=%P", head).split() == [C21_RESUME_SOURCE]
+            descendants = _c21_resume_git_paths(required("diff", "--name-only", f"{C21_RESUME_SOURCE}..{head}"))
+        return _validate_c21_resume_repository(bundle["progress"]["repository"], actual_head=head, actual_branch=branch,
+            actual_upstream=upstream, actual_remote_head=remote, actual_feature_remote_head=feature,
+            actual_changed_paths=changed, control_descendant_paths=descendants, working_tree_mode=bool(dirty),
+            worktree_is_clean=not dirty, control_runtime_record_commit_is_direct=direct, product_commit_parent_is_direct=True,
+            control_is_ancestor=_git_returncode(root, "merge-base", "--is-ancestor", C21_RESUME_SOURCE, head) == 0,
+            base_is_ancestor=bool(isinstance(declared_base, str) and re.fullmatch(r"[0-9a-f]{40}", declared_base)
+                and _git_returncode(root, "merge-base", "--is-ancestor", declared_base, head) == 0))
+    except (OSError, ValueError, TypeError, KeyError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+def c21_provider_wsl_execution_resume_start_paths() -> set[str]:
+    return {
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-start.json",
+        "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    }
+
+
+def c21_provider_wsl_execution_resume_paths() -> set[str]:
+    return {
+        "deploy/wsl/CandidateReleaseManifest.json",
+        "deploy/wsl/candidate-manifest-guard.sh",
+        "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md",
+        "docs/DEVELOPMENT_ENVIRONMENT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-bound.json",
+        "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
+        "scripts/check_project_progress.py",
+        "tests/deploy/test_wsl_staging_harness.py",
         "tests/tooling/test_project_progress.py",
     }
 

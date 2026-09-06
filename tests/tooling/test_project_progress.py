@@ -7286,8 +7286,8 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_provider_wsl_git_only_candidate_bound_projection_rejects_mutations(self):
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        bundle, snapshot_root = self._historical_bundle(checker, "e6c562cf07bc2c35e24addb60efa9d90fae08046")
+        manifest = json.loads((snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
         validator = checker.validate_c21_provider_wsl_git_only_candidate_projection
         self.assertEqual([], validator(bundle, manifest))
         for section, field, value in (
@@ -7393,7 +7393,7 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_provider_wsl_git_only_candidate_bound_git_projection_is_exact(self):
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, snapshot_root = self._historical_bundle(checker, "e6c562cf07bc2c35e24addb60efa9d90fae08046")
         repository = bundle["progress"]["repository"]
         source_paths = set(repository["exact_allowed_paths"]) - {
             "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
@@ -7608,6 +7608,238 @@ class ProjectProgressContractTests(unittest.TestCase):
                 changed_bundle = copy.deepcopy(bundle)
                 changed_bundle["progress"]["repository"][field] = value
                 self.assertTrue(checker._validate_git_projection(changed_bundle))
+
+    def _execution_resume_fixture(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_start_artifacts"))
+        source = "e6c562cf07bc2c35e24addb60efa9d90fae08046"
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
+            for path in ("docs/progress/build-progress.json", "docs/progress/progress-events.json")
+        }
+        directory = tempfile.TemporaryDirectory(prefix="anvil-seq533-", dir="D:/tmp")
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        files = {path: (ROOT / path).read_bytes() for path in (
+            "docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md",
+            "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md",
+            "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+        )}
+        artifacts = checker.c21_provider_wsl_execution_resume_start_artifacts(historical, files)
+        for path, raw in dict(files, **artifacts).items():
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
+        bundle = {
+            "_root": root,
+            "progress": json.loads(artifacts[checker.C21_RESUME_P]),
+            "events": json.loads(artifacts[checker.C21_RESUME_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C21_RESUME_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C21_RESUME_D]),
+        }
+        manifest = json.loads(artifacts[checker.C21_RESUME_M])
+        return checker, bundle, manifest, historical
+
+    def test_c21_provider_wsl_execution_resume_event_bytes_freeze_header_and_history(self):
+        checker, bundle, manifest, historical = self._execution_resume_fixture()
+        raw = (bundle["_root"] / checker.C21_RESUME_E).read_bytes()
+        old = historical[checker.C21_RESUME_E]
+        self.assertEqual(533, json.loads(raw)["last_sequence"])
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 530), checker.raw_event_object_prefix_bytes(raw, 530))
+        self.assertEqual([531, 532, 533], [event["sequence"] for event in bundle["events"]["events"][-3:]])
+        for corrupted in (old.replace(b'"last_sequence": 530', b'"last_sequence": 529'), old + b" ", old.replace(b'"stream_id":', b'"stream_id":"duplicate", "stream_id":')):
+            with self.subTest(corruption=corrupted[:110]), self.assertRaises(ValueError):
+                checker.c21_provider_wsl_execution_resume_event_bytes(corrupted, bundle["events"]["events"][-3:])
+
+    def test_c21_provider_wsl_execution_resume_matches_shared_recovery_contracts(self):
+        checker, generated, manifest, _ = self._execution_resume_fixture()
+        bundle = checker.load_bundle(ROOT)
+        bundle.update(generated)
+        bundle["_detached_digest_path"] = checker.C21_RESUME_D
+        bundle["_file_hashes"].update({path: hashlib.sha256((bundle["_root"] / path).read_bytes()).hexdigest().upper()
+                                      for path in checker.c21_provider_wsl_execution_resume_start_paths()})
+        for validator in (checker._validate_events, checker._validate_handoff,
+                          checker._validate_registry_refs, checker._validate_reporting_state,
+                          checker.validate_detached_progress_binding):
+            with self.subTest(validator=validator.__name__):
+                self.assertEqual([], validator(bundle))
+        self.assertEqual([], checker.validate_manifest_progress_binding(manifest, bundle))
+        self.assertEqual("EXECUTE_C21_PROVIDER_WSL_EXECUTION_RESUME_EXACT14", bundle["progress"]["next_safe_action"])
+
+    def test_c21_provider_wsl_execution_resume_public_main_rejects_nonobject_and_nested_corruption(self):
+        """Malformed P/E/M must reach the public CLI boundary without a traceback."""
+        checker = self.require_checker()
+        original_read = Path.read_text
+        for relative, nested in (
+            (checker.C21_RESUME_P, {"reporting_decision": None}),
+            (checker.C21_RESUME_E, {"events": [None]}),
+            (checker.C21_RESUME_M, {"raw_checksums": None}),
+        ):
+            for shape in ([], None, nested):
+                original = json.loads(original_read(ROOT / relative, encoding="utf-8"))
+                corrupted = original | shape if isinstance(shape, dict) else shape
+                def read_json(path, *args, **kwargs):
+                    if path == ROOT / relative:
+                        return json.dumps(corrupted)
+                    return original_read(path, *args, **kwargs)
+                output = io.StringIO()
+                with self.subTest(path=relative, shape=shape), mock.patch.object(Path, "read_text", read_json), mock.patch("sys.stdout", output):
+                    self.assertEqual(1, checker.main([str(ROOT)]))
+                    self.assertIn("LOAD_ERROR:INVALID_STRUCTURE:", output.getvalue())
+                    self.assertNotIn("Traceback", output.getvalue())
+
+    def test_c21_provider_wsl_execution_resume_projection_rejects_adversarial_evidence(self):
+        checker, bundle, manifest, historical = self._execution_resume_fixture()
+        validator = checker.validate_c21_provider_wsl_execution_resume_start_projection
+        def git_blob(arguments, **kwargs):
+            return historical[arguments[-1].split(":", 1)[1]]
+        with mock.patch.object(checker.subprocess, "check_output", side_effect=git_blob):
+            self.assertEqual([], validator(bundle, manifest))
+            for section in ("progress", "events", "handoff", "detached_digest"):
+                for value in (None, [], "malformed"):
+                    altered = copy.deepcopy(bundle)
+                    altered[section] = value
+                    with self.subTest(section=section, value=value):
+                        self.assertTrue(validator(altered, manifest))
+            for key, value in (("accepted", True), ("push", "EXECUTED"), ("start_exact_path_count", 9)):
+                altered = copy.deepcopy(manifest)
+                altered[key] = value
+                self.assertTrue(validator(bundle, altered))
+            for rows_field, owner in (("raw_checksums", manifest), ("latest_evidence_refs", bundle["progress"])):
+                rows = copy.deepcopy(owner[rows_field])
+                for malformed in (rows + [rows[0]], rows[:-1], [None], "wrong"):
+                    altered, altered_manifest = copy.deepcopy(bundle), copy.deepcopy(manifest)
+                    target = altered_manifest if owner is manifest else altered["progress"]
+                    target[rows_field] = malformed
+                    with self.subTest(rows=rows_field):
+                        self.assertTrue(validator(altered, altered_manifest))
+            for path in (checker.C21_RESUME_P, checker.C21_RESUME_E, checker.C21_RESUME_H, checker.C21_RESUME_D, checker.C21_RESUME_M, checker.C21_RESUME_WI, checker.C21_RESUME_PROMPT, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py", "docs/WORK_STATUS.md"):
+                target = bundle["_root"] / path
+                original = target.read_bytes()
+                for invalid in (None, b"{", b"[]", b'{"x":1,"x":2}', b'{"x":NaN}', b'\xff'):
+                    if invalid is None:
+                        target.unlink()
+                    else:
+                        target.write_bytes(invalid)
+                    with self.subTest(path=path, invalid=invalid):
+                        self.assertTrue(validator(bundle, manifest))
+                    target.write_bytes(original)
+            altered = copy.deepcopy(bundle)
+            altered["progress"]["next_work_package"]["status"] = "READY"
+            self.assertTrue(validator(altered, manifest))
+            altered = copy.deepcopy(bundle)
+            altered["events"]["events"][0]["actor"] = "rewritten"
+            self.assertTrue(validator(altered, manifest))
+            path = bundle["_root"] / checker.C21_RESUME_E
+            raw = path.read_bytes()
+            path.write_bytes(raw.replace(b'"last_sequence": 533', b'"last_sequence": 530'))
+            self.assertTrue(validator(bundle, manifest))
+
+    def test_c21_provider_wsl_execution_resume_git_projection_rejects_scope_and_lineage(self):
+        checker, bundle, _, _ = self._execution_resume_fixture()
+        repository = bundle["progress"]["repository"]
+        metadata = checker.c21_provider_wsl_execution_resume_path_metadata()
+        source = metadata["source_cumulative_exact_paths"]
+        start = metadata["start_exact_paths"]
+        common = dict(actual_head=checker.C21_RESUME_SOURCE, actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"], actual_remote_head=checker.C21_RESUME_REMOTE,
+            actual_feature_remote_head=checker.C21_RESUME_REMOTE, base_is_ancestor=True,
+            actual_changed_paths=source, working_tree_mode=True, progress=bundle["progress"],
+            control_descendant_paths=start, control_is_ancestor=True, worktree_is_clean=False,
+            control_runtime_record_commit_is_direct=False, product_commit_parent_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        post = dict(common, actual_head="a" * 40, actual_changed_paths=metadata["post_start_cumulative_exact_paths"],
+            working_tree_mode=False, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **post))
+        for label, base, changes in (
+            ("dirty widened", common, {"control_descendant_paths": start + ["outside.txt"]}),
+            ("dirty narrowed", common, {"control_descendant_paths": start[:-1]}),
+            ("source reverted", common, {"actual_changed_paths": source[:-1]}),
+            ("second descendant", post, {"control_runtime_record_commit_is_direct": False}),
+            ("merge", post, {"control_runtime_record_commit_is_direct": False}),
+            ("source parent", common, {"product_commit_parent_is_direct": False}),
+            ("cumulative reversion", post, {"actual_changed_paths": source}),
+            ("dirty child", post, {"worktree_is_clean": False, "working_tree_mode": True}),
+            ("base ancestry", common, {"base_is_ancestor": False}),
+            ("remote", common, {"actual_remote_head": "0" * 40}),
+        ):
+            with self.subTest(label=label):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(base, **changes)))
+
+    def test_c21_provider_wsl_execution_resume_collector_fails_closed(self):
+        checker, bundle, _, _ = self._execution_resume_fixture()
+        (bundle["_root"] / ".git").mkdir()
+        metadata = checker.c21_provider_wsl_execution_resume_path_metadata()
+        source, parent, base = checker.C21_RESUME_SOURCE, checker.C21_RESUME_PARENT, checker.C21_RESUME_BASE
+        values = {
+            ("rev-parse", "HEAD"): source, ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("rev-parse", "@{u}"): checker.C21_RESUME_REMOTE,
+            ("rev-parse", "origin/codex/c21-operational-execution"): checker.C21_RESUME_REMOTE,
+            ("diff", "--name-only", base, source): "\n".join(metadata["source_cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", source): parent,
+            ("diff", "--name-only", parent, source): "\n".join(sorted(checker.c21_provider_wsl_git_only_candidate_paths())),
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): "\n".join(" M " + path for path in metadata["start_exact_paths"]),
+            ("for-each-ref", "--format=%(refname) %(objectname)", checker.C21_RESUME_CANDIDATE_REF): "",
+        }
+        def run(mapping):
+            with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: mapping.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+                return checker._validate_git_projection(bundle)
+        self.assertEqual([], run(values))
+        for key in values:
+            with self.subTest(missing=key):
+                self.assertTrue(run(dict(values, **{}) | {key: None}))
+        ref_key = ("for-each-ref", "--format=%(refname) %(objectname)", checker.C21_RESUME_CANDIDATE_REF)
+        self.assertTrue(run(values | {ref_key: checker.C21_RESUME_CANDIDATE_REF + " " + source}))
+        status_key = ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        child = "a" * 40
+        post = values | {
+            ("rev-parse", "HEAD"): child, status_key: "",
+            ("diff", "--name-only", base, child): "\n".join(metadata["post_start_cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", child): source,
+            ("diff", "--name-only", f"{source}..{child}"): "\n".join(metadata["start_exact_paths"]),
+        }
+        self.assertEqual([], run(post))
+        for label, key, value in (
+            ("second descendant", ("show", "-s", "--format=%P", child), "b" * 40),
+            ("merge", ("show", "-s", "--format=%P", child), source + " " + "b" * 40),
+            ("source parent", ("show", "-s", "--format=%P", source), "b" * 40),
+            ("cumulative reversion", ("diff", "--name-only", base, child), "\n".join(metadata["post_start_cumulative_exact_paths"][:-1])),
+            ("dirty child", status_key, " M docs/WORK_STATUS.md"),
+            ("missing parent collection", ("show", "-s", "--format=%P", child), None),
+            ("missing descendant collection", ("diff", "--name-only", f"{source}..{child}"), None),
+        ):
+            with self.subTest(label=label):
+                self.assertTrue(run(post | {key: value}))
+        with mock.patch.object(checker, "_git_value", side_effect=OSError("git unavailable")):
+            self.assertEqual(["GIT_REQUIRED_COLLECTION_FAILED"], checker._validate_git_projection(bundle))
+
+    def test_c21_provider_wsl_execution_resume_rejects_duplicate_or_malformed_git_rows(self):
+        checker, bundle, _, _ = self._execution_resume_fixture()
+        self.assertTrue(hasattr(checker, "_c21_resume_git_paths"))
+        self.assertEqual(["docs/WORK_STATUS.md"], checker._c21_resume_git_paths("docs/WORK_STATUS.md"))
+        for raw in ("docs/WORK_STATUS.md\ndocs/WORK_STATUS.md", "docs/WORK_STATUS.md\n\n", " docs/WORK_STATUS.md", "../outside.txt"):
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                checker._c21_resume_git_paths(raw)
+
+    def test_c21_provider_wsl_execution_resume_start_paths_are_frozen(self) -> None:
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_start_paths"))
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_paths"))
+        start = sorted(checker.c21_provider_wsl_execution_resume_start_paths())
+        successor = sorted(checker.c21_provider_wsl_execution_resume_paths())
+        self.assertEqual(10, len(start))
+        self.assertEqual(
+            "0FCFCE1A57E7A806B9E94B495DBE7CF3AEFD720FB6B8ACFF029DA0CEBB7EA070",
+            checker.path_list_lf_sha256(start),
+        )
+        self.assertEqual(14, len(successor))
+        self.assertEqual(
+            "3A67A5443BBCD92B125E5168442B5EB46A1FBA4EA0A9AE061411FB655921C09B",
+            checker.path_list_lf_sha256(successor),
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
