@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-WSL-EXECUTION-RESUME-BOUND-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 536,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T19:01:20+09:00",
+  "scope": "seq534-536 completion; seq1-533 preserved; exact14 ready pending direct-child commit and Main binding.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 114036,
+    "file_sha256": "5514CC9330DC868CCC21477DE3684A08EDFE8B0E46F25FAE08A228AA2185F61C",
+    "canonical_json_sha256": "CEEE60594373D03C9B662698BB1C52E1A5900AA4C4888B7AB7F38F794B3D48F6"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 206815,
+    "file_sha256": "A728EE2CA047429F29880BDF91B9D2ECAB60B6461C04F5441295893078F83E13",
+    "machine_summary_canonical_sha256": "8BC6CCC4B796B7C3B19B3EDFAB3EA4FBA6810D3E0AEC1D0445190D30F9000600"
+  }
+}

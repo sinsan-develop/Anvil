@@ -1,3 +1,9 @@
+# C-21 Provider WSL execution-resume K exact14 — seq536 검증 마감
+
+- Main takeover 후 live checker `PASS sequence=536`, 전체 tooling `192 passed in 716.25s`, 전체 deploy contract `98 passed, 2 skipped in 743.40s`를 확인했다.
+- 독립 seq536 adversarial은 branch/upstream/HEAD, merge, exact14 widen/narrow, cumulative117 reversion, WI tamper, control-ref race/ABA를 포함한다.
+- 실제 WSL/Docker/DB/Provider/Telegram/ysna/push/main은 `NOT_EXECUTED`이며, 다음 단계는 K direct-child commit과 Main exact binding이다.
+
 # C-21 실행 재개 시작 기록 — seq533 최종 검증 마감
 
 - `full_tooling=PASS_189`: I1 보완·재결박 후 fresh tooling `189 passed in729.23s (12:09)`, exit0(session81020). Git Bash/PYTHONUTF8=1/PYTHONDONTWRITEBYTECODE=1/TEMP=TMP=D:/tmp 고정이며 실행 중 파일 수정0이다.
@@ -720,21 +726,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 533,
-  "last_event_id": "evt_c21_provider_wsl_execution_resume_package_started",
-  "status": "ACTIVE_PROVIDER_WSL_EXECUTION_RESUME_PREPARATION",
+  "event_sequence": 536,
+  "last_event_id": "evt_c21_provider_wsl_execution_resume_package_completed",
+  "status": "READY_FOR_APPROVED_WSL_QA",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "active_agent": "developer-primary",
-  "worker_lease": "worker-lease-c21-provider-wsl-execution-resume-20260906-001",
-  "write_lease": "write-lease-c21-provider-wsl-execution-resume-20260906-001",
-  "execution_fencing_token": "c21-provider-wsl-execution-resume-execution-fence-epoch-1-e6c562c",
-  "write_fencing_token": "c21-provider-wsl-execution-resume-write-fence-epoch-1-e6c562c",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
+  "execution_fencing_token": null,
+  "write_fencing_token": null,
   "active_work_instruction": "WI-C-21-PROVIDER-WSL-EXECUTION-RESUME-20260906-001",
   "active_work_instruction_sha256": "49232DEB6348A0FE6C011B57B76EC9B8A9733FFAAF5D6E9C988DB2560AC67AA3",
   "active_invocation_sha256": "991033514C8C00A5425D18828FB89A43AA680E674A246D1B4676ACF11A48F623",
-  "repository_head": "e6c562cf07bc2c35e24addb60efa9d90fae08046",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXECUTION_RESUME_SOURCE_EXACT109_START_RECORD10",
+  "repository_head": "d442d4584516e1a673fd2edde55a2fe1330e9394",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXECUTION_RESUME_START_EXACT113_SUCCESSOR_RECORD14",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
@@ -759,6 +765,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
     "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
     "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+    "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md",
     "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
     "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
     "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
@@ -775,6 +782,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
@@ -802,6 +810,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-bound.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-start.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
@@ -819,6 +828,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
     "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
+    "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
@@ -856,13 +866,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "dir_status": "CLEARED",
-  "next_safe_action": "EXECUTE_C21_PROVIDER_WSL_EXECUTION_RESUME_EXACT14",
-  "runtime_next_action": "EXECUTE_C21_PROVIDER_WSL_EXECUTION_RESUME_EXACT14",
+  "next_safe_action": "BIND_C21_PROVIDER_WSL_EXECUTION_RESUME_DIRECT_CHILD_COMMIT",
+  "runtime_next_action": "BLOCKED_PENDING_K_DIRECT_CHILD_COMMIT_AND_MAIN_EXACT_BINDING",
   "reporting_decision": "AUTO_CONTINUE",
-  "seq527_clean_review": "PRESERVED_C0_I0_M0",
-  "current_runtime": "NOT_OBSERVED_IN_S",
-  "previous_runtime": "NOT_OBSERVED_IN_S",
+  "current_runtime": "NOT_OBSERVED_IN_K",
+  "previous_runtime": "NOT_OBSERVED_IN_K",
   "rollback": "OBSERVATION_REQUIRED_AT_FUTURE_DISPATCH",
+  "independent_tester_status": "PENDING",
   "source_cumulative_exact_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",

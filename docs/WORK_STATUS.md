@@ -895,3 +895,44 @@
 - Main 지시에 따라 seq533 S exact10의 로컬 commit 허용 상태를 기록한다. 실제 commit은 Main이 최종 재결박/live checker/무결성을 확인한 뒤 수행하며 writer는 commit/push를 실행하지 않았다. 이는 K runtime 실행이나 외부 배포 승인으로 확대되지 않는다.
 - C-21 accepted=false, C-01 차단, DIR-2 미발생을 유지한다. WSL/Docker/DB/Provider/Telegram/ysna/main/push는 NOT_EXECUTED다. runtime dispatch는 K direct-child commit 및 Main exact binding 전까지 차단한다.
 - 다음 안전 행동: Main이 마감된 WORK_STATUS/HANDOFF를 포함한 current6 raw input으로 E/P/H/D/M을 재결박하고 live checker 및 로컬 commit 직전 exact10을 확인한다. 이번 문서 마감 자체를 새로운 실제 WSL/브라우저/DB PASS로 표시하지 않는다.
+# 2026-09-06 C-21 Provider WSL execution-resume K exact14
+
+- 담당: `developer-primary`; 상태: `IN_PROGRESS_TDD_GREEN`.
+- 기준: branch `codex/c21-operational-execution`, HEAD `d442d4584516e1a673fd2edde55a2fe1330e9394`, 시작 clean.
+- lease: worker `worker-lease-c21-provider-wsl-execution-resume-20260906-001`, write `write-lease-c21-provider-wsl-execution-resume-20260906-001`, exact14/hash `3A67A5443BBCD92B125E5168442B5EB46A1FBA4EA0A9AE061411FB655921C09B`.
+- TDD RED: completion repository 전용 테스트가 `_validate_c21_resume_bound_repository` 부재로 exit 1, 1 failed. fingerprint `C21_PROVIDER_WSL_EXECUTION_RESUME_BOUND_MISSING_R1` 1회.
+- 환경 오류: `rg.exe` 실행 불가 1회(`ResourceUnavailable`); PowerShell `Select-String`으로 읽기 전용 조사 전환. 제품 오류가 아니다.
+- 구현 중: seq534~536 completion builder, exact14/cumulative117 Git predicate, CandidateReleaseManifest/guard runtime-ready 계약.
+- 미실행: commit, push, WSL, Docker, DB, Provider, Telegram, ysna, main merge.
+- 다음: guard/projection TDD GREEN, 집중 및 전체 tooling/deploy 검증, evidence 재결박, writer lease 회수.
+
+## seq536 writer 실행 중단 및 Main 인수 요청
+
+- 동일 환경 fingerprint `SEQ536_DEPLOY_TEST_PYTHON_CPU_HANG`가 3회 반복됐다.
+  1. 기존 no-hardlinks fresh clone 단일 guard test: 60초 초과, 출력 없음, 소유 Python process 종료.
+  2. `--shared --no-checkout` 축소 fixture 단일 test: 30초 초과, 출력 없음, 소유 Python process 종료.
+  3. pytest를 제거한 직접 module/helper 실행: module 실행 경로에서 30초 초과, 출력 없음, 소유 Python process 종료.
+- `ast.parse`와 별도 `exec(compile(...))` module 정의만은 즉시 PASS했고 class 위치는 line 1751, 기존 cleanup class 뒤·state unit class 앞이다. 구문/삽입 위치 오류 증거는 없다.
+- PowerShell stderr 진단 로그 생성은 sandbox가 `D:\tmp\seq536-stack.log` 쓰기를 거부해 실행되지 않았다.
+- 마지막 성공 검증: completion 단위 `2 passed, 189 deselected`; `bash -n` PASS. `py_compile`은 project `__pycache__` 쓰기 권한 거부로 미검증이다.
+- 세 번째 동일 hang 후 Subagent 추가 실행과 canonical P/E/H/D/M materialization을 중단한다. 현재 변경을 보존하고 worker/write lease를 Main takeover로 반환한다.
+- commit, push, WSL, Docker, DB, Provider, Telegram, ysna, main merge는 `NOT_EXECUTED`다.
+
+## seq536 Main takeover 원인 확정 및 재개
+
+- 판정: 동일 hang 3회에 따라 어울이 writer를 인수했다. 변경 9경로와 기존 기록은 그대로 보존했다.
+- 확인 결과 test module import는 `0.41s`, fixture 생성은 `4.02s`로 정상이며 코드 구조나 clone 자체가 hang 원인이 아니었다.
+- 환경 원인 확정: Developer 실행에서는 WindowsApps의 WSL `bash.exe`가 먼저 선택된 경로 불일치가 있었고, Reviewer 비승격 실행에서는 Git Bash 고정 후에도 sandbox가 `tempfile.mkdtemp(D:/tmp)` 쓰기를 재시도하며 정지했다. 단일 원인으로 단정하지 않고 두 환경 조건을 모두 기록한다.
+- 교정: 검증 명령의 PATH 선두를 `C:\Program Files\Git\usr\bin`으로 고정하고 D:/tmp fixture 실행을 승인된 escalated 범위에서 수행했다. 같은 단일 guard fixture는 Main `1 passed, 118 deselected in 8.49s`, Reviewer `1 passed in 9.87s`; seq536 guard 3개는 Main `3 passed, 116 deselected in 41.26s`, Reviewer `3 passed, 116 deselected in 43.61s`, 모두 exit0이다.
+- 이 교정은 제품·계약 변경이 아니라 검증 실행기 선택 정정이다. 외부 실행·commit·push는 계속 0이며, 다음은 canonical P/E/H/D/M materialization과 전체 회귀 검증이다.
+- 첫 materialization live checker는 `EVENT_EFFECT_MISMATCH`, `GIT_REQUIRED_COLLECTION_FAILED`로 실패했다. 원인은 seq536 PACKAGE_COMPLETED에 공통 reducer용 cumulative `exact_allowed_paths`가 없었고, K가 push=NOT_EXECUTED인데 collector가 candidate remote ref 존재를 조기에 강제한 것이었다.
+- 수정: completion event에 cumulative exact117을 추가하고, projection pre/postcommit에서는 seq533과 동일하게 candidate ref 수집 성공과 ref 부재를 요구한다. 실제 candidate ref=a6 검증은 미래 runtime guard에만 유지한다.
+- 독립 Reviewer I1에 따라 CandidateReleaseManifest raw bytes를 checker 상수 SHA-256으로 고정하여 coherent unauthorized rewrite를 거부한다. rollback allowlist의 미관측 control d442를 제거하고 기존 실제 rollback 계보인 `a6dca0d`, `e4cccf3`를 보존했다.
+- 수정 후 live checker는 `PASS sequence=536`이었다. 첫 집중 회귀는 역사 seq533 public-main test가 live seq536 파일을 혼합해 `1 failed,13 passed`였으며, 제품 실패가 아니라 fixture 격리 누락이다. 해당 테스트 입력을 immutable seq533 builder 산출물로 고정했다.
+- 첫 전체 tooling은 `191 passed, 1 failed in 933.78s`, 첫 전체 deploy 계약은 `114 passed, 3 failed, 2 skipped in 1144.47s`였다. 병렬 D:/tmp I/O 경합 때문에 시간은 성능 증거로 사용하지 않는다.
+- tooling 1F는 seq536 collector가 mutated declared base 대신 상수 base로 ancestry를 조회한 회귀였다. declared base의 형식과 실제 ancestor를 검사하도록 수정했다. deploy 3F는 seq536 test class가 기존 base test를 상속해 중복 실행했고, 역사 seq530 status-failure test 한 곳이 current guard를 source한 fixture 혼합이었다. seq536 class를 독립 TestCase로 바꾸고 역사 test는 immutable seq530 guard를 사용하도록 수정했다.
+- 직접 수정 검증 3개는 `3 passed in 23.19s`. seq536 전용 branch/upstream/local HEAD, merge, exact14 widen/narrow, cumulative117 reversion, WI blob tamper, control-ref race/ABA를 보강한 집중 검증은 `7 passed, 93 deselected in 79.40s`, exit0이다.
+- 최종 직렬 전체 tooling은 `192 passed in 716.25s`, exit0. 최종 직렬 전체 deploy 계약은 `98 passed, 2 skipped in 743.40s`, exit0이다. skip2는 Windows Git Bash/NTFS에서 POSIX 0600/0400 mode를 표현할 수 없는 항목과 Compose parser 부재이며 실제 WSL PASS로 승격하지 않는다.
+- 현재 판정은 로컬 K exact14 구현·계약 검증 완료, `READY_FOR_APPROVED_WSL_QA`다. actual WSL/Docker/DB/Provider/Telegram/ysna/push/main은 모두 `NOT_EXECUTED`; 다음 안전 행동은 exact14/path hash와 누적 exact117을 재확인한 뒤 Main이 K direct-child commit을 만들고 별도 exact binding을 생성하는 것이다.
+- HANDOFF builder와 마지막 tooling assertion을 반영한 뒤 fresh 전체 tooling을 다시 실행해 `192 passed in 682.23s`, exit0을 확인했다. 이 실행 중 파일 수정0이다.
+- 독립 Reviewer 최종 판정은 `CLEAN_REVIEW / SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`, commit 가능이다. 독립 focused는 execution-resume tooling11 PASS와 seq536 guard7 PASS이며 exact14/exact117/history/ref 부재/rollback/raw SHA/dispatch 차단을 재확인했다.

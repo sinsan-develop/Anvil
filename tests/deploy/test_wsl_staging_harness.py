@@ -86,15 +86,20 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
     def _git_only_repo(self, temp, repo):
         candidate = "a6dca0da5a37e64491e91813895268e78ecb78b2"
         self._git(repo, "checkout", "-B", "codex/c21-operational-execution", candidate)
-        instruction = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
-        paths = instruction["write_lease"]["paths"] if instruction.get("write_lease") else instruction["repository"]["provider_wsl_git_only_candidate_bound_paths"]
+        historical_control = "e6c562cf07bc2c35e24addb60efa9d90fae08046"
+        instruction = json.loads(subprocess.check_output(
+            ["git", "show", f"{historical_control}:docs/progress/build-progress.json"], cwd=ROOT
+        ))
+        paths = instruction["repository"]["provider_wsl_git_only_candidate_bound_paths"]
         for relative in paths:
             destination = repo / relative
             destination.parent.mkdir(parents=True, exist_ok=True)
-            if (ROOT / relative).is_file():
-                shutil.copy2(ROOT / relative, destination)
-            else:
-                destination.write_text("{}", encoding="utf-8", newline="\n")
+            destination.write_bytes(subprocess.check_output(
+                ["git", "show", f"{historical_control}:{relative}"], cwd=ROOT
+            ))
+        (repo.parent / "historical-seq530-guard.sh").write_bytes(subprocess.check_output(
+            ["git", "show", f"{historical_control}:deploy/wsl/candidate-manifest-guard.sh"], cwd=ROOT
+        ))
         self._git(repo, "add", *paths)
         self._git(repo, "commit", "-m", "isolated exact12 candidate guard fixture")
         control_ref = "refs/remotes/origin/codex/c21-operational-execution"
@@ -109,7 +114,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         with temp:
             result = self._validate(repo, control_ref, candidate, checksum)
             self.assertEqual(0, result.returncode, result.stderr)
-            command = f"source '{self._posix(GUARD)}'; validate_wsl_candidate_manifest '{self._posix(repo)}' {control_ref} {candidate}"
+            command = f"source '{self._posix(repo.parent / 'historical-seq530-guard.sh')}'; validate_wsl_candidate_manifest '{self._posix(repo)}' {control_ref} {candidate}"
             held = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
                 env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
             self.assertEqual(22, held.returncode, held.stderr)
@@ -127,7 +132,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         with temp:
             self.assertEqual(0, self._validate(repo, control_ref, candidate, checksum).returncode)
             command = (
-                f"source '{self._posix(GUARD)}'; "
+                f"source '{self._posix(repo.parent / 'historical-seq530-guard.sh')}'; "
                 "git() { if [[ \"$*\" == *'status --porcelain'* ]]; then return 88; fi; command git \"$@\"; }; "
                 f"validate_wsl_candidate_binding '{self._posix(repo)}' {control_ref} {candidate}"
             )
@@ -177,7 +182,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self.assertIn("single direct child", rejected.stderr)
 
     def _validate(self, repo: Path, control_ref: str, candidate: str, checksum: str, guard=None):
-        guard = guard or (GUARD if candidate == "a6dca0da5a37e64491e91813895268e78ecb78b2" else repo.parent / "historical-seq494-guard.sh")
+        guard = guard or (repo.parent / "historical-seq530-guard.sh" if candidate == "a6dca0da5a37e64491e91813895268e78ecb78b2" else repo.parent / "historical-seq494-guard.sh")
         command = (
             f"source '{self._posix(guard)}'; "
             f"validate_wsl_candidate_binding '{self._posix(repo)}' {control_ref} {candidate}"
@@ -1740,6 +1745,191 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
     def test_manifest_checksum_tamper_is_rejected(self): self._case("checksum_tamper")
     def test_malformed_sha_allowlist_is_rejected(self): self._case("malformed_sha")
     def test_control_ref_change_during_validation_is_rejected(self): self._case("control_ref_race")
+
+
+@unittest.skipUnless(shutil.which("bash"), "bash is required")
+class WslProviderExecutionResumeBoundGuardTests(unittest.TestCase):
+    CANDIDATE = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+    START = "d442d4584516e1a673fd2edde55a2fe1330e9394"
+    EXACT14 = [
+        "deploy/wsl/CandidateReleaseManifest.json", "deploy/wsl/candidate-manifest-guard.sh",
+        "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md", "docs/DEVELOPMENT_ENVIRONMENT.md",
+        "docs/WORK_STATUS.md", "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-bound.json",
+        "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md", "scripts/check_project_progress.py",
+        "tests/deploy/test_wsl_staging_harness.py", "tests/tooling/test_project_progress.py",
+    ]
+
+    @staticmethod
+    def _canonical(value: object) -> bytes:
+        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+    def _git(self, cwd: Path, *args: str) -> str:
+        return subprocess.check_output(["git", *args], cwd=cwd, text=True).strip()
+
+    @staticmethod
+    def _posix(path: Path) -> str:
+        value = str(path).replace("\\", "/")
+        if len(value) > 1 and value[1] == ":":
+            return f"/{value[0].lower()}{value[2:]}"
+        return value
+
+    def _bound_repo(self):
+        temp = tempfile.TemporaryDirectory(prefix="anvil-seq536-", dir="D:/tmp")
+        repo = Path(temp.name) / "repo"
+        subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--shared", "--no-checkout", str(ROOT), str(repo)], check=True)
+        self._git(repo, "config", "user.email", "seq536@example.invalid")
+        self._git(repo, "config", "user.name", "seq536 fixture")
+        self._git(repo, "checkout", "-B", "codex/c21-operational-execution", self.START)
+        generated = {
+            "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-bound.json",
+        }
+        for relative in self.EXACT14:
+            target = repo / relative; target.parent.mkdir(parents=True, exist_ok=True)
+            if relative in generated:
+                target.write_text('{"seq536_fixture":true}\n', encoding="utf-8", newline="\n")
+            else:
+                shutil.copy2(ROOT / relative, target)
+        self._git(repo, "add", *self.EXACT14)
+        self._git(repo, "commit", "--quiet", "-m", "isolated seq536 exact14")
+        control = self._git(repo, "rev-parse", "HEAD")
+        self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact107", self.CANDIDATE)
+        self._git(repo, "update-ref", "refs/remotes/origin/codex/c21-operational-execution", control)
+        self._git(repo, "branch", "--set-upstream-to=origin/codex/c21-operational-execution")
+        raw = subprocess.check_output(["git", "show", f"{control}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo)
+        return temp, repo, control, hashlib.sha256(raw).hexdigest()
+
+    def _run_bound(self, repo, control, checksum, guard=GUARD):
+        command = f"source '{self._posix(guard)}'; validate_wsl_candidate_manifest '{self._posix(repo)}' refs/remotes/origin/codex/c21-operational-execution {self.CANDIDATE}"
+        return subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+            env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
+
+    def test_seq536_guard_accepts_only_exact_four_commit_chain(self):
+        temp, repo, control, checksum = self._bound_repo()
+        with temp:
+            result = self._run_bound(repo, control, checksum)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertEqual(14, len(self._git(repo, "diff", "--name-only", self.START, control).splitlines()))
+
+    def test_seq536_guard_rejects_checksum_dirty_ref_and_second_descendant_without_side_effect(self):
+        for scenario in ("checksum", "dirty", "candidate_ref", "second_descendant"):
+            temp, repo, control, checksum = self._bound_repo()
+            with temp, self.subTest(scenario=scenario):
+                before = self._git(repo, "rev-parse", "HEAD")
+                if scenario == "checksum": checksum = "0" * 64
+                elif scenario == "dirty": (repo / "outside.txt").write_text("dirty", encoding="utf-8")
+                elif scenario == "candidate_ref": self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact107", control)
+                else:
+                    self._git(repo, "commit", "--allow-empty", "--quiet", "-m", "unapproved descendant")
+                    self._git(repo, "update-ref", "refs/remotes/origin/codex/c21-operational-execution", "HEAD")
+                    control = self._git(repo, "rev-parse", "HEAD")
+                result = self._run_bound(repo, control, checksum)
+                self.assertNotEqual(0, result.returncode)
+                self.assertEqual(control if scenario == "second_descendant" else before, self._git(repo, "rev-parse", "HEAD"))
+
+    def test_seq536_guard_rejects_coherent_unauthorized_manifest_rewrite(self):
+        temp, repo, control, _ = self._bound_repo()
+        with temp:
+            path = repo / "deploy/wsl/CandidateReleaseManifest.json"
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            doc["authority"]["derived_binding"]["review"]["quality"] = "APPROVED"
+            doc["authority"]["derived_binding_sha256"] = hashlib.sha256(self._canonical(doc["authority"]["derived_binding"])).hexdigest().upper()
+            path.write_text(json.dumps(doc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+            self._git(repo, "add", str(path.relative_to(repo)))
+            self._git(repo, "commit", "--amend", "--no-edit", "--quiet")
+            control = self._git(repo, "rev-parse", "HEAD")
+            self._git(repo, "update-ref", "refs/remotes/origin/codex/c21-operational-execution", control)
+            raw = subprocess.check_output(["git", "show", f"{control}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo)
+            result = self._run_bound(repo, control, hashlib.sha256(raw).hexdigest())
+            self.assertNotEqual(0, result.returncode)
+
+    def test_seq536_guard_rejects_branch_upstream_and_local_head_drift(self):
+        for scenario in ("branch", "upstream", "local_head"):
+            temp, repo, control, checksum = self._bound_repo()
+            with temp, self.subTest(scenario=scenario):
+                if scenario == "branch":
+                    self._git(repo, "checkout", "-b", "wrong-branch")
+                elif scenario == "upstream":
+                    self._git(repo, "branch", "--unset-upstream")
+                else:
+                    self._git(repo, "checkout", "--detach", self.START)
+                before = self._git(repo, "rev-parse", "HEAD")
+                self.assertNotEqual(0, self._run_bound(repo, control, checksum).returncode)
+                self.assertEqual(before, self._git(repo, "rev-parse", "HEAD"))
+
+    def test_seq536_guard_rejects_merge_widen_narrow_and_cumulative_reversion(self):
+        for scenario in ("merge", "widen", "narrow", "cumulative_reversion"):
+            temp, repo, control, checksum = self._bound_repo()
+            with temp, self.subTest(scenario=scenario):
+                if scenario == "merge":
+                    self._git(repo, "checkout", "-b", "side", self.START)
+                    self._git(repo, "commit", "--allow-empty", "--quiet", "-m", "side")
+                    self._git(repo, "checkout", "codex/c21-operational-execution")
+                    self._git(repo, "merge", "--no-ff", "--no-edit", "side")
+                elif scenario == "widen":
+                    (repo / "outside.txt").write_text("outside\n", encoding="utf-8", newline="\n")
+                    self._git(repo, "add", "outside.txt")
+                    self._git(repo, "commit", "--amend", "--no-edit", "--quiet")
+                elif scenario == "narrow":
+                    relative = "docs/DEVELOPMENT_ENVIRONMENT.md"
+                    (repo / relative).write_bytes(subprocess.check_output(["git", "show", f"{self.START}:{relative}"], cwd=repo))
+                    self._git(repo, "add", relative)
+                    self._git(repo, "commit", "--amend", "--no-edit", "--quiet")
+                else:
+                    relative = "docs/DEVELOPMENT_ENVIRONMENT.md"
+                    (repo / relative).write_bytes(subprocess.check_output(["git", "show", f"eef349682ff5598e3488c9e75163c5e0a99a0bdb:{relative}"], cwd=repo))
+                    self._git(repo, "add", relative)
+                    self._git(repo, "commit", "--amend", "--no-edit", "--quiet")
+                control = self._git(repo, "rev-parse", "HEAD")
+                self._git(repo, "update-ref", "refs/remotes/origin/codex/c21-operational-execution", control)
+                self.assertNotEqual(0, self._run_bound(repo, control, checksum).returncode)
+
+    def test_seq536_runtime_rejects_instruction_blob_tamper(self):
+        temp, repo, control, checksum = self._bound_repo()
+        with temp:
+            instruction = repo / "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md"
+            instruction.write_bytes(instruction.read_bytes() + b"\nUNAPPROVED\n")
+            self._git(repo, "add", str(instruction.relative_to(repo)))
+            self._git(repo, "commit", "--amend", "--no-edit", "--quiet")
+            tampered = self._git(repo, "rev-parse", "HEAD")
+            command = f"source '{self._posix(GUARD)}'; validate_wsl_execution_resume '{self._posix(repo)}' {tampered} {self.CANDIDATE}"
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
+            self.assertEqual(22, result.returncode, result.stderr)
+            self.assertIn("instruction checksum mismatch", result.stderr)
+
+    def test_seq536_public_guard_rejects_control_ref_race_and_aba(self):
+        for scenario in ("race", "aba"):
+            temp, repo, control, checksum = self._bound_repo()
+            with temp, self.subTest(scenario=scenario):
+                sibling = self._git(repo, "commit-tree", self._git(repo, "rev-parse", "HEAD^{tree}"), "-p", self.START, "-m", "seq536 sibling")
+                ref = "refs/remotes/origin/codex/c21-operational-execution"
+                if scenario == "race":
+                    injected = f"validate_wsl_candidate_binding() {{ command git -C '{self._posix(repo)}' update-ref {ref} {sibling}; return 0; }}; "
+                else:
+                    counter = self._posix(repo / ".git" / "seq536-lookups")
+                    injected = f'''git() {{
+  if [[ "$*" == *'rev-parse --verify {ref}^{{commit}}' ]]; then
+    count=0; [[ ! -f '{counter}' ]] || read -r count < '{counter}'
+    count=$((count+1)); printf '%s\\n' "$count" > '{counter}'
+    if [[ "$count" == 2 ]]; then
+      command git -C '{self._posix(repo)}' update-ref {ref} {sibling}
+      command git "$@"
+      command git -C '{self._posix(repo)}' update-ref {ref} {control}
+      return 0
+    fi
+  fi
+  command git "$@"
+}}
+'''
+                command = f"source '{self._posix(GUARD)}'; {injected} validate_wsl_candidate_manifest '{self._posix(repo)}' {ref} {self.CANDIDATE}"
+                result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
+                    env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum})
+                self.assertEqual(20, result.returncode, result.stderr)
+                self.assertEqual(control if scenario == "aba" else sibling, self._git(repo, "rev-parse", ref))
 
 @unittest.skipUnless(shutil.which("bash"), "bash is required")
 class WslExecutionResumeStateUnitTests(unittest.TestCase):

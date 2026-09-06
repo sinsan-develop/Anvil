@@ -7669,19 +7669,27 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_provider_wsl_execution_resume_public_main_rejects_nonobject_and_nested_corruption(self):
         """Malformed P/E/M must reach the public CLI boundary without a traceback."""
-        checker = self.require_checker()
+        checker, historical_bundle, historical_manifest, _ = self._execution_resume_fixture()
         original_read = Path.read_text
+        historical_json = {
+            checker.C21_RESUME_P: historical_bundle["progress"],
+            checker.C21_RESUME_E: historical_bundle["events"],
+            checker.C21_RESUME_M: historical_manifest,
+        }
         for relative, nested in (
             (checker.C21_RESUME_P, {"reporting_decision": None}),
             (checker.C21_RESUME_E, {"events": [None]}),
             (checker.C21_RESUME_M, {"raw_checksums": None}),
         ):
             for shape in ([], None, nested):
-                original = json.loads(original_read(ROOT / relative, encoding="utf-8"))
+                original = historical_json[relative]
                 corrupted = original | shape if isinstance(shape, dict) else shape
                 def read_json(path, *args, **kwargs):
                     if path == ROOT / relative:
                         return json.dumps(corrupted)
+                    for historical_path, payload in historical_json.items():
+                        if path == ROOT / historical_path:
+                            return json.dumps(payload)
                     return original_read(path, *args, **kwargs)
                 output = io.StringIO()
                 with self.subTest(path=relative, shape=shape), mock.patch.object(Path, "read_text", read_json), mock.patch("sys.stdout", output):
@@ -7839,6 +7847,100 @@ class ProjectProgressContractTests(unittest.TestCase):
             "3A67A5443BBCD92B125E5168442B5EB46A1FBA4EA0A9AE061411FB655921C09B",
             checker.path_list_lf_sha256(successor),
         )
+
+    def test_c21_provider_wsl_execution_resume_completion_appends_terminal_events(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_artifacts"))
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{checker.C21_RESUME_START_COMMIT}:{path}"], cwd=ROOT)
+            for path in (checker.C21_RESUME_P, checker.C21_RESUME_E, checker.C21_RESUME_H)
+        }
+        files = {
+            path: (ROOT / path).read_bytes()
+            for path in checker.c21_provider_wsl_execution_resume_paths()
+            if path not in {
+                checker.C21_RESUME_P, checker.C21_RESUME_E, checker.C21_RESUME_H,
+                checker.C21_RESUME_BOUND_D, checker.C21_RESUME_BOUND_M,
+            } and (ROOT / path).is_file()
+        }
+        artifacts = checker.c21_provider_wsl_execution_resume_artifacts(historical, files)
+        progress = json.loads(artifacts[checker.C21_RESUME_P])
+        events = json.loads(artifacts[checker.C21_RESUME_E])
+        manifest = json.loads(artifacts[checker.C21_RESUME_BOUND_M])
+        self.assertTrue(artifacts[checker.C21_RESUME_H].startswith(
+            b"# C-21 Provider WSL execution-resume K exact14"
+        ))
+        self.assertEqual(536, progress["event_sequence"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("READY_FOR_APPROVED_WSL_QA", progress["status"])
+        self.assertEqual([534, 535, 536], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-3:]],
+        )
+        self.assertEqual(
+            checker.c21_provider_wsl_execution_resume_path_metadata()["post_successor_cumulative_exact_paths"],
+            events["events"][-1]["details"]["exact_allowed_paths"],
+        )
+        self.assertEqual("READY_FOR_APPROVED_WSL_QA", manifest["status"])
+        for key in ("commit", "push", "wsl", "docker", "database", "provider", "telegram", "ysna", "main_merge"):
+            self.assertEqual("NOT_EXECUTED", manifest[key])
+
+    def test_c21_provider_wsl_execution_resume_candidate_manifest_raw_contract_is_frozen(self):
+        checker = self.require_checker()
+        raw = (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_bytes()
+        self.assertEqual(checker.C21_RESUME_BOUND_CANDIDATE_SHA, hashlib.sha256(raw).hexdigest().upper())
+        self.assertNotEqual(checker.C21_RESUME_BOUND_CANDIDATE_SHA, hashlib.sha256(raw + b" ").hexdigest().upper())
+
+    def test_c21_provider_wsl_execution_resume_completion_repository_is_exact14(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "_validate_c21_resume_bound_repository"))
+        metadata = checker.c21_provider_wsl_execution_resume_path_metadata()
+        repository = {
+            "projection_mode": checker.VALIDATED_BASE_PROJECTION_MODE,
+            "validated_base_commit": checker.C21_RESUME_BASE,
+            "head_relation": checker.C21_RESUME_BOUND_RELATION,
+            "local_head": checker.C21_RESUME_START_COMMIT,
+            "product_parent_commit": checker.C21_RESUME_SOURCE,
+            "branch": "codex/c21-operational-execution",
+            "upstream": "origin/codex/c21-operational-execution",
+            "feature_remote": "origin/codex/c21-operational-execution",
+            "remote_head": checker.C21_RESUME_REMOTE,
+            "feature_remote_head": checker.C21_RESUME_REMOTE,
+            "candidate_remote_ref": checker.C21_RESUME_BOUND_CANDIDATE_REF,
+            "worktree_status": "SEQ536_PROVIDER_WSL_EXECUTION_RESUME_EXACT14_DIRTY",
+            "exact_allowed_paths": metadata["post_successor_cumulative_exact_paths"],
+            "provider_wsl_execution_resume_start_paths": metadata["start_exact_paths"],
+            "provider_wsl_execution_resume_paths": metadata["successor_exact_paths"],
+            "push_status": "NOT_EXECUTED",
+        }
+        common = dict(
+            actual_head=checker.C21_RESUME_START_COMMIT,
+            actual_branch=repository["branch"], actual_upstream=repository["upstream"],
+            actual_remote_head=checker.C21_RESUME_REMOTE, actual_feature_remote_head=checker.C21_RESUME_REMOTE,
+            actual_changed_paths=metadata["post_start_cumulative_exact_paths"],
+            control_descendant_paths=metadata["successor_exact_paths"], working_tree_mode=True,
+            worktree_is_clean=False, control_runtime_record_commit_is_direct=False,
+            control_is_ancestor=True, base_is_ancestor=True, product_commit_parent_is_direct=True,
+        )
+        self.assertEqual([], checker._validate_c21_resume_bound_repository(repository, **common))
+        post = dict(common, actual_head="f" * 40,
+                    actual_changed_paths=metadata["post_successor_cumulative_exact_paths"],
+                    working_tree_mode=False, worktree_is_clean=True,
+                    control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker._validate_c21_resume_bound_repository(repository, **post))
+        for field, value in (
+            ("control_descendant_paths", metadata["successor_exact_paths"][:-1]),
+            ("actual_changed_paths", metadata["post_successor_cumulative_exact_paths"][:-1]),
+            ("control_runtime_record_commit_is_direct", False),
+            ("worktree_is_clean", False),
+            ("base_is_ancestor", False),
+            ("actual_remote_head", "0" * 40),
+        ):
+            with self.subTest(field=field):
+                self.assertTrue(checker._validate_c21_resume_bound_repository(repository, **dict(post, **{field: value})))
 
 
 if __name__ == "__main__":

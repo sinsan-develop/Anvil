@@ -112,3 +112,9 @@
 - source=`a6dca0da5a37e64491e91813895268e78ecb78b2`, parent=`e4cccf3ce99e29005103cea3bd76fa0eede36f28`, candidate ref=`refs/remotes/origin/candidates/c21-wsl-exact107`이다.
 - guard는 manifest Git blob checksum, source/control single direct-child, exact path hash, branch/upstream, clean tree를 fail-closed로 요구한다.
 - 이 local Git-only binding은 push/WSL/Docker/DB/Provider/Telegram/ysna/main 실행 권한이 아니며 runtime gate는 `BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE`다.
+# C-21 Provider WSL execution-resume 준비 (2026-09-06)
+
+- `d442d4584516e1a673fd2edde55a2fe1330e9394` 이후 exact14 control successor만 준비한다.
+- 실행 대상은 기존 `WSL_SERVER_TEST_STAGING`, PostgreSQL 15 및 격리 PostgreSQL 18 RC다.
+- 실제 runtime dispatch는 K direct-child commit과 Main exact binding 후에만 허용한다.
+- 이 준비 단계에서는 WSL/Docker/DB/Provider/Telegram/ysna를 실행하지 않는다.
