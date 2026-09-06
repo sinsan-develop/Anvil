@@ -666,3 +666,36 @@
 - 기존 sequence 1~509와 historical evidence는 변경하지 않고 sequence 510~513을 append했다. 제품 exact13과 record exact8 외 경로 변경은 허용하지 않는다.
 - 실제 Provider 호출, Telegram outbound, WSL PG15/PG18RC, ysna 배포, main 병합은 모두 `NOT_EXECUTED`; C-21은 아직 수락되지 않았고 C-01은 차단 상태다.
 - 다음 안전 조치: 개발/WSL 전용 test session에 `provider:read`를 exact endpoint allowlist로 추가하는 successor를 발행하고 로컬 검증 후 Git-only PG15/PG18RC candidate를 결박한다.
+# C-21 Provider WSL Auth successor 시작 — sequence 516
+
+- 담당: `developer-primary`; 상태: `LOCAL_IMPLEMENTED_PENDING_GIT_ONLY_CANDIDATE`; Main은 progress·lease·검토를 관리한다.
+- 독립 review 1차는 `REWORK / C1 / I2`: 기존 `.env` 재작성 temp의 secret 노출·잔류, 비대상 bytes 정규화, Provider trailing-slash 307→200 허용을 검출했다. fingerprint `C21_PROVIDER_WSL_AUTH_REVIEW_R1` 1회다.
+- REWORK 1차에서 secure temp·cleanup·binary byte transform을 적용해 temp 보안과 LF/CRLF/final-newline 보존을 해소했다.
+- 독립 review 2차는 `REWORK / C0 / I2`: 전역 redirect 차단의 Provider 외 API 범위 초과 회귀와 0400 fixture의 잘못된 temp mode 기대값을 검출했다. fingerprint `C21_PROVIDER_WSL_AUTH_REVIEW_R2` 1회다.
+- REWORK 2차는 Provider exact3 slash variants만 좁게 거부하고 다른 API redirect 계약을 보존하며 0400 test oracle을 교정했다. 동일 package 유효 실패 누계 2회로 Main 직접 인수 threshold 3회에는 도달하지 않았다.
+- 제품 commit `0f70afeabe9a031e7960d49cfe27c808c0770d16`은 parent `b85d2b48e14f513e326054bc0be28009f269a827` direct child exact7이다. 독립 최종 review는 `SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`다.
+- Main 검증은 API `117 passed`, WSL focused `10 passed, 2 skipped`, bash syntax/diff-check PASS다. candidate WSL의 실제 0600/0400·signal/move-failure residue·PG15/PG18RC는 미검증이다.
+- sequence 517~524는 두 review/rework, write/worker lease 회수, package 완료, 최종 review를 append-only로 기록했다. 다음은 `PREPARE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE`다.
+- dispatch HEAD: `b85d2b48e14f513e326054bc0be28009f269a827`; 제품 write lease는 exact7/path hash `43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A`다.
+- 목표: 개발·WSL test session에 `provider:read`를 추가하되 Provider GET exact3만 허용하고 mutation·유사 경로·비정상 scope는 fail-closed한다.
+- sequence 514~516으로 worker lease → write lease → package start를 기록했다. 실제 Provider·Telegram·WSL·ysna·main·DB migration은 `NOT_EXECUTED`다.
+- 직전 시스템 안전 검토 서비스의 usage limit은 제품 실패가 아니며 동일 실패 횟수에 포함하지 않는다. 부분 반영된 start projection은 Main이 즉시 완결하고 제품 exact7은 Subagent가 TDD로 수행한다.
+
+### seq524 historical seq513 mutation fixture 보완
+
+- 오류 fingerprint `SEQ524_HISTORICAL_SEQ513_CURRENT_BUNDLE_MIX` 1회: `test_c21_provider_status_read_review_successor_fails_closed_on_binding_mutation`이 seq513 manifest와 현재 seq524 bundle을 혼합해 `C21_PROVIDER_STATUS_READ_COMPLETION_EVENT_INVALID`, `C21_PROVIDER_STATUS_READ_REVIEW_DIGEST_INVALID`, `C21_PROVIDER_STATUS_READ_REVIEW_EVENT_INVALID`, `C21_PROVIDER_STATUS_READ_REVIEW_EVENT_ORDER_INVALID`, `C21_PROVIDER_STATUS_READ_REVIEW_HANDOFF_INVALID`, `C21_PROVIDER_STATUS_READ_REVIEW_HISTORY_INVALID`, `C21_PROVIDER_STATUS_READ_REVIEW_PROJECTION_INVALID`, `C21_PROVIDER_STATUS_READ_REVIEW_RAW_INVALID` 8개 오류로 실패했다. 이는 historical fixture 오류이며 제품 실패가 아니다.
+- 최소 수정: 기존 `_historical_bundle` 패턴으로 seq513 commit `b85d2b48e14f513e326054bc0be28009f269a827`의 격리 bundle과 동일 시점 manifest를 로드하도록 test만 교정했다. seq1~513 event/evidence와 checker 계약은 변경하지 않았다.
+- RED: `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k "test_c21_provider_status_read_review_successor_fails_closed_on_binding_mutation"` -> exit 1, `1 failed, 168 deselected in 0.66s`.
+- GREEN: 동일 명령 -> exit 0, `1 passed, 168 deselected in 5.68s`; seq524 focused `-k "provider_wsl_auth_reviewed"` -> exit 0, `3 passed, 166 deselected in 1.78s`.
+- live checker: `.venv\Scripts\python.exe scripts/check_project_progress.py` -> exit 1, `PRG_REFERENCED_HASH_MISMATCH`. 원인은 `build-progress.json`의 `tests/tooling/test_project_progress.py` 결박 hash `6F9508873404B3D318E5611C9DA904BACB4DCB93ED7E594804CBCFA680BDE8F3`가 수정 후 portable hash `3CACC50CA9DB23EB8F2E2D0C779756988A3416717DDFB8781703951818BD8EFB`와 불일치하기 때문이다.
+- 다음 안전 조치: Main이 current test hash를 progress projection에 재결박하고 연쇄 snapshot/digest를 재계산한 뒤 live checker를 재실행한다. commit, push, WSL, Provider, Telegram, DB, ysna, main은 실행하지 않았다.
+- Main 재결박 후 live checker는 `PASS sequence=524 reporting=AUTO_CONTINUE`, 전체 `tests/tooling/test_project_progress.py`는 `169 passed in 717.78s`로 통과했다. `SEQ524_HISTORICAL_SEQ513_CURRENT_BUNDLE_MIX`는 1회 발생 후 해소됐으며 추가 반복은 없다.
+
+### seq524 독립 검토 재작업 1회
+
+- fingerprint `C21_PROVIDER_WSL_AUTH_SEQ524_BINDING_GAPS_R1` 유효 실패 1회: 독립 reviewer가 Important 2건으로 terminal seq514~524 event details와 manifest/digest 선언 metadata의 fail-open을 재현해 commit을 보류했다.
+- RED: `-k c21_provider_wsl_auth_reviewed` -> `2 failed, 169 deselected`; GREEN: 동일 focused suite -> `5 passed, 166 deselected`.
+- 조치: terminal event canonical SHA-256을 `70237B7C9F71D44330B8F77877DEB17A1D8362EFF362E88EE1D3522969FB1135`로 exact 결박하고, manifest `schema_version/created_at`, digest `schema_version/digest_id/algorithm/created_at/scope`를 exact 검증한다.
+- 현재 미충족: 변경된 checker/test hash와 progress snapshot/detached digest 재결박, 전체 tooling 재검증, 독립 재검토. seq1~513 historical evidence와 제품 exact7은 변경하지 않았다.
+- 해소 검증: Main 재결박 후 focused `5 passed, 166 deselected`, live checker `PASS sequence=524`, 전체 tooling `171 passed in 711.92s`를 확인했다. checker/test hash와 progress snapshot/detached digest 재결박 및 전체 tooling 미충족은 해소됐다.
+- 독립 재검토 최종 판정은 `SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`이며 exact10 record commit을 허용한다. seq514~524의 이전 11개 event details 변조는 `C21_PROVIDER_WSL_AUTH_REVIEW_EVENT_INVALID`, manifest/digest metadata 변조는 각 지정 오류로 모두 fail-closed 거부됨을 확인했다.

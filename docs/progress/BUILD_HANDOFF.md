@@ -695,15 +695,15 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 513,
-  "status": "LOCAL_IMPLEMENTED_PENDING_CANDIDATE_WSL",
+  "event_sequence": 524,
+  "status": "LOCAL_IMPLEMENTED_PENDING_GIT_ONLY_CANDIDATE",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_provider_status_read_independent_review_recorded",
-  "updated_at": "2026-09-06T02:35:00+09:00",
+  "last_event_id": "evt_c21_provider_wsl_auth_final_review_recorded",
+  "updated_at": "2026-09-06T09:07:23+09:00",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
-  "active_work_instruction_sha256": null,
-  "active_invocation_sha256": null,
+  "active_work_instruction_sha256": "0A36A2974CD5E3A6553FEDBC520AA001DB04AD2019B44F351623DF905D75A0C5",
+  "active_invocation_sha256": "286CAB760B9A352ECC292747C12EA1ED52E3C20B50CCCB2568103FF4B30884E7",
   "active_revision_binding_id": "APPROVAL-20260904-C21-WSL-EARLY-VALIDATION-001",
   "approval_artifact_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
   "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
@@ -712,13 +712,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "historical_seq1_487_raw_bytes": 786441,
   "historical_seq1_487_raw_sha256": "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
   "historical_seq1_487_canonical_sha256": "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
-  "next_safe_action": "Issue the development/WSL-only provider:read test-session successor, verify locally, then bind a Git-only PG15/PG18RC candidate.",
+  "next_safe_action": "Prepare the Git-only C-21 Provider WSL candidate manifest and guard for isolated WSL PG15 and PG18RC verification.",
   "dir_status": "CLEARED",
-  "repository_head": "13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+  "repository_head": "0f70afeabe9a031e7960d49cfe27c808c0770d16",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_PROVIDER_STATUS_READ_COMMITTED_EXACT95_REVIEW_RECORD8",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_AUTH_PRODUCT_EXACT99_REVIEW_RECORD10",
   "repository_exact_allowed_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -755,6 +755,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
@@ -778,6 +779,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
@@ -798,11 +800,14 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
     "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
     "packages/agent_team/provider_catalog.py",
     "packages/agent_team/provider_status.py",
+    "packages/api/local_session.py",
     "packages/api/provider_status.py",
     "packages/api/registry.py",
     "packages/api/runtime.py",
@@ -810,6 +815,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/agent_team/test_c21_provider_nonbilling_qa.py",
     "tests/agent_team/test_provider_status.py",
     "tests/api/test_c21_telegram_outbound_free_qa.py",
+    "tests/api/test_local_session.py",
     "tests/api/test_provider_status.py",
     "tests/api/test_registry_openapi.py",
     "tests/api/test_runtime_app.py",
@@ -870,8 +876,13 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "repository_exact51_path_list_sha256": "F3AD3734333F4D40E2C3AC7B00C59AB0D91F06574C2CBBFCA8AAA79B49217EF2",
   "record_exact13_path_list_sha256": "F17A6B348C9A88343FCB9DE019A80429698293C62E7C2D35ADCBD9D23C049DEF",
   "postcommit_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
-  "runtime_safety_gate": "ACTIVE_DEVELOPMENT_QA_EXACT7",
-  "runtime_next_action": "ISSUE_C21_PROVIDER_WSL_AUTH_SUCCESSOR",
+  "runtime_safety_gate": "LOCAL_IMPLEMENTED_PENDING_GIT_ONLY_CANDIDATE",
+  "runtime_next_action": "PREPARE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE",
+  "provider_wsl_auth_product_commit": "0f70afeabe9a031e7960d49cfe27c808c0770d16",
+  "provider_wsl_auth_product_parent": "b85d2b48e14f513e326054bc0be28009f269a827",
+  "provider_wsl_auth_product_exact7_path_list_sha256": "43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A",
+  "provider_wsl_auth_record_exact10_path_list_sha256": "3C963ACAF605AD6BF212F56C6C3D1FA3D5F9434E0787045C4F4E1D754F1C0B93",
+  "provider_wsl_auth_cumulative_exact103_path_list_sha256": "A46103D23EC42AD4F0431A979601964FA846913555C568DE4947605411787880",
   "repository_exact54_path_list_sha256": "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5",
   "record_exact12_path_list_sha256": "315FA23EA1B82C16252A749802C3CE94E611BDF3618BF55837A2FBEA187185F5",
   "postcommit_exact56_path_list_sha256": "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714",
@@ -1495,3 +1506,17 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 동일 Git projection 오류 3회 후 Main이 인수했고, 신산님 승인에 따라 seq513 전용 predicate를 일반 projection보다 먼저 적용한다. exact commit·경로·ancestor·direct-child·clean/dirty 검증은 모두 유지한다.
 - sequence 1~509 및 historical evidence는 불변이다. sequence 510~513만 append했고 record는 exact8이다.
 - Provider·Telegram 실제 호출, WSL PG15/PG18RC, ysna, main 병합은 수행하지 않았다. 다음 단계는 development/WSL-only `provider:read` test-session successor다.
+# C-21 Provider WSL Auth successor 시작 — sequence 516
+
+- dispatch HEAD `b85d2b48e14f513e326054bc0be28009f269a827`에서 `developer-primary`에게 exact7 write lease를 발급했다.
+- canonical permission scope에 `provider:read`를 추가하되 Provider GET exact3만 test session에서 허용한다. mutation·유사 경로·비정상 scope는 fail-closed한다.
+- actual Provider/Telegram/WSL/ysna/main/DB migration은 실행하지 않는다. 제품 완료 후 독립 review와 Git-only candidate binding으로 진행한다.
+
+## C-21 Provider WSL Auth 구현·독립 검토 완료 — sequence 524
+
+- 제품 commit `0f70afeabe9a031e7960d49cfe27c808c0770d16`은 parent `b85d2b48e14f513e326054bc0be28009f269a827`의 direct child이며 exact7/path hash `43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A`다.
+- `provider:read`는 Provider GET exact3만 허용한다. legacy·malformed·duplicate·wildcard·whitespace scope, mutation·유사 경로는 fail-closed하며 Provider slash 3개만 404, 기존 Task/Run/auth slash는 307을 유지한다.
+- `.env` rebind는 secure temp, signal/EXIT cleanup, 0600/0400 mode 보존, atomic move, LF/CRLF·final-newline·비대상 bytes 보존 계약을 구현했다.
+- 독립 review는 R1 `C1/I2`, R2 `C0/I2`를 거쳐 최종 `SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`다. 동일 package 유효 실패는 2회이며 Main 직접 인수 threshold 3회에 도달하지 않았다.
+- Main API `117 passed`; focused WSL harness `10 passed, 2 skipped`; bash syntax/diff-check PASS다. Windows NTFS에서 실제 POSIX mode는 검증하지 못했으며 candidate WSL에서 0600/0400·signal/move-failure residue와 PG15/PG18RC를 확인한다.
+- 실제 Provider·Telegram·WSL·ysna·main·DB migration은 `NOT_EXECUTED`; C-21 accepted=false, C-01 차단, DIR-2 미발생이다. 다음은 Git-only candidate manifest/guard 준비다.

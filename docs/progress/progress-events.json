@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 513,
+  "last_sequence": 524,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -18122,7 +18122,235 @@
         "dir2_status": "NOT_TRIGGERED",
         "runtime_next_action": "ISSUE_C21_PROVIDER_WSL_AUTH_SUCCESSOR"
       }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_worker_lease_issued",
+      "sequence": 514,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "occurred_at": "2026-09-06T03:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "PROVIDER-WSL-AUTH",
+        "lease_epoch": 1,
+        "fencing_token": "c21-provider-wsl-auth-execution-fence-epoch-1-b85d2b4",
+        "execution_fencing_token": "c21-provider-wsl-auth-execution-fence-epoch-1-b85d2b4",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_write_lease_issued",
+      "sequence": 515,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "occurred_at": "2026-09-06T03:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
+        "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "PROVIDER-WSL-AUTH",
+        "write_epoch": 1,
+        "execution_fencing_token": "c21-provider-wsl-auth-execution-fence-epoch-1-b85d2b4",
+        "write_fencing_token": "c21-provider-wsl-auth-write-fence-epoch-1-b85d2b4",
+        "fencing_token": "c21-provider-wsl-auth-write-fence-epoch-1-b85d2b4",
+        "status": "ACTIVE",
+        "path_scope": [
+          "deploy/wsl/bootstrap.sh",
+          "deploy/wsl/common.sh",
+          "deploy/wsl/verify.sh",
+          "packages/api/local_session.py",
+          "packages/api/runtime.py",
+          "tests/api/test_local_session.py",
+          "tests/deploy/test_wsl_staging_harness.py"
+        ],
+        "paths": [
+          "deploy/wsl/bootstrap.sh",
+          "deploy/wsl/common.sh",
+          "deploy/wsl/verify.sh",
+          "packages/api/local_session.py",
+          "packages/api/runtime.py",
+          "tests/api/test_local_session.py",
+          "tests/deploy/test_wsl_staging_harness.py"
+        ]
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_package_started",
+      "sequence": 516,
+      "event_type": "PACKAGE_STARTED",
+      "occurred_at": "2026-09-06T03:30:00+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "work_instruction_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
+        "package_status": "ACTIVE_PROVIDER_WSL_AUTH_SUCCESSOR",
+        "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
+        "write_lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
+        "dispatch_head": "b85d2b48e14f513e326054bc0be28009f269a827",
+        "product_exact_path_count": 7,
+        "product_exact_path_list_sha256": "43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A",
+        "accepted": false,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "actual_provider_calls": "NOT_EXECUTED",
+        "actual_telegram_outbound": "NOT_EXECUTED",
+        "runtime_next_action": "IMPLEMENT_PROVIDER_WSL_AUTH_EXACT7"
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_review_rework_1",
+      "sequence": 517,
+      "event_type": "INDEPENDENT_TEST_REVIEW_RECORDED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "independent-reviewer",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "verdict": "REWORK",
+        "critical_findings": 1,
+        "important_findings": 2,
+        "minor_findings": 0,
+        "attempt": 1,
+        "reason_codes": [
+          "ENV_TEMP_SECRET_MODE_AND_RESIDUE",
+          "ENV_NON_SCOPE_BYTE_PRESERVATION",
+          "PROVIDER_TRAILING_SLASH_REDIRECT"
+        ],
+        "accepted": false
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_rework_requested_1",
+      "sequence": 518,
+      "event_type": "PACKAGE_REWORK_REQUESTED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "attempt": 1,
+        "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
+        "write_lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
+        "same_failure_count": 1,
+        "status": "REWORK_ACTIVE"
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_review_rework_2",
+      "sequence": 519,
+      "event_type": "INDEPENDENT_TEST_REVIEW_RECORDED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "independent-reviewer",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "verdict": "REWORK",
+        "critical_findings": 0,
+        "important_findings": 2,
+        "minor_findings": 0,
+        "attempt": 2,
+        "reason_codes": [
+          "GLOBAL_REDIRECT_SLASH_REGRESSION",
+          "ENV_MODE_0400_TEST_ORACLE_MISMATCH"
+        ],
+        "accepted": false
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_rework_requested_2",
+      "sequence": 520,
+      "event_type": "PACKAGE_REWORK_REQUESTED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "attempt": 2,
+        "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
+        "write_lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
+        "same_failure_count": 2,
+        "status": "REWORK_ACTIVE",
+        "takeover_threshold": 3
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_write_lease_revoked",
+      "sequence": 521,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
+        "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
+        "execution_fencing_token": "c21-provider-wsl-auth-execution-fence-epoch-1-b85d2b4",
+        "write_fencing_token": "c21-provider-wsl-auth-write-fence-epoch-1-b85d2b4",
+        "status": "REVOKED",
+        "reason": "PRODUCT_EXACT7_COMMITTED_AND_REVIEWED",
+        "result": "PRODUCT_EXACT7_COMMITTED"
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_worker_lease_revoked",
+      "sequence": 522,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
+        "execution_fencing_token": "c21-provider-wsl-auth-execution-fence-epoch-1-b85d2b4",
+        "status": "REVOKED",
+        "reason": "DEVELOPER_COMPLETED_AFTER_REWORK_2",
+        "result": "DEVELOPER_COMPLETED"
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_package_completed",
+      "sequence": 523,
+      "event_type": "PACKAGE_COMPLETED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "work_instruction_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
+        "result_status": "COMPLETED",
+        "package_status": "LOCAL_IMPLEMENTED_PENDING_GIT_ONLY_CANDIDATE",
+        "developer_commit": "0f70afeabe9a031e7960d49cfe27c808c0770d16",
+        "developer_parent": "b85d2b48e14f513e326054bc0be28009f269a827",
+        "product_exact_path_count": 7,
+        "product_exact_path_list_sha256": "43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A",
+        "main_api_test": "117_PASSED",
+        "main_wsl_focused_test": "10_PASSED_2_SKIPPED",
+        "actual_provider_calls": "NOT_EXECUTED",
+        "actual_telegram_outbound": "NOT_EXECUTED",
+        "wsl_pg15_pg18rc": "NOT_EXECUTED",
+        "accepted": false
+      }
+    },
+    {
+      "event_id": "evt_c21_provider_wsl_auth_final_review_recorded",
+      "sequence": 524,
+      "event_type": "INDEPENDENT_TEST_REVIEW_RECORDED",
+      "occurred_at": "2026-09-06T09:07:23+09:00",
+      "actor": "independent-reviewer",
+      "subject_ref": "C-21/PROVIDER-WSL-AUTH",
+      "details": {
+        "verdict": "SPEC_PASS",
+        "quality": "APPROVED",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_commit": "0f70afeabe9a031e7960d49cfe27c808c0770d16",
+        "reviewed_path_count": 7,
+        "reviewed_path_list_sha256": "43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A",
+        "accepted": false,
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "runtime_next_action": "PREPARE_C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE"
+      }
     }
   ],
-  "last_event_id": "evt_c21_provider_status_read_independent_review_recorded"
+  "last_event_id": "evt_c21_provider_wsl_auth_final_review_recorded"
 }

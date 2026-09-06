@@ -6915,6 +6915,179 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_provider_status_read_start_projection(stale_handoff, copy.deepcopy(manifest)),
         )
 
+    def test_c21_provider_wsl_auth_reviewed_exact10_contract_exists(self) -> None:
+        """The seq524 record surface is the frozen exact10 requested by Main."""
+        checker = self.require_checker()
+        exact10 = sorted(
+            {
+                "docs/WORK_STATUS.md",
+                "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
+                "docs/progress/BUILD_HANDOFF.md",
+                "docs/progress/build-progress.json",
+                "docs/progress/progress-events.json",
+                "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
+                "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_INVOCATION_PROMPT.md",
+                "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            }
+        )
+        self.assertEqual(exact10, sorted(checker.c21_provider_wsl_auth_reviewed_paths()))
+        self.assertEqual(
+            "3C963ACAF605AD6BF212F56C6C3D1FA3D5F9434E0787045C4F4E1D754F1C0B93",
+            checker.path_list_lf_sha256(exact10),
+        )
+
+    def test_c21_provider_wsl_auth_reviewed_git_projection_is_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = copy.deepcopy(bundle["progress"]["repository"])
+        product_commit = "0f70afeabe9a031e7960d49cfe27c808c0770d16"
+        product_parent = "b85d2b48e14f513e326054bc0be28009f269a827"
+        committed = sorted(
+            checker.c21_development_qa_review_predecessor_paths()
+            | checker.c21_development_qa_review_successor_paths()
+            | checker.c21_provider_status_read_start_paths()
+            | checker.c21_provider_status_read_actual_paths()
+            | checker.c21_provider_status_read_review_successor_paths()
+            | checker.c21_provider_wsl_auth_product_paths()
+        )
+        record = sorted(checker.c21_provider_wsl_auth_reviewed_paths())
+        cumulative = sorted(set(committed) | set(record))
+        repository.update(
+            local_head=product_commit,
+            product_parent_commit=product_parent,
+            head_relation="FEATURE_WORKTREE_C21_PROVIDER_WSL_AUTH_PRODUCT_EXACT99_REVIEW_RECORD10",
+            worktree_status="SEQ524_PROVIDER_WSL_AUTH_REVIEWED_EXACT10_DIRTY",
+            exact_allowed_paths=cumulative,
+            provider_wsl_auth_reviewed_paths=record,
+        )
+        progress = copy.deepcopy(bundle["progress"])
+        progress["event_sequence"] = 524
+        common = {
+            "actual_head": product_commit,
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": committed,
+            "working_tree_mode": True,
+            "progress": progress,
+            "control_descendant_paths": record,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+            "product_commit_parent_is_direct": True,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        wrong_product_parent = dict(common, product_commit_parent_is_direct=False)
+        self.assertIn(
+            "GIT_PRODUCT_COMMIT_PARENT_INVALID",
+            checker.validate_repository_projection(repository, **wrong_product_parent),
+        )
+        postcommit = dict(
+            common,
+            actual_head="a" * 40,
+            actual_changed_paths=cumulative,
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        dirty_postcommit = dict(postcommit, worktree_is_clean=False)
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(repository, **dirty_postcommit),
+        )
+
+    def test_c21_provider_wsl_auth_reviewed_projection_rejects_binding_mutation(self) -> None:
+        checker = self.require_checker()
+        validator = checker.validate_c21_provider_wsl_auth_reviewed_projection
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual([], validator(bundle, manifest))
+        for field in (
+            "historical_full_file_sha256",
+            "historical_event_object_prefix_sha256",
+            "historical_events_canonical_ascii_sha256",
+            "product_commit",
+            "product_parent_commit",
+            "product_exact_path_list_sha256",
+            "record_exact_path_list_sha256",
+            "record_commit",
+            "record_commit_mode",
+        ):
+            mutated = copy.deepcopy(manifest)
+            mutated[field] = "tampered"
+            self.assertTrue(validator(bundle, mutated), field)
+        mutated_progress = copy.deepcopy(bundle)
+        mutated_progress["progress"]["provider_wsl_auth"]["actual_provider_calls"] = "EXECUTED"
+        self.assertIn(
+            "C21_PROVIDER_WSL_AUTH_REVIEW_BOUNDARY_INVALID",
+            validator(mutated_progress, manifest),
+        )
+        mutated_events = copy.deepcopy(bundle)
+        mutated_events["events"]["events"][515]["event_id"] = "tampered"
+        self.assertIn(
+            "C21_PROVIDER_WSL_AUTH_REVIEW_HISTORY_INVALID",
+            validator(mutated_events, manifest),
+        )
+
+    def test_c21_provider_wsl_auth_reviewed_rejects_each_terminal_event_detail_mutation(self) -> None:
+        checker = self.require_checker()
+        validator = checker.validate_c21_provider_wsl_auth_reviewed_projection
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for sequence in range(514, 525):
+            with self.subTest(sequence=sequence):
+                mutated = copy.deepcopy(bundle)
+                mutated["events"]["events"][sequence - 1]["details"]["unexpected_binding"] = "tampered"
+                self.assertIn(
+                    "C21_PROVIDER_WSL_AUTH_REVIEW_EVENT_INVALID",
+                    validator(mutated, manifest),
+                )
+
+    def test_c21_provider_wsl_auth_reviewed_rejects_manifest_and_digest_metadata_mutation(self) -> None:
+        checker = self.require_checker()
+        validator = checker.validate_c21_provider_wsl_auth_reviewed_projection
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for field in ("schema_version", "created_at"):
+            with self.subTest(manifest_field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = "tampered"
+                self.assertIn(
+                    "C21_PROVIDER_WSL_AUTH_REVIEW_MANIFEST_INVALID",
+                    validator(bundle, mutated),
+                )
+        digest = json.loads(
+            (ROOT / "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for field in ("schema_version", "digest_id", "algorithm", "created_at", "scope"):
+            with self.subTest(digest_field=field):
+                mutated = copy.deepcopy(digest)
+                mutated[field] = "tampered"
+                with mock.patch.object(checker, "_load_json", return_value=mutated):
+                    self.assertIn(
+                        "C21_PROVIDER_WSL_AUTH_REVIEW_DIGEST_INVALID",
+                        validator(bundle, manifest),
+                    )
+
     def test_c21_provider_status_read_review_successor_accepts_only_exact_record_projection(self) -> None:
         """A committed exact13 plus any record path outside exact8 must fail closed."""
         checker = self.require_checker()
@@ -6974,9 +7147,11 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_provider_status_read_review_successor_fails_closed_on_binding_mutation(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, snapshot_root = self._historical_bundle(
+            checker, "b85d2b48e14f513e326054bc0be28009f269a827"
+        )
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json").read_text(
+            (snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json").read_text(
                 encoding="utf-8"
             )
         )
