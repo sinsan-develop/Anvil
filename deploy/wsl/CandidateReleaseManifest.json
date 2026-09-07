@@ -109,6 +109,11 @@
   },
   "rollback": {
     "approved_commits": ["a6dca0da5a37e64491e91813895268e78ecb78b2", "a342d62391a44b349733d1468ac3b180761155ab", "324eb169fedbce958d2e8cc29362deb7af433677"],
+    "test_session_permission_scopes_by_commit": {
+      "a6dca0da5a37e64491e91813895268e78ecb78b2": ["tasks:write", "tasks:read", "run:events:read", "provider:read"],
+      "a342d62391a44b349733d1468ac3b180761155ab": ["tasks:write", "tasks:read", "run:events:read"],
+      "324eb169fedbce958d2e8cc29362deb7af433677": ["tasks:write", "tasks:read", "run:events:read"]
+    },
     "runtime_observation_required": true
   }
 }

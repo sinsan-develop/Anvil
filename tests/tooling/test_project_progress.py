@@ -8128,5 +8128,42 @@ class C21ProviderWslVerifyScopeCorrectionTests(unittest.TestCase):
         self.assertEqual([], checker.validate_c21_provider_wsl_verify_scope_artifacts(historical, files, artifacts))
 
 
+class C21WslRollbackScopeCompatR1Tests(unittest.TestCase):
+    def test_seq554_builder_preserves_history_and_binds_exact_scope(self):
+        checker=_load_checker_or_none(); self.assertIsNotNone(checker)
+        historical={p:subprocess.check_output(["git","show",f"{checker.C21_ROLLBACK_SCOPE_PARENT}:{p}"],cwd=ROOT)
+                    for p in (checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H)}
+        generated={checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H,
+                   checker.C21_ROLLBACK_SCOPE_D,checker.C21_ROLLBACK_SCOPE_M}
+        files={p:(ROOT/p).read_bytes() for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
+        artifacts=checker.c21_wsl_rollback_scope_artifacts(historical,files)
+        events=json.loads(artifacts[checker.C21_ROLLBACK_SCOPE_E])["events"]
+        manifest=json.loads(artifacts[checker.C21_ROLLBACK_SCOPE_M])
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical[checker.C21_ROLLBACK_SCOPE_E],548),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C21_ROLLBACK_SCOPE_E],548))
+        self.assertEqual(list(range(549,555)),[row["sequence"] for row in events[-6:]])
+        self.assertEqual(16,manifest["developer_exact_path_count"])
+        self.assertEqual("27647FE5BBE135FAB147A635D75BF93B7A4EC03E26BA00C2C709402EFB80B841",manifest["developer_exact_path_list_sha256"])
+        self.assertEqual(137,manifest["cumulative_exact_path_count"])
+        self.assertEqual("71F5E29A6F2AFA16219059D9417415DE3F62A515D7145728F21363EFCB4B42FC",manifest["cumulative_exact_path_list_sha256"])
+        self.assertEqual("PASS",manifest["runtime_fact"]["verify_receipts"]["pg15"])
+        self.assertEqual("NOT_STARTED",manifest["runtime_fact"]["first_rollback_attempt"]["pg18rc_mutation"])
+        self.assertEqual("UNCHANGED",manifest["runtime_fact"]["environment"]["bytes"])
+        self.assertEqual("NOT_EXECUTED",manifest["provider"])
+
+    def test_seq554_builder_rejects_scope_map_and_history_tamper(self):
+        checker=_load_checker_or_none(); self.assertIsNotNone(checker)
+        historical={p:subprocess.check_output(["git","show",f"{checker.C21_ROLLBACK_SCOPE_PARENT}:{p}"],cwd=ROOT)
+                    for p in (checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H)}
+        generated={checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H,
+                   checker.C21_ROLLBACK_SCOPE_D,checker.C21_ROLLBACK_SCOPE_M}
+        files={p:(ROOT/p).read_bytes() for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
+        bad=dict(files); doc=json.loads(bad["deploy/wsl/CandidateReleaseManifest.json"]); doc["rollback"]["test_session_permission_scopes_by_commit"].pop(next(iter(doc["rollback"]["test_session_permission_scopes_by_commit"])))
+        bad["deploy/wsl/CandidateReleaseManifest.json"]=json.dumps(doc).encode()
+        with self.assertRaises(ValueError): checker.c21_wsl_rollback_scope_artifacts(historical,bad)
+        corrupt=dict(historical); corrupt[checker.C21_ROLLBACK_SCOPE_E]=corrupt[checker.C21_ROLLBACK_SCOPE_E].replace(b'"sequence": 1',b'"sequence": 0',1)
+        with self.assertRaises(ValueError): checker.c21_wsl_rollback_scope_artifacts(corrupt,files)
+
+
 if __name__ == "__main__":
     unittest.main()

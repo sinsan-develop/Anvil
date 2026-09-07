@@ -1130,6 +1130,10 @@ class WslControlRuntimeTests(unittest.TestCase):
             # Isolate the existing rollback algorithm from runtime authorization.
             # Product files remain unchanged; real runtime I-3 exit 22 is tested separately.
             fixture_rollback = control / "deploy" / "wsl" / "rollback.sh"
+            fixture_rollback.write_bytes(subprocess.check_output(
+                ["git", "show", "dfd75904e3b6ba0f453965607a95d6020bdc4466:deploy/wsl/rollback.sh"],
+                cwd=ROOT,
+            ))
             fixture_rollback.write_text(fixture_rollback.read_text(encoding="utf-8").replace(
                 'validate_wsl_candidate_manifest "$REPO" "$MANIFEST_REF" "$EXPECTED"',
                 'validate_wsl_candidate_binding "$REPO" "$MANIFEST_REF" "$EXPECTED"'), encoding="utf-8", newline="\n")
@@ -1728,15 +1732,32 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
     PREVIOUS = "324eb169fedbce958d2e8cc29362deb7af433677"
     EXPECTED = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
 
+    @staticmethod
+    def _posix(path: Path) -> str:
+        value = str(path).replace("\\", "/")
+        if os.name == "nt" and shutil.which("cygpath"):
+            return subprocess.check_output(
+                ["bash", "-c", 'cygpath -u "$1"', "--", str(path)], text=True
+            ).strip()
+        if len(value) > 1 and value[1] == ":":
+            return f"/{value[0].lower()}{value[2:]}"
+        return value
+
     def _case(self, scenario):
-        with tempfile.TemporaryDirectory() as raw:
+        with tempfile.TemporaryDirectory(prefix="anvil-rollback-unit-", dir="D:/tmp") as raw:
             root = Path(raw); repo = root / "repo"; repo.mkdir()
             control = root / "control" / "deploy" / "wsl"; control.mkdir(parents=True)
             helper = WslCandidateManifestGuardTests()
             git = lambda *args: helper._git(repo, *args)
             git("init", "-b", "test-control"); git("config", "user.name", "Anvil Unit"); git("config", "user.email", "unit@example.invalid")
             path = repo / "deploy/wsl/CandidateReleaseManifest.json"; path.parent.mkdir(parents=True)
-            doc = {"source": {"commit": self.EXPECTED}, "rollback": {"approved_commits": [self.EXPECTED, self.PREVIOUS]}}
+            doc = {"source": {"commit": self.EXPECTED}, "rollback": {
+                "approved_commits": [self.EXPECTED, self.PREVIOUS],
+                "test_session_permission_scopes_by_commit": {
+                    self.EXPECTED: ["tasks:write", "tasks:read", "run:events:read", "provider:read"],
+                    self.PREVIOUS: ["tasks:write", "tasks:read", "run:events:read"],
+                },
+            }}
             if scenario == "malformed_allowlist": doc["rollback"]["approved_commits"] = "not-a-list"
             if scenario == "malformed_sha": doc["rollback"]["approved_commits"] = [self.EXPECTED, "bad-sha"]
             payload = b"not-json\n" if scenario == "malformed_json" else (json.dumps(doc) + "\n").encode()
@@ -1753,7 +1774,7 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
                 alternate = git("commit-tree", git("rev-parse", "HEAD^{tree}"), "-p", immutable, "-m", "racing control")
                 (control / "candidate-manifest-guard.sh").write_text(f'validate_wsl_candidate_manifest() {{ git -C "$1" update-ref "$2" {alternate}; }}\n', newline="\n")
             common = (DEPLOY / "common.sh").read_text(encoding="utf-8")
-            common += '\nload_server_environment() { return 0; }\nstart_wsl_ingress() { return 0; }\nwsl_compose() { echo "compose:$ANVIL_TARGET_SLUG:$*" >> "$ANVIL_UNIT_LOG"; }\ndocker() { local image="${@: -1}"; printf "%s\\n" "${image#anvil-wsl-web:}"; }\n'
+            common += '\nload_server_environment() { ANVIL_TEST_SESSION_PERMISSION_SCOPES="tasks:write,tasks:read,run:events:read,provider:read"; export ANVIL_TEST_SESSION_PERMISSION_SCOPES; }\nstart_wsl_ingress() { return 0; }\nwsl_compose() { [[ "$*" == "config --quiet" ]] && return 0; echo "compose:$ANVIL_TARGET_SLUG:$ANVIL_TEST_SESSION_PERMISSION_SCOPES:$*" >> "$ANVIL_UNIT_LOG"; }\ndocker() { local image="${@: -1}"; printf "%s\\n" "${image#anvil-wsl-web:}"; }\n'
             (control / "common.sh").write_text(common, encoding="utf-8", newline="\n")
             for slug in ("pg15", "pg18rc"):
                 runtime = root / "runtime" / slug; runtime.mkdir(parents=True)
@@ -1762,13 +1783,22 @@ class WslRollbackAllowlistUnitTests(unittest.TestCase):
             evidence = root / "evidence"; evidence.mkdir(); (evidence / "preserved.json").write_text("{}\n", newline="\n")
             snapshot = lambda: {str(p.relative_to(root)): p.read_bytes() for directory in (root / "runtime", evidence) for p in directory.rglob("*") if p.is_file()}
             before = snapshot(); log = root / "calls.log"
-            result = subprocess.run(["bash", helper._posix(control / "rollback.sh"), self.EXPECTED], text=True, capture_output=True,
-                env=os.environ | {"ANVIL_WSL_DEPLOY_ROOT": helper._posix(root), "ANVIL_WSL_CONTROL_REPO": helper._posix(root / "control"),
-                    "ANVIL_WSL_APPLICATION_REPO": helper._posix(repo), "ANVIL_CANDIDATE_MANIFEST_REF": ref,
-                    "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum, "ANVIL_PYTHON": helper._posix(Path(sys.executable)), "ANVIL_UNIT_LOG": helper._posix(log)})
+            command = (
+                f"ANVIL_WSL_DEPLOY_ROOT='{self._posix(root)}' "
+                f"ANVIL_WSL_CONTROL_REPO='{self._posix(root / 'control')}' "
+                f"ANVIL_WSL_APPLICATION_REPO='{self._posix(repo)}' "
+                f"ANVIL_CANDIDATE_MANIFEST_REF='{ref}' "
+                f"ANVIL_CANDIDATE_MANIFEST_SHA256='{checksum}' "
+                "ANVIL_PYTHON='python3' "
+                f"ANVIL_UNIT_LOG='{self._posix(log)}' "
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES='tasks:write,tasks:read,run:events:read,provider:read' "
+                f"'{self._posix(control / 'rollback.sh')}' '{self.EXPECTED}'"
+            )
+            result = subprocess.run(["bash", "-c", command], text=True, encoding="utf-8", capture_output=True)
             calls = log.read_text().splitlines() if log.exists() else []
             if scenario == "approved":
                 self.assertEqual(0, result.returncode, result.stderr); self.assertEqual(2, len(calls))
+                self.assertTrue(all(":tasks:write,tasks:read,run:events:read:" in call for call in calls))
                 for slug in ("pg15", "pg18rc"): self.assertEqual(self.PREVIOUS, (root / "runtime" / slug / "current.sha").read_text().strip())
             else:
                 self.assertNotEqual(0, result.returncode, scenario)
@@ -2187,6 +2217,45 @@ validate_c21_exact_runtime_images '{path}'
             result = subprocess.run(["bash", "-c", rejected], text=True, capture_output=True)
             self.assertEqual(23, result.returncode, result.stderr)
             self.assertIn("runtime image drift", result.stderr)
+
+
+class WslRollbackScopeCompatibilityContractTests(unittest.TestCase):
+    CANDIDATE = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+    OBSERVED = "a342d62391a44b349733d1468ac3b180761155ab"
+    PREVIOUS = "324eb169fedbce958d2e8cc29362deb7af433677"
+    EXACT4 = ["tasks:write", "tasks:read", "run:events:read", "provider:read"]
+    EXACT3 = ["tasks:write", "tasks:read", "run:events:read"]
+
+    def test_seq554_manifest_binds_exact_scope_for_every_rollback_commit(self):
+        doc = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
+        rollback = doc["rollback"]
+        mapping = rollback["test_session_permission_scopes_by_commit"]
+        self.assertEqual(set(rollback["approved_commits"]), set(mapping))
+        self.assertEqual(self.EXACT4, mapping[self.CANDIDATE])
+        self.assertEqual(self.EXACT3, mapping[self.OBSERVED])
+        self.assertEqual(self.EXACT3, mapping[self.PREVIOUS])
+        for scopes in mapping.values():
+            self.assertEqual(len(scopes), len(set(scopes)))
+            self.assertTrue(all(scope == scope.strip() and scope for scope in scopes))
+
+    def test_seq554_rollback_preflights_all_targets_before_first_mutation(self):
+        script = (DEPLOY / "rollback.sh").read_text(encoding="utf-8")
+        mutation = script.index("wsl_compose up -d --no-build --force-recreate anvil-web")
+        self.assertLess(script.index("ROLLBACK_POLICY_ROWS="), mutation)
+        self.assertLess(script.index("wsl_compose config --quiet"), mutation)
+        self.assertLess(script.index('previous_by_target["$target"]'), mutation)
+        self.assertLess(script.index('scope_by_target["$target"]'), mutation)
+
+    def test_seq554_rollback_uses_process_local_scope_and_marks_only_after_health(self):
+        script = (DEPLOY / "rollback.sh").read_text(encoding="utf-8")
+        self.assertIn('ANVIL_TEST_SESSION_PERMISSION_SCOPES="$scope" wsl_compose up', script)
+        self.assertIn('ANVIL_TEST_SESSION_PERMISSION_SCOPES="$scope" start_wsl_ingress', script)
+        health = script.index('ANVIL_TEST_SESSION_PERMISSION_SCOPES="$scope" start_wsl_ingress')
+        marker = script.index('current.sha.tmp.$$')
+        receipt = script.index('rollback.json.tmp.$$')
+        self.assertLess(health, marker)
+        self.assertLess(health, receipt)
+        self.assertNotIn('sed -i', script)
 
 
 if __name__ == "__main__":

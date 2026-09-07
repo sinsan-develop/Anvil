@@ -12787,6 +12787,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 554:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_rollback_scope_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 548:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13643,6 +13647,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_provider_wsl_exact_binding_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_exact_binding_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json":
+            errors.extend(validate_c21_wsl_rollback_scope_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_verify_scope_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
@@ -17665,6 +17671,192 @@ def _collect_c21_verify_scope_git(bundle: Mapping[str, Any]) -> list[str]:
         else:
             parents=(_git_value(root,"show","-s","--format=%P",head) or "").split()
             if dirty or parents!=[C21_VERIFY_SCOPE_PARENT]:return ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+        return []
+    except (OSError,ValueError,TypeError,KeyError):return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_ROLLBACK_SCOPE_PARENT="dfd75904e3b6ba0f453965607a95d6020bdc4466"
+C21_ROLLBACK_SCOPE_AT="2026-09-07T00:25:00+09:00"
+C21_ROLLBACK_SCOPE_WI_ID="WI-C-21-WSL-ROLLBACK-SCOPE-COMPAT-R1-20260907-001"
+C21_ROLLBACK_SCOPE_STATUS="READY_FOR_WSL_ROLLBACK_RETRY"
+C21_ROLLBACK_SCOPE_P="docs/progress/build-progress.json"
+C21_ROLLBACK_SCOPE_E="docs/progress/progress-events.json"
+C21_ROLLBACK_SCOPE_H="docs/progress/BUILD_HANDOFF.md"
+C21_ROLLBACK_SCOPE_D="docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json"
+C21_ROLLBACK_SCOPE_M="docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json"
+C21_ROLLBACK_SCOPE_WI="docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_WORK_INSTRUCTION.md"
+C21_ROLLBACK_SCOPE_PROMPT="docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_INVOCATION_PROMPT.md"
+
+
+def c21_wsl_rollback_scope_paths() -> list[str]:
+    return sorted(["deploy/wsl/CandidateReleaseManifest.json","deploy/wsl/candidate-manifest-guard.sh",
+        "deploy/wsl/rollback.sh","docs/04_test_reports/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_REPORT.md",
+        "docs/WORK_STATUS.md",C21_ROLLBACK_SCOPE_M,C21_ROLLBACK_SCOPE_H,C21_ROLLBACK_SCOPE_P,C21_ROLLBACK_SCOPE_E,
+        C21_ROLLBACK_SCOPE_D,"docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
+        C21_ROLLBACK_SCOPE_PROMPT,C21_ROLLBACK_SCOPE_WI,"scripts/check_project_progress.py",
+        "tests/deploy/test_wsl_staging_harness.py","tests/tooling/test_project_progress.py"])
+
+
+def c21_wsl_rollback_scope_metadata() -> dict[str, Any]:
+    exact=c21_wsl_rollback_scope_paths()
+    cumulative=sorted(set(c21_provider_wsl_verify_scope_metadata()["cumulative_exact_paths"])|set(exact))
+    windows=lambda paths: hashlib.sha256("".join(f"{p}\n" for p in sorted(set(paths),key=lambda v:v.casefold().replace("_",","))).encode()).hexdigest().upper()
+    return {"developer_exact_paths":exact,"developer_exact_path_count":16,"developer_exact_path_list_sha256":windows(exact),
+        "cumulative_exact_paths":cumulative,"cumulative_exact_path_count":137,"cumulative_exact_path_list_sha256":windows(cumulative)}
+
+
+def _c21_rollback_runtime_fact() -> dict[str, Any]:
+    candidate="a6dca0da5a37e64491e91813895268e78ecb78b2"
+    return {"verify_receipts":{"pg15":"PASS","pg18rc":"PASS"},"first_rollback_attempt":{
+        "pg15":"STOPPED_OLD_IMAGE_UNHEALTHY","pg15_current_marker":candidate,"pg18rc":"CANDIDATE_HEALTHY","pg18rc_mutation":"NOT_STARTED"},
+        "environment":{"bytes":"UNCHANGED","mode":"UNCHANGED"},"recovery_redeploy":{"pg15":"CANDIDATE_HEALTHY","pg18rc":"CANDIDATE_HEALTHY"},
+        "provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED"}
+
+
+def c21_wsl_rollback_scope_events() -> list[dict[str, Any]]:
+    m=c21_wsl_rollback_scope_metadata(); common={"occurred_at":C21_ROLLBACK_SCOPE_AT,"actor":"developer-primary","subject_ref":"C-21/WSL-ROLLBACK-SCOPE-COMPAT-R1"}
+    worker={"lease_id":"worker-lease-c21-wsl-rollback-scope-compat-r1-20260907-001","agent_id":"developer-primary","work_package_id":"C-21",
+        "subtask_id":"WSL-ROLLBACK-SCOPE-COMPAT-R1","lease_epoch":1,"execution_fencing_token":"c21-wsl-rollback-scope-compat-r1-execution-fence-epoch-1-8ad7472",
+        "fencing_token":"c21-wsl-rollback-scope-compat-r1-execution-fence-epoch-1-8ad7472","status":"ACTIVE","work_instruction_id":C21_ROLLBACK_SCOPE_WI_ID}
+    write={"lease_id":"write-lease-c21-wsl-rollback-scope-compat-r1-20260907-001","worker_lease_id":worker["lease_id"],"agent_id":"developer-primary",
+        "work_package_id":"C-21","subtask_id":"WSL-ROLLBACK-SCOPE-COMPAT-R1","write_epoch":1,"execution_fencing_token":worker["execution_fencing_token"],
+        "write_fencing_token":"c21-wsl-rollback-scope-compat-r1-write-fence-epoch-1-8ad7472","fencing_token":"c21-wsl-rollback-scope-compat-r1-write-fence-epoch-1-8ad7472",
+        "status":"ACTIVE","path_scope":m["developer_exact_paths"],"paths":m["developer_exact_paths"],"path_count":16,
+        "path_list_sha256":m["developer_exact_path_list_sha256"],"work_instruction_id":C21_ROLLBACK_SCOPE_WI_ID}
+    detail={"work_instruction_id":C21_ROLLBACK_SCOPE_WI_ID,"dispatch_head":C21_ROLLBACK_SCOPE_PARENT,"dispatch_upstream_head":C21_RESUME_REMOTE,
+        "projection_mode":VALIDATED_BASE_PROJECTION_MODE,
+        "validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_C21_ROLLBACK_SCOPE_PARENT_EXACT131_SUCCESSOR_RECORD16",
+        "exact_allowed_paths":m["cumulative_exact_paths"],"runtime_fact":_c21_rollback_runtime_fact(),
+        "provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED",**m}
+    return [{"event_id":"evt_c21_wsl_rollback_scope_worker_lease_issued","sequence":549,"event_type":"WORKER_LEASE_ISSUED",**common,"details":worker},
+        {"event_id":"evt_c21_wsl_rollback_scope_write_lease_issued","sequence":550,"event_type":"WRITE_LEASE_ISSUED",**common,"details":write},
+        {"event_id":"evt_c21_wsl_rollback_scope_package_started","sequence":551,"event_type":"PACKAGE_STARTED",**common,"details":dict(detail,result_status="IN_PROGRESS",package_status="ACTIVE_WSL_ROLLBACK_SCOPE_COMPAT_R1")},
+        {"event_id":"evt_c21_wsl_rollback_scope_write_lease_revoked","sequence":552,"event_type":"WRITE_LEASE_REVOKED",**common,"details":dict(write,status="REVOKED",reason="RESULT_HANDOFF")},
+        {"event_id":"evt_c21_wsl_rollback_scope_worker_lease_revoked","sequence":553,"event_type":"WORKER_LEASE_REVOKED",**common,"details":dict(worker,status="REVOKED",reason="RESULT_HANDOFF")},
+        {"event_id":"evt_c21_wsl_rollback_scope_package_completed","sequence":554,"event_type":"PACKAGE_COMPLETED",**common,
+         "details":dict(detail,result_status="COMPLETED",package_status=C21_ROLLBACK_SCOPE_STATUS,accepted=False,independent_tester_status="PENDING")}]
+
+
+def _c21_rollback_event_bytes(historical: bytes) -> bytes:
+    parsed=_c21_resume_json(historical)
+    if parsed.get("last_sequence")!=548 or len(parsed.get("events",[]))!=548: raise ValueError("C21_ROLLBACK_SCOPE_HISTORY_INVALID")
+    prefix=raw_event_object_prefix_bytes(historical,548)
+    header=(b'{\n  "schema_version": "1.0.0",\n  "stream_id": "anvil-build-main",\n  "first_sequence": 1,\n  "last_sequence": 548,\n  "events": [\n    ')
+    footer=b'\n  ],\n  "last_event_id": "evt_c21_provider_wsl_verify_scope_package_completed"\n}\n'
+    if historical!=header+prefix+footer: raise ValueError("C21_ROLLBACK_SCOPE_HISTORY_INVALID")
+    rows=b""
+    for event in c21_wsl_rollback_scope_events():
+        rows+=b",\n"+"\n".join("    "+line for line in json.dumps(event,ensure_ascii=False,indent=2,allow_nan=False).splitlines()).encode()
+    return header.replace(b'"last_sequence": 548',b'"last_sequence": 554')+prefix+rows+footer.replace(
+        b"evt_c21_provider_wsl_verify_scope_package_completed",b"evt_c21_wsl_rollback_scope_package_completed")
+
+
+def c21_wsl_rollback_scope_artifacts(historical: Mapping[str,bytes], files: Mapping[str,bytes]) -> dict[str,bytes]:
+    generated={C21_ROLLBACK_SCOPE_P,C21_ROLLBACK_SCOPE_E,C21_ROLLBACK_SCOPE_H,C21_ROLLBACK_SCOPE_D,C21_ROLLBACK_SCOPE_M}
+    if set(files)!=set(c21_wsl_rollback_scope_paths())-generated: raise ValueError("C21_ROLLBACK_SCOPE_FILE_SET_INVALID")
+    historical_hashes={C21_ROLLBACK_SCOPE_P:"118BE41A27B2D22C08529E2D5B82C3963ECF0B518C7708336265725FCA5E3E9C",
+        C21_ROLLBACK_SCOPE_E:"08B8121CF67DF099C514A63BF7260EE4F92022FC74DD40F6CF6F2B189158AD7A",
+        C21_ROLLBACK_SCOPE_H:"12DFFA29500837DEDA7C66E21A7F16FF1DE739EA667A712C3C30F2B47850D9ED"}
+    if set(historical)!=set(historical_hashes) or any(_c21_resume_sha(historical[p])!=sha for p,sha in historical_hashes.items()):
+        raise ValueError("C21_ROLLBACK_SCOPE_HISTORY_INVALID")
+    source=_c21_resume_json(historical[C21_ROLLBACK_SCOPE_P]); candidate=_c21_resume_json(files["deploy/wsl/CandidateReleaseManifest.json"])
+    if source.get("event_sequence")!=548: raise ValueError("C21_ROLLBACK_SCOPE_SOURCE_INVALID")
+    scopes=candidate.get("rollback",{}).get("test_session_permission_scopes_by_commit")
+    expected={"a6dca0da5a37e64491e91813895268e78ecb78b2":["tasks:write","tasks:read","run:events:read","provider:read"],
+        "a342d62391a44b349733d1468ac3b180761155ab":["tasks:write","tasks:read","run:events:read"],
+        "324eb169fedbce958d2e8cc29362deb7af433677":["tasks:write","tasks:read","run:events:read"]}
+    if scopes!=expected: raise ValueError("C21_ROLLBACK_SCOPE_MAP_INVALID")
+    m=c21_wsl_rollback_scope_metadata(); events=c21_wsl_rollback_scope_events(); events_raw=_c21_rollback_event_bytes(historical[C21_ROLLBACK_SCOPE_E])
+    wi_sha=_c21_resume_sha(files[C21_ROLLBACK_SCOPE_WI]); prompt_sha=_c21_resume_sha(files[C21_ROLLBACK_SCOPE_PROMPT]); runtime=_c21_rollback_runtime_fact()
+    instruction={"artifact_id":C21_ROLLBACK_SCOPE_WI_ID,"artifact_path":C21_ROLLBACK_SCOPE_WI,"artifact_sha256":wi_sha,"invocation_path":C21_ROLLBACK_SCOPE_PROMPT,
+        "invocation_sha256":prompt_sha,"result_status":"COMPLETED","package_status":C21_ROLLBACK_SCOPE_STATUS,"executor":"developer-primary",
+        "independent_tester_status":"PENDING","accepted":False,"c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",
+        "runtime_next_action":"BIND_EXACT16_THEN_RETRY_WSL_ROLLBACK"}
+    progress=dict(source); repository=dict(progress["repository"]); repository.update({"local_head":C21_ROLLBACK_SCOPE_PARENT,
+        "head_relation":"FEATURE_WORKTREE_C21_ROLLBACK_SCOPE_PARENT_EXACT131_SUCCESSOR_RECORD16","worktree_status":"SEQ554_WSL_ROLLBACK_SCOPE_EXACT16_DIRTY",
+        "exact_allowed_paths":m["cumulative_exact_paths"],"wsl_rollback_scope_paths":m["developer_exact_paths"],"push_status":"NOT_EXECUTED"})
+    boundary={"accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","commit":"NOT_EXECUTED","push":"NOT_EXECUTED",
+        "wsl_mutation":"NOT_EXECUTED","docker_mutation":"NOT_EXECUTED","database_mutation":"NOT_EXECUTED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED",
+        "ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED"}
+    progress.update({"updated_at":C21_ROLLBACK_SCOPE_AT,"event_sequence":554,"last_event_id":events[-1]["event_id"],"status":C21_ROLLBACK_SCOPE_STATUS,
+        "active_agent":None,"worker_lease":None,"write_lease":None,"active_work_instruction":instruction,"completed_work_instruction":instruction,"repository":repository,
+        "wsl_rollback_scope_compat_r1":{"event_sequence":554,"status":C21_ROLLBACK_SCOPE_STATUS,"source_commit":C21_ROLLBACK_SCOPE_PARENT,
+        "permission_scopes_by_commit":scopes,"runtime_fact":runtime,**m,**boundary},"runtime_next_action":"BIND_EXACT16_THEN_RETRY_WSL_ROLLBACK",
+        "next_safe_action":"BIND_EXACT16_THEN_RETRY_WSL_ROLLBACK","current_progress_evidence_ref":{"package_id":"C-21","path":C21_ROLLBACK_SCOPE_D,"manifest_path":C21_ROLLBACK_SCOPE_M},
+        "latest_evidence_manifest_ref":{"path":C21_ROLLBACK_SCOPE_M,"artifact_id":"C21-WSL-ROLLBACK-SCOPE-COMPAT-R1-20260907"},
+        "reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["C21_WSL_ROLLBACK_SCOPE_COMPAT_READY"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":C21_ROLLBACK_SCOPE_E,"sha256":_c21_resume_sha(events_raw)}
+    latest=dict(files); latest[C21_ROLLBACK_SCOPE_E]=events_raw
+    progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(raw)} for p,raw in sorted(latest.items())]
+    progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":554,"last_event_id":events[-1]["event_id"],"status":C21_ROLLBACK_SCOPE_STATUS,"current_phase":source["current_phase"],
+        "current_work_package":"C-21","active_agent":None,"worker_lease":None,"write_lease":None,"execution_fencing_token":None,"write_fencing_token":None,
+        "active_work_instruction":C21_ROLLBACK_SCOPE_WI_ID,"active_work_instruction_sha256":wi_sha,"active_invocation_sha256":prompt_sha,
+        "repository_head":C21_ROLLBACK_SCOPE_PARENT,"repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],
+        "repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],
+        "repository_exact_allowed_paths":m["cumulative_exact_paths"],"design_baseline_hash":source["design_baseline_hash"],
+        "valid_failure_count":source["valid_failure_count"],"dir_status":source["dir_review"]["status"],
+        "runtime_fact":runtime,"next_safe_action":"BIND_EXACT16_THEN_RETRY_WSL_ROLLBACK",
+        "runtime_next_action":"BIND_EXACT16_THEN_RETRY_WSL_ROLLBACK","reporting_decision":"AUTO_CONTINUE",**m,**boundary}
+    htext="# C-21 WSL rollback scope compatibility R1 — seq554 Developer 완료\n\n- 두 target은 candidate healthy로 복구되었고 Provider/Telegram은 NOT_EXECUTED다.\n\n"+historical[C21_ROLLBACK_SCOPE_H].decode()
+    replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"
+    htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count!=1: raise ValueError("C21_ROLLBACK_SCOPE_HANDOFF_INVALID")
+    handoff_raw=htext.encode()
+    digest={"schema_version":"1.0.0","digest_id":"C21-WSL-ROLLBACK-SCOPE-COMPAT-R1-DIGEST-20260907","package_id":"C-21","event_sequence":554,
+        "algorithm":"SHA-256","created_at":C21_ROLLBACK_SCOPE_AT,"scope":"seq549-554 append-only; seq1-548 preserved; exact16.","self_reference":False,
+        "progress":{"path":C21_ROLLBACK_SCOPE_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff":{"path":C21_ROLLBACK_SCOPE_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw=_c21_resume_json_bytes(digest); raw_files=dict(files); raw_files[C21_ROLLBACK_SCOPE_D]=digest_raw
+    manifest={"schema_version":"1.0.0","manifest_type":"C21_WSL_ROLLBACK_SCOPE_COMPAT_R1_PROJECTION","artifact_id":"C21-WSL-ROLLBACK-SCOPE-COMPAT-R1-20260907",
+        "created_at":C21_ROLLBACK_SCOPE_AT,"event_sequence":554,"appended_event_count":6,"historical_event_sequence":548,"historical_commit":C21_ROLLBACK_SCOPE_PARENT,
+        "historical_progress_bytes":len(historical[C21_ROLLBACK_SCOPE_P]),"historical_progress_sha256":_c21_resume_sha(historical[C21_ROLLBACK_SCOPE_P]),
+        "historical_full_file_bytes":len(historical[C21_ROLLBACK_SCOPE_E]),"historical_full_file_sha256":_c21_resume_sha(historical[C21_ROLLBACK_SCOPE_E]),
+        "historical_events_canonical_ascii_sha256":_c21_resume_sha(_canonical_ascii_json_bytes(_c21_resume_json(historical[C21_ROLLBACK_SCOPE_E])["events"])),
+        "execution_authority_path":C21_ROLLBACK_SCOPE_WI,"execution_authority_sha256":wi_sha,"work_instruction_id":C21_ROLLBACK_SCOPE_WI_ID,
+        "status":C21_ROLLBACK_SCOPE_STATUS,"record_commit":"PENDING_DIRECT_CHILD_RECORD_COMMIT","record_commit_mode":"PARENT_DIRECT_CHILD_EXACT16",
+        "permission_scopes_by_commit":scopes,"runtime_fact":runtime,"private_ref_cas":{"control_ref":"refs/remotes/development/codex/c21-operational-execution",
+        "observed_control":C21_ROLLBACK_SCOPE_PARENT,"candidate_ref":"refs/remotes/development/candidates/c21-wsl-exact107","observed_candidate":C21_RESUME_PARENT},
+        "self_reference":False,**m,**boundary}
+    manifest["raw_checksums"]=[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(raw_files.items())]
+    return {C21_ROLLBACK_SCOPE_P:progress_raw,C21_ROLLBACK_SCOPE_E:events_raw,C21_ROLLBACK_SCOPE_H:handoff_raw,C21_ROLLBACK_SCOPE_D:digest_raw,
+        C21_ROLLBACK_SCOPE_M:_c21_resume_json_bytes(manifest)}
+
+
+def validate_c21_wsl_rollback_scope_projection(bundle: Mapping[str,Any], manifest: Mapping[str,Any]) -> list[str]:
+    root=bundle.get("_root")
+    if not isinstance(root,Path): return ["C21_ROLLBACK_SCOPE_ROOT_INVALID"]
+    try:
+        hist={p:subprocess.check_output(["git","show",f"{C21_ROLLBACK_SCOPE_PARENT}:{p}"],cwd=root) for p in (C21_ROLLBACK_SCOPE_P,C21_ROLLBACK_SCOPE_E,C21_ROLLBACK_SCOPE_H)}
+        gen={C21_ROLLBACK_SCOPE_P,C21_ROLLBACK_SCOPE_E,C21_ROLLBACK_SCOPE_H,C21_ROLLBACK_SCOPE_D,C21_ROLLBACK_SCOPE_M}
+        files={p:(root/p).read_bytes() for p in set(c21_wsl_rollback_scope_paths())-gen}; expected=c21_wsl_rollback_scope_artifacts(hist,files)
+        supplied={C21_ROLLBACK_SCOPE_P:bundle.get("progress"),C21_ROLLBACK_SCOPE_E:bundle.get("events"),C21_ROLLBACK_SCOPE_D:bundle.get("detached_digest"),C21_ROLLBACK_SCOPE_M:manifest}
+        errors=["C21_ROLLBACK_SCOPE_PROJECTION_INVALID" for p,obj in supplied.items() if _c21_resume_json((root/p).read_bytes())!=_c21_resume_json(expected[p]) or obj!=_c21_resume_json(expected[p])]
+        if extract_handoff_summary((root/C21_ROLLBACK_SCOPE_H).read_text(encoding="utf-8"))!=extract_handoff_summary(expected[C21_ROLLBACK_SCOPE_H].decode()): errors.append("C21_ROLLBACK_SCOPE_HANDOFF_INVALID")
+        return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError): return ["C21_ROLLBACK_SCOPE_INPUT_INVALID"]
+
+
+def _collect_c21_rollback_scope_git(bundle: Mapping[str,Any]) -> list[str]:
+    root=bundle["_root"]; m=c21_wsl_rollback_scope_metadata(); repository=bundle["progress"]["repository"]
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}")
+        status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); dev_url=_git_value(root,"remote","get-url","development")
+        dev_control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution")
+        dev_candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact107")
+        if status is None:return ["GIT_STATUS_COLLECTION_FAILED"]
+        if None in (head,branch,upstream,dev_url,dev_control,dev_candidate):return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution":return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if dev_url!="git@github-sinsan-develop:sinsan-develop/Anvil.git" or dev_control!=C21_ROLLBACK_SCOPE_PARENT or dev_candidate!=C21_RESUME_PARENT:return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared=repository.get("validated_base_commit")
+        if not isinstance(declared,str) or not re.fullmatch(r"[0-9a-f]{40}",declared) or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0:return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=_working_tree_paths(status); at_parent=head==C21_ROLLBACK_SCOPE_PARENT
+        descendant=dirty if at_parent else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_ROLLBACK_SCOPE_PARENT,head) or "")
+        committed=_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or ""); changed=sorted(set(committed)|set(dirty)) if at_parent else committed
+        if descendant!=m["developer_exact_paths"] or changed!=m["cumulative_exact_paths"]:return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if at_parent:
+            if not dirty:return ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        elif dirty or (_git_value(root,"show","-s","--format=%P",head) or "").split()!=[C21_ROLLBACK_SCOPE_PARENT]:return ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
         return []
     except (OSError,ValueError,TypeError,KeyError):return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

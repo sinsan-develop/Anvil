@@ -1,3 +1,7 @@
+# C-21 WSL rollback scope compatibility R1 — seq554 Developer 완료
+
+- 두 target은 candidate healthy로 복구되었고 Provider/Telegram은 NOT_EXECUTED다.
+
 # C-21 Provider 제외 WSL verify scope correction — seq548 Developer 완료
 
 - Provider/Telegram runtime은 제외하고 migration·API·SSE·same-origin·backup/restore를 유지한다.
@@ -737,9 +741,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 548,
-  "last_event_id": "evt_c21_provider_wsl_verify_scope_package_completed",
-  "status": "READY_FOR_PROVIDER_EXCLUDED_WSL_QA_RETRY",
+  "event_sequence": 554,
+  "last_event_id": "evt_c21_wsl_rollback_scope_package_completed",
+  "status": "READY_FOR_WSL_ROLLBACK_RETRY",
   "current_phase": "C",
   "current_work_package": "C-21",
   "active_agent": null,
@@ -747,11 +751,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "write_lease": null,
   "execution_fencing_token": null,
   "write_fencing_token": null,
-  "active_work_instruction": "WI-C-21-PROVIDER-WSL-VERIFY-SCOPE-CORRECTION-20260906-001",
-  "active_work_instruction_sha256": "96DB50E6D917BD8BB3DF25D8C2A1852E513B15B404B2099B82E72430366F3B6E",
-  "active_invocation_sha256": "FFC93D5D34DAF7A3A4F5BCBEB2E155B128B77C1362F07A821C4B7DBE83214690",
-  "repository_head": "c330d34ea7d0acc7e423a978f9c558c94c159118",
-  "repository_head_relation": "FEATURE_WORKTREE_C21_VERIFY_SCOPE_PARENT_EXACT125_SUCCESSOR_RECORD17",
+  "active_work_instruction": "WI-C-21-WSL-ROLLBACK-SCOPE-COMPAT-R1-20260907-001",
+  "active_work_instruction_sha256": "1288243EABE43F2EC069ADE506F810D61AA6065823C2D22AEDD5E5490530E056",
+  "active_invocation_sha256": "CF03EC2EFBD40D038A20C1C7C18CCA80B6CC8936914BC55E62CFB76325C1B7A3",
+  "repository_head": "dfd75904e3b6ba0f453965607a95d6020bdc4466",
+  "repository_head_relation": "FEATURE_WORKTREE_C21_ROLLBACK_SCOPE_PARENT_EXACT131_SUCCESSOR_RECORD16",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
@@ -782,6 +786,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
     "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
     "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_REPORT.md",
     "docs/DEVELOPMENT_ENVIRONMENT.md",
     "docs/WORK_STATUS.md",
     "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
@@ -814,6 +819,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json",
     "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
@@ -844,12 +850,14 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
     "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+    "docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
@@ -868,6 +876,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
     "packages/agent_team/provider_catalog.py",
     "packages/agent_team/provider_status.py",
@@ -888,65 +898,54 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "valid_failure_count": 2,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "valid_failure_count": 2,
   "dir_status": "CLEARED",
-  "runtime_attempt": {
-    "deploy": "PASS",
-    "pg15": "STOPPED_AT_LOCAL_PROVIDER_ENVELOPE",
-    "pg15_sse": "NOT_REACHED",
-    "pg15_backup_restore": "NOT_REACHED",
-    "pg18rc": "NOT_STARTED",
-    "local_provider_status": "ATTEMPTED",
-    "external_provider_billing": "NOT_EXECUTED",
+  "runtime_fact": {
+    "verify_receipts": {
+      "pg15": "PASS",
+      "pg18rc": "PASS"
+    },
+    "first_rollback_attempt": {
+      "pg15": "STOPPED_OLD_IMAGE_UNHEALTHY",
+      "pg15_current_marker": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+      "pg18rc": "CANDIDATE_HEALTHY",
+      "pg18rc_mutation": "NOT_STARTED"
+    },
+    "environment": {
+      "bytes": "UNCHANGED",
+      "mode": "UNCHANGED"
+    },
+    "recovery_redeploy": {
+      "pg15": "CANDIDATE_HEALTHY",
+      "pg18rc": "CANDIDATE_HEALTHY"
+    },
+    "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED"
   },
-  "verification_scope": {
-    "mode": "PROVIDER_AND_TELEGRAM_EXCLUDED",
-    "included": [
-      "migration",
-      "api",
-      "authenticated_sse",
-      "last_event_id",
-      "same_origin",
-      "backup_restore",
-      "rollback"
-    ],
-    "excluded": [
-      "provider_runtime",
-      "provider_external",
-      "provider_billing",
-      "telegram"
-    ],
-    "evidence": {
-      "provider": "NOT_EXECUTED",
-      "telegram": "NOT_EXECUTED"
-    }
-  },
-  "next_safe_action": "BIND_EXACT17_DIRECT_CHILD_THEN_ATOMIC_PRIVATE_PUSH",
-  "runtime_next_action": "BIND_EXACT17_DIRECT_CHILD_THEN_ATOMIC_PRIVATE_PUSH",
+  "next_safe_action": "BIND_EXACT16_THEN_RETRY_WSL_ROLLBACK",
+  "runtime_next_action": "BIND_EXACT16_THEN_RETRY_WSL_ROLLBACK",
   "reporting_decision": "AUTO_CONTINUE",
   "developer_exact_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/candidate-manifest-guard.sh",
-    "deploy/wsl/verify.sh",
-    "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
+    "deploy/wsl/rollback.sh",
+    "docs/04_test_reports/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
-    "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
-    "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json",
+    "docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
-    "tests/api/test_provider_status.py",
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "developer_exact_path_count": 17,
-  "developer_exact_path_list_sha256": "78D7DFC8B684F2F295D4507931128E48D67017276D85941F534BEC5A1F839502",
+  "developer_exact_path_count": 16,
+  "developer_exact_path_list_sha256": "27647FE5BBE135FAB147A635D75BF93B7A4EC03E26BA00C2C709402EFB80B841",
   "cumulative_exact_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
@@ -974,6 +973,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
     "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
     "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_REPORT.md",
     "docs/DEVELOPMENT_ENVIRONMENT.md",
     "docs/WORK_STATUS.md",
     "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
@@ -1006,6 +1006,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json",
     "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
@@ -1036,12 +1037,14 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
     "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+    "docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
@@ -1060,6 +1063,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
     "packages/agent_team/provider_catalog.py",
     "packages/agent_team/provider_status.py",
@@ -1080,8 +1085,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "cumulative_exact_path_count": 131,
-  "cumulative_exact_path_list_sha256": "984F9276F0FBAC94CED5B3BC47D794948BA6D551520D77B2144B8A340A5C574A",
+  "cumulative_exact_path_count": 137,
+  "cumulative_exact_path_list_sha256": "71F5E29A6F2AFA16219059D9417415DE3F62A515D7145728F21363EFCB4B42FC",
   "accepted": false,
   "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
   "dir2_status": "NOT_TRIGGERED",

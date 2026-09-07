@@ -1040,3 +1040,63 @@
 - 동일 final diff의 tooling 전체 검증은 `197 passed in 961.27s`, exit 0이다.
 - Reviewer 1차 판정의 Important 1건은 전체 결과가 아직 문서·projection에 결박되지 않았다는 증거 정합성 항목이었다. 위 결과를 WORK_STATUS·validation·report에 기록하고 P/E/H/D/M을 다시 생성한 뒤 재검토한다.
 - 다음 조치: final evidence 재결박, live checker·exact17/누적 exact131/history byte 재확인, Reviewer 재검토 후 direct-child commit 준비다.
+
+## 2026-09-07 seq549~554 WSL rollback scope compatibility 시작 및 시스템 승인 대기
+
+- 담당 Agent: `developer-primary` (`developer_seq554_rollback_scope`). 기준선은 clean `dfd75904e3b6ba0f453965607a95d6020bdc4466`이며 write lease는 승인된 exact16에만 한정했다.
+- TDD RED: `python -m pytest tests/deploy/test_wsl_staging_harness.py -q -k seq554`는 `3 failed, 105 deselected`였다. fingerprint `C21_WSL_ROLLBACK_SCOPE_COMPAT_R1_RED` 1회이며, 누락된 commit별 scope map, all-target preflight, process-local scope override를 각각 재현한다.
+- 현재 변경 파일은 `tests/deploy/test_wsl_staging_harness.py`, `docs/WORK_STATUS.md`뿐이다. manifest·rollback·guard 구현은 적용되지 않았다.
+- 시스템 안전 게이트는 `deploy/wsl/CandidateReleaseManifest.json`, `deploy/wsl/rollback.sh`, `deploy/wsl/candidate-manifest-guard.sh`의 rollback permission-scope·계보 계약 변경에 대해 신산님의 직접적인 `seq549~554 C21_WSL_ROLLBACK_SCOPE_COMPAT_R1 구현 승인`을 요구하며 패치를 거부했다. 거부 횟수 1회이며 우회·간접 적용·재시도하지 않았다.
+- 승인되어야 할 정확한 범위: candidate/observed/previous commit별 session scope map 결박, 두 PostgreSQL target의 previous·scope·image·Compose render를 mutation 전에 모두 검사, target별 process-local scope override, health 성공 후 marker/receipt 기록, `.env` byte·mode 불변, exact16 direct-child 및 누적 exact137 guard/checker·seq549~554 projection 구현이다.
+- 현재 WSL 사실: PG15·PG18RC verify receipt는 PASS다. 최초 rollback 시도는 PG15 old image unhealthy에서 중단되어 current marker는 candidate `a6dca0d`를 유지했고 PG18RC는 candidate healthy이며 mutation은 시작하지 않았다. 이후 표준 redeploy로 두 target 모두 candidate `a6dca0d` healthy 상태로 복구되었고 `.env` byte·mode는 불변이다.
+- Provider·Telegram은 `NOT_EXECUTED`; push·ysna·main merge도 이 Subagent 범위에서 `NOT_EXECUTED`다.
+- 상태: `INCOMPLETE_WAITING_SYSTEM_EXECUTION_APPROVAL`. 제품 파일 추가 수정 없이 write lease를 반환한다. 정확한 승인 후 동일 기준선에서 RED를 유지한 채 구현을 재개한다.
+
+### seq554 직접 승인 후 제품 구현 및 projection 별도 승인 대기
+
+- 신산님의 직접 승인에 따라 Manifest commit별 scope map, guard 검증, rollback all-target preflight와 process-local scope override를 구현했다.
+- focused GREEN: `python -m pytest tests/deploy/test_wsl_staging_harness.py -q -k seq554`는 `3 passed, 105 deselected`; `bash -n deploy/wsl/rollback.sh`, `bash -n deploy/wsl/candidate-manifest-guard.sh`, `git diff --check`도 PASS다.
+- 현재 dirty exact 경로는 9개다: 제품 3개, TDD 1개, `WORK_STATUS` 1개, report/validation/WI/prompt 4개. P/E/H/D/M projection과 tooling test는 아직 생성하지 않았다.
+- 시스템 안전 게이트는 seq549~554 이벤트·progress·handoff·manifest projection 및 checker lineage/hash/lease predicate 추가가 scope map·guard·rollback 구현 승인보다 넓은 지속적 무결성 게이트 변경이라고 판정해 1회 거부했다. 요구되는 정확한 추가 승인 범위는 `seq549~554 append-only projection 생성과 exact16/direct-child/cumulative exact137 checker 및 계약 테스트 변경`이다.
+- 거부 전에 추가했던 미완성 checker routing 2곳은 즉시 원복했다. 현재 `scripts/check_project_progress.py`는 clean이며 정의되지 않은 seq554 함수 참조가 없다.
+- 장시간 full test는 시작하지 않았다. Provider·Telegram·WSL runtime·push·ysna·main merge는 계속 `NOT_EXECUTED`다.
+- 상태: `INCOMPLETE_WAITING_PROJECTION_GATE_APPROVAL`. 추가 mutation 없이 write lease를 반환한다.
+
+### seq554 projection 재개 시 해시 및 historical 결박 보완
+
+- 추가 직접 승인 후 seq549~554 pure builder/checker를 구현했다.
+- focused tooling 최초 실행은 `2 failed, 197 deselected`였다.
+- `C21_SEQ554_DECLARED_PATH_HASH_MISMATCH_R1` 1회: architect 전달값 `203A...`/`79C7...`은 승인된 exact16 목록에서 재현되지 않았다. Main 판정에 따라 실제 PowerShell `Sort-Object` + UTF-8 LF 재계산값 direct `27647FE5BBE135FAB147A635D75BF93B7A4EC03E26BA00C2C709402EFB80B841`, cumulative `71F5E29A6F2AFA16219059D9417415DE3F62A515D7145728F21363EFCB4B42FC`를 정본으로 사용한다.
+- `C21_SEQ554_HISTORY_HASH_UNBOUND_R1` 1회: pure builder가 전달받은 historical prefix 내부 변조를 parent blob hash와 대조하지 않았다. `dfd75904`의 P/E/H exact byte hash를 선행 검사하도록 보완했다.
+- 두 fingerprint 모두 1회이며 동일 오류 3회 조건에 해당하지 않는다.
+- materialize 후 live checker 최초 실행은 `EVENT_EFFECT_MISMATCH`, `HANDOFF_BASELINE_MISMATCH`, `HANDOFF_DIR_STATUS_MISMATCH`, `HANDOFF_FAILURE_COUNT_MISMATCH`였다. fingerprint `C21_SEQ554_GENERIC_PROJECTION_FIELDS_R1` 1회이며, seq554 event에 parent remote projection을, HANDOFF에 source baseline·DIR·failure count를 누락한 원인이다. source 정본 값을 추가하고 재materialize한다.
+- 두 번째 live checker는 `EVENT_EFFECT_MISMATCH` 1건만 남았다. fingerprint `C21_SEQ554_EVENT_EXACT_ALLOWED_PATHS_R1` 1회이며, event detail의 cumulative 목록에 generic reducer가 요구하는 `exact_allowed_paths` alias가 빠진 원인이다. 동일 cumulative exact137을 alias로 추가한다.
+- alias 추가·재materialize 후 live checker는 `G-05 project progress contract: PASS sequence=554 reporting=AUTO_CONTINUE`이다.
+- 기존 rollback allowlist fixture 재검증은 Windows `bash.exe` 경계에서 Python `subprocess(env=...)` 값이 전달되지 않아 `/srv/anvil-wsl` 기본값을 사용하며 1회 실패했다. fingerprint `C21_SEQ554_WSLENV_FIXTURE_FORWARDING_R1` 1회다. 제품이 아니라 fixture 호출 경계이므로 승인된 격리 경로 값을 Bash command에 inline으로 전달한다.
+- fixture inline 전달 후 candidate scope mismatch가 2회 재현됐다. fingerprint `C21_SEQ554_WINDOWS_PYTHON_CRLF_POLICY_ROWS_R1` 2회이며, Windows Python의 stdout CRLF가 Bash policy row 끝에 남은 것이 원인이다. 실제 WSL과 같은 `python3`를 fixture parser에 사용해 해소했고 approved rollback fixture는 PASS다. 같은 오류 3회 조건에는 도달하지 않았다.
+
+### seq554 full regression 환경 오류 3회 및 Main takeover 반환
+
+- full deploy/tooling을 병렬 시작했으나 `where.exe bash` 결과 첫 실행 파일이 `C:\Users\cyhuh\AppData\Local\Microsoft\WindowsApps\bash.exe`였고 Git Bash는 두 번째 `C:\Program Files\Git\usr\bin\bash.exe`였다.
+- 실행 중 deploy에 다수 공통 실패가 나타나 두 pytest를 Ctrl-C로 중단했다. 결과는 `INTERRUPTED_NOT_COUNTED`이며 PASS/FAIL 증거로 승격하지 않는다.
+- fingerprint `BASH_D_DRIVE_MOUNT_UNAVAILABLE_R1`은 기존 seq548 기록의 2회에 이번 잘못된 WSL bash 선택 1회를 합쳐 총 3회다.
+- 프로젝트 규칙에 따라 Developer Subagent는 추가 재실행·수정을 중단한다. Main Agent가 이 호스트에 실제 존재하는 `C:\Program Files\Git\usr\bin`을 PATH 선두로 고정해 deploy → tooling을 직렬 재검증한다.
+- 반환 시 상태: exact16 16/16 생성, seq1~548 historical hash 결박, focused rollback `12 passed`, focused tooling `2 passed`, shell syntax PASS, live checker는 마지막 materialize 시 `PASS sequence=554`였다. 이 WORK_STATUS 추가로 P/E/H/D/M은 재materialize가 필요하다.
+- Provider·Telegram·WSL runtime·Docker·DB·push·ysna·main은 `NOT_EXECUTED`다.
+
+### seq554 Main takeover 재개
+
+- Main 실측 `where.exe bash`는 WindowsApps WSL bash가 1순위, `C:\Program Files\Git\usr\bin\bash.exe`가 2순위였으며 `C:\Program Files\Git\bin\bash.exe`는 이 호스트에 없다.
+- Main은 검증 프로세스의 PATH 선두를 `C:\Program Files\Git\usr\bin`으로 고정한다. 이 변경은 제품 코드가 아니라 검증 실행기 선택 정정이다.
+- 이 기록을 포함한 final exact16 raw 파일로 P/E/H/D/M을 재생성한 뒤 live checker와 focused 검증을 먼저 실행한다.
+- Main 재결박 후 live checker `PASS sequence=554`, seq554 focused deploy `3 passed`, focused tooling `2 passed`, rollback/guard `bash -n` 및 diff-check PASS였다.
+- Git Bash 고정 전체 deploy 1차는 `104 passed, 2 skipped, 2 failed in 906.19s`였다. 실패는 서로 다른 fixture root다.
+  - `C21_SEQ554_HISTORICAL_ROLLBACK_MANIFEST_DRIFT_R1` 1회: historical seq494 guard fixture가 current seq554 rollback parser를 혼합해 scope map이 없는 과거 manifest를 malformed로 거부했다. 해당 테스트는 parent `dfd7590` rollback blob으로 고정하고 새 scope 계약은 seq554 전용 테스트가 검증한다.
+  - `C21_SEQ554_ROLLBACK_UNIT_POSIX_MAPPING_R1` 1회: 새 rollback allowlist unit의 `_posix`가 WSL 전용 `/mnt/d`를 고정해 Git Bash에서 script exit127이 발생했다. 공통 Windows fixture 방식대로 `cygpath`를 우선하고 fallback을 `/d`로 수정한다.
+- 두 실패는 제품 runtime 실패가 아니며 각각 1회다. 수정 후 두 테스트 focused PASS와 전체 deploy 재검증이 필요하다.
+- 두 fixture 수정 후 focused 재검증은 historical fixture PASS, rollback allowlist unit FAIL이었다. 남은 오류는 `C21_SEQ554_WINDOWS_PYTHON_CRLF_POLICY_ROWS_R1`이며 이전 Developer 기록 2회에 이번 Main focused 1회를 합쳐 총 3회다.
+- Main takeover 규칙에 따라 policy row transport에서 Windows Python의 CRLF 끝 `\r`만 제거한다. JSON 내부 scope whitespace·중복·순서 검증은 Python parser에서 이미 선행하므로 manifest 정책을 완화하지 않는다. 실제 WSL LF 출력과 `.env`는 변경하지 않는다.
+- CRLF transport 보완 후 historical rollback+allowlist focused는 `10 passed in 22.27s`, live checker·rollback `bash -n`·diff-check는 PASS였다.
+- 동일 final diff의 Git Bash 고정 전체 deploy 계약은 `106 passed, 2 skipped in 888.04s`, exit 0이다. skip 2건은 Windows/NTFS POSIX mode와 WSL Compose parser 전용 항목이며 실제 WSL rollback PASS로 승격하지 않는다.
+- 동일 final diff의 전체 tooling 계약은 `199 passed in 916.77s`, exit 0이다.
+- 다음 조치: final 결과를 validation/report에 기록하고 P/E/H/D/M을 재결박한 뒤 exact16/누적 exact137/history/direct-child 계약과 독립 review를 확인한다.
