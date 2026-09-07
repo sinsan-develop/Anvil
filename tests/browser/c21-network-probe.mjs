@@ -25,15 +25,104 @@ function chromiumExecutable() {
 }
 
 function parseArgs(argv) {
-  const values = { selfTest: false, selfTestCrossOriginRejection: false };
+  const values = { selfTest: false, selfTestCrossOriginRejection: false, workbenchSelfTest: false };
   for (let index = 0; index < argv.length; index += 1) {
     const value = argv[index];
     if (value === '--self-test') values.selfTest = true;
     else if (value === '--self-test-cross-origin-rejection') values.selfTestCrossOriginRejection = true;
+    else if (value === '--workbench-self-test') values.workbenchSelfTest = true;
     else if (value.startsWith('--')) values[value.slice(2)] = argv[++index];
     else throw new Error(`unexpected argument: ${value}`);
   }
   return values;
+}
+
+const providerIds = ['cerebras','groq','mistral','openrouter','upstage','gemini','anthropic','openai','ollama'];
+function providerRow(providerId) {
+  return {
+    provider_id: providerId,
+    display_name: providerId.toUpperCase(),
+    primary: providerId === 'upstage',
+    status: providerId === 'upstage' ? 'DEGRADED' : 'NOT_CONFIGURED',
+    credential_status: providerId === 'upstage' ? 'REGISTERED' : 'MISSING',
+    health_status: 'NOT_CHECKED',
+    latency_ms: null,
+    last_error: null,
+    models: [],
+    moa_eligible: providerId === 'upstage',
+  };
+}
+
+function startWorkbenchApiFixture() {
+  const requests = [];
+  const server = http.createServer((request, response) => {
+    requests.push({ method: request.method, path: request.url, lastEventId: request.headers['last-event-id'] || '' });
+    const pathname = new URL(request.url, 'http://fixture.invalid').pathname;
+    const json = (payload) => {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.end(JSON.stringify(payload));
+    };
+    if (request.method !== 'GET') {
+      response.writeHead(405, { 'content-type': 'application/json' });
+      return response.end('{"message":"GET only"}');
+    }
+    if (pathname === '/api/providers') return json({ data: providerIds.map(providerRow) });
+    const models = /^\/api\/providers\/([^/]+)\/models$/.exec(pathname);
+    if (models) return json({ data: { provider_id: models[1], models: models[1] === 'upstage' ? ['solar-pro'] : [], moa_eligible: models[1] === 'upstage' } });
+    const detail = /^\/api\/providers\/([^/]+)$/.exec(pathname);
+    if (detail && providerIds.includes(detail[1])) return json({ data: providerRow(detail[1]) });
+    if (pathname === '/api/runs/run-ui/events') {
+      response.writeHead(200, { 'content-type': 'text/event-stream' });
+      return response.end(request.headers['last-event-id'] ? '' : 'id: event-ui-1\nevent: TASK_CONFIRMED\ndata: {}\n\n');
+    }
+    response.writeHead(404, { 'content-type': 'application/json' });
+    return response.end('{"message":"not found"}');
+  });
+  return new Promise((resolve) => server.listen(0, '127.0.0.1', () => resolve({ server, requests, origin: `http://127.0.0.1:${server.address().port}` })));
+}
+
+async function runWorkbenchSelfTest() {
+  const fixture = await startWorkbenchApiFixture();
+  let runtime;
+  const ledger = [];
+  try {
+    process.env.ANVIL_API_UPSTREAM = fixture.origin;
+    const module = await import(`../../apps/web/server.mjs?workbench-self-test=${Date.now()}`);
+    runtime = await module.startWorkbenchServer({ host: '127.0.0.1', port: 0 });
+    const browser = await chromium.launch({ headless: true, executablePath: chromiumExecutable() });
+    try {
+      const page = await browser.newPage();
+      page.on('request', (request) => {
+        const url = new URL(request.url());
+        ledger.push({ method: request.method(), path: url.pathname, sameOrigin: url.origin === runtime.origin, lastEventId: request.headers()['last-event-id'] || '' });
+      });
+      await page.goto(`${runtime.origin}/`, { waitUntil: 'domcontentloaded' });
+      await page.locator('#state-badge').getByText('READY', { exact: true }).waitFor();
+      await page.locator('[data-provider-id="groq"]').click();
+      await page.locator('#detail-title').getByText('GROQ', { exact: true }).waitFor();
+      await page.locator('#run-id').fill('run-ui');
+      await page.locator('#connect-stream').click();
+      await page.locator('#last-event-id').getByText('event-ui-1', { exact: true }).waitFor();
+      await page.locator('#connect-stream').click();
+      await page.getByText('새 Event가 없습니다.', { exact: true }).waitFor();
+      const disabledActions = await page.locator('#configure-provider:disabled,#test-provider:disabled,#refresh-provider:disabled').count();
+      if (disabledActions !== 3) throw new Error('unavailable Provider actions are not disabled');
+      const apiRequests = ledger.filter((entry) => entry.path.startsWith('/api/'));
+      if (ledger.some((entry) => !entry.sameOrigin)) throw new Error('cross-origin browser request observed');
+      if (apiRequests.some((entry) => entry.method !== 'GET')) throw new Error('non-GET production workbench request observed');
+      if (apiRequests.some((entry) => entry.path.startsWith('/api/workbench/'))) throw new Error('fixture workbench API request observed');
+      const eventRequests = apiRequests.filter((entry) => entry.path === '/api/runs/run-ui/events');
+      if (eventRequests.length !== 2 || eventRequests[0].lastEventId || eventRequests[1].lastEventId !== 'event-ui-1') throw new Error('Last-Event-ID UI reconnect contract failed');
+      return { project: 'workbench-ui-self-test', evidenceTier: 'ACTUAL_HEADLESS_CHROMIUM_CLICK_AND_NETWORK', uiClickEvidence: true, disabledActions, requests: apiRequests };
+    } finally {
+      await browser.close();
+    }
+  } finally {
+    delete process.env.ANVIL_API_UPSTREAM;
+    if (runtime) await runtime.close();
+    fixture.server.closeAllConnections();
+    await new Promise((resolve) => fixture.server.close(resolve));
+  }
 }
 
 function startFixture() {
@@ -127,6 +216,9 @@ async function runProbe({ baseUrl, bootstrapToken, runId, expectedEventId, cross
 const args = parseArgs(process.argv.slice(2));
 let fixture;
 try {
+  if (args.workbenchSelfTest) {
+    process.stdout.write(`${JSON.stringify(await runWorkbenchSelfTest())}\n`);
+  } else {
   if (args.selfTest || args.selfTestCrossOriginRejection) {
     fixture = await startFixture();
     args['base-url'] = fixture.baseUrl;
@@ -150,6 +242,7 @@ try {
   } catch (error) {
     if (!args.selfTestCrossOriginRejection || !String(error.message).includes('cross-origin browser request observed')) throw error;
     process.stdout.write('{"crossOriginFailedRequestRejected":true}\n');
+  }
   }
 } finally {
   if (fixture) await new Promise((resolve) => fixture.server.close(resolve));

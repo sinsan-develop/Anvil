@@ -34,12 +34,31 @@ test('preview assets and errors keep strict security headers', async () => {
   }
 });
 
-test('fixture mode remains the default', async () => {
+test('production mode is default and fixture workbench remains available only at its explicit route', async () => {
   const runtime = await startWorkbenchServer({host: '127.0.0.1', port: 0});
   try {
     const page = await fetch(`${runtime.origin}/`);
-    assert.match(await page.text(), /Project Workbench/);
+    const production=await page.text();
+    assert.match(production, /data-production-workbench/);
+    assert.doesNotMatch(production, /FIXTURE BROWSER RUNTIME/);
+    const fixture=await fetch(`${runtime.origin}/fixture-workbench`);
+    assert.equal(fixture.status,200);
+    assert.match(await fixture.text(), /FIXTURE BROWSER RUNTIME/);
   } finally {
     await runtime.close();
   }
+});
+
+test('production runtime proxies Provider and SSE reads and never implements Provider writes', async () => {
+  const seen=[];
+  const upstream=(await import('node:http')).createServer((request,response)=>{seen.push([request.method,request.url,request.headers['last-event-id']]);response.writeHead(request.url.includes('/events')?200:501,{'content-type':request.url.includes('/events')?'text/event-stream':'application/json'});response.end(request.url.includes('/events')?'':'{"error":"not available"}');});
+  await new Promise(resolve=>upstream.listen(0,'127.0.0.1',resolve));
+  process.env.ANVIL_API_UPSTREAM=`http://127.0.0.1:${upstream.address().port}`;
+  const {startWorkbenchServer:start}=await import(`../server.mjs?production-proxy=${Date.now()}`);
+  const runtime=await start({host:'127.0.0.1',port:0});
+  try {
+    assert.equal((await fetch(`${runtime.origin}/api/providers`)).status,501);
+    assert.equal((await fetch(`${runtime.origin}/api/runs/run-1/events`,{headers:{'Last-Event-ID':'evt-1'}})).status,200);
+    assert.deepEqual(seen,[['GET','/api/providers',undefined],['GET','/api/runs/run-1/events','evt-1']]);
+  } finally { await runtime.close();upstream.closeAllConnections();await new Promise(resolve=>upstream.close(resolve));delete process.env.ANVIL_API_UPSTREAM; }
 });

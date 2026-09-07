@@ -12,12 +12,26 @@ async function read(response) {
 }
 
 export function createWorkbenchClient(fetchImpl=globalThis.fetch) {
+  const get=(path,headers={})=>fetchImpl(apiPath(path),{method:'GET',credentials:'include',headers:{accept:'application/json',...headers}}).then(read);
   return {
     config:()=>fetchImpl(apiPath('/api/workbench/config')).then(read),
     scan:({projectId,fixtureId,role,csrfToken})=>fetchImpl(apiPath('/api/workbench/scan'),{
       method:'POST', credentials:'same-origin',
       headers:{'content-type':'application/json','x-csrf-token':csrfToken},
       body:JSON.stringify({projectId,fixtureId,role})
-    }).then(read)
+    }).then(read),
+    providers:()=>get('/api/providers'),
+    provider:(providerId)=>get(`/api/providers/${encodeURIComponent(providerId)}`),
+    models:(providerId)=>get(`/api/providers/${encodeURIComponent(providerId)}/models`),
+    runEvents:async(runId,lastEventId='')=>{
+      const headers={accept:'text/event-stream'};
+      if(lastEventId) headers['Last-Event-ID']=lastEventId;
+      const response=await fetchImpl(apiPath(`/api/runs/${encodeURIComponent(runId)}/events`),{method:'GET',credentials:'include',headers});
+      if(!response.ok){const error=new Error('Event stream을 불러오지 못했습니다.');error.status=response.status;throw error;}
+      if(!(response.headers.get('content-type')||'').startsWith('text/event-stream')) throw new Error('Event stream 응답 형식이 올바르지 않습니다.');
+      const body=await response.text();
+      const ids=[...body.matchAll(/^id:\s*(.+)$/gm)].map(match=>match[1].trim()).filter(Boolean);
+      return {body,lastEventId:ids.at(-1)||lastEventId||'',eventCount:ids.length};
+    }
   };
 }

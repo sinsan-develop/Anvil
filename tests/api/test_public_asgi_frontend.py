@@ -45,7 +45,11 @@ def test_public_asgi_serves_frontend_from_same_listener() -> None:
     assert client.get("/health/live").json() == {"status": "ok"}
     response = client.get("/")
     assert response.status_code == 200
-    assert "Anvil" in response.text
+    assert "data-production-workbench" in response.text
+    assert "FIXTURE BROWSER RUNTIME" not in response.text
+    fixture = client.get("/fixture-workbench.html")
+    assert fixture.status_code == 200
+    assert "FIXTURE BROWSER RUNTIME" in fixture.text
 
 
 def test_fresh_asgi_route_order_keeps_health_routes_ahead_of_static_mount(monkeypatch) -> None:
