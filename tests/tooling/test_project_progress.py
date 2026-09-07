@@ -8897,5 +8897,64 @@ class C21WorkbenchUiWslGitOnlyCandidateBoundTests(unittest.TestCase):
             self.assertTrue(checker.validate_c21_workbench_ui_wsl_candidate_bound_manifest(changed),key)
 
 
+class C21WorkbenchUiWslRuntimeResultTests(unittest.TestCase):
+    def test_seq596_runtime_result_is_append_only_and_ready_for_independent_acceptance(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_workbench_ui_wsl_runtime_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_RUNTIME_PARENT}:{checker.C21_WORKBENCH_UI_WSL_RUNTIME_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 590),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_E], 590),
+        )
+        self.assertEqual(list(range(591, 597)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["c21_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_runtime_result_manifest(manifest))
+
+    def test_seq596_runtime_result_binds_exact_paths_runtime_receipts_and_exclusions(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_runtime_result_metadata()
+        self.assertEqual(
+            (12, "D1965266EBE7DDC3D4D6B0D01A2E71EA276DDFF378B0793E5895E2FB8F07F348", "B345B0586EC4A8937238324EAC5F6FC9046C848F9B171B5E6CB6B83DDA9A6346"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (195, "5F63907A3D63D0350B68EC277B9703EB6AB9D0631E583427BADC2D53A1A13F00", "CAD44AA61C8F359D0AD5FE19DABD70C4F7BE2106FC9EC4C59BD3E2EBFF89C516"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_workbench_ui_wsl_runtime_result_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_RUNTIME_M])
+        self.assertEqual(6, len(manifest["runtime_result"]["receipts"]))
+        self.assertEqual("BYTE_IDENTICAL", manifest["runtime_result"]["environment_file"]["result"])
+        self.assertEqual(3, manifest["runtime_result"]["timeout_lineage"]["valid_observation_count"])
+        self.assertTrue(manifest["runtime_result"]["timeout_lineage"]["main_takeover"])
+        self.assertEqual({"provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","c01":"NOT_EXECUTED"}, manifest["exclusions"])
+        for path, value in (
+            (("accepted",), True),
+            (("runtime_result", "cleanup", "residual_volumes"), 1),
+            (("runtime_result", "environment_file", "sha256_after"), "0" * 64),
+            (("runtime_result", "receipts", 0, "sha256"), "0" * 64),
+            (("exclusions", "provider"), "PASS"),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_runtime_result_manifest(changed), path)
+
+
 if __name__ == "__main__":
     unittest.main()

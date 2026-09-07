@@ -1381,3 +1381,57 @@
 - 전체 deploy harness: `119 tests in 733.993s / OK (skipped=9)`, exit0. 기존 환경 SKIP9 외 failure/error 0이다.
 - 전체 tooling: `591 tests in 1214.862s / OK`, exit0. failure/error/traceback 0이다.
 - 병렬 실행으로 각 wall time은 직전 순차 실행보다 늘었지만 결과 계약은 모두 PASS다. 이 결과를 마지막 raw 상태에 기록하고 generated5를 재결박한 뒤 exact12 amend·focused/live/determinism·독립 Reviewer를 수행한다.
+
+### WSL exact187 실행 재개 — 접속 경로 확인
+
+- private refs 게시와 재조회 완료 기준은 control `8fe7b975f39990b3d721d27b1a3e9353f891c5c1`, candidate `f0d4bc7badbdae69c2d2b21089667fdcc636518d`다. Provider·Telegram 실제 호출은 제외하고 migration·API·authenticated SSE·Last-Event-ID·same-origin·backup/restore·rollback·승인된 exact cleanup만 수행한다.
+- Windows `ssh SINSAN` 시도는 `banner exchange: Connection to UNKNOWN port -1: Connection refused`로 실패했다. fingerprint `C21_WSL_SINSAN_TRANSPORT_SELECTION_R1` 1회. 제품·WSL 장애가 아니라 현재 실행 환경에서 SSH 별칭이 offline 대체값으로 해석된 전송 경로 오류다.
+- `wsl.exe --list --verbose`와 `wsl.exe -d Ubuntu -- bash -lc`의 읽기 전용 확인 결과 Ubuntu 배포판이 실행 중이고 내부 hostname은 `SINSAN`, 사용자 `daon`, `/srv/anvil-wsl` 및 `/srv/anvil-wsl/repo`가 존재한다. 이후 표준 WSL 실행은 이 경로로 한정한다.
+- 다음: SINSAN 내부 Git·`.env` 존재/hash/mode·application/control/runtime marker·Docker residue를 읽기 전용으로 확인하고, manifest/action checksum을 고정한 control-runtime 순서로 진행한다.
+- 첫 preflight 출력의 runtime 경로를 `/runtime/anvil-wsl-pg*`로 잘못 조회하여 marker가 `ABSENT`처럼 표시됐고, image label 출력용 Go-template 인용도 2회 실패했다. fingerprint `C21_WSL_PREFLIGHT_COMMAND_QUOTING_R1` 3회. 이는 읽기 전용 진단 명령 작성 오류이며 제품/runtime 상태가 아니다. 추가 동적 shell 변수를 중단하고 literal 경로로 Main이 직접 확인했다.
+- 실제 runtime marker는 PG15/PG18RC 모두 current=`324eb169fedbce958d2e8cc29362deb7af433677`, previous=`324eb169fedbce958d2e8cc29362deb7af433677`; active control=`b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd`; rollback tag `anvil-wsl-web:324eb169...`는 존재한다. application HEAD=`a6dca0d...`, clean detached, private origin exact, 격리 container/network/volume은 0이다.
+- private fetch는 지정 deploy key로 exit0이며 control ref=`8fe7b975f39990b3d721d27b1a3e9353f891c5c1`, candidate ref=`f0d4bc7badbdae69c2d2b21089667fdcc636518d`, K parent=S를 재확인했다. immutable manifest SHA-256=`a1bb21983ef5791c5025e8487675801cb824b2066f5c9d9f8dcf092ec1d6d82b`, control-runtime SHA-256=`d0ff497b22851dfc6cb3fa36c761d8bb69ded1cb7a838e81ef55c4a459570097`다.
+- `.env` mode=600, SHA-256=`fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a`. 필수 7개 변수 이름이 각각 존재하고 값 byte 길이가 49/65/18/16/17/12/53으로 비어 있지 않음을 값 노출 없이 확인했다. 최초 `grep -E '=.+` count 출력은 shell 인용 영향으로 무효였으며 literal `sed` 길이 검사로 교정했다.
+- 다음: exact checksum을 환경으로 전달하여 표준 `control-runtime.sh deploy S`를 실행한다. 실패하면 side effect와 상태를 즉시 수집하고 같은 근본 원인 횟수를 누적한다.
+- 표준 deploy 실행은 exit0이다. control stage는 K `8fe7b97...`로 게시됐고 application checkout은 S `f0d4bc7...` clean detached로 전환됐다. PG15와 PG18RC에서 DB pull/start/healthy, pre-migration backup+restore-list, candidate image build, Alembic upgrade, web recreate, pinned nginx config test와 ingress start가 모두 완료됐다.
+- Docker Compose의 buildx plugin 경고와 migration one-off container의 Tini subreaper 경고가 있었으나 action exit0이며 해당 단계 실패는 없었다. 이는 기능 실패로 승격하지 않고 잔여 운영 개선사항으로 보존한다.
+- 다음: immutable verify checksum으로 표준 verify를 실행하여 두 target의 migration head, authenticated SSE, Last-Event-ID, same-origin, backup/restore를 검증한다. Provider·Telegram은 스크립트 계약대로 `NOT_EXECUTED`다.
+- 표준 verify는 exit0이다. PG15/PG18RC 모두 canonical test task/run/event 입력, `/auth/session`, authenticated SSE 1건, acknowledged Last-Event-ID 무재생, same-origin ingress, migration head `0013_task_bootstrap_authority`, round-trip dump/restore 및 scratch DB 정리를 완료했다. Provider·Telegram 호출은 수행하지 않았다.
+- 다음: rollback checksum과 commit별 test-session scope map을 사용해 두 target을 승인된 previous `324eb169...`로 rollback하고, marker·image·health·migration을 독립 관찰한다.
+- 표준 rollback은 exit0이며 두 target 모두 process-local exact3 test-session scope로 web/ingress를 재생성했다. 서버 `.env`는 수정하지 않았다.
+- 독립 관찰 결과 PG15/PG18RC의 current/previous marker와 실제 실행 web image revision은 모두 `324eb169...`; 두 `/health/ready`는 `status=ready`, DB `alembic_version`은 `0013_task_bootstrap_authority`다. rollback 중 DB downgrade는 수행하지 않는 계약과 일치한다.
+- 다음: S를 재배포하고 동일 표준 verify를 다시 실행한 뒤, 영수증과 `.env` 불변을 확인하고 exact cleanup을 수행한다.
+- S 재배포 1차는 PG15 DB가 healthy로 판정되고 image build까지 완료된 뒤 `wsl_compose run --rm anvil-web /opt/venv/bin/alembic upgrade head`에서 `psycopg.errors.ConnectionTimeout`으로 exit1 실패했다. fingerprint `C21_WSL_REDEPLOY_AFTER_ROLLBACK_DB_CONNECT_TIMEOUT_R1` 1회. 첫 deploy·verify·rollback은 성공했으며 이 실패를 전체 WSL 검증 PASS로 기록하지 않는다.
+- 실패 시점에는 두 번째 deploy가 PG15 migration 전에서 중단되어 PG18RC에는 이번 재배포 mutation이 시작되지 않았다. Main은 즉시 반복 실행하지 않고 Subagent 읽기 전용 코드 분석과 Main의 runtime marker/container/network/DB log·connectivity 관찰로 원인을 분리한다.
+- 다음: side effect 상태와 네트워크 연결성을 보존 조사하고, 표준 runtime을 바꾸지 않는 최소 복구 후 fresh 재배포한다. 동일 근본 원인 3회면 Main 직접 takeover 규칙을 적용한다.
+- 조사에서 PG15 DB는 healthy, `pg_isready` local PASS, 기존 rollback web의 DNS `anvil-db=172.21.0.2` 및 실제 SQL `select 1` PASS, DB log에도 crash/restart가 없었다. 반면 동일 S image의 새 Compose one-off는 DNS lookup PASS 후 `pg_isready -h anvil-db -t 5`가 `no response`로 실패했고 Alembic current도 같은 timeout이었다.
+- 같은 경계는 재배포 Alembic, one-off Alembic current, one-off TCP readiness에서 3회 확인됐다. `C21_WSL_REDEPLOY_AFTER_ROLLBACK_DB_CONNECT_TIMEOUT_R1` 누적 3회. Main이 직접 인수하며 Subagent는 rollback이 DB/network를 재생성하지 않고 scope override도 DSN과 무관함을 확인했다.
+- 최소 복구는 PG15 DB volume과 데이터는 보존하고 정확한 `anvil-db` 컨테이너 endpoint만 Compose force-recreate+healthy로 갱신한 뒤 candidate one-off TCP probe를 재실행하는 것이다. 성공 후 표준 deploy 전체를 fresh 실행한다. 광범위 network/volume 삭제는 하지 않는다.
+- PG15 `anvil-db`만 force-recreate+healthy한 뒤에도 candidate one-off `pg_isready`는 DNS resolve 후 `no response`였다. 기존 rollback web은 새 DB endpoint에 즉시 연결되어 DB·alias·password가 정상임을 재확인했다. 따라서 단일 DB endpoint가 아니라 현재 PG15 project bridge의 신규 endpoint forwarding 상태가 원인이다.
+- Main 복구 2단계는 승인된 exact PG15 test project의 서비스 3개와 network 2개만 제거·재생성하되 `anvil-wsl-pg15_anvil-db-data` volume과 `/srv/anvil-wsl/.env`, backup/evidence는 보존하는 것이다. 제거 전 network endpoint가 해당 project 서비스 3개뿐임을 확인했다.
+- exact PG15 서비스3/network2 제거는 exit0이고 DB volume 존재 및 `.env` mode600을 즉시 재확인했다. 이후 표준 deploy fresh 실행은 PG15 신규 bridge에서 migration one-off 연결을 포함해 통과했고 PG18RC까지 완료되어 전체 exit0이다.
+- 판정: 장애 원인은 rollback 후 유지된 PG15 Docker bridge에서 기존 endpoint 간 통신은 되지만 신규 Compose run endpoint의 TCP forwarding이 막힌 런타임 network residue였다. 제품 코드·DB 내용·Secret 변경 없이 exact test network 재생성으로 복구됐다.
+- 다음: 표준 verify를 재실행해 최종 candidate 상태를 다시 검증하고, evidence·marker·`.env` hash를 독립 확인한 뒤 exact cleanup한다.
+- 복구 후 표준 verify 재실행도 exit0이다. 두 target의 기존 test identifiers는 `ON CONFLICT`로 0건 추가됐고 authenticated SSE/Last-Event-ID/same-origin/backup-restore 결과는 동일하게 PASS다.
+- 최종 application은 S clean detached, 두 current marker=S, 두 previous marker=`324eb169...`; `.env` mode600 및 SHA-256 `fecae53b...a79a`로 작업 전과 byte-identical이다. backup·verify·rollback receipt 6개를 literal 경로로 읽고 checksum을 확보했으며 모든 `secret_values=omitted`다. 첫 evidence loop 출력은 shell 변수 인용 오류로 빈 파일명/empty hash가 출력되어 무효 처리했고 literal 경로 확인으로 교정했다(`C21_WSL_PREFLIGHT_COMMAND_QUOTING_R1` 누적4회; 제품 실패 아님).
+- 실제 in-app browser에서 PG15 `127.0.0.1:4770/`와 PG18RC `127.0.0.1:4870/` 모두 title `Anvil Provider Workbench`, 9개 Provider/Provider Registry/Run Event UI가 렌더링됨을 확인했다. 브라우저에 test token을 주입하지 않아 Provider 목록은 예상대로 `PERMISSION DENIED`, SSE는 `NOT CONNECTED`; 이를 authenticated browser PASS로 과장하지 않는다. 인증 SSE는 표준 same-origin HTTP verify로 별도 PASS다.
+- 다음: 표준 cleanup guard로 승인된 두 Compose project의 서비스·네트워크와 exact volume 2개만 제거하고 residue0, scratch DB0, `.env`/evidence/backup 보존을 확인한다.
+- 표준 cleanup은 exit0이다. 독립 사후 관찰에서 PG15/PG18RC Compose container=`0/0`, exact network=`0/0`, exact named volume 합계=`0`이다. restore scratch DB는 verify 단계에서 각각 drop됐고 DB 컨테이너·volume 자체도 승인된 cleanup으로 제거됐다.
+- `/srv/anvil-wsl/.env`는 mode600 및 SHA-256 `fecae53b...a79a`로 불변, evidence 6종과 candidate별 backup 디렉터리는 보존됐다. application repo는 S clean detached, runtime control ref=K, candidate ref=S다.
+- 현재 live checker의 `C21_WORKBENCH_UI_WSL_BOUND_PROJECTION_INVALID`, `GIT_PRIVATE_AUTHORITY_MISMATCH`, `PRG_REFERENCED_HASH_MISMATCH`는 seq590이 pre-CAS Git-only 상태를 결박한 뒤 실제 CAS·WSL 결과와 raw WORK_STATUS가 추가된 예상 projection drift다. seq590/historical evidence를 수정하지 않고 새 successor event/projection으로 해소한다.
+- 다음: 실제 runtime 결과와 네트워크 복구 이력, 제한사항을 새 append-only successor package에 결박하고 focused/full tooling·checker·독립 Reviewer·commit·private CAS push를 수행한다.
+
+### C-21 Workbench UI WSL runtime result successor — seq591~596
+
+- 담당: `developer-primary`; 시작 branch/HEAD: `codex/c21-operational-execution` / `8fe7b975f39990b3d721d27b1a3e9353f891c5c1`.
+- 기존 seq1~590과 historical evidence는 byte 불변으로 보존하고, 실제 WSL 실행 결과를 신규 exact12 / cumulative exact195 successor에만 기록한다.
+- TDD RED: `.venv\\Scripts\\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k runtime_result` → `2 failed, 1 passed, 224 deselected`, exit1. 신규 builder와 metadata 함수 부재가 의도한 실패 원인이다. fingerprint `C21_WORKBENCH_UI_WSL_RUNTIME_RESULT_UNBOUND_R1` 1회.
+- exact12 hash는 Windows `D1965266EBE7DDC3D4D6B0D01A2E71EA276DDFF378B0793E5895E2FB8F07F348`, ordinal `B345B0586EC4A8937238324EAC5F6FC9046C848F9B171B5E6CB6B83DDA9A6346`; cumulative exact195 hash는 Windows `5F63907A3D63D0350B68EC277B9703EB6AB9D0631E583427BADC2D53A1A13F00`, ordinal `CAD44AA61C8F359D0AD5FE19DABD70C4F7BE2106FC9EC4C59BD3E2EBFF89C516`다.
+- 첫 GREEN 시도는 신규 Git collector의 괄호 1개 누락으로 compile SyntaxError를 냈다. fingerprint `SEQ596_CHECKER_COLLECTOR_SYNTAX_R1` 1회. 즉시 최소 수정했고 focused `3 passed, 224 deselected`, exit0으로 해소했다. 기본 `py_compile`은 기존 접근 불가 `scripts/__pycache__` 때문에 code compile과 무관한 permission error가 발생하여, 최종 검증은 허용된 별도 pycache 경로로 재실행한다.
+- generated progress/event/HANDOFF/detached digest/manifest 5개를 materialize한 뒤 live checker는 `PASS sequence=596 reporting=AUTO_CONTINUE`, focused seq590+596 영향 범위는 `3 passed, 224 deselected`다. builder 2회 byte equality와 historical seq1~590 raw prefix equality도 PASS했다.
+- receipt overwrite 경계를 명시했다. pre-migration backup과 verification receipt hash는 final deploy/final verify의 현재 상태만 증명하며, 첫 verify의 독립 file evidence로 주장하지 않는다. rollback receipt는 보존 상태로 별도 결박한다.
+- 전체 tooling: `592 passed, 1 failed in 716.23s`, exit1. 실패는 historical `A13RepositoryScanArtifactTests::test_checker_validates_reusable_contract_and_eight_fixtures`의 `PUBLIC_RESULT_SCHEMA_MISMATCH`다. fingerprint `HISTORICAL_A13_MODULE_CACHE_SCHEMA_R1` 1회.
+- 위 테스트는 단독 실행하면 `1 passed in 12.84s`, A13 파일 전체에서는 `62 passed, 1 failed in 48.04s`로 재현됐다. historical checker가 같은 process에서 먼저 import된 current `packages.repository_intelligence.ScanResult` module cache를 재사용하여 accepted A-13 schema 대신 현재 확장 schema를 읽는 기존 순서 의존 fixture 문제다. seq596 exact12와 무관하고 exact12 밖 historical test는 변경 금지이므로 수정하지 않는다.
+- 미검증 경계: 동일 process 전체 tooling의 clean PASS는 위 기존 historical fixture 실패 때문에 확보하지 못했다. seq596 focused/live/determinism/raw history/exact Git 검증은 별도로 완료하고, 전체 suite를 PASS로 과장하지 않는다.
+- 최종 precommit 검증: seq590+596 focused `3 passed, 224 deselected`; live checker `PASS sequence=596 reporting=AUTO_CONTINUE`; in-memory compile, deterministic builder, seq1~590 raw prefix, strict manifest, `git diff --check` 모두 PASS다. Git collector는 K+dirty exact12와 validated base cumulative exact195, private control K/candidate S를 PASS했다.
+- 최초 postcommit `git diff --check HEAD^ HEAD`에서 신규 validation/WI/prompt 3개 EOF 여백을 발견했다. fingerprint `SEQ596_NEW_DOC_EOF_BLANK_R1` 1회. 신규 exact12 내부 비의미 포맷 오류이므로 제거하고 generated hashes를 재결박한 뒤 동일 direct-child commit을 amend한다.

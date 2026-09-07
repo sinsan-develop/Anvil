@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-provider-wsl-git-only-candidate-bound-seq530",
-  "event_sequence": 590,
-  "updated_at": "2026-09-07T21:35:00+09:00",
-  "last_event_id": "evt_c21_workbench_ui_wsl_candidate_package_completed",
+  "event_sequence": 596,
+  "updated_at": "2026-09-08T06:14:53+09:00",
+  "last_event_id": "evt_c21_workbench_ui_wsl_runtime_package_completed",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS",
+  "status": "READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -49,37 +49,41 @@
   ],
   "active_agent": null,
   "write_lease": {
-    "lease_id": "write-lease-c21-workbench-ui-wsl-candidate-20260907-001",
-    "worker_lease_id": "worker-lease-c21-workbench-ui-wsl-candidate-20260907-001",
+    "lease_id": "write-lease-c21-workbench-ui-wsl-runtime-result-20260908-001",
+    "worker_lease_id": "worker-lease-c21-workbench-ui-wsl-runtime-result-20260908-001",
     "agent_id": "developer-primary",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE",
+    "subtask_id": "WORKBENCH-UI-WSL-RUNTIME-RESULT",
     "write_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-wsl-candidate-execution-fence-epoch-1-468b140",
-    "write_fencing_token": "c21-workbench-ui-wsl-candidate-write-fence-epoch-1-468b140",
-    "fencing_token": "c21-workbench-ui-wsl-candidate-write-fence-epoch-1-468b140",
+    "execution_fencing_token": "c21-workbench-ui-wsl-runtime-result-execution-fence-epoch-1-8fe7b97",
+    "write_fencing_token": "c21-workbench-ui-wsl-runtime-result-write-fence-epoch-1-8fe7b97",
+    "fencing_token": "c21-workbench-ui-wsl-runtime-result-write-fence-epoch-1-8fe7b97",
     "status": "REVOKED",
     "path_scope": [
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate.json",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
     "paths": [
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate.json",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ]
@@ -116,13 +120,13 @@
     ]
   },
   "worker_lease": {
-    "lease_id": "worker-lease-c21-workbench-ui-wsl-candidate-20260907-001",
+    "lease_id": "worker-lease-c21-workbench-ui-wsl-runtime-result-20260908-001",
     "agent_id": "developer-primary",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE",
+    "subtask_id": "WORKBENCH-UI-WSL-RUNTIME-RESULT",
     "lease_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-wsl-candidate-execution-fence-epoch-1-468b140",
-    "fencing_token": "c21-workbench-ui-wsl-candidate-execution-fence-epoch-1-468b140",
+    "execution_fencing_token": "c21-workbench-ui-wsl-runtime-result-execution-fence-epoch-1-8fe7b97",
+    "fencing_token": "c21-workbench-ui-wsl-runtime-result-execution-fence-epoch-1-8fe7b97",
     "status": "REVOKED"
   },
   "completed_provider_wsl_auth_worker_lease": {
@@ -332,41 +336,41 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "deploy/wsl/CandidateReleaseManifest.json",
-      "sha256": "A1BB21983EF5791C5025E8487675801CB824B2066F5C9D9F8DCF092EC1D6D82B"
-    },
-    {
-      "path": "deploy/wsl/candidate-manifest-guard.sh",
-      "sha256": "5773186C9B12176E973BE8CA9A4460DEF2A8EC19120D7068E3EF3CE01F6744CC"
-    },
-    {
-      "path": "docs/DEVELOPMENT_ENVIRONMENT.md",
-      "sha256": "6624F6BAFD6DF8962F97D73B2A6960BCCA0DD250794B79C6C936BCE349C00312"
+      "path": "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
+      "sha256": "55DD9AD244C44C264873972EBD69432441516C7BC33D81FC46D276183713FA8D"
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "sha256": "89A92A02A8F7B93CEDD76CF5991AA10E6EE8E68E8846E51C2E4F8D5012C919DC"
+      "sha256": "B4786C4B52A54809780A4692C01BC25146402BCC1B396F1B758BB84A4F6686F6"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "0FFA33860D9F26A549D529E0AC0F3CE72654FC88C59102556174D4BB12738510"
+      "sha256": "D6FC8277DA3F6744606CC8B944E1FA4129B327AA69E177A867A30990DC1DB52C"
+    },
+    {
+      "path": "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
+      "sha256": "59C866C6F8FF335506314FA415005C46B8C7BAE6F501BBE4438910A778FB717E"
+    },
+    {
+      "path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "sha256": "DCF42C9E91C6D20243ED5C2580FE6A7B18CE0EF0596966843CD2E0C370BC77D0"
+    },
+    {
+      "path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "sha256": "6ED291A68ADCF399A6C1F51CE1E34875103D993632ADA373E2116E77A7248EA3"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "4643F16B81F5D7F945E132717CB89BE7013D8F8D6BF5EC4F5AB762D846B122E9"
-    },
-    {
-      "path": "tests/deploy/test_wsl_staging_harness.py",
-      "sha256": "0DEDE8F33FED03EE47B5A8125CB86D3498D33F01B7E6ED205D337377898D4210"
+      "sha256": "D02D56DE96E5CD4FB0C54D17082584415D29470E0441F3B9342D1CFA74BF9D57"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "D943B15C9FD8A1C3477499322F347B0D24AB8E4AAAAD047B01153CF5BD329992"
+      "sha256": "37224782267CA70862840AE96CFB0E0A3975DAEB0AE19C48BBFA3F5E68233662"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
-    "artifact_id": "C21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-BOUND-20260907"
+    "path": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
+    "artifact_id": "C21-WORKBENCH-UI-WSL-RUNTIME-RESULT-20260908"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -376,7 +380,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "PRIVATE_ATOMIC_CAS_PUBLISH",
+  "next_safe_action": "INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -488,7 +492,7 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_F0D4BC7_EXACT12_DIRTY",
+    "head_relation": "FEATURE_WORKTREE_8FE7B97_EXACT12_DIRTY",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -530,6 +534,7 @@
       "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
       "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
       "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md",
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
       "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md",
       "docs/04_test_reports/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_REPORT.md",
       "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md",
@@ -562,6 +567,7 @@
       "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
       "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json",
@@ -602,6 +608,7 @@
       "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json",
       "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate-bound.json",
       "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
@@ -625,6 +632,7 @@
       "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
       "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
       "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
       "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md",
       "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
       "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
@@ -651,6 +659,8 @@
       "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
       "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
       "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_INVOCATION_PROMPT.md",
@@ -700,8 +710,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "SEQ590_WORKBENCH_UI_WSL_CANDIDATE_EXACT12_DIRTY",
-    "local_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+    "worktree_status": "SEQ596_WORKBENCH_UI_WSL_RUNTIME_EXACT12_DIRTY",
+    "local_head": "8fe7b975f39990b3d721d27b1a3e9353f891c5c1",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1200,6 +1210,20 @@
       "scripts/check_project_progress.py",
       "tests/deploy/test_wsl_staging_harness.py",
       "tests/tooling/test_project_progress.py"
+    ],
+    "workbench_ui_wsl_runtime_result_paths": [
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
     ]
   },
   "a01_precondition": {
@@ -1305,7 +1329,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "WORKBENCH_UI_WSL_CANDIDATE_BOUND_PENDING_PRIVATE_CAS"
+      "WSL_RUNTIME_SCOPE_PASSED_PENDING_INDEPENDENT_ACCEPTANCE"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1356,14 +1380,14 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-C-21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-20260907-001",
-    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
-    "artifact_sha256": "B719AF281C2765EAF1D88BC62285ADDC233DCD9F4B2DFF6DDC9D7255BE5B8296",
-    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
-    "invocation_sha256": "7950FE7CCD1818A9C747FB06952EE7DD7D27ED7210C594E788A5CA5B89EDA941",
+    "artifact_id": "WI-C-21-WORKBENCH-UI-WSL-RUNTIME-RESULT-20260908-001",
+    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+    "artifact_sha256": "6ED291A68ADCF399A6C1F51CE1E34875103D993632ADA373E2116E77A7248EA3",
+    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+    "invocation_sha256": "DCF42C9E91C6D20243ED5C2580FE6A7B18CE0EF0596966843CD2E0C370BC77D0",
     "executor": "developer-primary",
     "result_status": "COMPLETED",
-    "package_status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS",
+    "package_status": "READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
     "accepted": false,
     "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
     "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
@@ -1504,8 +1528,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate-bound.json",
-    "manifest_path": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
+    "manifest_path": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1526,7 +1550,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "0FFA33860D9F26A549D529E0AC0F3CE72654FC88C59102556174D4BB12738510"
+      "sha256": "D6FC8277DA3F6744606CC8B944E1FA4129B327AA69E177A867A30990DC1DB52C"
     }
   },
   "next_work_package": {
@@ -1927,8 +1951,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "FB2B650D20A9BFA253FB65EC39035367E2B05B3FA5D5AFABBC72C7F60E672560",
-  "runtime_next_action": "PRIVATE_ATOMIC_CAS_PUBLISH",
+  "snapshot_hash": "B48080FE1C9E34BD4B7E15D627EF7FC9D58E85B501A16AC1FAB79B98E5ED7ACC",
+  "runtime_next_action": "INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2074,14 +2098,14 @@
     "runtime_next_action": "PUSH_AND_EXECUTE_C21_WSL_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION"
   },
   "completed_work_instruction": {
-    "artifact_id": "WI-C-21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-20260907-001",
-    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
-    "artifact_sha256": "B719AF281C2765EAF1D88BC62285ADDC233DCD9F4B2DFF6DDC9D7255BE5B8296",
-    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
-    "invocation_sha256": "7950FE7CCD1818A9C747FB06952EE7DD7D27ED7210C594E788A5CA5B89EDA941",
+    "artifact_id": "WI-C-21-WORKBENCH-UI-WSL-RUNTIME-RESULT-20260908-001",
+    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+    "artifact_sha256": "6ED291A68ADCF399A6C1F51CE1E34875103D993632ADA373E2116E77A7248EA3",
+    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+    "invocation_sha256": "DCF42C9E91C6D20243ED5C2580FE6A7B18CE0EF0596966843CD2E0C370BC77D0",
     "executor": "developer-primary",
     "result_status": "COMPLETED",
-    "package_status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS",
+    "package_status": "READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
     "accepted": false,
     "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
     "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
@@ -3530,7 +3554,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-07T21:35:00+09:00",
+  "recorded_at": "2026-09-08T06:14:53+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -4065,5 +4089,387 @@
     "post_bound_cumulative_path_count": 189,
     "post_bound_cumulative_path_list_sha256": "8A54D4594B30E4CACFD8AB8C54C187CB528735E39305E1503737932023BD786F",
     "post_bound_cumulative_path_list_ordinal_sha256": "13D263C508363A6D24622CC015545B965D96F67025EA75B1F1C9C43C5EDBF31A"
+  },
+  "workbench_ui_wsl_runtime_result": {
+    "status": "READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
+    "parent_control_commit": "8fe7b975f39990b3d721d27b1a3e9353f891c5c1",
+    "candidate_commit": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+    "private_git_authority": {
+      "remote": "development",
+      "url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+      "control_ref": "refs/heads/codex/c21-operational-execution",
+      "candidate_ref": "refs/heads/candidates/c21-wsl-exact187",
+      "observed_control": "8fe7b975f39990b3d721d27b1a3e9353f891c5c1",
+      "observed_candidate": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+      "public_origin_is_push_authority": false
+    },
+    "runtime_result": {
+      "host": "SINSAN",
+      "environment": "WSL_SERVER_TEST_STAGING",
+      "application_repo": "/srv/anvil-wsl/repo",
+      "application_repo_state": "CLEAN_DETACHED",
+      "application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+      "runtime_control_ref": "8fe7b975f39990b3d721d27b1a3e9353f891c5c1",
+      "candidate_ref": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+      "runtime_scope_passed": true,
+      "recorded_order": [
+        "INITIAL_DEPLOY",
+        "INITIAL_VERIFY",
+        "ROLLBACK",
+        "REDEPLOY_ATTEMPT_FAILED",
+        "MAIN_TAKEOVER",
+        "EXACT_PG15_BRIDGE_RECOVERY",
+        "FINAL_DEPLOY",
+        "FINAL_VERIFY",
+        "EXACT_CLEANUP"
+      ],
+      "commands": {
+        "initial_deploy": "PASS_EXIT_0",
+        "initial_verify": "PASS_EXIT_0",
+        "rollback": "PASS_EXIT_0",
+        "first_redeploy": "FAIL_EXIT_1",
+        "final_deploy": "PASS_EXIT_0",
+        "final_verify": "PASS_EXIT_0",
+        "cleanup": "PASS_EXIT_0"
+      },
+      "verification": {
+        "postgres_targets": [
+          "15",
+          "18-rc"
+        ],
+        "migration_head": "0013_task_bootstrap_authority",
+        "api": "PASS",
+        "auth_session": "PASS",
+        "authenticated_sse": "PASS_ONE_EVENT",
+        "last_event_id": "PASS_ACKNOWLEDGED_NO_REPLAY",
+        "same_origin": "PASS",
+        "backup_restore": "PASS",
+        "scratch_database_residue": 0,
+        "secret_values": "omitted"
+      },
+      "timeout_lineage": {
+        "fingerprint": "C21_WSL_REDEPLOY_AFTER_ROLLBACK_DB_CONNECT_TIMEOUT_R1",
+        "valid_observation_count": 3,
+        "main_takeover": true,
+        "failure_point": "PG15_CANDIDATE_COMPOSE_ONE_OFF_DB_TCP",
+        "product_defect": false
+      },
+      "bridge_recovery": {
+        "scope": "EXACT_PG15_TEST_PROJECT",
+        "services_removed": 3,
+        "networks_removed": 2,
+        "volume_preserved": "anvil-wsl-pg15_anvil-db-data",
+        "environment_file_preserved": true,
+        "result": "PASS"
+      },
+      "final_runtime_before_cleanup": {
+        "pg15_current": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+        "pg15_previous": "324eb169fedbce958d2e8cc29362deb7af433677",
+        "pg18rc_current": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+        "pg18rc_previous": "324eb169fedbce958d2e8cc29362deb7af433677"
+      },
+      "cleanup": {
+        "projects": [
+          "anvil-wsl-pg15",
+          "anvil-wsl-pg18rc"
+        ],
+        "exact_named_volumes": [
+          "anvil-wsl-pg15_anvil-db-data",
+          "anvil-wsl-pg18rc_anvil-db-data"
+        ],
+        "residual_containers": 0,
+        "residual_networks": 0,
+        "residual_volumes": 0,
+        "result": "PASS"
+      },
+      "environment_file": {
+        "path": "/srv/anvil-wsl/.env",
+        "mode_before": "600",
+        "mode_after": "600",
+        "sha256_before": "FECAE53B750E170A5BF345A23AC8D9BA12B508E9C6D0B47C518B90FD4D52A79A",
+        "sha256_after": "FECAE53B750E170A5BF345A23AC8D9BA12B508E9C6D0B47C518B90FD4D52A79A",
+        "result": "BYTE_IDENTICAL"
+      },
+      "script_hashes": {
+        "deploy/wsl/control-runtime.sh": "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097",
+        "deploy/wsl/deploy.sh": "7B6EE6A02BED857299423F78C73D746B6F8AC8C0CC40E3A611ECE06E43E1C1C0",
+        "deploy/wsl/verify.sh": "93E882D35C055535A7D989962FE0EE0EC49B91542EB462B655F1477DD2562A36",
+        "deploy/wsl/rollback.sh": "1A4CC5B9F77E4705C8864EB913E69C55042FB4A4BE8A40A872F1CA2EC72E7946",
+        "deploy/wsl/cleanup.sh": "65E8AA6F5F02AB554ECF3F4FBA1CEB16BD96616E952EB4D64D1285F183CC462D",
+        "deploy/wsl/candidate-manifest-guard.sh": "5773186C9B12176E973BE8CA9A4460DEF2A8EC19120D7068E3EF3CE01F6744CC"
+      },
+      "receipts": [
+        {
+          "path": "/srv/anvil-wsl/evidence/pg15-pre-migration-backup.json",
+          "sha256": "C8F043E2A3FC4CA3A3DD2F6A5FF9A02C02F51E6E28CBA952B7363B74BD78B599",
+          "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH",
+          "embedded_dump_sha256": "A99B40DCE4D594FE8C04ED4D033391624581FFEEB47FA285F8EDAD4D93B618C1"
+        },
+        {
+          "path": "/srv/anvil-wsl/evidence/pg18rc-pre-migration-backup.json",
+          "sha256": "9D8E5F5CE365E046D48BE23BB1B1022EDA9C1BFFECCE81E7DC758EF7EB7E8E0D",
+          "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH",
+          "embedded_dump_sha256": "38DACA3D837EF40F48A045EE5C02C1BFFEB55FEAB02C0099F3223C7A725D0E9D"
+        },
+        {
+          "path": "/srv/anvil-wsl/evidence/pg15-verification.json",
+          "sha256": "96BD2FC8D3D96E6D46215419A0917D145FA851226E6D1F3C122D93BC21FC8DB2",
+          "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH"
+        },
+        {
+          "path": "/srv/anvil-wsl/evidence/pg18rc-verification.json",
+          "sha256": "0CE473C529B74D8D6AC10F43F0E532D591C2D76233A345348812E95541EE4D3B",
+          "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH"
+        },
+        {
+          "path": "/srv/anvil-wsl/evidence/pg15-rollback.json",
+          "sha256": "A996678BDA2D01F191A90CD98F55E3E242FE012042813215B04B1D390082F630",
+          "state": "PRESERVED_ROLLBACK_STATE"
+        },
+        {
+          "path": "/srv/anvil-wsl/evidence/pg18rc-rollback.json",
+          "sha256": "A89B9709CFA43E0D01FF1953A4575EE78494C7D98DE075BF38B84D11C4FCD404",
+          "state": "PRESERVED_ROLLBACK_STATE"
+        }
+      ],
+      "browser": {
+        "result": "UNAUTHENTICATED_UI_RENDER_PASS",
+        "pg15": "PASS",
+        "pg18rc": "PASS",
+        "title": "Anvil Provider Workbench",
+        "provider_registry": "PERMISSION_DENIED",
+        "sse": "NOT_CONNECTED",
+        "authenticated_browser": "NOT_EXECUTED"
+      }
+    },
+    "runtime_scope_passed": true,
+    "accepted": false,
+    "c21_status": "BLOCKED_NOT_ACCEPTED",
+    "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+    "dir2_status": "NOT_TRIGGERED",
+    "exclusions": {
+      "provider": "NOT_EXECUTED",
+      "telegram": "NOT_EXECUTED",
+      "ysna": "NOT_EXECUTED",
+      "main_merge": "NOT_EXECUTED",
+      "c01": "NOT_EXECUTED"
+    },
+    "exact_paths": [
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "exact_path_count": 12,
+    "exact_path_list_sha256": "D1965266EBE7DDC3D4D6B0D01A2E71EA276DDFF378B0793E5895E2FB8F07F348",
+    "exact_path_list_ordinal_sha256": "B345B0586EC4A8937238324EAC5F6FC9046C848F9B171B5E6CB6B83DDA9A6346",
+    "cumulative_paths": [
+      "apps/web/fixture-workbench.html",
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/ui-preview-runtime.test.mjs",
+      "apps/web/tests/workbench.test.mjs",
+      "deploy/wsl/CandidateReleaseManifest.json",
+      "deploy/wsl/Dockerfile.web",
+      "deploy/wsl/bootstrap.sh",
+      "deploy/wsl/candidate-manifest-guard.sh",
+      "deploy/wsl/cleanup.sh",
+      "deploy/wsl/common.sh",
+      "deploy/wsl/compose.wsl.yml",
+      "deploy/wsl/control-runtime.sh",
+      "deploy/wsl/deploy.sh",
+      "deploy/wsl/nginx-wsl.conf",
+      "deploy/wsl/requirements-runtime.txt",
+      "deploy/wsl/rollback.sh",
+      "deploy/wsl/verify-c21-development-boundaries.sh",
+      "deploy/wsl/verify.sh",
+      "deploy/ysna/backup-c21-db.sh",
+      "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
+      "docs/04_test_reports/C-21_DEVELOPMENT_QA_INDEPENDENT_REVIEW_REPORT.md",
+      "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
+      "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+      "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+      "docs/04_test_reports/C-21_PROVIDER_WSL_EXACT_BINDING_REPORT.md",
+      "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md",
+      "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
+      "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
+      "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md",
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
+      "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md",
+      "docs/04_test_reports/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_REPORT.md",
+      "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md",
+      "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
+      "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
+      "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+      "docs/04_test_reports/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_REPORT.md",
+      "docs/DEVELOPMENT_ENVIRONMENT.md",
+      "docs/WORK_STATUS.md",
+      "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+      "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+      "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json",
+      "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/failure-ledger.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
+      "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json",
+      "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
+      "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-exact-binding-bound.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-exact-binding-start.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-bound.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-start.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
+      "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-historical-fixture-reconciliation.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate-bound.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-ingress-candidate-rebind.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
+      "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json",
+      "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+      "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
+      "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
+      "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
+      "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
+      "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+      "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
+      "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
+      "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md",
+      "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
+      "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
+      "docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
+      "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
+      "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+      "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_WORK_INSTRUCTION.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/provider_catalog.py",
+      "packages/agent_team/provider_status.py",
+      "packages/api/local_session.py",
+      "packages/api/provider_status.py",
+      "packages/api/registry.py",
+      "packages/api/runtime.py",
+      "scripts/check_project_progress.py",
+      "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+      "tests/agent_team/test_provider_status.py",
+      "tests/api/test_c21_telegram_outbound_free_qa.py",
+      "tests/api/test_local_session.py",
+      "tests/api/test_provider_status.py",
+      "tests/api/test_public_asgi_frontend.py",
+      "tests/api/test_registry_openapi.py",
+      "tests/api/test_runtime_app.py",
+      "tests/browser/c21-network-probe.mjs",
+      "tests/deploy/test_c21_lr02c_operational_contract.py",
+      "tests/deploy/test_wsl_staging_harness.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "cumulative_path_count": 195,
+    "cumulative_path_list_sha256": "5F63907A3D63D0350B68EC277B9703EB6AB9D0631E583427BADC2D53A1A13F00",
+    "cumulative_path_list_ordinal_sha256": "CAD44AA61C8F359D0AD5FE19DABD70C4F7BE2106FC9EC4C59BD3E2EBFF89C516"
   }
 }
