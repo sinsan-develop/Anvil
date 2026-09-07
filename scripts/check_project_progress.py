@@ -12788,6 +12788,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 584:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_workbench_ui_historical_fixture_reconciliation_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 578:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13676,6 +13680,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_cleanup_runtime_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_wsl_acceptance_strict_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json":
+            errors.extend(validate_c21_workbench_ui_historical_fixture_reconciliation_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_local_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json":
@@ -19308,6 +19314,139 @@ def _collect_c21_workbench_ui_local_result_git(bundle: Mapping[str, Any]) -> lis
         if direct!=metadata["result_exact_paths"] or cumulative!=metadata["cumulative_result_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
         if head==C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
         return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_WORKBENCH_UI_HISTORICAL_PARENT = "d059e043ff642c9f5eb50da8dda8aaa8f4ed8408"
+C21_WORKBENCH_UI_HISTORICAL_AT = "2026-09-07T19:36:03+09:00"
+C21_WORKBENCH_UI_HISTORICAL_WI_ID = "WI-C-21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-20260907-001"
+C21_WORKBENCH_UI_HISTORICAL_P = "docs/progress/build-progress.json"
+C21_WORKBENCH_UI_HISTORICAL_E = "docs/progress/progress-events.json"
+C21_WORKBENCH_UI_HISTORICAL_H = "docs/progress/BUILD_HANDOFF.md"
+C21_WORKBENCH_UI_HISTORICAL_D = "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-historical-fixture-reconciliation.json"
+C21_WORKBENCH_UI_HISTORICAL_M = "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json"
+C21_WORKBENCH_UI_HISTORICAL_WI = "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md"
+C21_WORKBENCH_UI_HISTORICAL_PROMPT = "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md"
+
+
+def c21_workbench_ui_historical_fixture_reconciliation_paths() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
+        "docs/WORK_STATUS.md", C21_WORKBENCH_UI_HISTORICAL_M, C21_WORKBENCH_UI_HISTORICAL_H,
+        C21_WORKBENCH_UI_HISTORICAL_P, C21_WORKBENCH_UI_HISTORICAL_E, C21_WORKBENCH_UI_HISTORICAL_D,
+        "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
+        C21_WORKBENCH_UI_HISTORICAL_PROMPT, C21_WORKBENCH_UI_HISTORICAL_WI,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+        "tests/tooling/test_a13_repository_scan.py", "tests/tooling/test_a14_workbench_prototype.py",
+        "tests/tooling/test_g07_baseline.py", "tests/tooling/test_phase_g_gate.py",
+    ])
+
+
+def c21_workbench_ui_historical_fixture_reconciliation_metadata() -> dict[str, Any]:
+    exact = c21_workbench_ui_historical_fixture_reconciliation_paths()
+    cumulative = sorted(set(c21_workbench_ui_local_result_metadata()["cumulative_result_paths"]) | set(exact))
+    result = {
+        "exact_paths": exact, "exact_path_count": len(exact),
+        "exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_paths": cumulative, "cumulative_path_count": len(cumulative),
+        "cumulative_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = {
+        "exact_path_count": 16,
+        "exact_path_list_sha256": "4B6FB5B5AEFD4A7CF943A191437A3A31F8EEADED1C96A47A6B8934AAFAB3F4F0",
+        "exact_path_list_ordinal_sha256": "E6A1C5BB1C6004DFA22E3342FC41A5C4B455A86EA7A3866549258E5056A95C90",
+        "cumulative_path_count": 183,
+        "cumulative_path_list_sha256": "BCCCA49E2B920D3A4FD4C557792F63204E20708E4897812CB4457DEB5ED7DC3B",
+        "cumulative_path_list_ordinal_sha256": "DFA407A31DBDAD6424B9664ACBFB1F77999D5D746604A20327CFE0E0EA85D91B",
+    }
+    if any(result[key] != value for key, value in expected.items()):
+        raise ValueError("C21_WORKBENCH_UI_HISTORICAL_PATH_METADATA_INVALID")
+    return result
+
+
+def _c21_workbench_ui_historical_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    worker = {"lease_id":"worker-lease-c21-workbench-ui-historical-20260907-001","agent_id":"main-agent-eoul","work_package_id":"C-21","subtask_id":"WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION","lease_epoch":1,"execution_fencing_token":"c21-workbench-ui-historical-execution-fence-epoch-1-d059e04","fencing_token":"c21-workbench-ui-historical-execution-fence-epoch-1-d059e04","status":"REVOKED"}
+    write = {"lease_id":"write-lease-c21-workbench-ui-historical-20260907-001","worker_lease_id":worker["lease_id"],"agent_id":"main-agent-eoul","work_package_id":"C-21","subtask_id":"WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION","write_epoch":1,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":"c21-workbench-ui-historical-write-fence-epoch-1-d059e04","fencing_token":"c21-workbench-ui-historical-write-fence-epoch-1-d059e04","status":"REVOKED","path_scope":c21_workbench_ui_historical_fixture_reconciliation_paths(),"paths":c21_workbench_ui_historical_fixture_reconciliation_paths()}
+    return worker, write
+
+
+def _c21_workbench_ui_historical_events(wi_sha: str, prompt_sha: str) -> list[dict[str, Any]]:
+    worker, write = _c21_workbench_ui_historical_leases(); active_worker={**worker,"status":"ACTIVE"}; active_write={**write,"status":"ACTIVE"}
+    common={"occurred_at":C21_WORKBENCH_UI_HISTORICAL_AT,"actor_type":"AGENT","actor_id":"main-agent-eoul","project_id":"anvil","run_id":None,"work_package_id":"C-21","step_id":"WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION","actor":"main-agent-eoul","subject_ref":"C-21/WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION"}
+    boundary={"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","external_execution":"NOT_EXECUTED","product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,"candidate_commit":C21_WORKBENCH_UI_LOCAL_CANDIDATE}
+    meta=c21_workbench_ui_historical_fixture_reconciliation_metadata()
+    return [
+        {**common,"event_id":"evt_c21_workbench_ui_historical_worker_lease_issued","sequence":579,"event_type":"WORKER_LEASE_ISSUED","details":{**boundary,**active_worker,"subject_ref":common["subject_ref"],"work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID}},
+        {**common,"event_id":"evt_c21_workbench_ui_historical_write_lease_issued","sequence":580,"event_type":"WRITE_LEASE_ISSUED","details":{**boundary,**active_write,"path_count":16,"path_list_sha256":meta["exact_path_list_sha256"],"work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID}},
+        {**common,"event_id":"evt_c21_workbench_ui_historical_package_started","sequence":581,"event_type":"PACKAGE_STARTED","details":{**boundary,"work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID,"package_status":"ACTIVE_TOOLING_RECONCILIATION","work_instruction_sha256":wi_sha,"invocation_sha256":prompt_sha,"dispatch_head":C21_WORKBENCH_UI_HISTORICAL_PARENT,"dispatch_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_D059E04_EXACT16_DIRTY","exact_allowed_paths":meta["cumulative_paths"],"execution_mode":"LOCAL_TEST_ONLY_MAIN_TAKEOVER"}},
+        {**common,"event_id":"evt_c21_workbench_ui_historical_write_lease_revoked","sequence":582,"event_type":"WRITE_LEASE_REVOKED","details":{**boundary,**write,"reason":"RESULT_HANDOFF","path_count":16,"path_list_sha256":meta["exact_path_list_sha256"],"work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID}},
+        {**common,"event_id":"evt_c21_workbench_ui_historical_worker_lease_revoked","sequence":583,"event_type":"WORKER_LEASE_REVOKED","details":{**boundary,**worker,"reason":"RESULT_HANDOFF","work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID}},
+        {**common,"event_id":"evt_c21_workbench_ui_historical_package_completed","sequence":584,"event_type":"PACKAGE_COMPLETED","details":{**boundary,"work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID,"completion_head":C21_WORKBENCH_UI_HISTORICAL_PARENT,"completion_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_D059E04_EXACT16_DIRTY","exact_allowed_paths":meta["cumulative_paths"],"result_status":"READY_FOR_INDEPENDENT_REVIEW","package_status":"READY_FOR_INDEPENDENT_REVIEW","independent_tester_status":"PENDING","next_action":"INDEPENDENT_C21_WORKBENCH_UI_REVIEW"}},
+    ]
+
+
+def c21_workbench_ui_historical_fixture_reconciliation_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated={C21_WORKBENCH_UI_HISTORICAL_P,C21_WORKBENCH_UI_HISTORICAL_E,C21_WORKBENCH_UI_HISTORICAL_H,C21_WORKBENCH_UI_HISTORICAL_D,C21_WORKBENCH_UI_HISTORICAL_M}
+    if set(files)!=set(c21_workbench_ui_historical_fixture_reconciliation_paths())-generated: raise ValueError("C21_WORKBENCH_UI_HISTORICAL_FILE_SET_INVALID")
+    source=_c21_resume_json(historical[C21_WORKBENCH_UI_HISTORICAL_P]); old_events=historical[C21_WORKBENCH_UI_HISTORICAL_E]
+    if source.get("event_sequence")!=578 or _c21_resume_json(old_events).get("last_sequence")!=578: raise ValueError("C21_WORKBENCH_UI_HISTORICAL_HISTORY_INVALID")
+    wi_sha=_c21_resume_sha(files[C21_WORKBENCH_UI_HISTORICAL_WI]); prompt_sha=_c21_resume_sha(files[C21_WORKBENCH_UI_HISTORICAL_PROMPT]); additions=_c21_workbench_ui_historical_events(wi_sha,prompt_sha)
+    prefix=raw_event_object_prefix_bytes(old_events,578); start=old_events.index(prefix); head=old_events[:start]; tail=old_events[start+len(prefix):]
+    appended=b"".join(b",\n"+"\n".join("    "+line for line in json.dumps(event,ensure_ascii=False,indent=2,allow_nan=False).splitlines()).encode() for event in additions)
+    events_raw=head.replace(b'"last_sequence": 578',b'"last_sequence": 584',1)+prefix+appended+tail.replace(b'evt_c21_workbench_ui_local_package_completed',b'evt_c21_workbench_ui_historical_package_completed',1)
+    meta=c21_workbench_ui_historical_fixture_reconciliation_metadata(); worker,write=_c21_workbench_ui_historical_leases()
+    instruction={"artifact_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID,"artifact_path":C21_WORKBENCH_UI_HISTORICAL_WI,"artifact_sha256":wi_sha,"invocation_path":C21_WORKBENCH_UI_HISTORICAL_PROMPT,"invocation_sha256":prompt_sha,"result_status":"READY_FOR_INDEPENDENT_REVIEW","package_status":"READY_FOR_INDEPENDENT_REVIEW","executor":"main-agent-eoul","accepted":False,"independent_tester_status":"PENDING","c21_acceptance_status":"BLOCKED_NOT_ACCEPTED","c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","runtime_next_action":"INDEPENDENT_C21_WORKBENCH_UI_REVIEW"}
+    progress=dict(source); repository=dict(progress["repository"]); repository.update({"local_head":C21_WORKBENCH_UI_HISTORICAL_PARENT,"head_relation":"FEATURE_WORKTREE_D059E04_EXACT16_DIRTY","worktree_status":"SEQ584_WORKBENCH_UI_HISTORICAL_EXACT16_DIRTY","exact_allowed_paths":meta["cumulative_paths"],"workbench_ui_historical_fixture_reconciliation_paths":meta["exact_paths"],"push_status":"NOT_EXECUTED"})
+    local=dict(progress.get("workbench_ui_local") or {}); local.update({"status":"READY_FOR_INDEPENDENT_REVIEW","independent_tester_status":"PENDING","accepted":False})
+    progress.update({"updated_at":C21_WORKBENCH_UI_HISTORICAL_AT,"recorded_at":C21_WORKBENCH_UI_HISTORICAL_AT,"event_sequence":584,"last_event_id":additions[-1]["event_id"],"status":"READY_FOR_INDEPENDENT_REVIEW","active_agent":None,"worker_lease":worker,"write_lease":write,"active_work_instruction":instruction,"completed_work_instruction":instruction,"repository":repository,"workbench_ui_local":local,"workbench_ui_historical_fixture_reconciliation":{"status":"READY_FOR_INDEPENDENT_REVIEW","accepted":False,"developer_failure_runs":[16,4,2],"main_focused_tests":177,"historical_mutation":False,"external_execution":"NOT_EXECUTED"},"runtime_next_action":"INDEPENDENT_C21_WORKBENCH_UI_REVIEW","next_safe_action":"INDEPENDENT_C21_WORKBENCH_UI_REVIEW","current_progress_evidence_ref":{"package_id":"C-21","path":C21_WORKBENCH_UI_HISTORICAL_D,"manifest_path":C21_WORKBENCH_UI_HISTORICAL_M},"latest_evidence_manifest_ref":{"path":C21_WORKBENCH_UI_HISTORICAL_M,"artifact_id":"C21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-20260907"},"reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["WORKBENCH_UI_TOOLING_RECONCILED_READY_FOR_REVIEW"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":C21_WORKBENCH_UI_HISTORICAL_E,"sha256":_c21_resume_sha(events_raw)}; progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(raw)} for p,raw in sorted({**files,C21_WORKBENCH_UI_HISTORICAL_E:events_raw}.items())]; progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":584,"last_event_id":additions[-1]["event_id"],"status":"READY_FOR_INDEPENDENT_REVIEW","current_phase":"C","current_work_package":"C-21","active_agent":None,"worker_lease":worker,"write_lease":write,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":write["write_fencing_token"],"active_work_instruction":C21_WORKBENCH_UI_HISTORICAL_WI_ID,"active_work_instruction_sha256":wi_sha,"active_invocation_sha256":prompt_sha,"repository_head":C21_WORKBENCH_UI_HISTORICAL_PARENT,"repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],"repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],"repository_exact_allowed_paths":meta["cumulative_paths"],"design_baseline_hash":source["design_baseline_hash"],"valid_failure_count":source["valid_failure_count"],"dir_status":source["dir_review"]["status"],"reporting_decision":"AUTO_CONTINUE","product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,"candidate_commit":C21_WORKBENCH_UI_LOCAL_CANDIDATE,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","external_execution":"NOT_EXECUTED","next_safe_action":"INDEPENDENT_C21_WORKBENCH_UI_REVIEW",**meta}
+    htext="# C-21 Workbench UI historical fixture reconciliation — seq584 Main 완료\n\n- 동일 오류 3회 후 Main이 인수해 historical fixture 177개를 복구했다.\n\n"+historical[C21_WORKBENCH_UI_HISTORICAL_H].decode(); replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"; htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count!=1: raise ValueError("C21_WORKBENCH_UI_HISTORICAL_HANDOFF_INVALID")
+    handoff_raw=htext.encode(); digest={"schema_version":"1.0.0","digest_id":"C21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-DIGEST-20260907","package_id":"C-21","event_sequence":584,"algorithm":"SHA-256","created_at":C21_WORKBENCH_UI_HISTORICAL_AT,"scope":"seq579-584 append-only; seq1-578 preserved; exact16 test-only reconciliation","self_reference":False,"progress":{"path":C21_WORKBENCH_UI_HISTORICAL_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},"handoff":{"path":C21_WORKBENCH_UI_HISTORICAL_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}; digest_raw=_c21_resume_json_bytes(digest)
+    prior={**files,C21_WORKBENCH_UI_HISTORICAL_E:events_raw,C21_WORKBENCH_UI_HISTORICAL_P:progress_raw,C21_WORKBENCH_UI_HISTORICAL_H:handoff_raw,C21_WORKBENCH_UI_HISTORICAL_D:digest_raw}; manifest={"schema_version":"1.0.0","manifest_type":"C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_PROJECTION","artifact_id":"C21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-20260907","created_at":C21_WORKBENCH_UI_HISTORICAL_AT,"event_sequence":584,"appended_event_count":6,"historical_event_sequence":578,"historical_commit":C21_WORKBENCH_UI_HISTORICAL_PARENT,"product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,"candidate_commit":C21_WORKBENCH_UI_LOCAL_CANDIDATE,"execution_authority_path":C21_WORKBENCH_UI_HISTORICAL_WI,"execution_authority_sha256":wi_sha,"work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID,"status":"READY_FOR_INDEPENDENT_REVIEW","accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","external_execution":"NOT_EXECUTED","independent_tester_status":"PENDING","self_reference":False,**meta}; manifest["raw_checksums"]=[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(prior.items())]
+    if validate_c21_workbench_ui_historical_fixture_reconciliation_manifest(manifest): raise ValueError("C21_WORKBENCH_UI_HISTORICAL_MANIFEST_INVALID")
+    return {C21_WORKBENCH_UI_HISTORICAL_E:events_raw,C21_WORKBENCH_UI_HISTORICAL_P:progress_raw,C21_WORKBENCH_UI_HISTORICAL_H:handoff_raw,C21_WORKBENCH_UI_HISTORICAL_D:digest_raw,C21_WORKBENCH_UI_HISTORICAL_M:_c21_resume_json_bytes(manifest)}
+
+
+def c21_workbench_ui_historical_fixture_reconciliation_from_root(root: Path) -> dict[str, bytes]:
+    historical={p:subprocess.check_output(["git","show",f"{C21_WORKBENCH_UI_HISTORICAL_PARENT}:{p}"],cwd=root) for p in (C21_WORKBENCH_UI_HISTORICAL_P,C21_WORKBENCH_UI_HISTORICAL_E,C21_WORKBENCH_UI_HISTORICAL_H)}
+    generated={C21_WORKBENCH_UI_HISTORICAL_P,C21_WORKBENCH_UI_HISTORICAL_E,C21_WORKBENCH_UI_HISTORICAL_H,C21_WORKBENCH_UI_HISTORICAL_D,C21_WORKBENCH_UI_HISTORICAL_M}; files={p:(root/p).read_bytes() for p in set(c21_workbench_ui_historical_fixture_reconciliation_paths())-generated}
+    return c21_workbench_ui_historical_fixture_reconciliation_artifacts(historical,files)
+
+
+def validate_c21_workbench_ui_historical_fixture_reconciliation_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        meta=c21_workbench_ui_historical_fixture_reconciliation_metadata(); expected={"schema_version":"1.0.0","manifest_type":"C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_PROJECTION","artifact_id":"C21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-20260907","created_at":C21_WORKBENCH_UI_HISTORICAL_AT,"event_sequence":584,"appended_event_count":6,"historical_event_sequence":578,"historical_commit":C21_WORKBENCH_UI_HISTORICAL_PARENT,"product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,"candidate_commit":C21_WORKBENCH_UI_LOCAL_CANDIDATE,"execution_authority_path":C21_WORKBENCH_UI_HISTORICAL_WI,"work_instruction_id":C21_WORKBENCH_UI_HISTORICAL_WI_ID,"status":"READY_FOR_INDEPENDENT_REVIEW","accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","external_execution":"NOT_EXECUTED","independent_tester_status":"PENDING","self_reference":False,**meta}
+        if any(not _c21_strict_json_equal(manifest.get(k),v) for k,v in expected.items()): return ["C21_WORKBENCH_UI_HISTORICAL_MANIFEST_INVALID"]
+        rows=manifest.get("raw_checksums"); expected_paths=set(c21_workbench_ui_historical_fixture_reconciliation_paths())-{C21_WORKBENCH_UI_HISTORICAL_M}
+        if type(rows) is not list or {r.get("path") for r in rows if type(r) is dict}!=expected_paths: return ["C21_WORKBENCH_UI_HISTORICAL_CHECKSUMS_INVALID"]
+        if any(type(r) is not dict or type(r.get("bytes")) is not int or r["bytes"]<=0 or type(r.get("sha256")) is not str or re.fullmatch(r"[0-9A-F]{64}",r["sha256"]) is None for r in rows): return ["C21_WORKBENCH_UI_HISTORICAL_CHECKSUMS_INVALID"]
+        return []
+    except (TypeError,KeyError,ValueError): return ["C21_WORKBENCH_UI_HISTORICAL_MANIFEST_INVALID"]
+
+
+def validate_c21_workbench_ui_historical_fixture_reconciliation_projection(bundle: Mapping[str,Any], manifest: Mapping[str,Any]) -> list[str]:
+    try:
+        expected=c21_workbench_ui_historical_fixture_reconciliation_from_root(bundle["_root"]); actual={C21_WORKBENCH_UI_HISTORICAL_P:bundle.get("progress"),C21_WORKBENCH_UI_HISTORICAL_E:bundle.get("events"),C21_WORKBENCH_UI_HISTORICAL_H:bundle.get("handoff"),C21_WORKBENCH_UI_HISTORICAL_D:bundle.get("detached_digest"),C21_WORKBENCH_UI_HISTORICAL_M:manifest}; objects={C21_WORKBENCH_UI_HISTORICAL_P:_c21_resume_json(expected[C21_WORKBENCH_UI_HISTORICAL_P]),C21_WORKBENCH_UI_HISTORICAL_E:_c21_resume_json(expected[C21_WORKBENCH_UI_HISTORICAL_E]),C21_WORKBENCH_UI_HISTORICAL_H:extract_handoff_summary(expected[C21_WORKBENCH_UI_HISTORICAL_H].decode()),C21_WORKBENCH_UI_HISTORICAL_D:_c21_resume_json(expected[C21_WORKBENCH_UI_HISTORICAL_D]),C21_WORKBENCH_UI_HISTORICAL_M:_c21_resume_json(expected[C21_WORKBENCH_UI_HISTORICAL_M])}; errors=[] if all(_c21_strict_json_equal(actual[p],objects[p]) for p in actual) else ["C21_WORKBENCH_UI_HISTORICAL_PROJECTION_INVALID"]; errors.extend(validate_c21_workbench_ui_historical_fixture_reconciliation_manifest(manifest)); return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError,json.JSONDecodeError): return ["C21_WORKBENCH_UI_HISTORICAL_INPUT_INVALID"]
+
+
+def _collect_c21_workbench_ui_historical_fixture_reconciliation_git(bundle: Mapping[str,Any]) -> list[str]:
+    root=bundle["_root"]; meta=c21_workbench_ui_historical_fixture_reconciliation_metadata()
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}"); private_url=_git_value(root,"remote","get-url","development"); control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution"); candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact107")
+        if status is None or None in (head,branch,upstream,private_url,control,candidate): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution": return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url!=C21_WORKBENCH_UI_LOCAL_PRIVATE_URL or control!="8d043e39f6066283821abe47b36fa83e5ecff8b5" or candidate!=C21_WORKBENCH_UI_LOCAL_CANDIDATE: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared=bundle["progress"].get("repository",{}).get("validated_base_commit")
+        if declared!=C21_EXACT_BINDING_BASE or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=sorted(_working_tree_paths(status)); direct=dirty if head==C21_WORKBENCH_UI_HISTORICAL_PARENT else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_WORKBENCH_UI_HISTORICAL_PARENT,head) or ""); cumulative=sorted(set(_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or "")) | (set(dirty) if head==C21_WORKBENCH_UI_HISTORICAL_PARENT else set()))
+        if direct!=meta["exact_paths"] or cumulative!=meta["cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head==C21_WORKBENCH_UI_HISTORICAL_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_HISTORICAL_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
     except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-DIGEST-20260907",
+  "package_id": "C-21",
+  "event_sequence": 584,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-07T19:36:03+09:00",
+  "scope": "seq579-584 append-only; seq1-578 preserved; exact16 test-only reconciliation",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 191801,
+    "file_sha256": "3CDD3973E21BAB79D12B385908B772924B7231886EABA15BC41EBAADBCCACE9B",
+    "canonical_json_sha256": "70472BB549902AC5B348B354963FDAD94F12F7CFCB3731467C75DC040DAE2A56"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 207429,
+    "file_sha256": "3B5C99EF63C61356E85474EE174325BC50A9BE5D2BA74DA31B6D5DB957EC31E4",
+    "machine_summary_canonical_sha256": "C5417FC1F0A1C8281D4380EA1955A4450CA4F5AE51446A5E7D030921BFC4B892"
+  }
+}

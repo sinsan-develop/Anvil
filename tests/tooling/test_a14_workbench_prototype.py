@@ -1,7 +1,9 @@
 import hashlib
+import importlib.util
 import json
 import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -9,6 +11,50 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 import scripts.check_a14_workbench_prototype as checker
 from scripts.evidence_portability import portable_hash
+
+
+_A14_ACCEPTED = "4bb8155e2d4a6bae7db57d2832716bd08eb0e4f9"
+_HISTORICAL_TEMP: tempfile.TemporaryDirectory[str] | None = None
+_HISTORICAL_ROOT: Path | None = None
+
+
+def setUpModule() -> None:
+    global _HISTORICAL_TEMP, _HISTORICAL_ROOT
+    _HISTORICAL_TEMP = tempfile.TemporaryDirectory(prefix="anvil-a14-frozen-")
+    _HISTORICAL_ROOT = Path(_HISTORICAL_TEMP.name) / "repository"
+    subprocess.run(
+        [
+            "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf",
+            "clone", "--quiet", "--local", "--no-hardlinks", "--no-checkout",
+            str(ROOT), str(_HISTORICAL_ROOT),
+        ],
+        check=True,
+    )
+
+
+def tearDownModule() -> None:
+    if _HISTORICAL_TEMP is not None:
+        _HISTORICAL_TEMP.cleanup()
+
+
+def _frozen_a14() -> tuple[Path, object]:
+    assert _HISTORICAL_ROOT is not None
+    subprocess.run(
+        ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "checkout", "--quiet", "--detach", "--force", _A14_ACCEPTED],
+        cwd=_HISTORICAL_ROOT,
+        check=True,
+    )
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout
+    if head != _A14_ACCEPTED or status:
+        raise AssertionError(f"unclean A-14 historical fixture: head={head} status={status!r}")
+    checker_path = _HISTORICAL_ROOT / "scripts/check_a14_workbench_prototype.py"
+    spec = importlib.util.spec_from_file_location("a14_historical_checker", checker_path)
+    if spec is None or spec.loader is None:
+        raise AssertionError("historical A-14 checker cannot be loaded")
+    historical_checker = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(historical_checker)
+    return _HISTORICAL_ROOT, historical_checker
 
 
 class A14WorkbenchArtifactTests(unittest.TestCase):
@@ -28,18 +74,21 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual(findings, [])
 
     def test_manifest_exact_paths_and_self_reference_false(self):
-        result = checker.check(ROOT)
+        historical_root, historical_checker = _frozen_a14()
+        result = historical_checker.check(historical_root)
         self.assertEqual(result["errors"], [])
         self.assertEqual(result["manifest"]["self_reference"], False)
         self.assertEqual(len(result["manifest"]["paths"]), 17)
-        server_lf = (ROOT / "apps/web/server.mjs").read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
-        self.assertEqual(hashlib.sha256(server_lf).hexdigest().upper(), "77FCAABC7013AA1FA53B8872F2E980CB59224733FB34A74D2A481DB5F49B649C")
         self.assertEqual(
-            portable_hash(ROOT, "tests/browser/a14/workbench-runtime.test.mjs"),
+            portable_hash(historical_root, "apps/web/server.mjs"),
+            "432FF673E9271B3016D3FD8A2E175266DE77C73A990D4287BBFD52772BCD16D5",
+        )
+        self.assertEqual(
+            portable_hash(historical_root, "tests/browser/a14/workbench-runtime.test.mjs"),
             "D6DC23724479AEBD43C91BFCB2CAFFA38940BFD161BE5F2C4E2DEC914AF59D9F",
         )
         acceptance = json.loads(
-            (ROOT / "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/A-14_ACCEPTANCE_PROGRESS_MANIFEST_R6.json").read_text(encoding="utf-8")
         )
         self.assertEqual("accepted", acceptance["artifact_status"])
         self.assertEqual("R5_EXECUTED_UI_FINDINGS_CLOSED", acceptance["actual_browser_status"])
@@ -49,9 +98,22 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         self.assertEqual("READY", acceptance["next_package_status"])
 
     def test_standalone_checker_passes(self):
-        result = subprocess.run([sys.executable, "scripts/check_a14_workbench_prototype.py", str(ROOT)], cwd=ROOT, capture_output=True, text=True)
+        historical_root, _ = _frozen_a14()
+        result = subprocess.run([sys.executable, "scripts/check_a14_workbench_prototype.py", str(historical_root)], cwd=historical_root, capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("A-14 WORKBENCH CHECK: PASS", result.stdout)
+
+    def test_frozen_manifest_rejects_mutated_artifact(self):
+        historical_root, historical_checker = _frozen_a14()
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-mutated-") as temp:
+            mutated_root = Path(temp) / "repository"
+            subprocess.run(
+                ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--local", "--no-hardlinks", str(historical_root), str(mutated_root)],
+                check=True,
+            )
+            server = mutated_root / "apps/web/server.mjs"
+            server.write_bytes(server.read_bytes() + b"\n// historical fixture mutation\n")
+            self.assertIn("checksum:apps/web/server.mjs", historical_checker.check(mutated_root)["errors"])
 
     def test_a15_start_manifest_binds_live_a14_successor_rows(self):
         manifest_path = ROOT / "docs/evidence/manifests/A-15_START_EVIDENCE_MANIFEST.json"

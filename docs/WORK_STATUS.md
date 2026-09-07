@@ -1245,3 +1245,38 @@
 - 나머지 18건은 UI 제품 동작 실패가 아니지만 이번 변경으로 드러난 회귀다. 기존 seq1~572와 historical evidence를 변경하지 않고 별도 historical-fixture reconciliation package에서 immutable commit/file-view fixture로 수정한다. 현재 exact10 lease 밖의 과거 테스트 4개 파일은 이 package에서 수정하지 않았다.
 - 따라서 이 package는 `COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION`으로 닫고 write/worker lease를 회수한다. 독립 Tester는 reconciliation 완료 전 `BLOCKED_PENDING_TOOLING_RECONCILIATION`이다. 다음 안전 조치는 `C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION`이다.
 - collector 보완 후 focused result 계약은 `3 tests in 3.461s`, `OK`, exit0이다. 이어 start+result projection `5 tests in 2.598s`, `OK`, live checker `PASS sequence=578 reporting=AUTO_CONTINUE`, `git diff --check` exit0을 확인했다. exact10 밖 A-13/A-14/G-07/Phase G 테스트 파일 diff는 0이다.
+
+## 2026-09-07 C-21 historical fixture reconciliation FAILURE_REPORT
+
+- 담당: `developer-primary`; parent `d059e043ff642c9f5eb50da8dda8aaa8f4ed8408`; lineage `C21_WORKBENCH_TOOLING_HISTORICAL_FIXTURE_RECONCILIATION_TEMPORAL_FIXTURE`.
+- 승인 범위의 기존 RED 재현은 예상 18건과 달리 현재 `176 tests in 35.789s`, `FAILED (failures=16)`, exit1이었다. 분류는 A-13 7, A-14 2, G-07 3, Phase G 4이며 제품 failure가 아닌 current-root temporal 결합이다.
+- 1차 immutable fixture 수정 뒤 `177 tests in 115.147s`, `FAILED (failures=4)`, exit1이었다. A-13 당시 successor 존재 계약 1, A-14 당시 portable hash 계약 1, Phase G의 clean historical HEAD와 당시 progress Git projection 차이 2였다.
+- 2차 당시 literal/검증 경계 복원 뒤 `177 tests in 100.147s`, `FAILED (failures=2)`, exit1이었다. A-13/A-14/G-07은 GREEN이지만 Phase G checkpoint manifest가 clean `57703ffc3521287cdd7d54b07bfd7c9001928388` snapshot에서 `GATE_CHECKPOINT_RAW_MISMATCH`, `GATE_CHECKPOINT_TARGET_BYTES_MISMATCH`, `GATE_CHECKPOINT_TARGET_MISMATCH`를 반환한다.
+- 동일 temporal-fixture lineage가 세 실행에서 연속 확인되어 프로젝트의 3회 규칙에 따라 추가 수정·재시도·seq579~584 projection materialization·commit을 중단한다. 상태는 `FAILURE_REPORT`; write/worker lease를 Main Agent에 반환한다.
+- 현재 변경은 test-only exact4와 본 작업현황 append뿐이다. 제품, historical evidence, historical checker/constants, `scripts/check_g07_baseline.py`는 변경하지 않았다. push/WSL/Provider/Telegram/ysna/main/external side effect는 `NOT_EXECUTED`다.
+- Main 인수 지점: Phase G accepted checkpoint가 원래 `HEAD=5ca9c1f` + post-checkpoint dirty projection으로 생성된 계약인지 확인하고, clean `57703ff`를 억지로 현재 hash에 맞추지 말고 materialized historical file-view 또는 전용 collector로 당시 raw view를 재현해야 한다. rollback은 네 test 파일과 이 WORK_STATUS append를 parent `d059e043` 상태로 복원하는 것이다.
+## 2026-09-07 C-21 Workbench UI historical fixture reconciliation seq579~584 — Main takeover
+
+- 기준 HEAD `d059e043ff642c9f5eb50da8dda8aaa8f4ed8408`, 제품 commit `7eb2cc291bda729e21deebbed86376eac4db7c2b`, 시작 시 clean이다.
+- test-only lease는 A13/A14/G07/Phase-G tooling test 4경로이며 historical evidence·scripts·상수·제품 코드는 불변이다.
+- 동일 lineage `C21_WORKBENCH_TOOLING_HISTORICAL_FIXTURE_RECONCILIATION_TEMPORAL_FIXTURE`가 16 → 4 → 2 failures로 3회 이어져 Developer가 중지하고 Main이 인수했다.
+- Main 인수 1차는 clean `57703ff`를 사용해 checkpoint manifest가 결박한 transient report bytes를 찾지 못해 Phase-G 2건이 계속 실패했다.
+- Git object database와 reachable history에 해당 두 transient blob이 없음을 확인했다. 현재 checker가 사용하는 declaration-only checkpoint 검증과 commit별 frozen root를 결합하는 것이 보존된 계약이다.
+- Main 인수 2차는 abbreviated SHA를 full SHA와 직접 비교하여 checkout/clean assertion 2건이 실패했다. 저장소 `rev-parse`로 full SHA를 확인해 교정했다.
+- 108-package gate 재계산은 `e59c4a105dab0faae31f43fd75e3ac53f1992ffe`, fenced A-02 start는 `2bd88123e93550db5874b479c82d78d4733fd53f` frozen root에 결박했다.
+- Main focused Phase-G 2 tests는 `Ran 2 tests in 12.444s / OK`; exact4 historical modules는 `Ran 177 tests in 97.378s / OK`다.
+- 현재 상태는 seq579~584 materialize 및 전체 tooling 전 `IN_PROGRESS`; Provider·Telegram·WSL·ysna·main·push는 `NOT_EXECUTED`다.
+
+### seq584 Main 전체 tooling 1차 및 temporal test 보완
+
+- seq584 exact16/cumulative183 경로 metadata를 Windows/ordinal SHA-256까지 상수로 결박했다. exact16은 `4B6FB5B5AEFD4A7CF943A191437A3A31F8EEADED1C96A47A6B8934AAFAB3F4F0` / `E6A1C5BB1C6004DFA22E3342FC41A5C4B455A86EA7A3866549258E5056A95C90`, cumulative183은 `BCCCA49E2B920D3A4FD4C557792F63204E20708E4897812CB4457DEB5ED7DC3B` / `DFA407A31DBDAD6424B9664ACBFB1F77999D5D746604A20327CFE0E0EA85D91B`이다.
+- 명령 오류 `C21_SEQ584_METADATA_FUNCTION_NAME_R1` 1회: 존재하지 않는 `build_*_metadata` 이름을 호출해 `AttributeError`가 발생했고 실제 공개 함수명으로 바로 교정했다. 제품·계약 실패가 아니다.
+- 환경 오류 `C21_SEQ584_SANDBOX_MATERIALIZE_PERMISSION_R1` 1회: managed sandbox가 격리 worktree의 generated file write를 거부했다. 승인된 격리 실행으로 동일 builder를 재실행해 5개 파생 산출물을 정상 생성했다.
+- pre-full focused는 seq584 2 tests `OK`, historical exact4 `177 tests in 95.725s / OK`, live checker `PASS sequence=584 reporting=AUTO_CONTINUE`, diff-check와 direct compile 모두 PASS다.
+- canonical full tooling 1차는 `587 tests in 1072.914s`, `FAILED (failures=2)`, exit1이다. 기존 seq572 strict projection test가 현재 seq584 bundle을 사용한 1건과, provider WSL candidate status fail-closed test가 현재 seq584 Git collector로 라우팅된 1건으로 분류했다.
+- 두 테스트를 각각 seq572 generated artifact view와 `e6c562cf07bc2c35e24addb60efa9d90fae08046` historical bundle에 고정했다. public current bundle에 과거 seq572 manifest를 주입하려던 중간 시도 2회는 generic registry/digest 계약과 맞지 않아 실패했고, 중복된 public assertion을 제거하고 seq572 전용 projection의 원래 검증 목적을 유지했다.
+- 두 실패의 targeted 최종 재검증은 `Ran 2 tests in 9.478s / OK`다. 동일 제품 오류 3회가 아니며 Main 인수 범위 안에서 historical temporal fixture만 보완했다. 다음은 파생 산출물 재결박 후 canonical full tooling 2차다.
+- canonical full tooling 2차는 `Ran 587 tests in 1126.738s / OK`, exit0으로 완료됐다. 앞선 19개 tooling 실패와 1차 잔여 2개 temporal test가 모두 해소됐다.
+- 다음은 이 최종 결과를 포함한 raw report/validation/WORK_STATUS 기준으로 seq584 P/E/H/D/M을 마지막 재결박하고, focused/live/determinism/diff/compile 및 exact16 상태를 확인한 뒤 단일 direct-child record commit을 생성하는 것이다.
+- 최종 evidence 재결박 전 검증은 historical exact4 `177 tests in 102.320s / OK`, seq584+잔여 회귀 targeted `4 tests in 12.061s / OK`, live checker sequence584 PASS, deterministic regeneration PASS, diff-check PASS, direct compile PASS다.
+- dirty set은 exact16과 일치하며 Windows/ordinal hash는 `4B6FB5B5AEFD4A7CF943A191437A3A31F8EEADED1C96A47A6B8934AAFAB3F4F0` / `E6A1C5BB1C6004DFA22E3342FC41A5C4B455A86EA7A3866549258E5056A95C90`다. 이 문구를 포함해 마지막으로 파생 산출물을 재결박한 뒤 read-only precommit 확인만 수행한다.

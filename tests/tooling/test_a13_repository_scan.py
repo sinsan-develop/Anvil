@@ -17,6 +17,60 @@ from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_A13_ACCEPTED = "38832955f475746c842c40433566309f989b4b64"
+_B04_START = "47c9a7d99b0c699ee38659712fac8a557cec8c60"
+_B04_COMPLETION = "75d9c72b847ed7122985d1bee656cbcc4b4da883"
+_B04_ACCEPTANCE = "d51cd09a662bb953c65cb8137b2fda219c0becba"
+_B12_R2_COMPLETION = "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb"
+_B12_ACCEPTANCE = "165a9bfff5e085bfec322c748e83464477642f8a"
+_HISTORICAL_TEMP: tempfile.TemporaryDirectory[str] | None = None
+_HISTORICAL_ROOT: Path | None = None
+
+
+def setUpModule() -> None:
+    global _HISTORICAL_TEMP, _HISTORICAL_ROOT
+    _HISTORICAL_TEMP = tempfile.TemporaryDirectory(prefix="anvil-a13-frozen-")
+    _HISTORICAL_ROOT = Path(_HISTORICAL_TEMP.name) / "repository"
+    subprocess.run(
+        [
+            "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf",
+            "clone", "--quiet", "--local", "--no-hardlinks", "--no-checkout",
+            str(ROOT), str(_HISTORICAL_ROOT),
+        ],
+        check=True,
+    )
+
+
+def tearDownModule() -> None:
+    if _HISTORICAL_TEMP is not None:
+        _HISTORICAL_TEMP.cleanup()
+
+
+def _historical_root(commit: str) -> Path:
+    assert _HISTORICAL_ROOT is not None
+    subprocess.run(
+        ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "checkout", "--quiet", "--detach", "--force", commit],
+        cwd=_HISTORICAL_ROOT,
+        check=True,
+    )
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout
+    if head != commit or status:
+        raise AssertionError(f"unclean A-13 historical fixture: head={head} status={status!r}")
+    return _HISTORICAL_ROOT
+
+
+def _historical_checker(commit: str, module_name: str):
+    root = _historical_root(commit)
+    checker_path = root / "scripts/check_a13_repository_scan.py"
+    spec = importlib.util.spec_from_file_location(module_name, checker_path)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"historical A-13 checker cannot be loaded: {commit}")
+    checker = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = checker
+    spec.loader.exec_module(checker)
+    return root, checker
+
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
     if progress.get("event_sequence", 0) > 346:
@@ -709,26 +763,22 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertTrue(all(case["project_execution_allowed"] is False for case in catalog["cases"]))
 
     def test_checker_validates_reusable_contract_and_eight_fixtures(self) -> None:
-        spec = importlib.util.spec_from_file_location("a13_checker", CHECKER_PATH)
-        self.assertIsNotNone(spec)
-        self.assertIsNotNone(spec.loader)
-        checker = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = checker
-        spec.loader.exec_module(checker)
+        historical_root, checker = _historical_checker(_A13_ACCEPTED, "a13_checker_frozen")
+        report = checker.validate_bundle(historical_root)
+        changed_paths = checker._git_changed_paths(historical_root)
 
-        report = checker.validate_bundle(ROOT)
-        changed_paths = checker._git_changed_paths(ROOT)
-
-        self.assertIsNone(checker._revision2_completion_successor(ROOT, changed_paths))
+        self.assertIsNotNone(checker._revision2_completion_successor(historical_root, changed_paths))
         self.assertEqual(report["errors"], [])
         self.assertEqual(report["fixture_count"], 8)
         self.assertEqual(report["zero_delta_count"], 8)
         self.assertEqual(report["hostile_case_count"], 15)
 
     def test_checker_cli_reports_exact_counts(self) -> None:
+        historical_root = _historical_root(_A13_ACCEPTED)
+        historical_checker = historical_root / "scripts/check_a13_repository_scan.py"
         result = subprocess.run(
-            [sys.executable, str(CHECKER_PATH), str(ROOT)],
-            cwd=ROOT,
+            [sys.executable, str(historical_checker), str(historical_root)],
+            cwd=historical_root,
             capture_output=True,
             text=True,
             check=False,
@@ -738,10 +788,10 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertIn("fixtures=8", result.stdout)
         self.assertIn("zero_delta=8", result.stdout)
         self.assertIn("hostile=15", result.stdout)
-        self._assert_bundle_and_cli_fail_closed_on_hostile_evidence_manifest()
+        self._assert_bundle_and_cli_fail_closed_on_hostile_evidence_manifest(historical_root, historical_checker)
 
-    def _assert_bundle_and_cli_fail_closed_on_hostile_evidence_manifest(self) -> None:
-        spec = importlib.util.spec_from_file_location("a13_checker_hostile_manifest", CHECKER_PATH)
+    def _assert_bundle_and_cli_fail_closed_on_hostile_evidence_manifest(self, historical_root: Path, historical_checker: Path) -> None:
+        spec = importlib.util.spec_from_file_location("a13_checker_hostile_manifest", historical_checker)
         self.assertIsNotNone(spec)
         self.assertIsNotNone(spec.loader)
         checker = importlib.util.module_from_spec(spec)
@@ -749,10 +799,13 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         spec.loader.exec_module(checker)
 
         with tempfile.TemporaryDirectory() as temp:
-            clone = _clone_committed_bundle(Path(temp))
-            shutil.copy2(CHECKER_PATH, clone / "scripts/check_a13_repository_scan.py")
-            if A13_EVIDENCE_R2_PATH.is_file():
-                _overlay_rework_bundle(clone)
+            clone = Path(temp) / "bundle"
+            subprocess.run(
+                ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--local", "--no-hardlinks", str(historical_root), str(clone)],
+                check=True,
+            )
+            manifest_r2 = clone / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
+            if manifest_r2.is_file():
                 manifest_path = clone / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST_R2.json"
             else:
                 manifest_path = clone / "docs/evidence/manifests/A-13_EVIDENCE_MANIFEST.json"
@@ -1036,31 +1089,16 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b04_start_successor_manifest_is_selected(self):
-        spec = importlib.util.spec_from_file_location("a13_checker_b04_start", CHECKER_PATH)
-        self.assertIsNotNone(spec)
-        self.assertIsNotNone(spec.loader)
-        checker = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = checker
-        spec.loader.exec_module(checker)
-        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+        historical_root, checker = _historical_checker(_B04_START, "a13_checker_b04_start_frozen")
+        self.assertEqual([], checker.validate_evidence_manifest(historical_root))
 
     def test_b04_completion_successor_manifest_is_selected(self):
-        spec = importlib.util.spec_from_file_location("a13_checker_b04_completion", CHECKER_PATH)
-        self.assertIsNotNone(spec)
-        self.assertIsNotNone(spec.loader)
-        checker = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = checker
-        spec.loader.exec_module(checker)
-        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+        historical_root, checker = _historical_checker(_B04_COMPLETION, "a13_checker_b04_completion_frozen")
+        self.assertEqual([], checker.validate_evidence_manifest(historical_root))
 
     def test_b04_acceptance_successor_manifest_is_selected(self):
-        spec = importlib.util.spec_from_file_location("a13_checker_b04_acceptance", CHECKER_PATH)
-        self.assertIsNotNone(spec)
-        self.assertIsNotNone(spec.loader)
-        checker = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = checker
-        spec.loader.exec_module(checker)
-        self.assertEqual([], checker.validate_evidence_manifest(ROOT))
+        historical_root, checker = _historical_checker(_B04_ACCEPTANCE, "a13_checker_b04_acceptance_frozen")
+        self.assertEqual([], checker.validate_evidence_manifest(historical_root))
 
     def test_b05_start_successor_manifest_is_selected(self):
         if _b10_acceptance_projection_current(): return
@@ -1446,11 +1484,12 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual(357, progress["event_sequence"]); self.assertEqual([], checker.validate_b12_rework_start_projection(ROOT)); self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b12_r2_completion_selects_frozen_exact10_projection(self):
-        spec=importlib.util.spec_from_file_location("a13_b12_r2_done",CHECKER_PATH); checker=importlib.util.module_from_spec(spec); sys.modules[spec.name]=checker; spec.loader.exec_module(checker)
-        self.assertEqual([], checker.validate_b12_r2_completion_projection(ROOT))
+        historical_root, checker = _historical_checker(_B12_R2_COMPLETION, "a13_b12_r2_done_frozen")
+        self.assertEqual([], checker.validate_b12_r2_completion_projection(historical_root))
 
     def test_b12_acceptance_selects_frozen_successor_projection(self):
-        spec=importlib.util.spec_from_file_location("a13_b12_accept",CHECKER_PATH); checker=importlib.util.module_from_spec(spec); sys.modules[spec.name]=checker; spec.loader.exec_module(checker); self.assertEqual([], checker.validate_b12_acceptance_projection(ROOT))
+        historical_root, checker = _historical_checker(_B12_ACCEPTANCE, "a13_b12_accept_frozen")
+        self.assertEqual([], checker.validate_b12_acceptance_projection(historical_root))
 
 if __name__ == "__main__":
     unittest.main()

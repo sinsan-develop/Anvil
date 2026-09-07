@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-provider-wsl-git-only-candidate-bound-seq530",
-  "event_sequence": 578,
-  "updated_at": "2026-09-07T17:00:00+09:00",
-  "last_event_id": "evt_c21_workbench_ui_local_package_completed",
+  "event_sequence": 584,
+  "updated_at": "2026-09-07T19:36:03+09:00",
+  "last_event_id": "evt_c21_workbench_ui_historical_package_completed",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION",
+  "status": "READY_FOR_INDEPENDENT_REVIEW",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -49,41 +49,51 @@
   ],
   "active_agent": null,
   "write_lease": {
-    "lease_id": "write-lease-c21-workbench-ui-local-20260907-001",
-    "worker_lease_id": "worker-lease-c21-workbench-ui-local-20260907-001",
-    "agent_id": "developer-primary",
+    "lease_id": "write-lease-c21-workbench-ui-historical-20260907-001",
+    "worker_lease_id": "worker-lease-c21-workbench-ui-historical-20260907-001",
+    "agent_id": "main-agent-eoul",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-REWORK-LOCAL",
+    "subtask_id": "WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION",
     "write_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
-    "write_fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
-    "fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
+    "execution_fencing_token": "c21-workbench-ui-historical-execution-fence-epoch-1-d059e04",
+    "write_fencing_token": "c21-workbench-ui-historical-write-fence-epoch-1-d059e04",
+    "fencing_token": "c21-workbench-ui-historical-write-fence-epoch-1-d059e04",
     "status": "REVOKED",
     "path_scope": [
-      "apps/web/fixture-workbench.html",
-      "apps/web/index.html",
-      "apps/web/server.mjs",
-      "apps/web/src/api/workbench-client.js",
-      "apps/web/src/app/workbench.js",
-      "apps/web/src/features/workbench/workbench-state.js",
-      "apps/web/src/styles/workbench.css",
-      "apps/web/tests/ui-preview-runtime.test.mjs",
-      "apps/web/tests/workbench.test.mjs",
-      "tests/api/test_public_asgi_frontend.py",
-      "tests/browser/c21-network-probe.mjs"
+      "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-historical-fixture-reconciliation.json",
+      "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
     ],
     "paths": [
-      "apps/web/fixture-workbench.html",
-      "apps/web/index.html",
-      "apps/web/server.mjs",
-      "apps/web/src/api/workbench-client.js",
-      "apps/web/src/app/workbench.js",
-      "apps/web/src/features/workbench/workbench-state.js",
-      "apps/web/src/styles/workbench.css",
-      "apps/web/tests/ui-preview-runtime.test.mjs",
-      "apps/web/tests/workbench.test.mjs",
-      "tests/api/test_public_asgi_frontend.py",
-      "tests/browser/c21-network-probe.mjs"
+      "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-historical-fixture-reconciliation.json",
+      "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
     ]
   },
   "completed_provider_wsl_auth_write_lease": {
@@ -118,13 +128,13 @@
     ]
   },
   "worker_lease": {
-    "lease_id": "worker-lease-c21-workbench-ui-local-20260907-001",
-    "agent_id": "developer-primary",
+    "lease_id": "worker-lease-c21-workbench-ui-historical-20260907-001",
+    "agent_id": "main-agent-eoul",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-REWORK-LOCAL",
+    "subtask_id": "WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION",
     "lease_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
-    "fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+    "execution_fencing_token": "c21-workbench-ui-historical-execution-fence-epoch-1-d059e04",
+    "fencing_token": "c21-workbench-ui-historical-execution-fence-epoch-1-d059e04",
     "status": "REVOKED"
   },
   "completed_provider_wsl_auth_worker_lease": {
@@ -334,33 +344,57 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md",
-      "sha256": "76EABC9DB58647211A6DF25A90F6DF5AB59B357E21EDB11A779011A46CC0010B"
+      "path": "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
+      "sha256": "CA26D66F688580C630B208372F5090B71702EC9A36DA410E321EA9A70DEA4396"
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "sha256": "1CD09BE9C0586D82EB30026E560E66EA1A32EFE6EC1D1D3B3DE066FF23FE3098"
+      "sha256": "1D006304E8A3D26D9791AA5ED5C4668B906B190385A726D867309A3D33DC4D71"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "93A7F8CDFDCEE9FA2AC3FA73DD653DBC16331EFFFC45988D4E155B638A89959D"
+      "sha256": "4935A54715472C2B08D5ACCDE5CF3768DF3B574FE834BAC55F87834F9271ED1E"
     },
     {
-      "path": "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
-      "sha256": "0F3F0DA8B426DC9F0191DBCB9AE4AE2A74ADBC7324CB9491364F7ECC7A7578F2"
+      "path": "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
+      "sha256": "F462E7686452BD699652E669F1661C5C9F768058C2ECA4218B692F09D1C5BBDC"
+    },
+    {
+      "path": "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+      "sha256": "1CE0B72845051998A05889A0421D20A7744E539A0FC533687AFEA52923C16670"
+    },
+    {
+      "path": "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
+      "sha256": "DBC563FF1CB302A891646EB80864485B8519774B9D1C6496CAB7C4CB8F37EEEB"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "D15F0E5D867995BC34CAEBCC4B123C65820D3842865C138F29B355B0FC78684B"
+      "sha256": "22DE054D868D5136252B6028952F063D2AB904490CDA01D9E5ABAF2FCE060EBC"
+    },
+    {
+      "path": "tests/tooling/test_a13_repository_scan.py",
+      "sha256": "C8D3BE92E4A15652AE93CE86BFEC675A062816B8E5806F8439F826CF4F9783F1"
+    },
+    {
+      "path": "tests/tooling/test_a14_workbench_prototype.py",
+      "sha256": "B97CFF6B95B1D6E8853933C3958190ADEB6423D001EAC264B84D21E83A148129"
+    },
+    {
+      "path": "tests/tooling/test_g07_baseline.py",
+      "sha256": "E2398B065A613FA5F2A10909715810A935850B1BC0EC68154D481C59A90820AA"
+    },
+    {
+      "path": "tests/tooling/test_phase_g_gate.py",
+      "sha256": "5B9A769DDB8DB2371C890F616233C9FF4B9AF7BE431386442B5838CF20920FEC"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "40BE52A0549351EC685E14F891380AD60F6378A7D483D564F94F05939F0C6A81"
+      "sha256": "620DB973B7F7838A65F1868F2F3E3398440A375A06190EFA0566FBACC04E5B9E"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json",
-    "artifact_id": "C21-WORKBENCH-UI-REWORK-LOCAL-RESULT-20260907"
+    "path": "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json",
+    "artifact_id": "C21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-20260907"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -370,7 +404,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION",
+  "next_safe_action": "INDEPENDENT_C21_WORKBENCH_UI_REVIEW",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -482,7 +516,7 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_7EB2CC2_RESULT_EXACT10_DIRTY",
+    "head_relation": "FEATURE_WORKTREE_D059E04_EXACT16_DIRTY",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -522,6 +556,7 @@
       "docs/04_test_reports/C-21_PROVIDER_WSL_EXACT_BINDING_REPORT.md",
       "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md",
       "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
+      "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
       "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md",
       "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md",
       "docs/04_test_reports/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_REPORT.md",
@@ -550,6 +585,7 @@
       "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
       "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json",
       "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json",
       "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
@@ -587,6 +623,7 @@
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-historical-fixture-reconciliation.json",
       "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
       "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
@@ -610,6 +647,7 @@
       "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
       "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
       "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+      "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
       "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
       "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md",
       "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
@@ -631,6 +669,8 @@
       "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md",
       "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
       "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
@@ -662,6 +702,10 @@
       "tests/browser/c21-network-probe.mjs",
       "tests/deploy/test_c21_lr02c_operational_contract.py",
       "tests/deploy/test_wsl_staging_harness.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
       "tests/tooling/test_project_progress.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
@@ -678,8 +722,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "SEQ578_WORKBENCH_UI_LOCAL_RESULT_EXACT10_DIRTY",
-    "local_head": "7eb2cc291bda729e21deebbed86376eac4db7c2b",
+    "worktree_status": "SEQ584_WORKBENCH_UI_HISTORICAL_EXACT16_DIRTY",
+    "local_head": "d059e043ff642c9f5eb50da8dda8aaa8f4ed8408",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
@@ -1134,7 +1178,25 @@
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "product_commit": "7eb2cc291bda729e21deebbed86376eac4db7c2b"
+    "product_commit": "7eb2cc291bda729e21deebbed86376eac4db7c2b",
+    "workbench_ui_historical_fixture_reconciliation_paths": [
+      "docs/04_test_reports/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_REPORT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-historical-fixture-reconciliation.json",
+      "docs/validation/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_g07_baseline.py",
+      "tests/tooling/test_phase_g_gate.py",
+      "tests/tooling/test_project_progress.py"
+    ]
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1239,7 +1301,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "LOCAL_UI_REWORK_COMPLETED_PENDING_TOOLING_RECONCILIATION"
+      "WORKBENCH_UI_TOOLING_RECONCILED_READY_FOR_REVIEW"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1290,20 +1352,20 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-C-21-WORKBENCH-UI-REWORK-LOCAL-20260907-001",
-    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
-    "artifact_sha256": "0334807DD480BD7B5C7C7B6036FD8C6F35FE830D19A7562DEEAD9B673C7C2398",
-    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
-    "invocation_sha256": "B52EF2074E2EC3C90E36E029D92D7E105E536F8E6C872D325682AB4126B4E962",
-    "result_status": "COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION",
-    "package_status": "COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION",
-    "executor": "developer-primary",
+    "artifact_id": "WI-C-21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-20260907-001",
+    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
+    "artifact_sha256": "DBC563FF1CB302A891646EB80864485B8519774B9D1C6496CAB7C4CB8F37EEEB",
+    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+    "invocation_sha256": "1CE0B72845051998A05889A0421D20A7744E539A0FC533687AFEA52923C16670",
+    "result_status": "READY_FOR_INDEPENDENT_REVIEW",
+    "package_status": "READY_FOR_INDEPENDENT_REVIEW",
+    "executor": "main-agent-eoul",
     "accepted": false,
+    "independent_tester_status": "PENDING",
     "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
     "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
     "dir2_status": "NOT_TRIGGERED",
-    "runtime_next_action": "C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION",
-    "independent_tester_status": "BLOCKED_PENDING_TOOLING_RECONCILIATION"
+    "runtime_next_action": "INDEPENDENT_C21_WORKBENCH_UI_REVIEW"
   },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
@@ -1440,8 +1502,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json",
-    "manifest_path": "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-historical-fixture-reconciliation.json",
+    "manifest_path": "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1462,7 +1524,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "93A7F8CDFDCEE9FA2AC3FA73DD653DBC16331EFFFC45988D4E155B638A89959D"
+      "sha256": "4935A54715472C2B08D5ACCDE5CF3768DF3B574FE834BAC55F87834F9271ED1E"
     }
   },
   "next_work_package": {
@@ -1863,8 +1925,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "E739E0672FA72CC64AB884CE470007F3A9EE091FEABD82AE9EAA99BFA6950E59",
-  "runtime_next_action": "C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION",
+  "snapshot_hash": "7E4AFB5D61346F139D9E039D5C142FA6F9EE7A74F2E18900658AEDAE2676198E",
+  "runtime_next_action": "INDEPENDENT_C21_WORKBENCH_UI_REVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -2010,19 +2072,20 @@
     "runtime_next_action": "PUSH_AND_EXECUTE_C21_WSL_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION"
   },
   "completed_work_instruction": {
-    "artifact_id": "WI-C-21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907-001",
-    "artifact_path": "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
-    "artifact_sha256": "5199E599F6DC1A588546D50F473E80513A10B0ADA655114839037ADD41821E06",
-    "invocation_path": "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
-    "invocation_sha256": "ECC664EC9371B7FF338FAF94849FB955FD63456BBC96E6C0FB113405CFD4FD2A",
-    "result_status": "COMPLETED",
-    "package_status": "C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_COMPLETED",
-    "executor": "developer-primary",
+    "artifact_id": "WI-C-21-WORKBENCH-UI-HISTORICAL-FIXTURE-RECONCILIATION-20260907-001",
+    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_WORK_INSTRUCTION.md",
+    "artifact_sha256": "DBC563FF1CB302A891646EB80864485B8519774B9D1C6496CAB7C4CB8F37EEEB",
+    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_INVOCATION_PROMPT.md",
+    "invocation_sha256": "1CE0B72845051998A05889A0421D20A7744E539A0FC533687AFEA52923C16670",
+    "result_status": "READY_FOR_INDEPENDENT_REVIEW",
+    "package_status": "READY_FOR_INDEPENDENT_REVIEW",
+    "executor": "main-agent-eoul",
     "accepted": false,
+    "independent_tester_status": "PENDING",
     "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
     "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
     "dir2_status": "NOT_TRIGGERED",
-    "runtime_next_action": "USER_OWNED_PROVIDER_TELEGRAM_AND_BROWSER_ACCEPTANCE_PER_PLAN"
+    "runtime_next_action": "INDEPENDENT_C21_WORKBENCH_UI_REVIEW"
   },
   "provider_wsl_execution_resume": {
     "event_sequence": 536,
@@ -3467,7 +3530,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-07T17:00:00+09:00",
+  "recorded_at": "2026-09-07T19:36:03+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -3536,15 +3599,27 @@
     "c01_start": "NOT_AUTHORIZED"
   },
   "workbench_ui_local": {
-    "status": "COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION",
+    "status": "READY_FOR_INDEPENDENT_REVIEW",
     "scope": "LOCAL_ONLY",
     "accepted": false,
-    "independent_tester_status": "BLOCKED_PENDING_TOOLING_RECONCILIATION",
+    "independent_tester_status": "PENDING",
     "product_commit": "7eb2cc291bda729e21deebbed86376eac4db7c2b",
     "provider_calls": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
     "wsl": "NOT_EXECUTED",
     "ysna": "NOT_EXECUTED",
     "main": "NOT_EXECUTED"
+  },
+  "workbench_ui_historical_fixture_reconciliation": {
+    "status": "READY_FOR_INDEPENDENT_REVIEW",
+    "accepted": false,
+    "developer_failure_runs": [
+      16,
+      4,
+      2
+    ],
+    "main_focused_tests": 177,
+    "historical_mutation": false,
+    "external_execution": "NOT_EXECUTED"
   }
 }
