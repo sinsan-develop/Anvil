@@ -1630,6 +1630,178 @@ start_wsl_ingress
 
 
 class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
+    def _run_cleanup_entrypoint_guard_flow(
+        self, fail_validation_at: int = 0, duplicate_guard_source: bool = False
+    ):
+        with tempfile.TemporaryDirectory(prefix="anvil-cleanup-entrypoint-", dir="D:/tmp") as raw:
+            root = Path(raw)
+            repo = root / "repo"
+            subprocess.run(
+                ["git", "clone", "--quiet", "--no-checkout", "--shared", str(ROOT), str(repo)],
+                check=True,
+            )
+            control_commit = self._git(ROOT, "rev-parse", "HEAD")
+            candidate = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+            control_ref = "refs/remotes/origin/codex/c21-operational-execution"
+            self._git(repo, "checkout", "--quiet", "--detach", control_commit)
+            self._git(repo, "remote", "set-url", "origin", "git@github-sinsan-develop:sinsan-develop/Anvil.git")
+            self._git(repo, "update-ref", control_ref, control_commit)
+            self._git(repo, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact107", candidate)
+
+            control = root / "control" / "deploy" / "wsl"
+            control.mkdir(parents=True)
+            shutil.copy2(DEPLOY / "cleanup.sh", control / "cleanup.sh")
+            log = root / "flow.log"
+            log_posix = self._posix(log)
+
+            common = (DEPLOY / "common.sh").read_text(encoding="utf-8")
+            if duplicate_guard_source:
+                common = common.replace(
+                    '  validate_wsl_candidate_manifest "$repo" "$manifest_ref" "$expected" || return $?',
+                    '  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/candidate-manifest-guard.sh"\n'
+                    '  validate_wsl_candidate_manifest "$repo" "$manifest_ref" "$expected" || return $?',
+                    1,
+                )
+            common += f'''\
+
+stat() {{
+  printf '%s\\n' env-load >> '{log_posix}'
+  printf '%s\\n' 600
+}}
+docker() {{
+  printf 'docker:%s\\n' "$*" >> '{log_posix}'
+  if [[ "$1 $2" == "volume ls" ]]; then
+    printf '%s\\n' anvil-wsl-pg15_anvil-db-data anvil-wsl-pg18rc_anvil-db-data
+  elif [[ "$1 $2" == "network ls" ]]; then
+    printf '%s\\n' anvil-wsl-pg15_anvil-ingress anvil-wsl-pg18rc_anvil-ingress
+  elif [[ "$1 $2" == "network inspect" ]]; then
+    network="${{@: -1}}"
+    case "$*" in
+      *com.docker.compose.project*) [[ "$network" == anvil-wsl-pg15_* ]] && echo anvil-wsl-pg15 || echo anvil-wsl-pg18rc ;;
+      *com.docker.compose.network*) echo anvil-ingress ;;
+      *com.anvil.environment*) echo WSL_SERVER_TEST_STAGING ;;
+      *com.anvil.cleanup-scope*) echo C21_WSL_ISOLATED_TEST ;;
+      *'.Internal'*) echo false ;;
+      *'len .Containers'*) echo 0 ;;
+      *'range $id'*) : ;;
+    esac
+  elif [[ "$1 $2" == "volume inspect" ]]; then
+    volume="${{@: -1}}"
+    case "$*" in
+      *com.docker.compose.project*) [[ "$volume" == anvil-wsl-pg15_* ]] && echo anvil-wsl-pg15 || echo anvil-wsl-pg18rc ;;
+      *com.anvil.environment*) echo WSL_SERVER_TEST_STAGING ;;
+      *com.anvil.cleanup-scope*) echo C21_WSL_ISOLATED_TEST ;;
+    esac
+  fi
+}}
+wsl_compose() {{ printf 'compose:%s\\n' "$*" >> '{log_posix}'; }}
+'''
+            (control / "common.sh").write_text(common, encoding="utf-8", newline="\n")
+
+            guard = f"printf '%s\\n' guard-source >> '{log_posix}'\n" + GUARD.read_text(encoding="utf-8")
+            guard += f'''\
+
+validate_c21_exact_runtime_state() {{
+  ANVIL_TEST_VALIDATION_COUNT=$((ANVIL_TEST_VALIDATION_COUNT + 1))
+  printf '%s\\n' validate >> '{log_posix}'
+  [[ "${{ANVIL_TEST_FAIL_VALIDATION_AT:-0}}" != "$ANVIL_TEST_VALIDATION_COUNT" ]]
+}}
+validate_c21_exact_runtime_images() {{ return 0; }}
+'''
+            (control / "candidate-manifest-guard.sh").write_text(guard, encoding="utf-8", newline="\n")
+
+            values = {
+                "ANVIL_WSL_PG_PASSWORD": "a" * 48,
+                "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "b" * 64,
+                "ANVIL_TEST_SESSION_ACTOR_ID": "fixture-actor",
+                "ANVIL_TEST_SESSION_PROJECT_ID": "fixture-project",
+                "ANVIL_TEST_SESSION_ENVIRONMENT_ID": "fixture-environment",
+                "ANVIL_TEST_SESSION_RUN_IDS": "fixture-run",
+                "ANVIL_TEST_SESSION_PERMISSION_SCOPES": "tasks:write,tasks:read,run:events:read,provider:read",
+            }
+            (root / ".env").write_bytes(
+                "".join(f"{name}={value}\n" for name, value in values.items()).encode("utf-8")
+            )
+            manifest_raw = subprocess.check_output(
+                ["git", "show", f"{control_commit}:deploy/wsl/CandidateReleaseManifest.json"], cwd=repo
+            )
+            result = subprocess.run(
+                ["bash", self._posix(control / "cleanup.sh"), candidate],
+                text=True,
+                capture_output=True,
+                env=os.environ
+                | {
+                    "ANVIL_PYTHON": self._posix(Path(sys.executable)),
+                    "ANVIL_CANDIDATE_MANIFEST_SHA256": hashlib.sha256(manifest_raw).hexdigest(),
+                    "ANVIL_CANDIDATE_MANIFEST_REF": control_ref,
+                    "ANVIL_WSL_DEPLOY_ROOT": self._posix(root),
+                    "ANVIL_WSL_CONTROL_REPO": self._posix(root / "control"),
+                    "ANVIL_WSL_APPLICATION_REPO": self._posix(repo),
+                    "ANVIL_TEST_FAIL_VALIDATION_AT": str(fail_validation_at),
+                    "ANVIL_TEST_VALIDATION_COUNT": "0",
+                },
+            )
+            events = log.read_text(encoding="utf-8").splitlines() if log.exists() else []
+            return result, events
+
+    def test_cleanup_entrypoint_runs_real_guard_twice_validation_and_one_environment_load(self):
+        result, events = self._run_cleanup_entrypoint_guard_flow()
+
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(1, events.count("guard-source"))
+        self.assertEqual(2, events.count("validate"))
+        self.assertEqual(1, events.count("env-load"))
+        self.assertIn("docker:volume ls --format {{.Name}}", events)
+        self.assertIn("docker:network ls --format {{.Name}}", events)
+
+    def test_cleanup_entrypoint_first_validation_failure_stops_before_environment_and_inventory(self):
+        result, events = self._run_cleanup_entrypoint_guard_flow(fail_validation_at=1)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(1, events.count("guard-source"))
+        self.assertEqual(1, events.count("validate"))
+        self.assertNotIn("env-load", events)
+        self.assertFalse(any(event.startswith("docker:") for event in events))
+        self.assertFalse(any(event.startswith(("compose:rm", "docker:volume rm", "docker:network rm")) for event in events))
+
+    def test_cleanup_entrypoint_second_validation_failure_stops_before_inventory_and_mutation(self):
+        result, events = self._run_cleanup_entrypoint_guard_flow(fail_validation_at=2)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertEqual(1, events.count("guard-source"))
+        self.assertEqual(2, events.count("validate"))
+        self.assertEqual(1, events.count("env-load"))
+        self.assertFalse(any(event.startswith("docker:") for event in events))
+        self.assertFalse(any(event.startswith(("compose:rm", "docker:volume rm", "docker:network rm")) for event in events))
+
+    def test_cleanup_entrypoint_duplicate_real_guard_source_reproduces_readonly_failure(self):
+        result, events = self._run_cleanup_entrypoint_guard_flow(duplicate_guard_source=True)
+
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("readonly variable", result.stderr)
+        self.assertEqual(2, events.count("guard-source"))
+        self.assertEqual(1, events.count("validate"))
+        self.assertEqual(1, events.count("env-load"))
+        self.assertFalse(any(event.startswith("docker:") for event in events))
+
+    def test_cleanup_sources_guard_once_then_reaches_inventory(self):
+        """A readonly public guard is sourced once before cleanup inventory starts."""
+        with tempfile.TemporaryDirectory() as raw:
+            log = Path(raw) / "docker.log"
+            command = f'''\
+source '{self._posix(DEPLOY / "common.sh")}'
+source '{self._posix(GUARD)}'
+validate_wsl_candidate_manifest() {{ return 0; }}
+docker() {{ printf 'docker:%s\\n' "$*" >> '{self._posix(log)}'; }}
+wsl_compose() {{ printf 'compose:%s\\n' "$*" >> '{self._posix(log)}'; }}
+cleanup_wsl_test_volumes {'a' * 40} '/missing-repo' refs/remotes/origin/codex/c21-operational-execution
+'''
+            result = subprocess.run(["bash", "-c", command], text=True, capture_output=True)
+            self.assertEqual(0, result.returncode, result.stderr)
+            calls = log.read_text(encoding="utf-8").splitlines()
+            self.assertIn("docker:volume ls --format {{.Name}}", calls)
+            self.assertIn("docker:network ls --format {{.Name}}", calls)
+
     def _run_cleanup(self, repo: Path, candidate: str, control_ref: str, checksum: str, mismatch: str = ""):
         log = repo / "docker.log"
         # Exercise cleanup algorithm in an isolated fixture, not runtime authorization.
@@ -1641,6 +1813,7 @@ class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
             'validate_wsl_candidate_binding "$repo" "$manifest_ref" "$expected"'), encoding="utf-8", newline="\n")
         shutil.copy2(repo.parent / "historical-seq494-guard.sh", fixture_common.parent / "candidate-manifest-guard.sh")
         command = f'''
+source '{self._posix(fixture_common.parent / "candidate-manifest-guard.sh")}'
 source '{self._posix(fixture_common)}'
 docker() {{
   echo "docker:$*" >> '{self._posix(log)}'

@@ -1100,3 +1100,41 @@
 - 동일 final diff의 Git Bash 고정 전체 deploy 계약은 `106 passed, 2 skipped in 888.04s`, exit 0이다. skip 2건은 Windows/NTFS POSIX mode와 WSL Compose parser 전용 항목이며 실제 WSL rollback PASS로 승격하지 않는다.
 - 동일 final diff의 전체 tooling 계약은 `199 passed in 916.77s`, exit 0이다.
 - 다음 조치: final 결과를 validation/report에 기록하고 P/E/H/D/M을 재결박한 뒤 exact16/누적 exact137/history/direct-child 계약과 독립 review를 확인한다.
+
+## 2026-09-07 C-21 WSL cleanup guard source R1 — 플랫폼 안전 게이트 BLOCKED
+
+- 기준: branch `codex/c21-operational-execution`, HEAD `797b4d831e384423fdd9a706f9512ffa9dc79bb5`, parent `dfd75904e3b6ba0f453965607a95d6020bdc4466`; 시작 시 clean.
+- TDD RED: 실제 `candidate-manifest-guard.sh`를 `cleanup_wsl_test_volumes` 진입 전 1회 source한 뒤 현재 `common.sh`가 다시 source하여 `readonly variable`로 Docker inventory 전에 종료하는 것을 `cleanup_sources_guard_once_then_reaches_inventory`로 재현했다. GREEN 중간 변경은 `common.sh`의 중복 source 1줄 제거와 common-only fixture의 historical guard 명시 source다.
+- 현재 dirty 중간 경로: `deploy/wsl/common.sh`, `tests/deploy/test_wsl_staging_harness.py`, `scripts/check_project_progress.py`, `tests/tooling/test_project_progress.py`. guard/checker/projection의 최종 구현, 생성 문서, commit은 미수행이다.
+- 플랫폼 거부: `C21_WSL_CLEANUP_GUARD_SOURCE_R1_PLATFORM_GUARD_SCOPE_REJECTED` 1회. `candidate-manifest-guard.sh`의 `797b4d8` direct-child exact15 및 base `eef3496` cumulative exact143 결박 변경을 지속적 보안·무결성 통제 변경으로 판정해 명시적 사용자 승인을 요구했다. 우회·간접 적용은 금지됐다.
+- resource mutation=0. Provider, Telegram, WSL, Docker, DB, ysna, main, push, cleanup retry는 모두 `NOT_EXECUTED`.
+- 필요한 정확한 승인 범위: `deploy/wsl/candidate-manifest-guard.sh`의 source parent `797b4d8` single-direct-child exact15와 cumulative exact143 결박, 그에 종속한 seq555~560 append-only checker/projection/evidence 문서 생성 및 direct-child commit 검증.
+- 다음 조치: 신산님의 위 guard/projection 범위 직접 승인 후에만 existing TDD GREEN을 재개하고 validation 2회·inventory 도달·allowlist cleanup/mutation0 실패 경로를 검증한다.
+
+### reviewer fix round 1
+
+- Reviewer `REWORK C0/I2/M2`를 반영 중이다. I1/I2 RED는 status 수집 오류가 generic collection error로 귀결되는 것을 재현했고, collector에 private development URL/control/candidate CAS 및 named status/base-ancestry fail-closed 계약을 추가했다.
+- external runtime actions remain `NOT_EXECUTED`; resource mutation remains `0`.
+
+#### reviewer fix round 1 focused 및 first full tooling
+
+- I1/I2 focused tooling은 development private URL/control/candidate CAS, exact `GIT_STATUS_COLLECTION_FAILED`, declared-base ancestry fail-closed와 seq554 immutable `797b4d8` blob fixture 2곳을 포함해 `4 passed, 198 deselected`, exit0이다.
+- real cleanup focused는 실제 `cleanup.sh` entrypoint와 real readonly guard를 사용한다. success=`source1/validate2/env1/inventory reached`, first validation failure=`validate1/env0/inventory0/mutation0`, second validation failure=`validate2/env1/inventory0/mutation0`; duplicate real guard source는 readonly 재선언을 실제 재현하고 inventory/mutation0이다. 결과 `4 passed, 109 deselected`, exit0.
+- Reviewer 전달 full deploy는 `107 passed, 2 skipped`, exit0이고, pre-fix full tooling은 `198 passed, 2 failed`, exit1이다. 서로 다른 시점의 증거이며 실패를 PASS로 승격하지 않는다.
+- fix-round first full tooling은 `199 passed, 3 failed in 632.58s`, exit1이다. 3건 모두 amend 전 committed successor에 reviewer-fix dirty가 남아 발생한 동일 `GIT_DESCENDANT_RECORD_COMMIT_INVALID`; 코드/계약 테스트 실패가 아니라 postcommit 조건 미충족이며 최종 amend 후 전체 tooling을 재실행한다.
+- full deploy는 이 round에서 제품 `cleanup.sh`/`common.sh`/guard bytes가 변경되지 않고 checker/test/evidence만 변경됐으므로 재실행하지 않았다. 변경된 cleanup test는 위 real-entrypoint focused로 실행했다.
+- Bash syntax와 Python compile은 PASS. amend 전 live checker는 정확히 `GIT_DESCENDANT_RECORD_COMMIT_INVALID`; 최종 amend 전 PASS로 기록하지 않는다. 외부 WSL/Docker/DB/Provider/Telegram/ysna/main/push/cleanup retry는 계속 `NOT_EXECUTED`, resource mutation=0이다.
+
+#### reviewer fix round 1 clean postcommit full tooling
+
+- first amend `9ccc4104988bebdc61da7cb68b42fba502d3b3ff`는 parent `797b4d831e384423fdd9a706f9512ffa9dc79bb5`의 single direct child였고, clean 상태 live checker는 `G-05 project progress contract: PASS sequence=560 reporting=AUTO_CONTINUE`였다.
+- 같은 clean postcommit에서 full tooling은 `202 passed in 637.37s`, exit0이다. 이 결과를 final exact15 evidence에 append하고 P/E/H/D/M을 재materialize한 뒤 최종 amend/postcommit checker와 focused 검증을 다시 수행한다.
+- 외부 WSL/Docker/DB/Provider/Telegram/ysna/main/push/cleanup retry는 `NOT_EXECUTED`; resource mutation=0을 유지한다.
+
+#### reviewer fix round 1 TDD 및 환경 오류 원장
+
+- `C21_SEQ560_REAL_ENTRYPOINT_REGRESSION_RED` 1회: 새 3개 test는 helper 부재로 `3 failed, 109 deselected`, exit1을 먼저 확인했다. helper 구현 후 real guard/Git을 유지하고 runtime state/image·Docker/stat만 fixture adapter로 격리했다.
+- `C21_SEQ560_ENV_WRAPPER_CRLF_R1` 2회: environment-load 횟수를 `declare -f | sed | eval` wrapper로 관찰한 fixture가 MSYS 함수 재구성 경계에서 CR을 유입해 각 `2 failed, 1 passed`, exit1이었다. 실제 loader baseline test는 같은 환경에서 `1 passed`; loader를 감싸지 않고 real loader의 단일 `stat` 호출에서 횟수를 관찰하도록 바꿔 해소했다. 제품 실패가 아니다.
+- `C21_SEQ560_DUPLICATE_SOURCE_REGRESSION_RED` 1회: duplicate-source option 부재로 `1 failed`, exit1을 먼저 확인했다. option 구현 후 첫 실행은 실제 historical 순서 `guard source1 → validation1 → env load1 → guard source2 readonly failure`를 보여 assertion 1건이 실패했다. 관찰된 실제 순서로 기대를 교정한 뒤 GREEN이다.
+- `C21_SEQ560_DTMP_SANDBOX_MKDTEMP_BLOCKED` 3회: managed sandbox 안에서 `D:\tmp` `tempfile.mkdtemp`가 멈췄고 faulthandler가 정확히 `tempfile.py:mkdtemp`를 지목했다. 이 플랫폼 실행 오류는 정식 제품 failure가 아니며, 승인된 격리 test 실행으로 전환해 해소했다. 중단된 자체 pytest process tree 2개는 종료했고 외부 runtime/resource mutation은 없었다.
+- 유효 제품 실패 횟수는 증가하지 않았고 동일 제품 근본 원인 3회 조건은 발생하지 않았다.

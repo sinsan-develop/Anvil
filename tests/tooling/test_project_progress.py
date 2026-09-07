@@ -8129,13 +8129,16 @@ class C21ProviderWslVerifyScopeCorrectionTests(unittest.TestCase):
 
 
 class C21WslRollbackScopeCompatR1Tests(unittest.TestCase):
+    IMMUTABLE_FIXTURE_COMMIT = "797b4d831e384423fdd9a706f9512ffa9dc79bb5"
+
     def test_seq554_builder_preserves_history_and_binds_exact_scope(self):
         checker=_load_checker_or_none(); self.assertIsNotNone(checker)
         historical={p:subprocess.check_output(["git","show",f"{checker.C21_ROLLBACK_SCOPE_PARENT}:{p}"],cwd=ROOT)
                     for p in (checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H)}
         generated={checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H,
                    checker.C21_ROLLBACK_SCOPE_D,checker.C21_ROLLBACK_SCOPE_M}
-        files={p:(ROOT/p).read_bytes() for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
+        files={p:subprocess.check_output(["git","show",f"{self.IMMUTABLE_FIXTURE_COMMIT}:{p}"],cwd=ROOT)
+               for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
         artifacts=checker.c21_wsl_rollback_scope_artifacts(historical,files)
         events=json.loads(artifacts[checker.C21_ROLLBACK_SCOPE_E])["events"]
         manifest=json.loads(artifacts[checker.C21_ROLLBACK_SCOPE_M])
@@ -8157,12 +8160,70 @@ class C21WslRollbackScopeCompatR1Tests(unittest.TestCase):
                     for p in (checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H)}
         generated={checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H,
                    checker.C21_ROLLBACK_SCOPE_D,checker.C21_ROLLBACK_SCOPE_M}
-        files={p:(ROOT/p).read_bytes() for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
+        files={p:subprocess.check_output(["git","show",f"{self.IMMUTABLE_FIXTURE_COMMIT}:{p}"],cwd=ROOT)
+               for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
         bad=dict(files); doc=json.loads(bad["deploy/wsl/CandidateReleaseManifest.json"]); doc["rollback"]["test_session_permission_scopes_by_commit"].pop(next(iter(doc["rollback"]["test_session_permission_scopes_by_commit"])))
         bad["deploy/wsl/CandidateReleaseManifest.json"]=json.dumps(doc).encode()
         with self.assertRaises(ValueError): checker.c21_wsl_rollback_scope_artifacts(historical,bad)
         corrupt=dict(historical); corrupt[checker.C21_ROLLBACK_SCOPE_E]=corrupt[checker.C21_ROLLBACK_SCOPE_E].replace(b'"sequence": 1',b'"sequence": 0',1)
         with self.assertRaises(ValueError): checker.c21_wsl_rollback_scope_artifacts(corrupt,files)
+
+
+class C21WslCleanupGuardSourceR1Tests(unittest.TestCase):
+    @staticmethod
+    def _seq560_git_values(checker):
+        return {
+            ("rev-parse", "HEAD"): checker.C21_CLEANUP_GUARD_SOURCE_PARENT,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): "",
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_CLEANUP_GUARD_SOURCE_PARENT,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): checker.C21_RESUME_PARENT,
+        }
+
+    def test_seq560_git_collector_names_status_and_declared_base_failures(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        values = self._seq560_git_values(checker)
+        status_args = ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: None if args == status_args else values.get(args)):
+            self.assertEqual(["GIT_STATUS_COLLECTION_FAILED"], checker._collect_c21_cleanup_guard_source_git(bundle))
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=1):
+            self.assertEqual(["GIT_VALIDATED_BASE_NOT_ANCESTOR"], checker._collect_c21_cleanup_guard_source_git(bundle))
+
+    def test_seq560_git_collector_requires_private_development_url_and_ref_cas(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        for arguments, bad_value in (
+            (("remote", "get-url", "development"), "https://github.com/public/Anvil.git"),
+            (("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"), "0" * 40),
+            (("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"), "0" * 40),
+        ):
+            with self.subTest(arguments=arguments):
+                values = self._seq560_git_values(checker)
+                values[arguments] = bad_value
+                with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)):
+                    self.assertEqual(["GIT_PRIVATE_AUTHORITY_MISMATCH"], checker._collect_c21_cleanup_guard_source_git(bundle))
+
+    def test_seq560_builder_preserves_seq554_history_and_binds_exact15(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_cleanup_guard_source_artifacts"))
+        historical = {p: subprocess.check_output(["git", "show", f"{checker.C21_CLEANUP_GUARD_SOURCE_PARENT}:{p}"], cwd=ROOT)
+                      for p in (checker.C21_CLEANUP_GUARD_SOURCE_P, checker.C21_CLEANUP_GUARD_SOURCE_E, checker.C21_CLEANUP_GUARD_SOURCE_H)}
+        generated = {checker.C21_CLEANUP_GUARD_SOURCE_P, checker.C21_CLEANUP_GUARD_SOURCE_E, checker.C21_CLEANUP_GUARD_SOURCE_H,
+                     checker.C21_CLEANUP_GUARD_SOURCE_D, checker.C21_CLEANUP_GUARD_SOURCE_M}
+        files = {p: (ROOT / p).read_bytes() for p in set(checker.c21_cleanup_guard_source_paths()) - generated}
+        artifacts = checker.c21_cleanup_guard_source_artifacts(historical, files)
+        events = json.loads(artifacts[checker.C21_CLEANUP_GUARD_SOURCE_E])["events"]
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_GUARD_SOURCE_M])
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical[checker.C21_CLEANUP_GUARD_SOURCE_E], 554), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_CLEANUP_GUARD_SOURCE_E], 554))
+        self.assertEqual(list(range(555, 561)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual(15, manifest["developer_exact_path_count"])
+        self.assertEqual("6722B8BCE25FAFA0467214F8C5C91833515E3443A59CD8FBC1471538AF62DE82", manifest["developer_exact_path_list_sha256"])
+        self.assertEqual(143, manifest["cumulative_exact_path_count"])
+        self.assertEqual("F69664E702C97D7859E21F455919D1BCF913BCF70C6375F752892B25B793DB22", manifest["cumulative_exact_path_list_sha256"])
+        self.assertEqual(0, manifest["runtime"]["prior_runtime_cleanup_attempt"]["mutation_count"])
 
 
 if __name__ == "__main__":

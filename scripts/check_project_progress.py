@@ -12787,6 +12787,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 560:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_cleanup_guard_source_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 554:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13649,6 +13653,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_provider_wsl_exact_binding_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json":
             errors.extend(validate_c21_wsl_rollback_scope_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json":
+            errors.extend(validate_c21_cleanup_guard_source_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_verify_scope_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
@@ -17860,6 +17866,82 @@ def _collect_c21_rollback_scope_git(bundle: Mapping[str,Any]) -> list[str]:
         return []
     except (OSError,ValueError,TypeError,KeyError):return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
+
+C21_CLEANUP_GUARD_SOURCE_PARENT="797b4d831e384423fdd9a706f9512ffa9dc79bb5"
+C21_CLEANUP_GUARD_SOURCE_AT="2026-09-07T01:10:00+09:00"
+C21_CLEANUP_GUARD_SOURCE_WI_ID="WI-C-21-WSL-CLEANUP-GUARD-SOURCE-R1-20260907-001"
+C21_CLEANUP_GUARD_SOURCE_STATUS="READY_FOR_WSL_CLEANUP_RETRY"
+C21_CLEANUP_GUARD_SOURCE_P="docs/progress/build-progress.json"
+C21_CLEANUP_GUARD_SOURCE_E="docs/progress/progress-events.json"
+C21_CLEANUP_GUARD_SOURCE_H="docs/progress/BUILD_HANDOFF.md"
+C21_CLEANUP_GUARD_SOURCE_D="docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json"
+C21_CLEANUP_GUARD_SOURCE_M="docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json"
+C21_CLEANUP_GUARD_SOURCE_WI="docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_WORK_INSTRUCTION.md"
+C21_CLEANUP_GUARD_SOURCE_PROMPT="docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_INVOCATION_PROMPT.md"
+
+def c21_cleanup_guard_source_paths() -> list[str]:
+    return sorted(["deploy/wsl/candidate-manifest-guard.sh","deploy/wsl/common.sh","docs/04_test_reports/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_REPORT.md","docs/WORK_STATUS.md",C21_CLEANUP_GUARD_SOURCE_M,C21_CLEANUP_GUARD_SOURCE_H,C21_CLEANUP_GUARD_SOURCE_P,C21_CLEANUP_GUARD_SOURCE_E,C21_CLEANUP_GUARD_SOURCE_D,"docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",C21_CLEANUP_GUARD_SOURCE_PROMPT,C21_CLEANUP_GUARD_SOURCE_WI,"scripts/check_project_progress.py","tests/deploy/test_wsl_staging_harness.py","tests/tooling/test_project_progress.py"])
+
+def c21_cleanup_guard_source_metadata() -> dict[str, Any]:
+    exact=c21_cleanup_guard_source_paths(); cumulative=sorted(set(c21_wsl_rollback_scope_metadata()["cumulative_exact_paths"])|set(exact))
+    windows=lambda paths: hashlib.sha256("".join(f"{p}\n" for p in sorted(set(paths),key=lambda v:v.casefold().replace("_",","))).encode()).hexdigest().upper()
+    result={"developer_exact_paths":exact,"developer_exact_path_count":len(exact),"developer_exact_path_list_sha256":windows(exact),"cumulative_exact_paths":cumulative,"cumulative_exact_path_count":len(cumulative),"cumulative_exact_path_list_sha256":windows(cumulative)}
+    if result["developer_exact_path_count"]!=15 or result["developer_exact_path_list_sha256"]!="6722B8BCE25FAFA0467214F8C5C91833515E3443A59CD8FBC1471538AF62DE82" or result["cumulative_exact_path_count"]!=143 or result["cumulative_exact_path_list_sha256"]!="F69664E702C97D7859E21F455919D1BCF913BCF70C6375F752892B25B793DB22": raise ValueError("C21_CLEANUP_GUARD_SOURCE_PATH_HASH_INVALID")
+    return result
+
+def _c21_cleanup_guard_source_runtime() -> dict[str, Any]:
+    external={key:"NOT_EXECUTED" for key in ("provider","telegram","wsl","docker","database","ysna","main","push","cleanup_retry")}
+    return {"prior_runtime_cleanup_attempt":{"status":"FAILED_BEFORE_CLEANUP_DOCKER_INVENTORY","fingerprint":"GUARD_RE_SOURCE_READONLY_REDECLARATION","mutation_count":0,"evidence":"MAIN_OBSERVED_RUNTIME_RESULT"},"local_package_execution":{"external":external}}
+
+def c21_cleanup_guard_source_events() -> list[dict[str, Any]]:
+    m=c21_cleanup_guard_source_metadata(); common={"occurred_at":C21_CLEANUP_GUARD_SOURCE_AT,"actor":"developer-primary","subject_ref":"C-21/WSL-CLEANUP-GUARD-SOURCE-R1"}
+    worker={"lease_id":"worker-lease-c21-wsl-cleanup-guard-source-r1-20260907-001","agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"WSL-CLEANUP-GUARD-SOURCE-R1","lease_epoch":1,"execution_fencing_token":"c21-wsl-cleanup-guard-source-r1-execution-fence-epoch-1-797b4d8","fencing_token":"c21-wsl-cleanup-guard-source-r1-execution-fence-epoch-1-797b4d8","status":"ACTIVE","work_instruction_id":C21_CLEANUP_GUARD_SOURCE_WI_ID}
+    write={"lease_id":"write-lease-c21-wsl-cleanup-guard-source-r1-20260907-001","worker_lease_id":worker["lease_id"],"agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"WSL-CLEANUP-GUARD-SOURCE-R1","write_epoch":1,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":"c21-wsl-cleanup-guard-source-r1-write-fence-epoch-1-797b4d8","fencing_token":"c21-wsl-cleanup-guard-source-r1-write-fence-epoch-1-797b4d8","status":"ACTIVE","path_scope":m["developer_exact_paths"],"paths":m["developer_exact_paths"],"path_count":15,"path_list_sha256":m["developer_exact_path_list_sha256"],"work_instruction_id":C21_CLEANUP_GUARD_SOURCE_WI_ID}
+    detail={"work_instruction_id":C21_CLEANUP_GUARD_SOURCE_WI_ID,"dispatch_head":C21_CLEANUP_GUARD_SOURCE_PARENT,"dispatch_upstream_head":C21_RESUME_REMOTE,"projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_C21_CLEANUP_GUARD_SOURCE_PARENT_EXACT15_SUCCESSOR_RECORD","exact_allowed_paths":m["cumulative_exact_paths"],"runtime":_c21_cleanup_guard_source_runtime(),**m}
+    return [{"event_id":"evt_c21_cleanup_guard_source_worker_lease_issued","sequence":555,"event_type":"WORKER_LEASE_ISSUED",**common,"details":worker},{"event_id":"evt_c21_cleanup_guard_source_write_lease_issued","sequence":556,"event_type":"WRITE_LEASE_ISSUED",**common,"details":write},{"event_id":"evt_c21_cleanup_guard_source_package_started","sequence":557,"event_type":"PACKAGE_STARTED",**common,"details":dict(detail,result_status="IN_PROGRESS",package_status="ACTIVE_WSL_CLEANUP_GUARD_SOURCE_R1")},{"event_id":"evt_c21_cleanup_guard_source_write_lease_revoked","sequence":558,"event_type":"WRITE_LEASE_REVOKED",**common,"details":dict(write,status="REVOKED",reason="RESULT_HANDOFF")},{"event_id":"evt_c21_cleanup_guard_source_worker_lease_revoked","sequence":559,"event_type":"WORKER_LEASE_REVOKED",**common,"details":dict(worker,status="REVOKED",reason="RESULT_HANDOFF")},{"event_id":"evt_c21_cleanup_guard_source_package_completed","sequence":560,"event_type":"PACKAGE_COMPLETED",**common,"details":dict(detail,result_status="COMPLETED",package_status=C21_CLEANUP_GUARD_SOURCE_STATUS,accepted=False,independent_tester_status="PENDING")}]
+
+def c21_cleanup_guard_source_artifacts(historical: Mapping[str,bytes], files: Mapping[str,bytes]) -> dict[str,bytes]:
+    generated={C21_CLEANUP_GUARD_SOURCE_P,C21_CLEANUP_GUARD_SOURCE_E,C21_CLEANUP_GUARD_SOURCE_H,C21_CLEANUP_GUARD_SOURCE_D,C21_CLEANUP_GUARD_SOURCE_M}; m=c21_cleanup_guard_source_metadata()
+    if set(files)!=set(c21_cleanup_guard_source_paths())-generated: raise ValueError("C21_CLEANUP_GUARD_SOURCE_FILE_SET_INVALID")
+    hashes={C21_CLEANUP_GUARD_SOURCE_P:"1E6DB7C957F715DC136D0582AAC1E29C5A76674D63F62C5E401FB8A02B4116AF",C21_CLEANUP_GUARD_SOURCE_E:"986E4C4F943305448E54630C5F8631D671A0DE273B2CF8E7C15EC2CF1382C50E",C21_CLEANUP_GUARD_SOURCE_H:"DFA0C8E1D0A46B794546D3335261D998A46612106B9B3F97C4075EBFCBADD82C"}
+    if set(historical)!=set(hashes) or any(_c21_resume_sha(historical[p])!=v for p,v in hashes.items()): raise ValueError("C21_CLEANUP_GUARD_SOURCE_HISTORY_INVALID")
+    source=_c21_resume_json(historical[C21_CLEANUP_GUARD_SOURCE_P]); parsed=_c21_resume_json(historical[C21_CLEANUP_GUARD_SOURCE_E])
+    if source.get("event_sequence")!=554 or parsed.get("last_sequence")!=554 or len(parsed.get("events",[]))!=554: raise ValueError("C21_CLEANUP_GUARD_SOURCE_HISTORY_INVALID")
+    prefix=raw_event_object_prefix_bytes(historical[C21_CLEANUP_GUARD_SOURCE_E],554); header=b'{\n  "schema_version": "1.0.0",\n  "stream_id": "anvil-build-main",\n  "first_sequence": 1,\n  "last_sequence": 554,\n  "events": [\n    '; footer=b'\n  ],\n  "last_event_id": "evt_c21_wsl_rollback_scope_package_completed"\n}\n'
+    if historical[C21_CLEANUP_GUARD_SOURCE_E]!=header+prefix+footer: raise ValueError("C21_CLEANUP_GUARD_SOURCE_HISTORY_INVALID")
+    rows=b"".join(b",\n"+"\n".join("    "+line for line in json.dumps(event,ensure_ascii=False,indent=2,allow_nan=False).splitlines()).encode() for event in c21_cleanup_guard_source_events()); events_raw=header.replace(b'554',b'560',1)+prefix+rows+footer.replace(b'evt_c21_wsl_rollback_scope_package_completed',b'evt_c21_cleanup_guard_source_package_completed')
+    wi_sha=_c21_resume_sha(files[C21_CLEANUP_GUARD_SOURCE_WI]); prompt_sha=_c21_resume_sha(files[C21_CLEANUP_GUARD_SOURCE_PROMPT]); runtime=_c21_cleanup_guard_source_runtime(); instruction={"artifact_id":C21_CLEANUP_GUARD_SOURCE_WI_ID,"artifact_path":C21_CLEANUP_GUARD_SOURCE_WI,"artifact_sha256":wi_sha,"invocation_path":C21_CLEANUP_GUARD_SOURCE_PROMPT,"invocation_sha256":prompt_sha,"result_status":"COMPLETED","package_status":C21_CLEANUP_GUARD_SOURCE_STATUS,"executor":"developer-primary","accepted":False,"independent_tester_status":"PENDING","c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","runtime_next_action":"BIND_EXACT15_THEN_RETRY_WSL_CLEANUP"}
+    progress=dict(source); repository=dict(progress["repository"]); repository.update({"local_head":C21_CLEANUP_GUARD_SOURCE_PARENT,"head_relation":"FEATURE_WORKTREE_C21_CLEANUP_GUARD_SOURCE_PARENT_EXACT15_SUCCESSOR_RECORD","worktree_status":"SEQ560_WSL_CLEANUP_GUARD_SOURCE_EXACT15_DIRTY","exact_allowed_paths":m["cumulative_exact_paths"],"cleanup_guard_source_paths":m["developer_exact_paths"],"push_status":"NOT_EXECUTED"}); progress.update({"updated_at":C21_CLEANUP_GUARD_SOURCE_AT,"event_sequence":560,"last_event_id":"evt_c21_cleanup_guard_source_package_completed","status":C21_CLEANUP_GUARD_SOURCE_STATUS,"active_agent":None,"worker_lease":None,"write_lease":None,"active_work_instruction":instruction,"completed_work_instruction":instruction,"repository":repository,"runtime":runtime,"runtime_next_action":"BIND_EXACT15_THEN_RETRY_WSL_CLEANUP","next_safe_action":"BIND_EXACT15_THEN_RETRY_WSL_CLEANUP","current_progress_evidence_ref":{"package_id":"C-21","path":C21_CLEANUP_GUARD_SOURCE_D,"manifest_path":C21_CLEANUP_GUARD_SOURCE_M},"latest_evidence_manifest_ref":{"path":C21_CLEANUP_GUARD_SOURCE_M,"artifact_id":"C21-WSL-CLEANUP-GUARD-SOURCE-R1-20260907"},"reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["C21_WSL_CLEANUP_GUARD_SOURCE_READY"],"stop_before_dialogue_report":False}}); progress["registry_refs"]["progress_events"]={"path":C21_CLEANUP_GUARD_SOURCE_E,"sha256":_c21_resume_sha(events_raw)}; latest=dict(files); latest[C21_CLEANUP_GUARD_SOURCE_E]=events_raw; progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(raw)} for p,raw in sorted(latest.items())]; progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":560,"last_event_id":"evt_c21_cleanup_guard_source_package_completed","status":C21_CLEANUP_GUARD_SOURCE_STATUS,"current_phase":source["current_phase"],"current_work_package":"C-21","active_agent":None,"worker_lease":None,"write_lease":None,"execution_fencing_token":None,"write_fencing_token":None,"active_work_instruction":C21_CLEANUP_GUARD_SOURCE_WI_ID,"active_work_instruction_sha256":wi_sha,"active_invocation_sha256":prompt_sha,"repository_head":C21_CLEANUP_GUARD_SOURCE_PARENT,"repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],"repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],"repository_exact_allowed_paths":m["cumulative_exact_paths"],"design_baseline_hash":source["design_baseline_hash"],"valid_failure_count":source["valid_failure_count"],"dir_status":source["dir_review"]["status"],"runtime":runtime,"next_safe_action":"BIND_EXACT15_THEN_RETRY_WSL_CLEANUP","runtime_next_action":"BIND_EXACT15_THEN_RETRY_WSL_CLEANUP","reporting_decision":"AUTO_CONTINUE",**m,"accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","commit":"NOT_EXECUTED","push":"NOT_EXECUTED"}; htext="# C-21 WSL cleanup guard source R1 — seq560 Developer 완료\n\n- 실제 prior cleanup은 readonly 재선언으로 inventory 전 중단했고 mutation=0이다.\n\n"+historical[C21_CLEANUP_GUARD_SOURCE_H].decode(); replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"; htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL);
+    if count!=1: raise ValueError("C21_CLEANUP_GUARD_SOURCE_HANDOFF_INVALID")
+    handoff_raw=htext.encode(); digest={"schema_version":"1.0.0","digest_id":"C21-WSL-CLEANUP-GUARD-SOURCE-R1-DIGEST-20260907","package_id":"C-21","event_sequence":560,"algorithm":"SHA-256","created_at":C21_CLEANUP_GUARD_SOURCE_AT,"scope":"seq555-560 append-only; seq1-554 preserved; exact15.","self_reference":False,"progress":{"path":C21_CLEANUP_GUARD_SOURCE_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},"handoff":{"path":C21_CLEANUP_GUARD_SOURCE_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}; digest_raw=_c21_resume_json_bytes(digest); raw_files=dict(files); raw_files[C21_CLEANUP_GUARD_SOURCE_D]=digest_raw; manifest={"schema_version":"1.0.0","manifest_type":"C21_WSL_CLEANUP_GUARD_SOURCE_R1_PROJECTION","artifact_id":"C21-WSL-CLEANUP-GUARD-SOURCE-R1-20260907","created_at":C21_CLEANUP_GUARD_SOURCE_AT,"event_sequence":560,"appended_event_count":6,"historical_event_sequence":554,"historical_commit":C21_CLEANUP_GUARD_SOURCE_PARENT,"status":C21_CLEANUP_GUARD_SOURCE_STATUS,"record_commit":"PENDING_DIRECT_CHILD_RECORD_COMMIT","record_commit_mode":"PARENT_DIRECT_CHILD_EXACT15","execution_authority_path":C21_CLEANUP_GUARD_SOURCE_WI,"execution_authority_sha256":wi_sha,"work_instruction_id":C21_CLEANUP_GUARD_SOURCE_WI_ID,"runtime":runtime,"self_reference":False,"accepted":False,"c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**m}; manifest["raw_checksums"]=[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(raw_files.items())]; return {C21_CLEANUP_GUARD_SOURCE_P:progress_raw,C21_CLEANUP_GUARD_SOURCE_E:events_raw,C21_CLEANUP_GUARD_SOURCE_H:handoff_raw,C21_CLEANUP_GUARD_SOURCE_D:digest_raw,C21_CLEANUP_GUARD_SOURCE_M:_c21_resume_json_bytes(manifest)}
+
+def validate_c21_cleanup_guard_source_projection(bundle: Mapping[str,Any], manifest: Mapping[str,Any]) -> list[str]:
+    root=bundle.get("_root")
+    try:
+        hist={p:subprocess.check_output(["git","show",f"{C21_CLEANUP_GUARD_SOURCE_PARENT}:{p}"],cwd=root) for p in (C21_CLEANUP_GUARD_SOURCE_P,C21_CLEANUP_GUARD_SOURCE_E,C21_CLEANUP_GUARD_SOURCE_H)}; gen={C21_CLEANUP_GUARD_SOURCE_P,C21_CLEANUP_GUARD_SOURCE_E,C21_CLEANUP_GUARD_SOURCE_H,C21_CLEANUP_GUARD_SOURCE_D,C21_CLEANUP_GUARD_SOURCE_M}; files={p:(root/p).read_bytes() for p in set(c21_cleanup_guard_source_paths())-gen}; expected=c21_cleanup_guard_source_artifacts(hist,files); supplied={C21_CLEANUP_GUARD_SOURCE_P:bundle.get("progress"),C21_CLEANUP_GUARD_SOURCE_E:bundle.get("events"),C21_CLEANUP_GUARD_SOURCE_D:bundle.get("detached_digest"),C21_CLEANUP_GUARD_SOURCE_M:manifest}; errors=["C21_CLEANUP_GUARD_SOURCE_PROJECTION_INVALID" for p,obj in supplied.items() if _c21_resume_json((root/p).read_bytes())!=_c21_resume_json(expected[p]) or obj!=_c21_resume_json(expected[p])];
+        if extract_handoff_summary((root/C21_CLEANUP_GUARD_SOURCE_H).read_text(encoding="utf-8"))!=extract_handoff_summary(expected[C21_CLEANUP_GUARD_SOURCE_H].decode()): errors.append("C21_CLEANUP_GUARD_SOURCE_HANDOFF_INVALID")
+        return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError): return ["C21_CLEANUP_GUARD_SOURCE_INPUT_INVALID"]
+
+def _collect_c21_cleanup_guard_source_git(bundle: Mapping[str,Any]) -> list[str]:
+    root=bundle["_root"]; m=c21_cleanup_guard_source_metadata()
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}")
+        dev_url=_git_value(root,"remote","get-url","development"); dev_control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution"); dev_candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact107")
+        if status is None: return ["GIT_STATUS_COLLECTION_FAILED"]
+        if None in (head,branch,upstream,dev_url,dev_control,dev_candidate): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution": return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if dev_url!="git@github-sinsan-develop:sinsan-develop/Anvil.git" or dev_control!=C21_CLEANUP_GUARD_SOURCE_PARENT or dev_candidate!=C21_RESUME_PARENT: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared=bundle["progress"]["repository"].get("validated_base_commit")
+        if not isinstance(declared,str) or not re.fullmatch(r"[0-9a-f]{40}",declared) or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=sorted(_working_tree_paths(status)); direct=dirty if head==C21_CLEANUP_GUARD_SOURCE_PARENT else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_CLEANUP_GUARD_SOURCE_PARENT,head) or "")
+        committed=_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or "")
+        cumulative=sorted(set(committed)|set(dirty)) if head==C21_CLEANUP_GUARD_SOURCE_PARENT else committed
+        if direct!=m["developer_exact_paths"] or cumulative!=m["cumulative_exact_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head==C21_CLEANUP_GUARD_SOURCE_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_CLEANUP_GUARD_SOURCE_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 if __name__ == "__main__":
     raise SystemExit(main())

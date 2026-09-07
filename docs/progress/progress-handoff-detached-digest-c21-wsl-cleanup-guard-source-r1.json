@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-CLEANUP-GUARD-SOURCE-R1-DIGEST-20260907",
+  "package_id": "C-21",
+  "event_sequence": 560,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-07T01:10:00+09:00",
+  "scope": "seq555-560 append-only; seq1-554 preserved; exact15.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 175487,
+    "file_sha256": "58658DB1BA22CE5170ECA2969926FBAD617E1ECEC32AD18A55336CEE2D863A18",
+    "canonical_json_sha256": "EFE2EFE0ADDD65DEEA97798EFA0BC10F8C996C3027FCE3E0FF25881D37049F95"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 197951,
+    "file_sha256": "F7C04CF2DA2787BA17E0B5CFC3F57BE14DAA288148CE5F9B1930937B03B37A0E",
+    "machine_summary_canonical_sha256": "F899D5825F52D3DAF0531D964D7B7B0DA057269B32086CB240408D8C268EF170"
+  }
+}

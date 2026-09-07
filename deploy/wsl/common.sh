@@ -105,7 +105,6 @@ start_wsl_ingress() {
 cleanup_wsl_test_volumes() {
   local expected="$1" repo="$2" manifest_ref="$3"
   require_exact_sha "$expected" || return $?
-  source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/candidate-manifest-guard.sh"
   validate_wsl_candidate_manifest "$repo" "$manifest_ref" "$expected" || return $?
   local -a targets=(15 18-rc)
   local -a projects=(anvil-wsl-pg15 anvil-wsl-pg18rc)

@@ -1,0 +1,1 @@
+Implement WI-C-21-WSL-CLEANUP-GUARD-SOURCE-R1-20260907-001 on the exact15 lease. Use the real readonly guard in TDD, append only seq555-560, preserve seq1-554 raw bytes and do not run any external cleanup action.
