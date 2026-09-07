@@ -1,3 +1,7 @@
+# C-21 A13 historical module isolation — seq602
+
+- historical checker import cache를 test context에만 격리하고 acceptance 대기 상태를 유지한다.
+
 # C-21 Workbench UI WSL runtime result — seq596
 
 - WSL runtime scope PASS를 독립 acceptance 대기 상태로 결박한다.
@@ -777,69 +781,71 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 596,
-  "last_event_id": "evt_c21_workbench_ui_wsl_runtime_package_completed",
+  "event_sequence": 602,
+  "last_event_id": "evt_c21_a13_historical_module_isolation_package_completed",
   "status": "READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
   "current_phase": "C",
   "current_work_package": "C-21",
   "active_agent": null,
   "worker_lease": {
-    "lease_id": "worker-lease-c21-workbench-ui-wsl-runtime-result-20260908-001",
+    "lease_id": "worker-lease-c21-a13-historical-module-isolation-20260908-001",
     "agent_id": "developer-primary",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-WSL-RUNTIME-RESULT",
+    "subtask_id": "A13-HISTORICAL-MODULE-ISOLATION-R1",
     "lease_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-wsl-runtime-result-execution-fence-epoch-1-8fe7b97",
-    "fencing_token": "c21-workbench-ui-wsl-runtime-result-execution-fence-epoch-1-8fe7b97",
+    "execution_fencing_token": "c21-a13-module-isolation-execution-fence-epoch-1-6e06810",
+    "fencing_token": "c21-a13-module-isolation-execution-fence-epoch-1-6e06810",
     "status": "REVOKED"
   },
   "write_lease": {
-    "lease_id": "write-lease-c21-workbench-ui-wsl-runtime-result-20260908-001",
-    "worker_lease_id": "worker-lease-c21-workbench-ui-wsl-runtime-result-20260908-001",
+    "lease_id": "write-lease-c21-a13-historical-module-isolation-20260908-001",
+    "worker_lease_id": "worker-lease-c21-a13-historical-module-isolation-20260908-001",
     "agent_id": "developer-primary",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-WSL-RUNTIME-RESULT",
+    "subtask_id": "A13-HISTORICAL-MODULE-ISOLATION-R1",
     "write_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-wsl-runtime-result-execution-fence-epoch-1-8fe7b97",
-    "write_fencing_token": "c21-workbench-ui-wsl-runtime-result-write-fence-epoch-1-8fe7b97",
-    "fencing_token": "c21-workbench-ui-wsl-runtime-result-write-fence-epoch-1-8fe7b97",
+    "execution_fencing_token": "c21-a13-module-isolation-execution-fence-epoch-1-6e06810",
+    "write_fencing_token": "c21-a13-module-isolation-write-fence-epoch-1-6e06810",
+    "fencing_token": "c21-a13-module-isolation-write-fence-epoch-1-6e06810",
     "status": "REVOKED",
     "path_scope": [
-      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
+      "docs/04_test_reports/C-21_A13_HISTORICAL_MODULE_ISOLATION_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
-      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c21-a13-historical-module-isolation.json",
+      "docs/validation/C-21_A13_HISTORICAL_MODULE_ISOLATION_VALIDATION.md",
+      "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_project_progress.py"
     ],
     "paths": [
-      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
+      "docs/04_test_reports/C-21_A13_HISTORICAL_MODULE_ISOLATION_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
-      "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c21-a13-historical-module-isolation.json",
+      "docs/validation/C-21_A13_HISTORICAL_MODULE_ISOLATION_VALIDATION.md",
+      "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
+      "tests/tooling/test_a13_repository_scan.py",
       "tests/tooling/test_project_progress.py"
     ]
   },
-  "execution_fencing_token": "c21-workbench-ui-wsl-runtime-result-execution-fence-epoch-1-8fe7b97",
-  "write_fencing_token": "c21-workbench-ui-wsl-runtime-result-write-fence-epoch-1-8fe7b97",
-  "active_work_instruction": "WI-C-21-WORKBENCH-UI-WSL-RUNTIME-RESULT-20260908-001",
-  "active_work_instruction_sha256": "6ED291A68ADCF399A6C1F51CE1E34875103D993632ADA373E2116E77A7248EA3",
-  "active_invocation_sha256": "DCF42C9E91C6D20243ED5C2580FE6A7B18CE0EF0596966843CD2E0C370BC77D0",
-  "repository_head": "8fe7b975f39990b3d721d27b1a3e9353f891c5c1",
-  "repository_head_relation": "FEATURE_WORKTREE_8FE7B97_EXACT12_DIRTY",
+  "execution_fencing_token": "c21-a13-module-isolation-execution-fence-epoch-1-6e06810",
+  "write_fencing_token": "c21-a13-module-isolation-write-fence-epoch-1-6e06810",
+  "active_work_instruction": "WI-C-21-A13-HISTORICAL-MODULE-ISOLATION-20260908-001",
+  "active_work_instruction_sha256": "F01E25C5651B161CC7D85F2B0FB03C25EF6F7B7C233B7F2EE3222DCFA94D802E",
+  "active_invocation_sha256": "D994F1E788D37E07A9E7CCBC912F0B96B6A4F01824A0DF1DD49B024055731AB5",
+  "repository_head": "6e06810ea02b72e5642da8258cd0ae5fb6d87dc6",
+  "repository_head_relation": "FEATURE_WORKTREE_6E06810_EXACT13_DIRTY",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
@@ -868,6 +874,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "deploy/wsl/verify-c21-development-boundaries.sh",
     "deploy/wsl/verify.sh",
     "deploy/ysna/backup-c21-db.sh",
+    "docs/04_test_reports/C-21_A13_HISTORICAL_MODULE_ISOLATION_REPORT.md",
     "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
     "docs/04_test_reports/C-21_DEVELOPMENT_QA_INDEPENDENT_REVIEW_REPORT.md",
     "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
@@ -890,6 +897,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/WORK_STATUS.md",
     "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+    "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json",
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json",
@@ -933,6 +941,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-a13-historical-module-isolation.json",
     "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
     "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json",
     "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
@@ -969,6 +978,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+    "docs/validation/C-21_A13_HISTORICAL_MODULE_ISOLATION_VALIDATION.md",
     "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
@@ -981,6 +991,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
     "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
     "docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
+    "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
@@ -1053,175 +1065,55 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "observed_candidate": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
     "public_origin_is_push_authority": false
   },
-  "runtime_result": {
-    "host": "SINSAN",
-    "environment": "WSL_SERVER_TEST_STAGING",
-    "application_repo": "/srv/anvil-wsl/repo",
-    "application_repo_state": "CLEAN_DETACHED",
-    "application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
-    "runtime_control_ref": "8fe7b975f39990b3d721d27b1a3e9353f891c5c1",
-    "candidate_ref": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
-    "runtime_scope_passed": true,
-    "recorded_order": [
-      "INITIAL_DEPLOY",
-      "INITIAL_VERIFY",
-      "ROLLBACK",
-      "REDEPLOY_ATTEMPT_FAILED",
-      "MAIN_TAKEOVER",
-      "EXACT_PG15_BRIDGE_RECOVERY",
-      "FINAL_DEPLOY",
-      "FINAL_VERIFY",
-      "EXACT_CLEANUP"
+  "isolation_result": {
+    "scope": "TEST_HARNESS_ONLY",
+    "changed_test": "tests/tooling/test_a13_repository_scan.py",
+    "product_code_mutation_count": 0,
+    "historical_evidence_mutation_count": 0,
+    "isolated_modules": [
+      "packages",
+      "packages.repository_intelligence*"
     ],
-    "commands": {
-      "initial_deploy": "PASS_EXIT_0",
-      "initial_verify": "PASS_EXIT_0",
-      "rollback": "PASS_EXIT_0",
-      "first_redeploy": "FAIL_EXIT_1",
-      "final_deploy": "PASS_EXIT_0",
-      "final_verify": "PASS_EXIT_0",
-      "cleanup": "PASS_EXIT_0"
-    },
-    "verification": {
-      "postgres_targets": [
-        "15",
-        "18-rc"
-      ],
-      "migration_head": "0013_task_bootstrap_authority",
-      "api": "PASS",
-      "auth_session": "PASS",
-      "authenticated_sse": "PASS_ONE_EVENT",
-      "last_event_id": "PASS_ACKNOWLEDGED_NO_REPLAY",
-      "same_origin": "PASS",
-      "backup_restore": "PASS",
-      "scratch_database_residue": 0,
-      "secret_values": "omitted"
-    },
-    "timeout_lineage": {
-      "fingerprint": "C21_WSL_REDEPLOY_AFTER_ROLLBACK_DB_CONNECT_TIMEOUT_R1",
-      "valid_observation_count": 3,
-      "main_takeover": true,
-      "failure_point": "PG15_CANDIDATE_COMPOSE_ONE_OFF_DB_TCP",
-      "product_defect": false
-    },
-    "bridge_recovery": {
-      "scope": "EXACT_PG15_TEST_PROJECT",
-      "services_removed": 3,
-      "networks_removed": 2,
-      "volume_preserved": "anvil-wsl-pg15_anvil-db-data",
-      "environment_file_preserved": true,
-      "result": "PASS"
-    },
-    "final_runtime_before_cleanup": {
-      "pg15_current": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
-      "pg15_previous": "324eb169fedbce958d2e8cc29362deb7af433677",
-      "pg18rc_current": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
-      "pg18rc_previous": "324eb169fedbce958d2e8cc29362deb7af433677"
-    },
-    "cleanup": {
-      "projects": [
-        "anvil-wsl-pg15",
-        "anvil-wsl-pg18rc"
-      ],
-      "exact_named_volumes": [
-        "anvil-wsl-pg15_anvil-db-data",
-        "anvil-wsl-pg18rc_anvil-db-data"
-      ],
-      "residual_containers": 0,
-      "residual_networks": 0,
-      "residual_volumes": 0,
-      "result": "PASS"
-    },
-    "environment_file": {
-      "path": "/srv/anvil-wsl/.env",
-      "mode_before": "600",
-      "mode_after": "600",
-      "sha256_before": "FECAE53B750E170A5BF345A23AC8D9BA12B508E9C6D0B47C518B90FD4D52A79A",
-      "sha256_after": "FECAE53B750E170A5BF345A23AC8D9BA12B508E9C6D0B47C518B90FD4D52A79A",
-      "result": "BYTE_IDENTICAL"
-    },
-    "script_hashes": {
-      "deploy/wsl/control-runtime.sh": "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097",
-      "deploy/wsl/deploy.sh": "7B6EE6A02BED857299423F78C73D746B6F8AC8C0CC40E3A611ECE06E43E1C1C0",
-      "deploy/wsl/verify.sh": "93E882D35C055535A7D989962FE0EE0EC49B91542EB462B655F1477DD2562A36",
-      "deploy/wsl/rollback.sh": "1A4CC5B9F77E4705C8864EB913E69C55042FB4A4BE8A40A872F1CA2EC72E7946",
-      "deploy/wsl/cleanup.sh": "65E8AA6F5F02AB554ECF3F4FBA1CEB16BD96616E952EB4D64D1285F183CC462D",
-      "deploy/wsl/candidate-manifest-guard.sh": "5773186C9B12176E973BE8CA9A4460DEF2A8EC19120D7068E3EF3CE01F6744CC"
-    },
-    "receipts": [
-      {
-        "path": "/srv/anvil-wsl/evidence/pg15-pre-migration-backup.json",
-        "sha256": "C8F043E2A3FC4CA3A3DD2F6A5FF9A02C02F51E6E28CBA952B7363B74BD78B599",
-        "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH",
-        "embedded_dump_sha256": "A99B40DCE4D594FE8C04ED4D033391624581FFEEB47FA285F8EDAD4D93B618C1"
-      },
-      {
-        "path": "/srv/anvil-wsl/evidence/pg18rc-pre-migration-backup.json",
-        "sha256": "9D8E5F5CE365E046D48BE23BB1B1022EDA9C1BFFECCE81E7DC758EF7EB7E8E0D",
-        "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH",
-        "embedded_dump_sha256": "38DACA3D837EF40F48A045EE5C02C1BFFEB55FEAB02C0099F3223C7A725D0E9D"
-      },
-      {
-        "path": "/srv/anvil-wsl/evidence/pg15-verification.json",
-        "sha256": "96BD2FC8D3D96E6D46215419A0917D145FA851226E6D1F3C122D93BC21FC8DB2",
-        "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH"
-      },
-      {
-        "path": "/srv/anvil-wsl/evidence/pg18rc-verification.json",
-        "sha256": "0CE473C529B74D8D6AC10F43F0E532D591C2D76233A345348812E95541EE4D3B",
-        "state": "CURRENT_FINAL_STATE_OVERWRITE_PATH"
-      },
-      {
-        "path": "/srv/anvil-wsl/evidence/pg15-rollback.json",
-        "sha256": "A996678BDA2D01F191A90CD98F55E3E242FE012042813215B04B1D390082F630",
-        "state": "PRESERVED_ROLLBACK_STATE"
-      },
-      {
-        "path": "/srv/anvil-wsl/evidence/pg18rc-rollback.json",
-        "sha256": "A89B9709CFA43E0D01FF1953A4575EE78494C7D98DE075BF38B84D11C4FCD404",
-        "state": "PRESERVED_ROLLBACK_STATE"
-      }
-    ],
-    "browser": {
-      "result": "UNAUTHENTICATED_UI_RENDER_PASS",
-      "pg15": "PASS",
-      "pg18rc": "PASS",
-      "title": "Anvil Provider Workbench",
-      "provider_registry": "PERMISSION_DENIED",
-      "sse": "NOT_CONNECTED",
-      "authenticated_browser": "NOT_EXECUTED"
-    }
+    "checker_module_isolated": true,
+    "sys_path_exact_restore": true,
+    "two_node_order": "PASS",
+    "success_restore": "PASS",
+    "exception_restore": "PASS",
+    "focused_isolation": "2_PASSED",
+    "a13_suite": "65_PASSED",
+    "full_tooling": "597_PASSED",
+    "prior_failure_fingerprint": "HISTORICAL_A13_MODULE_CACHE_SCHEMA_R1",
+    "prior_failure_count": 1,
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "main_merge": "NOT_EXECUTED",
+    "push": "NOT_EXECUTED"
   },
-  "runtime_scope_passed": true,
   "accepted": false,
   "c21_status": "BLOCKED_NOT_ACCEPTED",
   "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
   "dir2_status": "NOT_TRIGGERED",
-  "exclusions": {
-    "provider": "NOT_EXECUTED",
-    "telegram": "NOT_EXECUTED",
-    "ysna": "NOT_EXECUTED",
-    "main_merge": "NOT_EXECUTED",
-    "c01": "NOT_EXECUTED"
-  },
   "next_safe_action": "INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",
   "exact_paths": [
-    "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
+    "docs/04_test_reports/C-21_A13_HISTORICAL_MODULE_ISOLATION_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json",
+    "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-runtime-result.json",
-    "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
-    "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c21-a13-historical-module-isolation.json",
+    "docs/validation/C-21_A13_HISTORICAL_MODULE_ISOLATION_VALIDATION.md",
+    "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
+    "tests/tooling/test_a13_repository_scan.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "exact_path_count": 12,
-  "exact_path_list_sha256": "D1965266EBE7DDC3D4D6B0D01A2E71EA276DDFF378B0793E5895E2FB8F07F348",
-  "exact_path_list_ordinal_sha256": "B345B0586EC4A8937238324EAC5F6FC9046C848F9B171B5E6CB6B83DDA9A6346",
+  "exact_path_count": 13,
+  "exact_path_list_sha256": "3363F8F3DB4BE55C2D4CC12FCDD60D8EDEEDA46C7385CE87A92FAD6B72FF820A",
+  "exact_path_list_ordinal_sha256": "7EBDAF635BD89CFBFB9B183003613CE433A9929405AF74005DDDF85A5CB0DF42",
   "cumulative_paths": [
     "apps/web/fixture-workbench.html",
     "apps/web/index.html",
@@ -1247,6 +1139,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "deploy/wsl/verify-c21-development-boundaries.sh",
     "deploy/wsl/verify.sh",
     "deploy/ysna/backup-c21-db.sh",
+    "docs/04_test_reports/C-21_A13_HISTORICAL_MODULE_ISOLATION_REPORT.md",
     "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
     "docs/04_test_reports/C-21_DEVELOPMENT_QA_INDEPENDENT_REVIEW_REPORT.md",
     "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
@@ -1269,6 +1162,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/WORK_STATUS.md",
     "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
     "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+    "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json",
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json",
@@ -1312,6 +1206,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/build-progress.json",
     "docs/progress/failure-ledger.json",
     "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-a13-historical-module-isolation.json",
     "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
     "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json",
     "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
@@ -1348,6 +1243,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+    "docs/validation/C-21_A13_HISTORICAL_MODULE_ISOLATION_VALIDATION.md",
     "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
@@ -1360,6 +1256,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
     "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
     "docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
+    "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
@@ -1419,9 +1317,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "cumulative_path_count": 195,
-  "cumulative_path_list_sha256": "5F63907A3D63D0350B68EC277B9703EB6AB9D0631E583427BADC2D53A1A13F00",
-  "cumulative_path_list_ordinal_sha256": "CAD44AA61C8F359D0AD5FE19DABD70C4F7BE2106FC9EC4C59BD3E2EBFF89C516"
+  "cumulative_path_count": 201,
+  "cumulative_path_list_sha256": "DF0884A6F6AA73738488487E4A8C5181A6022FA4443DDCF1E28B69FA6EA3882D",
+  "cumulative_path_list_ordinal_sha256": "FF0B9643404E4EA080313E43AD52BC3D356A82710415162B437C2914FFBA8312"
 }
 ```
 

@@ -8956,5 +8956,69 @@ class C21WorkbenchUiWslRuntimeResultTests(unittest.TestCase):
             self.assertTrue(checker.validate_c21_workbench_ui_wsl_runtime_result_manifest(changed), path)
 
 
+class C21A13HistoricalModuleIsolationTests(unittest.TestCase):
+    def test_seq602_builder_preserves_seq596_and_records_isolation_lifecycle(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_a13_historical_module_isolation_from_root"))
+        artifacts = checker.c21_a13_historical_module_isolation_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_E])
+        progress = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_P])
+        manifest = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_A13_MODULE_ISOLATION_PARENT}:{checker.C21_A13_MODULE_ISOLATION_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 596),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_A13_MODULE_ISOLATION_E], 596),
+        )
+        self.assertEqual(list(range(597, 603)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["status"])
+        self.assertEqual("INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["runtime_next_action"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["c21_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        self.assertEqual([], checker.validate_c21_a13_historical_module_isolation_manifest(manifest))
+
+    def test_seq602_manifest_binds_exact13_cumulative201_and_isolation_proof(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_a13_historical_module_isolation_metadata()
+        self.assertEqual(
+            (13, "3363F8F3DB4BE55C2D4CC12FCDD60D8EDEEDA46C7385CE87A92FAD6B72FF820A", "7EBDAF635BD89CFBFB9B183003613CE433A9929405AF74005DDDF85A5CB0DF42"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (201, "DF0884A6F6AA73738488487E4A8C5181A6022FA4443DDCF1E28B69FA6EA3882D", "FF0B9643404E4EA080313E43AD52BC3D356A82710415162B437C2914FFBA8312"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_a13_historical_module_isolation_from_root(ROOT)[checker.C21_A13_MODULE_ISOLATION_M])
+        proof = manifest["isolation_result"]
+        self.assertEqual("TEST_HARNESS_ONLY", proof["scope"])
+        self.assertEqual(0, proof["product_code_mutation_count"])
+        self.assertEqual("PASS", proof["two_node_order"])
+        self.assertEqual("PASS", proof["success_restore"])
+        self.assertEqual("PASS", proof["exception_restore"])
+        self.assertEqual("65_PASSED", proof["a13_suite"])
+        self.assertEqual("597_PASSED", proof["full_tooling"])
+        self.assertEqual([], checker.validate_c21_a13_historical_module_isolation_manifest(manifest))
+        for path, value in (
+            (("accepted",), True),
+            (("isolation_result", "product_code_mutation_count"), 1),
+            (("isolation_result", "exception_restore"), "FAIL"),
+            (("cumulative_path_count",), 200),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_a13_historical_module_isolation_manifest(changed), path)
+
+
 if __name__ == "__main__":
     unittest.main()

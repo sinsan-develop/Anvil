@@ -1435,3 +1435,33 @@
 - 미검증 경계: 동일 process 전체 tooling의 clean PASS는 위 기존 historical fixture 실패 때문에 확보하지 못했다. seq596 focused/live/determinism/raw history/exact Git 검증은 별도로 완료하고, 전체 suite를 PASS로 과장하지 않는다.
 - 최종 precommit 검증: seq590+596 focused `3 passed, 224 deselected`; live checker `PASS sequence=596 reporting=AUTO_CONTINUE`; in-memory compile, deterministic builder, seq1~590 raw prefix, strict manifest, `git diff --check` 모두 PASS다. Git collector는 K+dirty exact12와 validated base cumulative exact195, private control K/candidate S를 PASS했다.
 - 최초 postcommit `git diff --check HEAD^ HEAD`에서 신규 validation/WI/prompt 3개 EOF 여백을 발견했다. fingerprint `SEQ596_NEW_DOC_EOF_BLANK_R1` 1회. 신규 exact12 내부 비의미 포맷 오류이므로 제거하고 generated hashes를 재결박한 뒤 동일 direct-child commit을 amend한다.
+
+### C-21 A13 historical module isolation successor — seq597~602
+
+- 담당: `developer-primary`; 인수 branch/HEAD: `codex/c21-operational-execution` / `6e06810ea02b72e5642da8258cd0ae5fb6d87dc6` (clean).
+- 범위: seq1~596, historical evidence, 제품 코드는 불변으로 보존하고 `tests/tooling/test_a13_repository_scan.py`의 historical import만 context-managed isolation한다. `packages`와 `packages.repository_intelligence*` module cache 및 `sys.path`를 성공·예외 모두에서 정확히 복원한다.
+- 계획 경계: 신규 exact13, cumulative exact201, seq597~602 lifecycle. Provider·Telegram·WSL·ysna·main·push는 수행하지 않는다.
+- 다음: 순서 의존 2-node 재현 테스트와 예외 복원 negative 테스트를 먼저 추가하고 RED를 확인한다.
+- TDD RED: `.venv\Scripts\python.exe -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider -k "historical_checker_isolates_package_modules_across_two_nodes or historical_checker_restores_modules_and_path_after_exception"` → `2 failed, 63 deselected`, exit1. 두 테스트 모두 기존 `_historical_checker`가 tuple을 반환하여 context manager protocol을 제공하지 않는 예상 이유로 실패했다. fingerprint `A13_HISTORICAL_IMPORT_ISOLATION_MISSING_R1` 1회.
+- 다음: helper를 context manager로 전환하고 historical root를 `sys.path` 최우선에 잠시 설정하며, `packages`/`packages.repository_intelligence*`와 checker module을 `finally`에서 정확히 복원한다.
+- GREEN focused: 위 helper를 context manager로 전환하고 6개 historical caller를 context 범위로 제한했다. RED와 동일 명령은 `2 passed, 63 deselected in 24.78s`, exit0이다. 성공 노드 2개 사이와 강제 예외 후 모두 original module identity 및 `sys.path` exact list가 복원됨을 확인했다.
+- 다음: A13 파일 전체를 단일 process에서 실행해 기존 `PUBLIC_RESULT_SCHEMA_MISMATCH` 순서 의존성 해소와 회귀를 확인한다.
+- A13 전체 GREEN: `.venv\Scripts\python.exe -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → `65 passed in 72.01s`, exit0. 기존 전체 실행의 `PUBLIC_RESULT_SCHEMA_MISMATCH`가 재발하지 않았다.
+- seq602 projection TDD RED: `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k seq602` → `2 failed, 227 deselected`, exit1. 신규 builder/metadata가 없는 예상 이유로 실패했다. fingerprint `C21_A13_MODULE_ISOLATION_PROJECTION_UNBOUND_R1` 1회.
+- 다음: seq596을 parent로 하는 seq597~602 append-only builder, strict manifest/projection/Git predicate를 추가하고 exact13/cumulative201을 결박한다.
+- seq602 focused GREEN: builder, metadata, strict manifest/projection validator, seq602 우선 Git predicate와 manifest routing을 구현했다. `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k seq602` → `2 passed, 227 deselected in 2.21s`, exit0.
+- 터미널 상태는 seq596과 동일하게 `READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE`, next action은 `INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE`이며 acceptance/C-01/DIR-2 차단을 그대로 유지한다.
+- 다음: 신규 generated5를 materialize하고 live checker와 byte determinism을 확인한다.
+- generated5 최초 materialize는 sandbox가 `D:\tmp` exec write를 거부하여 `PermissionError` exit1이었다. fingerprint `SEQ602_GENERATED_WRITE_SANDBOX_DENIED_R1` 1회. 플랫폼 실행 권한을 정식 요청해 동일 builder를 성공적으로 실행했다.
+- 첫 live checker는 `EVENT_EFFECT_MISMATCH`, `GIT_PRIVATE_AUTHORITY_MISMATCH` exit1이었다. fingerprint `SEQ602_EVENT_REMOTE_AND_PRIVATE_CONTROL_BINDING_R1` 1회. seq602 completion event에 seq596의 public upstream projection을 유지하는 `completion_upstream_head`가 없었고, private control ref는 push 금지 경계에서 실제로는 seq590 control `8fe7b97...`을 유지하고 있었다. 실제 권위를 manifest/collector에 정확히 결박해 교정했다.
+- 교정 후 generated5 materialize 및 live checker는 `PASS sequence=602 reporting=AUTO_CONTINUE`, exit0이다.
+- exact13 hash는 Windows `3363F8F3DB4BE55C2D4CC12FCDD60D8EDEEDA46C7385CE87A92FAD6B72FF820A`, ordinal `7EBDAF635BD89CFBFB9B183003613CE433A9929405AF74005DDDF85A5CB0DF42`; cumulative exact201 hash는 Windows `DF0884A6F6AA73738488487E4A8C5181A6022FA4443DDCF1E28B69FA6EA3882D`, ordinal `FF0B9643404E4EA080313E43AD52BC3D356A82710415162B437C2914FFBA8312`다.
+- 다음: 정적 metadata hash를 고정한 generated5를 재생성한 뒤 focused/A13 회귀와 전체 tooling을 실행한다.
+- metadata hash 고정 후 focused seq596+602는 `4 passed, 225 deselected in 1.68s`, A13 전체는 `65 passed in 88.50s`, live checker는 `PASS sequence=602 reporting=AUTO_CONTINUE`로 모두 exit0이다.
+- 다음: generated5를 최신 WORK_STATUS hash로 재생성하고 `tests/tooling` 전체를 단일 process에서 실행해 전체 통과를 확인한다.
+- 전체 tooling: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → `597 passed in 1247.18s`, exit0. 기존 기대 595는 seq602 projection 테스트 2개를 전체 수에 포함하지 않은 계산 오류였고, 실제 collection 결과 597로 evidence/contract를 정정했다. fingerprint `SEQ602_TOOLING_EXPECTED_COUNT_CORRECTION_R1` 1회.
+- 장시간 테스트 상태 확인 중 `Get-CimInstance Win32_Process`는 OS access denied로 실패했다. fingerprint `SEQ602_PROCESS_COMMANDLINE_DIAGNOSTIC_DENIED_R1` 1회(제품/테스트 실패 아님). `Get-Process`로 worker/launcher의 `Responding=True`와 CPU 증가를 확인했다.
+- 다음: 597 evidence 정정 후 generated5를 재생성하고 focused/live/determinism/history/Git 최종 검증을 수행한다.
+- 597 evidence 정정 후 seq596+602 focused는 `4 passed, 225 deselected in 1.76s`, live checker는 `PASS sequence=602 reporting=AUTO_CONTINUE`, 모두 exit0이다.
+- generated5 2회 byte equality, materialized generated5 equality, seq1~596 raw event object prefix, strict manifest, raw checksum row 12개, exact13/cumulative201 metadata, `git diff --check`는 모두 PASS했다.
+- precommit status는 선언된 exact13만 dirty/untracked이며 제품 코드·historical evidence 변경은 0건이다. 다음: WORK_STATUS 최종 hash를 generated5에 재결박하고 quick final verification 후 단일 commit한다.

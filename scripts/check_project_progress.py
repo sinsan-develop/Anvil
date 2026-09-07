@@ -12788,6 +12788,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 602:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_a13_historical_module_isolation_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 596:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13700,6 +13704,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_candidate_bound_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_runtime_result_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json":
+            errors.extend(validate_c21_a13_historical_module_isolation_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_local_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json":
@@ -19895,6 +19901,160 @@ def _collect_c21_workbench_ui_wsl_runtime_result_git(bundle: Mapping[str,Any])->
         if direct!=meta["exact_paths"] or cumulative!=meta["cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
         if head==C21_WORKBENCH_UI_WSL_RUNTIME_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
         return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_WSL_RUNTIME_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_A13_MODULE_ISOLATION_PARENT = "6e06810ea02b72e5642da8258cd0ae5fb6d87dc6"
+C21_A13_MODULE_ISOLATION_AT = "2026-09-08T08:42:00+09:00"
+C21_A13_MODULE_ISOLATION_STATUS = "READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE"
+C21_A13_MODULE_ISOLATION_WI_ID = "WI-C-21-A13-HISTORICAL-MODULE-ISOLATION-20260908-001"
+C21_A13_MODULE_ISOLATION_P = "docs/progress/build-progress.json"
+C21_A13_MODULE_ISOLATION_E = "docs/progress/progress-events.json"
+C21_A13_MODULE_ISOLATION_H = "docs/progress/BUILD_HANDOFF.md"
+C21_A13_MODULE_ISOLATION_D = "docs/progress/progress-handoff-detached-digest-c21-a13-historical-module-isolation.json"
+C21_A13_MODULE_ISOLATION_M = "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json"
+C21_A13_MODULE_ISOLATION_WI = "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_WORK_INSTRUCTION.md"
+C21_A13_MODULE_ISOLATION_PROMPT = "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_INVOCATION_PROMPT.md"
+
+
+def c21_a13_historical_module_isolation_paths() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-21_A13_HISTORICAL_MODULE_ISOLATION_REPORT.md",
+        "docs/WORK_STATUS.md", C21_A13_MODULE_ISOLATION_M, C21_A13_MODULE_ISOLATION_H,
+        C21_A13_MODULE_ISOLATION_P, C21_A13_MODULE_ISOLATION_E, C21_A13_MODULE_ISOLATION_D,
+        "docs/validation/C-21_A13_HISTORICAL_MODULE_ISOLATION_VALIDATION.md",
+        C21_A13_MODULE_ISOLATION_PROMPT, C21_A13_MODULE_ISOLATION_WI,
+        "scripts/check_project_progress.py", "tests/tooling/test_a13_repository_scan.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c21_a13_historical_module_isolation_metadata() -> dict[str, Any]:
+    exact = c21_a13_historical_module_isolation_paths()
+    cumulative = sorted(set(c21_workbench_ui_wsl_runtime_result_metadata()["cumulative_paths"]) | set(exact))
+    result = {
+        "exact_paths": exact, "exact_path_count": len(exact),
+        "exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_paths": cumulative, "cumulative_path_count": len(cumulative),
+        "cumulative_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = {
+        "exact_path_count": 13,
+        "exact_path_list_sha256": "3363F8F3DB4BE55C2D4CC12FCDD60D8EDEEDA46C7385CE87A92FAD6B72FF820A",
+        "exact_path_list_ordinal_sha256": "7EBDAF635BD89CFBFB9B183003613CE433A9929405AF74005DDDF85A5CB0DF42",
+        "cumulative_path_count": 201,
+        "cumulative_path_list_sha256": "DF0884A6F6AA73738488487E4A8C5181A6022FA4443DDCF1E28B69FA6EA3882D",
+        "cumulative_path_list_ordinal_sha256": "FF0B9643404E4EA080313E43AD52BC3D356A82710415162B437C2914FFBA8312",
+    }
+    if any(result[key] != value for key, value in expected.items()):
+        raise ValueError("C21_A13_MODULE_ISOLATION_PATH_METADATA_INVALID")
+    return result
+
+
+def _c21_a13_historical_module_isolation_authority() -> dict[str, Any]:
+    return {
+        "remote": "development", "url": C21_WORKBENCH_UI_WSL_PRIVATE_URL,
+        "control_ref": "refs/heads/codex/c21-operational-execution",
+        "candidate_ref": C21_WORKBENCH_UI_WSL_NEW_CANDIDATE_REF,
+        "observed_control": C21_WORKBENCH_UI_WSL_RUNTIME_PARENT,
+        "observed_candidate": C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,
+        "public_origin_is_push_authority": False,
+    }
+
+
+def _c21_a13_historical_module_isolation_result() -> dict[str, Any]:
+    return {
+        "scope": "TEST_HARNESS_ONLY", "changed_test": "tests/tooling/test_a13_repository_scan.py",
+        "product_code_mutation_count": 0, "historical_evidence_mutation_count": 0,
+        "isolated_modules": ["packages", "packages.repository_intelligence*"],
+        "checker_module_isolated": True, "sys_path_exact_restore": True,
+        "two_node_order": "PASS", "success_restore": "PASS", "exception_restore": "PASS",
+        "focused_isolation": "2_PASSED", "a13_suite": "65_PASSED", "full_tooling": "597_PASSED",
+        "prior_failure_fingerprint": "HISTORICAL_A13_MODULE_CACHE_SCHEMA_R1",
+        "prior_failure_count": 1, "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED",
+        "wsl": "NOT_EXECUTED", "ysna": "NOT_EXECUTED", "main_merge": "NOT_EXECUTED", "push": "NOT_EXECUTED",
+    }
+
+
+def _c21_a13_historical_module_isolation_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    worker={"lease_id":"worker-lease-c21-a13-historical-module-isolation-20260908-001","agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"A13-HISTORICAL-MODULE-ISOLATION-R1","lease_epoch":1,"execution_fencing_token":"c21-a13-module-isolation-execution-fence-epoch-1-6e06810","fencing_token":"c21-a13-module-isolation-execution-fence-epoch-1-6e06810","status":"ACTIVE"}
+    write={"lease_id":"write-lease-c21-a13-historical-module-isolation-20260908-001","worker_lease_id":worker["lease_id"],"agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"A13-HISTORICAL-MODULE-ISOLATION-R1","write_epoch":1,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":"c21-a13-module-isolation-write-fence-epoch-1-6e06810","fencing_token":"c21-a13-module-isolation-write-fence-epoch-1-6e06810","status":"ACTIVE","path_scope":c21_a13_historical_module_isolation_paths(),"paths":c21_a13_historical_module_isolation_paths()}
+    return worker,write
+
+
+def _c21_a13_historical_module_isolation_events(wi_sha: str, prompt_sha: str) -> list[dict[str, Any]]:
+    meta=c21_a13_historical_module_isolation_metadata(); result=_c21_a13_historical_module_isolation_result(); worker,write=_c21_a13_historical_module_isolation_leases()
+    common={"occurred_at":C21_A13_MODULE_ISOLATION_AT,"occurred_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","actor_type":"AGENT","actor_id":"developer-primary","project_id":"anvil","run_id":None,"work_package_id":"C-21","step_id":"A13-HISTORICAL-MODULE-ISOLATION-R1","actor":"developer-primary","subject_ref":"C-21/A13-HISTORICAL-MODULE-ISOLATION-R1"}
+    boundary={"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","wsl":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","push":"NOT_EXECUTED"}
+    prefix="evt_c21_a13_historical_module_isolation_"
+    return [
+        {**common,"event_id":prefix+"worker_lease_issued","sequence":597,"event_type":"WORKER_LEASE_ISSUED","details":{**boundary,**worker,"work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID}},
+        {**common,"event_id":prefix+"write_lease_issued","sequence":598,"event_type":"WRITE_LEASE_ISSUED","details":{**boundary,**write,"path_count":13,"path_list_sha256":meta["exact_path_list_sha256"],"work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID}},
+        {**common,"event_id":prefix+"package_started","sequence":599,"event_type":"PACKAGE_STARTED","details":{**boundary,"work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID,"work_instruction_sha256":wi_sha,"invocation_sha256":prompt_sha,"dispatch_head":C21_A13_MODULE_ISOLATION_PARENT,"package_status":"ACTIVE_A13_HISTORICAL_MODULE_ISOLATION"}},
+        {**common,"event_id":prefix+"write_lease_revoked","sequence":600,"event_type":"WRITE_LEASE_REVOKED","details":{**boundary,**{**write,"status":"REVOKED"},"reason":"RESULT_HANDOFF","work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID}},
+        {**common,"event_id":prefix+"worker_lease_revoked","sequence":601,"event_type":"WORKER_LEASE_REVOKED","details":{**boundary,**{**worker,"status":"REVOKED"},"reason":"RESULT_HANDOFF","work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID}},
+        {**common,"event_id":prefix+"package_completed","sequence":602,"event_type":"PACKAGE_COMPLETED","details":{**boundary,"work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID,"completion_parent":C21_A13_MODULE_ISOLATION_PARENT,"completion_head":C21_A13_MODULE_ISOLATION_PARENT,"completion_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_6E06810_EXACT13_DIRTY","candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"isolation_result":result,"result_status":C21_A13_MODULE_ISOLATION_STATUS,"package_status":C21_A13_MODULE_ISOLATION_STATUS,"exact_allowed_paths":meta["cumulative_paths"],"next_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE"}},
+    ]
+
+
+def c21_a13_historical_module_isolation_artifacts(historical: Mapping[str,bytes], files: Mapping[str,bytes]) -> dict[str,bytes]:
+    generated={C21_A13_MODULE_ISOLATION_P,C21_A13_MODULE_ISOLATION_E,C21_A13_MODULE_ISOLATION_H,C21_A13_MODULE_ISOLATION_D,C21_A13_MODULE_ISOLATION_M}
+    if set(files)!=set(c21_a13_historical_module_isolation_paths())-generated: raise ValueError("C21_A13_MODULE_ISOLATION_FILE_SET_INVALID")
+    progress=_c21_resume_json(historical[C21_A13_MODULE_ISOLATION_P])
+    if progress.get("event_sequence")!=596: raise ValueError("C21_A13_MODULE_ISOLATION_HISTORY_INVALID")
+    wi_sha=_c21_resume_sha(files[C21_A13_MODULE_ISOLATION_WI]); prompt_sha=_c21_resume_sha(files[C21_A13_MODULE_ISOLATION_PROMPT]); additions=_c21_a13_historical_module_isolation_events(wi_sha,prompt_sha); events_raw=_c21_append_events(historical[C21_A13_MODULE_ISOLATION_E],596,additions)
+    meta=c21_a13_historical_module_isolation_metadata(); result=_c21_a13_historical_module_isolation_result(); authority=_c21_a13_historical_module_isolation_authority(); worker,write=_c21_a13_historical_module_isolation_leases(); worker["status"]="REVOKED"; write["status"]="REVOKED"
+    instruction={"artifact_id":C21_A13_MODULE_ISOLATION_WI_ID,"artifact_path":C21_A13_MODULE_ISOLATION_WI,"artifact_sha256":wi_sha,"invocation_path":C21_A13_MODULE_ISOLATION_PROMPT,"invocation_sha256":prompt_sha,"executor":"developer-primary","result_status":"COMPLETED","package_status":C21_A13_MODULE_ISOLATION_STATUS,"accepted":False,"c21_acceptance_status":"BLOCKED_NOT_ACCEPTED","c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED"}
+    repository=dict(progress["repository"]); repository.update({"local_head":C21_A13_MODULE_ISOLATION_PARENT,"head_relation":"FEATURE_WORKTREE_6E06810_EXACT13_DIRTY","worktree_status":"SEQ602_A13_HISTORICAL_MODULE_ISOLATION_EXACT13_DIRTY","exact_allowed_paths":meta["cumulative_paths"],"a13_historical_module_isolation_paths":meta["exact_paths"],"push_status":"NOT_EXECUTED"})
+    active={"status":C21_A13_MODULE_ISOLATION_STATUS,"parent_control_commit":C21_A13_MODULE_ISOLATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"private_git_authority":authority,"isolation_result":result,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**meta}
+    progress.update({"updated_at":C21_A13_MODULE_ISOLATION_AT,"recorded_at":C21_A13_MODULE_ISOLATION_AT,"event_sequence":602,"last_event_id":additions[-1]["event_id"],"status":C21_A13_MODULE_ISOLATION_STATUS,"active_agent":None,"worker_lease":worker,"write_lease":write,"active_work_instruction":instruction,"completed_work_instruction":instruction,"repository":repository,"a13_historical_module_isolation":active,"runtime_next_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE","next_safe_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE","current_progress_evidence_ref":{"package_id":"C-21","path":C21_A13_MODULE_ISOLATION_D,"manifest_path":C21_A13_MODULE_ISOLATION_M},"latest_evidence_manifest_ref":{"path":C21_A13_MODULE_ISOLATION_M,"artifact_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-20260908"},"reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["A13_HISTORICAL_MODULE_ISOLATION_PASS_ACCEPTANCE_STATE_UNCHANGED"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":C21_A13_MODULE_ISOLATION_E,"sha256":_c21_resume_sha(events_raw)}; latest={**files,C21_A13_MODULE_ISOLATION_E:events_raw}; progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(raw)} for p,raw in sorted(latest.items())]; progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":602,"last_event_id":additions[-1]["event_id"],"status":C21_A13_MODULE_ISOLATION_STATUS,"current_phase":"C","current_work_package":"C-21","active_agent":None,"worker_lease":worker,"write_lease":write,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":write["write_fencing_token"],"active_work_instruction":C21_A13_MODULE_ISOLATION_WI_ID,"active_work_instruction_sha256":wi_sha,"active_invocation_sha256":prompt_sha,"repository_head":C21_A13_MODULE_ISOLATION_PARENT,"repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],"repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],"repository_exact_allowed_paths":meta["cumulative_paths"],"design_baseline_hash":progress["design_baseline_hash"],"valid_failure_count":progress["valid_failure_count"],"dir_status":progress["dir_review"]["status"],"reporting_decision":"AUTO_CONTINUE","private_git_authority":authority,"isolation_result":result,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","next_safe_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",**meta}
+    htext="# C-21 A13 historical module isolation — seq602\n\n- historical checker import cache를 test context에만 격리하고 acceptance 대기 상태를 유지한다.\n\n"+historical[C21_A13_MODULE_ISOLATION_H].decode(); replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"; htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count!=1: raise ValueError("C21_A13_MODULE_ISOLATION_HANDOFF_INVALID")
+    handoff_raw=htext.encode(); digest={"schema_version":"1.0.0","digest_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-DIGEST-20260908","package_id":"C-21","event_sequence":602,"algorithm":"SHA-256","created_at":C21_A13_MODULE_ISOLATION_AT,"scope":"seq597-602 append-only; seq1-596 preserved; exact13 cumulative201","self_reference":False,"progress":{"path":C21_A13_MODULE_ISOLATION_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},"handoff":{"path":C21_A13_MODULE_ISOLATION_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}; digest_raw=_c21_resume_json_bytes(digest)
+    prior={**files,C21_A13_MODULE_ISOLATION_E:events_raw,C21_A13_MODULE_ISOLATION_P:progress_raw,C21_A13_MODULE_ISOLATION_H:handoff_raw,C21_A13_MODULE_ISOLATION_D:digest_raw}; manifest={"schema_version":"1.0.0","manifest_type":"C21_A13_HISTORICAL_MODULE_ISOLATION_PROJECTION","artifact_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-20260908","recorded_at":C21_A13_MODULE_ISOLATION_AT,"recorded_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","event_sequence":602,"appended_event_count":6,"historical_event_sequence":596,"historical_commit":C21_A13_MODULE_ISOLATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID,"execution_authority_sha256":wi_sha,"private_git_authority":authority,"status":C21_A13_MODULE_ISOLATION_STATUS,"isolation_result":result,"self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**meta}; manifest["raw_checksums"]=[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(prior.items())]
+    return {C21_A13_MODULE_ISOLATION_E:events_raw,C21_A13_MODULE_ISOLATION_P:progress_raw,C21_A13_MODULE_ISOLATION_H:handoff_raw,C21_A13_MODULE_ISOLATION_D:digest_raw,C21_A13_MODULE_ISOLATION_M:_c21_resume_json_bytes(manifest)}
+
+
+def c21_a13_historical_module_isolation_from_root(root: Path) -> dict[str,bytes]:
+    historical={p:subprocess.check_output(["git","show",f"{C21_A13_MODULE_ISOLATION_PARENT}:{p}"],cwd=root) for p in (C21_A13_MODULE_ISOLATION_P,C21_A13_MODULE_ISOLATION_E,C21_A13_MODULE_ISOLATION_H)}
+    generated={C21_A13_MODULE_ISOLATION_P,C21_A13_MODULE_ISOLATION_E,C21_A13_MODULE_ISOLATION_H,C21_A13_MODULE_ISOLATION_D,C21_A13_MODULE_ISOLATION_M}; files={p:(root/p).read_bytes() for p in set(c21_a13_historical_module_isolation_paths())-generated}
+    return c21_a13_historical_module_isolation_artifacts(historical,files)
+
+
+def validate_c21_a13_historical_module_isolation_manifest(manifest: Mapping[str,Any]) -> list[str]:
+    try:
+        meta=c21_a13_historical_module_isolation_metadata(); expected={"schema_version":"1.0.0","manifest_type":"C21_A13_HISTORICAL_MODULE_ISOLATION_PROJECTION","artifact_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-20260908","recorded_at":C21_A13_MODULE_ISOLATION_AT,"recorded_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","event_sequence":602,"appended_event_count":6,"historical_event_sequence":596,"historical_commit":C21_A13_MODULE_ISOLATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"work_instruction_id":C21_A13_MODULE_ISOLATION_WI_ID,"private_git_authority":_c21_a13_historical_module_isolation_authority(),"status":C21_A13_MODULE_ISOLATION_STATUS,"isolation_result":_c21_a13_historical_module_isolation_result(),"self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**meta}
+        allowed=set(expected)|{"execution_authority_sha256","raw_checksums"}
+        if set(manifest)!=allowed or any(not _c21_strict_json_equal(manifest.get(k),v) for k,v in expected.items()) or re.fullmatch(r"[0-9A-F]{64}",str(manifest.get("execution_authority_sha256"))) is None: return ["C21_A13_MODULE_ISOLATION_MANIFEST_INVALID"]
+        rows=manifest.get("raw_checksums"); expected_paths=set(c21_a13_historical_module_isolation_paths())-{C21_A13_MODULE_ISOLATION_M}
+        if type(rows) is not list or {r.get("path") for r in rows if type(r) is dict}!=expected_paths or any(type(r) is not dict or set(r)!={"path","bytes","sha256"} or type(r.get("bytes")) is not int or r["bytes"]<=0 or re.fullmatch(r"[0-9A-F]{64}",str(r.get("sha256"))) is None for r in rows): return ["C21_A13_MODULE_ISOLATION_CHECKSUMS_INVALID"]
+        return []
+    except (TypeError,KeyError,ValueError): return ["C21_A13_MODULE_ISOLATION_MANIFEST_INVALID"]
+
+
+def validate_c21_a13_historical_module_isolation_projection(bundle: Mapping[str,Any],manifest: Mapping[str,Any])->list[str]:
+    try:
+        expected=c21_a13_historical_module_isolation_from_root(bundle["_root"]); actual={C21_A13_MODULE_ISOLATION_P:bundle.get("progress"),C21_A13_MODULE_ISOLATION_E:bundle.get("events"),C21_A13_MODULE_ISOLATION_H:bundle.get("handoff"),C21_A13_MODULE_ISOLATION_D:bundle.get("detached_digest"),C21_A13_MODULE_ISOLATION_M:manifest}; objects={C21_A13_MODULE_ISOLATION_P:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_P]),C21_A13_MODULE_ISOLATION_E:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_E]),C21_A13_MODULE_ISOLATION_H:extract_handoff_summary(expected[C21_A13_MODULE_ISOLATION_H].decode()),C21_A13_MODULE_ISOLATION_D:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_D]),C21_A13_MODULE_ISOLATION_M:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_M])}; errors=[] if all(_c21_strict_json_equal(actual[p],objects[p]) for p in actual) else ["C21_A13_MODULE_ISOLATION_PROJECTION_INVALID"]; errors.extend(validate_c21_a13_historical_module_isolation_manifest(manifest)); return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError,json.JSONDecodeError): return ["C21_A13_MODULE_ISOLATION_INPUT_INVALID"]
+
+
+def _collect_c21_a13_historical_module_isolation_git(bundle: Mapping[str,Any])->list[str]:
+    root=bundle["_root"]; meta=c21_a13_historical_module_isolation_metadata()
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}"); private_url=_git_value(root,"remote","get-url","development"); control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution"); candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact187")
+        if status is None or None in (head,branch,upstream,private_url,control,candidate): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution": return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url!=C21_WORKBENCH_UI_WSL_PRIVATE_URL or control!=C21_WORKBENCH_UI_WSL_RUNTIME_PARENT or candidate!=C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared=bundle["progress"].get("repository",{}).get("validated_base_commit")
+        if declared!=C21_EXACT_BINDING_BASE or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=sorted(_working_tree_paths(status)); direct=dirty if head==C21_A13_MODULE_ISOLATION_PARENT else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_A13_MODULE_ISOLATION_PARENT,head) or ""); cumulative=sorted(set(_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or "")) | (set(dirty) if head==C21_A13_MODULE_ISOLATION_PARENT else set()))
+        if direct!=meta["exact_paths"] or cumulative!=meta["cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head==C21_A13_MODULE_ISOLATION_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_A13_MODULE_ISOLATION_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
     except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 

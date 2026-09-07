@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import contextmanager
 from pathlib import Path
 from unittest import mock
 
@@ -60,16 +61,44 @@ def _historical_root(commit: str) -> Path:
     return _HISTORICAL_ROOT
 
 
+def _is_historical_package_module(name: str) -> bool:
+    return name == "packages" or name.startswith("packages.repository_intelligence")
+
+
+@contextmanager
 def _historical_checker(commit: str, module_name: str):
     root = _historical_root(commit)
     checker_path = root / "scripts/check_a13_repository_scan.py"
-    spec = importlib.util.spec_from_file_location(module_name, checker_path)
-    if spec is None or spec.loader is None:
-        raise AssertionError(f"historical A-13 checker cannot be loaded: {commit}")
-    checker = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = checker
-    spec.loader.exec_module(checker)
-    return root, checker
+    original_path = list(sys.path)
+    original_modules = {
+        name: module
+        for name, module in sys.modules.items()
+        if _is_historical_package_module(name)
+    }
+    missing = object()
+    original_checker = sys.modules.get(module_name, missing)
+    try:
+        for name in tuple(sys.modules):
+            if _is_historical_package_module(name):
+                del sys.modules[name]
+        sys.path.insert(0, str(root))
+        spec = importlib.util.spec_from_file_location(module_name, checker_path)
+        if spec is None or spec.loader is None:
+            raise AssertionError(f"historical A-13 checker cannot be loaded: {commit}")
+        checker = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = checker
+        spec.loader.exec_module(checker)
+        yield root, checker
+    finally:
+        for name in tuple(sys.modules):
+            if _is_historical_package_module(name):
+                del sys.modules[name]
+        sys.modules.update(original_modules)
+        if original_checker is missing:
+            sys.modules.pop(module_name, None)
+        else:
+            sys.modules[module_name] = original_checker
+        sys.path[:] = original_path
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
@@ -763,15 +792,58 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertTrue(all(case["project_execution_allowed"] is False for case in catalog["cases"]))
 
     def test_checker_validates_reusable_contract_and_eight_fixtures(self) -> None:
-        historical_root, checker = _historical_checker(_A13_ACCEPTED, "a13_checker_frozen")
-        report = checker.validate_bundle(historical_root)
-        changed_paths = checker._git_changed_paths(historical_root)
+        with _historical_checker(_A13_ACCEPTED, "a13_checker_frozen") as (historical_root, checker):
+            report = checker.validate_bundle(historical_root)
+            changed_paths = checker._git_changed_paths(historical_root)
 
-        self.assertIsNotNone(checker._revision2_completion_successor(historical_root, changed_paths))
-        self.assertEqual(report["errors"], [])
-        self.assertEqual(report["fixture_count"], 8)
-        self.assertEqual(report["zero_delta_count"], 8)
-        self.assertEqual(report["hostile_case_count"], 15)
+            self.assertIsNotNone(checker._revision2_completion_successor(historical_root, changed_paths))
+            self.assertEqual(report["errors"], [])
+            self.assertEqual(report["fixture_count"], 8)
+            self.assertEqual(report["zero_delta_count"], 8)
+            self.assertEqual(report["hostile_case_count"], 15)
+
+    def test_historical_checker_isolates_package_modules_across_two_nodes(self) -> None:
+        from packages.repository_intelligence import ScanResult
+
+        tracked = lambda: {
+            name: module
+            for name, module in sys.modules.items()
+            if name == "packages" or name.startswith("packages.repository_intelligence")
+        }
+        original_modules = tracked()
+        original_path = list(sys.path)
+
+        for commit, module_name in (
+            (_A13_ACCEPTED, "a13_checker_isolated_node_one"),
+            (_B12_R2_COMPLETION, "a13_checker_isolated_node_two"),
+        ):
+            with _historical_checker(commit, module_name) as (historical_root, checker):
+                report = checker.validate_bundle(historical_root)
+                self.assertEqual([], report["errors"])
+                loaded = sys.modules["packages.repository_intelligence"]
+                self.assertNotEqual(ScanResult, loaded.ScanResult)
+                self.assertTrue(Path(loaded.__file__).is_relative_to(historical_root))
+
+            self.assertEqual(original_path, sys.path)
+            self.assertEqual(original_modules, tracked())
+
+    def test_historical_checker_restores_modules_and_path_after_exception(self) -> None:
+        from packages.repository_intelligence import ScanResult  # noqa: F401
+
+        tracked = lambda: {
+            name: module
+            for name, module in sys.modules.items()
+            if name == "packages" or name.startswith("packages.repository_intelligence")
+        }
+        original_modules = tracked()
+        original_path = list(sys.path)
+
+        with self.assertRaisesRegex(RuntimeError, "forced historical import failure"):
+            with _historical_checker(_A13_ACCEPTED, "a13_checker_isolated_exception"):
+                raise RuntimeError("forced historical import failure")
+
+        self.assertEqual(original_path, sys.path)
+        self.assertEqual(original_modules, tracked())
 
     def test_checker_cli_reports_exact_counts(self) -> None:
         historical_root = _historical_root(_A13_ACCEPTED)
@@ -1089,16 +1161,16 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b04_start_successor_manifest_is_selected(self):
-        historical_root, checker = _historical_checker(_B04_START, "a13_checker_b04_start_frozen")
-        self.assertEqual([], checker.validate_evidence_manifest(historical_root))
+        with _historical_checker(_B04_START, "a13_checker_b04_start_frozen") as (historical_root, checker):
+            self.assertEqual([], checker.validate_evidence_manifest(historical_root))
 
     def test_b04_completion_successor_manifest_is_selected(self):
-        historical_root, checker = _historical_checker(_B04_COMPLETION, "a13_checker_b04_completion_frozen")
-        self.assertEqual([], checker.validate_evidence_manifest(historical_root))
+        with _historical_checker(_B04_COMPLETION, "a13_checker_b04_completion_frozen") as (historical_root, checker):
+            self.assertEqual([], checker.validate_evidence_manifest(historical_root))
 
     def test_b04_acceptance_successor_manifest_is_selected(self):
-        historical_root, checker = _historical_checker(_B04_ACCEPTANCE, "a13_checker_b04_acceptance_frozen")
-        self.assertEqual([], checker.validate_evidence_manifest(historical_root))
+        with _historical_checker(_B04_ACCEPTANCE, "a13_checker_b04_acceptance_frozen") as (historical_root, checker):
+            self.assertEqual([], checker.validate_evidence_manifest(historical_root))
 
     def test_b05_start_successor_manifest_is_selected(self):
         if _b10_acceptance_projection_current(): return
@@ -1484,12 +1556,12 @@ class A13RepositoryScanArtifactTests(unittest.TestCase):
         self.assertEqual(357, progress["event_sequence"]); self.assertEqual([], checker.validate_b12_rework_start_projection(ROOT)); self.assertEqual([], checker.validate_evidence_manifest(ROOT))
 
     def test_b12_r2_completion_selects_frozen_exact10_projection(self):
-        historical_root, checker = _historical_checker(_B12_R2_COMPLETION, "a13_b12_r2_done_frozen")
-        self.assertEqual([], checker.validate_b12_r2_completion_projection(historical_root))
+        with _historical_checker(_B12_R2_COMPLETION, "a13_b12_r2_done_frozen") as (historical_root, checker):
+            self.assertEqual([], checker.validate_b12_r2_completion_projection(historical_root))
 
     def test_b12_acceptance_selects_frozen_successor_projection(self):
-        historical_root, checker = _historical_checker(_B12_ACCEPTANCE, "a13_b12_accept_frozen")
-        self.assertEqual([], checker.validate_b12_acceptance_projection(historical_root))
+        with _historical_checker(_B12_ACCEPTANCE, "a13_b12_accept_frozen") as (historical_root, checker):
+            self.assertEqual([], checker.validate_b12_acceptance_projection(historical_root))
 
 if __name__ == "__main__":
     unittest.main()
