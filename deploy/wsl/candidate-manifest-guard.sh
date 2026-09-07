@@ -221,6 +221,127 @@ validate_wsl_candidate_manifest() {
   validate_wsl_execution_resume "$repo" "$control_sha" "$expected"
 }
 
+# seq590 Workbench UI exact187 Git-only candidate implementation. Historical
+# definitions remain unchanged; the final public dispatcher is appended below.
+_c21_validate_wsl_candidate_binding_before_workbench="$(declare -f validate_wsl_candidate_binding)"
+_c21_validate_wsl_candidate_manifest_before_workbench="$(declare -f validate_wsl_candidate_manifest)"
+eval "${_c21_validate_wsl_candidate_binding_before_workbench/validate_wsl_candidate_binding/validate_wsl_candidate_binding_before_workbench}"
+eval "${_c21_validate_wsl_candidate_manifest_before_workbench/validate_wsl_candidate_manifest/validate_wsl_candidate_manifest_before_workbench}"
+readonly C21_WORKBENCH_CANDIDATE='f0d4bc7badbdae69c2d2b21089667fdcc636518d'
+readonly C21_WORKBENCH_CANDIDATE_PARENT='468b1408f6e817d20d68c46a79ba44dc82cb4b3d'
+readonly C21_WORKBENCH_CONTROL_PREDECESSOR='8d043e39f6066283821abe47b36fa83e5ecff8b5'
+readonly C21_WORKBENCH_RUNTIME_CANDIDATE_REF='refs/remotes/origin/candidates/c21-wsl-exact187'
+
+_c21_workbench_candidate_manifest_contract() {
+  local payload="$1" python_bin="${ANVIL_PYTHON:-python3}"
+  command -v "$python_bin" >/dev/null || return 20
+  ANVIL_C21_MANIFEST="$payload" "$python_bin" - <<'PY' || return 20
+import hashlib, json, os
+def unique(pairs):
+    out={}
+    for key,value in pairs:
+        if key in out: raise ValueError('duplicate key')
+        out[key]=value
+    return out
+def nonfinite(value): raise ValueError('nonfinite')
+doc=json.loads(os.environ['ANVIL_C21_MANIFEST'],object_pairs_hook=unique,parse_constant=nonfinite)
+candidate='f0d4bc7badbdae69c2d2b21089667fdcc636518d'; old='324eb169fedbce958d2e8cc29362deb7af433677'
+private='git@github-sinsan-develop:sinsan-develop/Anvil.git'
+if type(doc) is not dict or doc.get('schema_version')!=1 or doc.get('manifest_type')!='WSL_STAGING_CANDIDATE': raise SystemExit(1)
+keys={'schema_version','manifest_type','status','runtime_safety_gate','source','environment','verification_scope','authority','exclusions','test_session_permission_scopes','wsl_observation','cleanup','runtime_binding','rollback'}
+if set(doc)!=keys: raise SystemExit(1)
+if (doc.get('status'),doc.get('runtime_safety_gate'))!=('GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS','BLOCKED_PENDING_PRIVATE_ATOMIC_CAS'): raise SystemExit(1)
+if doc.get('source')!={'commit':candidate,'remote_ref':'refs/remotes/origin/candidates/c21-wsl-exact187','working_tree':'CLEAN','branch':'codex/c21-operational-execution','upstream':'origin/codex/c21-operational-execution'}: raise SystemExit(1)
+b=doc.get('authority')
+if type(b) is not dict or hashlib.sha256(json.dumps(b,ensure_ascii=False,sort_keys=True,separators=(',',':')).encode()).hexdigest().upper()!='985BF0E357291D002C5081040684667524DDBC1F1DF83EAF01880874A58E03AF': raise SystemExit(1)
+b=doc.get('authority',{}).get('exact_private_git_binding')
+expected={'push_remote':'development','push_url':private,'control_ref':'refs/remotes/development/codex/c21-operational-execution','candidate_ref':'refs/heads/candidates/c21-wsl-exact187','observed_control':'8d043e39f6066283821abe47b36fa83e5ecff8b5','observed_candidate':'ABSENT','observed_existing_exact107':'a6dca0da5a37e64491e91813895268e78ecb78b2','control_compare_and_swap':True,'candidate_compare_and_swap':True,'runtime_fetch_remote':'origin','runtime_fetch_url':private,'runtime_control_ref':'refs/remotes/origin/codex/c21-operational-execution','runtime_candidate_ref':'refs/remotes/origin/candidates/c21-wsl-exact187','public_origin_is_push_authority':False}
+if b!=expected: raise SystemExit(1)
+scope=['tasks:write','tasks:read','run:events:read','provider:read']
+if doc.get('test_session_permission_scopes')!=scope: raise SystemExit(1)
+if doc.get('rollback')!={'approved_commits':[candidate,old],'test_session_permission_scopes_by_commit':{candidate:scope,old:['tasks:write','tasks:read','run:events:read']},'runtime_observation_required':True}: raise SystemExit(1)
+observed='a342d62391a44b349733d1468ac3b180761155ab'; resume='a6dca0da5a37e64491e91813895268e78ecb78b2'
+tuples=[{'application_head':observed,'current':observed,'previous':old},
+ {'application_head':resume,'current':resume,'previous':old},
+ {'application_head':resume,'current':old,'previous':old},
+ {'application_head':candidate,'current':candidate,'previous':old},
+ {'application_head':candidate,'current':old,'previous':old}]
+runtime={'host':'SINSAN','application_repo':'/srv/anvil-wsl/repo','application_repo_state':'CLEAN_DETACHED',
+ 'application_origin':private,'observed_application_head':observed,'observed_pg15_current':observed,
+ 'observed_pg18rc_current':observed,'observed_previous':old,
+ 'rollback_allowlist':[candidate,resume,observed,old],'allowed_lifecycle_tuples':tuples,
+ 'fail_closed_before_mutation':True}
+if doc.get('runtime_binding')!=runtime: raise SystemExit(1)
+if doc.get('environment')!={'name':'WSL_SERVER_TEST_STAGING','postgres_targets':['15','18-rc']}: raise SystemExit(1)
+if doc.get('cleanup')!={'exact_named_volumes':['anvil-wsl-pg15_anvil-db-data','anvil-wsl-pg18rc_anvil-db-data'],'required_labels':{'com.anvil.environment':'WSL_SERVER_TEST_STAGING','com.anvil.cleanup-scope':'C21_WSL_ISOLATED_TEST'}}: raise SystemExit(1)
+if doc.get('verification_scope')!={'mode':'PROVIDER_AND_TELEGRAM_EXCLUDED','included':['migration','api','authenticated_sse','last_event_id','same_origin','backup_restore','rollback'],'excluded':['provider_runtime','provider_external','provider_billing','telegram'],'evidence':{'provider':'NOT_EXECUTED','telegram':'NOT_EXECUTED'}}: raise SystemExit(1)
+obs=doc.get('wsl_observation')
+if obs!={'host':'SINSAN','application_repo':'/srv/anvil-wsl/repo','application_repo_state':'CLEAN_DETACHED','application_head':'a6dca0da5a37e64491e91813895268e78ecb78b2','active_control':'b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd','pg15_current':old,'pg15_previous':old,'pg18rc_current':old,'pg18rc_previous':old,'residual_containers':0,'residual_networks':0,'residual_volumes':0}: raise SystemExit(1)
+if doc.get('exclusions')!=['TELEGRAM_EXECUTION','PROVIDER_EXECUTION','YSNA_EXECUTION','MAIN_MERGE']: raise SystemExit(1)
+PY
+}
+
+_c21_workbench_validate_wsl_candidate_binding() {
+  local repo="$1" manifest_ref="$2" expected="$3" pinned_control_sha="${4:-}"
+  local control_sha current_control payload supplied_hash actual_hash paths status_raw head origin
+  if [[ "$expected" != "$C21_WORKBENCH_CANDIDATE" ]]; then
+    validate_wsl_candidate_binding_before_workbench "$repo" "$manifest_ref" "$expected" "$pinned_control_sha"
+    return $?
+  fi
+  [[ "$manifest_ref" == 'refs/remotes/origin/codex/c21-operational-execution' ]] || return 20
+  [[ "$expected" == "$C21_WORKBENCH_CANDIDATE" ]] || return 20
+  control_sha="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ -z "$pinned_control_sha" || "$control_sha" == "$pinned_control_sha" ]] || return 20
+  [[ "$(git -C "$repo" rev-parse --verify "$C21_WORKBENCH_RUNTIME_CANDIDATE_REF^{commit}")" == "$expected" ]] || return 21
+  supplied_hash="${ANVIL_CANDIDATE_MANIFEST_SHA256:?candidate manifest checksum is required}"
+  payload="$(git -C "$repo" show "$control_sha:deploy/wsl/CandidateReleaseManifest.json")" || return 20
+  actual_hash="$(printf '%s\n' "$payload" | sha256sum | cut -d' ' -f1)" || return 20
+  [[ "$actual_hash" == "${supplied_hash,,}" ]] || return 20
+  _c21_workbench_candidate_manifest_contract "$payload" || return 20
+  [[ "$(git -C "$repo" show -s --format=%P 72139df2f8cd3c16e1c7c08b26686f675400a2c9)" == "$C21_WORKBENCH_CONTROL_PREDECESSOR" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P 7eb2cc291bda729e21deebbed86376eac4db7c2b)" == '72139df2f8cd3c16e1c7c08b26686f675400a2c9' ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P d059e043ff642c9f5eb50da8dda8aaa8f4ed8408)" == '7eb2cc291bda729e21deebbed86376eac4db7c2b' ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_WORKBENCH_CANDIDATE_PARENT")" == 'd059e043ff642c9f5eb50da8dda8aaa8f4ed8408' ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$C21_WORKBENCH_CANDIDATE")" == "$C21_WORKBENCH_CANDIDATE_PARENT" ]] || return 21
+  [[ "$(git -C "$repo" show -s --format=%P "$control_sha")" == "$C21_WORKBENCH_CANDIDATE" ]] || return 21
+  for row in \
+    "$C21_WORKBENCH_CONTROL_PREDECESSOR 72139df2f8cd3c16e1c7c08b26686f675400a2c9 10 CFBA74FE970ADD24C512890616C8CAFBB269DF5AFE81A40AEBAB2A01D3F150D6" \
+    "72139df2f8cd3c16e1c7c08b26686f675400a2c9 7eb2cc291bda729e21deebbed86376eac4db7c2b 11 3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF" \
+    "7eb2cc291bda729e21deebbed86376eac4db7c2b d059e043ff642c9f5eb50da8dda8aaa8f4ed8408 10 8177130298C0103FF92935009FFC230F1AC1FC5A9F7651D3AEB40D16E67A8D80" \
+    "d059e043ff642c9f5eb50da8dda8aaa8f4ed8408 $C21_WORKBENCH_CANDIDATE_PARENT 16 4B6FB5B5AEFD4A7CF943A191437A3A31F8EEADED1C96A47A6B8934AAFAB3F4F0" \
+    "$C21_WORKBENCH_CANDIDATE_PARENT $C21_WORKBENCH_CANDIDATE 10 6E8FF216E3984D238E6229C489B97B8CBD3E45E7591D4378ED9EA5C4AFE8DFD5" \
+    "$C21_WORKBENCH_CANDIDATE $control_sha 12 D85669CA2C20EA8481C165F736FD28F017E7291BAFBB3916684A9DF5975EF714"; do
+    set -- $row; paths="$(git -C "$repo" diff --name-only "$1" "$2")" || return 20
+    [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == "$3" && "$(_c21_windows_path_hash "$paths")" == "$4" ]] || return 21
+  done
+  paths="$(git -C "$repo" diff --name-only eef349682ff5598e3488c9e75163c5e0a99a0bdb "$control_sha")" || return 20
+  [[ "$(printf '%s\n' "$paths" | sed '/^$/d' | wc -l | tr -d ' ')" == 189 && "$(_c21_windows_path_hash "$paths")" == '8A54D4594B30E4CACFD8AB8C54C187CB528735E39305E1503737932023BD786F' ]] || return 21
+  status_raw="$(git -C "$repo" status --porcelain=v1 --untracked-files=all)" || return 20
+  [[ -z "$status_raw" ]] || return 21
+  head="$(git -C "$repo" rev-parse --verify HEAD)" || return 20
+  [[ "$head" == 'a6dca0da5a37e64491e91813895268e78ecb78b2' || "$head" == "$expected" || "$head" == "$control_sha" ]] || return 21
+  if [[ -n "${ROOT:-}" ]]; then
+    [[ -z "$(git -C "$repo" branch --show-current)" ]] || return 21
+    origin="$(git -C "$repo" remote get-url origin)" || return 20
+    [[ "$origin" == 'git@github-sinsan-develop:sinsan-develop/Anvil.git' ]] || return 21
+  fi
+  current_control="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ "$current_control" == "$control_sha" ]] || return 20
+}
+
+_c21_workbench_validate_wsl_candidate_manifest() {
+  local repo="$1" manifest_ref="$2" expected="$3" control_sha current_control
+  if [[ "$expected" != "$C21_WORKBENCH_CANDIDATE" ]]; then
+    validate_wsl_candidate_manifest_before_workbench "$repo" "$manifest_ref" "$expected"
+    return $?
+  fi
+  control_sha="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  _c21_workbench_validate_wsl_candidate_binding "$repo" "$manifest_ref" "$expected" "$control_sha" || return $?
+  current_control="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
+  [[ "$current_control" == "$control_sha" ]] || return 20
+  validate_wsl_execution_resume "$repo" "$control_sha" "$expected"
+}
+
 # seq542 exact private-authority/runtime binding. Historical definitions above
 # remain visible for audit; these final definitions are the active contract.
 readonly C21_EXACT_START_CONTROL='71d6747c0b713bedf1a1bc6724a5771d6ae33c60'
@@ -314,7 +435,9 @@ validate_c21_exact_runtime_state() {
     case "$tuple" in
       "$C21_EXACT_OBSERVED_RUNTIME:$C21_EXACT_OBSERVED_RUNTIME:$C21_EXACT_OBSERVED_PREVIOUS"|\
       "$C21_RESUME_CANDIDATE:$C21_RESUME_CANDIDATE:$C21_EXACT_OBSERVED_PREVIOUS"|\
-      "$C21_RESUME_CANDIDATE:$C21_EXACT_OBSERVED_PREVIOUS:$C21_EXACT_OBSERVED_PREVIOUS") ;;
+      "$C21_RESUME_CANDIDATE:$C21_EXACT_OBSERVED_PREVIOUS:$C21_EXACT_OBSERVED_PREVIOUS"|\
+      "$C21_WORKBENCH_CANDIDATE:$C21_WORKBENCH_CANDIDATE:$C21_EXACT_OBSERVED_PREVIOUS"|\
+      "$C21_WORKBENCH_CANDIDATE:$C21_EXACT_OBSERVED_PREVIOUS:$C21_EXACT_OBSERVED_PREVIOUS") ;;
       *) echo "runtime state drift: unapproved lifecycle tuple for $target" >&2; return 23 ;;
     esac
   done
@@ -423,4 +546,27 @@ validate_wsl_candidate_manifest() {
   current_control="$(git -C "$repo" rev-parse --verify "$manifest_ref^{commit}")" || return 20
   [[ "$current_control" == "$control_sha" ]] || { echo 'control revision changed during runtime validation' >&2; return 20; }
   validate_wsl_execution_resume "$repo" "$control_sha" "$expected"
+}
+
+# seq590 final active dispatcher. Capture the complete historical exact107
+# implementation above, then route only the new exact187 source to its predicate.
+_c21_validate_wsl_candidate_binding_before_workbench_final="$(declare -f validate_wsl_candidate_binding)"
+_c21_validate_wsl_candidate_manifest_before_workbench_final="$(declare -f validate_wsl_candidate_manifest)"
+eval "${_c21_validate_wsl_candidate_binding_before_workbench_final/validate_wsl_candidate_binding/validate_wsl_candidate_binding_before_workbench_final}"
+eval "${_c21_validate_wsl_candidate_manifest_before_workbench_final/validate_wsl_candidate_manifest/validate_wsl_candidate_manifest_before_workbench_final}"
+
+validate_wsl_candidate_binding() {
+  if [[ "$3" == "$C21_WORKBENCH_CANDIDATE" ]]; then
+    _c21_workbench_validate_wsl_candidate_binding "$@"
+    return $?
+  fi
+  validate_wsl_candidate_binding_before_workbench_final "$@"
+}
+
+validate_wsl_candidate_manifest() {
+  if [[ "$3" == "$C21_WORKBENCH_CANDIDATE" ]]; then
+    _c21_workbench_validate_wsl_candidate_manifest "$@"
+    return $?
+  fi
+  validate_wsl_candidate_manifest_before_workbench_final "$@"
 }

@@ -34,6 +34,18 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             return f"/{value[0].lower()}{value[2:]}"
         return value
 
+    @staticmethod
+    def _non_git_snapshot(root: Path) -> dict[str, bytes]:
+        snapshot: dict[str, bytes] = {}
+        for directory, names, files in os.walk(root):
+            names[:] = [name for name in names if name != ".git"]
+            base = Path(directory)
+            for name in files:
+                path = base / name
+                if path.is_file():
+                    snapshot[str(path.relative_to(root))] = path.read_bytes()
+        return snapshot
+
     def _repo(self, historical=False, git_only=False):
         temp = tempfile.TemporaryDirectory()
         repo = Path(temp.name) / "repo"
@@ -47,7 +59,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
                 "clone",
                 "--quiet",
                 "--no-checkout",
-                "--no-hardlinks",
+                "--shared",
                 str(ROOT),
                 str(repo),
             ],
@@ -198,7 +210,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
         )
 
     def test_provider_git_only_candidate_contract_binds_exact107_source_and_control(self):
-        manifest = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads(subprocess.check_output(["git","show","3501c37b25274c2c3b406a15bc8a57aa03a162e7:deploy/wsl/CandidateReleaseManifest.json"],cwd=ROOT))
         self.assertEqual("a6dca0da5a37e64491e91813895268e78ecb78b2", manifest["source"]["commit"])
         self.assertEqual(
             "refs/remotes/origin/candidates/c21-wsl-exact107",
@@ -256,7 +268,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             control.mkdir(parents=True)
             for name in ("cleanup.sh", "common.sh", "candidate-manifest-guard.sh"):
                 (control / name).write_bytes(subprocess.check_output(["git", "show", "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994:deploy/wsl/" + name], cwd=repo))
-            before = {str(path.relative_to(repo)): path.read_bytes() for path in repo.rglob("*") if path.is_file() and ".git" not in path.parts}
+            before = self._non_git_snapshot(repo)
             command = f"docker() {{ echo UNEXPECTED_DOCKER; return 97; }}; export -f docker; bash '{self._posix(control / 'cleanup.sh')}' {candidate}"
             result = subprocess.run(["bash", "-c", command], text=True, capture_output=True,
                 env=os.environ | {"ANVIL_PYTHON": self._posix(Path(sys.executable)), "ANVIL_CANDIDATE_MANIFEST_SHA256": checksum,
@@ -265,7 +277,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self.assertEqual(22, result.returncode, result.stderr)
             self.assertIn("BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE", result.stderr)
             self.assertNotIn("UNEXPECTED_DOCKER", result.stdout + result.stderr)
-            after = {str(path.relative_to(repo)): path.read_bytes() for path in repo.rglob("*") if path.is_file() and ".git" not in path.parts}
+            after = self._non_git_snapshot(repo)
             self.assertEqual(before, after)
 
     def test_manifest_checksum_hashes_exact_git_blob_bytes_and_rejects_one_byte_change(self):
@@ -567,7 +579,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
             self.assertEqual("", self._git(repo, "status", "--porcelain"))
             # A second fresh local clone verifies immutable Git blobs, not the writer tree.
             fresh = repo.parent / "fresh"
-            subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--no-hardlinks", str(repo), str(fresh)], check=True)
+            subprocess.run(["git", "-c", "core.autocrlf=false", "clone", "--quiet", "--shared", str(repo), str(fresh)], check=True)
             self._git(fresh, "update-ref", control_ref, self._git(repo, "rev-parse", control_ref))
             self._git(fresh, "update-ref", "refs/remotes/origin/candidates/c21-wsl-exact56", candidate)
             accepted = self._runtime(fresh, control_ref, candidate, checksum)
@@ -594,7 +606,7 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
                     self._git(repo,"add",str(path.relative_to(repo)));self._git(repo,"commit","--amend","--no-edit")
                     self._git(repo,"update-ref",control_ref,self._git(repo,"rev-parse","HEAD"))
                     checksum=hashlib.sha256(subprocess.check_output(["git","show",f"{control_ref}:deploy/wsl/CandidateReleaseManifest.json"],cwd=repo)).hexdigest()
-                    before={str(p.relative_to(repo)):p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git" not in p.parts}
+                    before=self._non_git_snapshot(repo)
                     prior_env=os.environ.get("ANVIL_RUNTIME_SAFETY_GATE")
                     try:
                         os.environ["ANVIL_RUNTIME_SAFETY_GATE"]="READY_FOR_APPROVED_WSL_QA"
@@ -603,8 +615,21 @@ class WslCandidateManifestGuardTests(unittest.TestCase):
                         if prior_env is None: os.environ.pop("ANVIL_RUNTIME_SAFETY_GATE",None)
                         else: os.environ["ANVIL_RUNTIME_SAFETY_GATE"]=prior_env
                     self.assertNotEqual(0,result.returncode,result.stderr)
-                    after={str(p.relative_to(repo)):p.read_bytes() for p in repo.rglob("*") if p.is_file() and ".git" not in p.parts}
+                    after=self._non_git_snapshot(repo)
                     self.assertEqual(before,after)
+
+    def test_shared_fixture_clone_keeps_source_head_and_status_isolated(self):
+        source_head = self._git(ROOT, "rev-parse", "HEAD")
+        source_status = self._git(ROOT, "status", "--porcelain", "--untracked-files=all")
+        temp, repo, *_ = self._repo()
+        with temp:
+            marker = repo / "fixture-isolation.txt"
+            marker.write_text("isolated\n", encoding="utf-8", newline="\n")
+            self._git(repo, "add", marker.name)
+            self._git(repo, "commit", "-m", "test: verify fixture isolation")
+            self.assertNotEqual(source_head, self._git(repo, "rev-parse", "HEAD"))
+            self.assertEqual(source_head, self._git(ROOT, "rev-parse", "HEAD"))
+            self.assertEqual(source_status, self._git(ROOT, "status", "--porcelain", "--untracked-files=all"))
 
 
 
@@ -1640,9 +1665,18 @@ class WslCleanupExecutionTests(WslCandidateManifestGuardTests):
                 ["git", "clone", "--quiet", "--no-checkout", "--shared", str(ROOT), str(repo)],
                 check=True,
             )
-            control_commit = self._git(ROOT, "rev-parse", "HEAD")
+            # These tests exercise the seq560 cleanup guard-source lifecycle.
+            # Freeze its accepted control/manifest view so later candidate
+            # successors cannot make the fixture combine incompatible epochs.
+            control_commit = "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd"
             candidate = "a6dca0da5a37e64491e91813895268e78ecb78b2"
             control_ref = "refs/remotes/origin/codex/c21-operational-execution"
+            # The cleanup entrypoint only reads the WSL control scripts from the
+            # fixture worktree; all binding evidence is read from immutable Git
+            # objects.  A sparse checkout avoids materializing and deleting the
+            # entire repository for each guard-flow scenario on Windows NTFS.
+            self._git(repo, "sparse-checkout", "init", "--cone")
+            self._git(repo, "sparse-checkout", "set", "deploy/wsl")
             self._git(repo, "checkout", "--quiet", "--detach", control_commit)
             self._git(repo, "remote", "set-url", "origin", "git@github-sinsan-develop:sinsan-develop/Anvil.git")
             self._git(repo, "update-ref", control_ref, control_commit)
@@ -2355,7 +2389,7 @@ class WslProviderExactBindingRuntimeStateTests(unittest.TestCase):
                 self.assertIn("runtime state drift", result.stderr)
 
     def test_seq542_manifest_separates_private_push_and_runtime_fetch_authority(self):
-        doc = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
+        doc = json.loads(subprocess.check_output(["git","show","c330d34ea7d0acc7e423a978f9c558c94c159118:deploy/wsl/CandidateReleaseManifest.json"],cwd=ROOT))
         binding = doc["authority"]["exact_private_git_binding"]
         self.assertEqual("development", binding["push_remote"])
         self.assertEqual("origin", binding["runtime_fetch_remote"])
@@ -2400,7 +2434,7 @@ class WslRollbackScopeCompatibilityContractTests(unittest.TestCase):
     EXACT3 = ["tasks:write", "tasks:read", "run:events:read"]
 
     def test_seq554_manifest_binds_exact_scope_for_every_rollback_commit(self):
-        doc = json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
+        doc = json.loads(subprocess.check_output(["git","show","797b4d831e384423fdd9a706f9512ffa9dc79bb5:deploy/wsl/CandidateReleaseManifest.json"],cwd=ROOT))
         rollback = doc["rollback"]
         mapping = rollback["test_session_permission_scopes_by_commit"]
         self.assertEqual(set(rollback["approved_commits"]), set(mapping))
@@ -2410,6 +2444,88 @@ class WslRollbackScopeCompatibilityContractTests(unittest.TestCase):
         for scopes in mapping.values():
             self.assertEqual(len(scopes), len(set(scopes)))
             self.assertTrue(all(scope == scope.strip() and scope for scope in scopes))
+
+
+class WslWorkbenchUiGitOnlyCandidateContractTests(unittest.TestCase):
+    def test_seq590_public_guard_dispatch_is_the_final_active_definition(self):
+        script=str(GUARD).replace("\\","/")
+        if len(script)>1 and script[1]==":": script=f"/{script[0].lower()}{script[2:]}"
+        result=subprocess.run(
+            ["bash","-c",f"source '{script}'; declare -f validate_wsl_candidate_binding"],
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(0,result.returncode,result.stderr)
+        self.assertIn('C21_WORKBENCH_CANDIDATE',result.stdout)
+        self.assertIn('validate_wsl_candidate_binding_before_workbench',result.stdout)
+
+    def test_seq590_manifest_binds_new_candidate_and_minimum_scope(self):
+        doc=json.loads((DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8"))
+        candidate="f0d4bc7badbdae69c2d2b21089667fdcc636518d"
+        previous="324eb169fedbce958d2e8cc29362deb7af433677"
+        self.assertEqual("GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS",doc["status"])
+        self.assertEqual(candidate,doc["source"]["commit"])
+        self.assertEqual("refs/remotes/origin/candidates/c21-wsl-exact187",doc["source"]["remote_ref"])
+        binding=doc["authority"]["exact_private_git_binding"]
+        self.assertEqual("8d043e39f6066283821abe47b36fa83e5ecff8b5",binding["observed_control"])
+        self.assertEqual("ABSENT",binding["observed_candidate"])
+        self.assertTrue(binding["control_compare_and_swap"])
+        self.assertTrue(binding["candidate_compare_and_swap"])
+        self.assertEqual(["tasks:write","tasks:read","run:events:read","provider:read"],doc["test_session_permission_scopes"])
+        self.assertEqual({"provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED"},doc["verification_scope"]["evidence"])
+        runtime=doc["runtime_binding"]
+        self.assertIn(candidate,runtime["rollback_allowlist"])
+        self.assertIn({"application_head":candidate,"current":candidate,"previous":previous},runtime["allowed_lifecycle_tuples"])
+        self.assertIn({"application_head":candidate,"current":previous,"previous":previous},runtime["allowed_lifecycle_tuples"])
+
+    def test_seq590_runtime_state_accepts_deployed_and_rolled_back_candidate(self):
+        candidate="f0d4bc7badbdae69c2d2b21089667fdcc636518d"
+        previous="324eb169fedbce958d2e8cc29362deb7af433677"
+        script=WslCandidateManifestGuardTests._posix(GUARD)
+        with tempfile.TemporaryDirectory(prefix="anvil-seq590-runtime-",dir="D:/tmp") as raw:
+            root=Path(raw)
+            for slug in ("pg15","pg18rc"):
+                state=root / "runtime" / slug
+                state.mkdir(parents=True)
+                (state / "previous.sha").write_text(previous+"\n",encoding="utf-8",newline="\n")
+                (state / "current.sha").write_text(candidate+"\n",encoding="utf-8",newline="\n")
+            command=f"source '{script}'; validate_c21_exact_runtime_state '{WslCandidateManifestGuardTests._posix(root)}' {candidate}"
+            deployed=subprocess.run(["bash","-c",command],text=True,capture_output=True)
+            self.assertEqual(0,deployed.returncode,deployed.stderr)
+            for slug in ("pg15","pg18rc"):
+                (root / "runtime" / slug / "current.sha").write_text(previous+"\n",encoding="utf-8",newline="\n")
+            rolled_back=subprocess.run(["bash","-c",command],text=True,capture_output=True)
+            self.assertEqual(0,rolled_back.returncode,rolled_back.stderr)
+
+    def test_seq590_active_guard_contract_rejects_manifest_boundary_drift(self):
+        raw=(DEPLOY / "CandidateReleaseManifest.json").read_text(encoding="utf-8")
+        runtime_drift=json.loads(raw)
+        runtime_drift["runtime_binding"]["allowed_lifecycle_tuples"].pop()
+        runtime_drift_raw=json.dumps(runtime_drift,ensure_ascii=False)
+        authority_drift=json.loads(raw)
+        authority_drift["authority"]["approval_artifact_sha256"]="0"*64
+        authority_drift_raw=json.dumps(authority_drift,ensure_ascii=False)
+        cleanup_drift=json.loads(raw)
+        cleanup_drift["cleanup"]["required_labels"]["com.anvil.cleanup-scope"]="WIDENED"
+        cleanup_drift_raw=json.dumps(cleanup_drift,ensure_ascii=False)
+        extra_key=json.loads(raw)
+        extra_key["unapproved_extension"]=True
+        extra_key_raw=json.dumps(extra_key,ensure_ascii=False)
+        script=str(GUARD).replace("\\","/")
+        if len(script)>1 and script[1]==":": script=f"/{script[0].lower()}{script[2:]}"
+        python_bin=str(Path(sys.executable)).replace("\\","/")
+        if len(python_bin)>1 and python_bin[1]==":": python_bin=f"/{python_bin[0].lower()}{python_bin[2:]}"
+        for payload,expected in (
+            (raw,0),
+            (raw.replace('"telegram": "NOT_EXECUTED"','"telegram": "PASS"'),20),
+            (runtime_drift_raw,20),
+            (authority_drift_raw,20),
+            (cleanup_drift_raw,20),
+            (extra_key_raw,20),
+        ):
+            command=f"source '{script}'; _c21_workbench_candidate_manifest_contract \"$ANVIL_PAYLOAD\""
+            result=subprocess.run(["bash","-c",command],text=True,capture_output=True,env={**os.environ,"ANVIL_PAYLOAD":payload,"ANVIL_PYTHON":python_bin})
+            self.assertEqual(expected,result.returncode,result.stderr)
 
     def test_seq554_rollback_preflights_all_targets_before_first_mutation(self):
         script = (DEPLOY / "rollback.sh").read_text(encoding="utf-8")

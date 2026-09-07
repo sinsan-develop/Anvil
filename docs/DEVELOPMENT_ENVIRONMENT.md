@@ -127,3 +127,11 @@
 - Candidate tuple: HEAD/current `a6dca0da5a37e64491e91813895268e78ecb78b2`, previous `324eb169fedbce958d2e8cc29362deb7af433677`.
 - Rolled-back tuple: HEAD `a6dca0da5a37e64491e91813895268e78ecb78b2`, current/previous `324eb169fedbce958d2e8cc29362deb7af433677`.
 - 위 tuple 및 필요한 image revision이 다르면 deploy/verify/rollback mutation 전에 중단한다.
+# C-21 Workbench UI WSL Git-only candidate
+
+- candidate source: `f0d4bc7badbdae69c2d2b21089667fdcc636518d`
+- private candidate ref: `refs/heads/candidates/c21-wsl-exact187`
+- private control CAS expected-old: `8d043e39f6066283821abe47b36fa83e5ecff8b5`
+- 현재 단계: `GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS`
+- WSL 실행 전 새 candidate/control ref의 atomic CAS 게시와 재조회가 필수다.
+- 실제 Provider 및 Telegram 실행은 이 후보의 검증 범위에서 제외한다.

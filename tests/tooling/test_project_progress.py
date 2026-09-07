@@ -8047,17 +8047,18 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_c21_provider_wsl_exact_binding_completion_is_forward_only(self):
         checker = self.require_checker()
         self.assertTrue(hasattr(checker, "c21_provider_wsl_exact_binding_artifacts"))
+        accepted = "c330d34ea7d0acc7e423a978f9c558c94c159118"
         historical = {
             path: subprocess.check_output(["git", "show", f"{checker.C21_EXACT_BINDING_START_COMMIT}:{path}"], cwd=ROOT)
             for path in (checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E, checker.C21_EXACT_BINDING_H)
         }
         files = {
-            path: (ROOT / path).read_bytes()
+            path: subprocess.check_output(["git", "show", f"{accepted}:{path}"], cwd=ROOT)
             for path in checker.c21_provider_wsl_exact_binding_paths()
             if path not in {
                 checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E, checker.C21_EXACT_BINDING_H,
                 checker.C21_EXACT_BINDING_BOUND_D, checker.C21_EXACT_BINDING_BOUND_M,
-            } and (ROOT / path).is_file()
+            }
         }
         artifacts = checker.c21_provider_wsl_exact_binding_artifacts(historical, files)
         progress = json.loads(artifacts[checker.C21_EXACT_BINDING_P])
@@ -8864,6 +8865,36 @@ class C21WorkbenchUiWslGitOnlyCandidateStartTests(unittest.TestCase):
         for key, value in (("accepted", True), ("c21_status", "ACCEPTED"), ("c01_status", "READY"), ("dir2_status", "TRIGGERED"), ("provider", "PASS"), ("telegram", "PASS")):
             changed = copy.deepcopy(manifest); changed[key] = value
             self.assertTrue(checker.validate_c21_workbench_ui_wsl_candidate_start_manifest(changed), key)
+
+
+class C21WorkbenchUiWslGitOnlyCandidateBoundTests(unittest.TestCase):
+    def test_seq590_bound_builder_preserves_seq587_and_closes_leases(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_candidate_bound_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_candidate_bound_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_S_COMMIT}:{checker.C21_WORKBENCH_UI_WSL_BOUND_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical,587), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_E],587))
+        self.assertEqual([588,589,590], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-3:]])
+        self.assertEqual("GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertEqual("REVOKED", progress["worker_lease"]["status"])
+        self.assertEqual("REVOKED", progress["write_lease"]["status"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_candidate_bound_manifest(manifest))
+
+    def test_seq590_metadata_and_boundary_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_candidate_metadata()
+        self.assertEqual((12,"D85669CA2C20EA8481C165F736FD28F017E7291BAFBB3916684A9DF5975EF714","4A8A0CED250CE4E9010589C68416BC4C25346F6D2DA46F44034CE92336C6D901"), (metadata["bound_exact_path_count"],metadata["bound_exact_path_list_sha256"],metadata["bound_exact_path_list_ordinal_sha256"]))
+        self.assertEqual((189,"8A54D4594B30E4CACFD8AB8C54C187CB528735E39305E1503737932023BD786F","13D263C508363A6D24622CC015545B965D96F67025EA75B1F1C9C43C5EDBF31A"), (metadata["post_bound_cumulative_path_count"],metadata["post_bound_cumulative_path_list_sha256"],metadata["post_bound_cumulative_path_list_ordinal_sha256"]))
+        manifest=json.loads(checker.c21_workbench_ui_wsl_candidate_bound_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_BOUND_M])
+        for key,value in (("accepted",True),("c21_status","ACCEPTED"),("c01_status","READY"),("dir2_status","TRIGGERED"),("provider","PASS"),("telegram","PASS")):
+            changed=copy.deepcopy(manifest); changed[key]=value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_candidate_bound_manifest(changed),key)
 
 
 if __name__ == "__main__":

@@ -1291,3 +1291,93 @@
 - GREEN 보완 오류: 최초 event append helper가 terminal event 내부의 event_id를 footer보다 먼저 치환해 seq584 raw prefix 보존 테스트 1건이 실패했다. fingerprint `C21_WORKBENCH_UI_WSL_EVENT_FOOTER_REPLACE_R1` 1회. footer tail만 치환하도록 수정했다.
 - 환경 오류 원장: S generated5 materialize가 sandbox의 `D:\tmp` 쓰기 제한으로 `PermissionError` 1회 발생했다. fingerprint `WORKBENCH_WSL_CANDIDATE_TMP_WRITE_SANDBOX_R1`; 제품/계약 오류가 아니며 같은 명령을 승인된 unrestricted 실행으로 재개한다.
 - S live checker 1차는 `EVENT_EFFECT_MISMATCH` 1건으로 실패했다. fingerprint `C21_WORKBENCH_UI_WSL_START_REMOTE_EFFECT_R1`; terminal `PACKAGE_STARTED`에 source projection의 `dispatch_upstream_head`가 누락된 원인이며 동일 관측값을 추가해 보완한다.
+
+### S exact10 completion
+
+- S commit `f0d4bc7badbdae69c2d2b21089667fdcc636518d`는 parent `468b1408f6e817d20d68c46a79ba44dc82cb4b3d`의 단일 direct child다.
+- exact10 Windows/ordinal hash는 `6E8FF216E3984D238E6229C489B97B8CBD3E45E7591D4378ED9EA5C4AFE8DFD5` / `E6B5378AA75AE61785AAAF6E5C07695663EA4F3970010750D9DD4D5EA3492275`, cumulative187은 `287B8617A64EC0A33E3F97E20A03E7CB69B66A9C8A1DBCC777E3A16D2F7F3D88` / `1A35F7995A3AE539395E0EC515B240C276433F5AD7F736C28BE0F63182EDC889`이다.
+- postcommit live checker `PASS sequence=587 reporting=AUTO_CONTINUE`, focused `2 tests OK`, deterministic generated5 및 diff-check PASS다.
+- K seq588~590 exact12 TDD RED를 시작한다. 외부 실행은 계속 `NOT_EXECUTED`다.
+- K TDD RED: tooling/deploy focused 실행은 `Ran 6 tests`, 3 failures/1 error로 예상 실패했다. missing bound builder/metadata, 이전 Candidate manifest status/source, active guard 함수 부재가 원인이다. fingerprint `C21_WORKBENCH_UI_WSL_CANDIDATE_BOUND_MISSING_R1` 1회.
+- K GREEN 보완: active guard focused 1건이 Windows Git Bash의 기본 `python3` 부재로 exit20이었다. fingerprint `C21_WORKBENCH_UI_WSL_GUARD_TEST_PYTHON_PATH_R1` 1회; 실제 WSL 계약 실패가 아니며 기존 harness 방식대로 현재 interpreter의 POSIX 경로를 `ANVIL_PYTHON`에 주입한다.
+- 환경 오류 원장: S/K/deploy 결합 focused 중 Windows subprocess stderr reader의 CP949 decode가 1회 실패해 guard shell이 exit127로 표시됐다. fingerprint `WORKBENCH_WSL_CANDIDATE_CP949_READER_FLAKE_R1`; 동일 테스트 단독 재실행은 즉시 PASS했다. 제품/guard failure로 승격하지 않고 전체 suite에서 재검증한다.
+- 전체 deploy 1차는 같은 Windows `cp949` reader 예외가 7회 반복되어 결과가 오염돼 중단했다. fingerprint `WORKBENCH_WSL_CANDIDATE_CP949_READER_FLAKE_R1` 누적 8회. 정식 제품 실패가 아니며 추가 동일 실행을 중단하고 Developer가 직접 `PYTHONUTF8=1`로 프로세스 기본 text encoding을 고정한 뒤 전체 suite를 새로 실행한다.
+- UTF-8 전체 deploy 2차는 신규 active guard가 historical exact107 호출까지 가로채 다수 fail을 즉시 재현해 중단했다. fingerprint `C21_WORKBENCH_GUARD_HISTORICAL_DISPATCH_R1` 1회. 기존 active 함수 객체를 seq590 alias로 보존하고 expected candidate가 exact187일 때만 신규 predicate를 적용하도록 수정한다.
+- candidate별 guard dispatcher 보완 후 prior guard 27개 중 26개 PASS, 1개는 historical exact107 manifest assertion이 current mutable file을 읽는 시간결합으로 실패했다. fingerprint `C21_WORKBENCH_DEPLOY_HISTORICAL_MANIFEST_FIXTURE_R1` 1회. seq542/seq554를 포함한 historical manifest 검사는 각 accepted commit blob으로 고정한다.
+- historical fixture commit 1차 선택에서 exact107 source에 `a6dca0d` 자체 blob을 사용해 실제 source `a342d62`가 반환됐고, seq542는 exact binding 도입 전 `71d6747`을 골라 2건 실패했다. fingerprint `C21_WORKBENCH_HISTORICAL_FIXTURE_COMMIT_SELECTION_R1` 1회. `git log -- deploy/wsl/CandidateReleaseManifest.json` 실측으로 source fixture=`3501c37`, exact binding fixture=`c330d34`, scope map fixture=`797b4d8`로 정정한다.
+- 전체 deploy 3차는 non-elevated UTF-8 환경에서 약 30분간 F/E 없이 진행했으나 장기 중복 fixture 구간의 종료를 확인하지 못하고 진단을 위해 중단했다. fingerprint `WORKBENCH_WSL_DEPLOY_LONG_RUNNING_DIAGNOSTIC_R1` 1회. 프로세스는 응답 중이고 CPU가 계속 증가해 idle/hang 증거는 없었다. 중단 결과를 PASS로 쓰지 않으며 같은 fresh 전체 명령을 충분한 시간 동안 다시 실행한다.
+- 전체 deploy 재시도도 non-elevated UTF-8 Git Bash에서 약 30분간 F/E 없이 CPU를 계속 사용했으나 진단 목적으로 중단했다. `WORKBENCH_WSL_DEPLOY_LONG_RUNNING_DIAGNOSTIC_R1` 누적 2회이며 PASS가 아니다. elevated 실행은 WSL bash가 Git Bash 형식 `/d/.../.venv/python.exe` 경로를 찾지 못해 exit127이었다(`WORKBENCH_WSL_DEPLOY_ELEVATED_BASH_PATH_R1` 1회, 환경 오류).
+- Git global excludes 경고를 줄이려 `core.excludesfile=NUL`을 적용한 시도는 Git이 NUL을 exclude file로 허용하지 않아 실패했다(`WORKBENCH_WSL_GIT_IGNORE_OVERRIDE_NUL_R1` 1회, 명령/환경 오류). repo-local `.gitignore` 절대경로를 프로세스 한정 override로 사용한다.
+- 현재 프로세스 확인 중 `Get-CimInstance Win32_Process`는 managed 권한으로 `Access denied`였다(`WORKBENCH_WSL_PROCESS_ENUM_PERMISSION_R1` 1회, 환경 오류). 이 시점에 이어갈 unified test session은 없으며 dirty set은 K exact12와 일치했다.
+- 전체 suite 전 active symbol을 직접 검사해 seq590 구현이 파일 중간에 삽입되고 뒤쪽 seq542 historical public 정의가 다시 덮어쓰는 결함을 재현했다. 신규 public-dispatch test는 active 함수에 `C21_WORKBENCH_CANDIDATE`가 없어 1 failure였고 fingerprint `C21_WORKBENCH_GUARD_FINAL_DEFINITION_ORDER_R1` 1회다. 원인은 정의 순서이며, historical final 함수를 alias로 캡처한 뒤 EOF public dispatcher가 exact187만 신규 predicate로 전달하도록 최소 수정했다. 해당 class `Ran 5 tests / OK`로 GREEN이다.
+- 다음: repo-local excludes + UTF-8 non-elevated Git Bash로 full deploy를 종료까지 실행하고, 이후 full tooling·Web·API/agent-team을 순차 검증한다.
+
+### K full deploy 동일 장기 실행 3회 — Developer FAILURE_REPORT
+
+- lineage/fingerprint: `WORKBENCH_WSL_DEPLOY_LONG_RUNNING_DIAGNOSTIC_R1`. 이번 fresh full deploy는 2026-09-07 23:14:14에 시작해 2시간 00분 이상 실행됐고, 마지막 확인 PID 56280은 CPU 6716.22초, `Responding=True`, single thread, WorkingSet 약 13.6MB였다. F/E/traceback 출력은 0이었으나 종료하지 않아 PASS가 아니다.
+- 진행 위치: unittest dot/fixture 출력 순서상 `WslCandidateManifestGuardTests` 23개 중 앞 22개가 완료됐고, 마지막 기존 `test_seq494_public_coherent_resume_or_work_instruction_rewrite_rejected`의 7-scenario temp clone/file snapshot 구간에서 장기 실행했다. 이 테스트는 각 scenario 전후 `repo.rglob("*")`로 `.git` traversal까지 수행한 뒤 파일 선택 단계에서만 `.git`을 제외한다. 신규 seq590 class 실행 전의 기존 harness 병목이다.
+- 동일 조건은 앞선 diagnostic 중단 2회에 이어 이번 재개에서 3회째 확인됐다. 프로젝트 규칙에 따라 Developer는 추가 full deploy 재시도와 테스트 성능 수정을 중단하고 Main에게 인계한다. 이번 중단은 exit1이며 PASS로 기록하지 않는다.
+- 별도 확인 오류: 테스트 정의 순서 확인용 one-line Python 명령은 quoting 오류로 `SyntaxError` 1회(`WORKBENCH_WSL_TEST_ORDER_COMMAND_QUOTING_R1`), `wmic`은 명령 부재 1회, `tasklist /v`는 Access denied 1회(`WORKBENCH_WSL_PROCESS_COMMANDLINE_DIAGNOSTIC_R1`)였다. 제품 오류가 아니며 더 이상 권한 우회를 시도하지 않았다.
+- 완료된 조치: seq590 public guard가 뒤쪽 historical 함수 정의에 덮어써지던 결함은 dedicated RED로 재현하고 EOF dispatcher로 수정했다. `WslWorkbenchUiGitOnlyCandidateContractTests`는 `Ran 5 tests / OK`; dirty 경로는 K exact12와 일치한다.
+- 미완료/미검증: full deploy 종료 결과, full tooling, Web 19, API/agent-team 193, 최종 K materialize/determinism/live checker/exact hash, K commit/postcommit은 미완료다. push/WSL/Docker/DB/Provider/Telegram/ysna/main은 계속 `NOT_EXECUTED`다.
+- Main 인수 권장안: 기존 test의 non-Git snapshot 의미를 유지하면서 `.git` 디렉터리를 traversal 전에 prune하는 fixture helper로 병목을 제거하고 해당 단일 test를 먼저 시간 측정한 뒤 full deploy를 fresh 실행한다. 변경 범위를 테스트 harness에 한정하고 deploy runtime script는 수정하지 않는다.
+- rollback: K dirty exact12 전체를 S commit `f0d4bc7badbdae69c2d2b21089667fdcc636518d`로 되돌리면 된다. S commit 자체는 clean 검증과 seq587 checker PASS를 이미 확보했다.
+
+### K Main takeover — deploy harness 병목 및 실행환경 분리
+
+- 동일 lineage `WORKBENCH_WSL_DEPLOY_LONG_RUNNING_DIAGNOSTIC_R1` 3회 후 Main이 test-only lease를 인수했다. 제품·deploy runtime·historical evidence는 수정하지 않았다.
+- 기존 seq494 snapshot comprehension이 `.git`을 파일 선택 단계에서만 제외하여 Git object tree 전체를 순회하던 문제를 `os.walk()`의 directory prune으로 수정했다. 해당 7-scenario 단일 테스트는 기존 2시간 초과 미종료에서 `103.383s / OK`로 단축됐다.
+- fixture clone은 source object 복제를 피하는 `git clone --shared`로 제한했고, source HEAD/status가 clone commit 후에도 불변임을 확인하는 격리 회귀 테스트를 추가했다. seq494+격리 targeted는 `2 tests in 64.109s / OK`다.
+- cleanup entrypoint fixture도 immutable Git object만 읽고 worktree에서는 `deploy/wsl`만 사용하므로 sparse checkout을 적용했다. 제품 저장소·source object·runtime script는 변경하지 않는다.
+- Main verbose full deploy 비상승 실행은 `tempfile.mkdtemp(dir="D:/tmp")`에서 샌드박스 write가 허용되지 않은 채 CPU를 소비하는 환경 대기로 확인됐다. `faulthandler` stack이 `tempfile.py:385 mkdtemp`를 직접 지목했다. fingerprint `WORKBENCH_WSL_TMP_SANDBOX_MKDTEMP_R1` 1회이며 제품/테스트 assertion 실패가 아니다.
+- 상승 실행의 기본 PATH는 WSL `bash`를 선택해 Git Bash 경로 `/d/...`를 찾지 못했다. fingerprint `WORKBENCH_WSL_ELEVATED_BASH_SELECTION_R1` 1회. 프로세스 PATH 앞에 `C:\\Program Files\\Git\\usr\\bin`을 고정하여 Git Bash와 D: mount를 명시한다.
+- 위 환경 고정 뒤 cleanup duplicate-source 단일 테스트는 `1.865s`에 실행됐으나 dirty precommit fixture가 아직 존재하지 않는 seq590 control commit을 요구해 첫 binding에서 `cleanup-guard control must be a single direct child`로 거부됐다. 이는 commit 전 current HEAD만 clone하는 기존 fixture의 lifecycle 조건이며, exact12 commit 후 full deploy에서 재검증한다. historical expectation이나 guard를 완화하지 않는다.
+- K focused tooling+guard는 `7 tests in 1.118s / OK`다. raw `WORK_STATUS`와 test harness 변경 뒤 live checker는 예상대로 `PRG_REFERENCED_HASH_MISMATCH`를 검출했으며, final raw 입력을 반영해 P/E/H/D/M을 deterministic 재materialize한 뒤 다시 실행한다.
+- 외부 실행, push, WSL, Docker, DB, Provider, Telegram, ysna, main은 계속 `NOT_EXECUTED`다.
+
+### K final precommit 검증
+
+- final raw 입력 재결박 후 seq590 focused tooling+guard는 `7 tests in 1.105s / OK`, live checker는 `PASS sequence=590 reporting=AUTO_CONTINUE`, deterministic generated5 비교·`git diff --check`·direct Python compile·`bash -n`은 모두 PASS다.
+- 제품 회귀는 정확한 표준 명령으로 Web `19/19 PASS`와 API+agent_team `193 passed in 6.53s`를 확인했다. API unittest discovery 0건은 해당 pytest suite의 검증으로 사용하지 않고 환경/명령 선택 기록으로만 남긴다.
+- canonical 전체 tooling은 Git Bash PATH·UTF-8·D:\\tmp fixture 권한을 고정한 fresh 실행에서 `591 tests in 995.010s / OK`, exit0으로 완료됐다. 실행 중 제품/문서 mutation은 없었다.
+- dirty set은 계약 exact12이며 Windows/ordinal hash `D85669CA2C20EA8481C165F736FD28F017E7291BAFBB3916684A9DF5975EF714` / `4A8A0CED250CE4E9010589C68416BC4C25346F6D2DA46F44034CE92336C6D901`, cumulative189 hash `8A54D4594B30E4CACFD8AB8C54C187CB528735E39305E1503737932023BD786F` / `13D263C508363A6D24622CC015545B965D96F67025EA75B1F1C9C43C5EDBF31A`와 일치했다.
+- 이 raw 결과를 마지막으로 P/E/H/D/M에 재결박한 뒤 focused/live/determinism/diff/compile/hash를 read-only로 재확인하고 S commit의 단일 direct-child exact12 commit을 생성한다. commit-bound full deploy는 그 다음 fresh 실행한다.
+
+### K independent review REWORK 및 Main 보완
+
+- 최초 K commit `b9ff3ff118ecce4c744f2803083e45f5aea7ce4e`에 대한 독립 Reviewer 판정은 `REWORK`, Critical 0 / Important 1 / Minor 1이다.
+- Important 원인은 새 candidate `f0d4bc7...`가 source/rollback에는 결박됐지만 `runtime_binding.allowed_lifecycle_tuples`와 active `validate_c21_exact_runtime_state`에는 없었던 것이다. 정상 배포 상태 `f0d4bc7:f0d4bc7:324eb169`가 exit23으로 거부되어 verify와 rollback을 막는 실제 계약 결함이다.
+- TDD RED는 manifest rollback allowlist 누락과 정상 배포 tuple 거부를 각각 재현해 `2 failures`였다. test helper의 `_posix` 호출 대상 오류 1회는 즉시 교정한 test-author 오류이며 제품 실패 횟수에 포함하지 않는다.
+- GREEN은 manifest의 정확한 신규 배포 후/rollback 후 tuple 2개와 rollback allowlist를 추가하고, 새 manifest contract가 runtime binding 전체를 strict equality로 검증하도록 보완했다. active runtime validator도 동일 두 tuple만 추가했다. focused class는 `6 tests in 1.193s / OK`이며 runtime tuple 삭제 변조도 exit20으로 fail-closed다.
+- commit-bound full deploy의 기존 cleanup entrypoint 4건은 현재 seq590 manifest와 과거 exact107 candidate를 혼합하는 historical temporal fixture 때문에 같은 binding 실패를 냈다. 테스트 최초 확정 commit `b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd`를 control/manifest view로 고정하되 현재 cleanup/common/guard를 계속 실행하도록 수정했고, 관련 4건은 `28.733s / OK`다. historical artifact bytes는 변경하지 않았다.
+- Reviewer Minor는 S WorkInstruction의 EOF 빈 줄 1건이다. 이미 검증된 immutable S commit과 계보를 재작성하지 않으며 기능·runtime 영향 없는 기존 diff 경고로 보존한다.
+- K는 아직 private push 전이므로 위 exact12 내부 보완과 재결박을 같은 single direct-child commit으로 amend한 뒤 full tooling/deploy와 재검토를 다시 수행한다.
+
+### K commit-bound 재검증
+
+- Reviewer 보완을 포함한 K `ab2483a1f07d90d2763d9038e73a57b176dadd64`는 S `f0d4bc7...`의 단일 direct child, clean exact12이며 postcommit checker sequence590 PASS다.
+- commit-bound 전체 deploy harness는 `119 tests in 575.846s / OK (skipped=9)`, exit0이다. SKIP9는 기존 Windows/Git Bash 환경 조건이며 실제 WSL runtime PASS로 승격하지 않는다.
+- 보완 후 canonical 전체 tooling 1차는 `591 tests in 969.091s`, error1, exit1이다. 유일 오류는 과거 `test_c21_provider_wsl_exact_binding_completion_is_forward_only`가 현재 seq590 Candidate manifest를 과거 seq542 builder 입력으로 사용해 `C21_EXACT_BINDING_BOUND_CANDIDATE_INVALID`를 낸 temporal fixture다. 제품/runtime/checker 오류로 분류하지 않는다.
+- 위 과거 테스트의 raw 입력만 당시 accepted commit `c330d34ea7d0acc7e423a978f9c558c94c159118` Git blob으로 고정했다. historical evidence와 checker는 변경하지 않았고 targeted 재검증은 `1 test in 0.750s / OK`다.
+- 이 결과와 exact12 변경을 다시 재결박·amend한 뒤 full tooling을 fresh 재실행하고 독립 Reviewer 재검토를 받는다.
+
+### K final full tooling PASS
+
+- 최종 K `61eff066fcc0693884bf1816eeed14687908f2c9`에서 historical fixture 보완 후 canonical 전체 tooling을 fresh 재실행했다. 결과는 `591 tests in 964.449s / OK`, exit0이며 failure/error/traceback은 0이다.
+- 이 PASS를 raw 상태에 마지막으로 기록하고 seq590 P/E/H/D/M을 재결박한 뒤 K를 동일 exact12 single direct-child로 최종 amend한다. 이후 focused/live/determinism/path/hash와 독립 Reviewer만 재확인하며 전체 suite 결과를 과장하지 않는다.
+
+### K independent review 2차 REWORK 및 manifest fail-closed 보완
+
+- 최종 K `744d032256a911ef600686d13dc7a47817156f11` 2차 검토는 runtime tuple 해소를 확인했으나 `REWORK`, Critical 0 / Important 1 / Minor 1이었다.
+- Important는 seq590 전용 manifest contract가 `authority.approval_artifact_sha256`, `cleanup.required_labels`, 미승인 최상위 key 변조를 허용한 것이다. TDD RED에서 해당 변조가 rc0으로 통과해 1 failure로 재현됐다.
+- seq590 manifest의 최상위 exact key set, authority 전체 canonical SHA-256 `985BF0E357291D002C5081040684667524DDBC1F1DF83EAF01880874A58E03AF`, environment와 cleanup exact object를 전용 contract에 추가했다. runtime/rollback/source/verification/wsl observation의 기존 exact 비교도 유지한다.
+- 구현 중 `hashlib` import가 같은 파일의 과거 heredoc에 적용된 위치 오류 1회가 있었고 신규 heredoc으로 즉시 교정했다. historical 함수의 원문 import는 복원했으며 제품 실패가 아니다.
+- 보완 focused class는 `6 tests in 1.754s / OK`; authority·cleanup·unknown key·runtime tuple·Telegram evidence 변조를 모두 rc20으로 거부하고 정상 manifest 및 신규 배포/rollback tuple은 통과한다.
+- 이 보완은 기존 exact12 경로 안이며 private push 전이다. 재결박·amend 후 전체 deploy/tooling과 독립 검토를 다시 수행한다.
+
+### K manifest fail-closed 최종 full suites
+
+- seq590 manifest fail-closed 보완을 포함한 K `d08ed2585b6c66cb9792f8b52ea6d65b5a8f217e`에서 두 canonical suite를 fresh 병렬 실행했다.
+- 전체 deploy harness: `119 tests in 733.993s / OK (skipped=9)`, exit0. 기존 환경 SKIP9 외 failure/error 0이다.
+- 전체 tooling: `591 tests in 1214.862s / OK`, exit0. failure/error/traceback 0이다.
+- 병렬 실행으로 각 wall time은 직전 순차 실행보다 늘었지만 결과 계약은 모두 PASS다. 이 결과를 마지막 raw 상태에 기록하고 generated5를 재결박한 뒤 exact12 amend·focused/live/determinism·독립 Reviewer를 수행한다.

@@ -1,11 +1,11 @@
 {
   "schema_version": 1,
   "manifest_type": "WSL_STAGING_CANDIDATE",
-  "status": "APPROVED_FOR_STAGING_VALIDATION",
-  "runtime_safety_gate": "READY_FOR_APPROVED_WSL_QA",
+  "status": "GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS",
+  "runtime_safety_gate": "BLOCKED_PENDING_PRIVATE_ATOMIC_CAS",
   "source": {
-    "commit": "a6dca0da5a37e64491e91813895268e78ecb78b2",
-    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
+    "commit": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+    "remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact187",
     "working_tree": "CLEAN",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution"
@@ -27,15 +27,16 @@
       "push_remote": "development",
       "push_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
       "control_ref": "refs/remotes/development/codex/c21-operational-execution",
-      "candidate_ref": "refs/remotes/development/candidates/c21-wsl-exact107",
-      "observed_control": "772afbd5eb55791ca7b5002d58378437ea496750",
+      "candidate_ref": "refs/heads/candidates/c21-wsl-exact187",
+      "observed_control": "8d043e39f6066283821abe47b36fa83e5ecff8b5",
       "observed_candidate": "ABSENT",
+      "observed_existing_exact107": "a6dca0da5a37e64491e91813895268e78ecb78b2",
       "control_compare_and_swap": true,
       "candidate_compare_and_swap": true,
       "runtime_fetch_remote": "origin",
       "runtime_fetch_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
       "runtime_control_ref": "refs/remotes/origin/codex/c21-operational-execution",
-      "runtime_candidate_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
+      "runtime_candidate_ref": "refs/remotes/origin/candidates/c21-wsl-exact187",
       "public_origin_is_push_authority": false
     },
     "derived_binding": {
@@ -82,6 +83,21 @@
     "derived_binding_sha256": "E9F82E221F2F0158B648555F3B8535906FD4F75422E28999A86F1ACB408F6AFA"
   },
   "exclusions": ["TELEGRAM_EXECUTION", "PROVIDER_EXECUTION", "YSNA_EXECUTION", "MAIN_MERGE"],
+  "test_session_permission_scopes": ["tasks:write", "tasks:read", "run:events:read", "provider:read"],
+  "wsl_observation": {
+    "host": "SINSAN",
+    "application_repo": "/srv/anvil-wsl/repo",
+    "application_repo_state": "CLEAN_DETACHED",
+    "application_head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+    "active_control": "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd",
+    "pg15_current": "324eb169fedbce958d2e8cc29362deb7af433677",
+    "pg15_previous": "324eb169fedbce958d2e8cc29362deb7af433677",
+    "pg18rc_current": "324eb169fedbce958d2e8cc29362deb7af433677",
+    "pg18rc_previous": "324eb169fedbce958d2e8cc29362deb7af433677",
+    "residual_containers": 0,
+    "residual_networks": 0,
+    "residual_volumes": 0
+  },
   "cleanup": {
     "exact_named_volumes": ["anvil-wsl-pg15_anvil-db-data", "anvil-wsl-pg18rc_anvil-db-data"],
     "required_labels": {"com.anvil.environment": "WSL_SERVER_TEST_STAGING", "com.anvil.cleanup-scope": "C21_WSL_ISOLATED_TEST"}
@@ -96,6 +112,7 @@
     "observed_pg18rc_current": "a342d62391a44b349733d1468ac3b180761155ab",
     "observed_previous": "324eb169fedbce958d2e8cc29362deb7af433677",
     "rollback_allowlist": [
+      "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
       "a6dca0da5a37e64491e91813895268e78ecb78b2",
       "a342d62391a44b349733d1468ac3b180761155ab",
       "324eb169fedbce958d2e8cc29362deb7af433677"
@@ -103,15 +120,16 @@
     "allowed_lifecycle_tuples": [
       {"application_head": "a342d62391a44b349733d1468ac3b180761155ab", "current": "a342d62391a44b349733d1468ac3b180761155ab", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"},
       {"application_head": "a6dca0da5a37e64491e91813895268e78ecb78b2", "current": "a6dca0da5a37e64491e91813895268e78ecb78b2", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"},
-      {"application_head": "a6dca0da5a37e64491e91813895268e78ecb78b2", "current": "324eb169fedbce958d2e8cc29362deb7af433677", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"}
+      {"application_head": "a6dca0da5a37e64491e91813895268e78ecb78b2", "current": "324eb169fedbce958d2e8cc29362deb7af433677", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"},
+      {"application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "current": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"},
+      {"application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "current": "324eb169fedbce958d2e8cc29362deb7af433677", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"}
     ],
     "fail_closed_before_mutation": true
   },
   "rollback": {
-    "approved_commits": ["a6dca0da5a37e64491e91813895268e78ecb78b2", "a342d62391a44b349733d1468ac3b180761155ab", "324eb169fedbce958d2e8cc29362deb7af433677"],
+    "approved_commits": ["f0d4bc7badbdae69c2d2b21089667fdcc636518d", "324eb169fedbce958d2e8cc29362deb7af433677"],
     "test_session_permission_scopes_by_commit": {
-      "a6dca0da5a37e64491e91813895268e78ecb78b2": ["tasks:write", "tasks:read", "run:events:read", "provider:read"],
-      "a342d62391a44b349733d1468ac3b180761155ab": ["tasks:write", "tasks:read", "run:events:read"],
+      "f0d4bc7badbdae69c2d2b21089667fdcc636518d": ["tasks:write", "tasks:read", "run:events:read", "provider:read"],
       "324eb169fedbce958d2e8cc29362deb7af433677": ["tasks:write", "tasks:read", "run:events:read"]
     },
     "runtime_observation_required": true
