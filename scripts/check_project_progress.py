@@ -12787,6 +12787,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 566:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_cleanup_runtime_result_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 560:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13655,6 +13659,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_wsl_rollback_scope_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json":
             errors.extend(validate_c21_cleanup_guard_source_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json":
+            errors.extend(validate_c21_cleanup_runtime_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_verify_scope_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
@@ -17942,6 +17948,361 @@ def _collect_c21_cleanup_guard_source_git(bundle: Mapping[str,Any]) -> list[str]
         if head==C21_CLEANUP_GUARD_SOURCE_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
         return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_CLEANUP_GUARD_SOURCE_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
     except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_CLEANUP_RUNTIME_RESULT_PARENT = "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd"
+C21_CLEANUP_RUNTIME_RESULT_CANDIDATE = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT = "2026-09-07T04:00:51.7574180Z"
+C21_CLEANUP_RUNTIME_RESULT_WI_ID = "WI-C-21-WSL-CLEANUP-RUNTIME-RESULT-20260907-001"
+C21_CLEANUP_RUNTIME_RESULT_STATUS = "READY_FOR_C21_WSL_ACCEPTANCE"
+C21_CLEANUP_RUNTIME_RESULT_P = "docs/progress/build-progress.json"
+C21_CLEANUP_RUNTIME_RESULT_E = "docs/progress/progress-events.json"
+C21_CLEANUP_RUNTIME_RESULT_H = "docs/progress/BUILD_HANDOFF.md"
+C21_CLEANUP_RUNTIME_RESULT_D = "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json"
+C21_CLEANUP_RUNTIME_RESULT_M = "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json"
+C21_CLEANUP_RUNTIME_RESULT_REPORT = "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md"
+C21_CLEANUP_RUNTIME_RESULT_VALIDATION = "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md"
+C21_CLEANUP_RUNTIME_RESULT_WI = "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_WORK_INSTRUCTION.md"
+C21_CLEANUP_RUNTIME_RESULT_PROMPT = "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_INVOCATION_PROMPT.md"
+C21_CLEANUP_RUNTIME_RESULT_LIMITATION = "PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION"
+C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C21_CLEANUP_RUNTIME_RESULT_POST_VERIFY = """Write-Output 'PG15_CONTAINERS'
+wsl.exe -d Ubuntu -- sudo -n docker ps -aq --filter label=com.docker.compose.project=anvil-wsl-pg15
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'PG18_CONTAINERS'
+wsl.exe -d Ubuntu -- sudo -n docker ps -aq --filter label=com.docker.compose.project=anvil-wsl-pg18rc
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'PG15_NETWORKS'
+wsl.exe -d Ubuntu -- sudo -n docker network ls -q --filter label=com.docker.compose.project=anvil-wsl-pg15
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'PG18_NETWORKS'
+wsl.exe -d Ubuntu -- sudo -n docker network ls -q --filter label=com.docker.compose.project=anvil-wsl-pg18rc
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'TARGET_VOLUMES'
+wsl.exe -d Ubuntu -- sudo -n docker volume ls -q --filter name=anvil-wsl-pg15_anvil-db-data
+wsl.exe -d Ubuntu -- sudo -n docker volume ls -q --filter name=anvil-wsl-pg18rc_anvil-db-data
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'APP_HEAD'
+wsl.exe -d Ubuntu -- sudo -n git -C /srv/anvil-wsl/repo rev-parse HEAD
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'APP_BRANCH_EXPECT_EXIT1'
+wsl.exe -d Ubuntu -- sudo -n git -C /srv/anvil-wsl/repo symbolic-ref -q --short HEAD
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'APP_STATUS'
+wsl.exe -d Ubuntu -- sudo -n git -C /srv/anvil-wsl/repo status --porcelain=v1
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'APP_ORIGIN'
+wsl.exe -d Ubuntu -- sudo -n git -C /srv/anvil-wsl/repo remote get-url origin
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'CONTROL_ACTIVE'
+wsl.exe -d Ubuntu -- sudo -n cat /srv/anvil-wsl/control/active
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'CONTROL_HEAD'
+wsl.exe -d Ubuntu -- sudo -n git -C /srv/anvil-wsl/control/stage.3558037.6302 rev-parse HEAD
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'CONTROL_STATUS'
+wsl.exe -d Ubuntu -- sudo -n git -C /srv/anvil-wsl/control/stage.3558037.6302 status --porcelain=v1
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'CONTROL_ORIGIN'
+wsl.exe -d Ubuntu -- sudo -n git -C /srv/anvil-wsl/control/stage.3558037.6302 remote get-url origin
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'MANIFEST_SHA'
+wsl.exe -d Ubuntu -- sudo -n sha256sum /srv/anvil-wsl/control/stage.3558037.6302/deploy/wsl/CandidateReleaseManifest.json
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'ENV_SHA'
+wsl.exe -d Ubuntu -- sudo -n sha256sum /srv/anvil-wsl/.env
+Write-Output \"exit=$LASTEXITCODE\"
+Write-Output 'ENV_STAT'
+wsl.exe -d Ubuntu -- sudo -n stat -c '%a|%U:%G|%s' /srv/anvil-wsl/.env
+Write-Output \"exit=$LASTEXITCODE\""""
+
+
+def c21_cleanup_runtime_result_paths() -> list[str]:
+    return sorted([
+        C21_CLEANUP_RUNTIME_RESULT_REPORT,
+        "docs/WORK_STATUS.md",
+        C21_CLEANUP_RUNTIME_RESULT_M,
+        C21_CLEANUP_RUNTIME_RESULT_H,
+        C21_CLEANUP_RUNTIME_RESULT_P,
+        C21_CLEANUP_RUNTIME_RESULT_E,
+        C21_CLEANUP_RUNTIME_RESULT_D,
+        C21_CLEANUP_RUNTIME_RESULT_VALIDATION,
+        C21_CLEANUP_RUNTIME_RESULT_PROMPT,
+        C21_CLEANUP_RUNTIME_RESULT_WI,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def _c21_path_list_sha(paths: list[str], *, windows: bool) -> str:
+    key = (lambda value: value.casefold().replace("_", ",")) if windows else None
+    ordered = sorted(set(paths), key=key)
+    return hashlib.sha256("".join(f"{path}\n" for path in ordered).encode()).hexdigest().upper()
+
+
+def c21_cleanup_runtime_result_metadata() -> dict[str, Any]:
+    exact = c21_cleanup_runtime_result_paths()
+    cumulative = sorted(set(c21_cleanup_guard_source_metadata()["cumulative_exact_paths"]) | set(exact))
+    result = {
+        "developer_exact_paths": exact,
+        "developer_exact_path_count": len(exact),
+        "developer_exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "developer_exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_exact_paths": cumulative,
+        "cumulative_exact_path_count": len(cumulative),
+        "cumulative_exact_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_exact_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = (12, "54DE92EBEC20A6897379A2B14FBBA258517A0E6A52A221C6217739B40FA9E0EF", "63E7070C7D5D018F76DE04A0369B5778F3B58AF2798EA2EC78ED3CFB75645CA0", 149, "F804F93F8F8BE351071EB0CC3674A4EB442BF8D0E74DFF0D65FAD88AD1DE85F2", "B956DA56B0D6BD17D0918878F1E3F80E672FAE971CEE3E4793A1CE227E0C47C8")
+    actual = (result["developer_exact_path_count"], result["developer_exact_path_list_sha256"], result["developer_exact_path_list_ordinal_sha256"], result["cumulative_exact_path_count"], result["cumulative_exact_path_list_sha256"], result["cumulative_exact_path_list_ordinal_sha256"])
+    if actual != expected:
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_PATH_HASH_INVALID")
+    return result
+
+
+def _c21_cleanup_runtime_result_limitation() -> dict[str, Any]:
+    return {
+        "code": C21_CLEANUP_RUNTIME_RESULT_LIMITATION,
+        "status": "OPEN",
+        "resolution": "UNRESOLVED_EVIDENCE_DETAIL",
+        "reviewer_severity": "MINOR",
+        "unavailable_detail": ["PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT", "CLEANUP_ENV_AND_ARGV_FULLTEXT"],
+        "preserved_detail": ["RESULTS", "HASHES", "EXIT_CODES"],
+    }
+
+
+def _c21_cleanup_runtime_result_runtime() -> dict[str, Any]:
+    marker = {"current": "324eb169fedbce958d2e8cc29362deb7af433677", "previous": "324eb169fedbce958d2e8cc29362deb7af433677"}
+    return {
+        "runtime_observed_at_status": "UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
+        "runtime_observed_at": None,
+        "runtime_observed_date": "2026-09-07",
+        "cleanup": {
+            "invocation_count": 1,
+            "internal_exit_code": 0,
+            "outer_wrapper_exit_code": 1,
+            "cleanup_status": "SUCCEEDED",
+            "wrapper_failure": "POST_CLEANUP_UNRELATED_INVENTORY_EQUALITY_ASSERTION",
+            "wrapper_failure_is_cleanup_failure": False,
+        },
+        "target_cleanup": {
+            "containers": {"before": 6, "deleted": 6, "remaining": 0},
+            "networks": {"before": 4, "deleted": 4, "remaining": 0},
+            "volumes": {"before": 2, "deleted": 2, "remaining": 0},
+        },
+        "unrelated_inventory": {
+            "global_equality": False,
+            "preexisting_missing_count": 0,
+            "preexisting_changed_count": 0,
+            "concurrent_added_or_replaced_projects": ["Daon2", "eoul"],
+            "cleanup_boundary": "PRESERVED",
+        },
+        "application": {"head": C21_CLEANUP_RUNTIME_RESULT_CANDIDATE, "head_mode": "DETACHED", "clean": True, "origin": C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL},
+        "control": {"active_stage": "stage.3558037.6302", "head": C21_CLEANUP_RUNTIME_RESULT_PARENT, "clean": True, "origin": C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL},
+        "environment": {"sha256": "fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a", "size": 443, "mode": "0600", "owner": "root:root", "unchanged": True},
+        "markers": {"pg15": dict(marker), "pg18rc": dict(marker)},
+        "receipts_and_evidence": {"hashes_and_counts_preserved": True, "exact_values_reproduced_in_record": False, "reason": "PRESERVED_OPERATOR_RESULT_WITHOUT_INVENTED_VALUES"},
+        "preapproval_denial": {"process_created": False, "mutation_count": 0},
+        "observation_errors": [
+            {"code": "DISTRO_SELECTION_OBSERVATION_ERROR", "classification": "OBSERVATION_ERROR", "valid_failure_count_increment": 0},
+            {"code": "POST_VERIFY_ENV_STAT_QUOTING_DAMAGE", "classification": "OBSERVATION_ERROR", "command_exit_code": 127, "outer_block_exit_code": 0, "valid_failure_count_increment": 0},
+        ],
+        "external_execution": {"wsl_cleanup": "EXECUTED_APPROVED", "docker_cleanup": "EXECUTED_APPROVED", "volume_cleanup": "EXECUTED_APPROVED", "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "separate_database": "NOT_EXECUTED", "ysna": "NOT_EXECUTED", "main": "NOT_EXECUTED", "push": "NOT_EXECUTED"},
+    }
+
+
+def validate_c21_cleanup_runtime_result_runtime(runtime: Mapping[str, Any]) -> list[str]:
+    try:
+        return [] if runtime == _c21_cleanup_runtime_result_runtime() else ["C21_CLEANUP_RUNTIME_RESULT_RUNTIME_INVALID"]
+    except (TypeError, ValueError):
+        return ["C21_CLEANUP_RUNTIME_RESULT_RUNTIME_INVALID"]
+
+
+def validate_c21_cleanup_runtime_result_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        metadata = c21_cleanup_runtime_result_metadata()
+        historical_hashes = {C21_CLEANUP_RUNTIME_RESULT_P: "58658DB1BA22CE5170ECA2969926FBAD617E1ECEC32AD18A55336CEE2D863A18", C21_CLEANUP_RUNTIME_RESULT_E: "DCF6DA3B93C63C16E6C580C800824231032A41E0AE94FC7792EEFCF571E68CD8", C21_CLEANUP_RUNTIME_RESULT_H: "F7C04CF2DA2787BA17E0B5CFC3F57BE14DAA288148CE5F9B1930937B03B37A0E"}
+        expected = {
+            "schema_version": "1.0.0",
+            "manifest_type": "C21_WSL_CLEANUP_RUNTIME_RESULT_PROJECTION",
+            "artifact_id": "C21-WSL-CLEANUP-RUNTIME-RESULT-20260907",
+            "recorded_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT,
+            "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
+            "event_sequence": 566,
+            "appended_event_count": 6,
+            "historical_event_sequence": 560,
+            "historical_commit": C21_CLEANUP_RUNTIME_RESULT_PARENT,
+            "historical_hashes": historical_hashes,
+            "status": C21_CLEANUP_RUNTIME_RESULT_STATUS,
+            "record_commit_mode": "PARENT_DIRECT_CHILD_EXACT12",
+            "candidate_commit": C21_CLEANUP_RUNTIME_RESULT_CANDIDATE,
+            "private_development_url": C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL,
+            "evidence_detail_limitations": [_c21_cleanup_runtime_result_limitation()],
+            "self_reference": False,
+            "accepted": False,
+            "independent_tester_status": "PENDING",
+            "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+            "dir2_status": "NOT_TRIGGERED",
+            "next_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW",
+            **metadata,
+        }
+        errors = ["C21_CLEANUP_RUNTIME_RESULT_MANIFEST_INVALID"] if any(manifest.get(key) != value for key, value in expected.items()) else []
+        errors.extend(validate_c21_cleanup_runtime_result_runtime(manifest.get("runtime")))
+        rows = manifest.get("raw_checksums")
+        expected_paths = set(c21_cleanup_runtime_result_paths()) - {C21_CLEANUP_RUNTIME_RESULT_M}
+        if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_paths or len(rows) != len(expected_paths) or any(not isinstance(row, Mapping) or not isinstance(row.get("bytes"), int) or row.get("bytes") < 1 or not isinstance(row.get("sha256"), str) or not re.fullmatch(r"[0-9A-F]{64}", row["sha256"]) for row in rows):
+            errors.append("C21_CLEANUP_RUNTIME_RESULT_CHECKSUMS_INVALID")
+        return sorted(set(errors))
+    except (TypeError, ValueError, KeyError):
+        return ["C21_CLEANUP_RUNTIME_RESULT_MANIFEST_INVALID"]
+
+
+def c21_cleanup_runtime_result_events() -> list[dict[str, Any]]:
+    metadata = c21_cleanup_runtime_result_metadata()
+    common = {"occurred_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "actor": "developer-primary", "subject_ref": "C-21/WSL-CLEANUP-RUNTIME-RESULT"}
+    worker = {"lease_id": "worker-lease-c21-wsl-cleanup-runtime-result-20260907-001", "agent_id": "developer-primary", "work_package_id": "C-21", "subtask_id": "WSL-CLEANUP-RUNTIME-RESULT", "lease_epoch": 1, "execution_fencing_token": "c21-wsl-cleanup-runtime-result-execution-fence-epoch-1-b2ba821", "fencing_token": "c21-wsl-cleanup-runtime-result-execution-fence-epoch-1-b2ba821", "status": "ACTIVE", "work_instruction_id": C21_CLEANUP_RUNTIME_RESULT_WI_ID}
+    write = {"lease_id": "write-lease-c21-wsl-cleanup-runtime-result-20260907-001", "worker_lease_id": worker["lease_id"], "agent_id": "developer-primary", "work_package_id": "C-21", "subtask_id": "WSL-CLEANUP-RUNTIME-RESULT", "write_epoch": 1, "execution_fencing_token": worker["execution_fencing_token"], "write_fencing_token": "c21-wsl-cleanup-runtime-result-write-fence-epoch-1-b2ba821", "fencing_token": "c21-wsl-cleanup-runtime-result-write-fence-epoch-1-b2ba821", "status": "ACTIVE", "path_scope": metadata["developer_exact_paths"], "paths": metadata["developer_exact_paths"], "path_count": 12, "path_list_sha256": metadata["developer_exact_path_list_sha256"], "work_instruction_id": C21_CLEANUP_RUNTIME_RESULT_WI_ID}
+    detail = {"work_instruction_id": C21_CLEANUP_RUNTIME_RESULT_WI_ID, "dispatch_head": C21_CLEANUP_RUNTIME_RESULT_PARENT, "dispatch_upstream_head": C21_RESUME_REMOTE, "candidate_commit": C21_CLEANUP_RUNTIME_RESULT_CANDIDATE, "projection_mode": VALIDATED_BASE_PROJECTION_MODE, "validated_base_commit": C21_EXACT_BINDING_BASE, "head_relation": "FEATURE_WORKTREE_C21_CLEANUP_RUNTIME_RESULT_PARENT_EXACT12_SUCCESSOR_RECORD", "exact_allowed_paths": metadata["cumulative_exact_paths"], "runtime": _c21_cleanup_runtime_result_runtime(), "recorded_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING", "evidence_detail_limitations": [_c21_cleanup_runtime_result_limitation()], **metadata}
+    return [
+        {"event_id": "evt_c21_cleanup_runtime_result_worker_lease_issued", "sequence": 561, "event_type": "WORKER_LEASE_ISSUED", **common, "details": worker},
+        {"event_id": "evt_c21_cleanup_runtime_result_write_lease_issued", "sequence": 562, "event_type": "WRITE_LEASE_ISSUED", **common, "details": write},
+        {"event_id": "evt_c21_cleanup_runtime_result_package_started", "sequence": 563, "event_type": "PACKAGE_STARTED", **common, "details": dict(detail, result_status="IN_PROGRESS", package_status="ACTIVE_WSL_CLEANUP_RUNTIME_RESULT")},
+        {"event_id": "evt_c21_cleanup_runtime_result_write_lease_revoked", "sequence": 564, "event_type": "WRITE_LEASE_REVOKED", **common, "details": dict(write, status="REVOKED", reason="RESULT_HANDOFF")},
+        {"event_id": "evt_c21_cleanup_runtime_result_worker_lease_revoked", "sequence": 565, "event_type": "WORKER_LEASE_REVOKED", **common, "details": dict(worker, status="REVOKED", reason="RESULT_HANDOFF")},
+        {"event_id": "evt_c21_cleanup_runtime_result_package_completed", "sequence": 566, "event_type": "PACKAGE_COMPLETED", **common, "details": dict(detail, result_status="COMPLETED", package_status=C21_CLEANUP_RUNTIME_RESULT_STATUS, accepted=False, independent_tester_status="PENDING", c01_status="BLOCKED_PENDING_C21_ACCEPTANCE", dir2_status="NOT_TRIGGERED", next_action="INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW")},
+    ]
+
+
+def _c21_cleanup_runtime_result_preserve_seq560(files: Mapping[str, bytes]) -> None:
+    script = files["scripts/check_project_progress.py"]
+    test = files["tests/tooling/test_project_progress.py"]
+    script_section = script[script.index(b"C21_CLEANUP_GUARD_SOURCE_PARENT="):script.index(b"C21_CLEANUP_RUNTIME_RESULT_PARENT =")].rstrip(b"\n")
+    test_section = test[test.index(b"class C21WslCleanupGuardSourceR1Tests"):test.index(b"class C21WslCleanupRuntimeResultTests")].rstrip(b"\n")
+    if _c21_resume_sha(script_section) != "A1E0A54DD53923316485E6078179B25D8582AFF793D611379BF6678F0AA8336F" or _c21_resume_sha(test_section) != "303019CC2B9FFDF3463C427323A686F23966903836ACDAAF3FFA631C1DB5594E":
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_SEQ560_FIXTURE_DRIFT")
+    report = files[C21_CLEANUP_RUNTIME_RESULT_REPORT]
+    if ("```powershell\n" + C21_CLEANUP_RUNTIME_RESULT_POST_VERIFY + "\n```").encode() not in report:
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_POST_VERIFY_LOG_INVALID")
+    required = {
+        C21_CLEANUP_RUNTIME_RESULT_REPORT: [C21_CLEANUP_RUNTIME_RESULT_LIMITATION, "OPEN / UNRESOLVED_EVIDENCE_DETAIL / MINOR", "ENV_STAT"],
+        C21_CLEANUP_RUNTIME_RESULT_VALIDATION: [C21_CLEANUP_RUNTIME_RESULT_LIMITATION, "raw7 → events → progress → handoff → detached digest → manifest"],
+        C21_CLEANUP_RUNTIME_RESULT_WI: [C21_CLEANUP_RUNTIME_RESULT_PARENT, C21_CLEANUP_RUNTIME_RESULT_CANDIDATE],
+        "docs/WORK_STATUS.md": [C21_CLEANUP_RUNTIME_RESULT_LIMITATION, C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT],
+    }
+    for path, needles in required.items():
+        text = files[path].decode("utf-8")
+        if any(needle not in text for needle in needles):
+            raise ValueError("C21_CLEANUP_RUNTIME_RESULT_REQUIRED_EVIDENCE_INVALID")
+
+
+def c21_cleanup_runtime_result_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {C21_CLEANUP_RUNTIME_RESULT_P, C21_CLEANUP_RUNTIME_RESULT_E, C21_CLEANUP_RUNTIME_RESULT_H, C21_CLEANUP_RUNTIME_RESULT_D, C21_CLEANUP_RUNTIME_RESULT_M}
+    metadata = c21_cleanup_runtime_result_metadata()
+    if set(files) != set(c21_cleanup_runtime_result_paths()) - generated:
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_FILE_SET_INVALID")
+    historical_hashes = {C21_CLEANUP_RUNTIME_RESULT_P: "58658DB1BA22CE5170ECA2969926FBAD617E1ECEC32AD18A55336CEE2D863A18", C21_CLEANUP_RUNTIME_RESULT_E: "DCF6DA3B93C63C16E6C580C800824231032A41E0AE94FC7792EEFCF571E68CD8", C21_CLEANUP_RUNTIME_RESULT_H: "F7C04CF2DA2787BA17E0B5CFC3F57BE14DAA288148CE5F9B1930937B03B37A0E"}
+    if set(historical) != set(historical_hashes) or any(_c21_resume_sha(historical[path]) != digest for path, digest in historical_hashes.items()):
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_HISTORY_INVALID")
+    source = _c21_resume_json(historical[C21_CLEANUP_RUNTIME_RESULT_P])
+    parsed = _c21_resume_json(historical[C21_CLEANUP_RUNTIME_RESULT_E])
+    if source.get("event_sequence") != 560 or parsed.get("last_sequence") != 560 or len(parsed.get("events", [])) != 560 or parsed.get("last_event_id") != "evt_c21_cleanup_guard_source_package_completed":
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_HISTORY_INVALID")
+    prefix = raw_event_object_prefix_bytes(historical[C21_CLEANUP_RUNTIME_RESULT_E], 560)
+    header = b'{\n  "schema_version": "1.0.0",\n  "stream_id": "anvil-build-main",\n  "first_sequence": 1,\n  "last_sequence": 560,\n  "events": [\n    '
+    footer = b'\n  ],\n  "last_event_id": "evt_c21_cleanup_guard_source_package_completed"\n}\n'
+    if historical[C21_CLEANUP_RUNTIME_RESULT_E] != header + prefix + footer:
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_HISTORY_PREFIX_INVALID")
+    _c21_cleanup_runtime_result_preserve_seq560(files)
+    runtime = _c21_cleanup_runtime_result_runtime()
+    if validate_c21_cleanup_runtime_result_runtime(runtime):
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_RUNTIME_INVALID")
+    rows = b"".join(b",\n" + "\n".join("    " + line for line in json.dumps(event, ensure_ascii=False, indent=2, allow_nan=False).splitlines()).encode() for event in c21_cleanup_runtime_result_events())
+    events_raw = header.replace(b'560', b'566', 1) + prefix + rows + footer.replace(b'evt_c21_cleanup_guard_source_package_completed', b'evt_c21_cleanup_runtime_result_package_completed')
+    wi_sha = _c21_resume_sha(files[C21_CLEANUP_RUNTIME_RESULT_WI])
+    prompt_sha = _c21_resume_sha(files[C21_CLEANUP_RUNTIME_RESULT_PROMPT])
+    limitation = _c21_cleanup_runtime_result_limitation()
+    instruction = {"artifact_id": C21_CLEANUP_RUNTIME_RESULT_WI_ID, "artifact_path": C21_CLEANUP_RUNTIME_RESULT_WI, "artifact_sha256": wi_sha, "invocation_path": C21_CLEANUP_RUNTIME_RESULT_PROMPT, "invocation_sha256": prompt_sha, "result_status": "COMPLETED", "package_status": C21_CLEANUP_RUNTIME_RESULT_STATUS, "executor": "developer-primary", "accepted": False, "independent_tester_status": "PENDING", "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED", "runtime_next_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW"}
+    progress = dict(source)
+    repository = dict(progress["repository"])
+    repository.update({"local_head": C21_CLEANUP_RUNTIME_RESULT_PARENT, "head_relation": "FEATURE_WORKTREE_C21_CLEANUP_RUNTIME_RESULT_PARENT_EXACT12_SUCCESSOR_RECORD", "worktree_status": "SEQ566_WSL_CLEANUP_RUNTIME_RESULT_EXACT12_DIRTY", "exact_allowed_paths": metadata["cumulative_exact_paths"], "cleanup_runtime_result_paths": metadata["developer_exact_paths"], "private_development_url": C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL, "private_control_head": C21_CLEANUP_RUNTIME_RESULT_PARENT, "private_candidate_head": C21_CLEANUP_RUNTIME_RESULT_CANDIDATE, "push_status": "NOT_EXECUTED"})
+    progress.update({"updated_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "recorded_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING", "event_sequence": 566, "last_event_id": "evt_c21_cleanup_runtime_result_package_completed", "status": C21_CLEANUP_RUNTIME_RESULT_STATUS, "active_agent": None, "worker_lease": None, "write_lease": None, "active_work_instruction": instruction, "completed_work_instruction": instruction, "repository": repository, "runtime": runtime, "evidence_detail_limitations": [limitation], "runtime_next_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW", "next_safe_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW", "current_progress_evidence_ref": {"package_id": "C-21", "path": C21_CLEANUP_RUNTIME_RESULT_D, "manifest_path": C21_CLEANUP_RUNTIME_RESULT_M}, "latest_evidence_manifest_ref": {"path": C21_CLEANUP_RUNTIME_RESULT_M, "artifact_id": "C21-WSL-CLEANUP-RUNTIME-RESULT-20260907"}, "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C21_WSL_CLEANUP_RUNTIME_RESULT_READY_FOR_ACCEPTANCE"], "stop_before_dialogue_report": False}})
+    progress["registry_refs"]["progress_events"] = {"path": C21_CLEANUP_RUNTIME_RESULT_E, "sha256": _c21_resume_sha(events_raw)}
+    latest = dict(files); latest[C21_CLEANUP_RUNTIME_RESULT_E] = events_raw
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)} for path, raw in sorted(latest.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {"event_sequence": 566, "last_event_id": "evt_c21_cleanup_runtime_result_package_completed", "status": C21_CLEANUP_RUNTIME_RESULT_STATUS, "current_phase": source["current_phase"], "current_work_package": "C-21", "active_agent": None, "worker_lease": None, "write_lease": None, "execution_fencing_token": None, "write_fencing_token": None, "active_work_instruction": C21_CLEANUP_RUNTIME_RESULT_WI_ID, "active_work_instruction_sha256": wi_sha, "active_invocation_sha256": prompt_sha, "repository_head": C21_CLEANUP_RUNTIME_RESULT_PARENT, "repository_head_relation": repository["head_relation"], "repository_upstream": repository["upstream"], "repository_projection_mode": repository["projection_mode"], "repository_validated_base_commit": repository["validated_base_commit"], "repository_exact_allowed_paths": metadata["cumulative_exact_paths"], "private_development_url": C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL, "private_control_head": C21_CLEANUP_RUNTIME_RESULT_PARENT, "private_candidate_head": C21_CLEANUP_RUNTIME_RESULT_CANDIDATE, "design_baseline_hash": source["design_baseline_hash"], "valid_failure_count": source["valid_failure_count"], "dir_status": source["dir_review"]["status"], "runtime": runtime, "evidence_detail_limitations": [limitation], "recorded_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING", "next_safe_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW", "runtime_next_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW", "reporting_decision": "AUTO_CONTINUE", **metadata, "accepted": False, "independent_tester_status": "PENDING", "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED", "commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT", "push": "NOT_EXECUTED"}
+    htext = "# C-21 WSL cleanup runtime result — seq566 Developer 완료\n\n- Cleanup succeeded; the outer wrapper failed only on post-cleanup unrelated-inventory equality. Independent acceptance remains pending.\n\n" + historical[C21_CLEANUP_RUNTIME_RESULT_H].decode()
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    htext, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement, htext, flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_HANDOFF_INVALID")
+    handoff_raw = htext.encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C21-WSL-CLEANUP-RUNTIME-RESULT-DIGEST-20260907", "package_id": "C-21", "event_sequence": 566, "algorithm": "SHA-256", "created_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "scope": "seq561-566 append-only; seq1-560 preserved; exact12.", "self_reference": False, "progress": {"path": C21_CLEANUP_RUNTIME_RESULT_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))}, "handoff": {"path": C21_CLEANUP_RUNTIME_RESULT_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    prior_artifacts = dict(files); prior_artifacts.update({C21_CLEANUP_RUNTIME_RESULT_E: events_raw, C21_CLEANUP_RUNTIME_RESULT_P: progress_raw, C21_CLEANUP_RUNTIME_RESULT_H: handoff_raw, C21_CLEANUP_RUNTIME_RESULT_D: digest_raw})
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C21_WSL_CLEANUP_RUNTIME_RESULT_PROJECTION", "artifact_id": "C21-WSL-CLEANUP-RUNTIME-RESULT-20260907", "created_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "recorded_at": C21_CLEANUP_RUNTIME_RESULT_RECORDED_AT, "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING", "event_sequence": 566, "appended_event_count": 6, "historical_event_sequence": 560, "historical_commit": C21_CLEANUP_RUNTIME_RESULT_PARENT, "historical_hashes": historical_hashes, "status": C21_CLEANUP_RUNTIME_RESULT_STATUS, "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT", "record_commit_mode": "PARENT_DIRECT_CHILD_EXACT12", "execution_authority_path": C21_CLEANUP_RUNTIME_RESULT_WI, "execution_authority_sha256": wi_sha, "work_instruction_id": C21_CLEANUP_RUNTIME_RESULT_WI_ID, "candidate_commit": C21_CLEANUP_RUNTIME_RESULT_CANDIDATE, "private_development_url": C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL, "runtime": runtime, "evidence_detail_limitations": [limitation], "self_reference": False, "accepted": False, "independent_tester_status": "PENDING", "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED", "next_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW", **metadata}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)} for path, raw in sorted(prior_artifacts.items())]
+    if validate_c21_cleanup_runtime_result_manifest(manifest):
+        raise ValueError("C21_CLEANUP_RUNTIME_RESULT_MANIFEST_INVALID")
+    return {C21_CLEANUP_RUNTIME_RESULT_E: events_raw, C21_CLEANUP_RUNTIME_RESULT_P: progress_raw, C21_CLEANUP_RUNTIME_RESULT_H: handoff_raw, C21_CLEANUP_RUNTIME_RESULT_D: digest_raw, C21_CLEANUP_RUNTIME_RESULT_M: _c21_resume_json_bytes(manifest)}
+
+
+def validate_c21_cleanup_runtime_result_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    root = bundle.get("_root")
+    try:
+        historical = {path: subprocess.check_output(["git", "show", f"{C21_CLEANUP_RUNTIME_RESULT_PARENT}:{path}"], cwd=root) for path in (C21_CLEANUP_RUNTIME_RESULT_P, C21_CLEANUP_RUNTIME_RESULT_E, C21_CLEANUP_RUNTIME_RESULT_H)}
+        generated = {C21_CLEANUP_RUNTIME_RESULT_P, C21_CLEANUP_RUNTIME_RESULT_E, C21_CLEANUP_RUNTIME_RESULT_H, C21_CLEANUP_RUNTIME_RESULT_D, C21_CLEANUP_RUNTIME_RESULT_M}
+        files = {path: (root / path).read_bytes() for path in set(c21_cleanup_runtime_result_paths()) - generated}
+        expected = c21_cleanup_runtime_result_artifacts(historical, files)
+        errors = []
+        for path in generated:
+            if (root / path).read_bytes() != expected[path]:
+                errors.append("C21_CLEANUP_RUNTIME_RESULT_PROJECTION_INVALID")
+        supplied = {C21_CLEANUP_RUNTIME_RESULT_P: bundle.get("progress"), C21_CLEANUP_RUNTIME_RESULT_E: bundle.get("events"), C21_CLEANUP_RUNTIME_RESULT_D: bundle.get("detached_digest"), C21_CLEANUP_RUNTIME_RESULT_M: manifest}
+        if any(obj != _c21_resume_json(expected[path]) for path, obj in supplied.items()):
+            errors.append("C21_CLEANUP_RUNTIME_RESULT_PROJECTION_INVALID")
+        errors.extend(validate_c21_cleanup_runtime_result_manifest(manifest))
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C21_CLEANUP_RUNTIME_RESULT_INPUT_INVALID"]
+
+
+def _collect_c21_cleanup_runtime_result_git(bundle: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]
+    metadata = c21_cleanup_runtime_result_metadata()
+    try:
+        head = _git_value(root, "rev-parse", "HEAD")
+        status = _git_value(root, "-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        branch = _git_value(root, "branch", "--show-current")
+        upstream = _git_value(root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+        private_url = _git_value(root, "remote", "get-url", "development")
+        private_control = _git_value(root, "for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution")
+        private_candidate = _git_value(root, "for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107")
+        if status is None:
+            return ["GIT_STATUS_COLLECTION_FAILED"]
+        if None in (head, branch, upstream, private_url, private_control, private_candidate):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch != "codex/c21-operational-execution" or upstream != "origin/codex/c21-operational-execution":
+            return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url != C21_CLEANUP_RUNTIME_RESULT_PRIVATE_URL or private_control != C21_CLEANUP_RUNTIME_RESULT_PARENT or private_candidate != C21_CLEANUP_RUNTIME_RESULT_CANDIDATE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared = bundle["progress"]["repository"].get("validated_base_commit")
+        if not isinstance(declared, str) or not re.fullmatch(r"[0-9a-f]{40}", declared) or _git_returncode(root, "merge-base", "--is-ancestor", declared, head) != 0:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty = sorted(_working_tree_paths(status))
+        direct = dirty if head == C21_CLEANUP_RUNTIME_RESULT_PARENT else _c21_resume_git_paths(_git_value(root, "diff", "--name-only", C21_CLEANUP_RUNTIME_RESULT_PARENT, head) or "")
+        committed = _c21_resume_git_paths(_git_value(root, "diff", "--name-only", C21_EXACT_BINDING_BASE, head) or "")
+        cumulative = sorted(set(committed) | set(dirty)) if head == C21_CLEANUP_RUNTIME_RESULT_PARENT else committed
+        if direct != metadata["developer_exact_paths"] or cumulative != metadata["cumulative_exact_paths"]:
+            return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head == C21_CLEANUP_RUNTIME_RESULT_PARENT:
+            return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        parents = (_git_value(root, "show", "-s", "--format=%P", head) or "").split()
+        return [] if not dirty and parents == [C21_CLEANUP_RUNTIME_RESULT_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError, ValueError, TypeError, KeyError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

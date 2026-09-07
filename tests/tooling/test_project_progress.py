@@ -8226,5 +8226,205 @@ class C21WslCleanupGuardSourceR1Tests(unittest.TestCase):
         self.assertEqual(0, manifest["runtime"]["prior_runtime_cleanup_attempt"]["mutation_count"])
 
 
+class C21WslCleanupRuntimeResultTests(unittest.TestCase):
+    @staticmethod
+    def _historical(checker):
+        return {
+            path: subprocess.check_output(
+                ["git", "show", f"{checker.C21_CLEANUP_RUNTIME_RESULT_PARENT}:{path}"], cwd=ROOT
+            )
+            for path in (
+                checker.C21_CLEANUP_RUNTIME_RESULT_P,
+                checker.C21_CLEANUP_RUNTIME_RESULT_E,
+                checker.C21_CLEANUP_RUNTIME_RESULT_H,
+            )
+        }
+
+    @staticmethod
+    def _raw_files(checker):
+        generated = {
+            checker.C21_CLEANUP_RUNTIME_RESULT_P,
+            checker.C21_CLEANUP_RUNTIME_RESULT_E,
+            checker.C21_CLEANUP_RUNTIME_RESULT_H,
+            checker.C21_CLEANUP_RUNTIME_RESULT_D,
+            checker.C21_CLEANUP_RUNTIME_RESULT_M,
+        }
+        return {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_cleanup_runtime_result_paths()) - generated
+        }
+
+    def test_seq566_builder_preserves_seq560_and_records_strict_runtime_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_cleanup_runtime_result_artifacts"))
+        historical = self._historical(checker)
+        artifacts = checker.c21_cleanup_runtime_result_artifacts(historical, self._raw_files(checker))
+        events = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_E])["events"]
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_M])
+        progress = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_P])
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_CLEANUP_RUNTIME_RESULT_E], 560),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_E], 560),
+        )
+        self.assertEqual(list(range(561, 567)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events[-6:]],
+        )
+        self.assertEqual("READY_FOR_C21_WSL_ACCEPTANCE", progress["status"])
+        self.assertEqual("INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("PENDING", manifest["independent_tester_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        runtime = manifest["runtime"]
+        self.assertEqual("UNAVAILABLE_AFTER_SUBAGENT_COMPACTION", runtime["runtime_observed_at_status"])
+        self.assertIsNone(runtime["runtime_observed_at"])
+        self.assertEqual("2026-09-07", runtime["runtime_observed_date"])
+        self.assertNotEqual(runtime["runtime_observed_at"], manifest["recorded_at"])
+        self.assertEqual("LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING", manifest["recorded_at_source"])
+        self.assertEqual(1, runtime["cleanup"]["invocation_count"])
+        self.assertEqual(0, runtime["cleanup"]["internal_exit_code"])
+        self.assertEqual(1, runtime["cleanup"]["outer_wrapper_exit_code"])
+        self.assertEqual("SUCCEEDED", runtime["cleanup"]["cleanup_status"])
+        self.assertFalse(runtime["cleanup"]["wrapper_failure_is_cleanup_failure"])
+        self.assertEqual("POST_CLEANUP_UNRELATED_INVENTORY_EQUALITY_ASSERTION", runtime["cleanup"]["wrapper_failure"])
+        self.assertEqual(
+            {"containers": {"before": 6, "deleted": 6, "remaining": 0}, "networks": {"before": 4, "deleted": 4, "remaining": 0}, "volumes": {"before": 2, "deleted": 2, "remaining": 0}},
+            runtime["target_cleanup"],
+        )
+        self.assertFalse(runtime["unrelated_inventory"]["global_equality"])
+        self.assertEqual(0, runtime["unrelated_inventory"]["preexisting_missing_count"])
+        self.assertEqual(0, runtime["unrelated_inventory"]["preexisting_changed_count"])
+        self.assertEqual(["Daon2", "eoul"], runtime["unrelated_inventory"]["concurrent_added_or_replaced_projects"])
+        self.assertEqual("a6dca0da5a37e64491e91813895268e78ecb78b2", runtime["application"]["head"])
+        self.assertEqual("DETACHED", runtime["application"]["head_mode"])
+        self.assertTrue(runtime["application"]["clean"])
+        self.assertEqual("stage.3558037.6302", runtime["control"]["active_stage"])
+        self.assertEqual(checker.C21_CLEANUP_RUNTIME_RESULT_PARENT, runtime["control"]["head"])
+        self.assertEqual("fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a", runtime["environment"]["sha256"])
+        self.assertEqual(443, runtime["environment"]["size"])
+        self.assertEqual("0600", runtime["environment"]["mode"])
+        self.assertEqual("root:root", runtime["environment"]["owner"])
+        self.assertTrue(runtime["environment"]["unchanged"])
+        self.assertEqual("324eb169fedbce958d2e8cc29362deb7af433677", runtime["markers"]["pg15"]["current"])
+        self.assertEqual(runtime["markers"]["pg15"], runtime["markers"]["pg18rc"])
+        self.assertTrue(runtime["receipts_and_evidence"]["hashes_and_counts_preserved"])
+        self.assertEqual("EXECUTED_APPROVED", runtime["external_execution"]["volume_cleanup"])
+        for name in ("provider", "telegram", "separate_database", "ysna", "main"):
+            self.assertEqual("NOT_EXECUTED", runtime["external_execution"][name])
+        limitation = manifest["evidence_detail_limitations"][0]
+        self.assertEqual("PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION", limitation["code"])
+        self.assertEqual("OPEN", limitation["status"])
+        self.assertEqual("UNRESOLVED_EVIDENCE_DETAIL", limitation["resolution"])
+        self.assertEqual("MINOR", limitation["reviewer_severity"])
+
+    def test_seq566_metadata_binds_windows_and_ordinal_exact12_cumulative149(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_cleanup_runtime_result_metadata"))
+        metadata = checker.c21_cleanup_runtime_result_metadata()
+        self.assertEqual(12, metadata["developer_exact_path_count"])
+        self.assertEqual("54DE92EBEC20A6897379A2B14FBBA258517A0E6A52A221C6217739B40FA9E0EF", metadata["developer_exact_path_list_sha256"])
+        self.assertEqual("63E7070C7D5D018F76DE04A0369B5778F3B58AF2798EA2EC78ED3CFB75645CA0", metadata["developer_exact_path_list_ordinal_sha256"])
+        self.assertEqual(149, metadata["cumulative_exact_path_count"])
+        self.assertEqual("F804F93F8F8BE351071EB0CC3674A4EB442BF8D0E74DFF0D65FAD88AD1DE85F2", metadata["cumulative_exact_path_list_sha256"])
+        self.assertEqual("B956DA56B0D6BD17D0918878F1E3F80E672FAE971CEE3E4793A1CE227E0C47C8", metadata["cumulative_exact_path_list_ordinal_sha256"])
+
+    def test_seq566_runtime_validator_rejects_tamper_and_malformed_json(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "validate_c21_cleanup_runtime_result_runtime"))
+        runtime = checker._c21_cleanup_runtime_result_runtime()
+        mutations = (
+            ("cleanup_count", lambda d: d["cleanup"].__setitem__("invocation_count", 2)),
+            ("cleanup_exit", lambda d: d["cleanup"].__setitem__("internal_exit_code", 1)),
+            ("misclassification", lambda d: d["cleanup"].__setitem__("wrapper_failure_is_cleanup_failure", True)),
+            ("target_remaining", lambda d: d["target_cleanup"]["containers"].__setitem__("remaining", 1)),
+            ("unrelated_loss", lambda d: d["unrelated_inventory"].__setitem__("preexisting_missing_count", 1)),
+            ("environment", lambda d: d["environment"].__setitem__("unchanged", False)),
+            ("marker", lambda d: d["markers"]["pg15"].__setitem__("current", "0" * 40)),
+            ("receipt", lambda d: d["receipts_and_evidence"].__setitem__("hashes_and_counts_preserved", False)),
+            ("external", lambda d: d["external_execution"].__setitem__("provider", "EXECUTED")),
+            ("observed_at", lambda d: d.__setitem__("runtime_observed_at", "2026-09-07T00:00:00Z")),
+        )
+        self.assertEqual([], checker.validate_c21_cleanup_runtime_result_runtime(runtime))
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(runtime); mutate(changed)
+                self.assertTrue(checker.validate_c21_cleanup_runtime_result_runtime(changed))
+        with self.assertRaises((json.JSONDecodeError, UnicodeDecodeError)):
+            checker._c21_resume_json(b'{"broken":')
+
+    def test_seq566_manifest_and_history_validators_reject_boundary_evidence_and_prefix_tamper(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "validate_c21_cleanup_runtime_result_manifest"))
+        historical = self._historical(checker)
+        raw_files = self._raw_files(checker)
+        artifacts = checker.c21_cleanup_runtime_result_artifacts(historical, raw_files)
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_M])
+        self.assertEqual([], checker.validate_c21_cleanup_runtime_result_manifest(manifest))
+        mutations = (
+            ("accepted", lambda d: d.__setitem__("accepted", True)),
+            ("tester", lambda d: d.__setitem__("independent_tester_status", "PASS")),
+            ("c01", lambda d: d.__setitem__("c01_status", "READY")),
+            ("dir2", lambda d: d.__setitem__("dir2_status", "TRIGGERED")),
+            ("limitation", lambda d: d.__setitem__("evidence_detail_limitations", [])),
+            ("path_count", lambda d: d.__setitem__("developer_exact_path_count", 11)),
+            ("path_hash", lambda d: d.__setitem__("cumulative_exact_path_list_sha256", "0" * 64)),
+            ("history_hash", lambda d: d["historical_hashes"].__setitem__(checker.C21_CLEANUP_RUNTIME_RESULT_E, "0" * 64)),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(manifest); mutate(changed)
+                self.assertTrue(checker.validate_c21_cleanup_runtime_result_manifest(changed))
+        self.assertTrue(checker.validate_c21_cleanup_runtime_result_manifest({}))
+        corrupt = dict(historical)
+        corrupt[checker.C21_CLEANUP_RUNTIME_RESULT_E] = corrupt[checker.C21_CLEANUP_RUNTIME_RESULT_E].replace(b'"sequence": 1', b'"sequence": 0', 1)
+        with self.assertRaises(ValueError):
+            checker.c21_cleanup_runtime_result_artifacts(corrupt, raw_files)
+        missing = dict(raw_files); missing.pop(next(iter(missing)))
+        with self.assertRaises(ValueError):
+            checker.c21_cleanup_runtime_result_artifacts(historical, missing)
+
+    @staticmethod
+    def _seq566_git_values(checker, *, head=None, status=None, parents=None):
+        head = head or checker.C21_CLEANUP_RUNTIME_RESULT_PARENT
+        return {
+            ("rev-parse", "HEAD"): head,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): status,
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_CLEANUP_RUNTIME_RESULT_PARENT,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): "a6dca0da5a37e64491e91813895268e78ecb78b2",
+            ("diff", "--name-only", checker.C21_CLEANUP_RUNTIME_RESULT_PARENT, head): "\n".join(checker.c21_cleanup_runtime_result_paths()),
+            ("diff", "--name-only", checker.C21_EXACT_BINDING_BASE, head): "\n".join(checker.c21_cleanup_runtime_result_metadata()["cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", head): parents,
+        }
+
+    def test_seq566_git_collector_fail_closed_precommit_postcommit_and_invalid_descendants(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "_collect_c21_cleanup_runtime_result_git"))
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        dirty = "\n".join(f" M {path}" for path in checker.c21_cleanup_runtime_result_paths())
+        values = self._seq566_git_values(checker, status=dirty)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_cleanup_runtime_result_git(bundle))
+        values[("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")] = None
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)):
+            self.assertEqual(["GIT_STATUS_COLLECTION_FAILED"], checker._collect_c21_cleanup_runtime_result_git(bundle))
+        child = "1" * 40
+        values = self._seq566_git_values(checker, head=child, status="", parents=checker.C21_CLEANUP_RUNTIME_RESULT_PARENT)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_cleanup_runtime_result_git(bundle))
+        for name, bad_head, bad_parents in (("merge", "2" * 40, checker.C21_CLEANUP_RUNTIME_RESULT_PARENT + " " + "3" * 40), ("second_descendant", "4" * 40, child), ("reversion", checker.C21_CLEANUP_RUNTIME_RESULT_PARENT, None)):
+            with self.subTest(name=name):
+                bad_status = "" if name != "reversion" else dirty.replace(" M ", "")
+                values = self._seq566_git_values(checker, head=bad_head, status=bad_status, parents=bad_parents)
+                if name == "reversion":
+                    values[("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")] = ""
+                with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+                    self.assertTrue(checker._collect_c21_cleanup_runtime_result_git(bundle))
+
+
 if __name__ == "__main__":
     unittest.main()

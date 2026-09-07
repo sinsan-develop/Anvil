@@ -1,0 +1,379 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C21_WSL_CLEANUP_RUNTIME_RESULT_PROJECTION",
+  "artifact_id": "C21-WSL-CLEANUP-RUNTIME-RESULT-20260907",
+  "created_at": "2026-09-07T04:00:51.7574180Z",
+  "recorded_at": "2026-09-07T04:00:51.7574180Z",
+  "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
+  "event_sequence": 566,
+  "appended_event_count": 6,
+  "historical_event_sequence": 560,
+  "historical_commit": "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd",
+  "historical_hashes": {
+    "docs/progress/build-progress.json": "58658DB1BA22CE5170ECA2969926FBAD617E1ECEC32AD18A55336CEE2D863A18",
+    "docs/progress/progress-events.json": "DCF6DA3B93C63C16E6C580C800824231032A41E0AE94FC7792EEFCF571E68CD8",
+    "docs/progress/BUILD_HANDOFF.md": "F7C04CF2DA2787BA17E0B5CFC3F57BE14DAA288148CE5F9B1930937B03B37A0E"
+  },
+  "status": "READY_FOR_C21_WSL_ACCEPTANCE",
+  "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+  "record_commit_mode": "PARENT_DIRECT_CHILD_EXACT12",
+  "execution_authority_path": "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+  "execution_authority_sha256": "3972B3FA9034708E41F2E888833684EB20162E9A5C70E8C594F46D120FFD5323",
+  "work_instruction_id": "WI-C-21-WSL-CLEANUP-RUNTIME-RESULT-20260907-001",
+  "candidate_commit": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+  "private_development_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "runtime": {
+    "runtime_observed_at_status": "UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
+    "runtime_observed_at": null,
+    "runtime_observed_date": "2026-09-07",
+    "cleanup": {
+      "invocation_count": 1,
+      "internal_exit_code": 0,
+      "outer_wrapper_exit_code": 1,
+      "cleanup_status": "SUCCEEDED",
+      "wrapper_failure": "POST_CLEANUP_UNRELATED_INVENTORY_EQUALITY_ASSERTION",
+      "wrapper_failure_is_cleanup_failure": false
+    },
+    "target_cleanup": {
+      "containers": {
+        "before": 6,
+        "deleted": 6,
+        "remaining": 0
+      },
+      "networks": {
+        "before": 4,
+        "deleted": 4,
+        "remaining": 0
+      },
+      "volumes": {
+        "before": 2,
+        "deleted": 2,
+        "remaining": 0
+      }
+    },
+    "unrelated_inventory": {
+      "global_equality": false,
+      "preexisting_missing_count": 0,
+      "preexisting_changed_count": 0,
+      "concurrent_added_or_replaced_projects": [
+        "Daon2",
+        "eoul"
+      ],
+      "cleanup_boundary": "PRESERVED"
+    },
+    "application": {
+      "head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+      "head_mode": "DETACHED",
+      "clean": true,
+      "origin": "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+    },
+    "control": {
+      "active_stage": "stage.3558037.6302",
+      "head": "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd",
+      "clean": true,
+      "origin": "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+    },
+    "environment": {
+      "sha256": "fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a",
+      "size": 443,
+      "mode": "0600",
+      "owner": "root:root",
+      "unchanged": true
+    },
+    "markers": {
+      "pg15": {
+        "current": "324eb169fedbce958d2e8cc29362deb7af433677",
+        "previous": "324eb169fedbce958d2e8cc29362deb7af433677"
+      },
+      "pg18rc": {
+        "current": "324eb169fedbce958d2e8cc29362deb7af433677",
+        "previous": "324eb169fedbce958d2e8cc29362deb7af433677"
+      }
+    },
+    "receipts_and_evidence": {
+      "hashes_and_counts_preserved": true,
+      "exact_values_reproduced_in_record": false,
+      "reason": "PRESERVED_OPERATOR_RESULT_WITHOUT_INVENTED_VALUES"
+    },
+    "preapproval_denial": {
+      "process_created": false,
+      "mutation_count": 0
+    },
+    "observation_errors": [
+      {
+        "code": "DISTRO_SELECTION_OBSERVATION_ERROR",
+        "classification": "OBSERVATION_ERROR",
+        "valid_failure_count_increment": 0
+      },
+      {
+        "code": "POST_VERIFY_ENV_STAT_QUOTING_DAMAGE",
+        "classification": "OBSERVATION_ERROR",
+        "command_exit_code": 127,
+        "outer_block_exit_code": 0,
+        "valid_failure_count_increment": 0
+      }
+    ],
+    "external_execution": {
+      "wsl_cleanup": "EXECUTED_APPROVED",
+      "docker_cleanup": "EXECUTED_APPROVED",
+      "volume_cleanup": "EXECUTED_APPROVED",
+      "provider": "NOT_EXECUTED",
+      "telegram": "NOT_EXECUTED",
+      "separate_database": "NOT_EXECUTED",
+      "ysna": "NOT_EXECUTED",
+      "main": "NOT_EXECUTED",
+      "push": "NOT_EXECUTED"
+    }
+  },
+  "evidence_detail_limitations": [
+    {
+      "code": "PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
+      "status": "OPEN",
+      "resolution": "UNRESOLVED_EVIDENCE_DETAIL",
+      "reviewer_severity": "MINOR",
+      "unavailable_detail": [
+        "PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT",
+        "CLEANUP_ENV_AND_ARGV_FULLTEXT"
+      ],
+      "preserved_detail": [
+        "RESULTS",
+        "HASHES",
+        "EXIT_CODES"
+      ]
+    }
+  ],
+  "self_reference": false,
+  "accepted": false,
+  "independent_tester_status": "PENDING",
+  "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+  "dir2_status": "NOT_TRIGGERED",
+  "next_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW",
+  "developer_exact_paths": [
+    "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
+    "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
+    "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "developer_exact_path_count": 12,
+  "developer_exact_path_list_sha256": "54DE92EBEC20A6897379A2B14FBBA258517A0E6A52A221C6217739B40FA9E0EF",
+  "developer_exact_path_list_ordinal_sha256": "63E7070C7D5D018F76DE04A0369B5778F3B58AF2798EA2EC78ED3CFB75645CA0",
+  "cumulative_exact_paths": [
+    "deploy/wsl/CandidateReleaseManifest.json",
+    "deploy/wsl/Dockerfile.web",
+    "deploy/wsl/bootstrap.sh",
+    "deploy/wsl/candidate-manifest-guard.sh",
+    "deploy/wsl/cleanup.sh",
+    "deploy/wsl/common.sh",
+    "deploy/wsl/compose.wsl.yml",
+    "deploy/wsl/control-runtime.sh",
+    "deploy/wsl/deploy.sh",
+    "deploy/wsl/nginx-wsl.conf",
+    "deploy/wsl/requirements-runtime.txt",
+    "deploy/wsl/rollback.sh",
+    "deploy/wsl/verify-c21-development-boundaries.sh",
+    "deploy/wsl/verify.sh",
+    "deploy/ysna/backup-c21-db.sh",
+    "docs/04_test_reports/C-21_DEVELOPMENT_QA_EXECUTION_REPORT.md",
+    "docs/04_test_reports/C-21_DEVELOPMENT_QA_INDEPENDENT_REVIEW_REPORT.md",
+    "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
+    "docs/04_test_reports/C-21_LR02C_OPERATIONAL_EXECUTION_REPORT.md",
+    "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+    "docs/04_test_reports/C-21_PROVIDER_WSL_EXACT_BINDING_REPORT.md",
+    "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md",
+    "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_EARLY_VALIDATION_PROGRESS.md",
+    "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
+    "docs/04_test_reports/C-21_WSL_READINESS_DECISION_REPORT.md",
+    "docs/04_test_reports/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_REPORT.md",
+    "docs/DEVELOPMENT_ENVIRONMENT.md",
+    "docs/WORK_STATUS.md",
+    "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+    "docs/approvals/APPROVAL-20260905-C21-WSL-INGRESS-EXCEPTION-001.md",
+    "docs/evidence/manifests/C-21_DEVELOPMENT_QA_EXECUTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json",
+    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+    "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_EXACT_BINDING_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_EXECUTION_RESUME_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_EARLY_VALIDATION_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_MANIFEST.json",
+    "docs/evidence/manifests/C-21_YSNA_STAGING_CLASSIFICATION_DECISION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/failure-ledger.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-development-qa-resume.json",
+    "docs/progress/progress-handoff-detached-digest-c21-development-qa-review.json",
+    "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json",
+    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-conninfo-rework-r4.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-status-read-reviewed.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-status-read.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-exact-binding-bound.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-exact-binding-start.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-bound.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-execution-resume-start.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
+    "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-cold-start-candidate-rebind.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-compose-runner-candidate-rebind.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-fresh-clone-candidate-rebind.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-ingress-candidate-rebind.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-resume.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-readiness-decision.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-allowlist-candidate-rebind.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-rollback-scope-compat-r1.json",
+    "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+    "docs/validation/C-21_DEVELOPMENT_QA_EXECUTION_VALIDATION.md",
+    "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
+    "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
+    "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
+    "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+    "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
+    "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
+    "docs/validation/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_VALIDATION.md",
+    "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_INVOCATION_PROMPT_R4.md",
+    "docs/work_orders/C-21_LR-02C_OPS_R2_CONNINFO_REWORK_WORK_INSTRUCTION_R4.md",
+    "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_STATUS_READ_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WSL_EARLY_VALIDATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_EARLY_VALIDATION_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WSL_ROLLBACK_SCOPE_COMPAT_R1_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/provider_catalog.py",
+    "packages/agent_team/provider_status.py",
+    "packages/api/local_session.py",
+    "packages/api/provider_status.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_c21_provider_nonbilling_qa.py",
+    "tests/agent_team/test_provider_status.py",
+    "tests/api/test_c21_telegram_outbound_free_qa.py",
+    "tests/api/test_local_session.py",
+    "tests/api/test_provider_status.py",
+    "tests/api/test_registry_openapi.py",
+    "tests/api/test_runtime_app.py",
+    "tests/browser/c21-network-probe.mjs",
+    "tests/deploy/test_c21_lr02c_operational_contract.py",
+    "tests/deploy/test_wsl_staging_harness.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "cumulative_exact_path_count": 149,
+  "cumulative_exact_path_list_sha256": "F804F93F8F8BE351071EB0CC3674A4EB442BF8D0E74DFF0D65FAD88AD1DE85F2",
+  "cumulative_exact_path_list_ordinal_sha256": "B956DA56B0D6BD17D0918878F1E3F80E672FAE971CEE3E4793A1CE227E0C47C8",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md",
+      "bytes": 6977,
+      "sha256": "32A406D1A2E377279D66C166FDCA4CC1312FDBD0DFA328F36316055AAC2A82F2"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 204751,
+      "sha256": "4D0EEC48DD1A01BEBBBD175DAADE7290FA2B687B5F4CFA7A40E1BA3AE6E6E6D1"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 202513,
+      "sha256": "EA7C3A2A39BBA0275BAB3AABF0FFFE5CCB447351D57727A7D7C2570095966965"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 179433,
+      "sha256": "B73110442CB277D9D1C5C51F35D4AA58901150BABDC2F87FB5EDBFC47673615E"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 1259245,
+      "sha256": "A7C6C492A9FEDB365C8F129615BE0B1E8B488831C5FB8F48CE8E84CABEB222D0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
+      "bytes": 869,
+      "sha256": "B4AD4D3CECA38496941F333E488279586534C54874E1F562B4AA64281C453C50"
+    },
+    {
+      "path": "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
+      "bytes": 3213,
+      "sha256": "80ECC212BA87F45E6424A0B3E740C89ED968E913E0B413ED2C1A5AA51AB9AD6F"
+    },
+    {
+      "path": "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_INVOCATION_PROMPT.md",
+      "bytes": 300,
+      "sha256": "30E11D57C24248E0630B06C046130EE8B9659CAEE064167F55F23F4C52CE670F"
+    },
+    {
+      "path": "docs/work_orders/C-21_WSL_CLEANUP_RUNTIME_RESULT_WORK_INSTRUCTION.md",
+      "bytes": 965,
+      "sha256": "3972B3FA9034708E41F2E888833684EB20162E9A5C70E8C594F46D120FFD5323"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 1372963,
+      "sha256": "95679BE3080DB0E762AF0E9DCD41ED8D4E5112425D81E05827357A1AFE93F8C3"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 471043,
+      "sha256": "B1B6D5C5FD5500A08AC2A0D138C1454DD72087D142D7073F5576DE97800BF25E"
+    }
+  ]
+}

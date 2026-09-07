@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-CLEANUP-RUNTIME-RESULT-DIGEST-20260907",
+  "package_id": "C-21",
+  "event_sequence": 566,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-07T04:00:51.7574180Z",
+  "scope": "seq561-566 append-only; seq1-560 preserved; exact12.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 179433,
+    "file_sha256": "B73110442CB277D9D1C5C51F35D4AA58901150BABDC2F87FB5EDBFC47673615E",
+    "canonical_json_sha256": "6CEF18953FA08276C49BDC9DAFEF5FD7C9DC7B66E6A61BE0E5E0B3CF64778410"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 202513,
+    "file_sha256": "EA7C3A2A39BBA0275BAB3AABF0FFFE5CCB447351D57727A7D7C2570095966965",
+    "machine_summary_canonical_sha256": "539E3F7339705E4C16E03BD0B9519F90964AA14B85964EFE522038912AE0078F"
+  }
+}

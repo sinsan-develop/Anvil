@@ -1,0 +1,1 @@
+Record WI-C-21-WSL-CLEANUP-RUNTIME-RESULT-20260907-001 as seq561~566 on the exact12 lease. Preserve seq1~560 and all product/deploy/guard bytes, bind the observed cleanup success separately from the wrapper assertion failure, and do not reconstruct compacted command text or run any external action.
