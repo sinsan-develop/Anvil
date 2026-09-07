@@ -1280,3 +1280,14 @@
 - 다음은 이 최종 결과를 포함한 raw report/validation/WORK_STATUS 기준으로 seq584 P/E/H/D/M을 마지막 재결박하고, focused/live/determinism/diff/compile 및 exact16 상태를 확인한 뒤 단일 direct-child record commit을 생성하는 것이다.
 - 최종 evidence 재결박 전 검증은 historical exact4 `177 tests in 102.320s / OK`, seq584+잔여 회귀 targeted `4 tests in 12.061s / OK`, live checker sequence584 PASS, deterministic regeneration PASS, diff-check PASS, direct compile PASS다.
 - dirty set은 exact16과 일치하며 Windows/ordinal hash는 `4B6FB5B5AEFD4A7CF943A191437A3A31F8EEADED1C96A47A6B8934AAFAB3F4F0` / `E6A1C5BB1C6004DFA22E3342FC41A5C4B455A86EA7A3866549258E5056A95C90`다. 이 문구를 포함해 마지막으로 파생 산출물을 재결박한 뒤 read-only precommit 확인만 수행한다.
+## 2026-09-07 C-21 Workbench UI WSL Git-only candidate Developer 시작
+
+- 담당: `developer-primary`; 상태: `IN_PROGRESS_TDD_RED_PREPARATION`.
+- 시작 branch/HEAD: `codex/c21-operational-execution` / `468b1408f6e817d20d68c46a79ba44dc82cb4b3d`; 시작 worktree clean.
+- 범위: seq585~590의 S exact10 및 K exact12 두 direct-child commit. 기존 seq1~584와 historical evidence는 보존한다.
+- 실행 제외: push, WSL, Docker, DB, Provider, Telegram, ysna, main은 `NOT_EXECUTED`.
+- 환경 오류 원장: `WORKBENCH_WSL_CANDIDATE_RG_WINDOWS_LAUNCH_R1` 1회. Windows `rg.exe` 연결 오류로 검색이 실행되지 않아 PowerShell `Select-String`으로 전환했다. 제품/계약 실패가 아니다.
+- TDD RED: `.venv\Scripts\python.exe -m unittest tests.tooling.test_project_progress.C21WorkbenchUiWslGitOnlyCandidateStartTests` → exit 1, `Ran 2 tests`, missing builder/metadata로 예상대로 실패했다. fingerprint `C21_WORKBENCH_UI_WSL_CANDIDATE_START_MISSING_R1` 1회.
+- GREEN 보완 오류: 최초 event append helper가 terminal event 내부의 event_id를 footer보다 먼저 치환해 seq584 raw prefix 보존 테스트 1건이 실패했다. fingerprint `C21_WORKBENCH_UI_WSL_EVENT_FOOTER_REPLACE_R1` 1회. footer tail만 치환하도록 수정했다.
+- 환경 오류 원장: S generated5 materialize가 sandbox의 `D:\tmp` 쓰기 제한으로 `PermissionError` 1회 발생했다. fingerprint `WORKBENCH_WSL_CANDIDATE_TMP_WRITE_SANDBOX_R1`; 제품/계약 오류가 아니며 같은 명령을 승인된 unrestricted 실행으로 재개한다.
+- S live checker 1차는 `EVENT_EFFECT_MISMATCH` 1건으로 실패했다. fingerprint `C21_WORKBENCH_UI_WSL_START_REMOTE_EFFECT_R1`; terminal `PACKAGE_STARTED`에 source projection의 `dispatch_upstream_head`가 누락된 원인이며 동일 관측값을 추가해 보완한다.

@@ -12788,6 +12788,14 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 590:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_workbench_ui_wsl_candidate_bound_git(bundle)
+    if bundle.get("progress", {}).get("event_sequence") == 587:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_workbench_ui_wsl_candidate_start_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 584:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13682,6 +13690,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_wsl_acceptance_strict_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_historical_fixture_reconciliation_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
+            errors.extend(validate_c21_workbench_ui_wsl_candidate_start_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json":
+            errors.extend(validate_c21_workbench_ui_wsl_candidate_bound_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_local_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json":
@@ -19447,6 +19459,151 @@ def _collect_c21_workbench_ui_historical_fixture_reconciliation_git(bundle: Mapp
         if direct!=meta["exact_paths"] or cumulative!=meta["cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
         if head==C21_WORKBENCH_UI_HISTORICAL_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
         return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_HISTORICAL_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_WORKBENCH_UI_WSL_SOURCE = "468b1408f6e817d20d68c46a79ba44dc82cb4b3d"
+C21_WORKBENCH_UI_WSL_PRODUCT = "7eb2cc291bda729e21deebbed86376eac4db7c2b"
+C21_WORKBENCH_UI_WSL_PRIVATE_CONTROL = "8d043e39f6066283821abe47b36fa83e5ecff8b5"
+C21_WORKBENCH_UI_WSL_OLD_CANDIDATE = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+C21_WORKBENCH_UI_WSL_PRIVATE_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C21_WORKBENCH_UI_WSL_NEW_CANDIDATE_REF = "refs/heads/candidates/c21-wsl-exact187"
+C21_WORKBENCH_UI_WSL_START_AT = "2026-09-07T21:10:00+09:00"
+C21_WORKBENCH_UI_WSL_START_WI_ID = "WI-C-21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-20260907-001"
+C21_WORKBENCH_UI_WSL_START_P = "docs/progress/build-progress.json"
+C21_WORKBENCH_UI_WSL_START_E = "docs/progress/progress-events.json"
+C21_WORKBENCH_UI_WSL_START_H = "docs/progress/BUILD_HANDOFF.md"
+C21_WORKBENCH_UI_WSL_START_D = "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate.json"
+C21_WORKBENCH_UI_WSL_START_M = "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json"
+C21_WORKBENCH_UI_WSL_START_WI = "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md"
+C21_WORKBENCH_UI_WSL_START_PROMPT = "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md"
+
+
+def c21_workbench_ui_wsl_candidate_start_paths() -> list[str]:
+    return sorted([
+        "docs/WORK_STATUS.md", C21_WORKBENCH_UI_WSL_START_M, C21_WORKBENCH_UI_WSL_START_H,
+        C21_WORKBENCH_UI_WSL_START_P, C21_WORKBENCH_UI_WSL_START_E, C21_WORKBENCH_UI_WSL_START_D,
+        C21_WORKBENCH_UI_WSL_START_PROMPT, C21_WORKBENCH_UI_WSL_START_WI,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c21_workbench_ui_wsl_candidate_metadata() -> dict[str, Any]:
+    start = c21_workbench_ui_wsl_candidate_start_paths()
+    cumulative = sorted(set(c21_workbench_ui_historical_fixture_reconciliation_metadata()["cumulative_paths"]) | set(start))
+    result = {
+        "start_exact_paths": start,
+        "start_exact_path_count": len(start),
+        "start_exact_path_list_sha256": _c21_path_list_sha(start, windows=True),
+        "start_exact_path_list_ordinal_sha256": _c21_path_list_sha(start, windows=False),
+        "post_start_cumulative_paths": cumulative,
+        "post_start_cumulative_path_count": len(cumulative),
+        "post_start_cumulative_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "post_start_cumulative_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = {
+        "start_exact_path_count": 10,
+        "start_exact_path_list_sha256": "6E8FF216E3984D238E6229C489B97B8CBD3E45E7591D4378ED9EA5C4AFE8DFD5",
+        "start_exact_path_list_ordinal_sha256": "E6B5378AA75AE61785AAAF6E5C07695663EA4F3970010750D9DD4D5EA3492275",
+        "post_start_cumulative_path_count": 187,
+        "post_start_cumulative_path_list_sha256": "287B8617A64EC0A33E3F97E20A03E7CB69B66A9C8A1DBCC777E3A16D2F7F3D88",
+        "post_start_cumulative_path_list_ordinal_sha256": "1A35F7995A3AE539395E0EC515B240C276433F5AD7F736C28BE0F63182EDC889",
+    }
+    if any(result[key] != value for key, value in expected.items()):
+        raise ValueError("C21_WORKBENCH_UI_WSL_CANDIDATE_PATH_METADATA_INVALID")
+    return result
+
+
+def _c21_workbench_ui_wsl_start_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    worker = {"lease_id":"worker-lease-c21-workbench-ui-wsl-candidate-20260907-001","agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE","lease_epoch":1,"execution_fencing_token":"c21-workbench-ui-wsl-candidate-execution-fence-epoch-1-468b140","fencing_token":"c21-workbench-ui-wsl-candidate-execution-fence-epoch-1-468b140","status":"ACTIVE"}
+    write = {"lease_id":"write-lease-c21-workbench-ui-wsl-candidate-20260907-001","worker_lease_id":worker["lease_id"],"agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE","write_epoch":1,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":"c21-workbench-ui-wsl-candidate-write-fence-epoch-1-468b140","fencing_token":"c21-workbench-ui-wsl-candidate-write-fence-epoch-1-468b140","status":"ACTIVE","path_scope":c21_workbench_ui_wsl_candidate_start_paths(),"paths":c21_workbench_ui_wsl_candidate_start_paths()}
+    return worker, write
+
+
+def _c21_workbench_ui_wsl_start_events(wi_sha: str, prompt_sha: str) -> list[dict[str, Any]]:
+    meta = c21_workbench_ui_wsl_candidate_metadata(); worker, write = _c21_workbench_ui_wsl_start_leases()
+    common = {"occurred_at":C21_WORKBENCH_UI_WSL_START_AT,"actor_type":"AGENT","actor_id":"developer-primary","project_id":"anvil","run_id":None,"work_package_id":"C-21","step_id":"WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE","actor":"developer-primary","subject_ref":"C-21/WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE"}
+    boundary = {"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","external_execution":"NOT_EXECUTED","product_commit":C21_WORKBENCH_UI_WSL_PRODUCT,"source_commit":C21_WORKBENCH_UI_WSL_SOURCE}
+    return [
+        {**common,"event_id":"evt_c21_workbench_ui_wsl_candidate_worker_lease_issued","sequence":585,"event_type":"WORKER_LEASE_ISSUED","details":{**boundary,**worker,"work_instruction_id":C21_WORKBENCH_UI_WSL_START_WI_ID}},
+        {**common,"event_id":"evt_c21_workbench_ui_wsl_candidate_write_lease_issued","sequence":586,"event_type":"WRITE_LEASE_ISSUED","details":{**boundary,**write,"path_count":10,"path_list_sha256":meta["start_exact_path_list_sha256"],"work_instruction_id":C21_WORKBENCH_UI_WSL_START_WI_ID}},
+        {**common,"event_id":"evt_c21_workbench_ui_wsl_candidate_package_started","sequence":587,"event_type":"PACKAGE_STARTED","details":{**boundary,"work_instruction_id":C21_WORKBENCH_UI_WSL_START_WI_ID,"work_instruction_sha256":wi_sha,"invocation_sha256":prompt_sha,"dispatch_head":C21_WORKBENCH_UI_WSL_SOURCE,"dispatch_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_468B140_EXACT10_DIRTY","exact_allowed_paths":meta["post_start_cumulative_paths"],"package_status":"ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE","next_action":"CREATE_S_DIRECT_CHILD_EXACT10"}},
+    ]
+
+
+def _c21_append_events(historical: bytes, previous_sequence: int, additions: list[dict[str, Any]]) -> bytes:
+    source = _c21_resume_json(historical)
+    if source.get("last_sequence") != previous_sequence or len(source.get("events", [])) != previous_sequence:
+        raise ValueError("C21_EVENT_HISTORY_INVALID")
+    prefix = raw_event_object_prefix_bytes(historical, previous_sequence)
+    offset = historical.index(prefix); head = historical[:offset]; tail = historical[offset + len(prefix):]
+    appended = b"".join(b",\n" + "\n".join("    " + line for line in json.dumps(event, ensure_ascii=False, indent=2, allow_nan=False).splitlines()).encode() for event in additions)
+    tail = tail.replace(source["last_event_id"].encode(), additions[-1]["event_id"].encode(), 1)
+    return head.replace(f'"last_sequence": {previous_sequence}'.encode(), f'"last_sequence": {additions[-1]["sequence"]}'.encode(), 1) + prefix + appended + tail
+
+
+def c21_workbench_ui_wsl_candidate_start_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {C21_WORKBENCH_UI_WSL_START_P,C21_WORKBENCH_UI_WSL_START_E,C21_WORKBENCH_UI_WSL_START_H,C21_WORKBENCH_UI_WSL_START_D,C21_WORKBENCH_UI_WSL_START_M}
+    if set(files) != set(c21_workbench_ui_wsl_candidate_start_paths()) - generated:
+        raise ValueError("C21_WORKBENCH_UI_WSL_START_FILE_SET_INVALID")
+    progress = _c21_resume_json(historical[C21_WORKBENCH_UI_WSL_START_P])
+    if progress.get("event_sequence") != 584:
+        raise ValueError("C21_WORKBENCH_UI_WSL_START_HISTORY_INVALID")
+    wi_sha = _c21_resume_sha(files[C21_WORKBENCH_UI_WSL_START_WI]); prompt_sha = _c21_resume_sha(files[C21_WORKBENCH_UI_WSL_START_PROMPT])
+    additions = _c21_workbench_ui_wsl_start_events(wi_sha, prompt_sha); events_raw = _c21_append_events(historical[C21_WORKBENCH_UI_WSL_START_E], 584, additions)
+    meta = c21_workbench_ui_wsl_candidate_metadata(); worker, write = _c21_workbench_ui_wsl_start_leases()
+    authority = {"remote":"development","url":C21_WORKBENCH_UI_WSL_PRIVATE_URL,"control_ref":"refs/heads/codex/c21-operational-execution","candidate_ref":C21_WORKBENCH_UI_WSL_NEW_CANDIDATE_REF,"observed_control":C21_WORKBENCH_UI_WSL_PRIVATE_CONTROL,"observed_new_candidate":"ABSENT","observed_existing_exact107":C21_WORKBENCH_UI_WSL_OLD_CANDIDATE,"control_compare_and_swap":True,"candidate_compare_and_swap":True,"public_origin_is_push_authority":False}
+    instruction = {"artifact_id":C21_WORKBENCH_UI_WSL_START_WI_ID,"artifact_path":C21_WORKBENCH_UI_WSL_START_WI,"artifact_sha256":wi_sha,"invocation_path":C21_WORKBENCH_UI_WSL_START_PROMPT,"invocation_sha256":prompt_sha,"executor":"developer-primary","result_status":"IN_PROGRESS","package_status":"ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE","accepted":False,"c21_acceptance_status":"BLOCKED_NOT_ACCEPTED","c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED"}
+    repository = dict(progress["repository"]); repository.update({"local_head":C21_WORKBENCH_UI_WSL_SOURCE,"head_relation":"FEATURE_WORKTREE_468B140_EXACT10_DIRTY","worktree_status":"SEQ587_WORKBENCH_UI_WSL_CANDIDATE_EXACT10_DIRTY","exact_allowed_paths":meta["post_start_cumulative_paths"],"workbench_ui_wsl_candidate_start_paths":meta["start_exact_paths"],"candidate_remote_ref":C21_WORKBENCH_UI_WSL_NEW_CANDIDATE_REF,"push_status":"NOT_EXECUTED"})
+    active = {"status":"ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE","source_commit":C21_WORKBENCH_UI_WSL_SOURCE,"product_commit":C21_WORKBENCH_UI_WSL_PRODUCT,"private_git_authority":authority,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","external_execution":"NOT_EXECUTED",**meta}
+    progress.update({"updated_at":C21_WORKBENCH_UI_WSL_START_AT,"recorded_at":C21_WORKBENCH_UI_WSL_START_AT,"event_sequence":587,"last_event_id":additions[-1]["event_id"],"status":"ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE","active_agent":"developer-primary","worker_lease":worker,"write_lease":write,"active_work_instruction":instruction,"repository":repository,"workbench_ui_wsl_candidate":active,"runtime_next_action":"CREATE_S_DIRECT_CHILD_EXACT10","next_safe_action":"CREATE_S_DIRECT_CHILD_EXACT10","current_progress_evidence_ref":{"package_id":"C-21","path":C21_WORKBENCH_UI_WSL_START_D,"manifest_path":C21_WORKBENCH_UI_WSL_START_M},"latest_evidence_manifest_ref":{"path":C21_WORKBENCH_UI_WSL_START_M,"artifact_id":"C21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-START-20260907"},"reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":C21_WORKBENCH_UI_WSL_START_E,"sha256":_c21_resume_sha(events_raw)}
+    latest={**files,C21_WORKBENCH_UI_WSL_START_E:events_raw}; progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(raw)} for p,raw in sorted(latest.items())]; progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":587,"last_event_id":additions[-1]["event_id"],"status":"ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE","current_phase":"C","current_work_package":"C-21","active_agent":"developer-primary","worker_lease":worker["lease_id"],"write_lease":write["lease_id"],"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":write["write_fencing_token"],"active_work_instruction":C21_WORKBENCH_UI_WSL_START_WI_ID,"active_work_instruction_sha256":wi_sha,"active_invocation_sha256":prompt_sha,"repository_head":C21_WORKBENCH_UI_WSL_SOURCE,"repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],"repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],"repository_exact_allowed_paths":meta["post_start_cumulative_paths"],"design_baseline_hash":progress["design_baseline_hash"],"valid_failure_count":progress["valid_failure_count"],"dir_status":progress["dir_review"]["status"],"reporting_decision":"AUTO_CONTINUE","private_git_authority":authority,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","external_execution":"NOT_EXECUTED","next_safe_action":"CREATE_S_DIRECT_CHILD_EXACT10",**meta}
+    htext="# C-21 Workbench UI WSL Git-only candidate — seq587 시작\n\n- S exact10 candidate commit 준비 상태이며 외부 실행은 없다.\n\n"+historical[C21_WORKBENCH_UI_WSL_START_H].decode(); replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"; htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count != 1: raise ValueError("C21_WORKBENCH_UI_WSL_START_HANDOFF_INVALID")
+    handoff_raw=htext.encode(); digest={"schema_version":"1.0.0","digest_id":"C21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-START-DIGEST-20260907","package_id":"C-21","event_sequence":587,"algorithm":"SHA-256","created_at":C21_WORKBENCH_UI_WSL_START_AT,"scope":"seq585-587 append-only; seq1-584 preserved; S exact10","self_reference":False,"progress":{"path":C21_WORKBENCH_UI_WSL_START_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},"handoff":{"path":C21_WORKBENCH_UI_WSL_START_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}; digest_raw=_c21_resume_json_bytes(digest)
+    prior={**files,C21_WORKBENCH_UI_WSL_START_E:events_raw,C21_WORKBENCH_UI_WSL_START_P:progress_raw,C21_WORKBENCH_UI_WSL_START_H:handoff_raw,C21_WORKBENCH_UI_WSL_START_D:digest_raw}
+    manifest={"schema_version":"1.0.0","manifest_type":"C21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_PROJECTION","artifact_id":"C21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-START-20260907","created_at":C21_WORKBENCH_UI_WSL_START_AT,"event_sequence":587,"appended_event_count":3,"historical_event_sequence":584,"historical_commit":C21_WORKBENCH_UI_WSL_SOURCE,"product_commit":C21_WORKBENCH_UI_WSL_PRODUCT,"execution_authority_path":C21_WORKBENCH_UI_WSL_START_WI,"execution_authority_sha256":wi_sha,"work_instruction_id":C21_WORKBENCH_UI_WSL_START_WI_ID,"status":"ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE","private_git_authority":authority,"record_commit":"PENDING_S_DIRECT_CHILD_EXACT10","self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","external_execution":"NOT_EXECUTED",**meta}; manifest["raw_checksums"]=[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(prior.items())]
+    return {C21_WORKBENCH_UI_WSL_START_E:events_raw,C21_WORKBENCH_UI_WSL_START_P:progress_raw,C21_WORKBENCH_UI_WSL_START_H:handoff_raw,C21_WORKBENCH_UI_WSL_START_D:digest_raw,C21_WORKBENCH_UI_WSL_START_M:_c21_resume_json_bytes(manifest)}
+
+
+def c21_workbench_ui_wsl_candidate_start_from_root(root: Path) -> dict[str, bytes]:
+    historical={p:subprocess.check_output(["git","show",f"{C21_WORKBENCH_UI_WSL_SOURCE}:{p}"],cwd=root) for p in (C21_WORKBENCH_UI_WSL_START_P,C21_WORKBENCH_UI_WSL_START_E,C21_WORKBENCH_UI_WSL_START_H)}
+    generated={C21_WORKBENCH_UI_WSL_START_P,C21_WORKBENCH_UI_WSL_START_E,C21_WORKBENCH_UI_WSL_START_H,C21_WORKBENCH_UI_WSL_START_D,C21_WORKBENCH_UI_WSL_START_M}; files={p:(root/p).read_bytes() for p in set(c21_workbench_ui_wsl_candidate_start_paths())-generated}
+    return c21_workbench_ui_wsl_candidate_start_artifacts(historical,files)
+
+
+def validate_c21_workbench_ui_wsl_candidate_start_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        meta=c21_workbench_ui_wsl_candidate_metadata(); authority={"remote":"development","url":C21_WORKBENCH_UI_WSL_PRIVATE_URL,"control_ref":"refs/heads/codex/c21-operational-execution","candidate_ref":C21_WORKBENCH_UI_WSL_NEW_CANDIDATE_REF,"observed_control":C21_WORKBENCH_UI_WSL_PRIVATE_CONTROL,"observed_new_candidate":"ABSENT","observed_existing_exact107":C21_WORKBENCH_UI_WSL_OLD_CANDIDATE,"control_compare_and_swap":True,"candidate_compare_and_swap":True,"public_origin_is_push_authority":False}
+        expected={"schema_version":"1.0.0","manifest_type":"C21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_PROJECTION","event_sequence":587,"appended_event_count":3,"historical_event_sequence":584,"historical_commit":C21_WORKBENCH_UI_WSL_SOURCE,"product_commit":C21_WORKBENCH_UI_WSL_PRODUCT,"work_instruction_id":C21_WORKBENCH_UI_WSL_START_WI_ID,"status":"ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE","private_git_authority":authority,"record_commit":"PENDING_S_DIRECT_CHILD_EXACT10","self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","external_execution":"NOT_EXECUTED",**meta}
+        if any(not _c21_strict_json_equal(manifest.get(k),v) for k,v in expected.items()): return ["C21_WORKBENCH_UI_WSL_START_MANIFEST_INVALID"]
+        rows=manifest.get("raw_checksums"); expected_paths=set(c21_workbench_ui_wsl_candidate_start_paths())-{C21_WORKBENCH_UI_WSL_START_M}
+        if type(rows) is not list or {r.get("path") for r in rows if type(r) is dict}!=expected_paths or any(type(r) is not dict or type(r.get("bytes")) is not int or r["bytes"]<=0 or re.fullmatch(r"[0-9A-F]{64}",str(r.get("sha256"))) is None for r in rows): return ["C21_WORKBENCH_UI_WSL_START_CHECKSUMS_INVALID"]
+        return []
+    except (TypeError,KeyError,ValueError): return ["C21_WORKBENCH_UI_WSL_START_MANIFEST_INVALID"]
+
+
+def validate_c21_workbench_ui_wsl_candidate_start_projection(bundle: Mapping[str,Any], manifest: Mapping[str,Any]) -> list[str]:
+    try:
+        expected=c21_workbench_ui_wsl_candidate_start_from_root(bundle["_root"]); actual={C21_WORKBENCH_UI_WSL_START_P:bundle.get("progress"),C21_WORKBENCH_UI_WSL_START_E:bundle.get("events"),C21_WORKBENCH_UI_WSL_START_H:bundle.get("handoff"),C21_WORKBENCH_UI_WSL_START_D:bundle.get("detached_digest"),C21_WORKBENCH_UI_WSL_START_M:manifest}; objects={C21_WORKBENCH_UI_WSL_START_P:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_START_P]),C21_WORKBENCH_UI_WSL_START_E:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_START_E]),C21_WORKBENCH_UI_WSL_START_H:extract_handoff_summary(expected[C21_WORKBENCH_UI_WSL_START_H].decode()),C21_WORKBENCH_UI_WSL_START_D:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_START_D]),C21_WORKBENCH_UI_WSL_START_M:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_START_M])}; errors=[] if all(_c21_strict_json_equal(actual[p],objects[p]) for p in actual) else ["C21_WORKBENCH_UI_WSL_START_PROJECTION_INVALID"]; errors.extend(validate_c21_workbench_ui_wsl_candidate_start_manifest(manifest)); return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError,json.JSONDecodeError): return ["C21_WORKBENCH_UI_WSL_START_INPUT_INVALID"]
+
+
+def _collect_c21_workbench_ui_wsl_candidate_start_git(bundle: Mapping[str,Any]) -> list[str]:
+    root=bundle["_root"]; meta=c21_workbench_ui_wsl_candidate_metadata()
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}"); private_url=_git_value(root,"remote","get-url","development"); control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution"); old_candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact107"); new_candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact187")
+        if status is None or None in (head,branch,upstream,private_url,control,old_candidate,new_candidate): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution": return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url!=C21_WORKBENCH_UI_WSL_PRIVATE_URL or control!=C21_WORKBENCH_UI_WSL_PRIVATE_CONTROL or old_candidate!=C21_WORKBENCH_UI_WSL_OLD_CANDIDATE or new_candidate!="": return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared=bundle["progress"].get("repository",{}).get("validated_base_commit")
+        if declared!=C21_EXACT_BINDING_BASE or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=sorted(_working_tree_paths(status)); direct=dirty if head==C21_WORKBENCH_UI_WSL_SOURCE else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_WORKBENCH_UI_WSL_SOURCE,head) or ""); cumulative=sorted(set(_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or "")) | (set(dirty) if head==C21_WORKBENCH_UI_WSL_SOURCE else set()))
+        if direct!=meta["start_exact_paths"] or cumulative!=meta["post_start_cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head==C21_WORKBENCH_UI_WSL_SOURCE: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_WSL_SOURCE] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
     except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 

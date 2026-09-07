@@ -8827,5 +8827,44 @@ class C21WorkbenchUiHistoricalFixtureReconciliationTests(unittest.TestCase):
             self.assertTrue(checker.validate_c21_workbench_ui_historical_fixture_reconciliation_manifest(changed), key)
 
 
+class C21WorkbenchUiWslGitOnlyCandidateStartTests(unittest.TestCase):
+    def test_seq587_start_builder_preserves_seq584_and_binds_exact10(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_candidate_start_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_candidate_start_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_START_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_START_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_START_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_SOURCE}:{checker.C21_WORKBENCH_UI_WSL_START_E}"], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 584),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_START_E], 584),
+        )
+        self.assertEqual([585, 586, 587], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"], [row["event_type"] for row in events["events"][-3:]])
+        self.assertEqual("ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE", progress["status"])
+        self.assertEqual("ACTIVE", progress["worker_lease"]["status"])
+        self.assertEqual("ACTIVE", progress["write_lease"]["status"])
+        self.assertEqual("ABSENT", manifest["private_git_authority"]["observed_new_candidate"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["provider"])
+        self.assertEqual("NOT_EXECUTED", manifest["telegram"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_candidate_start_manifest(manifest))
+
+    def test_seq587_metadata_and_manifest_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_candidate_metadata()
+        self.assertEqual((10, "6E8FF216E3984D238E6229C489B97B8CBD3E45E7591D4378ED9EA5C4AFE8DFD5", "E6B5378AA75AE61785AAAF6E5C07695663EA4F3970010750D9DD4D5EA3492275"),
+                         (metadata["start_exact_path_count"], metadata["start_exact_path_list_sha256"], metadata["start_exact_path_list_ordinal_sha256"]))
+        self.assertEqual((187, "287B8617A64EC0A33E3F97E20A03E7CB69B66A9C8A1DBCC777E3A16D2F7F3D88", "1A35F7995A3AE539395E0EC515B240C276433F5AD7F736C28BE0F63182EDC889"),
+                         (metadata["post_start_cumulative_path_count"], metadata["post_start_cumulative_path_list_sha256"], metadata["post_start_cumulative_path_list_ordinal_sha256"]))
+        manifest = json.loads(checker.c21_workbench_ui_wsl_candidate_start_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_START_M])
+        for key, value in (("accepted", True), ("c21_status", "ACCEPTED"), ("c01_status", "READY"), ("dir2_status", "TRIGGERED"), ("provider", "PASS"), ("telegram", "PASS")):
+            changed = copy.deepcopy(manifest); changed[key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_candidate_start_manifest(changed), key)
+
+
 if __name__ == "__main__":
     unittest.main()
