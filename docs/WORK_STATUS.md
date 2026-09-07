@@ -1175,3 +1175,41 @@
 - 첫 result-evidence append와 deterministic 재결박 뒤 precommit focused는 다시 `5 passed, 202 deselected`, live checker sequence566 PASS, diff-check PASS, direct compile PASS다.
 - `C21_SEQ566_EVENT_REMOTE_PROJECTION_MISSING_R1` 1회: 최초 live checker의 `EVENT_EFFECT_MISMATCH`는 seq566 완료 Event에 source remote-head projection이 빠진 원인이며 `dispatch_upstream_head`를 immutable source 값으로 추가해 해소했다.
 - `C21_SEQ566_PYCOMPILE_CACHE_PERMISSION_R1` 1회와 `C21_SEQ566_SANDBOX_MKDTEMP_STALL_R1` 1회는 각각 pycache write 권한과 알려진 sandbox temp 생성 정지의 환경 오류다. 정식 제품 failure count는 기존 `2`로 유지한다.
+
+## 2026-09-07 C-21 WSL acceptance strict successor seq567~572
+
+- 담당: `developer-primary` (`developer_seq572_wsl_acceptance_strict`); WorkInstruction `WI-C-21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907-001`; parent `bcaeeacd1618461127c2387504e2535a0d54504f`, private control expected `b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd`, candidate `a6dca0da5a37e64491e91813895268e78ecb78b2`; exact12 append-only writer lease.
+- 독립 Tester source는 파일이 아닌 `INDEPENDENT_TESTER_AGENT_REPORT`이며 repository artifact는 `ABSENT`다. 판정 `ACCEPTED_WITH_LIMITATION — C-21 WSL 선행검증 범위에 한정`, findings `C0/I0/M2`를 원문 경계대로 기록한다.
+- machine 목표: `acceptance_scope=C21_WSL`, `wsl_acceptance_status=ACCEPTED_WITH_LIMITATION`, `accepted=false`, `c21_acceptance_status=BLOCKED_NOT_ACCEPTED`, C-01 `BLOCKED_PENDING_C21_ACCEPTANCE`, DIR-2 `NOT_TRIGGERED`.
+- 열린 limitation: primary wrapper/env/argv fulltext 미보존, exact runtime timestamp null/unavailable, receipt originals/paths 미독립 확인, same-origin HTTP ingress만 확인하고 실제 browser Network 미검증.
+- 비승인/미검증: 실제 Provider, Telegram, browser acceptance, ysna, main, C-01 start, push, 외부 실행. 다음은 계획에 따른 사용자 소유의 실제 Provider/Telegram 검증과 실제 브라우저 인수다.
+- TDD RED `C21_SEQ566_JSON_SCALAR_TYPE_CONFUSION_R1` 1회: runtime public validator가 `invocation_count=True`, `internal_exit_code=False`, `outer_wrapper_exit_code=1.0`을 정상 정수와 동일하게 비교해 `1 failed`, exit1. 공용 parser/canonical JSON을 바꾸지 않고 C-21 전용 recursive strict comparator로 보완했다.
+- TDD RED `C21_SEQ572_STRICT_SUCCESSOR_MISSING_R1` 1회: seq572 builder/validator/collector/routing 부재를 신규 class 6개 test에서 `1 failure, 5 errors`, exit1로 확인했다. 이는 예상된 기능 부재이고 valid product failure count를 증가시키지 않는다.
+- 환경 오류 `C21_SEQ572_PYTHON_LAUNCHER_ENV_R1` 3회: `python` 명령 부재, `py -3` 설치 Python 부재, `uv` cache 초기화 access denied였다. 제품 실패가 아니며 bundled workspace Python으로 전환해 TDD RED를 정상 실행했다.
+- exact12 Windows/ordinal 재계산은 `9E8380E9F3B58C5F8C717133B0777AEA0E2DAF90CED947590DECC56C67C86B2F` / `495960755DC2C2F74DF6FB8213163FE502A3EE6DDD4F0E2692FD97D06E406536`; cumulative155는 `4C4BF601FE76A9C24591891176470BD87E0BE85EFB060898033D741FACC6B66C` / `2CA55B9DCCE87ECBC0D7FD233D8F98E76FA8ED7E7C1BCB6C903B72EB1EE64F2D`로 전달값과 일치했다.
+- 현재 단계: raw7 작성 완료, seq572 P/E/H/D/M deterministic materialize 및 focused GREEN 전. 제품/deploy/guard bytes는 수정하지 않았다.
+
+### seq572 Developer 검증 결과
+
+- 최초 materialize 후 focused는 `11 passed, 1 failed`, exit1이었다. `C21_SEQ572_EVENT_CONTRACT_FIELDS_R1` 1회로, generic Event 계약이 completion top-level `accepted` 누락을 `EVENT_PAYLOAD_MISSING`, repository projection의 `dispatch_upstream_head` 누락을 `EVENT_EFFECT_MISMATCH`로 검출했다. seq566과 같은 두 필드만 보완해 해소했으며 제품 runtime failure가 아니다.
+- 재materialize 후 focused seq566+seq572 public-path tests는 `12 tests in 14.525s`, `OK`, exit0이다.
+- live checker 첫 호출은 잘못된 `--root .` 인수 때문에 `--root`를 directory로 해석해 LOAD_ERROR를 냈다. `C21_SEQ572_LIVE_CHECKER_ARGV_R1` 1회 명령 사용 오류이며, 지원되는 positional `.` 호출은 `G-05 project progress contract: PASS sequence=572 reporting=AUTO_CONTINUE`, exit0이다.
+- `git diff --check` exit0, 두 Python 파일 direct in-memory compile PASS/exit0, dirty 경로 exact12 일치다.
+- 승인된 격리 실행의 full tooling은 `214 tests in 667.571s`, `OK`, exit0이다. 제품/deploy/guard bytes는 parent와 동일하므로 deploy full은 실행하지 않았다.
+- 다음: 이 결과가 포함된 raw7로 P/E/H/D/M 최종 재materialize → fresh focused/live/diff/compile → exact12 단일 direct-child commit → clean postcommit checker. push/external execution은 계속 금지한다.
+
+### seq566 public projection 직접 RED 보강
+
+- 완료 전 자체 검토에서 최초 seq566 projection assertion이 current seq572 raw mismatch로도 만족될 수 있음을 발견했다. immutable `bcaeeacd` seq566 artifacts를 synthetic generated-file view로 제공하도록 테스트를 교체했다.
+- `C21_SEQ566_PROJECTION_FLOAT_TYPE_CONFUSION_R1` 1회: direct projection에 `event_sequence=566.0`을 넣었을 때 빈 오류 목록을 반환해 `1 failed`, exit1을 정확히 확인했다. supplied progress/events/digest/manifest 비교를 C-21 strict helper에 직접 연결한 뒤 해당 테스트 PASS다.
+- 이 테스트/코드 변경으로 앞선 full tooling 결과는 역사 증거로만 유지하고 final raw7 재materialize 뒤 focused 및 full tooling을 다시 실행한다.
+
+### seq572 final full tooling 및 evidence 결박
+
+- direct seq566 projection strict 보강 후 pre-evidence focused는 `12 tests in 18.705s`, `OK`, live checker sequence572 PASS, diff-check PASS다.
+- `C21_SEQ572_PYCOMPILE_CACHE_PERMISSION_R1` 1회: `py_compile`이 managed sandbox의 `scripts/__pycache__` 쓰기를 거부해 exit1이었다. source syntax failure가 아니며 파일 생성 없는 direct `compile()`은 두 변경 Python 파일 모두 PASS/exit0이다.
+- 승인된 격리 final full tooling은 `214 tests in 680.535s`, `OK`, exit0이다. trace/failure는 없었다.
+- 이 결과를 raw7에 기록하고 P/E/H/D/M을 deterministic 재materialize한 뒤 fresh focused/live/diff/compile, exact path/hash/status 검증, exact12 direct-child commit과 clean postcommit checker를 수행한다.
+- final full 결과를 반영한 첫 재materialize 뒤 focused는 `12 tests in 16.375s`, `OK`, live checker sequence572 PASS, diff-check PASS, direct `compile()` PASS다.
+- 독립 PowerShell 재계산은 dirty exact12 count12와 cumulative155를 확인했고 Windows/ordinal hash가 각각 exact `9E8380E9F3B58C5F8C717133B0777AEA0E2DAF90CED947590DECC56C67C86B2F` / `495960755DC2C2F74DF6FB8213163FE502A3EE6DDD4F0E2692FD97D06E406536`, cumulative `4C4BF601FE76A9C24591891176470BD87E0BE85EFB060898033D741FACC6B66C` / `2CA55B9DCCE87ECBC0D7FD233D8F98E76FA8ED7E7C1BCB6C903B72EB1EE64F2D`로 계약과 일치했다.
+- 위 검증 결과를 마지막 raw7 append로 고정한 뒤 파생 P/E/H/D/M을 한 번 더 재materialize한다. 이후 실행하는 focused/live/diff/compile과 exact path/hash는 precommit 최종 증거이며 추가 evidence append 없이 commit한다.

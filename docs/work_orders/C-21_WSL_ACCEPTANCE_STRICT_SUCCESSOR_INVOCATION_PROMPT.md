@@ -1,0 +1,1 @@
+Implement seq567~572 as the exact12 C-21 WSL acceptance strict successor. Preserve seq1~566 and all product/deploy/guard bytes; record only C21_WSL ACCEPTED_WITH_LIMITATION, keep accepted=false/C-01 blocked/DIR-2 not triggered, and reject bool-int-float type confusion on every public validation path.

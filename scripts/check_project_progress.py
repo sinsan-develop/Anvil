@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import subprocess
 import sys
@@ -12787,6 +12788,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 572:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_wsl_acceptance_strict_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 566:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13661,6 +13666,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_cleanup_guard_source_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json":
             errors.extend(validate_c21_cleanup_runtime_result_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json":
+            errors.extend(validate_c21_wsl_acceptance_strict_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json":
             errors.extend(validate_c21_provider_wsl_verify_scope_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json":
@@ -18111,9 +18118,26 @@ def _c21_cleanup_runtime_result_runtime() -> dict[str, Any]:
     }
 
 
+def _c21_strict_json_equal(actual: Any, expected: Any) -> bool:
+    """Compare JSON values without Python's bool/int/float equality coercion."""
+    if type(actual) is not type(expected):
+        return False
+    if type(expected) is dict:
+        return actual.keys() == expected.keys() and all(
+            _c21_strict_json_equal(actual[key], expected[key]) for key in expected
+        )
+    if type(expected) is list:
+        return len(actual) == len(expected) and all(
+            _c21_strict_json_equal(left, right) for left, right in zip(actual, expected)
+        )
+    if type(expected) is float and not math.isfinite(actual):
+        return False
+    return actual == expected
+
+
 def validate_c21_cleanup_runtime_result_runtime(runtime: Mapping[str, Any]) -> list[str]:
     try:
-        return [] if runtime == _c21_cleanup_runtime_result_runtime() else ["C21_CLEANUP_RUNTIME_RESULT_RUNTIME_INVALID"]
+        return [] if _c21_strict_json_equal(runtime, _c21_cleanup_runtime_result_runtime()) else ["C21_CLEANUP_RUNTIME_RESULT_RUNTIME_INVALID"]
     except (TypeError, ValueError):
         return ["C21_CLEANUP_RUNTIME_RESULT_RUNTIME_INVALID"]
 
@@ -18146,11 +18170,13 @@ def validate_c21_cleanup_runtime_result_manifest(manifest: Mapping[str, Any]) ->
             "next_action": "INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW",
             **metadata,
         }
-        errors = ["C21_CLEANUP_RUNTIME_RESULT_MANIFEST_INVALID"] if any(manifest.get(key) != value for key, value in expected.items()) else []
+        errors = ["C21_CLEANUP_RUNTIME_RESULT_MANIFEST_INVALID"] if any(
+            not _c21_strict_json_equal(manifest.get(key), value) for key, value in expected.items()
+        ) else []
         errors.extend(validate_c21_cleanup_runtime_result_runtime(manifest.get("runtime")))
         rows = manifest.get("raw_checksums")
         expected_paths = set(c21_cleanup_runtime_result_paths()) - {C21_CLEANUP_RUNTIME_RESULT_M}
-        if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_paths or len(rows) != len(expected_paths) or any(not isinstance(row, Mapping) or not isinstance(row.get("bytes"), int) or row.get("bytes") < 1 or not isinstance(row.get("sha256"), str) or not re.fullmatch(r"[0-9A-F]{64}", row["sha256"]) for row in rows):
+        if not isinstance(rows, list) or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_paths or len(rows) != len(expected_paths) or any(not isinstance(row, Mapping) or type(row.get("bytes")) is not int or row.get("bytes") < 1 or not isinstance(row.get("sha256"), str) or not re.fullmatch(r"[0-9A-F]{64}", row["sha256"]) for row in rows):
             errors.append("C21_CLEANUP_RUNTIME_RESULT_CHECKSUMS_INVALID")
         return sorted(set(errors))
     except (TypeError, ValueError, KeyError):
@@ -18260,7 +18286,7 @@ def validate_c21_cleanup_runtime_result_projection(bundle: Mapping[str, Any], ma
             if (root / path).read_bytes() != expected[path]:
                 errors.append("C21_CLEANUP_RUNTIME_RESULT_PROJECTION_INVALID")
         supplied = {C21_CLEANUP_RUNTIME_RESULT_P: bundle.get("progress"), C21_CLEANUP_RUNTIME_RESULT_E: bundle.get("events"), C21_CLEANUP_RUNTIME_RESULT_D: bundle.get("detached_digest"), C21_CLEANUP_RUNTIME_RESULT_M: manifest}
-        if any(obj != _c21_resume_json(expected[path]) for path, obj in supplied.items()):
+        if any(not _c21_strict_json_equal(obj, _c21_resume_json(expected[path])) for path, obj in supplied.items()):
             errors.append("C21_CLEANUP_RUNTIME_RESULT_PROJECTION_INVALID")
         errors.extend(validate_c21_cleanup_runtime_result_manifest(manifest))
         return sorted(set(errors))
@@ -18300,6 +18326,580 @@ def _collect_c21_cleanup_runtime_result_git(bundle: Mapping[str, Any]) -> list[s
             return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
         parents = (_git_value(root, "show", "-s", "--format=%P", head) or "").split()
         return [] if not dirty and parents == [C21_CLEANUP_RUNTIME_RESULT_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError, ValueError, TypeError, KeyError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_WSL_ACCEPTANCE_STRICT_PARENT = "bcaeeacd1618461127c2387504e2535a0d54504f"
+C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL = "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd"
+C21_WSL_ACCEPTANCE_STRICT_CANDIDATE = "a6dca0da5a37e64491e91813895268e78ecb78b2"
+C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT = "2026-09-07T05:13:15.9345766Z"
+C21_WSL_ACCEPTANCE_STRICT_WI_ID = "WI-C-21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907-001"
+C21_WSL_ACCEPTANCE_STRICT_STATUS = "C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_COMPLETED"
+C21_WSL_ACCEPTANCE_STRICT_NEXT = "USER_OWNED_PROVIDER_TELEGRAM_AND_BROWSER_ACCEPTANCE_PER_PLAN"
+C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C21_WSL_ACCEPTANCE_STRICT_P = "docs/progress/build-progress.json"
+C21_WSL_ACCEPTANCE_STRICT_E = "docs/progress/progress-events.json"
+C21_WSL_ACCEPTANCE_STRICT_H = "docs/progress/BUILD_HANDOFF.md"
+C21_WSL_ACCEPTANCE_STRICT_D = "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json"
+C21_WSL_ACCEPTANCE_STRICT_M = "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json"
+C21_WSL_ACCEPTANCE_STRICT_REPORT = "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md"
+C21_WSL_ACCEPTANCE_STRICT_VALIDATION = "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md"
+C21_WSL_ACCEPTANCE_STRICT_WI = "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md"
+C21_WSL_ACCEPTANCE_STRICT_PROMPT = "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md"
+
+
+def c21_wsl_acceptance_strict_paths() -> list[str]:
+    return sorted([
+        C21_WSL_ACCEPTANCE_STRICT_REPORT,
+        "docs/WORK_STATUS.md",
+        C21_WSL_ACCEPTANCE_STRICT_M,
+        C21_WSL_ACCEPTANCE_STRICT_H,
+        C21_WSL_ACCEPTANCE_STRICT_P,
+        C21_WSL_ACCEPTANCE_STRICT_E,
+        C21_WSL_ACCEPTANCE_STRICT_D,
+        C21_WSL_ACCEPTANCE_STRICT_VALIDATION,
+        C21_WSL_ACCEPTANCE_STRICT_PROMPT,
+        C21_WSL_ACCEPTANCE_STRICT_WI,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c21_wsl_acceptance_strict_metadata() -> dict[str, Any]:
+    exact = c21_wsl_acceptance_strict_paths()
+    cumulative = sorted(set(c21_cleanup_runtime_result_metadata()["cumulative_exact_paths"]) | set(exact))
+    result = {
+        "developer_exact_paths": exact,
+        "developer_exact_path_count": len(exact),
+        "developer_exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "developer_exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_exact_paths": cumulative,
+        "cumulative_exact_path_count": len(cumulative),
+        "cumulative_exact_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_exact_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = (
+        12,
+        "9E8380E9F3B58C5F8C717133B0777AEA0E2DAF90CED947590DECC56C67C86B2F",
+        "495960755DC2C2F74DF6FB8213163FE502A3EE6DDD4F0E2692FD97D06E406536",
+        155,
+        "4C4BF601FE76A9C24591891176470BD87E0BE85EFB060898033D741FACC6B66C",
+        "2CA55B9DCCE87ECBC0D7FD233D8F98E76FA8ED7E7C1BCB6C903B72EB1EE64F2D",
+    )
+    actual = (
+        result["developer_exact_path_count"],
+        result["developer_exact_path_list_sha256"],
+        result["developer_exact_path_list_ordinal_sha256"],
+        result["cumulative_exact_path_count"],
+        result["cumulative_exact_path_list_sha256"],
+        result["cumulative_exact_path_list_ordinal_sha256"],
+    )
+    if actual != expected:
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_PATH_HASH_INVALID")
+    return result
+
+
+def _c21_wsl_acceptance_state() -> dict[str, Any]:
+    return {
+        "acceptance_scope": "C21_WSL",
+        "wsl_acceptance_status": "ACCEPTED_WITH_LIMITATION",
+        "accepted": False,
+        "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+    }
+
+
+def _c21_wsl_acceptance_tester() -> dict[str, Any]:
+    return {
+        "source": "INDEPENDENT_TESTER_AGENT_REPORT",
+        "repository_artifact": "ABSENT",
+        "verdict": "ACCEPTED_WITH_LIMITATION",
+        "scope": "C21_WSL",
+        "findings": {"critical": 0, "important": 0, "minor": 2},
+    }
+
+
+def _c21_wsl_acceptance_limitations() -> list[dict[str, Any]]:
+    return [
+        {
+            "code": "PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
+            "status": "OPEN",
+            "detail": "PRIMARY_WRAPPER_ENV_ARGV_FULLTEXT_MISSING",
+        },
+        {
+            "code": "EXACT_RUNTIME_OBSERVED_TIMESTAMP_UNAVAILABLE",
+            "status": "OPEN",
+            "detail": "RUNTIME_OBSERVED_AT_NULL_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
+        },
+        {
+            "code": "RECEIPT_ORIGINALS_AND_PATHS_NOT_INDEPENDENTLY_INSPECTED",
+            "status": "OPEN",
+            "detail": "RECORDED_HASHES_AND_COUNTS_ONLY",
+        },
+        {
+            "code": "SAME_ORIGIN_HTTP_INGRESS_NOT_BROWSER_NETWORK_ACCEPTANCE",
+            "status": "OPEN",
+            "detail": "CURL_HTTP_INGRESS_ONLY",
+        },
+    ]
+
+
+def _c21_wsl_acceptance_boundaries() -> dict[str, Any]:
+    return {
+        "provider": "NOT_VERIFIED",
+        "telegram": "NOT_VERIFIED",
+        "browser_network": "NOT_VERIFIED",
+        "ysna": "NOT_VERIFIED",
+        "main": "NOT_AUTHORIZED",
+        "c01_start": "NOT_AUTHORIZED",
+    }
+
+
+def _c21_wsl_acceptance_preserve_seq566(root: Path) -> None:
+    expected = {
+        "scripts/check_project_progress.py": "95679BE3080DB0E762AF0E9DCD41ED8D4E5112425D81E05827357A1AFE93F8C3",
+        "tests/tooling/test_project_progress.py": "B1B6D5C5FD5500A08AC2A0D138C1454DD72087D142D7073F5576DE97800BF25E",
+        C21_CLEANUP_RUNTIME_RESULT_M: "CB96A6235A04F8B47DF03853FA0DF5EA4179A090D3D291DB5E713C4BCE2F30DE",
+    }
+    for path, digest in expected.items():
+        raw = subprocess.check_output(["git", "show", f"{C21_WSL_ACCEPTANCE_STRICT_PARENT}:{path}"], cwd=root)
+        if _c21_resume_sha(raw) != digest:
+            raise ValueError("C21_WSL_ACCEPTANCE_STRICT_SEQ566_BLOB_INVALID")
+    predecessor = _c21_resume_json(
+        subprocess.check_output(["git", "show", f"{C21_WSL_ACCEPTANCE_STRICT_PARENT}:{C21_CLEANUP_RUNTIME_RESULT_M}"], cwd=root)
+    )
+    if validate_c21_cleanup_runtime_result_manifest(predecessor):
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_SEQ566_MANIFEST_INVALID")
+
+
+def c21_wsl_acceptance_strict_events() -> list[dict[str, Any]]:
+    metadata = c21_wsl_acceptance_strict_metadata()
+    common = {
+        "occurred_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+        "actor": "developer-primary",
+        "subject_ref": "C-21/WSL-ACCEPTANCE-STRICT-SUCCESSOR",
+    }
+    worker = {
+        "lease_id": "worker-lease-c21-wsl-acceptance-strict-successor-20260907-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "WSL-ACCEPTANCE-STRICT-SUCCESSOR",
+        "lease_epoch": 1,
+        "execution_fencing_token": "c21-wsl-acceptance-strict-execution-fence-epoch-1-bcaeeac",
+        "fencing_token": "c21-wsl-acceptance-strict-execution-fence-epoch-1-bcaeeac",
+        "status": "ACTIVE",
+        "work_instruction_id": C21_WSL_ACCEPTANCE_STRICT_WI_ID,
+    }
+    write = {
+        "lease_id": "write-lease-c21-wsl-acceptance-strict-successor-20260907-001",
+        "worker_lease_id": worker["lease_id"],
+        "agent_id": "developer-primary",
+        "work_package_id": "C-21",
+        "subtask_id": "WSL-ACCEPTANCE-STRICT-SUCCESSOR",
+        "write_epoch": 1,
+        "execution_fencing_token": worker["execution_fencing_token"],
+        "write_fencing_token": "c21-wsl-acceptance-strict-write-fence-epoch-1-bcaeeac",
+        "fencing_token": "c21-wsl-acceptance-strict-write-fence-epoch-1-bcaeeac",
+        "status": "ACTIVE",
+        "path_scope": metadata["developer_exact_paths"],
+        "paths": metadata["developer_exact_paths"],
+        "path_count": 12,
+        "path_list_sha256": metadata["developer_exact_path_list_sha256"],
+        "work_instruction_id": C21_WSL_ACCEPTANCE_STRICT_WI_ID,
+    }
+    detail = {
+        "work_instruction_id": C21_WSL_ACCEPTANCE_STRICT_WI_ID,
+        "dispatch_head": C21_WSL_ACCEPTANCE_STRICT_PARENT,
+        "dispatch_upstream_head": C21_RESUME_REMOTE,
+        "private_control_commit": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL,
+        "candidate_commit": C21_WSL_ACCEPTANCE_STRICT_CANDIDATE,
+        "projection_mode": VALIDATED_BASE_PROJECTION_MODE,
+        "validated_base_commit": C21_EXACT_BINDING_BASE,
+        "head_relation": "FEATURE_WORKTREE_BCA_PARENT_EXACT12_WSL_ACCEPTANCE_STRICT_SUCCESSOR",
+        "exact_allowed_paths": metadata["cumulative_exact_paths"],
+        "wsl_acceptance": _c21_wsl_acceptance_state(),
+        "independent_tester": _c21_wsl_acceptance_tester(),
+        "runtime": _c21_cleanup_runtime_result_runtime(),
+        "open_limitations": _c21_wsl_acceptance_limitations(),
+        "verification_boundaries": _c21_wsl_acceptance_boundaries(),
+        "next_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+        "accepted": False,
+        **metadata,
+    }
+    return [
+        {"event_id": "evt_c21_wsl_acceptance_strict_worker_lease_issued", "sequence": 567, "event_type": "WORKER_LEASE_ISSUED", **common, "details": worker},
+        {"event_id": "evt_c21_wsl_acceptance_strict_write_lease_issued", "sequence": 568, "event_type": "WRITE_LEASE_ISSUED", **common, "details": write},
+        {"event_id": "evt_c21_wsl_acceptance_strict_package_started", "sequence": 569, "event_type": "PACKAGE_STARTED", **common, "details": dict(detail, result_status="IN_PROGRESS", package_status="ACTIVE_C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR")},
+        {"event_id": "evt_c21_wsl_acceptance_strict_write_lease_revoked", "sequence": 570, "event_type": "WRITE_LEASE_REVOKED", **common, "details": dict(write, status="REVOKED", reason="RESULT_HANDOFF")},
+        {"event_id": "evt_c21_wsl_acceptance_strict_worker_lease_revoked", "sequence": 571, "event_type": "WORKER_LEASE_REVOKED", **common, "details": dict(worker, status="REVOKED", reason="RESULT_HANDOFF")},
+        {"event_id": "evt_c21_wsl_acceptance_strict_package_completed", "sequence": 572, "event_type": "PACKAGE_COMPLETED", **common, "details": dict(detail, result_status="COMPLETED", package_status=C21_WSL_ACCEPTANCE_STRICT_STATUS)},
+    ]
+
+
+def validate_c21_wsl_acceptance_strict_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        metadata = c21_wsl_acceptance_strict_metadata()
+        expected = {
+            "schema_version": "1.0.0",
+            "manifest_type": "C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_PROJECTION",
+            "artifact_id": "C21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907",
+            "created_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+            "recorded_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+            "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
+            "event_sequence": 572,
+            "appended_event_count": 6,
+            "historical_event_sequence": 566,
+            "historical_commit": C21_WSL_ACCEPTANCE_STRICT_PARENT,
+            "predecessor_manifest_sha256": "CB96A6235A04F8B47DF03853FA0DF5EA4179A090D3D291DB5E713C4BCE2F30DE",
+            "status": C21_WSL_ACCEPTANCE_STRICT_STATUS,
+            "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+            "record_commit_mode": "PARENT_DIRECT_CHILD_EXACT12",
+            "work_instruction_id": C21_WSL_ACCEPTANCE_STRICT_WI_ID,
+            "candidate_commit": C21_WSL_ACCEPTANCE_STRICT_CANDIDATE,
+            "private_control_commit": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL,
+            "private_development_url": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL,
+            "wsl_acceptance": _c21_wsl_acceptance_state(),
+            "independent_tester": _c21_wsl_acceptance_tester(),
+            "runtime": _c21_cleanup_runtime_result_runtime(),
+            "open_limitations": _c21_wsl_acceptance_limitations(),
+            "verification_boundaries": _c21_wsl_acceptance_boundaries(),
+            "next_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+            "self_reference": False,
+            "accepted": False,
+            "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+            "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+            "dir2_status": "NOT_TRIGGERED",
+            **metadata,
+        }
+        errors = [] if all(
+            _c21_strict_json_equal(manifest.get(key), value) for key, value in expected.items()
+        ) else ["C21_WSL_ACCEPTANCE_STRICT_MANIFEST_INVALID"]
+        rows = manifest.get("raw_checksums")
+        expected_paths = set(c21_wsl_acceptance_strict_paths()) - {C21_WSL_ACCEPTANCE_STRICT_M}
+        if (
+            type(rows) is not list
+            or len(rows) != len(expected_paths)
+            or {row.get("path") for row in rows if type(row) is dict} != expected_paths
+            or any(
+                type(row) is not dict
+                or set(row) != {"path", "bytes", "sha256"}
+                or type(row.get("path")) is not str
+                or type(row.get("bytes")) is not int
+                or row["bytes"] <= 0
+                or type(row.get("sha256")) is not str
+                or re.fullmatch(r"[0-9A-F]{64}", row["sha256"]) is None
+                for row in rows or []
+            )
+        ):
+            errors.append("C21_WSL_ACCEPTANCE_STRICT_CHECKSUMS_INVALID")
+        return sorted(set(errors))
+    except (TypeError, ValueError, KeyError):
+        return ["C21_WSL_ACCEPTANCE_STRICT_MANIFEST_INVALID"]
+
+
+def c21_wsl_acceptance_strict_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {
+        C21_WSL_ACCEPTANCE_STRICT_P,
+        C21_WSL_ACCEPTANCE_STRICT_E,
+        C21_WSL_ACCEPTANCE_STRICT_H,
+        C21_WSL_ACCEPTANCE_STRICT_D,
+        C21_WSL_ACCEPTANCE_STRICT_M,
+    }
+    metadata = c21_wsl_acceptance_strict_metadata()
+    if set(files) != set(c21_wsl_acceptance_strict_paths()) - generated:
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_FILE_SET_INVALID")
+    historical_hashes = {
+        C21_WSL_ACCEPTANCE_STRICT_P: "B73110442CB277D9D1C5C51F35D4AA58901150BABDC2F87FB5EDBFC47673615E",
+        C21_WSL_ACCEPTANCE_STRICT_E: "A7C6C492A9FEDB365C8F129615BE0B1E8B488831C5FB8F48CE8E84CABEB222D0",
+        C21_WSL_ACCEPTANCE_STRICT_H: "EA7C3A2A39BBA0275BAB3AABF0FFFE5CCB447351D57727A7D7C2570095966965",
+    }
+    if set(historical) != set(historical_hashes) or any(
+        _c21_resume_sha(historical[path]) != digest for path, digest in historical_hashes.items()
+    ):
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_HISTORY_INVALID")
+    source = _c21_resume_json(historical[C21_WSL_ACCEPTANCE_STRICT_P])
+    stream = _c21_resume_json(historical[C21_WSL_ACCEPTANCE_STRICT_E])
+    if not all((
+        type(source.get("event_sequence")) is int and source["event_sequence"] == 566,
+        type(stream.get("last_sequence")) is int and stream["last_sequence"] == 566,
+        type(stream.get("events")) is list and len(stream["events"]) == 566,
+        stream.get("last_event_id") == "evt_c21_cleanup_runtime_result_package_completed",
+    )):
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_HISTORY_INVALID")
+    prefix = raw_event_object_prefix_bytes(historical[C21_WSL_ACCEPTANCE_STRICT_E], 566)
+    if len(prefix) != 1259036 or _c21_resume_sha(prefix) != "0011B8958FFAB958C6EB84B2C52D347518E78C979361FE7D13F9E94F2718006B":
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_HISTORY_PREFIX_INVALID")
+    root = Path(__file__).resolve().parents[1]
+    _c21_wsl_acceptance_preserve_seq566(root)
+    required = {
+        C21_WSL_ACCEPTANCE_STRICT_REPORT: ["ACCEPTED_WITH_LIMITATION", "C0/I0/M2", "INDEPENDENT_TESTER_AGENT_REPORT"],
+        C21_WSL_ACCEPTANCE_STRICT_VALIDATION: ["recursive strict JSON equality", "raw7 → E → P → H → D → M"],
+        C21_WSL_ACCEPTANCE_STRICT_WI: [C21_WSL_ACCEPTANCE_STRICT_PARENT, C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL, C21_WSL_ACCEPTANCE_STRICT_CANDIDATE],
+        C21_WSL_ACCEPTANCE_STRICT_PROMPT: ["seq567~572", "exact12"],
+        "docs/WORK_STATUS.md": [C21_WSL_ACCEPTANCE_STRICT_WI_ID, "TDD RED"],
+    }
+    for path, needles in required.items():
+        text = files[path].decode("utf-8")
+        if any(needle not in text for needle in needles):
+            raise ValueError("C21_WSL_ACCEPTANCE_STRICT_REQUIRED_EVIDENCE_INVALID")
+
+    header = b'{\n  "schema_version": "1.0.0",\n  "stream_id": "anvil-build-main",\n  "first_sequence": 1,\n  "last_sequence": 566,\n  "events": [\n    '
+    footer = b'\n  ],\n  "last_event_id": "evt_c21_cleanup_runtime_result_package_completed"\n}\n'
+    if historical[C21_WSL_ACCEPTANCE_STRICT_E] != header + prefix + footer:
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_HISTORY_PREFIX_INVALID")
+    appended = b"".join(
+        b",\n" + "\n".join("    " + line for line in json.dumps(event, ensure_ascii=False, indent=2, allow_nan=False).splitlines()).encode()
+        for event in c21_wsl_acceptance_strict_events()
+    )
+    events_raw = header.replace(b'566', b'572', 1) + prefix + appended + footer.replace(
+        b'evt_c21_cleanup_runtime_result_package_completed', b'evt_c21_wsl_acceptance_strict_package_completed'
+    )
+    wi_sha = _c21_resume_sha(files[C21_WSL_ACCEPTANCE_STRICT_WI])
+    prompt_sha = _c21_resume_sha(files[C21_WSL_ACCEPTANCE_STRICT_PROMPT])
+    state = _c21_wsl_acceptance_state()
+    tester = _c21_wsl_acceptance_tester()
+    runtime = _c21_cleanup_runtime_result_runtime()
+    limitations = _c21_wsl_acceptance_limitations()
+    boundaries = _c21_wsl_acceptance_boundaries()
+    instruction = {
+        "artifact_id": C21_WSL_ACCEPTANCE_STRICT_WI_ID,
+        "artifact_path": C21_WSL_ACCEPTANCE_STRICT_WI,
+        "artifact_sha256": wi_sha,
+        "invocation_path": C21_WSL_ACCEPTANCE_STRICT_PROMPT,
+        "invocation_sha256": prompt_sha,
+        "result_status": "COMPLETED",
+        "package_status": C21_WSL_ACCEPTANCE_STRICT_STATUS,
+        "executor": "developer-primary",
+        "accepted": False,
+        "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "runtime_next_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+    }
+    progress = dict(source)
+    repository = dict(progress["repository"])
+    repository.update({
+        "local_head": C21_WSL_ACCEPTANCE_STRICT_PARENT,
+        "head_relation": "FEATURE_WORKTREE_BCA_PARENT_EXACT12_WSL_ACCEPTANCE_STRICT_SUCCESSOR",
+        "worktree_status": "SEQ572_WSL_ACCEPTANCE_STRICT_EXACT12_DIRTY",
+        "exact_allowed_paths": metadata["cumulative_exact_paths"],
+        "wsl_acceptance_strict_paths": metadata["developer_exact_paths"],
+        "private_development_url": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL,
+        "private_control_head": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL,
+        "private_candidate_head": C21_WSL_ACCEPTANCE_STRICT_CANDIDATE,
+        "push_status": "NOT_EXECUTED",
+    })
+    progress.update({
+        "updated_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+        "recorded_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+        "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
+        "event_sequence": 572,
+        "last_event_id": "evt_c21_wsl_acceptance_strict_package_completed",
+        "status": C21_WSL_ACCEPTANCE_STRICT_STATUS,
+        "active_agent": None,
+        "worker_lease": None,
+        "write_lease": None,
+        "active_work_instruction": instruction,
+        "completed_work_instruction": instruction,
+        "repository": repository,
+        "runtime": runtime,
+        "wsl_acceptance": state,
+        "independent_tester": tester,
+        "open_limitations": limitations,
+        "verification_boundaries": boundaries,
+        "runtime_next_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+        "next_safe_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+        "current_progress_evidence_ref": {"package_id": "C-21", "path": C21_WSL_ACCEPTANCE_STRICT_D, "manifest_path": C21_WSL_ACCEPTANCE_STRICT_M},
+        "latest_evidence_manifest_ref": {"path": C21_WSL_ACCEPTANCE_STRICT_M, "artifact_id": "C21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C21_WSL_LIMITED_ACCEPTANCE_RECORDED_USER_ACTION_REMAINS"], "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C21_WSL_ACCEPTANCE_STRICT_E, "sha256": _c21_resume_sha(events_raw)}
+    latest = dict(files); latest[C21_WSL_ACCEPTANCE_STRICT_E] = events_raw
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)} for path, raw in sorted(latest.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+
+    handoff = {
+        "event_sequence": 572,
+        "last_event_id": "evt_c21_wsl_acceptance_strict_package_completed",
+        "status": C21_WSL_ACCEPTANCE_STRICT_STATUS,
+        "current_phase": source["current_phase"],
+        "current_work_package": "C-21",
+        "active_agent": None,
+        "worker_lease": None,
+        "write_lease": None,
+        "execution_fencing_token": None,
+        "write_fencing_token": None,
+        "active_work_instruction": C21_WSL_ACCEPTANCE_STRICT_WI_ID,
+        "active_work_instruction_sha256": wi_sha,
+        "active_invocation_sha256": prompt_sha,
+        "repository_head": C21_WSL_ACCEPTANCE_STRICT_PARENT,
+        "repository_head_relation": repository["head_relation"],
+        "repository_upstream": repository["upstream"],
+        "repository_projection_mode": repository["projection_mode"],
+        "repository_validated_base_commit": repository["validated_base_commit"],
+        "repository_exact_allowed_paths": metadata["cumulative_exact_paths"],
+        "private_development_url": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL,
+        "private_control_head": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL,
+        "private_candidate_head": C21_WSL_ACCEPTANCE_STRICT_CANDIDATE,
+        "design_baseline_hash": source["design_baseline_hash"],
+        "valid_failure_count": source["valid_failure_count"],
+        "dir_status": source["dir_review"]["status"],
+        "runtime": runtime,
+        "wsl_acceptance": state,
+        "independent_tester": tester,
+        "open_limitations": limitations,
+        "verification_boundaries": boundaries,
+        "recorded_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+        "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
+        "next_safe_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+        "runtime_next_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+        "reporting_decision": "AUTO_CONTINUE",
+        **metadata,
+        "accepted": False,
+        "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        "commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        "push": "NOT_EXECUTED",
+    }
+    htext = "# C-21 WSL acceptance strict successor — seq572 Developer 완료\n\n- WSL 선행검증 범위만 ACCEPTED_WITH_LIMITATION이며 C-21 전체 accepted는 false다.\n\n" + historical[C21_WSL_ACCEPTANCE_STRICT_H].decode()
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    htext, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement, htext, flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_HANDOFF_INVALID")
+    handoff_raw = htext.encode()
+    digest = {
+        "schema_version": "1.0.0",
+        "digest_id": "C21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-DIGEST-20260907",
+        "package_id": "C-21",
+        "event_sequence": 572,
+        "algorithm": "SHA-256",
+        "created_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+        "scope": "seq567-572 append-only; seq1-566 preserved; exact12.",
+        "self_reference": False,
+        "progress": {"path": C21_WSL_ACCEPTANCE_STRICT_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C21_WSL_ACCEPTANCE_STRICT_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    prior = dict(files); prior.update({C21_WSL_ACCEPTANCE_STRICT_E: events_raw, C21_WSL_ACCEPTANCE_STRICT_P: progress_raw, C21_WSL_ACCEPTANCE_STRICT_H: handoff_raw, C21_WSL_ACCEPTANCE_STRICT_D: digest_raw})
+    manifest = {
+        "schema_version": "1.0.0",
+        "manifest_type": "C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_PROJECTION",
+        "artifact_id": "C21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907",
+        "created_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+        "recorded_at": C21_WSL_ACCEPTANCE_STRICT_RECORDED_AT,
+        "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
+        "event_sequence": 572,
+        "appended_event_count": 6,
+        "historical_event_sequence": 566,
+        "historical_commit": C21_WSL_ACCEPTANCE_STRICT_PARENT,
+        "historical_hashes": historical_hashes,
+        "predecessor_manifest_sha256": "CB96A6235A04F8B47DF03853FA0DF5EA4179A090D3D291DB5E713C4BCE2F30DE",
+        "status": C21_WSL_ACCEPTANCE_STRICT_STATUS,
+        "record_commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
+        "record_commit_mode": "PARENT_DIRECT_CHILD_EXACT12",
+        "execution_authority_path": C21_WSL_ACCEPTANCE_STRICT_WI,
+        "execution_authority_sha256": wi_sha,
+        "work_instruction_id": C21_WSL_ACCEPTANCE_STRICT_WI_ID,
+        "candidate_commit": C21_WSL_ACCEPTANCE_STRICT_CANDIDATE,
+        "private_control_commit": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL,
+        "private_development_url": C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL,
+        "wsl_acceptance": state,
+        "independent_tester": tester,
+        "runtime": runtime,
+        "open_limitations": limitations,
+        "verification_boundaries": boundaries,
+        "next_action": C21_WSL_ACCEPTANCE_STRICT_NEXT,
+        "self_reference": False,
+        "accepted": False,
+        "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED",
+        **metadata,
+    }
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)} for path, raw in sorted(prior.items())]
+    if validate_c21_wsl_acceptance_strict_manifest(manifest):
+        raise ValueError("C21_WSL_ACCEPTANCE_STRICT_MANIFEST_INVALID")
+    return {
+        C21_WSL_ACCEPTANCE_STRICT_E: events_raw,
+        C21_WSL_ACCEPTANCE_STRICT_P: progress_raw,
+        C21_WSL_ACCEPTANCE_STRICT_H: handoff_raw,
+        C21_WSL_ACCEPTANCE_STRICT_D: digest_raw,
+        C21_WSL_ACCEPTANCE_STRICT_M: _c21_resume_json_bytes(manifest),
+    }
+
+
+def validate_c21_wsl_acceptance_strict_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    root = bundle.get("_root")
+    try:
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{C21_WSL_ACCEPTANCE_STRICT_PARENT}:{path}"], cwd=root)
+            for path in (C21_WSL_ACCEPTANCE_STRICT_P, C21_WSL_ACCEPTANCE_STRICT_E, C21_WSL_ACCEPTANCE_STRICT_H)
+        }
+        generated = {C21_WSL_ACCEPTANCE_STRICT_P, C21_WSL_ACCEPTANCE_STRICT_E, C21_WSL_ACCEPTANCE_STRICT_H, C21_WSL_ACCEPTANCE_STRICT_D, C21_WSL_ACCEPTANCE_STRICT_M}
+        files = {path: (root / path).read_bytes() for path in set(c21_wsl_acceptance_strict_paths()) - generated}
+        expected = c21_wsl_acceptance_strict_artifacts(historical, files)
+        errors = []
+        for path in generated:
+            if (root / path).read_bytes() != expected[path]:
+                errors.append("C21_WSL_ACCEPTANCE_STRICT_PROJECTION_INVALID")
+        supplied = {
+            C21_WSL_ACCEPTANCE_STRICT_P: bundle.get("progress"),
+            C21_WSL_ACCEPTANCE_STRICT_E: bundle.get("events"),
+            C21_WSL_ACCEPTANCE_STRICT_H: bundle.get("handoff"),
+            C21_WSL_ACCEPTANCE_STRICT_D: bundle.get("detached_digest"),
+            C21_WSL_ACCEPTANCE_STRICT_M: manifest,
+        }
+        expected_objects = {
+            C21_WSL_ACCEPTANCE_STRICT_P: _c21_resume_json(expected[C21_WSL_ACCEPTANCE_STRICT_P]),
+            C21_WSL_ACCEPTANCE_STRICT_E: _c21_resume_json(expected[C21_WSL_ACCEPTANCE_STRICT_E]),
+            C21_WSL_ACCEPTANCE_STRICT_H: extract_handoff_summary(expected[C21_WSL_ACCEPTANCE_STRICT_H].decode()),
+            C21_WSL_ACCEPTANCE_STRICT_D: _c21_resume_json(expected[C21_WSL_ACCEPTANCE_STRICT_D]),
+            C21_WSL_ACCEPTANCE_STRICT_M: _c21_resume_json(expected[C21_WSL_ACCEPTANCE_STRICT_M]),
+        }
+        if any(not _c21_strict_json_equal(supplied[path], expected_objects[path]) for path in supplied):
+            errors.append("C21_WSL_ACCEPTANCE_STRICT_PROJECTION_INVALID")
+        errors.extend(validate_c21_wsl_acceptance_strict_manifest(manifest))
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C21_WSL_ACCEPTANCE_STRICT_INPUT_INVALID"]
+
+
+def _collect_c21_wsl_acceptance_strict_git(bundle: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]
+    metadata = c21_wsl_acceptance_strict_metadata()
+    try:
+        head = _git_value(root, "rev-parse", "HEAD")
+        status = _git_value(root, "-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        branch = _git_value(root, "branch", "--show-current")
+        upstream = _git_value(root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+        private_url = _git_value(root, "remote", "get-url", "development")
+        private_control = _git_value(root, "for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution")
+        private_candidate = _git_value(root, "for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107")
+        if status is None:
+            return ["GIT_STATUS_COLLECTION_FAILED"]
+        if None in (head, branch, upstream, private_url, private_control, private_candidate):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch != "codex/c21-operational-execution" or upstream != "origin/codex/c21-operational-execution":
+            return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url != C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL or private_control != C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL or private_candidate != C21_WSL_ACCEPTANCE_STRICT_CANDIDATE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared = bundle["progress"]["repository"].get("validated_base_commit")
+        if type(declared) is not str or re.fullmatch(r"[0-9a-f]{40}", declared) is None or _git_returncode(root, "merge-base", "--is-ancestor", declared, head) != 0:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty = sorted(_working_tree_paths(status))
+        direct = dirty if head == C21_WSL_ACCEPTANCE_STRICT_PARENT else _c21_resume_git_paths(_git_value(root, "diff", "--name-only", C21_WSL_ACCEPTANCE_STRICT_PARENT, head) or "")
+        committed = _c21_resume_git_paths(_git_value(root, "diff", "--name-only", C21_EXACT_BINDING_BASE, head) or "")
+        cumulative = sorted(set(committed) | set(dirty)) if head == C21_WSL_ACCEPTANCE_STRICT_PARENT else committed
+        if direct != metadata["developer_exact_paths"] or cumulative != metadata["cumulative_exact_paths"]:
+            return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head == C21_WSL_ACCEPTANCE_STRICT_PARENT:
+            return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        parents = (_git_value(root, "show", "-s", "--format=%P", head) or "").split()
+        return [] if not dirty and parents == [C21_WSL_ACCEPTANCE_STRICT_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
     except (OSError, ValueError, TypeError, KeyError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

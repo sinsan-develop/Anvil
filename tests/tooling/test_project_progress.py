@@ -8385,6 +8385,59 @@ class C21WslCleanupRuntimeResultTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             checker.c21_cleanup_runtime_result_artifacts(historical, missing)
 
+    def test_seq566_public_validators_reject_json_scalar_type_confusion(self):
+        """A bool/float accepted as an int would let an invalid public record pass."""
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        historical = self._historical(checker)
+        artifacts = checker.c21_cleanup_runtime_result_artifacts(historical, self._raw_files(checker))
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_M])
+
+        runtime = copy.deepcopy(manifest["runtime"])
+        runtime["cleanup"]["invocation_count"] = True
+        runtime["cleanup"]["internal_exit_code"] = False
+        runtime["cleanup"]["outer_wrapper_exit_code"] = 1.0
+        self.assertTrue(checker.validate_c21_cleanup_runtime_result_runtime(runtime))
+
+        confused_manifest = copy.deepcopy(manifest)
+        confused_manifest["accepted"] = 0
+        confused_manifest["event_sequence"] = 566.0
+        confused_manifest["self_reference"] = 0
+        confused_manifest["developer_exact_path_count"] = 12.0
+        confused_manifest["raw_checksums"][0]["bytes"] = True
+        self.assertTrue(checker.validate_c21_cleanup_runtime_result_manifest(confused_manifest))
+
+        projection_bundle = {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_P]),
+            "events": json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_E]),
+            "detached_digest": json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_D]),
+        }
+        generated = {
+            checker.C21_CLEANUP_RUNTIME_RESULT_P,
+            checker.C21_CLEANUP_RUNTIME_RESULT_E,
+            checker.C21_CLEANUP_RUNTIME_RESULT_H,
+            checker.C21_CLEANUP_RUNTIME_RESULT_D,
+            checker.C21_CLEANUP_RUNTIME_RESULT_M,
+        }
+        original_read_bytes = Path.read_bytes
+        def read_seq566_generated(path):
+            try:
+                relative = path.resolve().relative_to(ROOT).as_posix()
+            except ValueError:
+                return original_read_bytes(path)
+            return artifacts[relative] if relative in generated else original_read_bytes(path)
+        projection_bundle["progress"]["event_sequence"] = 566.0
+        with mock.patch.object(Path, "read_bytes", autospec=True, side_effect=read_seq566_generated):
+            self.assertTrue(checker.validate_c21_cleanup_runtime_result_projection(projection_bundle, manifest))
+
+        public_bundle = checker.load_bundle(ROOT)
+        public_bundle["progress"]["event_sequence"] = 566.0
+        public_bundle["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(public_bundle["progress"])
+        public_bundle["events"]["last_sequence"] = 566.0
+        public_bundle["events"]["events"][-1]["sequence"] = 566.0
+        public_bundle["detached_digest"]["event_sequence"] = 566.0
+        self.assertTrue(checker.validate_bundle(public_bundle))
+
     @staticmethod
     def _seq566_git_values(checker, *, head=None, status=None, parents=None):
         head = head or checker.C21_CLEANUP_RUNTIME_RESULT_PARENT
@@ -8424,6 +8477,204 @@ class C21WslCleanupRuntimeResultTests(unittest.TestCase):
                     values[("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")] = ""
                 with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
                     self.assertTrue(checker._collect_c21_cleanup_runtime_result_git(bundle))
+
+
+class C21WslAcceptanceStrictSuccessorTests(unittest.TestCase):
+    @staticmethod
+    def _historical(checker):
+        return {
+            path: subprocess.check_output(
+                ["git", "show", f"{checker.C21_WSL_ACCEPTANCE_STRICT_PARENT}:{path}"], cwd=ROOT
+            )
+            for path in (
+                checker.C21_WSL_ACCEPTANCE_STRICT_P,
+                checker.C21_WSL_ACCEPTANCE_STRICT_E,
+                checker.C21_WSL_ACCEPTANCE_STRICT_H,
+            )
+        }
+
+    @staticmethod
+    def _raw_files(checker):
+        generated = {
+            checker.C21_WSL_ACCEPTANCE_STRICT_P,
+            checker.C21_WSL_ACCEPTANCE_STRICT_E,
+            checker.C21_WSL_ACCEPTANCE_STRICT_H,
+            checker.C21_WSL_ACCEPTANCE_STRICT_D,
+            checker.C21_WSL_ACCEPTANCE_STRICT_M,
+        }
+        return {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_wsl_acceptance_strict_paths()) - generated
+        }
+
+    def _artifacts(self, checker):
+        return checker.c21_wsl_acceptance_strict_artifacts(
+            self._historical(checker), self._raw_files(checker)
+        )
+
+    def test_seq572_builder_preserves_seq566_and_records_limited_wsl_acceptance(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_wsl_acceptance_strict_artifacts"))
+        historical = self._historical(checker)
+        artifacts = checker.c21_wsl_acceptance_strict_artifacts(historical, self._raw_files(checker))
+        events = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_E])["events"]
+        progress = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_P])
+        manifest = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_M])
+        handoff = checker.extract_handoff_summary(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_H].decode())
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_WSL_ACCEPTANCE_STRICT_E], 566),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_E], 566),
+        )
+        self.assertEqual(list(range(567, 573)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events[-6:]],
+        )
+        expected_state = {
+            "acceptance_scope": "C21_WSL",
+            "wsl_acceptance_status": "ACCEPTED_WITH_LIMITATION",
+            "accepted": False,
+            "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+            "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+            "dir2_status": "NOT_TRIGGERED",
+        }
+        for document in (progress["wsl_acceptance"], handoff["wsl_acceptance"], manifest["wsl_acceptance"]):
+            self.assertEqual(expected_state, {key: document[key] for key in expected_state})
+        self.assertFalse(events[-1]["details"]["wsl_acceptance"]["accepted"])
+        self.assertEqual("INDEPENDENT_TESTER_AGENT_REPORT", manifest["independent_tester"]["source"])
+        self.assertEqual("ABSENT", manifest["independent_tester"]["repository_artifact"])
+        self.assertEqual({"critical": 0, "important": 0, "minor": 2}, manifest["independent_tester"]["findings"])
+        self.assertIsNone(manifest["runtime"]["runtime_observed_at"])
+        self.assertEqual("UNAVAILABLE_AFTER_SUBAGENT_COMPACTION", manifest["runtime"]["runtime_observed_at_status"])
+        limitation_codes = {row["code"] for row in manifest["open_limitations"]}
+        self.assertEqual({
+            "PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
+            "EXACT_RUNTIME_OBSERVED_TIMESTAMP_UNAVAILABLE",
+            "RECEIPT_ORIGINALS_AND_PATHS_NOT_INDEPENDENTLY_INSPECTED",
+            "SAME_ORIGIN_HTTP_INGRESS_NOT_BROWSER_NETWORK_ACCEPTANCE",
+        }, limitation_codes)
+        self.assertEqual("NOT_VERIFIED", manifest["verification_boundaries"]["provider"])
+        self.assertEqual("NOT_VERIFIED", manifest["verification_boundaries"]["telegram"])
+        self.assertEqual("NOT_VERIFIED", manifest["verification_boundaries"]["ysna"])
+        self.assertEqual("NOT_AUTHORIZED", manifest["verification_boundaries"]["main"])
+
+    def test_seq572_metadata_binds_exact12_and_cumulative155_hashes(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_wsl_acceptance_strict_metadata()
+        self.assertEqual(12, metadata["developer_exact_path_count"])
+        self.assertEqual("9E8380E9F3B58C5F8C717133B0777AEA0E2DAF90CED947590DECC56C67C86B2F", metadata["developer_exact_path_list_sha256"])
+        self.assertEqual("495960755DC2C2F74DF6FB8213163FE502A3EE6DDD4F0E2692FD97D06E406536", metadata["developer_exact_path_list_ordinal_sha256"])
+        self.assertEqual(155, metadata["cumulative_exact_path_count"])
+        self.assertEqual("4C4BF601FE76A9C24591891176470BD87E0BE85EFB060898033D741FACC6B66C", metadata["cumulative_exact_path_list_sha256"])
+        self.assertEqual("2CA55B9DCCE87ECBC0D7FD233D8F98E76FA8ED7E7C1BCB6C903B72EB1EE64F2D", metadata["cumulative_exact_path_list_ordinal_sha256"])
+
+    def test_seq572_validator_rejects_types_scope_promotion_and_evidence_invention(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = self._artifacts(checker)
+        manifest = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_M])
+        self.assertEqual([], checker.validate_c21_wsl_acceptance_strict_manifest(manifest))
+        mutations = (
+            ("accepted_bool", lambda d: d.__setitem__("accepted", 0)),
+            ("event_sequence_float", lambda d: d.__setitem__("event_sequence", 572.0)),
+            ("self_reference_bool", lambda d: d.__setitem__("self_reference", 0)),
+            ("path_count_float", lambda d: d.__setitem__("developer_exact_path_count", 12.0)),
+            ("checksum_bool", lambda d: d["raw_checksums"][0].__setitem__("bytes", True)),
+            ("scope_promotion", lambda d: d["wsl_acceptance"].__setitem__("acceptance_scope", "C21_ALL")),
+            ("wsl_status_promotion", lambda d: d["wsl_acceptance"].__setitem__("wsl_acceptance_status", "ACCEPTED")),
+            ("c21_acceptance", lambda d: d["wsl_acceptance"].__setitem__("c21_acceptance_status", "ACCEPTED")),
+            ("c01", lambda d: d["wsl_acceptance"].__setitem__("c01_status", "READY")),
+            ("dir2", lambda d: d["wsl_acceptance"].__setitem__("dir2_status", "TRIGGERED")),
+            ("limitation_removed", lambda d: d.__setitem__("open_limitations", d["open_limitations"][:-1])),
+            ("timestamp_invented", lambda d: d["runtime"].__setitem__("runtime_observed_at", "2026-09-07T00:00:00Z")),
+            ("provider_promoted", lambda d: d["verification_boundaries"].__setitem__("provider", "VERIFIED")),
+            ("telegram_promoted", lambda d: d["verification_boundaries"].__setitem__("telegram", "VERIFIED")),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(manifest); mutate(changed)
+                self.assertTrue(checker.validate_c21_wsl_acceptance_strict_manifest(changed))
+
+    def test_seq572_projection_and_public_bundle_reject_strict_state_tamper(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / checker.C21_WSL_ACCEPTANCE_STRICT_M).read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_wsl_acceptance_strict_projection(bundle, manifest))
+        for name, mutate_bundle, mutate_manifest in (
+            ("progress", lambda b: b["progress"]["wsl_acceptance"].__setitem__("accepted", 0), None),
+            ("event", lambda b: b["events"]["events"][-1]["details"]["wsl_acceptance"].__setitem__("accepted", 0), None),
+            ("handoff", lambda b: b["handoff"]["wsl_acceptance"].__setitem__("accepted", 0), None),
+            ("digest", lambda b: b["detached_digest"].__setitem__("event_sequence", 572.0), None),
+            ("manifest", None, lambda m: m.__setitem__("accepted", 0)),
+        ):
+            with self.subTest(name=name):
+                changed_bundle = copy.deepcopy(bundle)
+                changed_manifest = copy.deepcopy(manifest)
+                if mutate_bundle:
+                    mutate_bundle(changed_bundle)
+                if mutate_manifest:
+                    mutate_manifest(changed_manifest)
+                self.assertTrue(checker.validate_c21_wsl_acceptance_strict_projection(changed_bundle, changed_manifest))
+        self.assertEqual([], checker.validate_bundle(bundle))
+        invalid_manifest = copy.deepcopy(manifest); invalid_manifest["accepted"] = 0
+        original_load_json = checker._load_json
+        manifest_path = ROOT / checker.C21_WSL_ACCEPTANCE_STRICT_M
+        with mock.patch.object(checker, "_load_json", side_effect=lambda path: invalid_manifest if path == manifest_path else original_load_json(path)):
+            self.assertTrue(checker.validate_bundle(bundle))
+
+    def test_seq572_builder_rejects_history_prefix_path_and_malformed_json(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        historical = self._historical(checker)
+        raw_files = self._raw_files(checker)
+        corrupt = dict(historical)
+        corrupt[checker.C21_WSL_ACCEPTANCE_STRICT_E] = corrupt[checker.C21_WSL_ACCEPTANCE_STRICT_E].replace(b'"sequence": 1', b'"sequence": 0', 1)
+        with self.assertRaises(ValueError):
+            checker.c21_wsl_acceptance_strict_artifacts(corrupt, raw_files)
+        malformed = dict(historical); malformed[checker.C21_WSL_ACCEPTANCE_STRICT_P] = b'{"broken":'
+        with self.assertRaises((ValueError, json.JSONDecodeError)):
+            checker.c21_wsl_acceptance_strict_artifacts(malformed, raw_files)
+        missing = dict(raw_files); missing.pop(next(iter(missing)))
+        with self.assertRaises(ValueError):
+            checker.c21_wsl_acceptance_strict_artifacts(historical, missing)
+
+    @staticmethod
+    def _git_values(checker, *, head=None, status=None, parents=None):
+        head = head or checker.C21_WSL_ACCEPTANCE_STRICT_PARENT
+        return {
+            ("rev-parse", "HEAD"): head,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): status,
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): checker.C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): checker.C21_WSL_ACCEPTANCE_STRICT_CANDIDATE,
+            ("diff", "--name-only", checker.C21_WSL_ACCEPTANCE_STRICT_PARENT, head): "\n".join(checker.c21_wsl_acceptance_strict_paths()),
+            ("diff", "--name-only", checker.C21_EXACT_BINDING_BASE, head): "\n".join(checker.c21_wsl_acceptance_strict_metadata()["cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", head): parents,
+        }
+
+    def test_seq572_git_collector_and_routing_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 572, "repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        dirty = "\n".join(f" M {path}" for path in checker.c21_wsl_acceptance_strict_paths())
+        values = self._git_values(checker, status=dirty)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_wsl_acceptance_strict_git(bundle))
+        child = "1" * 40
+        values = self._git_values(checker, head=child, status="", parents=checker.C21_WSL_ACCEPTANCE_STRICT_PARENT)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_wsl_acceptance_strict_git(bundle))
+        for name, update in (
+            ("merge", {("show", "-s", "--format=%P", child): checker.C21_WSL_ACCEPTANCE_STRICT_PARENT + " " + "2" * 40}),
+            ("private_control", {("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): "0" * 40}),
+            ("candidate", {("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): "0" * 40}),
+            ("diff", {("diff", "--name-only", checker.C21_WSL_ACCEPTANCE_STRICT_PARENT, child): "docs/WORK_STATUS.md"}),
+        ):
+            with self.subTest(name=name):
+                changed = dict(values); changed.update(update)
+                with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: changed.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+                    self.assertTrue(checker._collect_c21_wsl_acceptance_strict_git(bundle))
+        with mock.patch.object(checker, "_collect_c21_wsl_acceptance_strict_git", return_value=["ROUTED"]):
+            self.assertEqual(["ROUTED"], checker._validate_git_projection(bundle))
 
 
 if __name__ == "__main__":
