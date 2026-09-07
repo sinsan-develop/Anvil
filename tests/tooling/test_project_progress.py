@@ -8677,5 +8677,51 @@ class C21WslAcceptanceStrictSuccessorTests(unittest.TestCase):
             self.assertEqual(["ROUTED"], checker._validate_git_projection(bundle))
 
 
+class C21WorkbenchUiReworkLocalStartTests(unittest.TestCase):
+    def test_seq575_builder_preserves_seq572_and_issues_exact_leases(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_local_start_artifacts"))
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_LOCAL_PARENT}:{path}"], cwd=ROOT)
+            for path in (checker.C21_WORKBENCH_UI_LOCAL_P, checker.C21_WORKBENCH_UI_LOCAL_E, checker.C21_WORKBENCH_UI_LOCAL_H)
+        }
+        generated = {checker.C21_WORKBENCH_UI_LOCAL_P, checker.C21_WORKBENCH_UI_LOCAL_E, checker.C21_WORKBENCH_UI_LOCAL_H, checker.C21_WORKBENCH_UI_LOCAL_D, checker.C21_WORKBENCH_UI_LOCAL_M}
+        raw_files = {path: (ROOT / path).read_bytes() for path in set(checker.c21_workbench_ui_local_start_paths()) - generated}
+        artifacts = checker.c21_workbench_ui_local_start_artifacts(historical, raw_files)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E])["events"]
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_M])
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_WORKBENCH_UI_LOCAL_E], 572),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E], 572),
+        )
+        self.assertEqual([573, 574, 575], [row["sequence"] for row in events[-3:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"], [row["event_type"] for row in events[-3:]])
+        self.assertEqual("ACTIVE_WORKBENCH_UI_REWORK_LOCAL", progress["status"])
+        self.assertEqual("ACTIVE", progress["worker_lease"]["status"])
+        self.assertEqual("ACTIVE", progress["write_lease"]["status"])
+        self.assertEqual(checker.c21_workbench_ui_local_product_paths(), progress["write_lease"]["paths"])
+        self.assertEqual(10, manifest["start_exact_path_count"])
+        self.assertEqual(11, manifest["product_exact_path_count"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_execution"])
+
+    def test_seq575_metadata_binds_exact_paths_and_rejects_scope_promotion(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_local_metadata()
+        self.assertEqual(10, metadata["start_exact_path_count"])
+        self.assertEqual("CFBA74FE970ADD24C512890616C8CAFBB269DF5AFE81A40AEBAB2A01D3F150D6", metadata["start_exact_path_list_sha256"])
+        self.assertEqual(11, metadata["product_exact_path_count"])
+        self.assertEqual("3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF", metadata["product_exact_path_list_sha256"])
+        self.assertEqual(159, metadata["cumulative_start_path_count"])
+        self.assertEqual("9F597E2977C2133988D895A815E97620C634CB78FCF31DD6D3BAE71A16DB259B", metadata["cumulative_start_path_list_sha256"])
+        artifacts = checker.c21_workbench_ui_local_start_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_M])
+        self.assertEqual([], checker.validate_c21_workbench_ui_local_start_manifest(manifest))
+        for key, value in (("accepted", True), ("external_execution", "PASS"), ("c21_status", "ACCEPTED"), ("c01_status", "READY"), ("dir2_status", "TRIGGERED")):
+            changed = copy.deepcopy(manifest); changed[key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_local_start_manifest(changed), key)
+
+
 if __name__ == "__main__":
     unittest.main()

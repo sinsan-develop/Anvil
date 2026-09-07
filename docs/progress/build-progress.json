@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c21-provider-wsl-git-only-candidate-bound-seq530",
-  "event_sequence": 572,
-  "updated_at": "2026-09-07T05:13:15.9345766Z",
-  "last_event_id": "evt_c21_wsl_acceptance_strict_package_completed",
+  "event_sequence": 575,
+  "updated_at": "2026-09-07T15:35:00+09:00",
+  "last_event_id": "evt_c21_workbench_ui_local_package_started",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "status": "C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_COMPLETED",
+  "status": "ACTIVE_WORKBENCH_UI_REWORK_LOCAL",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -47,8 +47,45 @@
     "B-11",
     "B-12"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": "developer-primary",
+  "write_lease": {
+    "lease_id": "write-lease-c21-workbench-ui-local-20260907-001",
+    "worker_lease_id": "worker-lease-c21-workbench-ui-local-20260907-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "WORKBENCH-UI-REWORK-LOCAL",
+    "write_epoch": 1,
+    "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+    "write_fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
+    "fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
+    "status": "ACTIVE",
+    "path_scope": [
+      "apps/web/fixture-workbench.html",
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/ui-preview-runtime.test.mjs",
+      "apps/web/tests/workbench.test.mjs",
+      "tests/api/test_public_asgi_frontend.py",
+      "tests/browser/c21-network-probe.mjs"
+    ],
+    "paths": [
+      "apps/web/fixture-workbench.html",
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/ui-preview-runtime.test.mjs",
+      "apps/web/tests/workbench.test.mjs",
+      "tests/api/test_public_asgi_frontend.py",
+      "tests/browser/c21-network-probe.mjs"
+    ]
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -80,7 +117,16 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-c21-workbench-ui-local-20260907-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "WORKBENCH-UI-REWORK-LOCAL",
+    "lease_epoch": 1,
+    "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+    "fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+    "status": "ACTIVE"
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -288,41 +334,33 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md",
-      "sha256": "38B0EB56C3CCEA19A8996BAE467D4CE275F66CA04E3FE8723B433395D245DE8A"
-    },
-    {
       "path": "docs/WORK_STATUS.md",
-      "sha256": "FC3B52B44D782C0B9ADB5C1009DDF5A29F682D33256EFE55A0C9C0EF0B89C039"
+      "sha256": "5FDF0D72387F7800188CF60564BC8883AE96C7C0D6055E59C0C5BAA77ED0F6C4"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "33686DD2B54C832E094F66D0662651DF27AD7A22F090B2996E8FB3C759B60FCF"
+      "sha256": "E69666D6D1990FFD44791187EFBE9F4DD5CEDEA839659F1149B7F855A3F24764"
     },
     {
-      "path": "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md",
-      "sha256": "BDBCEE90FF2429DD323C55AA09D04CEBA8BB8D616E322EE4948F341FA4FFEA3F"
+      "path": "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+      "sha256": "B52EF2074E2EC3C90E36E029D92D7E105E536F8E6C872D325682AB4126B4E962"
     },
     {
-      "path": "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
-      "sha256": "ECC664EC9371B7FF338FAF94849FB955FD63456BBC96E6C0FB113405CFD4FD2A"
-    },
-    {
-      "path": "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
-      "sha256": "5199E599F6DC1A588546D50F473E80513A10B0ADA655114839037ADD41821E06"
+      "path": "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
+      "sha256": "0334807DD480BD7B5C7C7B6036FD8C6F35FE830D19A7562DEEAD9B673C7C2398"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "AB9A3B6D614F32FAB54D446086A9BD48FC3862222EC81A2F14935C0F25ED056A"
+      "sha256": "3BAF63C8E1F67A7AC7F7422DCCDB83F163304CD596B3449BC4F169BB9968FAD9"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "79AE73346BB684D78C60555D13666627A7F2AD10FA2FDAC8781F5F2AD9CF775F"
+      "sha256": "C4C42847CF171E268A87DC8D6C52D0A36EB6398170DCE7D1674985AF2C473353"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
-    "artifact_id": "C21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907"
+    "path": "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
+    "artifact_id": "C21-WORKBENCH-UI-REWORK-LOCAL-START-20260907"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -332,7 +370,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "USER_OWNED_PROVIDER_TELEGRAM_AND_BROWSER_ACCEPTANCE_PER_PLAN",
+  "next_safe_action": "IMPLEMENT_LOCAL_WORKBENCH_UI_REWORK_TDD",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -444,7 +482,7 @@
   "repository": {
     "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
     "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-    "head_relation": "FEATURE_WORKTREE_BCA_PARENT_EXACT12_WSL_ACCEPTANCE_STRICT_SUCCESSOR",
+    "head_relation": "FEATURE_WORKTREE_8D043E3_START_EXACT10_DIRTY",
     "branch": "codex/c21-operational-execution",
     "upstream": "origin/codex/c21-operational-execution",
     "remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
@@ -502,6 +540,7 @@
       "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
       "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
       "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json",
@@ -537,6 +576,7 @@
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
       "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
       "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
@@ -578,6 +618,8 @@
       "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md",
       "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
       "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
       "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_INVOCATION_PROMPT.md",
@@ -622,8 +664,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "SEQ572_WSL_ACCEPTANCE_STRICT_EXACT12_DIRTY",
-    "local_head": "bcaeeacd1618461127c2387504e2535a0d54504f",
+    "worktree_status": "SEQ575_WORKBENCH_UI_LOCAL_START_EXACT10_DIRTY",
+    "local_head": "8d043e39f6066283821abe47b36fa83e5ecff8b5",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact107",
@@ -780,7 +822,7 @@
       "tests/tooling/test_project_progress.py"
     ],
     "private_atomic_push": "PASS",
-    "private_control_head": "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd",
+    "private_control_head": "8d043e39f6066283821abe47b36fa83e5ecff8b5",
     "private_candidate_head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
     "independent_judgment_successor_paths": [
       "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md",
@@ -1040,6 +1082,31 @@
       "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
+    ],
+    "workbench_ui_local_start_paths": [
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
+      "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "workbench_ui_local_product_paths": [
+      "apps/web/fixture-workbench.html",
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/ui-preview-runtime.test.mjs",
+      "apps/web/tests/workbench.test.mjs",
+      "tests/api/test_public_asgi_frontend.py",
+      "tests/browser/c21-network-probe.mjs"
     ]
   },
   "a01_precondition": {
@@ -1145,7 +1212,7 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C21_WSL_LIMITED_ACCEPTANCE_RECORDED_USER_ACTION_REMAINS"
+      "LOCAL_UI_REWORK_START"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1196,19 +1263,19 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-C-21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907-001",
-    "artifact_path": "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
-    "artifact_sha256": "5199E599F6DC1A588546D50F473E80513A10B0ADA655114839037ADD41821E06",
-    "invocation_path": "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
-    "invocation_sha256": "ECC664EC9371B7FF338FAF94849FB955FD63456BBC96E6C0FB113405CFD4FD2A",
-    "result_status": "COMPLETED",
-    "package_status": "C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_COMPLETED",
+    "artifact_id": "WI-C-21-WORKBENCH-UI-REWORK-LOCAL-20260907-001",
+    "artifact_path": "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
+    "artifact_sha256": "0334807DD480BD7B5C7C7B6036FD8C6F35FE830D19A7562DEEAD9B673C7C2398",
+    "invocation_path": "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+    "invocation_sha256": "B52EF2074E2EC3C90E36E029D92D7E105E536F8E6C872D325682AB4126B4E962",
+    "result_status": "IN_PROGRESS",
+    "package_status": "ACTIVE_WORKBENCH_UI_REWORK_LOCAL",
     "executor": "developer-primary",
     "accepted": false,
     "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
     "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE",
     "dir2_status": "NOT_TRIGGERED",
-    "runtime_next_action": "USER_OWNED_PROVIDER_TELEGRAM_AND_BROWSER_ACCEPTANCE_PER_PLAN"
+    "runtime_next_action": "IMPLEMENT_LOCAL_WORKBENCH_UI_REWORK_TDD"
   },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
@@ -1345,8 +1412,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-21",
-    "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
-    "manifest_path": "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
+    "manifest_path": "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1367,7 +1434,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "33686DD2B54C832E094F66D0662651DF27AD7A22F090B2996E8FB3C759B60FCF"
+      "sha256": "E69666D6D1990FFD44791187EFBE9F4DD5CEDEA839659F1149B7F855A3F24764"
     }
   },
   "next_work_package": {
@@ -1768,8 +1835,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "65E105C1B36C95B2EA9EC6024B63141D6C0FEF01114C5CB2027298BB5EFF2CBE",
-  "runtime_next_action": "USER_OWNED_PROVIDER_TELEGRAM_AND_BROWSER_ACCEPTANCE_PER_PLAN",
+  "snapshot_hash": "1F06354DB8DFD730E2F1785DCEC527182CAAC91E01529028C7655A9BDE47FB68",
+  "runtime_next_action": "IMPLEMENT_LOCAL_WORKBENCH_UI_REWORK_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3372,7 +3439,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-07T05:13:15.9345766Z",
+  "recorded_at": "2026-09-07T15:35:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -3439,5 +3506,15 @@
     "ysna": "NOT_VERIFIED",
     "main": "NOT_AUTHORIZED",
     "c01_start": "NOT_AUTHORIZED"
+  },
+  "workbench_ui_local": {
+    "status": "IN_PROGRESS",
+    "scope": "LOCAL_ONLY",
+    "accepted": false,
+    "provider_calls": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "main": "NOT_EXECUTED"
   }
 }

@@ -1,0 +1,1 @@
+Implement the approved LOCAL C-21 Workbench UI rework under `WI-C-21-WORKBENCH-UI-REWORK-LOCAL-20260907-001`. Preserve seq1~572 and candidate `a6dca0d`; use TDD, exact11 product paths, same-origin authenticated Provider READ and SSE/Last-Event-ID only, and do not execute excluded external scopes.

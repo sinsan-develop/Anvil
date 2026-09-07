@@ -1213,3 +1213,16 @@
 - final full 결과를 반영한 첫 재materialize 뒤 focused는 `12 tests in 16.375s`, `OK`, live checker sequence572 PASS, diff-check PASS, direct `compile()` PASS다.
 - 독립 PowerShell 재계산은 dirty exact12 count12와 cumulative155를 확인했고 Windows/ordinal hash가 각각 exact `9E8380E9F3B58C5F8C717133B0777AEA0E2DAF90CED947590DECC56C67C86B2F` / `495960755DC2C2F74DF6FB8213163FE502A3EE6DDD4F0E2692FD97D06E406536`, cumulative `4C4BF601FE76A9C24591891176470BD87E0BE85EFB060898033D741FACC6B66C` / `2CA55B9DCCE87ECBC0D7FD233D8F98E76FA8ED7E7C1BCB6C903B72EB1EE64F2D`로 계약과 일치했다.
 - 위 검증 결과를 마지막 raw7 append로 고정한 뒤 파생 P/E/H/D/M을 한 번 더 재materialize한다. 이후 실행하는 focused/live/diff/compile과 exact path/hash는 precommit 최종 증거이며 추가 evidence append 없이 commit한다.
+# 2026-09-07 C-21 Workbench UI rework local 착수
+
+- 담당: `developer-primary`; dispatch base `8d043e39f6066283821abe47b36fa83e5ecff8b5`; 상태 `START_PROJECTION_TDD`.
+- 범위: seq573~578 append-only, product exact11, LOCAL-only. Provider/Telegram 실제 호출·WSL·ysna·main·DB/schema/Secret 변경은 제외한다.
+- topology: seq573 worker lease → seq574 write lease → seq575 package start → product direct child → seq576 write revoke → seq577 worker revoke → seq578 completion.
+- TDD RED: `python -m unittest tests.tooling.test_project_progress.C21WorkbenchUiReworkLocalStartTests`는 builder/metadata 부재로 `1 failure, 1 error`, exit1. 예상된 착수 projection RED이며 제품 오류가 아니다.
+- 오류 횟수: 제품 오류 0; 절차상 RED 1(실패 집계 제외). 다음 조치: start projection builder/validator/collector를 최소 구현해 seq575 checkpoint를 결박한다.
+
+- start metadata 첫 GREEN 시도는 기존 checker의 `windows`가 CRLF가 아니라 Windows ordinal(casefold/underscore normalization) 정렬을 뜻한다는 점을 잘못 적용해 `C21_WORKBENCH_UI_LOCAL_PATH_METADATA_INVALID` 2 errors, exit1이었다. 실제 helper 결과로 고정 hash를 정정했다. 제품 오류 0, 절차 오류 1이며 같은 근본원인 반복은 아니다.
+
+- start builder focused는 `2 tests / OK`였으나 첫 live checker에서 event payload/effect 및 HANDOFF 공통 비교 필드 누락을 fail-closed로 검출했다. 기존 event contract의 flat lease payload와 repository effect, HANDOFF 공통 필드를 builder에 추가한다. 제품 오류 0, projection 계약 오류 1이며 같은 근본원인 반복은 아니다.
+
+- seq575 start projection GREEN: focused `2 tests / OK`, live checker `PASS sequence=575 reporting=AUTO_CONTINUE`, `git diff --check` exit0. exact10 start lease와 exact11 product write lease가 ACTIVE이며 다음은 제품 테스트 RED다.

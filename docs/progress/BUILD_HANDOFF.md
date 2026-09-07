@@ -1,3 +1,7 @@
+# C-21 Workbench UI rework local — seq575 Developer 착수
+
+- LOCAL-only exact11 제품 구현을 위한 worker/write lease가 ACTIVE다.
+
 # C-21 WSL acceptance strict successor — seq572 Developer 완료
 
 - WSL 선행검증 범위만 ACCEPTED_WITH_LIMITATION이며 C-21 전체 accepted는 false다.
@@ -753,21 +757,67 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 572,
-  "last_event_id": "evt_c21_wsl_acceptance_strict_package_completed",
-  "status": "C21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_COMPLETED",
+  "event_sequence": 575,
+  "last_event_id": "evt_c21_workbench_ui_local_package_started",
+  "status": "ACTIVE_WORKBENCH_UI_REWORK_LOCAL",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
-  "execution_fencing_token": null,
-  "write_fencing_token": null,
-  "active_work_instruction": "WI-C-21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-20260907-001",
-  "active_work_instruction_sha256": "5199E599F6DC1A588546D50F473E80513A10B0ADA655114839037ADD41821E06",
-  "active_invocation_sha256": "ECC664EC9371B7FF338FAF94849FB955FD63456BBC96E6C0FB113405CFD4FD2A",
-  "repository_head": "bcaeeacd1618461127c2387504e2535a0d54504f",
-  "repository_head_relation": "FEATURE_WORKTREE_BCA_PARENT_EXACT12_WSL_ACCEPTANCE_STRICT_SUCCESSOR",
+  "active_agent": "developer-primary",
+  "worker_lease": {
+    "lease_id": "worker-lease-c21-workbench-ui-local-20260907-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "WORKBENCH-UI-REWORK-LOCAL",
+    "lease_epoch": 1,
+    "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+    "fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c21-workbench-ui-local-20260907-001",
+    "worker_lease_id": "worker-lease-c21-workbench-ui-local-20260907-001",
+    "agent_id": "developer-primary",
+    "work_package_id": "C-21",
+    "subtask_id": "WORKBENCH-UI-REWORK-LOCAL",
+    "write_epoch": 1,
+    "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+    "write_fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
+    "fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
+    "status": "ACTIVE",
+    "path_scope": [
+      "apps/web/fixture-workbench.html",
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/ui-preview-runtime.test.mjs",
+      "apps/web/tests/workbench.test.mjs",
+      "tests/api/test_public_asgi_frontend.py",
+      "tests/browser/c21-network-probe.mjs"
+    ],
+    "paths": [
+      "apps/web/fixture-workbench.html",
+      "apps/web/index.html",
+      "apps/web/server.mjs",
+      "apps/web/src/api/workbench-client.js",
+      "apps/web/src/app/workbench.js",
+      "apps/web/src/features/workbench/workbench-state.js",
+      "apps/web/src/styles/workbench.css",
+      "apps/web/tests/ui-preview-runtime.test.mjs",
+      "apps/web/tests/workbench.test.mjs",
+      "tests/api/test_public_asgi_frontend.py",
+      "tests/browser/c21-network-probe.mjs"
+    ]
+  },
+  "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
+  "write_fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
+  "active_work_instruction": "WI-C-21-WORKBENCH-UI-REWORK-LOCAL-20260907-001",
+  "active_work_instruction_sha256": "0334807DD480BD7B5C7C7B6036FD8C6F35FE830D19A7562DEEAD9B673C7C2398",
+  "active_invocation_sha256": "B52EF2074E2EC3C90E36E029D92D7E105E536F8E6C872D325682AB4126B4E962",
+  "repository_head": "8d043e39f6066283821abe47b36fa83e5ecff8b5",
+  "repository_head_relation": "FEATURE_WORKTREE_8D043E3_START_EXACT10_DIRTY",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
@@ -822,6 +872,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json",
@@ -857,6 +908,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
@@ -898,6 +950,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_INVOCATION_PROMPT.md",
@@ -928,187 +982,50 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "private_development_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
-  "private_control_head": "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd",
-  "private_candidate_head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "dir_status": "CLEARED",
-  "runtime": {
-    "runtime_observed_at_status": "UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
-    "runtime_observed_at": null,
-    "runtime_observed_date": "2026-09-07",
-    "cleanup": {
-      "invocation_count": 1,
-      "internal_exit_code": 0,
-      "outer_wrapper_exit_code": 1,
-      "cleanup_status": "SUCCEEDED",
-      "wrapper_failure": "POST_CLEANUP_UNRELATED_INVENTORY_EQUALITY_ASSERTION",
-      "wrapper_failure_is_cleanup_failure": false
-    },
-    "target_cleanup": {
-      "containers": {
-        "before": 6,
-        "deleted": 6,
-        "remaining": 0
-      },
-      "networks": {
-        "before": 4,
-        "deleted": 4,
-        "remaining": 0
-      },
-      "volumes": {
-        "before": 2,
-        "deleted": 2,
-        "remaining": 0
-      }
-    },
-    "unrelated_inventory": {
-      "global_equality": false,
-      "preexisting_missing_count": 0,
-      "preexisting_changed_count": 0,
-      "concurrent_added_or_replaced_projects": [
-        "Daon2",
-        "eoul"
-      ],
-      "cleanup_boundary": "PRESERVED"
-    },
-    "application": {
-      "head": "a6dca0da5a37e64491e91813895268e78ecb78b2",
-      "head_mode": "DETACHED",
-      "clean": true,
-      "origin": "git@github-sinsan-develop:sinsan-develop/Anvil.git"
-    },
-    "control": {
-      "active_stage": "stage.3558037.6302",
-      "head": "b2ba82144fa811b4c6cf8673c4113e07ea1d5cfd",
-      "clean": true,
-      "origin": "git@github-sinsan-develop:sinsan-develop/Anvil.git"
-    },
-    "environment": {
-      "sha256": "fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a",
-      "size": 443,
-      "mode": "0600",
-      "owner": "root:root",
-      "unchanged": true
-    },
-    "markers": {
-      "pg15": {
-        "current": "324eb169fedbce958d2e8cc29362deb7af433677",
-        "previous": "324eb169fedbce958d2e8cc29362deb7af433677"
-      },
-      "pg18rc": {
-        "current": "324eb169fedbce958d2e8cc29362deb7af433677",
-        "previous": "324eb169fedbce958d2e8cc29362deb7af433677"
-      }
-    },
-    "receipts_and_evidence": {
-      "hashes_and_counts_preserved": true,
-      "exact_values_reproduced_in_record": false,
-      "reason": "PRESERVED_OPERATOR_RESULT_WITHOUT_INVENTED_VALUES"
-    },
-    "preapproval_denial": {
-      "process_created": false,
-      "mutation_count": 0
-    },
-    "observation_errors": [
-      {
-        "code": "DISTRO_SELECTION_OBSERVATION_ERROR",
-        "classification": "OBSERVATION_ERROR",
-        "valid_failure_count_increment": 0
-      },
-      {
-        "code": "POST_VERIFY_ENV_STAT_QUOTING_DAMAGE",
-        "classification": "OBSERVATION_ERROR",
-        "command_exit_code": 127,
-        "outer_block_exit_code": 0,
-        "valid_failure_count_increment": 0
-      }
-    ],
-    "external_execution": {
-      "wsl_cleanup": "EXECUTED_APPROVED",
-      "docker_cleanup": "EXECUTED_APPROVED",
-      "volume_cleanup": "EXECUTED_APPROVED",
-      "provider": "NOT_EXECUTED",
-      "telegram": "NOT_EXECUTED",
-      "separate_database": "NOT_EXECUTED",
-      "ysna": "NOT_EXECUTED",
-      "main": "NOT_EXECUTED",
-      "push": "NOT_EXECUTED"
-    }
-  },
-  "wsl_acceptance": {
-    "acceptance_scope": "C21_WSL",
-    "wsl_acceptance_status": "ACCEPTED_WITH_LIMITATION",
-    "accepted": false,
-    "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
-    "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
-    "dir2_status": "NOT_TRIGGERED"
-  },
-  "independent_tester": {
-    "source": "INDEPENDENT_TESTER_AGENT_REPORT",
-    "repository_artifact": "ABSENT",
-    "verdict": "ACCEPTED_WITH_LIMITATION",
-    "scope": "C21_WSL",
-    "findings": {
-      "critical": 0,
-      "important": 0,
-      "minor": 2
-    }
-  },
-  "open_limitations": [
-    {
-      "code": "PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
-      "status": "OPEN",
-      "detail": "PRIMARY_WRAPPER_ENV_ARGV_FULLTEXT_MISSING"
-    },
-    {
-      "code": "EXACT_RUNTIME_OBSERVED_TIMESTAMP_UNAVAILABLE",
-      "status": "OPEN",
-      "detail": "RUNTIME_OBSERVED_AT_NULL_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION"
-    },
-    {
-      "code": "RECEIPT_ORIGINALS_AND_PATHS_NOT_INDEPENDENTLY_INSPECTED",
-      "status": "OPEN",
-      "detail": "RECORDED_HASHES_AND_COUNTS_ONLY"
-    },
-    {
-      "code": "SAME_ORIGIN_HTTP_INGRESS_NOT_BROWSER_NETWORK_ACCEPTANCE",
-      "status": "OPEN",
-      "detail": "CURL_HTTP_INGRESS_ONLY"
-    }
-  ],
-  "verification_boundaries": {
-    "provider": "NOT_VERIFIED",
-    "telegram": "NOT_VERIFIED",
-    "browser_network": "NOT_VERIFIED",
-    "ysna": "NOT_VERIFIED",
-    "main": "NOT_AUTHORIZED",
-    "c01_start": "NOT_AUTHORIZED"
-  },
-  "recorded_at": "2026-09-07T05:13:15.9345766Z",
-  "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
-  "next_safe_action": "USER_OWNED_PROVIDER_TELEGRAM_AND_BROWSER_ACCEPTANCE_PER_PLAN",
-  "runtime_next_action": "USER_OWNED_PROVIDER_TELEGRAM_AND_BROWSER_ACCEPTANCE_PER_PLAN",
   "reporting_decision": "AUTO_CONTINUE",
-  "developer_exact_paths": [
-    "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md",
+  "candidate_commit": "a6dca0da5a37e64491e91813895268e78ecb78b2",
+  "scope": "LOCAL_ONLY",
+  "accepted": false,
+  "c21_status": "BLOCKED_NOT_ACCEPTED",
+  "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+  "dir2_status": "NOT_TRIGGERED",
+  "external_execution": "NOT_EXECUTED",
+  "next_safe_action": "IMPLEMENT_LOCAL_WORKBENCH_UI_REWORK_TDD",
+  "start_exact_paths": [
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
-    "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md",
-    "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
+    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "developer_exact_path_count": 12,
-  "developer_exact_path_list_sha256": "9E8380E9F3B58C5F8C717133B0777AEA0E2DAF90CED947590DECC56C67C86B2F",
-  "developer_exact_path_list_ordinal_sha256": "495960755DC2C2F74DF6FB8213163FE502A3EE6DDD4F0E2692FD97D06E406536",
-  "cumulative_exact_paths": [
+  "start_exact_path_count": 10,
+  "start_exact_path_list_sha256": "CFBA74FE970ADD24C512890616C8CAFBB269DF5AFE81A40AEBAB2A01D3F150D6",
+  "start_exact_path_list_ordinal_sha256": "55D95E1B9A238A03C6D7CD3E47B3F75BE5DD373D68E782747F6B79CAD785338A",
+  "product_exact_paths": [
+    "apps/web/fixture-workbench.html",
+    "apps/web/index.html",
+    "apps/web/server.mjs",
+    "apps/web/src/api/workbench-client.js",
+    "apps/web/src/app/workbench.js",
+    "apps/web/src/features/workbench/workbench-state.js",
+    "apps/web/src/styles/workbench.css",
+    "apps/web/tests/ui-preview-runtime.test.mjs",
+    "apps/web/tests/workbench.test.mjs",
+    "tests/api/test_public_asgi_frontend.py",
+    "tests/browser/c21-network-probe.mjs"
+  ],
+  "product_exact_path_count": 11,
+  "product_exact_path_list_sha256": "3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF",
+  "product_exact_path_list_ordinal_sha256": "3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF",
+  "cumulative_start_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
     "deploy/wsl/bootstrap.sh",
@@ -1159,6 +1076,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CLEANUP_RUNTIME_RESULT_MANIFEST.json",
@@ -1194,6 +1112,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
@@ -1235,6 +1154,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_INVOCATION_PROMPT.md",
@@ -1265,15 +1186,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "cumulative_exact_path_count": 155,
-  "cumulative_exact_path_list_sha256": "4C4BF601FE76A9C24591891176470BD87E0BE85EFB060898033D741FACC6B66C",
-  "cumulative_exact_path_list_ordinal_sha256": "2CA55B9DCCE87ECBC0D7FD233D8F98E76FA8ED7E7C1BCB6C903B72EB1EE64F2D",
-  "accepted": false,
-  "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
-  "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
-  "dir2_status": "NOT_TRIGGERED",
-  "commit": "PENDING_DIRECT_CHILD_RECORD_COMMIT",
-  "push": "NOT_EXECUTED"
+  "cumulative_start_path_count": 159,
+  "cumulative_start_path_list_sha256": "9F597E2977C2133988D895A815E97620C634CB78FCF31DD6D3BAE71A16DB259B",
+  "cumulative_start_path_list_ordinal_sha256": "AD8B3AE3DE78C356B3BB8596622C2F35549F1A73FA41A2AC52328A567B3B77A1"
 }
 ```
 
