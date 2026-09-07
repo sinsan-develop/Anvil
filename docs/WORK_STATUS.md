@@ -1226,3 +1226,22 @@
 - start builder focused는 `2 tests / OK`였으나 첫 live checker에서 event payload/effect 및 HANDOFF 공통 비교 필드 누락을 fail-closed로 검출했다. 기존 event contract의 flat lease payload와 repository effect, HANDOFF 공통 필드를 builder에 추가한다. 제품 오류 0, projection 계약 오류 1이며 같은 근본원인 반복은 아니다.
 
 - seq575 start projection GREEN: focused `2 tests / OK`, live checker `PASS sequence=575 reporting=AUTO_CONTINUE`, `git diff --check` exit0. exact10 start lease와 exact11 product write lease가 ACTIVE이며 다음은 제품 테스트 RED다.
+
+## 2026-09-07 C-21 Workbench UI rework local 제품 구현
+
+- 담당: `developer-primary`; 제품 commit `7eb2cc291bda729e21deebbed86376eac4db7c2b`; parent start checkpoint `72139df2f8cd3c16e1c7c08b26686f675400a2c9`; exact11/path hash `3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF`.
+- TDD RED: Node는 production marker/exports 부재로 실패했고 ASGI는 production root marker 부재로 실패했다. Chromium `--workbench-self-test`는 기능 부재로 required arguments 오류를 반환했다. 모두 승인 범위 기능 부재를 먼저 확인한 예상 RED다.
+- GREEN: web 전체 `19/19`, API+agent_team 표준 범위 `193/193`, 신규 실제 headless Chromium 클릭/Network, 기존 SSE self-test와 cross-origin rejection, `git diff --check`, production browser secret/internal-host scan을 통과했다.
+- Chromium은 `/api/providers` → UPSTAGE detail/models → GROQ 클릭 → authenticated SSE 2회 흐름을 실제 클릭했다. 요청은 모두 same-origin GET이고 두 번째 SSE에만 `Last-Event-ID: event-ui-1`이 있었다. 설정/연결 테스트/model refresh 버튼 3개는 disabled이며 POST와 fixture API 요청은 없었다.
+- 전체 `pytest -q`는 exit2로 PASS가 아니다. 기존 collection 오류 7건: PyYAML 미설치 1, 중복 `test_models`/`test_repository` import mismatch 3, fixture `src` import 부재 3. 제품 변경과 직접 관련된 표준 분리 suite는 위와 같이 PASS했다.
+- 오류 원장: Python PATH 명령 부재 1회와 bundled Python의 pytest 부재 1회는 환경 실행 오류다. Chromium disabled button selector ID 부재 1회는 probe assertion 보완 오류이며 실제 버튼은 disabled였다. seq575 checker의 제품 commit 직후 `GIT_DESCENDANT_PATH_SET_MISMATCH` 1회는 start-only predicate가 제품 direct child를 아직 허용하지 않은 lifecycle 공백이다. 유효 제품 실패 0, 동일 근본 원인 3회 없음.
+- 제외/미검증: 실제 Provider/Telegram 호출, WSL, ysna, main, DB/schema/Secret 변경과 push는 `NOT_EXECUTED`. 다음은 seq576~578 결과 projection과 독립 Tester 검토다.
+
+## 2026-09-07 C-21 Workbench UI rework local full tooling 판정
+
+- canonical full tooling은 `583 tests in 1136.972s`, `FAILED (failures=19)`, exit1이다. PASS 또는 미검증으로 승격하지 않는다.
+- root-cause 분류: A-13 current-root temporal coupling 7, A-14 accepted artifact checksum/current-root coupling 2, G-07 historical authority/current-root coupling 3, Phase G Gate historical baseline/current-root coupling 4, progress historical projection/current-root coupling 2, seq578 validated-base collector fail-open 1이다.
+- seq578 collector 1건은 declared `validated_base_commit`이 canonical exact base와 일치하고 현재 HEAD의 ancestor인지 먼저 확인하도록 최소 수정했다. 해당 mutation test를 targeted GREEN으로 재검증한다.
+- 나머지 18건은 UI 제품 동작 실패가 아니지만 이번 변경으로 드러난 회귀다. 기존 seq1~572와 historical evidence를 변경하지 않고 별도 historical-fixture reconciliation package에서 immutable commit/file-view fixture로 수정한다. 현재 exact10 lease 밖의 과거 테스트 4개 파일은 이 package에서 수정하지 않았다.
+- 따라서 이 package는 `COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION`으로 닫고 write/worker lease를 회수한다. 독립 Tester는 reconciliation 완료 전 `BLOCKED_PENDING_TOOLING_RECONCILIATION`이다. 다음 안전 조치는 `C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION`이다.
+- collector 보완 후 focused result 계약은 `3 tests in 3.461s`, `OK`, exit0이다. 이어 start+result projection `5 tests in 2.598s`, `OK`, live checker `PASS sequence=578 reporting=AUTO_CONTINUE`, `git diff --check` exit0을 확인했다. exact10 밖 A-13/A-14/G-07/Phase G 테스트 파일 diff는 0이다.

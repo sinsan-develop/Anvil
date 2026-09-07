@@ -8723,5 +8723,54 @@ class C21WorkbenchUiReworkLocalStartTests(unittest.TestCase):
             self.assertTrue(checker.validate_c21_workbench_ui_local_start_manifest(changed), key)
 
 
+class C21WorkbenchUiReworkLocalResultTests(unittest.TestCase):
+    def test_seq578_git_collector_rejects_mutated_declared_base(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 578, "repository": {"validated_base_commit": "0" * 40}}}
+        values = {
+            ("rev-parse", "HEAD"): checker.C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): " M docs/WORK_STATUS.md",
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): checker.C21_WORKBENCH_UI_LOCAL_PRIVATE_URL,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_WORKBENCH_UI_LOCAL_PARENT,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): checker.C21_WORKBENCH_UI_LOCAL_CANDIDATE,
+        }
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual(["GIT_VALIDATED_BASE_NOT_ANCESTOR"], checker._collect_c21_workbench_ui_local_result_git(bundle))
+
+    def test_seq578_builder_preserves_seq575_and_closes_leases(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_local_result_artifacts"))
+        artifacts = checker.c21_workbench_ui_local_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E])["events"]
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT}:{checker.C21_WORKBENCH_UI_LOCAL_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 575), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E], 575))
+        self.assertEqual([576, 577, 578], [row["sequence"] for row in events[-3:]])
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events[-3:]])
+        self.assertEqual("COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", progress["status"])
+        self.assertEqual("REVOKED", progress["worker_lease"]["status"])
+        self.assertEqual("REVOKED", progress["write_lease"]["status"])
+        self.assertEqual("BLOCKED_PENDING_TOOLING_RECONCILIATION", progress["workbench_ui_local"]["independent_tester_status"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_execution"])
+
+    def test_seq578_metadata_and_manifest_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_local_result_metadata()
+        self.assertEqual(10, metadata["result_exact_path_count"])
+        self.assertEqual("8177130298C0103FF92935009FFC230F1AC1FC5A9F7651D3AEB40D16E67A8D80", metadata["result_exact_path_list_sha256"])
+        self.assertEqual(173, metadata["cumulative_result_path_count"])
+        self.assertEqual("708CE3F98FFAC1139D6A5F0CD5BCA96DCE0859B9DE6C3A7248906961BB428B9C", metadata["cumulative_result_path_list_sha256"])
+        artifacts = checker.c21_workbench_ui_local_result_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_RESULT_M])
+        self.assertEqual([], checker.validate_c21_workbench_ui_local_result_manifest(manifest))
+        for key, value in (("accepted", True), ("external_execution", "PASS"), ("product_commit", "0" * 40)):
+            changed = copy.deepcopy(manifest); changed[key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_local_result_manifest(changed), key)
+
+
 if __name__ == "__main__":
     unittest.main()

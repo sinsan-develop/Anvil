@@ -1,3 +1,7 @@
+# C-21 Workbench UI rework local — seq578 Developer 로컬 구현 종료
+
+- LOCAL 구현은 완료됐지만 full tooling의 historical temporal-fixture 회귀 18건을 별도 reconciliation package에서 해소하기 전 독립 Tester 검토로 승격하지 않는다.
+
 # C-21 Workbench UI rework local — seq575 Developer 착수
 
 - LOCAL-only exact11 제품 구현을 위한 worker/write lease가 ACTIVE다.
@@ -757,12 +761,12 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 575,
-  "last_event_id": "evt_c21_workbench_ui_local_package_started",
-  "status": "ACTIVE_WORKBENCH_UI_REWORK_LOCAL",
+  "event_sequence": 578,
+  "last_event_id": "evt_c21_workbench_ui_local_package_completed",
+  "status": "COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION",
   "current_phase": "C",
   "current_work_package": "C-21",
-  "active_agent": "developer-primary",
+  "active_agent": null,
   "worker_lease": {
     "lease_id": "worker-lease-c21-workbench-ui-local-20260907-001",
     "agent_id": "developer-primary",
@@ -771,7 +775,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "lease_epoch": 1,
     "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
     "fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
-    "status": "ACTIVE"
+    "status": "REVOKED"
   },
   "write_lease": {
     "lease_id": "write-lease-c21-workbench-ui-local-20260907-001",
@@ -783,7 +787,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "execution_fencing_token": "c21-workbench-ui-local-execution-fence-epoch-1-8d043e3",
     "write_fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
     "fencing_token": "c21-workbench-ui-local-write-fence-epoch-1-8d043e3",
-    "status": "ACTIVE",
+    "status": "REVOKED",
     "path_scope": [
       "apps/web/fixture-workbench.html",
       "apps/web/index.html",
@@ -816,12 +820,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "active_work_instruction": "WI-C-21-WORKBENCH-UI-REWORK-LOCAL-20260907-001",
   "active_work_instruction_sha256": "0334807DD480BD7B5C7C7B6036FD8C6F35FE830D19A7562DEEAD9B673C7C2398",
   "active_invocation_sha256": "B52EF2074E2EC3C90E36E029D92D7E105E536F8E6C872D325682AB4126B4E962",
-  "repository_head": "8d043e39f6066283821abe47b36fa83e5ecff8b5",
-  "repository_head_relation": "FEATURE_WORKTREE_8D043E3_START_EXACT10_DIRTY",
+  "repository_head": "7eb2cc291bda729e21deebbed86376eac4db7c2b",
+  "repository_head_relation": "FEATURE_WORKTREE_7EB2CC2_RESULT_EXACT10_DIRTY",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
   "repository_exact_allowed_paths": [
+    "apps/web/fixture-workbench.html",
+    "apps/web/index.html",
+    "apps/web/server.mjs",
+    "apps/web/src/api/workbench-client.js",
+    "apps/web/src/app/workbench.js",
+    "apps/web/src/features/workbench/workbench-state.js",
+    "apps/web/src/styles/workbench.css",
+    "apps/web/tests/ui-preview-runtime.test.mjs",
+    "apps/web/tests/workbench.test.mjs",
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
     "deploy/wsl/bootstrap.sh",
@@ -845,6 +858,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_PROVIDER_WSL_EXACT_BINDING_REPORT.md",
     "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md",
     "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
+    "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md",
     "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md",
     "docs/04_test_reports/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_REPORT.md",
     "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md",
@@ -872,6 +886,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
@@ -909,6 +924,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
@@ -930,6 +946,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+    "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
     "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md",
     "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
     "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
@@ -975,6 +992,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/api/test_c21_telegram_outbound_free_qa.py",
     "tests/api/test_local_session.py",
     "tests/api/test_provider_status.py",
+    "tests/api/test_public_asgi_frontend.py",
     "tests/api/test_registry_openapi.py",
     "tests/api/test_runtime_app.py",
     "tests/browser/c21-network-probe.mjs",
@@ -993,23 +1011,23 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
   "dir2_status": "NOT_TRIGGERED",
   "external_execution": "NOT_EXECUTED",
-  "next_safe_action": "IMPLEMENT_LOCAL_WORKBENCH_UI_REWORK_TDD",
-  "start_exact_paths": [
+  "next_safe_action": "C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION",
+  "result_exact_paths": [
+    "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
-    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_WORKBENCH_UI_REWORK_LOCAL_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json",
+    "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "start_exact_path_count": 10,
-  "start_exact_path_list_sha256": "CFBA74FE970ADD24C512890616C8CAFBB269DF5AFE81A40AEBAB2A01D3F150D6",
-  "start_exact_path_list_ordinal_sha256": "55D95E1B9A238A03C6D7CD3E47B3F75BE5DD373D68E782747F6B79CAD785338A",
-  "product_exact_paths": [
+  "result_exact_path_count": 10,
+  "result_exact_path_list_sha256": "8177130298C0103FF92935009FFC230F1AC1FC5A9F7651D3AEB40D16E67A8D80",
+  "result_exact_path_list_ordinal_sha256": "121C19093B2F3B8099A0F75A04F4705FCF99315BF119563D7F488FE6C3029D70",
+  "cumulative_result_paths": [
     "apps/web/fixture-workbench.html",
     "apps/web/index.html",
     "apps/web/server.mjs",
@@ -1019,13 +1037,6 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "apps/web/src/styles/workbench.css",
     "apps/web/tests/ui-preview-runtime.test.mjs",
     "apps/web/tests/workbench.test.mjs",
-    "tests/api/test_public_asgi_frontend.py",
-    "tests/browser/c21-network-probe.mjs"
-  ],
-  "product_exact_path_count": 11,
-  "product_exact_path_list_sha256": "3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF",
-  "product_exact_path_list_ordinal_sha256": "3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF",
-  "cumulative_start_paths": [
     "deploy/wsl/CandidateReleaseManifest.json",
     "deploy/wsl/Dockerfile.web",
     "deploy/wsl/bootstrap.sh",
@@ -1049,6 +1060,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_PROVIDER_WSL_EXACT_BINDING_REPORT.md",
     "docs/04_test_reports/C-21_PROVIDER_WSL_EXECUTION_RESUME_REPORT.md",
     "docs/04_test_reports/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_REPORT.md",
+    "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md",
     "docs/04_test_reports/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_REPORT.md",
     "docs/04_test_reports/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_REPORT.md",
     "docs/04_test_reports/C-21_WSL_CLEANUP_RUNTIME_RESULT_REPORT.md",
@@ -1076,6 +1088,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json",
     "docs/evidence/manifests/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_MANIFEST.json",
@@ -1113,6 +1126,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate.json",
     "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-verify-scope-correction.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local-start.json",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-acceptance-strict-successor.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-guard-source-r1.json",
     "docs/progress/progress-handoff-detached-digest-c21-wsl-cleanup-runtime-result.json",
@@ -1134,6 +1148,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/validation/C-21_PROVIDER_WSL_EXACT_BINDING_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_EXECUTION_RESUME_VALIDATION.md",
     "docs/validation/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_VALIDATION.md",
+    "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
     "docs/validation/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_VALIDATION.md",
     "docs/validation/C-21_WSL_CLEANUP_GUARD_SOURCE_R1_VALIDATION.md",
     "docs/validation/C-21_WSL_CLEANUP_RUNTIME_RESULT_VALIDATION.md",
@@ -1179,6 +1194,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/api/test_c21_telegram_outbound_free_qa.py",
     "tests/api/test_local_session.py",
     "tests/api/test_provider_status.py",
+    "tests/api/test_public_asgi_frontend.py",
     "tests/api/test_registry_openapi.py",
     "tests/api/test_runtime_app.py",
     "tests/browser/c21-network-probe.mjs",
@@ -1186,9 +1202,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/deploy/test_wsl_staging_harness.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "cumulative_start_path_count": 159,
-  "cumulative_start_path_list_sha256": "9F597E2977C2133988D895A815E97620C634CB78FCF31DD6D3BAE71A16DB259B",
-  "cumulative_start_path_list_ordinal_sha256": "AD8B3AE3DE78C356B3BB8596622C2F35549F1A73FA41A2AC52328A567B3B77A1"
+  "cumulative_result_path_count": 173,
+  "cumulative_result_path_list_sha256": "708CE3F98FFAC1139D6A5F0CD5BCA96DCE0859B9DE6C3A7248906961BB428B9C",
+  "cumulative_result_path_list_ordinal_sha256": "3D14FD6339839E6CFAA6F798E0188C1CC0F557F70247E4168E9AEA5768AE43FD"
 }
 ```
 

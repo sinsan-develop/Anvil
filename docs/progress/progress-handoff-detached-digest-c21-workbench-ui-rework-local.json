@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WORKBENCH-UI-REWORK-LOCAL-RESULT-DIGEST-20260907",
+  "package_id": "C-21",
+  "event_sequence": 578,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-07T17:00:00+09:00",
+  "scope": "seq576-578 append-only; seq1-575 preserved; product exact11; result exact10",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 187356,
+    "file_sha256": "3B03BDF42B9B645A186845D2EBC48794DD0E025FC71C9B4C1BFD21DEA60A6556",
+    "canonical_json_sha256": "A36FE02C52692BE31C65CA7432F0F6DF75A67EFAD781E3D8AD40D02BEB10811C"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 204100,
+    "file_sha256": "7CAF3992E06112689BC5D95FB329971370820619D161DF41EED6B783B0CEE642",
+    "machine_summary_canonical_sha256": "BD6486377A0121F8430CFE06C54A96D3448F6C424274BD55FDEBDD096FC7C1E1"
+  }
+}

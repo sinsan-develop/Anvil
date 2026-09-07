@@ -12788,6 +12788,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 578:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_workbench_ui_local_result_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 575:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13672,6 +13676,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_cleanup_runtime_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WSL_ACCEPTANCE_STRICT_SUCCESSOR_MANIFEST.json":
             errors.extend(validate_c21_wsl_acceptance_strict_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json":
+            errors.extend(validate_c21_workbench_ui_local_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_local_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_PROVIDER_WSL_VERIFY_SCOPE_CORRECTION_MANIFEST.json":
@@ -19180,6 +19186,129 @@ def _collect_c21_workbench_ui_local_start_git(bundle: Mapping[str, Any]) -> list
         parents = (_git_value(root, "show", "-s", "--format=%P", head) or "").split()
         return [] if not dirty and parents == [C21_WORKBENCH_UI_LOCAL_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
     except (OSError, ValueError, TypeError, KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT = "7eb2cc291bda729e21deebbed86376eac4db7c2b"
+C21_WORKBENCH_UI_LOCAL_RESULT_AT = "2026-09-07T17:00:00+09:00"
+C21_WORKBENCH_UI_LOCAL_RESULT_M = "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json"
+C21_WORKBENCH_UI_LOCAL_RESULT_D = "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-rework-local.json"
+
+
+def c21_workbench_ui_local_result_paths() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-21_WORKBENCH_UI_REWORK_LOCAL_REPORT.md", "docs/WORK_STATUS.md",
+        C21_WORKBENCH_UI_LOCAL_RESULT_M, C21_WORKBENCH_UI_LOCAL_H, C21_WORKBENCH_UI_LOCAL_P,
+        C21_WORKBENCH_UI_LOCAL_E, C21_WORKBENCH_UI_LOCAL_RESULT_D,
+        "docs/validation/C-21_WORKBENCH_UI_REWORK_LOCAL_VALIDATION.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c21_workbench_ui_local_result_metadata() -> dict[str, Any]:
+    exact = c21_workbench_ui_local_result_paths()
+    cumulative = sorted(set(c21_workbench_ui_local_metadata()["cumulative_start_paths"]) | set(c21_workbench_ui_local_product_paths()) | set(exact))
+    result = {
+        "result_exact_paths": exact, "result_exact_path_count": len(exact),
+        "result_exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "result_exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_result_paths": cumulative, "cumulative_result_path_count": len(cumulative),
+        "cumulative_result_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_result_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = (10, "8177130298C0103FF92935009FFC230F1AC1FC5A9F7651D3AEB40D16E67A8D80", 173, "708CE3F98FFAC1139D6A5F0CD5BCA96DCE0859B9DE6C3A7248906961BB428B9C")
+    actual = (result["result_exact_path_count"], result["result_exact_path_list_sha256"], result["cumulative_result_path_count"], result["cumulative_result_path_list_sha256"])
+    if actual != expected: raise ValueError("C21_WORKBENCH_UI_LOCAL_RESULT_PATH_METADATA_INVALID")
+    return result
+
+
+def _c21_workbench_ui_local_result_events() -> list[dict[str, Any]]:
+    worker, write = _c21_workbench_ui_local_leases(); worker = {**worker, "status": "REVOKED"}; write = {**write, "status": "REVOKED"}
+    common = {"occurred_at": C21_WORKBENCH_UI_LOCAL_RESULT_AT, "actor_type": "AGENT", "actor_id": "developer-primary", "project_id": "anvil", "run_id": None, "work_package_id": "C-21", "step_id": "WORKBENCH-UI-REWORK-LOCAL", "actor": "developer-primary", "subject_ref": "C-21/WORKBENCH-UI-REWORK-LOCAL"}
+    boundary = {"accepted": False, "c21_status": "BLOCKED_NOT_ACCEPTED", "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED", "external_execution": "NOT_EXECUTED", "candidate_commit": C21_WORKBENCH_UI_LOCAL_CANDIDATE}
+    metadata = c21_workbench_ui_local_result_metadata()
+    return [
+        {**common, "event_id": "evt_c21_workbench_ui_local_write_lease_revoked", "sequence": 576, "event_type": "WRITE_LEASE_REVOKED", "details": {**boundary, **write, "reason": "RESULT_HANDOFF", "path_count": 11, "path_list_sha256": c21_workbench_ui_local_metadata()["product_exact_path_list_sha256"], "work_instruction_id": C21_WORKBENCH_UI_LOCAL_WI_ID}},
+        {**common, "event_id": "evt_c21_workbench_ui_local_worker_lease_revoked", "sequence": 577, "event_type": "WORKER_LEASE_REVOKED", "details": {**boundary, **worker, "reason": "RESULT_HANDOFF", "work_instruction_id": C21_WORKBENCH_UI_LOCAL_WI_ID}},
+        {**common, "event_id": "evt_c21_workbench_ui_local_package_completed", "sequence": 578, "event_type": "PACKAGE_COMPLETED", "details": {**boundary, "work_instruction_id": C21_WORKBENCH_UI_LOCAL_WI_ID, "completion_head": C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "completion_upstream_head": "ca92b7845eda803cff3c432799642e4f9243d4d6", "product_commit": C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "projection_mode": VALIDATED_BASE_PROJECTION_MODE, "validated_base_commit": C21_EXACT_BINDING_BASE, "head_relation": "FEATURE_WORKTREE_7EB2CC2_RESULT_EXACT10_DIRTY", "exact_allowed_paths": metadata["cumulative_result_paths"], "result_status": "COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "package_status": "COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "independent_tester_status": "BLOCKED_PENDING_TOOLING_RECONCILIATION", "next_action": "C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION"}},
+    ]
+
+
+def c21_workbench_ui_local_result_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes], product: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {C21_WORKBENCH_UI_LOCAL_P, C21_WORKBENCH_UI_LOCAL_E, C21_WORKBENCH_UI_LOCAL_H, C21_WORKBENCH_UI_LOCAL_RESULT_D, C21_WORKBENCH_UI_LOCAL_RESULT_M}
+    if set(files) != set(c21_workbench_ui_local_result_paths()) - generated: raise ValueError("C21_WORKBENCH_UI_LOCAL_RESULT_FILE_SET_INVALID")
+    if set(product) != set(c21_workbench_ui_local_product_paths()): raise ValueError("C21_WORKBENCH_UI_LOCAL_PRODUCT_FILE_SET_INVALID")
+    source = _c21_resume_json(historical[C21_WORKBENCH_UI_LOCAL_P]); events = _c21_resume_json(historical[C21_WORKBENCH_UI_LOCAL_E])["events"]
+    if source.get("event_sequence") != 575 or [row.get("sequence") for row in events[-3:]] != [573,574,575]: raise ValueError("C21_WORKBENCH_UI_LOCAL_RESULT_HISTORY_INVALID")
+    additions = _c21_workbench_ui_local_result_events(); old_events = historical[C21_WORKBENCH_UI_LOCAL_E]
+    prefix = raw_event_object_prefix_bytes(old_events, 575); start = old_events.index(prefix); head = old_events[:start]; tail = old_events[start + len(prefix):]
+    appended = b"".join(b",\n" + "\n".join("    " + line for line in json.dumps(event, ensure_ascii=False, indent=2, allow_nan=False).splitlines()).encode() for event in additions)
+    events_raw = head.replace(b'"last_sequence": 575', b'"last_sequence": 578', 1) + prefix + appended + tail.replace(b'evt_c21_workbench_ui_local_package_started', b'evt_c21_workbench_ui_local_package_completed', 1)
+    metadata = c21_workbench_ui_local_result_metadata(); worker, write = _c21_workbench_ui_local_leases(); worker = {**worker, "status":"REVOKED"}; write = {**write, "status":"REVOKED"}
+    instruction = dict(source["active_work_instruction"]); instruction.update({"result_status":"COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "package_status":"COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "independent_tester_status":"BLOCKED_PENDING_TOOLING_RECONCILIATION", "runtime_next_action":"C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION"})
+    progress = dict(source); repository = dict(progress["repository"])
+    repository.update({"local_head":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "head_relation":"FEATURE_WORKTREE_7EB2CC2_RESULT_EXACT10_DIRTY", "worktree_status":"SEQ578_WORKBENCH_UI_LOCAL_RESULT_EXACT10_DIRTY", "exact_allowed_paths":metadata["cumulative_result_paths"], "workbench_ui_local_result_paths":metadata["result_exact_paths"], "product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "push_status":"NOT_EXECUTED"})
+    progress.update({"updated_at":C21_WORKBENCH_UI_LOCAL_RESULT_AT, "recorded_at":C21_WORKBENCH_UI_LOCAL_RESULT_AT, "event_sequence":578, "last_event_id":additions[-1]["event_id"], "status":"COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "active_agent":None, "worker_lease":worker, "write_lease":write, "active_work_instruction":instruction, "repository":repository, "workbench_ui_local":{"status":"COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "scope":"LOCAL_ONLY", "accepted":False, "independent_tester_status":"BLOCKED_PENDING_TOOLING_RECONCILIATION", "product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "provider_calls":"NOT_EXECUTED", "telegram":"NOT_EXECUTED", "wsl":"NOT_EXECUTED", "ysna":"NOT_EXECUTED", "main":"NOT_EXECUTED"}, "runtime_next_action":"C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION", "next_safe_action":"C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION", "current_progress_evidence_ref":{"package_id":"C-21", "path":C21_WORKBENCH_UI_LOCAL_RESULT_D, "manifest_path":C21_WORKBENCH_UI_LOCAL_RESULT_M}, "latest_evidence_manifest_ref":{"path":C21_WORKBENCH_UI_LOCAL_RESULT_M, "artifact_id":"C21-WORKBENCH-UI-REWORK-LOCAL-RESULT-20260907"}, "reporting_decision":{"decision":"AUTO_CONTINUE", "reason_codes":["LOCAL_UI_REWORK_COMPLETED_PENDING_TOOLING_RECONCILIATION"], "stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"] = {"path":C21_WORKBENCH_UI_LOCAL_E, "sha256":_c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path":path,"sha256":_c21_resume_sha(raw)} for path,raw in sorted({**files,C21_WORKBENCH_UI_LOCAL_E:events_raw}.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress); progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {"event_sequence":578, "last_event_id":additions[-1]["event_id"], "status":"COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "current_phase":"C", "current_work_package":"C-21", "active_agent":None, "worker_lease":worker, "write_lease":write, "execution_fencing_token":worker["execution_fencing_token"], "write_fencing_token":write["write_fencing_token"], "active_work_instruction":C21_WORKBENCH_UI_LOCAL_WI_ID, "active_work_instruction_sha256":instruction["artifact_sha256"], "active_invocation_sha256":instruction["invocation_sha256"], "repository_head":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "repository_head_relation":repository["head_relation"], "repository_upstream":repository["upstream"], "repository_projection_mode":repository["projection_mode"], "repository_validated_base_commit":repository["validated_base_commit"], "repository_exact_allowed_paths":metadata["cumulative_result_paths"], "design_baseline_hash":source["design_baseline_hash"], "valid_failure_count":source["valid_failure_count"], "dir_status":source["dir_review"]["status"], "reporting_decision":"AUTO_CONTINUE", "candidate_commit":C21_WORKBENCH_UI_LOCAL_CANDIDATE, "scope":"LOCAL_ONLY", "accepted":False, "c21_status":"BLOCKED_NOT_ACCEPTED", "c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status":"NOT_TRIGGERED", "external_execution":"NOT_EXECUTED", "next_safe_action":"C21_WORKBENCH_UI_HISTORICAL_FIXTURE_RECONCILIATION", **metadata}
+    htext = "# C-21 Workbench UI rework local — seq578 Developer 로컬 구현 종료\n\n- LOCAL 구현은 완료됐지만 full tooling의 historical temporal-fixture 회귀 18건을 별도 reconciliation package에서 해소하기 전 독립 Tester 검토로 승격하지 않는다.\n\n" + historical[C21_WORKBENCH_UI_LOCAL_H].decode()
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"; htext,count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count != 1: raise ValueError("C21_WORKBENCH_UI_LOCAL_RESULT_HANDOFF_INVALID")
+    handoff_raw = htext.encode(); digest = {"schema_version":"1.0.0", "digest_id":"C21-WORKBENCH-UI-REWORK-LOCAL-RESULT-DIGEST-20260907", "package_id":"C-21", "event_sequence":578, "algorithm":"SHA-256", "created_at":C21_WORKBENCH_UI_LOCAL_RESULT_AT, "scope":"seq576-578 append-only; seq1-575 preserved; product exact11; result exact10", "self_reference":False, "progress":{"path":C21_WORKBENCH_UI_LOCAL_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))}, "handoff":{"path":C21_WORKBENCH_UI_LOCAL_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest); prior = {**files,C21_WORKBENCH_UI_LOCAL_E:events_raw,C21_WORKBENCH_UI_LOCAL_P:progress_raw,C21_WORKBENCH_UI_LOCAL_H:handoff_raw,C21_WORKBENCH_UI_LOCAL_RESULT_D:digest_raw}
+    manifest = {"schema_version":"1.0.0", "manifest_type":"C21_WORKBENCH_UI_REWORK_LOCAL_RESULT_PROJECTION", "artifact_id":"C21-WORKBENCH-UI-REWORK-LOCAL-RESULT-20260907", "created_at":C21_WORKBENCH_UI_LOCAL_RESULT_AT, "event_sequence":578, "appended_event_count":3, "historical_event_sequence":575, "historical_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT, "candidate_commit":C21_WORKBENCH_UI_LOCAL_CANDIDATE, "execution_authority_path":C21_WORKBENCH_UI_LOCAL_WI, "execution_authority_sha256":instruction["artifact_sha256"], "work_instruction_id":C21_WORKBENCH_UI_LOCAL_WI_ID, "status":"COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", "accepted":False, "c21_status":"BLOCKED_NOT_ACCEPTED", "c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status":"NOT_TRIGGERED", "external_execution":"NOT_EXECUTED", "independent_tester_status":"BLOCKED_PENDING_TOOLING_RECONCILIATION", "self_reference":False, **metadata}
+    manifest["product_checksums"] = [{"path":path,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for path,raw in sorted(product.items())]
+    manifest["raw_checksums"] = [{"path":path,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for path,raw in sorted(prior.items())]
+    if validate_c21_workbench_ui_local_result_manifest(manifest): raise ValueError("C21_WORKBENCH_UI_LOCAL_RESULT_MANIFEST_INVALID")
+    return {C21_WORKBENCH_UI_LOCAL_E:events_raw,C21_WORKBENCH_UI_LOCAL_P:progress_raw,C21_WORKBENCH_UI_LOCAL_H:handoff_raw,C21_WORKBENCH_UI_LOCAL_RESULT_D:digest_raw,C21_WORKBENCH_UI_LOCAL_RESULT_M:_c21_resume_json_bytes(manifest)}
+
+
+def c21_workbench_ui_local_result_from_root(root: Path) -> dict[str, bytes]:
+    historical = {path:subprocess.check_output(["git","show",f"{C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT}:{path}"],cwd=root) for path in (C21_WORKBENCH_UI_LOCAL_P,C21_WORKBENCH_UI_LOCAL_E,C21_WORKBENCH_UI_LOCAL_H)}
+    generated = {C21_WORKBENCH_UI_LOCAL_P,C21_WORKBENCH_UI_LOCAL_E,C21_WORKBENCH_UI_LOCAL_H,C21_WORKBENCH_UI_LOCAL_RESULT_D,C21_WORKBENCH_UI_LOCAL_RESULT_M}
+    files = {path:(root/path).read_bytes() for path in set(c21_workbench_ui_local_result_paths())-generated}
+    product = {path:subprocess.check_output(["git","show",f"{C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT}:{path}"],cwd=root) for path in c21_workbench_ui_local_product_paths()}
+    return c21_workbench_ui_local_result_artifacts(historical,files,product)
+
+
+def validate_c21_workbench_ui_local_result_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        metadata=c21_workbench_ui_local_result_metadata(); expected={"schema_version":"1.0.0","manifest_type":"C21_WORKBENCH_UI_REWORK_LOCAL_RESULT_PROJECTION","artifact_id":"C21-WORKBENCH-UI-REWORK-LOCAL-RESULT-20260907","created_at":C21_WORKBENCH_UI_LOCAL_RESULT_AT,"event_sequence":578,"appended_event_count":3,"historical_event_sequence":575,"historical_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,"product_commit":C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,"candidate_commit":C21_WORKBENCH_UI_LOCAL_CANDIDATE,"execution_authority_path":C21_WORKBENCH_UI_LOCAL_WI,"work_instruction_id":C21_WORKBENCH_UI_LOCAL_WI_ID,"status":"COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION","accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","external_execution":"NOT_EXECUTED","independent_tester_status":"BLOCKED_PENDING_TOOLING_RECONCILIATION","self_reference":False,**metadata}
+        if any(not _c21_strict_json_equal(manifest.get(k),v) for k,v in expected.items()): return ["C21_WORKBENCH_UI_LOCAL_RESULT_MANIFEST_INVALID"]
+        raw=manifest.get("raw_checksums"); product=manifest.get("product_checksums")
+        if type(raw) is not list or {r.get("path") for r in raw if type(r) is dict} != set(c21_workbench_ui_local_result_paths())-{C21_WORKBENCH_UI_LOCAL_RESULT_M}: return ["C21_WORKBENCH_UI_LOCAL_RESULT_CHECKSUMS_INVALID"]
+        if type(product) is not list or {r.get("path") for r in product if type(r) is dict} != set(c21_workbench_ui_local_product_paths()): return ["C21_WORKBENCH_UI_LOCAL_PRODUCT_CHECKSUMS_INVALID"]
+        if any(type(r) is not dict or type(r.get("bytes")) is not int or r["bytes"]<=0 or type(r.get("sha256")) is not str or re.fullmatch(r"[0-9A-F]{64}",r["sha256"]) is None for r in raw+product): return ["C21_WORKBENCH_UI_LOCAL_RESULT_CHECKSUMS_INVALID"]
+        return []
+    except (TypeError,KeyError,ValueError): return ["C21_WORKBENCH_UI_LOCAL_RESULT_MANIFEST_INVALID"]
+
+
+def validate_c21_workbench_ui_local_result_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected=c21_workbench_ui_local_result_from_root(bundle["_root"]); actual={C21_WORKBENCH_UI_LOCAL_P:bundle.get("progress"),C21_WORKBENCH_UI_LOCAL_E:bundle.get("events"),C21_WORKBENCH_UI_LOCAL_H:bundle.get("handoff"),C21_WORKBENCH_UI_LOCAL_RESULT_D:bundle.get("detached_digest"),C21_WORKBENCH_UI_LOCAL_RESULT_M:manifest}; objects={C21_WORKBENCH_UI_LOCAL_P:_c21_resume_json(expected[C21_WORKBENCH_UI_LOCAL_P]),C21_WORKBENCH_UI_LOCAL_E:_c21_resume_json(expected[C21_WORKBENCH_UI_LOCAL_E]),C21_WORKBENCH_UI_LOCAL_H:extract_handoff_summary(expected[C21_WORKBENCH_UI_LOCAL_H].decode()),C21_WORKBENCH_UI_LOCAL_RESULT_D:_c21_resume_json(expected[C21_WORKBENCH_UI_LOCAL_RESULT_D]),C21_WORKBENCH_UI_LOCAL_RESULT_M:_c21_resume_json(expected[C21_WORKBENCH_UI_LOCAL_RESULT_M])}
+        errors=[] if all(_c21_strict_json_equal(actual[p],objects[p]) for p in actual) else ["C21_WORKBENCH_UI_LOCAL_RESULT_PROJECTION_INVALID"]; errors.extend(validate_c21_workbench_ui_local_result_manifest(manifest)); return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError,json.JSONDecodeError): return ["C21_WORKBENCH_UI_LOCAL_RESULT_INPUT_INVALID"]
+
+
+def _collect_c21_workbench_ui_local_result_git(bundle: Mapping[str, Any]) -> list[str]:
+    root=bundle["_root"]; metadata=c21_workbench_ui_local_result_metadata()
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}"); private_url=_git_value(root,"remote","get-url","development"); control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution"); candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact107")
+        if status is None or None in (head,branch,upstream,private_url,control,candidate): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution": return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url!=C21_WORKBENCH_UI_LOCAL_PRIVATE_URL or control!=C21_WORKBENCH_UI_LOCAL_PARENT or candidate!=C21_WORKBENCH_UI_LOCAL_CANDIDATE: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared=bundle["progress"].get("repository",{}).get("validated_base_commit")
+        if declared!=C21_EXACT_BINDING_BASE or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        start_commit="72139df2f8cd3c16e1c7c08b26686f675400a2c9"
+        if (_git_value(root,"show","-s","--format=%P",C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT) or "").split()!=[start_commit]: return ["GIT_PRODUCT_COMMIT_PARENT_INVALID"]
+        if _c21_resume_git_paths(_git_value(root,"diff","--name-only",start_commit,C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT) or "")!=c21_workbench_ui_local_product_paths(): return ["GIT_PRODUCT_PATH_SET_MISMATCH"]
+        dirty=sorted(_working_tree_paths(status)); direct=dirty if head==C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,head) or "")
+        cumulative=sorted(set(_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or "")) | (set(dirty) if head==C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT else set()))
+        if direct!=metadata["result_exact_paths"] or cumulative!=metadata["cumulative_result_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head==C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
 if __name__ == "__main__":
