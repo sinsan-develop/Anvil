@@ -9465,5 +9465,79 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryR4ResultTests(unittest.TestCase):
             self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_manifest(changed), path)
 
 
+class C21WorkbenchUiWslImmutableRuntimeControlV2PublicationTests(unittest.TestCase):
+    def test_seq644_builder_preserves_seq638_and_records_create_only_publication(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT}:{checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 638), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E], 638))
+        self.assertEqual(list(range(639, 645)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("READY_FOR_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R5_WSL_DEVELOPMENT_VALIDATION", progress["status"])
+        self.assertEqual("EXECUTE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_DEVELOPMENT_VALIDATION_R5", progress["runtime_next_action"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(manifest))
+
+    def test_seq644_metadata_binds_exact12_and_cumulative243(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_metadata()
+        self.assertEqual((12, "52BB8F1F3335F352CF407AC69BE5DE78A71E51DB9A9025A1D6D6486ED73EA45C", "78B04CBAD3026CC5E406017B99C5152CA60336855011F2BAF10272C9FE689548"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((243, "1505E6FF2DE7353174C779B8EFC65E2A1B5E8D2DC10C5208F435491BD2C8E5AF", "9746214EEA8491E43644F443AA01399FA7CB88F1C97D6E4BFC87420525E9CF62"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq644_manifest_strictly_binds_sibling_and_actual_cas_receipt(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        manifest = json.loads(checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", manifest["candidate_commit"])
+        self.assertEqual("22ebc0470d4bd9ddef03f763c0197d67c315443e", manifest["record_commit"])
+        self.assertEqual("fb311d456fe3cbb2e8439f39017356ddec6cf266", manifest["runtime_control_v2_commit"])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", manifest["runtime_control_v2_parent"])
+        self.assertEqual({"exact_path_count": 12, "cumulative_path_count": 189}, manifest["sibling_path_counts"])
+        self.assertEqual("3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329", manifest["sibling_raw_sha256"]["manifest"])
+        self.assertEqual("94727D9BF06BC6256B97F1FA7BB8C2E1E383F75EA5D2939A804E0A0B6D22AA19", manifest["sibling_raw_sha256"]["guard"])
+        receipt = manifest["publication_receipt"]
+        self.assertEqual("ABSENT", receipt["pre"]["runtime_control_v2"])
+        self.assertEqual(0, receipt["create_only_cas"]["exit_code"])
+        self.assertEqual("PASS", receipt["create_only_cas"]["result"])
+        self.assertEqual("fb311d456fe3cbb2e8439f39017356ddec6cf266", receipt["post"]["runtime_control_v2"])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", receipt["post"]["candidate"])
+        self.assertEqual("22ebc0470d4bd9ddef03f763c0197d67c315443e", receipt["post"]["record"])
+        self.assertEqual({"decision": "COMMIT_READY", "critical": 0, "important": 0, "minor": 0}, manifest["reviewer_receipt"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["c21_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        for key in ("provider", "telegram", "wsl_runtime", "ysna", "main_merge", "c01"):
+            self.assertEqual("NOT_EXECUTED", manifest["exclusions"][key])
+
+        for path, value in (
+            (("runtime_control_v2_parent",), "22ebc0470d4bd9ddef03f763c0197d67c315443e"),
+            (("sibling_raw_sha256", "guard"), "0" * 64),
+            (("publication_receipt", "pre", "runtime_control_v2"), "fb311d456fe3cbb2e8439f39017356ddec6cf266"),
+            (("publication_receipt", "create_only_cas", "exit_code"), 1),
+            (("publication_receipt", "post", "candidate"), "0" * 40),
+            (("reviewer_receipt", "important"), 1),
+            (("accepted",), True),
+        ):
+            changed = copy.deepcopy(manifest); target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(changed), path)
+
+    def test_seq644_applies_current_environment_directive_without_mutating_workplan(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        manifest = json.loads(checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M])
+        self.assertEqual("CURRENT_DIRECTIVE_APPLIED_TO_EXECUTION_EVIDENCE", manifest["environment_classification"]["directive_status"])
+        self.assertEqual("DEVELOPMENT", manifest["environment_classification"]["local_pc"])
+        self.assertEqual("DEVELOPMENT", manifest["environment_classification"]["wsl_server"])
+        self.assertEqual("TEST_STAGING_UAT_AFTER_EXPLICIT_APPROVAL", manifest["environment_classification"]["oracle_cloud"])
+        self.assertEqual("LEGACY_MACHINE_IDENTIFIER_NOT_STAGE_CLASSIFICATION", manifest["environment_classification"]["WSL_SERVER_TEST_STAGING"])
+        self.assertEqual("PENDING_EXPLICIT_GOVERNANCE_CLASSIFICATION_APPROVAL", manifest["workplan_persistent_wording_change"])
+        changed = copy.deepcopy(manifest); changed["workplan_persistent_wording_change"] = "APPLIED"
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(changed))
+
+
 if __name__ == "__main__":
     unittest.main()

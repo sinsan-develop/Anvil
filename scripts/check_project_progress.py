@@ -12788,6 +12788,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 644:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 638:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13738,6 +13742,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
+            errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_MANIFEST.json":
@@ -20958,6 +20964,231 @@ def _collect_c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_git(bundl
         if head==C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
         return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
     except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT = "22ebc0470d4bd9ddef03f763c0197d67c315443e"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE = "f0d4bc7badbdae69c2d2b21089667fdcc636518d"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING = "fb311d456fe3cbb2e8439f39017356ddec6cf266"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_AT = "2026-09-09T12:00:00+09:00"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS = "READY_FOR_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R5_WSL_DEVELOPMENT_VALIDATION"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_NEXT = "EXECUTE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_DEVELOPMENT_VALIDATION_R5"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID = "WI-C-21-WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION-20260909-001"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P = "docs/progress/build-progress.json"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E = "docs/progress/progress-events.json"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H = "docs/progress/BUILD_HANDOFF.md"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D = "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-immutable-runtime-control-v2-publication.json"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M = "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI = "docs/work_orders/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WORK_INSTRUCTION.md"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PROMPT = "docs/work_orders/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_INVOCATION_PROMPT.md"
+C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_REF = "refs/heads/candidates/c21-wsl-runtime-control-v2"
+
+
+def c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_paths() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_REPORT.md",
+        "docs/WORK_STATUS.md",
+        C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M,
+        C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H,
+        C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P,
+        C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E,
+        C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D,
+        "docs/validation/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_VALIDATION.md",
+        C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PROMPT,
+        C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_metadata() -> dict[str,Any]:
+    exact = c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_paths()
+    cumulative = sorted(set(c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_metadata()["cumulative_paths"]) | set(exact))
+    result = {
+        "exact_paths": exact,
+        "exact_path_count": len(exact),
+        "exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_paths": cumulative,
+        "cumulative_path_count": len(cumulative),
+        "cumulative_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = {
+        "exact_path_count": 12,
+        "exact_path_list_sha256": "52BB8F1F3335F352CF407AC69BE5DE78A71E51DB9A9025A1D6D6486ED73EA45C",
+        "exact_path_list_ordinal_sha256": "78B04CBAD3026CC5E406017B99C5152CA60336855011F2BAF10272C9FE689548",
+        "cumulative_path_count": 243,
+        "cumulative_path_list_sha256": "1505E6FF2DE7353174C779B8EFC65E2A1B5E8D2DC10C5208F435491BD2C8E5AF",
+        "cumulative_path_list_ordinal_sha256": "9746214EEA8491E43644F443AA01399FA7CB88F1C97D6E4BFC87420525E9CF62",
+    }
+    if any(result[key] != value for key,value in expected.items()):
+        raise ValueError("C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PATH_METADATA_INVALID")
+    return result
+
+
+def _c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_sibling() -> dict[str,Any]:
+    return {
+        "commit": C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,
+        "parent": C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,
+        "exact_path_count": 12,
+        "exact_path_list_sha256": "D85669CA2C20EA8481C165F736FD28F017E7291BAFBB3916684A9DF5975EF714",
+        "exact_path_list_ordinal_sha256": "4A8A0CED250CE4E9010589C68416BC4C25346F6D2DA46F44034CE92336C6D901",
+        "cumulative_path_count": 189,
+        "cumulative_path_list_sha256": "8A54D4594B30E4CACFD8AB8C54C187CB528735E39305E1503737932023BD786F",
+        "cumulative_path_list_ordinal_sha256": "13D263C508363A6D24622CC015545B965D96F67025EA75B1F1C9C43C5EDBF31A",
+        "manifest_sha256": "3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329",
+        "guard_sha256": "94727D9BF06BC6256B97F1FA7BB8C2E1E383F75EA5D2939A804E0A0B6D22AA19",
+    }
+
+
+def _c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_receipt() -> dict[str,Any]:
+    return {
+        "remote": "development",
+        "remote_url": C21_WORKBENCH_UI_WSL_PRIVATE_URL,
+        "preflight_command": "git ls-remote development refs/heads/candidates/c21-wsl-runtime-control-v2 refs/heads/candidates/c21-wsl-exact187 refs/heads/codex/c21-operational-execution",
+        "preflight_exit_code": 0,
+        "pre": {"runtime_control_v2":"ABSENT","candidate":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"record":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT},
+        "create_only_cas": {
+            "command": "git push development fb311d456fe3cbb2e8439f39017356ddec6cf266:refs/heads/candidates/c21-wsl-runtime-control-v2 --force-with-lease=refs/heads/candidates/c21-wsl-runtime-control-v2:",
+            "exit_code": 0,
+            "result": "PASS",
+            "mode": "ATOMIC_CREATE_ONLY_COMPARE_AND_SWAP",
+        },
+        "postflight_command": "git ls-remote development refs/heads/candidates/c21-wsl-runtime-control-v2 refs/heads/candidates/c21-wsl-exact187 refs/heads/codex/c21-operational-execution",
+        "postflight_exit_code": 0,
+        "post": {"runtime_control_v2":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,"candidate":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"record":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT},
+        "evidence_source": "MAIN_AGENT_DIRECT_TOOL_RECEIPT",
+    }
+
+
+def _c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_environment() -> dict[str,Any]:
+    return {
+        "directive_status":"CURRENT_DIRECTIVE_APPLIED_TO_EXECUTION_EVIDENCE",
+        "local_pc":"DEVELOPMENT",
+        "wsl_server":"DEVELOPMENT",
+        "wsl_external_acceptance":False,
+        "wsl_completion":False,
+        "oracle_cloud":"TEST_STAGING_UAT_AFTER_EXPLICIT_APPROVAL",
+        "oracle_cloud_mutation":"NOT_EXECUTED",
+        "WSL_SERVER_TEST_STAGING":"LEGACY_MACHINE_IDENTIFIER_NOT_STAGE_CLASSIFICATION",
+        "cleanup_labels":"UNCHANGED_LEGACY_IDENTIFIERS",
+    }
+
+
+def _c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_authority() -> dict[str,Any]:
+    return {
+        "remote":"development",
+        "url":C21_WORKBENCH_UI_WSL_PRIVATE_URL,
+        "record_ref":"refs/heads/codex/c21-operational-execution",
+        "candidate_ref":"refs/heads/candidates/c21-wsl-exact187",
+        "runtime_control_v2_ref":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_REF,
+        "observed_record":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,
+        "observed_candidate":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,
+        "observed_runtime_control_v2":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,
+        "public_origin_is_push_authority":False,
+    }
+
+
+def _c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_leases() -> tuple[dict[str,Any],dict[str,Any]]:
+    paths=c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_paths()
+    worker={"lease_id":"worker-lease-c21-workbench-ui-wsl-immutable-runtime-control-v2-publication-20260909-001","agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION","lease_epoch":1,"execution_fencing_token":"c21-workbench-ui-wsl-immutable-runtime-control-v2-publication-execution-fence-epoch-1-22ebc04","fencing_token":"c21-workbench-ui-wsl-immutable-runtime-control-v2-publication-execution-fence-epoch-1-22ebc04","status":"ACTIVE"}
+    write={"lease_id":"write-lease-c21-workbench-ui-wsl-immutable-runtime-control-v2-publication-20260909-001","worker_lease_id":worker["lease_id"],"agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION","write_epoch":1,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":"c21-workbench-ui-wsl-immutable-runtime-control-v2-publication-write-fence-epoch-1-22ebc04","fencing_token":"c21-workbench-ui-wsl-immutable-runtime-control-v2-publication-write-fence-epoch-1-22ebc04","status":"ACTIVE","path_scope":paths,"paths":paths}
+    return worker,write
+
+
+def _c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_events(wi_sha:str,prompt_sha:str) -> list[dict[str,Any]]:
+    meta=c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_metadata(); worker,write=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_leases(); receipt=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_receipt()
+    common={"occurred_at":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_AT,"occurred_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","actor_type":"AGENT","actor_id":"developer-primary","project_id":"anvil","run_id":None,"work_package_id":"C-21","step_id":"WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION","actor":"developer-primary","subject_ref":"C-21/WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION"}
+    boundary={"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","wsl_runtime":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","c01":"NOT_EXECUTED"}
+    prefix="evt_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_"
+    return [
+        {**common,"event_id":prefix+"worker_lease_issued","sequence":639,"event_type":"WORKER_LEASE_ISSUED","details":{**boundary,**worker,"work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"write_lease_issued","sequence":640,"event_type":"WRITE_LEASE_ISSUED","details":{**boundary,**write,"path_count":12,"path_list_sha256":meta["exact_path_list_sha256"],"work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"package_started","sequence":641,"event_type":"PACKAGE_STARTED","details":{**boundary,"work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID,"work_instruction_sha256":wi_sha,"invocation_sha256":prompt_sha,"dispatch_head":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"package_status":"ACTIVE_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION"}},
+        {**common,"event_id":prefix+"write_lease_revoked","sequence":642,"event_type":"WRITE_LEASE_REVOKED","details":{**boundary,**{**write,"status":"REVOKED"},"reason":"RESULT_HANDOFF","work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"worker_lease_revoked","sequence":643,"event_type":"WORKER_LEASE_REVOKED","details":{**boundary,**{**worker,"status":"REVOKED"},"reason":"RESULT_HANDOFF","work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"package_completed","sequence":644,"event_type":"PACKAGE_COMPLETED","details":{**boundary,"work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID,"completion_parent":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"completion_head":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"completion_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_22EBC04_EXACT12_DIRTY","candidate_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"runtime_control_v2_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,"publication_receipt":receipt,"result_status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"package_status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"exact_allowed_paths":meta["cumulative_paths"],"next_action":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_NEXT}},
+    ]
+
+
+def c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_artifacts(historical:Mapping[str,bytes],files:Mapping[str,bytes]) -> dict[str,bytes]:
+    generated={C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M}
+    if set(files)!=set(c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_paths())-generated: raise ValueError("C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_FILE_SET_INVALID")
+    progress=_c21_resume_json(historical[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P])
+    if progress.get("event_sequence")!=638: raise ValueError("C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_HISTORY_INVALID")
+    wi_sha=_c21_resume_sha(files[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI]); prompt_sha=_c21_resume_sha(files[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PROMPT]); additions=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_events(wi_sha,prompt_sha); events_raw=_c21_append_events(historical[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E],638,additions)
+    meta=c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_metadata(); sibling=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_sibling(); receipt=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_receipt(); environment=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_environment(); authority=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_authority(); worker,write=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_leases(); worker["status"]="REVOKED"; write["status"]="REVOKED"
+    instruction={"artifact_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID,"artifact_path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI,"artifact_sha256":wi_sha,"invocation_path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PROMPT,"invocation_sha256":prompt_sha,"executor":"developer-primary","result_status":"COMPLETED","package_status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"accepted":False,"c21_acceptance_status":"BLOCKED_NOT_ACCEPTED","c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED"}
+    repository=dict(progress["repository"]); repository.update({"local_head":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"head_relation":"FEATURE_WORKTREE_22EBC04_EXACT12_DIRTY","worktree_status":"SEQ644_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_EXACT12_DIRTY","exact_allowed_paths":meta["cumulative_paths"],"workbench_ui_wsl_immutable_runtime_control_v2_publication_paths":meta["exact_paths"],"push_status":"CREATE_ONLY_CAS_PASS_RECORDED"})
+    active={"status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"parent_record_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"runtime_control_v2_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,"private_git_authority":authority,"publication_receipt":receipt,"environment_classification":environment,"workplan_persistent_wording_change":"PENDING_EXPLICIT_GOVERNANCE_CLASSIFICATION_APPROVAL","runtime_execution":"NOT_EXECUTED","accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**meta}
+    progress.update({"updated_at":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_AT,"recorded_at":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_AT,"event_sequence":644,"last_event_id":additions[-1]["event_id"],"status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"active_agent":None,"worker_lease":worker,"write_lease":write,"active_work_instruction":instruction,"completed_work_instruction":instruction,"repository":repository,"workbench_ui_wsl_immutable_runtime_control_v2_publication":active,"runtime_next_action":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_NEXT,"next_safe_action":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_NEXT,"current_progress_evidence_ref":{"package_id":"C-21","path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D,"manifest_path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M},"latest_evidence_manifest_ref":{"path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M,"artifact_id":"C21-WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION-20260909"},"reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["IMMUTABLE_RUNTIME_CONTROL_V2_PUBLISHED_R5_WSL_DEVELOPMENT_VALIDATION_READY"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E,"sha256":_c21_resume_sha(events_raw)}; latest={**files,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E:events_raw}; progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(raw)} for p,raw in sorted(latest.items())]; progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":644,"last_event_id":additions[-1]["event_id"],"status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"current_phase":"C","current_work_package":"C-21","active_agent":None,"worker_lease":worker,"write_lease":write,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":write["write_fencing_token"],"active_work_instruction":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID,"active_work_instruction_sha256":wi_sha,"active_invocation_sha256":prompt_sha,"repository_head":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],"repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],"repository_exact_allowed_paths":meta["cumulative_paths"],"design_baseline_hash":progress["design_baseline_hash"],"valid_failure_count":progress["valid_failure_count"],"dir_status":progress["dir_review"]["status"],"reporting_decision":"AUTO_CONTINUE","private_git_authority":authority,"publication_receipt":receipt,"environment_classification":environment,"workplan_persistent_wording_change":"PENDING_EXPLICIT_GOVERNANCE_CLASSIFICATION_APPROVAL","runtime_execution":"NOT_EXECUTED","accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","next_safe_action":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_NEXT,**meta}
+    htext="# C-21 Workbench UI WSL immutable runtime control v2 publication — seq644\n\n- create-only CAS receipt를 append-only로 기록했고 R5 WSL development validation만 준비했다. WorkPlan 지속 문구 변경은 별도 승인 대기다.\n\n"+historical[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H].decode(); replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"; htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count!=1: raise ValueError("C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_HANDOFF_INVALID")
+    handoff_raw=htext.encode(); digest={"schema_version":"1.0.0","digest_id":"C21-WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION-DIGEST-20260909","package_id":"C-21","event_sequence":644,"algorithm":"SHA-256","created_at":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_AT,"scope":"seq639-644 append-only; seq1-638 preserved; exact12 cumulative243","self_reference":False,"progress":{"path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},"handoff":{"path":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}; digest_raw=_c21_resume_json_bytes(digest)
+    prior={**files,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E:events_raw,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P:progress_raw,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H:handoff_raw,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D:digest_raw}
+    manifest={"schema_version":"1.0.0","manifest_type":"C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PROJECTION","artifact_id":"C21-WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION-20260909","recorded_at":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_AT,"recorded_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","event_sequence":644,"appended_event_count":6,"historical_event_sequence":638,"historical_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"record_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"runtime_control_v2_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,"runtime_control_v2_parent":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"sibling_path_counts":{"exact_path_count":sibling["exact_path_count"],"cumulative_path_count":sibling["cumulative_path_count"]},"sibling_path_hashes":{"exact_windows":sibling["exact_path_list_sha256"],"exact_ordinal":sibling["exact_path_list_ordinal_sha256"],"cumulative_windows":sibling["cumulative_path_list_sha256"],"cumulative_ordinal":sibling["cumulative_path_list_ordinal_sha256"]},"sibling_raw_sha256":{"manifest":sibling["manifest_sha256"],"guard":sibling["guard_sha256"]},"work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID,"execution_authority_sha256":wi_sha,"private_git_authority":authority,"publication_receipt":receipt,"reviewer_receipt":{"decision":"COMMIT_READY","critical":0,"important":0,"minor":0},"orchestration_errors":[{"fingerprint":"MAIN_AGENT_TARGET_RESOLUTION_SEND_MESSAGE_R1","count":1,"product_failure":False,"same_fingerprint_repeat_count":0}],"environment_classification":environment,"workplan_persistent_wording_change":"PENDING_EXPLICIT_GOVERNANCE_CLASSIFICATION_APPROVAL","status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"next_action":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_NEXT,"runtime_execution":"NOT_EXECUTED","self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","exclusions":{"provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","wsl_runtime":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","c01":"NOT_EXECUTED"},**meta}
+    manifest["raw_checksums"]=[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(prior.items())]
+    return {C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E:events_raw,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P:progress_raw,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H:handoff_raw,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D:digest_raw,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M:_c21_resume_json_bytes(manifest)}
+
+
+def _validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_sibling(root:Path) -> None:
+    sibling=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_sibling()
+    parents=(_git_value(root,"show","-s","--format=%P",sibling["commit"]) or "").split()
+    if parents!=[sibling["parent"]]: raise ValueError("C21_RUNTIME_CONTROL_V2_PARENT_INVALID")
+    exact=_c21_resume_git_paths(_git_value(root,"diff","--name-only",sibling["parent"],sibling["commit"]) or "")
+    cumulative=_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,sibling["commit"]) or "")
+    actual=(len(exact),_c21_path_list_sha(exact,windows=True),_c21_path_list_sha(exact,windows=False),len(cumulative),_c21_path_list_sha(cumulative,windows=True),_c21_path_list_sha(cumulative,windows=False))
+    expected=(sibling["exact_path_count"],sibling["exact_path_list_sha256"],sibling["exact_path_list_ordinal_sha256"],sibling["cumulative_path_count"],sibling["cumulative_path_list_sha256"],sibling["cumulative_path_list_ordinal_sha256"])
+    if actual!=expected: raise ValueError("C21_RUNTIME_CONTROL_V2_PATH_METADATA_INVALID")
+    manifest_blob=subprocess.check_output(["git","show",f'{sibling["commit"]}:deploy/wsl/CandidateReleaseManifest.json'],cwd=root)
+    guard_blob=subprocess.check_output(["git","show",f'{sibling["commit"]}:deploy/wsl/candidate-manifest-guard.sh'],cwd=root)
+    if _c21_resume_sha(manifest_blob)!=sibling["manifest_sha256"] or _c21_resume_sha(guard_blob)!=sibling["guard_sha256"]: raise ValueError("C21_RUNTIME_CONTROL_V2_RAW_HASH_INVALID")
+
+
+def c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(root:Path) -> dict[str,bytes]:
+    _validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_sibling(root)
+    historical={p:subprocess.check_output(["git","show",f"{C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT}:{p}"],cwd=root) for p in (C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H)}
+    generated={C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D,C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M}; files={p:(root/p).read_bytes() for p in set(c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_paths())-generated}
+    return c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_artifacts(historical,files)
+
+
+def validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(manifest:Mapping[str,Any]) -> list[str]:
+    try:
+        meta=c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_metadata(); sibling=_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_sibling()
+        expected={"schema_version":"1.0.0","manifest_type":"C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PROJECTION","artifact_id":"C21-WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION-20260909","recorded_at":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_AT,"recorded_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","event_sequence":644,"appended_event_count":6,"historical_event_sequence":638,"historical_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"record_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,"runtime_control_v2_commit":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,"runtime_control_v2_parent":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE,"sibling_path_counts":{"exact_path_count":12,"cumulative_path_count":189},"sibling_path_hashes":{"exact_windows":sibling["exact_path_list_sha256"],"exact_ordinal":sibling["exact_path_list_ordinal_sha256"],"cumulative_windows":sibling["cumulative_path_list_sha256"],"cumulative_ordinal":sibling["cumulative_path_list_ordinal_sha256"]},"sibling_raw_sha256":{"manifest":sibling["manifest_sha256"],"guard":sibling["guard_sha256"]},"work_instruction_id":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_WI_ID,"private_git_authority":_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_authority(),"publication_receipt":_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_receipt(),"reviewer_receipt":{"decision":"COMMIT_READY","critical":0,"important":0,"minor":0},"orchestration_errors":[{"fingerprint":"MAIN_AGENT_TARGET_RESOLUTION_SEND_MESSAGE_R1","count":1,"product_failure":False,"same_fingerprint_repeat_count":0}],"environment_classification":_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_environment(),"workplan_persistent_wording_change":"PENDING_EXPLICIT_GOVERNANCE_CLASSIFICATION_APPROVAL","status":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_STATUS,"next_action":C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_NEXT,"runtime_execution":"NOT_EXECUTED","self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","exclusions":{"provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","wsl_runtime":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","c01":"NOT_EXECUTED"},**meta}
+        allowed=set(expected)|{"execution_authority_sha256","raw_checksums"}
+        if set(manifest)!=allowed or any(not _c21_strict_json_equal(manifest.get(k),v) for k,v in expected.items()) or re.fullmatch(r"[0-9A-F]{64}",str(manifest.get("execution_authority_sha256"))) is None: return ["C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST_INVALID"]
+        rows=manifest.get("raw_checksums"); expected_paths=set(c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_paths())-{C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M}
+        if type(rows) is not list or {r.get("path") for r in rows if type(r) is dict}!=expected_paths or any(type(r) is not dict or set(r)!={"path","bytes","sha256"} or type(r.get("bytes")) is not int or r["bytes"]<=0 or re.fullmatch(r"[0-9A-F]{64}",str(r.get("sha256"))) is None for r in rows): return ["C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CHECKSUMS_INVALID"]
+        return []
+    except (TypeError,KeyError,ValueError): return ["C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST_INVALID"]
+
+
+def validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle:Mapping[str,Any],manifest:Mapping[str,Any]) -> list[str]:
+    try:
+        expected=c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(bundle["_root"]); actual={C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P:bundle.get("progress"),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E:bundle.get("events"),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H:bundle.get("handoff"),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D:bundle.get("detached_digest"),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M:manifest}; objects={C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P]),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E]),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H:extract_handoff_summary(expected[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_H].decode()),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_D]),C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M:_c21_resume_json(expected[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M])}
+        errors=[] if all(_c21_strict_json_equal(actual[p],objects[p]) for p in actual) else ["C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PROJECTION_INVALID"]; errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(manifest)); return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError,json.JSONDecodeError): return ["C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_INPUT_INVALID"]
+
+
+def _collect_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_git(bundle:Mapping[str,Any]) -> list[str]:
+    root=bundle["_root"]; meta=c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_metadata()
+    try:
+        _validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_sibling(root)
+        head=_git_value(root,"rev-parse","HEAD"); status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}"); private_url=_git_value(root,"remote","get-url","development"); record=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution"); candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact187"); runtime=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-runtime-control-v2")
+        if status is None or None in (head,branch,upstream,private_url,record,candidate,runtime): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution": return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url!=C21_WORKBENCH_UI_WSL_PRIVATE_URL or record not in {C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,head} or candidate!=C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_CANDIDATE or runtime!=C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if _git_returncode(root,"merge-base","--is-ancestor",C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_SIBLING,head)==0: return ["GIT_SIBLING_HISTORY_MERGED"]
+        declared=bundle["progress"].get("repository",{}).get("validated_base_commit")
+        if declared!=C21_EXACT_BINDING_BASE or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=sorted(_working_tree_paths(status)); direct=dirty if head==C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT,head) or ""); cumulative=sorted(set(_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or ""))|(set(dirty) if head==C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT else set()))
+        if direct!=meta["exact_paths"] or cumulative!=meta["cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head==C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
 if __name__ == "__main__":
