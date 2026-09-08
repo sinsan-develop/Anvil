@@ -1538,3 +1538,22 @@
 - final focused seq614+seq620+probe: `9 passed, 231 deselected`, exit0. generated5 두 번 생성 결과 및 materialized bytes 동일 `SEQ620_GENERATED5_DETERMINISTIC_PASS`; `git diff --check` PASS.
 - exact 경로는 설계된 12개와 일치하고 cumulative219 hash는 Windows `52936B5F9C6861EE6FAE270F747A6318502747539E8E66B285DA2811612D4E6D`, ordinal `7478D25196E94EB84E45BCE779E685937DB29E5736C8F482A7CD52D6040C40E2`다.
 - 진단 오류 원장: sandbox 기본 WSL 호출 `E_ACCESSDENIED` 1회(플랫폼 권한, 승격 후 해소); root 소유 repo의 dubious ownership와 `.env` read denial 1회(전역 설정 변경 없이 command-local `safe.directory`와 기존 sudo read로 해소); sudo가 daon SSH alias/known_hosts를 상속하지 못한 private fetch 실패 2회(직접 `github.com` host와 기존 daon deploy key/known_hosts 명시로 해소); PowerShell/WSL 중첩 변수·quote 진단 명령 실패 2회(고정 literal 명령으로 해소); post-cleanup active-stage 동적 경로 검사 실패 1회(관측 stage literal read-only 검사로 exact control/clean 확인). 이들은 runtime deploy valid failure 횟수에 포함하지 않는다.
+
+## 2026-09-08 C-21 seq621~626 WSL authenticated browser runtime retry result R2
+
+- 담당: `developer-primary`; parent/control `a9243cc9969de58e4b230ff028fca1fe95e14778`, candidate `f0d4bc7badbdae69c2d2b21089667fdcc636518d`.
+- seq620 independent review `COMMIT_READY C0/I0/M0`와 private CAS publication을 Main으로부터 인수했다. candidate는 불변이다.
+- preflight: private control/candidate exact, candidate ancestor of control, application exact candidate/clean, `.env` mode600/hash `fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a`, required names 및 provider:read scope, initial residue0 모두 PASS. 값은 출력하지 않았다.
+- attempt 2: `ANVIL_CANDIDATE_MANIFEST_REF=refs/remotes/origin/codex/c21-operational-execution`, trusted control exact a9243cc, EXPECTED candidate exact f0d4bc7로 분리했다.
+- deploy `FAIL`, exit128. control stage exact a9243cc 생성 후 application repo의 기존 origin hostname alias를 root 실행이 해석하지 못해 `git fetch origin`에서 mutation 전 중단됐다. fingerprint `APPLICATION_ORIGIN_ALIAS_UNRESOLVED_UNDER_ROOT`, 현재 root cause 1회다.
+- 계약에 따라 실패를 재실행하지 않았다. verify/browser PG15/browser PG18RC는 `NOT_EXECUTED`다.
+- cleanup: 표준 control-runtime cleanup 정확히 1회, exit0. 사후 application repo exact candidate/clean, env mode/hash byte-identical, PG15/PG18RC container/network 0, exact volume residue0.
+- secret 값, token, cookie, header, raw URL, screenshot 파일은 기록·생성하지 않았다. Provider 외부·Telegram·ysna·main·C-01은 `NOT_EXECUTED`다.
+- 판정: `FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_VALIDATION_ATTEMPT_2`; accepted=false, C-21/C-01 blocked, DIR-2 not triggered.
+- 용어: WSL browser/API/DB/runtime은 개발단계 검증이며 사용자 인수·외부 테스트·개발 완료로 표현하지 않는다.
+- 다음: application fetch의 alias 해석 경계를 분석한다. 이번 attempt2 evidence는 보존한다.
+- TDD RED: seq626 builder/metadata 부재로 `2 failed, 240 deselected`, exit1.
+- TDD GREEN: strict attempt2 failure projection/checker를 구현한 뒤 seq626 focused는 `2 passed, 240 deselected`, seq620 회귀 포함 focused는 `4 passed, 238 deselected`, 모두 exit0이다.
+- canonical 전체 tooling: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → `610 passed in 1176.53s (0:19:36)`, exit0. failure/error는 0이다.
+- 다음: 전체 PASS 영수증을 generated5에 재결박하고 focused/live/determinism/exact12/Git 계보를 최종 검증한 뒤 parent a9243cc의 단일 direct-child commit으로 고정한다.
+- precommit 최종 검증: seq620+seq626 focused `4 passed, 238 deselected`; live checker `PASS sequence=626 reporting=AUTO_CONTINUE`; generated5 2회 byte equality와 materialized equality `SEQ626_GENERATED5_DETERMINISTIC_PASS`; exact12 Windows/ordinal 및 cumulative225 Windows/ordinal hash 일치; parent a9243cc exact; `git diff --check` PASS다.
