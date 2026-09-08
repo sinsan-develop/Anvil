@@ -12788,6 +12788,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 656:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 650:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13748,6 +13752,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_MANIFEST.json":
+            errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_MANIFEST.json":
@@ -21782,6 +21788,522 @@ def _collect_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_git(bundl
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
+
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P = "docs/progress/build-progress.json"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E = "docs/progress/progress-events.json"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H = "docs/progress/BUILD_HANDOFF.md"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D = "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result.json"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M = "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_MANIFEST.json"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI = "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WORK_INSTRUCTION.md"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PROMPT = "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_INVOCATION_PROMPT.md"
+
+
+def c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_paths() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_REPORT.md",
+        "docs/WORK_STATUS.md",
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D,
+        "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_VALIDATION.md",
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PROMPT,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_metadata() -> dict[str, Any]:
+    exact = c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_paths()
+    cumulative = sorted(set(c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_metadata()["cumulative_paths"]) | set(exact))
+    result = {
+        "exact_paths": exact,
+        "exact_path_count": len(exact),
+        "exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_paths": cumulative,
+        "cumulative_path_count": len(cumulative),
+        "cumulative_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = {
+        "exact_path_count": 12,
+        "exact_path_list_sha256": "58CE542C2E5F2946FDFC0D159D4E294AC50D9FFF1012CE86BE151F9724941975",
+        "exact_path_list_ordinal_sha256": "2FD1D089F870B271B0E97C21F675DAAC4DAD5A1923838E25446EC4B12FFE6DC3",
+        "cumulative_path_count": 255,
+        "cumulative_path_list_sha256": "880C34EB128C6C44407AF05BC1692D7C0C6C99232EF1B89EA1BD2D9D0D584786",
+        "cumulative_path_list_ordinal_sha256": "CEEBA7C44B1AB182186202579F550791FBE9455AE3138DB3B0C66FCBCC5554F6",
+    }
+    if any(result[key] != value for key, value in expected.items()):
+        raise ValueError("C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PATH_METADATA_INVALID")
+    return result
+
+
+def validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(result: Mapping[str, Any]) -> list[str]:
+    error = "C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RUNTIME_RESULT_INVALID"
+    try:
+        allowed = {"attempt_number", "outcome", "orchestration_failure", "preflight", "deploy", "verify", "browser_pg15", "browser_pg18rc", "receipts", "image_metadata", "cleanup", "postconditions", "external_calls", "secret_safety"}
+        if set(result) != allowed or result.get("attempt_number") != 6 or result.get("outcome") not in {"SUCCESS", "FAILED"}:
+            return [error]
+        preflight = result["preflight"]
+        expected_preflight_keys = {"result", "candidate_commit", "runtime_control_commit", "manifest_ref", "manifest_sha256", "control_runtime_sha256", "application_head", "application_dirty_count", "environment_mode", "environment_sha256", "required_names", "provider_read_scope", "initial_residue_count", "playwright_module", "chromium_executable", "environment_file_mutated", "secret_values"}
+        if set(preflight) != expected_preflight_keys or any((
+            preflight["result"] != "PASS",
+            preflight["candidate_commit"] != "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+            preflight["runtime_control_commit"] != "fb311d456fe3cbb2e8439f39017356ddec6cf266",
+            preflight["manifest_ref"] != "refs/remotes/origin/candidates/c21-wsl-runtime-control-v2",
+            preflight["manifest_sha256"] != "3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329",
+            preflight["control_runtime_sha256"] != "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097",
+            preflight["application_head"] != preflight["candidate_commit"],
+            preflight["application_dirty_count"] != 0,
+            preflight["environment_mode"] != "600",
+            re.fullmatch(r"[0-9A-F]{64}", str(preflight["environment_sha256"])) is None,
+            preflight["required_names"] != "PRESENT",
+            preflight["provider_read_scope"] is not True,
+            preflight["initial_residue_count"] != 0,
+            preflight["playwright_module"] != "PRESENT_PROCESS_LOCAL",
+            preflight["chromium_executable"] != "PRESENT_PROCESS_LOCAL",
+            preflight["environment_file_mutated"] is not False,
+            preflight["secret_values"] != "OMITTED",
+        )):
+            return [error]
+        pass_phase = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+        browser_pass = {**pass_phase, "viewport_count": 3, "provider_count": 9, "primary_provider": "UPSTAGE", "groq_click": "PASS", "authenticated_sse": "PASS", "last_event_id": "PASS", "same_origin": "PASS"}
+        cleanup = result["cleanup"]
+        if type(cleanup) is not dict or set(cleanup) != {"attempt_count", "result", "exit_code", "evidence_reexecution"} or cleanup["attempt_count"] != 1 or cleanup["result"] not in {"PASS", "FAIL"} or type(cleanup["exit_code"]) is not int or cleanup["evidence_reexecution"] is not False:
+            return [error]
+        expected_post = {"application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "application_dirty_count": 0, "environment": "BYTE_IDENTICAL", "control_stage_dirty_count": 0, "container_residue": 0, "network_residue": 0, "exact_volume_residue": 0, "lock_residue": 0, "screenshot_residue": 0, "total_residue_count": 0, "backup_evidence_preserved": True}
+        if not _c21_strict_json_equal(result["postconditions"], expected_post):
+            return [error]
+        if result["external_calls"] != {"provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED"} or result["secret_safety"] != {"token": "MEMORY_ONLY", "credential_values": "OMITTED", "cookie_values": "OMITTED", "header_values": "OMITTED", "raw_urls": "OMITTED"}:
+            return [error]
+        receipts = result["receipts"]
+        receipt_ok = type(receipts) is dict and receipts.get("current_json_count") == 4 and receipts.get("backup_count") == 2 and receipts.get("verification_count") == 2 and receipts.get("rollback_count") == 0 and type(receipts.get("sha256")) is list and len(receipts["sha256"]) == 4 and all(re.fullmatch(r"[0-9A-F]{64}", str(value)) for value in receipts["sha256"])
+        if result["outcome"] == "SUCCESS":
+            if any((result["orchestration_failure"] != "NONE", result["deploy"] != pass_phase, result["verify"] != pass_phase, result["browser_pg15"] != browser_pass, result["browser_pg18rc"] != browser_pass, cleanup != {**pass_phase, "evidence_reexecution": False}, not receipt_ok, result["image_metadata"] != {"count": 2, "result": "PASS"})):
+                return [error]
+            return []
+        orchestration = result["orchestration_failure"]
+        if type(orchestration) is dict:
+            expected_orchestration = {"result": "FAIL", "after_phase": "deploy", "failure_fingerprint": "POWERSHELL_FUNCTION_STDOUT_EXITCODE_CAPTURE_R6", "controller_exit_code": 1, "runtime_action_reexecution": False, "product_failure": False}
+            expected_receipts = {"current_json_count": 2, "backup_count": 2, "verification_count": 0, "rollback_count": 0}
+            if not _c21_strict_json_equal(orchestration, expected_orchestration) or result["deploy"] != pass_phase or any(result[key] != "NOT_EXECUTED" for key in ("verify", "browser_pg15", "browser_pg18rc")):
+                return [error]
+            if type(receipts) is not dict or any(receipts.get(key) != value for key, value in expected_receipts.items()) or type(receipts.get("sha256")) is not list or len(receipts["sha256"]) != 2 or any(re.fullmatch(r"[0-9A-F]{64}", str(value)) is None for value in receipts["sha256"]):
+                return [error]
+            if result["image_metadata"] != {"count": 2, "result": "PASS"} or cleanup != {**pass_phase, "evidence_reexecution": False}:
+                return [error]
+            return []
+        if orchestration != "NONE":
+            return [error]
+        phases = [result["deploy"], result["verify"], result["browser_pg15"], result["browser_pg18rc"]]
+        failed = [index for index, phase in enumerate(phases) if type(phase) is dict and phase.get("result") == "FAIL"]
+        if len(failed) != 1:
+            return [error]
+        failed_index = failed[0]
+        expected_prior = [pass_phase, pass_phase, browser_pass, browser_pass]
+        if any(phases[index] != expected_prior[index] for index in range(failed_index)) or any(phase != "NOT_EXECUTED" for phase in phases[failed_index + 1:]):
+            return [error]
+        failure = phases[failed_index]
+        if set(failure) != {"attempt_count", "result", "exit_code", "failure_fingerprint", "evidence_reexecution"} or failure["attempt_count"] != 1 or failure["result"] != "FAIL" or failure["exit_code"] == 0 or re.fullmatch(r"[A-Z0-9_]+", str(failure["failure_fingerprint"])) is None or failure["evidence_reexecution"] is not False:
+            return [error]
+        if failed_index < 1:
+            if receipts != {"current_json_count": 0, "backup_count": 0, "verification_count": 0, "rollback_count": 0, "sha256": []} or result["image_metadata"] != "NOT_EXECUTED":
+                return [error]
+        elif not receipt_ok or result["image_metadata"] != {"count": 2, "result": "PASS"}:
+            return [error]
+        return []
+    except (TypeError, KeyError, ValueError):
+        return [error]
+
+
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT = "4a30f234745677025a572beb2ec8dcad379ac193"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL = "fb311d456fe3cbb2e8439f39017356ddec6cf266"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE = "f0d4bc7badbdae69c2d2b21089667fdcc636518d"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_AT = "2026-09-09T18:30:00+09:00"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS = "FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R6_WSL_DEVELOPMENT_VALIDATION"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_NEXT = "REPAIR_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_CONTROLLER_EXIT_CAPTURE"
+C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID = "WI-C-21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT-20260909-001"
+
+
+def _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_runtime() -> dict[str, Any]:
+    pass_phase = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+    return {
+        "attempt_number": 6,
+        "outcome": "FAILED",
+        "orchestration_failure": {"result": "FAIL", "after_phase": "deploy", "failure_fingerprint": "POWERSHELL_FUNCTION_STDOUT_EXITCODE_CAPTURE_R6", "controller_exit_code": 1, "runtime_action_reexecution": False, "product_failure": False},
+        "preflight": {
+            "result": "PASS", "candidate_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE,
+            "runtime_control_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL,
+            "manifest_ref": "refs/remotes/origin/candidates/c21-wsl-runtime-control-v2",
+            "manifest_sha256": "3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329",
+            "control_runtime_sha256": "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097",
+            "application_head": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE,
+            "application_dirty_count": 0, "environment_mode": "600",
+            "environment_sha256": "FECAE53B750E170A5BF345A23AC8D9BA12B508E9C6D0B47C518B90FD4D52A79A",
+            "required_names": "PRESENT", "provider_read_scope": True, "initial_residue_count": 0,
+            "playwright_module": "PRESENT_PROCESS_LOCAL", "chromium_executable": "PRESENT_PROCESS_LOCAL",
+            "environment_file_mutated": False, "secret_values": "OMITTED",
+        },
+        "deploy": dict(pass_phase), "verify": "NOT_EXECUTED", "browser_pg15": "NOT_EXECUTED", "browser_pg18rc": "NOT_EXECUTED",
+        "receipts": {"current_json_count": 2, "backup_count": 2, "verification_count": 0, "rollback_count": 0,
+            "sha256": ["894462E086D50C681C7A13B01671A1A915AAB34793E95544CE1CDF572897ADAE", "C02F8A37DF0681E69B85534DA7126BB719DBC6D0F56BEEBF85661D0314F72FB5"]},
+        "image_metadata": {"count": 2, "result": "PASS"}, "cleanup": {**pass_phase, "evidence_reexecution": False},
+        "postconditions": {"application_head": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE, "application_dirty_count": 0, "environment": "BYTE_IDENTICAL", "control_stage_dirty_count": 0, "container_residue": 0, "network_residue": 0, "exact_volume_residue": 0, "lock_residue": 0, "screenshot_residue": 0, "total_residue_count": 0, "backup_evidence_preserved": True},
+        "external_calls": {"provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED"},
+        "secret_safety": {"token": "MEMORY_ONLY", "credential_values": "OMITTED", "cookie_values": "OMITTED", "header_values": "OMITTED", "raw_urls": "OMITTED"},
+    }
+
+
+def _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_diagnosis() -> dict[str, Any]:
+    return {"failure_fingerprint": "POWERSHELL_FUNCTION_STDOUT_EXITCODE_CAPTURE_R6", "category": "POWERSHELL_CONTROLLER_EXIT_CAPTURE", "deploy_action": "PASS_EXIT_0_ONCE", "verify_action": "NOT_EXECUTED", "browser_pg15": "NOT_EXECUTED", "browser_pg18rc": "NOT_EXECUTED", "cleanup_action": "PASS_EXIT_0_ONCE", "stdout_was_captured_with_exit_code": True, "controller_misclassified_deploy": True, "product_ui_api_sse_failure_established": False, "runtime_action_reexecution": False}
+
+
+def _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_errors() -> list[dict[str, Any]]:
+    return [
+        {"fingerprint": "MAIN_R6_ARCHITECT_PATH_HASH_CALCULATION_ERROR_R1", "count": 1, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "DETACHED_BRANCH_EMPTY_OUTPUT_NULL_TRIM", "count": 2, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "POWERSHELL_FUNCTION_STDOUT_EXITCODE_CAPTURE_R6", "count": 1, "product_failure": False, "runtime_failure": True},
+        {"fingerprint": "SEQ656_PYTHON_COMMAND_NOT_FOUND_R1", "count": 1, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "SEQ656_PY_LAUNCHER_NO_PYTHON_R1", "count": 1, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "SEQ656_BUNDLED_PYTHON_PYTEST_MISSING_R1", "count": 1, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "R6_POSTEVIDENCE_WSL_SANDBOX_DENIED_R1", "count": 1, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "R6_RECEIPT_SECRET_SAFE_QUOTE_JQ_UNAVAILABLE_R1", "count": 1, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "SEQ656_PYCOMPILE_SANDBOX_PYCACHE_DENIED_R1", "count": 1, "product_failure": False, "runtime_failure": False},
+        {"fingerprint": "MAIN_COLLAB_TOOL_ARGUMENT_ERROR", "count": 3, "product_failure": False, "runtime_failure": False, "impact": "NONE", "resolved": True},
+    ]
+
+
+def _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_authority() -> dict[str, Any]:
+    return {
+        "remote": "development",
+        "url": C21_WORKBENCH_UI_WSL_PRIVATE_URL,
+        "record_ref": "refs/heads/codex/c21-operational-execution",
+        "candidate_ref": "refs/heads/candidates/c21-wsl-exact187",
+        "runtime_control_ref": "refs/heads/candidates/c21-wsl-runtime-control-v2",
+        "observed_record": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT,
+        "observed_candidate": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE,
+        "observed_runtime_control": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL,
+        "public_origin_is_push_authority": False,
+    }
+
+
+def _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    paths = c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_paths()
+    worker = {
+        "lease_id": "worker-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result-20260909-001",
+        "agent_id": "developer-primary", "work_package_id": "C-21",
+        "subtask_id": "WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT",
+        "lease_epoch": 1,
+        "execution_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result-execution-fence-epoch-1-4a30f23",
+        "fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result-execution-fence-epoch-1-4a30f23",
+        "status": "ACTIVE",
+    }
+    write = {
+        "lease_id": "write-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result-20260909-001",
+        "worker_lease_id": worker["lease_id"], "agent_id": "developer-primary",
+        "work_package_id": "C-21", "subtask_id": worker["subtask_id"], "write_epoch": 1,
+        "execution_fencing_token": worker["execution_fencing_token"],
+        "write_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result-write-fence-epoch-1-4a30f23",
+        "fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result-write-fence-epoch-1-4a30f23",
+        "status": "ACTIVE", "path_scope": paths, "paths": paths,
+    }
+    return worker, write
+
+
+def _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_events(wi_sha: str, prompt_sha: str) -> list[dict[str, Any]]:
+    meta = c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_metadata()
+    worker, write = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_leases()
+    result = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_runtime()
+    common = {
+        "occurred_at": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_AT,
+        "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+        "actor_type": "AGENT", "actor_id": "developer-primary", "project_id": "anvil",
+        "run_id": None, "work_package_id": "C-21",
+        "step_id": "WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT",
+        "actor": "developer-primary",
+        "subject_ref": "C-21/WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT",
+    }
+    boundary = {
+        "accepted": False, "c21_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+        "runtime_execution": "FAILED", "provider_external": "NOT_EXECUTED",
+        "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED",
+        "main_merge": "NOT_EXECUTED", "c01": "NOT_EXECUTED",
+    }
+    prefix = "evt_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_"
+    return [
+        {**common, "event_id": prefix + "worker_lease_issued", "sequence": 651, "event_type": "WORKER_LEASE_ISSUED", "details": {**boundary, **worker, "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID}},
+        {**common, "event_id": prefix + "write_lease_issued", "sequence": 652, "event_type": "WRITE_LEASE_ISSUED", "details": {**boundary, **write, "path_count": 12, "path_list_sha256": meta["exact_path_list_sha256"], "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID}},
+        {**common, "event_id": prefix + "package_started", "sequence": 653, "event_type": "PACKAGE_STARTED", "details": {**boundary, "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID, "work_instruction_sha256": wi_sha, "invocation_sha256": prompt_sha, "dispatch_head": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT, "package_status": "ACTIVE_WSL_DEVELOPMENT_VALIDATION_R6"}},
+        {**common, "event_id": prefix + "write_lease_revoked", "sequence": 654, "event_type": "WRITE_LEASE_REVOKED", "details": {**boundary, **{**write, "status": "REVOKED"}, "reason": "FAILURE_RESULT_HANDOFF", "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID}},
+        {**common, "event_id": prefix + "worker_lease_revoked", "sequence": 655, "event_type": "WORKER_LEASE_REVOKED", "details": {**boundary, **{**worker, "status": "REVOKED"}, "reason": "FAILURE_RESULT_HANDOFF", "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID}},
+        {**common, "event_id": prefix + "package_completed", "sequence": 656, "event_type": "PACKAGE_COMPLETED", "details": {**boundary, "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID, "completion_parent": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT, "completion_head": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT, "completion_upstream_head": "ca92b7845eda803cff3c432799642e4f9243d4d6", "projection_mode": VALIDATED_BASE_PROJECTION_MODE, "validated_base_commit": C21_EXACT_BINDING_BASE, "head_relation": "FEATURE_WORKTREE_4A30F23_EXACT12_DIRTY", "candidate_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE, "runtime_control_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL, "runtime_result": result, "result_status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS, "package_status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS, "exact_allowed_paths": meta["cumulative_paths"], "next_action": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_NEXT}},
+    ]
+
+
+def c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M,
+    }
+    if set(files) != set(c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_paths()) - generated:
+        raise ValueError("C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_FILE_SET_INVALID")
+    progress = _c21_resume_json(historical[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P])
+    if progress.get("event_sequence") != 650:
+        raise ValueError("C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_HISTORY_INVALID")
+    wi_sha = _c21_resume_sha(files[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI])
+    prompt_sha = _c21_resume_sha(files[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PROMPT])
+    additions = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_events(wi_sha, prompt_sha)
+    events_raw = _c21_append_events(historical[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E], 650, additions)
+    meta = c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_metadata()
+    result = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_runtime()
+    diagnosis = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_diagnosis()
+    errors = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_errors()
+    authority = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_authority()
+    worker, write = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_leases()
+    worker["status"] = "REVOKED"
+    write["status"] = "REVOKED"
+    instruction = {
+        "artifact_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID,
+        "artifact_path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI,
+        "artifact_sha256": wi_sha,
+        "invocation_path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PROMPT,
+        "invocation_sha256": prompt_sha,
+        "executor": "developer-primary", "result_status": "FAILURE_REPORT",
+        "package_status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS,
+        "accepted": False, "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_boundary": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+    }
+    repository = dict(progress["repository"])
+    repository.update({
+        "local_head": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT,
+        "head_relation": "FEATURE_WORKTREE_4A30F23_EXACT12_DIRTY",
+        "worktree_status": "SEQ656_RUNTIME_RETRY_R6_RESULT_EXACT12_DIRTY",
+        "exact_allowed_paths": meta["cumulative_paths"],
+        "workbench_ui_wsl_auth_browser_runtime_retry_r6_result_paths": meta["exact_paths"],
+        "push_status": "NOT_EXECUTED",
+    })
+    active = {
+        "status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS,
+        "parent_control_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT,
+        "candidate_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE,
+        "runtime_control_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL,
+        "private_git_authority": authority, "runtime_result": result,
+        "diagnosis": diagnosis, "orchestration_errors": errors,
+        "runtime_execution": "FAILED", "validation_classification": "WSL_DEVELOPMENT_VALIDATION",
+        "accepted": False, "c21_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED", **meta,
+    }
+    progress.update({
+        "updated_at": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_AT,
+        "recorded_at": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_AT,
+        "event_sequence": 656, "last_event_id": additions[-1]["event_id"],
+        "status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS,
+        "active_agent": None, "worker_lease": worker, "write_lease": write,
+        "active_work_instruction": instruction, "completed_work_instruction": instruction,
+        "repository": repository,
+        "workbench_ui_wsl_auth_browser_runtime_retry_r6_result": active,
+        "runtime_next_action": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_NEXT,
+        "next_safe_action": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_NEXT,
+        "current_progress_evidence_ref": {"package_id": "C-21", "path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D, "manifest_path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M},
+        "latest_evidence_manifest_ref": {"path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M, "artifact_id": "C21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT-20260909"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C21_AUTH_BROWSER_R6_CONTROLLER_EXIT_CAPTURE_REPAIR_REQUIRED"], "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E, "sha256": _c21_resume_sha(events_raw)}
+    latest = {**files, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E: events_raw}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)} for path, raw in sorted(latest.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {
+        "event_sequence": 656, "last_event_id": additions[-1]["event_id"],
+        "status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS,
+        "current_phase": "C", "current_work_package": "C-21", "active_agent": None,
+        "worker_lease": worker, "write_lease": write,
+        "execution_fencing_token": worker["execution_fencing_token"],
+        "write_fencing_token": write["write_fencing_token"],
+        "active_work_instruction": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID,
+        "active_work_instruction_sha256": wi_sha, "active_invocation_sha256": prompt_sha,
+        "repository_head": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT,
+        "repository_head_relation": repository["head_relation"], "repository_upstream": repository["upstream"],
+        "repository_projection_mode": repository["projection_mode"], "repository_validated_base_commit": repository["validated_base_commit"],
+        "repository_exact_allowed_paths": meta["cumulative_paths"],
+        "design_baseline_hash": progress["design_baseline_hash"], "valid_failure_count": progress["valid_failure_count"],
+        "dir_status": progress["dir_review"]["status"], "reporting_decision": "AUTO_CONTINUE",
+        "private_git_authority": authority, "runtime_result": result, "diagnosis": diagnosis,
+        "orchestration_errors": errors, "runtime_execution": "FAILED",
+        "validation_classification": "WSL_DEVELOPMENT_VALIDATION", "accepted": False,
+        "c21_status": "BLOCKED_NOT_ACCEPTED", "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+        "dir2_status": "NOT_TRIGGERED", "next_safe_action": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_NEXT, **meta,
+    }
+    htext = (
+        "# C-21 Workbench UI WSL authenticated browser runtime retry R6 result — seq656\n\n"
+        "- deploy는 1회 exit0 PASS했으나 PowerShell controller가 stdout과 exit code를 함께 수집해 실패로 오분류했다. verify와 두 browser는 미실행이며 outer-finally cleanup은 1회 exit0 PASS했고 runtime 재실행은 없다.\n\n"
+        + historical[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H].decode()
+    )
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    htext, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement, htext, flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_HANDOFF_INVALID")
+    handoff_raw = htext.encode()
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT-DIGEST-20260909",
+        "package_id": "C-21", "event_sequence": 656, "algorithm": "SHA-256",
+        "created_at": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_AT,
+        "scope": "seq651-656 append-only; seq1-650 preserved; exact12 cumulative255", "self_reference": False,
+        "progress": {"path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    prior = {**files, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E: events_raw, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P: progress_raw, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H: handoff_raw, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D: digest_raw}
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PROJECTION",
+        "artifact_id": "C21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT-20260909",
+        "recorded_at": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_AT,
+        "recorded_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+        "event_sequence": 656, "appended_event_count": 6, "historical_event_sequence": 650,
+        "historical_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT,
+        "candidate_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE,
+        "runtime_control_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL,
+        "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID,
+        "execution_authority_sha256": wi_sha, "private_git_authority": authority,
+        "status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS,
+        "runtime_result": result, "diagnosis": diagnosis, "orchestration_errors": errors,
+        "image_metadata_sha256": [
+            "18108107884FE16327CC7942663434382D90F5102A3767A0BD518A361C3E88B3",
+            "2E549E4BAC11D2D8FEAD70C4DC37C0878A23AFF058DD10DD317E7AA6D2D32393",
+        ],
+        "runtime_execution": "FAILED", "validation_classification": "WSL_DEVELOPMENT_VALIDATION",
+        "self_reference": False, "accepted": False, "c21_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+        "exclusions": {"provider_external": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED", "ysna": "NOT_EXECUTED", "main_merge": "NOT_EXECUTED", "c01": "NOT_EXECUTED"},
+        **meta,
+    }
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)} for path, raw in sorted(prior.items())]
+    return {
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E: events_raw,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P: progress_raw,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H: handoff_raw,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D: digest_raw,
+        C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M: _c21_resume_json_bytes(manifest),
+    }
+
+
+def c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_from_root(root: Path) -> dict[str, bytes]:
+    historical = {path: subprocess.check_output(["git", "show", f"{C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT}:{path}"], cwd=root) for path in (C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H)}
+    generated = {C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D, C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M}
+    files = {path: (root / path).read_bytes() for path in set(c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_paths()) - generated}
+    return c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_artifacts(historical, files)
+
+
+def _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_manifest_expected() -> dict[str, Any]:
+    return {
+        "schema_version": "1.0.0", "manifest_type": "C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PROJECTION",
+        "artifact_id": "C21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R6-RESULT-20260909",
+        "recorded_at": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_AT,
+        "recorded_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+        "event_sequence": 656, "appended_event_count": 6, "historical_event_sequence": 650,
+        "historical_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT,
+        "candidate_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE,
+        "runtime_control_commit": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL,
+        "work_instruction_id": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WI_ID,
+        "private_git_authority": _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_authority(),
+        "status": C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_STATUS,
+        "runtime_result": _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_runtime(),
+        "diagnosis": _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_diagnosis(),
+        "orchestration_errors": _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_errors(),
+        "image_metadata_sha256": ["18108107884FE16327CC7942663434382D90F5102A3767A0BD518A361C3E88B3", "2E549E4BAC11D2D8FEAD70C4DC37C0878A23AFF058DD10DD317E7AA6D2D32393"],
+        "runtime_execution": "FAILED", "validation_classification": "WSL_DEVELOPMENT_VALIDATION",
+        "self_reference": False, "accepted": False, "c21_status": "BLOCKED_NOT_ACCEPTED",
+        "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE", "dir2_status": "NOT_TRIGGERED",
+        "exclusions": {"provider_external": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED", "ysna": "NOT_EXECUTED", "main_merge": "NOT_EXECUTED", "c01": "NOT_EXECUTED"},
+        **c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_metadata(),
+    }
+
+
+def validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = _c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_manifest_expected()
+        allowed = set(expected) | {"execution_authority_sha256", "raw_checksums"}
+        if set(manifest) != allowed or any(not _c21_strict_json_equal(manifest.get(key), value) for key, value in expected.items()):
+            return ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_MANIFEST_INVALID"]
+        if re.fullmatch(r"[0-9A-F]{64}", str(manifest.get("execution_authority_sha256"))) is None:
+            return ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_MANIFEST_INVALID"]
+        if validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(manifest["runtime_result"]):
+            return ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_RUNTIME_INVALID"]
+        rows = manifest.get("raw_checksums")
+        expected_paths = set(c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_paths()) - {C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M}
+        if type(rows) is not list or {row.get("path") for row in rows if type(row) is dict} != expected_paths:
+            return ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CHECKSUMS_INVALID"]
+        if any(type(row) is not dict or set(row) != {"path", "bytes", "sha256"} or type(row.get("bytes")) is not int or row["bytes"] <= 0 or re.fullmatch(r"[0-9A-F]{64}", str(row.get("sha256"))) is None for row in rows):
+            return ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CHECKSUMS_INVALID"]
+        return []
+    except (TypeError, KeyError, ValueError):
+        return ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_MANIFEST_INVALID"]
+
+
+def validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_from_root(bundle["_root"])
+        actual = {
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P: bundle.get("progress"),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E: bundle.get("events"),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H: bundle.get("handoff"),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D: bundle.get("detached_digest"),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M: manifest,
+        }
+        objects = {
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P: _c21_resume_json(expected[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P]),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E: _c21_resume_json(expected[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E]),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H: extract_handoff_summary(expected[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_H].decode()),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D: _c21_resume_json(expected[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_D]),
+            C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M: _c21_resume_json(expected[C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], objects[path]) for path in actual) else ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PROJECTION_INVALID"]
+        errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_manifest(manifest))
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_INPUT_INVALID"]
+
+
+def _collect_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_git(bundle: Mapping[str, Any]) -> list[str]:
+    root = bundle["_root"]
+    meta = c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_metadata()
+    try:
+        head = _git_value(root, "rev-parse", "HEAD")
+        status = _git_value(root, "-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        branch = _git_value(root, "branch", "--show-current")
+        upstream = _git_value(root, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+        private_url = _git_value(root, "remote", "get-url", "development")
+        record = _git_value(root, "for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution")
+        candidate = _git_value(root, "for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact187")
+        control = _git_value(root, "for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-runtime-control-v2")
+        if status is None or None in (head, branch, upstream, private_url, record, candidate, control):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch != "codex/c21-operational-execution" or upstream != "origin/codex/c21-operational-execution":
+            return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url != C21_WORKBENCH_UI_WSL_PRIVATE_URL or record not in {C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT, head} or candidate != C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CANDIDATE or control != C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_CONTROL:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if _git_returncode(root, "merge-base", "--is-ancestor", control, head) == 0:
+            return ["GIT_SIBLING_HISTORY_MERGED"]
+        declared = bundle["progress"].get("repository", {}).get("validated_base_commit")
+        if declared != C21_EXACT_BINDING_BASE or _git_returncode(root, "merge-base", "--is-ancestor", declared, head) != 0:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty = sorted(_working_tree_paths(status))
+        direct = dirty if head == C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT else _c21_resume_git_paths(_git_value(root, "diff", "--name-only", C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT, head) or "")
+        cumulative = sorted(set(_c21_resume_git_paths(_git_value(root, "diff", "--name-only", C21_EXACT_BINDING_BASE, head) or "")) | (set(dirty) if head == C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT else set()))
+        if direct != meta["exact_paths"] or cumulative != meta["cumulative_paths"]:
+            return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head == C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT:
+            return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
+        return [] if not dirty and (_git_value(root, "show", "-s", "--format=%P", head) or "").split() == [C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 if __name__ == "__main__":
     raise SystemExit(main())
