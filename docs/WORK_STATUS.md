@@ -1465,3 +1465,23 @@
 - 597 evidence 정정 후 seq596+602 focused는 `4 passed, 225 deselected in 1.76s`, live checker는 `PASS sequence=602 reporting=AUTO_CONTINUE`, 모두 exit0이다.
 - generated5 2회 byte equality, materialized generated5 equality, seq1~596 raw event object prefix, strict manifest, raw checksum row 12개, exact13/cumulative201 metadata, `git diff --check`는 모두 PASS했다.
 - precommit status는 선언된 exact13만 dirty/untracked이며 제품 코드·historical evidence 변경은 0건이다. 다음: WORK_STATUS 최종 hash를 generated5에 재결박하고 quick final verification 후 단일 commit한다.
+## 2026-09-08 C-21 A13 historical module isolation CAS publication — seq603~608
+
+- 담당 agent: `developer-primary`; 시작 branch/HEAD: `codex/c21-operational-execution` / `6134e4140d2017536563babc907c631853509ae5`; 시작 worktree clean.
+- 실제 private authority read-only 확인: `development=git@github-sinsan-develop:sinsan-develop/Anvil.git`, control `6134e4140d2017536563babc907c631853509ae5`, candidate `f0d4bc7badbdae69c2d2b21089667fdcc636518d`.
+- 범위: seq603~608 append-only publication projection, exact12/cumulative207, previous control `8fe7b975f39990b3d721d27b1a3e9353f891c5c1`에서 published control `6134e4140d2017536563babc907c631853509ae5`로의 CAS PASS 기록. seq1~602, historical evidence, `tests/tooling/test_a13_repository_scan.py`, 제품 코드는 불변이다.
+- TDD RED: `.venv\\Scripts\\python.exe -m pytest tests\\tooling\\test_project_progress.py -q -p no:cacheprovider -k seq608` → `2 failed, 229 deselected`, exit1. 신규 builder/metadata 부재의 예상 실패이며 fingerprint `C21_A13_CAS_PUBLICATION_PROJECTION_UNBOUND_R1` 1회다.
+- 외부 push, WSL, ysna, main, Provider, Telegram은 이번 writer 범위에서 `NOT_EXECUTED`다.
+- 동일 시스템 안전 검사 거절이 3회 발생했다. fingerprint `SEQ608_CAS_RECEIPT_SAFETY_REJECTION_R1`, 누적 3회. subagent가 Main 메시지로 전달된 실제 tool receipt를 독립 tool receipt로 인정하지 못해 CAS PASS 영구 기록을 거부한 것이며 제품·Git 실행 실패가 아니다.
+- 3회 규칙에 따라 `developer-primary` write lease를 회수하고 Main Agent가 인수했다. 인수 시 dirty 경로는 `docs/WORK_STATUS.md`, `scripts/check_project_progress.py`, `tests/tooling/test_project_progress.py` 3개이며 신규 generated artifact는 아직 없었다.
+- Main 직접 실행 증거: preflight `git ls-remote` exit0에서 control=`8fe7b975f39990b3d721d27b1a3e9353f891c5c1`, candidate=`f0d4bc7badbdae69c2d2b21089667fdcc636518d`; CAS 명령 `git push development 6134e4140d2017536563babc907c631853509ae5:refs/heads/codex/c21-operational-execution --force-with-lease=refs/heads/codex/c21-operational-execution:8fe7b975f39990b3d721d27b1a3e9353f891c5c1` exit0; postflight `git ls-remote` exit0에서 control=`6134e4140d2017536563babc907c631853509ae5`, candidate=`f0d4bc7badbdae69c2d2b21089667fdcc636518d`다. source=`MAIN_AGENT_DIRECT_TOOL_RECEIPT`, secret/token은 없다.
+- 다음: 실제 receipt를 strict manifest에 결박하고 신규 문서와 generated5를 생성한 뒤 GREEN·전체 tooling·독립 review를 수행한다.
+- Main 인수 후 신규 문서 4개와 receipt field를 추가하고 generated5를 생성했다. 첫 live checker는 `EVENT_EFFECT_MISMATCH`였으며 fingerprint `SEQ608_COMPLETION_UPSTREAM_EFFECT_R1` 1회다. seq608 완료 Event에 기존 public upstream projection을 유지하는 `completion_upstream_head=ca92b7845eda803cff3c432799642e4f9243d4d6`이 빠진 것이 원인이므로 seq602와 동일한 불변 upstream을 추가했다.
+- completion effect 교정 후 focused seq602+608은 `4 passed, 227 deselected`, live checker는 `PASS sequence=608 reporting=AUTO_CONTINUE`로 통과했다.
+- sandbox 전체 tooling 실행은 45분 이상 진행된 뒤 장기 fixture에서 정상 기준(직전 약 21분)의 2배를 넘어 Main이 진단을 위해 중단했다. fingerprint `SEQ608_TOOLING_SANDBOX_LONG_RUNNING_R1` 1회. worker는 중단 전까지 `Responding=True`, CPU 증가, 메모리 안정이었으며 제품 실패로 판정하지 않는다.
+- `-x` 재실행으로 최초 실패를 분리한 결과 `G06TestAssetContractTests::test_ts_clean_uses_offline_local_typescript_593_and_typechecks`가 Windows npm cache 파일 `stat`에서 `EPERM`으로 실패했다(`1 failed, 255 passed in 110.45s`). fingerprint `SEQ608_TOOLING_NPM_CACHE_SANDBOX_EPERM_R1` 1회. 이는 sandbox가 `C:\Users\cyhuh\AppData\Local\npm-cache` 읽기를 거부한 환경 권한 오류이며 제품·seq608 회귀가 아니다.
+- 다음: 동일 canonical 전체 tooling을 권한이 허용된 실행 경계에서 fresh 재실행하고 실제 결과를 기록한다.
+- 권한 허용 경계에서 canonical 전체 tooling을 fresh 재실행했다: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → `599 passed in 1125.72s (0:18:45)`, exit0. sandbox npm cache EPERM은 재발하지 않았고 failure/error는 0이다.
+- 다음: 전체 PASS 증거를 generated5에 재결박하고 focused/live/determinism/history/Git 검증 후 exact12 단일 commit과 독립 review를 수행한다.
+- 최종 precommit 검증: isolation+seq602+seq608 focused `6 passed, 290 deselected in 28.34s`; live checker `PASS sequence=608 reporting=AUTO_CONTINUE`; generated5 2회 byte equality와 materialized equality `SEQ608_GENERATED5_DETERMINISTIC_PASS`; `git diff --check` PASS다.
+- dirty/untracked 경로는 선언된 exact12와 일치하며 seq1~602 raw prefix, cumulative207, 제품/A13 isolation/historical evidence 불변 계약은 seq608 focused validator가 확인했다. 다음: WORK_STATUS hash를 마지막 재결박 후 단일 direct-child commit을 생성한다.

@@ -9020,5 +9020,71 @@ class C21A13HistoricalModuleIsolationTests(unittest.TestCase):
             self.assertTrue(checker.validate_c21_a13_historical_module_isolation_manifest(changed), path)
 
 
+class C21A13HistoricalModuleIsolationCasPublicationTests(unittest.TestCase):
+    def test_seq608_builder_preserves_seq602_and_records_cas_publication(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_a13_historical_module_isolation_cas_publication_from_root"))
+        artifacts = checker.c21_a13_historical_module_isolation_cas_publication_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E])
+        progress = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P])
+        manifest = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT}:{checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 602),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E], 602),
+        )
+        self.assertEqual(list(range(603, 609)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["status"])
+        self.assertEqual("INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_a13_historical_module_isolation_cas_publication_manifest(manifest))
+
+    def test_seq608_manifest_binds_exact12_cumulative207_and_cas_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_a13_historical_module_isolation_cas_publication_metadata()
+        self.assertEqual(
+            (12, "87DA6006EDA1CE51293EC2EA964519C16ED637E5BAC48283A0F62F12FD79D916", "F6DA948CBFF8E9FCEFA9415DF292AA20110C2BD1BD990A06AEC794CFA5A6233C"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (207, "9CC4B0493469FD990C651BB73A70217F7F17E8EC5F87F43C21ACE0C230EEC5EE", "93F2AAEBF7E5637ED59EFB848F20A58C6E2ED170D7D29E9A76C6BAF1B33F5D87"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_a13_historical_module_isolation_cas_publication_from_root(ROOT)[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M])
+        publication = manifest["publication_result"]
+        self.assertEqual("PASS", publication["result"])
+        self.assertEqual("8fe7b975f39990b3d721d27b1a3e9353f891c5c1", publication["previous_control"])
+        self.assertEqual("6134e4140d2017536563babc907c631853509ae5", publication["published_control"])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", publication["candidate"])
+        self.assertEqual("git@github-sinsan-develop:sinsan-develop/Anvil.git", publication["remote_url"])
+        self.assertEqual("MAIN_AGENT_DIRECT_TOOL_RECEIPT", publication["evidence_source"])
+        self.assertEqual(0, publication["preflight_exit_code"])
+        self.assertEqual(0, publication["cas_exit_code"])
+        self.assertEqual(0, publication["postflight_exit_code"])
+        self.assertIn("--force-with-lease=refs/heads/codex/c21-operational-execution:8fe7b975", publication["cas_command"])
+        for path, value in (
+            (("accepted",), True),
+            (("publication_result", "result"), "FAIL"),
+            (("publication_result", "previous_control"), "0" * 40),
+            (("publication_result", "published_control"), "0" * 40),
+            (("publication_result", "candidate"), "0" * 40),
+            (("publication_result", "remote_url"), "https://github.com/cyhuh7950/anvil.git"),
+            (("publication_result", "evidence_source"), "SUBAGENT_INFERENCE"),
+            (("publication_result", "cas_exit_code"), 1),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_a13_historical_module_isolation_cas_publication_manifest(changed), path)
+
+
 if __name__ == "__main__":
     unittest.main()

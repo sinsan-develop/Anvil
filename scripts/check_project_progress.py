@@ -12788,6 +12788,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 608:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c21_a13_historical_module_isolation_cas_publication_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 602:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13706,6 +13710,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_runtime_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_MANIFEST.json":
             errors.extend(validate_c21_a13_historical_module_isolation_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_MANIFEST.json":
+            errors.extend(validate_c21_a13_historical_module_isolation_cas_publication_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_local_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_REWORK_LOCAL_START_MANIFEST.json":
@@ -20055,6 +20061,177 @@ def _collect_c21_a13_historical_module_isolation_git(bundle: Mapping[str,Any])->
         if direct!=meta["exact_paths"] or cumulative!=meta["cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
         if head==C21_A13_MODULE_ISOLATION_PARENT: return [] if dirty else ["GIT_DESCENDANT_WORKTREE_DIRTY"]
         return [] if not dirty and (_git_value(root,"show","-s","--format=%P",head) or "").split()==[C21_A13_MODULE_ISOLATION_PARENT] else ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+    except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT = "6134e4140d2017536563babc907c631853509ae5"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PREVIOUS_CONTROL = "8fe7b975f39990b3d721d27b1a3e9353f891c5c1"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_AT = "2026-09-08T09:30:00+09:00"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS = "READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID = "WI-C-21-A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION-20260908-001"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P = "docs/progress/build-progress.json"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E = "docs/progress/progress-events.json"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H = "docs/progress/BUILD_HANDOFF.md"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D = "docs/progress/progress-handoff-detached-digest-c21-a13-historical-module-isolation-cas-publication.json"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M = "docs/evidence/manifests/C-21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_MANIFEST.json"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI = "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_WORK_INSTRUCTION.md"
+C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PROMPT = "docs/work_orders/C-21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_INVOCATION_PROMPT.md"
+
+
+def c21_a13_historical_module_isolation_cas_publication_paths() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_REPORT.md",
+        "docs/WORK_STATUS.md", C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M,
+        C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H, C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P,
+        C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E, C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D,
+        "docs/validation/C-21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_VALIDATION.md",
+        C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PROMPT, C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c21_a13_historical_module_isolation_cas_publication_metadata() -> dict[str, Any]:
+    exact = c21_a13_historical_module_isolation_cas_publication_paths()
+    cumulative = sorted(set(c21_a13_historical_module_isolation_metadata()["cumulative_paths"]) | set(exact))
+    result = {
+        "exact_paths": exact, "exact_path_count": len(exact),
+        "exact_path_list_sha256": _c21_path_list_sha(exact, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(exact, windows=False),
+        "cumulative_paths": cumulative, "cumulative_path_count": len(cumulative),
+        "cumulative_path_list_sha256": _c21_path_list_sha(cumulative, windows=True),
+        "cumulative_path_list_ordinal_sha256": _c21_path_list_sha(cumulative, windows=False),
+    }
+    expected = {
+        "exact_path_count": 12,
+        "exact_path_list_sha256": "87DA6006EDA1CE51293EC2EA964519C16ED637E5BAC48283A0F62F12FD79D916",
+        "exact_path_list_ordinal_sha256": "F6DA948CBFF8E9FCEFA9415DF292AA20110C2BD1BD990A06AEC794CFA5A6233C",
+        "cumulative_path_count": 207,
+        "cumulative_path_list_sha256": "9CC4B0493469FD990C651BB73A70217F7F17E8EC5F87F43C21ACE0C230EEC5EE",
+        "cumulative_path_list_ordinal_sha256": "93F2AAEBF7E5637ED59EFB848F20A58C6E2ED170D7D29E9A76C6BAF1B33F5D87",
+    }
+    if any(result[key] != value for key, value in expected.items()):
+        raise ValueError("C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PATH_METADATA_INVALID")
+    return result
+
+
+def _c21_a13_historical_module_isolation_cas_publication_result() -> dict[str, Any]:
+    return {
+        "result": "PASS",
+        "remote": "development",
+        "remote_url": C21_WORKBENCH_UI_WSL_PRIVATE_URL,
+        "control_ref": "refs/heads/codex/c21-operational-execution",
+        "candidate_ref": C21_WORKBENCH_UI_WSL_NEW_CANDIDATE_REF,
+        "previous_control": C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PREVIOUS_CONTROL,
+        "published_control": C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,
+        "candidate": C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,
+        "atomic_compare_and_swap": "PASS",
+        "evidence_source": "MAIN_AGENT_DIRECT_TOOL_RECEIPT",
+        "preflight_command": "git ls-remote development refs/heads/codex/c21-operational-execution refs/heads/candidates/c21-wsl-exact187",
+        "preflight_exit_code": 0,
+        "cas_command": "git push development 6134e4140d2017536563babc907c631853509ae5:refs/heads/codex/c21-operational-execution --force-with-lease=refs/heads/codex/c21-operational-execution:8fe7b975f39990b3d721d27b1a3e9353f891c5c1",
+        "cas_exit_code": 0,
+        "cas_output": "8fe7b97..6134e41 -> codex/c21-operational-execution",
+        "postflight_command": "git ls-remote development refs/heads/codex/c21-operational-execution refs/heads/candidates/c21-wsl-exact187",
+        "postflight_exit_code": 0,
+        "control_fetch": "PASS",
+        "candidate_fetch": "PASS",
+        "product_code_mutation_count": 0,
+        "historical_evidence_mutation_count": 0,
+        "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "wsl": "NOT_EXECUTED",
+        "ysna": "NOT_EXECUTED", "main_merge": "NOT_EXECUTED",
+    }
+
+
+def _c21_a13_historical_module_isolation_cas_publication_authority() -> dict[str, Any]:
+    return {
+        "remote": "development", "url": C21_WORKBENCH_UI_WSL_PRIVATE_URL,
+        "control_ref": "refs/heads/codex/c21-operational-execution",
+        "candidate_ref": C21_WORKBENCH_UI_WSL_NEW_CANDIDATE_REF,
+        "observed_control": C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,
+        "observed_candidate": C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,
+        "public_origin_is_push_authority": False,
+    }
+
+
+def _c21_a13_historical_module_isolation_cas_publication_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    worker={"lease_id":"worker-lease-c21-a13-historical-module-isolation-cas-publication-20260908-001","agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION","lease_epoch":1,"execution_fencing_token":"c21-a13-module-isolation-cas-publication-execution-fence-epoch-1-6134e41","fencing_token":"c21-a13-module-isolation-cas-publication-execution-fence-epoch-1-6134e41","status":"ACTIVE"}
+    write={"lease_id":"write-lease-c21-a13-historical-module-isolation-cas-publication-20260908-001","worker_lease_id":worker["lease_id"],"agent_id":"developer-primary","work_package_id":"C-21","subtask_id":"A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION","write_epoch":1,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":"c21-a13-module-isolation-cas-publication-write-fence-epoch-1-6134e41","fencing_token":"c21-a13-module-isolation-cas-publication-write-fence-epoch-1-6134e41","status":"ACTIVE","path_scope":c21_a13_historical_module_isolation_cas_publication_paths(),"paths":c21_a13_historical_module_isolation_cas_publication_paths()}
+    return worker,write
+
+
+def _c21_a13_historical_module_isolation_cas_publication_events(wi_sha: str, prompt_sha: str) -> list[dict[str, Any]]:
+    meta=c21_a13_historical_module_isolation_cas_publication_metadata(); result=_c21_a13_historical_module_isolation_cas_publication_result(); worker,write=_c21_a13_historical_module_isolation_cas_publication_leases()
+    common={"occurred_at":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_AT,"occurred_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","actor_type":"AGENT","actor_id":"developer-primary","project_id":"anvil","run_id":None,"work_package_id":"C-21","step_id":"A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION","actor":"developer-primary","subject_ref":"C-21/A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION"}
+    boundary={"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","wsl":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED"}
+    prefix="evt_c21_a13_historical_module_isolation_cas_publication_"
+    return [
+        {**common,"event_id":prefix+"worker_lease_issued","sequence":603,"event_type":"WORKER_LEASE_ISSUED","details":{**boundary,**worker,"work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"write_lease_issued","sequence":604,"event_type":"WRITE_LEASE_ISSUED","details":{**boundary,**write,"path_count":12,"path_list_sha256":meta["exact_path_list_sha256"],"work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"package_started","sequence":605,"event_type":"PACKAGE_STARTED","details":{**boundary,"work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID,"work_instruction_sha256":wi_sha,"invocation_sha256":prompt_sha,"dispatch_head":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"package_status":"ACTIVE_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION"}},
+        {**common,"event_id":prefix+"write_lease_revoked","sequence":606,"event_type":"WRITE_LEASE_REVOKED","details":{**boundary,**{**write,"status":"REVOKED"},"reason":"RESULT_HANDOFF","work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"worker_lease_revoked","sequence":607,"event_type":"WORKER_LEASE_REVOKED","details":{**boundary,**{**worker,"status":"REVOKED"},"reason":"RESULT_HANDOFF","work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID}},
+        {**common,"event_id":prefix+"package_completed","sequence":608,"event_type":"PACKAGE_COMPLETED","details":{**boundary,"work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID,"completion_parent":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"completion_head":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"completion_upstream_head":"ca92b7845eda803cff3c432799642e4f9243d4d6","projection_mode":VALIDATED_BASE_PROJECTION_MODE,"validated_base_commit":C21_EXACT_BINDING_BASE,"head_relation":"FEATURE_WORKTREE_6134E41_EXACT12_DIRTY","candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"publication_result":result,"result_status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"package_status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"exact_allowed_paths":meta["cumulative_paths"],"next_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE"}},
+    ]
+
+
+def c21_a13_historical_module_isolation_cas_publication_artifacts(historical: Mapping[str,bytes], files: Mapping[str,bytes]) -> dict[str,bytes]:
+    generated={C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M}
+    if set(files)!=set(c21_a13_historical_module_isolation_cas_publication_paths())-generated: raise ValueError("C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_FILE_SET_INVALID")
+    progress=_c21_resume_json(historical[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P])
+    if progress.get("event_sequence")!=602: raise ValueError("C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_HISTORY_INVALID")
+    wi_sha=_c21_resume_sha(files[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI]); prompt_sha=_c21_resume_sha(files[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PROMPT]); additions=_c21_a13_historical_module_isolation_cas_publication_events(wi_sha,prompt_sha); events_raw=_c21_append_events(historical[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E],602,additions)
+    meta=c21_a13_historical_module_isolation_cas_publication_metadata(); result=_c21_a13_historical_module_isolation_cas_publication_result(); authority=_c21_a13_historical_module_isolation_cas_publication_authority(); worker,write=_c21_a13_historical_module_isolation_cas_publication_leases(); worker["status"]="REVOKED"; write["status"]="REVOKED"
+    instruction={"artifact_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID,"artifact_path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI,"artifact_sha256":wi_sha,"invocation_path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PROMPT,"invocation_sha256":prompt_sha,"executor":"developer-primary","result_status":"COMPLETED","package_status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"accepted":False,"c21_acceptance_status":"BLOCKED_NOT_ACCEPTED","c01_boundary":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED"}
+    repository=dict(progress["repository"]); repository.update({"local_head":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"head_relation":"FEATURE_WORKTREE_6134E41_EXACT12_DIRTY","worktree_status":"SEQ608_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_EXACT12_DIRTY","exact_allowed_paths":meta["cumulative_paths"],"a13_historical_module_isolation_cas_publication_paths":meta["exact_paths"],"push_status":"CAS_PASS_RECORDED"})
+    active={"status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"parent_control_commit":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"private_git_authority":authority,"publication_result":result,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**meta}
+    progress.update({"updated_at":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_AT,"recorded_at":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_AT,"event_sequence":608,"last_event_id":additions[-1]["event_id"],"status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"active_agent":None,"worker_lease":worker,"write_lease":write,"active_work_instruction":instruction,"completed_work_instruction":instruction,"repository":repository,"a13_historical_module_isolation_cas_publication":active,"runtime_next_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE","next_safe_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE","current_progress_evidence_ref":{"package_id":"C-21","path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D,"manifest_path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M},"latest_evidence_manifest_ref":{"path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M,"artifact_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION-20260908"},"reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_PASS_ACCEPTANCE_STATE_UNCHANGED"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E,"sha256":_c21_resume_sha(events_raw)}; latest={**files,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E:events_raw}; progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha(raw)} for p,raw in sorted(latest.items())]; progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={"event_sequence":608,"last_event_id":additions[-1]["event_id"],"status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"current_phase":"C","current_work_package":"C-21","active_agent":None,"worker_lease":worker,"write_lease":write,"execution_fencing_token":worker["execution_fencing_token"],"write_fencing_token":write["write_fencing_token"],"active_work_instruction":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID,"active_work_instruction_sha256":wi_sha,"active_invocation_sha256":prompt_sha,"repository_head":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"repository_head_relation":repository["head_relation"],"repository_upstream":repository["upstream"],"repository_projection_mode":repository["projection_mode"],"repository_validated_base_commit":repository["validated_base_commit"],"repository_exact_allowed_paths":meta["cumulative_paths"],"design_baseline_hash":progress["design_baseline_hash"],"valid_failure_count":progress["valid_failure_count"],"dir_status":progress["dir_review"]["status"],"reporting_decision":"AUTO_CONTINUE","private_git_authority":authority,"publication_result":result,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED","next_safe_action":"INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE",**meta}
+    htext="# C-21 A13 historical module isolation CAS publication — seq608\n\n- private control CAS PASS를 append-only로 기록하고 acceptance 대기 상태를 유지한다.\n\n"+historical[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H].decode(); replacement="```json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+"```"; htext,count=re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```",lambda _:replacement,htext,flags=re.DOTALL)
+    if count!=1: raise ValueError("C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_HANDOFF_INVALID")
+    handoff_raw=htext.encode(); digest={"schema_version":"1.0.0","digest_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION-DIGEST-20260908","package_id":"C-21","event_sequence":608,"algorithm":"SHA-256","created_at":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_AT,"scope":"seq603-608 append-only; seq1-602 preserved; exact12 cumulative207","self_reference":False,"progress":{"path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},"handoff":{"path":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}; digest_raw=_c21_resume_json_bytes(digest)
+    prior={**files,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E:events_raw,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P:progress_raw,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H:handoff_raw,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D:digest_raw}; manifest={"schema_version":"1.0.0","manifest_type":"C21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_PROJECTION","artifact_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION-20260908","recorded_at":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_AT,"recorded_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","event_sequence":608,"appended_event_count":6,"historical_event_sequence":602,"historical_commit":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID,"execution_authority_sha256":wi_sha,"private_git_authority":authority,"status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"publication_result":result,"self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**meta}; manifest["raw_checksums"]=[{"path":p,"bytes":len(raw),"sha256":_c21_resume_sha(raw)} for p,raw in sorted(prior.items())]
+    return {C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E:events_raw,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P:progress_raw,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H:handoff_raw,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D:digest_raw,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M:_c21_resume_json_bytes(manifest)}
+
+
+def c21_a13_historical_module_isolation_cas_publication_from_root(root: Path) -> dict[str,bytes]:
+    historical={p:subprocess.check_output(["git","show",f"{C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT}:{p}"],cwd=root) for p in (C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H)}
+    generated={C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D,C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M}; files={p:(root/p).read_bytes() for p in set(c21_a13_historical_module_isolation_cas_publication_paths())-generated}
+    return c21_a13_historical_module_isolation_cas_publication_artifacts(historical,files)
+
+
+def validate_c21_a13_historical_module_isolation_cas_publication_manifest(manifest: Mapping[str,Any]) -> list[str]:
+    try:
+        meta=c21_a13_historical_module_isolation_cas_publication_metadata(); expected={"schema_version":"1.0.0","manifest_type":"C21_A13_HISTORICAL_MODULE_ISOLATION_CAS_PUBLICATION_PROJECTION","artifact_id":"C21-A13-HISTORICAL-MODULE-ISOLATION-CAS-PUBLICATION-20260908","recorded_at":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_AT,"recorded_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","event_sequence":608,"appended_event_count":6,"historical_event_sequence":602,"historical_commit":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,"candidate_commit":C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE,"work_instruction_id":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_WI_ID,"private_git_authority":_c21_a13_historical_module_isolation_cas_publication_authority(),"status":C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_STATUS,"publication_result":_c21_a13_historical_module_isolation_cas_publication_result(),"self_reference":False,"accepted":False,"c21_status":"BLOCKED_NOT_ACCEPTED","c01_status":"BLOCKED_PENDING_C21_ACCEPTANCE","dir2_status":"NOT_TRIGGERED",**meta}
+        allowed=set(expected)|{"execution_authority_sha256","raw_checksums"}
+        if set(manifest)!=allowed or any(not _c21_strict_json_equal(manifest.get(k),v) for k,v in expected.items()) or re.fullmatch(r"[0-9A-F]{64}",str(manifest.get("execution_authority_sha256"))) is None: return ["C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_MANIFEST_INVALID"]
+        rows=manifest.get("raw_checksums"); expected_paths=set(c21_a13_historical_module_isolation_cas_publication_paths())-{C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M}
+        if type(rows) is not list or {r.get("path") for r in rows if type(r) is dict}!=expected_paths or any(type(r) is not dict or set(r)!={"path","bytes","sha256"} or type(r.get("bytes")) is not int or r["bytes"]<=0 or re.fullmatch(r"[0-9A-F]{64}",str(r.get("sha256"))) is None for r in rows): return ["C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_CHECKSUMS_INVALID"]
+        return []
+    except (TypeError,KeyError,ValueError): return ["C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_MANIFEST_INVALID"]
+
+
+def validate_c21_a13_historical_module_isolation_cas_publication_projection(bundle: Mapping[str,Any],manifest: Mapping[str,Any])->list[str]:
+    try:
+        expected=c21_a13_historical_module_isolation_cas_publication_from_root(bundle["_root"]); actual={C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P:bundle.get("progress"),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E:bundle.get("events"),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H:bundle.get("handoff"),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D:bundle.get("detached_digest"),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M:manifest}; objects={C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P]),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E]),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H:extract_handoff_summary(expected[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_H].decode()),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_D]),C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M:_c21_resume_json(expected[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M])}; errors=[] if all(_c21_strict_json_equal(actual[p],objects[p]) for p in actual) else ["C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PROJECTION_INVALID"]; errors.extend(validate_c21_a13_historical_module_isolation_cas_publication_manifest(manifest)); return sorted(set(errors))
+    except (OSError,subprocess.CalledProcessError,ValueError,TypeError,KeyError,UnicodeError,json.JSONDecodeError): return ["C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_INPUT_INVALID"]
+
+
+def _collect_c21_a13_historical_module_isolation_cas_publication_git(bundle: Mapping[str,Any])->list[str]:
+    root=bundle["_root"]; meta=c21_a13_historical_module_isolation_cas_publication_metadata()
+    try:
+        head=_git_value(root,"rev-parse","HEAD"); status=_git_value(root,"-c","core.quotePath=false","status","--porcelain=v1","--untracked-files=all"); branch=_git_value(root,"branch","--show-current"); upstream=_git_value(root,"rev-parse","--abbrev-ref","--symbolic-full-name","@{u}"); private_url=_git_value(root,"remote","get-url","development"); control=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/codex/c21-operational-execution"); candidate=_git_value(root,"for-each-ref","--format=%(objectname)","refs/remotes/development/candidates/c21-wsl-exact187")
+        if status is None or None in (head,branch,upstream,private_url,control,candidate): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch!="codex/c21-operational-execution" or upstream!="origin/codex/c21-operational-execution": return ["GIT_DESCENDANT_ORIGIN_MISMATCH"]
+        if private_url!=C21_WORKBENCH_UI_WSL_PRIVATE_URL or candidate!=C21_WORKBENCH_UI_WSL_RUNTIME_CANDIDATE: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        declared=bundle["progress"].get("repository",{}).get("validated_base_commit")
+        if declared!=C21_EXACT_BINDING_BASE or _git_returncode(root,"merge-base","--is-ancestor",declared,head)!=0: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        dirty=sorted(_working_tree_paths(status)); direct=dirty if head==C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT else _c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,head) or ""); cumulative=sorted(set(_c21_resume_git_paths(_git_value(root,"diff","--name-only",C21_EXACT_BINDING_BASE,head) or "")) | (set(dirty) if head==C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT else set()))
+        if direct!=meta["exact_paths"] or cumulative!=meta["cumulative_paths"]: return ["GIT_DESCENDANT_PATH_SET_MISMATCH"]
+        if head==C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT:
+            return [] if dirty and control==C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT else ["GIT_PRIVATE_AUTHORITY_MISMATCH" if control!=C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT else "GIT_DESCENDANT_WORKTREE_DIRTY"]
+        if dirty or (_git_value(root,"show","-s","--format=%P",head) or "").split()!=[C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT]: return ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+        return [] if control in {C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT,head} else ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
     except (OSError,ValueError,TypeError,KeyError): return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
