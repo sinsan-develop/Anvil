@@ -1557,3 +1557,24 @@
 - canonical 전체 tooling: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → `610 passed in 1176.53s (0:19:36)`, exit0. failure/error는 0이다.
 - 다음: 전체 PASS 영수증을 generated5에 재결박하고 focused/live/determinism/exact12/Git 계보를 최종 검증한 뒤 parent a9243cc의 단일 direct-child commit으로 고정한다.
 - precommit 최종 검증: seq620+seq626 focused `4 passed, 238 deselected`; live checker `PASS sequence=626 reporting=AUTO_CONTINUE`; generated5 2회 byte equality와 materialized equality `SEQ626_GENERATED5_DETERMINISTIC_PASS`; exact12 Windows/ordinal 및 cumulative225 Windows/ordinal hash 일치; parent a9243cc exact; `git diff --check` PASS다.
+
+## 2026-09-08 C-21 seq627~632 WSL authenticated browser runtime retry R3 result
+
+- 담당: `developer-primary`; parent/control `2d4a2c90fb6f3d4e38ba311f9e13294a8fe67be0`, candidate `f0d4bc7badbdae69c2d2b21089667fdcc636518d`.
+- Main orchestration 오류 `MAIN_R3_WRONG_WORKDIR_CREATEPROCESS_R1` 1회: canonical worktree가 아닌 잘못된 workdir로 프로세스를 생성하려다 실패했다. 제품·WSL·Git 실행 실패가 아니며 canonical worktree로 교정했다.
+- 범위: seq627~632 append-only exact12 projection 및 actual WSL development validation attempt 3. 제품/deploy/probe/WorkPlan/historical 파일은 변경하지 않는다.
+- 다음: seq632 strict success/failure projection/checker 계약을 TDD RED로 고정한 뒤 secret-safe preflight와 단일 runtime attempt를 실행한다.
+- TDD RED: `.venv\Scripts\python.exe -m pytest tests\tooling\test_project_progress.py -q -p no:cacheprovider -k seq632` → `2 failed, 242 deselected`, exit1. 신규 R3 builder/metadata 부재의 예상 실패이며 fingerprint `C21_AUTH_BROWSER_RUNTIME_R3_PROJECTION_UNBOUND_R1` 1회다.
+- 다음: WSL child env에서 explicit `GIT_SSH_COMMAND` presence/exact와 private refs/repo/env/scope/residue를 secret-safe 확인한 뒤 attempt 3을 1회 실행한다.
+- 플랫폼 안전 심사 거절 2회는 actual runtime 실행 전 `PLATFORM_SAFETY_REVIEW_REJECTION`으로 분리하며 attempt 3 횟수에 포함하지 않는다. 세 번째 요청은 사용자 중단으로 판정되지 않았고 제품·WSL mutation 증거가 없다.
+- actual attempt 3 preflight: host/user `SINSAN`/`daon`, private control/candidate `2d4a2c90...`/`f0d4bc7...`, application candidate/clean, env mode600/hash `FECAE53B...52A79A`, required names/provider:read scope, initial container/network/exact-volume residue `0/0/0`, lock absent가 PASS했다.
+- deploy exact1은 control runtime을 표준 `bash script` 호출 대신 직접 실행하여 `/srv/anvil-wsl/repo/deploy/wsl/control-runtime.sh: Permission denied`, exit126으로 application/Docker mutation 전에 실패했다. fingerprint `CONTROL_RUNTIME_DIRECT_EXEC_PERMISSION_DENIED_R3` 유효 실패 1회다. verify/PG15/PG18 authenticated browser는 `NOT_EXECUTED`이며 재실행하지 않았다.
+- cleanup exact1도 동일 direct-exec 오류로 exit126/FAIL이다. read-only 사후 관측은 container/network/exact-volume/lock residue `0/0/0/0`, application `f0d4bc7...` clean, env mode/hash byte-identical이다. malformed bash arg1 및 wrong Windows cwd Git discovery2는 preflight orchestration abort이며 runtime mutation0이다. receipt 뒤 `exit 30\\r` 메시지는 PowerShell CRLF 오류로 second attempt가 아니다.
+- 판정: `FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_VALIDATION_ATTEMPT_3`; WSL 개발단계 검증 실패이며 accepted=false, C-21/C-01 blocked, DIR-2 not triggered. Provider 외부·Telegram·ysna·main·C-01은 `NOT_EXECUTED`다.
+- 다음 안전 조치: 별도 successor에서 `sudo -n env GIT_SSH_COMMAND=... bash /srv/anvil-wsl/repo/deploy/wsl/control-runtime.sh deploy <candidate>`를 사용하고 cleanup도 `bash`로 호출한다.
+- 경로 계약 재검산: repository `_c21_path_list_sha`로 exact12 Windows/ordinal `227E0B11...784E4B`/`3FDD92F6...73E3E`, cumulative231 `1701B4B8...65B15`/`4491BC45...EEE6C`가 모두 일치했다. 최초 독립 계산의 경로 입력 오류는 계약 오류로 계상하지 않는다.
+- Main의 exact 경로 전달 중 manifest `WORKBENCH_UI_UI`, validation `WORKBEN_UI` 오타 1회는 즉시 정정됐으며 오타 경로 파일은 생성하지 않았다. fingerprint `MAIN_R3_EXACT_PATH_TRANSMISSION_TYPO_R1` 1회다.
+- TDD GREEN: seq632 focused `2 passed, 242 deselected`; seq626 회귀 포함 focused `4 passed, 240 deselected`; live checker `PASS sequence=632 reporting=AUTO_CONTINUE`다.
+- canonical 전체 tooling: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → `612 passed in 1060.58s (0:17:40)`, exit0. failure/error는 0이다.
+- 다음: 위 fresh 영수증을 generated5에 재결박하고 focused/live/determinism/exact12/Git 계보를 최종 검증한 뒤 parent `2d4a2c9`의 단일 direct-child commit으로 고정한다.
+- precommit 최종 검증: seq626+seq632 focused `4 passed, 240 deselected`; live checker `PASS sequence=632 reporting=AUTO_CONTINUE`; generated5 2회 및 materialized bytes 동일 `SEQ632_GENERATED5_DETERMINISTIC_PASS`; exact12/cumulative231 Windows·ordinal hash 일치; parent `2d4a2c9` exact; `git diff --check` PASS다.

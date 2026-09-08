@@ -9378,5 +9378,44 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryResultTests(unittest.TestCase):
             self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_result_manifest(changed), path)
 
 
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR3ResultTests(unittest.TestCase):
+    def test_seq632_builder_preserves_seq626_and_records_attempt3_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_PARENT}:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 626), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_E], 626))
+        self.assertEqual(list(range(627, 633)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_VALIDATION_ATTEMPT_3", progress["status"])
+        self.assertEqual("ISSUE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_BASH_INVOCATION_SUCCESSOR", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_manifest(manifest))
+
+    def test_seq632_manifest_binds_exact12_cumulative231_and_cleanup_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_metadata()
+        self.assertEqual((12, "227E0B11E216170A0A56C7D184EB67A0D51054F9C72D9C19BDA493CEB7784E4B", "3FDD92F6996CA52C33F06522D2DF3FC2BBEEC2338F05AE097BB4A3F2FA773E3E"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((231, "1701B4B854A56B3AA965E9EA15C9270758143AC8FB3BE3F5811A9A11D9E65B15", "4491BC454A30831810DB01E50F6A824D69B22A855A9093C1086ECF554B8EEE6C"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+        manifest = json.loads(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_M])
+        result = manifest["runtime_result"]
+        self.assertEqual(3, result["attempt_number"])
+        self.assertEqual("PASS", result["preflight"]["result"])
+        self.assertEqual({"result": "FAIL", "exit_code": 126, "failure_fingerprint": "CONTROL_RUNTIME_DIRECT_EXEC_PERMISSION_DENIED_R3", "failure_location": "CONTROL_RUNTIME_DIRECT_EXEC", "mutation_boundary": "BEFORE_CONTROL_RUNTIME_OR_APPLICATION_DOCKER_MUTATION", "evidence_reexecution": False}, result["deploy"])
+        for key in ("verify", "browser_pg15", "browser_pg18rc"):
+            self.assertEqual("NOT_EXECUTED", result[key])
+        self.assertEqual({"attempt_count": 1, "exit_code": 126, "result": "FAIL", "failure_fingerprint": "CONTROL_RUNTIME_DIRECT_EXEC_PERMISSION_DENIED_R3"}, result["cleanup"])
+        self.assertEqual("BYTE_IDENTICAL", result["postconditions"]["environment"])
+        self.assertEqual(0, result["postconditions"]["total_residue_count"])
+        for path, value in ((('accepted',), True), (('runtime_result', 'attempt_number'), 2), (('runtime_result', 'deploy', 'result'), 'PASS'), (('runtime_result', 'cleanup', 'attempt_count'), 2), (('runtime_result', 'postconditions', 'total_residue_count'), 1)):
+            changed = copy.deepcopy(manifest); target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_manifest(changed), path)
+
+
 if __name__ == "__main__":
     unittest.main()
