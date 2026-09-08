@@ -1,3 +1,14 @@
+# C-21 Workbench UI WSL authenticated browser probe R1 — seq609~614
+
+- Reviewer 최종 재검토 `COMMIT_READY / C0 / I0 / M1`: WorkInstruction 첫 범위 bullet에 R1의 `screenshot root를 환경변수에서 읽는다` 문구가 남아 확정된 R2 memory-only 계약과 불일치했다. path 없는 Buffer 메모리 전용 및 screenshot-root nonempty env fail-closed로 비의미 문서 정정했으며 기능·범위·seq614/exact13/hash 경계는 확대하지 않는다. 기존 full tooling `606 passed in 1320.29s`는 코드 불변으로 유지하고 focused 문서/checker 검증으로 M1을 해소한다.
+- 비의미 정정 pre-amend 검증: focused `7 passed, 231 deselected`; live checker는 새 projection이 아직 commit되지 않은 단계에서 예상대로 `GIT_DESCENDANT_RECORD_COMMIT_INVALID` 1회로 fail-closed했다. amend 후 재검증 대상으로서 제품/계약 실패가 아니며 valid failure count `2`는 불변이다.
+- Reviewer R2: `REWORK / C0 / I1 / M1`, 동일 package valid failure 2로 수락했다. filesystem screenshot root 설계가 TOCTOU·overwrite·symlink·cleanup 예외 경계를 불필요하게 만든다는 판단에 따라 WorkInstruction을 `MEMORY_ONLY` Buffer capture로 축소한다. 이는 기능 범위 확대가 아니라 위험 제거 revision이며 seq614/exact13을 유지한다.
+- R2 시작 기준 full tooling: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → exit 0, `606 passed in 1122.50s`.
+- R2 TDD RED: memory-only manifest/input/failure/self-test 계약 부재 `4 failed, 1 passed`; 하나의 screenshot persistence revision lineage valid failure 2에 속하며 3번째 동일 유효 실패는 아니다.
+- R2 GREEN: screenshot은 path 없는 Buffer로만 캡처하고 logical relative name/bytes/SHA-256만 receipt에 기록한다. filesystem files/directories/residue는 0이고 `ANVIL_SCREENSHOT_ROOT` 및 legacy `ANVIL_WSL_WORKBENCH_SCREENSHOT_DIR` 입력은 fail-closed 거부한다. Last-Event-ID exact 검증은 유지한다. 집중 `7 passed, 231 deselected`, Node syntax PASS다.
+- R2 최종 full tooling 재검증: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → exit 0, `606 passed in 1320.29s (0:22:00)`; 실패 fingerprint 없음.
+- R2 최종 보조 검증: API 전체 `117 passed`, Workbench Web `8 passed`, actual headless Workbench click/SSE와 cross-origin rejection PASS. `node --test apps/web/tests`는 Node가 directory target을 module로 해석해 1회 exit 1이었고 정확한 `apps/web/tests/workbench.test.mjs` 대상으로 정정했다. 제품 실패가 아니며 valid failure count는 `2`로 유지한다.
+
 # C-21 Provider status READ start — seq507~509
 
 - commit 전 cached diff-check의 `new blank line at EOF` 2건(WI line58, invocation line11)을 비의미 correction으로 확정했다. 문서 의미·제품 범위·lease exact18은 불변이며 EOF LF 1개로 정규화한 뒤 WI/prompt 3-way hash와 manifest/raw refs/digest/progress/HANDOFF snapshot만 재결박한다. full164 R3 결과는 유효하고 focused 검증으로 마감한다.
@@ -1485,3 +1496,23 @@
 - 다음: 전체 PASS 증거를 generated5에 재결박하고 focused/live/determinism/history/Git 검증 후 exact12 단일 commit과 독립 review를 수행한다.
 - 최종 precommit 검증: isolation+seq602+seq608 focused `6 passed, 290 deselected in 28.34s`; live checker `PASS sequence=608 reporting=AUTO_CONTINUE`; generated5 2회 byte equality와 materialized equality `SEQ608_GENERATED5_DETERMINISTIC_PASS`; `git diff --check` PASS다.
 - dirty/untracked 경로는 선언된 exact12와 일치하며 seq1~602 raw prefix, cumulative207, 제품/A13 isolation/historical evidence 불변 계약은 seq608 focused validator가 확인했다. 다음: WORK_STATUS hash를 마지막 재결박 후 단일 direct-child commit을 생성한다.
+# 2026-09-08 C-21 Workbench UI WSL authenticated browser probe R1 — seq609~614
+
+- 담당: `developer-primary`; 시작 기준: clean `4ad596f603987f7a87b4396de035fd49ddc274f6`, branch `codex/c21-operational-execution`.
+- 범위: exact13 Git-only probe 계약. 제품·배포·DB·Provider·Telegram·WSL·ysna·main은 변경 또는 실행하지 않는다.
+- TDD RED: `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k 'seq614 or probe_self_test'` → exit 1, `3 failed, 231 deselected`. seq614 builder/metadata 부재 2건과 새 self-test mode 부재가 의도한 실패 원인이다. Playwright eager load가 schema-only self-test보다 먼저 실패한 현상은 새 mode가 runtime dependency 없이 secret-safe receipt schema를 검증해야 한다는 계약으로 함께 고정한다.
+- 다음 조치: browser probe env-only mode와 schema-only self-test를 최소 구현하고, seq609~614 append-only projection/checker를 결박한 뒤 집중·전체 검증한다.
+- 구현 GREEN: seq614 및 browser 입력 경계 집중 검증 `4 passed, 231 deselected`; 동일 fingerprint 반복 0회다.
+- 환경 오류: sandbox 기본 권한에서 `docs/progress/progress-events.json` 생성 projection 쓰기가 `PermissionError`로 1회 거부됐다. 제품/생성기 오류가 아니며 플랫폼의 D:\tmp 쓰기 승격으로 동일 builder를 재실행해 generated5를 기록했다.
+- projection 보완: 최초 live checker는 completion Event의 `completion_upstream_head` 누락으로 `EVENT_EFFECT_MISMATCH` 1회였다. predecessor repository remote 값을 명시해 재결박했고 live checker는 `PASS sequence=614 reporting=AUTO_CONTINUE`다. 동일 fingerprint 반복 0회다.
+- 추가 TDD RED/GREEN: 상대 screenshot root가 repository 쓰기로 해석될 수 있는 실패를 1회 재현하고 원문 absolute path만 허용하도록 수정했다. seq614/browser 집중 검증은 `5 passed, 231 deselected`다.
+- 관련 검증: `node --check tests/browser/c21-network-probe.mjs` exit 0; Web `12 passed`; API `41 passed`; 기존 `--workbench-self-test`는 실제 headless Chromium click/network를 통해 Provider GET 및 SSE Last-Event-ID 재개를 통과했다. Web 시험의 기존 `MODULE_TYPELESS_PACKAGE_JSON` 경고는 제품 오류로 승격하지 않는다.
+- actual `--wsl-workbench-auth` WSL 실행과 실제 screenshot 생성은 이 Git-only package에서 `NOT_EXECUTED`다.
+- 전체 progress tooling: `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider` → exit 0, `236 passed in 1009.65s`. 실패 0이다.
+- 독립 Reviewer R1: `REWORK / C0 / I3 / M0`. Important 3건은 screenshot root의 승인 temp 경계·비덮어쓰기/정리 계약 부족과 `Last-Event-ID` exact 값 비교 부족이다. exact13 안에서 TDD rework하며 acceptance/runtime 경계는 바꾸지 않는다.
+- Main fresh 전체 tooling 기준: `604 passed in 1202.30s`, exit 0. 보완 후 동일 전체 범위를 다시 실행한다.
+- Rework TDD RED: temp root/cleanup 및 bad cursor self-test 부재 `2 failed`; manifest 확장 계약 부재 `1 failed`. 서로 다른 root cause 각 1회이며 반복 0회다.
+- Rework GREEN: 승인 temp prefix, unique non-existing/exclusive run directory, arbitrary/repository/existing/symlink-junction-reparse-realpath escape 거부, success/failure cleanup receipt, `Last-Event-ID == initial eventId` exact 비교와 missing/stale/wrong negative 계약을 구현했다. 집중 `7 passed, 231 deselected`, Node syntax exit 0이다.
+- post-create race 보완 TDD RED/GREEN: 생성 후 symlink/reparse 교체 거부 증거 부재 `1 failed` 후 created run directory realpath를 재검증하고 screenshot buffer를 `wx` exclusive write하도록 수정했다. 집중 `2 passed, 236 deselected`; 동일 fingerprint 반복 0회다.
+- Browser negative/actual/schema self-tests: page fetch scope PASS, cross-origin rejection PASS, 실제 headless Workbench Provider click + SSE Last-Event-ID PASS, schema-only root/cursor/screenshot receipt PASS. Web `12 passed`, API `41 passed`, Node syntax/diff-check PASS다.
+- Rework generated5를 a4ad8e2 위 dirty 상태에서 임시 확인할 때 live checker는 postcommit clean-only gate에 따라 `GIT_DESCENDANT_RECORD_COMMIT_INVALID` 1회를 반환했다. 이는 a4ad8e2 amend 전 예상된 Git transition이며 final amend 후 clean direct-child에서 재검증한다.

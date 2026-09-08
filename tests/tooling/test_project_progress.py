@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -9084,6 +9085,192 @@ class C21A13HistoricalModuleIsolationCasPublicationTests(unittest.TestCase):
             for key in path[:-1]: target = target[key]
             target[path[-1]] = value
             self.assertTrue(checker.validate_c21_a13_historical_module_isolation_cas_publication_manifest(changed), path)
+
+
+class C21WorkbenchUiWslAuthBrowserProbeTests(unittest.TestCase):
+    def test_seq614_builder_preserves_seq608_and_records_probe_contract(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_auth_browser_probe_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_probe_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_PARENT}:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 608),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_E], 608),
+        )
+        self.assertEqual(list(range(609, 615)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_EXECUTION", progress["status"])
+        self.assertEqual("EXECUTE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE", progress["runtime_next_action"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_execution"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_probe_manifest(manifest))
+
+    def test_seq614_manifest_binds_exact13_cumulative213_and_secret_safe_probe_contract(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_probe_metadata()
+        self.assertEqual(
+            (13, "CC635465B7F0E79B3AAE5C88FFC23CAE180F28FAED00B440D200772083AA6AC6", "269419A426966B48E97F87147F2B65365D3F16B42D5D1EA6E525B95AF55F5D22"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (213, "2878046572BD6386121F5D35C0390766468492A1E9BC6F40219F5ADBD6376D2E", "726D55C3AE83A2791A86CB79C4BBB7419FC502E992A3FDD159A955BAB432F068"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_workbench_ui_wsl_auth_browser_probe_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_M])
+        contract = manifest["probe_contract"]
+        self.assertEqual("ENVIRONMENT_ONLY", contract["credential_input"])
+        self.assertEqual([[1920,1080], [1440,900], [430,844]], contract["viewports"])
+        self.assertEqual("ONE_CANONICAL_JSON_RECEIPT", contract["output"])
+        self.assertEqual("FAIL_CLOSED_NONZERO", contract["acceptance_failure"])
+        self.assertEqual("SCHEMA_ONLY_PASS", contract["self_test"])
+        self.assertEqual("MEMORY_ONLY", contract["screenshot"]["storage"])
+        self.assertEqual(0, contract["screenshot"]["files_created"])
+        self.assertEqual(0, contract["screenshot"]["directories_created"])
+        self.assertEqual(0, contract["screenshot"]["residue_count"])
+        self.assertEqual("FAIL_CLOSED_IF_SUPPLIED", contract["screenshot"]["root_input"])
+        self.assertEqual("EXACT_INITIAL_EVENT_ID", contract["last_event_id"])
+        self.assertEqual(["MISSING_REJECTED", "STALE_REJECTED", "WRONG_REJECTED"], contract["last_event_id_negative_cases"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_execution"])
+        for path, value in (
+            (("accepted",), True),
+            (("runtime_execution",), "PASS"),
+            (("probe_contract", "credential_input"), "CLI_ALLOWED"),
+            (("probe_contract", "viewports"), [[1920,1080]]),
+            (("probe_contract", "provider_write_count"), 1),
+            (("probe_contract", "secret_safety", "cookie_occurrences"), 1),
+            (("probe_contract", "screenshot", "storage"), "FILESYSTEM"),
+            (("probe_contract", "last_event_id"), "PRESENT_ONLY"),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_probe_manifest(changed), path)
+
+    def test_wsl_workbench_auth_probe_self_test_receipt_schema_and_secret_safety(self):
+        result = subprocess.run(
+            ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth-self-test"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        self.assertEqual(1, len(lines))
+        receipt = json.loads(lines[0])
+        self.assertEqual(json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")), lines[0])
+        self.assertEqual("SCHEMA_ONLY_PASS", receipt["result"])
+        self.assertEqual("ENVIRONMENT_ONLY", receipt["credentialInput"])
+        self.assertEqual([[1920,1080], [1440,900], [430,844]], [[row["width"], row["height"]] for row in receipt["viewports"]])
+        self.assertTrue(all(set(row["screenshot"]) == {"relativeName", "bytes", "sha256"} for row in receipt["viewports"]))
+        self.assertTrue(all(len(row["screenshot"]["sha256"]) == 64 for row in receipt["viewports"]))
+        self.assertEqual({"directoriesCreated":0,"filesCreated":0,"residueCount":0,"storage":"MEMORY_ONLY"}, receipt["filesystemMutation"])
+        self.assertEqual({"rootInput":"FAIL_CLOSED_IF_SUPPLIED","storage":"MEMORY_ONLY"}, receipt["screenshotPolicy"])
+        self.assertEqual({"sentinelOccurrences":0,"authorizationHeaderOccurrences":0,"cookieOccurrences":0,"rawUrlOccurrences":0}, receipt["secretSafety"])
+        rendered = json.dumps(receipt, sort_keys=True).lower()
+        self.assertNotIn("bootstrap-token", rendered)
+        self.assertNotIn("set-cookie", rendered)
+        self.assertNotIn('"authorization":', rendered)
+
+    def test_wsl_workbench_auth_probe_rejects_cli_credentials_and_missing_env_with_one_safe_receipt(self):
+        cases = (
+            (["--wsl-workbench-auth", "--bootstrap-token", "forbidden-secret-sentinel"], "INPUT_REJECTED"),
+            (["--wsl-workbench-auth"], "ENVIRONMENT_ERROR"),
+        )
+        clean_env = {
+            key: value for key, value in os.environ.items()
+            if key not in {
+                "ANVIL_WSL_WORKBENCH_BASE_URL",
+                "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN",
+                "ANVIL_TEST_SESSION_RUN_ID",
+                "ANVIL_WSL_WORKBENCH_SCREENSHOT_DIR",
+                "ANVIL_SCREENSHOT_ROOT",
+            }
+        }
+        for arguments, expected in cases:
+            result = subprocess.run(
+                ["node", "tests/browser/c21-network-probe.mjs", *arguments],
+                cwd=ROOT,
+                env=clean_env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertNotEqual(0, result.returncode)
+            lines = [line for line in result.stdout.splitlines() if line.strip()]
+            self.assertEqual(1, len(lines), result.stderr)
+            receipt = json.loads(lines[0])
+            self.assertEqual(expected, receipt["result"])
+            self.assertEqual("ENVIRONMENT_ONLY", receipt["credentialInput"])
+            self.assertNotIn("forbidden-secret-sentinel", result.stdout)
+            self.assertNotIn("forbidden-secret-sentinel", result.stderr)
+
+    def test_wsl_workbench_auth_probe_rejects_any_screenshot_root_input(self):
+        for variable in ("ANVIL_SCREENSHOT_ROOT", "ANVIL_WSL_WORKBENCH_SCREENSHOT_DIR"):
+            environment = dict(os.environ)
+            environment.update({
+                "ANVIL_WSL_WORKBENCH_BASE_URL": "http://127.0.0.1:4770/",
+                "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "not-printed",
+                "ANVIL_TEST_SESSION_RUN_ID": "run-safe",
+                variable: "D:/tmp/forbidden-screenshot-root",
+            })
+            result = subprocess.run(
+                ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth"],
+                cwd=ROOT, env=environment, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(2, result.returncode)
+            receipt = json.loads(result.stdout)
+            self.assertEqual("ENVIRONMENT_ERROR", receipt["result"])
+            self.assertEqual("FAIL_CLOSED_IF_SUPPLIED", receipt["screenshotPolicy"]["rootInput"])
+            self.assertNotIn("not-printed", result.stdout + result.stderr)
+
+    def test_wsl_workbench_auth_probe_failure_is_memory_only_canonical_and_mutates_no_filesystem(self):
+        before = sorted(Path("D:/tmp").glob("anvil-c21-auth-browser-probe-*"))
+        environment = dict(os.environ)
+        environment.update({
+            "ANVIL_WSL_WORKBENCH_BASE_URL": "http://127.0.0.1:4770/",
+            "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "not-printed",
+            "ANVIL_TEST_SESSION_RUN_ID": "run-safe",
+            "ANVIL_PLAYWRIGHT_MODULE": str(ROOT / "missing-playwright-for-cleanup-test"),
+        })
+        environment.pop("ANVIL_SCREENSHOT_ROOT", None)
+        environment.pop("ANVIL_WSL_WORKBENCH_SCREENSHOT_DIR", None)
+        result = subprocess.run(
+            ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth"],
+            cwd=ROOT, env=environment, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(1, result.returncode, result.stderr)
+        receipt = json.loads(result.stdout)
+        self.assertEqual("PROBE_ERROR", receipt["result"])
+        self.assertEqual(json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")), result.stdout.strip())
+        self.assertEqual({"directoriesCreated":0,"filesCreated":0,"residueCount":0,"storage":"MEMORY_ONLY"}, receipt["filesystemMutation"])
+        self.assertEqual(before, sorted(Path("D:/tmp").glob("anvil-c21-auth-browser-probe-*")))
+
+    def test_wsl_workbench_auth_probe_self_test_memory_only_and_rejects_bad_resume_cursor(self):
+        result = subprocess.run(
+            ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth-self-test"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        receipt = json.loads(result.stdout)
+        self.assertEqual({
+            "missingRejected": True,
+            "staleRejected": True,
+            "wrongRejected": True,
+        }, receipt["lastEventIdNegativeCases"])
+        self.assertEqual({"rootInput":"FAIL_CLOSED_IF_SUPPLIED","storage":"MEMORY_ONLY"}, receipt["screenshotPolicy"])
+        self.assertEqual({"directoriesCreated":0,"filesCreated":0,"residueCount":0,"storage":"MEMORY_ONLY"}, receipt["filesystemMutation"])
 
 
 if __name__ == "__main__":
