@@ -9539,5 +9539,114 @@ class C21WorkbenchUiWslImmutableRuntimeControlV2PublicationTests(unittest.TestCa
         self.assertTrue(checker.validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(changed))
 
 
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR5ResultTests(unittest.TestCase):
+    def _preflight(self):
+        return {
+            "result": "PASS",
+            "candidate_commit": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+            "runtime_control_commit": "fb311d456fe3cbb2e8439f39017356ddec6cf266",
+            "manifest_ref": "refs/remotes/origin/candidates/c21-wsl-runtime-control-v2",
+            "manifest_sha256": "3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329",
+            "control_runtime_sha256": "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097",
+            "application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+            "application_dirty_count": 0,
+            "environment_mode": "600",
+            "environment_sha256": "F" * 64,
+            "required_names": "PRESENT",
+            "provider_read_scope": True,
+            "initial_residue_count": 0,
+            "secret_values": "OMITTED",
+        }
+
+    def _success(self):
+        phase = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+        browser = {
+            **phase,
+            "viewport_count": 3,
+            "provider_count": 9,
+            "primary_provider": "UPSTAGE",
+            "groq_click": "PASS",
+            "authenticated_sse": "PASS",
+            "last_event_id": "PASS",
+            "same_origin": "PASS",
+        }
+        return {
+            "attempt_number": 5,
+            "outcome": "SUCCESS",
+            "preflight": self._preflight(),
+            "deploy": dict(phase),
+            "verify": dict(phase),
+            "browser_pg15": dict(browser),
+            "browser_pg18rc": dict(browser),
+            "receipts": {"current_json_count": 4, "backup_count": 2, "verification_count": 2, "rollback_count": 0, "sha256": ["A" * 64, "B" * 64, "C" * 64, "D" * 64]},
+            "image_metadata": {"count": 2, "result": "PASS"},
+            "cleanup": {**phase, "evidence_reexecution": False},
+            "postconditions": {"application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "application_dirty_count": 0, "environment": "BYTE_IDENTICAL", "control_stage_dirty_count": 0, "container_residue": 0, "network_residue": 0, "exact_volume_residue": 0, "lock_residue": 0, "screenshot_residue": 0, "total_residue_count": 0, "backup_evidence_preserved": True},
+            "external_calls": {"provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED"},
+            "secret_safety": {"token": "MEMORY_ONLY", "credential_values": "OMITTED", "cookie_values": "OMITTED", "header_values": "OMITTED", "raw_urls": "OMITTED"},
+        }
+
+    def test_seq650_metadata_binds_architect_exact12_and_cumulative249(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_metadata()
+        self.assertEqual((12, "AFA5519D9CC8F31C74009752367D4C69669F1F616ACDB92E8F7BD24010D61DFD", "1F17E1C320EA124C5648F32AB896AAD904EFF511F13F5D08F03CA2239074A7AD"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((249, "C4B351233E25AADB75F0534B2F8BE61AC2E4FB1E4B85CD7C05A6592F068A6B67", "4AB6817F0F43D1B1CD02A99F36AD8632647293387C49458239AF88EFC74F47A5"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq650_success_projection_is_strict_and_pending_independent_review(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._success()
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(result))
+        for path, value in (
+            (("deploy", "attempt_count"), 2),
+            (("receipts", "rollback_count"), 1),
+            (("browser_pg15", "same_origin"), "FAIL"),
+            (("postconditions", "total_residue_count"), 1),
+            (("external_calls", "provider"), "EXECUTED"),
+            (("secret_safety", "token"), "RECORDED"),
+        ):
+            changed = copy.deepcopy(result); changed[path[0]][path[1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(changed), path)
+
+    def test_seq650_failure_projection_stops_after_first_failure_and_cleans_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._success()
+        result.update({"outcome": "FAILED", "deploy": {"attempt_count": 1, "result": "FAIL", "exit_code": 17, "failure_fingerprint": "TEST_FAILURE", "evidence_reexecution": False}, "verify": "NOT_EXECUTED", "browser_pg15": "NOT_EXECUTED", "browser_pg18rc": "NOT_EXECUTED", "receipts": {"current_json_count": 0, "backup_count": 0, "verification_count": 0, "rollback_count": 0, "sha256": []}, "image_metadata": "NOT_EXECUTED"})
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(result))
+        changed = copy.deepcopy(result); changed["verify"] = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(changed))
+
+    def test_seq650_actual_pg15_dependency_failure_preserves_verify_receipts_without_pg18_retry(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._success()
+        result.update({
+            "outcome": "FAILED",
+            "browser_pg15": {"attempt_count": 1, "result": "FAIL", "exit_code": 1, "failure_fingerprint": "PLAYWRIGHT_MODULE_DEFAULT_PATH_MISSING_R5", "evidence_reexecution": False},
+            "browser_pg18rc": "NOT_EXECUTED",
+        })
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(result))
+        changed = copy.deepcopy(result); changed["browser_pg18rc"] = self._success()["browser_pg18rc"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(changed))
+
+    def test_seq650_builder_preserves_seq644_and_records_actual_r5_failure(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"48c34f8ef514e061f1cfa24e6d9f9f5bc0173bf1:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 644), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_E], 644))
+        self.assertEqual(list(range(645, 651)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R5_WSL_DEVELOPMENT_VALIDATION", progress["status"])
+        self.assertEqual("FAILED", manifest["runtime_execution"])
+        self.assertEqual("PLAYWRIGHT_MODULE_DEFAULT_PATH_MISSING_R5", manifest["runtime_result"]["browser_pg15"]["failure_fingerprint"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_result"]["browser_pg18rc"])
+        self.assertEqual(1, manifest["runtime_result"]["cleanup"]["attempt_count"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_manifest(manifest))
+        changed = copy.deepcopy(manifest); changed["runtime_result"]["browser_pg18rc"] = self._success()["browser_pg18rc"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_manifest(changed))
+
+
 if __name__ == "__main__":
     unittest.main()
