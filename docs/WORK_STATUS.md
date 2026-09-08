@@ -1516,3 +1516,25 @@
 - post-create race 보완 TDD RED/GREEN: 생성 후 symlink/reparse 교체 거부 증거 부재 `1 failed` 후 created run directory realpath를 재검증하고 screenshot buffer를 `wx` exclusive write하도록 수정했다. 집중 `2 passed, 236 deselected`; 동일 fingerprint 반복 0회다.
 - Browser negative/actual/schema self-tests: page fetch scope PASS, cross-origin rejection PASS, 실제 headless Workbench Provider click + SSE Last-Event-ID PASS, schema-only root/cursor/screenshot receipt PASS. Web `12 passed`, API `41 passed`, Node syntax/diff-check PASS다.
 - Rework generated5를 a4ad8e2 위 dirty 상태에서 임시 확인할 때 live checker는 postcommit clean-only gate에 따라 `GIT_DESCENDANT_RECORD_COMMIT_INVALID` 1회를 반환했다. 이는 a4ad8e2 amend 전 예상된 Git transition이며 final amend 후 clean direct-child에서 재검증한다.
+
+## 2026-09-08 C-21 seq615~620 WSL authenticated browser runtime result R1
+
+- 담당: `developer-primary`; 인수 parent/control `c4f219b214cd6bfd6fabf7fe69e26a8995ae098a`, candidate `f0d4bc7badbdae69c2d2b21089667fdcc636518d`, validated base `eef349682ff5598e3488c9e75163c5e0a99a0bdb`.
+- 단계: preflight `PASS`; deploy attempt 1 `FAIL`; verify/browser PG15/browser PG18RC `NOT_EXECUTED`; cleanup attempt 1 `PASS`; postcondition `PASS`.
+- 오류 횟수: runtime invocation lineage `C21_AUTH_BROWSER_CONTROL_REF_MISBOUND` valid failure 1. `ANVIL_CANDIDATE_MANIFEST_REF`를 control-runtime checkout에도 사용하는 현재 인터페이스에 candidate ref를 전달하여 observed checkout `f0d4bc7...`가 trusted control `c4f219b...`와 달랐고 mutation 전 exit3으로 거부됐다.
+- WSL preflight: host `SINSAN`, user `daon`, application repo exact candidate/clean, private refs exact, validated base ancestor PASS, `.env` owner root/mode600/hash `fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a`, bootstrap-token name/RUN_IDS/scope name presence 및 `provider:read` scope PASS. 값은 출력하지 않았다.
+- immutable hashes: manifest `a1bb21983ef5791c5025e8487675801cb824b2066f5c9d9f8dcf092ec1d6d82b`, control-runtime `d0ff497b22851dfc6cb3fa36c761d8bb69ded1cb7a838e81ef55c4a459570097`, deploy `7b6ee6a02bed857299423f78c73d746b6f8ac8c0cc40e3a611ece06e43e1c1c0`, verify `93e882d35c055535a7d989962fe0ee0ec49b91542eb462b655f1477dd2562a36`, cleanup `65e8aa6f5f02ab554ecf3f4fba1ceb16bd96616e952eb4d64d1285f183cc462d`.
+- cleanup: 올바른 control ref로 표준 cleanup 1회, exit0. active control exact `c4f219b...`/clean.
+- 사후: application repo exact candidate/clean, `.env` mode/hash byte-identical, PG15/PG18RC container0/network0, exact volume2 residue0.
+- 비밀 안전성: credential value, token, cookie, header, raw URL은 stdout·문서·event·manifest에 기록하지 않았다. screenshot files/directories/residue도 0이다.
+- 미검증: actual deploy/verify, authenticated browser 3 viewport, Provider UI read/GROQ click, SSE/Last-Event-ID. Provider 외부·Telegram·ysna·main·C-01은 제외 유지.
+- 판정: `FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_EXECUTION`; accepted=false, C-21/C-01 blocked, DIR-2 not triggered.
+- 다음: control checkout ref와 candidate manifest ref 역할을 분리한 별도 successor runtime attempt를 발행한다. 이번 실패 evidence는 보존한다.
+- TDD RED: seq620 focused에서 신규 builder/metadata 부재로 `2 failed, 238 deselected`, exit1을 확인했다. GREEN: strict failure result/checksum/tamper 계약 구현 후 `2 passed, 238 deselected`, exit0이다.
+- generated5 최초 materialize는 sandbox의 `D:\tmp` 쓰기 제한으로 `PermissionError` 1회가 발생했다. 제품/생성기 실패가 아니며 승인된 격리 worktree 쓰기 경계에서 동일 권위 생성기를 실행해 생성했다.
+- live checker: `G-05 project progress contract: PASS sequence=620 reporting=AUTO_CONTINUE`, exit0.
+- canonical 전체 tooling: `.venv\Scripts\python.exe -m pytest tests\tooling -q -p no:cacheprovider` → `608 passed in 1214.47s (0:20:14)`, exit0.
+- 용어 경계: WSL browser/API/DB/runtime은 개발단계 검증이다. 사용자 인수·외부 테스트·개발 완료로 승격하지 않는다. 작업계획서 자체 용어 정정은 exact12 밖이므로 후속 별도 projection 대상으로 남긴다.
+- final focused seq614+seq620+probe: `9 passed, 231 deselected`, exit0. generated5 두 번 생성 결과 및 materialized bytes 동일 `SEQ620_GENERATED5_DETERMINISTIC_PASS`; `git diff --check` PASS.
+- exact 경로는 설계된 12개와 일치하고 cumulative219 hash는 Windows `52936B5F9C6861EE6FAE270F747A6318502747539E8E66B285DA2811612D4E6D`, ordinal `7478D25196E94EB84E45BCE779E685937DB29E5736C8F482A7CD52D6040C40E2`다.
+- 진단 오류 원장: sandbox 기본 WSL 호출 `E_ACCESSDENIED` 1회(플랫폼 권한, 승격 후 해소); root 소유 repo의 dubious ownership와 `.env` read denial 1회(전역 설정 변경 없이 command-local `safe.directory`와 기존 sudo read로 해소); sudo가 daon SSH alias/known_hosts를 상속하지 못한 private fetch 실패 2회(직접 `github.com` host와 기존 daon deploy key/known_hosts 명시로 해소); PowerShell/WSL 중첩 변수·quote 진단 명령 실패 2회(고정 literal 명령으로 해소); post-cleanup active-stage 동적 경로 검사 실패 1회(관측 stage literal read-only 검사로 exact control/clean 확인). 이들은 runtime deploy valid failure 횟수에 포함하지 않는다.
