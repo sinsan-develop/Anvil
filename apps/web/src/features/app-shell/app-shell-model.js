@@ -13,21 +13,30 @@ export const MENU_ITEMS = Object.freeze([
 ]);
 
 export const DASHBOARD_HEALTH = Object.freeze(['Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store']);
+export const DASHBOARD_OPERATIONS = Object.freeze(['실행 중', '승인 대기', 'BLOCKED', '필수 Gate 미통과', '예상 비용 초과', 'baseline 충돌']);
+export const DASHBOARD_OPERATION_DEFINITIONS = Object.freeze([
+  {key:'running', label:'실행 중'}, {key:'approvalWaiting', label:'승인 대기'}, {key:'blocked', label:'BLOCKED'},
+  {key:'requiredGateFailed', label:'필수 Gate 미통과'}, {key:'budgetExceeded', label:'예상 비용 초과'}, {key:'baselineConflict', label:'baseline 충돌'},
+]);
 export const READY_PATH = '/health/ready';
 
-const unavailable = reason => Object.freeze({status:'UNAVAILABLE', detail:'No source connected', reason});
+const unavailable = reason => Object.freeze({
+  icon:'○', status:'UNAVAILABLE', detail:'No source connected', reason,
+  lastChecked:'UNAVAILABLE', errorCount:'UNAVAILABLE',
+  detailLink:Object.freeze({status:'UNAVAILABLE', label:'상세 링크 UNAVAILABLE', reason:'Health detail source is not connected.'}),
+});
 const unavailableSection = reason => Object.freeze({status:'UNAVAILABLE', detail:'No source connected', reason});
 
 export function createDashboardState() {
   return {
     health: DASHBOARD_HEALTH.map(name => ({name, ...unavailable('Dashboard read model is not connected.')})),
     operations: {
-      activeRuns: unavailableSection('Run read model is not connected.'),
+      running: unavailableSection('Run read model is not connected.'),
       approvalWaiting: unavailableSection('Approval read model is not connected.'),
-      blockedRuns: unavailableSection('Run read model is not connected.'),
-      failedRuns: unavailableSection('Run read model is not connected.'),
-      requiredGates: unavailableSection('Quality read model is not connected.'),
-      budgetThresholds: unavailableSection('Cost read model is not connected.'),
+      blocked: unavailableSection('Run read model is not connected.'),
+      requiredGateFailed: unavailableSection('Quality read model is not connected.'),
+      budgetExceeded: unavailableSection('Cost read model is not connected.'),
+      baselineConflict: unavailableSection('Baseline read model is not connected.'),
     },
     nextActions: unavailableSection('Next action read model is not connected.'),
     criticalAlerts: unavailableSection('Alert read model is not connected.'),
@@ -39,11 +48,11 @@ export function reduceDashboard(state, action) {
   if (action.type === 'READINESS_RECEIVED') {
     const payload = action.payload;
     if (!payload || payload.status !== 'ready' || typeof payload.migration_head !== 'string' || !payload.migration_head) return reduceDashboard(state, {type:'READINESS_FAILED'});
-    const health = state.health.map((card, index) => index === 0 ? {...card, status:'READY', detail:`Migration ${payload.migration_head}`, reason:'Same-origin readiness endpoint responded.'} : card);
+    const health = state.health.map((card, index) => index === 0 ? {...card, icon:'●', status:'READY', detail:`Migration ${payload.migration_head}`, reason:'Same-origin readiness endpoint responded.', lastChecked:action.refreshedAt || 'JUST NOW'} : card);
     return {...state, health, refreshedAt: action.refreshedAt || 'JUST NOW'};
   }
   if (action.type === 'READINESS_FAILED') {
-    const health = state.health.map((card, index) => index === 0 ? {...card, status:'NOT_CONNECTED', detail:'Readiness unavailable', reason:'The same-origin readiness endpoint did not return ready.'} : card);
+    const health = state.health.map((card, index) => index === 0 ? {...card, icon:'○', status:'NOT_CONNECTED', detail:'Readiness unavailable', reason:'The same-origin readiness endpoint did not return ready.', lastChecked:action.refreshedAt || 'FAILED'} : card);
     return {...state, health, refreshedAt: action.refreshedAt || 'FAILED'};
   }
   return state;

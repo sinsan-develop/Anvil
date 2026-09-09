@@ -17,3 +17,14 @@
 - Error count: 0 formal implementation failures. The initial all-web regression exposed the obsolete root-workbench expectation once; its test was revised to the approved Dashboard/Provider split and then passed.
 - Unverified: `py -m pytest tests/api/test_public_asgi_frontend.py -q` cannot run because no default Python is installed in this worktree; actual browser rendering and `/health/ready` response remain unverified. WSL/remote/DB/container work was not performed by scope.
 - Next: review exact diff and stage only the listed Dashboard Shell files for the required local commit.
+
+## 2026-09-09 — Reviewer rework round 1
+
+- Scope: reviewer-required Dashboard Shell corrections only; no WSL, remote, DB, container, Provider, or migration action.
+- Changed files: `apps/web/index.html`, `apps/web/src/app/app-shell.js`, `apps/web/src/features/app-shell/app-shell-model.js`, `apps/web/src/styles/app-shell.css`, `apps/web/tests/app-shell.test.mjs`, this progress file.
+- RED: `node --no-warnings --test apps/web/tests/app-shell.test.mjs` first failed because `DASHBOARD_OPERATIONS` was absent; after browser observation exposed English property-name headings, the strengthened contract then failed on the missing `DASHBOARD_OPERATION_DEFINITIONS` export. Both failures were expected pre-implementation contract gaps.
+- GREEN: focused app-shell test 3 passed; full Web test suite `node --no-warnings --test apps/web/tests/*.test.mjs` → 24 passed; `git diff --check` and browser-source host scan passed.
+- Browser evidence: local static server at 430px yielded `clientWidth=415`, `scrollWidth=415`; sidebar collapse changed `aria-expanded` true→false and button name to `메뉴 펼치기`, then restored the menu. The expanded menu retained all names; PREPARING items had `aria-disabled=true`, `tabindex=-1`, and no `href`. With no local `/health/ready` route, Database changed to truthful `NOT_CONNECTED`/`FAILED` rather than a success state.
+- Error count: 0 formal implementation failures; two expected RED contract gaps resolved. Operations exact set is now 실행 중/승인 대기/BLOCKED/필수 Gate 미통과/예상 비용 초과/baseline 충돌; `failedRuns` is removed. Health cards expose icon, status, short explanation, last checked, error count, and an explicitly unavailable detail-link field.
+- Unverified: Python API pytest remains unavailable because no default Python is installed; a successful real `/health/ready` response, WSL/remote/DB/container remain unverified by scope.
+- Next: stage only rework files, run staged verification, and commit the reviewer rework.

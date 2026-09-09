@@ -4,6 +4,8 @@ import {readFile} from 'node:fs/promises';
 
 import {
   DASHBOARD_HEALTH,
+  DASHBOARD_OPERATIONS,
+  DASHBOARD_OPERATION_DEFINITIONS,
   MENU_ITEMS,
   READY_PATH,
   createDashboardState,
@@ -27,9 +29,26 @@ test('dashboard state is honest until a same-origin readiness result arrives', (
     'Database', 'Queue', 'Worker', 'LLM Providers', 'Execution Backends', 'Artifact Store',
   ]);
   assert.ok(initial.health.every(({status, reason}) => status === 'UNAVAILABLE' && reason));
-  assert.equal(initial.operations.activeRuns.status, 'UNAVAILABLE');
+  assert.deepEqual(DASHBOARD_OPERATIONS, [
+    '실행 중', '승인 대기', 'BLOCKED', '필수 Gate 미통과', '예상 비용 초과', 'baseline 충돌',
+  ]);
+  assert.deepEqual(DASHBOARD_OPERATION_DEFINITIONS.map(({key, label}) => [key, label]), [
+    ['running', '실행 중'], ['approvalWaiting', '승인 대기'], ['blocked', 'BLOCKED'],
+    ['requiredGateFailed', '필수 Gate 미통과'], ['budgetExceeded', '예상 비용 초과'], ['baselineConflict', 'baseline 충돌'],
+  ]);
+  assert.deepEqual(Object.keys(initial.operations), [
+    'running', 'approvalWaiting', 'blocked', 'requiredGateFailed', 'budgetExceeded', 'baselineConflict',
+  ]);
+  assert.equal(initial.operations.running.status, 'UNAVAILABLE');
+  assert.equal(initial.operations.failedRuns, undefined);
   assert.equal(initial.nextActions.status, 'UNAVAILABLE');
   assert.equal(initial.criticalAlerts.status, 'UNAVAILABLE');
+  for (const card of initial.health) {
+    assert.equal(card.icon, '○');
+    assert.equal(card.lastChecked, 'UNAVAILABLE');
+    assert.equal(card.errorCount, 'UNAVAILABLE');
+    assert.equal(card.detailLink.status, 'UNAVAILABLE');
+  }
 
   const ready = reduceDashboard(initial, {
     type: 'READINESS_RECEIVED',
@@ -40,7 +59,7 @@ test('dashboard state is honest until a same-origin readiness result arrives', (
   assert.ok(ready.health.slice(1).every(({status}) => status === 'UNAVAILABLE'));
 });
 
-test('dashboard HTML and CSS preserve the production shell and narrow viewport contract', async () => {
+test('dashboard HTML and CSS preserve accessible menu control and narrow viewport contract', async () => {
   const [html, css] = await Promise.all([
     readFile(new URL('index.html', root), 'utf8'),
     readFile(new URL('src/styles/app-shell.css', root), 'utf8'),
@@ -48,6 +67,8 @@ test('dashboard HTML and CSS preserve the production shell and narrow viewport c
   assert.match(html, /data-production-dashboard/);
   assert.match(html, /id="dashboard-health"/);
   assert.match(html, /id="dashboard-next-actions"/);
+  assert.match(html, /id="toggle-sidebar"[^>]*aria-expanded="true"/);
+  assert.match(html, /aria-label="사이드바 접기 또는 펼치기"/);
   assert.match(html, /src="\/src\/app\/app-shell\.js"/);
   assert.match(css, /--sidebar-width:\s*224px/);
   assert.match(css, /--sidebar-collapsed-width:\s*56px/);
@@ -55,4 +76,6 @@ test('dashboard HTML and CSS preserve the production shell and narrow viewport c
   assert.doesNotMatch(css, /body\s*\{[^}]*min-width\s*:/);
   assert.doesNotMatch(css, /overflow-x\s*:\s*hidden/);
   assert.match(css, /@media\s*\(max-width:\s*430px\)/);
+  assert.doesNotMatch(css, /@media\(max-width:760px\)[\s\S]*\.sidebar-toggle\{display:none\}/);
+  assert.match(css, /@media\(max-width:430px\)[\s\S]*\.app-menu/);
 });
