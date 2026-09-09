@@ -34,13 +34,16 @@ test('preview assets and errors keep strict security headers', async () => {
   }
 });
 
-test('production mode hides fixture workbench unless the explicit fixture flag is enabled', async () => {
+test('production mode serves Dashboard, keeps Provider Workbench separate, and hides fixtures by default', async () => {
   const runtime = await startWorkbenchServer({host: '127.0.0.1', port: 0});
   try {
     const page = await fetch(`${runtime.origin}/`);
     const production=await page.text();
-    assert.match(production, /data-production-workbench/);
+    assert.match(production, /data-production-dashboard/);
     assert.doesNotMatch(production, /FIXTURE BROWSER RUNTIME/);
+    const provider=await fetch(`${runtime.origin}/provider-workbench.html`);
+    assert.equal(provider.status,200);
+    assert.match(await provider.text(), /data-production-workbench/);
     const fixture=await fetch(`${runtime.origin}/fixture-workbench`);
     const fixtureHtml=await fetch(`${runtime.origin}/fixture-workbench.html`);
     assert.equal(fixture.status,404);

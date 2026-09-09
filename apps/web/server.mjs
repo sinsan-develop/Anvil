@@ -44,6 +44,9 @@ const staticFiles=new Map([
   ['/src/api/workbench-client.js',['src/api/workbench-client.js','text/javascript; charset=utf-8']],
   ['/src/features/workbench/workbench-state.js',['src/features/workbench/workbench-state.js','text/javascript; charset=utf-8']],
   ['/src/styles/workbench.css',['src/styles/workbench.css','text/css; charset=utf-8']],
+  ['/src/app/app-shell.js',['src/app/app-shell.js','text/javascript; charset=utf-8']],
+  ['/src/features/app-shell/app-shell-model.js',['src/features/app-shell/app-shell-model.js','text/javascript; charset=utf-8']],
+  ['/src/styles/app-shell.css',['src/styles/app-shell.css','text/css; charset=utf-8']],
   ['/design-flow',['design-flow.html','text/html; charset=utf-8']],
   ['/src/api/design-flow-client.js',['src/api/design-flow-client.js','text/javascript; charset=utf-8']],
   ['/src/app/design-flow.js',['src/app/design-flow.js','text/javascript; charset=utf-8']],
@@ -122,6 +125,11 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
       if (request.method==='GET' && requestUrl.pathname==='/') {
         const filename=runtimeMode==='preview'?'ui-preview.html':runtimeMode==='fixture'?'fixture-workbench.html':'index.html';
         const body=await readFile(join(webRoot,filename));
+        response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
+        return response.end(body);
+      }
+      if (request.method==='GET' && requestUrl.pathname==='/provider-workbench.html') {
+        const body=await readFile(join(webRoot,'provider-workbench.html'));
         response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
         return response.end(body);
       }

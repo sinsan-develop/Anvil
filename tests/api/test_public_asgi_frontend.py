@@ -45,8 +45,11 @@ def test_public_asgi_serves_frontend_from_same_listener() -> None:
     assert client.get("/health/live").json() == {"status": "ok"}
     response = client.get("/")
     assert response.status_code == 200
-    assert "data-production-workbench" in response.text
+    assert "data-production-dashboard" in response.text
     assert "FIXTURE BROWSER RUNTIME" not in response.text
+    provider = client.get("/provider-workbench.html")
+    assert provider.status_code == 200
+    assert "data-production-workbench" in provider.text
     fixture = client.get("/fixture-workbench.html")
     assert fixture.status_code == 200
     assert "FIXTURE BROWSER RUNTIME" in fixture.text
