@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R9-RESULT-DIGEST-20260909",
+  "package_id": "C-21",
+  "event_sequence": 674,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-09T23:55:00+09:00",
+  "scope": "seq663-674 append-only; seq1-668 preserved; exact12 cumulative273",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 591167,
+    "file_sha256": "C52AE9E162C76A1268CB3A0B9107A95C07406DC20A6D0060B599E362FFCBF8CC",
+    "canonical_json_sha256": "F86C1585F2F56AF9834763701048169ACBDB451B3CE0640F1EA3311A60E68296"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 238830,
+    "file_sha256": "853221C5F99194A62E74D97FBA29FE10A02C29EF35E79C9881D7061699D02DC1",
+    "machine_summary_canonical_sha256": "37A1C4B60067D67CD6C3F86B0003914BE1BB85C141E4D6C5542D1740614B6A70"
+  }
+}

@@ -9924,5 +9924,105 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryR8ResultTests(unittest.TestCase):
         self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_result_manifest(manifest))
 
 
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9ResultTests(unittest.TestCase):
+    def _native(self, result="PASS"):
+        raw = json.dumps({"result": result, "runtimeExecution": "EXECUTED" if result == "PASS" else "FAILED"}, separators=(",", ":"), sort_keys=True) + "\n"
+        return {"stdout": raw, "stderr": "", "exit_code": 0 if result == "PASS" else 1, "process_started": True}
+
+    @staticmethod
+    def _safe(receipt):
+        return {"result": receipt["result"], "runtime_execution": receipt["runtimeExecution"]}
+
+    def _assert_secret_safe_one_object(self, envelope):
+        self.assertIs(type(envelope), dict)
+        rendered = json.dumps(envelope, sort_keys=True)
+        self.assertNotIn("synthetic-secret-value", rendered)
+        self.assertNotIn("stdout", envelope)
+        self.assertNotIn("stderr", envelope)
+        self.assertTrue(envelope["raw_cleared"])
+        self.assertTrue(envelope["secret_cleared"])
+
+    def test_seq674_metadata_binds_exact12_and_cumulative273(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_metadata()
+        self.assertEqual((12, "C76DF85C02565072777A14B469396E5E56F001BD094051F546A9CF2C6AA3F003", "E52F1859A1643A060D3D680554B111E54D7DDC7F05C543E0EE39B8F2C50036D5"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((273, "BF167099DC8F21AC96258B041C333A9F19DC2426899EB140B48531FFA26A9D45", "797C222A29F7B7D6F729D6DC2C3F06CE55586705AA0C8C01A6E42D9708806338"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq674_synthetic_pass_returns_one_safe_envelope(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: self._native(), self._safe, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual(("PASS", "COMPLETE", "NONE", "NONE"), (envelope["result"], envelope["observation_state"], envelope["failure_step"], envelope["exception_category"]))
+        self.assertEqual((1, 0), (envelope["stdout_line_count"], envelope["stderr_line_count"]))
+        self.assertEqual({"result": "PASS", "runtime_execution": "EXECUTED"}, envelope["safe_receipt"])
+
+    def test_seq674_synthetic_probe_error_preserves_metadata_and_safe_receipt(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: self._native("PROBE_ERROR"), self._safe, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual("FAIL", envelope["result"])
+        self.assertEqual("COMPLETE", envelope["observation_state"])
+        self.assertEqual(1, envelope["exit_code"])
+        self.assertRegex(envelope["stdout_sha256"], r"^[0-9A-F]{64}$")
+        self.assertEqual("PROBE_ERROR", envelope["safe_receipt"]["result"])
+
+    def test_seq674_synthetic_malformed_returns_parse_failure_envelope(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        native = {"stdout": "{malformed}\n", "stderr": "", "exit_code": 1, "process_started": True}
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: native, self._safe, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual(("FAIL", "STRICT_PARSE", "JSON_DECODE_ERROR", "STRICT_JSON_PARSE"), (envelope["result"], envelope["failure_step"], envelope["exception_category"], envelope["failure_statement"]))
+        self.assertRegex(envelope["stdout_sha256"], r"^[0-9A-F]{64}$")
+
+    def test_seq674_synthetic_throwing_transformer_returns_exception_envelope(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        def throwing(_receipt):
+            raise RuntimeError("synthetic-secret-value")
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: self._native(), throwing, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual(("FAIL", "SAFE_TRANSFORM", "TRANSFORMER_RUNTIME_ERROR", "SAFE_RECEIPT_TRANSFORM"), (envelope["result"], envelope["failure_step"], envelope["exception_category"], envelope["failure_statement"]))
+        self.assertEqual("NOT_AVAILABLE", envelope["safe_receipt"])
+
+    def test_seq674_failure_projection_revokes_leases_and_hands_off_count3(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        generated = {
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_P,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_E,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_H,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_D,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_M,
+        }
+        historical = {
+            path: subprocess.check_output(["git", "show", f"eadba5bad0df3ea4f52e28b847ab20957217b6c5:{path}"], cwd=ROOT)
+            for path in (
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_P,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_E,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_H,
+            )
+        }
+        files = {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_paths()) - generated
+        }
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_artifacts(historical, files)
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_M])
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_E])
+        self.assertEqual(list(range(669, 675)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("FAILED_R9_CONTROLLER_EVIDENCE_CAPTURE_LINEAGE_COUNT3_TAKEOVER_REQUIRED", manifest["status"])
+        self.assertEqual(3, manifest["diagnosis"]["evidence_capture_identical_root_count"])
+        self.assertEqual("R9_ACTUAL_ENVELOPE_HASH_HELPER_RESOLUTION_R1", manifest["diagnosis"]["failure_fingerprint"])
+        self.assertEqual((1, 0, 0, 0, 1), tuple(manifest["runtime_result"][name]["attempt_count"] if isinstance(manifest["runtime_result"][name], dict) else 0 for name in ("deploy", "verify", "browser_pg15", "browser_pg18rc", "cleanup")))
+        self.assertEqual("REVOKED", manifest["takeover_packet"]["worker_lease_status"])
+        self.assertEqual("REVOKED", manifest["takeover_packet"]["write_lease_status"])
+        self.assertEqual("MAIN_AGENT_SEQUENTIAL_TAKEOVER", manifest["takeover_packet"]["next_owner"])
+        self.assertFalse(manifest["diagnosis"]["product_failure_established"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_manifest(manifest))
+
+
 if __name__ == "__main__":
     unittest.main()
