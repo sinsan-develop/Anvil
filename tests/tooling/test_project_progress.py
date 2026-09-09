@@ -10222,5 +10222,56 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests(unittest.TestCase):
         self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(next_test)].rstrip())
 
 
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests(unittest.TestCase):
+    PARENT = "c8c35cf92e72ea405b1a9171983c26407175c382"
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        return checker, checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_evidence_correction_from_root(ROOT)
+
+    def test_seq692_metadata_binds_exact12_and_cumulative292(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_evidence_correction_metadata()
+        self.assertEqual((12, "57AB57A282545B4BAC8FE729A04FE315DDDC6E58C69B30086093AFC5B60AC0EB", "384AFFDE81E005F3882CB839D0E0A0DE4AD44EB64EE21B8DAF18264B132BC8A5"), (meta["exact_path_count"], meta["exact_path_list_sha256"], meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((292, "8F4C7FE3DE09BE70264AB38C01969B8B9B58E1D8C7A8EF572205FB6547FCC9B6", "D814CFED8C979B0D89F90DA39497675578477C2FC5062585EB21F3480BE3913E"), (meta["cumulative_path_count"], meta["cumulative_path_list_sha256"], meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq692_builder_preserves_historical_receipt_and_corrects_only_unsupported_fields(self):
+        checker, artifacts = self._build()
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_M])
+        historical = json.loads(subprocess.check_output(["git", "show", f"{self.PARENT}:docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_MANIFEST.json"], cwd=ROOT))
+        self.assertEqual(historical["runtime_result"]["browser_pg15"], manifest["historical_browser_pg15"])
+        effective = manifest["effective_browser_pg15"]
+        historical_safe = historical["runtime_result"]["browser_pg15"]["safe_receipt"]
+        self.assertEqual({key:value for key,value in historical_safe.items() if key not in {"provider_row_count","groq_detail_clicked"}}, {key:value for key,value in effective["safe_receipt"].items() if key not in {"provider_row_count","groq_detail_clicked"}})
+        self.assertEqual(("UNAVAILABLE_NOT_PERSISTED", "UNAVAILABLE_NOT_PERSISTED"), (effective["safe_receipt"]["provider_row_count"], effective["safe_receipt"]["groq_detail_clicked"]))
+        self.assertEqual(historical["runtime_result"]["browser_pg15"]["false_predicates"], effective["false_predicates"])
+        self.assertEqual((1, "ACCEPTANCE_FAILED", "EXECUTED"), (effective["exit_code"], effective["safe_receipt"]["result"], effective["safe_receipt"]["runtime_execution"]))
+
+    def test_seq692_review_resolution_events_status_and_zero_action_are_strict(self):
+        checker, artifacts = self._build()
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_M])
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_E])["events"][-6:]
+        self.assertEqual(list(range(687, 693)), [event["sequence"] for event in events])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+        self.assertEqual(["CORRECTION_RESULT_HANDOFF", "CORRECTION_RESULT_HANDOFF"], [events[3]["details"]["reason"], events[4]["details"]["reason"]])
+        self.assertEqual({"critical":0,"important":1,"minor":0}, manifest["review"]["findings"])
+        self.assertEqual(("R10_SAFE_RECEIPT_UNSUPPORTED_FIELD_ASSERTION_R1", "RESOLVED_CURRENT_PROJECTION"), (manifest["review"]["fingerprint"], manifest["review"]["resolution"]))
+        self.assertEqual((False, False, False, False, 0), tuple(manifest["change_boundary"][key] for key in ("product_change","runtime_change","policy_change","scope_change","runtime_action_count")))
+        self.assertEqual(("READY_R10_EVIDENCE_CORRECTION_FOR_INDEPENDENT_REVIEW", "INDEPENDENT_REVIEW_R10_EVIDENCE_CORRECTION_BEFORE_R11"), (manifest["status"], manifest["next_action"]))
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_evidence_correction_manifest(manifest))
+
+    def test_seq692_existing_seq686_checker_and_test_regions_are_byte_preserved(self):
+        checker_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_P ="
+        correction_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_P ="
+        old_checker = subprocess.check_output(["git", "show", f"{self.PARENT}:scripts/check_project_progress.py"], cwd=ROOT)
+        current_checker = CHECKER_PATH.read_bytes()
+        self.assertEqual(old_checker[old_checker.index(checker_start):old_checker.rindex(b'if __name__ == "__main__":')].rstrip(), current_checker[current_checker.index(checker_start):current_checker.index(correction_start)].rstrip())
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests"
+        correction_test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests"
+        old_test = subprocess.check_output(["git", "show", f"{self.PARENT}:tests/tooling/test_project_progress.py"], cwd=ROOT)
+        current_test = Path(__file__).read_bytes()
+        self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(correction_test_start)].rstrip())
+
+
 if __name__ == "__main__":
     unittest.main()

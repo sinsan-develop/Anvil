@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-R10-EVIDENCE-CORRECTION-DIGEST-20260909",
+  "package_id": "C-21",
+  "event_sequence": 692,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-09T16:00:00+09:00",
+  "scope": "seq687-692 append-only evidence correction; seq1-686 and R10 artifacts preserved; exact12 cumulative292",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 762008,
+    "file_sha256": "08D0C0B3B2FD2D154CCE5B68EB9EED40A226B0049628191A94DFE6CD8056B29C",
+    "canonical_json_sha256": "0F67E77988A81F1856B66C71C513EF9E5F81D7E4A767F7D0B7C782B3DD1105C0"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 271734,
+    "file_sha256": "9AFA48F1A5099581B315D90181DA2D69C37DEA8D4D92552FF31813629E4984C6",
+    "machine_summary_canonical_sha256": "7C87B3EEE1D36B81029FA5E5BF464EDD1432762A8B07B800B4ABC35A31CF9FBF"
+  }
+}
