@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   PROVIDERS,
@@ -17,6 +18,18 @@ import {
   normalizeProviderCatalog,
   reduceProductionWorkbench,
 } from '../src/features/workbench/workbench-state.js';
+
+const workbenchCss = readFileSync(new URL('../src/styles/workbench.css', import.meta.url), 'utf8');
+
+test('workbench layout keeps the 430px mobile viewport free of document overflow', () => {
+  assert.doesNotMatch(workbenchCss, /body\{[^}]*min-width:1180px/);
+  assert.doesNotMatch(workbenchCss, /overflow-x:hidden/);
+  assert.match(workbenchCss, /main\{[^}]*grid-template-columns:180px minmax\(0,1fr\)/);
+  assert.match(workbenchCss, /\.workspace\{[^}]*min-width:0/);
+  assert.match(workbenchCss, /@media\(max-width:640px\)\{[^}]*main\{[^}]*grid-template-columns:1fr/);
+  assert.match(workbenchCss, /@media\(max-width:640px\)[\s\S]*\.grid\{[^}]*grid-template-columns:1fr/);
+  assert.match(workbenchCss, /\.detail dd,\.stream dd\{[^}]*min-width:0;[^}]*overflow-wrap:anywhere/);
+});
 
 test('canonical providers and honest A-12 state vocabulary stay fixed', () => {
   assert.deepEqual(PROVIDERS, ['CEREBRAS','GROQ','MISTRAL','OPENROUTER','UPSTAGE','GEMINI','ANTHROPIC','OPENAI','OLLAMA']);
