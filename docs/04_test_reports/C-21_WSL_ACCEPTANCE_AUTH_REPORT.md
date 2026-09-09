@@ -48,7 +48,7 @@
 | `PYTEST_ORPHAN_PROCESS_CLEANUP_R1` | 1 | 종료 지연 진단 중 생성된 해당 pytest process가 남음 | 생성 시각과 venv 경로가 일치하는 이번 작업 process만 종료, 기존 타 작업 Python process는 보존 | 해소 |
 | `WSL_ACCEPTANCE_PUBLIC_AUTHORITY_R1` | 1 | 최초 구현이 mode/environment 문자열만 검사하여 공개 hostname 오주입 시 read-only 우회가 활성화될 수 있음 | 독립 Reviewer finding 수용, private/loopback IP와 console URL hostname exact match startup guard 추가 | 해소 |
 | `TRUSTED_PRINCIPAL_MUTATION_FALLBACK_R1` | 1 | trusted principal이 모든 endpoint handler에 전달되어 mutation은 권한 검사에서만 차단됨 | trusted fallback을 canonical Provider GET 3개와 Run SSE GET 1개로 구조적 제한, mutation은 cookie 없으면 401 | 해소 |
-| `GIT_INDEX_LOCK_PERMISSION_R1` | 1 | sandbox에서 shared worktree metadata `D:/Project/Anvil/.git/worktrees/.../index.lock` 생성 권한 거부 | 제품 파일 변경 없이 시스템 Git 쓰기 권한으로 동일 explicit path stage/commit 재실행 | 조치 중 |
+| `GIT_INDEX_LOCK_PERMISSION_R1` | 1 | sandbox에서 shared worktree metadata `D:/Project/Anvil/.git/worktrees/.../index.lock` 생성 권한 거부 | 제품 파일 변경 없이 시스템 Git 쓰기 권한으로 동일 explicit path stage/commit 재실행 | 해소 |
 
 ## 검증 결과
 
@@ -58,11 +58,48 @@
 - `git diff --check` → PASS
 - WSL acceptance 계약: 정확한 `WSL_SERVER_TEST_STAGING`과 private/loopback IP authority 일치 시에만 활성, Provider read 허용, allowlisted Run SSE read 허용, 공개·불일치·DNS authority startup 거부, Provider mutation은 미인증 401, 비허용 Run 거부, 기본 COOKIE mode 보존
 
-## 미검증
+## 독립 검토
 
-- 독립 Reviewer 판정
-- exact commit의 WSL Git 배포와 실제 브라우저/API/SSE 확인
+- 판정: `COMPLETED`
+- blocking finding: 0건
+- 초기 IMPORTANT 2건(public/DNS authority, trusted principal mutation fallback)은 수정·재검토 완료
+- 상세: `docs/04_test_reports/C-21_WSL_ACCEPTANCE_AUTH_REVIEW.md`
 
 ## 다음 조치
 
-독립 Reviewer 판정 후 안전한 commit을 만들고 개발 원격 candidate ref로 publish한다. WSL-server는 동일 exact commit을 Git fetch하여 정식 `anvil-web` 컨테이너만 교체하고 실제 브라우저/API/SSE를 검증한다.
+정식 Dashboard Shell을 `/`에 구현하고 현재 Provider Workbench를 Settings 보조 경로로 분리하는 다음 UI package를 시작한다.
+
+## WSL 배포 진행 갱신
+
+- local/product commit: `70ddf09257131b82490bab5ec86192b7631674b3`
+- development ref: `refs/heads/candidates/c21-wsl-acceptance-auth-r1`
+- WSL checkout: clean detached exact `70ddf09257131b82490bab5ec86192b7631674b3`
+- WSL image: `anvil-web:70ddf09257131b82490bab5ec86192b7631674b3`
+- image ID: `sha256:b3f6653b665553b85ab3ac9d558c52e964b2e5adf70e63f1c52062fbf28a5b53`
+- OCI revision: exact `70ddf09257131b82490bab5ec86192b7631674b3`
+- current runtime: `anvil-web` 동일 이름·포트 `3770`으로 정상 실행
+- runtime auth: `WSL_ACCEPTANCE · wsl_acceptance_reader`
+- UI: 실제 브라우저에서 `READY`, canonical 9개 Provider, UPSTAGE PRIMARY 렌더링 확인
+- health: `/`, `/health/live`, `/health/ready` 모두 HTTP 200
+- Provider API: `/api/providers` HTTP 200, 9개 행, 실제 Provider 호출 없음
+- SSE: `c21-wsl-run` initial event 200, `Last-Event-ID: c21-wsl-event-1` 재개 200/0 bytes, invalid cursor 409, 비허용 Run 403
+- formal test entities: `c21-wsl-task`, `c21-wsl-run`, `c21-wsl-event-1` 멱등 생성
+
+### WSL 배포 오류 기록
+
+| fingerprint | 횟수 | 원인 | 조치 | 상태 |
+|---|---:|---|---|---|
+| `WSL_GIT_FETCH_OWNERSHIP_R1` | 1 | `/srv/anvil-wsl/repo/.git`가 root 소유라 daon fetch의 `FETCH_HEAD` 쓰기 거부 | root Git에 기존 daon SSH config/key/known_hosts를 명시해 fetch | 해소 |
+| `WSL_ROOT_GIT_HOSTKEY_R1` | 1 | root Git이 daon known_hosts를 사용하지 않아 host key 검증 실패 | 기존 daon key와 known_hosts를 명시 | 해소 |
+| `WSL_BUILD_CONTEXT_GIT_PERMISSION_R1` | 1 | daon Docker client가 root 소유 `.git/logs/...`를 읽지 못함 | source 변경 없이 sudo Docker build | 해소 |
+| `WSL_IMAGE_LABEL_INSPECT_QUOTE_R1` | 1 | Docker Go-template 따옴표 escape 오류 | ID와 JSON label을 별도 read-only inspect | 해소 |
+| `WSL_HEALTH_POWERSHELL_EXPANSION_R1` | 1 | 원격 shell의 `$()`가 local PowerShell에서 먼저 평가됨 | 해당 polling 명령 중단, 단순 원격 명령으로 분리 | 해소 |
+| `WSL_REQUIRED_RUNTIME_ENV_MISSING_R1` | 1 | 기존 컨테이너의 DB/Telegram 필수키가 `/srv/anvil-wsl/.env`가 아니라 삭제된 컨테이너의 explicit env에만 존재 | 신산님 명시 승인 후 기존 DB password reference와 WSL 검증용 signing 값으로 동일 container 재기동 | 해소 |
+| `WSL_HEALTH_INSPECT_NO_METADATA_R1` | 1 | 새 container에는 Docker healthcheck metadata가 없어 `.State.Health.Status` template 실패 | HTTP `/health/live`·`/health/ready` 직접 검증; Docker health metadata는 후속 formal deploy control에 남김 | 비차단 |
+| `WSL_HOST_HEADER_PROBE_R1` | 1 | loopback curl의 기본 Host `127.0.0.1`이 exact public host guard로 403 | `Host: 172.27.253.53`로 실제 브라우저 authority와 동일하게 재검증 | 해소 |
+| `WSL_SSE_RUN_ID_MISMATCH_R1` | 1 | 최초 probe가 allowlist의 실제 `c21-wsl-run` 대신 `run-c21` 사용 | 비밀이 아닌 allowlist ID 확인 후 정식 Run ID 사용 | 해소 |
+| `PLATFORM_GUARD_MUTATION_PROBE_R1` | 1 | Provider mutation POST가 read-only 검증 범위를 벗어나 시스템 안전 게이트 거부 | 우회하지 않고 POST 제외, 승인된 UI·health·Provider GET·SSE만 검증 | 해소 |
+
+### 현재 판정
+
+`WSL_ACCEPTANCE_AUTH_VALIDATED`. 실제 Provider·Telegram 외부 호출은 승인 범위대로 수행하지 않았다. Docker healthcheck metadata는 없지만 UI와 live/ready/API/SSE 경로는 실제 HTTP로 통과했다.
