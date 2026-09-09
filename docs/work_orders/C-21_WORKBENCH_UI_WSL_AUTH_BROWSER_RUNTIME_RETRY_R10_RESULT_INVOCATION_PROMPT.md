@@ -1,0 +1,3 @@
+# C-21 Workbench UI WSL authenticated browser runtime retry R10 result invocation
+
+parent `27406570cbfbb89f19ee3a5d746687125d043d7e`에서 exact12만 수정한다. 신산님의 `DIRECT_USER_APPROVAL`과 subject SHA-256 `723A1D914C3540B7D4FF677C25C25DDA7CFF25ED7CD43ABF1E7D436D8B6426DC`에 따라 immutable control/candidate 격리 one-shot을 실행한다. 첫 failure 뒤 후속 phase를 중단하고 deploy 이후 cleanup1을 보장하며 retry0을 유지한다. raw/secret/origin/screenshot binary는 기록하지 않는다. 실제 safe result를 seq681~686 failure projection에 결박하고 focused/checker/generated5/exact12 single direct-child commit/postcommit까지 수행한다. Provider external/Telegram/Oracle Cloud/ysna/main/C-01과 push는 실행하지 않는다.

@@ -10119,5 +10119,108 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests(unittest
         self.assertEqual(old_test[old_test.index(test_start):old_test.index(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(correction_test_start)].rstrip())
 
 
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests(unittest.TestCase):
+    PARENT = "27406570cbfbb89f19ee3a5d746687125d043d7e"
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        return checker, checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_result_from_root(ROOT)
+
+    @staticmethod
+    def _native(stdout, stderr="", exit_code=0):
+        return {"stdout": stdout, "stderr": stderr, "exit_code": exit_code, "process_started": True}
+
+    @staticmethod
+    def _safe(receipt):
+        return {"result": receipt["result"], "runtime_execution": receipt["runtimeExecution"]}
+
+    def _assert_safe_envelope(self, envelope):
+        self.assertIs(type(envelope), dict)
+        self.assertNotIn("stdout", envelope)
+        self.assertNotIn("stderr", envelope)
+        self.assertTrue(envelope["raw_cleared"])
+        self.assertTrue(envelope["secret_cleared"])
+        self.assertNotIn("synthetic-secret-value", json.dumps(envelope, sort_keys=True))
+
+    def test_seq686_metadata_binds_exact12_and_cumulative286(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_result_metadata()
+        self.assertEqual((12, "A517ED343E5509C56070AC53DFF2FA46DBF6E22AD0F87D4640A09EFBE748F39A", "BE98A5D1DB7ED066EB01888326947F65E72D87615E0FE076EE2DC6796DE86836"), (meta["exact_path_count"], meta["exact_path_list_sha256"], meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((286, "38CF5747CE85C17EB7DB259E12B86E65B5AB32743E298B3E4A5573D9D33EE335", "C67C1829358F575C435D47AD3953BDC636DD22F3CFF8CDDF9C2B816F72081ED2"), (meta["cumulative_path_count"], meta["cumulative_path_list_sha256"], meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq686_phase_envelope_pass_and_known_native_hashes(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        raw = json.dumps({"result": "PASS", "runtimeExecution": "EXECUTED"}, separators=(",", ":"), sort_keys=True) + "\n"
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native(raw), self._safe, ("synthetic-secret-value",))
+        self._assert_safe_envelope(envelope)
+        self.assertEqual(("PASS", "COMPLETE", "NONE", "NONE"), (envelope["result"], envelope["observation_state"], envelope["failure_step"], envelope["exception_category"]))
+        self.assertRegex(envelope["stdout_sha256"], r"^[0-9A-F]{64}$")
+        node = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_native_self_check(self._native("R10-OUT\n", "R10-ERR\n", 23))
+        self.assertEqual(("BDF41A72943B842E0FD1E6D2A44FDEFE52D8463FAD7EB08283F501CFEEA61058", "FE050FD63FC67571ABF6366E44B234A0D33F6B27FF7FAC235E482E43BC563F45", 1, 1, 23), (node["stdout_sha256"], node["stderr_sha256"], node["stdout_line_count"], node["stderr_line_count"], node["exit_code"]))
+
+    def test_seq686_phase_envelope_probe_error_is_safe_and_exact(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        raw = json.dumps({"result": "PROBE_ERROR", "runtimeExecution": "FAILED"}, separators=(",", ":"), sort_keys=True) + "\n"
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native(raw, "redacted-category\n", 1), self._safe, ("synthetic-secret-value",))
+        self._assert_safe_envelope(envelope)
+        self.assertEqual(("FAIL", "COMPLETE", 1, "PROBE_ERROR"), (envelope["result"], envelope["observation_state"], envelope["exit_code"], envelope["safe_receipt"]["result"]))
+        self.assertEqual(["receipt.result==PASS", "native.exit_code==0"], envelope["false_predicates"])
+
+    def test_seq686_phase_envelope_malformed_and_transformer_exceptions_return_one_object(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        malformed = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native("{malformed}\n", exit_code=1), self._safe, ("synthetic-secret-value",))
+        self._assert_safe_envelope(malformed)
+        self.assertEqual(("STRICT_PARSE", "JSON_DECODE_ERROR", "STRICT_JSON_PARSE"), (malformed["failure_step"], malformed["exception_category"], malformed["failure_statement"]))
+        def throwing(_receipt):
+            raise RuntimeError("synthetic-secret-value")
+        transformed = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native('{"result":"PASS","runtimeExecution":"EXECUTED"}\n'), throwing, ("synthetic-secret-value",))
+        self._assert_safe_envelope(transformed)
+        self.assertEqual(("SAFE_TRANSFORM", "TRANSFORMER_RUNTIME_ERROR", "SAFE_RECEIPT_TRANSFORM", "NOT_AVAILABLE"), (transformed["failure_step"], transformed["exception_category"], transformed["failure_statement"], transformed["safe_receipt"]))
+
+    def test_seq686_runtime_validator_accepts_strict_success_and_failure_only(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        success = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime_fixture(True)
+        failure = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime_fixture(False)
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(success))
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(failure))
+        changed = copy.deepcopy(success); changed["retry_count"] = 1
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(changed))
+        changed = copy.deepcopy(success); changed["browser_pg15"]["false_predicates"] = ["receipt.result==PASS"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(changed))
+
+    def test_seq686_builder_binds_actual_failure_approval_events_and_safe_evidence(self):
+        checker, artifacts = self._build()
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_M])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_P])
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_E])["events"][-6:]
+        self.assertEqual(list(range(681, 687)), [event["sequence"] for event in events])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+        self.assertEqual(["FAILURE_RESULT_HANDOFF", "FAILURE_RESULT_HANDOFF"], [events[3]["details"]["reason"], events[4]["details"]["reason"]])
+        approval = manifest["approval"]
+        self.assertEqual(("DIRECT_USER_APPROVAL", "계속하자", "723A1D914C3540B7D4FF677C25C25DDA7CFF25ED7CD43ABF1E7D436D8B6426DC"), (approval["source"], approval["response"], approval["subject_sha256"]))
+        runtime = manifest["runtime_result"]
+        self.assertEqual((1, 1, 1, 0, 1, 0), tuple(runtime["action_counts"][key] for key in ("deploy", "verify", "pg15_browser", "pg18rc_browser", "cleanup", "retry")))
+        self.assertEqual(("ACCEPTANCE_FAILED", "EXECUTED", 3, 2), (runtime["browser_pg15"]["safe_receipt"]["result"], runtime["browser_pg15"]["safe_receipt"]["runtime_execution"], runtime["browser_pg15"]["safe_receipt"]["viewport_count"], runtime["browser_pg15"]["safe_receipt"]["viewport_pass_count"]))
+        self.assertEqual(["receipt.result==PASS", "viewports.all_acceptance_predicates==true", "native.exit_code==0"], runtime["browser_pg15"]["false_predicates"])
+        self.assertEqual("UNAVAILABLE_NOT_PERSISTED", runtime["browser_pg15"]["failing_viewport_name"])
+        self.assertEqual("UNAVAILABLE_NOT_PERSISTED", runtime["browser_pg15"]["individual_false_predicate_paths"])
+        self.assertEqual({"fingerprint":"BROWSER_ACCEPTANCE_FAILED_R10","count":1}, manifest["diagnosis"]["primary_root"])
+        self.assertEqual({"fingerprint":"R10_SAFE_RECEIPT_VIEWPORT_PREDICATE_DETAIL_INSUFFICIENT_R1","count":1}, manifest["diagnosis"]["capture_detail_root"])
+        self.assertEqual(progress["workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction"]["correction"]["exact_roots"], manifest["historical_exact_roots"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_result_manifest(manifest))
+
+    def test_seq686_existing_seq680_checker_and_test_regions_are_byte_preserved(self):
+        current_checker = CHECKER_PATH.read_bytes()
+        old_checker = subprocess.check_output(["git", "show", f"{self.PARENT}:scripts/check_project_progress.py"], cwd=ROOT)
+        start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P ="
+        next_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_P ="
+        self.assertEqual(old_checker[old_checker.index(start):old_checker.index(b'if __name__ == "__main__":')].rstrip(), current_checker[current_checker.index(start):current_checker.index(next_start)].rstrip())
+        current_test = Path(__file__).read_bytes()
+        old_test = subprocess.check_output(["git", "show", f"{self.PARENT}:tests/tooling/test_project_progress.py"], cwd=ROOT)
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests"
+        next_test = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests"
+        self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(next_test)].rstrip())
+
+
 if __name__ == "__main__":
     unittest.main()
