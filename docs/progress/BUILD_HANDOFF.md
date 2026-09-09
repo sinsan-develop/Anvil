@@ -1,3 +1,7 @@
+# C-21 Workbench UI WSL authenticated browser runtime retry R8 result — seq668
+
+- deploy/verify는 각 1회 exit0 PASS했다. PG15 controller는 1회 진입했으나 secret-safe observation 할당 전 exception으로 native 실행 여부와 predicate가 보존되지 않았다. PG18RC는 미실행, cleanup은 1회 exit0 PASS, retry0이다.
+
 # C-21 Workbench UI WSL authenticated browser runtime retry R7 result — seq662
 
 - native wrapper는 stdout/exit 분리 PASS, deploy와 verify는 각 1회 exit0 PASS했다. PG15 browser는 secret-safe parsed receipt non-PASS/exit1로 중단했고 PG18RC는 미실행, outer-finally cleanup은 1회 exit0 PASS했으며 runtime 재실행은 없다.
@@ -821,69 +825,69 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 662,
-  "last_event_id": "evt_c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_result_package_completed",
-  "status": "FAILED_R7_WSL_DEVELOPMENT_VALIDATION_EVIDENCE_INSUFFICIENT",
+  "event_sequence": 668,
+  "last_event_id": "evt_c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_result_package_completed",
+  "status": "FAILED_R8_WSL_DEVELOPMENT_VALIDATION_EVIDENCE_INSUFFICIENT",
   "current_phase": "C",
   "current_work_package": "C-21",
   "active_agent": null,
   "worker_lease": {
-    "lease_id": "worker-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-20260909-001",
+    "lease_id": "worker-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-20260909-001",
     "agent_id": "developer-primary",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R7-RESULT",
+    "subtask_id": "WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R8-RESULT",
     "lease_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-execution-fence-epoch-1-0e22a1d",
-    "fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-execution-fence-epoch-1-0e22a1d",
+    "execution_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-execution-fence-epoch-1-a1b67f4",
+    "fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-execution-fence-epoch-1-a1b67f4",
     "status": "REVOKED"
   },
   "write_lease": {
-    "lease_id": "write-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-20260909-001",
-    "worker_lease_id": "worker-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-20260909-001",
+    "lease_id": "write-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-20260909-001",
+    "worker_lease_id": "worker-lease-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-20260909-001",
     "agent_id": "developer-primary",
     "work_package_id": "C-21",
-    "subtask_id": "WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R7-RESULT",
+    "subtask_id": "WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R8-RESULT",
     "write_epoch": 1,
-    "execution_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-execution-fence-epoch-1-0e22a1d",
-    "write_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-write-fence-epoch-1-0e22a1d",
-    "fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-write-fence-epoch-1-0e22a1d",
+    "execution_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-execution-fence-epoch-1-a1b67f4",
+    "write_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-write-fence-epoch-1-a1b67f4",
+    "fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-write-fence-epoch-1-a1b67f4",
     "status": "REVOKED",
     "path_scope": [
-      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_REPORT.md",
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result.json",
-      "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_VALIDATION.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result.json",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
     "paths": [
-      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_REPORT.md",
+      "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_MANIFEST.json",
+      "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result.json",
-      "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_VALIDATION.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result.json",
+      "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_VALIDATION.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ]
   },
-  "execution_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-execution-fence-epoch-1-0e22a1d",
-  "write_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result-write-fence-epoch-1-0e22a1d",
-  "active_work_instruction": "WI-C-21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R7-RESULT-20260909-001",
-  "active_work_instruction_sha256": "B4F3725EA2C517A2D7AD0A016F513DE970B2ADA9C68900128DEED6247F66B85A",
-  "active_invocation_sha256": "31141E41418046DAF767FC59E0CF0D48699D4F01BE08A4CFF0E1B689CEF2C2D4",
-  "repository_head": "0e22a1d4e47cdff117b894dd885af816f354a550",
-  "repository_head_relation": "FEATURE_WORKTREE_0E22A1D_EXACT12_DIRTY",
+  "execution_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-execution-fence-epoch-1-a1b67f4",
+  "write_fencing_token": "c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result-write-fence-epoch-1-a1b67f4",
+  "active_work_instruction": "WI-C-21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R8-RESULT-20260909-001",
+  "active_work_instruction_sha256": "346B5AD2509A8F8F77AA5D1A05CEA713B3B79EA5D6ABD4C68D3C9B9EB757CA39",
+  "active_invocation_sha256": "6ADA79CBEA81F114066FE17355E4ACF69DDFA8B75A4FB7C4283D9C1BEA24177A",
+  "repository_head": "a1b67f4f93d06e1b71f5bd05b9f66e404f10a039",
+  "repository_head_relation": "FEATURE_WORKTREE_A1B67F4_EXACT12_DIRTY",
   "repository_upstream": "origin/codex/c21-operational-execution",
   "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
   "repository_validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
@@ -931,6 +935,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_REPORT.md",
+    "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
@@ -973,6 +978,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
@@ -1025,6 +1031,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r5-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result.json",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate-bound.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate.json",
@@ -1062,6 +1069,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_VALIDATION.md",
+    "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
@@ -1107,6 +1115,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
@@ -1160,20 +1170,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "record_ref": "refs/heads/codex/c21-operational-execution",
     "candidate_ref": "refs/heads/candidates/c21-wsl-exact187",
     "runtime_control_ref": "refs/heads/candidates/c21-wsl-runtime-control-v2",
-    "observed_record": "0e22a1d4e47cdff117b894dd885af816f354a550",
+    "observed_record": "a1b67f4f93d06e1b71f5bd05b9f66e404f10a039",
     "observed_candidate": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
     "observed_runtime_control": "fb311d456fe3cbb2e8439f39017356ddec6cf266",
     "public_origin_is_push_authority": false
   },
   "runtime_result": {
-    "attempt_number": 7,
+    "attempt_number": 8,
     "outcome": "FAILED",
-    "native_wrapper_self_check": {
+    "retry_count": 0,
+    "native_controller_self_check": {
       "result": "PASS",
       "stdout_lines": 1,
-      "exit_code": 0,
-      "exit_code_type": "INT32",
-      "caller_field": ".ExitCode",
+      "stderr_lines": 1,
+      "exit_code": 7,
+      "streams_separate": true,
       "wsl_action": false
     },
     "preflight": {
@@ -1187,8 +1198,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "application_dirty_count": 0,
       "environment_mode": "600",
       "environment_sha256": "FECAE53B750E170A5BF345A23AC8D9BA12B508E9C6D0B47C518B90FD4D52A79A",
-      "required_names": "PRESENT",
-      "provider_read_scope": true,
+      "required_names": "PRESENT_EXACTLY_ONCE",
+      "permission_scope": "tasks:write,tasks:read,run:events:read,provider:read",
       "initial_residue_count": 0,
       "playwright_module": "PRESENT_PROCESS_LOCAL",
       "chromium_executable": "PRESENT_PROCESS_LOCAL",
@@ -1198,18 +1209,38 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "deploy": {
       "attempt_count": 1,
       "result": "PASS",
-      "exit_code": 0
+      "exit_code": 0,
+      "stdout_line_count": 116,
+      "stderr_line_count": 101,
+      "stdout_sha256": "F28B319BBA08690433562C5761FC2FBB54B57BF38C735D602FAAC618F807AD68",
+      "stderr_sha256": "456084BED61A2FE28A812A9E551432C99B09355C2C60144B1507155B50A3770E"
     },
     "verify": {
       "attempt_count": 1,
       "result": "PASS",
-      "exit_code": 0
+      "exit_code": 0,
+      "stdout_line_count": 6,
+      "stderr_line_count": 4,
+      "stdout_sha256": "26343A4715E97BCC02B7383F7A4BCDE21A3FA9BE488CBF3A5AC98CA05C127C95",
+      "stderr_sha256": "073BBD58A94D75288C2850C14BC4EC5CEBDF54BE0D9DCBC4D225BC63CFD6227A"
     },
     "browser_pg15": {
       "attempt_count": 1,
       "result": "FAIL",
-      "exit_code": 1,
-      "failure_fingerprint": "BROWSER_ACCEPTANCE_FAILED_R7",
+      "exit_code": -1,
+      "failure_fingerprint": "BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8",
+      "failure_category": "PG15_CONTROLLER_EXCEPTION_AFTER_ATTEMPT_ENTRY_BEFORE_SECRET_SAFE_OBSERVATION_ASSIGNMENT",
+      "native_process_execution": "UNCONFIRMED",
+      "native_process_exit_code": "UNAVAILABLE",
+      "stdout_line_count": "UNAVAILABLE",
+      "stderr_line_count": "UNAVAILABLE",
+      "stdout_sha256": "UNAVAILABLE",
+      "stderr_sha256": "UNAVAILABLE",
+      "canonical_receipt_sha256": "UNAVAILABLE",
+      "stderr_category": "UNAVAILABLE",
+      "secret_scan_count": "UNAVAILABLE",
+      "false_predicates": "UNAVAILABLE_CONTROLLER_EXCEPTION_BEFORE_SAFE_PROJECTION",
+      "safe_receipt": "NOT_PERSISTED",
       "evidence_reexecution": false
     },
     "browser_pg18rc": "NOT_EXECUTED",
@@ -1219,20 +1250,28 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "verification_count": 2,
       "rollback_count": 0,
       "sha256": [
-        "CF9EF430DF36FCF3C90FFB7B9E4247DF4D62BF885D1529F4C4599189D2A7E90E",
+        "99190AC941CAAEBDE91FF5F40B5E53EFC3C251CA597038FB8AE08E0F5567E4F7",
         "96BD2FC8D3D96E6D46215419A0917D145FA851226E6D1F3C122D93BC21FC8DB2",
-        "9A4B65F982F5A1DA547B07E9AE203250F2999BDA0A665064528EB5E586AC612D",
+        "A619FDF49B45717798482F3DDEDDFD71F6C3DFF5141C5E447E51CA2DC1F74775",
         "0CE473C529B74D8D6AC10F43F0E532D591C2D76233A345348812E95541EE4D3B"
       ]
     },
     "image_metadata": {
       "count": 2,
-      "result": "PASS"
+      "result": "PASS",
+      "sha256": [
+        "18108107884FE16327CC7942663434382D90F5102A3767A0BD518A361C3E88B3",
+        "2E549E4BAC11D2D8FEAD70C4DC37C0878A23AFF058DD10DD317E7AA6D2D32393"
+      ]
     },
     "cleanup": {
       "attempt_count": 1,
       "result": "PASS",
       "exit_code": 0,
+      "stdout_line_count": 8,
+      "stderr_line_count": 26,
+      "stdout_sha256": "5B7E9FB197CCD9F08C41A16568052E5A604560EE3B128157852B305E03026737",
+      "stderr_sha256": "D2B51978ED6A3C32EA52B7CD1D44D6F3C4B0F093C2340F96DB66659CEBF06047",
       "evidence_reexecution": false
     },
     "postconditions": {
@@ -1244,7 +1283,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "network_residue": 0,
       "exact_volume_residue": 0,
       "lock_residue": 0,
-      "screenshot_residue": 0,
+      "screenshot_filesystem_mutation": "NOT_OBSERVED_BY_PRODUCT_CODE_POLICY",
       "total_residue_count": 0,
       "backup_evidence_preserved": true
     },
@@ -1254,76 +1293,109 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "oracle_cloud": "NOT_EXECUTED"
     },
     "secret_safety": {
-      "token": "MEMORY_ONLY",
+      "token": "MEMORY_ONLY_CLEARED",
       "credential_values": "OMITTED",
       "cookie_values": "OMITTED",
       "header_values": "OMITTED",
-      "raw_urls": "OMITTED"
+      "raw_urls": "OMITTED",
+      "screenshot_binary": "NOT_PERSISTED",
+      "browser_raw_output": "NOT_PERSISTED"
     }
   },
   "diagnosis": {
-    "failure_fingerprint": "BROWSER_ACCEPTANCE_FAILED_R7",
-    "diagnostic_fingerprint": "BROWSER_RECEIPT_NOT_PERSISTED_R7",
-    "category": "PG15_BROWSER_SECRET_SAFE_RECEIPT_NONPASS",
-    "native_wrapper_exit_capture": "PASS",
-    "r6_stdout_capture_root_resolved": true,
+    "failure_fingerprint": "BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8",
+    "diagnostic_fingerprint": "BROWSER_RECEIPT_NOT_PERSISTED_R8",
+    "failure_category": "PG15_CONTROLLER_EXCEPTION_AFTER_ATTEMPT_ENTRY_BEFORE_SECRET_SAFE_OBSERVATION_ASSIGNMENT",
+    "evidence_capture_lineage": "BROWSER_RECEIPT_NOT_PERSISTED",
+    "evidence_capture_identical_root_count": 2,
+    "r7_evidence_capture_root_same": true,
+    "browser_native_process_execution": "UNCONFIRMED",
+    "browser_predicate_details": "UNAVAILABLE_NOT_INFERRED",
+    "product_failure_established": false,
     "deploy_action": "PASS_EXIT_0_ONCE",
     "verify_action": "PASS_EXIT_0_ONCE",
-    "pg15_browser": "NONPASS_EXIT_1_ONCE",
+    "pg15_browser_controller": "ENTERED_ONCE_NO_SAFE_OBSERVATION_RETURNED",
     "pg18rc_browser": "NOT_EXECUTED",
     "cleanup_action": "PASS_EXIT_0_ONCE",
-    "receipt_json_parser": "PASS",
-    "receipt_subcategory": "NOT_PERSISTED_NO_REEXECUTION",
-    "verify_authenticated_sse_last_event_id_same_origin": "PASS_BOTH_TARGETS",
-    "product_ui_api_sse_failure_established": false,
     "runtime_action_reexecution": false
   },
   "orchestration_errors": [
     {
-      "fingerprint": "R7_PREFLIGHT_RESERVED_ARGS_PARAMETER_R1",
-      "count": 1,
-      "product_failure": false,
-      "runtime_failure": false
-    },
-    {
-      "fingerprint": "R7_PREFLIGHT_CONTROL_ROOT_REPO_ASSUMPTION_R1",
-      "count": 1,
-      "product_failure": false,
-      "runtime_failure": false
-    },
-    {
-      "fingerprint": "R7_PREFLIGHT_FOREACH_REF_FORMAT_QUOTING_R1",
-      "count": 1,
-      "product_failure": false,
-      "runtime_failure": false
-    },
-    {
-      "fingerprint": "BROWSER_ACCEPTANCE_FAILED_R7",
-      "count": 1,
-      "product_failure": false,
-      "runtime_failure": true
-    },
-    {
-      "fingerprint": "BROWSER_RECEIPT_NOT_PERSISTED_R7",
-      "count": 1,
-      "product_failure": false,
-      "runtime_failure": false
-    },
-    {
-      "fingerprint": "MAIN_R7_INTERRUPT_TOOL_SELECTION_ERROR_R1",
+      "fingerprint": "R8_INITIAL_TOOL_PAYLOAD_SYNTAX_R1",
       "count": 1,
       "product_failure": false,
       "runtime_failure": false,
-      "impact": "NONE",
-      "resolved": true
+      "impact": "NONE"
     },
     {
-      "fingerprint": "MAIN_R7_STATUS_TRANSMISSION_TYPO_R1",
+      "fingerprint": "R8_SANDBOX_WSL_E_ACCESSDENIED_R1",
       "count": 1,
       "product_failure": false,
       "runtime_failure": false,
-      "impact": "NONE",
-      "resolved": true
+      "impact": "PERMISSION_BOUNDARY_RESOLVED_ESCALATED"
+    },
+    {
+      "fingerprint": "R8_SELF_CHECK_RESULT_SERIALIZATION_R1",
+      "count": 1,
+      "product_failure": false,
+      "runtime_failure": false,
+      "impact": "NONE"
+    },
+    {
+      "fingerprint": "R8_PREFLIGHT_BASH_C_ARGUMENT_SPLIT_R1",
+      "count": 2,
+      "product_failure": false,
+      "runtime_failure": false,
+      "impact": "READ_ONLY_FALSE_LABEL"
+    },
+    {
+      "fingerprint": "R8_PREFLIGHT_ACTIVE_POINTER_RELATIVE_PATH_R1",
+      "count": 1,
+      "product_failure": false,
+      "runtime_failure": false,
+      "impact": "READ_ONLY_FALSE_LABEL"
+    },
+    {
+      "fingerprint": "R8_PREFLIGHT_ENV_CONTRACT_ASSUMPTION_R1",
+      "count": 2,
+      "product_failure": false,
+      "runtime_failure": false,
+      "impact": "READ_ONLY_FALSE_LABEL"
+    },
+    {
+      "fingerprint": "R8_PREFLIGHT_BROAD_LOCK_PATTERN_R1",
+      "count": 1,
+      "product_failure": false,
+      "runtime_failure": false,
+      "impact": "READ_ONLY_FALSE_LABEL"
+    },
+    {
+      "fingerprint": "BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8",
+      "count": 1,
+      "product_failure": false,
+      "runtime_failure": true,
+      "impact": "R8_EVIDENCE_INSUFFICIENT"
+    },
+    {
+      "fingerprint": "BROWSER_RECEIPT_NOT_PERSISTED",
+      "count": 2,
+      "product_failure": false,
+      "runtime_failure": true,
+      "impact": "R7_R8_IDENTICAL_EVIDENCE_CAPTURE_ROOT"
+    },
+    {
+      "fingerprint": "R8_FOCUSED_TOOL_ARGUMENT_SYNTAX_R1",
+      "count": 1,
+      "product_failure": false,
+      "runtime_failure": false,
+      "impact": "NONE_COMMAND_NOT_STARTED"
+    },
+    {
+      "fingerprint": "R8_LIVE_CHECKER_EVENT_EFFECT_BINDING_R1",
+      "count": 1,
+      "product_failure": false,
+      "runtime_failure": false,
+      "impact": "GENERATED_PROJECTION_ONLY_RESOLVED"
     }
   ],
   "runtime_execution": "FAILED",
@@ -1332,24 +1404,24 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "c21_status": "BLOCKED_NOT_ACCEPTED",
   "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
   "dir2_status": "NOT_TRIGGERED",
-  "next_safe_action": "PREPARE_R8_SECRET_SAFE_BROWSER_RECEIPT_PERSISTENCE_AND_PREDICATE_DIAGNOSTICS",
+  "next_safe_action": "PREPARE_R9_CONTROLLER_ATOMIC_SAFE_OBSERVATION_CAPTURE_BEFORE_BROWSER_EXECUTION",
   "exact_paths": [
-    "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_REPORT.md",
+    "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result.json",
-    "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_VALIDATION.md",
-    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result.json",
+    "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_VALIDATION.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
   "exact_path_count": 12,
-  "exact_path_list_sha256": "335DD6D1A0DAE21EEF33E7ACC095757E5772DFBB158B3961EB74CA5DECF29C67",
-  "exact_path_list_ordinal_sha256": "1440E42A35D52FCC1924901F8665852ABCE928754003F34964507AE4B2D4AC77",
+  "exact_path_list_sha256": "151561FBBD5EAF89FC25E125D0E205B08ADBA99EADECB1E194D4D0DC0AEB3F25",
+  "exact_path_list_ordinal_sha256": "0373683DBDDB9B07FCFBA084F2F9BC164D7326EC3864FE616CE110B2D8FED172",
   "cumulative_paths": [
     "apps/web/fixture-workbench.html",
     "apps/web/index.html",
@@ -1394,6 +1466,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_REPORT.md",
+    "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_REPORT.md",
     "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_REPORT.md",
@@ -1436,6 +1509,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_MANIFEST.json",
+    "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
     "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json",
@@ -1488,6 +1562,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r5-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r6-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r7-result.json",
+    "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r8-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-result.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate-bound.json",
     "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-git-only-candidate.json",
@@ -1525,6 +1600,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_VALIDATION.md",
+    "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_VALIDATION.md",
     "docs/validation/C-21_WORKBENCH_UI_WSL_RUNTIME_RESULT_VALIDATION.md",
@@ -1570,6 +1646,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_INVOCATION_PROMPT.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_WORK_INSTRUCTION.md",
     "docs/work_orders/C-21_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE_INVOCATION_PROMPT.md",
@@ -1613,9 +1691,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/tooling/test_phase_g_gate.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "cumulative_path_count": 261,
-  "cumulative_path_list_sha256": "A3B103827529073532AF5208A8EB183D72411885F93EF6CCAD808CC084ADC29B",
-  "cumulative_path_list_ordinal_sha256": "AAAC92F5DAD74BF24485D35053509B7AACAC8C1A72199692A043D93290DBDEEE"
+  "cumulative_path_count": 267,
+  "cumulative_path_list_sha256": "84F562328BC0C0EA7CEB2C9C15CD0728447140C8F67A7A9A5689973E4834374B",
+  "cumulative_path_list_ordinal_sha256": "6DE6BB7AB87178149F987475196D8EA30997DF57BE025E5F9453AD67DBCF590B"
 }
 ```
 
