@@ -10273,5 +10273,96 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests(unittes
         self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(correction_test_start)].rstrip())
 
 
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR11ResultTests(unittest.TestCase):
+    PARENT = "da7ab71ea14bbe0db2c41d114ca4b97c1109404b"
+    BOOL_FIELDS = ["providerListVisible", "providerDetailVisible", "runEventActionVisible", "statusAlertVisible", "documentHorizontalOverflowZero", "keyboardTabFocusVisible", "buttonAccessibleNames", "sseInitialConnected", "lastEventIdReconnect"]
+
+    def _receipt(self):
+        viewports = []
+        for name, width, height in (("desktop-1920x1080",1920,1080),("desktop-1440x900",1440,900),("mobile-430x844",430,844)):
+            row = {"name":name,"width":width,"height":height}
+            row.update({field:True for field in self.BOOL_FIELDS})
+            viewports.append(row)
+        return {"schemaVersion":"1.0.0","project":"c21-workbench-ui-wsl-auth-browser-probe","result":"PASS","credentialInput":"ENVIRONMENT_ONLY","runtimeExecution":"EXECUTED","viewports":viewports,"requestContract":{"providerReadGetOnly":True,"providerWriteCount":0,"crossOriginCount":0,"fixtureApiCount":0,"lastEventIdExactMatch":True},"secretSafety":{"sentinelOccurrences":0,"authorizationHeaderOccurrences":0,"cookieOccurrences":0,"rawUrlOccurrences":0},"screenshotPolicy":{"storage":"MEMORY_ONLY","rootInput":"FAIL_CLOSED_IF_SUPPLIED"},"filesystemMutation":{"storage":"MEMORY_ONLY","filesCreated":0,"directoriesCreated":0,"residueCount":0}}
+
+    def test_seq698_metadata_binds_exact12_and_cumulative298(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_metadata()
+        self.assertEqual((12,"BD8C7FF87D4FD1C49FE860678C0F7AD99EEF72F64BA21B7B66F3857486CA1FA4","234500925F1410C7F9F591950E1AAD03B0013E64E00CE092D07C3057832B319E"),(meta["exact_path_count"],meta["exact_path_list_sha256"],meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((298,"F573D2A1061D34AC512697AF6249D0CB0C0459F890B945B2B5225E20DBE39A35","7110CBD9CCB68D8785C80B8ECE96677FCAF4638DDB91D68CBFCDA3E2CAD5669C"),(meta["cumulative_path_count"],meta["cumulative_path_list_sha256"],meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq698_safe_receipt_preserves_viewport_fields_without_screenshot_subtree(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(self._receipt(), 0)
+        self.assertEqual([], result["receipt_false_predicates"]); self.assertEqual([], result["native_false_predicates"]); self.assertEqual([], result["consistency_false_predicates"])
+        self.assertEqual([(row["name"],row["width"],row["height"]) for row in self._receipt()["viewports"]],[(row["name"],row["width"],row["height"]) for row in result["safe_receipt"]["viewports"]])
+        for row in result["safe_receipt"]["viewports"]: self.assertEqual(self.BOOL_FIELDS, [field for field in self.BOOL_FIELDS if field in row])
+        rendered = json.dumps(result, sort_keys=True)
+        for forbidden in ("screenshotPolicy","screenshot","path","binary","base64"): self.assertNotIn(forbidden, rendered)
+
+    def test_seq698_targeted_mobile_keyboard_false_is_exact_ordinal_unique(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        receipt = self._receipt(); receipt["result"] = "ACCEPTANCE_FAILED"; receipt["viewports"][2]["keyboardTabFocusVisible"] = False
+        result = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(receipt, 1)
+        self.assertEqual(["receipt.result==PASS","safe_receipt.viewports[2].keyboardTabFocusVisible==true"],result["receipt_false_predicates"])
+        self.assertEqual(["native.exit_code==0"],result["native_false_predicates"])
+        self.assertEqual([],result["consistency_false_predicates"])
+        self.assertEqual(len(result["receipt_false_predicates"]),len(set(result["receipt_false_predicates"])))
+
+    def test_seq698_reversed_multi_false_is_sorted_and_unique(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        receipt = self._receipt(); receipt["result"] = "ACCEPTANCE_FAILED"; receipt["viewports"][2]["statusAlertVisible"] = False; receipt["viewports"][0]["providerListVisible"] = False; receipt["viewports"][2]["keyboardTabFocusVisible"] = False
+        result = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(receipt, 1)
+        self.assertEqual(["receipt.result==PASS","safe_receipt.viewports[0].providerListVisible==true","safe_receipt.viewports[2].statusAlertVisible==true","safe_receipt.viewports[2].keyboardTabFocusVisible==true"],result["receipt_false_predicates"])
+        self.assertEqual(4,len(set(result["receipt_false_predicates"])))
+
+    def test_seq698_wrong_or_missing_schema_and_transform_exception_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        wrong = self._receipt(); wrong["schemaVersion"] = "0.9.0"
+        self.assertEqual(["safe_receipt.schema_version==1.0.0"],checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(wrong,0)["consistency_false_predicates"])
+        missing = self._receipt(); del missing["schemaVersion"]
+        self.assertEqual(["safe_receipt.schema_version.present"],checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(missing,0)["consistency_false_predicates"])
+        def throwing(_receipt): raise RuntimeError("must-not-persist")
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda:{"stdout":json.dumps(self._receipt())+"\n","stderr":"","exit_code":0,"process_started":True},throwing,("must-not-persist",))
+        self.assertEqual(("FAIL","SAFE_TRANSFORM","TRANSFORMER_RUNTIME_ERROR","NOT_AVAILABLE"),(envelope["result"],envelope["failure_step"],envelope["exception_category"],envelope["safe_receipt"]))
+        self.assertNotIn("must-not-persist",json.dumps(envelope,sort_keys=True))
+
+    def test_seq698_existing_seq692_checker_and_test_regions_are_byte_preserved(self):
+        checker_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_P ="
+        next_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_P ="
+        old_checker = subprocess.check_output(["git","show",f"{self.PARENT}:scripts/check_project_progress.py"],cwd=ROOT); current_checker = CHECKER_PATH.read_bytes()
+        self.assertEqual(old_checker[old_checker.index(checker_start):old_checker.rindex(b'if __name__ == "__main__":')].rstrip(),current_checker[current_checker.index(checker_start):current_checker.index(next_start)].rstrip())
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests"; next_test = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR11ResultTests"
+        old_test = subprocess.check_output(["git","show",f"{self.PARENT}:tests/tooling/test_project_progress.py"],cwd=ROOT); current_test = Path(__file__).read_bytes()
+        self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(),current_test[current_test.index(test_start):current_test.index(next_test)].rstrip())
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        return checker, checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_from_root(ROOT)
+
+    def test_seq698_builder_persists_exact_actual_viewport_and_false_predicates(self):
+        checker, artifacts = self._build(); manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_M]); browser = manifest["runtime_result"]["browser_pg15"]
+        self.assertEqual((1,"FAIL",1,"ACCEPTANCE_FAILED","EXECUTED"),(browser["attempt_count"],browser["result"],browser["exit_code"],browser["safe_receipt"]["result"],browser["safe_receipt"]["runtime_execution"]))
+        self.assertEqual(("mobile-430x844",430,844,False),(browser["safe_receipt"]["viewports"][2]["name"],browser["safe_receipt"]["viewports"][2]["width"],browser["safe_receipt"]["viewports"][2]["height"],browser["safe_receipt"]["viewports"][2]["documentHorizontalOverflowZero"]))
+        self.assertEqual(["receipt.result==PASS","safe_receipt.viewports[2].documentHorizontalOverflowZero==true"],browser["receipt_false_predicates"])
+        self.assertEqual(["native.exit_code==0"],browser["native_false_predicates"]); self.assertEqual([],browser["consistency_false_predicates"])
+        rendered=json.dumps(browser,sort_keys=True)
+        for forbidden in ("screenshotPolicy","screenshot","base64"): self.assertNotIn(forbidden,rendered)
+
+    def test_seq698_builder_runtime_counts_events_status_and_roots_are_strict(self):
+        checker, artifacts = self._build(); manifest=json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_M]); events=json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_E])["events"][-6:]
+        self.assertEqual({"deploy":1,"verify":1,"pg15_browser":1,"pg18rc_browser":0,"cleanup":1,"retry":0},manifest["runtime_result"]["action_counts"])
+        self.assertEqual(list(range(693,699)),[event["sequence"] for event in events]); self.assertEqual(["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"],[event["event_type"] for event in events])
+        self.assertEqual(["FAILURE_RESULT_HANDOFF","FAILURE_RESULT_HANDOFF"],[events[3]["details"]["reason"],events[4]["details"]["reason"]])
+        self.assertEqual(("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R11_WSL_DEVELOPMENT_VALIDATION","INDEPENDENT_REVIEW_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R11_FAILURE_RESULT",False),(manifest["status"],manifest["next_action"],manifest["accepted"]))
+        self.assertEqual({"R7":{"fingerprint":"BROWSER_ACCEPTANCE_FAILED_R7","count":1},"R8":{"fingerprint":"BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8","count":1},"R9":{"fingerprint":"R9_ACTUAL_ENVELOPE_HASH_HELPER_RESOLUTION_R1","count":1}},manifest["historical_exact_roots"])
+        self.assertEqual([],checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_manifest(manifest))
+
+    def test_seq698_builder_is_deterministic_and_dispatcher_selects_r11_first(self):
+        checker, first=self._build(); second=checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_from_root(ROOT); self.assertEqual(first,second)
+        manifest=json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_M]); bundle={"_root":ROOT,"progress":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_P]),"events":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_E]),"handoff":checker.extract_handoff_summary(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_H].decode()),"detached_digest":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_D])}
+        self.assertEqual([],checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_projection(bundle,manifest))
+
+
 if __name__ == "__main__":
     unittest.main()
