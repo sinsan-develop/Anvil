@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R9-TAKEOVER-CORRECTION-DIGEST-20260909",
+  "package_id": "C-21",
+  "event_sequence": 680,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-09T12:30:00+09:00",
+  "scope": "seq675-680 append-only correction; seq1-674 and R9 unique artifacts preserved; exact13 cumulative280",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 660074,
+    "file_sha256": "743A2CF61AA16FDC025A5240A4AEE3062742B36EDEDA06BF76FC58B1C64E2CD5",
+    "canonical_json_sha256": "8C0766428993DBC6CF774192730C4D52C926BADDEE788BF422A55BC6549CF725"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 270068,
+    "file_sha256": "6685B8BB01C3679704BC4CB7C069048F21E46AB8607D24134BFD94DCA505EB87",
+    "machine_summary_canonical_sha256": "985D19DBA3881BBE744CB61F669B9DD80BCE8E2BC5C63034CB7CBA4AD686F476"
+  }
+}

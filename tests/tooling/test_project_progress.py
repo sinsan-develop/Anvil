@@ -10024,5 +10024,100 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9ResultTests(unittest.TestCase):
         self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_manifest(manifest))
 
 
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests(unittest.TestCase):
+    PARENT = "5162d3581ac4c856a6a454ca4284b5191a1238b5"
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        generated = {
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_H,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_D,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M,
+        }
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{self.PARENT}:{path}"], cwd=ROOT)
+            for path in (
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_H,
+                "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_REPORT.md",
+                "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_MANIFEST.json",
+                "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r9-result.json",
+                "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_VALIDATION.md",
+                "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_INVOCATION_PROMPT.md",
+                "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_WORK_INSTRUCTION.md",
+            )
+        }
+        files = {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_paths()) - generated
+        }
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_artifacts(historical, files)
+        return checker, historical, artifacts
+
+    def test_seq680_metadata_binds_exact13_and_cumulative280(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_metadata()
+        self.assertEqual((13, "0CF50BDA1B2C5E7D89C4C92DF6821EDFD4FD5488870A145733ABC9E3245CB159", "66B0CB35CDBB0E7630E79E2330F63A073A39DD6199F8D67588C78A8BB8D6AA9D"), (meta["exact_path_count"], meta["exact_path_list_sha256"], meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((280, "B40528446712F4211D3329093724E387E654BCEDE328395F3D0BF212995AEDFC", "C8EAF5D682D267502B04ABDDF17672C9F6331396DE97C0C87F66036B9633F136"), (meta["cumulative_path_count"], meta["cumulative_path_list_sha256"], meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq680_historical_anchors_and_r9_unique_artifacts_are_exact(self):
+        checker, historical, artifacts = self._build()
+        events_raw = historical[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E]
+        self.assertEqual((1966883, "45D30AFFCE78BB8F93B58ADAF9B4D4491FEE6F70E2491C67939AA6BD6B400484"), (len(events_raw), hashlib.sha256(events_raw).hexdigest().upper()))
+        prefix = checker.raw_event_object_prefix_bytes(events_raw, 674)
+        self.assertEqual((1966643, "34FB962606BF12C750DB5761319D4962A7A3B4C938760F70429C11A8C213460C"), (len(prefix), hashlib.sha256(prefix).hexdigest().upper()))
+        self.assertEqual("376E17C93B28E1625180A3F53EF4B17C2010B1DD94630E6F728FC8EE4E606314", hashlib.sha256(checker.canonical_json_bytes(json.loads(events_raw)["events"][:674])).hexdigest().upper())
+        anchors = {
+            "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_REPORT.md": "51638EC480304B0C634FB0776752B829A8B1B5C47E71C8015003A6CE28F11E02",
+            "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_MANIFEST.json": "90644BEFA6227D21A73ACC48FC9DE4DBA548CA4C719B46EBFFED49668FDB788A",
+            "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r9-result.json": "A4775604772E5C0244E813D57082B724C4EC65551959167DEF7889B674A875D2",
+            "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_VALIDATION.md": "C60E21D81E39E278B80A0618E8BEEACF863BA7FC52FCD8A08E3AC96748266A93",
+            "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_INVOCATION_PROMPT.md": "9B6D4C55CB23B5A254A6CD22596F661426E73F8DF7F5F0AC1E44419DC0C71B93",
+            "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_WORK_INSTRUCTION.md": "8C1D85F26FFC47254A247D0C02AFAFBCBB336D6BD9FD27A16FCDF14C21774246",
+        }
+        self.assertEqual(anchors, json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M])["historical_anchors"]["r9_unique_artifacts"])
+
+    def test_seq680_current_roots_supersede_broad_diagnostic_without_takeover(self):
+        checker, historical, artifacts = self._build()
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M])
+        historical_progress = json.loads(historical[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P])
+        self.assertEqual(historical_progress["workbench_ui_wsl_auth_browser_runtime_retry_r9_result"], progress["workbench_ui_wsl_auth_browser_runtime_retry_r9_result"])
+        self.assertNotIn("takeover_packet", progress)
+        self.assertNotIn("takeover_packet", manifest)
+        correction = manifest["correction"]
+        self.assertEqual({"R7": {"fingerprint": "BROWSER_ACCEPTANCE_FAILED_R7", "count": 1}, "R8": {"fingerprint": "BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8", "count": 1}, "R9": {"fingerprint": "R9_ACTUAL_ENVELOPE_HASH_HELPER_RESOLUTION_R1", "count": 1}}, correction["exact_roots"])
+        self.assertEqual(("SUPERSEDED_BY_INDEPENDENT_REVIEW", "DIAGNOSTIC_SYMPTOM_ONLY_NOT_ROOT_IDENTITY", False), (correction["broad_grouping_status"], correction["broad_grouping_classification"], correction["policy_change"]))
+        self.assertEqual((False, False, "NOT_TRIGGERED"), (correction["main_direct"], correction["developer_runtime_resume"], correction["main_takeover"]))
+
+    def test_seq680_events_approval_status_and_next_are_strict(self):
+        checker, _historical, artifacts = self._build()
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E])["events"][-6:]
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M])
+        self.assertEqual(list(range(675, 681)), [event["sequence"] for event in events])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+        self.assertEqual(["CORRECTION_RESULT_HANDOFF", "CORRECTION_RESULT_HANDOFF"], [events[3]["details"]["reason"], events[4]["details"]["reason"]])
+        self.assertEqual("READY_R9_TAKEOVER_CORRECTION_FOR_INDEPENDENT_REVIEW", manifest["status"])
+        self.assertEqual("INDEPENDENT_REVIEW_R9_TAKEOVER_CORRECTION_BEFORE_R10", manifest["next_action"])
+        approval = manifest["approval"]
+        self.assertEqual(("APPROVAL-20260909-C21-R9-TAKEOVER-CORRECTION-001", "HUMAN_OVERRIDE", "30C93434E546AD91D8D2B1F4F8040A70DDC3FD136E15AFAB793E676DB5B9342D"), (approval["approval_id"], approval["mode"], approval["user_subject_sha256"]))
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_manifest(manifest))
+
+    def test_seq680_existing_seq674_checker_and_test_regions_are_byte_preserved(self):
+        current_checker = CHECKER_PATH.read_bytes()
+        old_checker = subprocess.check_output(["git", "show", f"{self.PARENT}:scripts/check_project_progress.py"], cwd=ROOT)
+        checker_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_P ="
+        correction_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P ="
+        self.assertEqual(old_checker[old_checker.index(checker_start):old_checker.index(b'if __name__ == "__main__":')].rstrip(), current_checker[current_checker.index(checker_start):current_checker.index(correction_start)].rstrip())
+        current_test = Path(__file__).read_bytes()
+        old_test = subprocess.check_output(["git", "show", f"{self.PARENT}:tests/tooling/test_project_progress.py"], cwd=ROOT)
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9ResultTests"
+        correction_test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests"
+        self.assertEqual(old_test[old_test.index(test_start):old_test.index(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(correction_test_start)].rstrip())
+
+
 if __name__ == "__main__":
     unittest.main()
