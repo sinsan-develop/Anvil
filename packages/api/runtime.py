@@ -7,6 +7,7 @@ credential values through application state or responses.
 
 from __future__ import annotations
 
+from ipaddress import ip_address
 import os
 from urllib.parse import urlsplit
 from collections.abc import Mapping
@@ -21,6 +22,7 @@ from packages.agent_team.runtime_config import runtime_catalog
 from packages.agent_team.telegram_adapter import TelegramAdapter
 from packages.persistence.config import DatabaseSettings
 
+from .common import SessionPrincipal
 from .fastapi_app import ApiPorts, AuthorizationScope, create_app
 from .local_session import LocalTestSessionConfig, LocalTestSessionService
 from .provider_status import ProviderStatusPort
@@ -55,6 +57,8 @@ _PROVIDER_TRAILING_SLASH_PATHS = (
     "/api/providers/{providerId}/",
     "/api/providers/{providerId}/models/",
 )
+_WSL_ACCEPTANCE_MODE = "WSL_ACCEPTANCE"
+_WSL_RUNTIME_ENVIRONMENT = "WSL_SERVER_TEST_STAGING"
 
 
 def _provider_trailing_slash_denied() -> Response:
@@ -66,6 +70,22 @@ def _required(environment: Mapping[str, str], name: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise RuntimeConfigurationError(f"{name} is required")
     return value.strip()
+
+
+def _require_wsl_acceptance_authority(environment: Mapping[str, str]) -> None:
+    public_host = _required(environment, "ANVIL_PUBLIC_HOST")
+    console_base_url = _required(environment, "ANVIL_CONSOLE_BASE_URL")
+    parsed = urlsplit(console_base_url)
+    try:
+        address = ip_address(public_host)
+    except ValueError as error:
+        raise RuntimeConfigurationError(
+            "WSL_ACCEPTANCE requires a private or loopback IP authority"
+        ) from error
+    if parsed.hostname != public_host or not (address.is_private or address.is_loopback):
+        raise RuntimeConfigurationError(
+            "WSL_ACCEPTANCE requires a matching private or loopback IP authority"
+        )
 
 
 def _allowlisted_identities(environment: Mapping[str, str]) -> frozenset[tuple[str, str]]:
@@ -146,6 +166,19 @@ def create_runtime_app(
     fail before a route is exposed; the in-memory state store is never used.
     """
     source = os.environ if environment is None else environment
+    configured_auth_mode = source.get("ANVIL_AUTH_MODE", "")
+    if configured_auth_mode not in {"", "COOKIE", _WSL_ACCEPTANCE_MODE}:
+        raise RuntimeConfigurationError("ANVIL_AUTH_MODE is invalid")
+    auth_mode = configured_auth_mode or "COOKIE"
+    if (
+        auth_mode == _WSL_ACCEPTANCE_MODE
+        and source.get("ANVIL_RUNTIME_ENVIRONMENT") != _WSL_RUNTIME_ENVIRONMENT
+    ):
+        raise RuntimeConfigurationError(
+            "WSL_ACCEPTANCE requires exact ANVIL_RUNTIME_ENVIRONMENT=WSL_SERVER_TEST_STAGING"
+        )
+    if auth_mode == _WSL_ACCEPTANCE_MODE:
+        _require_wsl_acceptance_authority(source)
     try:
         settings = DatabaseSettings.from_environment(source)
     except ValueError as error:
@@ -215,6 +248,20 @@ def create_runtime_app(
         if local_session_config is not None
         else None
     )
+    trusted_read_principal = None
+    if auth_mode == _WSL_ACCEPTANCE_MODE:
+        if local_session is None:
+            raise RuntimeConfigurationError(
+                "WSL_ACCEPTANCE requires manifest-bound ANVIL_TEST_SESSION configuration"
+            )
+        trusted_read_principal = SessionPrincipal(
+            actor_id="server:wsl-acceptance",
+            actor_role="wsl_acceptance_reader",
+            csrf_token="server-read-only-no-csrf",
+            permissions=frozenset({"provider:read", "run:events:read"}),
+            project_ids=frozenset({local_session.config.project_id}),
+            environment_ids=frozenset({local_session.config.environment_id}),
+        )
     if local_session is not None:
         conflicts = {"authenticate", "authorization_resolver", "session_issuer"} & set(app_kwargs)
         if conflicts:
@@ -256,16 +303,23 @@ def create_runtime_app(
                 authorized = False
             if not authorized:
                 return None
+            allowed_roles = (
+                frozenset({"tester", "wsl_acceptance_reader"})
+                if endpoint.key == "GET /api/runs/{id}/events" or endpoint.key in provider_read_keys
+                else frozenset({"tester"})
+            )
             return AuthorizationScope(
                 local_session.config.project_id,
                 local_session.config.environment_id,
-                frozenset({"tester"}),
+                allowed_roles,
             )
 
         app_kwargs.update(
             authenticate=local_session.authenticate,
             authorization_resolver=resolve_test_scope,
             session_issuer=local_session,
+            trusted_read_principal=trusted_read_principal,
+            auth_mode=auth_mode,
         )
     else:
         injected_scope_resolver = app_kwargs.get("authorization_resolver")
@@ -308,6 +362,7 @@ def create_runtime_app(
     app.state.runtime_database_configured = True
     app.state.event_stream = app_kwargs["event_stream"]
     app.state.local_test_session_enabled = local_session is not None
+    app.state.auth_mode = auth_mode
     return app
 
 

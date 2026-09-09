@@ -1,4 +1,6 @@
 """ASGI entrypoint for the unified public runtime; secrets stay in process env."""
+import os
+
 from fastapi import Response
 from sqlalchemy import text
 from fastapi import FastAPI
@@ -35,7 +37,11 @@ def create_asgi_app(app: FastAPI) -> FastAPI:
         )
 
     # Mount only after every explicit API route so StaticFiles cannot shadow health.
-    mount_frontend(app, str(Path(__file__).resolve().parents[3] / "apps" / "web"))
+    mount_frontend(
+        app,
+        str(Path(__file__).resolve().parents[3] / "apps" / "web"),
+        fixture_enabled=os.environ.get("ANVIL_FIXTURE_WORKBENCH_ENABLED") == "true",
+    )
     return app
 
 

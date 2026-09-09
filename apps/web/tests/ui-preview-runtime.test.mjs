@@ -34,7 +34,7 @@ test('preview assets and errors keep strict security headers', async () => {
   }
 });
 
-test('production mode is default and fixture workbench remains available only at its explicit route', async () => {
+test('production mode hides fixture workbench unless the explicit fixture flag is enabled', async () => {
   const runtime = await startWorkbenchServer({host: '127.0.0.1', port: 0});
   try {
     const page = await fetch(`${runtime.origin}/`);
@@ -42,11 +42,19 @@ test('production mode is default and fixture workbench remains available only at
     assert.match(production, /data-production-workbench/);
     assert.doesNotMatch(production, /FIXTURE BROWSER RUNTIME/);
     const fixture=await fetch(`${runtime.origin}/fixture-workbench`);
-    assert.equal(fixture.status,200);
-    assert.match(await fixture.text(), /FIXTURE BROWSER RUNTIME/);
+    const fixtureHtml=await fetch(`${runtime.origin}/fixture-workbench.html`);
+    assert.equal(fixture.status,404);
+    assert.equal(fixtureHtml.status,404);
   } finally {
     await runtime.close();
   }
+
+  const flagged = await startWorkbenchServer({host: '127.0.0.1', port: 0, fixtureEnabled: true});
+  try {
+    const fixture=await fetch(`${flagged.origin}/fixture-workbench`);
+    assert.equal(fixture.status,200);
+    assert.match(await fixture.text(), /FIXTURE BROWSER RUNTIME/);
+  } finally { await flagged.close(); }
 });
 
 test('production runtime proxies Provider and SSE reads and never implements Provider writes', async () => {

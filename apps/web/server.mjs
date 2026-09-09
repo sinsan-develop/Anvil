@@ -84,7 +84,7 @@ async function scanFixture(fixtureId) {
   return JSON.parse(stdout);
 }
 
-export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production'}={}) {
+export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false}={}) {
   const runtimeMode=uiMode==='preview'?'preview':uiMode==='fixture'?'fixture':'production';
   const csrfToken=randomUUID();
   let allowedHost='';
@@ -125,7 +125,7 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
         response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
         return response.end(body);
       }
-      if (request.method==='GET' && requestUrl.pathname==='/fixture-workbench') {
+      if (fixtureEnabled && request.method==='GET' && requestUrl.pathname==='/fixture-workbench') {
         const body=await readFile(join(webRoot,'fixture-workbench.html'));
         response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
         return response.end(body);

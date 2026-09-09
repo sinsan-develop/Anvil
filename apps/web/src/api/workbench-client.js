@@ -1,6 +1,6 @@
 export function apiPath(value) {
-  if (typeof value !== 'string' || !value.startsWith('/api/') || value.startsWith('//') || value.includes('://')) {
-    throw new Error('Only same-origin /api paths are allowed');
+  if (typeof value !== 'string' || (!value.startsWith('/api/') && value!=='/auth/session/status') || value.startsWith('//') || value.includes('://')) {
+    throw new Error('Only allowlisted same-origin paths are allowed');
   }
   return value;
 }
@@ -20,6 +20,7 @@ export function createWorkbenchClient(fetchImpl=globalThis.fetch) {
       headers:{'content-type':'application/json','x-csrf-token':csrfToken},
       body:JSON.stringify({projectId,fixtureId,role})
     }).then(read),
+    sessionStatus:()=>get('/auth/session/status'),
     providers:()=>get('/api/providers'),
     provider:(providerId)=>get(`/api/providers/${encodeURIComponent(providerId)}`),
     models:(providerId)=>get(`/api/providers/${encodeURIComponent(providerId)}/models`),

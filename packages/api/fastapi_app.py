@@ -11,7 +11,7 @@ from typing import Any, Callable, Mapping, Protocol
 from urllib.parse import urlsplit
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from packages.events.transition_guard import OptimisticVersionConflict
@@ -32,10 +32,37 @@ from .telegram_webhook import TelegramWebhook
 
 
 ApplicationPort = Callable[[ApplicationRequest], Any]
+_TRUSTED_READ_ENDPOINT_KEYS = frozenset(
+    {
+        "GET /api/providers",
+        "GET /api/providers/{providerId}",
+        "GET /api/providers/{providerId}/models",
+        "GET /api/runs/{id}/events",
+    }
+)
 
 
-def mount_frontend(app: FastAPI, directory: str) -> None:
+def mount_frontend(app: FastAPI, directory: str, *, fixture_enabled: bool = False) -> None:
     """Serve the built frontend from the same ASGI listener as the API."""
+    fixture_file = f"{directory}/fixture-workbench.html"
+    if fixture_enabled:
+        app.add_api_route(
+            "/fixture-workbench",
+            lambda: FileResponse(fixture_file),
+            methods=["GET"],
+            include_in_schema=False,
+        )
+    else:
+        def fixture_not_found() -> Response:
+            return Response(status_code=404)
+
+        for path in ("/fixture-workbench", "/fixture-workbench.html"):
+            app.add_api_route(
+                path,
+                fixture_not_found,
+                methods=["GET"],
+                include_in_schema=False,
+            )
     app.mount("/", StaticFiles(directory=directory, html=True), name="frontend")
 Authenticator = Callable[[str], SessionPrincipal | None]
 _IF_MATCH = re.compile(r'(?:W/)?"?([0-9]+)"?\Z')
@@ -124,6 +151,21 @@ def _principal(request: Request, authenticate: Authenticator, config: WebSecurit
     if principal is None:
         raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
     return principal
+
+
+def _read_principal(
+    request: Request,
+    authenticate: Authenticator,
+    config: WebSecurityConfig,
+    trusted_read_principal: SessionPrincipal | None,
+) -> SessionPrincipal:
+    token = request.cookies.get(config.session_cookie_name)
+    principal = authenticate(token) if token else None
+    if principal is not None:
+        return principal
+    if trusted_read_principal is not None:
+        return trusted_read_principal
+    raise ApiContractError("AUTHENTICATION_REQUIRED", "Authentication is required.", 401)
 
 
 def _authorize(
@@ -280,11 +322,14 @@ def _endpoint_handler(
     authenticate: Authenticator,
     config: WebSecurityConfig,
     resolve_authorization: AuthorizationResolver | None,
+    trusted_read_principal: SessionPrincipal | None,
 ) -> Callable[[Request], Any]:
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
             _host(request, config)
-            principal = _principal(request, authenticate, config)
+            principal = _read_principal(
+                request, authenticate, config, trusted_read_principal
+            )
             body = await _body(request) if endpoint.is_mutation else {}
             authorization_parameters = dict(request.path_params)
             if endpoint.key == "POST /api/projects/{projectId}/tasks":
@@ -362,12 +407,13 @@ def _sse_handler(
     authenticate: Authenticator,
     config: WebSecurityConfig,
     resolve_authorization: AuthorizationResolver | None,
+    trusted_read_principal: SessionPrincipal | None,
 ) -> Callable[[Request], Any]:
     async def handler(request: Request, **_path_parameters: str) -> Response:
         try:
             _host(request, config)
             _origin(request, config, required=False)
-            principal = _principal(request, authenticate, config)
+            principal = _read_principal(request, authenticate, config, trusted_read_principal)
             _authorize(principal, endpoint, dict(request.path_params), resolve_authorization)
             if "after" in request.query_params:
                 raise ApiContractError(
@@ -479,6 +525,8 @@ def create_app(
     recovery_ports: ApiPorts | None = None,
     telegram_webhook: TelegramWebhook | None = None,
     session_issuer: SessionIssuer | None = None,
+    trusted_read_principal: SessionPrincipal | None = None,
+    auth_mode: str = "COOKIE",
 ) -> FastAPI:
     api_registry = registry or canonical_api_registry()
     base_ports = ports or ApiPorts()
@@ -529,8 +577,20 @@ def create_app(
         return response
 
     for endpoint in api_registry.endpoints:
+        endpoint_trusted_read_principal = (
+            trusted_read_principal
+            if endpoint.key in _TRUSTED_READ_ENDPOINT_KEYS
+            else None
+        )
         handler = (
-            _sse_handler(endpoint, stream, authenticator, config, authorization_resolver)
+            _sse_handler(
+                endpoint,
+                stream,
+                authenticator,
+                config,
+                authorization_resolver,
+                endpoint_trusted_read_principal,
+            )
             if endpoint.key == "GET /api/runs/{id}/events"
             else _endpoint_handler(
                 endpoint,
@@ -538,6 +598,7 @@ def create_app(
                 authenticator,
                 config,
                 authorization_resolver,
+                endpoint_trusted_read_principal,
             )
         )
         app.add_api_route(endpoint.path, handler, methods=[endpoint.method], tags=[endpoint.source], **_task_openapi(endpoint))
@@ -573,6 +634,24 @@ def create_app(
                 return response
             except ApiContractError as error:
                 return _error_response(request, error)
+
+    @app.get("/auth/session/status", include_in_schema=False)
+    async def session_status(request: Request) -> JSONResponse:
+        try:
+            _host(request, config)
+            token = request.cookies.get(config.session_cookie_name)
+            principal = authenticator(token) if token else None
+            if principal is None:
+                principal = trusted_read_principal
+            return JSONResponse(
+                {
+                    "authenticated": principal is not None,
+                    "mode": auth_mode,
+                    "actor_role": principal.actor_role if principal is not None else None,
+                }
+            )
+        except ApiContractError as error:
+            return _error_response(request, error)
     if telegram_webhook is not None:
         @app.post("/integrations/telegram/webhook", include_in_schema=False)
         async def telegram_webhook_handler(request: Request) -> JSONResponse:

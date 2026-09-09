@@ -71,14 +71,22 @@ export function normalizeProviderDetail(payload,expectedId){
 }
 
 export function mapHttpFailure(status){
-  if(status===401||status===403) return {phase:'PERMISSION_DENIED',message:'Provider 상태를 볼 권한이 없습니다.'};
+  if(status===401) return {phase:'AUTHENTICATION_REQUIRED',message:'인증이 필요합니다.'};
+  if(status===403) return {phase:'PERMISSION_DENIED',message:'Provider 상태를 볼 권한이 없습니다.'};
   if(status===409||status===423||status===429) return {phase:'BLOCKED',message:'현재 상태에서는 Provider 정보를 불러올 수 없습니다.'};
   return {phase:'ERROR',message:'Provider 상태를 불러오지 못했습니다.'};
 }
 
-export function createProductionState(){return {phase:'LOADING',providers:[],selectedId:'',detail:null,models:null,message:'인증된 Provider 상태를 불러오고 있습니다.',lastEventId:'',streamMessage:'연결하면 저장된 마지막 Event 이후부터 재개합니다.'};}
+export function normalizeSessionStatus(payload){
+  const keys=payload&&typeof payload==='object'?Object.keys(payload):[];
+  if(!payload||keys.length!==3||!keys.includes('authenticated')||!keys.includes('mode')||!keys.includes('actor_role')||typeof payload.authenticated!=='boolean'||!['COOKIE','WSL_ACCEPTANCE'].includes(payload.mode)||(payload.actor_role!==null&&typeof payload.actor_role!=='string')) throw new Error('Invalid session status');
+  return {authenticated:payload.authenticated,mode:payload.mode,actorRole:payload.actor_role};
+}
+
+export function createProductionState(){return {phase:'LOADING',auth:{authenticated:false,mode:'CHECKING',actorRole:null},providers:[],selectedId:'',detail:null,models:null,message:'인증 상태를 확인하고 있습니다.',lastEventId:'',streamMessage:'연결하면 저장된 마지막 Event 이후부터 재개합니다.'};}
 export function reduceProductionWorkbench(state,action){
   switch(action.type){
+    case 'AUTH_STATUS_RECEIVED':return {...state,auth:action.status};
     case 'LOAD_STARTED':return {...state,phase:'LOADING',message:'인증된 Provider 상태를 불러오고 있습니다.'};
     case 'PROVIDERS_RECEIVED':return {...state,phase:action.providers.length?'READY':'EMPTY',providers:action.providers,selectedId:action.providers.find(row=>row.primary)?.id||action.providers[0]?.id||'',message:action.providers.length?'API가 반환한 현재 상태입니다.':'표시할 Provider가 없습니다.'};
     case 'LOAD_FAILED':return {...state,phase:action.failure.phase,message:action.failure.message,providers:[],selectedId:'',detail:null,models:null};
