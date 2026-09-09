@@ -28,3 +28,13 @@
 - Error count: 0 formal implementation failures; two expected RED contract gaps resolved. Operations exact set is now 실행 중/승인 대기/BLOCKED/필수 Gate 미통과/예상 비용 초과/baseline 충돌; `failedRuns` is removed. Health cards expose icon, status, short explanation, last checked, error count, and an explicitly unavailable detail-link field.
 - Unverified: Python API pytest remains unavailable because no default Python is installed; a successful real `/health/ready` response, WSL/remote/DB/container remain unverified by scope.
 - Next: stage only rework files, run staged verification, and commit the reviewer rework.
+
+## 2026-09-09 — Main 검증 및 독립 재검토
+
+- Main API 회귀: 검증된 Anvil venv로 `pytest -p no:cacheprovider` 관련 API 6파일 실행 → `71 passed in 5.09s`.
+- Main Web 회귀: `node --no-warnings --test apps/web/tests/*.test.mjs` → `24 passed`, 실패 0.
+- Main diff: `git diff --check` → PASS.
+- 독립 Reviewer 재검토: `ACCEPTED`, Critical 0 / Important 0 / 비차단 Minor 1.
+- 독립 Chromium 430×932: `clientWidth=scrollWidth=430`, menu 11, health 6, operations exact 6, collapse/restore와 ARIA 상태 PASS.
+- 비차단 Minor: 430px 검증이 repository 자동 browser regression suite에는 아직 편입되지 않았으며 이번 scoped acceptance에서는 수동 독립 증거로 보존.
+- 다음 조치: exact commit을 development candidate ref로 push하고 WSL-server의 정식 `anvil-web` 하나에 Git 배포하여 `/` Dashboard, `/provider-workbench.html`, health를 실제 브라우저/API로 검증한다.
