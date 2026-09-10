@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C01-MAINLINE-ACCEPTANCE-DIGEST-20260910",
+  "package_id": "C-01",
+  "event_sequence": 715,
+  "algorithm": "SHA-256",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 802346,
+    "file_sha256": "01FB4C4A3BC50F377F39D585CB5A01FAB7A10F96D0205F191DA3D5249B1C2CA0",
+    "canonical_json_sha256": "427948635C4CA0A37154B9CF1CBD5DB6AA39B22BCCFCE6E2DB07AA9F96DD166F"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 188203,
+    "file_sha256": "EDCCA43DB38784BD9FD4D5E12F36A3861EEADEAABDCA7A467687FB5757E34BD0",
+    "machine_summary_canonical_sha256": "361EBF6C3FEBE3AC970AB3E915855D8CF3E71966270CB2ADB8044F277C5875D3"
+  }
+}

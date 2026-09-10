@@ -342,7 +342,12 @@ class ProjectProgressContractTests(unittest.TestCase):
 
         mutated = copy.deepcopy(bundle)
         mutated["progress"]["repository"]["validated_base_commit"] = "0" * 40
-        self.assertIn("GIT_VALIDATED_BASE_NOT_ANCESTOR", checker.validate_bundle(mutated))
+        if bundle["progress"]["event_sequence"] == 715:
+            self.assertIn("C01_ACCEPTANCE_GIT_BASE_OR_PRODUCT_INVALID", checker.validate_bundle(mutated))
+        else:
+            self.assertIn("GIT_VALIDATED_BASE_NOT_ANCESTOR", checker.validate_bundle(mutated))
+        # The generic era is independently exercised below by the frozen
+        # test_exact_evidence_only_descendant_rejects_each_provenance_violation.
 
         mutated = copy.deepcopy(bundle)
         instruction = (
@@ -10596,7 +10601,9 @@ class C21PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
 
     def test_seq700_git_collector_accepts_precommit_postcommit_and_merged_main_without_deleted_candidate_ref(self):
         checker = _load_checker_or_none(); self.assertIsNotNone(checker)
-        bundle = checker.load_bundle(ROOT); metadata = checker.c21_postmerge_development_authority_reconciliation_metadata()
+        # This collector describes seq700, not the mutable current projection.
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": "931b32418924de11626949b9303360696d614fb0"}}}
+        metadata = checker.c21_postmerge_development_authority_reconciliation_metadata()
         base = checker.C21_POSTMERGE_AUTHORITY_BASE; feature = "a" * 40; merged = "b" * 40
         devref = checker.C21_POSTMERGE_AUTHORITY_DEVELOPMENT_REF; status_key = ("status", "--porcelain", "--untracked-files=all")
         common = {
@@ -10719,6 +10726,246 @@ class C21PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
             ["GIT_VALIDATED_BASE_NOT_ANCESTOR"],
             checker._collect_c21_postmerge_development_authority_reconciliation_git(mutated),
         )
+
+
+class C01MainlineAcceptanceTests(unittest.TestCase):
+    BASE = "e215c0612363050dbe20315646f1612f31b8cdc0"
+    INITIAL_PRODUCT = "f56ac2514d0c5bca41768e456ed57f2036ab3137"
+    PRODUCT = "66c0e43a092215ea2e9be24606d7a28e10dff359"
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c01_mainline_acceptance_from_root"), "C-01 acceptance builder missing")
+        return checker
+
+    def test_c01_builder_records_two_lifecycles_and_separate_review_judgment(self):
+        checker = self._checker()
+        first = checker.c01_mainline_acceptance_from_root(ROOT)
+        self.assertEqual(first, checker.c01_mainline_acceptance_from_root(ROOT))
+        events = json.loads(first[checker.C01_ACCEPTANCE_E])["events"]
+        lifecycle = ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"]
+        self.assertEqual(lifecycle + ["INDEPENDENT_TEST_REVIEW_RECORDED", "INDEPENDENT_TEST_JUDGMENT_RECORDED"] + lifecycle + ["MAIN_PACKAGE_ACCEPTED"], [event["event_type"] for event in events[700:]])
+        self.assertEqual(list(range(701, 716)), [event["sequence"] for event in events[700:]])
+        progress = json.loads(first[checker.C01_ACCEPTANCE_P])
+        self.assertEqual((715, "C-01", "MAIN_PACKAGE_ACCEPTED", 1), (progress["event_sequence"], progress["current_work_package"], progress["status"], progress["completed_packages"].count("C-01")))
+        self.assertEqual({"package_id": "C-02", "status": "READY_FOR_WORK_INSTRUCTION"}, progress["next_work_package"])
+        self.assertEqual(progress["next_work_package"], progress["next_successor_work_package"])
+        self.assertEqual((None, None, None), tuple(progress[key] for key in ("active_agent", "worker_lease", "write_lease")))
+        manifest = json.loads(first[checker.C01_ACCEPTANCE_M])
+        self.assertEqual("NOT_REACHED", manifest["dir2_status"])
+        self.assertEqual("LOCAL_FIXTURE_CONTRACT_SCOPE", manifest["acceptance_scope"])
+        self.assertEqual({"NOT_EXECUTED"}, set(manifest["evidence_boundary"].values()))
+        self.assertEqual(20, len(manifest["exact_paths"]))
+        self.assertEqual(28, len(manifest["cumulative_paths"]))
+        self.assertEqual([], checker.validate_c01_mainline_acceptance_manifest(manifest))
+        prior = subprocess.check_output(["git", "show", f"{self.PRODUCT}:docs/progress/progress-events.json"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(prior, 700), checker.raw_event_object_prefix_bytes(first[checker.C01_ACCEPTANCE_E], 700))
+        previous = checker._c21_resume_sha(checker.canonical_json_bytes(events[699]))
+        for event in events[700:]:
+            self.assertEqual(previous, event["previous_event_sha256"])
+            previous = checker._c21_resume_sha(checker.canonical_json_bytes(event))
+
+    def test_c01_fixture_receipts_are_actual_deterministic_local_outputs(self):
+        checker = self._checker()
+        raw = checker.c01_mainline_fixture_evidence(ROOT)
+        self.assertEqual(raw, checker.c01_mainline_fixture_evidence(ROOT))
+        backend = json.loads(raw[checker.C01_ACCEPTANCE_BACKEND])
+        self.assertEqual(["claude", "codex", "local"], [case["backend"] for case in backend["cases"]])
+        for case in backend["cases"]:
+            self.assertEqual("task-graph:1", case["result"]["task_graph_ref"])
+            self.assertEqual("permission:1", case["result"]["permission_ref"])
+            self.assertEqual("evidence:1", case["result"]["evidence_ref"])
+            self.assertEqual("checkpoint:1", case["result"]["resume_ref"])
+        budget = json.loads(raw[checker.C01_ACCEPTANCE_BUDGET])
+        self.assertEqual((0, 0), (budget["denied"]["adapter_calls"], budget["duplicate_step"]["additional_adapter_calls"]))
+        for scenario, abort, provenance in (("success", "COMPLETED", "PROVIDER_FINAL"), ("abort", "ABORTED", "ABORT_CONFIRMED")):
+            evidence = budget[scenario]["events"]
+            self.assertEqual(["BUDGET_RESERVED", "USAGE_RECONCILED"], [event["event_type"] for event in evidence])
+            self.assertEqual((abort, provenance), (evidence[-1]["abort_status"], evidence[-1]["usage_provenance"]))
+            self.assertIsInstance(evidence[-1]["cost"], str)
+        self.assertNotIn("secret-shaped prompt", json.dumps(budget))
+
+    def test_c01_current_state_does_not_carry_old_package_failure_or_base_parents(self):
+        checker = self._checker()
+        progress = json.loads(checker.c01_mainline_acceptance_from_root(ROOT)[checker.C01_ACCEPTANCE_P])
+        self.assertEqual(["931b32418924de11626949b9303360696d614fb0", "ef973bb3e61df5a3acded215dbebe73a71f4f873"], progress["repository"]["baseline_merge_parents"])
+        self.assertEqual((0, None), (progress["valid_failure_count"], progress["active_failure_lineage"]))
+        self.assertEqual(32, progress["historical_accepted_failure_count"])
+        self.assertEqual(2, progress["historical_failure_counts_by_lineage"]["C-21/LR-02C/OPS-R2"])
+        self.assertEqual(32, sum(progress["historical_failure_counts_by_lineage"].values()))
+        self.assertEqual(4, progress["completed_c01_acceptance_worker_lease"]["lease_epoch"])
+        self.assertEqual("worker-lease-c01-mainline-acceptance-projection-r4-20260911-001", progress["completed_c01_acceptance_worker_lease"]["lease_id"])
+
+    def test_c01_ledger_derived_historical_map_only_tamper_is_rejected(self):
+        checker = self._checker()
+        artifacts = checker.c01_mainline_acceptance_from_root(ROOT)
+        bundle = checker.load_bundle(ROOT)
+        for key, path in (("progress", checker.C01_ACCEPTANCE_P), ("events", checker.C01_ACCEPTANCE_E), ("detached_digest", checker.C01_ACCEPTANCE_D)):
+            bundle[key] = json.loads(artifacts[path])
+        bundle["handoff"] = checker.extract_handoff_summary(artifacts[checker.C01_ACCEPTANCE_H].decode())
+        manifest = json.loads(artifacts[checker.C01_ACCEPTANCE_M])
+        self.assertEqual(2, bundle["progress"]["historical_failure_counts_by_lineage"]["C-21/LR-02C/OPS-R2"])
+        self.assertNotIn("C01_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c01_mainline_acceptance_projection(bundle, manifest))
+        bundle["progress"]["historical_failure_counts_by_lineage"]["C-21/LR-02C/OPS-R2"] = 1
+        bundle["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(bundle["progress"])
+        self.assertIn("C01_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c01_mainline_acceptance_projection(bundle, manifest))
+
+    def test_c01_fix_chain_and_independent_design_scenarios_are_bound_without_hiding_round_one(self):
+        checker = self._checker()
+        metadata = checker.c01_mainline_acceptance_metadata()
+        self.assertEqual(self.PRODUCT, metadata["product_commit"])
+        self.assertEqual(self.INITIAL_PRODUCT, metadata["product_parent"])
+        self.assertEqual((9, 2, 11, 20, 28), (metadata["product_path_count"], len(metadata["product_fix_paths"]), metadata["product_path_occurrence_count"], metadata["exact_path_count"], metadata["cumulative_path_count"]))
+        artifacts = checker.c01_mainline_acceptance_from_root(ROOT)
+        basis = json.loads(artifacts[checker.C01_ACCEPTANCE_M])["acceptance_basis"]
+        self.assertEqual((18, self.INITIAL_PRODUCT), (basis["developer_test_rerun"]["passed"], basis["developer_test_rerun"]["product_commit"]))
+        scenarios = basis["independent_design_scenarios"]
+        self.assertEqual((0, 9, 0), (scenarios["implementation_read_before_authoring"], scenarios["round2"]["passed"], scenarios["round2"]["failed"]))
+        self.assertEqual((8, 1, self.INITIAL_PRODUCT), (scenarios["round1"]["passed"], scenarios["round1"]["failed"], scenarios["round1"]["product_commit"]))
+        self.assertEqual(self.PRODUCT, scenarios["round2"]["bound_product_commit"])
+        self.assertEqual("C01-UNKNOWN-USAGE-CONSUMED-ZERO-RELEASE-v1", scenarios["finding"]["fingerprint"])
+        self.assertEqual("RESOLVED_INDEPENDENT_ROUND2", scenarios["finding"]["resolution"])
+        self.assertEqual("RESOLVED_BY_DESIGN_DERIVED_SCENARIOS", basis["projection_review_finding"]["resolution"])
+        budget = json.loads(artifacts[checker.C01_ACCEPTANCE_BUDGET])
+        unknown = budget["independent_design_scenarios"]["unknown_usage"]
+        self.assertEqual(("USAGE_RECONCILIATION_REQUIRED", 1, [], "unknown"), (unknown["reconciliation_status"], unknown["remaining_reservations"], unknown["events"], unknown["usage_provenance"]))
+        self.assertEqual(0, json.loads(artifacts[checker.C01_ACCEPTANCE_BACKEND])["external_calls"])
+
+    def test_c01_current_event_effect_is_exact_and_future_projection_is_not_relaxed(self):
+        checker = self._checker()
+        artifacts = checker.c01_mainline_acceptance_from_root(ROOT)
+        progress = json.loads(artifacts[checker.C01_ACCEPTANCE_P])
+        stream = json.loads(artifacts[checker.C01_ACCEPTANCE_E])
+        contract = checker.load_bundle(ROOT)["event_contract"]
+        self.assertEqual([], checker.validate_event_stream(stream, contract, progress))
+        wrong = copy.deepcopy(progress)
+        wrong["repository"]["local_head"] = "0" * 40
+        self.assertIn("EVENT_EFFECT_MISMATCH", checker.validate_event_stream(stream, contract, wrong))
+        future = copy.deepcopy(progress)
+        future["event_sequence"] = 716
+        self.assertIn("EVENT_EFFECT_MISMATCH", checker.validate_event_stream(stream, contract, future))
+
+    def test_c01_manifest_rejects_scope_promotion_and_wrong_binding(self):
+        checker = self._checker()
+        manifest = json.loads(checker.c01_mainline_acceptance_from_root(ROOT)[checker.C01_ACCEPTANCE_M])
+        mutations = (
+            lambda m: m["evidence_boundary"].update(provider="PASS"),
+            lambda m: m.update(product_commit="0" * 40),
+            lambda m: m.update(development_remote_ref="refs/remotes/origin/main"),
+            lambda m: m["product_work_instruction"].update(sha256="0" * 64),
+            lambda m: m["raw_checksums"].pop(),
+            lambda m: m.update(dir2_status="CLEARED"),
+            lambda m: m["acceptance_basis"]["independent_test"].update(verdict="FAIL"),
+        )
+        for mutate in mutations:
+            changed = copy.deepcopy(manifest)
+            mutate(changed)
+            self.assertTrue(checker.validate_c01_mainline_acceptance_manifest(changed))
+
+    def test_c01_rehashed_manifest_rejects_regression_only_acceptance_and_erased_findings(self):
+        checker = self._checker()
+        manifest = json.loads(checker.c01_mainline_acceptance_from_root(ROOT)[checker.C01_ACCEPTANCE_M])
+        mutations = (
+            lambda b: b["independent_test"].update(passed=18, role="REGRESSION_ONLY"),
+            lambda b: b["independent_design_scenarios"].update(implementation_read_before_authoring=1),
+            lambda b: b["independent_design_scenarios"]["round1"].update(failed=0),
+            lambda b: b["independent_design_scenarios"]["round2"].update(bound_product_commit=self.INITIAL_PRODUCT),
+            lambda b: b["independent_design_scenarios"]["finding"].update(fingerprint="ERASED"),
+            lambda b: b["projection_review_finding"].update(important_findings=0),
+            lambda b: b["product_fix"]["review"].update(important_findings=1),
+            lambda b: b["developer_test_rerun"].update(acceptance_authority=True),
+        )
+        for mutate in mutations:
+            changed = copy.deepcopy(manifest)
+            mutate(changed["acceptance_basis"])
+            changed["acceptance_basis_sha256"] = checker._c21_resume_sha(checker.canonical_json_bytes(changed["acceptance_basis"]))
+            self.assertTrue(checker.validate_c01_mainline_acceptance_manifest(changed))
+
+    def _git_case(self, checker, state):
+        meta = checker.c01_mainline_acceptance_metadata()
+        projection, merged = "a" * 40, "b" * 40
+        feature = "codex/c01-mainline-reconciliation"
+        values = {
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("rev-parse", self.BASE): self.BASE,
+            ("rev-parse", self.PRODUCT): self.PRODUCT,
+            ("rev-parse", self.INITIAL_PRODUCT): self.INITIAL_PRODUCT,
+            ("show", "-s", "--format=%P", self.BASE): "931b32418924de11626949b9303360696d614fb0 ef973bb3e61df5a3acded215dbebe73a71f4f873",
+            ("show", "-s", "--format=%P", self.INITIAL_PRODUCT): self.BASE,
+            ("show", "-s", "--format=%P", self.PRODUCT): self.INITIAL_PRODUCT,
+            ("diff", "--name-only", self.BASE, self.INITIAL_PRODUCT): "\n".join(meta["initial_product_paths"]),
+            ("diff", "--name-only", self.INITIAL_PRODUCT, self.PRODUCT): "\n".join(meta["product_fix_paths"]),
+            ("diff", "--name-only", self.BASE, self.PRODUCT): "\n".join(meta["product_paths"]),
+            ("diff", "--cached", "--name-only"): "",
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+            ("status", "--porcelain", "--untracked-files=all"): "",
+            ("branch", "--show-current"): feature,
+            ("rev-parse", "--abbrev-ref", "@{upstream}"): None,
+            ("rev-parse", "refs/remotes/development/main"): self.BASE,
+            ("rev-parse", "HEAD"): self.PRODUCT,
+        }
+        checks = {("merge-base", "--is-ancestor", self.BASE, self.PRODUCT), ("diff", "--check", self.BASE, self.PRODUCT), ("diff", "--cached", "--check")}
+        checks |= {("merge-base", "--is-ancestor", self.BASE, self.INITIAL_PRODUCT), ("merge-base", "--is-ancestor", self.INITIAL_PRODUCT, self.PRODUCT), ("diff", "--check", self.BASE, self.INITIAL_PRODUCT), ("diff", "--check", self.INITIAL_PRODUCT, self.PRODUCT)}
+        if state == "precommit":
+            values[("diff", "--cached", "--name-only")] = "\n".join(meta["exact_paths"])
+            values[("diff", "--cached", "--name-only", self.BASE)] = "\n".join(meta["cumulative_paths"])
+            values[("status", "--porcelain", "--untracked-files=all")] = "\n".join("M  " + path for path in meta["exact_paths"])
+        else:
+            values[("rev-parse", "HEAD")] = projection
+            values[("show", "-s", "--format=%P", projection)] = self.PRODUCT
+            values[("diff", "--name-only", self.PRODUCT, projection)] = "\n".join(meta["exact_paths"])
+            values[("diff", "--name-only", self.BASE, projection)] = "\n".join(meta["cumulative_paths"])
+            checks |= {("merge-base", "--is-ancestor", self.PRODUCT, projection), ("diff", "--check", self.PRODUCT, projection), ("diff", "--check", self.BASE, projection)}
+            if state == "merged":
+                values.update({("rev-parse", "HEAD"): merged, ("branch", "--show-current"): "main", ("rev-parse", "--abbrev-ref", "@{upstream}"): "development/main", ("rev-parse", "refs/remotes/development/main"): merged, ("show", "-s", "--format=%P", merged): f"{self.BASE} {projection}", ("diff", "--name-only", self.BASE, merged): "\n".join(meta["cumulative_paths"]), ("diff", "--name-only", projection, merged): ""})
+                checks |= {("merge-base", "--is-ancestor", projection, merged), ("diff", "--check", self.BASE, merged)}
+        return values, checks
+
+    def _run_git(self, checker, values, checks):
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 715, "repository": {"validated_base_commit": self.BASE, "product_commit": self.PRODUCT}}}
+        with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in checks else 1):
+            return checker._validate_git_projection(bundle)
+
+    def test_c01_git_accepts_only_three_exact_states(self):
+        checker = self._checker()
+        for state in ("precommit", "feature", "merged"):
+            values, checks = self._git_case(checker, state)
+            self.assertEqual([], self._run_git(checker, values, checks), state)
+
+    def test_c01_git_rejects_each_wrong_authority_lineage_scope_and_cleanliness(self):
+        checker = self._checker()
+        for state in ("precommit", "feature", "merged"):
+            values, checks = self._git_case(checker, state)
+            changes = [
+                (("remote", "get-url", "development"), "https://github.com/cyhuh7950/anvil.git"),
+                (("rev-parse", "refs/remotes/development/main"), "c" * 40),
+                (("rev-parse", self.BASE), "c" * 40),
+                (("rev-parse", self.PRODUCT), "c" * 40),
+                (("rev-parse", self.INITIAL_PRODUCT), "c" * 40),
+                (("show", "-s", "--format=%P", self.INITIAL_PRODUCT), "c" * 40),
+                (("show", "-s", "--format=%P", self.PRODUCT), self.BASE + " " + "c" * 40),
+                (("diff", "--name-only", self.BASE, self.INITIAL_PRODUCT), "packages/orchestration/kernel.py"),
+                (("diff", "--name-only", self.INITIAL_PRODUCT, self.PRODUCT), "packages/orchestration/kernel.py"),
+                (("show", "-s", "--format=%P", self.BASE), "ef973bb3e61df5a3acded215dbebe73a71f4f873 931b32418924de11626949b9303360696d614fb0"),
+                (("diff", "--name-only", self.BASE, self.PRODUCT), "packages/orchestration/kernel.py"),
+                (("diff", "--name-only"), "docs/WORK_STATUS.md"),
+                (("ls-files", "--others", "--exclude-standard"), "unexpected.txt"),
+                (("rev-parse", "--abbrev-ref", "@{upstream}"), "origin/main"),
+            ]
+            if state == "precommit":
+                changes += [(("diff", "--cached", "--name-only"), "docs/WORK_STATUS.md"), (("diff", "--cached", "--name-only", self.BASE), "docs/WORK_STATUS.md")]
+            else:
+                changes += [(("show", "-s", "--format=%P", "a" * 40), self.BASE), (("diff", "--name-only", self.PRODUCT, "a" * 40), "docs/WORK_STATUS.md"), (("diff", "--name-only", self.BASE, "a" * 40), "docs/WORK_STATUS.md"), (("diff", "--cached", "--name-only"), "docs/WORK_STATUS.md"), (("status", "--porcelain", "--untracked-files=all"), " M docs/WORK_STATUS.md")]
+            if state == "merged":
+                changes += [(("show", "-s", "--format=%P", "b" * 40), "a" * 40 + " " + self.BASE), (("diff", "--name-only", self.BASE, "b" * 40), "docs/WORK_STATUS.md"), (("diff", "--name-only", "a" * 40, "b" * 40), "docs/WORK_STATUS.md")]
+            for key, changed in changes:
+                with self.subTest(state=state, key=key):
+                    self.assertTrue(self._run_git(checker, values | {key: changed}, checks))
+            for check in checks:
+                with self.subTest(state=state, check=check):
+                    self.assertTrue(self._run_git(checker, values, checks - {check}))
 
 
 if __name__ == "__main__":

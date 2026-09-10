@@ -1012,7 +1012,8 @@ def validate_repository(
         and entry.get("counts_toward_valid_failure") is True
         and entry.get("validator_acceptance") is True
     ]
-    active_lineage_id = progress.get("active_failure_lineage", {}).get("step_lineage_id", "G-07")
+    active_lineage = progress.get("active_failure_lineage", {})
+    active_lineage_id = None if active_lineage is None else active_lineage.get("step_lineage_id", "G-07")
     active_lineage_count = sum(1 for entry in valid_historical_failures if entry.get("step_lineage_id") == active_lineage_id)
     historical_failures = [entry for entry in valid_historical_failures if entry.get("step_lineage_id") != active_lineage_id]
     failure_counts = {
@@ -1021,7 +1022,8 @@ def validate_repository(
         "historical_accepted_failure_total": len(historical_failures),
         "historical_by_lineage": dict(sorted(Counter(entry.get("step_lineage_id") for entry in historical_failures).items())),
     }
-    if progress.get("active_failure_lineage", {}).get("valid_failure_count") != active_lineage_count:
+    declared_active_count = progress.get("valid_failure_count") if active_lineage is None else active_lineage.get("valid_failure_count")
+    if declared_active_count != active_lineage_count:
         _error(errors, "ACTIVE_FAILURE_PROJECTION_MISMATCH", progress_path, f"expected={active_lineage_count}")
     if progress.get("historical_accepted_failure_count") != len(historical_failures):
         _error(errors, "HISTORICAL_FAILURE_PROJECTION_MISMATCH", progress_path, f"expected={len(historical_failures)}")
