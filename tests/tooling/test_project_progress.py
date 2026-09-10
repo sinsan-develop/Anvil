@@ -3944,9 +3944,8 @@ class ProjectProgressContractTests(unittest.TestCase):
             "scripts/check_project_progress.py",
             "tests/tooling/test_project_progress.py",
         ]
-        repository = copy.deepcopy(bundle["progress"]["repository"])
-        repository.update(
-            {
+        repository = {
+                "projection_mode": checker.VALIDATED_BASE_PROJECTION_MODE,
                 "validated_base_commit": base,
                 "head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_RUNTIME_SUCCESSOR_ACTIVE_EXACT42",
                 "branch": "codex/c21-operational-execution",
@@ -3957,7 +3956,6 @@ class ProjectProgressContractTests(unittest.TestCase):
                 "local_head": runtime,
                 "exact_allowed_paths": exact42,
             }
-        )
         progress = {
             "event_sequence": 488,
             "last_event_id": "evt_c21_wsl_control_runtime_successor_bound",
@@ -10412,10 +10410,11 @@ class C21FinalAcceptanceProjectionReconciliationTests(unittest.TestCase):
 
     def test_seq699_git_collector_accepts_only_precommit_exact15_or_clean_direct_child(self):
         checker = _load_checker_or_none(); self.assertIsNotNone(checker)
-        bundle = checker.load_bundle(ROOT)
         metadata = checker.c21_final_acceptance_projection_reconciliation_metadata()
         record = checker.C21_FINAL_ACCEPTANCE_RECORD
         deployed = checker.C21_FINAL_ACCEPTANCE_DEPLOYED
+        bundle = copy.deepcopy(checker.load_bundle(ROOT))
+        bundle["progress"]["repository"] = {"validated_base_commit": record}
         private_url = checker.C21_WORKBENCH_UI_WSL_PRIVATE_URL
         development_ref = "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1"
         branch = "codex/c21-wsl-acceptance-auth-r1"
@@ -10548,6 +10547,178 @@ class C21FinalAcceptanceProjectionReconciliationTests(unittest.TestCase):
         self.assertEqual(["C21_FINAL_ACCEPTANCE_EVIDENCE_BOUNDARY_INVALID"], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(promoted))
         rebound = json.loads(json.dumps(manifest)); rebound["deployed_product_source"] = "0" * 40
         self.assertEqual(["C21_FINAL_ACCEPTANCE_MANIFEST_INVALID"], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(rebound))
+
+
+class C21PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
+    def test_seq700_contract_builder_validator_and_dispatcher_are_available(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_postmerge_development_authority_reconciliation_metadata()
+        self.assertEqual((700, "REPOSITORY_RECONCILED", "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED", 12), (metadata["sequence"], metadata["event_type"], metadata["status"], metadata["exact_path_count"]))
+        self.assertEqual("git@github-sinsan-develop:sinsan-develop/Anvil.git", metadata["development_remote_url"])
+        self.assertEqual("refs/remotes/development/main", metadata["development_remote_ref"])
+        first = checker.c21_postmerge_development_authority_reconciliation_from_root(ROOT)
+        second = checker.c21_postmerge_development_authority_reconciliation_from_root(ROOT)
+        self.assertEqual(first, second)
+        manifest = json.loads(first[checker.C21_POSTMERGE_AUTHORITY_M])
+        progress = json.loads(first[checker.C21_POSTMERGE_AUTHORITY_P])
+        bundle = {
+            "_root": ROOT,
+            "progress": progress,
+            "events": json.loads(first[checker.C21_POSTMERGE_AUTHORITY_E]),
+            "handoff": checker.extract_handoff_summary(first[checker.C21_POSTMERGE_AUTHORITY_H].decode()),
+            "detached_digest": json.loads(first[checker.C21_POSTMERGE_AUTHORITY_D]),
+        }
+        self.assertEqual([], checker.validate_c21_postmerge_development_authority_reconciliation_projection(bundle, manifest))
+        self.assertEqual("C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION", manifest["manifest_type"])
+        self.assertEqual("READY_FOR_WORK_INSTRUCTION", progress["next_work_package"]["status"])
+        self.assertEqual("C-01", progress["next_work_package"]["package_id"])
+        self.assertIn("C-21", progress["completed_packages"])
+        self.assertEqual(("USER_OWNED_NOT_EXECUTED", "USER_OWNED_NOT_EXECUTED"), (manifest["evidence_boundary"]["provider"], manifest["evidence_boundary"]["telegram"]))
+
+    def test_seq700_preserves_seq1_699_raw_event_objects_and_rejects_boundary_tamper(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_postmerge_development_authority_reconciliation_from_root(ROOT)
+        prior = subprocess.check_output(["git", "show", f"{checker.C21_POSTMERGE_AUTHORITY_BASE}:docs/progress/progress-events.json"], cwd=ROOT)
+        current = artifacts[checker.C21_POSTMERGE_AUTHORITY_E]
+        self.assertEqual(checker.raw_event_object_prefix_bytes(prior, 699), checker.raw_event_object_prefix_bytes(current, 699))
+        manifest = json.loads(artifacts[checker.C21_POSTMERGE_AUTHORITY_M])
+        for label, mutate, expected in (
+            ("url", lambda value: value.update(development_remote_url="https://example.invalid/Anvil.git"), "C21_POSTMERGE_AUTHORITY_MANIFEST_INVALID"),
+            ("ref", lambda value: value.update(development_remote_ref="refs/remotes/development/candidates/deleted"), "C21_POSTMERGE_AUTHORITY_MANIFEST_INVALID"),
+            ("merge-parent", lambda value: value["lineage"].update(baseline_merge_parents=["0" * 40]), "C21_POSTMERGE_AUTHORITY_LINEAGE_INVALID"),
+            ("a03-parent", lambda value: value["lineage"].update(feature_parent="0" * 40), "C21_POSTMERGE_AUTHORITY_LINEAGE_INVALID"),
+            ("provider", lambda value: value["evidence_boundary"].update(provider="PASS"), "C21_POSTMERGE_AUTHORITY_EVIDENCE_BOUNDARY_INVALID"),
+            ("c01", lambda value: value.update(c01_status="BLOCKED"), "C21_POSTMERGE_AUTHORITY_MANIFEST_INVALID"),
+        ):
+            with self.subTest(label=label):
+                changed = json.loads(json.dumps(manifest)); mutate(changed)
+                self.assertIn(expected, checker.validate_c21_postmerge_development_authority_reconciliation_manifest(changed))
+
+    def test_seq700_git_collector_accepts_precommit_postcommit_and_merged_main_without_deleted_candidate_ref(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = checker.load_bundle(ROOT); metadata = checker.c21_postmerge_development_authority_reconciliation_metadata()
+        base = checker.C21_POSTMERGE_AUTHORITY_BASE; feature = "a" * 40; merged = "b" * 40
+        devref = checker.C21_POSTMERGE_AUTHORITY_DEVELOPMENT_REF; status_key = ("status", "--porcelain", "--untracked-files=all")
+        common = {
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("rev-parse", base): base,
+            ("show", "-s", "--format=%P", base): "eef349682ff5598e3488c9e75163c5e0a99a0bdb a03aecc74b412515dab983148838c249fca62d3a",
+            ("show", "-s", "--format=%P", "a03aecc74b412515dab983148838c249fca62d3a"): "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+            ("show", "-s", "--format=%P", "2db9eff352d32d60638ae9bf7c9dae153c862be8"): "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
+        }
+        ancestors = {
+            ("merge-base", "--is-ancestor", "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd", "2db9eff352d32d60638ae9bf7c9dae153c862be8"),
+            ("merge-base", "--is-ancestor", "2db9eff352d32d60638ae9bf7c9dae153c862be8", "a03aecc74b412515dab983148838c249fca62d3a"),
+            ("merge-base", "--is-ancestor", "a03aecc74b412515dab983148838c249fca62d3a", base),
+        }
+        def run(values, accepted):
+            with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in accepted else 1):
+                return checker._collect_c21_postmerge_development_authority_reconciliation_git(bundle)
+        pre = common | {
+            ("rev-parse", "HEAD"): base, ("branch", "--show-current"): "codex/c21-postmerge-authority-reconcile",
+            ("rev-parse", devref): base, ("rev-parse", "--abbrev-ref", "@{upstream}"): None,
+            ("diff", "--cached", "--name-only"): "\n".join(metadata["exact_paths"]),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+            status_key: "\n".join("M  " + path for path in metadata["exact_paths"]),
+        }
+        self.assertEqual([], run(pre, ancestors | {("diff", "--cached", "--check")}))
+        valid_precommit_checks = ancestors | {("diff", "--cached", "--check")}
+        precommit_negatives = (
+            (
+                "cached-name-missing-one",
+                pre | {("diff", "--cached", "--name-only"): "\n".join(metadata["exact_paths"][:-1])},
+                valid_precommit_checks,
+            ),
+            (
+                "unstaged-nonempty",
+                pre | {("diff", "--name-only"): "docs/WORK_STATUS.md"},
+                valid_precommit_checks,
+            ),
+            (
+                "untracked-nonempty",
+                pre | {("ls-files", "--others", "--exclude-standard"): "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md"},
+                valid_precommit_checks,
+            ),
+            (
+                "cached-diff-check-nonzero",
+                pre,
+                ancestors,
+            ),
+        )
+        for label, changed, checks in precommit_negatives:
+            with self.subTest(precommit_negative=label):
+                self.assertEqual(
+                    ["C21_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"],
+                    run(changed, checks),
+                )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(pre | {("remote", "get-url", "development"): "https://example.invalid/Anvil.git"}, ancestors | {("diff", "--cached", "--check")}),
+        )
+        self.assertEqual(
+            ["C21_POSTMERGE_AUTHORITY_BRANCH_OR_UPSTREAM_INVALID"],
+            run(pre | {("rev-parse", "--abbrev-ref", "@{upstream}"): "development/unexpected"}, ancestors | {("diff", "--cached", "--check")}),
+        )
+        self.assertEqual(
+            ["C21_POSTMERGE_AUTHORITY_GIT_LINEAGE_INVALID"],
+            run(pre | {("show", "-s", "--format=%P", base): checker.C21_POSTMERGE_AUTHORITY_BASE_PARENTS[1] + " " + checker.C21_POSTMERGE_AUTHORITY_BASE_PARENTS[0]}, ancestors | {("diff", "--cached", "--check")}),
+        )
+        self.assertEqual(
+            ["C21_POSTMERGE_AUTHORITY_GIT_LINEAGE_INVALID"],
+            run(pre | {("show", "-s", "--format=%P", checker.C21_POSTMERGE_AUTHORITY_FEATURE): "0" * 40}, ancestors | {("diff", "--cached", "--check")}),
+        )
+        self.assertEqual(
+            ["C21_POSTMERGE_AUTHORITY_GIT_LINEAGE_INVALID"],
+            run(pre | {("show", "-s", "--format=%P", checker.C21_POSTMERGE_AUTHORITY_RECORD): "0" * 40}, ancestors | {("diff", "--cached", "--check")}),
+        )
+        self.assertEqual(
+            ["C21_POSTMERGE_AUTHORITY_GIT_LINEAGE_INVALID"],
+            run(pre, (ancestors - {("merge-base", "--is-ancestor", checker.C21_POSTMERGE_AUTHORITY_RECORD, checker.C21_POSTMERGE_AUTHORITY_FEATURE)}) | {("diff", "--cached", "--check")}),
+        )
+        post = common | {
+            ("rev-parse", "HEAD"): feature, ("branch", "--show-current"): "codex/c21-postmerge-authority-reconcile",
+            ("rev-parse", devref): base, ("rev-parse", "--abbrev-ref", "@{upstream}"): "development/codex/c21-postmerge-authority-reconcile",
+            ("show", "-s", "--format=%P", feature): base,
+            ("diff", "--name-only", base, feature): "\n".join(metadata["exact_paths"]), status_key: "",
+        }
+        post_checks = ancestors | {("merge-base", "--is-ancestor", base, feature), ("diff", "--check", base, feature)}
+        self.assertEqual([], run(post, post_checks))
+        self.assertEqual(["C21_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"], run(post | {status_key: " M docs/WORK_STATUS.md"}, post_checks))
+        final = common | {
+            ("rev-parse", "HEAD"): merged, ("branch", "--show-current"): "main", ("rev-parse", devref): merged,
+            ("rev-parse", "--abbrev-ref", "@{upstream}"): "development/main", ("show", "-s", "--format=%P", merged): f"{base} {feature}",
+            ("show", "-s", "--format=%P", feature): base,
+            ("diff", "--name-only", base, feature): "\n".join(metadata["exact_paths"]),
+            ("diff", "--name-only", base, merged): "\n".join(metadata["exact_paths"]), status_key: "",
+        }
+        final_checks = ancestors | {("merge-base", "--is-ancestor", base, feature), ("merge-base", "--is-ancestor", base, merged), ("diff", "--check", base, feature), ("diff", "--check", base, merged)}
+        self.assertEqual([], run(final, final_checks))
+        self.assertEqual(
+            ["C21_POSTMERGE_AUTHORITY_BRANCH_OR_UPSTREAM_INVALID"],
+            run(final | {("rev-parse", "--abbrev-ref", "@{upstream}"): "origin/main"}, final_checks),
+        )
+        self.assertTrue(run(pre | {status_key: " M docs/WORK_STATUS.md"}, ancestors | {("diff", "--cached", "--check")}))
+        self.assertEqual(["GIT_PRIVATE_AUTHORITY_MISMATCH"], run(pre | {("rev-parse", devref): "0" * 40}, ancestors | {("diff", "--cached", "--check")}))
+        self.assertTrue(run(final | {("show", "-s", "--format=%P", merged): feature + " " + base}, final_checks))
+        self.assertEqual(
+            ["C21_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"],
+            run(final | {("diff", "--name-only", base, merged): "docs/WORK_STATUS.md"}, final_checks),
+        )
+        self.assertNotIn(("rev-parse", "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1"), final)
+
+    def test_seq700_git_and_manifest_dispatchers_select_successor_first(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 700}}
+        with mock.patch.object(checker, "_collect_c21_postmerge_development_authority_reconciliation_git", return_value=["SEQ700_SELECTED"]) as selected:
+            self.assertEqual(["SEQ700_SELECTED"], checker._validate_git_projection(bundle))
+            selected.assert_called_once_with(bundle)
+        mutated = copy.deepcopy(checker.load_bundle(ROOT))
+        mutated["progress"]["repository"]["validated_base_commit"] = "0" * 40
+        self.assertEqual(
+            ["GIT_VALIDATED_BASE_NOT_ANCESTOR"],
+            checker._collect_c21_postmerge_development_authority_reconciliation_git(mutated),
+        )
 
 
 if __name__ == "__main__":

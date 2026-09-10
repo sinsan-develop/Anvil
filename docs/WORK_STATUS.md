@@ -1911,3 +1911,92 @@
 - stale pending-final 문구는 최종 증거로 해석되지 않도록 superseded 사실로 교정했다. R6/generated5 재결박, exact15 amend, postcommit focused/A14/live/full tooling/authority/diff/clean 재검증을 같은 브랜치에서 이어간다.
 - scanner-bearing postcommit의 최종 검증은 A14/seq699 focused `20 passed in 17.56s`, A14 standalone `PASS paths=17 self_reference=false`, progress checker `PASS sequence=699 reporting=AUTO_CONTINUE`, app-shell `3 passed`, full tooling fresh `680 passed in 1071.45s (0:17:51)`, exit0이다. 이 결과로 위 pending 상태를 supersede하며 C-21은 `MAIN_PACKAGE_ACCEPTED`, C-01은 `READY_FOR_WORK_INSTRUCTION`이다.
 - 최종 문서/checksum 재결박은 scanner/checker/test logic을 변경하지 않는다. 최종 증거는 symbolic current exact15 HEAD, development authority/ref, sole-parent/ancestor, range diff와 clean predicate에 결박하며 mutable self-referential commit SHA는 문서에 넣지 않는다. Provider/Telegram actual은 `USER_OWNED_NOT_EXECUTED`, push/WSL/DB/external action은0이다.
+# 2026-09-10 C-21 post-merge development authority reconciliation — seq700 TDD RED
+
+- 단계: `C-21 / POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION`
+- 담당 agent: `developer-primary`
+- 상태: `IN_PROGRESS_TDD_RED`
+- 시작 branch/HEAD: `codex/c21-postmerge-authority-reconcile` / `931b32418924de11626949b9303360696d614fb0`
+- 개발 정본: `git@github-sinsan-develop:sinsan-develop/Anvil.git`, `refs/remotes/development/main`
+- 변경 파일: exact12 한정; 현재 test/WI/prompt/result/validation/WORK_STATUS부터 작성
+- TDD RED: seq700 focused `3 failed, 306 deselected`, exit 1
+- 오류 fingerprint/count: `SEQ700_BUILDER_COLLECTOR_ABSENT_R1` / 1회
+- 원인: seq700 builder/collector/dispatcher 부재
+- 불변: seq1~699 event object와 historical evidence, C-21 accepted, C-01 ready, DIR-2 not reached
+- 미검증: focused GREEN, checker CLI, diff/history/checksum
+- 외부 미실행: Provider/Telegram actual은 `USER_OWNED_NOT_EXECUTED`; network/WSL/Docker/DB/deploy/push/PR/merge/branch delete는 `NOT_EXECUTED`
+- 다음 조치: exact12 범위에서 builder/validator/collector/dispatcher 최소 구현 후 deterministic projection 생성·검증
+
+## seq700 TDD GREEN checkpoint
+
+- 구현: canonical `REPOSITORY_RECONCILED` event, deterministic builder/from-root, strict manifest/projection validator, seq700 dispatcher, 3-state Git collector
+- focused GREEN: `3 passed, 306 deselected`, exit 0
+- 삭제된 `refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1` 조회·존재 요구: 0
+- 현재 상태: `COMPLETED_PENDING_INDEPENDENT_REVIEW`; projection 생성과 live checker/diff 검증 대기
+
+## seq700 live checker checkpoint
+
+- focused 최종: `4 passed, 306 deselected`, exit 0
+- live checker: `G-05 project progress contract: PASS sequence=700 reporting=AUTO_CONTINUE`, exit 0
+- 보완 오류 fingerprint/count: `SEQ700_COMMON_EVENT_HANDOFF_CONTRACT_MISMATCH_R1` / 1회; 필수 repository payload와 HANDOFF status 정합화 후 해소
+- 환경 오류: generated exact5 D:\tmp write 거부 1회; 시스템 승인된 동일 generator로 해소, 정식 failure 미산입
+- 변조 거부: development URL/ref, baseline merge parents, a03/2db parent, ancestor, dirty/path, branch/upstream, merged parent/path
+- 다음 조치: 문서 변경을 포함해 exact5 재생성 후 py_compile, focused, checker, exact12, seq1~699 byte prefix를 최종 확인하고 Main 독립 review로 인계
+
+## seq700 independent review rework round 1/5
+
+- reviewer findings: Important 2 (`origin/main` merged upstream 완화, unstaged/untracked precommit checksum 우회)
+- TDD RED: `1 failed, 3 passed, 306 deselected`, exit 1
+- 오류 fingerprint/count: `SEQ700_REVIEW_R1_PRECOMMIT_INDEX_INCOMPLETE` / 1회
+- 조치 1: merged main upstream을 `development/main` exact로 제한하고 `origin/main` negative 계약 추가
+- 조치 2: precommit은 cached name-only exact12, unstaged name-only empty, untracked empty, status exact12, cached diff-check PASS 모두 요구
+- GREEN: `4 passed, 306 deselected`, exit 0
+- 현재 상태: exact12 명시 stage와 live checker/digest/history 재검증 대기
+
+### Review R1 최종 staged 검증
+
+- exact12 staged: PASS; unrelated staged 0, unstaged 0, untracked 0
+- cached diff-check: PASS
+- syntax: PASS
+- focused: `4 passed, 306 deselected`, exit 0
+- live checker: `PASS sequence=700 reporting=AUTO_CONTINUE`, exit 0
+- deterministic generated5: PASS
+- seq1~699 raw event prefix: `2155312` bytes / `209446EEDCAE056F25E788701A0E12D76B487EBD20D52644C14D151FAC0C1D83`, byte-identical
+- 상태: `COMPLETED_PENDING_INDEPENDENT_REREVIEW`; commit/push/external action 미실행
+
+## seq700 independent review rework round 2/5
+
+- reviewer finding: Important 1, precommit negative 독립성 부족
+- 조치: cached path 1개 누락 / unstaged nonempty / untracked nonempty / cached diff-check failure를 table/subTest 네 행으로 분리하고 각 행은 한 조건만 변조
+- status path mismatch negative: 기존 별도 계약 유지
+- production RED: 없음; production collector 동작은 이미 올바르므로 테스트 gap 보완 직후 focused `4 passed, 306 deselected`, exit 0
+- 명령 오류: 첫 검증 호출의 workdir/token 구성 오류 1회, target mutation 0, 동일 근본 원인 반복 0, 정식 failure 미산입
+- 다음 조치: generated5 checksum 재결박, exact12 restage, focused/checker/history/determinism/cached diff-check 최종 재검증
+
+## seq700 systematic rework round 3/5
+
+- Main 전체 tooling: `681 passed, 3 failed in 1155.62s`
+- exact node RED: 3 failures, exit 1
+- `SEQ488_HISTORICAL_FIXTURE_CURRENT_REPOSITORY_MIX_R1` 1회: seq488 test repository를 current copy가 아닌 frozen explicit fixture로 격리
+- `SEQ700_VALIDATED_BASE_REASON_CODE_REGRESSION_R1` 1회: seq700 projected base mismatch에 `GIT_VALIDATED_BASE_NOT_ANCESTOR` 복원 및 전용 regression 추가
+- `SEQ699_HISTORICAL_FIXTURE_CURRENT_REPOSITORY_MIX_R1` 1회: seq699 collector bundle repository를 exact historical fixture로 격리
+- 세 exact node GREEN: `3 passed`, exit 0
+- 기존 seq488/seq699 production 계약 완화: 없음
+- 테스트 locator class 오기 1회: exit 4/test 0/mutation 0, 정식 failure 미산입
+- full tooling 재실행: Main 수행 경계라 미실행
+- 최종 검증: 세 exact node `3 passed`; seq700 focused `4 passed, 306 deselected`; checker `PASS sequence=700 reporting=AUTO_CONTINUE`; exact12 staged, unstaged 0, untracked 0; cached diff-check/history/determinism PASS
+- 상태: `COMPLETED_PENDING_INDEPENDENT_REREVIEW`; Main이 full tooling을 재실행
+
+## seq700 최종 독립 review·tooling 마감
+
+- 담당 agent: Main 검증 + read-only diagnostic + independent reviewer + `developer-primary` evidence writer
+- 독립 review round 3 판정: `PASS`; findings `Critical 0 / Important 0 / Minor 0`
+- 실행 환경 오류 fingerprint/count: `TOOLING_TMP_SANDBOX_PERMISSION_R1` / `1회`. restricted sandbox full tooling은 `D:\tmp` 임시 디렉터리 생성에 요구되는 권한이 없어 A14 `tempfile.mkdtemp` 노드에서 `61.8분` 정체한 후 Main이 중단했다.
+- 영향/분류: 제품·checker·round3 회귀가 아닌 시스템 권한 오류다. valid product/checker failure count는 증가시키지 않았다.
+- read-only escalated 진단: A14 exact node `1 passed in 5.35s`; A01~A13 `193 passed in 119.04s`.
+- Main escalated full tooling: `684 passed in 1113.60s (0:18:33)`, exit `0`.
+- Main checker CLI 인자 오류 fingerprint/count: `CHECKER_CLI_POSITIONAL_ROOT_INVOCATION_R1` / `1회`. `python scripts/check_project_progress.py --root .`를 호출해 positional root가 `--root`로 해석되어 `LOAD_ERROR ...\--root\docs\progress\build-progress.json`가 발생했다. 제품/checker valid failure count는 불변이며, 정확한 `python scripts/check_project_progress.py .`는 `PASS sequence=700 reporting=AUTO_CONTINUE`다.
+- 변경 파일: seq700 exact12 유지; `scripts/check_project_progress.py` 및 `tests/tooling/test_project_progress.py` 로직은 최종 증거 재결박 단계에서 변경하지 않음.
+- 미실행 범위: Provider/Telegram actual `USER_OWNED_NOT_EXECUTED`; network/WSL/Docker/DB/deploy/push/PR/merge/branch delete `NOT_EXECUTED`.
+- 최종 evidence rebind 검증: seq700 focused `4 passed, 306 deselected`; live checker `PASS sequence=700 reporting=AUTO_CONTINUE`; generated5 two-build/live equality, manifest checksum 11행, seq1~699 raw prefix `2155312` bytes / `209446EEDCAE056F25E788701A0E12D76B487EBD20D52644C14D151FAC0C1D83` PASS; exact12 staged, unstaged/untracked 0, cached diff-check PASS.
+- 상태: `COMPLETED`; commit/push/merge는 Main Agent 후속 경계다.
