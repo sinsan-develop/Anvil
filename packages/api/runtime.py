@@ -32,6 +32,8 @@ from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
 from .security import WebSecurityConfig
 from .sse import PostgresEventStream
 from packages.persistence.run_creation_repository import SqlAlchemyRunCreationRepository
+from .step_execution import EXECUTE_KEY, SqlAlchemyStepExecutionPort
+from packages.llm_gateway import NativeAgentAdapter
 
 
 class RuntimeConfigurationError(ValueError):
@@ -156,6 +158,7 @@ def create_runtime_app(
     session_factory: Callable[[], Any] | None = None,
     engine: Any | None = None,
     adapter: TelegramAdapter | None = None,
+    step_adapters: Mapping[str, NativeAgentAdapter] | None = None,
     **app_kwargs: Any,
 ):
     """Construct the application with durable Telegram state.
@@ -212,6 +215,14 @@ def create_runtime_app(
         telegram_adapter, config, session_factory=session_factory,
     )
     base_ports = app_kwargs.pop("ports", ApiPorts())
+    step_commands = {}
+    if step_adapters is not None:
+        if EXECUTE_KEY in base_ports.commands:
+            raise RuntimeConfigurationError("runtime Step execution port cannot replace an injected port")
+        try:
+            step_commands[EXECUTE_KEY] = SqlAlchemyStepExecutionPort(session_factory, step_adapters)
+        except ValueError as error:
+            raise RuntimeConfigurationError(str(error)) from error
     run_key = "POST /api/tasks/{taskId}/runs"
     task_create_key = "POST /api/projects/{projectId}/tasks"
     task_read_key = "GET /api/tasks/{taskId}"
@@ -229,6 +240,7 @@ def create_runtime_app(
     app_kwargs["ports"] = ApiPorts(
         commands={
             **base_ports.commands,
+            **step_commands,
             run_key: RunCreationPort(SqlAlchemyRunCreationRepository(session_factory)),
             task_create_key: TaskBootstrapPort(task_repository),
         },

@@ -53,6 +53,18 @@ class RecordingReducer(EventReducer):
 
 
 class EventStoreTests(unittest.TestCase):
+    def test_budget_events_preserve_run_projection_and_replay(self):
+        repository = InMemoryEventRepository()
+        store = RunEventStore(repository=repository)
+        before = store.append(command()).projection
+        for version, event_type in enumerate(("BUDGET_RESERVED", "USAGE_RECONCILED",
+                                               "USAGE_RECONCILIATION_REQUIRED", "BUDGET_RESERVATION_FAILED"), 1):
+            receipt = store.append(replace(command(), event_id=f"budget-{version}",
+                                           event_type=event_type, expected_version=version,
+                                           idempotency_key=f"budget-{version}", payload={}))
+            self.assertEqual(replace(before, version=version + 1), receipt.projection)
+        self.assertEqual(receipt.projection, EventReducer().replay("run-1", repository.events_for("run-1")))
+
     def test_event_is_appended_before_projection_is_reduced(self):
         repository = InMemoryEventRepository()
         reducer = RecordingReducer(repository)

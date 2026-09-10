@@ -230,6 +230,7 @@ def _parent_openapi_hash(current_schema: dict) -> str:
 
 
 def test_registry_and_openapi_have_only_the_approved_execute_semantic_diff() -> None:
+    _assert_network_guard_contract()
     registry = importlib.import_module("packages.api.registry").canonical_api_registry()
     matches = [endpoint for endpoint in registry.endpoints if endpoint.key == EXECUTE_KEY]
     assert len(matches) == 1, f"C01_L3_MISSING_EXECUTE_ROUTE: registry {EXECUTE_KEY}"
@@ -267,15 +268,83 @@ class DeterministicProvider:
 
 
 @contextmanager
-def _deny_network():
-    original = socket.socket.connect
-    def denied(self, address):  # noqa: ANN001
-        raise AssertionError(f"C01_L3_EXTERNAL_NETWORK_CALL: {address!r}")
-    socket.socket.connect = denied
+def _deny_network(database_url: str):
+    """Allow only in-process loopback and this test's exact PostgreSQL endpoint."""
+    parsed = make_url(database_url)
+    database_host = (parsed.host or "").casefold()
+    database_port = parsed.port or 5432
+    database_endpoints = {(database_host, database_port)}
+    for family, socket_type, protocol, canonical_name, address in socket.getaddrinfo(
+        database_host, database_port, type=socket.SOCK_STREAM
+    ):
+        del family, socket_type, protocol, canonical_name
+        database_endpoints.add((str(address[0]).split("%", 1)[0].casefold(), int(address[1])))
+
+    original_connect = socket.socket.connect
+    original_connect_ex = socket.socket.connect_ex
+
+    def allowed(address: object) -> bool:
+        if not isinstance(address, tuple) or len(address) < 2:
+            return False
+        host = str(address[0]).split("%", 1)[0].casefold()
+        try:
+            port = int(address[1])
+        except (TypeError, ValueError):
+            return False
+        return (host, port) in database_endpoints
+
+    def guarded_connect(self, address):  # noqa: ANN001
+        if not allowed(address):
+            raise AssertionError(f"C01_L3_EXTERNAL_NETWORK_CALL: {address!r}")
+        return original_connect(self, address)
+
+    def guarded_connect_ex(self, address):  # noqa: ANN001
+        if not allowed(address):
+            raise AssertionError(f"C01_L3_EXTERNAL_NETWORK_CALL: {address!r}")
+        return original_connect_ex(self, address)
+
+    socket.socket.connect = guarded_connect
+    socket.socket.connect_ex = guarded_connect_ex
     try:
         yield
     finally:
-        socket.socket.connect = original
+        socket.socket.connect = original_connect
+        socket.socket.connect_ex = original_connect_ex
+
+
+def _assert_network_guard_contract() -> None:
+    """Exercise allow/deny decisions without opening a real network connection."""
+    original_connect = socket.socket.connect
+    original_connect_ex = socket.socket.connect_ex
+    delegated: list[tuple[str, object]] = []
+
+    def fake_connect(self, address):  # noqa: ANN001
+        delegated.append(("connect", address))
+        return None
+
+    def fake_connect_ex(self, address):  # noqa: ANN001
+        delegated.append(("connect_ex", address))
+        return 0
+
+    socket.socket.connect = fake_connect
+    socket.socket.connect_ex = fake_connect_ex
+    try:
+        endpoint = ("127.0.0.1", 6543)
+        with _deny_network("postgresql://tester:secret@127.0.0.1:6543/anvil_test"):
+            connection = socket.socket()
+            try:
+                assert connection.connect(endpoint) is None
+                assert connection.connect_ex(endpoint) == 0
+                with pytest.raises(AssertionError, match="C01_L3_EXTERNAL_NETWORK_CALL"):
+                    connection.connect(("127.0.0.1", 8080))
+                with pytest.raises(AssertionError, match="C01_L3_EXTERNAL_NETWORK_CALL"):
+                    connection.connect(("::1", 8081, 0, 0))
+            finally:
+                connection.close()
+    finally:
+        socket.socket.connect = original_connect
+        socket.socket.connect_ex = original_connect_ex
+    assert delegated == [("connect", endpoint), ("connect_ex", endpoint)]
 
 
 @contextmanager
@@ -315,7 +384,7 @@ def _seed_authority(dsn: str, *, cost_limit: str = "10.00000000", token_limit: i
     engine = create_engine(dsn, pool_pre_ping=True)
     with engine.begin() as c:
         c.execute(text("INSERT INTO design_artifacts (artifact_id,revision,content_hash,actor_type,actor_id,artifact_type,source_refs) VALUES (:id,1,:hash,'AGENT','eoul','DESIGN_SPECIFICATION',CAST('[]' AS json))"), {"id": ids["spec"], "hash": _hash("9")})
-        c.execute(text("INSERT INTO design_baselines (artifact_id,revision,content_hash,actor_type,actor_id,specification_id,root_human_approval_id,approval_mode,scope,project_id) VALUES (:id,1,:hash,'HUMAN','owner',:spec,:approval,'HUMAN_APPROVED',CAST('{}' AS json),'project-1')"), {"id": ids["baseline"], "hash": _hash("a"), "spec": ids["spec"], "approval": f"approval-spec-{suffix}"})
+        c.execute(text("INSERT INTO design_baselines (artifact_id,revision,content_hash,actor_type,actor_id,specification_id,root_human_approval_id,approval_mode,scope,project_id) VALUES (:id,1,:hash,'HUMAN','owner',:spec,:approval,'HUMAN_APPROVED',CAST('{}' AS json),'project-1')"), {"id": ids["baseline"], "hash": _hash("a"), "spec": ids["spec"], "approval": f"approval-DESIGN_SPECIFICATION-{suffix}"})
         c.execute(text("INSERT INTO work_plans (artifact_id,revision,content_hash,design_baseline_id,design_baseline_hash,scope) VALUES (:id,1,:hash,:baseline,:baseline_hash,CAST('{}' AS json))"), {"id": ids["workplan"], "hash": _hash("b"), "baseline": ids["baseline"], "baseline_hash": _hash("a")})
         c.execute(text("INSERT INTO iteration_plans (artifact_id,revision,content_hash,work_plan_id,work_plan_hash,sequence) VALUES (:id,1,:hash,:workplan,:workplan_hash,1)"), {"id": ids["iteration"], "hash": _hash("c"), "workplan": ids["workplan"], "workplan_hash": _hash("b")})
         c.execute(text("INSERT INTO work_instructions (artifact_id,revision,content_hash,iteration_plan_id,iteration_plan_hash,allowed_paths,allowed_actions,completion_conditions) VALUES (:id,1,:hash,:iteration,:iteration_hash,CAST('[]' AS json),CAST('[]' AS json),CAST('[]' AS json))"), {"id": ids["instruction"], "hash": _hash("d"), "iteration": ids["iteration"], "iteration_hash": _hash("c")})
@@ -394,7 +463,7 @@ def test_authorized_boundary_correlates_backend_usage_and_persisted_receipts(bac
         authority, provider, key = _seed_authority(dsn), DeterministicProvider(), f"idem-{uuid4().hex}"
         path, body, headers = _request(authority, key, backend=backend)
         before = _events(dsn, authority.run_id)
-        with _deny_network(), _client(dsn, provider) as client:
+        with _client(dsn, provider) as client, _deny_network(dsn):
             response = client.post(path, json=body, headers=headers)
         assert response.status_code == 200, response.text
         payload = response.json()
@@ -410,7 +479,7 @@ def test_budget_denial_precedes_adapter_and_has_no_false_success_event() -> None
         authority, provider = _seed_authority(dsn, cost_limit="0.10000000", token_limit=10), DeterministicProvider()
         path, body, headers = _request(authority, f"idem-{uuid4().hex}")
         before = _events(dsn, authority.run_id)
-        with _deny_network(), _client(dsn, provider) as client:
+        with _client(dsn, provider) as client, _deny_network(dsn):
             response = client.post(path, json=body, headers=headers)
         assert response.status_code == 409 and provider.calls == []
         rows = _events(dsn, authority.run_id)
@@ -423,7 +492,7 @@ def test_unknown_usage_is_409_with_active_reservation_and_structured_event() -> 
         authority, provider = _seed_authority(dsn), DeterministicProvider(known_usage=False)
         path, body, headers = _request(authority, f"idem-{uuid4().hex}")
         before = _events(dsn, authority.run_id)
-        with _deny_network(), _client(dsn, provider) as client:
+        with _client(dsn, provider) as client, _deny_network(dsn):
             response = client.post(path, json=body, headers=headers)
         assert response.status_code == 409 and response.json()["code"] == "USAGE_RECONCILIATION_REQUIRED"
         engine = create_engine(dsn)
@@ -441,7 +510,7 @@ def test_authoritative_usage_reconciles_after_reservation() -> None:
         authority, provider = _seed_authority(dsn), DeterministicProvider()
         path, body, headers = _request(authority, f"idem-{uuid4().hex}")
         before = _events(dsn, authority.run_id)
-        with _deny_network(), _client(dsn, provider) as client:
+        with _client(dsn, provider) as client, _deny_network(dsn):
             response = client.post(path, json=body, headers=headers)
         assert response.status_code == 200
         _assert_receipts_match(response.json(), _events(dsn, authority.run_id)[len(before):])
@@ -458,7 +527,7 @@ def test_payloads_exclude_prompt_and_credential_values() -> None:
         authority, provider = _seed_authority(dsn), DeterministicProvider()
         path, body, headers = _request(authority, f"idem-{uuid4().hex}")
         before = _events(dsn, authority.run_id)
-        with _deny_network(), _client(dsn, provider) as client:
+        with _client(dsn, provider) as client, _deny_network(dsn):
             response = client.post(path, json=body, headers=headers)
         rows = _events(dsn, authority.run_id)
         _assert_receipts_match(response.json(), rows[len(before):])
@@ -471,7 +540,7 @@ def test_idempotent_replay_reuses_receipts_and_conflicting_payload_is_rejected()
         authority, provider = _seed_authority(dsn), DeterministicProvider()
         path, body, headers = _request(authority, f"idem-{uuid4().hex}")
         initial = _events(dsn, authority.run_id)
-        with _deny_network(), _client(dsn, provider) as client:
+        with _client(dsn, provider) as client, _deny_network(dsn):
             first = client.post(path, json=body, headers=headers)
             before = _events(dsn, authority.run_id)
             replay = client.post(path, json=body, headers=headers)

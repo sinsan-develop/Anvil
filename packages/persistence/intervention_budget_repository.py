@@ -26,6 +26,98 @@ class ReconciliationConflict(ValueError):
     pass
 
 
+class SqlAlchemyInterventionBudgetRepository:
+    """0009 함수를 재사용하며 commit은 실행 포트의 트랜잭션이 소유한다."""
+
+    def __init__(self, session):
+        self.session = session
+
+    def reserve(self, request: BudgetRequest) -> BudgetReservation:
+        from sqlalchemy import text
+        from dataclasses import asdict
+        row = self.session.execute(text(
+            "SELECT * FROM anvil_budget_reserve(:reservation_id,:budget_id,:run_id,:step_id,"
+            ":request_id,:provider,:model,:pricing_version,:forecast_cost,:forecast_tokens)"
+        ), asdict(request)).mappings().one()
+        if row["reservation_id"] is None:
+            raise AtomicReservationRejected("budget reservation denied")
+        return self._reservation(row)
+
+    def lock_execution_identity(self, request: BudgetRequest) -> tuple[BudgetReservation, ...]:
+        """예약 함수와 같은 ledger lock 아래 기존 reservation/request를 확인한다."""
+        from sqlalchemy import text
+
+        self.session.execute(text(
+            "SELECT budget_id FROM budget_ledgers WHERE budget_id=:budget_id FOR UPDATE"
+        ), {"budget_id": request.budget_id}).scalar_one_or_none()
+        rows = self.session.execute(text(
+            "SELECT * FROM budget_reservations "
+            "WHERE reservation_id=:reservation_id OR request_id=:request_id "
+            "ORDER BY reservation_id FOR UPDATE"
+        ), {"reservation_id": request.reservation_id,
+            "request_id": request.request_id}).mappings().all()
+        return tuple(self._reservation(row) for row in rows)
+
+    @staticmethod
+    def _reservation(row) -> BudgetReservation:
+        from dataclasses import fields
+        values = {field.name: row[field.name] for field in fields(BudgetReservation)}
+        values["status"] = ReservationStatus(values["status"])
+        return BudgetReservation(**values)
+
+    def reservation(self, reservation_id: str) -> BudgetReservation:
+        from sqlalchemy import text
+        row = self.session.execute(text(
+            "SELECT * FROM budget_reservations WHERE reservation_id=:id FOR UPDATE"
+        ), {"id": reservation_id}).mappings().one()
+        return self._reservation(row)
+
+    def reconcile(self, receipt: UsageReceipt) -> ReconciliationReceipt:
+        from dataclasses import asdict
+        from hashlib import sha256
+        import json
+        from sqlalchemy import text
+
+        reserved = self.reservation(receipt.reservation_id)
+        if receipt.request_id != reserved.request_id:
+            raise ReconciliationConflict("usage request does not match reservation")
+        if (receipt.provenance == "UNKNOWN" or receipt.actual_cost is None or receipt.actual_tokens is None
+                or receipt.actual_cost > reserved.reserved_cost or receipt.actual_tokens > reserved.reserved_tokens):
+            raise ReconciliationConflict("authoritative final usage is unavailable")
+        released_cost = reserved.reserved_cost - receipt.actual_cost
+        released_tokens = reserved.reserved_tokens - receipt.actual_tokens
+        values = asdict(receipt)
+        values.update(released_cost=released_cost, released_tokens=released_tokens,
+                      payload_hash="sha256:" + sha256(json.dumps(asdict(receipt), default=str,
+                          sort_keys=True, separators=(",", ":")).encode()).hexdigest())
+        row = self.session.execute(text(
+            "SELECT * FROM anvil_budget_reconcile(:usage_receipt_id,:reservation_id,:request_id,"
+            ":abort_status,:actual_cost,:actual_tokens,:released_cost,:released_tokens,"
+            ":payload_hash,:retry_after,:rate_bucket,:provenance)"
+        ), values).mappings().one()
+        if row["usage_receipt_id"] is None:
+            raise ReconciliationConflict("usage finalization conflicts with persisted receipt")
+        return ReconciliationReceipt(receipt.usage_receipt_id, receipt.reservation_id, receipt.request_id,
+            receipt.abort_status, receipt.actual_cost, receipt.actual_tokens, released_cost,
+            released_tokens, receipt.retry_after, receipt.rate_bucket, receipt.provenance)
+
+    def require_reconciliation(self, receipt: UsageReceipt) -> None:
+        """불확실한 사용량은 0으로 확정하지 않고 NULL 영수증으로 유지한다."""
+        from sqlalchemy import text
+        reserved = self.reservation(receipt.reservation_id)
+        if reserved.request_id != receipt.request_id or reserved.status is ReservationStatus.CONSUMED:
+            raise ReconciliationConflict("cannot replace an authoritative reservation")
+        self.session.execute(text(
+            "INSERT INTO budget_usage_receipts (usage_receipt_id,reservation_id,request_id,abort_status,"
+            "actual_cost,actual_tokens,is_authoritative_final,provenance) "
+            "VALUES (:id,:reservation,:request,:abort,NULL,NULL,false,'UNKNOWN')"
+        ), {"id": receipt.usage_receipt_id, "reservation": receipt.reservation_id,
+            "request": receipt.request_id, "abort": receipt.abort_status})
+        self.session.execute(text(
+            "UPDATE budget_reservations SET status='RECONCILIATION_REQUIRED' WHERE reservation_id=:id"
+        ), {"id": receipt.reservation_id})
+
+
 @runtime_checkable
 class InterventionBudgetRepository(Protocol):
     def create_budget(self, limit: BudgetLimit) -> None: ...

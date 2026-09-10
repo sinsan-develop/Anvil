@@ -75,6 +75,7 @@ def _permission(method: str, path: str) -> str:
         "POST /api/runs/{id}:pause": "run:pause",
         "POST /api/runs/{id}:resume": "run:resume",
         "POST /api/runs/{id}:cancel": "run:cancel",
+        "POST /api/runs/{id}/steps/{stepId}:execute": "run:execute",
         "POST /api/design-specifications/{id}:approve": "human:design:approve",
         "GET /api/evidence-manifests/{id}": "evidence:read",
     }
@@ -114,6 +115,7 @@ _V1_ENDPOINTS: tuple[tuple[str, str, str], ...] = (
     ("POST", "/api/runs/{id}:resume", "47.13"),
     ("POST", "/api/runs/{id}:cancel", "47.13"),
     ("POST", "/api/runs/{id}:reconcile", "47.13"),
+    ("POST", "/api/runs/{id}/steps/{stepId}:execute", "C-01"),
     ("POST", "/api/runs/{id}/interventions", "47.13"),
     ("POST", "/api/runs/{id}/priorities", "47.13"),
     ("GET", "/api/providers", "47.13"),

@@ -456,6 +456,9 @@ def _declare_path_parameters(handler: Callable[..., Any], path: str) -> None:
 
 
 def _task_openapi(endpoint: EndpointSpec) -> dict[str, Any]:
+    from .step_execution import EXECUTE_KEY, execute_openapi
+    if endpoint.key == EXECUTE_KEY:
+        return execute_openapi()
     create_schema = {
         "type": "object",
         "additionalProperties": False,
@@ -661,4 +664,16 @@ def create_app(
                 now=datetime.now(timezone.utc),
             )
             return JSONResponse(payload, status_code=status)
+    # 이 추가 operation의 검증은 ApplicationPort가 소유한다. FastAPI가 경로
+    # 매개변수에서 자동 추론하는 422만 제거하며 기존 operation은 보존한다.
+    original_openapi = app.openapi
+
+    def canonical_openapi():
+        schema = original_openapi()
+        operation = schema.get("paths", {}).get("/api/runs/{id}/steps/{stepId}:execute", {}).get("post")
+        if operation is not None:
+            operation["responses"].pop("422", None)
+        return schema
+
+    app.openapi = canonical_openapi
     return app

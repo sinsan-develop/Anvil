@@ -44,6 +44,26 @@ class _FakeSession:
     pass
 
 
+@pytest.mark.parametrize("bound,expected", [(False, 501), (True, 400)])
+def test_runtime_step_execution_requires_explicit_adapter_binding(bound, expected):
+    from packages.llm_gateway import DeterministicFakeAdapter, NativeAgentAdapter
+    principal = SessionPrincipal("owner", "owner", "csrf", frozenset({"run:execute"}),
+                                 frozenset({"project-1"}), frozenset({"env-1"}))
+    options = {"step_adapters": {"LOCAL": NativeAgentAdapter(DeterministicFakeAdapter())}} if bound else {}
+    app = create_runtime_app(environment=_env(), session_factory=lambda: _FakeSession(),
+        authenticate=lambda token: principal if token == "session" else None,
+        authorization_resolver=lambda _endpoint, _params: AuthorizationScope("project-1", "env-1", frozenset({"owner"})),
+        **options)
+    with TestClient(app, base_url="https://anvil.sinsan.kr") as client:
+        client.cookies.set("anvil_session", "session")
+        response = client.post("/api/runs/run-1/steps/step-1:execute", json={}, headers={
+            "origin": "https://anvil.sinsan.kr", "x-csrf-token": "csrf",
+            "idempotency-key": "key-1", "if-match": '"2"', "x-target-hash": "sha256:" + "a" * 64,
+            "x-permission-scope": "run:execute", "x-reason": "test",
+        })
+    assert response.status_code == expected
+
+
 def test_runtime_app_requires_database_and_telegram_references() -> None:
     with pytest.raises(RuntimeConfigurationError, match="ANVIL_DATABASE_URL"):
         create_runtime_app(environment={})
