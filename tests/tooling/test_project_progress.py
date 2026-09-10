@@ -10968,5 +10968,135 @@ class C01MainlineAcceptanceTests(unittest.TestCase):
                     self.assertTrue(self._run_git(checker, values, checks - {check}))
 
 
+class C01L3ReworkControlTests(unittest.TestCase):
+    BASE = "0f39bad30e7f4ab865077530cbbd29d902d1485d"
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(
+            hasattr(checker, "c01_l3_rework_control_from_root"),
+            "C-01 L3 rework control builder missing",
+        )
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        bundle = checker.load_bundle(ROOT)
+        bundle["progress"] = json.loads(artifacts[checker.C01_L3_REWORK_P])
+        bundle["events"] = json.loads(artifacts[checker.C01_L3_REWORK_E])
+        bundle["handoff"] = checker.extract_handoff_summary(
+            artifacts[checker.C01_L3_REWORK_H].decode()
+        )
+        bundle["detached_digest"] = json.loads(artifacts[checker.C01_L3_REWORK_D])
+        return bundle
+
+    def test_seq721_builder_reopens_c01_and_preserves_seq715_bytes(self):
+        checker = self._checker()
+        artifacts = checker.c01_l3_rework_control_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c01_l3_rework_control_from_root(ROOT))
+        progress = json.loads(artifacts[checker.C01_L3_REWORK_P])
+        events = json.loads(artifacts[checker.C01_L3_REWORK_E])["events"]
+        manifest = json.loads(artifacts[checker.C01_L3_REWORK_M])
+
+        self.assertEqual(
+            [
+                "INDEPENDENT_TEST_REVIEW_RECORDED",
+                "EVIDENCE_MANIFEST_INVALIDATED",
+                "WORKER_LEASE_ISSUED",
+                "WRITE_LEASE_ISSUED",
+                "PACKAGE_REWORK_REQUESTED",
+                "PACKAGE_RESUMED",
+            ],
+            [event["event_type"] for event in events[715:]],
+        )
+        self.assertEqual(list(range(716, 722)), [event["sequence"] for event in events[715:]])
+        self.assertEqual((721, "C-01", "REWORK_IN_PROGRESS"), (
+            progress["event_sequence"], progress["current_work_package"], progress["status"]
+        ))
+        self.assertNotIn("C-01", progress["completed_packages"])
+        self.assertEqual({"package_id": "C-01", "status": "ACTIVE"}, progress["next_work_package"])
+        self.assertEqual(
+            {"package_id": "C-02", "status": "BLOCKED_PENDING_C01_ACCEPTANCE"},
+            progress["next_successor_work_package"],
+        )
+        self.assertFalse(progress["c01_mainline_acceptance"]["accepted"])
+        self.assertEqual("INVALIDATED_BY_FINAL_INDEPENDENT_REVIEW", progress["c01_mainline_acceptance"]["status"])
+        self.assertEqual(
+            {"step_lineage_id": "C-01", "valid_failure_count": 0, "status": "REWORK_REQUIRED"},
+            progress["active_failure_lineage"],
+        )
+        self.assertEqual(0, progress["valid_failure_count"])
+        self.assertEqual(17, len(progress["write_lease"]["path_scope"]))
+        self.assertEqual(10, manifest["control_exact_path_count"])
+        self.assertEqual([], checker.validate_c01_l3_rework_control_projection(
+            self._bundle(checker, artifacts), manifest
+        ))
+        contract = checker.load_bundle(ROOT)["event_contract"]
+        self.assertEqual([], checker.validate_event_stream(
+            json.loads(artifacts[checker.C01_L3_REWORK_E]), contract, progress
+        ))
+
+        prior = subprocess.check_output(
+            ["git", "show", f"{self.BASE}:docs/progress/progress-events.json"], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(prior, 715),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C01_L3_REWORK_E], 715),
+        )
+
+    def test_seq721_predicate_fails_closed_on_each_control_boundary(self):
+        checker = self._checker()
+        artifacts = checker.c01_l3_rework_control_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C01_L3_REWORK_M])
+        mutations = (
+            lambda bundle, m: bundle["progress"]["completed_packages"].append("C-01"),
+            lambda bundle, m: bundle["progress"]["next_successor_work_package"].update(status="READY"),
+            lambda bundle, m: bundle["progress"]["c01_mainline_acceptance"].update(accepted=True),
+            lambda bundle, m: bundle["events"]["events"][716].update(event_type="PACKAGE_RESUMED"),
+            lambda bundle, m: bundle["progress"]["write_lease"].update(write_fencing_token="stale"),
+            lambda bundle, m: m["external_execution"].update(provider="EXECUTED"),
+            lambda bundle, m: m["product_exact_paths"].append("packages/forbidden.py"),
+        )
+        for mutate in mutations:
+            with self.subTest(mutate=mutate):
+                bundle = self._bundle(checker, artifacts)
+                changed_manifest = copy.deepcopy(manifest)
+                mutate(bundle, changed_manifest)
+                self.assertTrue(
+                    checker.validate_c01_l3_rework_control_projection(bundle, changed_manifest)
+                )
+
+    def test_seq721_git_requires_exact_single_child_control_commit(self):
+        checker = self._checker()
+        meta = checker.c01_l3_rework_control_metadata()
+        child = "a" * 40
+        values = {
+            ("rev-parse", "HEAD"): child,
+            ("show", "-s", "--format=%P", child): self.BASE,
+            ("diff", "--name-only", self.BASE, child): "\n".join(meta["control_exact_paths"]),
+            ("diff", "--cached", "--name-only"): "",
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+            ("status", "--porcelain", "--untracked-files=all"): "",
+            ("branch", "--show-current"): "codex/c01-mainline-reconciliation",
+        }
+        checks = {
+            ("merge-base", "--is-ancestor", self.BASE, child),
+            ("diff", "--check", self.BASE, child),
+        }
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 721}}
+        with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: values.get(args)), mock.patch.object(
+            checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in checks else 1
+        ):
+            self.assertEqual([], checker._validate_git_projection(bundle))
+            values[("show", "-s", "--format=%P", child)] = self.BASE + " " + "b" * 40
+            self.assertIn("C01_L3_REWORK_GIT_PROJECTION_INVALID", checker._validate_git_projection(bundle))
+
+    def test_seq721_git_decodes_quoted_utf8_report_path(self):
+        checker = self._checker()
+        quoted = r'".superpowers/sdd/Anvil_\354\236\221\354\227\205\352\263\204\355\232\215\354\204\234_v1/task-C-01-l3-rework-control-report.md"'
+        self.assertEqual(checker.C01_L3_REWORK_REPORT, checker._c01_l3_decode_git_path(quoted))
+
+
 if __name__ == "__main__":
     unittest.main()

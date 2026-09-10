@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 715,
+  "last_sequence": 721,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -38657,7 +38657,266 @@
           "tests/verification/test_c01_independent_acceptance.py"
         ]
       }
+    },
+    {
+      "occurred_at": "2026-09-11T02:30:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "independent-code-reviewer",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-01",
+      "step_id": "L3-FINAL-REVIEW",
+      "actor": "independent-code-reviewer",
+      "subject_ref": "C-01/L3-FINAL-REVIEW",
+      "event_id": "evt_c01_l3_final_review_recorded",
+      "sequence": 716,
+      "event_type": "INDEPENDENT_TEST_REVIEW_RECORDED",
+      "previous_event_sha256": "FE20692EFBAFC9F5E559FA35FFB0DE78D2A3DA4B70D3BC6EC89911FC727CD762",
+      "details": {
+        "verdict": "FAIL",
+        "quality": "CHANGES_REQUIRED",
+        "critical_findings": 1,
+        "important_findings": 1,
+        "minor_findings": 0,
+        "reviewed_commit": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
+        "review_report_ref": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-final-branch-review-report.md",
+        "review_report_sha256": "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46",
+        "reason_codes": [
+          "C01-L3-NOT-EXECUTED-PROMOTED-TO-PASS-v1",
+          "C01-REQUIRED-EAPI-EEVT-SHAPE-MISSING-v1"
+        ]
+      }
+    },
+    {
+      "occurred_at": "2026-09-11T02:30:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-01",
+      "step_id": "L3-EVIDENCE-INVALIDATION",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-01/L3-EVIDENCE-INVALIDATION",
+      "event_id": "evt_c01_l3_evidence_invalidated",
+      "sequence": 717,
+      "event_type": "EVIDENCE_MANIFEST_INVALIDATED",
+      "previous_event_sha256": "D26037AD86BCCC01BA46E18979D95C9F555E177EB6AB2DC05BEBC7EC603ADECE",
+      "details": {
+        "manifest_ref": "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "F7692F049C48047AD410F8C9A5A02D6C98B18AC3BE4539102F7BEBC18BFE63FC",
+        "reason": "FINAL_INDEPENDENT_REVIEW_REJECTED_L3_ACCEPTANCE",
+        "invalidated_event_sequence": 715,
+        "invalidated_event_id": "evt_c01_mainline_main_package_accepted",
+        "invalidated_validation_ids": [
+          "AV-AGT-002",
+          "AV-AGT-003",
+          "AV-OPS-011"
+        ],
+        "historical_bytes_mutated": false
+      }
+    },
+    {
+      "occurred_at": "2026-09-11T02:30:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-01",
+      "step_id": "L3-REWORK",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-01/L3-REWORK",
+      "event_id": "evt_c01_l3_rework_worker_lease_issued",
+      "sequence": 718,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "7F477ED99CFD11218C01C159E2E27364BBCD92BEFB63398EAB566A280A45F567",
+      "details": {
+        "lease_id": "worker-lease-c01-l3-rework-20260911-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-01",
+        "lease_epoch": 5,
+        "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
+        "fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
+        "status": "ACTIVE",
+        "subject_ref": "C-01/L3-REWORK"
+      }
+    },
+    {
+      "occurred_at": "2026-09-11T02:30:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-01",
+      "step_id": "L3-REWORK",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-01/L3-REWORK",
+      "event_id": "evt_c01_l3_rework_write_lease_issued",
+      "sequence": 719,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "F5B6D5D2A4044FB598BD9639A4D9133983A2455623653B54B6A5D0D0B8666B01",
+      "details": {
+        "lease_id": "write-lease-c01-l3-rework-20260911-001",
+        "worker_lease_id": "worker-lease-c01-l3-rework-20260911-001",
+        "agent_id": "developer-primary",
+        "work_package_id": "C-01",
+        "write_epoch": 5,
+        "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
+        "write_fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
+        "fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
+        "status": "ACTIVE",
+        "path_scope": [
+          "packages/api/fastapi_app.py",
+          "packages/api/registry.py",
+          "packages/api/runtime.py",
+          "packages/api/step_execution.py",
+          "packages/budget/models.py",
+          "packages/events/reducer.py",
+          "packages/events/transition_guard.py",
+          "packages/orchestration/kernel.py",
+          "packages/persistence/event_repository.py",
+          "packages/persistence/intervention_budget_repository.py",
+          "tests/api/test_c01_step_execution.py",
+          "tests/api/test_registry_openapi.py",
+          "tests/api/test_runtime_app.py",
+          "tests/events/test_event_store.py",
+          "tests/llm_gateway/test_c01_kernel.py",
+          "tests/persistence/test_c01_step_execution_postgres.py",
+          "tests/verification/test_c01_l3_independent_acceptance.py"
+        ]
+      }
+    },
+    {
+      "occurred_at": "2026-09-11T02:30:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-01",
+      "step_id": "L3-REWORK",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-01/L3-REWORK",
+      "event_id": "evt_c01_l3_rework_requested",
+      "sequence": 720,
+      "event_type": "PACKAGE_REWORK_REQUESTED",
+      "previous_event_sha256": "345D3AF068FA8FC7E7B7FBC58B60FE4858B0909CBC21A402EB692905EE0B1862",
+      "details": {
+        "attempt": 1,
+        "worker_lease_id": "worker-lease-c01-l3-rework-20260911-001",
+        "write_lease_id": "write-lease-c01-l3-rework-20260911-001",
+        "same_failure_count": 0,
+        "status": "REWORK_REQUIRED",
+        "work_instruction_id": "WI-C-01-L3-REWORK-20260911-001",
+        "work_instruction_sha256": "2984497CE246F1FFB13F828F513CDD3084DC8C485C97DADA51C5D0C4F556F5EE",
+        "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
+        "write_fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
+        "review_ref": {
+          "path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-final-branch-review-report.md",
+          "sha256": "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46"
+        },
+        "api_contract": {
+          "route": "POST /api/runs/{id}/steps/{stepId}:execute",
+          "permission": "run:execute",
+          "persistence": "REAL_POSTGRESQL_BUDGET_AND_EVENT",
+          "migrations": [
+            "0005_event_store",
+            "0009_intervention_budget"
+          ],
+          "backend": "DETERMINISTIC_INJECTED_NO_EXTERNAL_CALL",
+          "success": {
+            "http_status": 200,
+            "required_fields": [
+              "request",
+              "reservation",
+              "run",
+              "step",
+              "backend",
+              "result",
+              "final_usage",
+              "provenance",
+              "event_receipts"
+            ]
+          },
+          "unknown_usage": {
+            "http_status": 409,
+            "error_code": "USAGE_RECONCILIATION_REQUIRED",
+            "reservation_status": "RECONCILIATION_REQUIRED",
+            "persisted_event_type": "USAGE_RECONCILIATION_REQUIRED",
+            "correlation": [
+              "request",
+              "reservation"
+            ]
+          },
+          "event_fields": [
+            "id",
+            "type",
+            "sequence",
+            "timestamp",
+            "actor",
+            "correlation",
+            "causation",
+            "idempotency"
+          ],
+          "event_payload_exclusions": [
+            "prompt",
+            "credentials"
+          ],
+          "e_api": [
+            "raw_request",
+            "raw_response",
+            "normalized_openapi_before_after_diff"
+          ]
+        }
+      }
+    },
+    {
+      "occurred_at": "2026-09-11T02:30:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-01",
+      "step_id": "L3-REWORK",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-01/L3-REWORK",
+      "event_id": "evt_c01_l3_rework_package_resumed",
+      "sequence": 721,
+      "event_type": "PACKAGE_RESUMED",
+      "previous_event_sha256": "B3F869107CD6E5E9319039AF394C7BB7C26E84E4B0B1811ED38114D27AD531A4",
+      "details": {
+        "resume_event_ref": "evt_c01_l3_rework_requested",
+        "work_instruction_id": "WI-C-01-L3-REWORK-20260911-001",
+        "work_instruction_sha256": "2984497CE246F1FFB13F828F513CDD3084DC8C485C97DADA51C5D0C4F556F5EE",
+        "invocation_sha256": "B2882419B8D469EA9C39B5EB4A69900F9E500F045A8EBC913C6D33496EE5B9CA",
+        "worker_lease_id": "worker-lease-c01-l3-rework-20260911-001",
+        "write_lease_id": "write-lease-c01-l3-rework-20260911-001",
+        "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
+        "write_fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
+        "dispatch_head": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
+        "dispatch_upstream_head": "e215c0612363050dbe20315646f1612f31b8cdc0",
+        "projection_mode": "C01_L3_REWORK_CONTROL_EXACT10",
+        "validated_base_commit": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
+        "head_relation": "PRECOMMIT_STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md",
+          "docs/evidence/manifests/C-01_L3_REWORK_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json",
+          "docs/work_orders/C-01_L3_REWORK_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-01_L3_REWORK_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "package_status": "REWORK_IN_PROGRESS"
+      }
     }
   ],
-  "last_event_id": "evt_c01_mainline_main_package_accepted"
+  "last_event_id": "evt_c01_l3_rework_package_resumed"
 }

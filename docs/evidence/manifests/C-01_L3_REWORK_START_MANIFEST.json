@@ -1,0 +1,190 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C01_L3_REWORK_START_PROJECTION",
+  "artifact_id": "C01-L3-REWORK-START-20260911",
+  "created_at": "2026-09-11T02:30:00+09:00",
+  "event_sequence": 721,
+  "historical_event_sequence": 715,
+  "appended_event_count": 6,
+  "historical_commit": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
+  "historical_raw_event_prefix": {
+    "bytes": 2189608,
+    "sha256": "717CAB1E70CE2ACDBDA5ABA7711F812CFF360701C773F95BA20D4088345C57C9"
+  },
+  "final_event_sha256": "F2CD477EC4D9BA272C45ED923FDC2CF86C63710816D9C4973117D9F6B138CB17",
+  "status": "REWORK_IN_PROGRESS",
+  "accepted": false,
+  "c01_status": "REWORK_IN_PROGRESS",
+  "c02_status": "BLOCKED_PENDING_C01_ACCEPTANCE",
+  "invalidated_acceptance": {
+    "event_sequence": 715,
+    "event_id": "evt_c01_mainline_main_package_accepted",
+    "manifest_path": "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json"
+  },
+  "review_receipt": {
+    "path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-final-branch-review-report.md",
+    "sha256": "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46"
+  },
+  "execution_authority_path": "docs/work_orders/C-01_L3_REWORK_WORK_INSTRUCTION.md",
+  "execution_authority_sha256": "2984497CE246F1FFB13F828F513CDD3084DC8C485C97DADA51C5D0C4F556F5EE",
+  "invocation_path": "docs/work_orders/C-01_L3_REWORK_INVOCATION_PROMPT.md",
+  "invocation_sha256": "B2882419B8D469EA9C39B5EB4A69900F9E500F045A8EBC913C6D33496EE5B9CA",
+  "api_contract": {
+    "route": "POST /api/runs/{id}/steps/{stepId}:execute",
+    "permission": "run:execute",
+    "persistence": "REAL_POSTGRESQL_BUDGET_AND_EVENT",
+    "migrations": [
+      "0005_event_store",
+      "0009_intervention_budget"
+    ],
+    "backend": "DETERMINISTIC_INJECTED_NO_EXTERNAL_CALL",
+    "success": {
+      "http_status": 200,
+      "required_fields": [
+        "request",
+        "reservation",
+        "run",
+        "step",
+        "backend",
+        "result",
+        "final_usage",
+        "provenance",
+        "event_receipts"
+      ]
+    },
+    "unknown_usage": {
+      "http_status": 409,
+      "error_code": "USAGE_RECONCILIATION_REQUIRED",
+      "reservation_status": "RECONCILIATION_REQUIRED",
+      "persisted_event_type": "USAGE_RECONCILIATION_REQUIRED",
+      "correlation": [
+        "request",
+        "reservation"
+      ]
+    },
+    "event_fields": [
+      "id",
+      "type",
+      "sequence",
+      "timestamp",
+      "actor",
+      "correlation",
+      "causation",
+      "idempotency"
+    ],
+    "event_payload_exclusions": [
+      "prompt",
+      "credentials"
+    ],
+    "e_api": [
+      "raw_request",
+      "raw_response",
+      "normalized_openapi_before_after_diff"
+    ]
+  },
+  "external_execution": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "credential_access": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "cost": "NOT_INCURRED",
+    "new_migration": "NOT_CREATED",
+    "database": "NOT_EXECUTED_CONTROL_ONLY",
+    "push": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "self_reference": false,
+  "historical_sequence": 715,
+  "sequence": 721,
+  "base_commit": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
+  "branch": "codex/c01-mainline-reconciliation",
+  "work_instruction_id": "WI-C-01-L3-REWORK-20260911-001",
+  "worker_lease_id": "worker-lease-c01-l3-rework-20260911-001",
+  "write_lease_id": "write-lease-c01-l3-rework-20260911-001",
+  "lease_epoch": 5,
+  "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
+  "write_fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
+  "control_exact_paths": [
+    ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md",
+    "docs/evidence/manifests/C-01_L3_REWORK_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json",
+    "docs/work_orders/C-01_L3_REWORK_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_L3_REWORK_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "control_exact_path_count": 10,
+  "control_exact_path_list_sha256": "BCDB773925760ACA5B34FEB0E7CD65467F6A4EB45FBF7EEC00C38DDF1AD107DF",
+  "product_exact_paths": [
+    "packages/api/fastapi_app.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "packages/api/step_execution.py",
+    "packages/budget/models.py",
+    "packages/events/reducer.py",
+    "packages/events/transition_guard.py",
+    "packages/orchestration/kernel.py",
+    "packages/persistence/event_repository.py",
+    "packages/persistence/intervention_budget_repository.py",
+    "tests/api/test_c01_step_execution.py",
+    "tests/api/test_registry_openapi.py",
+    "tests/api/test_runtime_app.py",
+    "tests/events/test_event_store.py",
+    "tests/llm_gateway/test_c01_kernel.py",
+    "tests/persistence/test_c01_step_execution_postgres.py",
+    "tests/verification/test_c01_l3_independent_acceptance.py"
+  ],
+  "product_exact_path_count": 17,
+  "product_exact_path_list_sha256": "307EEE7A53134DFA10292BEAD6864D0F395655F31281EF3EBD8616E9C27395B1",
+  "raw_checksums": [
+    {
+      "path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md",
+      "bytes": 2819,
+      "sha256": "D1FC7CCAECF4D0B4EF6B466597ED2A8B8324C9E23E1911FDEF3E91327AA54292"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 186491,
+      "sha256": "CBA711331C11CE1F1D28824DAE601B4F199D4AA68E7345EB2AC687F4B8098A95"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 806317,
+      "sha256": "6407B85A1CBB0DF6572BBFC96F01735B041F774AFF11091CF82A9F4DB683906E"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2200644,
+      "sha256": "19E86F1F75FB0830231A503D250AE3DB29A52362FB500530D6A5354875218EFA"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json",
+      "bytes": 879,
+      "sha256": "F30DB4137861C0FFA2DF0C3809F4D464873FD4BAC47146B75D9E9A8853DDD011"
+    },
+    {
+      "path": "docs/work_orders/C-01_L3_REWORK_INVOCATION_PROMPT.md",
+      "bytes": 644,
+      "sha256": "B2882419B8D469EA9C39B5EB4A69900F9E500F045A8EBC913C6D33496EE5B9CA"
+    },
+    {
+      "path": "docs/work_orders/C-01_L3_REWORK_WORK_INSTRUCTION.md",
+      "bytes": 3912,
+      "sha256": "2984497CE246F1FFB13F828F513CDD3084DC8C485C97DADA51C5D0C4F556F5EE"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2292148,
+      "sha256": "E8D4778D278132EE7653EF0E9A60B33B00188B265D823BCD337B7EDA63002251"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 683585,
+      "sha256": "921E8CB430153A3B161E80C1FAA37DDBEE1A47D17D154387F30DD8C85367571A"
+    }
+  ]
+}
