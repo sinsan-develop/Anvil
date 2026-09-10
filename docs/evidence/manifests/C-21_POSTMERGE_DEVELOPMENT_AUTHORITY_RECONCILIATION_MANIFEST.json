@@ -1,0 +1,115 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION",
+  "artifact_id": "C-21-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260910",
+  "event_sequence": 700,
+  "historical_event_sequence": 699,
+  "historical_raw_event_prefix": {
+    "bytes": 2155312,
+    "sha256": "209446EEDCAE056F25E788701A0E12D76B487EBD20D52644C14D151FAC0C1D83"
+  },
+  "accepted": true,
+  "c21_status": "MAIN_PACKAGE_ACCEPTED",
+  "c01_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "blocking_count": 0,
+  "lineage": {
+    "baseline_merge_commit": "931b32418924de11626949b9303360696d614fb0",
+    "baseline_merge_parents": [
+      "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+      "a03aecc74b412515dab983148838c249fca62d3a"
+    ],
+    "feature_commit": "a03aecc74b412515dab983148838c249fca62d3a",
+    "feature_parent": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+    "record_commit": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+    "record_parent": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
+    "ancestor_chain_required": true
+  },
+  "evidence_boundary": {
+    "provider": "USER_OWNED_NOT_EXECUTED",
+    "telegram": "USER_OWNED_NOT_EXECUTED",
+    "external_action": "NOT_EXECUTED",
+    "historical_seq699": "PRESERVED_SUPERSEDED_BY_SEQ700_AUTHORITY_ONLY"
+  },
+  "self_reference": false,
+  "sequence": 700,
+  "event_type": "REPOSITORY_RECONCILED",
+  "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "development_remote_ref": "refs/remotes/development/main",
+  "baseline_merge_commit": "931b32418924de11626949b9303360696d614fb0",
+  "exact_paths": [
+    "docs/04_test_reports/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-postmerge-development-authority-reconciliation.json",
+    "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 12,
+  "exact_path_list_sha256": "D8DAA741A70EC152258458407C5E6C46FE973CFAAF3EB3CD8B636E380DB8CB3A",
+  "exact_path_list_ordinal_sha256": "988DDB6EE11ABF447F25CBC570BBAA8D951795496041DEC930EBBA15D1A82B1C",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+      "bytes": 6472,
+      "sha256": "5996673945027B8ED0ECB1EEB1FB87998559AA7497D57EEF2F3511A7A1C12A43"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 396315,
+      "sha256": "ECA6EFBDE750BBB55DCA05FAC673E5D9A8D34E3366213C8CD5145E2479C4CADA"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 184782,
+      "sha256": "28A15709C30156E3362D226B6723702369B726426513B210412D5988A1BA68A9"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 777828,
+      "sha256": "FA0AE7A20998121E4FB2B1563FF81A80012FF6ECEC19B84B1F2C378F73EEE7B0"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2157973,
+      "sha256": "1A86416E6C75E3EA1D126E961A3D9799078921F2CB263489C2D96E427A8EAEB7"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-postmerge-development-authority-reconciliation.json",
+      "bytes": 876,
+      "sha256": "C612D731F05E255AB12E8A4C1EA15B7D13F8C7AE164783D9EA580D4C4A7F03B2"
+    },
+    {
+      "path": "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "bytes": 3477,
+      "sha256": "3887CC8799F81F6891059D343F8C90C039E4EDAE6B3261872B49C63167C2DD40"
+    },
+    {
+      "path": "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "bytes": 447,
+      "sha256": "8FF895514C33528CE91601CB7AB71E8A699B40EE4AEE6A0C1D2546220A9CA43D"
+    },
+    {
+      "path": "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+      "bytes": 1461,
+      "sha256": "7A7B3CE9E7AA2C6CBDD9D265E4E947E573E6367D9DA3D556A17675379A1C2206"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2204041,
+      "sha256": "075D1B4BCCEF5DDFA141729B2821BEF47BFF722603D6C5319AD8FDB2BFD28070"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 657610,
+      "sha256": "7C96F692913F097D15E5DAEEA84078AFB46C0D77A581EECBFA4844066A4C82D6"
+    }
+  ]
+}

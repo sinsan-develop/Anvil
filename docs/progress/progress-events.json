@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 699,
+  "last_sequence": 700,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -37937,7 +37937,53 @@
         "validated_base_commit": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
         "head_relation": "POSTCOMMIT_EXACT15_SOLE_DIRECT_CHILD_OF_RECORD"
       }
+    },
+    {
+      "occurred_at": "2026-09-10T10:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-21",
+      "step_id": "POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION",
+      "actor": "developer-primary",
+      "subject_ref": "C-21/POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION",
+      "event_id": "evt_c21_postmerge_development_main_authority_reconciled",
+      "sequence": 700,
+      "event_type": "REPOSITORY_RECONCILED",
+      "details": {
+        "branch": "codex/c21-postmerge-authority-reconcile",
+        "local_head": "931b32418924de11626949b9303360696d614fb0",
+        "remote_head": "931b32418924de11626949b9303360696d614fb0",
+        "upstream": "NO_UPSTREAM",
+        "observed_at": "2026-09-10T10:00:00+09:00",
+        "reason": "DEVELOPMENT_DEFAULT_MAIN_RECONCILED_AFTER_MERGED_BRANCH_CLEANUP",
+        "decision": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+        "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+        "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+        "development_remote_ref": "refs/remotes/development/main",
+        "deleted_candidate_ref_required": false,
+        "historical_event_sequence": 699,
+        "c21_status": "MAIN_PACKAGE_ACCEPTED",
+        "c01_status": "READY_FOR_WORK_INSTRUCTION",
+        "dir2_status": "NOT_REACHED",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+          "docs/WORK_STATUS.md",
+          "docs/evidence/manifests/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-postmerge-development-authority-reconciliation.json",
+          "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+          "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
     }
   ],
-  "last_event_id": "evt_c21_final_acceptance_projection_main_package_accepted"
+  "last_event_id": "evt_c21_postmerge_development_main_authority_reconciled"
 }

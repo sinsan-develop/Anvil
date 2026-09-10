@@ -845,113 +845,83 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 699,
-  "last_event_id": "evt_c21_final_acceptance_projection_main_package_accepted",
+  "sequence": 700,
+  "event_type": "REPOSITORY_RECONCILED",
   "status": "MAIN_PACKAGE_ACCEPTED",
+  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "development_remote_ref": "refs/remotes/development/main",
+  "baseline_merge_commit": "931b32418924de11626949b9303360696d614fb0",
+  "exact_paths": [
+    "docs/04_test_reports/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-postmerge-development-authority-reconciliation.json",
+    "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 12,
+  "exact_path_list_sha256": "D8DAA741A70EC152258458407C5E6C46FE973CFAAF3EB3CD8B636E380DB8CB3A",
+  "exact_path_list_ordinal_sha256": "988DDB6EE11ABF447F25CBC570BBAA8D951795496041DEC930EBBA15D1A82B1C",
+  "event_sequence": 700,
+  "last_event_id": "evt_c21_postmerge_development_main_authority_reconciled",
+  "reconciliation_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
   "current_phase": "C",
   "current_work_package": "C-21",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
-  "repository_head": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
-  "repository_head_relation": "POSTCOMMIT_EXACT15_SOLE_DIRECT_CHILD_OF_RECORD",
+  "repository_head": "931b32418924de11626949b9303360696d614fb0",
+  "repository_head_relation": "PRECOMMIT_EXACT12_FROM_MERGED_MAIN",
+  "repository_upstream": "NO_UPSTREAM",
+  "repository_projection_mode": "DEVELOPMENT_MAIN_AUTHORITY_SUCCESSOR_EXACT12",
+  "repository_validated_base_commit": "931b32418924de11626949b9303360696d614fb0",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+    "docs/04_test_reports/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
-    "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
+    "docs/evidence/manifests/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
-    "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
-    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
-    "scripts/check_a14_workbench_prototype.py",
+    "docs/progress/progress-handoff-detached-digest-c21-postmerge-development-authority-reconciliation.json",
+    "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
-    "tests/tooling/test_a14_workbench_prototype.py",
     "tests/tooling/test_project_progress.py"
   ],
   "accepted": true,
+  "c21_status": "MAIN_PACKAGE_ACCEPTED",
   "c01_status": "READY_FOR_WORK_INSTRUCTION",
   "dir2_status": "NOT_REACHED",
   "blocking_count": 0,
-  "approval_binding": {
-    "approved_by": "신산님",
-    "approved_at": "2026-09-09",
-    "scope": "seq699 historical completed WSL/UI/API/SSE evidence projection only",
-    "external_provider": "USER_OWNED_NOT_EXECUTED",
-    "telegram": "USER_OWNED_NOT_EXECUTED"
+  "lineage": {
+    "baseline_merge_commit": "931b32418924de11626949b9303360696d614fb0",
+    "baseline_merge_parents": [
+      "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+      "a03aecc74b412515dab983148838c249fca62d3a"
+    ],
+    "feature_commit": "a03aecc74b412515dab983148838c249fca62d3a",
+    "feature_parent": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+    "record_commit": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+    "record_parent": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
+    "ancestor_chain_required": true
   },
-  "same_origin_evidence": {
-    "historical_authenticated_ui_api_sse": {
-      "reference": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_MANIFEST.json",
-      "execution": "HISTORICAL_EXECUTED_REFERENCE",
-      "provider_read_get_only": true,
-      "provider_write_count": 0,
-      "cross_origin_count": 0,
-      "authenticated_sse_initial": true,
-      "last_event_id_exact_match": true,
-      "secret_residue_count": 0,
-      "filesystem_residue_count": 0
-    },
-    "current_source_static": {
-      "execution": "CURRENT_SOURCE_STATIC_ANALYSIS",
-      "csp_connect_src": "'self'",
-      "browser_source_absolute_host_scan_count": 0,
-      "network_receipt": "NOT_CREATED"
-    }
+  "evidence_boundary": {
+    "provider": "USER_OWNED_NOT_EXECUTED",
+    "telegram": "USER_OWNED_NOT_EXECUTED",
+    "external_action": "NOT_EXECUTED",
+    "historical_seq699": "PRESERVED_SUPERSEDED_BY_SEQ700_AUTHORITY_ONLY"
   },
-  "sequence": 699,
-  "event_type": "MAIN_PACKAGE_ACCEPTED",
-  "record_candidate": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
-  "development_ref": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
-  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
-  "development_remote_ref": "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1",
-  "deployed_product_source": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
-  "image_digest": "sha256:83f2c7b879c65a0f0c571acfcbf114c913b1d53631e7de880f0ec3ffe146db25",
-  "oci_revision": "7b7e7cc",
-  "anvil_web": {
-    "replicas": 1,
-    "published_port": 3770
-  },
-  "health": {
-    "live": true,
-    "ready": true,
-    "migration": "0013"
-  },
-  "provider_read_api": {
-    "provider_count": 9,
-    "method": "GET",
-    "write_count": 0
-  },
-  "exact_paths": [
-    "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
-    "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
-    "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
-    "docs/progress/BUILD_HANDOFF.md",
-    "docs/progress/build-progress.json",
-    "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
-    "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
-    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
-    "scripts/check_a14_workbench_prototype.py",
-    "scripts/check_project_progress.py",
-    "tests/tooling/test_a14_workbench_prototype.py",
-    "tests/tooling/test_project_progress.py"
-  ],
-  "exact_path_count": 15,
-  "exact_path_list_sha256": "D06C8F4158A914042DA3C0688BC5829D7B6F2D94DDEDFEF18F27AEC6FD7B336E",
-  "exact_path_list_ordinal_sha256": "DE7B86332907781913506C1C74B2066EAA4EAF74EAF00378866FA587803D4187",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 2,
   "next_safe_action": "C01_READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
-  "repository_upstream": "origin/codex/c21-operational-execution",
-  "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
