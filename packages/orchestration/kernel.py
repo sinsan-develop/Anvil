@@ -8,7 +8,12 @@ from uuid import uuid4
 
 from packages.budget.models import BudgetRequest, UsageReceipt
 from packages.budget.service import BudgetReservationFailed, BudgetService
-from packages.llm_gateway import GatewayRequest, GatewayResponse, NativeAgentAdapter
+from packages.llm_gateway import (
+    GatewayRequest,
+    GatewayResponse,
+    NativeAgentAdapter,
+    UsageProvenance,
+)
 
 
 class BudgetDenied(RuntimeError):
@@ -116,9 +121,11 @@ class MainAgentKernel:
             GatewayRequest(provider, model, input_text, request_id, abort_signal, retry_after)
         )
         usage = response.final_usage
+        usage_is_unknown = response.usage_provenance is UsageProvenance.UNKNOWN
         receipt = UsageReceipt(
             f"usage:{request_id}", reservation_id, request_id, response.abort_status,
-            Decimal(usage.total_tokens) / Decimal(100), usage.total_tokens,
+            None if usage_is_unknown else Decimal(usage.total_tokens) / Decimal(100),
+            None if usage_is_unknown else usage.total_tokens,
             response.retry_after, None, response.usage_provenance.value,
         )
         reconciliation = self._budget.reconcile(receipt)

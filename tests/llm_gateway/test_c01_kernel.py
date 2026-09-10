@@ -9,11 +9,13 @@ from packages.llm_gateway import (
     CapabilityProbe,
     DeterministicFakeAdapter,
     GatewayRequest,
+    GatewayResponse,
     NativeAgentAdapter,
+    TokenUsage,
     UsageProvenance,
 )
 from packages.orchestration import MainAgentKernel, StepBudget
-from packages.budget.service import BudgetService
+from packages.budget.service import BudgetService, UsageReconciliationRequired
 from packages.persistence.intervention_budget_repository import InMemoryInterventionBudgetRepository
 
 
@@ -133,6 +135,47 @@ def test_kernel_abort_returns_final_reconciliation_evidence():
     ]
     assert result.evidence[-1].abort_status == "ABORTED"
     assert result.evidence[-1].usage_provenance == "ABORT_CONFIRMED"
+
+
+def test_kernel_unknown_usage_keeps_the_reservation_for_reconciliation():
+    class UnknownUsageAdapter:
+        def __init__(self):
+            self.calls = 0
+
+        def probe(self, required=frozenset()):
+            return DeterministicFakeAdapter().probe(required)
+
+        def generate(self, request):
+            self.calls += 1
+            return GatewayResponse(
+                request_id=request.request_id,
+                provider=request.provider,
+                model=request.model,
+                output_text="unknown usage fixture",
+                final_usage=TokenUsage(0, 0),
+                usage_provenance=UsageProvenance.UNKNOWN,
+                retry_after="23",
+            )
+
+    provider = UnknownUsageAdapter()
+    kernel, budget = _kernel(NativeAgentAdapter(provider))
+
+    with pytest.raises(UsageReconciliationRequired, match="final usage is unknown"):
+        kernel.run_step(
+            run_id="run-1", step_id="step-unknown", budget_id="b1",
+            provider="UPSTAGE", model="m", input_text="hello",
+            forecast_tokens=10, forecast_cost=Decimal("1"), retry_after="23",
+        )
+
+    reservation = budget.reservation("reservation:run-1:step-unknown")
+    snapshot = budget.snapshot("b1")
+    assert provider.calls == 1
+    assert reservation.status.value == "RECONCILIATION_REQUIRED"
+    assert reservation.reserved_tokens == 10
+    assert reservation.reserved_cost == Decimal("1")
+    assert reservation.consumed_tokens == 0
+    assert reservation.released_tokens == 0
+    assert snapshot.active_requests == 1
 
 
 def test_kernel_distinct_calls_get_unique_canonical_request_ids():
