@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-WSL-VERIFY-SCOPE-CORRECTION-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 548,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T23:30:00+09:00",
+  "scope": "seq543-548 append-only Provider-excluded WSL verify correction; seq1-542 preserved; exact17.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 159890,
+    "file_sha256": "118BE41A27B2D22C08529E2D5B82C3963ECF0B518C7708336265725FCA5E3E9C",
+    "canonical_json_sha256": "48EB6F51011E08D018D870D7CE49F58A84322BF6AC088921E365C039BEEEA558"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 196320,
+    "file_sha256": "12DFFA29500837DEDA7C66E21A7F16FF1DE739EA667A712C3C30F2B47850D9ED",
+    "machine_summary_canonical_sha256": "A24AF3508B4806F2F106DD96936EF7A4BAC444EBD9F5CFC90D9AEBE12B93C9A5"
+  }
+}

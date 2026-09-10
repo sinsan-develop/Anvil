@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WORKBENCH-UI-WSL-IMMUTABLE-RUNTIME-CONTROL-V2-PUBLICATION-DIGEST-20260909",
+  "package_id": "C-21",
+  "event_sequence": 644,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-09T12:00:00+09:00",
+  "scope": "seq639-644 append-only; seq1-638 preserved; exact12 cumulative243",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 430609,
+    "file_sha256": "50A85554997E2C4D1002A49EEA01B833E16843F69864B21C8818B094DE227F83",
+    "canonical_json_sha256": "FD186F1B5A5A9E0498FE42DF39CB3B6E69FE8813A4A55B52EAF96CDDE7E5F18F"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 223486,
+    "file_sha256": "0C2F36140EC7A34D1BB17A4CBF39F6E17CCE726C05C215DB8D3FA9A0A031DB80",
+    "machine_summary_canonical_sha256": "4027DB9C98E299112A574D22432F9B383369C0BBA0252DB9D140524E55B75174"
+  }
+}

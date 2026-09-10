@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-COLD-START-CANDIDATE-REBIND-DIGEST-20260905",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "event_sequence": 491,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 92480,
+    "file_sha256": "11C1A752408B65699BB50D385966D5A25E52B1ED99E6C3AB29CCC7F7E15B93D2",
+    "canonical_json_sha256": "A23CEFEF36D5E6CC4AF5FC7AE8C490471409C311D70044BC87B839AC41508F5F"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 160931,
+    "file_sha256": "2F5986162B60AC595007CEB2B207EE63A876EF31423A57BB8BC5DC031CFC44DE",
+    "machine_summary_canonical_sha256": "2BD87B32679AC9E50590763922D18B79DC80E07E1B6F4CE759E58E994C4229D9"
+  },
+  "created_at": "2026-09-05T07:20:00+09:00",
+  "scope": "Candidate 324eb16 exact48 and immutable seq1..490 are bound by the seq491 record-only exact11 successor. New candidate execution is not performed; previous seq490 push/recovery and partial WSL execution are recorded separately.",
+  "self_reference": false
+}

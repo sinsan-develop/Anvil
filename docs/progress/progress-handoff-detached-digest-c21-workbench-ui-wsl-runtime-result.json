@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WORKBENCH-UI-WSL-RUNTIME-RESULT-DIGEST-20260908",
+  "package_id": "C-21",
+  "event_sequence": 596,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-08T06:14:53+09:00",
+  "scope": "seq591-596 append-only; seq1-590 preserved; exact12 cumulative195",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 246306,
+    "file_sha256": "9905789D69BD38FA4BFA34A47394D7E4B0E3F85B119E0ACDFD75329213D9745B",
+    "canonical_json_sha256": "34E6DBF8FD83D97998880ACE54EA717EEFFC8F5AFB8579689B363C345BCE0C3A"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 215015,
+    "file_sha256": "2695809EA8917089F6BE9EB53D8B4050F46268C3266343A8BB36AA10A784856C",
+    "machine_summary_canonical_sha256": "5351514BB2A2918BDF6FB69E8E1DC7DFF730050193C178B77AE6C7CE59846352"
+  }
+}

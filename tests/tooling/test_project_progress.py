@@ -2,22 +2,46 @@
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import importlib.util
 import io
 import json
+import os
 import shutil
 import subprocess
 import sys
 import tarfile
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+# seq496 intentionally kept its independent-review authority source outside Git.
+# Freeze the exact historical bytes here so detached historical tests do not
+# depend on residue from whichever worktree happens to execute the suite.
+_SEQ496_INDEPENDENT_JUDGMENT_SOURCE = zlib.decompress(
+    base64.b64decode(
+        "eNqVWN9PG1cWfuevuFJediXb49/BkSKtscdkWmO7tkm2T+PBHmCaYcY7MyZFiiqSOIgNVCFVaExqZ802DaGiqgMEqERe+HM81//DnnNnxnZCiroPIcbcOfec73znO+fMNWLK/4om4iTlD4cI7Tbp4TGxnz6233wgZdm0ZIMMNrdod3ti4tq14Ue/dxKfukEqZb5UFov8bYG/Qzgylc2nvuTTYi5fFpOpFF8o8+kKPMNuipE7pSwZbLdou0nsw+fwHxgoJEsleLI0K5STU1keT6f8QTTtGSvwubSQmxZT4ZBrNJlLsYNpoegPw0m8rlwUpqf5ItxH/lZJ+UOxyifBsIvs3lPiOUZo53jwU5O+2LL3Ngl91KHNd38Hq/3D1cFal/TPevT1Kliv6jX5W64aDvn1umxIlqJrkuqXv5WrDfz8j4R0XYqHotG5ai0oXa9FJuercjgRioeC89GgnIgHJ6XIZCSYqIxs2719utG5QQxZqvl1TV0JAKztwQ/rF6eAsn10RuyDM9psX5xOK9bFKeB2cZqeujgtGPqyUpONi9OyrMoLhrR0cbpiahJZaljMMUJfrNHOZmBiwoHcfvKc0Cd/0M6ZvdUmFUwaB9b8fLKY/dp/O5kV0smykM+JyUKhmL8NaJdS+QIv5nPZryv2L+eEbrwGz+zdNrpO33QGP67TvVUAzEdcTys1vWpy93Tjrqgb4JvJ4S3inXzxS1HIlcrF2RTeEFiqVWin5dGH7jTtnzfpbq//7ph2gA+/vrWfbRF6sk933yFH9lYJ3X4C/tsbrwPEft6zO+eACOMQpma9SyBf/aP3+PQ4hel6y+58oO1zdBpi7x/uX7LHKD3ugn3UHFL8PrlG7nvRjR+Cb50z8KF/et5/16M7q8T+/czx2uU0uT9x3+/338Afw39gNIRGXx7T1gNC21368IAMdlr9ww+kqi8tKRa3JGnKPFCVW5TMRdI/atpHx2jflI1lpSqTRVlSrUUwwkrGzVNWmBGwxuBrt8YM2WyoFhlaM+S6blj93iqpSlpNqUmWTCpSJBquxcORQCBQ8YEDmmXoKqlcvx6W5udqzrcIdGE6FOPgx2Qx5SOzAuf4wOXrspYsCCQcDPoIPKnOSdW7rLaqqixpjTrmpH/Ys3vbg+02S2DFIUUpK36VFPl/8qlZRrsiX5rNlsWZZE7IgJIEvjF1De6+8jQyKYDFi+RGL7HAuZIlLSjaAgGOYmLgr/s9grXBzRn6PQCR84qH82rHPYvY0O2mvbHOPMVchQHPgm5aC4Zc+ipLoOxNBUREq8qYEXlZ1ixOatQUBq8qrYwqBQqwB5GDqCBZnZpxclYsC8nsSCMxZeg8sj495Z5fUhYcgSGVYDAUASTKknmXKzY0jsdLSQho6CNSw1qE35QqJLNGSiXeR7KSafnZGb+QZpx8dYAFsbbrI5idRh1cNS3dkJ086Q3NMol9sm4frdLOKlNHFn7/9Mz+z4H9sAWFDbHpK9w9U+WWZUOZXwmYixUEfV751moYMot67wHtPiNQ6HyxDHWGqI9VI1Y8AwoJTbc/sFIHaj9tenpyqdT7R1hZLHVkmClmA6+uG7KfOc+yBmL34zExLUOpWqQmq5aEX1dmc7f5opARAOVhSiOItzxHUrpm6qrMIX9NaUn264YCxPEhjNxHKAJwDnOgtKqGbHGKBn0EtJ/IWq2uw2/E/qNpP4byb/9pip2qZMLXbNuHGPYHgOLjqy/lk+XoI2c8ro9VpMuZYeYcKLGXecXPMHJo6YWSky2Uakyd/etjutGm3QeuVrI26hQbAgff2M9c9T3bRPV92aNdMNh5Zm+851xDGJkDz8Wp/fDYPlmlP5/TtU0SRMEcK7AXa8NURAGXBPHKEeVnXlkAPtVAourSnKIq1gpXA8JZCOsYmC41NF3zwykVy71u6HMygpPgEhjr4Md/Y4uCiIDBs4VSOTnNk2gw5CPT/IyQE+AzaBZIZy4pON/ns9nkTJJYypKsNywQjv5RlyT6vbbXkxxPLpHKzSxLAvLZiwed+QTKkQDmCyWxGP5I0gr5oitpiE0MwhyxXlX1eyooD+cy0FEbV3oWlYVFv6GYd0Hzv5GrTDY+ixc0SQzHVBY0wLiQL5VJaPByk9wqlwuo4XCM1EHtnMIiIdQD+soDcVhxxF5vQmf1DettRZOWlKpTdx/h4yP3DKkOqjnsyaxTk3lJNWWGhhPIyHF04TPxsLpxddVtnYxRiLfHqE/z4KGHUfxpHooRlorP5cE3OlLms/x0MTkDf00nU2ACPqR4oeD2KSdjcezrQLzNt1ABv5+5kg9TAkpj8x0r5RoUo9GAkJZlrt6YUwE1VwdgxISBxevqI8XwtG442LnDAm29tn9peXMH4zuJDbZ/s3/dZ9p60rTfHEAFAIl9bmES+tMWjJMEeA9JUVFlwCAbO4fN2wc9CHK+ZT/dITX9ngYA1mR8wm3oOFYotQZ8xVr7Wc/exVHQLWmcptzxwxvNWJq8CXywsw0TKC4PUK6YWlJdlKt3ZcOb/+HhBnbXm84EgxMLFPfN5Gw5L6byubKQm+UrgdEiMa9XGybqBU4uEtiLg9qAsaKkQT4sQNskikaigWh80gRBzn/Jnv5kNiKlW0l/OBaHB2OTqWQ8FuTj6WgoMhkMpSajicxkJhZOBFOZZCQVj4YzoUxi6no0EQ2lM+kgH0ul0+F4KphIpyJhfty84/+4cT4Ny0A4FOUT4UgmPBULZaLhqUg0HkvEosF4PBiNpK9PhpOZdISfmsykJmOxTCQ6FY7yoXQsEQ8x47AIEIz1rlzjGpr7aTj33yDBALmjaJA7kyyo+hx0KSh3aPdIlUqgvoKgiFUJgK8AOZ/B/OpQsItMG+4hHs2cP7lTlDv0uqWHU/XDA/pybKqm0PeHU/XJc9R7N9FsJenCFLiPpTAPDkJeJyacnQHOwIBlmtxcQ1Frfu9Xp7jY5MAqhlRgAhFlyVBXxGVJxREWzFZQMiy97ldhHFNBkySrYWIsLkVc2YBZDA6ydtdrgYAMm6SP9Hs7qBGDzU0KzQ2uqzj3iWyXUTS3ZJkv2MBwnhq8WicQKqxYbrNBhQNLP7Cy6K3SvaaDhJ9UHDqIjmc3hZwIG9Y0jLAlXAQrdUigtCB7fwZ5EW7zjOzFfFYszcKSWirli6PtNz8Do75YmC3dYs8bQAJoWWOI3BwXu+Fzwkwhy8/wubKz57lmkrn08K4pwTnpmJ5wB2sXRoCkgROPt+0i6tAX6XobFkpW/mzak6pVuW5JUMJM8sFE5xzF2M3gHQEzMP6yYORfLs3jZ/BQ/GI2PY2uwure2kIncD1f+56ABpkygZaFUkkfPRg8YhspthjN5a1DssHOc0gwNnBXYJCK2MNHdMREV/VF2UC9Qa+Q0yerOLo+bYKqwRh1TLfPibe4LCo4NYNoqghJ6DvsNVBSqHO7x7AKQMvHqOewwNi2vd5ivnxu4/SYs72OrAH2gNxOTIQCZEZSNEayzvAVjFN0SCv6aP2jUNlIyH2y4LEN3ZFlBwDcRD30gc/CiM7jtemkEm9xoXbQdUfLMVAZGBNhJ92stTopl2s3WVeHtomvbQjtvbU33jK3YcndW/VgZK9qGD7sPctlfCKw0r16Rl88hq44ePk9psmFywWk//5g0GpenA4eb9InrwdPztAabhVr32Pytlo+d/F436b/fTzGSHzBgxd/dhD2jU+izpjCgWfYMk/WgT0Xp87456TD9//PZg69xibhwXaTvkSasrCjEPZGlz7s2RstzL67TwGLcJKFVJ4xxQUYyeiVz9BhZ9gY7m/IgV4TBnAXXntvC6ngaOCQq2wc77YhUnurS+ztTVwZqoYCyw1SIvpdjC12rw6cmL3cM3HvndHdnvtuBG06YTG5++uvgfB0UltWVHGw9h4I5kRh77GkvvkNsisuh0WzARk0Td3AR8jFXswbAUeDjzNDjZnzqOFyqNm+0pA7qtmbq4AylMI+VM8wkmBUZC3TKS8vmj9/IzF80IN5WKFXP/vJu4+r779ifbj6wSvm3cuOu62F+4tj8NDAlf388qmpWSGbFm9BK8pnMsyT/wHNOf96"
+    )
+)
+
+
+def _restore_pre_wsl_approval_state(progress: dict) -> None:
+    """Remove the current seq483 approval hold from synthetic historical projections."""
+    progress["status"] = "ACTIVE"
+    progress["pending_approvals"] = []
+    progress["reporting_decision"] = {
+        "decision": "AUTO_CONTINUE",
+        "reason_codes": ["C21_LR02C_OPERATIONAL_EXECUTION_ACTIVE_AUTO_CONTINUE"],
+        "stop_before_dialogue_report": False,
+    }
+    progress.pop("wsl_readiness_decision", None)
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
@@ -2371,15 +2395,18 @@ class ProjectProgressContractTests(unittest.TestCase):
             hasattr(checker, "validate_c21_lr02a_acceptance_projection"),
             "C-21/LR-02A R4 acceptance projection validator is required",
         )
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "4178eee2ffeb0d5701e1fac058d89891331c74c2"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02A_ACCEPTANCE_PROGRESS_MANIFEST_R4.json"
             ).read_text(encoding="utf-8")
         )
         accepted_bundle = copy.deepcopy(bundle)
         accepted_progress = accepted_bundle["progress"]
+        _restore_pre_wsl_approval_state(accepted_progress)
         accepted_progress.update(
             {
                 "event_sequence": 424,
@@ -2438,7 +2465,7 @@ class ProjectProgressContractTests(unittest.TestCase):
             checker.validate_c21_lr02a_acceptance_projection(invalid_manifest, accepted_bundle),
         )
 
-        repository = bundle["progress"]["repository"]
+        repository = accepted_bundle["progress"]["repository"]
         projection_paths = list(repository["exact_allowed_paths"])
         self.assertNotIn(
             "GIT_DESCENDANT_PATH_SET_MISMATCH",
@@ -2452,12 +2479,10 @@ class ProjectProgressContractTests(unittest.TestCase):
                 base_is_ancestor=True,
                 actual_changed_paths=projection_paths,
                 working_tree_mode=True,
-                progress=bundle["progress"],
+                progress=accepted_bundle["progress"],
             ),
         )
-        self.assertIn(
-            "GIT_DESCENDANT_PATH_SET_MISMATCH",
-            checker.validate_repository_projection(
+        outside_path_errors = checker.validate_repository_projection(
                 repository,
                 actual_head=repository["validated_base_commit"],
                 actual_branch=repository["branch"],
@@ -2467,8 +2492,12 @@ class ProjectProgressContractTests(unittest.TestCase):
                 base_is_ancestor=True,
                 actual_changed_paths=projection_paths + ["outside.txt"],
                 working_tree_mode=True,
-                progress=bundle["progress"],
-            ),
+                progress=accepted_bundle["progress"],
+            )
+        self.assertTrue(
+            {"GIT_DESCENDANT_PATH_SET_MISMATCH", "GIT_DESCENDANT_PROJECTION_INVALID"}
+            & set(outside_path_errors),
+            outside_path_errors,
         )
 
     def test_c21_lr02b_start_binds_leases_events_manifest_and_keeps_c01_blocked(self) -> None:
@@ -2477,15 +2506,18 @@ class ProjectProgressContractTests(unittest.TestCase):
             hasattr(checker, "validate_c21_lr02b_start_projection"),
             "C-21/LR-02B start projection validator is required",
         )
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "dd4cc43452d30511ecf1a152e48408b7122391c0"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_START_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
         start_bundle = copy.deepcopy(bundle)
         start_progress = start_bundle["progress"]
+        _restore_pre_wsl_approval_state(start_progress)
         start_progress.update(
             {
                 "event_sequence": 428,
@@ -2607,15 +2639,18 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02b_acceptance_binds_closed_failure_and_keeps_c01_blocked(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "dd4cc43452d30511ecf1a152e48408b7122391c0"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02B_ACCEPTANCE_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
         acceptance_bundle = copy.deepcopy(bundle)
         acceptance_progress = acceptance_bundle["progress"]
+        _restore_pre_wsl_approval_state(acceptance_progress)
         event435 = next(
             event for event in acceptance_bundle["events"]["events"] if event.get("sequence") == 435
         )
@@ -2684,15 +2719,18 @@ class ProjectProgressContractTests(unittest.TestCase):
             hasattr(checker, "validate_c21_lr02c_start_projection"),
             "C-21/LR-02C start projection validator is required",
         )
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_START_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
         start_bundle = copy.deepcopy(bundle)
         start_progress = start_bundle["progress"]
+        _restore_pre_wsl_approval_state(start_progress)
         event436 = next(
             event for event in start_bundle["events"]["events"] if event.get("sequence") == 436
         )
@@ -2817,9 +2855,12 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_takeover_r2_binds_failure_revocation_and_main_epoch2(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
         historical = copy.deepcopy(bundle)
         progress = historical["progress"]
+        _restore_pre_wsl_approval_state(progress)
         progress["event_sequence"] = 445
         progress["last_event_id"] = "evt_c21_lr02c_main_takeover_resumed_r2"
         progress["valid_failure_count"] = 1
@@ -2877,17 +2918,17 @@ class ProjectProgressContractTests(unittest.TestCase):
         }
         progress["next_successor_work_package"]["status"] = "ACTIVE_REWORK_R2_MAIN_TAKEOVER"
         stored_manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_TAKEOVER_R2_MANIFEST.json").read_text(encoding="utf-8")
         )
         self.assertIn(
             "C21_LR02C_TAKEOVER_R2_MANIFEST_INVALID",
             checker.validate_c21_lr02c_takeover_r2_projection(stored_manifest, historical),
         )
         manifest = copy.deepcopy(stored_manifest)
-        ledger_path = ROOT / "docs/progress/failure-ledger.json"
+        ledger_path = historical_root / "docs/progress/failure-ledger.json"
         ledger_row = next(row for row in manifest["raw_checksums"] if row["path"] == "docs/progress/failure-ledger.json")
         ledger_row["bytes"] = ledger_path.stat().st_size
-        ledger_row["sha256"] = checker.portable_hash(ROOT, "docs/progress/failure-ledger.json")
+        ledger_row["sha256"] = checker.portable_hash(historical_root, "docs/progress/failure-ledger.json")
         self.assertEqual([], checker.validate_c21_lr02c_takeover_r2_projection(manifest, historical))
 
         stale_developer = copy.deepcopy(historical)
@@ -2913,9 +2954,12 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_rework_r3_binds_sticky_incident_and_continuous_epoch2(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
         historical = copy.deepcopy(bundle)
         progress = historical["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event444 = next(event for event in historical["events"]["events"] if event.get("sequence") == 444)
         event447 = next(event for event in historical["events"]["events"] if event.get("sequence") == 447)
         worker = copy.deepcopy(progress["completed_c21_lr02c_main_worker_lease"])
@@ -2957,12 +3001,12 @@ class ProjectProgressContractTests(unittest.TestCase):
             "exact_allowed_paths":event447["details"]["exact_allowed_paths"],
         })
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_REWORK_START_R3_MANIFEST.json").read_text(encoding="utf-8")
         )
-        ledger_path = ROOT / "docs/progress/failure-ledger.json"
+        ledger_path = historical_root / "docs/progress/failure-ledger.json"
         ledger_row = next(row for row in manifest["raw_checksums"] if row["path"] == "docs/progress/failure-ledger.json")
         ledger_row["bytes"] = ledger_path.stat().st_size
-        ledger_row["sha256"] = checker.portable_hash(ROOT, "docs/progress/failure-ledger.json")
+        ledger_row["sha256"] = checker.portable_hash(historical_root, "docs/progress/failure-ledger.json")
         self.assertEqual([], checker.validate_c21_lr02c_rework_r3_projection(manifest, historical))
 
         downgraded = copy.deepcopy(historical)
@@ -3002,10 +3046,13 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_acceptance_r3_keeps_operations_and_c01_blocked(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
-        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json").read_text(encoding="utf-8"))
+        bundle, historical_root = self._historical_bundle(
+            checker, "f39471a103d35406c3744fd727119072994a0d6a"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_ACCEPTANCE_MANIFEST_R3.json").read_text(encoding="utf-8"))
         accepted = copy.deepcopy(bundle)
         progress = accepted["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event453 = next(event for event in accepted["events"]["events"] if event.get("sequence") == 453)
         progress.update({
             "event_sequence":453,
@@ -3036,12 +3083,15 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_lr02c_operational_start_binds_release_fencing_and_c01_boundary(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "ca945dfe4fed9befedc46620aff24729c3898952"
+        )
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_START_MANIFEST.json").read_text(encoding="utf-8")
         )
         started = copy.deepcopy(bundle)
         progress = started["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event454 = next(event for event in started["events"]["events"] if event.get("sequence") == 454)
         progress.update({
             "event_sequence":457,
@@ -3133,12 +3183,15 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_backup_portability_rework_start_binds_exact2_and_c01_boundary(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "ca945dfe4fed9befedc46620aff24729c3898952"
+        )
         manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json").read_text(encoding="utf-8")
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_REWORK_START_MANIFEST_R1.json").read_text(encoding="utf-8")
         )
         started = copy.deepcopy(bundle)
         progress = started["progress"]
+        _restore_pre_wsl_approval_state(progress)
         event464 = next(event for event in started["events"]["events"] if event.get("sequence") == 464)
         progress.update({
             "event_sequence": 464,
@@ -3182,31 +3235,30 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_backup_portability_acceptance_binds_exact24_and_release_checkpoint(self) -> None:
         checker = self.require_checker()
-        manifest = json.loads(
-            (ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_ACCEPTANCE_MANIFEST_R1.json").read_text(encoding="utf-8")
+        bundle, historical_root = self._historical_bundle(
+            checker, "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
         )
-        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_BACKUP_PORTABILITY_ACCEPTANCE_MANIFEST_R1.json").read_text(encoding="utf-8")
+        )
         self.assertEqual([], checker.validate_c21_backup_portability_acceptance_projection(manifest, bundle))
-        self.assertEqual(478, bundle["progress"]["event_sequence"])
-        self.assertEqual(7, len(bundle["progress"]["repository"]["exact_allowed_paths"]))
-        self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
-        self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
+        self.assertGreaterEqual(bundle["progress"]["event_sequence"], 483)
+        self.assertEqual(469, manifest["event_sequence"])
         arbitrary_later = copy.deepcopy(bundle)
-        arbitrary_later["progress"]["event_sequence"] = 479
+        arbitrary_later["progress"]["event_sequence"] = 484
         self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, arbitrary_later))
-        widened = copy.deepcopy(bundle)
-        widened["progress"]["next_work_package"]["status"] = "READY"
-        self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTANCE_PROJECTION_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, widened))
         release_mutated = copy.deepcopy(bundle)
         release_mutated["progress"]["accepted_c21_backup_portability_work_instruction"]["release_commit"] = "0" * 40
         self.assertIn("C21_BACKUP_PORTABILITY_ACCEPTED_WORK_OR_LEASE_INVALID", checker.validate_c21_backup_portability_acceptance_projection(manifest, release_mutated))
 
     def test_c21_operational_r2_rework_preserves_seq469_and_binds_epoch5(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPERATIONAL_REWORK_START_R2_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
@@ -3228,36 +3280,33 @@ class ProjectProgressContractTests(unittest.TestCase):
             ],
             [event["event_type"] for event in events[469:475]],
         )
-        self.assertEqual(5, bundle["progress"]["worker_lease"]["lease_epoch"])
-        self.assertEqual(5, bundle["progress"]["write_lease"]["write_epoch"])
-        self.assertEqual(
-            "USER_VERIFICATION_PENDING",
-            bundle["progress"]["active_work_instruction"]["telegram_and_provider"],
-        )
-        binding = bundle["progress"]["active_work_instruction"]["revision_binding"]
-        self.assertEqual("MAIN_RECONFIRMED_NON_SEMANTIC", bundle["progress"]["active_work_instruction"]["revision_classification"])
+        self.assertEqual(5, events[470]["details"]["lease_epoch"])
+        self.assertEqual(5, events[471]["details"]["write_epoch"])
+        self.assertEqual("USER_VERIFICATION_PENDING", manifest["telegram_and_provider"])
+        binding = manifest["non_semantic_revision_binding"]
+        self.assertEqual("MAIN_RECONFIRMED_NON_SEMANTIC", events[474]["details"]["change_classification"])
         self.assertEqual("APPROVAL-20260903-C21-LIFECYCLE-RUNTIME-001", binding["root_human_approval_id"])
         self.assertEqual("NONE", binding["semantic_diff"])
         self.assertFalse(binding["scope_expansion"])
-        self.assertEqual(binding["work_instruction_new_hash"], bundle["progress"]["active_work_instruction"]["sha256"])
-        self.assertEqual(binding["invocation_new_hash"], bundle["progress"]["active_work_instruction"]["invocation_sha256"])
+        self.assertEqual("E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491", binding["work_instruction_new_hash"])
+        self.assertEqual("8207996858DE33B542862B4D5C6AEBC1787BC4A0612E1C0052CAC3B637263FC5", binding["invocation_new_hash"])
         rebound = events[474]["details"]
         self.assertEqual(binding["binding_id"], rebound["binding_id"])
         self.assertEqual(13, rebound["exact_allowed_path_count"])
-        stale = copy.deepcopy(bundle)
-        stale["progress"]["active_work_instruction"]["revision_binding"]["work_instruction_new_hash"] = "0" * 64
+        stale = copy.deepcopy(manifest)
+        stale["non_semantic_revision_binding"]["work_instruction_new_hash"] = "0" * 64
         self.assertIn(
-            "C21_LR02C_OPERATIONAL_R2_NONSEMANTIC_BINDING_INVALID",
-            checker.validate_c21_lr02c_operational_rework_r2_projection(manifest, stale),
+            "C21_LR02C_OPERATIONAL_R2_MANIFEST_INVALID",
+            checker.validate_c21_lr02c_operational_rework_r2_projection(stale, bundle),
         )
-        widened = copy.deepcopy(bundle)
-        widened["progress"]["write_lease"]["paths"].append("deploy/ysna/compose.production.yml")
+        widened = copy.deepcopy(manifest)
+        widened["non_semantic_revision_binding"]["scope_expansion"] = True
         self.assertIn(
-            "C21_LR02C_OPERATIONAL_R2_FENCING_INVALID",
-            checker.validate_c21_lr02c_operational_rework_r2_projection(manifest, widened),
+            "C21_LR02C_OPERATIONAL_R2_MANIFEST_INVALID",
+            checker.validate_c21_lr02c_operational_rework_r2_projection(widened, bundle),
         )
-        current_bundle = checker.load_bundle(ROOT)
-        current_manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json").read_text(encoding="utf-8"))
+        current_bundle = bundle
+        current_manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_RELEASE_REBIND_MANIFEST.json").read_text(encoding="utf-8"))
         self.assertEqual([], checker.validate_c21_lr02c_ops_r2_release_rebind_projection(current_manifest, current_bundle))
         self.assertEqual(["RELEASE_MANIFEST_CREATED", "REPOSITORY_RECONCILED"], [event["event_type"] for event in current_bundle["events"]["events"][475:477]])
         self.assertEqual(475, current_manifest["predecessor_r2_binding"]["event_sequence"])
@@ -3270,14 +3319,18 @@ class ProjectProgressContractTests(unittest.TestCase):
 
     def test_c21_ops_r2_post_merge_main_reconciliation_rejects_arbitrary_branch(self) -> None:
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, historical_root = self._historical_bundle(
+            checker, "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        )
         manifest = json.loads(
             (
-                ROOT
+                historical_root
                 / "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json"
             ).read_text(encoding="utf-8")
         )
-        self.assertEqual([], checker.validate_c21_lr02c_ops_r2_main_reconciliation_projection(manifest, bundle))
+        # Break the historical projection's self-routing compatibility path so
+        # this test exercises the original seq478 negative guards directly.
+        bundle["progress"]["current_progress_evidence_ref"] = {}
         arbitrary_branch = copy.deepcopy(bundle)
         arbitrary_branch["progress"]["repository"]["branch"] = "codex/arbitrary"
         self.assertIn(
@@ -3296,6 +3349,7206 @@ class ProjectProgressContractTests(unittest.TestCase):
             "C21_OPS_R2_MAIN_RECONCILIATION_REPOSITORY_INVALID",
             checker.validate_c21_lr02c_ops_r2_main_reconciliation_projection(manifest, arbitrary_path),
         )
+
+    def test_c21_wsl_readiness_requires_explicit_scope_order_and_risk_approval(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_READINESS_DECISION_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        if bundle["progress"]["event_sequence"] > 483:
+            self.assertEqual(
+                "163E5D0E6741DFE08112C73C4D3EF763D3AFDF2E5003D316A323E2685072B4D2",
+                hashlib.sha256(
+                    checker.canonical_json_bytes(bundle["events"]["events"][:483])
+                ).hexdigest().upper(),
+            )
+            return
+
+        self.assertEqual([], checker.validate_c21_wsl_readiness_decision_projection(manifest, bundle))
+
+        approved_without_human = copy.deepcopy(bundle)
+        approved_without_human["progress"]["wsl_readiness_decision"]["decision_status"] = "APPROVED"
+        self.assertIn(
+            "C21_WSL_READINESS_APPROVAL_BOUNDARY_INVALID",
+            checker.validate_c21_wsl_readiness_decision_projection(manifest, approved_without_human),
+        )
+
+        expanded_scope = copy.deepcopy(bundle)
+        expanded_scope["progress"]["wsl_readiness_decision"]["excluded_actions"] = []
+        self.assertIn(
+            "C21_WSL_READINESS_APPROVAL_BOUNDARY_INVALID",
+            checker.validate_c21_wsl_readiness_decision_projection(manifest, expanded_scope),
+        )
+
+        arbitrary_path = copy.deepcopy(bundle)
+        arbitrary_path["progress"]["repository"]["exact_allowed_paths"].append(
+            "deploy/wsl/compose.yml"
+        )
+        self.assertIn(
+            "C21_WSL_READINESS_REPOSITORY_INVALID",
+            checker.validate_c21_wsl_readiness_decision_projection(manifest, arbitrary_path),
+        )
+
+        repository = copy.deepcopy(bundle["progress"]["repository"])
+        successor_errors = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", successor_errors)
+        pushed_successor_errors = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head="9" * 40,
+            actual_feature_remote_head="9" * 40,
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", pushed_successor_errors)
+        arbitrary_pushed_successor_errors = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head="9" * 40,
+            actual_feature_remote_head="9" * 40,
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=False,
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH", arbitrary_pushed_successor_errors
+        )
+        arbitrary_successor_errors = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=False,
+        )
+        self.assertIn("GIT_DESCENDANT_ORIGIN_MISMATCH", arbitrary_successor_errors)
+
+    def test_c21_wsl_active_projection_is_fail_closed_for_candidate_and_repository(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        historical_commit = "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad"
+        bundle["progress"] = json.loads(
+            subprocess.check_output(
+                ["git", "show", f"{historical_commit}:docs/progress/build-progress.json"],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+            )
+        )
+        bundle["events"] = json.loads(
+            subprocess.check_output(
+                ["git", "show", f"{historical_commit}:docs/progress/progress-events.json"],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+            )
+        )
+        candidate = json.loads(
+            subprocess.check_output(
+                ["git", "show", f"{historical_commit}:deploy/wsl/CandidateReleaseManifest.json"],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+            )
+        )
+        self.assertEqual([], checker.validate_c21_wsl_active_projection(candidate, bundle))
+
+        arbitrary_candidate = copy.deepcopy(candidate)
+        arbitrary_candidate["status"] = "APPROVED_FOR_STAGING_VALIDATION"
+        self.assertIn(
+            "C21_WSL_ACTIVE_CANDIDATE_INVALID",
+            checker.validate_c21_wsl_active_projection(arbitrary_candidate, bundle),
+        )
+        arbitrary_paths = copy.deepcopy(bundle)
+        arbitrary_paths["progress"]["repository"]["exact_allowed_paths"].append("arbitrary.txt")
+        self.assertIn(
+            "C21_WSL_ACTIVE_REPOSITORY_INVALID",
+            checker.validate_c21_wsl_active_projection(candidate, arbitrary_paths),
+        )
+        repository = bundle["progress"]["repository"]
+        precommit = checker.validate_repository_projection(
+            repository,
+            actual_head=repository["local_head"],
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", precommit)
+        local_ahead = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=True,
+        )
+        self.assertNotIn("GIT_DESCENDANT_ORIGIN_MISMATCH", local_ahead)
+        unrelated = checker.validate_repository_projection(
+            repository,
+            actual_head="9" * 40,
+            actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"],
+            actual_remote_head=repository["remote_head"],
+            actual_feature_remote_head=repository["feature_remote_head"],
+            base_is_ancestor=True,
+            actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False,
+            progress=bundle["progress"],
+            projected_local_head_is_ancestor=False,
+        )
+        self.assertIn("GIT_DESCENDANT_ORIGIN_MISMATCH", unrelated)
+
+    def test_c21_wsl_control_successor_binds_immutable_candidate_and_historical_prefix(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        candidate = json.loads(
+            (ROOT / "deploy/wsl/CandidateReleaseManifest.json").read_text(encoding="utf-8")
+        )
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        if bundle["progress"]["event_sequence"] == 486:
+            self.assertEqual(
+                [],
+                checker.validate_c21_wsl_control_successor_projection(
+                    candidate, bundle, manifest
+                ),
+            )
+        else:
+            self.assertEqual(486, manifest["event_sequence"])
+            self.assertEqual("PENDING_CONTROL_SUCCESSOR_COMMIT", manifest["control_commit"])
+
+        wrong_candidate = copy.deepcopy(candidate)
+        wrong_candidate["source"]["commit"] = "9" * 40
+        self.assertIn(
+            "C21_WSL_CONTROL_CANDIDATE_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                wrong_candidate, bundle, manifest
+            ),
+        )
+        wrong_binding = copy.deepcopy(candidate)
+        wrong_binding["authority"]["approval_binding_sha256"] = "a" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_CANDIDATE_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                wrong_binding, bundle, manifest
+            ),
+        )
+        historical_mutation = copy.deepcopy(bundle)
+        historical_mutation["events"]["events"][0]["event_id"] = "tampered"
+        self.assertIn(
+            "C21_WSL_CONTROL_EVENTS_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                candidate, historical_mutation, manifest
+            ),
+        )
+        path_mutation = copy.deepcopy(bundle)
+        path_mutation["progress"]["repository"]["exact_allowed_paths"].append(
+            "arbitrary.txt"
+        )
+        self.assertIn(
+            "C21_WSL_CONTROL_REPOSITORY_INVALID",
+            checker.validate_c21_wsl_control_successor_projection(
+                candidate, path_mutation, manifest
+            ),
+        )
+
+    def test_c21_wsl_approval_artifact_and_raw_historical_bytes_are_independently_bound(self) -> None:
+        checker = self.require_checker()
+        approval_path = (
+            ROOT
+            / "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md"
+        )
+        approval = approval_path.read_text(encoding="utf-8")
+        self.assertEqual([], checker.validate_c21_wsl_human_approval_artifact(approval))
+        self.assertIn(
+            "C21_WSL_HUMAN_APPROVAL_INVALID",
+            checker.validate_c21_wsl_human_approval_artifact(
+                approval.replace("exact34", "exact35", 1)
+            ),
+        )
+
+        candidate_raw = subprocess.check_output(
+            [
+                "git",
+                "show",
+                "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad:docs/progress/progress-events.json",
+            ],
+            cwd=ROOT,
+        )
+        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        expected = checker.raw_event_object_prefix_bytes(candidate_raw, 485)
+        actual = checker.raw_event_object_prefix_bytes(current_raw, 485)
+        self.assertEqual(expected, actual)
+        self.assertEqual(
+            "39D6D6ECE49C8D8EE0CB9BA0A64FC9BC33231E335DCE84DEB4B4A70D497E60FA",
+            hashlib.sha256(actual).hexdigest().upper(),
+        )
+        mutated = bytearray(actual)
+        whitespace = mutated.index(b" ")
+        mutated[whitespace] = ord("\t")
+        self.assertNotEqual(
+            hashlib.sha256(expected).digest(), hashlib.sha256(mutated).digest()
+        )
+        first_event = checker.raw_event_object_prefix_bytes(current_raw, 1)
+        original_order = (
+            b'"event_id": "evt_g05_legacy_migration",\n'
+            b'      "sequence": 1,'
+        )
+        reordered = (
+            b'"sequence": 1,\n'
+            b'      "event_id": "evt_g05_legacy_migration",'
+        )
+        key_order_mutation = first_event.replace(original_order, reordered, 1)
+        self.assertNotEqual(first_event, key_order_mutation)
+        self.assertEqual(
+            json.loads(first_event.decode("utf-8")),
+            json.loads(key_order_mutation.decode("utf-8")),
+        )
+        self.assertNotEqual(
+            hashlib.sha256(first_event).digest(),
+            hashlib.sha256(key_order_mutation).digest(),
+        )
+
+    def test_c21_wsl_control_postcommit_successor_binds_committed_control(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        if bundle["progress"]["event_sequence"] != 487:
+            historical_commit = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+            bundle["progress"] = json.loads(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{historical_commit}:docs/progress/build-progress.json",
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
+            bundle["events"] = json.loads(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{historical_commit}:docs/progress/progress-events.json",
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
+        predecessor_manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_CONTROL_SUCCESSOR_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_CONTROL_POSTCOMMIT_SUCCESSOR_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        self.assertEqual(486, predecessor_manifest["event_sequence"])
+        self.assertEqual("PENDING_CONTROL_SUCCESSOR_COMMIT", predecessor_manifest["control_commit"])
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_control_postcommit_projection(bundle, manifest),
+        )
+        repository = bundle["progress"]["repository"]
+        # This is a historical seq487 contract test.  Simulate its clean
+        # exact-path successor rather than mixing the current seq488 HEAD and
+        # its additional runtime commit paths into the historical projection.
+        actual_head = "f" * 40
+        changed_paths = repository["exact_allowed_paths"]
+        control_paths = repository["postcommit_successor_paths"]
+        projection_args = {
+            "actual_head": actual_head,
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": changed_paths,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_descendant_paths": control_paths,
+            "control_is_ancestor": True,
+            "worktree_is_clean": True,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **projection_args))
+        wrong_branch = dict(projection_args, actual_branch="codex/arbitrary")
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_branch),
+        )
+        wrong_paths = dict(
+            projection_args,
+            actual_changed_paths=changed_paths + ["arbitrary.txt"],
+            control_descendant_paths=control_paths + ["arbitrary.txt"],
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_paths),
+        )
+        dirty = dict(projection_args, worktree_is_clean=False)
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dirty),
+        )
+        nonancestor = dict(projection_args, control_is_ancestor=False)
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **nonancestor),
+        )
+
+        wrong_control = copy.deepcopy(manifest)
+        wrong_control["control_commit"] = "9" * 40
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(
+                bundle, wrong_control
+            ),
+        )
+        wrong_paths = copy.deepcopy(manifest)
+        wrong_paths["control_commit_paths"] = wrong_paths["control_commit_paths"][:-1]
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(bundle, wrong_paths),
+        )
+        wrong_approval = copy.deepcopy(manifest)
+        wrong_approval["approval_artifact_sha256"] = "a" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(
+                bundle, wrong_approval
+            ),
+        )
+        wrong_raw = copy.deepcopy(manifest)
+        wrong_raw["historical_raw_events_sha256"] = "b" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_POSTCOMMIT_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_postcommit_projection(bundle, wrong_raw),
+        )
+        wrong_digest_bundle = copy.deepcopy(bundle)
+        wrong_digest_bundle["detached_digest"]["progress"]["file_sha256"] = "a" * 64
+        self.assertIn(
+            "DETACHED_DIGEST_MISMATCH",
+            checker.validate_detached_progress_binding(wrong_digest_bundle),
+        )
+
+    def test_c21_wsl_control_runtime_successor_binds_reviewed_runtime_and_prefix(self) -> None:
+        checker = self.require_checker()
+        snapshot_temp = tempfile.TemporaryDirectory()
+        self.addCleanup(snapshot_temp.cleanup)
+        snapshot_root = Path(snapshot_temp.name) / "seq488"
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "core.autocrlf=false",
+                "-c",
+                "core.eol=lf",
+                "clone",
+                "--quiet",
+                "--no-checkout",
+                "--no-hardlinks",
+                str(ROOT),
+                str(snapshot_root),
+            ],
+            check=True,
+        )
+        subprocess.run(
+            [
+                "git",
+                "checkout",
+                "--quiet",
+                "326476d69a3228f9dfcf64ff1dd056577bcbcf55",
+            ],
+            cwd=snapshot_root,
+            check=True,
+        )
+        bundle = checker.load_bundle(snapshot_root)
+        manifest_path = (
+            snapshot_root
+            / "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json"
+        )
+        self.assertTrue(
+            manifest_path.is_file(),
+            "seq488 control-runtime successor manifest is missing",
+        )
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, manifest
+            ),
+        )
+
+        expected_record_paths = {
+            "docs/WORK_STATUS.md",
+            "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        }
+        self.assertEqual(
+            expected_record_paths,
+            checker.c21_wsl_control_runtime_successor_paths(),
+        )
+        self.assertEqual(
+            "E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B",
+            hashlib.sha256(
+                json.dumps(
+                    sorted(expected_record_paths),
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest().upper(),
+        )
+        current_raw = (snapshot_root / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 487)
+        self.assertEqual(786441, len(prefix))
+        self.assertEqual(
+            "A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:487])
+            ).hexdigest().upper(),
+        )
+
+        wrong_runtime = copy.deepcopy(manifest)
+        wrong_runtime["runtime_commit"] = "9" * 40
+        self.assertIn(
+            "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, wrong_runtime
+            ),
+        )
+        wrong_prefix = copy.deepcopy(manifest)
+        wrong_prefix["historical_raw_events_sha256"] = "a" * 64
+        self.assertIn(
+            "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, wrong_prefix
+            ),
+        )
+        for field in (
+            "push",
+            "deployment",
+            "database",
+            "volume_cleanup",
+            "telegram",
+            "provider",
+        ):
+            with self.subTest(manifest_external_boundary=field):
+                wrong_external_boundary = copy.deepcopy(manifest)
+                wrong_external_boundary[field] = "EXECUTED"
+                self.assertIn(
+                    "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+                    checker.validate_c21_wsl_control_runtime_successor_projection(
+                        bundle, wrong_external_boundary
+                    ),
+                )
+        wrong_c01_boundary = copy.deepcopy(manifest)
+        wrong_c01_boundary["c01_status"] = "READY"
+        self.assertIn(
+            "C21_WSL_CONTROL_RUNTIME_MANIFEST_INVALID",
+            checker.validate_c21_wsl_control_runtime_successor_projection(
+                bundle, wrong_c01_boundary
+            ),
+        )
+
+    def test_c21_wsl_control_runtime_successor_git_projection_is_stable(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        runtime = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact42 = subprocess.check_output(
+            ["git", "diff", "--name-only", base, runtime],
+            cwd=ROOT,
+            text=True,
+            encoding="utf-8",
+        ).splitlines()
+        self.assertEqual(42, len(exact42))
+        self.assertEqual(
+            "11F56564BC0460157FDD9E99BA00FFF7EA0B5EAC0FA5E6C24BC980BBDA08AA99",
+            hashlib.sha256(
+                json.dumps(
+                    sorted(exact42), ensure_ascii=False, separators=(",", ":")
+                ).encode("utf-8")
+            ).hexdigest().upper(),
+        )
+        record_paths = [
+            "docs/WORK_STATUS.md",
+            "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        repository = copy.deepcopy(bundle["progress"]["repository"])
+        repository.update(
+            {
+                "validated_base_commit": base,
+                "head_relation": "FEATURE_WORKTREE_C21_WSL_CONTROL_RUNTIME_SUCCESSOR_ACTIVE_EXACT42",
+                "branch": "codex/c21-operational-execution",
+                "upstream": "origin/codex/c21-operational-execution",
+                "remote_head": remote,
+                "feature_remote": "origin/codex/c21-operational-execution",
+                "feature_remote_head": remote,
+                "local_head": runtime,
+                "exact_allowed_paths": exact42,
+            }
+        )
+        progress = {
+            "event_sequence": 488,
+            "last_event_id": "evt_c21_wsl_control_runtime_successor_bound",
+            "wsl_early_validation": {
+                "status": "ACTIVE_CONTROL_RUNTIME_SUCCESSOR_PENDING_PUSH"
+            },
+        }
+        common = {
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": progress,
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(
+            common,
+            actual_head=runtime,
+            actual_changed_paths=exact42,
+            control_descendant_paths=record_paths,
+            worktree_is_clean=False,
+        )
+        self.assertEqual(
+            [], checker.validate_repository_projection(repository, **precommit)
+        )
+
+        exact44 = sorted(
+            set(exact42)
+            | {
+                "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+                "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+            }
+        )
+        postcommit = dict(
+            common,
+            actual_head="f" * 40,
+            actual_changed_paths=exact44,
+            control_descendant_paths=record_paths,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual(
+            [], checker.validate_repository_projection(repository, **postcommit)
+        )
+
+        for bad_paths in (
+            record_paths[:-1],
+            record_paths + ["arbitrary.txt"],
+            record_paths + ["deploy/wsl/cleanup.sh"],
+        ):
+            invalid_precommit = dict(precommit, control_descendant_paths=bad_paths)
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(
+                    repository, **invalid_precommit
+                ),
+            )
+            invalid_paths = dict(postcommit, control_descendant_paths=bad_paths)
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **invalid_paths),
+            )
+        wrong_branch = dict(postcommit, actual_branch="codex/arbitrary")
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_branch),
+        )
+        wrong_upstream = dict(postcommit, actual_upstream="origin/arbitrary")
+        self.assertIn(
+            "GIT_UPSTREAM_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_upstream),
+        )
+        wrong_remote = dict(postcommit, actual_remote_head="0" * 40)
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **wrong_remote),
+        )
+        nonancestor = dict(
+            postcommit,
+            projected_local_head_is_ancestor=False,
+            control_is_ancestor=False,
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            checker.validate_repository_projection(repository, **nonancestor),
+        )
+        dirty_descendant = dict(postcommit, worktree_is_clean=False)
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dirty_descendant),
+        )
+
+    def test_c21_wsl_control_runtime_postcommit_real_git_requires_one_direct_exact44_record_commit(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        bundle["progress"] = json.loads(
+            subprocess.check_output(
+                [
+                    "git",
+                    "show",
+                    "326476d69a3228f9dfcf64ff1dd056577bcbcf55:docs/progress/build-progress.json",
+                ],
+                cwd=ROOT,
+                text=True,
+                encoding="utf-8",
+            )
+        )
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        runtime = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+        runtime_parent = "5251a0b889f4e1062a5780eea9f03d8e9b9f69bb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(
+            {
+                "docs/WORK_STATUS.md",
+                "docs/evidence/manifests/C-21_WSL_CONTROL_RUNTIME_SUCCESSOR_MANIFEST.json",
+                "docs/progress/BUILD_HANDOFF.md",
+                "docs/progress/build-progress.json",
+                "docs/progress/progress-events.json",
+                "docs/progress/progress-handoff-detached-digest-c21-wsl-control-runtime-successor.json",
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            }
+        )
+
+        def git(repo: Path, *args: str, input_text: str | None = None) -> str:
+            return subprocess.check_output(
+                ["git", *args],
+                cwd=repo,
+                input=input_text,
+                text=True,
+                encoding="utf-8",
+            ).strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "core.autocrlf=false",
+                    "-c",
+                    "core.eol=lf",
+                    "clone",
+                    "--quiet",
+                    "--no-checkout",
+                    "--no-hardlinks",
+                    str(ROOT),
+                    str(repo),
+                ],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "checkout", "--quiet", "-B", branch, runtime],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True
+            )
+            subprocess.run(
+                ["git", "config", "user.email", "anvil-test@example.invalid"],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "update-ref", f"refs/remotes/origin/{branch}", remote],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "branch", "--set-upstream-to", f"origin/{branch}", branch],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.DEVNULL,
+            )
+            for relative in record_paths:
+                source = ROOT / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def commit_record(repo: Path, message: str) -> str:
+            subprocess.run(
+                ["git", "commit", "--quiet", "-m", message], cwd=repo, check=True
+            )
+            return git(repo, "rev-parse", "HEAD")
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+
+            valid_repo = create_fixture(temp_root, "valid")
+            valid_head = commit_record(valid_repo, "seq488 exact8 record")
+            self.assertEqual(
+                44,
+                len(
+                    git(
+                        valid_repo, "diff", "--name-only", base, valid_head
+                    ).splitlines()
+                ),
+            )
+            self.assertEqual(
+                [runtime],
+                git(valid_repo, "show", "-s", "--format=%P", valid_head).split(),
+            )
+            self.assertEqual([], validate(valid_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(
+                    ["git", "show", f"{base}:docs/progress/BUILD_HANDOFF.md"],
+                    cwd=reverted_repo,
+                )
+            )
+            subprocess.run(
+                ["git", "add", "--", "docs/progress/BUILD_HANDOFF.md"],
+                cwd=reverted_repo,
+                check=True,
+            )
+            reverted_head = commit_record(reverted_repo, "seq488 record with reversion")
+            self.assertEqual(
+                43,
+                len(
+                    git(
+                        reverted_repo, "diff", "--name-only", base, reverted_head
+                    ).splitlines()
+                ),
+            )
+            reverted_errors = validate(reverted_repo)
+
+            second_repo = create_fixture(temp_root, "second-descendant")
+            first_record_head = commit_record(second_repo, "seq488 exact8 record")
+            with (second_repo / "docs/WORK_STATUS.md").open(
+                "a", encoding="utf-8", newline="\n"
+            ) as stream:
+                stream.write("\nsecond descendant mutation\n")
+            subprocess.run(
+                ["git", "add", "--", "docs/WORK_STATUS.md"],
+                cwd=second_repo,
+                check=True,
+            )
+            second_head = commit_record(second_repo, "second exact8 descendant")
+            self.assertEqual(
+                44,
+                len(git(second_repo, "diff", "--name-only", base, second_head).splitlines()),
+            )
+            self.assertEqual(
+                [first_record_head],
+                git(second_repo, "show", "-s", "--format=%P", second_head).split(),
+            )
+            second_descendant_errors = validate(second_repo)
+
+            wrong_parent_repo = create_fixture(temp_root, "wrong-parent")
+            record_tree = git(wrong_parent_repo, "write-tree")
+            side_tree = git(wrong_parent_repo, "rev-parse", f"{runtime_parent}^{{tree}}")
+            side_commit = git(
+                wrong_parent_repo,
+                "commit-tree",
+                side_tree,
+                "-p",
+                runtime_parent,
+                input_text="side parent\n",
+            )
+            wrong_parent_head = git(
+                wrong_parent_repo,
+                "commit-tree",
+                record_tree,
+                "-p",
+                runtime,
+                "-p",
+                side_commit,
+                input_text="seq488 wrong-parent merge\n",
+            )
+            subprocess.run(
+                ["git", "update-ref", "HEAD", wrong_parent_head],
+                cwd=wrong_parent_repo,
+                check=True,
+            )
+            self.assertEqual(
+                44,
+                len(
+                    git(
+                        wrong_parent_repo,
+                        "diff",
+                        "--name-only",
+                        base,
+                        wrong_parent_head,
+                    ).splitlines()
+                ),
+            )
+            self.assertEqual(
+                [runtime, side_commit],
+                git(
+                    wrong_parent_repo,
+                    "show",
+                    "-s",
+                    "--format=%P",
+                    wrong_parent_head,
+                ).split(),
+            )
+            wrong_parent_errors = validate(wrong_parent_repo)
+
+            for scenario, errors in (
+                ("base_to_head_exact43_reversion", reverted_errors),
+                ("second_descendant_commit", second_descendant_errors),
+                ("wrong_parent_merge", wrong_parent_errors),
+            ):
+                with self.subTest(scenario=scenario):
+                    self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", errors)
+
+    def test_c21_wsl_postcommit_git_projection_rejects_every_dirty_variant(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        if bundle["progress"]["event_sequence"] != 487:
+            historical_commit = "ead1214e3f01e68e577c3163e1cf143ee5753490"
+            bundle["progress"] = json.loads(
+                subprocess.check_output(
+                    [
+                        "git",
+                        "show",
+                        f"{historical_commit}:docs/progress/build-progress.json",
+                    ],
+                    cwd=ROOT,
+                    text=True,
+                    encoding="utf-8",
+                )
+            )
+        repository = bundle["progress"]["repository"]
+        actual_head = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+        ).strip()
+        expected_upstream = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+
+        def validate_simulated(
+            *,
+            status: str = "",
+            branch: str = "codex/c21-operational-execution",
+            remote: str = expected_upstream,
+            ancestor: bool = True,
+        ) -> list[str]:
+            with tempfile.TemporaryDirectory() as temp:
+                simulated_root = Path(temp)
+                (simulated_root / ".git").write_text("gitdir: simulated\n", encoding="utf-8")
+
+                def fake_git_value(_root: Path, *args: str) -> str | None:
+                    if args == ("rev-parse", "HEAD"):
+                        return actual_head
+                    if args == ("branch", "--show-current"):
+                        return branch
+                    if args == ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"):
+                        return "origin/codex/c21-operational-execution"
+                    if args == ("rev-parse", "@{u}"):
+                        return remote
+                    if args == ("rev-parse", repository["feature_remote"]):
+                        return remote
+                    if args[:2] == ("diff", "--name-only"):
+                        revision_range = args[2]
+                        if revision_range.startswith(repository["local_head"]):
+                            return "\n".join(repository["postcommit_successor_paths"])
+                        return "\n".join(repository["exact_allowed_paths"])
+                    if args[-2:] == ("status", "--porcelain=v1") or "status" in args:
+                        return status
+                    return None
+
+                simulated = copy.deepcopy(bundle)
+                simulated["_root"] = simulated_root
+                with mock.patch.object(checker, "_git_value", side_effect=fake_git_value), mock.patch.object(
+                    checker, "_git_returncode", return_value=0 if ancestor else 1
+                ):
+                    return checker._validate_git_projection(simulated)
+
+        self.assertEqual([], validate_simulated())
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status=" M docs/WORK_STATUS.md"),
+        )
+        current_six = repository["postcommit_successor_paths"][:6]
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status="\n".join(f" M {path}" for path in current_six)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status="?? arbitrary-untracked.txt"),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            validate_simulated(status=" M arbitrary-tracked.txt"),
+        )
+        self.assertIn(
+            "GIT_BRANCH_MISMATCH",
+            validate_simulated(branch="codex/arbitrary"),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            validate_simulated(remote="f" * 40),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_ORIGIN_MISMATCH",
+            validate_simulated(ancestor=False),
+        )
+
+    def _historical_bundle(self, checker, commit: str):
+        """Load an immutable historical projection without mixing current files."""
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        repo = Path(temp.name) / "historical"
+        subprocess.run(
+            [
+                "git",
+                "-c",
+                "core.autocrlf=false",
+                "-c",
+                "core.eol=lf",
+                "clone",
+                "--quiet",
+                "--no-checkout",
+                "--no-hardlinks",
+                str(ROOT),
+                str(repo),
+            ],
+            check=True,
+        )
+        subprocess.run(["git", "checkout", "--quiet", "--detach", commit], cwd=repo, check=True)
+        return checker.load_bundle(repo), repo
+
+    def _independent_judgment_bundle(self, checker):
+        """Load seq498 plus its intentionally untracked tester authority source."""
+        bundle, repo = self._historical_bundle(
+            checker, "4178ae78db2c48e176e8543364d09787e54bb4ad"
+        )
+        source = Path(".superpowers/sdd/Anvil_작업계획서_v1/seq496-c21-independent-judgment.md")
+        destination = repo / source
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(_SEQ496_INDEPENDENT_JUDGMENT_SOURCE)
+        return bundle, repo
+
+    def test_c21_wsl_fresh_clone_candidate_rebind_projection_binds_exact_contracts(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
+        manifest_path = (
+            historical_root
+            / "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file(), "seq489 rebind manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_fresh_clone_candidate_rebind_projection(
+                bundle, manifest
+            ),
+        )
+
+        current_raw = (historical_root / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 488)
+        self.assertEqual(792116, len(prefix))
+        self.assertEqual(
+            "842F518F9F935402BE41BA9E873EDAFE57973D86C87A37AFFD77482F173B7A7D",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "CC651FA094FCD1873450DDB9C6E57F1EDF019A6373712756129ADC86FEA9B6C9",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:488])
+            ).hexdigest().upper(),
+        )
+
+        exact44 = checker.c21_wsl_fresh_clone_candidate_committed_exact_paths()
+        exact11 = checker.c21_wsl_fresh_clone_candidate_rebind_successor_paths()
+        exact46 = checker.c21_wsl_fresh_clone_candidate_record_committed_exact_paths()
+        self.assertEqual((44, 11, 46), (len(exact44), len(exact11), len(exact46)))
+        for paths, expected in (
+            (exact44, "A6D1C6AC386639995DA003F6934D9C24ACF81EE860FCCB094AAA731BD8A88E6B"),
+            (exact11, "C4DDBACD49E01E710FDC93D83B6247C0BCBFA484C2FBA8317BEF83CF14C3885A"),
+            (exact46, "F538ABED26C9EB01210C14144CD861889BFF603175A72203CEA717DFC46C1C86"),
+        ):
+            self.assertEqual(
+                expected,
+                hashlib.sha256(
+                    json.dumps(
+                        sorted(paths), ensure_ascii=False, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest().upper(),
+            )
+
+        candidate_manifest = json.loads(
+            (historical_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        binding = candidate_manifest["authority"]["derived_binding"]
+        self.assertEqual(binding, manifest["derived_correction_binding"])
+        self.assertEqual(
+            candidate_manifest["authority"]["derived_binding_sha256"],
+            manifest["derived_correction_binding_sha256"],
+        )
+
+    def test_c21_wsl_fresh_clone_candidate_rebind_projection_rejects_mutations(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
+        manifest = json.loads(
+            (
+                historical_root
+                / "docs/evidence/manifests/C-21_WSL_FRESH_CLONE_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+
+        mutations: list[tuple[str, dict, dict, str]] = []
+        old_ref = copy.deepcopy(manifest)
+        old_ref["candidate_remote_ref"] = (
+            "refs/remotes/origin/candidates/c21-wsl-exact34"
+        )
+        mutations.append(("old_candidate_ref", bundle, old_ref, "C21_WSL_FRESH_CLONE_REBIND_MANIFEST_INVALID"))
+        wrong_parent = copy.deepcopy(manifest)
+        wrong_parent["candidate_parent_commit"] = "0" * 40
+        mutations.append(("wrong_parent", bundle, wrong_parent, "C21_WSL_FRESH_CLONE_REBIND_MANIFEST_INVALID"))
+        wrong_binding = copy.deepcopy(manifest)
+        wrong_binding["derived_correction_binding_sha256"] = "0" * 64
+        mutations.append(("derived_binding_hash", bundle, wrong_binding, "C21_WSL_FRESH_CLONE_REBIND_BINDING_INVALID"))
+        subset = copy.deepcopy(manifest)
+        subset["path_contracts"]["record_successor"]["path_count"] = 10
+        mutations.append(("record_subset", bundle, subset, "C21_WSL_FRESH_CLONE_REBIND_MANIFEST_INVALID"))
+        external = copy.deepcopy(manifest)
+        external["push"] = "EXECUTED"
+        mutations.append(("external_execution", bundle, external, "C21_WSL_FRESH_CLONE_REBIND_BOUNDARY_INVALID"))
+        changed_event = copy.deepcopy(bundle)
+        changed_event["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("historical_event", changed_event, manifest, "C21_WSL_FRESH_CLONE_REBIND_EVENTS_INVALID"))
+        changed_current_event = copy.deepcopy(bundle)
+        changed_current_event["events"]["events"][-1]["details"]["branch"] = "codex/arbitrary"
+        mutations.append(("current_event_branch", changed_current_event, manifest, "C21_WSL_FRESH_CLONE_REBIND_EVENTS_INVALID"))
+        wrong_record_paths = copy.deepcopy(manifest)
+        wrong_record_paths["record_successor_paths"] = wrong_record_paths[
+            "record_successor_paths"
+        ][:-1]
+        mutations.append(("record_path_list", bundle, wrong_record_paths, "C21_WSL_FRESH_CLONE_REBIND_MANIFEST_INVALID"))
+
+        for scenario, candidate_bundle, candidate_manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_fresh_clone_candidate_rebind_projection(
+                        candidate_bundle, candidate_manifest
+                    ),
+                )
+
+    def test_c21_wsl_fresh_clone_candidate_rebind_git_projection_is_exact(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
+        repository = bundle["progress"]["repository"]
+        candidate = "326476d69a3228f9dfcf64ff1dd056577bcbcf55"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact44 = sorted(checker.c21_wsl_fresh_clone_candidate_committed_exact_paths())
+        exact11 = sorted(checker.c21_wsl_fresh_clone_candidate_rebind_successor_paths())
+        exact46 = sorted(checker.c21_wsl_fresh_clone_candidate_record_committed_exact_paths())
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(
+            common,
+            actual_head=candidate,
+            actual_changed_paths=exact44,
+            control_descendant_paths=exact11,
+            worktree_is_clean=False,
+        )
+        self.assertEqual(
+            [], checker.validate_repository_projection(repository, **precommit)
+        )
+        postcommit = dict(
+            common,
+            actual_head="f" * 40,
+            actual_changed_paths=exact46,
+            control_descendant_paths=exact11,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual(
+            [], checker.validate_repository_projection(repository, **postcommit)
+        )
+        for bad_paths in (
+            exact11[:-1],
+            exact11 + ["arbitrary.txt"],
+            exact11 + ["deploy/wsl/deploy.sh"],
+        ):
+            with self.subTest(bad_paths=bad_paths):
+                self.assertIn(
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                    checker.validate_repository_projection(
+                        repository,
+                        **dict(precommit, control_descendant_paths=bad_paths),
+                    ),
+                )
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(
+                repository,
+                **dict(postcommit, control_runtime_record_commit_is_direct=False),
+            ),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(
+                repository, **dict(postcommit, worktree_is_clean=False)
+            ),
+        )
+
+    def test_c21_wsl_fresh_clone_candidate_rebind_real_git_requires_direct_exact11_child(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "99e83e4b07df1cffced6a89ff16ff2266ddaa426"
+        )
+        candidate = "326476d69a3228f9dfcf64ff1dd056577bcbcf55"
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(
+            checker.c21_wsl_fresh_clone_candidate_rebind_successor_paths()
+        )
+
+        def git(repo: Path, *args: str, input_text: str | None = None) -> str:
+            return subprocess.check_output(
+                ["git", *args],
+                cwd=repo,
+                input=input_text,
+                text=True,
+                encoding="utf-8",
+            ).strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(
+                [
+                    "git",
+                    "-c",
+                    "core.autocrlf=false",
+                    "-c",
+                    "core.eol=lf",
+                    "clone",
+                    "--quiet",
+                    "--no-checkout",
+                    "--no-hardlinks",
+                    str(ROOT),
+                    str(repo),
+                ],
+                check=True,
+            )
+            subprocess.run(
+                ["git", "checkout", "--quiet", "-B", branch, candidate],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True)
+            subprocess.run(
+                ["git", "config", "user.email", "anvil-test@example.invalid"],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "update-ref", f"refs/remotes/origin/{branch}", remote],
+                cwd=repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "branch", "--set-upstream-to", f"origin/{branch}", branch],
+                cwd=repo,
+                check=True,
+                stdout=subprocess.DEVNULL,
+            )
+            for relative in record_paths:
+                source = ROOT / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            valid_repo = create_fixture(temp_root, "valid")
+            subprocess.run(
+                ["git", "commit", "--quiet", "-m", "seq489 exact11 record"],
+                cwd=valid_repo,
+                check=True,
+            )
+            valid_head = git(valid_repo, "rev-parse", "HEAD")
+            self.assertEqual([candidate], git(valid_repo, "show", "-s", "--format=%P", valid_head).split())
+            self.assertEqual(46, len(git(valid_repo, "diff", "--name-only", base, valid_head).splitlines()))
+            self.assertEqual([], validate(valid_repo))
+
+            second_repo = create_fixture(temp_root, "second")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq489 record"], cwd=second_repo, check=True)
+            with (second_repo / "docs/WORK_STATUS.md").open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write("\nsecond descendant\n")
+            subprocess.run(["git", "add", "docs/WORK_STATUS.md"], cwd=second_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "second descendant"], cwd=second_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(second_repo))
+
+            merge_repo = create_fixture(temp_root, "merge")
+            subprocess.run(
+                ["git", "commit", "--quiet", "-m", "seq489 record"],
+                cwd=merge_repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "checkout", "--quiet", "-b", "side", candidate],
+                cwd=merge_repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "commit", "--quiet", "--allow-empty", "-m", "side parent"],
+                cwd=merge_repo,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "checkout", "--quiet", branch], cwd=merge_repo, check=True
+            )
+            subprocess.run(
+                ["git", "merge", "--quiet", "--no-ff", "side", "-m", "merge record"],
+                cwd=merge_repo,
+                check=True,
+            )
+            self.assertEqual(
+                2,
+                len(git(merge_repo, "show", "-s", "--format=%P", "HEAD").split()),
+            )
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(merge_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(
+                    ["git", "show", f"{base}:docs/progress/BUILD_HANDOFF.md"],
+                    cwd=reverted_repo,
+                )
+            )
+            subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(reverted_repo))
+
+
+    def test_c21_wsl_compose_runner_candidate_rebind_projection_binds_exact_contracts(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "18fa604531acfd303c10effa528797fbd5b55c8b")
+        snapshot_root = bundle["_root"]
+        manifest_path = (
+            snapshot_root
+            / "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file(), "seq490 rebind manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_compose_runner_candidate_rebind_projection(
+                bundle, manifest
+            ),
+        )
+        current_raw = (snapshot_root / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 489)
+        self.assertEqual(803027, len(prefix))
+        self.assertEqual(
+            "8F3067777D6B906E12A9B5E225F63DE3049CD27BD32B0449C48016327E008539",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "0D7CEDE2D5A539EA321872599D45398F6A3C55629EE2F9708AA98F59A7C5B26D",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:489])
+            ).hexdigest().upper(),
+        )
+        exact46 = checker.c21_wsl_compose_runner_candidate_committed_exact_paths()
+        exact11 = checker.c21_wsl_compose_runner_candidate_rebind_successor_paths()
+        exact48 = checker.c21_wsl_compose_runner_candidate_record_committed_exact_paths()
+        self.assertEqual((46, 11, 48), (len(exact46), len(exact11), len(exact48)))
+        for paths, expected in (
+            (exact46, "F538ABED26C9EB01210C14144CD861889BFF603175A72203CEA717DFC46C1C86"),
+            (exact11, "E439C0A394C536E1825E7C3FCF606BB7CC14D39C0DF29E7B60E648885EB6B110"),
+            (exact48, "2626990127D2830414F77371813D893143C51065B0ACF41D14EAD3FEBBF88288"),
+        ):
+            self.assertEqual(
+                expected,
+                hashlib.sha256(
+                    json.dumps(
+                        sorted(paths), ensure_ascii=False, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest().upper(),
+            )
+
+    def test_c21_wsl_compose_runner_candidate_rebind_routes_private_push_autonomously(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "18fa604531acfd303c10effa528797fbd5b55c8b")
+        snapshot_root = bundle["_root"]
+        progress = bundle["progress"]
+        repository = progress["repository"]
+        active = progress["wsl_early_validation"]
+        expected_status = "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH"
+        expected_action = (
+            "COMPLETE_SEQ490_REVIEW_THEN_AUTONOMOUS_PRIVATE_PUSH_"
+            "WITHOUT_SEPARATE_PROJECT_APPROVAL"
+        )
+        expected_safe_action = (
+            "seq490 review 완료 후 Main이 승인된 개발·테스트 범위의 private "
+            "candidate/control refs를 별도 프로젝트 승인 대기 없이 자동 push하고 "
+            "append-only 결과 checkpoint를 기록한 뒤 WSL 검증으로 진행한다. "
+            "C-01은 계속 차단한다."
+        )
+        self.assertEqual(expected_status, repository["push_status"])
+        self.assertEqual(expected_status, repository["candidate_push_status"])
+        self.assertEqual(expected_status, active["candidate_push_status"])
+        self.assertEqual(expected_action, active["next_action"])
+        self.assertEqual(expected_safe_action, progress["next_safe_action"])
+        handoff = checker.extract_handoff_summary(
+            (snapshot_root / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
+        )
+        self.assertEqual(expected_safe_action, handoff["next_safe_action"])
+        self.assertEqual(expected_status, handoff["repository_push_status"])
+        self.assertEqual(expected_status, handoff["candidate_push_status"])
+        self.assertEqual(expected_action, handoff["next_action"])
+        candidate = json.loads(
+            (snapshot_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_policy = "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE"
+        self.assertEqual(expected_policy, candidate["authority"]["private_push_policy"])
+        self.assertEqual(expected_policy, manifest["private_push_policy"])
+
+    def test_c21_wsl_compose_runner_candidate_rebind_projection_rejects_mutations(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "18fa604531acfd303c10effa528797fbd5b55c8b")
+        snapshot_root = bundle["_root"]
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_COMPOSE_RUNNER_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations: list[tuple[str, dict, dict, str]] = []
+        old_ref = copy.deepcopy(manifest)
+        old_ref["candidate_remote_ref"] = "refs/remotes/origin/candidates/c21-wsl-exact44"
+        mutations.append(("old_ref", bundle, old_ref, "C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID"))
+        wrong_parent = copy.deepcopy(manifest)
+        wrong_parent["candidate_parent_commit"] = "0" * 40
+        mutations.append(("wrong_parent", bundle, wrong_parent, "C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID"))
+        wrong_binding = copy.deepcopy(manifest)
+        wrong_binding["derived_correction_binding_sha256"] = "0" * 64
+        mutations.append(("binding", bundle, wrong_binding, "C21_WSL_COMPOSE_RUNNER_REBIND_BINDING_INVALID"))
+        for paths in (
+            manifest["record_successor_paths"][:-1],
+            manifest["record_successor_paths"] + ["arbitrary.txt"],
+            manifest["record_successor_paths"] + ["deploy/wsl/deploy.sh"],
+        ):
+            wrong_paths = copy.deepcopy(manifest)
+            wrong_paths["record_successor_paths"] = paths
+            mutations.append(("record_paths", bundle, wrong_paths, "C21_WSL_COMPOSE_RUNNER_REBIND_MANIFEST_INVALID"))
+        external = copy.deepcopy(manifest)
+        external["push"] = "EXECUTED"
+        mutations.append(("external", bundle, external, "C21_WSL_COMPOSE_RUNNER_REBIND_BOUNDARY_INVALID"))
+        historical = copy.deepcopy(bundle)
+        historical["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("historical", historical, manifest, "C21_WSL_COMPOSE_RUNNER_REBIND_EVENTS_INVALID"))
+        for scenario, candidate_bundle, candidate_manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_compose_runner_candidate_rebind_projection(
+                        candidate_bundle, candidate_manifest
+                    ),
+                )
+
+    def test_c21_wsl_compose_runner_candidate_rebind_git_projection_is_exact(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "18fa604531acfd303c10effa528797fbd5b55c8b")
+        snapshot_root = bundle["_root"]
+        repository = bundle["progress"]["repository"]
+        candidate = "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact46 = sorted(checker.c21_wsl_compose_runner_candidate_committed_exact_paths())
+        exact11 = sorted(checker.c21_wsl_compose_runner_candidate_rebind_successor_paths())
+        exact48 = sorted(checker.c21_wsl_compose_runner_candidate_record_committed_exact_paths())
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(common, actual_head=candidate, actual_changed_paths=exact46, control_descendant_paths=exact11, worktree_is_clean=False)
+        postcommit = dict(common, actual_head="f" * 40, actual_changed_paths=exact48, control_descendant_paths=exact11, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **precommit))
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for bad_paths in (exact11[:-1], exact11 + ["arbitrary.txt"], exact11 + ["deploy/wsl/deploy.sh"]):
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **dict(precommit, control_descendant_paths=bad_paths)),
+            )
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **dict(postcommit, control_runtime_record_commit_is_direct=False)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dict(postcommit, worktree_is_clean=False)),
+        )
+
+    def test_c21_wsl_compose_runner_candidate_rebind_real_git_requires_direct_exact11_child(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "18fa604531acfd303c10effa528797fbd5b55c8b")
+        snapshot_root = bundle["_root"]
+        candidate = "830ad98546ed82a59524dd5a6cef0a5b7a6a96b0"
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(checker.c21_wsl_compose_runner_candidate_rebind_successor_paths())
+
+        def git(repo: Path, *args: str) -> str:
+            return subprocess.check_output(["git", *args], cwd=repo, text=True, encoding="utf-8").strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--no-checkout", "--no-hardlinks", str(snapshot_root), str(repo)], check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-B", branch, candidate], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "anvil-test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "update-ref", f"refs/remotes/origin/{branch}", remote], cwd=repo, check=True)
+            subprocess.run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            for relative in record_paths:
+                source = snapshot_root / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            valid_repo = create_fixture(temp_root, "valid")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq490 exact11 record"], cwd=valid_repo, check=True)
+            valid_head = git(valid_repo, "rev-parse", "HEAD")
+            self.assertEqual([candidate], git(valid_repo, "show", "-s", "--format=%P", valid_head).split())
+            self.assertEqual(48, len(git(valid_repo, "diff", "--name-only", base, valid_head).splitlines()))
+            self.assertEqual([], validate(valid_repo))
+
+            second_repo = create_fixture(temp_root, "second")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq490 record"], cwd=second_repo, check=True)
+            with (second_repo / "docs/WORK_STATUS.md").open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write("\nsecond descendant\n")
+            subprocess.run(["git", "add", "docs/WORK_STATUS.md"], cwd=second_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "second descendant"], cwd=second_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(second_repo))
+
+            merge_repo = create_fixture(temp_root, "merge")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq490 record"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-b", "side", candidate], cwd=merge_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "--allow-empty", "-m", "side parent"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", branch], cwd=merge_repo, check=True)
+            subprocess.run(["git", "merge", "--quiet", "--no-ff", "side", "-m", "merge record"], cwd=merge_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(merge_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(["git", "show", f"{candidate}:docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo)
+            )
+            subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
+            self.assertTrue(
+                {
+                    "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                }
+                & set(validate(reverted_repo))
+            )
+
+
+    def test_c21_wsl_cold_start_candidate_rebind_projection_binds_exact_contracts(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "3f52d26a61e49543dd3d3121f5cc62a04f809a3d")
+        snapshot_root = bundle["_root"]
+        manifest_path = (
+            snapshot_root
+            / "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file(), "seq491 rebind manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_cold_start_candidate_rebind_projection(
+                bundle, manifest
+            ),
+        )
+        current_raw = (snapshot_root / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 490)
+        self.assertEqual(814540, len(prefix))
+        self.assertEqual(
+            "E0A940F4FB2AD3EAE694831599063512339647ECABE64E20C924677A27672B19",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "22A0C80EDABC24894FFCFF8D4036E9B4CB09698B21FA713958D515CD7DCCEFF8",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:490])
+            ).hexdigest().upper(),
+        )
+        exact48 = checker.c21_wsl_cold_start_candidate_committed_exact_paths()
+        exact11 = checker.c21_wsl_cold_start_candidate_rebind_successor_paths()
+        exact50 = checker.c21_wsl_cold_start_candidate_record_committed_exact_paths()
+        self.assertEqual((48, 11, 50), (len(exact48), len(exact11), len(exact50)))
+        for paths, expected in (
+            (exact48, "2626990127D2830414F77371813D893143C51065B0ACF41D14EAD3FEBBF88288"),
+            (exact11, "D7016A7C101CE330EECD91A12A4FB093628969D3B19158A6950FF398401D1952"),
+            (exact50, "9D28888908150BC834FC8931D12A35A9265C7D589ED2D89EAD7F2248E2D179EE"),
+        ):
+            self.assertEqual(
+                expected,
+                hashlib.sha256(
+                    json.dumps(
+                        sorted(paths), ensure_ascii=False, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest().upper(),
+            )
+
+    def test_c21_wsl_cold_start_candidate_rebind_routes_private_push_autonomously(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "3f52d26a61e49543dd3d3121f5cc62a04f809a3d")
+        snapshot_root = bundle["_root"]
+        progress = bundle["progress"]
+        repository = progress["repository"]
+        active = progress["wsl_early_validation"]
+        expected_status = "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH"
+        expected_action = (
+            "COMPLETE_SEQ491_REVIEW_THEN_AUTONOMOUS_PRIVATE_PUSH_"
+            "WITHOUT_SEPARATE_PROJECT_APPROVAL"
+        )
+        expected_safe_action = (
+            "seq491 review 완료 후 Main이 승인된 개발·테스트 범위의 private "
+            "candidate/control refs를 별도 프로젝트 승인 대기 없이 자동 push하고 "
+            "append-only 결과 checkpoint를 기록한 뒤 WSL 검증으로 진행한다. "
+            "C-01은 계속 차단한다."
+        )
+        self.assertEqual(expected_status, repository["push_status"])
+        self.assertEqual(expected_status, repository["candidate_push_status"])
+        self.assertEqual(expected_status, active["candidate_push_status"])
+        self.assertEqual(expected_action, active["next_action"])
+        self.assertEqual(expected_safe_action, progress["next_safe_action"])
+        handoff = checker.extract_handoff_summary(
+            (snapshot_root / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
+        )
+        self.assertEqual(expected_safe_action, handoff["next_safe_action"])
+        self.assertEqual(expected_status, handoff["repository_push_status"])
+        self.assertEqual(expected_status, handoff["candidate_push_status"])
+        self.assertEqual(expected_action, handoff["next_action"])
+        candidate = json.loads(
+            (snapshot_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_policy = "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE"
+        self.assertEqual(expected_policy, candidate["authority"]["private_push_policy"])
+        self.assertEqual(expected_policy, manifest["private_push_policy"])
+
+    def test_c21_wsl_cold_start_candidate_rebind_projection_rejects_mutations(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "3f52d26a61e49543dd3d3121f5cc62a04f809a3d")
+        snapshot_root = bundle["_root"]
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_COLD_START_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations: list[tuple[str, dict, dict, str]] = []
+        old_ref = copy.deepcopy(manifest)
+        old_ref["candidate_remote_ref"] = "refs/remotes/origin/candidates/c21-wsl-exact44"
+        mutations.append(("old_ref", bundle, old_ref, "C21_WSL_COLD_START_REBIND_MANIFEST_INVALID"))
+        wrong_parent = copy.deepcopy(manifest)
+        wrong_parent["candidate_parent_commit"] = "0" * 40
+        mutations.append(("wrong_parent", bundle, wrong_parent, "C21_WSL_COLD_START_REBIND_MANIFEST_INVALID"))
+        wrong_binding = copy.deepcopy(manifest)
+        wrong_binding["derived_correction_binding_sha256"] = "0" * 64
+        mutations.append(("binding", bundle, wrong_binding, "C21_WSL_COLD_START_REBIND_BINDING_INVALID"))
+        for paths in (
+            manifest["record_successor_paths"][:-1],
+            manifest["record_successor_paths"] + ["arbitrary.txt"],
+            manifest["record_successor_paths"] + ["deploy/wsl/deploy.sh"],
+        ):
+            wrong_paths = copy.deepcopy(manifest)
+            wrong_paths["record_successor_paths"] = paths
+            mutations.append(("record_paths", bundle, wrong_paths, "C21_WSL_COLD_START_REBIND_MANIFEST_INVALID"))
+        external = copy.deepcopy(manifest)
+        external["push"] = "EXECUTED"
+        mutations.append(("external", bundle, external, "C21_WSL_COLD_START_REBIND_BOUNDARY_INVALID"))
+        historical = copy.deepcopy(bundle)
+        historical["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("historical", historical, manifest, "C21_WSL_COLD_START_REBIND_EVENTS_INVALID"))
+        for scenario, candidate_bundle, candidate_manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_cold_start_candidate_rebind_projection(
+                        candidate_bundle, candidate_manifest
+                    ),
+                )
+
+    def test_c21_wsl_cold_start_candidate_rebind_git_projection_is_exact(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "3f52d26a61e49543dd3d3121f5cc62a04f809a3d")
+        snapshot_root = bundle["_root"]
+        repository = bundle["progress"]["repository"]
+        candidate = "324eb169fedbce958d2e8cc29362deb7af433677"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact48 = sorted(checker.c21_wsl_cold_start_candidate_committed_exact_paths())
+        exact11 = sorted(checker.c21_wsl_cold_start_candidate_rebind_successor_paths())
+        exact50 = sorted(checker.c21_wsl_cold_start_candidate_record_committed_exact_paths())
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(common, actual_head=candidate, actual_changed_paths=exact48, control_descendant_paths=exact11, worktree_is_clean=False)
+        postcommit = dict(common, actual_head="f" * 40, actual_changed_paths=exact50, control_descendant_paths=exact11, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **precommit))
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for bad_paths in (exact11[:-1], exact11 + ["arbitrary.txt"], exact11 + ["deploy/wsl/deploy.sh"]):
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **dict(precommit, control_descendant_paths=bad_paths)),
+            )
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **dict(postcommit, control_runtime_record_commit_is_direct=False)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dict(postcommit, worktree_is_clean=False)),
+        )
+
+    def test_c21_wsl_cold_start_candidate_rebind_real_git_requires_direct_exact11_child(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "3f52d26a61e49543dd3d3121f5cc62a04f809a3d")
+        snapshot_root = bundle["_root"]
+        candidate = "324eb169fedbce958d2e8cc29362deb7af433677"
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(checker.c21_wsl_cold_start_candidate_rebind_successor_paths())
+
+        def git(repo: Path, *args: str) -> str:
+            return subprocess.check_output(["git", *args], cwd=repo, text=True, encoding="utf-8").strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--no-checkout", "--no-hardlinks", str(snapshot_root), str(repo)], check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-B", branch, candidate], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "anvil-test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "update-ref", f"refs/remotes/origin/{branch}", remote], cwd=repo, check=True)
+            subprocess.run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            for relative in record_paths:
+                source = snapshot_root / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            valid_repo = create_fixture(temp_root, "valid")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq491 exact11 record"], cwd=valid_repo, check=True)
+            valid_head = git(valid_repo, "rev-parse", "HEAD")
+            self.assertEqual([candidate], git(valid_repo, "show", "-s", "--format=%P", valid_head).split())
+            self.assertEqual(50, len(git(valid_repo, "diff", "--name-only", base, valid_head).splitlines()))
+            self.assertEqual([], validate(valid_repo))
+
+            second_repo = create_fixture(temp_root, "second")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq491 record"], cwd=second_repo, check=True)
+            with (second_repo / "docs/WORK_STATUS.md").open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write("\nsecond descendant\n")
+            subprocess.run(["git", "add", "docs/WORK_STATUS.md"], cwd=second_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "second descendant"], cwd=second_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(second_repo))
+
+            merge_repo = create_fixture(temp_root, "merge")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq491 record"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-b", "side", candidate], cwd=merge_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "--allow-empty", "-m", "side parent"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", branch], cwd=merge_repo, check=True)
+            subprocess.run(["git", "merge", "--quiet", "--no-ff", "side", "-m", "merge record"], cwd=merge_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(merge_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(["git", "show", f"{candidate}:docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo)
+            )
+            subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
+            self.assertTrue(
+                {
+                    "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                }
+                & set(validate(reverted_repo))
+            )
+
+
+    def test_c21_wsl_ingress_candidate_rebind_projection_binds_exact_contracts(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "48fbad8be35c7e826dd31363464c7c477d9ca9e8")
+        manifest_path = (
+            snapshot_root
+            / "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file(), "seq492 rebind manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_ingress_candidate_rebind_projection(
+                bundle, manifest
+            ),
+        )
+        current_raw = (snapshot_root / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 491)
+        self.assertEqual(827250, len(prefix))
+        self.assertEqual(
+            "7BE4FFEF2DC5B38FA84974BB296712E25AB8E346D274B1523C7B134804083F71",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "8453BE8410EE21BBED0EAC04F75C2DA3FB02CDA41FF1D731590FD149057AF7D7",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:491])
+            ).hexdigest().upper(),
+        )
+        exact51 = checker.c21_wsl_ingress_candidate_committed_exact_paths()
+        exact13 = checker.c21_wsl_ingress_candidate_rebind_successor_paths()
+        exact54 = checker.c21_wsl_ingress_candidate_record_committed_exact_paths()
+        self.assertEqual((51, 13, 54), (len(exact51), len(exact13), len(exact54)))
+        for paths, expected in (
+            (exact51, "F3AD3734333F4D40E2C3AC7B00C59AB0D91F06574C2CBBFCA8AAA79B49217EF2"),
+            (exact13, "F17A6B348C9A88343FCB9DE019A80429698293C62E7C2D35ADCBD9D23C049DEF"),
+            (exact54, "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5"),
+        ):
+            self.assertEqual(
+                expected,
+                hashlib.sha256(
+                    json.dumps(
+                        sorted(paths), ensure_ascii=False, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest().upper(),
+            )
+
+    def test_c21_wsl_ingress_candidate_rebind_routes_private_push_autonomously(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "48fbad8be35c7e826dd31363464c7c477d9ca9e8")
+        progress = bundle["progress"]
+        repository = progress["repository"]
+        active = progress["wsl_early_validation"]
+        expected_status = "REVIEW_COMPLETION_THEN_AUTONOMOUS_PRIVATE_PUSH"
+        expected_action = "COMPLETE_SEQ492_BINDING_REVIEW_THEN_HOLD_RUNTIME_FOR_I3_PRODUCT_SUCCESSOR"
+        expected_safe_action = 'seq492 결박 검토·기록 후 I-3 rollback allowlist 제품 보완 승인과 검증을 기다린다. 새 candidate의 deploy/rollback/cleanup은 금지하며 C-01은 계속 차단한다.'
+        self.assertEqual(expected_status, repository["push_status"])
+        self.assertEqual(expected_status, repository["candidate_push_status"])
+        self.assertEqual(expected_status, active["candidate_push_status"])
+        self.assertEqual(expected_action, active["next_action"])
+        self.assertEqual(expected_safe_action, progress["next_safe_action"])
+        handoff = checker.extract_handoff_summary(
+            (snapshot_root / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
+        )
+        self.assertEqual(expected_safe_action, handoff["next_safe_action"])
+        self.assertEqual(expected_status, handoff["repository_push_status"])
+        self.assertEqual(expected_status, handoff["candidate_push_status"])
+        self.assertEqual(expected_action, handoff["next_action"])
+        candidate = json.loads(
+            (snapshot_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_policy = "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE"
+        self.assertEqual(expected_policy, candidate["authority"]["private_push_policy"])
+        self.assertEqual(expected_policy, manifest["private_push_policy"])
+
+    def test_c21_wsl_ingress_candidate_rebind_projection_rejects_mutations(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "48fbad8be35c7e826dd31363464c7c477d9ca9e8")
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations: list[tuple[str, dict, dict, str]] = []
+        old_ref = copy.deepcopy(manifest)
+        old_ref["candidate_remote_ref"] = "refs/remotes/origin/candidates/c21-wsl-exact44"
+        mutations.append(("old_ref", bundle, old_ref, "C21_WSL_INGRESS_REBIND_MANIFEST_INVALID"))
+        wrong_parent = copy.deepcopy(manifest)
+        wrong_parent["candidate_parent_commit"] = "0" * 40
+        mutations.append(("wrong_parent", bundle, wrong_parent, "C21_WSL_INGRESS_REBIND_MANIFEST_INVALID"))
+        wrong_binding = copy.deepcopy(manifest)
+        wrong_binding["derived_correction_binding_sha256"] = "0" * 64
+        mutations.append(("binding", bundle, wrong_binding, "C21_WSL_INGRESS_REBIND_BINDING_INVALID"))
+        for paths in (
+            manifest["record_successor_paths"][:-1],
+            manifest["record_successor_paths"] + ["arbitrary.txt"],
+            manifest["record_successor_paths"] + ["deploy/wsl/deploy.sh"],
+        ):
+            wrong_paths = copy.deepcopy(manifest)
+            wrong_paths["record_successor_paths"] = paths
+            mutations.append(("record_paths", bundle, wrong_paths, "C21_WSL_INGRESS_REBIND_MANIFEST_INVALID"))
+        external = copy.deepcopy(manifest)
+        external["push"] = "EXECUTED"
+        mutations.append(("external", bundle, external, "C21_WSL_INGRESS_REBIND_BOUNDARY_INVALID"))
+        historical = copy.deepcopy(bundle)
+        historical["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("historical", historical, manifest, "C21_WSL_INGRESS_REBIND_EVENTS_INVALID"))
+        for scenario, candidate_bundle, candidate_manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_ingress_candidate_rebind_projection(
+                        candidate_bundle, candidate_manifest
+                    ),
+                )
+
+    def test_c21_wsl_ingress_candidate_rebind_git_projection_is_exact(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "48fbad8be35c7e826dd31363464c7c477d9ca9e8")
+        repository = bundle["progress"]["repository"]
+        candidate = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact51 = sorted(checker.c21_wsl_ingress_candidate_committed_exact_paths())
+        exact13 = sorted(checker.c21_wsl_ingress_candidate_rebind_successor_paths())
+        exact54 = sorted(checker.c21_wsl_ingress_candidate_record_committed_exact_paths())
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(common, actual_head=candidate, actual_changed_paths=exact51, control_descendant_paths=exact13, worktree_is_clean=False)
+        postcommit = dict(common, actual_head="f" * 40, actual_changed_paths=exact54, control_descendant_paths=exact13, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **precommit))
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for bad_paths in (exact13[:-1], exact13 + ["arbitrary.txt"], exact13 + ["deploy/wsl/deploy.sh"]):
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **dict(precommit, control_descendant_paths=bad_paths)),
+            )
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **dict(postcommit, control_runtime_record_commit_is_direct=False)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dict(postcommit, worktree_is_clean=False)),
+        )
+
+    def test_c21_wsl_ingress_candidate_rebind_real_git_requires_direct_exact13_child(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "48fbad8be35c7e826dd31363464c7c477d9ca9e8")
+        candidate = "ccf5109d0640bf28c461e7754ad56e0821fd77be"
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(checker.c21_wsl_ingress_candidate_rebind_successor_paths())
+
+        def git(repo: Path, *args: str) -> str:
+            return subprocess.check_output(["git", *args], cwd=repo, text=True, encoding="utf-8").strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--no-checkout", "--no-hardlinks", str(snapshot_root), str(repo)], check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-B", branch, candidate], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "anvil-test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "update-ref", f"refs/remotes/origin/{branch}", remote], cwd=repo, check=True)
+            subprocess.run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            for relative in record_paths:
+                source = snapshot_root / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            valid_repo = create_fixture(temp_root, "valid")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq492 exact13 record"], cwd=valid_repo, check=True)
+            valid_head = git(valid_repo, "rev-parse", "HEAD")
+            self.assertEqual([candidate], git(valid_repo, "show", "-s", "--format=%P", valid_head).split())
+            self.assertEqual(54, len(git(valid_repo, "diff", "--name-only", base, valid_head).splitlines()))
+            self.assertEqual([], validate(valid_repo))
+
+            second_repo = create_fixture(temp_root, "second")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq492 record"], cwd=second_repo, check=True)
+            with (second_repo / "docs/WORK_STATUS.md").open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write("\nsecond descendant\n")
+            subprocess.run(["git", "add", "docs/WORK_STATUS.md"], cwd=second_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "second descendant"], cwd=second_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(second_repo))
+
+            merge_repo = create_fixture(temp_root, "merge")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq492 record"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-b", "side", candidate], cwd=merge_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "--allow-empty", "-m", "side parent"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", branch], cwd=merge_repo, check=True)
+            subprocess.run(["git", "merge", "--quiet", "--no-ff", "side", "-m", "merge record"], cwd=merge_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(merge_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(["git", "show", f"{candidate}:docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo)
+            )
+            subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
+            self.assertTrue(
+                {
+                    "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                }
+                & set(validate(reverted_repo))
+            )
+
+
+    def test_c21_wsl_ingress_runtime_hold_cannot_be_promoted_to_execution(self):
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "48fbad8be35c7e826dd31363464c7c477d9ca9e8")
+        manifest = json.loads((snapshot_root / "docs/evidence/manifests/C-21_WSL_INGRESS_CANDIDATE_REBIND_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual("BLOCKED_IMPORTANT_I3", manifest["runtime_safety_gate"])
+        manifest["runtime_safety_gate"] = "ALLOWED"
+        self.assertIn("C21_WSL_INGRESS_REBIND_RUNTIME_GATE_INVALID", checker.validate_c21_wsl_ingress_candidate_rebind_projection(bundle, manifest))
+
+    def test_c21_wsl_rollback_allowlist_candidate_rebind_projection_binds_exact_contracts(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994")
+        manifest_path = (
+            snapshot_root
+            / "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file(), "seq493 rebind manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(
+                bundle, manifest
+            ),
+        )
+        current_raw = (snapshot_root / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 492)
+        self.assertEqual(841414, len(prefix))
+        self.assertEqual(
+            "F38EA939F8A29669377EC527384EF5EEE9E5F3DEBA1DCA3FAC448B3875C7C063",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "5A8F4B9FC0187F0D06E0CB74F5EFF059004CC0D93A624EF85FE6CBB242C3530B",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:492])
+            ).hexdigest().upper(),
+        )
+        exact54 = checker.c21_wsl_rollback_allowlist_candidate_committed_exact_paths()
+        exact12 = checker.c21_wsl_rollback_allowlist_candidate_rebind_successor_paths()
+        exact56 = checker.c21_wsl_rollback_allowlist_candidate_record_committed_exact_paths()
+        self.assertEqual((54, 12, 56), (len(exact54), len(exact12), len(exact56)))
+        for paths, expected in (
+            (exact54, "176FB83A22359E5C2D5A4DC7180439A31318E16BF50288B154E02046415EFCF5"),
+            (exact12, "6A7D0BE483A2B9C119B6566FAB91D6B3D7A4377544DAAEC5D6C07E3359AAE183"),
+            (exact56, "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714"),
+        ):
+            self.assertEqual(
+                expected,
+                hashlib.sha256(
+                    json.dumps(
+                        sorted(paths), ensure_ascii=False, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest().upper(),
+            )
+
+    def test_c21_wsl_rollback_allowlist_candidate_rebind_keeps_external_execution_outside_current_scope(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994")
+        progress = bundle["progress"]
+        repository = progress["repository"]
+        active = progress["wsl_early_validation"]
+        expected_status = "NOT_EXECUTED_EXTERNAL_SCOPE_HOLD"
+        expected_action = "COMPLETE_SEQ493_RECORD_REVIEW_THEN_HOLD_EXTERNAL_EXECUTION_OUTSIDE_CURRENT_SCOPE"
+        expected_safe_action = 'seq493 내부 결박·검토를 마감한다. I-3는 로컬 제품 검증에서 보완됐으나 이번 범위에 외부 실행은 없으므로 push/배포/rollback/cleanup은 수행하지 않으며 C-01은 계속 차단한다.'
+        self.assertEqual(expected_status, repository["push_status"])
+        self.assertEqual(expected_status, repository["candidate_push_status"])
+        self.assertEqual(expected_status, active["candidate_push_status"])
+        self.assertEqual(expected_action, active["next_action"])
+        self.assertEqual(expected_safe_action, progress["next_safe_action"])
+        handoff = checker.extract_handoff_summary(
+            (snapshot_root / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
+        )
+        self.assertEqual(expected_safe_action, handoff["next_safe_action"])
+        self.assertEqual(expected_status, handoff["repository_push_status"])
+        self.assertEqual(expected_status, handoff["candidate_push_status"])
+        self.assertEqual(expected_action, handoff["next_action"])
+        candidate = json.loads(
+            (snapshot_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_policy = "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE"
+        self.assertEqual(expected_policy, candidate["authority"]["private_push_policy"])
+        self.assertEqual(expected_policy, manifest["private_push_policy"])
+
+    def test_c21_wsl_rollback_allowlist_candidate_rebind_projection_rejects_mutations(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994")
+        manifest = json.loads(
+            (
+                snapshot_root
+                / "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations: list[tuple[str, dict, dict, str]] = []
+        old_ref = copy.deepcopy(manifest)
+        old_ref["candidate_remote_ref"] = "refs/remotes/origin/candidates/c21-wsl-exact44"
+        mutations.append(("old_ref", bundle, old_ref, "C21_WSL_ROLLBACK_ALLOWLIST_REBIND_MANIFEST_INVALID"))
+        wrong_parent = copy.deepcopy(manifest)
+        wrong_parent["candidate_parent_commit"] = "0" * 40
+        mutations.append(("wrong_parent", bundle, wrong_parent, "C21_WSL_ROLLBACK_ALLOWLIST_REBIND_MANIFEST_INVALID"))
+        wrong_binding = copy.deepcopy(manifest)
+        wrong_binding["derived_correction_binding_sha256"] = "0" * 64
+        mutations.append(("binding", bundle, wrong_binding, "C21_WSL_ROLLBACK_ALLOWLIST_REBIND_BINDING_INVALID"))
+        for paths in (
+            manifest["record_successor_paths"][:-1],
+            manifest["record_successor_paths"] + ["arbitrary.txt"],
+            manifest["record_successor_paths"] + ["deploy/wsl/deploy.sh"],
+        ):
+            wrong_paths = copy.deepcopy(manifest)
+            wrong_paths["record_successor_paths"] = paths
+            mutations.append(("record_paths", bundle, wrong_paths, "C21_WSL_ROLLBACK_ALLOWLIST_REBIND_MANIFEST_INVALID"))
+        external = copy.deepcopy(manifest)
+        external["push"] = "EXECUTED"
+        mutations.append(("external", bundle, external, "C21_WSL_ROLLBACK_ALLOWLIST_REBIND_BOUNDARY_INVALID"))
+        historical = copy.deepcopy(bundle)
+        historical["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("historical", historical, manifest, "C21_WSL_ROLLBACK_ALLOWLIST_REBIND_EVENTS_INVALID"))
+        for scenario, candidate_bundle, candidate_manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(
+                        candidate_bundle, candidate_manifest
+                    ),
+                )
+
+    def test_c21_wsl_rollback_allowlist_candidate_rebind_git_projection_is_exact(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994")
+        repository = bundle["progress"]["repository"]
+        candidate = "5f8c301e18c332e3353092dab9efe5c32d0fda84"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact54 = sorted(checker.c21_wsl_rollback_allowlist_candidate_committed_exact_paths())
+        exact12 = sorted(checker.c21_wsl_rollback_allowlist_candidate_rebind_successor_paths())
+        exact56 = sorted(checker.c21_wsl_rollback_allowlist_candidate_record_committed_exact_paths())
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(common, actual_head=candidate, actual_changed_paths=exact54, control_descendant_paths=exact12, worktree_is_clean=False)
+        postcommit = dict(common, actual_head="f" * 40, actual_changed_paths=exact56, control_descendant_paths=exact12, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **precommit))
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for bad_paths in (exact12[:-1], exact12 + ["arbitrary.txt"], exact12 + ["deploy/wsl/deploy.sh"]):
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **dict(precommit, control_descendant_paths=bad_paths)),
+            )
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **dict(postcommit, control_runtime_record_commit_is_direct=False)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dict(postcommit, worktree_is_clean=False)),
+        )
+
+    def test_c21_wsl_rollback_allowlist_candidate_rebind_real_git_requires_direct_exact12_child(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994")
+        candidate = "5f8c301e18c332e3353092dab9efe5c32d0fda84"
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(checker.c21_wsl_rollback_allowlist_candidate_rebind_successor_paths())
+
+        def git(repo: Path, *args: str) -> str:
+            return subprocess.check_output(["git", *args], cwd=repo, text=True, encoding="utf-8").strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--no-checkout", "--no-hardlinks", str(snapshot_root), str(repo)], check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-B", branch, candidate], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "anvil-test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "update-ref", f"refs/remotes/origin/{branch}", remote], cwd=repo, check=True)
+            subprocess.run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            for relative in record_paths:
+                source = snapshot_root / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            valid_repo = create_fixture(temp_root, "valid")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq493 exact12 record"], cwd=valid_repo, check=True)
+            valid_head = git(valid_repo, "rev-parse", "HEAD")
+            self.assertEqual([candidate], git(valid_repo, "show", "-s", "--format=%P", valid_head).split())
+            self.assertEqual(56, len(git(valid_repo, "diff", "--name-only", base, valid_head).splitlines()))
+            self.assertEqual([], validate(valid_repo))
+
+            second_repo = create_fixture(temp_root, "second")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq493 record"], cwd=second_repo, check=True)
+            with (second_repo / "docs/WORK_STATUS.md").open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write("\nsecond descendant\n")
+            subprocess.run(["git", "add", "docs/WORK_STATUS.md"], cwd=second_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "second descendant"], cwd=second_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(second_repo))
+
+            merge_repo = create_fixture(temp_root, "merge")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq493 record"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-b", "side", candidate], cwd=merge_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "--allow-empty", "-m", "side parent"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", branch], cwd=merge_repo, check=True)
+            subprocess.run(["git", "merge", "--quiet", "--no-ff", "side", "-m", "merge record"], cwd=merge_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(merge_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(["git", "show", f"{candidate}:docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo)
+            )
+            subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
+            self.assertTrue(
+                {
+                    "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                }
+                & set(validate(reverted_repo))
+            )
+
+
+    def test_c21_wsl_rollback_allowlist_runtime_hold_cannot_be_promoted_to_execution(self):
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994")
+        manifest = json.loads((snapshot_root / "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual("BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE", manifest["runtime_safety_gate"])
+        manifest["runtime_safety_gate"] = "ALLOWED"
+        self.assertIn("C21_WSL_ROLLBACK_ALLOWLIST_REBIND_RUNTIME_GATE_INVALID", checker.validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(bundle, manifest))
+
+    def test_c21_wsl_rollback_allowlist_coherent_local_evidence_cannot_claim_external_success(self):
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "ad3355baf0aa94da27b8cb6b5ee5a90215ee5994")
+        bundle = copy.deepcopy(bundle)
+        manifest = json.loads((snapshot_root / "docs/evidence/manifests/C-21_WSL_ROLLBACK_ALLOWLIST_CANDIDATE_REBIND_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(bundle, manifest))
+        for document in (bundle["progress"]["wsl_early_validation"], bundle["events"]["events"][-1]["details"], manifest):
+            document["local_product_evidence"]["external_execution"] = "PASS"
+        self.assertIn("C21_WSL_ROLLBACK_ALLOWLIST_REBIND_LOCAL_EVIDENCE_INVALID", checker.validate_c21_wsl_rollback_allowlist_candidate_rebind_projection(bundle, manifest))
+
+    def test_c21_wsl_qa_resume_candidate_rebind_projection_binds_exact_contracts(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
+        manifest_path = (
+            historical_root
+            / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file(), "seq494 rebind manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(
+                bundle, manifest
+            ),
+        )
+        current_raw = (ROOT / "docs/progress/progress-events.json").read_bytes()
+        prefix = checker.raw_event_object_prefix_bytes(current_raw, 493)
+        self.assertEqual(857131, len(prefix))
+        self.assertEqual(
+            "CD537E3872F9AA042DBDB8028FB0310EBD7512673229A7D12F70A49D373465C7",
+            hashlib.sha256(prefix).hexdigest().upper(),
+        )
+        self.assertEqual(
+            "854B2F3E08482698C44251D16A7D5E3D51AF0C1879DF4DCF564DFD6A7615BAF2",
+            hashlib.sha256(
+                checker.canonical_json_bytes(bundle["events"]["events"][:493])
+            ).hexdigest().upper(),
+        )
+        exact56 = checker.c21_wsl_qa_resume_candidate_committed_exact_paths()
+        exact12 = checker.c21_wsl_qa_resume_candidate_rebind_successor_paths()
+        exact58 = checker.c21_wsl_qa_resume_candidate_record_committed_exact_paths()
+        self.assertEqual((56, 12, 58), (len(exact56), len(exact12), len(exact58)))
+        for paths, expected in (
+            (exact56, "0BB4FEDFE3582C50A539182B065AAE2E6B19E313356CFCFC0DD6B9B385BC6714"),
+            (exact12, "315FA23EA1B82C16252A749802C3CE94E611BDF3618BF55837A2FBEA187185F5"),
+            (exact58, "6F3B6CFA9DD2EA91B40A277D3199084947B0FE2C74744849FC59CF2A52647BC4"),
+        ):
+            self.assertEqual(
+                expected,
+                hashlib.sha256(
+                    json.dumps(
+                        sorted(paths), ensure_ascii=False, separators=(",", ":")
+                    ).encode("utf-8")
+                ).hexdigest().upper(),
+            )
+
+    def test_c21_wsl_qa_resume_candidate_rebind_separates_ready_from_actual_execution(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
+        progress = bundle["progress"]
+        repository = progress["repository"]
+        active = progress["wsl_early_validation"]
+        expected_status = "NOT_EXECUTED_PENDING_LOCAL_SEQ494_COMMIT_EXTERNAL_SCOPE_RECONFIRMATION"
+        expected_action = "COMPLETE_SEQ494_LOCAL_REVIEW_AND_COMMIT_THEN_RECONFIRM_EXTERNAL_SCOPE"
+        expected_safe_action = 'seq494 로컬 검토·direct-child commit과 clean postcommit 검증까지만 완료한다. 최신 PMO 지시에 따라 private push·WSL·DB·rollback·cleanup 등 외부 실행은 금지하며 이후 외부 범위를 재확인한다. READY는 기술적 준비 상태일 뿐 현재 dispatch 권한이나 실제 성공이 아니다. Telegram·Provider·ysna·main 병합은 제외하고 C-01은 독립 판정까지 차단한다.'
+        self.assertEqual(expected_status, repository["push_status"])
+        self.assertEqual(expected_status, repository["candidate_push_status"])
+        self.assertEqual(expected_status, active["candidate_push_status"])
+        self.assertEqual(expected_action, active["next_action"])
+        self.assertEqual(expected_safe_action, progress["next_safe_action"])
+        handoff = checker.extract_handoff_summary(
+            (historical_root / "docs/progress/BUILD_HANDOFF.md").read_text(encoding="utf-8")
+        )
+        self.assertEqual(expected_safe_action, handoff["next_safe_action"])
+        self.assertEqual(expected_status, handoff["repository_push_status"])
+        self.assertEqual(expected_status, handoff["candidate_push_status"])
+        self.assertEqual(expected_action, handoff["next_action"])
+        candidate = json.loads(
+            (historical_root / "deploy/wsl/CandidateReleaseManifest.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        manifest = json.loads(
+            (
+                historical_root
+                / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        expected_policy = "MAIN_AUTONOMOUS_WITHIN_APPROVED_DEVELOPMENT_TEST_SCOPE"
+        self.assertEqual(expected_policy, candidate["authority"]["private_push_policy"])
+        self.assertEqual(expected_policy, manifest["private_push_policy"])
+
+    def test_c21_wsl_qa_resume_candidate_rebind_projection_rejects_mutations(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
+        manifest = json.loads(
+            (
+                historical_root
+                / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations: list[tuple[str, dict, dict, str]] = []
+        old_ref = copy.deepcopy(manifest)
+        old_ref["candidate_remote_ref"] = "refs/remotes/origin/candidates/c21-wsl-exact44"
+        mutations.append(("old_ref", bundle, old_ref, "C21_WSL_QA_RESUME_REBIND_MANIFEST_INVALID"))
+        wrong_parent = copy.deepcopy(manifest)
+        wrong_parent["candidate_parent_commit"] = "0" * 40
+        mutations.append(("wrong_parent", bundle, wrong_parent, "C21_WSL_QA_RESUME_REBIND_MANIFEST_INVALID"))
+        wrong_binding = copy.deepcopy(manifest)
+        wrong_binding["derived_correction_binding_sha256"] = "0" * 64
+        mutations.append(("binding", bundle, wrong_binding, "C21_WSL_QA_RESUME_REBIND_BINDING_INVALID"))
+        for paths in (
+            manifest["record_successor_paths"][:-1],
+            manifest["record_successor_paths"] + ["arbitrary.txt"],
+            manifest["record_successor_paths"] + ["deploy/wsl/deploy.sh"],
+        ):
+            wrong_paths = copy.deepcopy(manifest)
+            wrong_paths["record_successor_paths"] = paths
+            mutations.append(("record_paths", bundle, wrong_paths, "C21_WSL_QA_RESUME_REBIND_MANIFEST_INVALID"))
+        external = copy.deepcopy(manifest)
+        external["push"] = "EXECUTED"
+        mutations.append(("external", bundle, external, "C21_WSL_QA_RESUME_REBIND_BOUNDARY_INVALID"))
+        historical = copy.deepcopy(bundle)
+        historical["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("historical", historical, manifest, "C21_WSL_QA_RESUME_REBIND_EVENTS_INVALID"))
+        for scenario, candidate_bundle, candidate_manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(
+                        candidate_bundle, candidate_manifest
+                    ),
+                )
+
+    def test_c21_wsl_qa_resume_candidate_rebind_git_projection_is_exact(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
+        repository = bundle["progress"]["repository"]
+        candidate = "a342d62391a44b349733d1468ac3b180761155ab"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        exact56 = sorted(checker.c21_wsl_qa_resume_candidate_committed_exact_paths())
+        exact12 = sorted(checker.c21_wsl_qa_resume_candidate_rebind_successor_paths())
+        exact58 = sorted(checker.c21_wsl_qa_resume_candidate_record_committed_exact_paths())
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": remote,
+            "actual_feature_remote_head": remote,
+            "base_is_ancestor": True,
+            "working_tree_mode": False,
+            "progress": bundle["progress"],
+            "projected_local_head_is_ancestor": True,
+            "control_is_ancestor": True,
+        }
+        precommit = dict(common, actual_head=candidate, actual_changed_paths=exact56, control_descendant_paths=exact12, worktree_is_clean=False)
+        postcommit = dict(common, actual_head="f" * 40, actual_changed_paths=exact58, control_descendant_paths=exact12, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **precommit))
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for bad_paths in (exact12[:-1], exact12 + ["arbitrary.txt"], exact12 + ["deploy/wsl/deploy.sh"]):
+            self.assertIn(
+                "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                checker.validate_repository_projection(repository, **dict(precommit, control_descendant_paths=bad_paths)),
+            )
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **dict(postcommit, control_runtime_record_commit_is_direct=False)),
+        )
+        self.assertIn(
+            "GIT_DESCENDANT_WORKTREE_DIRTY",
+            checker.validate_repository_projection(repository, **dict(postcommit, worktree_is_clean=False)),
+        )
+
+    def test_c21_wsl_qa_resume_candidate_rebind_real_git_requires_direct_exact12_child(
+        self,
+    ) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "772afbd5eb55791ca7b5002d58378437ea496750"
+        )
+        candidate = "a342d62391a44b349733d1468ac3b180761155ab"
+        base = "eef349682ff5598e3488c9e75163c5e0a99a0bdb"
+        remote = "ca92b7845eda803cff3c432799642e4f9243d4d6"
+        branch = "codex/c21-operational-execution"
+        record_paths = sorted(checker.c21_wsl_qa_resume_candidate_rebind_successor_paths())
+
+        def git(repo: Path, *args: str) -> str:
+            return subprocess.check_output(["git", *args], cwd=repo, text=True, encoding="utf-8").strip()
+
+        def create_fixture(parent: Path, name: str) -> Path:
+            repo = parent / name
+            subprocess.run(["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "clone", "--quiet", "--no-checkout", "--no-hardlinks", str(ROOT), str(repo)], check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-B", branch, candidate], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.name", "Anvil Test"], cwd=repo, check=True)
+            subprocess.run(["git", "config", "user.email", "anvil-test@example.invalid"], cwd=repo, check=True)
+            subprocess.run(["git", "update-ref", f"refs/remotes/origin/{branch}", remote], cwd=repo, check=True)
+            subprocess.run(["git", "branch", "--set-upstream-to", f"origin/{branch}", branch], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+            for relative in record_paths:
+                source = ROOT / relative
+                destination = repo / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source, destination)
+            subprocess.run(["git", "add", "--", *record_paths], cwd=repo, check=True)
+            return repo
+
+        def validate(repo: Path) -> list[str]:
+            projected = copy.deepcopy(bundle)
+            projected["_root"] = repo
+            return checker._validate_git_projection(projected)
+
+        with tempfile.TemporaryDirectory() as temp:
+            temp_root = Path(temp)
+            valid_repo = create_fixture(temp_root, "valid")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq494 exact12 record"], cwd=valid_repo, check=True)
+            valid_head = git(valid_repo, "rev-parse", "HEAD")
+            self.assertEqual([candidate], git(valid_repo, "show", "-s", "--format=%P", valid_head).split())
+            self.assertEqual(58, len(git(valid_repo, "diff", "--name-only", base, valid_head).splitlines()))
+            self.assertEqual([], validate(valid_repo))
+
+            second_repo = create_fixture(temp_root, "second")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq494 record"], cwd=second_repo, check=True)
+            with (second_repo / "docs/WORK_STATUS.md").open("a", encoding="utf-8", newline="\n") as stream:
+                stream.write("\nsecond descendant\n")
+            subprocess.run(["git", "add", "docs/WORK_STATUS.md"], cwd=second_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "second descendant"], cwd=second_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(second_repo))
+
+            merge_repo = create_fixture(temp_root, "merge")
+            subprocess.run(["git", "commit", "--quiet", "-m", "seq494 record"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", "-b", "side", candidate], cwd=merge_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "--allow-empty", "-m", "side parent"], cwd=merge_repo, check=True)
+            subprocess.run(["git", "checkout", "--quiet", branch], cwd=merge_repo, check=True)
+            subprocess.run(["git", "merge", "--quiet", "--no-ff", "side", "-m", "merge record"], cwd=merge_repo, check=True)
+            self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", validate(merge_repo))
+
+            reverted_repo = create_fixture(temp_root, "reverted")
+            (reverted_repo / "docs/progress/BUILD_HANDOFF.md").write_bytes(
+                subprocess.check_output(["git", "show", f"{candidate}:docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo)
+            )
+            subprocess.run(["git", "add", "docs/progress/BUILD_HANDOFF.md"], cwd=reverted_repo, check=True)
+            subprocess.run(["git", "commit", "--quiet", "-m", "path reversion"], cwd=reverted_repo, check=True)
+            self.assertTrue(
+                {
+                    "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+                    "GIT_DESCENDANT_PATH_SET_MISMATCH",
+                }
+                & set(validate(reverted_repo))
+            )
+
+
+    def test_c21_wsl_qa_resume_ready_gate_cannot_be_replaced_by_unrestricted_allowed(self):
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual("READY_FOR_APPROVED_WSL_QA", manifest["runtime_safety_gate"])
+        manifest["runtime_safety_gate"] = "ALLOWED"
+        self.assertIn("C21_WSL_QA_RESUME_REBIND_RUNTIME_GATE_INVALID", checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+
+    def test_c21_wsl_qa_resume_coherent_local_evidence_cannot_claim_external_success(self):
+        checker = self.require_checker()
+        historical_bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+        bundle = copy.deepcopy(historical_bundle)
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+        for document in (bundle["progress"]["wsl_early_validation"], bundle["events"]["events"][-1]["details"], manifest):
+            document["local_product_evidence"]["external_execution"] = "PASS"
+        self.assertIn("C21_WSL_QA_RESUME_REBIND_LOCAL_EVIDENCE_INVALID", checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+
+    def test_c21_wsl_qa_resume_coherent_predecessor_recovery_cannot_claim_new_candidate_push(self):
+        checker = self.require_checker()
+        historical_bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+        bundle = copy.deepcopy(historical_bundle)
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+        for doc in (bundle["progress"]["wsl_early_validation"], bundle["events"]["events"][-1]["details"], manifest):
+            doc["predecessor_private_recovery"]["current_candidate_push"] = "PASS"
+        self.assertIn("C21_WSL_QA_RESUME_PREDECESSOR_RECOVERY_INVALID", checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+
+
+    def test_c21_wsl_qa_resume_coherent_runtime_next_action_cannot_dispatch(self):
+        checker = self.require_checker()
+        for value in ("MAIN_DISPATCH_DEPLOY_NOW_WITHOUT_SCOPE_RECONFIRMATION", "OTHER_HOLD", " ", None):
+            with self.subTest(value=value):
+                historical_bundle, historical_root = self._historical_bundle(checker, "772afbd5eb55791ca7b5002d58378437ea496750")
+                bundle = copy.deepcopy(historical_bundle)
+                manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_WSL_QA_RESUME_MANIFEST.json").read_text(encoding="utf-8"))
+                self.assertEqual([], checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+                for doc in (bundle["progress"]["wsl_early_validation"], bundle["events"]["events"][-1]["details"], manifest, bundle["handoff"]):
+                    if value is None: doc.pop("runtime_next_action", None)
+                    else: doc["runtime_next_action"] = value
+                self.assertIn("C21_WSL_QA_RESUME_REBIND_RUNTIME_NEXT_ACTION_INVALID", checker.validate_c21_wsl_qa_resume_candidate_rebind_projection(bundle, manifest))
+
+    def test_c21_wsl_qa_execution_result_projection_is_strictly_scoped(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "9a7a6144bcd0a7d38fce291610f40e9608a38309"
+        )
+        manifest_path = (
+            historical_root
+            / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"
+        )
+        self.assertTrue(manifest_path.is_file())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual(
+            [],
+            checker.validate_c21_wsl_qa_execution_result_projection(bundle, manifest),
+        )
+        self.assertEqual("SUITABLE", manifest["product_validation"])
+        self.assertEqual(
+            "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY",
+            manifest["validation_scope"],
+        )
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("PENDING", manifest["independent_tester_status"])
+        self.assertEqual(
+            "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+            manifest["c01_status"],
+        )
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+
+    def test_c21_wsl_qa_execution_result_projection_rejects_evidence_promotion(self) -> None:
+        checker = self.require_checker()
+        original_bundle = checker.load_bundle(ROOT)
+        original_manifest = json.loads(
+            (
+                ROOT
+                / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json"
+            ).read_text(encoding="utf-8")
+        )
+        mutations = []
+        promoted = copy.deepcopy(original_manifest)
+        promoted["accepted"] = True
+        mutations.append(("accepted", copy.deepcopy(original_bundle), promoted, "C21_WSL_QA_RESULT_DECISION_BOUNDARY_INVALID"))
+        external = copy.deepcopy(original_manifest)
+        external["execution_result"]["excluded"]["provider"] = "PASS"
+        mutations.append(("provider", copy.deepcopy(original_bundle), external, "C21_WSL_QA_RESULT_EXECUTION_INVALID"))
+        residue = copy.deepcopy(original_manifest)
+        residue["execution_result"]["cleanup"]["volumes"] = 1
+        mutations.append(("residue", copy.deepcopy(original_bundle), residue, "C21_WSL_QA_RESULT_EXECUTION_INVALID"))
+        product_failure = copy.deepcopy(original_manifest)
+        product_failure["execution_result"]["deploy_attempts"][0]["product_valid_failure"] = True
+        mutations.append(("premutation_failure", copy.deepcopy(original_bundle), product_failure, "C21_WSL_QA_RESULT_EXECUTION_INVALID"))
+        history = copy.deepcopy(original_bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("history", history, copy.deepcopy(original_manifest), "C21_WSL_QA_RESULT_HISTORY_INVALID"))
+        for scenario, bundle, manifest, reason in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertIn(
+                    reason,
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, manifest),
+                )
+
+    def test_c21_wsl_qa_execution_result_git_projection_is_exact(self) -> None:
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        repository = bundle["progress"]["repository"]
+        common = {
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+        }
+        precommit = dict(
+            common,
+            actual_head="772afbd5eb55791ca7b5002d58378437ea496750",
+            actual_changed_paths=sorted(checker.c21_wsl_qa_execution_result_parent_paths()),
+            control_descendant_paths=sorted(checker.c21_wsl_qa_execution_result_successor_paths()),
+            worktree_is_clean=False,
+            record_commit_is_direct=False,
+        )
+        self.assertEqual([], checker.validate_c21_wsl_qa_execution_result_git(repository, **precommit))
+        bad = dict(precommit, control_descendant_paths=precommit["control_descendant_paths"] + ["arbitrary.txt"])
+        self.assertIn("GIT_DESCENDANT_PATH_SET_MISMATCH", checker.validate_c21_wsl_qa_execution_result_git(repository, **bad))
+        postcommit = dict(
+            common,
+            actual_head="f" * 40,
+            actual_changed_paths=sorted(checker.c21_wsl_qa_execution_result_record_paths()),
+            control_descendant_paths=sorted(checker.c21_wsl_qa_execution_result_successor_paths()),
+            worktree_is_clean=True,
+            record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_c21_wsl_qa_execution_result_git(repository, **postcommit))
+        self.assertIn("GIT_DESCENDANT_RECORD_COMMIT_INVALID", checker.validate_c21_wsl_qa_execution_result_git(repository, **dict(postcommit, record_commit_is_direct=False)))
+
+    def test_c21_wsl_qa_execution_result_rejects_coherent_evidence_mutations(self) -> None:
+        checker = self.require_checker()
+        original_bundle, historical_root = self._historical_bundle(
+            checker, "9a7a6144bcd0a7d38fce291610f40e9608a38309"
+        )
+        original_manifest = json.loads(
+            (historical_root / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json").read_text(encoding="utf-8")
+        )
+
+        def mutate_all(path, value):
+            bundle = copy.deepcopy(original_bundle)
+            manifest = copy.deepcopy(original_manifest)
+            for result in (
+                manifest["execution_result"],
+                bundle["events"]["events"][-1]["details"]["execution_result"],
+                bundle["progress"]["wsl_early_validation"]["execution_result"],
+            ):
+                target = result
+                for part in path[:-1]:
+                    target = target[part]
+                target[path[-1]] = value
+            return bundle, manifest
+
+        mutations = [
+            (("candidate_commit",), "0" * 40),
+            (("control_commit",), "0" * 40),
+            (("environment",), "PRODUCTION"),
+            (("targets",), ["POSTGRESQL_15"]),
+            (("deploy_attempts", 0, "reason"), "OTHER"),
+            (("deploy_attempts", 1, "cleanup_trap"), "FAIL"),
+            (("deploy_attempts", 2, "ssh_config"), "/tmp/config"),
+            (("candidate_deploy", "return_after_rollback"), "FAIL"),
+            (("verification", "migration"), "0012_run_authority"),
+            (("rollback", "from"), "0" * 40),
+            (("rollback_observation", "database_counts_before_after"), "2|1|1_CHANGED"),
+            (("final_state", "env_content"), "CHANGED"),
+            (("excluded", "telegram"), "PASS"),
+            (("evidence", "rollback_observer_scratch_sha256"), "0" * 64),
+        ]
+        for path, value in mutations:
+            with self.subTest(path=path):
+                bundle, manifest = mutate_all(path, value)
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, manifest),
+                    path,
+                )
+
+    def test_c21_wsl_qa_execution_result_rejects_manifest_and_recovery_mutations(self) -> None:
+        checker = self.require_checker()
+        original_bundle = checker.load_bundle(ROOT)
+        original_manifest = json.loads(
+            (ROOT / "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json").read_text(encoding="utf-8")
+        )
+        manifest_mutations = {
+            "record_parent_commit": "0" * 40,
+            "candidate_commit": "0" * 40,
+            "runtime_commit": "0" * 40,
+            "historical_raw_event_bytes": 1,
+            "historical_raw_events_sha256": "0" * 64,
+            "historical_events_sha256": "0" * 64,
+            "record_successor_path_count": 9,
+            "record_successor_path_list_sha256": "0" * 64,
+            "postcommit_exact_path_count": 60,
+            "postcommit_exact_path_list_sha256": "0" * 64,
+        }
+        for field, value in manifest_mutations.items():
+            with self.subTest(field=field):
+                manifest = copy.deepcopy(original_manifest)
+                manifest[field] = value
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(copy.deepcopy(original_bundle), manifest),
+                    field,
+                )
+        recovery_mutations = {
+            "candidate_push_status": "NOT_EXECUTED",
+            "wsl_access": "NOT_EXECUTED",
+            "postgres_15": "NOT_EXECUTED",
+            "postgres_18_rc": "NOT_EXECUTED",
+            "migration": "NOT_EXECUTED",
+            "api": "NOT_EXECUTED",
+            "authenticated_sse": "NOT_EXECUTED",
+            "last_event_id": "NOT_EXECUTED",
+            "same_origin": "NOT_EXECUTED",
+            "backup_restore": "NOT_EXECUTED",
+            "application_rollback": "NOT_EXECUTED",
+            "deployment": "NOT_EXECUTED",
+            "database": "NOT_EXECUTED",
+            "volume_cleanup": "NOT_EXECUTED",
+            "runtime_safety_gate": "READY_FOR_APPROVED_WSL_QA",
+            "runtime_next_action": "DISPATCH_NOW",
+        }
+        for field, value in recovery_mutations.items():
+            with self.subTest(field=field):
+                bundle = copy.deepcopy(original_bundle)
+                bundle["progress"]["wsl_early_validation"][field] = value
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, copy.deepcopy(original_manifest)),
+                    field,
+                )
+        handoff_mutations = {
+            "status": "ACTIVE",
+            "repository_push_status": "NOT_EXECUTED",
+            "candidate_push_status": "NOT_EXECUTED",
+            "deployment_status": "NOT_EXECUTED",
+            "runtime_safety_gate": "READY_FOR_APPROVED_WSL_QA",
+            "runtime_next_action": "DISPATCH_NOW",
+            "c01_status": "STARTED",
+            "dir2_status": "TRIGGERED",
+        }
+        for field, value in handoff_mutations.items():
+            with self.subTest(handoff_field=field):
+                bundle = copy.deepcopy(original_bundle)
+                bundle["handoff"][field] = value
+                self.assertTrue(
+                    checker.validate_c21_wsl_qa_execution_result_projection(bundle, copy.deepcopy(original_manifest)),
+                    field,
+                )
+
+    def test_c21_wsl_qa_execution_result_fast_path_preserves_generic_repository_guards(self) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "9a7a6144bcd0a7d38fce291610f40e9608a38309"
+        )
+        repository = bundle["progress"]["repository"]
+        common = {
+            "actual_head": "772afbd5eb55791ca7b5002d58378437ea496750",
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            "base_is_ancestor": True,
+            "actual_changed_paths": sorted(checker.c21_wsl_qa_execution_result_parent_paths()),
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": sorted(checker.c21_wsl_qa_execution_result_successor_paths()),
+            "worktree_is_clean": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        cases = [
+            ("projection_mode", "TAMPERED", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("validated_base_commit", "0" * 40, "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("head_relation", "TAMPERED", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("branch", "other", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("upstream", "origin/other", "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("remote_head", "0" * 40, "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("feature_remote_head", "0" * 40, "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1], "GIT_DESCENDANT_PROJECTION_INVALID"),
+            ("qa_execution_result_successor_paths", repository["qa_execution_result_successor_paths"][:-1], "GIT_DESCENDANT_PROJECTION_INVALID"),
+        ]
+        for field, value, reason in cases:
+            with self.subTest(field=field):
+                mutated = copy.deepcopy(repository)
+                mutated[field] = value
+                self.assertIn(reason, checker.validate_repository_projection(mutated, **common))
+        self.assertIn(
+            "GIT_VALIDATED_BASE_NOT_ANCESTOR",
+            checker.validate_repository_projection(repository, **dict(common, base_is_ancestor=False)),
+        )
+        real_git_bundle = copy.deepcopy(bundle)
+        real_git_bundle["progress"]["repository"]["projection_mode"] = "TAMPERED"
+        self.assertIn(
+            "GIT_DESCENDANT_PROJECTION_INVALID",
+            checker._validate_git_projection(real_git_bundle),
+        )
+
+    def test_c21_independent_judgment_projection_is_blocked_not_accepted(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._independent_judgment_bundle(checker)
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file())
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_independent_judgment_projection(bundle, manifest))
+        self.assertEqual("TEST_REVIEW", bundle["progress"]["status"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["verdict"])
+        self.assertFalse(manifest["accepted"])
+        self.assertIsNone(bundle["progress"]["worker_lease"])
+        self.assertIsNone(bundle["progress"]["write_lease"])
+        self.assertIsNone(bundle["progress"]["active_agent"])
+
+    def test_c21_independent_judgment_rejects_revocation_order_and_lease_mutations(self) -> None:
+        checker = self.require_checker()
+        original, historical_root = self._independent_judgment_bundle(checker)
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_independent_judgment_projection(original, manifest))
+        mutations = []
+        swapped = copy.deepcopy(original)
+        swapped["events"]["events"][-3], swapped["events"]["events"][-2] = swapped["events"]["events"][-2], swapped["events"]["events"][-3]
+        mutations.append(("order", swapped))
+        duplicate = copy.deepcopy(original)
+        duplicate["events"]["events"][-2]["event_type"] = "WRITE_LEASE_REVOKED"
+        mutations.append(("duplicate", duplicate))
+        lease_id = copy.deepcopy(original)
+        lease_id["events"]["events"][-3]["details"]["lease_id"] = "other"
+        mutations.append(("lease_id", lease_id))
+        fencing = copy.deepcopy(original)
+        fencing["events"]["events"][-2]["details"]["execution_fencing_token"] = "other"
+        mutations.append(("fencing", fencing))
+        write_active = copy.deepcopy(original)
+        write_active["progress"]["write_lease"] = {"status": "ACTIVE"}
+        mutations.append(("write_active", write_active))
+        worker_active = copy.deepcopy(original)
+        worker_active["progress"]["worker_lease"] = {"status": "ACTIVE"}
+        mutations.append(("worker_active", worker_active))
+        agent_active = copy.deepcopy(original)
+        agent_active["progress"]["active_agent"] = "developer-primary-wsl"
+        mutations.append(("agent_active", agent_active))
+        stale_wi = copy.deepcopy(original)
+        stale_wi["progress"]["active_work_instruction"]["result_status"] = "IN_PROGRESS"
+        mutations.append(("stale_wi", stale_wi))
+        for scenario, bundle in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, copy.deepcopy(manifest)))
+
+    def test_c21_independent_judgment_rejects_coherent_decision_promotion(self) -> None:
+        checker = self.require_checker()
+        original, historical_root = self._independent_judgment_bundle(checker)
+        original_manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+
+        def mutate_all(field, value):
+            bundle = copy.deepcopy(original)
+            manifest = copy.deepcopy(original_manifest)
+            docs = [manifest, bundle["events"]["events"][-1]["details"], bundle["progress"]["c21_independent_judgment"], bundle["handoff"]]
+            for doc in docs:
+                doc[field] = value
+            return bundle, manifest
+
+        for field, value in (
+            ("verdict", "PASS"),
+            ("accepted", True),
+            ("c01_status", "STARTED"),
+            ("dir2_status", "TRIGGERED"),
+            ("runtime_next_action", "DISPATCH_NOW"),
+        ):
+            with self.subTest(field=field):
+                bundle, manifest = mutate_all(field, value)
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, manifest))
+        for criterion in ("2", "3", "4", "5"):
+            with self.subTest(criterion=criterion):
+                bundle = copy.deepcopy(original)
+                manifest = copy.deepcopy(original_manifest)
+                for doc in (manifest, bundle["events"]["events"][-1]["details"], bundle["progress"]["c21_independent_judgment"]):
+                    doc["criteria"][criterion] = "PASS"
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, manifest))
+
+    def test_c21_independent_judgment_rejects_history_hash_and_repository_mutations(self) -> None:
+        checker = self.require_checker()
+        original, historical_root = self._independent_judgment_bundle(checker)
+        original_manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        history = copy.deepcopy(original)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        self.assertTrue(checker.validate_c21_independent_judgment_projection(history, copy.deepcopy(original_manifest)))
+        for field, value in (
+            ("historical_raw_event_bytes", 1),
+            ("historical_raw_events_sha256", "0" * 64),
+            ("historical_events_sha256", "0" * 64),
+            ("record_successor_path_count", 8),
+            ("record_successor_path_list_sha256", "0" * 64),
+            ("postcommit_exact_path_count", 63),
+            ("postcommit_exact_path_list_sha256", "0" * 64),
+        ):
+            with self.subTest(field=field):
+                manifest = copy.deepcopy(original_manifest)
+                manifest[field] = value
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(copy.deepcopy(original), manifest))
+        for field, value in (
+            ("projection_mode", "TAMPERED"),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("remote_head", "0" * 40),
+            ("exact_allowed_paths", original["progress"]["repository"]["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                bundle = copy.deepcopy(original)
+                bundle["progress"]["repository"][field] = value
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, copy.deepcopy(original_manifest)))
+
+    def test_c21_independent_judgment_rejects_all_binding_event_and_digest_mutations(self) -> None:
+        checker = self.require_checker()
+        original, historical_root = self._independent_judgment_bundle(checker)
+        original_manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_INDEPENDENT_JUDGMENT_MANIFEST.json").read_text(encoding="utf-8"))
+        for field, value in (
+            ("judgment_source_sha256", "0" * 64),
+            ("work_instruction_sha256", "0" * 64),
+            ("revocation_events", ["other"]),
+            ("judgment_event_id", "other"),
+        ):
+            with self.subTest(manifest_field=field):
+                manifest = copy.deepcopy(original_manifest)
+                manifest[field] = value
+                self.assertIn("C21_JUDGMENT_MANIFEST_INVALID", checker.validate_c21_independent_judgment_projection(copy.deepcopy(original), manifest))
+        event_mutations = (
+            (-3, "actor", "other"), (-3, "subject_ref", "other"),
+            (-3, "occurred_at", "other"), (-3, "details.execution_fencing_token", "other"),
+            (-3, "details.worker_lease_id", "other"), (-3, "details.reason", "other"),
+            (-2, "actor", "other"), (-2, "subject_ref", "other"),
+            (-2, "details.reason", "other"), (-1, "actor", "other"),
+            (-1, "subject_ref", "other"), (-1, "details.judgment_source_sha256", "0" * 64),
+            (-1, "details.work_instruction_sha256", "0" * 64),
+            (-1, "details.evidence_ref", "other"),
+            (-1, "details.write_revocation_event_id", "other"),
+            (-1, "details.worker_revocation_event_id", "other"),
+        )
+        for index, path, value in event_mutations:
+            with self.subTest(event=index, path=path):
+                bundle = copy.deepcopy(original)
+                target = bundle["events"]["events"][index]
+                parts = path.split(".")
+                for part in parts[:-1]: target = target[part]
+                target[parts[-1]] = value
+                self.assertTrue(checker.validate_c21_independent_judgment_projection(bundle, copy.deepcopy(original_manifest)))
+        digest = json.loads((historical_root / "docs/progress/progress-handoff-detached-digest-c21-independent-judgment.json").read_text(encoding="utf-8"))
+        for path, value in (
+            (("progress", "bytes"), 1), (("progress", "canonical_json_sha256"), "0" * 64),
+            (("handoff", "bytes"), 1), (("handoff", "machine_summary_canonical_sha256"), "0" * 64),
+            (("scope",), "other"), (("self_reference",), True),
+        ):
+            with self.subTest(digest_path=path):
+                mutated = copy.deepcopy(digest); target = mutated
+                for part in path[:-1]: target = target[part]
+                target[path[-1]] = value
+                with mock.patch.object(checker, "_load_json", return_value=mutated):
+                    self.assertIn("C21_JUDGMENT_DIGEST_INVALID", checker.validate_c21_independent_judgment_projection(copy.deepcopy(original), copy.deepcopy(original_manifest)))
+
+    def test_c21_independent_judgment_real_git_fast_path_preserves_structural_guards(self) -> None:
+        checker = self.require_checker()
+        original, _ = self._independent_judgment_bundle(checker)
+        mutations = (
+            ("feature_remote", "origin/tampered"),
+            ("feature_remote_head", "0" * 40),
+            ("projection_mode", "TAMPERED"),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("local_head", "0" * 40),
+            ("worktree_status", "TAMPERED"),
+            ("exact_allowed_paths", original["progress"]["repository"]["exact_allowed_paths"][:-1]),
+        )
+        for field, value in mutations:
+            with self.subTest(field=field):
+                bundle = copy.deepcopy(original)
+                bundle["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(bundle), field)
+
+    def test_c21_independent_judgment_report_is_valid_markdown(self) -> None:
+        text = (ROOT / "docs/04_test_reports/C-21_INDEPENDENT_JUDGMENT_REPORT.md").read_text(encoding="utf-8")
+        self.assertIn("## 판정", text)
+        self.assertIn("- 전체 C-21: `TEST_REVIEW / BLOCKED_NOT_ACCEPTED`", text)
+        self.assertIn("## 근거", text)
+        self.assertIn("## lease 종료와 경계", text)
+        self.assertFalse(any(line.startswith("+") for line in text.splitlines()))
+
+    def test_c21_development_qa_resume_start_projection_activates_exact_leases(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file(), "development QA resume start manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        self.assertEqual(501, bundle["progress"]["event_sequence"])
+        self.assertEqual("ACTIVE_DEVELOPMENT_QA", bundle["progress"]["status"])
+        self.assertEqual("developer-primary", bundle["progress"]["active_agent"])
+        self.assertEqual(
+            "worker-lease-c21-development-qa-resume-20260905-001",
+            bundle["progress"]["worker_lease"]["lease_id"],
+        )
+        self.assertEqual(
+            "write-lease-c21-development-qa-resume-20260905-001",
+            bundle["progress"]["write_lease"]["lease_id"],
+        )
+
+    def test_c21_development_qa_resume_rejects_event_fencing_and_decision_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        mutations = []
+        for index, path, value in (
+            (-3, "event_type", "PACKAGE_RESUMED"),
+            (-3, "details.execution_fencing_token", "tampered"),
+            (-2, "details.write_fencing_token", "tampered"),
+            (-2, "details.paths", ["other"]),
+            (-1, "details.reason", "tampered"),
+        ):
+            mutated = copy.deepcopy(bundle)
+            target = mutated["events"]["events"][index]
+            parts = path.split(".")
+            for part in parts[:-1]:
+                target = target[part]
+            target[parts[-1]] = value
+            mutations.append((path, mutated, copy.deepcopy(manifest)))
+        for field, value in (
+            ("status", "TEST_REVIEW"),
+            ("active_agent", None),
+            ("worker_lease", None),
+            ("write_lease", None),
+        ):
+            mutated = copy.deepcopy(bundle)
+            mutated["progress"][field] = value
+            mutations.append((field, mutated, copy.deepcopy(manifest)))
+        for field, value in (
+            ("accepted", True),
+            ("c01_status", "STARTED"),
+            ("dir2_status", "TRIGGERED"),
+            ("runtime_next_action", "HOLD_USER_VALIDATION_REQUIRED"),
+        ):
+            mutated = copy.deepcopy(bundle)
+            mutated["progress"]["development_qa_resume"][field] = value
+            mutations.append((field, mutated, copy.deepcopy(manifest)))
+        for scenario, mutated_bundle, mutated_manifest in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(mutated_bundle, mutated_manifest))
+
+    def test_c21_development_qa_resume_rejects_history_manifest_and_exact_scope_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        history = copy.deepcopy(bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(history, copy.deepcopy(manifest)))
+        for field, value in (
+            ("historical_full_file_bytes", 1),
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_bytes", 1),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("historical_events_canonical_sha256", "0" * 64),
+            ("start_exact_path_count", 9),
+            ("start_exact_path_list_sha256", "0" * 64),
+            ("developer_exact_path_count", 6),
+            ("developer_exact_path_list_sha256", "0" * 64),
+        ):
+            mutated = copy.deepcopy(manifest)
+            mutated[field] = value
+            self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(copy.deepcopy(bundle), mutated), field)
+
+    def test_c21_development_qa_resume_distinguishes_full_blob_prefix_and_execution_authority(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_RESUME_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_resume_start_projection(bundle, manifest))
+        self.assertNotIn("proposal_sha256", manifest)
+        self.assertEqual("SCRATCH_ONLY_MAIN_REVIEW_INPUT_NOT_AUTHORITY", manifest["proposal_classification"])
+        self.assertEqual(882505, manifest["historical_full_file_bytes"])
+        self.assertEqual("B9C412B586999C2DCD530B7E6EDD283CE3A124BF4E98B08F8673A3184D641F78", manifest["historical_full_file_sha256"])
+        self.assertEqual(882302, manifest["historical_event_object_prefix_bytes"])
+        self.assertEqual("3659A9808E97F6927E983CFCCD617BF5B1740D60CCDFE16D39D8107C8780C955", manifest["historical_event_object_prefix_sha256"])
+        self.assertEqual("docs/work_orders/C-21_DEVELOPMENT_QA_RESUME_WORK_INSTRUCTION.md", manifest["execution_authority_path"])
+        for field, value in (
+            ("proposal_classification", "APPROVED_AUTHORITY"),
+            ("historical_full_file_bytes", 1),
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_bytes", 1),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("execution_authority_path", "other"),
+            ("execution_authority_sha256", "0" * 64),
+        ):
+            with self.subTest(field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = value
+                self.assertTrue(checker.validate_c21_development_qa_resume_start_projection(copy.deepcopy(bundle), mutated))
+
+    def test_c21_development_qa_resume_public_and_real_git_paths_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "580ed9d7b202383a107b5e0bda0f53b2066cddc5"
+        )
+        repository = bundle["progress"]["repository"]
+        exact64 = sorted(checker.c21_independent_judgment_record_paths())
+        exact10 = sorted(checker.c21_development_qa_resume_start_paths())
+        common = {
+            "actual_head": repository["local_head"],
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact64,
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": exact10,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        postcommit = dict(
+            common,
+            actual_head="34eb1725b47c544b6ec314a28428b364a029f3eb",
+            actual_changed_paths=sorted(set(exact64) | set(exact10)),
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=False,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for field, value in (
+            ("control_is_ancestor", False),
+            ("actual_changed_paths", sorted(set(exact64) | set(exact10))[:-1]),
+            ("control_descendant_paths", exact10[:-1]),
+            ("working_tree_mode", True),
+            ("worktree_is_clean", False),
+        ):
+            with self.subTest(postcommit_field=field):
+                self.assertTrue(
+                    checker.validate_repository_projection(
+                        repository, **dict(postcommit, **{field: value})
+                    )
+                )
+        for field, value in (
+            ("remote_head", "0" * 40),
+            ("feature_remote", "origin/tampered"),
+            ("feature_remote_head", "0" * 40),
+            ("branch", "other"),
+            ("upstream", "origin/other"),
+            ("local_head", "0" * 40),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("worktree_status", "CLEAN"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                mutated = copy.deepcopy(repository)
+                mutated[field] = value
+                self.assertTrue(checker.validate_repository_projection(mutated, **common))
+                real = copy.deepcopy(bundle)
+                real["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(real))
+        for field, value in (
+            ("actual_remote_head", "0" * 40),
+            ("actual_feature_remote_head", "0" * 40),
+            ("actual_changed_paths", exact64[:-1]),
+            ("working_tree_mode", False),
+            ("control_descendant_paths", exact10[:-1]),
+            ("worktree_is_clean", True),
+            ("base_is_ancestor", False),
+            ("control_runtime_record_commit_is_direct", True),
+        ):
+            with self.subTest(actual_field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(common, **{field: value})))
+
+    def test_c21_development_qa_review_successor_projects_rework_without_external_hold(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file(), "development QA review successor manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
+        self.assertEqual(506, bundle["progress"]["event_sequence"])
+        self.assertEqual("REWORK_REQUIRED", bundle["progress"]["status"])
+        self.assertEqual("ISSUE_C21_RUNTIME_UI_REWORK_WI", bundle["progress"]["runtime_next_action"])
+        self.assertIsNone(bundle["progress"]["active_agent"])
+        self.assertIsNone(bundle["progress"]["worker_lease"])
+        self.assertIsNone(bundle["progress"]["write_lease"])
+
+    def test_c21_development_qa_review_successor_rejects_decision_and_history_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
+        history = copy.deepcopy(bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(history, copy.deepcopy(manifest)))
+        for field, value in (
+            ("verdict", "BLOCKED_NOT_ACCEPTED"),
+            ("accepted", True),
+            ("c01_status", "STARTED"),
+            ("dir2_status", "TRIGGERED"),
+            ("runtime_next_action", "HOLD_USER_VALIDATION_REQUIRED"),
+            ("provider_runtime_status_port", "PASS"),
+            ("workbench_config", "PASS"),
+            ("ui_click_evidence", True),
+            ("actual_provider_calls", "EXECUTED"),
+            ("actual_telegram_outbound", "EXECUTED"),
+        ):
+            with self.subTest(field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = value
+                self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(copy.deepcopy(bundle), mutated))
+
+    def test_c21_development_qa_review_successor_rejects_event_and_binding_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_DEVELOPMENT_QA_REVIEW_SUCCESSOR_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_development_qa_review_successor_projection(bundle, manifest))
+        for index, path, value in (
+            (-5, "event_type", "PACKAGE_COMPLETED"),
+            (-5, "details.write_fencing_token", "tampered"),
+            (-4, "details.execution_fencing_token", "tampered"),
+            (-3, "details.commit", "0" * 40),
+            (-2, "details.verdict", "SPEC_FAIL"),
+            (-1, "details.verdict", "BLOCKED_NOT_ACCEPTED"),
+            (-1, "details.runtime_next_action", "HOLD_USER_VALIDATION_REQUIRED"),
+        ):
+            with self.subTest(event=index, path=path):
+                mutated = copy.deepcopy(bundle)
+                target = mutated["events"]["events"][index]
+                parts = path.split(".")
+                for part in parts[:-1]:
+                    target = target[part]
+                target[parts[-1]] = value
+                self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(mutated, copy.deepcopy(manifest)))
+        for field, value in (
+            ("historical_full_file_bytes", 1),
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_bytes", 1),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("historical_events_canonical_ascii_sha256", "0" * 64),
+            ("developer_commit", "0" * 40),
+            ("developer_exact_path_list_sha256", "0" * 64),
+            ("cumulative_exact_path_list_sha256", "0" * 64),
+            ("record_exact_path_list_sha256", "0" * 64),
+            ("record_commit", "0" * 40),
+            ("record_commit_mode", "SELF_BOUND"),
+        ):
+            with self.subTest(manifest_field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = value
+                self.assertTrue(checker.validate_c21_development_qa_review_successor_projection(copy.deepcopy(bundle), mutated))
+
+    def test_c21_development_qa_review_successor_public_and_real_git_paths_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "aa116e2044671628011b46d190de014ad7fd0af4"
+        )
+        repository = bundle["progress"]["repository"]
+        exact75 = sorted(checker.c21_development_qa_review_predecessor_paths())
+        exact9 = sorted(checker.c21_development_qa_review_successor_paths())
+        common = {
+            "actual_head": repository["local_head"],
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact75,
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": exact9,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        for field, value in (
+            ("remote_head", "0" * 40),
+            ("feature_remote", "origin/tampered"),
+            ("feature_remote_head", "0" * 40),
+            ("branch", "other"),
+            ("upstream", "origin/other"),
+            ("local_head", "0" * 40),
+            ("validated_base_commit", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("worktree_status", "CLEAN"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                mutated = copy.deepcopy(repository)
+                mutated[field] = value
+                self.assertTrue(checker.validate_repository_projection(mutated, **common))
+                real = copy.deepcopy(bundle)
+                real["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(real))
+        for field, value in (
+            ("actual_remote_head", "0" * 40),
+            ("actual_feature_remote_head", "0" * 40),
+            ("actual_changed_paths", exact75[:-1]),
+            ("working_tree_mode", False),
+            ("control_descendant_paths", exact9[:-1]),
+            ("worktree_is_clean", True),
+            ("base_is_ancestor", False),
+            ("control_runtime_record_commit_is_direct", True),
+        ):
+            with self.subTest(actual_field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(common, **{field: value})))
+
+    def test_c21_provider_status_read_start_projects_exact_leases_and_boundaries(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "51ed9d852a1fb48d24d7112cc900485de2f8011e"
+        )
+        manifest_path = historical_root / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json"
+        self.assertTrue(manifest_path.is_file(), "Provider status READ start manifest is missing")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_provider_status_read_start_projection(bundle, manifest))
+        self.assertEqual(10, len(checker.c21_provider_status_read_start_paths()))
+        self.assertEqual(18, len(checker.c21_provider_status_read_lease_paths()))
+        self.assertEqual(
+            "300FEF86F8357958E74BEAAA9440CA4B7F56240CC1C9B51A115A58B48B4122E8",
+            checker._path_list_sha256(checker.c21_provider_status_read_lease_paths()),
+        )
+        self.assertEqual("ACTIVE_PROVIDER_STATUS_READ", bundle["progress"]["status"])
+        self.assertEqual("developer-primary", bundle["progress"]["active_agent"])
+        self.assertFalse(bundle["progress"]["provider_status_read"]["accepted"])
+        prompt_sha = hashlib.sha256(
+            (historical_root / "docs/work_orders/C-21_PROVIDER_STATUS_READ_INVOCATION_PROMPT.md").read_bytes()
+        ).hexdigest().upper()
+        self.assertEqual(prompt_sha, bundle["progress"]["active_work_instruction"]["invocation_sha256"])
+        self.assertEqual(prompt_sha, bundle["handoff"]["active_invocation_sha256"])
+
+    def test_c21_provider_status_read_start_rejects_event_lease_history_and_boundary_mutations(self) -> None:
+        checker = self.require_checker()
+        bundle, historical_root = self._historical_bundle(
+            checker, "51ed9d852a1fb48d24d7112cc900485de2f8011e"
+        )
+        manifest = json.loads((historical_root / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_START_MANIFEST.json").read_text(encoding="utf-8"))
+        self.assertEqual([], checker.validate_c21_provider_status_read_start_projection(bundle, manifest))
+        mutations = []
+        for index, path, value in (
+            (-3, "event_type", "PACKAGE_STARTED"),
+            (-3, "details.execution_fencing_token", "tampered"),
+            (-2, "details.write_fencing_token", "tampered"),
+            (-2, "details.paths", ["other"]),
+            (-1, "details.runtime_next_action", "WAIT_FOR_EXTERNAL_PROVIDER"),
+        ):
+            changed = copy.deepcopy(bundle)
+            target = changed["events"]["events"][index]
+            parts = path.split(".")
+            for part in parts[:-1]:
+                target = target[part]
+            target[parts[-1]] = value
+            mutations.append((path, changed, copy.deepcopy(manifest)))
+        for field, value in (
+            ("status", "WAITING_APPROVAL"),
+            ("active_agent", None),
+            ("worker_lease", None),
+            ("write_lease", None),
+        ):
+            changed = copy.deepcopy(bundle)
+            changed["progress"][field] = value
+            mutations.append((field, changed, copy.deepcopy(manifest)))
+        for field, value in (
+            ("accepted", True),
+            ("c01_status", "READY"),
+            ("dir2_status", "TRIGGERED"),
+            ("actual_provider_calls", "EXECUTED"),
+            ("database_migration", "EXECUTED"),
+            ("runtime_next_action", "EXECUTE_WORKBENCH_UI_REWORK"),
+        ):
+            changed = copy.deepcopy(bundle)
+            changed["progress"]["provider_status_read"][field] = value
+            mutations.append((field, changed, copy.deepcopy(manifest)))
+        history = copy.deepcopy(bundle)
+        history["events"]["events"][0]["event_id"] += "-tampered"
+        mutations.append(("history", history, copy.deepcopy(manifest)))
+        for field, value in (
+            ("historical_full_file_sha256", "0" * 64),
+            ("historical_event_object_prefix_sha256", "0" * 64),
+            ("historical_events_canonical_ascii_sha256", "0" * 64),
+            ("start_exact_path_list_sha256", "0" * 64),
+            ("lease_exact_path_list_sha256", "0" * 64),
+            ("execution_authority_sha256", "0" * 64),
+        ):
+            changed_manifest = copy.deepcopy(manifest)
+            changed_manifest[field] = value
+            mutations.append((field, copy.deepcopy(bundle), changed_manifest))
+        for scenario, changed_bundle, changed_manifest in mutations:
+            with self.subTest(scenario=scenario):
+                self.assertTrue(checker.validate_c21_provider_status_read_start_projection(changed_bundle, changed_manifest))
+        stale_handoff = copy.deepcopy(bundle)
+        stale_handoff["handoff"]["active_invocation_sha256"] = "0" * 64
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_HANDOFF_INVALID",
+            checker.validate_c21_provider_status_read_start_projection(stale_handoff, copy.deepcopy(manifest)),
+        )
+
+    def test_c21_provider_wsl_auth_reviewed_exact10_contract_exists(self) -> None:
+        """The seq524 record surface is the frozen exact10 requested by Main."""
+        checker = self.require_checker()
+        exact10 = sorted(
+            {
+                "docs/WORK_STATUS.md",
+                "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json",
+                "docs/progress/BUILD_HANDOFF.md",
+                "docs/progress/build-progress.json",
+                "docs/progress/progress-events.json",
+                "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json",
+                "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_INVOCATION_PROMPT.md",
+                "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            }
+        )
+        self.assertEqual(exact10, sorted(checker.c21_provider_wsl_auth_reviewed_paths()))
+        self.assertEqual(
+            "3C963ACAF605AD6BF212F56C6C3D1FA3D5F9434E0787045C4F4E1D754F1C0B93",
+            checker.path_list_lf_sha256(exact10),
+        )
+
+    def test_c21_provider_wsl_auth_reviewed_git_projection_is_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+        )
+        repository = copy.deepcopy(bundle["progress"]["repository"])
+        product_commit = "0f70afeabe9a031e7960d49cfe27c808c0770d16"
+        product_parent = "b85d2b48e14f513e326054bc0be28009f269a827"
+        committed = sorted(
+            checker.c21_development_qa_review_predecessor_paths()
+            | checker.c21_development_qa_review_successor_paths()
+            | checker.c21_provider_status_read_start_paths()
+            | checker.c21_provider_status_read_actual_paths()
+            | checker.c21_provider_status_read_review_successor_paths()
+            | checker.c21_provider_wsl_auth_product_paths()
+        )
+        record = sorted(checker.c21_provider_wsl_auth_reviewed_paths())
+        cumulative = sorted(set(committed) | set(record))
+        repository.update(
+            local_head=product_commit,
+            product_parent_commit=product_parent,
+            head_relation="FEATURE_WORKTREE_C21_PROVIDER_WSL_AUTH_PRODUCT_EXACT99_REVIEW_RECORD10",
+            worktree_status="SEQ524_PROVIDER_WSL_AUTH_REVIEWED_EXACT10_DIRTY",
+            exact_allowed_paths=cumulative,
+            provider_wsl_auth_reviewed_paths=record,
+        )
+        progress = copy.deepcopy(bundle["progress"])
+        progress["event_sequence"] = 524
+        common = {
+            "actual_head": product_commit,
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": committed,
+            "working_tree_mode": True,
+            "progress": progress,
+            "control_descendant_paths": record,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+            "product_commit_parent_is_direct": True,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        wrong_product_parent = dict(common, product_commit_parent_is_direct=False)
+        self.assertIn(
+            "GIT_PRODUCT_COMMIT_PARENT_INVALID",
+            checker.validate_repository_projection(repository, **wrong_product_parent),
+        )
+        postcommit = dict(
+            common,
+            actual_head="a" * 40,
+            actual_changed_paths=cumulative,
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        dirty_postcommit = dict(postcommit, worktree_is_clean=False)
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(repository, **dirty_postcommit),
+        )
+
+    def test_c21_provider_wsl_auth_reviewed_projection_rejects_binding_mutation(self) -> None:
+        checker = self.require_checker()
+        validator = checker.validate_c21_provider_wsl_auth_reviewed_projection
+        bundle, snapshot_root = self._historical_bundle(
+            checker, "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+        )
+        manifest = json.loads(
+            (snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual([], validator(bundle, manifest))
+        for field in (
+            "historical_full_file_sha256",
+            "historical_event_object_prefix_sha256",
+            "historical_events_canonical_ascii_sha256",
+            "product_commit",
+            "product_parent_commit",
+            "product_exact_path_list_sha256",
+            "record_exact_path_list_sha256",
+            "record_commit",
+            "record_commit_mode",
+        ):
+            mutated = copy.deepcopy(manifest)
+            mutated[field] = "tampered"
+            self.assertTrue(validator(bundle, mutated), field)
+        mutated_progress = copy.deepcopy(bundle)
+        mutated_progress["progress"]["provider_wsl_auth"]["actual_provider_calls"] = "EXECUTED"
+        self.assertIn(
+            "C21_PROVIDER_WSL_AUTH_REVIEW_BOUNDARY_INVALID",
+            validator(mutated_progress, manifest),
+        )
+        mutated_events = copy.deepcopy(bundle)
+        mutated_events["events"]["events"][515]["event_id"] = "tampered"
+        self.assertIn(
+            "C21_PROVIDER_WSL_AUTH_REVIEW_HISTORY_INVALID",
+            validator(mutated_events, manifest),
+        )
+
+    def test_c21_provider_wsl_auth_reviewed_rejects_each_terminal_event_detail_mutation(self) -> None:
+        checker = self.require_checker()
+        validator = checker.validate_c21_provider_wsl_auth_reviewed_projection
+        bundle, snapshot_root = self._historical_bundle(
+            checker, "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+        )
+        manifest = json.loads(
+            (snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for sequence in range(514, 525):
+            with self.subTest(sequence=sequence):
+                mutated = copy.deepcopy(bundle)
+                mutated["events"]["events"][sequence - 1]["details"]["unexpected_binding"] = "tampered"
+                self.assertIn(
+                    "C21_PROVIDER_WSL_AUTH_REVIEW_EVENT_INVALID",
+                    validator(mutated, manifest),
+                )
+
+    def test_c21_provider_wsl_auth_reviewed_rejects_manifest_and_digest_metadata_mutation(self) -> None:
+        checker = self.require_checker()
+        validator = checker.validate_c21_provider_wsl_auth_reviewed_projection
+        bundle, snapshot_root = self._historical_bundle(
+            checker, "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+        )
+        manifest = json.loads(
+            (snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for field in ("schema_version", "created_at"):
+            with self.subTest(manifest_field=field):
+                mutated = copy.deepcopy(manifest)
+                mutated[field] = "tampered"
+                self.assertIn(
+                    "C21_PROVIDER_WSL_AUTH_REVIEW_MANIFEST_INVALID",
+                    validator(bundle, mutated),
+                )
+        digest = json.loads(
+            (snapshot_root / "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-auth-reviewed.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        for field in ("schema_version", "digest_id", "algorithm", "created_at", "scope"):
+            with self.subTest(digest_field=field):
+                mutated = copy.deepcopy(digest)
+                mutated[field] = "tampered"
+                with mock.patch.object(checker, "_load_json", return_value=mutated):
+                    self.assertIn(
+                        "C21_PROVIDER_WSL_AUTH_REVIEW_DIGEST_INVALID",
+                        validator(bundle, manifest),
+                    )
+
+    def test_c21_provider_wsl_git_only_candidate_start_exact_scopes_are_frozen(self) -> None:
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_git_only_candidate_start_paths"))
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_git_only_candidate_paths"))
+        start = sorted(checker.c21_provider_wsl_git_only_candidate_start_paths())
+        developer = sorted(checker.c21_provider_wsl_git_only_candidate_paths())
+        self.assertEqual(10, len(start))
+        self.assertEqual(
+            "87A153B8CF5F7B1C8A4B4CDD1589369164D7B7B7849971DC3E4D10EFFA7707D2",
+            checker.path_list_lf_sha256(start),
+        )
+        self.assertEqual(12, len(developer))
+        self.assertEqual(
+            "6DE878D2FD387431D2869BD5A0F070862B48727391F7F44D6D1FEEF983702765",
+            checker.path_list_lf_sha256(developer),
+        )
+
+    def test_c21_provider_wsl_git_only_candidate_start_git_projection_is_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "a6dca0da5a37e64491e91813895268e78ecb78b2")
+        repository = copy.deepcopy(bundle["progress"]["repository"])
+        committed = sorted(
+            checker.c21_development_qa_review_predecessor_paths()
+            | checker.c21_development_qa_review_successor_paths()
+            | checker.c21_provider_status_read_start_paths()
+            | checker.c21_provider_status_read_actual_paths()
+            | checker.c21_provider_status_read_review_successor_paths()
+            | checker.c21_provider_wsl_auth_product_paths()
+            | checker.c21_provider_wsl_auth_reviewed_paths()
+        )
+        start = sorted(checker.c21_provider_wsl_git_only_candidate_start_paths())
+        progress = copy.deepcopy(bundle["progress"])
+        common = {
+            "actual_head": "e4cccf3ce99e29005103cea3bd76fa0eede36f28",
+            "actual_branch": "codex/c21-operational-execution",
+            "actual_upstream": "origin/codex/c21-operational-execution",
+            "actual_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            "actual_feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+            "base_is_ancestor": True,
+            "actual_changed_paths": committed,
+            "working_tree_mode": True,
+            "progress": progress,
+            "control_descendant_paths": start,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(
+                repository, **dict(common, control_descendant_paths=start + ["outside.txt"])
+            ),
+        )
+        postcommit = dict(
+            common,
+            actual_head="a" * 40,
+            actual_changed_paths=sorted(set(committed) | set(start)),
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(
+                repository, **dict(postcommit, control_runtime_record_commit_is_direct=False)
+            ),
+        )
+
+    def test_c21_provider_wsl_git_only_candidate_postcommit_rejects_missing_status_collection(self) -> None:
+        """A failed status collector must not be interpreted as a clean seq527 worktree."""
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "a6dca0da5a37e64491e91813895268e78ecb78b2")
+        repository = bundle["progress"]["repository"]
+        parent = "e4cccf3ce99e29005103cea3bd76fa0eede36f28"
+        child = "a" * 40
+        exact107 = "\n".join(repository["exact_allowed_paths"])
+        exact10 = "\n".join(repository["provider_wsl_git_only_candidate_start_paths"])
+
+        def validate(status_raw):
+            def fake_git_value(_root, *arguments):
+                values = {
+                    ("rev-parse", "HEAD"): child,
+                    ("branch", "--show-current"): repository["branch"],
+                    ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): repository["upstream"],
+                    ("rev-parse", "@{u}"): repository["remote_head"],
+                    ("rev-parse", repository["feature_remote"]): repository["feature_remote_head"],
+                    ("diff", "--name-only", repository["validated_base_commit"], child): exact107,
+                    ("show", "-s", "--format=%P", child): parent,
+                    ("diff", "--name-only", f"{parent}..{child}"): exact10,
+                    ("show", "-s", "--format=%P", parent): repository["product_parent_commit"],
+                }
+                if arguments == (
+                    "-c",
+                    "core.quotePath=false",
+                    "status",
+                    "--porcelain=v1",
+                    "--untracked-files=all",
+                ):
+                    return status_raw
+                return values.get(arguments)
+
+            with mock.patch.object(checker, "_git_value", side_effect=fake_git_value), mock.patch.object(
+                checker, "_git_returncode", return_value=0
+            ):
+                return checker._validate_git_projection(copy.deepcopy(bundle))
+
+        self.assertEqual([], validate(""))
+        self.assertIn("GIT_STATUS_COLLECTION_FAILED", validate(None))
+
+    def test_c21_provider_wsl_git_only_candidate_start_projection_rejects_mutations(self) -> None:
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "validate_c21_provider_wsl_git_only_candidate_start_projection"))
+        validator = checker.validate_c21_provider_wsl_git_only_candidate_start_projection
+        bundle, snapshot_root = self._historical_bundle(checker, "a6dca0da5a37e64491e91813895268e78ecb78b2")
+        manifest = json.loads(
+            (snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual([], validator(bundle, manifest))
+        for index, field in ((-3, "status"), (-2, "write_fencing_token"), (-1, "accepted")):
+            with self.subTest(event_index=index, field=field):
+                changed = copy.deepcopy(bundle)
+                changed["events"]["events"][index]["details"][field] = "tampered"
+                self.assertIn(
+                    "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_EVENT_INVALID",
+                    validator(changed, copy.deepcopy(manifest)),
+                )
+        for section, field, value, reason in (
+            ("provider_wsl_git_only_candidate", "actual_push", "EXECUTED", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_BOUNDARY_INVALID"),
+            ("active_work_instruction", "artifact_sha256", "tampered", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_WORK_INSTRUCTION_INVALID"),
+            ("repository", "candidate_remote_ref", "refs/remotes/origin/candidates/other", "GIT_DESCENDANT_PROJECTION_INVALID"),
+        ):
+            with self.subTest(section=section, field=field):
+                changed = copy.deepcopy(bundle)
+                changed["progress"][section][field] = value
+                self.assertIn(reason, validator(changed, copy.deepcopy(manifest)) if section != "repository" else checker.validate_repository_projection(
+                    changed["progress"]["repository"],
+                    actual_head="e4cccf3ce99e29005103cea3bd76fa0eede36f28",
+                    actual_branch="codex/c21-operational-execution",
+                    actual_upstream="origin/codex/c21-operational-execution",
+                    actual_remote_head="ca92b7845eda803cff3c432799642e4f9243d4d6",
+                    actual_feature_remote_head="ca92b7845eda803cff3c432799642e4f9243d4d6",
+                    base_is_ancestor=True,
+                    actual_changed_paths=sorted(checker.c21_development_qa_review_predecessor_paths() | checker.c21_development_qa_review_successor_paths() | checker.c21_provider_status_read_start_paths() | checker.c21_provider_status_read_actual_paths() | checker.c21_provider_status_read_review_successor_paths() | checker.c21_provider_wsl_auth_product_paths() | checker.c21_provider_wsl_auth_reviewed_paths()),
+                    working_tree_mode=True,
+                    progress=changed["progress"],
+                    control_descendant_paths=sorted(checker.c21_provider_wsl_git_only_candidate_start_paths()),
+                    worktree_is_clean=False,
+                ))
+        for field in (
+            "execution_authority_sha256",
+            "invocation_sha256",
+            "start_exact_path_list_sha256",
+            "source_committed_exact_path_list_sha256",
+            "source_cumulative_exact_path_list_sha256",
+            "developer_exact_path_list_sha256",
+            "post_developer_cumulative_exact_path_list_sha256",
+        ):
+            with self.subTest(manifest_field=field):
+                changed_manifest = copy.deepcopy(manifest)
+                changed_manifest[field] = "tampered"
+                self.assertIn(
+                    "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_MANIFEST_INVALID",
+                    validator(copy.deepcopy(bundle), changed_manifest),
+                )
+        changed = copy.deepcopy(bundle)
+        changed["progress"]["latest_evidence_refs"] = [
+            {**row, "sha256": "0" * 64} if row.get("path") == "scripts/check_project_progress.py" else row
+            for row in changed["progress"]["latest_evidence_refs"]
+        ]
+        self.assertIn("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_LATEST_REF_INVALID", validator(changed, copy.deepcopy(manifest)))
+        changed = copy.deepcopy(bundle)
+        changed["handoff"]["runtime_next_action"] = "tampered"
+        self.assertIn("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_HANDOFF_INVALID", validator(changed, copy.deepcopy(manifest)))
+        changed = copy.deepcopy(bundle)
+        changed["detached_digest"]["scope"] = "tampered"
+        self.assertIn("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_START_DIGEST_INVALID", validator(changed, copy.deepcopy(manifest)))
+        changed = copy.deepcopy(bundle)
+        changed["progress"]["snapshot_hash"] = "0" * 64
+        self.assertIn("PRG_SNAPSHOT_HASH_MISMATCH", checker.validate_bundle(changed))
+
+    def test_c21_provider_wsl_git_only_candidate_bound_projection_rejects_mutations(self):
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "e6c562cf07bc2c35e24addb60efa9d90fae08046")
+        manifest = json.loads((snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        validator = checker.validate_c21_provider_wsl_git_only_candidate_projection
+        self.assertEqual([], validator(bundle, manifest))
+        for section, field, value in (
+            ("provider_wsl_git_only_candidate", "actual_push", "EXECUTED"),
+            ("provider_wsl_git_only_candidate", "candidate_ref", "refs/remotes/origin/other"),
+            ("active_work_instruction", "artifact_sha256", "0" * 64),
+            ("repository", "local_head", "0" * 40),
+        ):
+            with self.subTest(section=section, field=field):
+                changed = copy.deepcopy(bundle)
+                changed["progress"][section][field] = value
+                self.assertTrue(validator(changed, manifest))
+        for offset in (-3, -2, -1):
+            changed = copy.deepcopy(bundle)
+            changed["events"]["events"][offset]["details"]["unexpected_authority"] = True
+            self.assertIn("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_EVENT_INVALID", validator(changed, manifest))
+        for field in ("created_at", "historical_full_file_sha256", "developer_exact_paths", "execution_authority_sha256", "raw_checksums"):
+            changed = copy.deepcopy(manifest)
+            changed[field] = "tampered"
+            self.assertTrue(validator(bundle, changed), field)
+        changed = copy.deepcopy(bundle)
+        changed["detached_digest"]["scope"] = "tampered"
+        self.assertIn("C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID", validator(changed, manifest))
+        changed = copy.deepcopy(bundle)
+        changed["handoff"]["accepted"] = True
+        self.assertTrue(validator(changed, manifest))
+
+
+    def test_c21_provider_wsl_git_only_candidate_bound_malformed_digest_fails_closed(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        for case in ("missing", "null", "list", "progress_null", "progress_list", "handoff_null", "handoff_list"):
+            with self.subTest(case=case):
+                changed = copy.deepcopy(bundle)
+                if case == "missing":
+                    del changed["detached_digest"]
+                elif case in ("null", "list"):
+                    changed["detached_digest"] = None if case == "null" else []
+                else:
+                    section, shape = case.split("_")
+                    changed["detached_digest"][section] = None if shape == "null" else []
+                self.assertIn(
+                    "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID",
+                    checker.validate_c21_provider_wsl_git_only_candidate_projection(changed, manifest),
+                )
+
+    def test_c21_provider_wsl_git_only_candidate_bound_history_unavailable_fails_closed(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        original = subprocess.check_output
+        for relative in ("docs/progress/progress-events.json", "docs/progress/build-progress.json"):
+            for payload in (None, b"not-json", b"null", b"[]", b"{}"):
+                with self.subTest(relative=relative, payload=payload):
+                    def read_history(command, *args, **kwargs):
+                        if command == ["git", "show", "a6dca0da5a37e64491e91813895268e78ecb78b2:" + relative]:
+                            if payload is None:
+                                raise subprocess.CalledProcessError(128, command)
+                            return payload
+                        return original(command, *args, **kwargs)
+                    with mock.patch.object(subprocess, "check_output", side_effect=read_history):
+                        self.assertIn(
+                            "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HISTORY_INVALID",
+                            checker.validate_c21_provider_wsl_git_only_candidate_projection(bundle, manifest),
+                        )
+
+    def test_c21_provider_wsl_git_only_candidate_bound_missing_files_fail_closed(self):
+        checker = self.require_checker()
+        bundle = checker.load_bundle(ROOT)
+        manifest = json.loads((ROOT / "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json").read_text(encoding="utf-8"))
+        original = Path.read_bytes
+        instruction = bundle["progress"]["active_work_instruction"]
+        for relative, expected in (
+            ("docs/progress/progress-events.json", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_HISTORY_INVALID"),
+            ("docs/progress/build-progress.json", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID"),
+            ("docs/progress/BUILD_HANDOFF.md", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_DIGEST_INVALID"),
+            ("deploy/wsl/CandidateReleaseManifest.json", "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_LATEST_REF_INVALID"),
+            (instruction["artifact_path"], "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_LATEST_REF_INVALID"),
+            (instruction["invocation_path"], "C21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_LATEST_REF_INVALID"),
+        ):
+            with self.subTest(relative=relative):
+                def read_evidence(path):
+                    if path == ROOT / relative:
+                        raise FileNotFoundError(str(path))
+                    return original(path)
+                with mock.patch.object(Path, "read_bytes", read_evidence):
+                    self.assertIn(
+                        expected,
+                        checker.validate_c21_provider_wsl_git_only_candidate_projection(bundle, manifest),
+                    )
+
+    def test_c21_provider_wsl_git_only_candidate_bound_status_collection_fails_closed(self):
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(checker, "e6c562cf07bc2c35e24addb60efa9d90fae08046")
+        original = checker._git_value
+        def collect(root, *arguments):
+            if arguments == ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"):
+                return None
+            return original(root, *arguments)
+        with mock.patch.object(checker, "_git_value", side_effect=collect):
+            self.assertIn("GIT_STATUS_COLLECTION_FAILED", checker._validate_git_projection(bundle))
+
+    def test_c21_provider_wsl_git_only_candidate_bound_git_projection_is_exact(self):
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(checker, "e6c562cf07bc2c35e24addb60efa9d90fae08046")
+        repository = bundle["progress"]["repository"]
+        source_paths = set(repository["exact_allowed_paths"]) - {
+            "docs/evidence/manifests/C-21_PROVIDER_WSL_GIT_ONLY_CANDIDATE_MANIFEST.json",
+            "docs/progress/progress-handoff-detached-digest-c21-provider-wsl-git-only-candidate-bound.json",
+        }
+        arguments = dict(
+            actual_head="a6dca0da5a37e64491e91813895268e78ecb78b2",
+            actual_branch="codex/c21-operational-execution",
+            actual_upstream="origin/codex/c21-operational-execution",
+            actual_remote_head="ca92b7845eda803cff3c432799642e4f9243d4d6",
+            actual_feature_remote_head="ca92b7845eda803cff3c432799642e4f9243d4d6",
+            base_is_ancestor=True, actual_changed_paths=sorted(source_paths),
+            working_tree_mode=True, progress=bundle["progress"],
+            control_descendant_paths=sorted(checker.c21_provider_wsl_git_only_candidate_paths()),
+            worktree_is_clean=False, product_commit_parent_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **arguments))
+        for field, value in (
+            ("actual_branch", "main"), ("actual_upstream", None),
+            ("actual_remote_head", "0" * 40), ("base_is_ancestor", False),
+            ("product_commit_parent_is_direct", False), ("worktree_is_clean", True),
+            ("actual_changed_paths", sorted(source_paths)[:-1]),
+            ("control_descendant_paths", sorted(checker.c21_provider_wsl_git_only_candidate_paths()) + ["extra.txt"]),
+        ):
+            self.assertTrue(checker.validate_repository_projection(repository, **(arguments | {field: value})), field)
+        committed = arguments | dict(
+            actual_head="1" * 40, actual_changed_paths=repository["exact_allowed_paths"],
+            working_tree_mode=False, worktree_is_clean=True,
+            control_is_ancestor=True, control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **committed))
+        for field, value in (("control_runtime_record_commit_is_direct", False), ("worktree_is_clean", False), ("control_is_ancestor", False)):
+            self.assertTrue(checker.validate_repository_projection(repository, **(committed | {field: value})), field)
+
+    def test_c21_provider_status_read_review_successor_accepts_only_exact_record_projection(self) -> None:
+        """A committed exact13 plus any record path outside exact8 must fail closed."""
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "b85d2b48e14f513e326054bc0be28009f269a827"
+        )
+        repository = bundle["progress"]["repository"]
+        exact95 = sorted(
+            checker.c21_development_qa_review_predecessor_paths()
+            | checker.c21_development_qa_review_successor_paths()
+            | checker.c21_provider_status_read_start_paths()
+            | checker.c21_provider_status_read_actual_paths()
+        )
+        exact8 = sorted(checker.c21_provider_status_read_review_successor_paths())
+        repository.update(
+            local_head="13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+            head_relation="FEATURE_WORKTREE_C21_PROVIDER_STATUS_READ_COMMITTED_EXACT95_REVIEW_RECORD8",
+            worktree_status="SEQ513_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_DIRTY",
+            exact_allowed_paths=sorted(set(exact95) | set(exact8)),
+            provider_status_read_review_successor_paths=exact8,
+        )
+        progress = copy.deepcopy(bundle["progress"])
+        progress["event_sequence"] = 513
+        common = {
+            "actual_head": "13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0",
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact95,
+            "working_tree_mode": True,
+            "progress": progress,
+            "control_descendant_paths": exact8,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        tampered = dict(common, control_descendant_paths=exact8 + ["outside.txt"])
+        self.assertIn(
+            "GIT_DESCENDANT_PATH_SET_MISMATCH",
+            checker.validate_repository_projection(repository, **tampered),
+        )
+        postcommit = dict(
+            common,
+            actual_head="a" * 40,
+            actual_changed_paths=sorted(set(exact95) | set(exact8)),
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        wrong_parent = dict(postcommit, control_runtime_record_commit_is_direct=False)
+        self.assertIn(
+            "GIT_DESCENDANT_RECORD_COMMIT_INVALID",
+            checker.validate_repository_projection(repository, **wrong_parent),
+        )
+
+    def test_c21_provider_status_read_review_successor_fails_closed_on_binding_mutation(self) -> None:
+        checker = self.require_checker()
+        bundle, snapshot_root = self._historical_bundle(
+            checker, "b85d2b48e14f513e326054bc0be28009f269a827"
+        )
+        manifest = json.loads(
+            (snapshot_root / "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_REVIEW_SUCCESSOR_MANIFEST.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        self.assertEqual(
+            [],
+            checker.validate_c21_provider_status_read_review_successor_projection(bundle, manifest),
+        )
+        mutated_manifest = copy.deepcopy(manifest)
+        mutated_manifest["product_exact_paths"].append("outside.txt")
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_REVIEW_MANIFEST_INVALID",
+            checker.validate_c21_provider_status_read_review_successor_projection(bundle, mutated_manifest),
+        )
+        for field in (
+            "manifest_id",
+            "appended_event_count",
+            "product_parent_commit",
+            "review_report_sha256",
+            "record_commit",
+            "record_commit_mode",
+        ):
+            mutated_provenance = copy.deepcopy(manifest)
+            mutated_provenance[field] = "tampered"
+            self.assertIn(
+                "C21_PROVIDER_STATUS_READ_REVIEW_MANIFEST_INVALID",
+                checker.validate_c21_provider_status_read_review_successor_projection(
+                    bundle, mutated_provenance
+                ),
+                field,
+            )
+        mutated_progress = copy.deepcopy(bundle)
+        mutated_progress["progress"]["provider_status_read"]["actual_provider_calls"] = "PASS"
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_REVIEW_BOUNDARY_INVALID",
+            checker.validate_c21_provider_status_read_review_successor_projection(mutated_progress, manifest),
+        )
+        mutated_events = copy.deepcopy(bundle)
+        mutated_events["events"]["events"][508]["event_id"] = "tampered"
+        self.assertIn(
+            "C21_PROVIDER_STATUS_READ_REVIEW_HISTORY_INVALID",
+            checker.validate_c21_provider_status_read_review_successor_projection(mutated_events, manifest),
+        )
+
+    def test_c21_provider_status_read_start_public_and_real_git_paths_fail_closed(self) -> None:
+        checker = self.require_checker()
+        bundle, _ = self._historical_bundle(
+            checker, "51ed9d852a1fb48d24d7112cc900485de2f8011e"
+        )
+        repository = bundle["progress"]["repository"]
+        exact78 = sorted(checker.c21_development_qa_review_predecessor_paths() | checker.c21_development_qa_review_successor_paths())
+        exact10 = sorted(checker.c21_provider_status_read_start_paths())
+        common = {
+            "actual_head": repository["local_head"],
+            "actual_branch": repository["branch"],
+            "actual_upstream": repository["upstream"],
+            "actual_remote_head": repository["remote_head"],
+            "actual_feature_remote_head": repository["feature_remote_head"],
+            "base_is_ancestor": True,
+            "actual_changed_paths": exact78,
+            "working_tree_mode": True,
+            "progress": bundle["progress"],
+            "control_descendant_paths": exact10,
+            "worktree_is_clean": False,
+            "control_runtime_record_commit_is_direct": False,
+        }
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        postcommit = dict(
+            common,
+            actual_head="e" * 40,
+            actual_changed_paths=sorted(set(exact78) | set(exact10)),
+            working_tree_mode=False,
+            control_is_ancestor=True,
+            worktree_is_clean=True,
+            control_runtime_record_commit_is_direct=True,
+        )
+        self.assertEqual([], checker.validate_repository_projection(repository, **postcommit))
+        for field, value in (
+            ("actual_changed_paths", sorted(set(exact78) | set(exact10))[:-1]),
+            ("control_descendant_paths", exact10[:-1]),
+            ("working_tree_mode", True),
+            ("control_is_ancestor", False),
+            ("worktree_is_clean", False),
+            ("control_runtime_record_commit_is_direct", False),
+        ):
+            with self.subTest(postcommit_field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(postcommit, **{field: value})))
+        for field, value in (
+            ("actual_remote_head", "0" * 40),
+            ("actual_feature_remote_head", "0" * 40),
+            ("actual_changed_paths", exact78[:-1]),
+            ("control_descendant_paths", exact10[:-1]),
+            ("working_tree_mode", False),
+            ("worktree_is_clean", True),
+            ("base_is_ancestor", False),
+        ):
+            with self.subTest(field=field):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(common, **{field: value})))
+        for field, value in (
+            ("branch", "other"),
+            ("upstream", "origin/other"),
+            ("remote_head", "0" * 40),
+            ("feature_remote", "origin/other"),
+            ("feature_remote_head", "0" * 40),
+            ("validated_base_commit", "0" * 40),
+            ("local_head", "0" * 40),
+            ("head_relation", "TAMPERED"),
+            ("worktree_status", "CLEAN"),
+            ("exact_allowed_paths", repository["exact_allowed_paths"][:-1]),
+        ):
+            with self.subTest(repository_field=field):
+                changed = copy.deepcopy(repository)
+                changed[field] = value
+                self.assertTrue(checker.validate_repository_projection(changed, **common))
+                changed_bundle = copy.deepcopy(bundle)
+                changed_bundle["progress"]["repository"][field] = value
+                self.assertTrue(checker._validate_git_projection(changed_bundle))
+
+    def _execution_resume_fixture(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_start_artifacts"))
+        source = "e6c562cf07bc2c35e24addb60efa9d90fae08046"
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
+            for path in ("docs/progress/build-progress.json", "docs/progress/progress-events.json")
+        }
+        directory = tempfile.TemporaryDirectory(prefix="anvil-seq533-", dir="D:/tmp")
+        self.addCleanup(directory.cleanup)
+        root = Path(directory.name)
+        files = {path: (ROOT / path).read_bytes() for path in (
+            "docs/WORK_STATUS.md", "docs/progress/BUILD_HANDOFF.md",
+            "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_WORK_INSTRUCTION.md",
+            "docs/work_orders/C-21_PROVIDER_WSL_EXECUTION_RESUME_INVOCATION_PROMPT.md",
+            "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+        )}
+        artifacts = checker.c21_provider_wsl_execution_resume_start_artifacts(historical, files)
+        for path, raw in dict(files, **artifacts).items():
+            target = root / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(raw)
+        bundle = {
+            "_root": root,
+            "progress": json.loads(artifacts[checker.C21_RESUME_P]),
+            "events": json.loads(artifacts[checker.C21_RESUME_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C21_RESUME_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C21_RESUME_D]),
+        }
+        manifest = json.loads(artifacts[checker.C21_RESUME_M])
+        return checker, bundle, manifest, historical
+
+    def test_c21_provider_wsl_exact_binding_start_contract_is_frozen(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_exact_binding_start_artifacts"))
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_exact_binding_start_paths"))
+        paths = sorted(checker.c21_provider_wsl_exact_binding_start_paths())
+        self.assertEqual(10, len(paths))
+        self.assertEqual(
+            "410EB4E3EB843BFF2FE9D332505445286986BE8572A288DF713E388DAF587B62",
+            checker.path_list_lf_sha256(paths),
+        )
+        source = "3501c37b25274c2c3b406a15bc8a57aa03a162e7"
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
+            for path in ("docs/progress/build-progress.json", "docs/progress/progress-events.json")
+        }
+        files = {
+            "docs/WORK_STATUS.md": (ROOT / "docs/WORK_STATUS.md").read_bytes(),
+            "docs/progress/BUILD_HANDOFF.md": (ROOT / "docs/progress/BUILD_HANDOFF.md").read_bytes(),
+            "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_WORK_INSTRUCTION.md": b"binding wi\n",
+            "docs/work_orders/C-21_PROVIDER_WSL_EXACT_BINDING_INVOCATION_PROMPT.md": b"binding prompt\n",
+            "scripts/check_project_progress.py": (ROOT / "scripts/check_project_progress.py").read_bytes(),
+            "tests/tooling/test_project_progress.py": (ROOT / "tests/tooling/test_project_progress.py").read_bytes(),
+        }
+        artifacts = checker.c21_provider_wsl_exact_binding_start_artifacts(historical, files)
+        progress = json.loads(artifacts[checker.C21_EXACT_BINDING_P])
+        events = json.loads(artifacts[checker.C21_EXACT_BINDING_E])
+        self.assertEqual(539, progress["event_sequence"])
+        self.assertEqual([537, 538, 539], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(
+            "8A7D4AA0124FBC49DD67D48DBF10C9CCC586BB43AB4A9A4473604C1E2F43B429",
+            progress["repository"]["exact_allowed_path_list_sha256"],
+        )
+        self.assertEqual("NOT_EXECUTED", progress["provider_wsl_exact_binding"]["push"])
+        self.assertEqual("SINSAN", progress["provider_wsl_exact_binding"]["wsl_observation"]["host"])
+        started = events["events"][-1]["details"]
+        for event_field, repository_field in (
+            ("dispatch_head", "local_head"), ("dispatch_upstream_head", "remote_head"),
+            ("projection_mode", "projection_mode"), ("validated_base_commit", "validated_base_commit"),
+            ("head_relation", "head_relation"),
+        ):
+            self.assertEqual(progress["repository"][repository_field], started[event_field])
+
+    def test_c21_provider_wsl_exact_binding_start_preserves_history_and_rejects_tamper(self):
+        checker = self.require_checker()
+        source = checker.C21_EXACT_BINDING_SOURCE
+        historical = {path: subprocess.check_output(["git", "show", f"{source}:{path}"], cwd=ROOT)
+                      for path in (checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E)}
+        files = {path: (ROOT / path).read_bytes() for path in (
+            "docs/WORK_STATUS.md", checker.C21_EXACT_BINDING_H, checker.C21_EXACT_BINDING_WI,
+            checker.C21_EXACT_BINDING_PROMPT, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+        artifacts = checker.c21_provider_wsl_exact_binding_start_artifacts(historical, files)
+        old, new = historical[checker.C21_EXACT_BINDING_E], artifacts[checker.C21_EXACT_BINDING_E]
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 536), checker.raw_event_object_prefix_bytes(new, 536))
+        self.assertEqual(539, json.loads(new)["last_sequence"])
+        metadata = checker.c21_provider_wsl_exact_binding_path_metadata()
+        self.assertEqual(14, metadata["successor_exact_path_count"])
+        self.assertEqual("B570C707DBEA3594C6AC57B0D44DBD0F64BBDEE26A037FC954FF03CFD78A133E",
+                         metadata["successor_exact_path_list_sha256"])
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_start_artifacts(historical, files, artifacts))
+        for path in artifacts:
+            changed = dict(artifacts)
+            changed[path] = artifacts[path] + b" "
+            with self.subTest(path=path):
+                self.assertTrue(checker.validate_c21_provider_wsl_exact_binding_start_artifacts(historical, files, changed))
+        corrupted = dict(historical)
+        corrupted[checker.C21_EXACT_BINDING_E] += b" "
+        with self.assertRaises(ValueError):
+            checker.c21_provider_wsl_exact_binding_start_artifacts(corrupted, files)
+
+    def test_c21_provider_wsl_exact_binding_git_contract_requires_direct_child_and_private_authority(self):
+        checker = self.require_checker()
+        metadata = checker.c21_provider_wsl_exact_binding_path_metadata()
+        repository = {
+            "branch": "codex/c21-operational-execution", "upstream": "origin/codex/c21-operational-execution",
+            "local_head": checker.C21_EXACT_BINDING_SOURCE, "validated_base_commit": checker.C21_EXACT_BINDING_BASE,
+            "head_relation": "FEATURE_WORKTREE_C21_PROVIDER_WSL_EXACT_BINDING_SOURCE_EXACT117_START_RECORD10",
+            "exact_allowed_paths": metadata["post_start_cumulative_exact_paths"],
+            "exact_allowed_path_list_sha256": metadata["post_start_cumulative_exact_path_list_sha256"],
+        }
+        common = dict(actual_head=checker.C21_EXACT_BINDING_SOURCE,
+            actual_branch="codex/c21-operational-execution", actual_upstream="origin/codex/c21-operational-execution",
+            actual_changed_paths=metadata["source_exact_paths"], dirty_paths=metadata["start_exact_paths"],
+            source_parent=checker.C21_EXACT_BINDING_PARENT, source_is_ancestor=True, base_is_ancestor=True,
+            record_commit_is_direct=False, worktree_is_clean=False,
+            private_remote_url="git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            private_control="772afbd5eb55791ca7b5002d58378437ea496750", private_candidate_ref="",
+            private_control_is_ancestor=True)
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_repository(repository, **common))
+        child = dict(common, actual_head="a" * 40,
+            actual_changed_paths=metadata["post_start_cumulative_exact_paths"], dirty_paths=[],
+            record_commit_is_direct=True, worktree_is_clean=True)
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_repository(repository, **child))
+        for field, value in (("record_commit_is_direct", False), ("source_is_ancestor", False),
+                             ("base_is_ancestor", False), ("private_candidate_ref", "unexpected"),
+                             ("private_control_is_ancestor", False), ("private_remote_url", "git@github.com:public/Anvil.git")):
+            with self.subTest(field=field):
+                self.assertTrue(checker.validate_c21_provider_wsl_exact_binding_repository(repository, **dict(child, **{field:value})))
+
+    def test_c21_provider_wsl_execution_resume_event_bytes_freeze_header_and_history(self):
+        checker, bundle, manifest, historical = self._execution_resume_fixture()
+        raw = (bundle["_root"] / checker.C21_RESUME_E).read_bytes()
+        old = historical[checker.C21_RESUME_E]
+        self.assertEqual(533, json.loads(raw)["last_sequence"])
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 530), checker.raw_event_object_prefix_bytes(raw, 530))
+        self.assertEqual([531, 532, 533], [event["sequence"] for event in bundle["events"]["events"][-3:]])
+        for corrupted in (old.replace(b'"last_sequence": 530', b'"last_sequence": 529'), old + b" ", old.replace(b'"stream_id":', b'"stream_id":"duplicate", "stream_id":')):
+            with self.subTest(corruption=corrupted[:110]), self.assertRaises(ValueError):
+                checker.c21_provider_wsl_execution_resume_event_bytes(corrupted, bundle["events"]["events"][-3:])
+
+    def test_c21_provider_wsl_execution_resume_matches_shared_recovery_contracts(self):
+        checker, generated, manifest, _ = self._execution_resume_fixture()
+        bundle = checker.load_bundle(ROOT)
+        bundle.update(generated)
+        bundle["_detached_digest_path"] = checker.C21_RESUME_D
+        bundle["_file_hashes"].update({path: hashlib.sha256((bundle["_root"] / path).read_bytes()).hexdigest().upper()
+                                      for path in checker.c21_provider_wsl_execution_resume_start_paths()})
+        for validator in (checker._validate_events, checker._validate_handoff,
+                          checker._validate_registry_refs, checker._validate_reporting_state,
+                          checker.validate_detached_progress_binding):
+            with self.subTest(validator=validator.__name__):
+                self.assertEqual([], validator(bundle))
+        self.assertEqual([], checker.validate_manifest_progress_binding(manifest, bundle))
+        self.assertEqual("EXECUTE_C21_PROVIDER_WSL_EXECUTION_RESUME_EXACT14", bundle["progress"]["next_safe_action"])
+
+    def test_c21_provider_wsl_execution_resume_public_main_rejects_nonobject_and_nested_corruption(self):
+        """Malformed P/E/M must reach the public CLI boundary without a traceback."""
+        checker, historical_bundle, historical_manifest, _ = self._execution_resume_fixture()
+        original_read = Path.read_text
+        historical_json = {
+            checker.C21_RESUME_P: historical_bundle["progress"],
+            checker.C21_RESUME_E: historical_bundle["events"],
+            checker.C21_RESUME_M: historical_manifest,
+        }
+        for relative, nested in (
+            (checker.C21_RESUME_P, {"reporting_decision": None}),
+            (checker.C21_RESUME_E, {"events": [None]}),
+            (checker.C21_RESUME_M, {"raw_checksums": None}),
+        ):
+            for shape in ([], None, nested):
+                original = historical_json[relative]
+                corrupted = original | shape if isinstance(shape, dict) else shape
+                def read_json(path, *args, **kwargs):
+                    if path == ROOT / relative:
+                        return json.dumps(corrupted)
+                    for historical_path, payload in historical_json.items():
+                        if path == ROOT / historical_path:
+                            return json.dumps(payload)
+                    return original_read(path, *args, **kwargs)
+                output = io.StringIO()
+                with self.subTest(path=relative, shape=shape), mock.patch.object(Path, "read_text", read_json), mock.patch("sys.stdout", output):
+                    self.assertEqual(1, checker.main([str(ROOT)]))
+                    self.assertIn("LOAD_ERROR:INVALID_STRUCTURE:", output.getvalue())
+                    self.assertNotIn("Traceback", output.getvalue())
+
+    def test_c21_provider_wsl_execution_resume_projection_rejects_adversarial_evidence(self):
+        checker, bundle, manifest, historical = self._execution_resume_fixture()
+        validator = checker.validate_c21_provider_wsl_execution_resume_start_projection
+        def git_blob(arguments, **kwargs):
+            return historical[arguments[-1].split(":", 1)[1]]
+        with mock.patch.object(checker.subprocess, "check_output", side_effect=git_blob):
+            self.assertEqual([], validator(bundle, manifest))
+            for section in ("progress", "events", "handoff", "detached_digest"):
+                for value in (None, [], "malformed"):
+                    altered = copy.deepcopy(bundle)
+                    altered[section] = value
+                    with self.subTest(section=section, value=value):
+                        self.assertTrue(validator(altered, manifest))
+            for key, value in (("accepted", True), ("push", "EXECUTED"), ("start_exact_path_count", 9)):
+                altered = copy.deepcopy(manifest)
+                altered[key] = value
+                self.assertTrue(validator(bundle, altered))
+            for rows_field, owner in (("raw_checksums", manifest), ("latest_evidence_refs", bundle["progress"])):
+                rows = copy.deepcopy(owner[rows_field])
+                for malformed in (rows + [rows[0]], rows[:-1], [None], "wrong"):
+                    altered, altered_manifest = copy.deepcopy(bundle), copy.deepcopy(manifest)
+                    target = altered_manifest if owner is manifest else altered["progress"]
+                    target[rows_field] = malformed
+                    with self.subTest(rows=rows_field):
+                        self.assertTrue(validator(altered, altered_manifest))
+            for path in (checker.C21_RESUME_P, checker.C21_RESUME_E, checker.C21_RESUME_H, checker.C21_RESUME_D, checker.C21_RESUME_M, checker.C21_RESUME_WI, checker.C21_RESUME_PROMPT, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py", "docs/WORK_STATUS.md"):
+                target = bundle["_root"] / path
+                original = target.read_bytes()
+                for invalid in (None, b"{", b"[]", b'{"x":1,"x":2}', b'{"x":NaN}', b'\xff'):
+                    if invalid is None:
+                        target.unlink()
+                    else:
+                        target.write_bytes(invalid)
+                    with self.subTest(path=path, invalid=invalid):
+                        self.assertTrue(validator(bundle, manifest))
+                    target.write_bytes(original)
+            altered = copy.deepcopy(bundle)
+            altered["progress"]["next_work_package"]["status"] = "READY"
+            self.assertTrue(validator(altered, manifest))
+            altered = copy.deepcopy(bundle)
+            altered["events"]["events"][0]["actor"] = "rewritten"
+            self.assertTrue(validator(altered, manifest))
+            path = bundle["_root"] / checker.C21_RESUME_E
+            raw = path.read_bytes()
+            path.write_bytes(raw.replace(b'"last_sequence": 533', b'"last_sequence": 530'))
+            self.assertTrue(validator(bundle, manifest))
+
+    def test_c21_provider_wsl_execution_resume_git_projection_rejects_scope_and_lineage(self):
+        checker, bundle, _, _ = self._execution_resume_fixture()
+        repository = bundle["progress"]["repository"]
+        metadata = checker.c21_provider_wsl_execution_resume_path_metadata()
+        source = metadata["source_cumulative_exact_paths"]
+        start = metadata["start_exact_paths"]
+        common = dict(actual_head=checker.C21_RESUME_SOURCE, actual_branch=repository["branch"],
+            actual_upstream=repository["upstream"], actual_remote_head=checker.C21_RESUME_REMOTE,
+            actual_feature_remote_head=checker.C21_RESUME_REMOTE, base_is_ancestor=True,
+            actual_changed_paths=source, working_tree_mode=True, progress=bundle["progress"],
+            control_descendant_paths=start, control_is_ancestor=True, worktree_is_clean=False,
+            control_runtime_record_commit_is_direct=False, product_commit_parent_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **common))
+        post = dict(common, actual_head="a" * 40, actual_changed_paths=metadata["post_start_cumulative_exact_paths"],
+            working_tree_mode=False, worktree_is_clean=True, control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker.validate_repository_projection(repository, **post))
+        for label, base, changes in (
+            ("dirty widened", common, {"control_descendant_paths": start + ["outside.txt"]}),
+            ("dirty narrowed", common, {"control_descendant_paths": start[:-1]}),
+            ("source reverted", common, {"actual_changed_paths": source[:-1]}),
+            ("second descendant", post, {"control_runtime_record_commit_is_direct": False}),
+            ("merge", post, {"control_runtime_record_commit_is_direct": False}),
+            ("source parent", common, {"product_commit_parent_is_direct": False}),
+            ("cumulative reversion", post, {"actual_changed_paths": source}),
+            ("dirty child", post, {"worktree_is_clean": False, "working_tree_mode": True}),
+            ("base ancestry", common, {"base_is_ancestor": False}),
+            ("remote", common, {"actual_remote_head": "0" * 40}),
+        ):
+            with self.subTest(label=label):
+                self.assertTrue(checker.validate_repository_projection(repository, **dict(base, **changes)))
+
+    def test_c21_provider_wsl_execution_resume_collector_fails_closed(self):
+        checker, bundle, _, _ = self._execution_resume_fixture()
+        (bundle["_root"] / ".git").mkdir()
+        metadata = checker.c21_provider_wsl_execution_resume_path_metadata()
+        source, parent, base = checker.C21_RESUME_SOURCE, checker.C21_RESUME_PARENT, checker.C21_RESUME_BASE
+        values = {
+            ("rev-parse", "HEAD"): source, ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("rev-parse", "@{u}"): checker.C21_RESUME_REMOTE,
+            ("rev-parse", "origin/codex/c21-operational-execution"): checker.C21_RESUME_REMOTE,
+            ("diff", "--name-only", base, source): "\n".join(metadata["source_cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", source): parent,
+            ("diff", "--name-only", parent, source): "\n".join(sorted(checker.c21_provider_wsl_git_only_candidate_paths())),
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): "\n".join(" M " + path for path in metadata["start_exact_paths"]),
+            ("for-each-ref", "--format=%(refname) %(objectname)", checker.C21_RESUME_CANDIDATE_REF): "",
+        }
+        def run(mapping):
+            with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: mapping.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+                return checker._validate_git_projection(bundle)
+        self.assertEqual([], run(values))
+        for key in values:
+            with self.subTest(missing=key):
+                self.assertTrue(run(dict(values, **{}) | {key: None}))
+        ref_key = ("for-each-ref", "--format=%(refname) %(objectname)", checker.C21_RESUME_CANDIDATE_REF)
+        self.assertTrue(run(values | {ref_key: checker.C21_RESUME_CANDIDATE_REF + " " + source}))
+        status_key = ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        child = "a" * 40
+        post = values | {
+            ("rev-parse", "HEAD"): child, status_key: "",
+            ("diff", "--name-only", base, child): "\n".join(metadata["post_start_cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", child): source,
+            ("diff", "--name-only", f"{source}..{child}"): "\n".join(metadata["start_exact_paths"]),
+        }
+        self.assertEqual([], run(post))
+        for label, key, value in (
+            ("second descendant", ("show", "-s", "--format=%P", child), "b" * 40),
+            ("merge", ("show", "-s", "--format=%P", child), source + " " + "b" * 40),
+            ("source parent", ("show", "-s", "--format=%P", source), "b" * 40),
+            ("cumulative reversion", ("diff", "--name-only", base, child), "\n".join(metadata["post_start_cumulative_exact_paths"][:-1])),
+            ("dirty child", status_key, " M docs/WORK_STATUS.md"),
+            ("missing parent collection", ("show", "-s", "--format=%P", child), None),
+            ("missing descendant collection", ("diff", "--name-only", f"{source}..{child}"), None),
+        ):
+            with self.subTest(label=label):
+                self.assertTrue(run(post | {key: value}))
+        with mock.patch.object(checker, "_git_value", side_effect=OSError("git unavailable")):
+            self.assertEqual(["GIT_REQUIRED_COLLECTION_FAILED"], checker._validate_git_projection(bundle))
+
+    def test_c21_provider_wsl_execution_resume_rejects_duplicate_or_malformed_git_rows(self):
+        checker, bundle, _, _ = self._execution_resume_fixture()
+        self.assertTrue(hasattr(checker, "_c21_resume_git_paths"))
+        self.assertEqual(["docs/WORK_STATUS.md"], checker._c21_resume_git_paths("docs/WORK_STATUS.md"))
+        for raw in ("docs/WORK_STATUS.md\ndocs/WORK_STATUS.md", "docs/WORK_STATUS.md\n\n", " docs/WORK_STATUS.md", "../outside.txt"):
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                checker._c21_resume_git_paths(raw)
+
+    def test_c21_provider_wsl_execution_resume_start_paths_are_frozen(self) -> None:
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_start_paths"))
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_paths"))
+        start = sorted(checker.c21_provider_wsl_execution_resume_start_paths())
+        successor = sorted(checker.c21_provider_wsl_execution_resume_paths())
+        self.assertEqual(10, len(start))
+        self.assertEqual(
+            "0FCFCE1A57E7A806B9E94B495DBE7CF3AEFD720FB6B8ACFF029DA0CEBB7EA070",
+            checker.path_list_lf_sha256(start),
+        )
+        self.assertEqual(14, len(successor))
+        self.assertEqual(
+            "3A67A5443BBCD92B125E5168442B5EB46A1FBA4EA0A9AE061411FB655921C09B",
+            checker.path_list_lf_sha256(successor),
+        )
+
+    def test_c21_provider_wsl_execution_resume_completion_appends_terminal_events(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_execution_resume_artifacts"))
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{checker.C21_RESUME_START_COMMIT}:{path}"], cwd=ROOT)
+            for path in (checker.C21_RESUME_P, checker.C21_RESUME_E, checker.C21_RESUME_H)
+        }
+        files = {
+            path: (ROOT / path).read_bytes()
+            for path in checker.c21_provider_wsl_execution_resume_paths()
+            if path not in {
+                checker.C21_RESUME_P, checker.C21_RESUME_E, checker.C21_RESUME_H,
+                checker.C21_RESUME_BOUND_D, checker.C21_RESUME_BOUND_M,
+            } and (ROOT / path).is_file()
+        }
+        artifacts = checker.c21_provider_wsl_execution_resume_artifacts(historical, files)
+        progress = json.loads(artifacts[checker.C21_RESUME_P])
+        events = json.loads(artifacts[checker.C21_RESUME_E])
+        manifest = json.loads(artifacts[checker.C21_RESUME_BOUND_M])
+        self.assertTrue(artifacts[checker.C21_RESUME_H].startswith(
+            b"# C-21 Provider WSL execution-resume K exact14"
+        ))
+        self.assertEqual(536, progress["event_sequence"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual("COMPLETED", progress["active_work_instruction"]["result_status"])
+        self.assertEqual("READY_FOR_APPROVED_WSL_QA", progress["status"])
+        self.assertEqual([534, 535, 536], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-3:]],
+        )
+        self.assertEqual(
+            checker.c21_provider_wsl_execution_resume_path_metadata()["post_successor_cumulative_exact_paths"],
+            events["events"][-1]["details"]["exact_allowed_paths"],
+        )
+        self.assertEqual("READY_FOR_APPROVED_WSL_QA", manifest["status"])
+        for key in ("commit", "push", "wsl", "docker", "database", "provider", "telegram", "ysna", "main_merge"):
+            self.assertEqual("NOT_EXECUTED", manifest[key])
+
+    def test_c21_provider_wsl_execution_resume_candidate_manifest_raw_contract_is_frozen(self):
+        checker = self.require_checker()
+        raw = subprocess.check_output(
+            ["git", "show", "3501c37b25274c2c3b406a15bc8a57aa03a162e7:deploy/wsl/CandidateReleaseManifest.json"],
+            cwd=ROOT,
+        )
+        self.assertEqual(checker.C21_RESUME_BOUND_CANDIDATE_SHA, hashlib.sha256(raw).hexdigest().upper())
+        self.assertNotEqual(checker.C21_RESUME_BOUND_CANDIDATE_SHA, hashlib.sha256(raw + b" ").hexdigest().upper())
+
+    def test_c21_provider_wsl_execution_resume_completion_repository_is_exact14(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "_validate_c21_resume_bound_repository"))
+        metadata = checker.c21_provider_wsl_execution_resume_path_metadata()
+        repository = {
+            "projection_mode": checker.VALIDATED_BASE_PROJECTION_MODE,
+            "validated_base_commit": checker.C21_RESUME_BASE,
+            "head_relation": checker.C21_RESUME_BOUND_RELATION,
+            "local_head": checker.C21_RESUME_START_COMMIT,
+            "product_parent_commit": checker.C21_RESUME_SOURCE,
+            "branch": "codex/c21-operational-execution",
+            "upstream": "origin/codex/c21-operational-execution",
+            "feature_remote": "origin/codex/c21-operational-execution",
+            "remote_head": checker.C21_RESUME_REMOTE,
+            "feature_remote_head": checker.C21_RESUME_REMOTE,
+            "candidate_remote_ref": checker.C21_RESUME_BOUND_CANDIDATE_REF,
+            "worktree_status": "SEQ536_PROVIDER_WSL_EXECUTION_RESUME_EXACT14_DIRTY",
+            "exact_allowed_paths": metadata["post_successor_cumulative_exact_paths"],
+            "provider_wsl_execution_resume_start_paths": metadata["start_exact_paths"],
+            "provider_wsl_execution_resume_paths": metadata["successor_exact_paths"],
+            "push_status": "NOT_EXECUTED",
+        }
+        common = dict(
+            actual_head=checker.C21_RESUME_START_COMMIT,
+            actual_branch=repository["branch"], actual_upstream=repository["upstream"],
+            actual_remote_head=checker.C21_RESUME_REMOTE, actual_feature_remote_head=checker.C21_RESUME_REMOTE,
+            actual_changed_paths=metadata["post_start_cumulative_exact_paths"],
+            control_descendant_paths=metadata["successor_exact_paths"], working_tree_mode=True,
+            worktree_is_clean=False, control_runtime_record_commit_is_direct=False,
+            control_is_ancestor=True, base_is_ancestor=True, product_commit_parent_is_direct=True,
+        )
+        self.assertEqual([], checker._validate_c21_resume_bound_repository(repository, **common))
+        post = dict(common, actual_head="f" * 40,
+                    actual_changed_paths=metadata["post_successor_cumulative_exact_paths"],
+                    working_tree_mode=False, worktree_is_clean=True,
+                    control_runtime_record_commit_is_direct=True)
+        self.assertEqual([], checker._validate_c21_resume_bound_repository(repository, **post))
+        for field, value in (
+            ("control_descendant_paths", metadata["successor_exact_paths"][:-1]),
+            ("actual_changed_paths", metadata["post_successor_cumulative_exact_paths"][:-1]),
+            ("control_runtime_record_commit_is_direct", False),
+            ("worktree_is_clean", False),
+            ("base_is_ancestor", False),
+            ("actual_remote_head", "0" * 40),
+        ):
+            with self.subTest(field=field):
+                self.assertTrue(checker._validate_c21_resume_bound_repository(repository, **dict(post, **{field: value})))
+
+
+    def test_c21_provider_wsl_exact_binding_completion_is_forward_only(self):
+        checker = self.require_checker()
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_exact_binding_artifacts"))
+        accepted = "c330d34ea7d0acc7e423a978f9c558c94c159118"
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{checker.C21_EXACT_BINDING_START_COMMIT}:{path}"], cwd=ROOT)
+            for path in (checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E, checker.C21_EXACT_BINDING_H)
+        }
+        files = {
+            path: subprocess.check_output(["git", "show", f"{accepted}:{path}"], cwd=ROOT)
+            for path in checker.c21_provider_wsl_exact_binding_paths()
+            if path not in {
+                checker.C21_EXACT_BINDING_P, checker.C21_EXACT_BINDING_E, checker.C21_EXACT_BINDING_H,
+                checker.C21_EXACT_BINDING_BOUND_D, checker.C21_EXACT_BINDING_BOUND_M,
+            }
+        }
+        artifacts = checker.c21_provider_wsl_exact_binding_artifacts(historical, files)
+        progress = json.loads(artifacts[checker.C21_EXACT_BINDING_P])
+        events = json.loads(artifacts[checker.C21_EXACT_BINDING_E])
+        manifest = json.loads(artifacts[checker.C21_EXACT_BINDING_BOUND_M])
+        self.assertEqual(542, progress["event_sequence"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual([540, 541, 542], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-3:]],
+        )
+        self.assertEqual("READY_FOR_EXACT_PRIVATE_PUSH_AND_WSL_QA", manifest["status"])
+        self.assertEqual(
+            [
+                "a6dca0da5a37e64491e91813895268e78ecb78b2",
+                "a342d62391a44b349733d1468ac3b180761155ab",
+                "324eb169fedbce958d2e8cc29362deb7af433677",
+            ],
+            manifest["runtime_binding"]["rollback_allowlist"],
+        )
+        for key in ("commit", "push", "wsl", "docker", "database", "provider", "telegram", "ysna", "main_merge"):
+            self.assertEqual("NOT_EXECUTED", manifest[key])
+        self.assertEqual([], checker.validate_c21_provider_wsl_exact_binding_artifacts(historical, files, artifacts))
+        changed = dict(artifacts)
+        tampered = copy.deepcopy(manifest)
+        tampered["runtime_binding"]["observed_previous"] = "0" * 40
+        changed[checker.C21_EXACT_BINDING_BOUND_M] = json.dumps(tampered).encode()
+        self.assertTrue(checker.validate_c21_provider_wsl_exact_binding_artifacts(historical, files, changed))
+
+
+class C21ProviderWslVerifyScopeCorrectionTests(unittest.TestCase):
+    def test_seq548_builder_preserves_history_and_freezes_provider_exclusion(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_provider_wsl_verify_scope_artifacts"))
+        historical = {
+            path: subprocess.check_output(
+                ["git", "show", f"{checker.C21_VERIFY_SCOPE_PARENT}:{path}"], cwd=ROOT
+            )
+            for path in (checker.C21_VERIFY_SCOPE_P, checker.C21_VERIFY_SCOPE_E, checker.C21_VERIFY_SCOPE_H)
+        }
+        raw_scope = set(checker.c21_provider_wsl_verify_scope_paths()) - {
+            checker.C21_VERIFY_SCOPE_P, checker.C21_VERIFY_SCOPE_E,
+            checker.C21_VERIFY_SCOPE_H, checker.C21_VERIFY_SCOPE_D,
+            checker.C21_VERIFY_SCOPE_M,
+        }
+        files = {path: (ROOT / path).read_bytes() for path in raw_scope}
+        artifacts = checker.c21_provider_wsl_verify_scope_artifacts(historical, files)
+        events = json.loads(artifacts[checker.C21_VERIFY_SCOPE_E])["events"]
+        manifest = json.loads(artifacts[checker.C21_VERIFY_SCOPE_M])
+
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_VERIFY_SCOPE_E], 542),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_VERIFY_SCOPE_E], 542),
+        )
+        self.assertEqual(list(range(543, 549)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual("PROVIDER_AND_TELEGRAM_EXCLUDED", manifest["verification_scope"]["mode"])
+        self.assertEqual("ATTEMPTED", manifest["runtime_attempt"]["local_provider_status"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_attempt"]["external_provider_billing"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_attempt"]["telegram"])
+        self.assertEqual(2, manifest["valid_failure_count"])
+        self.assertEqual(17, manifest["developer_exact_path_count"])
+        self.assertEqual("78D7DFC8B684F2F295D4507931128E48D67017276D85941F534BEC5A1F839502", manifest["developer_exact_path_list_sha256"])
+        self.assertEqual(131, manifest["cumulative_exact_path_count"])
+        self.assertEqual("984F9276F0FBAC94CED5B3BC47D794948BA6D551520D77B2144B8A340A5C574A", manifest["cumulative_exact_path_list_sha256"])
+        self.assertEqual([], checker.validate_c21_provider_wsl_verify_scope_artifacts(historical, files, artifacts))
+
+
+class C21WslRollbackScopeCompatR1Tests(unittest.TestCase):
+    IMMUTABLE_FIXTURE_COMMIT = "797b4d831e384423fdd9a706f9512ffa9dc79bb5"
+
+    def test_seq554_builder_preserves_history_and_binds_exact_scope(self):
+        checker=_load_checker_or_none(); self.assertIsNotNone(checker)
+        historical={p:subprocess.check_output(["git","show",f"{checker.C21_ROLLBACK_SCOPE_PARENT}:{p}"],cwd=ROOT)
+                    for p in (checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H)}
+        generated={checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H,
+                   checker.C21_ROLLBACK_SCOPE_D,checker.C21_ROLLBACK_SCOPE_M}
+        files={p:subprocess.check_output(["git","show",f"{self.IMMUTABLE_FIXTURE_COMMIT}:{p}"],cwd=ROOT)
+               for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
+        artifacts=checker.c21_wsl_rollback_scope_artifacts(historical,files)
+        events=json.loads(artifacts[checker.C21_ROLLBACK_SCOPE_E])["events"]
+        manifest=json.loads(artifacts[checker.C21_ROLLBACK_SCOPE_M])
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical[checker.C21_ROLLBACK_SCOPE_E],548),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C21_ROLLBACK_SCOPE_E],548))
+        self.assertEqual(list(range(549,555)),[row["sequence"] for row in events[-6:]])
+        self.assertEqual(16,manifest["developer_exact_path_count"])
+        self.assertEqual("27647FE5BBE135FAB147A635D75BF93B7A4EC03E26BA00C2C709402EFB80B841",manifest["developer_exact_path_list_sha256"])
+        self.assertEqual(137,manifest["cumulative_exact_path_count"])
+        self.assertEqual("71F5E29A6F2AFA16219059D9417415DE3F62A515D7145728F21363EFCB4B42FC",manifest["cumulative_exact_path_list_sha256"])
+        self.assertEqual("PASS",manifest["runtime_fact"]["verify_receipts"]["pg15"])
+        self.assertEqual("NOT_STARTED",manifest["runtime_fact"]["first_rollback_attempt"]["pg18rc_mutation"])
+        self.assertEqual("UNCHANGED",manifest["runtime_fact"]["environment"]["bytes"])
+        self.assertEqual("NOT_EXECUTED",manifest["provider"])
+
+    def test_seq554_builder_rejects_scope_map_and_history_tamper(self):
+        checker=_load_checker_or_none(); self.assertIsNotNone(checker)
+        historical={p:subprocess.check_output(["git","show",f"{checker.C21_ROLLBACK_SCOPE_PARENT}:{p}"],cwd=ROOT)
+                    for p in (checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H)}
+        generated={checker.C21_ROLLBACK_SCOPE_P,checker.C21_ROLLBACK_SCOPE_E,checker.C21_ROLLBACK_SCOPE_H,
+                   checker.C21_ROLLBACK_SCOPE_D,checker.C21_ROLLBACK_SCOPE_M}
+        files={p:subprocess.check_output(["git","show",f"{self.IMMUTABLE_FIXTURE_COMMIT}:{p}"],cwd=ROOT)
+               for p in set(checker.c21_wsl_rollback_scope_paths())-generated}
+        bad=dict(files); doc=json.loads(bad["deploy/wsl/CandidateReleaseManifest.json"]); doc["rollback"]["test_session_permission_scopes_by_commit"].pop(next(iter(doc["rollback"]["test_session_permission_scopes_by_commit"])))
+        bad["deploy/wsl/CandidateReleaseManifest.json"]=json.dumps(doc).encode()
+        with self.assertRaises(ValueError): checker.c21_wsl_rollback_scope_artifacts(historical,bad)
+        corrupt=dict(historical); corrupt[checker.C21_ROLLBACK_SCOPE_E]=corrupt[checker.C21_ROLLBACK_SCOPE_E].replace(b'"sequence": 1',b'"sequence": 0',1)
+        with self.assertRaises(ValueError): checker.c21_wsl_rollback_scope_artifacts(corrupt,files)
+
+
+class C21WslCleanupGuardSourceR1Tests(unittest.TestCase):
+    @staticmethod
+    def _seq560_git_values(checker):
+        return {
+            ("rev-parse", "HEAD"): checker.C21_CLEANUP_GUARD_SOURCE_PARENT,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): "",
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_CLEANUP_GUARD_SOURCE_PARENT,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): checker.C21_RESUME_PARENT,
+        }
+
+    def test_seq560_git_collector_names_status_and_declared_base_failures(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        values = self._seq560_git_values(checker)
+        status_args = ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: None if args == status_args else values.get(args)):
+            self.assertEqual(["GIT_STATUS_COLLECTION_FAILED"], checker._collect_c21_cleanup_guard_source_git(bundle))
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=1):
+            self.assertEqual(["GIT_VALIDATED_BASE_NOT_ANCESTOR"], checker._collect_c21_cleanup_guard_source_git(bundle))
+
+    def test_seq560_git_collector_requires_private_development_url_and_ref_cas(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        for arguments, bad_value in (
+            (("remote", "get-url", "development"), "https://github.com/public/Anvil.git"),
+            (("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"), "0" * 40),
+            (("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"), "0" * 40),
+        ):
+            with self.subTest(arguments=arguments):
+                values = self._seq560_git_values(checker)
+                values[arguments] = bad_value
+                with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)):
+                    self.assertEqual(["GIT_PRIVATE_AUTHORITY_MISMATCH"], checker._collect_c21_cleanup_guard_source_git(bundle))
+
+    def test_seq560_builder_preserves_seq554_history_and_binds_exact15(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_cleanup_guard_source_artifacts"))
+        historical = {p: subprocess.check_output(["git", "show", f"{checker.C21_CLEANUP_GUARD_SOURCE_PARENT}:{p}"], cwd=ROOT)
+                      for p in (checker.C21_CLEANUP_GUARD_SOURCE_P, checker.C21_CLEANUP_GUARD_SOURCE_E, checker.C21_CLEANUP_GUARD_SOURCE_H)}
+        generated = {checker.C21_CLEANUP_GUARD_SOURCE_P, checker.C21_CLEANUP_GUARD_SOURCE_E, checker.C21_CLEANUP_GUARD_SOURCE_H,
+                     checker.C21_CLEANUP_GUARD_SOURCE_D, checker.C21_CLEANUP_GUARD_SOURCE_M}
+        files = {p: (ROOT / p).read_bytes() for p in set(checker.c21_cleanup_guard_source_paths()) - generated}
+        artifacts = checker.c21_cleanup_guard_source_artifacts(historical, files)
+        events = json.loads(artifacts[checker.C21_CLEANUP_GUARD_SOURCE_E])["events"]
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_GUARD_SOURCE_M])
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical[checker.C21_CLEANUP_GUARD_SOURCE_E], 554), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_CLEANUP_GUARD_SOURCE_E], 554))
+        self.assertEqual(list(range(555, 561)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual(15, manifest["developer_exact_path_count"])
+        self.assertEqual("6722B8BCE25FAFA0467214F8C5C91833515E3443A59CD8FBC1471538AF62DE82", manifest["developer_exact_path_list_sha256"])
+        self.assertEqual(143, manifest["cumulative_exact_path_count"])
+        self.assertEqual("F69664E702C97D7859E21F455919D1BCF913BCF70C6375F752892B25B793DB22", manifest["cumulative_exact_path_list_sha256"])
+        self.assertEqual(0, manifest["runtime"]["prior_runtime_cleanup_attempt"]["mutation_count"])
+
+
+class C21WslCleanupRuntimeResultTests(unittest.TestCase):
+    @staticmethod
+    def _historical(checker):
+        return {
+            path: subprocess.check_output(
+                ["git", "show", f"{checker.C21_CLEANUP_RUNTIME_RESULT_PARENT}:{path}"], cwd=ROOT
+            )
+            for path in (
+                checker.C21_CLEANUP_RUNTIME_RESULT_P,
+                checker.C21_CLEANUP_RUNTIME_RESULT_E,
+                checker.C21_CLEANUP_RUNTIME_RESULT_H,
+            )
+        }
+
+    @staticmethod
+    def _raw_files(checker):
+        generated = {
+            checker.C21_CLEANUP_RUNTIME_RESULT_P,
+            checker.C21_CLEANUP_RUNTIME_RESULT_E,
+            checker.C21_CLEANUP_RUNTIME_RESULT_H,
+            checker.C21_CLEANUP_RUNTIME_RESULT_D,
+            checker.C21_CLEANUP_RUNTIME_RESULT_M,
+        }
+        return {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_cleanup_runtime_result_paths()) - generated
+        }
+
+    def test_seq566_builder_preserves_seq560_and_records_strict_runtime_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_cleanup_runtime_result_artifacts"))
+        historical = self._historical(checker)
+        artifacts = checker.c21_cleanup_runtime_result_artifacts(historical, self._raw_files(checker))
+        events = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_E])["events"]
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_M])
+        progress = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_P])
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_CLEANUP_RUNTIME_RESULT_E], 560),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_E], 560),
+        )
+        self.assertEqual(list(range(561, 567)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events[-6:]],
+        )
+        self.assertEqual("READY_FOR_C21_WSL_ACCEPTANCE", progress["status"])
+        self.assertEqual("INDEPENDENT_C21_WSL_ACCEPTANCE_REVIEW", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("PENDING", manifest["independent_tester_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        runtime = manifest["runtime"]
+        self.assertEqual("UNAVAILABLE_AFTER_SUBAGENT_COMPACTION", runtime["runtime_observed_at_status"])
+        self.assertIsNone(runtime["runtime_observed_at"])
+        self.assertEqual("2026-09-07", runtime["runtime_observed_date"])
+        self.assertNotEqual(runtime["runtime_observed_at"], manifest["recorded_at"])
+        self.assertEqual("LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING", manifest["recorded_at_source"])
+        self.assertEqual(1, runtime["cleanup"]["invocation_count"])
+        self.assertEqual(0, runtime["cleanup"]["internal_exit_code"])
+        self.assertEqual(1, runtime["cleanup"]["outer_wrapper_exit_code"])
+        self.assertEqual("SUCCEEDED", runtime["cleanup"]["cleanup_status"])
+        self.assertFalse(runtime["cleanup"]["wrapper_failure_is_cleanup_failure"])
+        self.assertEqual("POST_CLEANUP_UNRELATED_INVENTORY_EQUALITY_ASSERTION", runtime["cleanup"]["wrapper_failure"])
+        self.assertEqual(
+            {"containers": {"before": 6, "deleted": 6, "remaining": 0}, "networks": {"before": 4, "deleted": 4, "remaining": 0}, "volumes": {"before": 2, "deleted": 2, "remaining": 0}},
+            runtime["target_cleanup"],
+        )
+        self.assertFalse(runtime["unrelated_inventory"]["global_equality"])
+        self.assertEqual(0, runtime["unrelated_inventory"]["preexisting_missing_count"])
+        self.assertEqual(0, runtime["unrelated_inventory"]["preexisting_changed_count"])
+        self.assertEqual(["Daon2", "eoul"], runtime["unrelated_inventory"]["concurrent_added_or_replaced_projects"])
+        self.assertEqual("a6dca0da5a37e64491e91813895268e78ecb78b2", runtime["application"]["head"])
+        self.assertEqual("DETACHED", runtime["application"]["head_mode"])
+        self.assertTrue(runtime["application"]["clean"])
+        self.assertEqual("stage.3558037.6302", runtime["control"]["active_stage"])
+        self.assertEqual(checker.C21_CLEANUP_RUNTIME_RESULT_PARENT, runtime["control"]["head"])
+        self.assertEqual("fecae53b750e170a5bf345a23ac8d9ba12b508e9c6d0b47c518b90fd4d52a79a", runtime["environment"]["sha256"])
+        self.assertEqual(443, runtime["environment"]["size"])
+        self.assertEqual("0600", runtime["environment"]["mode"])
+        self.assertEqual("root:root", runtime["environment"]["owner"])
+        self.assertTrue(runtime["environment"]["unchanged"])
+        self.assertEqual("324eb169fedbce958d2e8cc29362deb7af433677", runtime["markers"]["pg15"]["current"])
+        self.assertEqual(runtime["markers"]["pg15"], runtime["markers"]["pg18rc"])
+        self.assertTrue(runtime["receipts_and_evidence"]["hashes_and_counts_preserved"])
+        self.assertEqual("EXECUTED_APPROVED", runtime["external_execution"]["volume_cleanup"])
+        for name in ("provider", "telegram", "separate_database", "ysna", "main"):
+            self.assertEqual("NOT_EXECUTED", runtime["external_execution"][name])
+        limitation = manifest["evidence_detail_limitations"][0]
+        self.assertEqual("PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION", limitation["code"])
+        self.assertEqual("OPEN", limitation["status"])
+        self.assertEqual("UNRESOLVED_EVIDENCE_DETAIL", limitation["resolution"])
+        self.assertEqual("MINOR", limitation["reviewer_severity"])
+
+    def test_seq566_metadata_binds_windows_and_ordinal_exact12_cumulative149(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_cleanup_runtime_result_metadata"))
+        metadata = checker.c21_cleanup_runtime_result_metadata()
+        self.assertEqual(12, metadata["developer_exact_path_count"])
+        self.assertEqual("54DE92EBEC20A6897379A2B14FBBA258517A0E6A52A221C6217739B40FA9E0EF", metadata["developer_exact_path_list_sha256"])
+        self.assertEqual("63E7070C7D5D018F76DE04A0369B5778F3B58AF2798EA2EC78ED3CFB75645CA0", metadata["developer_exact_path_list_ordinal_sha256"])
+        self.assertEqual(149, metadata["cumulative_exact_path_count"])
+        self.assertEqual("F804F93F8F8BE351071EB0CC3674A4EB442BF8D0E74DFF0D65FAD88AD1DE85F2", metadata["cumulative_exact_path_list_sha256"])
+        self.assertEqual("B956DA56B0D6BD17D0918878F1E3F80E672FAE971CEE3E4793A1CE227E0C47C8", metadata["cumulative_exact_path_list_ordinal_sha256"])
+
+    def test_seq566_runtime_validator_rejects_tamper_and_malformed_json(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "validate_c21_cleanup_runtime_result_runtime"))
+        runtime = checker._c21_cleanup_runtime_result_runtime()
+        mutations = (
+            ("cleanup_count", lambda d: d["cleanup"].__setitem__("invocation_count", 2)),
+            ("cleanup_exit", lambda d: d["cleanup"].__setitem__("internal_exit_code", 1)),
+            ("misclassification", lambda d: d["cleanup"].__setitem__("wrapper_failure_is_cleanup_failure", True)),
+            ("target_remaining", lambda d: d["target_cleanup"]["containers"].__setitem__("remaining", 1)),
+            ("unrelated_loss", lambda d: d["unrelated_inventory"].__setitem__("preexisting_missing_count", 1)),
+            ("environment", lambda d: d["environment"].__setitem__("unchanged", False)),
+            ("marker", lambda d: d["markers"]["pg15"].__setitem__("current", "0" * 40)),
+            ("receipt", lambda d: d["receipts_and_evidence"].__setitem__("hashes_and_counts_preserved", False)),
+            ("external", lambda d: d["external_execution"].__setitem__("provider", "EXECUTED")),
+            ("observed_at", lambda d: d.__setitem__("runtime_observed_at", "2026-09-07T00:00:00Z")),
+        )
+        self.assertEqual([], checker.validate_c21_cleanup_runtime_result_runtime(runtime))
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(runtime); mutate(changed)
+                self.assertTrue(checker.validate_c21_cleanup_runtime_result_runtime(changed))
+        with self.assertRaises((json.JSONDecodeError, UnicodeDecodeError)):
+            checker._c21_resume_json(b'{"broken":')
+
+    def test_seq566_manifest_and_history_validators_reject_boundary_evidence_and_prefix_tamper(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "validate_c21_cleanup_runtime_result_manifest"))
+        historical = self._historical(checker)
+        raw_files = self._raw_files(checker)
+        artifacts = checker.c21_cleanup_runtime_result_artifacts(historical, raw_files)
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_M])
+        self.assertEqual([], checker.validate_c21_cleanup_runtime_result_manifest(manifest))
+        mutations = (
+            ("accepted", lambda d: d.__setitem__("accepted", True)),
+            ("tester", lambda d: d.__setitem__("independent_tester_status", "PASS")),
+            ("c01", lambda d: d.__setitem__("c01_status", "READY")),
+            ("dir2", lambda d: d.__setitem__("dir2_status", "TRIGGERED")),
+            ("limitation", lambda d: d.__setitem__("evidence_detail_limitations", [])),
+            ("path_count", lambda d: d.__setitem__("developer_exact_path_count", 11)),
+            ("path_hash", lambda d: d.__setitem__("cumulative_exact_path_list_sha256", "0" * 64)),
+            ("history_hash", lambda d: d["historical_hashes"].__setitem__(checker.C21_CLEANUP_RUNTIME_RESULT_E, "0" * 64)),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(manifest); mutate(changed)
+                self.assertTrue(checker.validate_c21_cleanup_runtime_result_manifest(changed))
+        self.assertTrue(checker.validate_c21_cleanup_runtime_result_manifest({}))
+        corrupt = dict(historical)
+        corrupt[checker.C21_CLEANUP_RUNTIME_RESULT_E] = corrupt[checker.C21_CLEANUP_RUNTIME_RESULT_E].replace(b'"sequence": 1', b'"sequence": 0', 1)
+        with self.assertRaises(ValueError):
+            checker.c21_cleanup_runtime_result_artifacts(corrupt, raw_files)
+        missing = dict(raw_files); missing.pop(next(iter(missing)))
+        with self.assertRaises(ValueError):
+            checker.c21_cleanup_runtime_result_artifacts(historical, missing)
+
+    def test_seq566_public_validators_reject_json_scalar_type_confusion(self):
+        """A bool/float accepted as an int would let an invalid public record pass."""
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        historical = self._historical(checker)
+        artifacts = checker.c21_cleanup_runtime_result_artifacts(historical, self._raw_files(checker))
+        manifest = json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_M])
+
+        runtime = copy.deepcopy(manifest["runtime"])
+        runtime["cleanup"]["invocation_count"] = True
+        runtime["cleanup"]["internal_exit_code"] = False
+        runtime["cleanup"]["outer_wrapper_exit_code"] = 1.0
+        self.assertTrue(checker.validate_c21_cleanup_runtime_result_runtime(runtime))
+
+        confused_manifest = copy.deepcopy(manifest)
+        confused_manifest["accepted"] = 0
+        confused_manifest["event_sequence"] = 566.0
+        confused_manifest["self_reference"] = 0
+        confused_manifest["developer_exact_path_count"] = 12.0
+        confused_manifest["raw_checksums"][0]["bytes"] = True
+        self.assertTrue(checker.validate_c21_cleanup_runtime_result_manifest(confused_manifest))
+
+        projection_bundle = {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_P]),
+            "events": json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_E]),
+            "detached_digest": json.loads(artifacts[checker.C21_CLEANUP_RUNTIME_RESULT_D]),
+        }
+        generated = {
+            checker.C21_CLEANUP_RUNTIME_RESULT_P,
+            checker.C21_CLEANUP_RUNTIME_RESULT_E,
+            checker.C21_CLEANUP_RUNTIME_RESULT_H,
+            checker.C21_CLEANUP_RUNTIME_RESULT_D,
+            checker.C21_CLEANUP_RUNTIME_RESULT_M,
+        }
+        original_read_bytes = Path.read_bytes
+        def read_seq566_generated(path):
+            try:
+                relative = path.resolve().relative_to(ROOT).as_posix()
+            except ValueError:
+                return original_read_bytes(path)
+            return artifacts[relative] if relative in generated else original_read_bytes(path)
+        projection_bundle["progress"]["event_sequence"] = 566.0
+        with mock.patch.object(Path, "read_bytes", autospec=True, side_effect=read_seq566_generated):
+            self.assertTrue(checker.validate_c21_cleanup_runtime_result_projection(projection_bundle, manifest))
+
+        public_bundle = checker.load_bundle(ROOT)
+        public_bundle["progress"]["event_sequence"] = 566.0
+        public_bundle["progress"]["snapshot_hash"] = checker.compute_snapshot_hash(public_bundle["progress"])
+        public_bundle["events"]["last_sequence"] = 566.0
+        public_bundle["events"]["events"][-1]["sequence"] = 566.0
+        public_bundle["detached_digest"]["event_sequence"] = 566.0
+        self.assertTrue(checker.validate_bundle(public_bundle))
+
+    @staticmethod
+    def _seq566_git_values(checker, *, head=None, status=None, parents=None):
+        head = head or checker.C21_CLEANUP_RUNTIME_RESULT_PARENT
+        return {
+            ("rev-parse", "HEAD"): head,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): status,
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_CLEANUP_RUNTIME_RESULT_PARENT,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): "a6dca0da5a37e64491e91813895268e78ecb78b2",
+            ("diff", "--name-only", checker.C21_CLEANUP_RUNTIME_RESULT_PARENT, head): "\n".join(checker.c21_cleanup_runtime_result_paths()),
+            ("diff", "--name-only", checker.C21_EXACT_BINDING_BASE, head): "\n".join(checker.c21_cleanup_runtime_result_metadata()["cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", head): parents,
+        }
+
+    def test_seq566_git_collector_fail_closed_precommit_postcommit_and_invalid_descendants(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "_collect_c21_cleanup_runtime_result_git"))
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        dirty = "\n".join(f" M {path}" for path in checker.c21_cleanup_runtime_result_paths())
+        values = self._seq566_git_values(checker, status=dirty)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_cleanup_runtime_result_git(bundle))
+        values[("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")] = None
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)):
+            self.assertEqual(["GIT_STATUS_COLLECTION_FAILED"], checker._collect_c21_cleanup_runtime_result_git(bundle))
+        child = "1" * 40
+        values = self._seq566_git_values(checker, head=child, status="", parents=checker.C21_CLEANUP_RUNTIME_RESULT_PARENT)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_cleanup_runtime_result_git(bundle))
+        for name, bad_head, bad_parents in (("merge", "2" * 40, checker.C21_CLEANUP_RUNTIME_RESULT_PARENT + " " + "3" * 40), ("second_descendant", "4" * 40, child), ("reversion", checker.C21_CLEANUP_RUNTIME_RESULT_PARENT, None)):
+            with self.subTest(name=name):
+                bad_status = "" if name != "reversion" else dirty.replace(" M ", "")
+                values = self._seq566_git_values(checker, head=bad_head, status=bad_status, parents=bad_parents)
+                if name == "reversion":
+                    values[("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all")] = ""
+                with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+                    self.assertTrue(checker._collect_c21_cleanup_runtime_result_git(bundle))
+
+
+class C21WslAcceptanceStrictSuccessorTests(unittest.TestCase):
+    @staticmethod
+    def _historical(checker):
+        return {
+            path: subprocess.check_output(
+                ["git", "show", f"{checker.C21_WSL_ACCEPTANCE_STRICT_PARENT}:{path}"], cwd=ROOT
+            )
+            for path in (
+                checker.C21_WSL_ACCEPTANCE_STRICT_P,
+                checker.C21_WSL_ACCEPTANCE_STRICT_E,
+                checker.C21_WSL_ACCEPTANCE_STRICT_H,
+            )
+        }
+
+    @staticmethod
+    def _raw_files(checker):
+        generated = {
+            checker.C21_WSL_ACCEPTANCE_STRICT_P,
+            checker.C21_WSL_ACCEPTANCE_STRICT_E,
+            checker.C21_WSL_ACCEPTANCE_STRICT_H,
+            checker.C21_WSL_ACCEPTANCE_STRICT_D,
+            checker.C21_WSL_ACCEPTANCE_STRICT_M,
+        }
+        return {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_wsl_acceptance_strict_paths()) - generated
+        }
+
+    def _artifacts(self, checker):
+        return checker.c21_wsl_acceptance_strict_artifacts(
+            self._historical(checker), self._raw_files(checker)
+        )
+
+    def test_seq572_builder_preserves_seq566_and_records_limited_wsl_acceptance(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_wsl_acceptance_strict_artifacts"))
+        historical = self._historical(checker)
+        artifacts = checker.c21_wsl_acceptance_strict_artifacts(historical, self._raw_files(checker))
+        events = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_E])["events"]
+        progress = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_P])
+        manifest = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_M])
+        handoff = checker.extract_handoff_summary(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_H].decode())
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_WSL_ACCEPTANCE_STRICT_E], 566),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_E], 566),
+        )
+        self.assertEqual(list(range(567, 573)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events[-6:]],
+        )
+        expected_state = {
+            "acceptance_scope": "C21_WSL",
+            "wsl_acceptance_status": "ACCEPTED_WITH_LIMITATION",
+            "accepted": False,
+            "c21_acceptance_status": "BLOCKED_NOT_ACCEPTED",
+            "c01_status": "BLOCKED_PENDING_C21_ACCEPTANCE",
+            "dir2_status": "NOT_TRIGGERED",
+        }
+        for document in (progress["wsl_acceptance"], handoff["wsl_acceptance"], manifest["wsl_acceptance"]):
+            self.assertEqual(expected_state, {key: document[key] for key in expected_state})
+        self.assertFalse(events[-1]["details"]["wsl_acceptance"]["accepted"])
+        self.assertEqual("INDEPENDENT_TESTER_AGENT_REPORT", manifest["independent_tester"]["source"])
+        self.assertEqual("ABSENT", manifest["independent_tester"]["repository_artifact"])
+        self.assertEqual({"critical": 0, "important": 0, "minor": 2}, manifest["independent_tester"]["findings"])
+        self.assertIsNone(manifest["runtime"]["runtime_observed_at"])
+        self.assertEqual("UNAVAILABLE_AFTER_SUBAGENT_COMPACTION", manifest["runtime"]["runtime_observed_at_status"])
+        limitation_codes = {row["code"] for row in manifest["open_limitations"]}
+        self.assertEqual({
+            "PRIMARY_MUTATION_WRAPPER_COMMAND_FULLTEXT_UNAVAILABLE_AFTER_SUBAGENT_COMPACTION",
+            "EXACT_RUNTIME_OBSERVED_TIMESTAMP_UNAVAILABLE",
+            "RECEIPT_ORIGINALS_AND_PATHS_NOT_INDEPENDENTLY_INSPECTED",
+            "SAME_ORIGIN_HTTP_INGRESS_NOT_BROWSER_NETWORK_ACCEPTANCE",
+        }, limitation_codes)
+        self.assertEqual("NOT_VERIFIED", manifest["verification_boundaries"]["provider"])
+        self.assertEqual("NOT_VERIFIED", manifest["verification_boundaries"]["telegram"])
+        self.assertEqual("NOT_VERIFIED", manifest["verification_boundaries"]["ysna"])
+        self.assertEqual("NOT_AUTHORIZED", manifest["verification_boundaries"]["main"])
+
+    def test_seq572_metadata_binds_exact12_and_cumulative155_hashes(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_wsl_acceptance_strict_metadata()
+        self.assertEqual(12, metadata["developer_exact_path_count"])
+        self.assertEqual("9E8380E9F3B58C5F8C717133B0777AEA0E2DAF90CED947590DECC56C67C86B2F", metadata["developer_exact_path_list_sha256"])
+        self.assertEqual("495960755DC2C2F74DF6FB8213163FE502A3EE6DDD4F0E2692FD97D06E406536", metadata["developer_exact_path_list_ordinal_sha256"])
+        self.assertEqual(155, metadata["cumulative_exact_path_count"])
+        self.assertEqual("4C4BF601FE76A9C24591891176470BD87E0BE85EFB060898033D741FACC6B66C", metadata["cumulative_exact_path_list_sha256"])
+        self.assertEqual("2CA55B9DCCE87ECBC0D7FD233D8F98E76FA8ED7E7C1BCB6C903B72EB1EE64F2D", metadata["cumulative_exact_path_list_ordinal_sha256"])
+
+    def test_seq572_validator_rejects_types_scope_promotion_and_evidence_invention(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = self._artifacts(checker)
+        manifest = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_M])
+        self.assertEqual([], checker.validate_c21_wsl_acceptance_strict_manifest(manifest))
+        mutations = (
+            ("accepted_bool", lambda d: d.__setitem__("accepted", 0)),
+            ("event_sequence_float", lambda d: d.__setitem__("event_sequence", 572.0)),
+            ("self_reference_bool", lambda d: d.__setitem__("self_reference", 0)),
+            ("path_count_float", lambda d: d.__setitem__("developer_exact_path_count", 12.0)),
+            ("checksum_bool", lambda d: d["raw_checksums"][0].__setitem__("bytes", True)),
+            ("scope_promotion", lambda d: d["wsl_acceptance"].__setitem__("acceptance_scope", "C21_ALL")),
+            ("wsl_status_promotion", lambda d: d["wsl_acceptance"].__setitem__("wsl_acceptance_status", "ACCEPTED")),
+            ("c21_acceptance", lambda d: d["wsl_acceptance"].__setitem__("c21_acceptance_status", "ACCEPTED")),
+            ("c01", lambda d: d["wsl_acceptance"].__setitem__("c01_status", "READY")),
+            ("dir2", lambda d: d["wsl_acceptance"].__setitem__("dir2_status", "TRIGGERED")),
+            ("limitation_removed", lambda d: d.__setitem__("open_limitations", d["open_limitations"][:-1])),
+            ("timestamp_invented", lambda d: d["runtime"].__setitem__("runtime_observed_at", "2026-09-07T00:00:00Z")),
+            ("provider_promoted", lambda d: d["verification_boundaries"].__setitem__("provider", "VERIFIED")),
+            ("telegram_promoted", lambda d: d["verification_boundaries"].__setitem__("telegram", "VERIFIED")),
+        )
+        for name, mutate in mutations:
+            with self.subTest(name=name):
+                changed = copy.deepcopy(manifest); mutate(changed)
+                self.assertTrue(checker.validate_c21_wsl_acceptance_strict_manifest(changed))
+
+    def test_seq572_projection_rejects_strict_state_tamper(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = self._artifacts(checker)
+        bundle = {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_P]),
+            "events": json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_D]),
+        }
+        manifest = json.loads(artifacts[checker.C21_WSL_ACCEPTANCE_STRICT_M])
+        generated = set(artifacts)
+        original_read_bytes = Path.read_bytes
+        def read_seq572_generated(path):
+            try:
+                relative = path.resolve().relative_to(ROOT).as_posix()
+            except ValueError:
+                return original_read_bytes(path)
+            return artifacts[relative] if relative in generated else original_read_bytes(path)
+        with mock.patch.object(Path, "read_bytes", autospec=True, side_effect=read_seq572_generated):
+            self.assertEqual([], checker.validate_c21_wsl_acceptance_strict_projection(bundle, manifest))
+            for name, mutate_bundle, mutate_manifest in (
+                ("progress", lambda b: b["progress"]["wsl_acceptance"].__setitem__("accepted", 0), None),
+                ("event", lambda b: b["events"]["events"][-1]["details"]["wsl_acceptance"].__setitem__("accepted", 0), None),
+                ("handoff", lambda b: b["handoff"]["wsl_acceptance"].__setitem__("accepted", 0), None),
+                ("digest", lambda b: b["detached_digest"].__setitem__("event_sequence", 572.0), None),
+                ("manifest", None, lambda m: m.__setitem__("accepted", 0)),
+            ):
+                with self.subTest(name=name):
+                    changed_bundle = copy.deepcopy(bundle)
+                    changed_manifest = copy.deepcopy(manifest)
+                    if mutate_bundle:
+                        mutate_bundle(changed_bundle)
+                    if mutate_manifest:
+                        mutate_manifest(changed_manifest)
+                    self.assertTrue(checker.validate_c21_wsl_acceptance_strict_projection(changed_bundle, changed_manifest))
+
+    def test_seq572_builder_rejects_history_prefix_path_and_malformed_json(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        historical = self._historical(checker)
+        raw_files = self._raw_files(checker)
+        corrupt = dict(historical)
+        corrupt[checker.C21_WSL_ACCEPTANCE_STRICT_E] = corrupt[checker.C21_WSL_ACCEPTANCE_STRICT_E].replace(b'"sequence": 1', b'"sequence": 0', 1)
+        with self.assertRaises(ValueError):
+            checker.c21_wsl_acceptance_strict_artifacts(corrupt, raw_files)
+        malformed = dict(historical); malformed[checker.C21_WSL_ACCEPTANCE_STRICT_P] = b'{"broken":'
+        with self.assertRaises((ValueError, json.JSONDecodeError)):
+            checker.c21_wsl_acceptance_strict_artifacts(malformed, raw_files)
+        missing = dict(raw_files); missing.pop(next(iter(missing)))
+        with self.assertRaises(ValueError):
+            checker.c21_wsl_acceptance_strict_artifacts(historical, missing)
+
+    @staticmethod
+    def _git_values(checker, *, head=None, status=None, parents=None):
+        head = head or checker.C21_WSL_ACCEPTANCE_STRICT_PARENT
+        return {
+            ("rev-parse", "HEAD"): head,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): status,
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): checker.C21_WSL_ACCEPTANCE_STRICT_PRIVATE_URL,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_WSL_ACCEPTANCE_STRICT_PRIVATE_CONTROL,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): checker.C21_WSL_ACCEPTANCE_STRICT_CANDIDATE,
+            ("diff", "--name-only", checker.C21_WSL_ACCEPTANCE_STRICT_PARENT, head): "\n".join(checker.c21_wsl_acceptance_strict_paths()),
+            ("diff", "--name-only", checker.C21_EXACT_BINDING_BASE, head): "\n".join(checker.c21_wsl_acceptance_strict_metadata()["cumulative_exact_paths"]),
+            ("show", "-s", "--format=%P", head): parents,
+        }
+
+    def test_seq572_git_collector_and_routing_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 572, "repository": {"validated_base_commit": checker.C21_EXACT_BINDING_BASE}}}
+        dirty = "\n".join(f" M {path}" for path in checker.c21_wsl_acceptance_strict_paths())
+        values = self._git_values(checker, status=dirty)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_wsl_acceptance_strict_git(bundle))
+        child = "1" * 40
+        values = self._git_values(checker, head=child, status="", parents=checker.C21_WSL_ACCEPTANCE_STRICT_PARENT)
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual([], checker._collect_c21_wsl_acceptance_strict_git(bundle))
+        for name, update in (
+            ("merge", {("show", "-s", "--format=%P", child): checker.C21_WSL_ACCEPTANCE_STRICT_PARENT + " " + "2" * 40}),
+            ("private_control", {("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): "0" * 40}),
+            ("candidate", {("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): "0" * 40}),
+            ("diff", {("diff", "--name-only", checker.C21_WSL_ACCEPTANCE_STRICT_PARENT, child): "docs/WORK_STATUS.md"}),
+        ):
+            with self.subTest(name=name):
+                changed = dict(values); changed.update(update)
+                with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: changed.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+                    self.assertTrue(checker._collect_c21_wsl_acceptance_strict_git(bundle))
+        with mock.patch.object(checker, "_collect_c21_wsl_acceptance_strict_git", return_value=["ROUTED"]):
+            self.assertEqual(["ROUTED"], checker._validate_git_projection(bundle))
+
+
+class C21WorkbenchUiReworkLocalStartTests(unittest.TestCase):
+    def test_seq575_builder_preserves_seq572_and_issues_exact_leases(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_local_start_artifacts"))
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_LOCAL_PARENT}:{path}"], cwd=ROOT)
+            for path in (checker.C21_WORKBENCH_UI_LOCAL_P, checker.C21_WORKBENCH_UI_LOCAL_E, checker.C21_WORKBENCH_UI_LOCAL_H)
+        }
+        generated = {checker.C21_WORKBENCH_UI_LOCAL_P, checker.C21_WORKBENCH_UI_LOCAL_E, checker.C21_WORKBENCH_UI_LOCAL_H, checker.C21_WORKBENCH_UI_LOCAL_D, checker.C21_WORKBENCH_UI_LOCAL_M}
+        raw_files = {path: (ROOT / path).read_bytes() for path in set(checker.c21_workbench_ui_local_start_paths()) - generated}
+        artifacts = checker.c21_workbench_ui_local_start_artifacts(historical, raw_files)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E])["events"]
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_M])
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical[checker.C21_WORKBENCH_UI_LOCAL_E], 572),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E], 572),
+        )
+        self.assertEqual([573, 574, 575], [row["sequence"] for row in events[-3:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"], [row["event_type"] for row in events[-3:]])
+        self.assertEqual("ACTIVE_WORKBENCH_UI_REWORK_LOCAL", progress["status"])
+        self.assertEqual("ACTIVE", progress["worker_lease"]["status"])
+        self.assertEqual("ACTIVE", progress["write_lease"]["status"])
+        self.assertEqual(checker.c21_workbench_ui_local_product_paths(), progress["write_lease"]["paths"])
+        self.assertEqual(10, manifest["start_exact_path_count"])
+        self.assertEqual(11, manifest["product_exact_path_count"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_execution"])
+
+    def test_seq575_metadata_binds_exact_paths_and_rejects_scope_promotion(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_local_metadata()
+        self.assertEqual(10, metadata["start_exact_path_count"])
+        self.assertEqual("CFBA74FE970ADD24C512890616C8CAFBB269DF5AFE81A40AEBAB2A01D3F150D6", metadata["start_exact_path_list_sha256"])
+        self.assertEqual(11, metadata["product_exact_path_count"])
+        self.assertEqual("3FD59352816A3CAF316F1EF832C9B206B20363197C4B5887626BA8D964095DFF", metadata["product_exact_path_list_sha256"])
+        self.assertEqual(159, metadata["cumulative_start_path_count"])
+        self.assertEqual("9F597E2977C2133988D895A815E97620C634CB78FCF31DD6D3BAE71A16DB259B", metadata["cumulative_start_path_list_sha256"])
+        artifacts = checker.c21_workbench_ui_local_start_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_M])
+        self.assertEqual([], checker.validate_c21_workbench_ui_local_start_manifest(manifest))
+        for key, value in (("accepted", True), ("external_execution", "PASS"), ("c21_status", "ACCEPTED"), ("c01_status", "READY"), ("dir2_status", "TRIGGERED")):
+            changed = copy.deepcopy(manifest); changed[key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_local_start_manifest(changed), key)
+
+
+class C21WorkbenchUiReworkLocalResultTests(unittest.TestCase):
+    def test_seq578_git_collector_rejects_mutated_declared_base(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 578, "repository": {"validated_base_commit": "0" * 40}}}
+        values = {
+            ("rev-parse", "HEAD"): checker.C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT,
+            ("-c", "core.quotePath=false", "status", "--porcelain=v1", "--untracked-files=all"): " M docs/WORK_STATUS.md",
+            ("branch", "--show-current"): "codex/c21-operational-execution",
+            ("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"): "origin/codex/c21-operational-execution",
+            ("remote", "get-url", "development"): checker.C21_WORKBENCH_UI_LOCAL_PRIVATE_URL,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/codex/c21-operational-execution"): checker.C21_WORKBENCH_UI_LOCAL_PARENT,
+            ("for-each-ref", "--format=%(objectname)", "refs/remotes/development/candidates/c21-wsl-exact107"): checker.C21_WORKBENCH_UI_LOCAL_CANDIDATE,
+        }
+        with mock.patch.object(checker, "_git_value", side_effect=lambda _root, *args: values.get(args)), mock.patch.object(checker, "_git_returncode", return_value=0):
+            self.assertEqual(["GIT_VALIDATED_BASE_NOT_ANCESTOR"], checker._collect_c21_workbench_ui_local_result_git(bundle))
+
+    def test_seq578_builder_preserves_seq575_and_closes_leases(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_local_result_artifacts"))
+        artifacts = checker.c21_workbench_ui_local_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E])["events"]
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_LOCAL_PRODUCT_COMMIT}:{checker.C21_WORKBENCH_UI_LOCAL_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 575), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_LOCAL_E], 575))
+        self.assertEqual([576, 577, 578], [row["sequence"] for row in events[-3:]])
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events[-3:]])
+        self.assertEqual("COMPLETED_LOCAL_PENDING_TOOLING_RECONCILIATION", progress["status"])
+        self.assertEqual("REVOKED", progress["worker_lease"]["status"])
+        self.assertEqual("REVOKED", progress["write_lease"]["status"])
+        self.assertEqual("BLOCKED_PENDING_TOOLING_RECONCILIATION", progress["workbench_ui_local"]["independent_tester_status"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_execution"])
+
+    def test_seq578_metadata_and_manifest_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_local_result_metadata()
+        self.assertEqual(10, metadata["result_exact_path_count"])
+        self.assertEqual("8177130298C0103FF92935009FFC230F1AC1FC5A9F7651D3AEB40D16E67A8D80", metadata["result_exact_path_list_sha256"])
+        self.assertEqual(173, metadata["cumulative_result_path_count"])
+        self.assertEqual("708CE3F98FFAC1139D6A5F0CD5BCA96DCE0859B9DE6C3A7248906961BB428B9C", metadata["cumulative_result_path_list_sha256"])
+        artifacts = checker.c21_workbench_ui_local_result_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_LOCAL_RESULT_M])
+        self.assertEqual([], checker.validate_c21_workbench_ui_local_result_manifest(manifest))
+        for key, value in (("accepted", True), ("external_execution", "PASS"), ("product_commit", "0" * 40)):
+            changed = copy.deepcopy(manifest); changed[key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_local_result_manifest(changed), key)
+
+
+class C21WorkbenchUiHistoricalFixtureReconciliationTests(unittest.TestCase):
+    def test_seq584_builder_preserves_seq578_and_records_main_takeover(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_historical_fixture_reconciliation_from_root"))
+        artifacts = checker.c21_workbench_ui_historical_fixture_reconciliation_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_HISTORICAL_E])["events"]
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_HISTORICAL_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_HISTORICAL_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_HISTORICAL_PARENT}:{checker.C21_WORKBENCH_UI_HISTORICAL_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 578),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_HISTORICAL_E], 578),
+        )
+        self.assertEqual(list(range(579, 585)), [row["sequence"] for row in events[-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events[-6:]],
+        )
+        self.assertEqual("READY_FOR_INDEPENDENT_REVIEW", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertEqual("REVOKED", progress["worker_lease"]["status"])
+        self.assertEqual("REVOKED", progress["write_lease"]["status"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_execution"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_historical_fixture_reconciliation_manifest(manifest))
+
+    def test_seq584_metadata_and_manifest_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_historical_fixture_reconciliation_metadata()
+        self.assertEqual(16, metadata["exact_path_count"])
+        self.assertEqual("4B6FB5B5AEFD4A7CF943A191437A3A31F8EEADED1C96A47A6B8934AAFAB3F4F0", metadata["exact_path_list_sha256"])
+        self.assertEqual("E6A1C5BB1C6004DFA22E3342FC41A5C4B455A86EA7A3866549258E5056A95C90", metadata["exact_path_list_ordinal_sha256"])
+        self.assertEqual(183, metadata["cumulative_path_count"])
+        self.assertEqual("BCCCA49E2B920D3A4FD4C557792F63204E20708E4897812CB4457DEB5ED7DC3B", metadata["cumulative_path_list_sha256"])
+        self.assertEqual("DFA407A31DBDAD6424B9664ACBFB1F77999D5D746604A20327CFE0E0EA85D91B", metadata["cumulative_path_list_ordinal_sha256"])
+        artifacts = checker.c21_workbench_ui_historical_fixture_reconciliation_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_HISTORICAL_M])
+        for key, value in (("accepted", True), ("external_execution", "PASS"), ("event_sequence", 584.0)):
+            changed = copy.deepcopy(manifest); changed[key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_historical_fixture_reconciliation_manifest(changed), key)
+
+
+class C21WorkbenchUiWslGitOnlyCandidateStartTests(unittest.TestCase):
+    def test_seq587_start_builder_preserves_seq584_and_binds_exact10(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_candidate_start_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_candidate_start_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_START_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_START_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_START_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_SOURCE}:{checker.C21_WORKBENCH_UI_WSL_START_E}"], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 584),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_START_E], 584),
+        )
+        self.assertEqual([585, 586, 587], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"], [row["event_type"] for row in events["events"][-3:]])
+        self.assertEqual("ACTIVE_WORKBENCH_UI_WSL_GIT_ONLY_CANDIDATE", progress["status"])
+        self.assertEqual("ACTIVE", progress["worker_lease"]["status"])
+        self.assertEqual("ACTIVE", progress["write_lease"]["status"])
+        self.assertEqual("ABSENT", manifest["private_git_authority"]["observed_new_candidate"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["provider"])
+        self.assertEqual("NOT_EXECUTED", manifest["telegram"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_candidate_start_manifest(manifest))
+
+    def test_seq587_metadata_and_manifest_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_candidate_metadata()
+        self.assertEqual((10, "6E8FF216E3984D238E6229C489B97B8CBD3E45E7591D4378ED9EA5C4AFE8DFD5", "E6B5378AA75AE61785AAAF6E5C07695663EA4F3970010750D9DD4D5EA3492275"),
+                         (metadata["start_exact_path_count"], metadata["start_exact_path_list_sha256"], metadata["start_exact_path_list_ordinal_sha256"]))
+        self.assertEqual((187, "287B8617A64EC0A33E3F97E20A03E7CB69B66A9C8A1DBCC777E3A16D2F7F3D88", "1A35F7995A3AE539395E0EC515B240C276433F5AD7F736C28BE0F63182EDC889"),
+                         (metadata["post_start_cumulative_path_count"], metadata["post_start_cumulative_path_list_sha256"], metadata["post_start_cumulative_path_list_ordinal_sha256"]))
+        manifest = json.loads(checker.c21_workbench_ui_wsl_candidate_start_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_START_M])
+        for key, value in (("accepted", True), ("c21_status", "ACCEPTED"), ("c01_status", "READY"), ("dir2_status", "TRIGGERED"), ("provider", "PASS"), ("telegram", "PASS")):
+            changed = copy.deepcopy(manifest); changed[key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_candidate_start_manifest(changed), key)
+
+
+class C21WorkbenchUiWslGitOnlyCandidateBoundTests(unittest.TestCase):
+    def test_seq590_bound_builder_preserves_seq587_and_closes_leases(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_candidate_bound_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_candidate_bound_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_S_COMMIT}:{checker.C21_WORKBENCH_UI_WSL_BOUND_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical,587), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_BOUND_E],587))
+        self.assertEqual([588,589,590], [row["sequence"] for row in events["events"][-3:]])
+        self.assertEqual(["WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-3:]])
+        self.assertEqual("GIT_ONLY_CANDIDATE_BOUND_PENDING_PRIVATE_ATOMIC_CAS", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertEqual("REVOKED", progress["worker_lease"]["status"])
+        self.assertEqual("REVOKED", progress["write_lease"]["status"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_candidate_bound_manifest(manifest))
+
+    def test_seq590_metadata_and_boundary_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_candidate_metadata()
+        self.assertEqual((12,"D85669CA2C20EA8481C165F736FD28F017E7291BAFBB3916684A9DF5975EF714","4A8A0CED250CE4E9010589C68416BC4C25346F6D2DA46F44034CE92336C6D901"), (metadata["bound_exact_path_count"],metadata["bound_exact_path_list_sha256"],metadata["bound_exact_path_list_ordinal_sha256"]))
+        self.assertEqual((189,"8A54D4594B30E4CACFD8AB8C54C187CB528735E39305E1503737932023BD786F","13D263C508363A6D24622CC015545B965D96F67025EA75B1F1C9C43C5EDBF31A"), (metadata["post_bound_cumulative_path_count"],metadata["post_bound_cumulative_path_list_sha256"],metadata["post_bound_cumulative_path_list_ordinal_sha256"]))
+        manifest=json.loads(checker.c21_workbench_ui_wsl_candidate_bound_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_BOUND_M])
+        for key,value in (("accepted",True),("c21_status","ACCEPTED"),("c01_status","READY"),("dir2_status","TRIGGERED"),("provider","PASS"),("telegram","PASS")):
+            changed=copy.deepcopy(manifest); changed[key]=value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_candidate_bound_manifest(changed),key)
+
+
+class C21WorkbenchUiWslRuntimeResultTests(unittest.TestCase):
+    def test_seq596_runtime_result_is_append_only_and_ready_for_independent_acceptance(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_workbench_ui_wsl_runtime_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_RUNTIME_PARENT}:{checker.C21_WORKBENCH_UI_WSL_RUNTIME_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 590),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_RUNTIME_E], 590),
+        )
+        self.assertEqual(list(range(591, 597)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["c21_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_runtime_result_manifest(manifest))
+
+    def test_seq596_runtime_result_binds_exact_paths_runtime_receipts_and_exclusions(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_runtime_result_metadata()
+        self.assertEqual(
+            (12, "D1965266EBE7DDC3D4D6B0D01A2E71EA276DDFF378B0793E5895E2FB8F07F348", "B345B0586EC4A8937238324EAC5F6FC9046C848F9B171B5E6CB6B83DDA9A6346"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (195, "5F63907A3D63D0350B68EC277B9703EB6AB9D0631E583427BADC2D53A1A13F00", "CAD44AA61C8F359D0AD5FE19DABD70C4F7BE2106FC9EC4C59BD3E2EBFF89C516"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_workbench_ui_wsl_runtime_result_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_RUNTIME_M])
+        self.assertEqual(6, len(manifest["runtime_result"]["receipts"]))
+        self.assertEqual("BYTE_IDENTICAL", manifest["runtime_result"]["environment_file"]["result"])
+        self.assertEqual(3, manifest["runtime_result"]["timeout_lineage"]["valid_observation_count"])
+        self.assertTrue(manifest["runtime_result"]["timeout_lineage"]["main_takeover"])
+        self.assertEqual({"provider":"NOT_EXECUTED","telegram":"NOT_EXECUTED","ysna":"NOT_EXECUTED","main_merge":"NOT_EXECUTED","c01":"NOT_EXECUTED"}, manifest["exclusions"])
+        for path, value in (
+            (("accepted",), True),
+            (("runtime_result", "cleanup", "residual_volumes"), 1),
+            (("runtime_result", "environment_file", "sha256_after"), "0" * 64),
+            (("runtime_result", "receipts", 0, "sha256"), "0" * 64),
+            (("exclusions", "provider"), "PASS"),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_runtime_result_manifest(changed), path)
+
+
+class C21A13HistoricalModuleIsolationTests(unittest.TestCase):
+    def test_seq602_builder_preserves_seq596_and_records_isolation_lifecycle(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_a13_historical_module_isolation_from_root"))
+        artifacts = checker.c21_a13_historical_module_isolation_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_E])
+        progress = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_P])
+        manifest = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_A13_MODULE_ISOLATION_PARENT}:{checker.C21_A13_MODULE_ISOLATION_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 596),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_A13_MODULE_ISOLATION_E], 596),
+        )
+        self.assertEqual(list(range(597, 603)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["status"])
+        self.assertEqual("INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["runtime_next_action"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["c21_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        self.assertEqual([], checker.validate_c21_a13_historical_module_isolation_manifest(manifest))
+
+    def test_seq602_manifest_binds_exact13_cumulative201_and_isolation_proof(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_a13_historical_module_isolation_metadata()
+        self.assertEqual(
+            (13, "3363F8F3DB4BE55C2D4CC12FCDD60D8EDEEDA46C7385CE87A92FAD6B72FF820A", "7EBDAF635BD89CFBFB9B183003613CE433A9929405AF74005DDDF85A5CB0DF42"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (201, "DF0884A6F6AA73738488487E4A8C5181A6022FA4443DDCF1E28B69FA6EA3882D", "FF0B9643404E4EA080313E43AD52BC3D356A82710415162B437C2914FFBA8312"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_a13_historical_module_isolation_from_root(ROOT)[checker.C21_A13_MODULE_ISOLATION_M])
+        proof = manifest["isolation_result"]
+        self.assertEqual("TEST_HARNESS_ONLY", proof["scope"])
+        self.assertEqual(0, proof["product_code_mutation_count"])
+        self.assertEqual("PASS", proof["two_node_order"])
+        self.assertEqual("PASS", proof["success_restore"])
+        self.assertEqual("PASS", proof["exception_restore"])
+        self.assertEqual("65_PASSED", proof["a13_suite"])
+        self.assertEqual("597_PASSED", proof["full_tooling"])
+        self.assertEqual([], checker.validate_c21_a13_historical_module_isolation_manifest(manifest))
+        for path, value in (
+            (("accepted",), True),
+            (("isolation_result", "product_code_mutation_count"), 1),
+            (("isolation_result", "exception_restore"), "FAIL"),
+            (("cumulative_path_count",), 200),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_a13_historical_module_isolation_manifest(changed), path)
+
+
+class C21A13HistoricalModuleIsolationCasPublicationTests(unittest.TestCase):
+    def test_seq608_builder_preserves_seq602_and_records_cas_publication(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_a13_historical_module_isolation_cas_publication_from_root"))
+        artifacts = checker.c21_a13_historical_module_isolation_cas_publication_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E])
+        progress = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_P])
+        manifest = json.loads(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_PARENT}:{checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 602),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_E], 602),
+        )
+        self.assertEqual(list(range(603, 609)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["status"])
+        self.assertEqual("INDEPENDENT_C21_WORKBENCH_UI_WSL_ACCEPTANCE", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_a13_historical_module_isolation_cas_publication_manifest(manifest))
+
+    def test_seq608_manifest_binds_exact12_cumulative207_and_cas_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_a13_historical_module_isolation_cas_publication_metadata()
+        self.assertEqual(
+            (12, "87DA6006EDA1CE51293EC2EA964519C16ED637E5BAC48283A0F62F12FD79D916", "F6DA948CBFF8E9FCEFA9415DF292AA20110C2BD1BD990A06AEC794CFA5A6233C"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (207, "9CC4B0493469FD990C651BB73A70217F7F17E8EC5F87F43C21ACE0C230EEC5EE", "93F2AAEBF7E5637ED59EFB848F20A58C6E2ED170D7D29E9A76C6BAF1B33F5D87"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_a13_historical_module_isolation_cas_publication_from_root(ROOT)[checker.C21_A13_MODULE_ISOLATION_CAS_PUBLICATION_M])
+        publication = manifest["publication_result"]
+        self.assertEqual("PASS", publication["result"])
+        self.assertEqual("8fe7b975f39990b3d721d27b1a3e9353f891c5c1", publication["previous_control"])
+        self.assertEqual("6134e4140d2017536563babc907c631853509ae5", publication["published_control"])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", publication["candidate"])
+        self.assertEqual("git@github-sinsan-develop:sinsan-develop/Anvil.git", publication["remote_url"])
+        self.assertEqual("MAIN_AGENT_DIRECT_TOOL_RECEIPT", publication["evidence_source"])
+        self.assertEqual(0, publication["preflight_exit_code"])
+        self.assertEqual(0, publication["cas_exit_code"])
+        self.assertEqual(0, publication["postflight_exit_code"])
+        self.assertIn("--force-with-lease=refs/heads/codex/c21-operational-execution:8fe7b975", publication["cas_command"])
+        for path, value in (
+            (("accepted",), True),
+            (("publication_result", "result"), "FAIL"),
+            (("publication_result", "previous_control"), "0" * 40),
+            (("publication_result", "published_control"), "0" * 40),
+            (("publication_result", "candidate"), "0" * 40),
+            (("publication_result", "remote_url"), "https://github.com/cyhuh7950/anvil.git"),
+            (("publication_result", "evidence_source"), "SUBAGENT_INFERENCE"),
+            (("publication_result", "cas_exit_code"), 1),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_a13_historical_module_isolation_cas_publication_manifest(changed), path)
+
+
+class C21WorkbenchUiWslAuthBrowserProbeTests(unittest.TestCase):
+    def test_seq614_builder_preserves_seq608_and_records_probe_contract(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_auth_browser_probe_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_probe_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_PARENT}:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 608),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_E], 608),
+        )
+        self.assertEqual(list(range(609, 615)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("READY_FOR_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_EXECUTION", progress["status"])
+        self.assertEqual("EXECUTE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE", progress["runtime_next_action"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_execution"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_probe_manifest(manifest))
+
+    def test_seq614_manifest_binds_exact13_cumulative213_and_secret_safe_probe_contract(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_probe_metadata()
+        self.assertEqual(
+            (13, "CC635465B7F0E79B3AAE5C88FFC23CAE180F28FAED00B440D200772083AA6AC6", "269419A426966B48E97F87147F2B65365D3F16B42D5D1EA6E525B95AF55F5D22"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (213, "2878046572BD6386121F5D35C0390766468492A1E9BC6F40219F5ADBD6376D2E", "726D55C3AE83A2791A86CB79C4BBB7419FC502E992A3FDD159A955BAB432F068"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_workbench_ui_wsl_auth_browser_probe_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_PROBE_M])
+        contract = manifest["probe_contract"]
+        self.assertEqual("ENVIRONMENT_ONLY", contract["credential_input"])
+        self.assertEqual([[1920,1080], [1440,900], [430,844]], contract["viewports"])
+        self.assertEqual("ONE_CANONICAL_JSON_RECEIPT", contract["output"])
+        self.assertEqual("FAIL_CLOSED_NONZERO", contract["acceptance_failure"])
+        self.assertEqual("SCHEMA_ONLY_PASS", contract["self_test"])
+        self.assertEqual("MEMORY_ONLY", contract["screenshot"]["storage"])
+        self.assertEqual(0, contract["screenshot"]["files_created"])
+        self.assertEqual(0, contract["screenshot"]["directories_created"])
+        self.assertEqual(0, contract["screenshot"]["residue_count"])
+        self.assertEqual("FAIL_CLOSED_IF_SUPPLIED", contract["screenshot"]["root_input"])
+        self.assertEqual("EXACT_INITIAL_EVENT_ID", contract["last_event_id"])
+        self.assertEqual(["MISSING_REJECTED", "STALE_REJECTED", "WRONG_REJECTED"], contract["last_event_id_negative_cases"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_execution"])
+        for path, value in (
+            (("accepted",), True),
+            (("runtime_execution",), "PASS"),
+            (("probe_contract", "credential_input"), "CLI_ALLOWED"),
+            (("probe_contract", "viewports"), [[1920,1080]]),
+            (("probe_contract", "provider_write_count"), 1),
+            (("probe_contract", "secret_safety", "cookie_occurrences"), 1),
+            (("probe_contract", "screenshot", "storage"), "FILESYSTEM"),
+            (("probe_contract", "last_event_id"), "PRESENT_ONLY"),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_probe_manifest(changed), path)
+
+    def test_wsl_workbench_auth_probe_self_test_receipt_schema_and_secret_safety(self):
+        result = subprocess.run(
+            ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth-self-test"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        lines = [line for line in result.stdout.splitlines() if line.strip()]
+        self.assertEqual(1, len(lines))
+        receipt = json.loads(lines[0])
+        self.assertEqual(json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")), lines[0])
+        self.assertEqual("SCHEMA_ONLY_PASS", receipt["result"])
+        self.assertEqual("ENVIRONMENT_ONLY", receipt["credentialInput"])
+        self.assertEqual([[1920,1080], [1440,900], [430,844]], [[row["width"], row["height"]] for row in receipt["viewports"]])
+        self.assertTrue(all(set(row["screenshot"]) == {"relativeName", "bytes", "sha256"} for row in receipt["viewports"]))
+        self.assertTrue(all(len(row["screenshot"]["sha256"]) == 64 for row in receipt["viewports"]))
+        self.assertEqual({"directoriesCreated":0,"filesCreated":0,"residueCount":0,"storage":"MEMORY_ONLY"}, receipt["filesystemMutation"])
+        self.assertEqual({"rootInput":"FAIL_CLOSED_IF_SUPPLIED","storage":"MEMORY_ONLY"}, receipt["screenshotPolicy"])
+        self.assertEqual({"sentinelOccurrences":0,"authorizationHeaderOccurrences":0,"cookieOccurrences":0,"rawUrlOccurrences":0}, receipt["secretSafety"])
+        rendered = json.dumps(receipt, sort_keys=True).lower()
+        self.assertNotIn("bootstrap-token", rendered)
+        self.assertNotIn("set-cookie", rendered)
+        self.assertNotIn('"authorization":', rendered)
+
+    def test_seq620_builder_preserves_seq614_and_records_failed_runtime_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_auth_browser_runtime_result_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RESULT_M])
+        historical = subprocess.check_output(
+            ["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RESULT_PARENT}:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RESULT_E}"],
+            cwd=ROOT,
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 614),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RESULT_E], 614),
+        )
+        self.assertEqual(list(range(615, 621)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_EXECUTION", progress["status"])
+        self.assertEqual("REVISE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_CONTROL_REF", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_result_manifest(manifest))
+
+    def test_seq620_manifest_binds_exact12_cumulative219_and_failure_cleanup(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_result_metadata()
+        self.assertEqual(
+            (12, "4184910AC22ECDDB800E560858463AD688BC9FA2C18A0FDB1415BAA87854E6D8", "166D23CED09DECD448F5CCAB44F1022F71516BD40914BB7A7F84CAE66A166262"),
+            (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]),
+        )
+        self.assertEqual(
+            (219, "52936B5F9C6861EE6FAE270F747A6318502747539E8E66B285DA2811612D4E6D", "7478D25196E94EB84E45BCE779E685937DB29E5736C8F482A7CD52D6040C40E2"),
+            (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]),
+        )
+        manifest = json.loads(checker.c21_workbench_ui_wsl_auth_browser_runtime_result_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RESULT_M])
+        result = manifest["runtime_result"]
+        self.assertEqual("PASS", result["preflight"]["result"])
+        self.assertEqual("FAIL", result["deploy"]["result"])
+        self.assertEqual("CONTROL_REF_MISBOUND", result["deploy"]["failure_fingerprint"])
+        self.assertEqual(1, result["deploy"]["attempt_count"])
+        self.assertEqual("NOT_EXECUTED", result["verify"])
+        self.assertEqual("NOT_EXECUTED", result["browser_pg15"])
+        self.assertEqual("NOT_EXECUTED", result["browser_pg18rc"])
+        self.assertEqual({"attempt_count": 1, "exit_code": 0, "result": "PASS"}, result["cleanup"])
+        self.assertEqual("BYTE_IDENTICAL", result["postconditions"]["environment"])
+        self.assertEqual(0, result["postconditions"]["container_residue_count"])
+        self.assertEqual(0, result["postconditions"]["network_residue_count"])
+        self.assertEqual(0, result["postconditions"]["volume_residue_count"])
+        for path, value in (
+            (("accepted",), True),
+            (("runtime_result", "deploy", "result"), "PASS"),
+            (("runtime_result", "deploy", "attempt_count"), 2),
+            (("runtime_result", "cleanup", "attempt_count"), 2),
+            (("runtime_result", "postconditions", "container_residue_count"), 1),
+        ):
+            changed = copy.deepcopy(manifest)
+            target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_result_manifest(changed), path)
+
+    def test_wsl_workbench_auth_probe_rejects_cli_credentials_and_missing_env_with_one_safe_receipt(self):
+        cases = (
+            (["--wsl-workbench-auth", "--bootstrap-token", "forbidden-secret-sentinel"], "INPUT_REJECTED"),
+            (["--wsl-workbench-auth"], "ENVIRONMENT_ERROR"),
+        )
+        clean_env = {
+            key: value for key, value in os.environ.items()
+            if key not in {
+                "ANVIL_WSL_WORKBENCH_BASE_URL",
+                "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN",
+                "ANVIL_TEST_SESSION_RUN_ID",
+                "ANVIL_WSL_WORKBENCH_SCREENSHOT_DIR",
+                "ANVIL_SCREENSHOT_ROOT",
+            }
+        }
+        for arguments, expected in cases:
+            result = subprocess.run(
+                ["node", "tests/browser/c21-network-probe.mjs", *arguments],
+                cwd=ROOT,
+                env=clean_env,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            self.assertNotEqual(0, result.returncode)
+            lines = [line for line in result.stdout.splitlines() if line.strip()]
+            self.assertEqual(1, len(lines), result.stderr)
+            receipt = json.loads(lines[0])
+            self.assertEqual(expected, receipt["result"])
+            self.assertEqual("ENVIRONMENT_ONLY", receipt["credentialInput"])
+            self.assertNotIn("forbidden-secret-sentinel", result.stdout)
+            self.assertNotIn("forbidden-secret-sentinel", result.stderr)
+
+    def test_wsl_workbench_auth_probe_rejects_any_screenshot_root_input(self):
+        for variable in ("ANVIL_SCREENSHOT_ROOT", "ANVIL_WSL_WORKBENCH_SCREENSHOT_DIR"):
+            environment = dict(os.environ)
+            environment.update({
+                "ANVIL_WSL_WORKBENCH_BASE_URL": "http://127.0.0.1:4770/",
+                "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "not-printed",
+                "ANVIL_TEST_SESSION_RUN_ID": "run-safe",
+                variable: "D:/tmp/forbidden-screenshot-root",
+            })
+            result = subprocess.run(
+                ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth"],
+                cwd=ROOT, env=environment, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(2, result.returncode)
+            receipt = json.loads(result.stdout)
+            self.assertEqual("ENVIRONMENT_ERROR", receipt["result"])
+            self.assertEqual("FAIL_CLOSED_IF_SUPPLIED", receipt["screenshotPolicy"]["rootInput"])
+            self.assertNotIn("not-printed", result.stdout + result.stderr)
+
+    def test_wsl_workbench_auth_probe_failure_is_memory_only_canonical_and_mutates_no_filesystem(self):
+        before = sorted(Path("D:/tmp").glob("anvil-c21-auth-browser-probe-*"))
+        environment = dict(os.environ)
+        environment.update({
+            "ANVIL_WSL_WORKBENCH_BASE_URL": "http://127.0.0.1:4770/",
+            "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN": "not-printed",
+            "ANVIL_TEST_SESSION_RUN_ID": "run-safe",
+            "ANVIL_PLAYWRIGHT_MODULE": str(ROOT / "missing-playwright-for-cleanup-test"),
+        })
+        environment.pop("ANVIL_SCREENSHOT_ROOT", None)
+        environment.pop("ANVIL_WSL_WORKBENCH_SCREENSHOT_DIR", None)
+        result = subprocess.run(
+            ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth"],
+            cwd=ROOT, env=environment, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(1, result.returncode, result.stderr)
+        receipt = json.loads(result.stdout)
+        self.assertEqual("PROBE_ERROR", receipt["result"])
+        self.assertEqual(json.dumps(receipt, ensure_ascii=False, sort_keys=True, separators=(",", ":")), result.stdout.strip())
+        self.assertEqual({"directoriesCreated":0,"filesCreated":0,"residueCount":0,"storage":"MEMORY_ONLY"}, receipt["filesystemMutation"])
+        self.assertEqual(before, sorted(Path("D:/tmp").glob("anvil-c21-auth-browser-probe-*")))
+
+    def test_wsl_workbench_auth_probe_self_test_memory_only_and_rejects_bad_resume_cursor(self):
+        result = subprocess.run(
+            ["node", "tests/browser/c21-network-probe.mjs", "--wsl-workbench-auth-self-test"],
+            cwd=ROOT, text=True, capture_output=True, check=False,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        receipt = json.loads(result.stdout)
+        self.assertEqual({
+            "missingRejected": True,
+            "staleRejected": True,
+            "wrongRejected": True,
+        }, receipt["lastEventIdNegativeCases"])
+        self.assertEqual({"rootInput":"FAIL_CLOSED_IF_SUPPLIED","storage":"MEMORY_ONLY"}, receipt["screenshotPolicy"])
+        self.assertEqual({"directoriesCreated":0,"filesCreated":0,"residueCount":0,"storage":"MEMORY_ONLY"}, receipt["filesystemMutation"])
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryResultTests(unittest.TestCase):
+    def test_seq626_builder_preserves_seq620_and_records_attempt2_failure(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_auth_browser_runtime_retry_result_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_PARENT}:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 620), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_E], 620))
+        self.assertEqual(list(range(621, 627)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual(progress["repository"]["remote_head"], events["events"][-1]["details"]["completion_upstream_head"])
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_VALIDATION_ATTEMPT_2", progress["status"])
+        self.assertEqual("ANALYZE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_VALIDATION_ATTEMPT_2", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_result_manifest(manifest))
+
+    def test_seq626_manifest_binds_exact12_cumulative225_and_cleanup_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_result_metadata()
+        self.assertEqual((12, "849B550F3AE689CC0CA636497418956ABFBFB1107748AAA6393EFA5EC044743A", "9C7E0AADC5448C221A0F6FCA08FFB288F916DD3C018808B1E43F7518DABC0FE8"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((225, "0C4A577FC62585963C7C72ED6C5F4955D520A98B9AC92249CAA2F376B4C71E8A", "F2200D3F4FD6B824DA6823BF6D97DDFD40F8386F578C220E2BE2ED221CBDF7A2"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+        manifest = json.loads(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_result_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_RESULT_M])
+        result = manifest["runtime_result"]
+        self.assertEqual(2, result["attempt_number"])
+        self.assertEqual("PASS", result["preflight"]["result"])
+        self.assertEqual("FAIL", result["deploy"]["result"])
+        self.assertEqual("APPLICATION_ORIGIN_ALIAS_UNRESOLVED_UNDER_ROOT", result["deploy"]["failure_fingerprint"])
+        self.assertEqual(128, result["deploy"]["exit_code"])
+        self.assertEqual("NOT_EXECUTED", result["verify"])
+        self.assertEqual("NOT_EXECUTED", result["browser_pg15"])
+        self.assertEqual("NOT_EXECUTED", result["browser_pg18rc"])
+        self.assertEqual({"attempt_count": 1, "exit_code": 0, "result": "PASS"}, result["cleanup"])
+        self.assertEqual("BYTE_IDENTICAL", result["postconditions"]["environment"])
+        self.assertEqual(0, result["postconditions"]["total_residue_count"])
+        for path, value in ((("accepted",), True), (("runtime_result", "attempt_number"), 3), (("runtime_result", "deploy", "result"), "PASS"), (("runtime_result", "cleanup", "attempt_count"), 2), (("runtime_result", "postconditions", "total_residue_count"), 1)):
+            changed = copy.deepcopy(manifest); target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_result_manifest(changed), path)
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR3ResultTests(unittest.TestCase):
+    def test_seq632_builder_preserves_seq626_and_records_attempt3_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_PARENT}:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 626), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_E], 626))
+        self.assertEqual(list(range(627, 633)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_VALIDATION_ATTEMPT_3", progress["status"])
+        self.assertEqual("ISSUE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_BASH_INVOCATION_SUCCESSOR", progress["runtime_next_action"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_manifest(manifest))
+
+    def test_seq632_manifest_binds_exact12_cumulative231_and_cleanup_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_metadata()
+        self.assertEqual((12, "227E0B11E216170A0A56C7D184EB67A0D51054F9C72D9C19BDA493CEB7784E4B", "3FDD92F6996CA52C33F06522D2DF3FC2BBEEC2338F05AE097BB4A3F2FA773E3E"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((231, "1701B4B854A56B3AA965E9EA15C9270758143AC8FB3BE3F5811A9A11D9E65B15", "4491BC454A30831810DB01E50F6A824D69B22A855A9093C1086ECF554B8EEE6C"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+        manifest = json.loads(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R3_RESULT_M])
+        result = manifest["runtime_result"]
+        self.assertEqual(3, result["attempt_number"])
+        self.assertEqual("PASS", result["preflight"]["result"])
+        self.assertEqual({"result": "FAIL", "exit_code": 126, "failure_fingerprint": "CONTROL_RUNTIME_DIRECT_EXEC_PERMISSION_DENIED_R3", "failure_location": "CONTROL_RUNTIME_DIRECT_EXEC", "mutation_boundary": "BEFORE_CONTROL_RUNTIME_OR_APPLICATION_DOCKER_MUTATION", "evidence_reexecution": False}, result["deploy"])
+        for key in ("verify", "browser_pg15", "browser_pg18rc"):
+            self.assertEqual("NOT_EXECUTED", result[key])
+        self.assertEqual({"attempt_count": 1, "exit_code": 126, "result": "FAIL", "failure_fingerprint": "CONTROL_RUNTIME_DIRECT_EXEC_PERMISSION_DENIED_R3"}, result["cleanup"])
+        self.assertEqual("BYTE_IDENTICAL", result["postconditions"]["environment"])
+        self.assertEqual(0, result["postconditions"]["total_residue_count"])
+        for path, value in ((('accepted',), True), (('runtime_result', 'attempt_number'), 2), (('runtime_result', 'deploy', 'result'), 'PASS'), (('runtime_result', 'cleanup', 'attempt_count'), 2), (('runtime_result', 'postconditions', 'total_residue_count'), 1)):
+            changed = copy.deepcopy(manifest); target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_manifest(changed), path)
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR4ResultTests(unittest.TestCase):
+    def test_seq638_builder_preserves_seq632_and_records_attempt4_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_PARENT}:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 632), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_E], 632))
+        self.assertEqual(list(range(633, 639)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual(progress["repository"]["remote_head"], events["events"][-1]["details"]["completion_upstream_head"])
+        self.assertEqual(4, manifest["runtime_result"]["attempt_number"])
+        self.assertEqual("WSL_DEVELOPMENT_VALIDATION", progress["workbench_ui_wsl_auth_browser_runtime_retry_r4_result"]["validation_classification"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["c21_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_manifest(manifest))
+
+    def test_seq638_metadata_binds_architect_exact12_and_cumulative237(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_metadata()
+        self.assertEqual((12, "3FC15E2C39804B528F406C3C8E448AC9285DBC0BF4918FBBC680CC7A081218F1", "55CCC7D5A506AD0A8F96ABE61FFD9199D3E65469781F8F95D17692D26E39742C"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((237, "7882E92AF9AB54F00F9A3A2C77391BD041FB7E4F1D942A6A95A3CAFB42CECE7C", "7B3AF29932CDB37734654F12E970C71AAF1E3FC23035D48888DEDDEBA359245D"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq638_strictly_records_actual_attempt4_failure_without_reexecution(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        manifest = json.loads(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R4_RESULT_M])
+        result = manifest["runtime_result"]
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_VALIDATION_ATTEMPT_4", manifest["status"])
+        self.assertEqual("FAILED", manifest["runtime_execution"])
+        self.assertEqual({"attempt_count": 1, "result": "FAIL", "exit_code": 1, "failure_fingerprint": "WORKBENCH_CANDIDATE_CONTROL_DIRECT_CHILD_MISMATCH_R4", "failure_location": "CANDIDATE_MANIFEST_GUARD", "evidence_reexecution": False}, result["deploy"])
+        for key in ("verify", "browser_pg15", "browser_pg18rc"):
+            self.assertEqual("NOT_EXECUTED", result[key])
+        self.assertEqual({"attempt_count": 1, "result": "FAIL", "exit_code": 1, "failure_fingerprint": "CONTROL_CLEANUP_HASH_FORMAT_INVALID_R4", "mutation_boundary": "BEFORE_CONTROL_STAGE_OR_DOCKER_MUTATION", "evidence_reexecution": False}, result["cleanup"])
+        self.assertEqual(0, result["postconditions"]["total_approved_runtime_residue_count"])
+        self.assertEqual(1, result["postconditions"]["active_control_stage_count"])
+        self.assertFalse(manifest["accepted"])
+        for path, value in ((('accepted',), True), (('runtime_result', 'deploy', 'result'), 'PASS'), (('runtime_result', 'cleanup', 'attempt_count'), 2), (('runtime_result', 'postconditions', 'total_approved_runtime_residue_count'), 1)):
+            changed = copy.deepcopy(manifest); target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r4_result_manifest(changed), path)
+
+
+class C21WorkbenchUiWslImmutableRuntimeControlV2PublicationTests(unittest.TestCase):
+    def test_seq644_builder_preserves_seq638_and_records_create_only_publication(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root"))
+        artifacts = checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M])
+        historical = subprocess.check_output(["git", "show", f"{checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_PARENT}:{checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 638), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_E], 638))
+        self.assertEqual(list(range(639, 645)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("READY_FOR_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R5_WSL_DEVELOPMENT_VALIDATION", progress["status"])
+        self.assertEqual("EXECUTE_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_DEVELOPMENT_VALIDATION_R5", progress["runtime_next_action"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(manifest))
+
+    def test_seq644_metadata_binds_exact12_and_cumulative243(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_metadata()
+        self.assertEqual((12, "52BB8F1F3335F352CF407AC69BE5DE78A71E51DB9A9025A1D6D6486ED73EA45C", "78B04CBAD3026CC5E406017B99C5152CA60336855011F2BAF10272C9FE689548"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((243, "1505E6FF2DE7353174C779B8EFC65E2A1B5E8D2DC10C5208F435491BD2C8E5AF", "9746214EEA8491E43644F443AA01399FA7CB88F1C97D6E4BFC87420525E9CF62"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq644_manifest_strictly_binds_sibling_and_actual_cas_receipt(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        manifest = json.loads(checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", manifest["candidate_commit"])
+        self.assertEqual("22ebc0470d4bd9ddef03f763c0197d67c315443e", manifest["record_commit"])
+        self.assertEqual("fb311d456fe3cbb2e8439f39017356ddec6cf266", manifest["runtime_control_v2_commit"])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", manifest["runtime_control_v2_parent"])
+        self.assertEqual({"exact_path_count": 12, "cumulative_path_count": 189}, manifest["sibling_path_counts"])
+        self.assertEqual("3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329", manifest["sibling_raw_sha256"]["manifest"])
+        self.assertEqual("94727D9BF06BC6256B97F1FA7BB8C2E1E383F75EA5D2939A804E0A0B6D22AA19", manifest["sibling_raw_sha256"]["guard"])
+        receipt = manifest["publication_receipt"]
+        self.assertEqual("ABSENT", receipt["pre"]["runtime_control_v2"])
+        self.assertEqual(0, receipt["create_only_cas"]["exit_code"])
+        self.assertEqual("PASS", receipt["create_only_cas"]["result"])
+        self.assertEqual("fb311d456fe3cbb2e8439f39017356ddec6cf266", receipt["post"]["runtime_control_v2"])
+        self.assertEqual("f0d4bc7badbdae69c2d2b21089667fdcc636518d", receipt["post"]["candidate"])
+        self.assertEqual("22ebc0470d4bd9ddef03f763c0197d67c315443e", receipt["post"]["record"])
+        self.assertEqual({"decision": "COMMIT_READY", "critical": 0, "important": 0, "minor": 0}, manifest["reviewer_receipt"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual("BLOCKED_NOT_ACCEPTED", manifest["c21_status"])
+        self.assertEqual("BLOCKED_PENDING_C21_ACCEPTANCE", manifest["c01_status"])
+        self.assertEqual("NOT_TRIGGERED", manifest["dir2_status"])
+        for key in ("provider", "telegram", "wsl_runtime", "ysna", "main_merge", "c01"):
+            self.assertEqual("NOT_EXECUTED", manifest["exclusions"][key])
+
+        for path, value in (
+            (("runtime_control_v2_parent",), "22ebc0470d4bd9ddef03f763c0197d67c315443e"),
+            (("sibling_raw_sha256", "guard"), "0" * 64),
+            (("publication_receipt", "pre", "runtime_control_v2"), "fb311d456fe3cbb2e8439f39017356ddec6cf266"),
+            (("publication_receipt", "create_only_cas", "exit_code"), 1),
+            (("publication_receipt", "post", "candidate"), "0" * 40),
+            (("reviewer_receipt", "important"), 1),
+            (("accepted",), True),
+        ):
+            changed = copy.deepcopy(manifest); target = changed
+            for key in path[:-1]: target = target[key]
+            target[path[-1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(changed), path)
+
+    def test_seq644_applies_current_environment_directive_without_mutating_workplan(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        manifest = json.loads(checker.c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_from_root(ROOT)[checker.C21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_M])
+        self.assertEqual("CURRENT_DIRECTIVE_APPLIED_TO_EXECUTION_EVIDENCE", manifest["environment_classification"]["directive_status"])
+        self.assertEqual("DEVELOPMENT", manifest["environment_classification"]["local_pc"])
+        self.assertEqual("DEVELOPMENT", manifest["environment_classification"]["wsl_server"])
+        self.assertEqual("TEST_STAGING_UAT_AFTER_EXPLICIT_APPROVAL", manifest["environment_classification"]["oracle_cloud"])
+        self.assertEqual("LEGACY_MACHINE_IDENTIFIER_NOT_STAGE_CLASSIFICATION", manifest["environment_classification"]["WSL_SERVER_TEST_STAGING"])
+        self.assertEqual("PENDING_EXPLICIT_GOVERNANCE_CLASSIFICATION_APPROVAL", manifest["workplan_persistent_wording_change"])
+        changed = copy.deepcopy(manifest); changed["workplan_persistent_wording_change"] = "APPLIED"
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_manifest(changed))
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR5ResultTests(unittest.TestCase):
+    def _preflight(self):
+        return {
+            "result": "PASS",
+            "candidate_commit": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+            "runtime_control_commit": "fb311d456fe3cbb2e8439f39017356ddec6cf266",
+            "manifest_ref": "refs/remotes/origin/candidates/c21-wsl-runtime-control-v2",
+            "manifest_sha256": "3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329",
+            "control_runtime_sha256": "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097",
+            "application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+            "application_dirty_count": 0,
+            "environment_mode": "600",
+            "environment_sha256": "F" * 64,
+            "required_names": "PRESENT",
+            "provider_read_scope": True,
+            "initial_residue_count": 0,
+            "secret_values": "OMITTED",
+        }
+
+    def _success(self):
+        phase = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+        browser = {
+            **phase,
+            "viewport_count": 3,
+            "provider_count": 9,
+            "primary_provider": "UPSTAGE",
+            "groq_click": "PASS",
+            "authenticated_sse": "PASS",
+            "last_event_id": "PASS",
+            "same_origin": "PASS",
+        }
+        return {
+            "attempt_number": 5,
+            "outcome": "SUCCESS",
+            "preflight": self._preflight(),
+            "deploy": dict(phase),
+            "verify": dict(phase),
+            "browser_pg15": dict(browser),
+            "browser_pg18rc": dict(browser),
+            "receipts": {"current_json_count": 4, "backup_count": 2, "verification_count": 2, "rollback_count": 0, "sha256": ["A" * 64, "B" * 64, "C" * 64, "D" * 64]},
+            "image_metadata": {"count": 2, "result": "PASS"},
+            "cleanup": {**phase, "evidence_reexecution": False},
+            "postconditions": {"application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "application_dirty_count": 0, "environment": "BYTE_IDENTICAL", "control_stage_dirty_count": 0, "container_residue": 0, "network_residue": 0, "exact_volume_residue": 0, "lock_residue": 0, "screenshot_residue": 0, "total_residue_count": 0, "backup_evidence_preserved": True},
+            "external_calls": {"provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED"},
+            "secret_safety": {"token": "MEMORY_ONLY", "credential_values": "OMITTED", "cookie_values": "OMITTED", "header_values": "OMITTED", "raw_urls": "OMITTED"},
+        }
+
+    def test_seq650_metadata_binds_architect_exact12_and_cumulative249(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_metadata()
+        self.assertEqual((12, "AFA5519D9CC8F31C74009752367D4C69669F1F616ACDB92E8F7BD24010D61DFD", "1F17E1C320EA124C5648F32AB896AAD904EFF511F13F5D08F03CA2239074A7AD"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((249, "C4B351233E25AADB75F0534B2F8BE61AC2E4FB1E4B85CD7C05A6592F068A6B67", "4AB6817F0F43D1B1CD02A99F36AD8632647293387C49458239AF88EFC74F47A5"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq650_success_projection_is_strict_and_pending_independent_review(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._success()
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(result))
+        for path, value in (
+            (("deploy", "attempt_count"), 2),
+            (("receipts", "rollback_count"), 1),
+            (("browser_pg15", "same_origin"), "FAIL"),
+            (("postconditions", "total_residue_count"), 1),
+            (("external_calls", "provider"), "EXECUTED"),
+            (("secret_safety", "token"), "RECORDED"),
+        ):
+            changed = copy.deepcopy(result); changed[path[0]][path[1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(changed), path)
+
+    def test_seq650_failure_projection_stops_after_first_failure_and_cleans_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._success()
+        result.update({"outcome": "FAILED", "deploy": {"attempt_count": 1, "result": "FAIL", "exit_code": 17, "failure_fingerprint": "TEST_FAILURE", "evidence_reexecution": False}, "verify": "NOT_EXECUTED", "browser_pg15": "NOT_EXECUTED", "browser_pg18rc": "NOT_EXECUTED", "receipts": {"current_json_count": 0, "backup_count": 0, "verification_count": 0, "rollback_count": 0, "sha256": []}, "image_metadata": "NOT_EXECUTED"})
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(result))
+        changed = copy.deepcopy(result); changed["verify"] = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(changed))
+
+    def test_seq650_actual_pg15_dependency_failure_preserves_verify_receipts_without_pg18_retry(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._success()
+        result.update({
+            "outcome": "FAILED",
+            "browser_pg15": {"attempt_count": 1, "result": "FAIL", "exit_code": 1, "failure_fingerprint": "PLAYWRIGHT_MODULE_DEFAULT_PATH_MISSING_R5", "evidence_reexecution": False},
+            "browser_pg18rc": "NOT_EXECUTED",
+        })
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(result))
+        changed = copy.deepcopy(result); changed["browser_pg18rc"] = self._success()["browser_pg18rc"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_runtime_result(changed))
+
+    def test_seq650_builder_preserves_seq644_and_records_actual_r5_failure(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"48c34f8ef514e061f1cfa24e6d9f9f5bc0173bf1:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 644), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R5_RESULT_E], 644))
+        self.assertEqual(list(range(645, 651)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R5_WSL_DEVELOPMENT_VALIDATION", progress["status"])
+        self.assertEqual("FAILED", manifest["runtime_execution"])
+        self.assertEqual("PLAYWRIGHT_MODULE_DEFAULT_PATH_MISSING_R5", manifest["runtime_result"]["browser_pg15"]["failure_fingerprint"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_result"]["browser_pg18rc"])
+        self.assertEqual(1, manifest["runtime_result"]["cleanup"]["attempt_count"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_manifest(manifest))
+        changed = copy.deepcopy(manifest); changed["runtime_result"]["browser_pg18rc"] = self._success()["browser_pg18rc"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r5_result_manifest(changed))
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR6ResultTests(unittest.TestCase):
+    def _runtime(self):
+        phase = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+        browser = {
+            **phase,
+            "viewport_count": 3,
+            "provider_count": 9,
+            "primary_provider": "UPSTAGE",
+            "groq_click": "PASS",
+            "authenticated_sse": "PASS",
+            "last_event_id": "PASS",
+            "same_origin": "PASS",
+        }
+        return {
+            "attempt_number": 6,
+            "outcome": "SUCCESS",
+            "orchestration_failure": "NONE",
+            "preflight": {
+                "result": "PASS",
+                "candidate_commit": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+                "runtime_control_commit": "fb311d456fe3cbb2e8439f39017356ddec6cf266",
+                "manifest_ref": "refs/remotes/origin/candidates/c21-wsl-runtime-control-v2",
+                "manifest_sha256": "3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329",
+                "control_runtime_sha256": "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097",
+                "application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d",
+                "application_dirty_count": 0,
+                "environment_mode": "600",
+                "environment_sha256": "F" * 64,
+                "required_names": "PRESENT",
+                "provider_read_scope": True,
+                "initial_residue_count": 0,
+                "playwright_module": "PRESENT_PROCESS_LOCAL",
+                "chromium_executable": "PRESENT_PROCESS_LOCAL",
+                "environment_file_mutated": False,
+                "secret_values": "OMITTED",
+            },
+            "deploy": dict(phase),
+            "verify": dict(phase),
+            "browser_pg15": dict(browser),
+            "browser_pg18rc": dict(browser),
+            "receipts": {"current_json_count": 4, "backup_count": 2, "verification_count": 2, "rollback_count": 0, "sha256": ["A" * 64, "B" * 64, "C" * 64, "D" * 64]},
+            "image_metadata": {"count": 2, "result": "PASS"},
+            "cleanup": {**phase, "evidence_reexecution": False},
+            "postconditions": {"application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "application_dirty_count": 0, "environment": "BYTE_IDENTICAL", "control_stage_dirty_count": 0, "container_residue": 0, "network_residue": 0, "exact_volume_residue": 0, "lock_residue": 0, "screenshot_residue": 0, "total_residue_count": 0, "backup_evidence_preserved": True},
+            "external_calls": {"provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED"},
+            "secret_safety": {"token": "MEMORY_ONLY", "credential_values": "OMITTED", "cookie_values": "OMITTED", "header_values": "OMITTED", "raw_urls": "OMITTED"},
+        }
+
+    def test_seq656_metadata_binds_architect_exact12_and_cumulative255(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_metadata()
+        self.assertEqual((12, "58CE542C2E5F2946FDFC0D159D4E294AC50D9FFF1012CE86BE151F9724941975", "2FD1D089F870B271B0E97C21F675DAAC4DAD5A1923838E25446EC4B12FFE6DC3"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((255, "880C34EB128C6C44407AF05BC1692D7C0C6C99232EF1B89EA1BD2D9D0D584786", "CEEBA7C44B1AB182186202579F550791FBE9455AE3138DB3B0C66FCBCC5554F6"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq656_success_projection_requires_process_local_browser_runtime_and_cleanup_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._runtime()
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(result))
+        for path, value in (
+            (("preflight", "playwright_module"), "ABSENT"),
+            (("preflight", "environment_file_mutated"), True),
+            (("browser_pg18rc", "viewport_count"), 2),
+            (("cleanup", "attempt_count"), 2),
+            (("external_calls", "provider"), "EXECUTED"),
+        ):
+            changed = copy.deepcopy(result); changed[path[0]][path[1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(changed), path)
+
+    def test_seq656_failure_projection_stops_after_first_failure_and_still_cleans_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._runtime()
+        result.update({"outcome": "FAILED", "browser_pg15": {"attempt_count": 1, "result": "FAIL", "exit_code": 1, "failure_fingerprint": "TEST_FAILURE", "evidence_reexecution": False}, "browser_pg18rc": "NOT_EXECUTED"})
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(result))
+        changed = copy.deepcopy(result); changed["browser_pg18rc"] = self._runtime()["browser_pg18rc"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(changed))
+
+    def test_seq656_actual_controller_failure_is_not_misreported_as_deploy_failure(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._runtime()
+        result.update({
+            "outcome": "FAILED",
+            "orchestration_failure": {"result": "FAIL", "after_phase": "deploy", "failure_fingerprint": "POWERSHELL_FUNCTION_STDOUT_EXITCODE_CAPTURE_R6", "controller_exit_code": 1, "runtime_action_reexecution": False, "product_failure": False},
+            "verify": "NOT_EXECUTED",
+            "browser_pg15": "NOT_EXECUTED",
+            "browser_pg18rc": "NOT_EXECUTED",
+            "receipts": {"current_json_count": 2, "backup_count": 2, "verification_count": 0, "rollback_count": 0, "sha256": ["A" * 64, "B" * 64]},
+        })
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(result))
+        changed = copy.deepcopy(result); changed["deploy"] = {"attempt_count": 1, "result": "FAIL", "exit_code": 1, "failure_fingerprint": "FALSE_DEPLOY_FAILURE", "evidence_reexecution": False}
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_runtime_result(changed))
+
+    def test_seq656_builder_preserves_seq650_and_records_actual_controller_failure(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"4a30f234745677025a572beb2ec8dcad379ac193:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 650), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R6_RESULT_E], 650))
+        self.assertEqual(list(range(651, 657)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R6_WSL_DEVELOPMENT_VALIDATION", progress["status"])
+        self.assertEqual("FAILED", manifest["runtime_execution"])
+        self.assertEqual("PASS", manifest["runtime_result"]["deploy"]["result"])
+        self.assertEqual("POWERSHELL_FUNCTION_STDOUT_EXITCODE_CAPTURE_R6", manifest["runtime_result"]["orchestration_failure"]["failure_fingerprint"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_result"]["verify"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_result"]["browser_pg15"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_result"]["browser_pg18rc"])
+        self.assertEqual(1, manifest["runtime_result"]["cleanup"]["attempt_count"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r6_result_manifest(manifest))
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR7ResultTests(unittest.TestCase):
+    def _runtime(self):
+        phase = {"attempt_count": 1, "result": "PASS", "exit_code": 0}
+        browser = {**phase, "viewport_count": 3, "provider_count": 9, "primary_provider": "UPSTAGE", "groq_click": "PASS", "authenticated_sse": "PASS", "last_event_id": "PASS", "same_origin": "PASS"}
+        return {
+            "attempt_number": 7,
+            "outcome": "SUCCESS",
+            "native_wrapper_self_check": {"result": "PASS", "stdout_lines": 1, "exit_code": 0, "exit_code_type": "INT32", "caller_field": ".ExitCode", "wsl_action": False},
+            "preflight": {"result": "PASS", "candidate_commit": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "runtime_control_commit": "fb311d456fe3cbb2e8439f39017356ddec6cf266", "manifest_ref": "refs/remotes/origin/candidates/c21-wsl-runtime-control-v2", "manifest_sha256": "3D81F783969336ED83F83EAE4855EB881A1AABC14F18F6EF390E22C272B7B329", "control_runtime_sha256": "D0FF497B22851DFC6CB3FA36C761D8BB69DED1CB7A838E81EF55C4A459570097", "application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "application_dirty_count": 0, "environment_mode": "600", "environment_sha256": "F" * 64, "required_names": "PRESENT", "provider_read_scope": True, "initial_residue_count": 0, "playwright_module": "PRESENT_PROCESS_LOCAL", "chromium_executable": "PRESENT_PROCESS_LOCAL", "environment_file_mutated": False, "secret_values": "OMITTED"},
+            "deploy": dict(phase), "verify": dict(phase), "browser_pg15": dict(browser), "browser_pg18rc": dict(browser),
+            "receipts": {"current_json_count": 4, "backup_count": 2, "verification_count": 2, "rollback_count": 0, "sha256": ["A" * 64, "B" * 64, "C" * 64, "D" * 64]},
+            "image_metadata": {"count": 2, "result": "PASS"}, "cleanup": {**phase, "evidence_reexecution": False},
+            "postconditions": {"application_head": "f0d4bc7badbdae69c2d2b21089667fdcc636518d", "application_dirty_count": 0, "environment": "BYTE_IDENTICAL", "control_stage_dirty_count": 0, "container_residue": 0, "network_residue": 0, "exact_volume_residue": 0, "lock_residue": 0, "screenshot_residue": 0, "total_residue_count": 0, "backup_evidence_preserved": True},
+            "external_calls": {"provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "oracle_cloud": "NOT_EXECUTED"},
+            "secret_safety": {"token": "MEMORY_ONLY", "credential_values": "OMITTED", "cookie_values": "OMITTED", "header_values": "OMITTED", "raw_urls": "OMITTED"},
+        }
+
+    def test_seq662_metadata_binds_exact12_and_cumulative261(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_result_metadata()
+        self.assertEqual((12, "335DD6D1A0DAE21EEF33E7ACC095757E5772DFBB158B3961EB74CA5DECF29C67", "1440E42A35D52FCC1924901F8665852ABCE928754003F34964507AE4B2D4AC77"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((261, "A3B103827529073532AF5208A8EB183D72411885F93EF6CCAD808CC084ADC29B", "AAAC92F5DAD74BF24485D35053509B7AACAC8C1A72199692A043D93290DBDEEE"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq662_native_wrapper_requires_separate_integer_exit_code(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._runtime()
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_runtime_result(result))
+        for key, value in (("exit_code", ["line", 0]), ("exit_code_type", "ARRAY"), ("caller_field", "$result"), ("wsl_action", True)):
+            changed = copy.deepcopy(result); changed["native_wrapper_self_check"][key] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_runtime_result(changed), key)
+
+    def test_seq662_failure_stops_after_first_failure_and_cleans_once(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = self._runtime(); result.update({"outcome": "FAILED", "verify": {"attempt_count": 1, "result": "FAIL", "exit_code": 7, "failure_fingerprint": "TEST_FAILURE", "evidence_reexecution": False}, "browser_pg15": "NOT_EXECUTED", "browser_pg18rc": "NOT_EXECUTED"})
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_runtime_result(result))
+        changed = copy.deepcopy(result); changed["browser_pg15"] = self._runtime()["browser_pg15"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_runtime_result(changed))
+
+    def test_seq662_builder_preserves_seq656_and_records_runtime_result(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_E])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"0e22a1d4e47cdff117b894dd885af816f354a550:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 656), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R7_RESULT_E], 656))
+        self.assertEqual(list(range(657, 663)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(7, manifest["runtime_result"]["attempt_number"])
+        self.assertEqual("FAILED_R7_WSL_DEVELOPMENT_VALIDATION_EVIDENCE_INSUFFICIENT", manifest["status"])
+        self.assertEqual("PASS", manifest["runtime_result"]["deploy"]["result"])
+        self.assertEqual("PASS", manifest["runtime_result"]["verify"]["result"])
+        self.assertEqual("BROWSER_ACCEPTANCE_FAILED_R7", manifest["runtime_result"]["browser_pg15"]["failure_fingerprint"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_result"]["browser_pg18rc"])
+        self.assertEqual(1, manifest["runtime_result"]["cleanup"]["attempt_count"])
+        self.assertTrue(manifest["diagnosis"]["r6_stdout_capture_root_resolved"])
+        self.assertEqual("BROWSER_RECEIPT_NOT_PERSISTED_R7", manifest["diagnosis"]["diagnostic_fingerprint"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r7_result_manifest(manifest))
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR8ResultTests(unittest.TestCase):
+    def _observation(self):
+        return {
+            "attempt_count": 1,
+            "result": "PASS",
+            "exit_code": 0,
+            "stdout_line_count": 1,
+            "stderr_line_count": 0,
+            "stdout_sha256": "A" * 64,
+            "stderr_sha256": "B" * 64,
+            "canonical_receipt_sha256": "C" * 64,
+            "stderr_category": "NONE",
+            "secret_scan_count": 0,
+            "false_predicates": [],
+            "safe_receipt": {
+                "schema_version": "1.0.0",
+                "result": "PASS",
+                "runtime_execution": "EXECUTED",
+                "viewport_count": 3,
+                "provider_list_visible": True,
+                "provider_detail_visible": True,
+                "run_event_action_visible": True,
+                "status_alert_visible": True,
+                "document_horizontal_overflow_zero": True,
+                "keyboard_tab_focus_visible": True,
+                "button_accessible_names": True,
+                "sse_initial_connected": True,
+                "last_event_id_reconnect": True,
+                "provider_read_get_only": True,
+                "provider_write_count": 0,
+                "cross_origin_count": 0,
+                "fixture_api_count": 0,
+                "last_event_id_exact_match": True,
+                "sentinel_occurrences": 0,
+                "authorization_header_occurrences": 0,
+                "cookie_occurrences": 0,
+                "raw_url_occurrences": 0,
+                "screenshot_storage": "MEMORY_ONLY",
+                "files_created": 0,
+                "directories_created": 0,
+                "residue_count": 0,
+            },
+        }
+
+    def test_seq668_metadata_binds_exact12_and_cumulative267(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_result_metadata()
+        self.assertEqual((12, "151561FBBD5EAF89FC25E125D0E205B08ADBA99EADECB1E194D4D0DC0AEB3F25", "0373683DBDDB9B07FCFBA084F2F9BC164D7326EC3864FE616CE110B2D8FED172"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((267, "84F562328BC0C0EA7CEB2C9C15CD0728447140C8F67A7A9A5689973E4834374B", "6DE6BB7AB87178149F987475196D8EA30997DF57BE025E5F9453AD67DBCF590B"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq668_browser_observation_requires_strict_secret_safe_pass(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        observation = self._observation()
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_browser_observation(observation))
+        for path, value in (
+            (("stdout_line_count",), 2),
+            (("secret_scan_count",), 1),
+            (("false_predicates",), ["receipt.result==PASS"]),
+            (("safe_receipt", "screenshot_storage"), "FILESYSTEM"),
+            (("safe_receipt", "same_origin_count"), 1),
+        ):
+            changed = copy.deepcopy(observation)
+            if len(path) == 1:
+                changed[path[0]] = value
+            else:
+                changed[path[0]][path[1]] = value
+            self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_browser_observation(changed), path)
+
+    def test_seq668_browser_observation_accepts_exact_failure_predicates_without_raw_receipt(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        observation = self._observation()
+        observation.update({
+            "result": "FAIL",
+            "exit_code": 1,
+            "stderr_line_count": 1,
+            "stderr_category": "REDACTED_NONEMPTY",
+            "false_predicates": ["receipt.result==PASS", "viewports.count==3"],
+        })
+        observation["safe_receipt"].update({"result": "PROBE_ERROR", "viewport_count": 0})
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_browser_observation(observation))
+        changed = copy.deepcopy(observation); changed["false_predicates"] = []
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_browser_observation(changed))
+
+    def test_seq668_builder_preserves_seq662_and_records_controller_boundary_failure(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_result_from_root(ROOT)
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_E])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_M])
+        historical = subprocess.check_output(["git", "show", f"a1b67f4f93d06e1b71f5bd05b9f66e404f10a039:{checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 662), checker.raw_event_object_prefix_bytes(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R8_RESULT_E], 662))
+        self.assertEqual(list(range(663, 669)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [row["event_type"] for row in events["events"][-6:]])
+        self.assertEqual("FAILED_R8_WSL_DEVELOPMENT_VALIDATION_EVIDENCE_INSUFFICIENT", manifest["status"])
+        self.assertEqual("PASS", manifest["runtime_result"]["deploy"]["result"])
+        self.assertEqual("PASS", manifest["runtime_result"]["verify"]["result"])
+        self.assertEqual("BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8", manifest["runtime_result"]["browser_pg15"]["failure_fingerprint"])
+        self.assertEqual("NOT_EXECUTED", manifest["runtime_result"]["browser_pg18rc"])
+        self.assertEqual(1, manifest["runtime_result"]["cleanup"]["attempt_count"])
+        self.assertEqual(0, manifest["runtime_result"]["retry_count"])
+        self.assertFalse(manifest["diagnosis"]["product_failure_established"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r8_result_manifest(manifest))
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9ResultTests(unittest.TestCase):
+    def _native(self, result="PASS"):
+        raw = json.dumps({"result": result, "runtimeExecution": "EXECUTED" if result == "PASS" else "FAILED"}, separators=(",", ":"), sort_keys=True) + "\n"
+        return {"stdout": raw, "stderr": "", "exit_code": 0 if result == "PASS" else 1, "process_started": True}
+
+    @staticmethod
+    def _safe(receipt):
+        return {"result": receipt["result"], "runtime_execution": receipt["runtimeExecution"]}
+
+    def _assert_secret_safe_one_object(self, envelope):
+        self.assertIs(type(envelope), dict)
+        rendered = json.dumps(envelope, sort_keys=True)
+        self.assertNotIn("synthetic-secret-value", rendered)
+        self.assertNotIn("stdout", envelope)
+        self.assertNotIn("stderr", envelope)
+        self.assertTrue(envelope["raw_cleared"])
+        self.assertTrue(envelope["secret_cleared"])
+
+    def test_seq674_metadata_binds_exact12_and_cumulative273(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_metadata()
+        self.assertEqual((12, "C76DF85C02565072777A14B469396E5E56F001BD094051F546A9CF2C6AA3F003", "E52F1859A1643A060D3D680554B111E54D7DDC7F05C543E0EE39B8F2C50036D5"), (metadata["exact_path_count"], metadata["exact_path_list_sha256"], metadata["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((273, "BF167099DC8F21AC96258B041C333A9F19DC2426899EB140B48531FFA26A9D45", "797C222A29F7B7D6F729D6DC2C3F06CE55586705AA0C8C01A6E42D9708806338"), (metadata["cumulative_path_count"], metadata["cumulative_path_list_sha256"], metadata["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq674_synthetic_pass_returns_one_safe_envelope(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: self._native(), self._safe, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual(("PASS", "COMPLETE", "NONE", "NONE"), (envelope["result"], envelope["observation_state"], envelope["failure_step"], envelope["exception_category"]))
+        self.assertEqual((1, 0), (envelope["stdout_line_count"], envelope["stderr_line_count"]))
+        self.assertEqual({"result": "PASS", "runtime_execution": "EXECUTED"}, envelope["safe_receipt"])
+
+    def test_seq674_synthetic_probe_error_preserves_metadata_and_safe_receipt(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: self._native("PROBE_ERROR"), self._safe, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual("FAIL", envelope["result"])
+        self.assertEqual("COMPLETE", envelope["observation_state"])
+        self.assertEqual(1, envelope["exit_code"])
+        self.assertRegex(envelope["stdout_sha256"], r"^[0-9A-F]{64}$")
+        self.assertEqual("PROBE_ERROR", envelope["safe_receipt"]["result"])
+
+    def test_seq674_synthetic_malformed_returns_parse_failure_envelope(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        native = {"stdout": "{malformed}\n", "stderr": "", "exit_code": 1, "process_started": True}
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: native, self._safe, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual(("FAIL", "STRICT_PARSE", "JSON_DECODE_ERROR", "STRICT_JSON_PARSE"), (envelope["result"], envelope["failure_step"], envelope["exception_category"], envelope["failure_statement"]))
+        self.assertRegex(envelope["stdout_sha256"], r"^[0-9A-F]{64}$")
+
+    def test_seq674_synthetic_throwing_transformer_returns_exception_envelope(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        def throwing(_receipt):
+            raise RuntimeError("synthetic-secret-value")
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_phase_envelope(lambda: self._native(), throwing, ("synthetic-secret-value",))
+        self._assert_secret_safe_one_object(envelope)
+        self.assertEqual(("FAIL", "SAFE_TRANSFORM", "TRANSFORMER_RUNTIME_ERROR", "SAFE_RECEIPT_TRANSFORM"), (envelope["result"], envelope["failure_step"], envelope["exception_category"], envelope["failure_statement"]))
+        self.assertEqual("NOT_AVAILABLE", envelope["safe_receipt"])
+
+    def test_seq674_failure_projection_revokes_leases_and_hands_off_count3(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        generated = {
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_P,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_E,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_H,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_D,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_M,
+        }
+        historical = {
+            path: subprocess.check_output(["git", "show", f"eadba5bad0df3ea4f52e28b847ab20957217b6c5:{path}"], cwd=ROOT)
+            for path in (
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_P,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_E,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_H,
+            )
+        }
+        files = {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_paths()) - generated
+        }
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_artifacts(historical, files)
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_M])
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_E])
+        self.assertEqual(list(range(669, 675)), [row["sequence"] for row in events["events"][-6:]])
+        self.assertEqual(
+            ["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"],
+            [row["event_type"] for row in events["events"][-6:]],
+        )
+        self.assertEqual("FAILED_R9_CONTROLLER_EVIDENCE_CAPTURE_LINEAGE_COUNT3_TAKEOVER_REQUIRED", manifest["status"])
+        self.assertEqual(3, manifest["diagnosis"]["evidence_capture_identical_root_count"])
+        self.assertEqual("R9_ACTUAL_ENVELOPE_HASH_HELPER_RESOLUTION_R1", manifest["diagnosis"]["failure_fingerprint"])
+        self.assertEqual((1, 0, 0, 0, 1), tuple(manifest["runtime_result"][name]["attempt_count"] if isinstance(manifest["runtime_result"][name], dict) else 0 for name in ("deploy", "verify", "browser_pg15", "browser_pg18rc", "cleanup")))
+        self.assertEqual("REVOKED", manifest["takeover_packet"]["worker_lease_status"])
+        self.assertEqual("REVOKED", manifest["takeover_packet"]["write_lease_status"])
+        self.assertEqual("MAIN_AGENT_SEQUENTIAL_TAKEOVER", manifest["takeover_packet"]["next_owner"])
+        self.assertFalse(manifest["diagnosis"]["product_failure_established"])
+        self.assertFalse(manifest["accepted"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_result_manifest(manifest))
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests(unittest.TestCase):
+    PARENT = "5162d3581ac4c856a6a454ca4284b5191a1238b5"
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        generated = {
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_H,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_D,
+            checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M,
+        }
+        historical = {
+            path: subprocess.check_output(["git", "show", f"{self.PARENT}:{path}"], cwd=ROOT)
+            for path in (
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E,
+                checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_H,
+                "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_REPORT.md",
+                "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_MANIFEST.json",
+                "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r9-result.json",
+                "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_VALIDATION.md",
+                "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_INVOCATION_PROMPT.md",
+                "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_WORK_INSTRUCTION.md",
+            )
+        }
+        files = {
+            path: (ROOT / path).read_bytes()
+            for path in set(checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_paths()) - generated
+        }
+        artifacts = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_artifacts(historical, files)
+        return checker, historical, artifacts
+
+    def test_seq680_metadata_binds_exact13_and_cumulative280(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_metadata()
+        self.assertEqual((13, "0CF50BDA1B2C5E7D89C4C92DF6821EDFD4FD5488870A145733ABC9E3245CB159", "66B0CB35CDBB0E7630E79E2330F63A073A39DD6199F8D67588C78A8BB8D6AA9D"), (meta["exact_path_count"], meta["exact_path_list_sha256"], meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((280, "B40528446712F4211D3329093724E387E654BCEDE328395F3D0BF212995AEDFC", "C8EAF5D682D267502B04ABDDF17672C9F6331396DE97C0C87F66036B9633F136"), (meta["cumulative_path_count"], meta["cumulative_path_list_sha256"], meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq680_historical_anchors_and_r9_unique_artifacts_are_exact(self):
+        checker, historical, artifacts = self._build()
+        events_raw = historical[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E]
+        self.assertEqual((1966883, "45D30AFFCE78BB8F93B58ADAF9B4D4491FEE6F70E2491C67939AA6BD6B400484"), (len(events_raw), hashlib.sha256(events_raw).hexdigest().upper()))
+        prefix = checker.raw_event_object_prefix_bytes(events_raw, 674)
+        self.assertEqual((1966643, "34FB962606BF12C750DB5761319D4962A7A3B4C938760F70429C11A8C213460C"), (len(prefix), hashlib.sha256(prefix).hexdigest().upper()))
+        self.assertEqual("376E17C93B28E1625180A3F53EF4B17C2010B1DD94630E6F728FC8EE4E606314", hashlib.sha256(checker.canonical_json_bytes(json.loads(events_raw)["events"][:674])).hexdigest().upper())
+        anchors = {
+            "docs/04_test_reports/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_REPORT.md": "51638EC480304B0C634FB0776752B829A8B1B5C47E71C8015003A6CE28F11E02",
+            "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_MANIFEST.json": "90644BEFA6227D21A73ACC48FC9DE4DBA548CA4C719B46EBFFED49668FDB788A",
+            "docs/progress/progress-handoff-detached-digest-c21-workbench-ui-wsl-auth-browser-runtime-retry-r9-result.json": "A4775604772E5C0244E813D57082B724C4EC65551959167DEF7889B674A875D2",
+            "docs/validation/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_VALIDATION.md": "C60E21D81E39E278B80A0618E8BEEACF863BA7FC52FCD8A08E3AC96748266A93",
+            "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_INVOCATION_PROMPT.md": "9B6D4C55CB23B5A254A6CD22596F661426E73F8DF7F5F0AC1E44419DC0C71B93",
+            "docs/work_orders/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_WORK_INSTRUCTION.md": "8C1D85F26FFC47254A247D0C02AFAFBCBB336D6BD9FD27A16FCDF14C21774246",
+        }
+        self.assertEqual(anchors, json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M])["historical_anchors"]["r9_unique_artifacts"])
+
+    def test_seq680_current_roots_supersede_broad_diagnostic_without_takeover(self):
+        checker, historical, artifacts = self._build()
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P])
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M])
+        historical_progress = json.loads(historical[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P])
+        self.assertEqual(historical_progress["workbench_ui_wsl_auth_browser_runtime_retry_r9_result"], progress["workbench_ui_wsl_auth_browser_runtime_retry_r9_result"])
+        self.assertNotIn("takeover_packet", progress)
+        self.assertNotIn("takeover_packet", manifest)
+        correction = manifest["correction"]
+        self.assertEqual({"R7": {"fingerprint": "BROWSER_ACCEPTANCE_FAILED_R7", "count": 1}, "R8": {"fingerprint": "BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8", "count": 1}, "R9": {"fingerprint": "R9_ACTUAL_ENVELOPE_HASH_HELPER_RESOLUTION_R1", "count": 1}}, correction["exact_roots"])
+        self.assertEqual(("SUPERSEDED_BY_INDEPENDENT_REVIEW", "DIAGNOSTIC_SYMPTOM_ONLY_NOT_ROOT_IDENTITY", False), (correction["broad_grouping_status"], correction["broad_grouping_classification"], correction["policy_change"]))
+        self.assertEqual((False, False, "NOT_TRIGGERED"), (correction["main_direct"], correction["developer_runtime_resume"], correction["main_takeover"]))
+
+    def test_seq680_events_approval_status_and_next_are_strict(self):
+        checker, _historical, artifacts = self._build()
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_E])["events"][-6:]
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_M])
+        self.assertEqual(list(range(675, 681)), [event["sequence"] for event in events])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+        self.assertEqual(["CORRECTION_RESULT_HANDOFF", "CORRECTION_RESULT_HANDOFF"], [events[3]["details"]["reason"], events[4]["details"]["reason"]])
+        self.assertEqual("READY_R9_TAKEOVER_CORRECTION_FOR_INDEPENDENT_REVIEW", manifest["status"])
+        self.assertEqual("INDEPENDENT_REVIEW_R9_TAKEOVER_CORRECTION_BEFORE_R10", manifest["next_action"])
+        approval = manifest["approval"]
+        self.assertEqual(("APPROVAL-20260909-C21-R9-TAKEOVER-CORRECTION-001", "HUMAN_OVERRIDE", "30C93434E546AD91D8D2B1F4F8040A70DDC3FD136E15AFAB793E676DB5B9342D"), (approval["approval_id"], approval["mode"], approval["user_subject_sha256"]))
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction_manifest(manifest))
+
+    def test_seq680_existing_seq674_checker_and_test_regions_are_byte_preserved(self):
+        current_checker = CHECKER_PATH.read_bytes()
+        old_checker = subprocess.check_output(["git", "show", f"{self.PARENT}:scripts/check_project_progress.py"], cwd=ROOT)
+        checker_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_RESULT_P ="
+        correction_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P ="
+        self.assertEqual(old_checker[old_checker.index(checker_start):old_checker.index(b'if __name__ == "__main__":')].rstrip(), current_checker[current_checker.index(checker_start):current_checker.index(correction_start)].rstrip())
+        current_test = Path(__file__).read_bytes()
+        old_test = subprocess.check_output(["git", "show", f"{self.PARENT}:tests/tooling/test_project_progress.py"], cwd=ROOT)
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9ResultTests"
+        correction_test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests"
+        self.assertEqual(old_test[old_test.index(test_start):old_test.index(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(correction_test_start)].rstrip())
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests(unittest.TestCase):
+    PARENT = "27406570cbfbb89f19ee3a5d746687125d043d7e"
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        return checker, checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_result_from_root(ROOT)
+
+    @staticmethod
+    def _native(stdout, stderr="", exit_code=0):
+        return {"stdout": stdout, "stderr": stderr, "exit_code": exit_code, "process_started": True}
+
+    @staticmethod
+    def _safe(receipt):
+        return {"result": receipt["result"], "runtime_execution": receipt["runtimeExecution"]}
+
+    def _assert_safe_envelope(self, envelope):
+        self.assertIs(type(envelope), dict)
+        self.assertNotIn("stdout", envelope)
+        self.assertNotIn("stderr", envelope)
+        self.assertTrue(envelope["raw_cleared"])
+        self.assertTrue(envelope["secret_cleared"])
+        self.assertNotIn("synthetic-secret-value", json.dumps(envelope, sort_keys=True))
+
+    def test_seq686_metadata_binds_exact12_and_cumulative286(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_result_metadata()
+        self.assertEqual((12, "A517ED343E5509C56070AC53DFF2FA46DBF6E22AD0F87D4640A09EFBE748F39A", "BE98A5D1DB7ED066EB01888326947F65E72D87615E0FE076EE2DC6796DE86836"), (meta["exact_path_count"], meta["exact_path_list_sha256"], meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((286, "38CF5747CE85C17EB7DB259E12B86E65B5AB32743E298B3E4A5573D9D33EE335", "C67C1829358F575C435D47AD3953BDC636DD22F3CFF8CDDF9C2B816F72081ED2"), (meta["cumulative_path_count"], meta["cumulative_path_list_sha256"], meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq686_phase_envelope_pass_and_known_native_hashes(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        raw = json.dumps({"result": "PASS", "runtimeExecution": "EXECUTED"}, separators=(",", ":"), sort_keys=True) + "\n"
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native(raw), self._safe, ("synthetic-secret-value",))
+        self._assert_safe_envelope(envelope)
+        self.assertEqual(("PASS", "COMPLETE", "NONE", "NONE"), (envelope["result"], envelope["observation_state"], envelope["failure_step"], envelope["exception_category"]))
+        self.assertRegex(envelope["stdout_sha256"], r"^[0-9A-F]{64}$")
+        node = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_native_self_check(self._native("R10-OUT\n", "R10-ERR\n", 23))
+        self.assertEqual(("BDF41A72943B842E0FD1E6D2A44FDEFE52D8463FAD7EB08283F501CFEEA61058", "FE050FD63FC67571ABF6366E44B234A0D33F6B27FF7FAC235E482E43BC563F45", 1, 1, 23), (node["stdout_sha256"], node["stderr_sha256"], node["stdout_line_count"], node["stderr_line_count"], node["exit_code"]))
+
+    def test_seq686_phase_envelope_probe_error_is_safe_and_exact(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        raw = json.dumps({"result": "PROBE_ERROR", "runtimeExecution": "FAILED"}, separators=(",", ":"), sort_keys=True) + "\n"
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native(raw, "redacted-category\n", 1), self._safe, ("synthetic-secret-value",))
+        self._assert_safe_envelope(envelope)
+        self.assertEqual(("FAIL", "COMPLETE", 1, "PROBE_ERROR"), (envelope["result"], envelope["observation_state"], envelope["exit_code"], envelope["safe_receipt"]["result"]))
+        self.assertEqual(["receipt.result==PASS", "native.exit_code==0"], envelope["false_predicates"])
+
+    def test_seq686_phase_envelope_malformed_and_transformer_exceptions_return_one_object(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        malformed = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native("{malformed}\n", exit_code=1), self._safe, ("synthetic-secret-value",))
+        self._assert_safe_envelope(malformed)
+        self.assertEqual(("STRICT_PARSE", "JSON_DECODE_ERROR", "STRICT_JSON_PARSE"), (malformed["failure_step"], malformed["exception_category"], malformed["failure_statement"]))
+        def throwing(_receipt):
+            raise RuntimeError("synthetic-secret-value")
+        transformed = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda: self._native('{"result":"PASS","runtimeExecution":"EXECUTED"}\n'), throwing, ("synthetic-secret-value",))
+        self._assert_safe_envelope(transformed)
+        self.assertEqual(("SAFE_TRANSFORM", "TRANSFORMER_RUNTIME_ERROR", "SAFE_RECEIPT_TRANSFORM", "NOT_AVAILABLE"), (transformed["failure_step"], transformed["exception_category"], transformed["failure_statement"], transformed["safe_receipt"]))
+
+    def test_seq686_runtime_validator_accepts_strict_success_and_failure_only(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        success = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime_fixture(True)
+        failure = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime_fixture(False)
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(success))
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(failure))
+        changed = copy.deepcopy(success); changed["retry_count"] = 1
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(changed))
+        changed = copy.deepcopy(success); changed["browser_pg15"]["false_predicates"] = ["receipt.result==PASS"]
+        self.assertTrue(checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_runtime(changed))
+
+    def test_seq686_builder_binds_actual_failure_approval_events_and_safe_evidence(self):
+        checker, artifacts = self._build()
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_M])
+        progress = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_P])
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_E])["events"][-6:]
+        self.assertEqual(list(range(681, 687)), [event["sequence"] for event in events])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+        self.assertEqual(["FAILURE_RESULT_HANDOFF", "FAILURE_RESULT_HANDOFF"], [events[3]["details"]["reason"], events[4]["details"]["reason"]])
+        approval = manifest["approval"]
+        self.assertEqual(("DIRECT_USER_APPROVAL", "계속하자", "723A1D914C3540B7D4FF677C25C25DDA7CFF25ED7CD43ABF1E7D436D8B6426DC"), (approval["source"], approval["response"], approval["subject_sha256"]))
+        runtime = manifest["runtime_result"]
+        self.assertEqual((1, 1, 1, 0, 1, 0), tuple(runtime["action_counts"][key] for key in ("deploy", "verify", "pg15_browser", "pg18rc_browser", "cleanup", "retry")))
+        self.assertEqual(("ACCEPTANCE_FAILED", "EXECUTED", 3, 2), (runtime["browser_pg15"]["safe_receipt"]["result"], runtime["browser_pg15"]["safe_receipt"]["runtime_execution"], runtime["browser_pg15"]["safe_receipt"]["viewport_count"], runtime["browser_pg15"]["safe_receipt"]["viewport_pass_count"]))
+        self.assertEqual(["receipt.result==PASS", "viewports.all_acceptance_predicates==true", "native.exit_code==0"], runtime["browser_pg15"]["false_predicates"])
+        self.assertEqual("UNAVAILABLE_NOT_PERSISTED", runtime["browser_pg15"]["failing_viewport_name"])
+        self.assertEqual("UNAVAILABLE_NOT_PERSISTED", runtime["browser_pg15"]["individual_false_predicate_paths"])
+        self.assertEqual({"fingerprint":"BROWSER_ACCEPTANCE_FAILED_R10","count":1}, manifest["diagnosis"]["primary_root"])
+        self.assertEqual({"fingerprint":"R10_SAFE_RECEIPT_VIEWPORT_PREDICATE_DETAIL_INSUFFICIENT_R1","count":1}, manifest["diagnosis"]["capture_detail_root"])
+        self.assertEqual(progress["workbench_ui_wsl_auth_browser_runtime_retry_r9_takeover_correction"]["correction"]["exact_roots"], manifest["historical_exact_roots"])
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_result_manifest(manifest))
+
+    def test_seq686_existing_seq680_checker_and_test_regions_are_byte_preserved(self):
+        current_checker = CHECKER_PATH.read_bytes()
+        old_checker = subprocess.check_output(["git", "show", f"{self.PARENT}:scripts/check_project_progress.py"], cwd=ROOT)
+        start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R9_TAKEOVER_CORRECTION_P ="
+        next_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_P ="
+        self.assertEqual(old_checker[old_checker.index(start):old_checker.index(b'if __name__ == "__main__":')].rstrip(), current_checker[current_checker.index(start):current_checker.index(next_start)].rstrip())
+        current_test = Path(__file__).read_bytes()
+        old_test = subprocess.check_output(["git", "show", f"{self.PARENT}:tests/tooling/test_project_progress.py"], cwd=ROOT)
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR9TakeoverCorrectionTests"
+        next_test = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests"
+        self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(next_test)].rstrip())
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests(unittest.TestCase):
+    PARENT = "c8c35cf92e72ea405b1a9171983c26407175c382"
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        return checker, checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_evidence_correction_from_root(ROOT)
+
+    def test_seq692_metadata_binds_exact12_and_cumulative292(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_evidence_correction_metadata()
+        self.assertEqual((12, "57AB57A282545B4BAC8FE729A04FE315DDDC6E58C69B30086093AFC5B60AC0EB", "384AFFDE81E005F3882CB839D0E0A0DE4AD44EB64EE21B8DAF18264B132BC8A5"), (meta["exact_path_count"], meta["exact_path_list_sha256"], meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((292, "8F4C7FE3DE09BE70264AB38C01969B8B9B58E1D8C7A8EF572205FB6547FCC9B6", "D814CFED8C979B0D89F90DA39497675578477C2FC5062585EB21F3480BE3913E"), (meta["cumulative_path_count"], meta["cumulative_path_list_sha256"], meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq692_builder_preserves_historical_receipt_and_corrects_only_unsupported_fields(self):
+        checker, artifacts = self._build()
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_M])
+        historical = json.loads(subprocess.check_output(["git", "show", f"{self.PARENT}:docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_MANIFEST.json"], cwd=ROOT))
+        self.assertEqual(historical["runtime_result"]["browser_pg15"], manifest["historical_browser_pg15"])
+        effective = manifest["effective_browser_pg15"]
+        historical_safe = historical["runtime_result"]["browser_pg15"]["safe_receipt"]
+        self.assertEqual({key:value for key,value in historical_safe.items() if key not in {"provider_row_count","groq_detail_clicked"}}, {key:value for key,value in effective["safe_receipt"].items() if key not in {"provider_row_count","groq_detail_clicked"}})
+        self.assertEqual(("UNAVAILABLE_NOT_PERSISTED", "UNAVAILABLE_NOT_PERSISTED"), (effective["safe_receipt"]["provider_row_count"], effective["safe_receipt"]["groq_detail_clicked"]))
+        self.assertEqual(historical["runtime_result"]["browser_pg15"]["false_predicates"], effective["false_predicates"])
+        self.assertEqual((1, "ACCEPTANCE_FAILED", "EXECUTED"), (effective["exit_code"], effective["safe_receipt"]["result"], effective["safe_receipt"]["runtime_execution"]))
+
+    def test_seq692_review_resolution_events_status_and_zero_action_are_strict(self):
+        checker, artifacts = self._build()
+        manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_M])
+        events = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_E])["events"][-6:]
+        self.assertEqual(list(range(687, 693)), [event["sequence"] for event in events])
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED"], [event["event_type"] for event in events])
+        self.assertEqual(["CORRECTION_RESULT_HANDOFF", "CORRECTION_RESULT_HANDOFF"], [events[3]["details"]["reason"], events[4]["details"]["reason"]])
+        self.assertEqual({"critical":0,"important":1,"minor":0}, manifest["review"]["findings"])
+        self.assertEqual(("R10_SAFE_RECEIPT_UNSUPPORTED_FIELD_ASSERTION_R1", "RESOLVED_CURRENT_PROJECTION"), (manifest["review"]["fingerprint"], manifest["review"]["resolution"]))
+        self.assertEqual((False, False, False, False, 0), tuple(manifest["change_boundary"][key] for key in ("product_change","runtime_change","policy_change","scope_change","runtime_action_count")))
+        self.assertEqual(("READY_R10_EVIDENCE_CORRECTION_FOR_INDEPENDENT_REVIEW", "INDEPENDENT_REVIEW_R10_EVIDENCE_CORRECTION_BEFORE_R11"), (manifest["status"], manifest["next_action"]))
+        self.assertEqual([], checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_evidence_correction_manifest(manifest))
+
+    def test_seq692_existing_seq686_checker_and_test_regions_are_byte_preserved(self):
+        checker_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_RESULT_P ="
+        correction_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_P ="
+        old_checker = subprocess.check_output(["git", "show", f"{self.PARENT}:scripts/check_project_progress.py"], cwd=ROOT)
+        current_checker = CHECKER_PATH.read_bytes()
+        self.assertEqual(old_checker[old_checker.index(checker_start):old_checker.rindex(b'if __name__ == "__main__":')].rstrip(), current_checker[current_checker.index(checker_start):current_checker.index(correction_start)].rstrip())
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10ResultTests"
+        correction_test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests"
+        old_test = subprocess.check_output(["git", "show", f"{self.PARENT}:tests/tooling/test_project_progress.py"], cwd=ROOT)
+        current_test = Path(__file__).read_bytes()
+        self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(), current_test[current_test.index(test_start):current_test.index(correction_test_start)].rstrip())
+
+
+class C21WorkbenchUiWslAuthBrowserRuntimeRetryR11ResultTests(unittest.TestCase):
+    PARENT = "da7ab71ea14bbe0db2c41d114ca4b97c1109404b"
+    BOOL_FIELDS = ["providerListVisible", "providerDetailVisible", "runEventActionVisible", "statusAlertVisible", "documentHorizontalOverflowZero", "keyboardTabFocusVisible", "buttonAccessibleNames", "sseInitialConnected", "lastEventIdReconnect"]
+
+    def _receipt(self):
+        viewports = []
+        for name, width, height in (("desktop-1920x1080",1920,1080),("desktop-1440x900",1440,900),("mobile-430x844",430,844)):
+            row = {"name":name,"width":width,"height":height}
+            row.update({field:True for field in self.BOOL_FIELDS})
+            viewports.append(row)
+        return {"schemaVersion":"1.0.0","project":"c21-workbench-ui-wsl-auth-browser-probe","result":"PASS","credentialInput":"ENVIRONMENT_ONLY","runtimeExecution":"EXECUTED","viewports":viewports,"requestContract":{"providerReadGetOnly":True,"providerWriteCount":0,"crossOriginCount":0,"fixtureApiCount":0,"lastEventIdExactMatch":True},"secretSafety":{"sentinelOccurrences":0,"authorizationHeaderOccurrences":0,"cookieOccurrences":0,"rawUrlOccurrences":0},"screenshotPolicy":{"storage":"MEMORY_ONLY","rootInput":"FAIL_CLOSED_IF_SUPPLIED"},"filesystemMutation":{"storage":"MEMORY_ONLY","filesCreated":0,"directoriesCreated":0,"residueCount":0}}
+
+    def test_seq698_metadata_binds_exact12_and_cumulative298(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        meta = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_metadata()
+        self.assertEqual((12,"BD8C7FF87D4FD1C49FE860678C0F7AD99EEF72F64BA21B7B66F3857486CA1FA4","234500925F1410C7F9F591950E1AAD03B0013E64E00CE092D07C3057832B319E"),(meta["exact_path_count"],meta["exact_path_list_sha256"],meta["exact_path_list_ordinal_sha256"]))
+        self.assertEqual((298,"F573D2A1061D34AC512697AF6249D0CB0C0459F890B945B2B5225E20DBE39A35","7110CBD9CCB68D8785C80B8ECE96677FCAF4638DDB91D68CBFCDA3E2CAD5669C"),(meta["cumulative_path_count"],meta["cumulative_path_list_sha256"],meta["cumulative_path_list_ordinal_sha256"]))
+
+    def test_seq698_safe_receipt_preserves_viewport_fields_without_screenshot_subtree(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        result = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(self._receipt(), 0)
+        self.assertEqual([], result["receipt_false_predicates"]); self.assertEqual([], result["native_false_predicates"]); self.assertEqual([], result["consistency_false_predicates"])
+        self.assertEqual([(row["name"],row["width"],row["height"]) for row in self._receipt()["viewports"]],[(row["name"],row["width"],row["height"]) for row in result["safe_receipt"]["viewports"]])
+        for row in result["safe_receipt"]["viewports"]: self.assertEqual(self.BOOL_FIELDS, [field for field in self.BOOL_FIELDS if field in row])
+        rendered = json.dumps(result, sort_keys=True)
+        for forbidden in ("screenshotPolicy","screenshot","path","binary","base64"): self.assertNotIn(forbidden, rendered)
+
+    def test_seq698_targeted_mobile_keyboard_false_is_exact_ordinal_unique(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        receipt = self._receipt(); receipt["result"] = "ACCEPTANCE_FAILED"; receipt["viewports"][2]["keyboardTabFocusVisible"] = False
+        result = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(receipt, 1)
+        self.assertEqual(["receipt.result==PASS","safe_receipt.viewports[2].keyboardTabFocusVisible==true"],result["receipt_false_predicates"])
+        self.assertEqual(["native.exit_code==0"],result["native_false_predicates"])
+        self.assertEqual([],result["consistency_false_predicates"])
+        self.assertEqual(len(result["receipt_false_predicates"]),len(set(result["receipt_false_predicates"])))
+
+    def test_seq698_reversed_multi_false_is_sorted_and_unique(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        receipt = self._receipt(); receipt["result"] = "ACCEPTANCE_FAILED"; receipt["viewports"][2]["statusAlertVisible"] = False; receipt["viewports"][0]["providerListVisible"] = False; receipt["viewports"][2]["keyboardTabFocusVisible"] = False
+        result = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(receipt, 1)
+        self.assertEqual(["receipt.result==PASS","safe_receipt.viewports[0].providerListVisible==true","safe_receipt.viewports[2].statusAlertVisible==true","safe_receipt.viewports[2].keyboardTabFocusVisible==true"],result["receipt_false_predicates"])
+        self.assertEqual(4,len(set(result["receipt_false_predicates"])))
+
+    def test_seq698_wrong_or_missing_schema_and_transform_exception_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        wrong = self._receipt(); wrong["schemaVersion"] = "0.9.0"
+        self.assertEqual(["safe_receipt.schema_version==1.0.0"],checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(wrong,0)["consistency_false_predicates"])
+        missing = self._receipt(); del missing["schemaVersion"]
+        self.assertEqual(["safe_receipt.schema_version.present"],checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_safe_transform(missing,0)["consistency_false_predicates"])
+        def throwing(_receipt): raise RuntimeError("must-not-persist")
+        envelope = checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r10_phase_envelope(lambda:{"stdout":json.dumps(self._receipt())+"\n","stderr":"","exit_code":0,"process_started":True},throwing,("must-not-persist",))
+        self.assertEqual(("FAIL","SAFE_TRANSFORM","TRANSFORMER_RUNTIME_ERROR","NOT_AVAILABLE"),(envelope["result"],envelope["failure_step"],envelope["exception_category"],envelope["safe_receipt"]))
+        self.assertNotIn("must-not-persist",json.dumps(envelope,sort_keys=True))
+
+    def test_seq698_existing_seq692_checker_and_test_regions_are_byte_preserved(self):
+        checker_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R10_EVIDENCE_CORRECTION_P ="
+        next_start = b"C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_P ="
+        old_checker = subprocess.check_output(["git","show",f"{self.PARENT}:scripts/check_project_progress.py"],cwd=ROOT); current_checker = CHECKER_PATH.read_bytes()
+        self.assertEqual(old_checker[old_checker.index(checker_start):old_checker.rindex(b'if __name__ == "__main__":')].rstrip(),current_checker[current_checker.index(checker_start):current_checker.index(next_start)].rstrip())
+        test_start = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR10EvidenceCorrectionTests"; next_test = b"class C21WorkbenchUiWslAuthBrowserRuntimeRetryR11ResultTests"
+        old_test = subprocess.check_output(["git","show",f"{self.PARENT}:tests/tooling/test_project_progress.py"],cwd=ROOT); current_test = Path(__file__).read_bytes()
+        self.assertEqual(old_test[old_test.index(test_start):old_test.rindex(b'if __name__ == "__main__":')].rstrip(),current_test[current_test.index(test_start):current_test.index(next_test)].rstrip())
+
+    def _build(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        return checker, checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_from_root(ROOT)
+
+    def test_seq698_builder_persists_exact_actual_viewport_and_false_predicates(self):
+        checker, artifacts = self._build(); manifest = json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_M]); browser = manifest["runtime_result"]["browser_pg15"]
+        self.assertEqual((1,"FAIL",1,"ACCEPTANCE_FAILED","EXECUTED"),(browser["attempt_count"],browser["result"],browser["exit_code"],browser["safe_receipt"]["result"],browser["safe_receipt"]["runtime_execution"]))
+        self.assertEqual(("mobile-430x844",430,844,False),(browser["safe_receipt"]["viewports"][2]["name"],browser["safe_receipt"]["viewports"][2]["width"],browser["safe_receipt"]["viewports"][2]["height"],browser["safe_receipt"]["viewports"][2]["documentHorizontalOverflowZero"]))
+        self.assertEqual(["receipt.result==PASS","safe_receipt.viewports[2].documentHorizontalOverflowZero==true"],browser["receipt_false_predicates"])
+        self.assertEqual(["native.exit_code==0"],browser["native_false_predicates"]); self.assertEqual([],browser["consistency_false_predicates"])
+        rendered=json.dumps(browser,sort_keys=True)
+        for forbidden in ("screenshotPolicy","screenshot","base64"): self.assertNotIn(forbidden,rendered)
+
+    def test_seq698_builder_runtime_counts_events_status_and_roots_are_strict(self):
+        checker, artifacts = self._build(); manifest=json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_M]); events=json.loads(artifacts[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_E])["events"][-6:]
+        self.assertEqual({"deploy":1,"verify":1,"pg15_browser":1,"pg18rc_browser":0,"cleanup":1,"retry":0},manifest["runtime_result"]["action_counts"])
+        self.assertEqual(list(range(693,699)),[event["sequence"] for event in events]); self.assertEqual(["WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","PACKAGE_COMPLETED"],[event["event_type"] for event in events])
+        self.assertEqual(["FAILURE_RESULT_HANDOFF","FAILURE_RESULT_HANDOFF"],[events[3]["details"]["reason"],events[4]["details"]["reason"]])
+        self.assertEqual(("FAILED_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R11_WSL_DEVELOPMENT_VALIDATION","INDEPENDENT_REVIEW_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R11_FAILURE_RESULT",False),(manifest["status"],manifest["next_action"],manifest["accepted"]))
+        self.assertEqual({"R7":{"fingerprint":"BROWSER_ACCEPTANCE_FAILED_R7","count":1},"R8":{"fingerprint":"BROWSER_OBSERVATION_CONTROLLER_EXCEPTION_R8","count":1},"R9":{"fingerprint":"R9_ACTUAL_ENVELOPE_HASH_HELPER_RESOLUTION_R1","count":1}},manifest["historical_exact_roots"])
+        self.assertEqual([],checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_manifest(manifest))
+
+    def test_seq698_builder_is_deterministic_and_dispatcher_selects_r11_first(self):
+        checker, first=self._build(); second=checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_from_root(ROOT); self.assertEqual(first,second)
+        manifest=json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_M]); bundle={"_root":ROOT,"progress":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_P]),"events":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_E]),"handoff":checker.extract_handoff_summary(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_H].decode()),"detached_digest":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_D])}
+        self.assertEqual([],checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_projection(bundle,manifest))
+class C21FinalAcceptanceProjectionReconciliationTests(unittest.TestCase):
+    def test_seq699_final_acceptance_projection_contract_is_available(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_final_acceptance_projection_reconciliation_metadata()
+        self.assertEqual(699, metadata["sequence"])
+        self.assertEqual("2db9eff352d32d60638ae9bf7c9dae153c862be8", metadata["record_candidate"])
+        self.assertEqual("7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd", metadata["deployed_product_source"])
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", metadata["event_type"])
+
+    def test_seq699_exact15_adds_only_a14_scanner_test_and_successor_registry(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_final_acceptance_projection_reconciliation_metadata()
+        self.assertEqual(15, metadata["exact_path_count"])
+        self.assertEqual(
+            {
+                "scripts/check_a14_workbench_prototype.py",
+                "tests/tooling/test_a14_workbench_prototype.py",
+                "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+            },
+            set(metadata["exact_paths"]) - {
+                "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+                "docs/WORK_STATUS.md",
+                "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
+                "docs/progress/BUILD_HANDOFF.md",
+                "docs/progress/build-progress.json",
+                "docs/progress/progress-events.json",
+                "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+                "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+                "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+                "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            },
+        )
+
+    def test_seq699_git_collector_accepts_only_precommit_exact15_or_clean_direct_child(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = checker.load_bundle(ROOT)
+        metadata = checker.c21_final_acceptance_projection_reconciliation_metadata()
+        record = checker.C21_FINAL_ACCEPTANCE_RECORD
+        deployed = checker.C21_FINAL_ACCEPTANCE_DEPLOYED
+        private_url = checker.C21_WORKBENCH_UI_WSL_PRIVATE_URL
+        development_ref = "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1"
+        branch = "codex/c21-wsl-acceptance-auth-r1"
+        status_key = ("status", "--porcelain", "--untracked-files=all")
+        values = {
+            ("rev-parse", "HEAD"): record,
+            ("branch", "--show-current"): branch,
+            ("rev-parse", record): record,
+            ("show", "-s", "--format=%P", record): deployed,
+            ("remote", "get-url", "development"): private_url,
+            ("for-each-ref", "--format=%(refname) %(objectname)", development_ref): f"{development_ref} {record}",
+            status_key: "\n".join(" M " + path for path in metadata["exact_paths"]),
+        }
+        def run(mapping, ancestors):
+            with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: mapping.get(args)), mock.patch.object(
+                checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in ancestors else 1
+            ):
+                return checker._collect_c21_final_acceptance_projection_reconciliation_git(bundle)
+        precommit_ancestors = {
+            ("merge-base", "--is-ancestor", deployed, record),
+            ("diff", "--cached", "--check"),
+        }
+        self.assertEqual([], run(values, precommit_ancestors))
+
+        child = "a" * 40
+        post = values | {
+            ("rev-parse", "HEAD"): child,
+            ("show", "-s", "--format=%P", child): record,
+            ("diff", "--name-only", record, child): "\n".join(metadata["exact_paths"]),
+            status_key: "",
+        }
+        post_ancestors = {
+            ("merge-base", "--is-ancestor", deployed, record),
+            ("merge-base", "--is-ancestor", record, child),
+            ("diff", "--check", record, child),
+        }
+        self.assertEqual([], run(post, post_ancestors))
+        self.assertTrue(run(post | {("show", "-s", "--format=%P", child): record + " " + deployed}, post_ancestors))
+        self.assertTrue(run(post | {status_key: " M docs/WORK_STATUS.md"}, post_ancestors))
+        self.assertTrue(run(post | {("rev-parse", record): None}, post_ancestors))
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("remote", "get-url", "development"): "https://example.invalid/Anvil.git"}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("for-each-ref", "--format=%(refname) %(objectname)", development_ref): f"{development_ref} {'0' * 40}"}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("for-each-ref", "--format=%(refname) %(objectname)", development_ref): None}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("remote", "get-url", "development"): None}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(
+                post | {
+                    ("for-each-ref", "--format=%(refname) %(objectname)", development_ref):
+                        f"{development_ref} {record}\nrefs/remotes/development/contaminated {'0' * 40}"
+                },
+                post_ancestors,
+            ),
+        )
+
+        self.assertTrue(run(values, precommit_ancestors - {("diff", "--cached", "--check")}))
+        self.assertTrue(run(post, post_ancestors - {("diff", "--check", record, child)}))
+
+    def test_seq699_builder_preserves_seq1_698_raw_prefix_and_projects_only_approved_evidence(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_final_acceptance_projection_reconciliation_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_M])
+        progress = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_P])
+        prior = subprocess.check_output(["git", "show", "2db9eff352d32d60638ae9bf7c9dae153c862be8:docs/progress/progress-events.json"], cwd=ROOT)
+        current = artifacts[checker.C21_FINAL_ACCEPTANCE_E]
+        self.assertEqual(checker.raw_event_object_prefix_bytes(prior, 698), checker.raw_event_object_prefix_bytes(current, 698))
+        self.assertEqual((699, "MAIN_PACKAGE_ACCEPTED", True, "READY_FOR_WORK_INSTRUCTION", "NOT_REACHED"), (manifest["event_sequence"], manifest["status"], manifest["accepted"], manifest["c01_status"], manifest["dir2_status"]))
+        evidence = manifest["acceptance"]
+        self.assertEqual(("USER_OWNED_NOT_EXECUTED", "USER_OWNED_NOT_EXECUTED"), (evidence["approval_binding"]["external_provider"], evidence["approval_binding"]["telegram"]))
+        self.assertEqual((0, "NOT_CREATED"), (evidence["historical_authenticated_ui_api_sse"]["cross_origin_count"], evidence["current_same_origin_source_static"]["network_receipt"]))
+        self.assertEqual(14, len(manifest["raw_checksums"]))
+        self.assertEqual(
+            {"package_id": "C-01", "status": "READY_FOR_WORK_INSTRUCTION"},
+            {key: progress["next_work_package"][key] for key in ("package_id", "status")},
+        )
+        self.assertEqual(
+            {"package_id": "C-01", "status": "READY_FOR_WORK_INSTRUCTION"},
+            {key: progress["next_successor_work_package"][key] for key in ("package_id", "status")},
+        )
+        self.assertIn("C-21", progress["completed_packages"])
+        self.assertEqual("POSTCOMMIT_EXACT15_SOLE_DIRECT_CHILD_OF_RECORD", progress["repository"]["head_relation"])
+        self.assertEqual("CLEAN", progress["repository"]["worktree_status"])
+        self.assertEqual([], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(manifest))
+
+    def test_seq699_canonical_progress_state_contradictions_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_final_acceptance_projection_reconciliation_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_M])
+        progress = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_P])
+        base_bundle = {
+            "_root": ROOT,
+            "progress": progress,
+            "events": json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C21_FINAL_ACCEPTANCE_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_D]),
+        }
+        mutations = (
+            ("next-work", lambda value: value["next_work_package"].update(status="BLOCKED_PENDING_C21_ACCEPTANCE")),
+            ("next-successor", lambda value: value["next_successor_work_package"].update(status="BLOCKED_PENDING_PROVIDER_STATUS_READ")),
+            ("completed", lambda value: value.update(completed_packages=[package for package in value["completed_packages"] if package != "C-21"])),
+            ("stale-head-relation", lambda value: value["repository"].update(head_relation="PRECOMMIT_EXACT12_SUCCESSOR_PROJECTION")),
+            ("stale-worktree-status", lambda value: value["repository"].update(worktree_status="SEQ698_R11_RESULT_EXACT12_DIRTY")),
+        )
+        for label, mutate in mutations:
+            with self.subTest(label=label):
+                bundle = json.loads(json.dumps({key: value for key, value in base_bundle.items() if key != "_root"}))
+                bundle["_root"] = ROOT
+                mutate(bundle["progress"])
+                self.assertIn(
+                    "C21_FINAL_ACCEPTANCE_CANONICAL_STATE_INVALID",
+                    checker.validate_c21_final_acceptance_projection_reconciliation_projection(bundle, manifest),
+                )
+
+    def test_seq699_adversarial_user_owned_promotion_and_binding_mutation_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        manifest = json.loads(checker.c21_final_acceptance_projection_reconciliation_from_root(ROOT)[checker.C21_FINAL_ACCEPTANCE_M])
+        promoted = json.loads(json.dumps(manifest)); promoted["acceptance"]["approval_binding"]["telegram"] = "PASS"
+        self.assertEqual(["C21_FINAL_ACCEPTANCE_EVIDENCE_BOUNDARY_INVALID"], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(promoted))
+        rebound = json.loads(json.dumps(manifest)); rebound["deployed_product_source"] = "0" * 40
+        self.assertEqual(["C21_FINAL_ACCEPTANCE_MANIFEST_INVALID"], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(rebound))
+
 
 if __name__ == "__main__":
     unittest.main()

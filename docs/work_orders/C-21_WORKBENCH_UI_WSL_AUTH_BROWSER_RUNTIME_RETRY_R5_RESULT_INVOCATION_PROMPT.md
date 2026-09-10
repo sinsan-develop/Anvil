@@ -1,0 +1,1 @@
+`WI-C-21-WORKBENCH-UI-WSL-AUTH-BROWSER-RUNTIME-RETRY-R5-RESULT-20260909-001`의 exact12 범위에서 actual R5를 재시도 없이 실행·기록하고 secret-safe evidence, cleanup exact1, strict success/failure projection과 검증 결과를 Main Agent에게 반환하라.

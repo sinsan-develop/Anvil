@@ -44,6 +44,9 @@ const staticFiles=new Map([
   ['/src/api/workbench-client.js',['src/api/workbench-client.js','text/javascript; charset=utf-8']],
   ['/src/features/workbench/workbench-state.js',['src/features/workbench/workbench-state.js','text/javascript; charset=utf-8']],
   ['/src/styles/workbench.css',['src/styles/workbench.css','text/css; charset=utf-8']],
+  ['/src/app/app-shell.js',['src/app/app-shell.js','text/javascript; charset=utf-8']],
+  ['/src/features/app-shell/app-shell-model.js',['src/features/app-shell/app-shell-model.js','text/javascript; charset=utf-8']],
+  ['/src/styles/app-shell.css',['src/styles/app-shell.css','text/css; charset=utf-8']],
   ['/design-flow',['design-flow.html','text/html; charset=utf-8']],
   ['/src/api/design-flow-client.js',['src/api/design-flow-client.js','text/javascript; charset=utf-8']],
   ['/src/app/design-flow.js',['src/app/design-flow.js','text/javascript; charset=utf-8']],
@@ -84,8 +87,8 @@ async function scanFixture(fixtureId) {
   return JSON.parse(stdout);
 }
 
-export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='fixture'}={}) {
-  const runtimeMode=uiMode==='preview'?'preview':'fixture';
+export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false}={}) {
+  const runtimeMode=uiMode==='preview'?'preview':uiMode==='fixture'?'fixture':'production';
   const csrfToken=randomUUID();
   let allowedHost='';
   const server=http.createServer(async (request,response)=>{
@@ -120,8 +123,18 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='f
         return send(response,200,{ok:true,state,scan:{status:scan.status,repository:{branch:scan.repository?.branch ?? null,language:scan.repository?.primary_language ?? null,trackedDirtyPaths:scan.repository?.tracked_dirty_paths?.length ?? 0},noWriteIdentical:scan.no_write_proof?.identical===true},evidence:{badge:'FIXTURE',countsAsPass:false,scope:'FIXTURE_BROWSER_RUNTIME_ONLY'},message:state==='BLOCKED'?'dirty fixture가 감지되어 실행을 차단했습니다.':'읽기 전용 fixture scan이 끝났습니다.',nextAction:state==='BLOCKED'?'변경 파일을 검토한 뒤 새 scan을 시작하세요.':'실행 모드를 선택하세요.'});
       }
       if (request.method==='GET' && requestUrl.pathname==='/') {
-        const filename=runtimeMode==='preview'?'ui-preview.html':'index.html';
+        const filename=runtimeMode==='preview'?'ui-preview.html':runtimeMode==='fixture'?'fixture-workbench.html':'index.html';
         const body=await readFile(join(webRoot,filename));
+        response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
+        return response.end(body);
+      }
+      if (request.method==='GET' && requestUrl.pathname==='/provider-workbench.html') {
+        const body=await readFile(join(webRoot,'provider-workbench.html'));
+        response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
+        return response.end(body);
+      }
+      if (fixtureEnabled && request.method==='GET' && requestUrl.pathname==='/fixture-workbench') {
+        const body=await readFile(join(webRoot,'fixture-workbench.html'));
         response.writeHead(200,{...securityHeaders,'content-type':'text/html; charset=utf-8','content-length':body.length});
         return response.end(body);
       }
@@ -139,6 +152,6 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='f
 if (process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const host=process.env.ANVIL_HOST||'127.0.0.1';
   const port=Number(process.env.ANVIL_PORT||4173);
-  const uiMode=process.env.ANVIL_UI_MODE||'fixture';
+  const uiMode=process.env.ANVIL_UI_MODE||'production';
   startWorkbenchServer({host,port,uiMode}).then(({origin})=>console.log(`Anvil ${uiMode} Workbench: ${origin}`)).catch(()=>{console.error('Workbench failed to start.');process.exitCode=1;});
 }

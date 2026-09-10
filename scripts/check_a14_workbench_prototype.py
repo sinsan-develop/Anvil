@@ -30,17 +30,209 @@ def canonical_lf_row_matches(root: Path, path: str, row: dict) -> bool:
     raw = (root / path).read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
     return len(raw) == row.get("bytes") and hashlib.sha256(raw).hexdigest().upper() == row.get("sha256")
 
+def _javascript_code_mask(text: str) -> tuple[str, bool]:
+    """Mask non-code lexemes while retaining code inside template interpolations."""
+    masked=list(text)
+    ambiguous=False
+    expression_prefix_words={
+        "await","case","delete","do","else","in","instanceof","new","of",
+        "return","throw","typeof","void","yield",
+    }
+
+    def blank(index: int) -> None:
+        if text[index] not in "\r\n":
+            masked[index]=" "
+
+    def scan_string(index: int, quote: str) -> int:
+        nonlocal ambiguous
+        blank(index); index += 1
+        while index < len(text):
+            char=text[index]; blank(index)
+            if char == "\\":
+                index += 1
+                if index >= len(text):
+                    ambiguous=True; return index
+                blank(index); index += 1; continue
+            index += 1
+            if char == quote:
+                return index
+            if char in "\r\n":
+                ambiguous=True; return index
+        ambiguous=True
+        return index
+
+    def scan_regex(index: int) -> int:
+        nonlocal ambiguous
+        blank(index); index += 1; in_class=False
+        while index < len(text):
+            char=text[index]; blank(index)
+            if char == "\\":
+                index += 1
+                if index >= len(text):
+                    ambiguous=True; return index
+                blank(index); index += 1; continue
+            if char in "\r\n":
+                ambiguous=True; return index + 1
+            if char == "[": in_class=True
+            elif char == "]": in_class=False
+            elif char == "/" and not in_class:
+                index += 1
+                while index < len(text) and (text[index].isalpha() or text[index] == "_"):
+                    blank(index); index += 1
+                return index
+            index += 1
+        ambiguous=True
+        return index
+
+    def scan_template(index: int) -> int:
+        nonlocal ambiguous
+        blank(index); index += 1
+        while index < len(text):
+            char=text[index]
+            if char == "\\":
+                blank(index); index += 1
+                if index >= len(text):
+                    ambiguous=True; return index
+                blank(index); index += 1; continue
+            if char == "`":
+                blank(index); return index + 1
+            if char == "$" and index + 1 < len(text) and text[index + 1] == "{":
+                blank(index)
+                index=scan_code(index + 2, True)
+                continue
+            blank(index); index += 1
+        ambiguous=True
+        return index
+
+    def scan_code(index: int, template_expression: bool=False) -> int:
+        nonlocal ambiguous
+        can_end_expression=False
+        nested_braces=0
+        while index < len(text):
+            char=text[index]
+            following=text[index + 1] if index + 1 < len(text) else ""
+            if char.isspace(): index += 1; continue
+            if char == "}" and template_expression and nested_braces == 0:
+                return index + 1
+            if char == "/" and following == "/":
+                blank(index); blank(index + 1); index += 2
+                while index < len(text) and text[index] not in "\r\n": blank(index); index += 1
+                continue
+            if char == "/" and following == "*":
+                blank(index); blank(index + 1); index += 2; closed=False
+                while index < len(text):
+                    if text[index] == "*" and index + 1 < len(text) and text[index + 1] == "/":
+                        blank(index); blank(index + 1); index += 2; closed=True; break
+                    blank(index); index += 1
+                if not closed: ambiguous=True
+                continue
+            if char in ("'", '"'):
+                index=scan_string(index,char); can_end_expression=True; continue
+            if char == "`":
+                index=scan_template(index); can_end_expression=True; continue
+            if char == "/" and not can_end_expression:
+                index=scan_regex(index); can_end_expression=True; continue
+            if char == "/":
+                can_end_expression=False; index += 2 if following == "=" else 1; continue
+            if char.isalpha() or char in "_$":
+                end=index + 1
+                while end < len(text) and (text[end].isalnum() or text[end] in "_$"): end += 1
+                word=text[index:end]
+                can_end_expression=word not in expression_prefix_words
+                index=end; continue
+            if char.isdigit():
+                index += 1
+                while index < len(text) and (text[index].isalnum() or text[index] in "._"): index += 1
+                can_end_expression=True; continue
+            if char == "{":
+                if template_expression: nested_braces += 1
+                can_end_expression=False; index += 1; continue
+            if char == "}":
+                if template_expression: nested_braces -= 1
+                can_end_expression=True; index += 1; continue
+            if char in ")]": can_end_expression=True
+            elif char in "([;,.:?=+-*%&|^!~<>": can_end_expression=False
+            index += 1
+        if template_expression:
+            ambiguous=True
+        return index
+
+    scan_code(0)
+    return "".join(masked),ambiguous
+
+def _brace_depth_at(code_mask: str, position: int) -> int | None:
+    depth=0
+    for char in code_mask[:position]:
+        if char == "{": depth += 1
+        elif char == "}":
+            if depth == 0: return None
+            depth -= 1
+    return depth
+
+def _brace_structure_invalid(code_mask: str) -> bool:
+    return _brace_depth_at(code_mask,len(code_mask)) != 0
+
+def _safe_root_relative(value: str) -> bool:
+    return value.startswith("/") and not value.startswith("//") and "://" not in value and "\\" not in value
+
 def browser_source_findings(paths: list[Path]) -> list[str]:
     findings=[]
-    forbidden=re.compile(r"https?://|localhost|127\.0\.0\.1|NEXT_PUBLIC_|host\.docker|container",re.I)
+    forbidden=re.compile(r"https?://|localhost|127\.0\.0\.1|NEXT_PUBLIC_|host\.docker",re.I)
     fetches=re.compile(r"(?:fetchImpl|fetch)\(([^,)]+)")
+    ready_declarations=[]
+    ready_pattern=re.compile(
+        r"^[ \t]*(?:export[ \t]+)?const[ \t]+READY_PATH[ \t]*=[ \t]*(['\"])([^'\"\r\n]+)\1[ \t]*;[ \t]*$",
+        re.MULTILINE,
+    )
+    sources=[]
     for path in paths:
         text=path.read_text(encoding="utf-8")
+        code_mask,lexical_ambiguous=_javascript_code_mask(text)
+        # READY_PATH is a narrow security binding, not a general JavaScript parser.
+        # If a slash survives masking, it may be division or a regex literal whose
+        # grammar depends on statement context.  Either form makes brace/scope
+        # inference unsafe, so fail closed instead of guessing.
+        lexical_ambiguous = lexical_ambiguous or ("READY_PATH" in text and "/" in code_mask)
+        declarations=[]
+        for match in ready_pattern.finditer(text):
+            declaration_code=code_mask[match.start():match.end()]
+            if _brace_depth_at(code_mask,match.start()) == 0 and re.search(r"\bconst\s+READY_PATH\b",declaration_code):
+                declarations.append((match.span(),match.group(2)))
+                ready_declarations.append(match.group(2))
+        imports=[]
+        for match in re.finditer(r"(?m)^[ \t]*import\b[\s\S]*?;",code_mask):
+            named=re.search(r"\bimport\s*\{([^}]*)\}\s*from\b",match.group())
+            names=[] if named is None else [part.strip() for part in named.group(1).split(",")]
+            if _brace_depth_at(code_mask,match.start()) == 0 and "READY_PATH" in names:
+                imports.append(match.span())
+        sources.append((path,text,code_mask,declarations,imports,lexical_ambiguous))
+    safe_ready_path = (
+        ready_declarations[0]
+        if len(ready_declarations) == 1
+        and _safe_root_relative(ready_declarations[0])
+        else None
+    )
+    for path,text,code_mask,declarations,imports,lexical_ambiguous in sources:
         if forbidden.search(text): findings.append(f"internal-address:{path.as_posix()}")
-        for match in fetches.finditer(text):
-            literal=match.group(1).strip().strip("'\"")
-            if literal.startswith(("/api/","apiPath(")) or match.group(1).strip().startswith("apiPath("): continue
+        fetch_matches=list(fetches.finditer(code_mask))
+        allowed_ready_spans=[span for span,_ in declarations]
+        allowed_ready_spans.extend(imports)
+        ready_path_bound=bool(declarations or imports)
+        for match in fetch_matches:
+            expression=text[match.start(1):match.end(1)].strip()
+            literal_match=re.fullmatch(r"(['\"])([^'\"\r\n]*)\1",expression)
+            root_relative=bool(literal_match and _safe_root_relative(literal_match.group(2)))
+            if expression == "READY_PATH": allowed_ready_spans.append(match.span(1))
+            if root_relative or expression.startswith("apiPath(") or (expression == "READY_PATH" and safe_ready_path and ready_path_bound): continue
             findings.append(f"non-relative-fetch:{path.as_posix()}")
+        ambiguous=any(
+            not any(start <= token.start() and token.end() <= end for start,end in allowed_ready_spans)
+            for token in re.finditer(r"\bREADY_PATH\b",code_mask)
+        )
+        if ambiguous:
+            findings.append(f"ambiguous-ready-path:{path.as_posix()}")
+        if "READY_PATH" in text and (lexical_ambiguous or _brace_structure_invalid(code_mask)):
+            findings.append(f"ambiguous-javascript-structure:{path.as_posix()}")
     return findings
 
 
@@ -134,9 +326,32 @@ def check(root: Path) -> dict:
                     continue
                 registry = json.loads(registry_path.read_text(encoding="utf-8"))
                 successor = registry.get("a14_successor_projection", {})
+                r6_registry_valid = (
+                    registry_path.name != "A-14_A14_SUCCESSOR_R6.json"
+                    or (
+                        registry.get("revision") == 6
+                        and successor.get("predecessor_registry_path")
+                        == "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json"
+                        and successor.get("predecessor_registry_sha256")
+                        == sha256(root / "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json")
+                        and successor.get("binding_mode")
+                        == "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY"
+                        and {row.get("path") for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
+                        == {
+                            "apps/web/index.html", "apps/web/server.mjs",
+                            "apps/web/src/app/workbench.js", "apps/web/src/api/workbench-client.js",
+                            "apps/web/src/features/workbench/workbench-state.js",
+                            "apps/web/src/styles/workbench.css", "apps/web/tests/workbench.test.mjs",
+                            "tests/browser/a14/workbench-runtime.test.mjs",
+                            "scripts/check_a14_workbench_prototype.py",
+                            "tests/tooling/test_a14_workbench_prototype.py",
+                        }
+                    )
+                )
                 if (
                     registry.get("artifact_type") == "a14_successor_registry"
                     and registry.get("self_reference") is False
+                    and r6_registry_valid
                     and successor.get("predecessor_manifest_sha256")
                     == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8"
                 ):
@@ -196,6 +411,41 @@ def check(root: Path) -> dict:
                 indexed = {row.get("path"): row for row in successor.get("live_raw_checksums", []) if isinstance(row, dict)}
                 if successor.get("authorization") == "B03_R2_LOCAL_SAME_ORIGIN_SHARED_SERVER" and set(indexed) == {"apps/web/server.mjs", "scripts/check_a14_workbench_prototype.py", "tests/tooling/test_a14_workbench_prototype.py"}:
                     successor_rows.update(indexed)
+            # R6 is an additive, committed-clean final selection.  Apply it
+            # after older A-15/B-03 projections so stale rows cannot override
+            # the exact live A-14 scanner boundary.
+            r6_registry_path = root / "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json"
+            if r6_registry_path.is_file() and _tracked_clean(root, r6_registry_path.relative_to(root).as_posix()):
+                r6_registry = json.loads(r6_registry_path.read_text(encoding="utf-8"))
+                r6_successor = r6_registry.get("a14_successor_projection", {})
+                r6_rows = {
+                    row.get("path"): row
+                    for row in r6_successor.get("live_raw_checksums", [])
+                    if isinstance(row, dict)
+                }
+                if (
+                    r6_registry.get("artifact_type") == "a14_successor_registry"
+                    and r6_registry.get("revision") == 6
+                    and r6_registry.get("self_reference") is False
+                    and r6_successor.get("predecessor_registry_path")
+                    == "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json"
+                    and r6_successor.get("predecessor_registry_sha256")
+                    == sha256(root / "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json")
+                    and r6_successor.get("predecessor_manifest_sha256")
+                    == "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8"
+                    and r6_successor.get("binding_mode")
+                    == "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY"
+                    and set(r6_rows) == {
+                        "apps/web/index.html", "apps/web/server.mjs",
+                        "apps/web/src/app/workbench.js", "apps/web/src/api/workbench-client.js",
+                        "apps/web/src/features/workbench/workbench-state.js",
+                        "apps/web/src/styles/workbench.css", "apps/web/tests/workbench.test.mjs",
+                        "tests/browser/a14/workbench-runtime.test.mjs",
+                        "scripts/check_a14_workbench_prototype.py",
+                        "tests/tooling/test_a14_workbench_prototype.py",
+                    }
+                ):
+                    successor_rows.update(r6_rows)
             for path,value in raw.items():
                 actual = portable_hash(root, path)
                 row = successor_rows.get(path)

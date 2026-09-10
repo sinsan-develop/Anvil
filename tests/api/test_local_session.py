@@ -109,7 +109,9 @@ class _ScopedTaskRepository:
         )
 
 
-def _scoped_client(monkeypatch) -> TestClient:
+def _scoped_client(
+    monkeypatch, *, permission_scopes: str | None = None
+) -> TestClient:
     from packages.api import runtime
     from packages.persistence import task_bootstrap_repository
 
@@ -123,8 +125,11 @@ def _scoped_client(monkeypatch) -> TestClient:
         "RunCreationPort",
         lambda _repository: (lambda _request: {"runId": "run-created"}),
     )
+    environment = _write_environment()
+    if permission_scopes is not None:
+        environment["ANVIL_TEST_SESSION_PERMISSION_SCOPES"] = permission_scopes
     app = create_runtime_app(
-        environment=_write_environment(),
+        environment=environment,
         session_factory=lambda: _FakeSession(),
         event_stream=_journal(),
     )
@@ -441,6 +446,75 @@ def test_test_session_allows_only_the_four_explicit_endpoints(monkeypatch) -> No
     )
     assert provider.status_code == 403
     assert provider.json()["error"]["code"] == "PERMISSION_DENIED"
+
+
+def test_provider_read_scope_allows_only_exact_provider_get_endpoints(monkeypatch) -> None:
+    """Broad provider access or a missing exact allowlist must fail this boundary."""
+    client = _scoped_client(
+        monkeypatch,
+        permission_scopes="tasks:write,tasks:read,run:events:read,provider:read",
+    )
+
+    unauthenticated = client.get(
+        "/api/providers", headers={"host": "anvil.sinsan.kr"}
+    )
+    assert unauthenticated.status_code == 401
+    assert _issue(client).status_code == 201
+
+    providers = client.get("/api/providers", headers={"host": "anvil.sinsan.kr"})
+    upstage = client.get(
+        "/api/providers/upstage", headers={"host": "anvil.sinsan.kr"}
+    )
+    models = client.get(
+        "/api/providers/upstage/models", headers={"host": "anvil.sinsan.kr"}
+    )
+    mutation = client.post(
+        "/api/providers/upstage:configure",
+        headers={"host": "anvil.sinsan.kr"},
+        json={},
+    )
+    similar_path = client.get(
+        "/api/providers/upstage/models/extra", headers={"host": "anvil.sinsan.kr"}
+    )
+    trailing_paths = (
+        "/api/providers/",
+        "/api/providers/upstage/",
+        "/api/providers/upstage/models/",
+    )
+
+    assert providers.status_code == 200
+    assert [provider["provider_id"] for provider in providers.json()["data"]] == [
+        "cerebras", "groq", "mistral", "openrouter", "upstage", "gemini",
+        "anthropic", "openai", "ollama",
+    ]
+    assert upstage.status_code == 200
+    assert upstage.json()["data"]["primary"] is True
+    assert upstage.json()["data"]["credential_status"] == "MISSING"
+    assert models.status_code == 200
+    assert models.json()["data"]["models"] == []
+    assert mutation.status_code == 403
+    assert mutation.json()["error"]["code"] == "PERMISSION_DENIED"
+    assert similar_path.status_code == 404
+    for path in trailing_paths:
+        response = client.get(
+            path,
+            headers={"host": "anvil.sinsan.kr"},
+            follow_redirects=False,
+        )
+        assert response.status_code in {403, 404}
+
+    for method, path in (
+        ("GET", "/api/tasks/task-c21/"),
+        ("GET", "/api/runs/run-c21/events/"),
+        ("POST", "/auth/session/"),
+    ):
+        response = client.request(
+            method,
+            path,
+            headers={"host": "anvil.sinsan.kr", "origin": "https://anvil.sinsan.kr"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 307
 
 
 @pytest.mark.parametrize(

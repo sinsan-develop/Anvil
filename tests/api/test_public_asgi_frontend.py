@@ -39,13 +39,29 @@ def test_public_asgi_serves_frontend_from_same_listener() -> None:
     directory = __file__.split("tests", 1)[0] + "apps/web"
     app = FastAPI()
     app.get("/health/live")(lambda: {"status": "ok"})
-    mount_frontend(app, directory)
+    mount_frontend(app, directory, fixture_enabled=True)
 
     client = TestClient(app)
     assert client.get("/health/live").json() == {"status": "ok"}
     response = client.get("/")
     assert response.status_code == 200
-    assert "Anvil" in response.text
+    assert "data-production-dashboard" in response.text
+    assert "FIXTURE BROWSER RUNTIME" not in response.text
+    provider = client.get("/provider-workbench.html")
+    assert provider.status_code == 200
+    assert "data-production-workbench" in provider.text
+    fixture = client.get("/fixture-workbench.html")
+    assert fixture.status_code == 200
+    assert "FIXTURE BROWSER RUNTIME" in fixture.text
+
+
+def test_public_asgi_hides_fixture_routes_by_default() -> None:
+    directory = __file__.split("tests", 1)[0] + "apps/web"
+    app = FastAPI()
+    mount_frontend(app, directory)
+    with TestClient(app) as client:
+        assert client.get("/fixture-workbench").status_code == 404
+        assert client.get("/fixture-workbench.html").status_code == 404
 
 
 def test_fresh_asgi_route_order_keeps_health_routes_ahead_of_static_mount(monkeypatch) -> None:

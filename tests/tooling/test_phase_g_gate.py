@@ -3,12 +3,83 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+_PHASE_G_108_PACKAGE_BASELINE = "e59c4a105dab0faae31f43fd75e3ac53f1992ffe"
+_A02_FENCED_START = "2bd88123e93550db5874b479c82d78d4733fd53f"
+_B12_R2_COMPLETION = "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb"
+_B12_ACCEPTANCE = "165a9bfff5e085bfec322c748e83464477642f8a"
+_HISTORICAL_TEMP: tempfile.TemporaryDirectory[str] | None = None
+_HISTORICAL_ROOT: Path | None = None
+
+
+def setUpModule() -> None:
+    global _HISTORICAL_TEMP, _HISTORICAL_ROOT
+    _HISTORICAL_TEMP = tempfile.TemporaryDirectory(prefix="anvil-phase-g-frozen-")
+    _HISTORICAL_ROOT = Path(_HISTORICAL_TEMP.name) / "repository"
+    subprocess.run(
+        [
+            "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf",
+            "clone", "--quiet", "--local", "--no-hardlinks", "--no-checkout",
+            str(ROOT), str(_HISTORICAL_ROOT),
+        ],
+        check=True,
+    )
+
+
+def tearDownModule() -> None:
+    if _HISTORICAL_TEMP is not None:
+        _HISTORICAL_TEMP.cleanup()
+
+
+def _historical_checker(commit: str, module_name: str):
+    assert _HISTORICAL_ROOT is not None
+    subprocess.run(
+        ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "checkout", "--quiet", "--detach", "--force", commit],
+        cwd=_HISTORICAL_ROOT,
+        check=True,
+    )
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout
+    if head != commit or status:
+        raise AssertionError(f"unclean Phase-G historical fixture: head={head} status={status!r}")
+    checker_path = _HISTORICAL_ROOT / "scripts/check_phase_g_gate.py"
+    spec = importlib.util.spec_from_file_location(module_name, checker_path)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"historical Phase-G checker cannot be loaded: {commit}")
+    checker = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = checker
+    spec.loader.exec_module(checker)
+    return _HISTORICAL_ROOT, checker
+
+
+def _validate_historical_gate(root: Path, checker, checkpoint_checker) -> dict:
+    # The checkpoint was recorded while HEAD still pointed at the accepted
+    # G-07 commit.  Validate the immutable content hashes independently from
+    # that temporal Git projection instead of comparing it with today's HEAD.
+    g07 = checker._load_g07(root)
+    baseline = g07.validate_repository(root, verify_hashes=True, verify_git=False)
+    if baseline["errors"]:
+        raise AssertionError(f"historical G-07 baseline invalid: {baseline['errors']!r}")
+    gate_manifest_errors = checker.validate_gate_manifest(root)
+    # The original checkpoint manifest intentionally binds the pre-commit raw
+    # view while the accepted commit contains the post-checkpoint reports.  Use
+    # the current declaration validator for that manifest so the historical
+    # test checks its signed declarations instead of pretending those transient
+    # raw report bytes were committed.
+    checkpoint_manifest_errors = checkpoint_checker.validate_checkpoint_manifest(root)
+    if gate_manifest_errors or checkpoint_manifest_errors:
+        raise AssertionError(
+            f"historical gate manifests invalid: gate={gate_manifest_errors!r} checkpoint={checkpoint_manifest_errors!r}"
+        )
+    return checker.validate_gate(root, verify_hashes=False)
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
@@ -100,7 +171,11 @@ class PhaseGGateTests(unittest.TestCase):
             self.assertEqual("BLOCKED_PENDING_B10_ACCEPTANCE", progress["next_work_package"]["status"])
 
     def test_gate_recalculates_all_required_contracts(self):
-        report = self.validate()
+        historical_root, historical_checker = _historical_checker(
+            _PHASE_G_108_PACKAGE_BASELINE,
+            "phase_g_recalculation_frozen",
+        )
+        report = _validate_historical_gate(historical_root, historical_checker, self.checker)
         self.assertEqual([], report["errors"])
         self.assertEqual([f"G-{n:02d}" for n in range(1, 8)], report["accepted_packages"])
         self.assertEqual(10, len(report["decisions"]))
@@ -178,9 +253,13 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual("090C669F5E66A6BB67577693C7CF1601727E12F5E173E0AA98D4BAF4D96B2091", decision["evidence_target_hash"])
 
     def test_gate_checkpoint_allows_fenced_a02_active_start(self):
-        report = self.validate()
+        historical_root, historical_checker = _historical_checker(
+            _A02_FENCED_START,
+            "phase_g_checkpoint_frozen",
+        )
+        report = _validate_historical_gate(historical_root, historical_checker, self.checker)
         self.assertEqual([], report["errors"])
-        events = json.loads((ROOT / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
+        events = json.loads((historical_root / "docs/progress/progress-events.json").read_text(encoding="utf-8"))["events"]
         worker = next(event for event in events if event["event_id"] == "evt_a02_worker_lease_issued")
         write = next(event for event in events if event["event_id"] == "evt_a02_write_lease_issued")
         start = next(event for event in events if event["event_id"] == "evt_a02_package_started")
@@ -571,10 +650,13 @@ class PhaseGGateTests(unittest.TestCase):
         self.assertEqual(357, progress["event_sequence"]); self.assertEqual("BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE", progress["next_work_package"]["status"])
 
     def test_b12_r2_completion_preserves_a_gate_and_blocks_c01(self):
-        self.assertEqual([], self.checker.validate_b12_r2_completion_projection(ROOT))
+        historical_root, historical_checker = _historical_checker(_B12_R2_COMPLETION, "phase_g_b12_r2_done_frozen")
+        self.assertEqual([], historical_checker.validate_b12_r2_completion_projection(historical_root))
 
     def test_b12_acceptance_preserves_a_gate_and_blocks_c01_pending_b_gate(self):
-        self.assertEqual([], self.checker.validate_b12_acceptance_projection(ROOT)); self.assertEqual([], self.validate()["errors"])
+        historical_root, historical_checker = _historical_checker(_B12_ACCEPTANCE, "phase_g_b12_accept_frozen")
+        self.assertEqual([], historical_checker.validate_b12_acceptance_projection(historical_root))
+        self.assertEqual([], historical_checker.validate_gate(historical_root)["errors"])
 
 if __name__ == "__main__":
     unittest.main()

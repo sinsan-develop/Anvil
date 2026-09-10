@@ -1,0 +1,154 @@
+{
+  "artifact_id": "C21-WSL-QA-EXECUTION-RESULT-20260905",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "manifest_type": "WSL_QA_EXECUTION_RESULT_PROJECTION",
+  "event_sequence": 495,
+  "historical_event_sequence": 494,
+  "historical_raw_event_bytes": 874441,
+  "historical_raw_events_sha256": "A8D822B390A8D5C96014EA80691E59ECB33E0FFE3B0A428B4741B0BEF8340862",
+  "historical_events_sha256": "6970AE6EC2B73B8BDE35B8DB113609270F4374BD8D59A6B808FADFFD471971A8",
+  "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+  "record_parent_commit": "772afbd5eb55791ca7b5002d58378437ea496750",
+  "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
+  "runtime_commit": "324eb169fedbce958d2e8cc29362deb7af433677",
+  "product_validation": "SUITABLE",
+  "validation_scope": "C-21/WSL-EARLY-VALIDATION_APPROVED_SCOPE_ONLY",
+  "accepted": false,
+  "independent_tester_status": "PENDING",
+  "package_status": "TEST_REVIEW_PENDING_INDEPENDENT_JUDGMENT",
+  "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
+  "dir2_status": "NOT_TRIGGERED",
+  "record_successor_paths": [
+    "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
+    "docs/DEVELOPMENT_ENVIRONMENT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-21_WSL_QA_EXECUTION_RESULT_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "record_successor_path_count": 10,
+  "record_successor_path_list_sha256": "0CEDE4184ABEF2911EBA37F06B4323134822A930775858D305ADAC501897EBB5",
+  "postcommit_exact_path_count": 61,
+  "postcommit_exact_path_list_sha256": "6DD88D7F86ECE8302CB2072CB127E6FEF20D993F20812CDDF84FA1264ED828CC",
+  "execution_result": {
+    "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
+    "control_commit": "772afbd5eb55791ca7b5002d58378437ea496750",
+    "environment": "WSL_SERVER_TEST_STAGING",
+    "targets": [
+      "POSTGRESQL_15",
+      "POSTGRESQL_18_RC"
+    ],
+    "private_atomic_push": "PASS",
+    "fresh_remote_recovery": "PASS",
+    "deploy_attempts": [
+      {
+        "attempt": 1,
+        "result": "PREMUTATION_ENVIRONMENT_FAILURE",
+        "exit_code": 1,
+        "reason": "ROOT_GIT_SSH_ALIAS_MISSING",
+        "product_valid_failure": false
+      },
+      {
+        "attempt": 2,
+        "result": "PREMUTATION_ENVIRONMENT_FAILURE",
+        "exit_code": 1,
+        "reason": "INNER_STAGE_GIT_SSH_ALIAS_MISSING",
+        "product_valid_failure": false,
+        "cleanup_trap": "PASS",
+        "current_preserved": "324eb169fedbce958d2e8cc29362deb7af433677"
+      },
+      {
+        "attempt": 3,
+        "result": "PASS",
+        "exit_code": 0,
+        "ssh_config": "/home/daon/.ssh/config"
+      }
+    ],
+    "candidate_deploy": {
+      "first": "PASS",
+      "return_after_rollback": "PASS"
+    },
+    "verification": {
+      "first": "PASS",
+      "second": "PASS",
+      "migration": "0013_task_bootstrap_authority",
+      "authenticated_sse": "PASS",
+      "last_event_id": "PASS",
+      "same_origin": "PASS",
+      "backup_restore": "PASS"
+    },
+    "rollback": {
+      "result": "PASS",
+      "from": "a342d62391a44b349733d1468ac3b180761155ab",
+      "to": "324eb169fedbce958d2e8cc29362deb7af433677",
+      "database_migration": "PRESERVED_NO_AUTOMATIC_DOWNGRADE",
+      "independent_observation": "PASS"
+    },
+    "rollback_observation": {
+      "targets": 2,
+      "runtime_commit": "324eb169fedbce958d2e8cc29362deb7af433677",
+      "ui_status": 200,
+      "health_status": 200,
+      "openapi_status": 200,
+      "session_status": 201,
+      "sse_status": 200,
+      "last_event_id_body_bytes": 0,
+      "database_counts_before_after": "1|1|1_UNCHANGED"
+    },
+    "cleanup": {
+      "result": "PASS",
+      "containers": 0,
+      "networks": 0,
+      "volumes": 0,
+      "receipt": "NOT_CREATED_BY_SCRIPT_DESIGN"
+    },
+    "final_state": {
+      "application_current": "a342d62391a44b349733d1468ac3b180761155ab",
+      "application_previous": "324eb169fedbce958d2e8cc29362deb7af433677",
+      "application_checkout": "CLEAN",
+      "env_mode": "600",
+      "env_owner": "root",
+      "env_content": "UNCHANGED"
+    },
+    "excluded": {
+      "telegram": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "ysna": "NOT_EXECUTED",
+      "browser_network": "NOT_EXECUTED",
+      "main_merge": "NOT_EXECUTED"
+    },
+    "evidence": {
+      "preflight_scratch_sha256": "F1847AC0D03AB814704AA8D1982DA7C2426A4C01C1F4723BFC3F170DD93FFB07",
+      "rollback_observer_scratch_sha256": "12A975797B4600031D1427FAA1010CDDF7100C1F297FAE6B3CCD80DF606F03B2",
+      "server_receipt_raw_hash": "NOT_COPIED_LOCALLY_NOT_ASSERTED"
+    }
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-qa-execution-result.json",
+      "bytes": 939,
+      "sha256": "28A3660DCF18E19430ABD91C5A2A69430BC9424FB429B3E164585B6FE9224385"
+    },
+    {
+      "path": "docs/04_test_reports/C-21_WSL_QA_EXECUTION_RESULT.md",
+      "bytes": 4506,
+      "sha256": "5ED610214E923F2B51F42B3465954066043D782AFD3EB8FC855F34B24E1D5961"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 1014337,
+      "sha256": "1F7091BEAB52B228FA93144021DA5E472CFAEB619A319BCCF9BBE3363A454EDF"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 338980,
+      "sha256": "55D6D6D91E2CD69C21F43B015BC0DCF48DBCC994A78FFC2F2A0B8ED18CE22236"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-05T17:20:00+09:00"
+}

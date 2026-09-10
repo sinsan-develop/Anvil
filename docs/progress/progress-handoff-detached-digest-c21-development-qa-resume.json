@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-DEVELOPMENT-QA-RESUME-DIGEST-20260905",
+  "package_id": "C-21",
+  "event_sequence": 501,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-05T20:30:00+09:00",
+  "scope": "C-21 development QA resume start; exact7 outbound-free scope; no acceptance or external execution.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 106488,
+    "file_sha256": "CC2178E6029D293B90142623993E37A533DA57C972D620E7DDA11C694F7F08C6",
+    "canonical_json_sha256": "A367D5305E44DD401796820FB4BCC73C63169D092F262D1089E9878498B188B0"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 171203,
+    "file_sha256": "0087EAFD24AEE7CAC9E1B5CA28BD8DA090E94B48033CB49C9587C57D5E0BD850",
+    "machine_summary_canonical_sha256": "B081F8FF826668FDBEA56973EB1DDE7E33C754A39ECF573F8676D82DB9E45A7C"
+  }
+}

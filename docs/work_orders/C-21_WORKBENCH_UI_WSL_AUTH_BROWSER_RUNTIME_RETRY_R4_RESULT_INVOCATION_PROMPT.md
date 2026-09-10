@@ -1,0 +1,1 @@
+developer-primary는 seq1~632와 attempt1~3을 보존하고 child preflight 후 모든 control-runtime action을 outermost sudo env의 동일 explicit Git SSH transport와 bash script 호출로 수행한다. attempt4는 정확히 1회이며 deploy→verify→PG15/PG18RC authenticated browser→cleanup exact1 순서다. 실패는 재실행하지 않고 환경·잔류 상태만 읽기 전용 확인한다. Secret 값과 screenshot 파일을 남기지 않으며 Provider 외부·Telegram·ysna·main·C-01은 실행하지 않는다.

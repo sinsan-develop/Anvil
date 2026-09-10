@@ -1,0 +1,1 @@
+developer-primary는 seq626과 attempt1/2 실패를 보존하고 exact root Git SSH transport로 WSL 개발검증 attempt3을 1회 실행·기록한다. actual failure는 재실행하지 않고 cleanup을 정확히 1회 시도한다. 제품·deploy·probe·historical 파일은 변경하지 않으며 Secret 값은 출력·저장하지 않는다.

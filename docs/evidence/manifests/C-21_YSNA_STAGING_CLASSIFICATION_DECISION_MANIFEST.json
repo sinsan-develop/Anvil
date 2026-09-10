@@ -1,0 +1,58 @@
+{
+  "artifact_id": "C21-YSNA-STAGING-CLASSIFICATION-DECISION-20260904",
+  "package_id": "C-21/LR-02C/OPS-R2",
+  "manifest_type": "ENVIRONMENT_CLASSIFICATION_DECISION_CHECKPOINT",
+  "event_sequence": 482,
+  "decision_id": "APPROVAL-20260904-C21-YSNA-STAGING-001",
+  "checkpoint_base": "871513d46a19f864190a977380a4c9c5b5d56573",
+  "repository_exact_path_count": 15,
+  "classification": "STAGING_USER_ACCEPTANCE_UNTIL_EXPLICIT_PRODUCTION_DECLARATION",
+  "targets": [
+    "ysna-server",
+    "anvil.sinsan.kr"
+  ],
+  "effective_until": "SHINSAN_EXPLICIT_PRODUCTION_TRANSITION_DECLARATION",
+  "frozen_predecessor_sequence": 481,
+  "frozen_predecessor_events_sha256": "3E97534028686CEC657BEB2B287A46FD32A92105AA64CDDBC0943142E9F27F66",
+  "historical_evidence": "PRESERVED_UNCHANGED",
+  "external_changes": "NOT_EXECUTED",
+  "excluded_actions": [
+    "SERVER_REDEPLOY",
+    "SERVER_RESTART",
+    "DATABASE_CHANGE",
+    "DNS_CHANGE",
+    "TLS_CHANGE",
+    "SECRET_CHANGE",
+    "EXISTING_MATERIAL_DELETION",
+    "MAIN_MERGE"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-ysna-staging-classification-decision.json",
+      "bytes": 1051,
+      "sha256": "B1DD4A790CD0645B5A46A967D4A54DC992D4E6472207FBDB0EC15274C820A53A"
+    },
+    {
+      "path": "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_CONNINFO_REWORK_MANIFEST_R4.json",
+      "bytes": 3364,
+      "sha256": "F439C229E72BE28122B9A8F3436E1AF206D898EF543B794D3B8065D363B0808D"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 774332,
+      "sha256": "29A7858D930058521370ED652910EC3D2150D2F6D446B275C0C759B77EA9610E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 739572,
+      "sha256": "8D6743D3A0C434252F5FDA29EC9AC0B9453AC19C51996FE01D1D551420EBE19A"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 191847,
+      "sha256": "5818791A6F86864FE6E703796FA372445B80DE2DDF1DCC1A24681F1F985C250C"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-04T13:55:26+09:00"
+}

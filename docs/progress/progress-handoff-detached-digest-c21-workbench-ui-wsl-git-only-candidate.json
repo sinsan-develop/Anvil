@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WORKBENCH-UI-WSL-GIT-ONLY-CANDIDATE-START-DIGEST-20260907",
+  "package_id": "C-21",
+  "event_sequence": 587,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-07T21:10:00+09:00",
+  "scope": "seq585-587 append-only; seq1-584 preserved; S exact10",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 206534,
+    "file_sha256": "ECF12E42D7F07116FC485A96F5D7A42C8337441D37133C03943E54B2F9F7FBB8",
+    "canonical_json_sha256": "8B4607A3E02E7BAAB3CE97255FE3D9BCF3B56B36BD2121788BF210A5B7CE4F40"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 205440,
+    "file_sha256": "1B70D60969C024290408075EC3B1C0A0C074B3765031B7EB87E85DB6C4A32743",
+    "machine_summary_canonical_sha256": "97420A8F3EB7272916841666CC8EC021D9980A35E85DA94E73BE13C1C836A038"
+  }
+}

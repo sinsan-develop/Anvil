@@ -1,0 +1,1 @@
+Implement WI-C-21-WSL-ROLLBACK-SCOPE-COMPAT-R1-20260907-001 in the exact16 path lease. Use TDD, preserve seq1-548 raw bytes, keep external actions NOT_EXECUTED, and return evidence to Main Agent without commit or push.

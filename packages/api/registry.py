@@ -67,6 +67,8 @@ class ApiRegistry:
 def _permission(method: str, path: str) -> str:
     exact = {
         "GET /api/providers": "provider:read",
+        "GET /api/providers/{providerId}": "provider:read",
+        "GET /api/providers/{providerId}/models": "provider:read",
         "POST /api/projects/{projectId}/tasks": "tasks:write",
         "GET /api/tasks/{taskId}": "tasks:read",
         "GET /api/runs/{id}/events": "run:events:read",

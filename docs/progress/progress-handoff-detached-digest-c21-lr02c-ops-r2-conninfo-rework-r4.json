@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-LR02C-OPS-R2-CONNINFO-REWORK-R4-DIGEST-20260904",
+  "package_id": "C-21/LR-02C/OPS-R2",
+  "event_sequence": 481,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 80903,
+    "file_sha256": "D90D4C02BED68D9BA850090CF4E8748B4DF1C0DB20FDBF4FC4D860098C464E18",
+    "canonical_json_sha256": "CA7050015EED42547C6E59C49EE11AEADB74DB6668D1BCDF922B84C17859DFDB"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 143807,
+    "file_sha256": "3862E04887F0B6060D2DFC3122EDC69B239B53B2D45F065B4FF95CB611563C2F",
+    "machine_summary_canonical_sha256": "AF498DEA3C7B3DD16D4B51D2E0200983ABF052B32DDD15BC61018845CBD25F6D"
+  },
+  "created_at": "2026-09-04T12:05:02+09:00",
+  "scope": "OPS-R2 backup attempt2 failure accepted as valid failure 2; conninfo R4 exact13 active on epoch5; focused operational contract 31 GREEN; no release rebind, backup attempt3, deploy, Telegram, or Provider execution; C-01 blocked."
+}

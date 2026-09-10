@@ -33,6 +33,10 @@ def _executable(directory: Path, name: str, body: str) -> None:
     target.chmod(0o755)
 
 
+def _install_python3(fakebin: Path) -> None:
+    _executable(fakebin, "python3", 'exec "$PYTHON_EXE" "$@"\n')
+
+
 def _install_fake_shared_db_docker(fakebin: Path) -> None:
     _executable(
         fakebin,
@@ -52,8 +56,11 @@ case "$*" in
     printf 'pg_restore (PostgreSQL) 18.0\n'
     ;;
   *"shared-db sh -ceu"*)
-    IFS= read -r dsn
-    [[ "$dsn" == "$EXPECTED_DSN" ]] || exit 41
+    service="$(cat)"
+    [[ "$service" == "$EXPECTED_SERVICE" ]] || exit 41
+    [[ "$*" == *"PGSERVICEFILE=/dev/fd/3"* ]] || exit 46
+    [[ "$*" == *"PGSERVICE=anvil_backup"* ]] || exit 47
+    [[ "$*" != *"PGDATABASE"* ]] || exit 48
     [[ "${SHARED_DB_DUMP_FAIL:-0}" == 0 ]] || exit 42
     printf 'container-portable-backup'
     ;;
@@ -87,34 +94,43 @@ def _load_probe_module():
 
 
 @pytest.mark.parametrize(
-    ("database_url", "expected_libpq_url"),
+    ("database_url", "expected_service"),
     [
         (
             "postgresql+psycopg2://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable",
-            "postgresql://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable",
+            "[anvil_backup]\nuser='secret-user'\npassword='secret-pass'\nhost='shared-db'\nport='5432'\ndbname='anvil'\nsslmode='disable'",
         ),
         (
             "postgresql://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable",
-            "postgresql://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable",
+            "[anvil_backup]\nuser='secret-user'\npassword='secret-pass'\nhost='shared-db'\nport='5432'\ndbname='anvil'\nsslmode='disable'",
         ),
         (
             "postgres://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable",
-            "postgres://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable",
+            "[anvil_backup]\nuser='secret-user'\npassword='secret-pass'\nhost='shared-db'\nport='5432'\ndbname='anvil'\nsslmode='disable'",
+        ),
+        (
+            "postgresql://secret%2Duser:p%40ss%5Cword@shared-db:5432/anvil%2Ddb?sslmode=require&connect_timeout=7&application_name=backup%20job&options=-c%20statement_timeout%3D0",
+            "[anvil_backup]\nuser='secret-user'\npassword='p@ss\\\\word'\nhost='shared-db'\nport='5432'\ndbname='anvil-db'\nsslmode='require'\nconnect_timeout='7'\napplication_name='backup job'\noptions='-c statement_timeout=0'",
         ),
     ],
 )
-def test_backup_host_path_normalizes_only_sqlalchemy_psycopg2_scheme(
+def test_backup_host_path_uses_exact_fd3_service_without_uri_environment(
     database_url: str,
-    expected_libpq_url: str,
+    expected_service: str,
 ) -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
+        _install_python3(fakebin)
         _executable(
             fakebin,
             "pg_dump",
-            '[[ "$PGDATABASE" == "$EXPECTED_DSN" ]] || exit 41\n'
+            'service="$(cat <&3)"\n'
+            '[[ "$service" == "$EXPECTED_SERVICE" ]] || exit 41\n'
+            '[[ "$PGSERVICEFILE" == /dev/fd/3 ]] || exit 42\n'
+            '[[ "$PGSERVICE" == anvil_backup ]] || exit 43\n'
+            '[[ -z "${PGDATABASE+x}" ]] || exit 44\n'
             'target="${@: -1}"; printf "portable-backup" > "${target#--file=}"\n',
         )
         _executable(fakebin, "pg_restore", '[[ "$1" == "--list" ]] && printf "TABLE public tasks\\n"\n')
@@ -122,7 +138,8 @@ def test_backup_host_path_normalizes_only_sqlalchemy_psycopg2_scheme(
             "ANVIL_DEPLOY_ROOT": _posix(root),
             "ANVIL_DATABASE_URL": database_url,
             "ANVIL_RELEASE_COMMIT": "a" * 40,
-            "EXPECTED_DSN": expected_libpq_url,
+            "EXPECTED_SERVICE": expected_service,
+            "PYTHON_EXE": _posix(Path(os.sys.executable)),
             "PATH": _posix(fakebin) + os.pathsep + os.environ.get("PATH", ""),
         }
         result = subprocess.run(
@@ -151,6 +168,7 @@ def test_backup_uses_running_shared_db_tools_when_a_host_client_is_unavailable(m
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
+        _install_python3(fakebin)
         docker_log = root / "docker.log"
         chmod_log = root / "chmod.log"
         _install_fake_shared_db_docker(fakebin)
@@ -158,14 +176,15 @@ def test_backup_uses_running_shared_db_tools_when_a_host_client_is_unavailable(m
         present_host_tool = "pg_restore" if missing_host_tool == "pg_dump" else "pg_dump"
         _executable(fakebin, present_host_tool, "exit 91\n")
         dsn = "postgresql+psycopg2://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable"
-        normalized_dsn = "postgresql://secret-user:secret-pass@shared-db:5432/anvil?sslmode=disable"
+        expected_service = "[anvil_backup]\nuser='secret-user'\npassword='secret-pass'\nhost='shared-db'\nport='5432'\ndbname='anvil'\nsslmode='disable'"
         env = os.environ | {
             "ANVIL_DEPLOY_ROOT": _posix(root),
             "ANVIL_DATABASE_URL": dsn,
             "ANVIL_RELEASE_COMMIT": "d" * 40,
             "DOCKER_LOG": _posix(docker_log),
             "CHMOD_LOG": _posix(chmod_log),
-            "EXPECTED_DSN": normalized_dsn,
+            "EXPECTED_SERVICE": expected_service,
+            "PYTHON_EXE": _posix(Path(os.sys.executable)),
             "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
         }
 
@@ -208,6 +227,7 @@ def test_backup_rejects_unsupported_database_scheme_without_invoking_clients() -
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
+        _install_python3(fakebin)
         client_log = root / "client.log"
         _executable(fakebin, "pg_dump", 'printf "pg_dump called" >> "$CLIENT_LOG"\n')
         _executable(fakebin, "pg_restore", 'printf "pg_restore called" >> "$CLIENT_LOG"\n')
@@ -216,6 +236,7 @@ def test_backup_rejects_unsupported_database_scheme_without_invoking_clients() -
             "ANVIL_DATABASE_URL": "mysql://secret-user:secret-pass@shared-db/anvil",
             "ANVIL_RELEASE_COMMIT": "2" * 40,
             "CLIENT_LOG": _posix(client_log),
+            "PYTHON_EXE": _posix(Path(os.sys.executable)),
             "PATH": _posix(fakebin) + os.pathsep + os.environ.get("PATH", ""),
         }
 
@@ -236,11 +257,83 @@ def test_backup_rejects_unsupported_database_scheme_without_invoking_clients() -
         assert "secret-pass" not in rendered
 
 
+@pytest.mark.parametrize(
+    "database_url",
+    [
+        "postgresql://:secret-pass@shared-db/anvil",
+        "postgresql:///anvil",
+        "postgresql://secret-user:secret-pass@shared-db/",
+        "postgresql://secret-user:secret-pass@shared-db:70000/anvil",
+        "postgresql://secret-user:secret%00pass@shared-db/anvil",
+        "postgresql://secret-user:secret%0Apass@shared-db/anvil",
+        "postgresql://secret-user:secret-pass@shared-db/anvil#fragment",
+        "postgresql://secret-user:secret-pass@shared-db/anvil?sslmode=require&sslmode=disable",
+        "postgresql://secret-user:secret-pass@shared-db/anvil?unknown=value",
+        "postgresql://secret-user:secret-pass@shared-db/anvil?dbname=other",
+        "postgresql://secret%ZZuser:secret-pass@shared-db/anvil",
+    ],
+)
+def test_backup_rejects_invalid_or_ambiguous_conninfo_before_any_client(database_url: str) -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        fakebin = root / "fakebin"
+        fakebin.mkdir()
+        _install_python3(fakebin)
+        client_log = root / "client.log"
+        _executable(fakebin, "pg_dump", 'printf "pg_dump" >> "$CLIENT_LOG"\n')
+        _executable(fakebin, "pg_restore", 'printf "pg_restore" >> "$CLIENT_LOG"\n')
+        _executable(fakebin, "docker", 'printf "docker" >> "$CLIENT_LOG"\n')
+        result = subprocess.run(
+            [str(_bash()), str(DEPLOY / "backup-c21-db.sh")],
+            env=os.environ | {
+                "ANVIL_DEPLOY_ROOT": _posix(root),
+                "ANVIL_DATABASE_URL": database_url,
+                "ANVIL_RELEASE_COMMIT": "3" * 40,
+                "CLIENT_LOG": _posix(client_log),
+                "PYTHON_EXE": _posix(Path(os.sys.executable)),
+                "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
+            },
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode != 0
+        assert "ANVIL_DATABASE_URL is invalid" in result.stderr
+        assert not client_log.exists()
+        assert not (root / "evidence" / "c21-db-backup.json").exists()
+        assert not list((root / "backups").rglob("*.tmp.*"))
+
+
+def test_backup_fails_closed_before_clients_when_python3_is_unavailable() -> None:
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        fakebin = root / "fakebin"
+        fakebin.mkdir()
+        client_log = root / "client.log"
+        _executable(fakebin, "pg_dump", 'printf "pg_dump" >> "$CLIENT_LOG"\n')
+        _executable(fakebin, "pg_restore", 'printf "pg_restore" >> "$CLIENT_LOG"\n')
+        result = subprocess.run(
+            [str(_bash()), str(DEPLOY / "backup-c21-db.sh")],
+            env=os.environ | {
+                "ANVIL_DEPLOY_ROOT": _posix(root),
+                "ANVIL_DATABASE_URL": "postgresql://secret-user:secret-pass@shared-db/anvil",
+                "ANVIL_RELEASE_COMMIT": "4" * 40,
+                "CLIENT_LOG": _posix(client_log),
+                "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
+            },
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode != 0
+        assert result.stderr.strip() == "database backup requires python3 for safe connection parsing"
+        assert not client_log.exists()
+
+
 def test_backup_fails_closed_when_shared_db_is_not_running() -> None:
     with tempfile.TemporaryDirectory() as temp:
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
+        _install_python3(fakebin)
         docker_log = root / "docker.log"
         _install_fake_shared_db_docker(fakebin)
         env = os.environ | {
@@ -249,6 +342,7 @@ def test_backup_fails_closed_when_shared_db_is_not_running() -> None:
             "ANVIL_RELEASE_COMMIT": "e" * 40,
             "DOCKER_LOG": _posix(docker_log),
             "SHARED_DB_RUNNING": "false",
+            "PYTHON_EXE": _posix(Path(os.sys.executable)),
             "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
         }
 
@@ -275,6 +369,7 @@ def test_backup_fails_closed_when_a_shared_db_postgresql_tool_is_unavailable(
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
+        _install_python3(fakebin)
         docker_log = root / "docker.log"
         _install_fake_shared_db_docker(fakebin)
         release = "1" * 40
@@ -284,7 +379,8 @@ def test_backup_fails_closed_when_a_shared_db_postgresql_tool_is_unavailable(
             "ANVIL_DATABASE_URL": dsn,
             "ANVIL_RELEASE_COMMIT": release,
             "DOCKER_LOG": _posix(docker_log),
-            "EXPECTED_DSN": dsn,
+            "EXPECTED_SERVICE": "[anvil_backup]\nuser='secret-user'\npassword='secret-pass'\nhost='shared-db'\ndbname='anvil'",
+            "PYTHON_EXE": _posix(Path(os.sys.executable)),
             availability_flag: "0",
             "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
         }
@@ -322,6 +418,7 @@ def test_shared_db_backup_failure_never_publishes_success(
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
+        _install_python3(fakebin)
         docker_log = root / "docker.log"
         _install_fake_shared_db_docker(fakebin)
         dsn = "postgresql://secret-user:secret-pass@shared-db/anvil"
@@ -330,7 +427,8 @@ def test_shared_db_backup_failure_never_publishes_success(
             "ANVIL_DATABASE_URL": dsn,
             "ANVIL_RELEASE_COMMIT": "f" * 40,
             "DOCKER_LOG": _posix(docker_log),
-            "EXPECTED_DSN": dsn,
+            "EXPECTED_SERVICE": "[anvil_backup]\nuser='secret-user'\npassword='secret-pass'\nhost='shared-db'\ndbname='anvil'",
+            "PYTHON_EXE": _posix(Path(os.sys.executable)),
             failure_flag: "1",
             "PATH": _posix(fakebin) + os.pathsep + _posix(_bash().parent),
         }
@@ -352,6 +450,7 @@ def test_backup_failure_never_writes_success_receipt() -> None:
         root = Path(temp)
         fakebin = root / "fakebin"
         fakebin.mkdir()
+        _install_python3(fakebin)
         _executable(fakebin, "pg_dump", "exit 17\n")
         _executable(fakebin, "pg_restore", "exit 0\n")
         _executable(fakebin, "docker", 'printf "called" > "$DOCKER_LOG"; exit 99\n')
@@ -361,6 +460,7 @@ def test_backup_failure_never_writes_success_receipt() -> None:
             "ANVIL_DATABASE_URL": "postgresql://secret.invalid/anvil",
             "ANVIL_RELEASE_COMMIT": "b" * 40,
             "DOCKER_LOG": _posix(docker_log),
+            "PYTHON_EXE": _posix(Path(os.sys.executable)),
             "PATH": _posix(fakebin) + os.pathsep + os.environ.get("PATH", ""),
         }
         result = subprocess.run([str(_bash()), str(DEPLOY / "backup-c21-db.sh")], env=env, text=True, capture_output=True)

@@ -9,6 +9,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+CANONICAL_PROVIDER_IDS: tuple[str, ...] = (
+    "cerebras", "groq", "mistral", "openrouter", "upstage",
+    "gemini", "anthropic", "openai", "ollama",
+)
+PRIMARY_PROVIDER_ID = "upstage"
+
 SUPPORTED_PROVIDERS: tuple[str, ...] = (
     "CEREBRAS", "GROQ", "MISTRAL", "OPENROUTER", "UPSTAGE",
     "GEMINI", "ANTHROPIC", "OPENAI", "OLLAMA",
@@ -35,6 +41,21 @@ class ProviderCatalogEntry:
     provider_id: str
     credential_key: str
     configured: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderDefinition:
+    provider_id: str
+    display_name: str
+    primary: bool
+
+
+def provider_definitions() -> tuple[ProviderDefinition, ...]:
+    """Return the public canonical provider catalog in stable display order."""
+    return tuple(
+        ProviderDefinition(provider_id, provider_id.upper(), provider_id == PRIMARY_PROVIDER_ID)
+        for provider_id in CANONICAL_PROVIDER_IDS
+    )
 
 
 def catalog_entries() -> tuple[ProviderCatalogEntry, ...]:
@@ -72,6 +93,8 @@ def ordered_candidates(
 
 
 __all__ = [
-    "PRIMARY_PROVIDER", "PROVIDER_CREDENTIAL_KEYS", "ProviderCatalogEntry",
+    "CANONICAL_PROVIDER_IDS", "PRIMARY_PROVIDER", "PRIMARY_PROVIDER_ID",
+    "PROVIDER_CREDENTIAL_KEYS", "ProviderCatalogEntry", "ProviderDefinition",
     "SUPPORTED_PROVIDERS", "catalog_entries", "ordered_candidates",
+    "provider_definitions",
 ]

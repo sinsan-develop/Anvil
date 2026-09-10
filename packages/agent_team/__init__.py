@@ -19,13 +19,18 @@ from .models import (
     TeamTaskStatus,
 )
 from .provider_catalog import (
+    CANONICAL_PROVIDER_IDS,
     PRIMARY_PROVIDER,
+    PRIMARY_PROVIDER_ID,
     PROVIDER_CREDENTIAL_KEYS,
     SUPPORTED_PROVIDERS,
     ProviderCatalogEntry,
+    ProviderDefinition,
     catalog_entries,
     ordered_candidates,
+    provider_definitions,
 )
+from .provider_status import ProviderStatus, ProviderStatusService
 from .moa import (
     BenchmarkRecord, CapabilityProfile, CapabilityRouter, FallbackPolicy,
     ProviderModelCatalog, ProviderModelEntry, ProviderModelRef,
@@ -77,11 +82,17 @@ __all__ = [
     "TeamTask",
     "TeamTaskStatus",
     "PRIMARY_PROVIDER",
+    "PRIMARY_PROVIDER_ID",
+    "CANONICAL_PROVIDER_IDS",
     "PROVIDER_CREDENTIAL_KEYS",
     "SUPPORTED_PROVIDERS",
     "ProviderCatalogEntry",
+    "ProviderDefinition",
+    "ProviderStatus",
+    "ProviderStatusService",
     "catalog_entries",
     "ordered_candidates",
+    "provider_definitions",
     "BenchmarkRecord",
     "CapabilityProfile",
     "CapabilityRouter",

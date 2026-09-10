@@ -1,0 +1,42 @@
+{
+  "artifact_id": "C21-WSL-CONTROL-SUCCESSOR-20260904",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "manifest_type": "WSL_CANDIDATE_CONTROL_SUCCESSOR_PROJECTION",
+  "event_sequence": 486,
+  "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+  "candidate_commit": "93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad",
+  "candidate_remote_ref": "refs/remotes/origin/candidates/c21-wsl-exact34",
+  "control_remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
+  "candidate_status": "APPROVED_FOR_STAGING_VALIDATION",
+  "approval_id": "APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001",
+  "approval_path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+  "approval_artifact_sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F",
+  "approval_binding_sha256": "2167308A28325D199D290574E619BCAEA62056E85BC5860719ADE25C39A753D5",
+  "repository_exact_path_count": 34,
+  "historical_event_sequence": 485,
+  "historical_events_sha256": "CC2A98A539CB226DB213CF4E715C599598E4819300A2676EC64E38D15DB2CDE8",
+  "historical_raw_event_bytes": 780353,
+  "historical_raw_events_sha256": "39D6D6ECE49C8D8EE0CB9BA0A64FC9BC33231E335DCE84DEB4B4A70D497E60FA",
+  "historical_evidence": "PRESERVED_UNCHANGED",
+  "private_remote_transition": "PUSH_BLOCKED_PENDING_EXACT_DESTINATION_APPROVAL",
+  "control_commit": "PENDING_CONTROL_SUCCESSOR_COMMIT",
+  "telegram": "NOT_EXECUTED",
+  "provider": "NOT_EXECUTED",
+  "deployment": "NOT_EXECUTED",
+  "database": "NOT_EXECUTED",
+  "volume_cleanup": "NOT_EXECUTED",
+  "raw_checksums": [
+    {
+      "path": "docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md",
+      "bytes": 2142,
+      "sha256": "92C34A49FA194F52219D764335157791F37069C2A95AFED65374072F6F60831F"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-wsl-control-successor.json",
+      "bytes": 972,
+      "sha256": "6B8281CE39AE95ED5F8780F8316214D00AB8EC677CCA94EC8EC169476C8E7659"
+    }
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-04T18:05:00+09:00"
+}

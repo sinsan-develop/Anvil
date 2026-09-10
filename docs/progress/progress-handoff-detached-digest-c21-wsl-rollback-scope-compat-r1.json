@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-ROLLBACK-SCOPE-COMPAT-R1-DIGEST-20260907",
+  "package_id": "C-21",
+  "event_sequence": 554,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-07T00:25:00+09:00",
+  "scope": "seq549-554 append-only; seq1-548 preserved; exact16.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 173644,
+    "file_sha256": "1E6DB7C957F715DC136D0582AAC1E29C5A76674D63F62C5E401FB8A02B4116AF",
+    "canonical_json_sha256": "B0DFEF7575829ADD4EC00EAFC4D312C8F9D9A36F375CFB69766EA4FFE8AB0BF0"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 197089,
+    "file_sha256": "DFA0C8E1D0A46B794546D3335261D998A46612106B9B3F97C4075EBFCBADD82C",
+    "machine_summary_canonical_sha256": "6AA7A260FD2FF9EA0367AE247C769BA8CFA69AD8027F92E3F6D5A7B7B405DAFC"
+  }
+}

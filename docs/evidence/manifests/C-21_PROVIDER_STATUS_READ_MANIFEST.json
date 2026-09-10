@@ -1,0 +1,90 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C21_PROVIDER_STATUS_READ_LOCAL_IMPLEMENTATION",
+  "manifest_id": "C21-PROVIDER-STATUS-READ-LOCAL-20260906",
+  "work_package_id": "C-21",
+  "subtask_id": "PROVIDER-STATUS-READ",
+  "executor": "developer-primary",
+  "base_commit": "51ed9d852a1fb48d24d7112cc900485de2f8011e",
+  "work_instruction_id": "WI-C-21-PROVIDER-STATUS-READ-20260906-001",
+  "work_instruction_sha256": "336B5C84F6319DF823A1F432F785FD7A0D28730832E806F8F67ACC39DBB8D495",
+  "invocation_prompt_sha256": "7D906D5E0194363D57F8CBC034089B79DB2913A30A1C269F4B2F02C3976C191B",
+  "write_lease_id": "write-lease-c21-provider-status-read-20260906-001",
+  "execution_fencing_token": "c21-provider-status-read-execution-fence-epoch-1-aa116e2",
+  "write_fencing_token": "c21-provider-status-read-write-fence-epoch-1-aa116e2",
+  "status": "LOCAL_IMPLEMENTED_PENDING_CANDIDATE_WSL",
+  "result_contract": "COMPLETED_FOR_LOCAL_REVIEW",
+  "accepted": false,
+  "actual_changed_path_count": 13,
+  "actual_changed_path_list_sha256": "B7DC7CA4195FE3FEA1AC3618A89FF3EF298C109750A8B0E554D686B2DD43F2B5",
+  "actual_changed_paths": [
+    "docs/04_test_reports/C-21_PROVIDER_STATUS_READ_REPORT.md",
+    "docs/evidence/manifests/C-21_PROVIDER_STATUS_READ_MANIFEST.json",
+    "docs/validation/C-21_PROVIDER_STATUS_READ_VALIDATION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/provider_catalog.py",
+    "packages/agent_team/provider_status.py",
+    "packages/api/provider_status.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "tests/agent_team/test_provider_status.py",
+    "tests/api/test_provider_status.py",
+    "tests/api/test_registry_openapi.py",
+    "tests/api/test_runtime_app.py"
+  ],
+  "contract": {
+    "canonical_provider_count": 9,
+    "canonical_ids_lowercase": true,
+    "display_names_uppercase": true,
+    "primary_provider_id": "upstage",
+    "credential_values_exposed": false,
+    "provider_network_calls": 0,
+    "runtime_fixture_models_exposed": 0,
+    "moa_eligible_provider_count": 0,
+    "provider_read_permission": "provider:read",
+    "unknown_or_mixed_id_status": 404,
+    "deferred_mutation_status": 501,
+    "database_migration_count": 0
+  },
+  "verification": {
+    "tdd_red_exit_code": 1,
+    "tdd_red_reason": "MISSING_PROVIDER_STATUS_PUBLIC_SYMBOLS_AND_API_PORT",
+    "focused_passed": 26,
+    "focused_exit_code": 0,
+    "related_regression_passed": 85,
+    "related_regression_exit_code": 0,
+    "broad_agent_team_api_passed": 192,
+    "broad_agent_team_api_exit_code": 0,
+    "final_fresh_verification": "192_PASSED_EXIT_0"
+  },
+  "error_ledger": [
+    {
+      "fingerprint": "LOCAL_PYTHON_COMMAND_NOT_FOUND",
+      "count": 1,
+      "classification": "LOCAL_ENVIRONMENT_NOT_PRODUCT_FAILURE",
+      "resolution": "USE_REPOSITORY_VENV_PYTHON_ABSOLUTE_PATH"
+    },
+    {
+      "fingerprint": "LOCAL_COMPILEALL_PYCACHE_PERMISSION_DENIED",
+      "count": 1,
+      "classification": "LOCAL_ENVIRONMENT_NOT_PRODUCT_FAILURE",
+      "resolution": "USE_READ_ONLY_AST_PARSE_SYNTAX_CHECK"
+    },
+    {
+      "fingerprint": "LOCAL_PATH_SET_ARRAY_NESTING",
+      "count": 1,
+      "classification": "LOCAL_TOOLING_NOT_PRODUCT_FAILURE",
+      "resolution": "FLATTEN_GIT_PATH_COMMAND_OUTPUT_BEFORE_SET_COMPARISON"
+    }
+  ],
+  "external_execution": {
+    "wsl": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "commit": "NOT_EXECUTED",
+    "push": "NOT_EXECUTED",
+    "main": "NOT_EXECUTED"
+  },
+  "self_reference": false
+}

@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-READINESS-DECISION-DIGEST-20260904",
+  "package_id": "C-21/WSL-READINESS",
+  "event_sequence": 483,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 84361,
+    "file_sha256": "B59AB45CFAAD8EBF39F42FA30EF150E503F2D510599351939814CFE9681C02CE",
+    "canonical_json_sha256": "3F2206018C7F52303563682B40799745967BBCACDD522B1CDA5E1780D79A4427"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 147338,
+    "file_sha256": "DED0DF2D90C3DCF295A22B8F9AD782B052B93FAB4D1C53D42B3772D137EE6A06",
+    "machine_summary_canonical_sha256": "8EA01F87CADA25BBF384D1A292506CB0013DB5ACCB29A08B6280C302B3009307"
+  },
+  "created_at": "2026-09-04T14:40:00+09:00",
+  "scope": "WSL Phase C early execution requires explicit approval for scope, order, and important operational risk changes; C-01 remains blocked; seq1-482 and prior evidence preserved; no product, server, DB, DNS, TLS, Secret, deletion, ReleaseManifest rebind, main merge, Telegram, or Provider action executed."
+}

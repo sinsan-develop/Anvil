@@ -94,6 +94,22 @@ def test_unbound_future_capability_fails_closed_instead_of_returning_fake_succes
     assert response.headers["x-request-id"] == response.json()["error"]["request_id"]
 
 
+def test_all_provider_read_routes_use_the_exact_provider_read_permission() -> None:
+    """Deriving plural permissions for provider detail or models must fail RBAC consistency."""
+    registry, _, _ = _b11()
+    provider_reads = {
+        endpoint.path: endpoint.permission
+        for endpoint in registry.canonical_api_registry().endpoints
+        if endpoint.method == "GET" and endpoint.path.startswith("/api/providers")
+    }
+
+    assert provider_reads == {
+        "/api/providers": "provider:read",
+        "/api/providers/{providerId}": "provider:read",
+        "/api/providers/{providerId}/models": "provider:read",
+    }
+
+
 def test_browser_api_url_is_relative_while_server_bff_keeps_internal_base_private() -> None:
     """Allowing an absolute browser URL or reflecting the BFF base must fail."""
     _, _, bff = _b11()

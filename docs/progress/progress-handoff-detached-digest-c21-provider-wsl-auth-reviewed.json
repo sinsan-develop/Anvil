@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-WSL-AUTH-REVIEWED-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 524,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T09:07:23+09:00",
+  "scope": "Provider WSL auth exact7 completed and independently approved after two rework rounds; seq1-513 preserved; Git-only candidate and WSL execution pending.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 114946,
+    "file_sha256": "8788C2EF6BDA37625777503C6FB924C35B0A28C54654B7EC53ED079D04BB5649",
+    "canonical_json_sha256": "7C9A956F1AE95DB2E304B535A2521459D7755D9F90C798A5D7FBDA946C57EB39"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 177956,
+    "file_sha256": "6E8A0672FB148C8C2228852CFA1A8CD4E5BF8DAA90D1DCB18983D7610EF3B1AD",
+    "machine_summary_canonical_sha256": "91A00633E568D4F479833FA5D8AA43694B309BEDAFF15F74F5B81179FC5BC487"
+  }
+}

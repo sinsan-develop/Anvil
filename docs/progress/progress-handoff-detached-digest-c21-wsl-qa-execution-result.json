@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-QA-EXECUTION-RESULT-DIGEST-20260905",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "event_sequence": 495,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 101753,
+    "file_sha256": "7B99515DFD6784CB097904EB59E535F300905BE2E6EC28DEF48DDC5CAFE624F6",
+    "canonical_json_sha256": "2F2D99D28AC67000487BD8110C8A53AB6D4869E2C3CF218E95ED4112A5DB36E9"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 168584,
+    "file_sha256": "AD14A7A7267B9E03942785B13F444321C411D4F4D7C5571A6189803F2220A217",
+    "machine_summary_canonical_sha256": "3DBFA9A257171CE369EE6FA923513F0951C1C53DE66C728A3605D67AEC229918"
+  },
+  "created_at": "2026-09-05T17:20:00+09:00",
+  "scope": "Actual WSL PG15/PG18RC approved-scope result only; independent judgment and C-21 acceptance remain pending.",
+  "self_reference": false
+}

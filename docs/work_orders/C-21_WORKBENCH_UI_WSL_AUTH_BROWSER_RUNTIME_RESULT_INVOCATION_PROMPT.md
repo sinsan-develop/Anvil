@@ -1,0 +1,1 @@
+developer-primary는 승인된 C-21 WSL authenticated browser runtime을 1회 실행하고 결과를 seq615~620에 기록한다. 비밀값은 출력·저장하지 않으며 실패 증거를 재실행으로 덮어쓰지 않는다. deploy 시작 뒤 cleanup은 정확히 1회 실행한다. 제품·deploy·probe·historical 파일은 변경하지 않는다.

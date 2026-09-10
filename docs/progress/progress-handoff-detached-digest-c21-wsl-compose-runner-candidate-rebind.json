@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-COMPOSE-RUNNER-CANDIDATE-REBIND-DIGEST-20260905",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "event_sequence": 490,
+  "algorithm": "SHA-256",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 90878,
+    "file_sha256": "D89A73930C1547A597CB785CED586878F7AC02A37DB6006CBA8C2912BCE21457",
+    "canonical_json_sha256": "6D82869910F97E895C0F533B54359225D49CF59DF7C7C18165573FB5C660FEB3"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 159680,
+    "file_sha256": "2800DAA5A45A64B0CB498EF498EB6CD61796E235CEB25154C7DD86BDB2DAAF13",
+    "machine_summary_canonical_sha256": "59A32A0616D5FAC8124F9AB2ABB240FCA2C708A361944F672BC977F23A0D4919"
+  },
+  "created_at": "2026-09-05T03:40:00+09:00",
+  "scope": "Candidate 830ad985 exact46 and immutable seq1..489 are bound by the seq490 record-only exact11 successor; push, deployment, DB, volume cleanup, Telegram, and Provider remain not executed.",
+  "self_reference": false
+}

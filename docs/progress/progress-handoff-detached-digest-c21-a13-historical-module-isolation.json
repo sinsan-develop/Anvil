@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-A13-HISTORICAL-MODULE-ISOLATION-DIGEST-20260908",
+  "package_id": "C-21",
+  "event_sequence": 602,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-08T08:42:00+09:00",
+  "scope": "seq597-602 append-only; seq1-596 preserved; exact13 cumulative201",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 265602,
+    "file_sha256": "2AD6753C164185EE65947364C8650B8015FD23DA9FB6F5DF2ACBAC1C3DE9DF55",
+    "canonical_json_sha256": "C051518638F86D9B1000A20E4FC092C42E8373DA811DD73BD2B22A794A790942"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 211488,
+    "file_sha256": "4B565F6B6C9D8C200E03D5CD55FF604124764380959D6DE1B1A7D70188C42F15",
+    "machine_summary_canonical_sha256": "6F60750B1D3E7596F8D33053872F35F9518EBD38DC1720600B962657B66C47E4"
+  }
+}

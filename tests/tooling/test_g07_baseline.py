@@ -5,12 +5,61 @@ from __future__ import annotations
 import copy
 import importlib.util
 import json
+import subprocess
+import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+_G07_ACCEPTED = "5ca9c1f65a5909e75283b878764509d747d6d2cf"
+_B12_R2_COMPLETION = "bb43f22f4cdb53d2b972265bd1e5cd81e0fcd5fb"
+_B12_ACCEPTANCE = "165a9bfff5e085bfec322c748e83464477642f8a"
+_HISTORICAL_TEMP: tempfile.TemporaryDirectory[str] | None = None
+_HISTORICAL_ROOT: Path | None = None
+
+
+def setUpModule() -> None:
+    global _HISTORICAL_TEMP, _HISTORICAL_ROOT
+    _HISTORICAL_TEMP = tempfile.TemporaryDirectory(prefix="anvil-g07-frozen-")
+    _HISTORICAL_ROOT = Path(_HISTORICAL_TEMP.name) / "repository"
+    subprocess.run(
+        [
+            "git", "-c", "core.autocrlf=false", "-c", "core.eol=lf",
+            "clone", "--quiet", "--local", "--no-hardlinks", "--no-checkout",
+            str(ROOT), str(_HISTORICAL_ROOT),
+        ],
+        check=True,
+    )
+
+
+def tearDownModule() -> None:
+    if _HISTORICAL_TEMP is not None:
+        _HISTORICAL_TEMP.cleanup()
+
+
+def _historical_checker(commit: str, module_name: str):
+    assert _HISTORICAL_ROOT is not None
+    subprocess.run(
+        ["git", "-c", "core.autocrlf=false", "-c", "core.eol=lf", "checkout", "--quiet", "--detach", "--force", commit],
+        cwd=_HISTORICAL_ROOT,
+        check=True,
+    )
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout.strip()
+    status = subprocess.run(["git", "status", "--porcelain"], cwd=_HISTORICAL_ROOT, check=True, capture_output=True, text=True).stdout
+    if head != commit or status:
+        raise AssertionError(f"unclean G-07 historical fixture: head={head} status={status!r}")
+    checker_path = _HISTORICAL_ROOT / "scripts/check_g07_baseline.py"
+    spec = importlib.util.spec_from_file_location(module_name, checker_path)
+    if spec is None or spec.loader is None:
+        raise AssertionError(f"historical G-07 checker cannot be loaded: {commit}")
+    checker = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = checker
+    spec.loader.exec_module(checker)
+    return _HISTORICAL_ROOT, checker
 
 def _b10_acceptance_projection_current() -> bool:
     progress = json.loads((ROOT / "docs/progress/build-progress.json").read_text(encoding="utf-8"))
@@ -125,9 +174,16 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual(2, progress["active_failure_lineage"]["valid_failure_count"])
 
     def test_authority_hash_and_version_drift_are_rejected(self):
-        design = (ROOT / "Anvil_설계서_v2.md").read_text(encoding="utf-8")
+        historical_root, historical_checker = _historical_checker(_G07_ACCEPTED, "g07_authority_frozen")
+        design = (historical_root / "Anvil_설계서_v2.md").read_text(encoding="utf-8")
         mutated = replace_once(design, "설계서 v2.6", "설계서 v2.5")
-        report = self.validate(texts={"Anvil_설계서_v2.md": mutated})
+        report = historical_checker.validate_repository(
+            historical_root,
+            text_overrides={"Anvil_설계서_v2.md": mutated},
+            json_overrides={},
+            verify_hashes=True,
+            verify_git=False,
+        )
         self.assertTrue({"AUTHORITY_HASH_MISMATCH", "AUTHORITY_VERSION_MISMATCH"} <= self.codes(report))
 
     def test_package_duplicate_unknown_dependency_and_cycle_are_rejected(self):
@@ -788,10 +844,13 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual("ACTIVE", progress["status"]); self.assertEqual("BLOCKED_PENDING_B12_ACCEPTANCE_AND_B_GATE", progress["next_work_package"]["status"])
 
     def test_b12_r2_completion_preserves_gate_and_blocks_c01(self):
-        self.assertEqual([], self.checker.validate_b12_r2_completion_projection(ROOT))
+        historical_root, historical_checker = _historical_checker(_B12_R2_COMPLETION, "g07_b12_r2_done_frozen")
+        self.assertEqual([], historical_checker.validate_b12_r2_completion_projection(historical_root))
 
     def test_b12_acceptance_preserves_a_gate_and_blocks_c01_pending_b_gate(self):
-        self.assertEqual([], self.checker.validate_b12_acceptance_projection(ROOT)); self.assertEqual([], self.validate()["errors"])
+        historical_root, historical_checker = _historical_checker(_B12_ACCEPTANCE, "g07_b12_accept_frozen")
+        self.assertEqual([], historical_checker.validate_b12_acceptance_projection(historical_root))
+        self.assertEqual([], historical_checker.validate_repository(historical_root, verify_git=False)["errors"])
 
 if __name__ == "__main__":
     unittest.main()

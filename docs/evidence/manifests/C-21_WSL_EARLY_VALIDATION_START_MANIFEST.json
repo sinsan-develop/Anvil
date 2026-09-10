@@ -1,0 +1,20 @@
+{
+  "artifact_id": "C21-WSL-EARLY-VALIDATION-START-20260904",
+  "package_id": "C-21/WSL-EARLY-VALIDATION",
+  "manifest_type": "WSL_EARLY_VALIDATION_ACTIVE_IMPLEMENTATION_PROJECTION",
+  "target_status": "ACTIVE_IMPLEMENTATION_PENDING_GIT_BINDING",
+  "event_sequence": 485,
+  "validated_base_commit": "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
+  "dispatch_commit": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+  "repository_exact_path_count": 34,
+  "candidate_status": "DRAFT_REQUIRES_EXACT_SHA_BINDING",
+  "historical_event_sequence": 483,
+  "historical_events_sha256": "163E5D0E6741DFE08112C73C4D3EF763D3AFDF2E5003D316A323E2685072B4D2",
+  "telegram": "NOT_EXECUTED",
+  "provider": "NOT_EXECUTED",
+  "raw_checksums": [
+    {"path":"docs/progress/progress-handoff-detached-digest-c21-wsl-early-validation-start.json","bytes":976,"sha256":"79E3B14AE76CB6669504B9EB33CDD5E96C57A0DAE6200DFC5E5FEEA57F9ED139"}
+  ],
+  "self_reference": false,
+  "created_at": "2026-09-04T15:20:01+09:00"
+}

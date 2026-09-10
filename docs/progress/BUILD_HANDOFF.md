@@ -1,3 +1,269 @@
+# C-21 Workbench UI WSL authenticated browser runtime retry R11 result — seq698
+
+- R11 one-shot은 mobile 430×844 horizontal overflow predicate failure로 종결했다. 제품 원인은 추정하지 않으며 independent review가 다음 조치다.
+
+# C-21 R10 evidence correction — seq692
+
+- historical R10 receipt는 보존하고 unsupported provider-row/GROQ assertions만 current effective projection에서 unavailable로 교정했다. runtime/WSL/product/external action0이며 independent review가 다음 조치다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R10 result — seq686
+
+- R10 one-shot은 PG15 acceptance failure로 종결했고, exact viewport/field detail은 safe receipt에 보존되지 않아 추정하지 않는다. runtime 재실행은 금지하며 independent review가 다음 조치다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R9 takeover correction — seq680
+
+- R7/R8/R9 exact root는 각1이고 broad diagnostic grouping은 independent review로 superseded했다. runtime/WSL/product/external action0이며 R10 전 independent review가 필요하다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R9 result — seq674
+
+- synthetic4와 final preflight는 PASS했다. actual은 deploy1 뒤 safe metadata hash helper가 Get-History alias로 해석되어 envelope를 반환하지 못했고 verify/PG15/PG18RC는 미실행했다. outer-finally cleanup1 뒤 residue0이며 retry0이다. 동일 evidence-capture lineage count3로 lease/tool ownership을 회수하고 Main 순차 인수로 전환한다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R8 result — seq668
+
+- deploy/verify는 각 1회 exit0 PASS했다. PG15 controller는 1회 진입했으나 secret-safe observation 할당 전 exception으로 native 실행 여부와 predicate가 보존되지 않았다. PG18RC는 미실행, cleanup은 1회 exit0 PASS, retry0이다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R7 result — seq662
+
+- native wrapper는 stdout/exit 분리 PASS, deploy와 verify는 각 1회 exit0 PASS했다. PG15 browser는 secret-safe parsed receipt non-PASS/exit1로 중단했고 PG18RC는 미실행, outer-finally cleanup은 1회 exit0 PASS했으며 runtime 재실행은 없다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R6 result — seq656
+
+- deploy는 1회 exit0 PASS했으나 PowerShell controller가 stdout과 exit code를 함께 수집해 실패로 오분류했다. verify와 두 browser는 미실행이며 outer-finally cleanup은 1회 exit0 PASS했고 runtime 재실행은 없다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R5 result — seq650
+
+- deploy/verify/cleanup은 PASS했고 PG15 browser는 Playwright runtime dependency resolution에서 fail-closed했다. PG18RC browser는 미실행이며 runtime 재실행은 없다.
+
+# C-21 Workbench UI WSL immutable runtime control v2 publication — seq644
+
+- create-only CAS receipt를 append-only로 기록했고 R5 WSL development validation만 준비했다. WorkPlan 지속 문구 변경은 별도 승인 대기다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R4 result — seq638
+
+- attempt4 deploy는 active guard의 candidate direct-child exact12 계약과 control eafe12a의 실제 lineage 불일치로 실패했다. verify/browser는 미실행이고 cleanup exact1은 hash 전사 오류로 mutation 전에 실패했으며 승인 runtime residue는 0이다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry R3 result — seq632
+
+- attempt3은 control-runtime direct execution permission denied로 mutation 전에 중단했고 cleanup attempt도 같은 이유로 실패했으나 read-only postcondition residue0이다.
+
+# C-21 Workbench UI WSL authenticated browser runtime retry result R2 — seq626
+
+- attempt2는 application origin alias 해석 실패로 mutation 전 중단했고 cleanup exact1 후 residue0이다.
+
+# C-21 Workbench UI WSL authenticated browser runtime result R1 — seq620
+
+- control ref misbinding으로 deploy gate가 mutation 전 실패했고 cleanup exact1 후 residue0을 확인했다.
+
+# C-21 Workbench UI WSL authenticated browser probe R1 — seq614
+
+- env-only secret-safe probe contract를 Git-only로 준비했고 actual WSL runtime은 실행하지 않았다.
+
+# C-21 A13 historical module isolation CAS publication — seq608
+
+- private control CAS PASS를 append-only로 기록하고 acceptance 대기 상태를 유지한다.
+
+# C-21 A13 historical module isolation — seq602
+
+- historical checker import cache를 test context에만 격리하고 acceptance 대기 상태를 유지한다.
+
+# C-21 Workbench UI WSL runtime result — seq596
+
+- WSL runtime scope PASS를 독립 acceptance 대기 상태로 결박한다.
+
+# C-21 Workbench UI WSL Git-only candidate — seq590 bound
+
+- K exact12가 private atomic CAS 이전 상태를 결박한다.
+
+# C-21 Workbench UI WSL Git-only candidate — seq587 시작
+
+- S exact10 candidate commit 준비 상태이며 외부 실행은 없다.
+
+# C-21 Workbench UI historical fixture reconciliation — seq584 Main 완료
+
+- 동일 오류 3회 후 Main이 인수해 historical fixture 177개를 복구했다.
+
+# C-21 Workbench UI rework local — seq578 Developer 로컬 구현 종료
+
+- LOCAL 구현은 완료됐지만 full tooling의 historical temporal-fixture 회귀 18건을 별도 reconciliation package에서 해소하기 전 독립 Tester 검토로 승격하지 않는다.
+
+# C-21 Workbench UI rework local — seq575 Developer 착수
+
+- LOCAL-only exact11 제품 구현을 위한 worker/write lease가 ACTIVE다.
+
+# C-21 WSL acceptance strict successor — seq572 Developer 완료
+
+- WSL 선행검증 범위만 ACCEPTED_WITH_LIMITATION이며 C-21 전체 accepted는 false다.
+
+# C-21 WSL cleanup runtime result — seq566 Developer 완료
+
+- Cleanup succeeded; the outer wrapper failed only on post-cleanup unrelated-inventory equality. Independent acceptance remains pending.
+
+# C-21 WSL cleanup guard source R1 — seq560 Developer 완료
+
+- 실제 prior cleanup은 readonly 재선언으로 inventory 전 중단했고 mutation=0이다.
+
+# C-21 WSL rollback scope compatibility R1 — seq554 Developer 완료
+
+- 두 target은 candidate healthy로 복구되었고 Provider/Telegram은 NOT_EXECUTED다.
+
+# C-21 Provider 제외 WSL verify scope correction — seq548 Developer 완료
+
+- Provider/Telegram runtime은 제외하고 migration·API·SSE·same-origin·backup/restore를 유지한다.
+- 이전 실행은 PG15 local Provider envelope에서 중단했으며 SSE/backup은 NOT_REACHED, PG18RC는 NOT_STARTED다.
+
+# C-21 Provider WSL exact private/runtime binding — seq542 Developer 완료
+
+- private development push와 WSL origin fetch 권위를 분리하고 lifecycle tuple을 mutation 전에 fail-closed한다.
+- rollback allowlist는 candidate, observed current, observed previous 3개다.
+- commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 NOT_EXECUTED다.
+
+# C-21 Provider WSL execution-resume K exact14 — seq536 검증 마감
+
+- Main takeover 후 live checker `PASS sequence=536`, 전체 tooling `192 passed in 716.25s`, 전체 deploy contract `98 passed, 2 skipped in 743.40s`를 확인했다.
+- 독립 seq536 adversarial은 branch/upstream/HEAD, merge, exact14 widen/narrow, cumulative117 reversion, WI tamper, control-ref race/ABA를 포함한다.
+- 실제 WSL/Docker/DB/Provider/Telegram/ysna/push/main은 `NOT_EXECUTED`이며, 다음 단계는 K direct-child commit과 Main exact binding이다.
+
+# C-21 실행 재개 시작 기록 — seq533 최종 검증 마감
+
+- `full_tooling=PASS_189`: I1 보완·재결박 후 fresh tooling `189 passed in729.23s (12:09)`, exit0(session81020). Git Bash/PYTHONUTF8=1/PYTHONDONTWRITEBYTECODE=1/TEMP=TMP=D:/tmp 고정이며 실행 중 파일 수정0이다.
+- `independent_review=CLEAN_REVIEW_C0_I0_M0`, `independent_focused=PASS_REVIEWER_18_MAIN_15`. Reviewer 판정·related18·Main15는 Main이 전달한 독립 증거다. public malformed9행 및 Git adversarial 계약을 확인했으며 전용 검증 잔류0이다.
+- Main 지시에 따라 S exact10 로컬 commit 허용을 기록한다. Main의 최종 재결박/live checker/무결성 확인 뒤 수행할 수 있으며 writer는 commit/push를 실행하지 않았다.
+- 이 마감은 WORK_STATUS/HANDOFF 본문 기록만 변경한다. 제품·검증 코드, strict machine summary schema, historical seq1~530은 불변이다. Main은 current6 입력으로5 artifacts를 최종 재결박한다.
+- C-21 accepted=false/C-01 차단/DIR-2 미발생을 유지한다. 외부 실행과 push는 NOT_EXECUTED이며 runtime은 K direct-child commit 및 Main exact binding 전까지 차단한다.
+
+# C-21 Provider Git-only 후보 결박 — seq530 CLEAN_REVIEW 마감
+
+- source a6dca0da5a37e64491e91813895268e78ecb78b2에 K exact12를 반영했고 누적 exact109로 결박한다. seq1~527 raw event prefix와 historical evidence는 보존했다.
+- 최초 full 실패2건을 테스트 각1줄로 보완한 뒤 전체 fresh tooling178P/664.70s/exit0, deploy91P/2S/649.93s/exit0을 확인했다. 재결박 뒤 live checker seq530 PASS와 후보 focused7P/17.22s/exit0도 확인했다. SKIP2는 Compose parser 부재 및 NTFS POSIX mode 한계이며 실제 WSL PASS가 아니다. 이는 I1 보완 전 검증 기록이며 최신 결과와 판정은 다음 항목에 기록한다.
+- Reviewer I1의 missing/corrupt evidence 예외를 fail-closed로 보완했다. adversarial23행 PASS, 재결박 뒤 live checker seq530 PASS 및 정상 baseline 포함 candidate focused10P/17.70s/exit0이다. I1 후 최신 full은 tooling181P/664.59s/exit0, deploy91P/2S/642.84s/exit0이며 위178P 결과는 보완 전 증거다. Main이 전달한 독립 Reviewer 판정은 CLEAN_REVIEW / C0 / I0 / M0다.
+- Main focused 최초8F(rc127)+cp949 warnings는 PATH/PYTHONUTF8 고정 누락으로 WindowsApps bash를 선택한 환경 오류다. Git Bash/UTF8/TEMP D:/tmp 고정 재실행은16P/258d/79.41s/exit0이며 제품 실패나 실제 WSL PASS로 분류하지 않는다. Main 전달 Reviewer20 adversarial 증거와 구분해 machine summary에 반영한다.
+- C-21 accepted=false, C-01 차단, DIR-2 미발생이다. Main 지시로 K exact12 로컬 commit 허용을 기록하며 최종 재결박/무결성 확인 후 Main이 수행한다. 현재 실제 commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 NOT_EXECUTED다. SKIP2는 Windows-local 환경 한계이고 실제 WSL PASS가 아니다.
+
+# C-21 Provider WSL Git-only candidate 시작 — seq525~527
+
+- HEAD `e4cccf3ce99e29005103cea3bd76fa0eede36f28`의 committed exact103에 start exact10을 더한 cumulative exact107 dirty projection이다.
+- `developer-primary` worker/write lease를 발급했고 후속 제품 write scope는 exact12 (`6DE878D2...2765`)로 고정했다.
+- 기존 seq1~524와 historical evidence는 byte-immutable이며, 실제 push/WSL/Docker/DB/Provider/Telegram/ysna/main 병합은 모두 `NOT_EXECUTED`다.
+- 다음 안전 조치는 exact12의 로컬 TDD 구현이다. C-21 accepted=false, C-01 차단, DIR-2 미발생을 유지한다.
+- seq527 Reviewer Important 1 보완은 Git status collector가 `None`을 clean 상태로 해석하지 않도록 `GIT_STATUS_COLLECTION_FAILED`로 fail-closed한다. 이전 developer usage-limit 중단은 유효 failure가 아니며, 외부 실행·commit·push는 하지 않는다.
+- 독립 Reviewer 재검토는 `CLEAN_REVIEW / C0 / I0 / M0`, focused `11 passed`로 Important 1 해소를 확인했다. 코드 변경이 없으므로 fresh 전체 tooling `175 passed in 884.84s`를 재사용하고, seq527/exact10·C-21 accepted=false·외부 `NOT_EXECUTED` 경계를 유지한다.
+
+# C-21 Provider status READ start — seq507~509
+
+- `developer-primary` exact18 write lease가 활성화됐다. actual 변경은 lease subset이어야 하며 모든 READ semantics를 충족한다.
+- 9개 canonical lowercase ID, uppercase display, UPSTAGE primary, env presence-only와 fail-closed MoA를 구현한다.
+- GET list/detail/models만 이번 slice다. configure/test/refresh POST는 501로 유지하고 Workbench UI는 다음 slice다.
+- 실제 Provider/Telegram, DB migration, ysna/main/release/install은 실행하지 않는다. C-21 accepted=false, C-01 차단, DIR-2 미발생이다.
+
+# C-21 Development QA review successor — seq506
+
+- exact7 commit `3c6774f98e25bf3b8473575d88da3fcac8fbca59` is `SPEC_PASS / QUALITY_APPROVED / C0 / I0`.
+- Overall C-21 remains unaccepted: `PACKAGE_QA_COMPLETED_BUT_C21_ACCEPTANCE_PENDING / C0 / I2`.
+- Open findings are runtime Provider status HTTP 501 and Workbench config HTTP 404/no UI-click evidence.
+- WSL PG15/PG18RC boundary QA and cleanup passed; actual Provider calls and Telegram outbound are not the current gate and remain unexecuted.
+- Status is `REWORK_REQUIRED`; next action is `ISSUE_C21_RUNTIME_UI_REWORK_WI`, not a user/external approval hold.
+
+# C-21 개발 QA 재개 — seq501
+
+- seq499→501로 developer-primary worker/write lease를 발급하고 `ACTIVE_DEVELOPMENT_QA`로 재개했다.
+- Provider runtime status port 미구현, browser page.evaluate/fetch 한계, Telegram outbound-free 경계를 유지한다.
+- accepted=false, C-01 차단, DIR-2 미발생. commit/push/외부 실행은 하지 않았다.
+
+# C-21 독립 판정 projection — seq498
+
+- 전체 C-21은 `BLOCKED_NOT_ACCEPTED`; WSL 하위 범위만 `PASS_SCOPE_LIMITED`다.
+- seq496→498로 write lease, worker lease를 순서대로 회수하고 독립 판정을 기록했다. 최종 active lease/agent는 null이다.
+- C-01 차단과 DIR-2 미발생을 유지하며 다음 조치는 `HOLD_USER_VALIDATION_REQUIRED`다.
+
+# C-21 WSL QA 실제 실행 결과 — seq495
+
+- WSL 승인 범위 ProductValidation=`SUITABLE`; PG15/PG18RC deploy·verify 2회, runtime324 genuine rollback/독립 관찰, candidate 복귀, cleanup residue `0/0/0` PASS.
+- 이 결과는 `accepted=false`, 독립 Tester=`PENDING`; C-01 차단과 DIR-2 미발생을 유지한다. Telegram·Provider·ysna·browser Network·main merge는 미실행이다.
+- 다음은 frozen exact10 독립 판정이며 기존 seq1~494와 historical evidence/approval은 불변이다.
+
+## seq494 로컬 검증 마감 / 2026-09-05
+
+- 담당: Main 어울 관리, pg18_binding_resume 구현 후 seq494_local_finish가 단일 writer 인수. candidate a342d62391a44b349733d1468ac3b180761155ab, candidate56 / record12 / 누적58. Main의 최종 문서 검토·record commit·clean postcommit 검증은 아직 전이며 외부 실행은 하지 않는다.
+- tooling 전체 139 PASS/471.73s/exit0은 직전 writer의 실제 결과를 Main에게서 인수했으며 중복 실행하지 않았다. 기존 harness session8103 최종 결과는 세션 소실로 미확인이고 제품 실패나 PASS로 계상하지 않는다.
+- 인수 후 frozen harness만 1회 재실행: session96554, 80 PASS / 1 Compose parser SKIP / 428.42s / exit0. stdout·exit는 D:/tmp/anvil-seq494-harness-resume-6fa1d981bdb54491a32aab02a9375c66에 보존했다. SKIP는 로컬 parser 환경 한계이며 실제 WSL 검증 성공이 아니다. 프로세스 확인이 실행 후 이뤄진 인수 절차 누락은 기록했고 이전 suite 잔존 없이 현재 launcher/worker 한 쌍만 확인했다.
+- Main 독립 B 검증: I1 보완 직전 핵심 Git/public READY/ABA 4 PASS/53.45s/exit0(session34066), 보완 후 runtime_next_action coherent 변조 거부 1 PASS/7.03s/exit0(session67752). Reviewer I1 해소 후 SPEC PASS / QUALITY APPROVED, Critical 0 / Important 0. 전체 검증 후 문서 마감 검토는 별도다.
+- 정상 exact HOLD는 PASS하고 임의 dispatch·다른 HOLD·빈 문자열·필드 누락은 FAIL하는 계약을 유지한다. event494 canonical SHA 644592AE2E1FE61A074455358F786BC84AE4BA28D71D1EEF3AF87154B02314D2, derived2320 bytes/hash2A57298FA53B8D16AA399DEB9DE695620A20581B5FA85845B4C0EEE573647BE6 및 seq1~493·기존 approval/evidence는 변경하지 않는다.
+- READY는 기술 준비 상태일 뿐 dispatch 허가가 아니다. runtime_next_action은 HOLD_EXTERNAL_EXECUTION_PENDING_SCOPE_RECONFIRMATION_AFTER_LOCAL_SEQ494_COMMIT 그대로다. private push·WSL·DB·실제 rollback/cleanup·Provider·Telegram·ysna·main 병합은 하지 않았다. 다음은 로컬 기록 마감 후 정확한 candidate/control/ref 및 실행 범위에 대한 외부 재개 조건 확인이다.
+
+### 아래는 준비 당시의 누적 기록
+
+# C-21 WSL rollback allowlist binding (2026-09-05, seq493)
+
+- 최종 producer 전체 tooling130 PASS/445.50s(exit0,8061), harness69 PASS/1 parser SKIP/399.44s(exit0,23190), 각1회. Focused tooling13 PASS/94.70s, guard16 PASS/122.05s. Parser SKIP는 Windows Compose parser 부재이며 실제 WSL 검증으로 승격하지 않는다.
+- Main 독립 critical3 PASS/36.72s(39021), raw239파일/seq492 prefix/unique493/제품 byte 불변 감사 PASS. Reviewer 별도 archive402/기존 WSL validator AST 보존 PASS, finding0. 같은 generator+finalizer 재실행은 exact12 hash 동일 및 event493 byte 불변(exit0,7941).
+- 제품 candidate `5f8c301e18c332e3353092dab9efe5c32d0fda84`, parent `48fbad8be35c7e826dd31363464c7c477d9ca9e8`; correction2/candidate54/record12/누적56. I-3 rollback allowlist는 로컬 제품 검증에서 보완됐다. 실제 rollback은 미실행이다.
+- 현재 gate `BLOCKED_EXTERNAL_EXECUTION_NOT_IN_SCOPE` 및 public guard 고정22. 현재 push도 NOT_EXECUTED_EXTERNAL_SCOPE_HOLD이며 실제 push/merge/배포/DB/rollback/cleanup/Telegram/Provider는 이번에 하지 않았다. C-21 완료·C-01 시작이 아니다.
+- 실제 잔류 runtime324eb169/control3f52d26, 이전 미배포 local ccf5109/control48fbad8를 구분한다. 원 cleanup·ingress human 승인과 seq1~492 evidence는 불변이다. 다음은 Main의 checksum·exact12 direct-child 기록 검토이며 외부 실행을 자동으로 시작하지 않는다.
+
+## 이전 seq492 checkpoint (역사 기록)
+
+# C-21 WSL ingress binding (2026-09-05, seq492)
+
+- Main 최종 전수 검증: tooling123 PASS/exit0(394.63s), harness1 FAIL/59 PASS/1 SKIP/exit1(360.62s). 마지막 실패는 runtime HOLD와 rollback 알고리즘 unit fixture의 경계 겹침이었다. 복사된 fixture만 binding 전용으로 분리한 뒤 해당1건 focused PASS/exit0(6.84s), PG18 preflight·Compose 변경0 의미를 유지했다. 전체 실행을 통째 PASS로 다시 표시하지 않는다.
+- 제품 rollback.sh 및 실제 runtime HOLD는 불변이며 I-3는 여전히 미해결이다. 테스트 통과는 배포/rollback/cleanup 허용이 아니다. 최종 기록 commit 이후에도 별도 제품 보완 승인·검증 전 실행 금지를 유지한다.
+
+- 현재 local product candidate는 `ccf5109d0640bf28c461e7754ad56e0821fd77be`, parent는 `3f52d26a61e49543dd3d3121f5cc62a04f809a3d`다. candidate51/record13/누적54 결박이며 새 후보 push·배포·DB·rollback·cleanup은 미실행이다.
+- `BLOCKED_IMPORTANT_I3`: 제품 rollback.sh가 previous SHA를 manifest approved_commits와 대조하지 않는 Important finding이 열려 있다. 이전 SPEC PASS/QUALITY APPROVED는 이 발견 전 검토다. 제품 후보는 수정하지 않았다.
+- binding 검증 PASS는 실행 허용이 아니다. 새 control guard의 정합성 함수는 정상 binding을 검사하고 기존 runtime 진입 함수는 고정 exit22로 막는다. 실제 cleanup.sh fixture 진입에서 exit22, Docker 호출0, 파일 변경0을 확인했다. 우회 옵션은 없다.
+- 다음은 seq492 기록 정합성 검토 후 별도 제품 rollback allowlist 보완 승인·구현·검증이다. deploy/rollback/cleanup을 실행하거나 C-01을 시작하지 않는다.
+
+## 이전 seq491 checkpoint (역사 기록)
+
+- 현재 후보 `324eb169fedbce958d2e8cc29362deb7af433677`, parent/control `18fa604531acfd303c10effa528797fbd5b55c8b`. bootstrap·DB readiness·tmpfs·PG18 named volume target 보완 exact5를 exact48 후보와 exact11 record로 재결박한다. PG15 mount는 `/var/lib/postgresql/data`, PG18 RC mount는 `/var/lib/postgresql`이다.
+- 이전 seq490 push/recovery PASS. 실제 WSL bootstrap/DB cold-start/tmpfs 실패가 발생했고 PG15 healthy·backup·image build만 PASS다. migration·web·PG18은 실행되지 않았다. 새 후보 실제 검증도 아직 미실행이다.
+- Main review 이후 승인 범위에서 자동 private push·복구 검증·WSL 검증을 계속한다. seq1~490과 과거 evidence는 그대로 보존하며 C-01은 독립 판정 전 차단한다.
+
+# Historical: C-21 WSL control post-commit successor (2026-09-04)
+
+- seq487 `REPOSITORY_RECONCILED`는 committed control `73c39ca03caa615f7207eac3499c668497cecc5a`를 candidate `93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad` 위 exact14, validated base `eef3496...` 위 cumulative exact39로 독립 결박한다.
+- candidate exact34, 승인 artifact path/file hash와 LF 승인 원문 hash, seq1~485 raw bytes/hash 및 committed seq1~486 raw bytes/hash는 모두 별도 검증한다. `Anvil_작업계획서_v1.md`는 `AUTHORITY_DOC_MUTATION_EXCLUDED`로 유지한다.
+- candidate/control push, WSL 배포, Docker, DB, volume 삭제, Telegram, Provider는 `NOT_EXECUTED`이며 C-01 차단은 유지한다.
+
+# C-21 WSL control successor active (2026-09-04)
+
+- seq486 `REPOSITORY_RECONCILED`를 append하여 immutable candidate `93c58f7a8eaf803e4c3e56b9f03df0f70674a4ad`를 validated base `eef3496...` 대비 cumulative exact34로 결박했다. seq1~485 canonical hash `CC2A98A...DB2CDE8`과 raw event-object bytes hash `39D6D6EC...7E60FA`는 보존한다.
+- `CandidateReleaseManifest.json`은 `APPROVED_FOR_STAGING_VALIDATION`, candidate remote `refs/remotes/origin/candidates/c21-wsl-exact34`, control remote `refs/remotes/origin/codex/c21-operational-execution`, 승인 artifact `docs/approvals/APPROVAL-20260904-C21-WSL-EXACT34-CLEANUP-001.md`(`92C34A49...60831F`)와 UTF-8/LF 승인 원문 hash `2167308A...753D5`, rollback exact candidate로 확정했다.
+- reviewed harness I1~I3와 private Git transition 문서는 별도 control successor 변경이다. candidate commit 자체는 수정하지 않는다.
+- private push는 대상 저장소에 대한 exact 승인 부족으로 safety gate에서 거부됐고 재시도·우회하지 않았다. control commit/push도 `NOT_EXECUTED`다.
+- PMO routing: 향후 checkpoint·예외·승인·quality gate·완료 후보는 parent PMO task `01a054f5-c2b4-7af0-b31a-c8148ef74642`로 직접 보고한다. legacy `01a027a8-0a37-7821-9980-aa029a33e8fd`는 read-only이며 수신·판단·승인 대상이 아니다.
+- 실제 WSL 배포, Docker, DB, volume 삭제, Telegram, Provider는 모두 `NOT_EXECUTED`; C-01은 계속 차단한다.
+
+# C-21 WSL 선행검증 구현 active (2026-09-04)
+
+- 신산님의 명시 승인으로 seq484 `SCOPE_CHANGE_APPROVED`, seq485 `PACKAGE_STARTED`를 append했다.
+- `deploy/wsl` 독립 Git-only harness, candidate manifest/guard, PG15·PG18 RC 격리 Compose, migration 전 backup gate, authenticated SSE/Last-Event-ID, same-origin, scratch restore, application-only rollback을 구현했다.
+- local TDD는 최초 4 tests `failures=6/errors=1` RED 뒤 4/4 PASS, Bash syntax와 diff whitespace PASS다.
+- 현재 candidate manifest는 의도적으로 `DRAFT_REQUIRES_EXACT_SHA_BINDING`이다. Main Agent가 implementation commit을 만든 뒤 그 exact SHA와 approval binding을 별도 control commit으로 결박·push하기 전에는 WSL 배포를 실행하지 않는다.
+- 실제 WSL PG15/PG18 RC/API/SSE/backup-restore/rollback은 `NOT_EXECUTED`; Telegram·Provider도 승인대로 `NOT_EXECUTED`다.
+- 오류는 `WSL_HARNESS_MISSING`, `GIT_BASH_PYTHON3_UNAVAILABLE`, `TEST_EXPECTED_WRONG_FAILURE_BRANCH` 각 1회이며 모두 닫혔다. 동일 근본 원인 3회가 아니다.
+- C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`를 유지한다.
+
+# C-21 WSL readiness 승인 대기 checkpoint (2026-09-04)
+
+- seq483 checkpoint 커밋 후 반복된 `GIT_DESCENDANT_ORIGIN_MISMATCH`는 동일 successor 근본 원인 4회차로 기록하고 Main Agent가 직접 인수했다. exact18과 projected local checkpoint ancestry가 모두 일치하는 후속 governance commit만 허용한다.
+- read-only review에서 post-push remote=HEAD ancestry 우회 결함 1건을 발견해 WSL projection 전용 음성 계약으로 차단했다.
+- 판정: seq483 `PACKAGE_WAITING_APPROVAL`. WSL-server 선행검증은 Phase C successor 조기실행이며 기능 범위·작업 순서·중요 운영 위험 변경 승인이 필요하다.
+- 저장소: `codex/c21-operational-execution`의 HEAD/upstream은 `894e7b71fc52905e774892844905199401199fb2`로 동기화됐다. seq1~482 및 모든 기존 evidence bytes는 보존한다.
+- 감사 결과: ReleaseManifest는 이전 `b4858ff` 후보에 고정, guard는 `origin/main` 조상만 허용, R4 §5는 feature push 이후 rebind/main/deploy를 금지한다. `deploy/wsl`은 `.gitkeep`뿐이고 ysna verify는 공개 도메인·Telegram·Provider에 결합돼 있다.
+- 작업계획 경계: F-16이 Git-only WSL staging harness/manifest를, F-17이 PG15 및 격리 PG18 RC 실제 검증을 소유한다.
+- 현재 상태: `WAITING_APPROVAL_WSL_PHASE_C_EARLY_EXECUTION`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT` 유지.
+- 수행하지 않음: 제품 코드, 서버 재배포·재시작, DB·DNS·TLS·Secret, 기존 자료 삭제, ReleaseManifest rebind, main 병합, Telegram, Provider.
+- 다음 승인 문구: `C-21 WSL 선행검증을 Phase C successor로 앞당기고, deploy/wsl Git-only staging harness와 별도 candidate ReleaseManifest/guard를 구현한 뒤 WSL-server의 PG15 전용 DB 및 격리 PG18 RC에서 Telegram·Provider를 제외한 migration·API·SSE·same-origin·backup/restore·rollback 검증을 수행하는 것을 승인한다.`
+
+# C-21 ysna staging 분류 결정 checkpoint (2026-09-04)
+
+- **판정:** seq482 `ENVIRONMENT_CLASSIFICATION_DECIDED`; `ysna-server`와 `anvil.sinsan.kr`는 신산님의 별도 실제 운영 전환 선언 전까지 staging·인수검증 환경이다.
+- **기준선:** R4 checkpoint `871513d46a19f864190a977380a4c9c5b5d56573`; seq1~481 및 기존 R4 evidence bytes는 변경하지 않는다.
+- **허용 변경:** current progress, append-only event, 이 HANDOFF, 신규 decision manifest/digest, checker와 계약 테스트만 갱신한다.
+- **오류 인수:** checkpoint 직후 동일 successor 계열 `GIT_DESCENDANT_ORIGIN_MISMATCH`가 재현되어 3회 초과 Main 직접 인수 규칙을 유지한다. exact15 checkpoint/pushed feature descendant만 허용하고 임의 branch/path/sequence는 거부한다.
+- **미실행:** 서버 재배포·재시작, DB·DNS·TLS·Secret 변경, 기존 자료 삭제, main 병합, backup attempt3, Telegram, Provider.
+- **다음:** checker/manifest/checksum을 검증한 뒤 decision checkpoint commit과 feature branch push를 준비한다. C-01은 계속 차단한다.
+
 # C-21 Lifecycle Runtime LR-02A R3 rework active (2026-09-03)
 
 - **판정:** `ACTIVE_REWORK_R3` (seq408→413 epoch2 lease revoke → second `FAILURE_REPORT_ACCEPTED` → epoch3 lease issue → `PACKAGE_RESUMED`).
@@ -569,49 +835,124 @@ The former Phase B Gate successor projection remains historical only. The immuta
 - ReleaseManifest target `b4858ffb373066b24d7d9ee9bfde810160cacb75`, focused 216 PASS, epoch5 ACTIVE, operational backup attempt2/deploy `NOT_EXECUTED`를 그대로 보존한다.
 - Telegram/Provider는 `USER_VERIFICATION_PENDING`, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다. 이 reconciliation에서 외부 서버 실행은 하지 않았다.
 
+## 2026-09-04 C-21/LR-02C OPS-R2 backup attempt 2 실패 수락 및 conninfo R4 재개
+
+- 승인 release `b4858ffb373066b24d7d9ee9bfde810160cacb75`의 Git blob으로 수행한 backup attempt 2는 exit `20`이었다. normalize 후에도 URI 전체가 literal database name으로 해석됐고 dump·receipt는 생성되지 않았다.
+- self DNS, local socket, direct TCP 인증은 PASS였고 `PGDATABASE` URL connect/dump는 FAIL, 같은 credential을 fd3 `pg_service.conf`로 전달한 connect/schema dump는 PASS였다.
+- 동일 `C21_BACKUP_LIBPQ_DSN_SCHEME_INCOMPATIBLE` lineage의 두 번째 유효 실패로 seq479에 수락했다. seq480은 기존 epoch5 lease를 R4 exact13으로 계속하고 seq481은 feature worktree reconciliation을 기록한다. seq1~478은 불변이다.
+- 제품 TDD는 `ANVIL_DATABASE_URL`을 Python stdlib로 strict parse·percent decode한 뒤 `[anvil_backup]` service bytes를 stdin→fd3로 전달하는 계약을 `31 passed`로 확정했다. credential/URI는 argv·log·receipt·disk에 남기지 않는다.
+- 새 제품 checkpoint 이전 ReleaseManifest rebind와 backup attempt 3·deploy는 `NOT_EXECUTED`; Telegram/Provider는 `USER_VERIFICATION_PENDING`, C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`다.
+
 ```json anvil-recovery-summary
 {
-  "event_sequence": 478,
-  "status": "ACTIVE",
+  "event_sequence": 699,
+  "last_event_id": "evt_c21_final_acceptance_projection_main_package_accepted",
+  "status": "MAIN_PACKAGE_ACCEPTED",
+  "current_phase": "C",
   "current_work_package": "C-21",
-  "last_event_id": "evt_c21_lr02c_ops_r2_main_reconciliation_exact7",
-  "updated_at": "2026-09-04T11:32:28+09:00",
-  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 1,
-  "active_work_instruction_sha256": "E03671A4F7FA76B805726E04E0AACB576B5ECEFB72D349F30E546DAB33DEC491",
-  "active_invocation_sha256": "8207996858DE33B542862B4D5C6AEBC1787BC4A0612E1C0052CAC3B637263FC5",
-  "active_revision_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-EOF-NORMALIZATION-20260904-001",
-  "next_safe_action": "승인된 b4858ff ReleaseManifest를 사용한 표준 Git 기반 운영 backup attempt 2와 deploy/verify를 Main이 별도 실행한다. 현재 projection에서는 외부 실행하지 않았으며 Telegram과 Provider는 신산님 검증 대기, C-01은 차단한다.",
-  "dir_status": "CLEARED",
-  "repository_head": "970680a95a7e2471effc903239548948b3aa6263",
-  "repository_upstream": "origin/main",
-  "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
-  "repository_validated_base_commit": "970680a95a7e2471effc903239548948b3aa6263",
-  "repository_head_relation": "MAIN_OPS_R2_POST_MERGE_RECONCILIATION_EXACT7_PENDING_COMMIT",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
+  "repository_head": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+  "repository_head_relation": "POSTCOMMIT_EXACT15_SOLE_DIRECT_CHILD_OF_RECORD",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-21_LIFECYCLE_RUNTIME_LR02C_OPS_R2_MAIN_RECONCILIATION_MANIFEST.json",
+    "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+    "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-lr02c-ops-r2-main-reconciliation.json",
+    "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+    "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+    "scripts/check_a14_workbench_prototype.py",
     "scripts/check_project_progress.py",
+    "tests/tooling/test_a14_workbench_prototype.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_release_binding_id": "MAIN_RECONFIRMED_NON_SEMANTIC:C21-LR02C-OPS-R2-RELEASE-B4858FF-20260904-001",
-  "release_target": "b4858ffb373066b24d7d9ee9bfde810160cacb75",
-  "focused_test_count": 216,
-  "operational_backup_attempt": 2,
-  "operational_backup_status": "NOT_EXECUTED",
-  "deployment_status": "NOT_EXECUTED",
-  "telegram_and_provider": "USER_VERIFICATION_PENDING",
-  "c01_status": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
-  "reporting_decision": "AUTO_CONTINUE",
-  "phase_b_gate_direct_set": "EXACT44_DEPENDENCY_SAFE",
-  "phase_b_gate_deferred_ids": ["AV-STAT-021", "AV-STAT-022", "AV-STAT-023", "AV-STAT-024", "AV-STAT-025", "AV-STAT-028"],
-  "phase_b_gate_undefined_ids": ["AV-STAT-029"],
-  "phase_b_gate_approval_ref": "docs/approvals/APPROVAL-20260821-PHASE-B-GATE-EXACT44-001.md",
-  "phase_b_gate_work_instruction": "docs/work_orders/PHASE_B_GATE_REWORK_WORK_INSTRUCTION_R3.md",
-  "phase_b_gate_status": "TEST_REVIEW_EXACT44"
+  "accepted": true,
+  "c01_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "blocking_count": 0,
+  "approval_binding": {
+    "approved_by": "신산님",
+    "approved_at": "2026-09-09",
+    "scope": "seq699 historical completed WSL/UI/API/SSE evidence projection only",
+    "external_provider": "USER_OWNED_NOT_EXECUTED",
+    "telegram": "USER_OWNED_NOT_EXECUTED"
+  },
+  "same_origin_evidence": {
+    "historical_authenticated_ui_api_sse": {
+      "reference": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_MANIFEST.json",
+      "execution": "HISTORICAL_EXECUTED_REFERENCE",
+      "provider_read_get_only": true,
+      "provider_write_count": 0,
+      "cross_origin_count": 0,
+      "authenticated_sse_initial": true,
+      "last_event_id_exact_match": true,
+      "secret_residue_count": 0,
+      "filesystem_residue_count": 0
+    },
+    "current_source_static": {
+      "execution": "CURRENT_SOURCE_STATIC_ANALYSIS",
+      "csp_connect_src": "'self'",
+      "browser_source_absolute_host_scan_count": 0,
+      "network_receipt": "NOT_CREATED"
+    }
+  },
+  "sequence": 699,
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "record_candidate": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+  "development_ref": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "development_remote_ref": "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1",
+  "deployed_product_source": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
+  "image_digest": "sha256:83f2c7b879c65a0f0c571acfcbf114c913b1d53631e7de880f0ec3ffe146db25",
+  "oci_revision": "7b7e7cc",
+  "anvil_web": {
+    "replicas": 1,
+    "published_port": 3770
+  },
+  "health": {
+    "live": true,
+    "ready": true,
+    "migration": "0013"
+  },
+  "provider_read_api": {
+    "provider_count": 9,
+    "method": "GET",
+    "write_count": 0
+  },
+  "exact_paths": [
+    "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+    "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+    "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+    "scripts/check_a14_workbench_prototype.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_a14_workbench_prototype.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 15,
+  "exact_path_list_sha256": "D06C8F4158A914042DA3C0688BC5829D7B6F2D94DDEDFEF18F27AEC6FD7B336E",
+  "exact_path_list_ordinal_sha256": "DE7B86332907781913506C1C74B2066EAA4EAF74EAF00378866FA587803D4187",
+  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "valid_failure_count": 2,
+  "next_safe_action": "C01_READY_FOR_WORK_INSTRUCTION",
+  "dir_status": "CLEARED",
+  "repository_upstream": "origin/codex/c21-operational-execution",
+  "repository_projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+  "repository_validated_base_commit": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+  "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 
@@ -1152,3 +1493,110 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - `/health/live`와 `/health/ready`는 HTTP 200이며, `/integrations/telegram/webhook` same-origin 경로와 Telegram `setWebhook`/`getWebhookInfo`가 성공했다. pending update는 0이고 잘못된 secret은 HTTP 400으로 거부됐다.
 - 기존 `progress-events.json`, `build-progress.json`의 historical event sequence/hash는 변경하지 않았다. 상세 증거는 `docs/evidence/manifests/C-32_OPERATIONAL_SUCCESSOR_PROJECTION.json`, `docs/completion_reports/C-32_OPERATIONAL_SUCCESSOR_PROJECTION.md`, `docs/progress/progress-handoff-detached-digest-c32-successor.json`에 둔다.
 - 이 successor projection은 Phase B Gate 판정이나 C-01 시작 승인을 대체하지 않는다. 다음 안전 행동은 Main Agent의 historical baseline과 successor evidence 정합성 검토다.
+
+## 2026-09-04 22:30:00 +09:00 C-21 seq488 control-runtime successor projection
+
+- 담당: `developer-primary-wsl`; 상태: `IN_PROGRESS_TDD_GREEN`.
+- 시작 branch/HEAD: `codex/c21-operational-execution` / `ead1214e3f01e68e577c3163e1cf143ee5753490`; 시작 worktree clean, upstream/remote head `ca92b7845eda803cff3c432799642e4f9243d4d6`.
+- TDD RED: `.venv\\Scripts\\python.exe -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k control_runtime_successor` → exit 1, `2 failed, 100 deselected`; seq488 manifest 부재와 runtime successor Git projection 미지원이 각각 의도한 원인이다.
+- immutable predecessor: seq1~487 raw `786441` bytes / `A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17`, canonical `E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C`; seq1~487 및 기존 manifest/digest는 수정하지 않는다.
+- repository binding: candidate `93c58f7...` exact34, predecessor control `73c39ca...`, runtime parent `5251a0b...`, reviewed control-runtime `ead1214...`; base→runtime exact42, record-only exact8.
+- external push/deployment/DB/volume/Telegram/Provider는 모두 `NOT_EXECUTED`; C-01은 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT` 유지다.
+
+### seq488 completion checkpoint
+
+- 상태: `COMPLETED_FOR_REVIEW`; unknown record commit SHA는 기록하지 않았고 commit/push는 `NOT_EXECUTED`다.
+- focused GREEN: seq488 전용 `2 passed, 100 deselected`; seq487 history/postcommit와 seq488 runtime successor 결합 범위 `4 passed, 98 deselected`.
+- full progress tooling GREEN: `102 passed in 73.62s`; precommit checker GREEN: `PASS sequence=488 reporting=AUTO_CONTINUE`.
+- error lineage: `C21_WSL_CONTROL_RUNTIME_SUCCESSOR_UNBOUND_R1` formal RED 1회 유지. `HISTORICAL_SEQ487_CURRENT_HEAD_PATH_MIX` 1회와 `SEQ488_SELF_REFERENCED_TOOL_HASH_STALE` 1회는 각각 root cause 확인·해소했고 동일 fingerprint 반복 0회다.
+- seq1~487 raw `786441` bytes / `A230B994745047786883CEF8F94279EAE239DB359F3A923717961F8552008C17`, canonical `E2752DBA9CEE5989D7AF890C83A0AD82886A610965CAAEC060EE4079A076295C`는 불변이다.
+- exact8 canonical sorted path-list hash는 Main ruling에 따른 실제 64자리 `E02DF27FAA2FA40D28E7FFA6F263D914DCA530F97A0BBF133C0E645F6694F00B`; brief의 63자리 `...F00`은 마지막 `B` 전사 누락이며 범위 변경이 아니다.
+- record exact8 외 mutation은 없고 external push/deployment/SSH/WSL/Docker/DB/volume/Telegram/Provider는 모두 `NOT_EXECUTED`; C-01 차단은 유지한다.
+- 다음 안전 조치: Main review 후 별도 승인 경계에서 exact8 record commit/push를 결정한다.
+
+#### seq488 error-ledger completeness note
+
+- 최초 full tooling `97 passed, 5 failed`: `SEQ488_PROGRESS_EVENT_REF_STALE` 1회가 referenced-hash 3건, `HISTORICAL_SEQ487_CURRENT_HEAD_PATH_MIX` 1회가 역사 projection 2건을 발생시켰다.
+- focused fixture 보완 중 `HISTORICAL_SEQ487_NEGATIVE_FIXTURE_CLASSIFICATION` 1회가 추가됐고, 이후 full `99 passed, 3 failed`는 `SEQ488_SELF_REFERENCED_TOOL_HASH_STALE` 1회였다.
+- 각 fingerprint는 root cause별 1회, 동일 fingerprint 반복 0회이며 모두 최종 `102 passed`와 checker PASS로 해소됐다. formal unbound RED는 `C21_WSL_CONTROL_RUNTIME_SUCCESSOR_UNBOUND_R1` 1회 그대로다.
+
+### seq488 reviewer fix round 1
+
+- reviewer finding: 기존 postcommit은 ead1214→HEAD exact8만 보아 base→HEAD exact43 reversion, second exact8 descendant, extra-parent merge를 구분하지 못했다. manifest external/C-01 상태도 event에서만 강제되고 manifest 자체 mutation은 허용됐다.
+- TDD RED: manifest boundary mutation은 `1 failed, 1 passed, 101 deselected`; real Git fixture에서 valid direct exact44는 PASS하고 base→HEAD exact43이 기존 checker에 `[]`로 허용됨을 재현했다.
+- GREEN contract: clean postcommit은 ead1214의 유일한 direct child 1 commit이고, ead1214→HEAD exact8이며, base→HEAD가 runtime exact42와 record exact8의 union인 derived exact44여야 한다. 위반은 `GIT_DESCENDANT_RECORD_COMMIT_INVALID`다.
+- manifest contract: push/deployment/database/volume_cleanup/telegram/provider `NOT_EXECUTED`, C-01 `BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT`를 manifest에서 직접 강제한다.
+- focused GREEN: `3 passed, 100 deselected in 28.87s`.
+- Main의 최초 독립 review dispatch 누락은 `MAIN_REVIEW_DISPATCH_OMISSION_SEQ488_R1` coordination error 1회이며 제품 failure가 아니다. 동일 오류 반복은 0회다.
+- seq1~487, predecessor manifest/digest, product, authority는 불변이고 external action/commit은 `NOT_EXECUTED`다.
+
+#### fix round 1 completion checkpoint
+
+- checker/test current portable hashes와 progress snapshot/digest/manifest를 재결속했다.
+- focused `3 passed, 100 deselected in 30.19s`; full progress tooling `103 passed in 120.82s`; precommit checker `PASS sequence=488 reporting=AUTO_CONTINUE`.
+- 상태는 `COMPLETED_FOR_REVIEW`; record exact8 외 mutation, commit, push, external action은 없다.
+# C-21 Provider 상태 조회 독립 검토 successor — sequence 513
+
+- Provider Status READ 제품 commit `13b2b4e7dbd0aaec8d8fc8bcf22ed969e9e82fe0`의 exact13과 path hash `B7DC7CA4195FE3FEA1AC3618A89FF3EF298C109750A8B0E554D686B2DD43F2B5`를 확정했다.
+- Main broad `192 passed`; 독립 검토 `SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`이다.
+- 동일 Git projection 오류 3회 후 Main이 인수했고, 신산님 승인에 따라 seq513 전용 predicate를 일반 projection보다 먼저 적용한다. exact commit·경로·ancestor·direct-child·clean/dirty 검증은 모두 유지한다.
+- sequence 1~509 및 historical evidence는 불변이다. sequence 510~513만 append했고 record는 exact8이다.
+- Provider·Telegram 실제 호출, WSL PG15/PG18RC, ysna, main 병합은 수행하지 않았다. 다음 단계는 development/WSL-only `provider:read` test-session successor다.
+# C-21 Provider WSL Auth successor 시작 — sequence 516
+
+- dispatch HEAD `b85d2b48e14f513e326054bc0be28009f269a827`에서 `developer-primary`에게 exact7 write lease를 발급했다.
+- canonical permission scope에 `provider:read`를 추가하되 Provider GET exact3만 test session에서 허용한다. mutation·유사 경로·비정상 scope는 fail-closed한다.
+- actual Provider/Telegram/WSL/ysna/main/DB migration은 실행하지 않는다. 제품 완료 후 독립 review와 Git-only candidate binding으로 진행한다.
+
+## C-21 Provider WSL Auth 구현·독립 검토 완료 — sequence 524
+
+- 제품 commit `0f70afeabe9a031e7960d49cfe27c808c0770d16`은 parent `b85d2b48e14f513e326054bc0be28009f269a827`의 direct child이며 exact7/path hash `43388FD076A9F799DC8AE3FC7EDABA6E682CFD1618BBE3721EC347F6E62FB11A`다.
+- `provider:read`는 Provider GET exact3만 허용한다. legacy·malformed·duplicate·wildcard·whitespace scope, mutation·유사 경로는 fail-closed하며 Provider slash 3개만 404, 기존 Task/Run/auth slash는 307을 유지한다.
+- `.env` rebind는 secure temp, signal/EXIT cleanup, 0600/0400 mode 보존, atomic move, LF/CRLF·final-newline·비대상 bytes 보존 계약을 구현했다.
+- 독립 review는 R1 `C1/I2`, R2 `C0/I2`를 거쳐 최종 `SPEC_PASS / QUALITY_APPROVED / C0 / I0 / M0`다. 동일 package 유효 실패는 2회이며 Main 직접 인수 threshold 3회에 도달하지 않았다.
+- Main API `117 passed`; focused WSL harness `10 passed, 2 skipped`; bash syntax/diff-check PASS다. Windows NTFS에서 실제 POSIX mode는 검증하지 못했으며 candidate WSL에서 0600/0400·signal/move-failure residue와 PG15/PG18RC를 확인한다.
+- 실제 Provider·Telegram·WSL·ysna·main·DB migration은 `NOT_EXECUTED`; C-21 accepted=false, C-01 차단, DIR-2 미발생이다. 다음은 Git-only candidate manifest/guard 준비다.
+
+## C-21 Provider WSL Git-only candidate exact12
+
+- source `a6dca0da5a37e64491e91813895268e78ecb78b2` 및 parent `e4cccf3ce99e29005103cea3bd76fa0eede36f28`의 lineage와 exact12 path hash를 local guard에 결박 중이다.
+- RED는 source mismatch/validator absence로 확인했으며 completion projection과 evidence/digest finalization 전이므로 아직 완료가 아니다.
+- commit/push/WSL/Docker/DB/Provider/Telegram/ysna/main은 `NOT_EXECUTED`다.
+
+## C-21 Provider WSL execution-resume S 시작 — seq531~533 결박 대기
+
+- S는 `e6c562cf07bc2c35e24addb60efa9d90fae08046` clean direct source와 parent `a6dca0da5a37e64491e91813895268e78ecb78b2`를 관측했다. seq527 CLEAN_REVIEW과 seq530 `commit=NOT_EXECUTED`은 불변이다.
+- `WI-C-21-PROVIDER-WSL-EXECUTION-RESUME-20260906-001`은 후속 K exact14 runtime-ready preparation만 허용한다. K는 `READY_FOR_APPROVED_WSL_QA`까지만 기록하며 runtime dispatch는 K direct-child commit 및 Main exact binding 이후에만 가능하다.
+- S/K는 commit, push, WSL, Docker, DB, Provider, Telegram, ysna, main을 실행하지 않는다. current/previous runtime 및 rollback은 미래 dispatch에서 관측해야 하며 이 projection에서 추측하지 않는다.
+- 플랫폼이 canonical progress active lease 전환을 영속 운영 상태로 분류해 2회 거절했다. machine summary와 detached digest는 그 전환 후에만 갱신한다. 따라서 이 항목은 실행 성공 또는 seq533 완료를 주장하지 않는다.
+
+### seq533 S validator 인수 checkpoint
+
+- seq533 순수 builder·strict validator·Git predicate/collector와 adversarial 계약6개를 구현했다. focused `6 passed,181 deselected in8.67s`, exit0. source `e6c562c`, S exact10, K exact14, source109/postS113/postK117의 목록·hash를 검사한다.
+- source header 530→533 외 seq1~530 raw prefix 보존, current progress의 변경 허용 key 밖 source 일치, H/D/M·raw5·latest6 exact 비교를 강제한다. missing/corrupt/nonobject/duplicate/nonfinite 입력과 Git 수집 오류는 named error로 거부한다.
+- Main은 canonical P/E/D 플랫폼 거절 누적3회 후 영속 기록을 인수했다. 이 writer는 추가 canonical 쓰기를 하지 않았으며 machine summary와 current manifest/digest의 seq533 마감은 Main 적용 대기다.
+- 외부 실행·commit·push는 NOT_EXECUTED다. K는 READY_FOR_APPROVED_WSL_QA까지만 준비하며 실제 runtime dispatch는 K direct-child commit과 Main exact binding 뒤에만 가능하다. current/previous runtime과 rollback은 향후 dispatch에서 관측해야 한다.
+
+- writer 최종 focused는 `7 passed,181 deselected in8.55s`, exit0이다. 공통 HANDOFF 필수8개 누락 RED를 보완했으며 Event/reporting/detached/manifest 공통 계약도 포함했다. seq530 AST 3개 불변, compile/diff-check PASS, 전용 테스트 fixture 잔류0이다. 현재 dirty7이며 Main이 builder의 E/P/H/D/M 다섯 결과를 함께 적용해야 S exact10 및 live 검증 단계가 성립한다.
+
+#### seq533 Reviewer I1 및 full tooling 재작업 인수
+
+- Main 재결박 후 full tooling은 `185 passed,3 failed in565.15s`, exit1이었다. historical seq530 테스트2개를 immutable e6c562c fixture로 고정하고, 변조된 base에 대한 실제 ancestry 오류 수집을 보완했다.
+- public main에서 P/E/M []/null/nested corrupt9행을 traceback 없는 LOAD_ERROR/exit1로 처리한다. RED4개 재현 후 최신 focused+영향 테스트는 `11 passed,178 deselected in21.35s`, exit0이다. seq530 AST 3개 불변 및 compile/diff-check PASS다.
+- 보완 후 canonical5개 재결박/live checker/Reviewer I1 재검토/전체 tooling은 Main 인수 후 수행한다. 이 writer는 P/E/D·commit/push·외부 실행을 하지 않았으며 최신 전체 PASS나 독립 승인으로 표시하지 않는다.
+
+## seq539 exact-binding S Developer handoff
+
+- `3501c37b25274c2c3b406a15bc8a57aa03a162e7`에서 seq537~539 pure builder/strict validator와 exact10 projection을 구현했다.
+- live checker PASS539, focused 3 PASS, 공통 recovery/malformed 2 PASS, py_compile/diff-check/raw history/exact10 hash PASS다.
+- 전체 tooling은 Main 중단으로 final summary가 없어 `INTERRUPTED_NOT_COUNTED`; 전용 잔류 PID 2개를 종료했고 잔류0이다.
+- 외부 push·WSL/Docker/DB·Provider·Telegram·ysna·main은 `NOT_EXECUTED`; commit하지 않고 writer 실행권을 Main에 반환한다.
+
+### seq539 Main takeover 최종 검증 handoff
+
+- seq533·seq536에 이어 세 번째로 반복된 declared-base ancestry 누락을 Main이 직접 인수해 `GIT_VALIDATED_BASE_NOT_ANCESTOR`를 복원했다.
+- 후속 전체 tooling에서 status 수집 실패 오류코드 회귀 1건을 발견했고, 기존 `GIT_STATUS_COLLECTION_FAILED` fail-closed 계약을 유지하도록 보완했다.
+- 보완 후 live checker PASS539, 영향 집중 `4 passed`, fresh 전체 tooling `195 passed in 997.74s`, diff-check PASS다.
+- 독립 Reviewer의 변경 전 판정은 `CLEAN_REVIEW / COMMIT_READY / C0 / I0 / M0`; 마지막 status 오류코드 보완만 재확인한 뒤 exact10 S direct-child commit으로 넘긴다.
+- 마지막 보완 후 Reviewer 재검토도 `COMMIT_READY / C0 / I0 / M0`이며 기존 status fail-closed 오류코드, exact10/121, raw history와 deterministic projection을 확인했다.
+- 실제 push·WSL/Docker/DB·Provider·Telegram·ysna·main은 모두 `NOT_EXECUTED`; 후속 K exact14와 runtime dispatch는 아직 실행하지 않는다.

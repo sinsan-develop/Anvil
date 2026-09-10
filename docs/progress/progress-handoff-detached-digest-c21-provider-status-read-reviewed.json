@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-PROVIDER-STATUS-READ-REVIEWED-DIGEST-20260906",
+  "package_id": "C-21",
+  "event_sequence": 513,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-06T02:35:00+09:00",
+  "scope": "Provider status READ exact13 completed and independently approved; seq1-509 preserved; WSL and external execution pending.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 109360,
+    "file_sha256": "0FA90EB4ABB67FC028BD37E9A6ABC61903AC0F57FEC09B676E5687BB558DAE21",
+    "canonical_json_sha256": "CCA6D7D56BC8BE34DA8578A163D4AE27C2E61053871DE8A011FEFBDEE785BD01"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 175005,
+    "file_sha256": "2540C406508BC62A0184D63FD1E7E9216718F75494A24F645CBA058AC9CC3007",
+    "machine_summary_canonical_sha256": "3DA73021DE1F56131BDAA50482372683E7928D0C1D02C1E3D213000104EC55C7"
+  }
+}

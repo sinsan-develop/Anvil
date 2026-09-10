@@ -1,0 +1,1 @@
+`WI-C-21-DEVELOPMENT-QA-RESUME-20260905-001`을 execution/write fencing token과 exact7 범위 안에서 수행하라. TDD 후 Provider test-double, Telegram outbound-free WSL webhook/DB audit, browser page.evaluate/fetch same-origin SSE를 검증하고 모든 임시 자원을 residue0으로 정리하라. Provider runtime port 미구현, UI click 미검증, 실제 외부 Provider/Telegram 호출 미검증을 분리해 보고하라.

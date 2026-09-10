@@ -1,0 +1,66 @@
+{
+  "artifact_id": "A-14-A14-SUCCESSOR-R6-001",
+  "artifact_type": "a14_successor_registry",
+  "package_id": "A-14",
+  "revision": 6,
+  "self_reference": false,
+  "a14_successor_projection": {
+    "predecessor_registry_path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json",
+    "predecessor_registry_sha256": "44ECD1D3A22ACD6E189CE4046E2F6023E7D864E9782279C4A3ADB263F128D20F",
+    "predecessor_manifest_path": "docs/evidence/manifests/A-14_EVIDENCE_MANIFEST.json",
+    "predecessor_manifest_sha256": "B04648D6390D1AB069416BC07F09B3F8EFCF505ADD56706CFF1E4EE04A3D99C8",
+    "live_raw_checksums": [
+      {
+        "path": "apps/web/index.html",
+        "bytes": 2213,
+        "sha256": "83ECB54F6E3CA178E5E94281A6EC95A1AB800CAC4E67767ACE0859BB5FFFB8F0"
+      },
+      {
+        "path": "apps/web/server.mjs",
+        "bytes": 11837,
+        "sha256": "DA4927259BFEE3ABDB5A74B24D4E4D189F9734077F7C9CAA0225ECA25D456EFD"
+      },
+      {
+        "path": "apps/web/src/app/workbench.js",
+        "bytes": 9253,
+        "sha256": "63501487AF1E49CE3D775F766AD553260923E0970894569E675B5F98E0847693"
+      },
+      {
+        "path": "apps/web/src/api/workbench-client.js",
+        "bytes": 2293,
+        "sha256": "304EEB72516A684208D046568F2D0CF086F0F4D3EC9D666CBC331CD425321763"
+      },
+      {
+        "path": "apps/web/src/features/workbench/workbench-state.js",
+        "bytes": 8715,
+        "sha256": "A648ADABCF9D4431C5AA631874AA6F3D368CEA2DDF55AD9AC35396C461C65758"
+      },
+      {
+        "path": "apps/web/src/styles/workbench.css",
+        "bytes": 4262,
+        "sha256": "63F74B67F9DCE3234A2B947AEAAA064B83E40FDA932F944082F484F1ADC7E3C1"
+      },
+      {
+        "path": "apps/web/tests/workbench.test.mjs",
+        "bytes": 10361,
+        "sha256": "AB009215334295E4E4F4B9B845182F69F4C25E396FFBD04E14B2EC6F729A55CD"
+      },
+      {
+        "path": "tests/browser/a14/workbench-runtime.test.mjs",
+        "bytes": 3408,
+        "sha256": "7B03AEDA9A8975FC6A271484B11969B8F24F1ABA3C7E7C4BF3403B81ABF6CB87"
+      },
+      {
+        "path": "scripts/check_a14_workbench_prototype.py",
+        "bytes": 33989,
+        "sha256": "280F5BE684E97CE49EF2203CAE06FF6FD807FF9F88B8F7329C3BA00B33A31794"
+      },
+      {
+        "path": "tests/tooling/test_a14_workbench_prototype.py",
+        "bytes": 15371,
+        "sha256": "9FFDB988DE6226C6D7F252FEC47BA1A3A23D7F9EE7A80C2FC41A82BD334DE280"
+      }
+    ],
+    "binding_mode": "GENERIC_COMMITTED_CLEAN_SUCCESSOR_REGISTRY"
+  }
+}

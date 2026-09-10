@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-WSL-ACCEPTANCE-STRICT-SUCCESSOR-DIGEST-20260907",
+  "package_id": "C-21",
+  "event_sequence": 572,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-07T05:13:15.9345766Z",
+  "scope": "seq567-572 append-only; seq1-566 preserved; exact12.",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 182440,
+    "file_sha256": "6EE33EA5974B3A2400DB62B0CCCE74498304F9BF18A005157356F994DBA651D1",
+    "canonical_json_sha256": "D4FCCE297B6DCA3DB28800EF33968584F84033A4E819822F3B749A74C8DCAAD5"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 204761,
+    "file_sha256": "930B37479B3CA304E636713DC1314A5452EC01A5330748ABF01EB7214B313574",
+    "machine_summary_canonical_sha256": "86DCB7011448C169F5C6717A63658378ED1C20CC67F6F5EFAC54A1D78BECF330"
+  }
+}
