@@ -25228,6 +25228,7 @@ C01_L3_REWORK_REPORT = ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-r
 C01_L3_REWORK_REVIEW = ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-final-branch-review-report.md"
 C01_L3_REWORK_REVIEW_SHA = "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46"
 C01_L3_REWORK_BASE = "0f39bad30e7f4ab865077530cbbd29d902d1485d"
+C01_L3_REWORK_CONTROL_COMMIT = "c80c40e2842b5e78d4475e804c8e3639169ce918"
 C01_L3_REWORK_AT = "2026-09-11T02:30:00+09:00"
 C01_L3_REWORK_WI_ID = "WI-C-01-L3-REWORK-20260911-001"
 C01_L3_REWORK_WORKER_ID = "worker-lease-c01-l3-rework-20260911-001"
@@ -25268,10 +25269,19 @@ def c01_l3_rework_control_metadata() -> dict[str, Any]:
         "scripts/check_project_progress.py",
         "tests/tooling/test_project_progress.py",
     ])
+    correction_paths = sorted([
+        C01_L3_REWORK_REPORT,
+        C01_L3_REWORK_M,
+        C01_L3_REWORK_P,
+        C01_L3_REWORK_D,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
     return {
         "historical_sequence": 715,
         "sequence": 721,
         "base_commit": C01_L3_REWORK_BASE,
+        "control_commit": C01_L3_REWORK_CONTROL_COMMIT,
         "branch": C01_ACCEPTANCE_BRANCH,
         "work_instruction_id": C01_L3_REWORK_WI_ID,
         "worker_lease_id": C01_L3_REWORK_WORKER_ID,
@@ -25282,6 +25292,9 @@ def c01_l3_rework_control_metadata() -> dict[str, Any]:
         "control_exact_paths": control_paths,
         "control_exact_path_count": len(control_paths),
         "control_exact_path_list_sha256": _c21_path_list_sha(control_paths, windows=False),
+        "correction_exact_paths": correction_paths,
+        "correction_exact_path_count": len(correction_paths),
+        "correction_exact_path_list_sha256": _c21_path_list_sha(correction_paths, windows=False),
         "product_exact_paths": product_paths,
         "product_exact_path_count": len(product_paths),
         "product_exact_path_list_sha256": _c21_path_list_sha(product_paths, windows=False),
@@ -25744,10 +25757,35 @@ def _collect_c01_l3_rework_control_git(bundle: Mapping[str, Any]) -> list[str]:
                 return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
             return [] if _c01_l3_git_paths(status, status=True) == meta["control_exact_paths"] and _c01_l3_git_paths(cached) == meta["control_exact_paths"] else ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
         parents = value("show", "-s", "--format=%P", head)
-        exact = value("diff", "--name-only", C01_L3_REWORK_BASE, head)
-        if status or cached or parents != C01_L3_REWORK_BASE or exact is None:
+        if not status and not cached and parents == C01_L3_REWORK_BASE:
+            exact = value("diff", "--name-only", C01_L3_REWORK_BASE, head)
+            if exact is not None and _c01_l3_git_paths(exact) == meta["control_exact_paths"] and check("merge-base", "--is-ancestor", C01_L3_REWORK_BASE, head) and check("diff", "--check", C01_L3_REWORK_BASE, head):
+                return []
             return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
-        if _c01_l3_git_paths(exact) != meta["control_exact_paths"] or not check("merge-base", "--is-ancestor", C01_L3_REWORK_BASE, head) or not check("diff", "--check", C01_L3_REWORK_BASE, head):
+        control_parent = value("show", "-s", "--format=%P", C01_L3_REWORK_CONTROL_COMMIT)
+        control_exact = value("diff", "--name-only", C01_L3_REWORK_BASE, C01_L3_REWORK_CONTROL_COMMIT)
+        if (
+            control_parent != C01_L3_REWORK_BASE
+            or control_exact is None
+            or _c01_l3_git_paths(control_exact) != meta["control_exact_paths"]
+            or not check("merge-base", "--is-ancestor", C01_L3_REWORK_BASE, C01_L3_REWORK_CONTROL_COMMIT)
+            or not check("diff", "--check", C01_L3_REWORK_BASE, C01_L3_REWORK_CONTROL_COMMIT)
+        ):
+            return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        if head == C01_L3_REWORK_CONTROL_COMMIT:
+            if not check("diff", "--cached", "--check"):
+                return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+            return [] if _c01_l3_git_paths(status, status=True) == meta["correction_exact_paths"] and _c01_l3_git_paths(cached) == meta["correction_exact_paths"] else ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        correction_exact = value("diff", "--name-only", C01_L3_REWORK_CONTROL_COMMIT, head)
+        if (
+            status
+            or cached
+            or parents != C01_L3_REWORK_CONTROL_COMMIT
+            or correction_exact is None
+            or _c01_l3_git_paths(correction_exact) != meta["correction_exact_paths"]
+            or not check("merge-base", "--is-ancestor", C01_L3_REWORK_CONTROL_COMMIT, head)
+            or not check("diff", "--check", C01_L3_REWORK_CONTROL_COMMIT, head)
+        ):
             return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
         return []
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError):

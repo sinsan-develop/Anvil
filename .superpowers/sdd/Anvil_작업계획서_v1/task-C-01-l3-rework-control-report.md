@@ -2,10 +2,10 @@
 
 ## Status
 
-- Status: COMPLETED_PENDING_RECORD_COMMIT
+- Status: COMPLETED
 - Frozen parent: `0f39bad30e7f4ab865077530cbbd29d902d1485d`
 - Branch: `codex/c01-mainline-reconciliation`
-- Record commit: `SELF` (resolve with `git rev-parse HEAD`; a Git commit cannot embed its own SHA without changing that SHA)
+- Record commit: `c80c40e2842b5e78d4475e804c8e3639169ce918`
 
 ## Exact changed paths
 
@@ -44,5 +44,21 @@ Verified control exact10:
 ## Remaining work and rollback
 
 - Remaining product work: execute the fresh exact17 C-01 L3 WorkInstruction, then obtain independent L3 review and Main acceptance. C-02 remains blocked.
-- Remaining control action: create the sole child record commit of `0f39bad` and verify its clean exact10 lineage.
+- Remaining control action: none.
 - Rollback after commit: revert the single control commit. Historical seq1-715 and evidence remain the recovery baseline.
+
+## Fix round 1/5 — stale report binding correction
+
+- Reviewer finding: the committed control report still said `COMPLETED_PENDING_RECORD_COMMIT`, used `SELF`, and listed record-commit creation as remaining work.
+- Resolution: status is `COMPLETED`, the exact record commit is `c80c40e2842b5e78d4475e804c8e3639169ce918`, and remaining control action is `none`.
+- Historical boundary: commit `c80c40e` and progress event seq1-721 are immutable; no amend or event rewrite.
+- Correction exact6:
+  1. `.superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md`
+  2. `docs/evidence/manifests/C-01_L3_REWORK_START_MANIFEST.json`
+  3. `docs/progress/build-progress.json`
+  4. `docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json`
+  5. `scripts/check_project_progress.py`
+  6. `tests/tooling/test_project_progress.py`
+- TDD RED: `1 failed, 324 deselected`; missing `control_commit` correction predicate metadata.
+- Correction commit identity: the sole clean direct child of `c80c40e` with this exact6 path set. Its actual SHA is reported by Git/final handoff because embedding a commit's own SHA would recursively change it.
+- Final correction verification: historical + current focused `15 passed, 310 deselected in 38.76s`; live checker `PASS sequence=721`; staged exact6, unstaged 0, untracked 0; `git diff --cached --check` exit 0.

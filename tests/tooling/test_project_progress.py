@@ -11097,6 +11097,39 @@ class C01L3ReworkControlTests(unittest.TestCase):
         quoted = r'".superpowers/sdd/Anvil_\354\236\221\354\227\205\352\263\204\355\232\215\354\204\234_v1/task-C-01-l3-rework-control-report.md"'
         self.assertEqual(checker.C01_L3_REWORK_REPORT, checker._c01_l3_decode_git_path(quoted))
 
+    def test_seq721_git_accepts_only_exact_report_binding_correction_child(self):
+        checker = self._checker()
+        meta = checker.c01_l3_rework_control_metadata()
+        control = "c80c40e2842b5e78d4475e804c8e3639169ce918"
+        correction = "b" * 40
+        self.assertEqual(control, meta["control_commit"])
+        self.assertEqual(6, meta["correction_exact_path_count"])
+        values = {
+            ("rev-parse", "HEAD"): correction,
+            ("show", "-s", "--format=%P", control): self.BASE,
+            ("show", "-s", "--format=%P", correction): control,
+            ("diff", "--name-only", self.BASE, control): "\n".join(meta["control_exact_paths"]),
+            ("diff", "--name-only", control, correction): "\n".join(meta["correction_exact_paths"]),
+            ("diff", "--cached", "--name-only"): "",
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+            ("status", "--porcelain", "--untracked-files=all"): "",
+            ("branch", "--show-current"): "codex/c01-mainline-reconciliation",
+        }
+        checks = {
+            ("merge-base", "--is-ancestor", self.BASE, control),
+            ("merge-base", "--is-ancestor", control, correction),
+            ("diff", "--check", self.BASE, control),
+            ("diff", "--check", control, correction),
+        }
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 721}}
+        with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: values.get(args)), mock.patch.object(
+            checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in checks else 1
+        ):
+            self.assertEqual([], checker._validate_git_projection(bundle))
+            values[("show", "-s", "--format=%P", correction)] = self.BASE
+            self.assertIn("C01_L3_REWORK_GIT_PROJECTION_INVALID", checker._validate_git_projection(bundle))
+
 
 if __name__ == "__main__":
     unittest.main()

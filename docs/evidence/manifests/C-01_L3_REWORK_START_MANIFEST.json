@@ -98,6 +98,7 @@
   "historical_sequence": 715,
   "sequence": 721,
   "base_commit": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
+  "control_commit": "c80c40e2842b5e78d4475e804c8e3639169ce918",
   "branch": "codex/c01-mainline-reconciliation",
   "work_instruction_id": "WI-C-01-L3-REWORK-20260911-001",
   "worker_lease_id": "worker-lease-c01-l3-rework-20260911-001",
@@ -119,6 +120,16 @@
   ],
   "control_exact_path_count": 10,
   "control_exact_path_list_sha256": "BCDB773925760ACA5B34FEB0E7CD65467F6A4EB45FBF7EEC00C38DDF1AD107DF",
+  "correction_exact_paths": [
+    ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md",
+    "docs/evidence/manifests/C-01_L3_REWORK_START_MANIFEST.json",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "correction_exact_path_count": 6,
+  "correction_exact_path_list_sha256": "B61027AF8B891C887360077CA867F5CA671C988E6A35D2347181B2C6E37E5C48",
   "product_exact_paths": [
     "packages/api/fastapi_app.py",
     "packages/api/registry.py",
@@ -143,8 +154,8 @@
   "raw_checksums": [
     {
       "path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md",
-      "bytes": 2819,
-      "sha256": "D1FC7CCAECF4D0B4EF6B466597ED2A8B8324C9E23E1911FDEF3E91327AA54292"
+      "bytes": 4024,
+      "sha256": "98BFCC42D39BC8E99CD7BA8AAB20E1834565845CDF34B43DE881A0424F3FB988"
     },
     {
       "path": "docs/progress/BUILD_HANDOFF.md",
@@ -154,7 +165,7 @@
     {
       "path": "docs/progress/build-progress.json",
       "bytes": 806317,
-      "sha256": "6407B85A1CBB0DF6572BBFC96F01735B041F774AFF11091CF82A9F4DB683906E"
+      "sha256": "EFCDF1EC79B87C811EC952A99DEFC625F787D4A34BA3B20903543F4BF2405CBE"
     },
     {
       "path": "docs/progress/progress-events.json",
@@ -164,7 +175,7 @@
     {
       "path": "docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json",
       "bytes": 879,
-      "sha256": "F30DB4137861C0FFA2DF0C3809F4D464873FD4BAC47146B75D9E9A8853DDD011"
+      "sha256": "31939CBCBD83F067FEDC193641C530A2DF38D5CA81AA7B712900FB1CD38BE0E5"
     },
     {
       "path": "docs/work_orders/C-01_L3_REWORK_INVOCATION_PROMPT.md",
@@ -178,13 +189,13 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "bytes": 2292148,
-      "sha256": "E8D4778D278132EE7653EF0E9A60B33B00188B265D823BCD337B7EDA63002251"
+      "bytes": 2294301,
+      "sha256": "83B9755800D45792B881C87ADEDBF2E184CBBD77DC5362ACDDC6A870B40DC4DF"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "bytes": 683585,
-      "sha256": "921E8CB430153A3B161E80C1FAA37DDBEE1A47D17D154387F30DD8C85367571A"
+      "bytes": 685506,
+      "sha256": "C80568797FCE4A7819D59B251A533F7955801F5D9014D9CF5F7FBBBFD7CDCDE6"
     }
   ]
 }

@@ -332,7 +332,7 @@
     },
     {
       "path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md",
-      "sha256": "D1FC7CCAECF4D0B4EF6B466597ED2A8B8324C9E23E1911FDEF3E91327AA54292"
+      "sha256": "98BFCC42D39BC8E99CD7BA8AAB20E1834565845CDF34B43DE881A0424F3FB988"
     },
     {
       "path": "docs/progress/progress-events.json",
@@ -348,11 +348,11 @@
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "E8D4778D278132EE7653EF0E9A60B33B00188B265D823BCD337B7EDA63002251"
+      "sha256": "83B9755800D45792B881C87ADEDBF2E184CBBD77DC5362ACDDC6A870B40DC4DF"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "921E8CB430153A3B161E80C1FAA37DDBEE1A47D17D154387F30DD8C85367571A"
+      "sha256": "C80568797FCE4A7819D59B251A533F7955801F5D9014D9CF5F7FBBBFD7CDCDE6"
     }
   ],
   "latest_evidence_manifest_ref": {
@@ -2063,7 +2063,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "8245AF554929E5DAAD3B71F8E50E64E95E1911BE2FF502895DE048E05CEB4E23",
+  "snapshot_hash": "3085CC9D1E1754BA3ADA1C98620ECD62E9FA6F040DAC68D10A57F710B8C537F2",
   "runtime_next_action": "DEVELOPER_IMPLEMENT_C01_L3_REWORK",
   "seq527_clean_review": {
     "event_sequence": 527,
