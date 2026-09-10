@@ -73,6 +73,124 @@ class A14WorkbenchArtifactTests(unittest.TestCase):
         findings = checker.browser_source_findings([path for path in browser_paths if path.is_file()])
         self.assertEqual(findings, [])
 
+    def test_browser_source_resolves_only_safe_root_relative_constants(self):
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-browser-source-", dir="D:/tmp") as temp:
+            source = Path(temp) / "source.js"
+            source.write_text(
+                "const READY_PATH = '/api/ready';\n"
+                "function render(container) { container.append('ready'); }\n"
+                "fetch(READY_PATH);\n",
+                encoding="utf-8",
+            )
+            self.assertEqual([], checker.browser_source_findings([source]))
+
+            for label, content in (
+                ("unresolved", "fetch(READY_PATH);\n"),
+                ("protocol-relative", "const READY_PATH = '//example.invalid/ready';\nfetch(READY_PATH);\n"),
+                ("absolute", "const READY_PATH = 'https://example.invalid/ready';\nfetch(READY_PATH);\n"),
+            ):
+                with self.subTest(label=label):
+                    source.write_text(content, encoding="utf-8")
+                    self.assertTrue(checker.browser_source_findings([source]))
+
+    def test_browser_source_rejects_commented_shadowed_and_escaped_ready_path(self):
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-ready-path-adversarial-", dir="D:/tmp") as temp:
+            source = Path(temp) / "source.js"
+            cases = (
+                ("commented-declaration", "/*\nconst READY_PATH = '/api/ready';\n*/\nfetch(READY_PATH);\n"),
+                (
+                    "shadowed-identifier",
+                    "const READY_PATH = '/api/ready';\n"
+                    "function load(READY_PATH) { return fetch(READY_PATH); }\n",
+                ),
+                (
+                    "escaped-protocol-relative",
+                    "const READY_PATH = '/\\x2fexample.invalid/ready';\nfetch(READY_PATH);\n",
+                ),
+            )
+            for label, content in cases:
+                with self.subTest(label=label):
+                    source.write_text(content, encoding="utf-8")
+                    self.assertTrue(checker.browser_source_findings([source]))
+
+            declaration = Path(temp) / "declaration.js"
+            use = Path(temp) / "unbound-use.js"
+            declaration.write_text("export const READY_PATH = '/api/ready';\n", encoding="utf-8")
+            use.write_text("fetch(READY_PATH);\n", encoding="utf-8")
+            self.assertTrue(checker.browser_source_findings([declaration, use]))
+
+    def test_browser_source_rejects_nested_ready_path_after_regex_literal_brace(self):
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-regex-brace-", dir="D:/tmp") as temp:
+            source = Path(temp) / "source.js"
+            source.write_text(
+                "function nested() {\n"
+                "const marker = /}/;\n"
+                "const READY_PATH = '/api/ready';\n"
+                "fetch(READY_PATH);\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(checker.browser_source_findings([source]))
+
+    def test_browser_source_rejects_nested_ready_path_when_regex_classes_balance_braces(self):
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-regex-class-braces-", dir="D:/tmp") as temp:
+            source = Path(temp) / "source.js"
+            source.write_text(
+                "function load(flag, value) {\n"
+                "  if (flag) /[}]/.test(value);\n"
+                "  const READY_PATH = '/api/ready';\n"
+                "  fetch(READY_PATH);\n"
+                "  if (flag) /[{]/.test(value);\n"
+                "}\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(checker.browser_source_findings([source]))
+
+    def test_browser_source_rejects_template_interpolation_ready_path_shadow(self):
+        with tempfile.TemporaryDirectory(prefix="anvil-a14-template-shadow-", dir="D:/tmp") as temp:
+            source = Path(temp) / "source.js"
+            source.write_text(
+                "const READY_PATH = '/api/ready';\n"
+                "const value = `prefix ${(() => { const READY_PATH = '//example.invalid/ready'; return fetch(READY_PATH); })()}`;\n"
+                "fetch(READY_PATH);\n",
+                encoding="utf-8",
+            )
+            self.assertTrue(checker.browser_source_findings([source]))
+
+    def test_a14_successor_r6_registry_binds_live_scanner_and_test(self):
+        registry_path = ROOT / "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json"
+        self.assertTrue(registry_path.is_file())
+        registry = json.loads(registry_path.read_text(encoding="utf-8"))
+        successor = registry["a14_successor_projection"]
+        self.assertEqual(("a14_successor_registry", 6, False), (
+            registry["artifact_type"], registry["revision"], registry["self_reference"]
+        ))
+        self.assertEqual(
+            ("docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json", hashlib.sha256(
+                (ROOT / "docs/evidence/manifests/A-14_A14_SUCCESSOR_R5.json").read_bytes()
+            ).hexdigest().upper()),
+            (successor["predecessor_registry_path"], successor["predecessor_registry_sha256"]),
+        )
+        rows = {row["path"]: row for row in successor["live_raw_checksums"]}
+        self.assertEqual(
+            {
+                "apps/web/index.html",
+                "apps/web/server.mjs",
+                "apps/web/src/app/workbench.js",
+                "apps/web/src/api/workbench-client.js",
+                "apps/web/src/features/workbench/workbench-state.js",
+                "apps/web/src/styles/workbench.css",
+                "apps/web/tests/workbench.test.mjs",
+                "tests/browser/a14/workbench-runtime.test.mjs",
+                "scripts/check_a14_workbench_prototype.py",
+                "tests/tooling/test_a14_workbench_prototype.py",
+            },
+            set(rows),
+        )
+        for path, row in rows.items():
+            raw = (ROOT / path).read_bytes()
+            self.assertEqual((len(raw), hashlib.sha256(raw).hexdigest().upper()), (row["bytes"], row["sha256"]))
+
     def test_manifest_exact_paths_and_self_reference_false(self):
         historical_root, historical_checker = _frozen_a14()
         result = historical_checker.check(historical_root)

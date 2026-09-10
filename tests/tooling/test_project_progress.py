@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import copy
 import hashlib
 import importlib.util
@@ -14,11 +15,21 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import zlib
 from pathlib import Path
 from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
+
+# seq496 intentionally kept its independent-review authority source outside Git.
+# Freeze the exact historical bytes here so detached historical tests do not
+# depend on residue from whichever worktree happens to execute the suite.
+_SEQ496_INDEPENDENT_JUDGMENT_SOURCE = zlib.decompress(
+    base64.b64decode(
+        "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"
+    )
+)
 
 
 def _restore_pre_wsl_approval_state(progress: dict) -> None:
@@ -4393,7 +4404,7 @@ class ProjectProgressContractTests(unittest.TestCase):
         source = Path(".superpowers/sdd/Anvil_작업계획서_v1/seq496-c21-independent-judgment.md")
         destination = repo / source
         destination.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(ROOT / source, destination)
+        destination.write_bytes(_SEQ496_INDEPENDENT_JUDGMENT_SOURCE)
         return bundle, repo
 
     def test_c21_wsl_fresh_clone_candidate_rebind_projection_binds_exact_contracts(
@@ -7432,7 +7443,9 @@ class ProjectProgressContractTests(unittest.TestCase):
     def test_c21_provider_status_read_review_successor_accepts_only_exact_record_projection(self) -> None:
         """A committed exact13 plus any record path outside exact8 must fail closed."""
         checker = self.require_checker()
-        bundle = checker.load_bundle(ROOT)
+        bundle, _ = self._historical_bundle(
+            checker, "b85d2b48e14f513e326054bc0be28009f269a827"
+        )
         repository = bundle["progress"]["repository"]
         exact95 = sorted(
             checker.c21_development_qa_review_predecessor_paths()
@@ -10362,6 +10375,179 @@ class C21WorkbenchUiWslAuthBrowserRuntimeRetryR11ResultTests(unittest.TestCase):
         checker, first=self._build(); second=checker.c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_from_root(ROOT); self.assertEqual(first,second)
         manifest=json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_M]); bundle={"_root":ROOT,"progress":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_P]),"events":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_E]),"handoff":checker.extract_handoff_summary(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_H].decode()),"detached_digest":json.loads(first[checker.C21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_D])}
         self.assertEqual([],checker.validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_projection(bundle,manifest))
+class C21FinalAcceptanceProjectionReconciliationTests(unittest.TestCase):
+    def test_seq699_final_acceptance_projection_contract_is_available(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_final_acceptance_projection_reconciliation_metadata()
+        self.assertEqual(699, metadata["sequence"])
+        self.assertEqual("2db9eff352d32d60638ae9bf7c9dae153c862be8", metadata["record_candidate"])
+        self.assertEqual("7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd", metadata["deployed_product_source"])
+        self.assertEqual("MAIN_PACKAGE_ACCEPTED", metadata["event_type"])
+
+    def test_seq699_exact15_adds_only_a14_scanner_test_and_successor_registry(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        metadata = checker.c21_final_acceptance_projection_reconciliation_metadata()
+        self.assertEqual(15, metadata["exact_path_count"])
+        self.assertEqual(
+            {
+                "scripts/check_a14_workbench_prototype.py",
+                "tests/tooling/test_a14_workbench_prototype.py",
+                "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+            },
+            set(metadata["exact_paths"]) - {
+                "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+                "docs/WORK_STATUS.md",
+                "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
+                "docs/progress/BUILD_HANDOFF.md",
+                "docs/progress/build-progress.json",
+                "docs/progress/progress-events.json",
+                "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+                "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+                "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+                "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            },
+        )
+
+    def test_seq699_git_collector_accepts_only_precommit_exact15_or_clean_direct_child(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        bundle = checker.load_bundle(ROOT)
+        metadata = checker.c21_final_acceptance_projection_reconciliation_metadata()
+        record = checker.C21_FINAL_ACCEPTANCE_RECORD
+        deployed = checker.C21_FINAL_ACCEPTANCE_DEPLOYED
+        private_url = checker.C21_WORKBENCH_UI_WSL_PRIVATE_URL
+        development_ref = "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1"
+        branch = "codex/c21-wsl-acceptance-auth-r1"
+        status_key = ("status", "--porcelain", "--untracked-files=all")
+        values = {
+            ("rev-parse", "HEAD"): record,
+            ("branch", "--show-current"): branch,
+            ("rev-parse", record): record,
+            ("show", "-s", "--format=%P", record): deployed,
+            ("remote", "get-url", "development"): private_url,
+            ("for-each-ref", "--format=%(refname) %(objectname)", development_ref): f"{development_ref} {record}",
+            status_key: "\n".join(" M " + path for path in metadata["exact_paths"]),
+        }
+        def run(mapping, ancestors):
+            with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: mapping.get(args)), mock.patch.object(
+                checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in ancestors else 1
+            ):
+                return checker._collect_c21_final_acceptance_projection_reconciliation_git(bundle)
+        precommit_ancestors = {
+            ("merge-base", "--is-ancestor", deployed, record),
+            ("diff", "--cached", "--check"),
+        }
+        self.assertEqual([], run(values, precommit_ancestors))
+
+        child = "a" * 40
+        post = values | {
+            ("rev-parse", "HEAD"): child,
+            ("show", "-s", "--format=%P", child): record,
+            ("diff", "--name-only", record, child): "\n".join(metadata["exact_paths"]),
+            status_key: "",
+        }
+        post_ancestors = {
+            ("merge-base", "--is-ancestor", deployed, record),
+            ("merge-base", "--is-ancestor", record, child),
+            ("diff", "--check", record, child),
+        }
+        self.assertEqual([], run(post, post_ancestors))
+        self.assertTrue(run(post | {("show", "-s", "--format=%P", child): record + " " + deployed}, post_ancestors))
+        self.assertTrue(run(post | {status_key: " M docs/WORK_STATUS.md"}, post_ancestors))
+        self.assertTrue(run(post | {("rev-parse", record): None}, post_ancestors))
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("remote", "get-url", "development"): "https://example.invalid/Anvil.git"}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("for-each-ref", "--format=%(refname) %(objectname)", development_ref): f"{development_ref} {'0' * 40}"}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("for-each-ref", "--format=%(refname) %(objectname)", development_ref): None}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(post | {("remote", "get-url", "development"): None}, post_ancestors),
+        )
+        self.assertEqual(
+            ["GIT_PRIVATE_AUTHORITY_MISMATCH"],
+            run(
+                post | {
+                    ("for-each-ref", "--format=%(refname) %(objectname)", development_ref):
+                        f"{development_ref} {record}\nrefs/remotes/development/contaminated {'0' * 40}"
+                },
+                post_ancestors,
+            ),
+        )
+
+        self.assertTrue(run(values, precommit_ancestors - {("diff", "--cached", "--check")}))
+        self.assertTrue(run(post, post_ancestors - {("diff", "--check", record, child)}))
+
+    def test_seq699_builder_preserves_seq1_698_raw_prefix_and_projects_only_approved_evidence(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_final_acceptance_projection_reconciliation_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_M])
+        progress = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_P])
+        prior = subprocess.check_output(["git", "show", "2db9eff352d32d60638ae9bf7c9dae153c862be8:docs/progress/progress-events.json"], cwd=ROOT)
+        current = artifacts[checker.C21_FINAL_ACCEPTANCE_E]
+        self.assertEqual(checker.raw_event_object_prefix_bytes(prior, 698), checker.raw_event_object_prefix_bytes(current, 698))
+        self.assertEqual((699, "MAIN_PACKAGE_ACCEPTED", True, "READY_FOR_WORK_INSTRUCTION", "NOT_REACHED"), (manifest["event_sequence"], manifest["status"], manifest["accepted"], manifest["c01_status"], manifest["dir2_status"]))
+        evidence = manifest["acceptance"]
+        self.assertEqual(("USER_OWNED_NOT_EXECUTED", "USER_OWNED_NOT_EXECUTED"), (evidence["approval_binding"]["external_provider"], evidence["approval_binding"]["telegram"]))
+        self.assertEqual((0, "NOT_CREATED"), (evidence["historical_authenticated_ui_api_sse"]["cross_origin_count"], evidence["current_same_origin_source_static"]["network_receipt"]))
+        self.assertEqual(14, len(manifest["raw_checksums"]))
+        self.assertEqual(
+            {"package_id": "C-01", "status": "READY_FOR_WORK_INSTRUCTION"},
+            {key: progress["next_work_package"][key] for key in ("package_id", "status")},
+        )
+        self.assertEqual(
+            {"package_id": "C-01", "status": "READY_FOR_WORK_INSTRUCTION"},
+            {key: progress["next_successor_work_package"][key] for key in ("package_id", "status")},
+        )
+        self.assertIn("C-21", progress["completed_packages"])
+        self.assertEqual("POSTCOMMIT_EXACT15_SOLE_DIRECT_CHILD_OF_RECORD", progress["repository"]["head_relation"])
+        self.assertEqual("CLEAN", progress["repository"]["worktree_status"])
+        self.assertEqual([], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(manifest))
+
+    def test_seq699_canonical_progress_state_contradictions_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        artifacts = checker.c21_final_acceptance_projection_reconciliation_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_M])
+        progress = json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_P])
+        base_bundle = {
+            "_root": ROOT,
+            "progress": progress,
+            "events": json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C21_FINAL_ACCEPTANCE_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C21_FINAL_ACCEPTANCE_D]),
+        }
+        mutations = (
+            ("next-work", lambda value: value["next_work_package"].update(status="BLOCKED_PENDING_C21_ACCEPTANCE")),
+            ("next-successor", lambda value: value["next_successor_work_package"].update(status="BLOCKED_PENDING_PROVIDER_STATUS_READ")),
+            ("completed", lambda value: value.update(completed_packages=[package for package in value["completed_packages"] if package != "C-21"])),
+            ("stale-head-relation", lambda value: value["repository"].update(head_relation="PRECOMMIT_EXACT12_SUCCESSOR_PROJECTION")),
+            ("stale-worktree-status", lambda value: value["repository"].update(worktree_status="SEQ698_R11_RESULT_EXACT12_DIRTY")),
+        )
+        for label, mutate in mutations:
+            with self.subTest(label=label):
+                bundle = json.loads(json.dumps({key: value for key, value in base_bundle.items() if key != "_root"}))
+                bundle["_root"] = ROOT
+                mutate(bundle["progress"])
+                self.assertIn(
+                    "C21_FINAL_ACCEPTANCE_CANONICAL_STATE_INVALID",
+                    checker.validate_c21_final_acceptance_projection_reconciliation_projection(bundle, manifest),
+                )
+
+    def test_seq699_adversarial_user_owned_promotion_and_binding_mutation_fail_closed(self):
+        checker = _load_checker_or_none(); self.assertIsNotNone(checker)
+        manifest = json.loads(checker.c21_final_acceptance_projection_reconciliation_from_root(ROOT)[checker.C21_FINAL_ACCEPTANCE_M])
+        promoted = json.loads(json.dumps(manifest)); promoted["acceptance"]["approval_binding"]["telegram"] = "PASS"
+        self.assertEqual(["C21_FINAL_ACCEPTANCE_EVIDENCE_BOUNDARY_INVALID"], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(promoted))
+        rebound = json.loads(json.dumps(manifest)); rebound["deployed_product_source"] = "0" * 40
+        self.assertEqual(["C21_FINAL_ACCEPTANCE_MANIFEST_INVALID"], checker.validate_c21_final_acceptance_projection_reconciliation_manifest(rebound))
 
 
 if __name__ == "__main__":

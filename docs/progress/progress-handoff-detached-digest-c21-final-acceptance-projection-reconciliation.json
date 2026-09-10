@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C21-FINAL-ACCEPTANCE-PROJECTION-RECONCILIATION-DIGEST-20260909",
+  "package_id": "C-21",
+  "event_sequence": 699,
+  "algorithm": "SHA-256",
+  "self_reference": false,
+  "scope": "seq699 append-only successor; seq1-698 raw event prefix preserved",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 775907,
+    "file_sha256": "D0E7B4C29604D24484DAD763D9AEE36636075F858F16945DF42033495EFD962A",
+    "canonical_json_sha256": "1845DC77E6AE2195F60CC3CDE1F254E65C14E20AB54E357684CB03B6D9821268"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 185766,
+    "file_sha256": "2B34BA3FC95882535FF2939CC9D29A5D88F0C378C3EDA370272D4CB6D18EB2B0",
+    "machine_summary_canonical_sha256": "EB0B39DF7B158BEB56BDF6F16EA51DAE2E8E2083A384C4A2BFD728EA6ECE7E9A"
+  }
+}

@@ -1,0 +1,213 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION",
+  "artifact_id": "C-21-FINAL-ACCEPTANCE-PROJECTION-RECONCILIATION-20260909",
+  "event_sequence": 699,
+  "historical_event_sequence": 698,
+  "historical_raw_event_prefix": {
+    "bytes": 2152248,
+    "sha256": "B7FD73B603072A4B48393A4F0428CD7F51AC01B96AC7C59C84963C11676BCC74"
+  },
+  "accepted": true,
+  "status": "MAIN_PACKAGE_ACCEPTED",
+  "c01_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "blocking_count": 0,
+  "acceptance": {
+    "approval_binding": {
+      "approved_by": "신산님",
+      "approved_at": "2026-09-09",
+      "scope": "seq699 historical completed WSL/UI/API/SSE evidence projection only",
+      "external_provider": "USER_OWNED_NOT_EXECUTED",
+      "telegram": "USER_OWNED_NOT_EXECUTED"
+    },
+    "blocking_count": 0,
+    "completion_criteria": {
+      "deployment_binding": "PASS_HISTORICAL_EVIDENCE",
+      "health_and_migration": "PASS_HISTORICAL_EVIDENCE",
+      "provider_read_api": "PASS_HISTORICAL_EVIDENCE",
+      "dashboard_provider_browser": "PASS_HISTORICAL_EVIDENCE",
+      "authenticated_sse": "PASS_HISTORICAL_EVIDENCE",
+      "secret_residue": "PASS_HISTORICAL_EVIDENCE"
+    },
+    "historical_authenticated_ui_api_sse": {
+      "reference": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_MANIFEST.json",
+      "execution": "HISTORICAL_EXECUTED_REFERENCE",
+      "provider_read_get_only": true,
+      "provider_write_count": 0,
+      "cross_origin_count": 0,
+      "authenticated_sse_initial": true,
+      "last_event_id_exact_match": true,
+      "secret_residue_count": 0,
+      "filesystem_residue_count": 0
+    },
+    "current_same_origin_source_static": {
+      "execution": "CURRENT_SOURCE_STATIC_ANALYSIS",
+      "csp_connect_src": "'self'",
+      "browser_source_absolute_host_scan_count": 0,
+      "network_receipt": "NOT_CREATED"
+    },
+    "accepted": true,
+    "c01_status": "READY_FOR_WORK_INSTRUCTION",
+    "dir2_status": "NOT_REACHED",
+    "sequence": 699,
+    "event_type": "MAIN_PACKAGE_ACCEPTED",
+    "record_candidate": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+    "development_ref": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+    "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+    "development_remote_ref": "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1",
+    "deployed_product_source": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
+    "image_digest": "sha256:83f2c7b879c65a0f0c571acfcbf114c913b1d53631e7de880f0ec3ffe146db25",
+    "oci_revision": "7b7e7cc",
+    "anvil_web": {
+      "replicas": 1,
+      "published_port": 3770
+    },
+    "health": {
+      "live": true,
+      "ready": true,
+      "migration": "0013"
+    },
+    "provider_read_api": {
+      "provider_count": 9,
+      "method": "GET",
+      "write_count": 0
+    },
+    "exact_paths": [
+      "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+      "docs/WORK_STATUS.md",
+      "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+      "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+      "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+      "scripts/check_a14_workbench_prototype.py",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_a14_workbench_prototype.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "exact_path_count": 15,
+    "exact_path_list_sha256": "D06C8F4158A914042DA3C0688BC5829D7B6F2D94DDEDFEF18F27AEC6FD7B336E",
+    "exact_path_list_ordinal_sha256": "DE7B86332907781913506C1C74B2066EAA4EAF74EAF00378866FA587803D4187"
+  },
+  "self_reference": false,
+  "sequence": 699,
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "record_candidate": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+  "development_ref": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "development_remote_ref": "refs/remotes/development/candidates/c21-wsl-acceptance-auth-r1",
+  "deployed_product_source": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
+  "image_digest": "sha256:83f2c7b879c65a0f0c571acfcbf114c913b1d53631e7de880f0ec3ffe146db25",
+  "oci_revision": "7b7e7cc",
+  "anvil_web": {
+    "replicas": 1,
+    "published_port": 3770
+  },
+  "health": {
+    "live": true,
+    "ready": true,
+    "migration": "0013"
+  },
+  "provider_read_api": {
+    "provider_count": 9,
+    "method": "GET",
+    "write_count": 0
+  },
+  "exact_paths": [
+    "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+    "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+    "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+    "scripts/check_a14_workbench_prototype.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_a14_workbench_prototype.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 15,
+  "exact_path_list_sha256": "D06C8F4158A914042DA3C0688BC5829D7B6F2D94DDEDFEF18F27AEC6FD7B336E",
+  "exact_path_list_ordinal_sha256": "DE7B86332907781913506C1C74B2066EAA4EAF74EAF00378866FA587803D4187",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+      "bytes": 12415,
+      "sha256": "FB789ACF90CDA7CE9A94B90AD06FDB4B623AB6E34C6C68EF07E2FC7A372767A9"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 388692,
+      "sha256": "5C8F980FD0A3872DD908BDD113552F3DD54345C6C7450DD47D8BDFB136D1AB07"
+    },
+    {
+      "path": "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+      "bytes": 2481,
+      "sha256": "390C736F974669F6691775E778C5B168DBEF414B9AFB118B81A2819F7282EE20"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 185766,
+      "sha256": "2B34BA3FC95882535FF2939CC9D29A5D88F0C378C3EDA370272D4CB6D18EB2B0"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 775907,
+      "sha256": "D0E7B4C29604D24484DAD763D9AEE36636075F858F16945DF42033495EFD962A"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2155530,
+      "sha256": "BEB0012FA1ACCFA673A8B40C0E6C7FFF646755E8DEADD3F23BB098C07FDCAA34"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+      "bytes": 850,
+      "sha256": "DED540BA8E542BF6C4F131D2BBB9AA1168AFCDEC1166ED2F5CB307836C3F8965"
+    },
+    {
+      "path": "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+      "bytes": 744,
+      "sha256": "1C7EA6E761567498848B4CBE6117CFFCCD1C5854F0C302AE47235A3C8330D0DD"
+    },
+    {
+      "path": "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+      "bytes": 445,
+      "sha256": "F0C2ABA631CB2C7A6888CE9805D4A7E46566336A79BDFEB3BBA0923E27D45B90"
+    },
+    {
+      "path": "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+      "bytes": 2238,
+      "sha256": "DC7D2860E1C7DEA0ED3C4DC1DD37C608B5F19A2EA2D3E5065AFA3146D3074E32"
+    },
+    {
+      "path": "scripts/check_a14_workbench_prototype.py",
+      "bytes": 33989,
+      "sha256": "280F5BE684E97CE49EF2203CAE06FF6FD807FF9F88B8F7329C3BA00B33A31794"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2175731,
+      "sha256": "8105A1BDF9BC970B87D3D18AC742DC13268DCBEA6FE1E27CC879446D929AF691"
+    },
+    {
+      "path": "tests/tooling/test_a14_workbench_prototype.py",
+      "bytes": 15371,
+      "sha256": "9FFDB988DE6226C6D7F252FEC47BA1A3A23D7F9EE7A80C2FC41A82BD334DE280"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 645087,
+      "sha256": "AE704DD63211A4EB3F853AA7AF4AA44AED9ECE64C5C327B8B3B3FEF06072A625"
+    }
+  ]
+}

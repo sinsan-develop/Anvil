@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 698,
+  "last_sequence": 699,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -37881,7 +37881,63 @@
         ],
         "next_action": "INDEPENDENT_REVIEW_C21_WORKBENCH_UI_WSL_AUTH_BROWSER_R11_FAILURE_RESULT"
       }
+    },
+    {
+      "occurred_at": "2026-09-09T18:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-21",
+      "step_id": "FINAL-ACCEPTANCE-PROJECTION-RECONCILIATION",
+      "actor": "developer-primary",
+      "subject_ref": "C-21/FINAL-ACCEPTANCE-PROJECTION-RECONCILIATION",
+      "event_id": "evt_c21_final_acceptance_projection_main_package_accepted",
+      "sequence": 699,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "details": {
+        "accepted": true,
+        "blocking_count": 0,
+        "approval_binding": {
+          "approved_by": "신산님",
+          "approved_at": "2026-09-09",
+          "scope": "seq699 historical completed WSL/UI/API/SSE evidence projection only",
+          "external_provider": "USER_OWNED_NOT_EXECUTED",
+          "telegram": "USER_OWNED_NOT_EXECUTED"
+        },
+        "c01_status": "READY_FOR_WORK_INSTRUCTION",
+        "dir2_status": "NOT_REACHED",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+          "docs/WORK_STATUS.md",
+          "docs/evidence/manifests/A-14_A14_SUCCESSOR_R6.json",
+          "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c21-final-acceptance-projection-reconciliation.json",
+          "docs/validation/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_VALIDATION.md",
+          "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_WORK_INSTRUCTION.md",
+          "scripts/check_a14_workbench_prototype.py",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_a14_workbench_prototype.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "decision": "ACCEPTED",
+        "test_report_ref": "docs/04_test_reports/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_RESULT.md",
+        "test_report_sha256": "FB789ACF90CDA7CE9A94B90AD06FDB4B623AB6E34C6C68EF07E2FC7A372767A9",
+        "manifest_ref": "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_AUTH_BROWSER_RUNTIME_RETRY_R11_RESULT_MANIFEST.json",
+        "manifest_sha256": "60104B2CF54DFB86972A2426ACE82DD053DDE053ACACA2969975B78445CBAD38",
+        "next_work_package": "C-01",
+        "acceptance_head": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+        "acceptance_upstream_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
+        "projection_mode": "VALIDATED_BASE_COMMIT_EXACT_EVIDENCE_ONLY_DESCENDANT",
+        "validated_base_commit": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
+        "head_relation": "POSTCOMMIT_EXACT15_SOLE_DIRECT_CHILD_OF_RECORD"
+      }
     }
   ],
-  "last_event_id": "evt_c21_workbench_ui_wsl_auth_browser_runtime_retry_r11_result_package_completed"
+  "last_event_id": "evt_c21_final_acceptance_projection_main_package_accepted"
 }
