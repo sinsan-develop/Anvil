@@ -2000,3 +2000,23 @@
 - 미실행 범위: Provider/Telegram actual `USER_OWNED_NOT_EXECUTED`; network/WSL/Docker/DB/deploy/push/PR/merge/branch delete `NOT_EXECUTED`.
 - 최종 evidence rebind 검증: seq700 focused `4 passed, 306 deselected`; live checker `PASS sequence=700 reporting=AUTO_CONTINUE`; generated5 two-build/live equality, manifest checksum 11행, seq1~699 raw prefix `2155312` bytes / `209446EEDCAE056F25E788701A0E12D76B487EBD20D52644C14D151FAC0C1D83` PASS; exact12 staged, unstaged/untracked 0, cached diff-check PASS.
 - 상태: `COMPLETED`; commit/push/merge는 Main Agent 후속 경계다.
+# 2026-09-10 C-01 product correction — developer-primary
+
+- 판정: `COMPLETED` (Main Agent 검토·독립 acceptance projection 전 Developer 구현/기본 검증 완료)
+- Work Package/기준선: `C-01`, branch `codex/c01-mainline-reconciliation`, BASE/시작 HEAD `e215c0612363050dbe20315646f1612f31b8cdc0`, 시작 status clean
+- worker lease: `worker-lease-c01-product-correction-20260910-001`; execution fencing token: `c01-product-execution-fence-epoch-1-e215c06`
+- write lease: `write-lease-c01-product-correction-20260910-001`; write fencing token: `c01-product-write-fence-epoch-1-e215c06`
+- 기준 hash: design `DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3`; work plan `00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18`; matrix `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5`; test plan `9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644`; corrective brief `5F9F3DD6454ED7C223BBC69176EACC2E6E16069CF6E9245E55326E4B58C37178`; pre-revision WorkInstruction `D594FC661D3E54D905C64B0AEDEB8E53644832EB9F2FE5C17A2B0CA5A3014DF3`
+- 시작 기준선: `.venv\Scripts\python.exe -m pytest tests\llm_gateway\test_c01_kernel.py tests\agent_team\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider` → exit 0, `10 passed in 0.77s`
+- TDD RED 준비 오류: 신규 symbol의 module-level import가 collection을 중단해 exit 1이었고, import를 test body로 지연해 assertion RED로 교정했다. fingerprint `C01_NATIVE_ADAPTER_IMPORT_COLLECTION_R1`, 1회, 제품/외부 영향 0.
+- 의미 있는 TDD RED: `.venv\Scripts\python.exe -m pytest tests\llm_gateway\test_c01_kernel.py tests\orchestration\test_c01_native_agent_adapter.py -q -p no:cacheprovider` → exit 1, `9 failed, 5 passed in 0.36s`; 빈 capability 기본값 오염, noncanonical/step-derived request ID, 동일 Step 두 번째 Provider 호출, evidence 부재, 별도 Native Coding Agent lifecycle boundary 부재를 각각 재현했다.
+- 최소 GREEN: 같은 focused 명령 → exit 0, `14 passed in 0.31s`.
+- C-21 호환: `.venv\Scripts\python.exe -m pytest tests\agent_team\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider` → exit 0, `4 passed in 0.70s`; 기존 LLM-provider `NativeAgentAdapter.probe/generate` 호출 계약 유지.
+- 변경 전→후: explicit `set()` capability가 암묵적 `text_generation`으로 바뀜→empty 유지; kernel request ID가 Step 고정값→호출별 canonical UUID; 동일 Step 재호출이 Provider에 도달→기존 reservation binding에서 사전 거부; 예산 결과 evidence 없음→ordered secret-free reserve/reconcile evidence; coding-agent lifecycle 경계 없음→별도 opaque Protocol 추가.
+- 변경 경로: `docs/work_orders/C-01_WORK_INSTRUCTION.md`, `docs/WORK_STATUS.md`, `docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md`, `packages/llm_gateway/contracts.py`, `packages/orchestration/__init__.py`, `packages/orchestration/kernel.py`, `packages/orchestration/native_agent_adapter.py`, `tests/llm_gateway/test_c01_kernel.py`, `tests/orchestration/test_c01_native_agent_adapter.py`.
+- 제외/미검증: network, 실제 Provider, Telegram, DB, API, browser, WSL, deployment, secret/외부 환경 mutation은 `NOT_EXECUTED`; C-02+ DelegationPacket/Developer lifecycle/validation 의미 변경 0; canonical progress/event/HANDOFF/checker 수정 0; commit/push/merge 0.
+- 오류 횟수: 정식 제품 실패 0; RED 수집 구조 오류 1회(해소); compileall sandbox 환경 오류 1회(승인된 재실행으로 해소).
+- 남은 acceptance: Main Agent diff/범위 검토와 별도 독립 Tester의 AV-AGT-002, AV-AGT-003, AV-OPS-011 판정 및 canonical projection은 후속 reviewed task가 소유한다.
+- rollback: 이 worktree의 위 변경 경로 diff만 역적용한다. 사용자 dirty/untracked, 다른 tracked path, canonical progress/history에는 손대지 않는다.
+- 최종 통합 기본 검증: `.venv\Scripts\python.exe -m pytest tests\llm_gateway tests\orchestration\test_c01_native_agent_adapter.py tests\agent_team\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider` → exit 0, `18 passed in 0.76s`.
+- compileall 환경 오류: 기본 sandbox에서 `packages/.../__pycache__/*.pyc` 쓰기가 거부되어 exit 1. fingerprint `C01_COMPILEALL_DTMP_SANDBOX_WRITE_DENIED_R1`, 1회, 코드/제품 failure가 아니다. 지정 worktree 내부 쓰기 승인으로 같은 compileall을 재실행해 exit 0, output 0을 확인했다.

@@ -1,6 +1,7 @@
 """Minimal Main Agent kernel for one budgeted model/action/observation step."""
 
-from .kernel import BudgetDenied, MainAgentKernel, StepBudget, StepResult
+from .kernel import BudgetDenied, BudgetUsageEvent, MainAgentKernel, StepBudget, StepResult
+from .native_agent_adapter import NativeCodingAgentAdapter
 from .delegation import DelegationPacket, PacketValidationResult, validate_packet
 from .developer_lifecycle import (
     DeveloperLifecycleService, DeveloperRunner, DeveloperSession,
@@ -35,7 +36,8 @@ from packages.planning.planner import (
 )
 
 __all__ = [
-    "BudgetDenied", "MainAgentKernel", "StepBudget", "StepResult",
+    "BudgetDenied", "BudgetUsageEvent", "MainAgentKernel", "StepBudget", "StepResult",
+    "NativeCodingAgentAdapter",
     "DelegationPacket", "PacketValidationResult", "validate_packet",
     "DeveloperLifecycleService", "DeveloperRunner", "DeveloperSession",
     "DeterministicFakeDeveloperRunner", "InvalidLifecycleTransition", "LifecycleError",
