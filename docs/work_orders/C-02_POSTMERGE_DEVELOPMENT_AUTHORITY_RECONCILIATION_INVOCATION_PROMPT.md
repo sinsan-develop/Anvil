@@ -1,0 +1,1 @@
+Apply the C-02 post-merge development authority reconciliation WorkInstruction exactly. Preserve seq1~736 raw event object bytes and historical evidence, append only seq737, enforce the strict exact12 Git predicate before seq736 and generic predicates, and do not execute commit, push, merge, deploy, Provider, Telegram, network, database, browser, WSL, runtime, or Secret actions.

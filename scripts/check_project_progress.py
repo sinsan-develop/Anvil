@@ -12856,6 +12856,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 737:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c02_postmerge_development_authority_reconciliation_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 736:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13888,6 +13892,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json":
+            errors.extend(validate_c02_postmerge_development_authority_reconciliation_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_c02_final_acceptance_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-02_START_MANIFEST.json":
@@ -28655,6 +28661,802 @@ def _collect_c02_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
             and check("diff", "--check", C02_FINAL_PRODUCT, head)
         )
         return [] if valid else ["C02_FINAL_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C02_POSTMERGE_AUTHORITY_P = "docs/progress/build-progress.json"
+C02_POSTMERGE_AUTHORITY_E = "docs/progress/progress-events.json"
+C02_POSTMERGE_AUTHORITY_H = "docs/progress/BUILD_HANDOFF.md"
+C02_POSTMERGE_AUTHORITY_D = "docs/progress/progress-handoff-detached-digest-c02-postmerge-development-authority-reconciliation.json"
+C02_POSTMERGE_AUTHORITY_M = "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json"
+C02_POSTMERGE_AUTHORITY_REPORT = "docs/04_test_reports/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md"
+C02_POSTMERGE_AUTHORITY_VALIDATION = "docs/validation/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md"
+C02_POSTMERGE_AUTHORITY_STATUS = "docs/WORK_STATUS.md"
+C02_POSTMERGE_AUTHORITY_WI = "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md"
+C02_POSTMERGE_AUTHORITY_PROMPT = "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md"
+C02_POSTMERGE_AUTHORITY_BASE = "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658"
+C02_POSTMERGE_AUTHORITY_BASE_PARENTS = [
+    "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+    "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
+]
+C02_POSTMERGE_AUTHORITY_FINAL = "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0"
+C02_POSTMERGE_AUTHORITY_PRODUCT = "db2b52fc85d022c5af51a1927a0133bf081f4586"
+C02_POSTMERGE_AUTHORITY_START_PROJECTION = "5179870e6e9f9e2c62afaa4ada9383936d0a7036"
+C02_POSTMERGE_AUTHORITY_CONTROL = "2eedcfa6b15594c2daa29bb52a5c10694c826776"
+C02_POSTMERGE_AUTHORITY_AUTHORITY = "4619ee132ced203780bb0ec615088add661ec802"
+C02_POSTMERGE_AUTHORITY_DEVELOPMENT_PARENT = "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5"
+C02_POSTMERGE_AUTHORITY_DEVELOPMENT_REF = "refs/remotes/development/main"
+C02_POSTMERGE_AUTHORITY_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C02_POSTMERGE_AUTHORITY_BRANCH = "codex/c02-postmerge-authority-reconcile-r1"
+C02_POSTMERGE_AUTHORITY_AT = "2026-09-12T02:05:29+09:00"
+C02_POSTMERGE_AUTHORITY_WI_ID = "WI-C-02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260912-001"
+C02_POSTMERGE_AUTHORITY_WI_SHA256 = "6917AD09270FEC8F5976FED14ED145DBD15490E8D609ACB0DBA23BE038924869"
+C02_POSTMERGE_AUTHORITY_PROMPT_SHA256 = "DA22B206BD180EFD986F1BF750DDF6173DD7D33C9D44D6B51CBBC99E202CE74D"
+
+
+def c02_postmerge_development_authority_reconciliation_paths() -> list[str]:
+    return sorted([
+        C02_POSTMERGE_AUTHORITY_REPORT,
+        C02_POSTMERGE_AUTHORITY_STATUS,
+        C02_POSTMERGE_AUTHORITY_M,
+        C02_POSTMERGE_AUTHORITY_H,
+        C02_POSTMERGE_AUTHORITY_P,
+        C02_POSTMERGE_AUTHORITY_E,
+        C02_POSTMERGE_AUTHORITY_D,
+        C02_POSTMERGE_AUTHORITY_VALIDATION,
+        C02_POSTMERGE_AUTHORITY_PROMPT,
+        C02_POSTMERGE_AUTHORITY_WI,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c02_postmerge_development_authority_reconciliation_metadata() -> dict[str, Any]:
+    paths = c02_postmerge_development_authority_reconciliation_paths()
+    return {
+        "sequence": 737,
+        "event_type": "REPOSITORY_RECONCILED",
+        "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+        "development_remote_url": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_URL,
+        "development_remote_ref": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_REF,
+        "baseline_merge_commit": C02_POSTMERGE_AUTHORITY_BASE,
+        "exact_paths": paths,
+        "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def _c02_postmerge_external_validation() -> dict[str, str]:
+    return {
+        "provider": "NOT_EXECUTED",
+        "telegram": "NOT_EXECUTED",
+        "network": "NOT_EXECUTED",
+        "database": "NOT_EXECUTED",
+        "browser": "NOT_EXECUTED",
+        "wsl": "NOT_EXECUTED",
+        "deployment": "NOT_EXECUTED",
+        "actual_runner": "NOT_EXECUTED",
+    }
+
+
+def _c02_postmerge_tooling_validation() -> dict[str, Any]:
+    return {
+        "monolithic": {
+            "status": "INTERRUPTED_ENVIRONMENT_PERFORMANCE_FAILURE",
+            "elapsed_approx_minutes": 220,
+            "fingerprint": "C02-TOOLING-SANDBOX-TMPDIR-PERMISSION-RETRY-v1",
+            "cause": "SANDBOX_DENIED_D_TMP_MKDIR_WHILE_OS_ACCESS_REPORTED_WRITABLE_AND_TEMPFILE_RETRIED_TO_TMP_MAX_AS_NAME_COLLISIONS",
+            "assertion_failure": False,
+            "product_failure": False,
+        },
+        "partitioned_full": {
+            "status": "PASS",
+            "selection": "MUTUALLY_EXCLUSIVE_COMPLETE_347",
+            "total_passed": 347,
+            "environment": "NORMAL_D_TMP_WRITABLE",
+            "partitions": [
+                {
+                    "selector": "not ProjectProgressContractTests",
+                    "passed": 151,
+                    "deselected": 196,
+                    "duration_seconds": 444.91,
+                    "node_sha256": None,
+                },
+                {
+                    "selector": "ProjectProgressContractTests and not c21",
+                    "passed": 82,
+                    "deselected": 265,
+                    "duration_seconds_approx": 231.5,
+                    "node_sha256": "954F68C8045759DE112568BE8FBED75A9058257D35D1B22709DBF6CA9206C10B",
+                },
+                {
+                    "selector": "ProjectProgressContractTests and c21",
+                    "passed": 114,
+                    "deselected": 233,
+                    "duration_seconds": 3423.04,
+                    "node_sha256": "064D08FF09B714675766C3C59FBCBDCA5EA5A22870D1EC7D0A99088A0A0A1213",
+                },
+            ],
+        },
+        "sandbox_diagnostic_partial_batches": "NOT_COMPLETED_EVIDENCE",
+    }
+
+
+def _c02_postmerge_lineage() -> dict[str, Any]:
+    return {
+        "baseline_merge_commit": C02_POSTMERGE_AUTHORITY_BASE,
+        "baseline_merge_parents": C02_POSTMERGE_AUTHORITY_BASE_PARENTS,
+        "feature_final_commit": C02_POSTMERGE_AUTHORITY_FINAL,
+        "feature_final_parent": C02_POSTMERGE_AUTHORITY_PRODUCT,
+        "product_commit": C02_POSTMERGE_AUTHORITY_PRODUCT,
+        "product_parent": C02_POSTMERGE_AUTHORITY_START_PROJECTION,
+        "start_projection_commit": C02_POSTMERGE_AUTHORITY_START_PROJECTION,
+        "start_projection_parent": C02_POSTMERGE_AUTHORITY_CONTROL,
+        "control_commit": C02_POSTMERGE_AUTHORITY_CONTROL,
+        "control_parent": C02_POSTMERGE_AUTHORITY_AUTHORITY,
+        "authority_commit": C02_POSTMERGE_AUTHORITY_AUTHORITY,
+        "authority_parent": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_PARENT,
+        "ancestor_chain": [
+            C02_POSTMERGE_AUTHORITY_DEVELOPMENT_PARENT,
+            C02_POSTMERGE_AUTHORITY_AUTHORITY,
+            C02_POSTMERGE_AUTHORITY_CONTROL,
+            C02_POSTMERGE_AUTHORITY_START_PROJECTION,
+            C02_POSTMERGE_AUTHORITY_PRODUCT,
+            C02_POSTMERGE_AUTHORITY_FINAL,
+            C02_POSTMERGE_AUTHORITY_BASE,
+        ],
+        "merge_tree_equals_feature_final": True,
+        "ancestor_chain_required": True,
+    }
+
+
+def _c02_postmerge_documents() -> tuple[bytes, bytes]:
+    report = f"""# C-02 Post-merge Development Authority Reconciliation Result
+
+- 판정: `DEVELOPMENT_MAIN_AUTHORITY_RECONCILED`
+- baseline merge: `{C02_POSTMERGE_AUTHORITY_BASE}`
+- ordered parents: `{C02_POSTMERGE_AUTHORITY_BASE_PARENTS[0]}`, `{C02_POSTMERGE_AUTHORITY_BASE_PARENTS[1]}`
+- feature-final → product → start-projection → control → authority: `fdb68e9` → `db2b52f` → `5179870` → `2eedcfa` → `4619ee`
+- development authority: `{C02_POSTMERGE_AUTHORITY_DEVELOPMENT_URL}` / `{C02_POSTMERGE_AUTHORITY_DEVELOPMENT_REF}`
+- C-02: `ACCEPTED`; C-03: `READY_FOR_WORK_INSTRUCTION`; DIR-2: `NOT_REACHED`; active lease: none
+- full repository suite: `NOT_COMPLETED` because of 7 pre-existing collection/environment errors
+- tooling contract suite: mutually exclusive partitions `151 + 82 + 114 = 347 PASS`
+- monolithic tooling run: about 220 minutes then interrupted for `C02-TOOLING-SANDBOX-TMPDIR-PERMISSION-RETRY-v1`; sandbox/tmpdir environment performance failure, not an assertion or product failure
+- sandbox diagnostic partial batches/timeouts: `NOT_COMPLETED_EVIDENCE`
+- Provider/Telegram/network/DB/browser/WSL/deployment/actual runner: `NOT_EXECUTED`
+- 구현 중 commit/push/PR/merge/delete/deploy/runtime/DB/Secret action: `NOT_EXECUTED`
+""".encode("utf-8")
+    validation = """# C-02 Post-merge Development Authority Reconciliation Validation
+
+- seq1~736 raw event objects: preserved
+- seq737 `REPOSITORY_RECONCILED / DEVELOPMENT_MAIN_AUTHORITY_RECONCILED`: appended
+- ordered merge/feature-final/product/start-projection/control/authority lineage: fail-closed
+- merge tree equals feature-final tree: required
+- exact12 precommit/direct-child/reviewed-two-parent-merge/detached-development-main Git states: fail-closed
+- development URL/ref, parent order, path, dirty, upstream and collection mutations: rejected
+- actual-root exact12 raw bytes, manifest checksum binding and seq1~736 raw prefix mutation: rejected
+- tooling contract suite: mutually exclusive complete partitions `347 PASS`; monolithic sandbox/tmpdir retry run is environment performance evidence only
+- sandbox diagnostic partial batches/timeouts: not promoted to completed evidence
+- full repository suite: `NOT_COMPLETED`; external validation: `NOT_EXECUTED`
+""".encode("utf-8")
+    return report, validation
+
+
+def c02_postmerge_development_authority_reconciliation_artifacts(
+    historical: Mapping[str, bytes], files: Mapping[str, bytes]
+) -> dict[str, bytes]:
+    meta = c02_postmerge_development_authority_reconciliation_metadata()
+    generated = {
+        C02_POSTMERGE_AUTHORITY_REPORT,
+        C02_POSTMERGE_AUTHORITY_STATUS,
+        C02_POSTMERGE_AUTHORITY_M,
+        C02_POSTMERGE_AUTHORITY_H,
+        C02_POSTMERGE_AUTHORITY_P,
+        C02_POSTMERGE_AUTHORITY_E,
+        C02_POSTMERGE_AUTHORITY_D,
+        C02_POSTMERGE_AUTHORITY_VALIDATION,
+    }
+    historical_paths = {
+        C02_POSTMERGE_AUTHORITY_STATUS,
+        C02_POSTMERGE_AUTHORITY_H,
+        C02_POSTMERGE_AUTHORITY_P,
+        C02_POSTMERGE_AUTHORITY_E,
+    }
+    if set(historical) != historical_paths or set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C02_POSTMERGE_AUTHORITY_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C02_POSTMERGE_AUTHORITY_P])
+    stream = _c21_resume_json(historical[C02_POSTMERGE_AUTHORITY_E])
+    if (
+        progress.get("event_sequence") != 736
+        or stream.get("last_sequence") != 736
+        or len(stream.get("events", [])) != 736
+        or progress.get("current_work_package") != "C-02"
+        or progress.get("status") != "ACCEPTED"
+        or progress.get("active_agent") is not None
+        or progress.get("worker_lease") is not None
+        or progress.get("write_lease") is not None
+        or progress.get("next_work_package") != {"package_id": "C-03", "status": "READY_FOR_WORK_INSTRUCTION"}
+        or progress.get("next_safe_action") != "ISSUE_C03_WORK_INSTRUCTION"
+    ):
+        raise ValueError("C02_POSTMERGE_AUTHORITY_HISTORY_INVALID")
+
+    lineage = _c02_postmerge_lineage()
+    external = _c02_postmerge_external_validation()
+    tooling = _c02_postmerge_tooling_validation()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    event = {
+        "occurred_at": C02_POSTMERGE_AUTHORITY_AT,
+        "occurred_at_source": "BASELINE_MERGE_COMMIT_TIME",
+        "actor_type": "AGENT",
+        "actor_id": "developer-primary",
+        "project_id": "anvil",
+        "run_id": None,
+        "work_package_id": "C-02",
+        "step_id": "POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION",
+        "actor": "developer-primary",
+        "subject_ref": "C-02/POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION",
+        "event_id": "evt_c02_postmerge_development_authority_reconciled",
+        "sequence": 737,
+        "event_type": "REPOSITORY_RECONCILED",
+        "previous_event_sha256": previous,
+        "details": {
+            "branch": C02_POSTMERGE_AUTHORITY_BRANCH,
+            "local_head": C02_POSTMERGE_AUTHORITY_BASE,
+            "remote_head": C02_POSTMERGE_AUTHORITY_BASE,
+            "upstream": "development/main",
+            "observed_at": C02_POSTMERGE_AUTHORITY_AT,
+            "reason": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED_AFTER_C02_FINAL_ACCEPTANCE_MERGE",
+            "decision": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+            "projection_mode": "C02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
+            "validated_base_commit": C02_POSTMERGE_AUTHORITY_BASE,
+            "head_relation": "EXACT12_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+            "exact_allowed_paths": meta["exact_paths"],
+            "development_remote_url": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_URL,
+            "development_remote_ref": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_REF,
+            "lineage": lineage,
+            "external_validation": external,
+            "tooling_validation": tooling,
+            "full_repository_suite": {"status": "NOT_COMPLETED", "collection_error_count": 7},
+            "dir2_status": "NOT_REACHED",
+        },
+    }
+    events_raw = _c21_append_events(historical[C02_POSTMERGE_AUTHORITY_E], 736, [event])
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": "C02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
+        "validated_base_commit": C02_POSTMERGE_AUTHORITY_BASE,
+        "local_head": C02_POSTMERGE_AUTHORITY_BASE,
+        "branch": C02_POSTMERGE_AUTHORITY_BRANCH,
+        "upstream": "development/main",
+        "remote_head": C02_POSTMERGE_AUTHORITY_BASE,
+        "head_relation": "EXACT12_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "worktree_status": "STAGED_EXACT12",
+        "exact_allowed_paths": meta["exact_paths"],
+        "development_remote_url": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_URL,
+        "development_remote_ref": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_REF,
+        **lineage,
+        "push_status": "NOT_EXECUTED_RECONCILIATION_RECORD",
+    })
+    wi_sha = _c21_resume_sha(files[C02_POSTMERGE_AUTHORITY_WI])
+    prompt_sha = _c21_resume_sha(files[C02_POSTMERGE_AUTHORITY_PROMPT])
+    instruction = {
+        "artifact_id": C02_POSTMERGE_AUTHORITY_WI_ID,
+        "artifact_path": C02_POSTMERGE_AUTHORITY_WI,
+        "artifact_sha256": wi_sha,
+        "invocation_path": C02_POSTMERGE_AUTHORITY_PROMPT,
+        "invocation_sha256": prompt_sha,
+        "executor": "developer-primary",
+        "result_status": "COMPLETED",
+        "package_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+        "exact_paths": meta["exact_paths"],
+    }
+    progress.update({
+        "snapshot_id": "snapshot-c02-postmerge-development-authority-reconciliation-seq737",
+        "updated_at": C02_POSTMERGE_AUTHORITY_AT,
+        "recorded_at": C02_POSTMERGE_AUTHORITY_AT,
+        "event_sequence": 737,
+        "last_event_id": event["event_id"],
+        "current_phase": "C",
+        "current_work_package": "C-02",
+        "status": "ACCEPTED",
+        "active_agent": None,
+        "worker_lease": None,
+        "write_lease": None,
+        "active_work_instruction": None,
+        "last_accepted_work_instruction": instruction,
+        "completed_work_instruction": instruction,
+        "repository": repository,
+        "c02_postmerge_development_authority_reconciliation": {
+            "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+            "accepted": True,
+            "event_sequence": 737,
+            "c02_status": "ACCEPTED",
+            "c03_status": "READY_FOR_WORK_INSTRUCTION",
+            "dir2_status": "NOT_REACHED",
+            "lineage": lineage,
+            "external_validation": external,
+            "tooling_validation": tooling,
+        },
+        "next_work_package": {"package_id": "C-03", "status": "READY_FOR_WORK_INSTRUCTION"},
+        "next_successor_work_package": None,
+        "runtime_next_action": "ISSUE_C03_WORK_INSTRUCTION",
+        "next_safe_action": "ISSUE_C03_WORK_INSTRUCTION",
+        "current_progress_evidence_ref": {
+            "package_id": "C-02",
+            "path": C02_POSTMERGE_AUTHORITY_D,
+            "manifest_path": C02_POSTMERGE_AUTHORITY_M,
+        },
+        "latest_evidence_manifest_ref": {
+            "path": C02_POSTMERGE_AUTHORITY_M,
+            "artifact_id": "C02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260912",
+        },
+        "reporting_decision": {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": [
+                "C02_ACCEPTED",
+                "C03_READY_FOR_WORK_INSTRUCTION",
+                "DIR2_NOT_REACHED",
+                "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+            ],
+            "stop_before_dialogue_report": False,
+        },
+    })
+    progress["registry_refs"]["progress_events"] = {
+        "path": C02_POSTMERGE_AUTHORITY_E,
+        "sha256": _c21_resume_sha(events_raw),
+    }
+
+    report_raw, validation_raw = _c02_postmerge_documents()
+    status_raw = historical[C02_POSTMERGE_AUTHORITY_STATUS].rstrip() + f"""
+
+## C-02 post-merge development authority reconciliation
+
+- seq737 `REPOSITORY_RECONCILED / DEVELOPMENT_MAIN_AUTHORITY_RECONCILED`.
+- development main `{C02_POSTMERGE_AUTHORITY_BASE}`; C-02 `ACCEPTED`; C-03 `READY_FOR_WORK_INSTRUCTION`; DIR-2 `NOT_REACHED`.
+- full repository suite `NOT_COMPLETED`; Provider/Telegram/network/DB/browser/WSL/deployment/actual runner `NOT_EXECUTED`; active lease 없음.
+- tooling contract suite는 상호배타 분할 347 PASS; monolithic sandbox/tmpdir retry는 assertion·product failure가 아닌 환경 성능 실패로 중단.
+""".encode("utf-8")
+    latest = {
+        **files,
+        C02_POSTMERGE_AUTHORITY_E: events_raw,
+        C02_POSTMERGE_AUTHORITY_REPORT: report_raw,
+        C02_POSTMERGE_AUTHORITY_STATUS: status_raw,
+        C02_POSTMERGE_AUTHORITY_VALIDATION: validation_raw,
+    }
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "accepted": True,
+        "reconciliation_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+        "c02_status": "ACCEPTED",
+        "c03_status": "READY_FOR_WORK_INSTRUCTION",
+        "dir2_status": "NOT_REACHED",
+        "dir_status": progress["dir_review"]["status"],
+        "repository_head": repository["local_head"],
+        "repository_upstream": repository["upstream"],
+        "repository_projection_mode": repository["projection_mode"],
+        "repository_validated_base_commit": repository["validated_base_commit"],
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": repository["exact_allowed_paths"],
+        "development_remote_url": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_URL,
+        "development_remote_ref": C02_POSTMERGE_AUTHORITY_DEVELOPMENT_REF,
+        "lineage": lineage,
+        "external_validation": external,
+        "tooling_validation": tooling,
+        "full_repository_suite": {"status": "NOT_COMPLETED", "collection_error_count": 7},
+        "current_manifest": C02_POSTMERGE_AUTHORITY_M,
+        "reporting_decision": "AUTO_CONTINUE",
+    })
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(
+        r"```json anvil-recovery-summary\s*\{.*?\}\s*```",
+        lambda _: replacement,
+        historical[C02_POSTMERGE_AUTHORITY_H].decode(),
+        flags=re.DOTALL,
+    )
+    if count != 1:
+        raise ValueError("C02_POSTMERGE_AUTHORITY_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-02 post-merge development authority reconciliation — seq737\n\n"
+        "- seq1~736 raw event object bytes를 보존하고 seq737만 append했다.\n"
+        "- C-02 ACCEPTED, C-03 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED, active lease 없음.\n"
+        "- full repository suite NOT_COMPLETED; external validation NOT_EXECUTED.\n\n"
+        + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0",
+        "digest_id": "C02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-DIGEST-20260912",
+        "package_id": "C-02",
+        "event_sequence": 737,
+        "algorithm": "SHA-256",
+        "created_at": C02_POSTMERGE_AUTHORITY_AT,
+        "scope": "seq737 append-only development authority successor; seq1-736 preserved; exact12",
+        "self_reference": False,
+        "progress": {
+            "path": C02_POSTMERGE_AUTHORITY_P,
+            "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress)),
+        },
+        "handoff": {
+            "path": C02_POSTMERGE_AUTHORITY_H,
+            "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff)),
+        },
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {
+        **files,
+        C02_POSTMERGE_AUTHORITY_REPORT: report_raw,
+        C02_POSTMERGE_AUTHORITY_STATUS: status_raw,
+        C02_POSTMERGE_AUTHORITY_H: handoff_raw,
+        C02_POSTMERGE_AUTHORITY_P: progress_raw,
+        C02_POSTMERGE_AUTHORITY_E: events_raw,
+        C02_POSTMERGE_AUTHORITY_D: digest_raw,
+        C02_POSTMERGE_AUTHORITY_VALIDATION: validation_raw,
+    }
+    historical_prefix = raw_event_object_prefix_bytes(historical[C02_POSTMERGE_AUTHORITY_E], 736)
+    manifest = {
+        "schema_version": "1.0.0",
+        "manifest_type": "C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION",
+        "artifact_id": "C02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260912",
+        "created_at": C02_POSTMERGE_AUTHORITY_AT,
+        "package_id": "C-02",
+        "event_sequence": 737,
+        "historical_event_sequence": 736,
+        "appended_event_count": 1,
+        "historical_raw_event_prefix": {
+            "bytes": len(historical_prefix),
+            "sha256": _c21_resume_sha(historical_prefix),
+        },
+        "accepted": True,
+        "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+        "c02_status": "ACCEPTED",
+        "c03_status": "READY_FOR_WORK_INSTRUCTION",
+        "dir2_status": "NOT_REACHED",
+        "active_leases": 0,
+        "execution_authority_path": C02_POSTMERGE_AUTHORITY_WI,
+        "execution_authority_sha256": wi_sha,
+        "invocation_path": C02_POSTMERGE_AUTHORITY_PROMPT,
+        "invocation_sha256": prompt_sha,
+        "lineage": lineage,
+        "external_validation": external,
+        "tooling_validation": tooling,
+        "full_repository_suite_status": "NOT_COMPLETED",
+        "collection_error_count": 7,
+        "record_binding": "EXACT12_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "self_reference": False,
+        **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+        for path, payload in sorted(artifacts.items())
+    ]
+    artifacts[C02_POSTMERGE_AUTHORITY_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C02_POSTMERGE_AUTHORITY_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c02_postmerge_development_authority_reconciliation_from_root(root: Path) -> dict[str, bytes]:
+    if _c21_resume_sha((root / C02_POSTMERGE_AUTHORITY_WI).read_bytes()) != C02_POSTMERGE_AUTHORITY_WI_SHA256:
+        raise ValueError("C02_POSTMERGE_AUTHORITY_WORK_INSTRUCTION_HASH_INVALID")
+    if _c21_resume_sha((root / C02_POSTMERGE_AUTHORITY_PROMPT).read_bytes()) != C02_POSTMERGE_AUTHORITY_PROMPT_SHA256:
+        raise ValueError("C02_POSTMERGE_AUTHORITY_INVOCATION_HASH_INVALID")
+    historical = {
+        path: subprocess.check_output(["git", "show", f"{C02_POSTMERGE_AUTHORITY_BASE}:{path}"], cwd=root)
+        for path in {
+            C02_POSTMERGE_AUTHORITY_STATUS,
+            C02_POSTMERGE_AUTHORITY_H,
+            C02_POSTMERGE_AUTHORITY_P,
+            C02_POSTMERGE_AUTHORITY_E,
+        }
+    }
+    generated = {
+        C02_POSTMERGE_AUTHORITY_REPORT,
+        C02_POSTMERGE_AUTHORITY_STATUS,
+        C02_POSTMERGE_AUTHORITY_M,
+        C02_POSTMERGE_AUTHORITY_H,
+        C02_POSTMERGE_AUTHORITY_P,
+        C02_POSTMERGE_AUTHORITY_E,
+        C02_POSTMERGE_AUTHORITY_D,
+        C02_POSTMERGE_AUTHORITY_VALIDATION,
+    }
+    files = {
+        path: (root / path).read_bytes()
+        for path in set(c02_postmerge_development_authority_reconciliation_paths()) - generated
+    }
+    return c02_postmerge_development_authority_reconciliation_artifacts(historical, files)
+
+
+def validate_c02_postmerge_development_authority_reconciliation_manifest(
+    manifest: Mapping[str, Any]
+) -> list[str]:
+    try:
+        meta = c02_postmerge_development_authority_reconciliation_metadata()
+        expected = {
+            "schema_version": "1.0.0",
+            "manifest_type": "C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION",
+            "artifact_id": "C02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260912",
+            "created_at": C02_POSTMERGE_AUTHORITY_AT,
+            "package_id": "C-02",
+            "event_sequence": 737,
+            "historical_event_sequence": 736,
+            "appended_event_count": 1,
+            "accepted": True,
+            "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+            "c02_status": "ACCEPTED",
+            "c03_status": "READY_FOR_WORK_INSTRUCTION",
+            "dir2_status": "NOT_REACHED",
+            "active_leases": 0,
+            "execution_authority_path": C02_POSTMERGE_AUTHORITY_WI,
+            "execution_authority_sha256": C02_POSTMERGE_AUTHORITY_WI_SHA256,
+            "invocation_path": C02_POSTMERGE_AUTHORITY_PROMPT,
+            "invocation_sha256": C02_POSTMERGE_AUTHORITY_PROMPT_SHA256,
+            "lineage": _c02_postmerge_lineage(),
+            "external_validation": _c02_postmerge_external_validation(),
+            "tooling_validation": _c02_postmerge_tooling_validation(),
+            "full_repository_suite_status": "NOT_COMPLETED",
+            "collection_error_count": 7,
+            "record_binding": "EXACT12_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+            "self_reference": False,
+            **meta,
+        }
+        errors = []
+        if any(not _c21_strict_json_equal(manifest.get(key), value) for key, value in expected.items()):
+            errors.append("C02_POSTMERGE_AUTHORITY_MANIFEST_INVALID")
+        prefix = manifest.get("historical_raw_event_prefix")
+        if (
+            not isinstance(prefix, Mapping)
+            or type(prefix.get("bytes")) is not int
+            or prefix["bytes"] < 1
+            or re.fullmatch(r"[A-F0-9]{64}", str(prefix.get("sha256"))) is None
+        ):
+            errors.append("C02_POSTMERGE_AUTHORITY_HISTORY_BINDING_INVALID")
+        rows = manifest.get("raw_checksums")
+        expected_paths = set(meta["exact_paths"]) - {C02_POSTMERGE_AUTHORITY_M}
+        if (
+            type(rows) is not list
+            or len(rows) != len(expected_paths)
+            or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_paths
+            or any(
+                not isinstance(row, Mapping)
+                or type(row.get("bytes")) is not int
+                or row["bytes"] < 1
+                or re.fullmatch(r"[A-F0-9]{64}", str(row.get("sha256"))) is None
+                for row in rows
+            )
+        ):
+            errors.append("C02_POSTMERGE_AUTHORITY_CHECKSUMS_INVALID")
+        return sorted(set(errors))
+    except (OSError, TypeError, KeyError, ValueError, AttributeError):
+        return ["C02_POSTMERGE_AUTHORITY_MANIFEST_INVALID"]
+
+
+def validate_c02_postmerge_development_authority_reconciliation_projection(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    try:
+        expected = c02_postmerge_development_authority_reconciliation_from_root(bundle["_root"])
+        actual_raw = {
+            path: (bundle["_root"] / path).read_bytes()
+            for path in c02_postmerge_development_authority_reconciliation_paths()
+        }
+        actual = {
+            C02_POSTMERGE_AUTHORITY_P: bundle.get("progress"),
+            C02_POSTMERGE_AUTHORITY_E: bundle.get("events"),
+            C02_POSTMERGE_AUTHORITY_H: bundle.get("handoff"),
+            C02_POSTMERGE_AUTHORITY_D: bundle.get("detached_digest"),
+            C02_POSTMERGE_AUTHORITY_M: manifest,
+        }
+        references = {
+            C02_POSTMERGE_AUTHORITY_P: _c21_resume_json(expected[C02_POSTMERGE_AUTHORITY_P]),
+            C02_POSTMERGE_AUTHORITY_E: _c21_resume_json(expected[C02_POSTMERGE_AUTHORITY_E]),
+            C02_POSTMERGE_AUTHORITY_H: extract_handoff_summary(expected[C02_POSTMERGE_AUTHORITY_H].decode()),
+            C02_POSTMERGE_AUTHORITY_D: _c21_resume_json(expected[C02_POSTMERGE_AUTHORITY_D]),
+            C02_POSTMERGE_AUTHORITY_M: _c21_resume_json(expected[C02_POSTMERGE_AUTHORITY_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], references[path]) for path in actual) else ["C02_POSTMERGE_AUTHORITY_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C02_POSTMERGE_AUTHORITY_RAW_BYTES_INVALID")
+        progress = actual[C02_POSTMERGE_AUTHORITY_P]
+        reconciliation = progress.get("c02_postmerge_development_authority_reconciliation", {}) if isinstance(progress, Mapping) else {}
+        if (
+            not isinstance(progress, Mapping)
+            or progress.get("event_sequence") != 737
+            or progress.get("current_phase") != "C"
+            or progress.get("current_work_package") != "C-02"
+            or progress.get("status") != "ACCEPTED"
+            or progress.get("active_agent") is not None
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or progress.get("active_work_instruction") is not None
+            or progress.get("next_work_package") != {"package_id": "C-03", "status": "READY_FOR_WORK_INSTRUCTION"}
+            or progress.get("next_safe_action") != "ISSUE_C03_WORK_INSTRUCTION"
+            or reconciliation.get("dir2_status") != "NOT_REACHED"
+            or "C-02" not in progress.get("completed_packages", [])
+        ):
+            errors.append("C02_POSTMERGE_AUTHORITY_CANONICAL_STATE_INVALID")
+        errors.extend(validate_c02_postmerge_development_authority_reconciliation_manifest(manifest))
+        historical = subprocess.check_output(
+            ["git", "show", f"{C02_POSTMERGE_AUTHORITY_BASE}:{C02_POSTMERGE_AUTHORITY_E}"],
+            cwd=bundle["_root"],
+        )
+        if raw_event_object_prefix_bytes(historical, 736) != raw_event_object_prefix_bytes(actual_raw[C02_POSTMERGE_AUTHORITY_E], 736):
+            errors.append("C02_POSTMERGE_AUTHORITY_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C02_POSTMERGE_AUTHORITY_INPUT_INVALID"]
+
+
+def _c02_optional_git_scalar(output: str | None) -> str | None:
+    rows = _c02_strict_raw_lines(output)
+    if rows is None or len(rows) > 1:
+        return None
+    if not rows:
+        return ""
+    if not rows[0] or rows[0] != rows[0].strip():
+        return None
+    return rows[0]
+
+
+def _collect_c02_postmerge_development_authority_reconciliation_git(
+    bundle: Mapping[str, Any]
+) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c02_postmerge_development_authority_reconciliation_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C02_POSTMERGE_AUTHORITY_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch = optional("branch", "--show-current")
+        status_raw = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C02_POSTMERGE_AUTHORITY_DEVELOPMENT_REF)
+        base_ref = value("rev-parse", C02_POSTMERGE_AUTHORITY_BASE)
+        final_ref = value("rev-parse", C02_POSTMERGE_AUTHORITY_FINAL)
+        base_parents = value("show", "-s", "--format=%P", C02_POSTMERGE_AUTHORITY_BASE)
+        final_parent = value("show", "-s", "--format=%P", C02_POSTMERGE_AUTHORITY_FINAL)
+        product_parent = value("show", "-s", "--format=%P", C02_POSTMERGE_AUTHORITY_PRODUCT)
+        start_parent = value("show", "-s", "--format=%P", C02_POSTMERGE_AUTHORITY_START_PROJECTION)
+        control_parent = value("show", "-s", "--format=%P", C02_POSTMERGE_AUTHORITY_CONTROL)
+        authority_parent = value("show", "-s", "--format=%P", C02_POSTMERGE_AUTHORITY_AUTHORITY)
+        if None in (
+            head, branch, status_raw, development_url, development_main, base_ref, final_ref,
+            base_parents, final_parent, product_parent, start_parent, control_parent, authority_parent,
+        ):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C02_POSTMERGE_AUTHORITY_DEVELOPMENT_URL:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if (
+            base_ref != C02_POSTMERGE_AUTHORITY_BASE
+            or final_ref != C02_POSTMERGE_AUTHORITY_FINAL
+            or base_parents.split() != C02_POSTMERGE_AUTHORITY_BASE_PARENTS
+            or final_parent.split() != [C02_POSTMERGE_AUTHORITY_PRODUCT]
+            or product_parent.split() != [C02_POSTMERGE_AUTHORITY_START_PROJECTION]
+            or start_parent.split() != [C02_POSTMERGE_AUTHORITY_CONTROL]
+            or control_parent.split() != [C02_POSTMERGE_AUTHORITY_AUTHORITY]
+            or authority_parent.split() != [C02_POSTMERGE_AUTHORITY_DEVELOPMENT_PARENT]
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_DEVELOPMENT_PARENT, C02_POSTMERGE_AUTHORITY_AUTHORITY)
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_AUTHORITY, C02_POSTMERGE_AUTHORITY_CONTROL)
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_CONTROL, C02_POSTMERGE_AUTHORITY_START_PROJECTION)
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_START_PROJECTION, C02_POSTMERGE_AUTHORITY_PRODUCT)
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_PRODUCT, C02_POSTMERGE_AUTHORITY_FINAL)
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_FINAL, C02_POSTMERGE_AUTHORITY_BASE)
+            or not check("diff", "--quiet", C02_POSTMERGE_AUTHORITY_FINAL, C02_POSTMERGE_AUTHORITY_BASE)
+        ):
+            return ["C02_POSTMERGE_AUTHORITY_GIT_LINEAGE_INVALID"]
+        dirty = _c02_strict_porcelain_paths(status_raw)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        feature_upstreams = {"", "development/main", f"development/{C02_POSTMERGE_AUTHORITY_BRANCH}"}
+        if head == C02_POSTMERGE_AUTHORITY_BASE:
+            if branch != C02_POSTMERGE_AUTHORITY_BRANCH or development_main != C02_POSTMERGE_AUTHORITY_BASE:
+                return ["C02_POSTMERGE_AUTHORITY_BRANCH_OR_UPSTREAM_INVALID"]
+            upstream = optional(
+                "for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C02_POSTMERGE_AUTHORITY_BRANCH}"
+            )
+            if upstream is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            if upstream not in feature_upstreams:
+                return ["C02_POSTMERGE_AUTHORITY_BRANCH_OR_UPSTREAM_INVALID"]
+            cached_raw = raw("diff", "--cached", "--name-only")
+            unstaged_raw = raw("diff", "--name-only")
+            untracked_raw = raw("ls-files", "--others", "--exclude-standard")
+            if None in (cached_raw, unstaged_raw, untracked_raw):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            cached = _c02_strict_name_only_paths(cached_raw)
+            unstaged = _c02_strict_name_only_paths(unstaged_raw)
+            untracked = _c02_strict_name_only_paths(untracked_raw)
+            if None in (cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                dirty == meta["exact_paths"]
+                and cached == meta["exact_paths"]
+                and not unstaged
+                and not untracked
+                and check("diff", "--cached", "--check")
+            )
+            return [] if valid else ["C02_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"]
+        if branch == C02_POSTMERGE_AUTHORITY_BRANCH:
+            if development_main != C02_POSTMERGE_AUTHORITY_BASE:
+                return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+            upstream = optional(
+                "for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C02_POSTMERGE_AUTHORITY_BRANCH}"
+            )
+            if upstream is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            if upstream not in feature_upstreams:
+                return ["C02_POSTMERGE_AUTHORITY_BRANCH_OR_UPSTREAM_INVALID"]
+            parents = value("show", "-s", "--format=%P", head)
+            changed_raw = raw("diff", "--name-only", C02_POSTMERGE_AUTHORITY_BASE, head)
+            if parents is None or changed_raw is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            changed = _c02_strict_name_only_paths(changed_raw)
+            if changed is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            if parents.split() != [C02_POSTMERGE_AUTHORITY_BASE] or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_BASE, head):
+                return ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+            valid = not dirty and changed == meta["exact_paths"] and check("diff", "--check", C02_POSTMERGE_AUTHORITY_BASE, head)
+            return [] if valid else ["C02_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"]
+        if branch == "main":
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main")
+            if upstream is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            if upstream != "development/main":
+                return ["C02_POSTMERGE_AUTHORITY_BRANCH_OR_UPSTREAM_INVALID"]
+        elif branch != "":
+            return ["C02_POSTMERGE_AUTHORITY_BRANCH_OR_UPSTREAM_INVALID"]
+        if head == C02_POSTMERGE_AUTHORITY_BASE or development_main != head:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        merged_parents = value("show", "-s", "--format=%P", head)
+        if merged_parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        parent_list = merged_parents.split()
+        if len(parent_list) != 2 or parent_list[0] != C02_POSTMERGE_AUTHORITY_BASE:
+            return ["C02_POSTMERGE_AUTHORITY_MERGE_LINEAGE_INVALID"]
+        postcommit = parent_list[1]
+        postcommit_parent = value("show", "-s", "--format=%P", postcommit)
+        postcommit_changed_raw = raw("diff", "--name-only", C02_POSTMERGE_AUTHORITY_BASE, postcommit)
+        merge_changed_raw = raw("diff", "--name-only", C02_POSTMERGE_AUTHORITY_BASE, head)
+        if None in (postcommit_parent, postcommit_changed_raw, merge_changed_raw):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        postcommit_changed = _c02_strict_name_only_paths(postcommit_changed_raw)
+        merge_changed = _c02_strict_name_only_paths(merge_changed_raw)
+        if None in (postcommit_changed, merge_changed):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if (
+            postcommit_parent.split() != [C02_POSTMERGE_AUTHORITY_BASE]
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_BASE, postcommit)
+            or not check("merge-base", "--is-ancestor", C02_POSTMERGE_AUTHORITY_BASE, head)
+        ):
+            return ["C02_POSTMERGE_AUTHORITY_MERGE_LINEAGE_INVALID"]
+        valid = (
+            not dirty
+            and postcommit_changed == meta["exact_paths"]
+            and merge_changed == meta["exact_paths"]
+            and check("diff", "--check", C02_POSTMERGE_AUTHORITY_BASE, postcommit)
+            and check("diff", "--check", C02_POSTMERGE_AUTHORITY_BASE, head)
+            and check("diff", "--quiet", postcommit, head)
+        )
+        return [] if valid else ["C02_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
