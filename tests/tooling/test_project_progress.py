@@ -11316,5 +11316,279 @@ class C01L3FinalAcceptanceProjectionTests(unittest.TestCase):
         )
 
 
+class C01PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
+    BASE = "b0e70278d3799860beb1eef94c382def53a45057"
+    BASE_PARENTS = [
+        "e215c0612363050dbe20315646f1612f31b8cdc0",
+        "5d4a78555110dee16fce01e512a367524ba1eeec",
+    ]
+    RECORD = "5d4a78555110dee16fce01e512a367524ba1eeec"
+    CONTROL = "2eba71ec37183ef6062157d7491ee48cb1fab6ba"
+    PRODUCT = "bb2ff4374c81865cab127eca14d3d4c9de575465"
+    EXACT12 = sorted([
+        "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
+        "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+        "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(
+            hasattr(checker, "c01_postmerge_development_authority_reconciliation_from_root"),
+            "C-01 postmerge authority builder missing",
+        )
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C01_POSTMERGE_AUTHORITY_P]),
+            "events": json.loads(artifacts[checker.C01_POSTMERGE_AUTHORITY_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C01_POSTMERGE_AUTHORITY_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C01_POSTMERGE_AUTHORITY_D]),
+        }
+
+    def test_seq728_builder_is_deterministic_and_preserves_seq727_raw_objects(self):
+        checker = self._checker()
+        first = checker.c01_postmerge_development_authority_reconciliation_from_root(ROOT)
+        self.assertEqual(first, checker.c01_postmerge_development_authority_reconciliation_from_root(ROOT))
+        self.assertEqual(set(self.EXACT12), set(first))
+        prior = subprocess.check_output(
+            ["git", "show", f"{self.BASE}:docs/progress/progress-events.json"], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(prior, 727),
+            checker.raw_event_object_prefix_bytes(first[checker.C01_POSTMERGE_AUTHORITY_E], 727),
+        )
+        progress = json.loads(first[checker.C01_POSTMERGE_AUTHORITY_P])
+        events = json.loads(first[checker.C01_POSTMERGE_AUTHORITY_E])["events"]
+        manifest = json.loads(first[checker.C01_POSTMERGE_AUTHORITY_M])
+        self.assertEqual((728, "REPOSITORY_RECONCILED"), (events[-1]["sequence"], events[-1]["event_type"]))
+        self.assertEqual(("C-01", "ACCEPTED", None, None), (
+            progress["current_work_package"], progress["status"],
+            progress["worker_lease"], progress["write_lease"],
+        ))
+        self.assertEqual({"package_id": "C-02", "status": "READY_NOT_STARTED"}, progress["next_work_package"])
+        self.assertEqual("DEVELOPMENT_MAIN_AUTHORITY_RECONCILED", manifest["status"])
+        self.assertIn(
+            checker.C01_POSTMERGE_AUTHORITY_STATUS,
+            {row["path"] for row in progress["latest_evidence_refs"]},
+        )
+        self.assertEqual(("USER_OWNED_NOT_EXECUTED", "USER_OWNED_NOT_EXECUTED"), (
+            manifest["evidence_boundary"]["provider"], manifest["evidence_boundary"]["telegram"],
+        ))
+        rows = {row["path"]: row for row in manifest["raw_checksums"]}
+        self.assertEqual(set(self.EXACT12) - {checker.C01_POSTMERGE_AUTHORITY_M}, set(rows))
+        for path, row in rows.items():
+            self.assertEqual(len(first[path]), row["bytes"])
+            self.assertEqual(hashlib.sha256(first[path]).hexdigest().upper(), row["sha256"])
+        self.assertEqual([], checker.validate_c01_postmerge_development_authority_reconciliation_projection(
+            self._bundle(checker, first), manifest
+        ))
+
+    def test_seq728_projection_rejects_history_state_boundary_and_checksum_mutations(self):
+        checker = self._checker()
+        artifacts = checker.c01_postmerge_development_authority_reconciliation_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C01_POSTMERGE_AUTHORITY_M])
+        for label, mutate in (
+            ("history", lambda bundle: bundle["events"]["events"][726].update(event_id="tampered")),
+            ("c01", lambda bundle: bundle["progress"].update(status="BLOCKED")),
+            ("c02", lambda bundle: bundle["progress"]["next_work_package"].update(status="ACTIVE")),
+            ("lease", lambda bundle: bundle["progress"].update(worker_lease={"status": "ACTIVE"})),
+        ):
+            with self.subTest(label=label):
+                changed = self._bundle(checker, artifacts)
+                mutate(changed)
+                self.assertTrue(checker.validate_c01_postmerge_development_authority_reconciliation_projection(changed, manifest))
+        for label, mutate in (
+            ("provider", lambda value: value["evidence_boundary"].update(provider="PASS")),
+            ("parents", lambda value: value["lineage"].update(baseline_merge_parents=list(reversed(self.BASE_PARENTS)))),
+            ("checksum", lambda value: value["raw_checksums"][0].update(sha256="0" * 64)),
+        ):
+            with self.subTest(label=label):
+                changed = copy.deepcopy(manifest)
+                mutate(changed)
+                self.assertTrue(checker.validate_c01_postmerge_development_authority_reconciliation_projection(
+                    self._bundle(checker, artifacts), changed
+                ))
+
+        original_read_bytes = Path.read_bytes
+        mutated_raw = artifacts[checker.C01_POSTMERGE_AUTHORITY_E].replace(
+            b'"event_id": "evt_g05_legacy_migration"',
+            b'"event_id": "xvt_g05_legacy_migration"',
+            1,
+        )
+        self.assertNotEqual(artifacts[checker.C01_POSTMERGE_AUTHORITY_E], mutated_raw)
+
+        def read_mutated_event_file(path):
+            if path == ROOT / checker.C01_POSTMERGE_AUTHORITY_E:
+                return mutated_raw
+            return original_read_bytes(path)
+
+        with mock.patch.object(Path, "read_bytes", read_mutated_event_file):
+            self.assertEqual(
+                [
+                    "C01_POSTMERGE_AUTHORITY_HISTORY_MUTATED",
+                    "C01_POSTMERGE_AUTHORITY_RAW_BYTES_INVALID",
+                ],
+                checker.validate_c01_postmerge_development_authority_reconciliation_projection(
+                    self._bundle(checker, artifacts), manifest
+                ),
+            )
+
+        mutated_status = artifacts[checker.C01_POSTMERGE_AUTHORITY_STATUS] + b"\nbyte-only mutation\n"
+
+        def read_mutated_status_file(path):
+            if path == ROOT / checker.C01_POSTMERGE_AUTHORITY_STATUS:
+                return mutated_status
+            return original_read_bytes(path)
+
+        with mock.patch.object(Path, "read_bytes", read_mutated_status_file):
+            self.assertEqual(
+                ["C01_POSTMERGE_AUTHORITY_RAW_BYTES_INVALID"],
+                checker.validate_c01_postmerge_development_authority_reconciliation_projection(
+                    self._bundle(checker, artifacts), manifest
+                ),
+            )
+
+    def test_seq728_git_accepts_only_precommit_postcommit_merge_and_detached_smoke(self):
+        checker = self._checker()
+        meta = checker.c01_postmerge_development_authority_reconciliation_metadata()
+        feature = "a" * 40
+        merged = "b" * 40
+        devref = "refs/remotes/development/main"
+        status_key = ("status", "--porcelain", "--untracked-files=all")
+        common = {
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("rev-parse", self.BASE): self.BASE,
+            ("show", "-s", "--format=%P", self.BASE): " ".join(self.BASE_PARENTS),
+            ("show", "-s", "--format=%P", self.RECORD): self.CONTROL,
+            ("show", "-s", "--format=%P", self.CONTROL): self.PRODUCT,
+        }
+        ancestors = {
+            ("merge-base", "--is-ancestor", self.PRODUCT, self.CONTROL),
+            ("merge-base", "--is-ancestor", self.CONTROL, self.RECORD),
+            ("merge-base", "--is-ancestor", self.RECORD, self.BASE),
+        }
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE}}}
+
+        def run(values, checks):
+            with mock.patch.object(checker, "_git_value", side_effect=lambda root, *args: values.get(args)), mock.patch.object(
+                checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in checks else 1
+            ):
+                return checker._collect_c01_postmerge_development_authority_reconciliation_git(bundle)
+
+        pre = common | {
+            ("rev-parse", "HEAD"): self.BASE,
+            ("branch", "--show-current"): "codex/c01-postmerge-authority-reconcile-r1",
+            ("rev-parse", devref): self.BASE,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/codex/c01-postmerge-authority-reconcile-r1"): "",
+            status_key: "\n".join("M  " + path for path in self.EXACT12),
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT12),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        pre_checks = ancestors | {("diff", "--cached", "--check")}
+        self.assertEqual([], run(pre, pre_checks))
+        self.assertTrue(run(pre | {("diff", "--cached", "--name-only"): "\n".join(self.EXACT12[:-1])}, pre_checks))
+        self.assertTrue(run(pre | {("remote", "get-url", "development"): "https://example.invalid/Anvil.git"}, pre_checks))
+        self.assertTrue(run(pre | {("show", "-s", "--format=%P", self.BASE): " ".join(reversed(self.BASE_PARENTS))}, pre_checks))
+        self.assertEqual(
+            ["GIT_REQUIRED_COLLECTION_FAILED"],
+            run(pre | {("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/codex/c01-postmerge-authority-reconcile-r1"): None}, pre_checks),
+        )
+
+        post = common | {
+            ("rev-parse", "HEAD"): feature,
+            ("branch", "--show-current"): "codex/c01-postmerge-authority-reconcile-r1",
+            ("rev-parse", devref): self.BASE,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/codex/c01-postmerge-authority-reconcile-r1"): "development/codex/c01-postmerge-authority-reconcile-r1",
+            ("show", "-s", "--format=%P", feature): self.BASE,
+            ("diff", "--name-only", self.BASE, feature): "\n".join(self.EXACT12),
+            status_key: "",
+        }
+        post_checks = ancestors | {
+            ("merge-base", "--is-ancestor", self.BASE, feature),
+            ("diff", "--check", self.BASE, feature),
+        }
+        self.assertEqual([], run(post, post_checks))
+        self.assertTrue(run(post | {status_key: " M docs/WORK_STATUS.md"}, post_checks))
+        self.assertEqual(
+            ["GIT_REQUIRED_COLLECTION_FAILED"],
+            run(post | {status_key: "??"}, post_checks),
+        )
+
+        merge = common | {
+            ("rev-parse", "HEAD"): merged,
+            ("branch", "--show-current"): "main",
+            ("rev-parse", devref): merged,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main"): "development/main",
+            ("show", "-s", "--format=%P", merged): f"{self.BASE} {feature}",
+            ("show", "-s", "--format=%P", feature): self.BASE,
+            ("diff", "--name-only", self.BASE, feature): "\n".join(self.EXACT12),
+            ("diff", "--name-only", self.BASE, merged): "\n".join(self.EXACT12),
+            status_key: "",
+        }
+        merge_checks = ancestors | {
+            ("merge-base", "--is-ancestor", self.BASE, feature),
+            ("merge-base", "--is-ancestor", self.BASE, merged),
+            ("diff", "--check", self.BASE, feature),
+            ("diff", "--check", self.BASE, merged),
+            ("diff", "--quiet", feature, merged),
+        }
+        self.assertEqual([], run(merge, merge_checks))
+        self.assertTrue(run(merge | {("show", "-s", "--format=%P", merged): f"{feature} {self.BASE}"}, merge_checks))
+        self.assertTrue(run(merge | {("diff", "--name-only", self.BASE, merged): self.EXACT12[0]}, merge_checks))
+        self.assertTrue(run(merge, merge_checks - {("diff", "--quiet", feature, merged)}))
+        self.assertEqual(
+            ["GIT_REQUIRED_COLLECTION_FAILED"],
+            run(merge | {("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main"): None}, merge_checks),
+        )
+
+        detached = merge | {
+            ("branch", "--show-current"): "",
+        }
+        self.assertEqual([], run(detached, merge_checks))
+        self.assertTrue(run(detached | {("rev-parse", devref): self.BASE}, merge_checks))
+        self.assertTrue(run(detached | {("rev-parse", "HEAD"): "c" * 40}, merge_checks))
+        with mock.patch.object(
+            checker,
+            "_git_value",
+            side_effect=lambda root, *args: (
+                (_ for _ in ()).throw(AssertionError("detached state must not query a branch upstream"))
+                if args and args[0] == "for-each-ref"
+                else detached.get(args)
+            ),
+        ), mock.patch.object(
+            checker, "_git_returncode", side_effect=lambda root, *args: 0 if args in merge_checks else 1
+        ):
+            self.assertEqual([], checker._collect_c01_postmerge_development_authority_reconciliation_git(bundle))
+
+    def test_seq728_dispatchers_select_postmerge_successor_first(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 728}}
+        with mock.patch.object(
+            checker,
+            "_collect_c01_postmerge_development_authority_reconciliation_git",
+            return_value=["SEQ728_SELECTED"],
+        ) as selected, mock.patch.object(
+            checker,
+            "_collect_c01_l3_final_acceptance_git",
+            side_effect=AssertionError("seq727 predicate must not run"),
+        ):
+            self.assertEqual(["SEQ728_SELECTED"], checker._validate_git_projection(bundle))
+            selected.assert_called_once_with(bundle)
+
+
 if __name__ == "__main__":
     unittest.main()

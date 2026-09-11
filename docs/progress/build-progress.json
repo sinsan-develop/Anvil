@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c01-l3-final-acceptance-seq727",
-  "event_sequence": 727,
-  "updated_at": "2026-09-11T15:30:00+09:00",
-  "last_event_id": "evt_c01_l3_final_main_package_accepted",
+  "snapshot_id": "snapshot-c01-postmerge-development-authority-reconciliation-seq728",
+  "event_sequence": 728,
+  "updated_at": "2026-09-11T11:20:12+09:00",
+  "last_event_id": "evt_c01_postmerge_development_authority_reconciled",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -286,21 +286,41 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
-      "sha256": "C0F83E4469C184C62211236279FE2ED0A6E1EA834142A6BA61BC9CB16ED569F6"
+      "path": "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+      "sha256": "C7849483B731DF90DAEEE29005A1A071B770DD5FE9E86A6F5A1B5656B9EE9C24"
     },
     {
-      "path": "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
-      "sha256": "8932C732DB168AB11C2EFBE638B273D632D091794BCF1CA18C849B79CC5B7DEA"
+      "path": "docs/WORK_STATUS.md",
+      "sha256": "2CCE0A51D18702CE0DDDAB08E000CD757D498DD3F7DFEB194E29BC9490C2E111"
     },
     {
-      "path": "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
-      "sha256": "A73CDB64483BE73FF712470C8946A570A75C68885DC6A148166128D639B9F1E1"
+      "path": "docs/progress/progress-events.json",
+      "sha256": "EAF08C771640809C8242FCD0CB995AB5A744AB297E32FEFAF8EC6A0BC04D3C4E"
+    },
+    {
+      "path": "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "sha256": "425CC5D4FA865F1400D822961041A5C57B33F73B547DD43B6F51309CDD535A95"
+    },
+    {
+      "path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "sha256": "12956F7C4AD35EECF09AB62981CB45C47D1707B84525D915E07F1E8EEAEB0BCB"
+    },
+    {
+      "path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+      "sha256": "1CE299E740F9D2A473DEFD30D09EB08BA1A740F89C8B43219C5FBB397BE50CA2"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "sha256": "877144A211D56BC89AF6517E7418A059D8FF18A487BA59DDE633BD68CE5DBCA1"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "sha256": "2B1807AF9DEAF14E48D8B06321E26F0AD40D143CCEEFAF16230BC4392423F348"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C01-L3-FINAL-ACCEPTANCE-20260911"
+    "path": "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+    "artifact_id": "C01-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260911"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -420,29 +440,26 @@
     }
   },
   "repository": {
-    "projection_mode": "C01_L3_FINAL_ACCEPTANCE_EXACT15",
-    "validated_base_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
-    "head_relation": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OF_CONTROL",
-    "branch": "codex/c01-mainline-reconciliation-r5",
-    "upstream": "development/codex/c01-mainline-reconciliation-r5",
-    "remote_head": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+    "projection_mode": "C01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
+    "validated_base_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+    "head_relation": "EXACT12_PRECOMMIT_OR_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+    "branch": "codex/c01-postmerge-authority-reconcile-r1",
+    "upstream": "NO_UPSTREAM",
+    "remote_head": "b0e70278d3799860beb1eef94c382def53a45057",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "NOT_EXECUTED_FINAL_RECORD",
+    "push_status": "NOT_EXECUTED_RECONCILIATION_RECORD",
     "exact_allowed_paths": [
-      "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
-      "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+      "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
       "docs/WORK_STATUS.md",
-      "docs/completion_reports/C-01_completion.md",
-      "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
-      "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+      "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
-      "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
-      "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
+      "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
@@ -460,8 +477,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "STAGED_EXACT15",
-    "local_head": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+    "worktree_status": "STAGED_EXACT12",
+    "local_head": "b0e70278d3799860beb1eef94c382def53a45057",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1221,8 +1238,8 @@
     "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
     "development_remote_ref": "refs/remotes/development/main",
     "baseline_merge_parents": [
-      "931b32418924de11626949b9303360696d614fb0",
-      "ef973bb3e61df5a3acded215dbebe73a71f4f873"
+      "e215c0612363050dbe20315646f1612f31b8cdc0",
+      "5d4a78555110dee16fce01e512a367524ba1eeec"
     ],
     "accepted_feature_commit": "a03aecc74b412515dab983148838c249fca62d3a",
     "accepted_feature_parent": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
@@ -1261,7 +1278,11 @@
     "projection_commit_binding": "STAGED_EXACT20_OR_SOLE_DIRECT_CHILD_OF_FIX_OR_MERGE_SECOND_PARENT",
     "control_commit_parent": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
     "historical_commit": "a34d12da5f504a5d2694fc04f0924082cb1fc1d9",
-    "test_baseline_commit": "fd3c89665629addd78e74c2fe946fb9dfc893c36"
+    "test_baseline_commit": "fd3c89665629addd78e74c2fe946fb9dfc893c36",
+    "baseline_merge_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+    "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
+    "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+    "control_parent": "bb2ff4374c81865cab127eca14d3d4c9de575465"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1358,31 +1379,25 @@
     "b01_started": true
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-C-01-L3-FINAL-ACCEPTANCE-PROJECTION-20260911-001",
-    "artifact_path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
-    "artifact_sha256": "568E85F6766F28D9356FA2674D260C8EE8229ED4EFACE5AEBF63F9B68F65D9B3",
-    "invocation_path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-    "invocation_sha256": "9B2D51D6070A732EAAEF3A10C3CD31CE87D8590EDFB7E407021E3930FBB1AEA9",
+    "artifact_id": "WI-C-01-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260911-001",
+    "artifact_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "artifact_sha256": "1CE299E740F9D2A473DEFD30D09EB08BA1A740F89C8B43219C5FBB397BE50CA2",
+    "invocation_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "invocation_sha256": "12956F7C4AD35EECF09AB62981CB45C47D1707B84525D915E07F1E8EEAEB0BCB",
     "executor": "developer-primary",
     "result_status": "COMPLETED",
-    "package_status": "ACCEPTED",
-    "accepted": true,
-    "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
-    "write_fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
+    "package_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
     "exact_paths": [
-      "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
-      "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+      "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
       "docs/WORK_STATUS.md",
-      "docs/completion_reports/C-01_completion.md",
-      "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
-      "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+      "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
-      "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
-      "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
+      "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ]
@@ -1391,7 +1406,8 @@
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
       "C01_ACCEPTED",
-      "C02_READY_NOT_STARTED"
+      "C02_READY_NOT_STARTED",
+      "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1577,8 +1593,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-01",
-    "path": "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
+    "manifest_path": "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1599,7 +1615,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "CDE2B25246DCE76D0477CB3594F1571D5A391750309434D13C8D7046BD7B67F5"
+      "sha256": "EAF08C771640809C8242FCD0CB995AB5A744AB297E32FEFAF8EC6A0BC04D3C4E"
     }
   },
   "next_work_package": {
@@ -1993,7 +2009,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "089D0777BB452E0588DBB15265E68AD33EEDC7078D90050486894BC8E7083F8E",
+  "snapshot_hash": "8B714934D3BEFA58E947E34F42BB5C9CE59938C782121DF2DD0F1F471F0B93F6",
   "runtime_next_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -2140,31 +2156,25 @@
     "runtime_next_action": "PUSH_AND_EXECUTE_C21_WSL_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION"
   },
   "completed_work_instruction": {
-    "artifact_id": "WI-C-01-L3-FINAL-ACCEPTANCE-PROJECTION-20260911-001",
-    "artifact_path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
-    "artifact_sha256": "568E85F6766F28D9356FA2674D260C8EE8229ED4EFACE5AEBF63F9B68F65D9B3",
-    "invocation_path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-    "invocation_sha256": "9B2D51D6070A732EAAEF3A10C3CD31CE87D8590EDFB7E407021E3930FBB1AEA9",
+    "artifact_id": "WI-C-01-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260911-001",
+    "artifact_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "artifact_sha256": "1CE299E740F9D2A473DEFD30D09EB08BA1A740F89C8B43219C5FBB397BE50CA2",
+    "invocation_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "invocation_sha256": "12956F7C4AD35EECF09AB62981CB45C47D1707B84525D915E07F1E8EEAEB0BCB",
     "executor": "developer-primary",
     "result_status": "COMPLETED",
-    "package_status": "ACCEPTED",
-    "accepted": true,
-    "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
-    "write_fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
+    "package_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
     "exact_paths": [
-      "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
-      "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+      "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
       "docs/WORK_STATUS.md",
-      "docs/completion_reports/C-01_completion.md",
-      "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
-      "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+      "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
-      "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
-      "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
+      "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ]
@@ -3612,7 +3622,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-11T15:30:00+09:00",
+  "recorded_at": "2026-09-11T11:20:12+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -13397,5 +13407,34 @@
       "tests/verification/test_c01_l3_independent_acceptance.py"
     ],
     "revoked_event_sequence": 722
+  },
+  "c01_postmerge_development_authority_reconciliation": {
+    "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+    "accepted": true,
+    "event_sequence": 728,
+    "lineage": {
+      "baseline_merge_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+      "baseline_merge_parents": [
+        "e215c0612363050dbe20315646f1612f31b8cdc0",
+        "5d4a78555110dee16fce01e512a367524ba1eeec"
+      ],
+      "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
+      "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+      "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+      "control_parent": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+      "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+      "ancestor_chain_required": true
+    },
+    "evidence_boundary": {
+      "provider": "USER_OWNED_NOT_EXECUTED",
+      "telegram": "USER_OWNED_NOT_EXECUTED",
+      "external_action": "NOT_EXECUTED",
+      "runtime": "NOT_MUTATED",
+      "database": "NOT_MUTATED",
+      "secret": "NOT_ACCESSED",
+      "push": "NOT_EXECUTED",
+      "pull_request": "NOT_EXECUTED",
+      "merge": "NOT_EXECUTED_BY_RECONCILIATION"
+    }
   }
 }
