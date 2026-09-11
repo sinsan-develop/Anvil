@@ -11,7 +11,9 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping
 
 from packages.leases import LeaseService
-from packages.orchestration.delegation import DelegationPacket
+from packages.orchestration.delegation import (
+    DataEgressProfile, DelegationPacket, PermissionSnapshot,
+)
 from packages.orchestration.developer_lifecycle import (
     CheckpointHandoff, DeveloperLifecycleService, LifecycleStatus,
 )
@@ -128,19 +130,37 @@ class SyntheticE2EHarness:
         if run_id in self._runs:
             raise E2EError("DUPLICATE_RUN")
         target = _hash({"run": run_id, "artifact": "synthetic"})
+        permission = PermissionSnapshot(
+            allowed_paths=("packages/e2e/**", "tests/e2e/**"),
+            allowed_actions=("read", "test"),
+            allowed_tools=("read_file", "pytest"),
+            allowed_backends=("local",), prohibited_paths=(), protected_paths=(),
+            prohibited_actions=("external_network", "database", "deployment"),
+        )
+        egress = DataEgressProfile("local_only", (), (), ())
         packet = DelegationPacket(
             delegation_id=f"delegation:{run_id}", parent_run_id=run_id,
             parent_agent_id="MAIN_AGENT", work_instruction_id="C-15",
-            plan_revision=1, step_id="step:fixture", objective="synthetic E2E",
-            allowed_paths=("packages/e2e/**", "tests/e2e/**"),
-            prohibited_actions=("external_network", "database", "deployment"),
-            completion_conditions=("evidence", "projection"), baseline_hash=self._BASELINE,
-            permission_snapshot_hash=self._PERMISSION, context_snapshot_hash=self._CONTEXT,
-            egress_snapshot_hash=self._EGRESS,
+            plan_revision=1, step_id="step:fixture", workspace_id="fixture-workspace",
+            objective="synthetic E2E", in_scope=("synthetic fixture",),
+            out_of_scope=("external systems",), allowed_paths=permission.allowed_paths,
+            prohibited_actions=permission.prohibited_actions,
+            permission_profile_id="fixture-read-only",
+            expected_result_schema="subagent_result/v1",
+            required_evidence=("evidence", "projection"), budget_ref="fixture-budget",
+            completion_conditions=("evidence", "projection"),
+            baseline_hash=self._BASELINE, context_snapshot_hash=self._CONTEXT,
+            permission_snapshot=permission,
+            permission_snapshot_hash=permission.snapshot_hash,
+            parent_permission_snapshot_hash=permission.snapshot_hash,
+            data_egress_profile=egress, egress_snapshot_hash=egress.snapshot_hash,
+            parent_egress_snapshot_hash=egress.snapshot_hash,
         )
-        self.lifecycle.start(packet, session_id=run_id, baseline_hash=self._BASELINE,
-                             permission_snapshot_hash=self._PERMISSION, context_snapshot_hash=self._CONTEXT,
-                             egress_snapshot_hash=self._EGRESS)
+        self.lifecycle.start(
+            packet, session_id=run_id, baseline_hash=self._BASELINE,
+            context_snapshot_hash=self._CONTEXT,
+            parent_permission_snapshot=permission, parent_egress_profile=egress,
+        )
         run = _Run(run_id, target, packet)
         self._runs[run_id] = run
         self._event(run, "RunRequested")

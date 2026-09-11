@@ -14,7 +14,10 @@ from types import MappingProxyType
 from typing import Any, Mapping, Protocol
 import re
 
-from .delegation import DelegationPacket, PacketValidationResult, validate_packet
+from .delegation import (
+    DataEgressProfile, DelegationPacket, PacketValidationResult,
+    PermissionSnapshot, validate_packet,
+)
 
 
 class LifecycleStatus(StrEnum):
@@ -249,13 +252,18 @@ class DeveloperLifecycleService:
 
     def start(
         self, packet: DelegationPacket | Mapping[str, Any] | None, *, session_id: str,
-        baseline_hash: str, permission_snapshot_hash: str, context_snapshot_hash: str,
-        egress_snapshot_hash: str,
+        baseline_hash: str, context_snapshot_hash: str,
+        parent_permission_snapshot: PermissionSnapshot | Mapping[str, Any] | None = None,
+        parent_egress_profile: DataEgressProfile | Mapping[str, Any] | None = None,
     ) -> DeveloperSession:
         existing = self._sessions.get(session_id)
         if existing is not None:
             return existing
-        validation = validate_packet(packet, baseline_hash=baseline_hash, permission_snapshot_hash=permission_snapshot_hash, context_snapshot_hash=context_snapshot_hash, egress_snapshot_hash=egress_snapshot_hash)
+        validation = validate_packet(
+            packet, baseline_hash=baseline_hash, context_snapshot_hash=context_snapshot_hash,
+            parent_permission_snapshot=parent_permission_snapshot,
+            parent_egress_profile=parent_egress_profile,
+        )
         if not validation.valid:
             raise PacketRejected(validation)
         candidate = packet if isinstance(packet, DelegationPacket) else DelegationPacket.from_dict(packet)

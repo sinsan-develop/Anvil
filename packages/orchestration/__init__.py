@@ -2,7 +2,11 @@
 
 from .kernel import BudgetDenied, BudgetUsageEvent, MainAgentKernel, StepBudget, StepResult
 from .native_agent_adapter import NativeCodingAgentAdapter
-from .delegation import DelegationPacket, PacketValidationResult, validate_packet
+from .delegation import (
+    DataEgressProfile, DataEgressSnapshot, DelegationPacket,
+    DelegationValidationReceipt, PacketValidationResult,
+    PermissionProfileSnapshot, PermissionSnapshot, ValidationReceipt, validate_packet,
+)
 from .developer_lifecycle import (
     DeveloperLifecycleService, DeveloperRunner, DeveloperSession,
     DeterministicFakeDeveloperRunner, InvalidLifecycleTransition, LifecycleError,
@@ -38,7 +42,9 @@ from packages.planning.planner import (
 __all__ = [
     "BudgetDenied", "BudgetUsageEvent", "MainAgentKernel", "StepBudget", "StepResult",
     "NativeCodingAgentAdapter",
-    "DelegationPacket", "PacketValidationResult", "validate_packet",
+    "DataEgressProfile", "DataEgressSnapshot", "PermissionSnapshot",
+    "PermissionProfileSnapshot", "DelegationPacket", "PacketValidationResult",
+    "DelegationValidationReceipt", "ValidationReceipt", "validate_packet",
     "DeveloperLifecycleService", "DeveloperRunner", "DeveloperSession",
     "DeterministicFakeDeveloperRunner", "InvalidLifecycleTransition", "LifecycleError",
     "LifecycleStatus", "PacketRejected", "RawResult", "RawResultEnvelope",

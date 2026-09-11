@@ -4,8 +4,8 @@ from datetime import datetime, timezone, timedelta
 from packages.execution import ResultStatus
 from packages.leases import LeaseService
 from packages.orchestration import (
-    DelegationPacket, DeveloperLifecycleService, FailureLedger,
-    MainAgentTakeoverService, TakeoverReasonCode,
+    DataEgressProfile, DelegationPacket, DeveloperLifecycleService, FailureLedger,
+    MainAgentTakeoverService, PermissionSnapshot, TakeoverReasonCode,
 )
 from packages.tool_gateway import ToolPermissionRegistry
 
@@ -29,13 +29,31 @@ def _report(result_id: str):
 
 
 def _ready():
+    permission = PermissionSnapshot(
+        ("packages/x.py",), ("read", "test"), ("read_file", "pytest"),
+        ("codex",), (), (), ("network",),
+    )
+    egress = DataEgressProfile("local_only", (), (), ())
     packet = DelegationPacket(
-        "del-1", "run-1", "main", "wi-1", 1, "step-1", "fix",
-        ("packages/x.py",), ("network",), ("three failures",), H, H, H, H,
+        delegation_id="del-1", parent_run_id="run-1", parent_agent_id="main",
+        work_instruction_id="wi-1", plan_revision=1, step_id="step-1",
+        workspace_id="ws-1", objective="fix", in_scope=("takeover fixture",),
+        out_of_scope=("external systems",), allowed_paths=permission.allowed_paths,
+        prohibited_actions=permission.prohibited_actions,
+        permission_profile_id="perm-1", expected_result_schema="subagent_result/v1",
+        required_evidence=("failure reports",), budget_ref="budget-1",
+        completion_conditions=("three failures",), baseline_hash=H,
+        context_snapshot_hash=H, permission_snapshot=permission,
+        permission_snapshot_hash=permission.snapshot_hash,
+        parent_permission_snapshot_hash=permission.snapshot_hash,
+        data_egress_profile=egress, egress_snapshot_hash=egress.snapshot_hash,
+        parent_egress_snapshot_hash=egress.snapshot_hash,
     )
     lifecycle = DeveloperLifecycleService()
-    lifecycle.start(packet, session_id="run-1", baseline_hash=H,
-                    permission_snapshot_hash=H, context_snapshot_hash=H, egress_snapshot_hash=H)
+    lifecycle.start(
+        packet, session_id="run-1", baseline_hash=H, context_snapshot_hash=H,
+        parent_permission_snapshot=permission, parent_egress_profile=egress,
+    )
     lifecycle.wait("run-1")
     now = datetime.now(timezone.utc)
     leases = LeaseService(token_factory=iter(["exec", "write"]).__next__)
