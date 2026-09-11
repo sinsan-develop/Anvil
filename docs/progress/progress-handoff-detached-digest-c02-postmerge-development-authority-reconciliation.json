@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-DIGEST-20260912",
+  "package_id": "C-02",
+  "event_sequence": 737,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-12T02:05:29+09:00",
+  "scope": "seq737 append-only development authority successor; seq1-736 preserved; exact12",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 816823,
+    "file_sha256": "7149CFF9B43FA844C09F6E9A7FC81DF0FE6A9BDE2EEBD430D5390F4F10E8BEEA",
+    "canonical_json_sha256": "1D381F06D3F20007557129EA70CBCE0388BEC80807207B415DCDF06B4FC0D731"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 188252,
+    "file_sha256": "FEE698B580EC0B1C7C3BDFB06C0676A0D22B5A2F3085C4A248BE62C12F534F21",
+    "machine_summary_canonical_sha256": "3126202605D0DDE54CAF25B90EF980614EC7D204408E852CCA9F9634DD47381C"
+  }
+}

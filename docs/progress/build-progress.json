@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c02-final-acceptance-seq736",
-  "event_sequence": 736,
-  "updated_at": "2026-09-12T08:45:00+09:00",
-  "last_event_id": "evt_c02_final_main_package_accepted",
+  "snapshot_id": "snapshot-c02-postmerge-development-authority-reconciliation-seq737",
+  "event_sequence": 737,
+  "updated_at": "2026-09-12T02:05:29+09:00",
+  "last_event_id": "evt_c02_postmerge_development_authority_reconciled",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -287,57 +287,41 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/C-02_FINAL_ACCEPTANCE_REPORT.md",
-      "sha256": "7CB858C7385926740298EFE7AD9F0953AD03298F2416E79B2E0157386A2383C8"
+      "path": "docs/04_test_reports/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+      "sha256": "619491F6965676705336B6B2B53504F450C9C34456455D4160575A9DE18D6302"
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "sha256": "F7BC0CCFA36C591BC70A46F882E23A82F7E070750D4A45B99E7F3BEA2F97452C"
-    },
-    {
-      "path": "docs/completion_reports/C-02_completion.md",
-      "sha256": "AAD14EFB2C273F1C125A48E490094A65112D6667FCC1C10E1DD9AAAA1952AEF7"
-    },
-    {
-      "path": "docs/evidence/raw/C-02_DELEGATION_AUTHORITY_EVIDENCE.json",
-      "sha256": "F5946FBB1D2372D4F2024B63A6E531B04706A77F7A0248EBB2E96F80EB632AB9"
+      "sha256": "4807A54C56ECA7A6627195C29DFC2822DABF82AC5E91884BE3804F95C2E711E8"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "BEC2ED58C212CA22490B25758B1AA0CAAFDD574967279F07937DDEEB29874ABB"
+      "sha256": "44FBC44637316F9EEFA7A0A0F39E38568C1FD7CFC0DEE6DDB906D5D83C5A214F"
     },
     {
-      "path": "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
-      "sha256": "53FE43762D8785A547F86FB0788E80B747D427676DC0FA25093D9C99CE664BE6"
+      "path": "docs/validation/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "sha256": "DAD5291CF0EA60FAF69215D44EDEFFBEBBE34A0A073319ECBC22F3E7E739CE62"
     },
     {
-      "path": "docs/validation/C-02_FINAL_ACCEPTANCE_VALIDATION.md",
-      "sha256": "846A1E85B74A04D55E41C8E1506AAF7E028921B7AE2827242E55647B4FEB73FF"
+      "path": "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "sha256": "DA22B206BD180EFD986F1BF750DDF6173DD7D33C9D44D6B51CBBC99E202CE74D"
     },
     {
-      "path": "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-      "sha256": "708EE104D705B4F1CEDBBB6F24E68623FF9A552BD0FD39A8351C5AC7BB99C105"
-    },
-    {
-      "path": "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
-      "sha256": "AE8D6CBFA21164137E161EF0DB96DE135B701C545EA858702F9AC21875471A80"
+      "path": "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+      "sha256": "6917AD09270FEC8F5976FED14ED145DBD15490E8D609ACB0DBA23BE038924869"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "7B0178B11CB407CD2FECFA17E5FA2C6E9BBC9FC64E5CCA318CD28FF372939DAD"
+      "sha256": "DD39E82CFA92C7489305CA2C413792EF4F2D5952772A7F662D390BE8162BC737"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "99F139AF107B1FE3613D78899BC0A94C35959556F7823B5F7FB59EA0E94D6020"
-    },
-    {
-      "path": "tests/verification/test_c02_independent_acceptance.py",
-      "sha256": "150AEAD0D67C249B1E5B9FB0F6020BA5A6702134AA00D62FCE8D30FF5B56D948"
+      "sha256": "899AAC832011CD82FD90440DDA1B83753CF00196F214F1FF3A5C432DA56C9C8A"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C02-FINAL-ACCEPTANCE-20260912"
+    "path": "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+    "artifact_id": "C02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260912"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -457,32 +441,28 @@
     }
   },
   "repository": {
-    "projection_mode": "C02_FINAL_ACCEPTANCE_EXACT16",
-    "validated_base_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
-    "head_relation": "STAGED_EXACT16_OR_SOLE_DIRECT_CHILD",
-    "branch": "codex/c02-delegation-contract-r1",
+    "projection_mode": "C02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
+    "validated_base_commit": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
+    "head_relation": "EXACT12_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+    "branch": "codex/c02-postmerge-authority-reconcile-r1",
     "upstream": "development/main",
-    "remote_head": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+    "remote_head": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "NOT_EXECUTED",
+    "push_status": "NOT_EXECUTED_RECONCILIATION_RECORD",
     "exact_allowed_paths": [
-      "docs/04_test_reports/C-02_FINAL_ACCEPTANCE_REPORT.md",
+      "docs/04_test_reports/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
       "docs/WORK_STATUS.md",
-      "docs/completion_reports/C-02_completion.md",
-      "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json",
-      "docs/evidence/raw/C-02_DELEGATION_AUTHORITY_EVIDENCE.json",
+      "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c02-final-acceptance.json",
-      "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
-      "docs/validation/C-02_FINAL_ACCEPTANCE_VALIDATION.md",
-      "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c02-postmerge-development-authority-reconciliation.json",
+      "docs/validation/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
-      "tests/tooling/test_project_progress.py",
-      "tests/verification/test_c02_independent_acceptance.py"
+      "tests/tooling/test_project_progress.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
       "docs/WORK_STATUS.md",
@@ -498,14 +478,14 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "STAGED_EXACT16",
-    "local_head": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+    "worktree_status": "STAGED_EXACT12",
+    "local_head": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
     "candidate_push_status": "NOT_EXECUTED_STAGE_S",
     "control_remote_ref": "refs/remotes/origin/codex/c21-operational-execution",
-    "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+    "control_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
     "control_runtime_parent": "5251a0b889f4e1062a5780eea9f03d8e9b9f69bb",
     "control_runtime_commit": "ead1214e3f01e68e577c3163e1cf143ee5753490",
     "control_successor_paths": [
@@ -1259,8 +1239,8 @@
     "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
     "development_remote_ref": "refs/remotes/development/main",
     "baseline_merge_parents": [
-      "e215c0612363050dbe20315646f1612f31b8cdc0",
-      "5d4a78555110dee16fce01e512a367524ba1eeec"
+      "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+      "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0"
     ],
     "accepted_feature_commit": "a03aecc74b412515dab983148838c249fca62d3a",
     "accepted_feature_parent": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
@@ -1300,7 +1280,7 @@
     "control_commit_parent": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
     "historical_commit": "a34d12da5f504a5d2694fc04f0924082cb1fc1d9",
     "test_baseline_commit": "fd3c89665629addd78e74c2fe946fb9dfc893c36",
-    "baseline_merge_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+    "baseline_merge_commit": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "4619ee132ced203780bb0ec615088add661ec802",
@@ -1325,7 +1305,9 @@
       "4619ee132ced203780bb0ec615088add661ec802",
       "2eedcfa6b15594c2daa29bb52a5c10694c826776",
       "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
-      "db2b52fc85d022c5af51a1927a0133bf081f4586"
+      "db2b52fc85d022c5af51a1927a0133bf081f4586",
+      "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
+      "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658"
     ],
     "product_exact_paths": [
       "packages/e2e/harness.py",
@@ -1336,7 +1318,15 @@
       "tests/orchestration/test_developer_lifecycle.py",
       "tests/orchestration/test_developer_lifecycle_c04.py",
       "tests/orchestration/test_takeover_c13.py"
-    ]
+    ],
+    "feature_final_commit": "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
+    "feature_final_parent": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+    "start_projection_commit": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+    "start_projection_parent": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "authority_commit": "4619ee132ced203780bb0ec615088add661ec802",
+    "authority_parent": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+    "merge_tree_equals_feature_final": true,
+    "ancestor_chain_required": true
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1433,25 +1423,25 @@
     "b01_started": true
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-C-01-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260911-001",
-    "artifact_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
-    "artifact_sha256": "1CE299E740F9D2A473DEFD30D09EB08BA1A740F89C8B43219C5FBB397BE50CA2",
-    "invocation_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-    "invocation_sha256": "12956F7C4AD35EECF09AB62981CB45C47D1707B84525D915E07F1E8EEAEB0BCB",
+    "artifact_id": "WI-C-02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260912-001",
+    "artifact_path": "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "artifact_sha256": "6917AD09270FEC8F5976FED14ED145DBD15490E8D609ACB0DBA23BE038924869",
+    "invocation_path": "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "invocation_sha256": "DA22B206BD180EFD986F1BF750DDF6173DD7D33C9D44D6B51CBBC99E202CE74D",
     "executor": "developer-primary",
     "result_status": "COMPLETED",
     "package_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
     "exact_paths": [
-      "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+      "docs/04_test_reports/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+      "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
-      "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c02-postmerge-development-authority-reconciliation.json",
+      "docs/validation/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ]
@@ -1461,7 +1451,8 @@
     "reason_codes": [
       "C02_ACCEPTED",
       "C03_READY_FOR_WORK_INSTRUCTION",
-      "DIR2_NOT_REACHED"
+      "DIR2_NOT_REACHED",
+      "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1647,8 +1638,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-02",
-    "path": "docs/progress/progress-handoff-detached-digest-c02-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c02-postmerge-development-authority-reconciliation.json",
+    "manifest_path": "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1669,7 +1660,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "BEC2ED58C212CA22490B25758B1AA0CAAFDD574967279F07937DDEEB29874ABB"
+      "sha256": "44FBC44637316F9EEFA7A0A0F39E38568C1FD7CFC0DEE6DDB906D5D83C5A214F"
     }
   },
   "next_work_package": {
@@ -2063,7 +2054,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "226A0A850CF65D45A31E97767653AF51AEF2D8447885DBE3C97158D0A81234C5",
+  "snapshot_hash": "89C31ABA533B86D9653809DBB968713F8A707D5EB251ECDA538E2877164B290B",
   "runtime_next_action": "ISSUE_C03_WORK_INSTRUCTION",
   "seq527_clean_review": {
     "event_sequence": 527,
@@ -2210,25 +2201,25 @@
     "runtime_next_action": "PUSH_AND_EXECUTE_C21_WSL_CANDIDATE_ONLY_AFTER_SEPARATE_AUTHORIZATION"
   },
   "completed_work_instruction": {
-    "artifact_id": "WI-C-01-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260911-001",
-    "artifact_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
-    "artifact_sha256": "1CE299E740F9D2A473DEFD30D09EB08BA1A740F89C8B43219C5FBB397BE50CA2",
-    "invocation_path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-    "invocation_sha256": "12956F7C4AD35EECF09AB62981CB45C47D1707B84525D915E07F1E8EEAEB0BCB",
+    "artifact_id": "WI-C-02-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260912-001",
+    "artifact_path": "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "artifact_sha256": "6917AD09270FEC8F5976FED14ED145DBD15490E8D609ACB0DBA23BE038924869",
+    "invocation_path": "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "invocation_sha256": "DA22B206BD180EFD986F1BF750DDF6173DD7D33C9D44D6B51CBBC99E202CE74D",
     "executor": "developer-primary",
     "result_status": "COMPLETED",
     "package_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
     "exact_paths": [
-      "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+      "docs/04_test_reports/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+      "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
-      "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c02-postmerge-development-authority-reconciliation.json",
+      "docs/validation/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+      "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ]
@@ -3676,7 +3667,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-12T08:45:00+09:00",
+  "recorded_at": "2026-09-12T02:05:29+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -13578,6 +13569,92 @@
     "main_takeover_lineages": {
       "C02-PRODUCT-SURROGATE-HASH-EXCEPTION-ESCAPE-v1": 3,
       "C02-START-MALFORMED-GIT-COLLECTION-FAILOPEN-v1": 3
+    }
+  },
+  "c02_postmerge_development_authority_reconciliation": {
+    "status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+    "accepted": true,
+    "event_sequence": 737,
+    "c02_status": "ACCEPTED",
+    "c03_status": "READY_FOR_WORK_INSTRUCTION",
+    "dir2_status": "NOT_REACHED",
+    "lineage": {
+      "baseline_merge_commit": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
+      "baseline_merge_parents": [
+        "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+        "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0"
+      ],
+      "feature_final_commit": "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
+      "feature_final_parent": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+      "product_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+      "product_parent": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+      "start_projection_commit": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+      "start_projection_parent": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+      "control_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+      "control_parent": "4619ee132ced203780bb0ec615088add661ec802",
+      "authority_commit": "4619ee132ced203780bb0ec615088add661ec802",
+      "authority_parent": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+      "ancestor_chain": [
+        "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+        "4619ee132ced203780bb0ec615088add661ec802",
+        "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+        "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+        "db2b52fc85d022c5af51a1927a0133bf081f4586",
+        "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
+        "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658"
+      ],
+      "merge_tree_equals_feature_final": true,
+      "ancestor_chain_required": true
+    },
+    "external_validation": {
+      "provider": "NOT_EXECUTED",
+      "telegram": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "actual_runner": "NOT_EXECUTED"
+    },
+    "tooling_validation": {
+      "monolithic": {
+        "status": "INTERRUPTED_ENVIRONMENT_PERFORMANCE_FAILURE",
+        "elapsed_approx_minutes": 220,
+        "fingerprint": "C02-TOOLING-SANDBOX-TMPDIR-PERMISSION-RETRY-v1",
+        "cause": "SANDBOX_DENIED_D_TMP_MKDIR_WHILE_OS_ACCESS_REPORTED_WRITABLE_AND_TEMPFILE_RETRIED_TO_TMP_MAX_AS_NAME_COLLISIONS",
+        "assertion_failure": false,
+        "product_failure": false
+      },
+      "partitioned_full": {
+        "status": "PASS",
+        "selection": "MUTUALLY_EXCLUSIVE_COMPLETE_347",
+        "total_passed": 347,
+        "environment": "NORMAL_D_TMP_WRITABLE",
+        "partitions": [
+          {
+            "selector": "not ProjectProgressContractTests",
+            "passed": 151,
+            "deselected": 196,
+            "duration_seconds": 444.91,
+            "node_sha256": null
+          },
+          {
+            "selector": "ProjectProgressContractTests and not c21",
+            "passed": 82,
+            "deselected": 265,
+            "duration_seconds_approx": 231.5,
+            "node_sha256": "954F68C8045759DE112568BE8FBED75A9058257D35D1B22709DBF6CA9206C10B"
+          },
+          {
+            "selector": "ProjectProgressContractTests and c21",
+            "passed": 114,
+            "deselected": 233,
+            "duration_seconds": 3423.04,
+            "node_sha256": "064D08FF09B714675766C3C59FBCBDCA5EA5A22870D1EC7D0A99088A0A0A1213"
+          }
+        ]
+      },
+      "sandbox_diagnostic_partial_batches": "NOT_COMPLETED_EVIDENCE"
     }
   }
 }
