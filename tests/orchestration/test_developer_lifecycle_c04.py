@@ -6,7 +6,9 @@ from packages.orchestration import (
     LifecycleStatus,
     ResumeRejected,
 )
-from tests.orchestration.test_delegation_packet import packet
+from tests.orchestration.test_delegation_packet import (
+    packet, packet_parent_egress, packet_parent_permission,
+)
 
 
 HASH = "sha256:" + "a" * 64
@@ -14,9 +16,12 @@ OTHER = "sha256:" + "b" * 64
 
 
 def started(service: DeveloperLifecycleService, session_id: str = "c04"):
-    service.start(packet(), session_id=session_id, baseline_hash=HASH,
-                  permission_snapshot_hash=HASH, context_snapshot_hash=HASH,
-                  egress_snapshot_hash=HASH)
+    service.start(
+        packet(), session_id=session_id, baseline_hash=HASH,
+        context_snapshot_hash=HASH,
+        parent_permission_snapshot=packet_parent_permission(),
+        parent_egress_profile=packet_parent_egress(),
+    )
     return service.wait(session_id)
 
 

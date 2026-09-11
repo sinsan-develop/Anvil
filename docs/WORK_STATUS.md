@@ -2127,3 +2127,17 @@
 - seq728 `REPOSITORY_RECONCILED / DEVELOPMENT_MAIN_AUTHORITY_RECONCILED`.
 - development main `b0e70278d3799860beb1eef94c382def53a45057`; C-01 `ACCEPTED`; C-02 `READY_NOT_STARTED`.
 - Provider/Telegram `USER_OWNED_NOT_EXECUTED`; active lease 없음.
+
+## C-02 start projection
+
+- seq729~731 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`.
+- C-02 `ACTIVE`; C-01 `ACCEPTED`; C-03 `BLOCKED_PENDING_C02_ACCEPTANCE`; DIR-2 `NOT_REACHED`.
+- actor `developer-primary`; epoch 1 worker/write fencing token과 exact product scope를 결박했다.
+- Provider/Telegram `USER_OWNED_NOT_EXECUTED`; runtime/DB/Secret/network/commit/push/PR/merge `NOT_EXECUTED`.
+
+## C-02 final acceptance
+
+- seq732~736 `WRITE_LEASE_REVOKED → WORKER_LEASE_REVOKED → PACKAGE_COMPLETED → INDEPENDENT_TEST_JUDGMENT_RECORDED → MAIN_PACKAGE_ACCEPTED`.
+- C-02 `ACCEPTED`; C-03 `READY_FOR_WORK_INSTRUCTION`; DIR-2 `NOT_REACHED`; reporting `AUTO_CONTINUE`.
+- AV-AGT-001/AV-SAFE-022 PASS; hostile1468, runner-zero1458, regression193; Critical/Important 0/0.
+- full repository suite `NOT_COMPLETED` (7 collection errors); Provider/Telegram/network/DB/browser/WSL/deploy/actual runner `NOT_EXECUTED`.

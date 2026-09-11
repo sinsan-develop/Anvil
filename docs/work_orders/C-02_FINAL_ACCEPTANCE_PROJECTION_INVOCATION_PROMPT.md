@@ -1,0 +1,1 @@
+Apply the C-02 final acceptance projection WorkInstruction exactly. Preserve seq1~731 raw event object bytes and historical evidence, append seq732~736, enforce the strict C-02 exact16 Git predicate before generic predicates, and do not execute commit, push, merge, deploy, external, product, or runtime actions.
