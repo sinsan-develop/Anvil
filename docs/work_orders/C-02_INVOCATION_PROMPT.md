@@ -1,1 +1,1 @@
-C-02 WorkInstruction을 기준으로 최소 DelegationPacket schema와 권한·컨텍스트·egress snapshot 검증을 구현하라. C-03 이후 lifecycle과 외부 시스템 호출은 구현하지 말고, deterministic hostile 테스트와 기본 검증 결과를 보고하라.
+C-02 R1 WorkInstruction을 먼저 읽고 exact 허용 경로만 단일 writer로 수정하라. 테스트를 먼저 작성해 요구 동작별 RED를 확인한 뒤 최소 구현으로 GREEN을 만들고, parent→child permission·egress 확대 및 모든 필수 경계 누락을 runner dispatch 전에 결정론적으로 차단하라. C-03 신규 기능과 외부 시스템은 실행하지 말고 상세 증거를 지정 report 파일에 남겨라.
