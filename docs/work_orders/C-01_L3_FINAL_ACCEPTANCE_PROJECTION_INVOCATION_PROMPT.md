@@ -1,0 +1,1 @@
+`WI-C-01-L3-FINAL-ACCEPTANCE-PROJECTION-20260911-001`을 exact하게 수행하라. seq1~721과 historical evidence를 byte-preserve하고, 실제 완료 증거만 seq722~727 successor와 exact15 projection/checker에 결박하라. 제품·runtime·DB·Provider·Telegram·C-02·ysna·main을 변경하거나 실행하지 말라.

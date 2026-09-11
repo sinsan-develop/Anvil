@@ -1,0 +1,99 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_type": "C01_L3_FINAL_OPERATIONAL_EVIDENCE",
+  "candidate_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+  "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+  "local_verification": {
+    "postgresql15_independent_l3": {
+      "result": "17 passed in 35.72s",
+      "failed": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    "product_api_event_adjacent_regression": {
+      "result": "93 passed in 37.43s",
+      "failed": 0,
+      "exit_code": 0
+    },
+    "product_review": {
+      "spec": "PASS",
+      "quality": "APPROVED",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    },
+    "control_review": {
+      "spec": "PASS",
+      "quality": "APPROVED",
+      "critical": 0,
+      "important": 0,
+      "minor": 0,
+      "contract_passed": 30
+    }
+  },
+  "formal_wsl": {
+    "receipt": "VERIFIED",
+    "container": "anvil-web",
+    "container_count": 1,
+    "host_port": 3770,
+    "checkout": "CLEAN_DETACHED",
+    "image_revision": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+    "healthy": true,
+    "read_only": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_opt": [
+      "no-new-privileges"
+    ],
+    "networks": [
+      "proxy-network"
+    ],
+    "public_ipv4": "0.0.0.0:3770",
+    "extra_anvil_runtime_resources": 0,
+    "secret_output_count": 0,
+    "secret_temp_residue": 0
+  },
+  "same_origin_http": {
+    "dashboard": 200,
+    "provider_workbench": 200,
+    "health_live": 200,
+    "health_ready": 200,
+    "openapi": 200,
+    "auth_status": 200,
+    "execute_route": "POST /api/runs/{id}/steps/{stepId}:execute"
+  },
+  "browser": {
+    "dashboard_database": "READY",
+    "migration": "0013_task_bootstrap_authority",
+    "workbench_identity": "WSL_ACCEPTANCE · wsl_acceptance_reader",
+    "workbench_status": "READY",
+    "provider_count": 9,
+    "primary_provider": "UPSTAGE",
+    "console_error_count": 0,
+    "console_warning_count": 0
+  },
+  "authenticated_sse": {
+    "session_issue_status": 201,
+    "authenticated": true,
+    "actor_role": "tester",
+    "initial_status": 200,
+    "initial_bytes": 88,
+    "content_type": "text/event-stream",
+    "event_id": "c21-wsl-event-1",
+    "event_type": "RUN_CREATED",
+    "resume_status": 200,
+    "resume_bytes": 0,
+    "invalid_cursor_status": 409,
+    "forbidden_run_status": 403
+  },
+  "external_execution": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "new_migration": "NOT_CREATED",
+    "database_write_during_deployment": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "main_merge": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED"
+  }
+}

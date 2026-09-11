@@ -2000,3 +2000,124 @@
 - 미실행 범위: Provider/Telegram actual `USER_OWNED_NOT_EXECUTED`; network/WSL/Docker/DB/deploy/push/PR/merge/branch delete `NOT_EXECUTED`.
 - 최종 evidence rebind 검증: seq700 focused `4 passed, 306 deselected`; live checker `PASS sequence=700 reporting=AUTO_CONTINUE`; generated5 two-build/live equality, manifest checksum 11행, seq1~699 raw prefix `2155312` bytes / `209446EEDCAE056F25E788701A0E12D76B487EBD20D52644C14D151FAC0C1D83` PASS; exact12 staged, unstaged/untracked 0, cached diff-check PASS.
 - 상태: `COMPLETED`; commit/push/merge는 Main Agent 후속 경계다.
+# 2026-09-10 C-01 product correction — developer-primary
+
+- 판정: `COMPLETED` (Main Agent 검토·독립 acceptance projection 전 Developer 구현/기본 검증 완료)
+- Work Package/기준선: `C-01`, branch `codex/c01-mainline-reconciliation`, BASE/시작 HEAD `e215c0612363050dbe20315646f1612f31b8cdc0`, 시작 status clean
+- worker lease: `worker-lease-c01-product-correction-20260910-001`; execution fencing token: `c01-product-execution-fence-epoch-1-e215c06`
+- write lease: `write-lease-c01-product-correction-20260910-001`; write fencing token: `c01-product-write-fence-epoch-1-e215c06`
+- 기준 hash: design `DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3`; work plan `00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18`; matrix `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5`; test plan `9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644`; corrective brief `5F9F3DD6454ED7C223BBC69176EACC2E6E16069CF6E9245E55326E4B58C37178`; pre-revision WorkInstruction `D594FC661D3E54D905C64B0AEDEB8E53644832EB9F2FE5C17A2B0CA5A3014DF3`
+- 시작 기준선: `.venv\Scripts\python.exe -m pytest tests\llm_gateway\test_c01_kernel.py tests\agent_team\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider` → exit 0, `10 passed in 0.77s`
+- TDD RED 준비 오류: 신규 symbol의 module-level import가 collection을 중단해 exit 1이었고, import를 test body로 지연해 assertion RED로 교정했다. fingerprint `C01_NATIVE_ADAPTER_IMPORT_COLLECTION_R1`, 1회, 제품/외부 영향 0.
+- 의미 있는 TDD RED: `.venv\Scripts\python.exe -m pytest tests\llm_gateway\test_c01_kernel.py tests\orchestration\test_c01_native_agent_adapter.py -q -p no:cacheprovider` → exit 1, `9 failed, 5 passed in 0.36s`; 빈 capability 기본값 오염, noncanonical/step-derived request ID, 동일 Step 두 번째 Provider 호출, evidence 부재, 별도 Native Coding Agent lifecycle boundary 부재를 각각 재현했다.
+- 최소 GREEN: 같은 focused 명령 → exit 0, `14 passed in 0.31s`.
+- C-21 호환: `.venv\Scripts\python.exe -m pytest tests\agent_team\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider` → exit 0, `4 passed in 0.70s`; 기존 LLM-provider `NativeAgentAdapter.probe/generate` 호출 계약 유지.
+- 변경 전→후: explicit `set()` capability가 암묵적 `text_generation`으로 바뀜→empty 유지; kernel request ID가 Step 고정값→호출별 canonical UUID; 동일 Step 재호출이 Provider에 도달→기존 reservation binding에서 사전 거부; 예산 결과 evidence 없음→ordered secret-free reserve/reconcile evidence; coding-agent lifecycle 경계 없음→별도 opaque Protocol 추가.
+- 변경 경로: `docs/work_orders/C-01_WORK_INSTRUCTION.md`, `docs/WORK_STATUS.md`, `docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md`, `packages/llm_gateway/contracts.py`, `packages/orchestration/__init__.py`, `packages/orchestration/kernel.py`, `packages/orchestration/native_agent_adapter.py`, `tests/llm_gateway/test_c01_kernel.py`, `tests/orchestration/test_c01_native_agent_adapter.py`.
+- 제외/미검증: network, 실제 Provider, Telegram, DB, API, browser, WSL, deployment, secret/외부 환경 mutation은 `NOT_EXECUTED`; C-02+ DelegationPacket/Developer lifecycle/validation 의미 변경 0; canonical progress/event/HANDOFF/checker 수정 0; commit/push/merge 0.
+- 오류 횟수: 정식 제품 실패 0; RED 수집 구조 오류 1회(해소); compileall sandbox 환경 오류 1회(승인된 재실행으로 해소).
+- 남은 acceptance: Main Agent diff/범위 검토와 별도 독립 Tester의 AV-AGT-002, AV-AGT-003, AV-OPS-011 판정 및 canonical projection은 후속 reviewed task가 소유한다.
+- rollback: 이 worktree의 위 변경 경로 diff만 역적용한다. 사용자 dirty/untracked, 다른 tracked path, canonical progress/history에는 손대지 않는다.
+- 최종 통합 기본 검증: `.venv\Scripts\python.exe -m pytest tests\llm_gateway tests\orchestration\test_c01_native_agent_adapter.py tests\agent_team\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider` → exit 0, `18 passed in 0.76s`.
+- compileall 환경 오류: 기본 sandbox에서 `packages/.../__pycache__/*.pyc` 쓰기가 거부되어 exit 1. fingerprint `C01_COMPILEALL_DTMP_SANDBOX_WRITE_DENIED_R1`, 1회, 코드/제품 failure가 아니다. 지정 worktree 내부 쓰기 승인으로 같은 compileall을 재실행해 exit 0, output 0을 확인했다.
+
+## 2026-09-10 C-01 mainline acceptance projection — developer-primary
+
+- 단계/상태: `ACCEPTANCE_PROJECTION_VALIDATING`; Main의 C-01 local fixture scope acceptance 기록을 수행한다.
+- 시작: `D:\tmp\anvil-main-integration`, branch `codex/c01-mainline-reconciliation`, clean HEAD `f56ac2514d0c5bca41768e456ed57f2036ab3137`; BASE `e215c0612363050dbe20315646f1612f31b8cdc0`의 sole direct child 및 product exact9 확인.
+- worker/execution: `worker-lease-c01-mainline-acceptance-20260910-001` / `c01-mainline-acceptance-execution-fence-epoch-1-f56ac25`.
+- write/token: `write-lease-c01-mainline-acceptance-20260910-001` / `c01-mainline-acceptance-write-fence-epoch-1-f56ac25`; exact17 한정.
+- 기준 문서: 설계 `DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3`, 계획 `00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18`, matrix `289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5`, test plan `9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644`, 운영규칙 `4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E` 실측 일치.
+- product WI는 `C-01_WORK_INSTRUCTION` path stem alias / SHA `F99FE2D6C009E7B897130DD3802460258F5CF406BE973DA0939D49DAA5E367A5`. Main 판단에 따라 기존 본문을 바꾸지 않고 exact ID/path/hash를 invocation과 manifest에 결박한다.
+- 독립 자료: code review SPEC PASS / QUALITY APPROVED C0/I0/M0, hash `476E911CDB044ECDE80578EA0724E49EDC85A3117A74CC3820D56403AE66DBCB`; Tester 18 passed/0 failed/0 skipped, hash `EA461AD96A247A477FD096DB22B96E0713B8D7C2782DFFD2B4A6779539310973`. 별도 event707/708로 보존한다.
+- seq701~706 product lifecycle, 707 code review, 708 independent Tester, 709~714 projection lifecycle, 715 Main acceptance. 이전 seq1~700/historical evidence는 byte-preserve 대상이다.
+- TDD RED: `.venv\Scripts\python.exe -m pytest tests\tooling\test_project_progress.py -k C01MainlineAcceptance -q -p no:cacheprovider` → exit 1, `5 failed, 310 deselected in 1.54s`.
+- 최소 GREEN: 같은 명령 → exit 0, `5 passed, 310 deselected in 9.40s`.
+- 변경 전→후: acceptance builder/collector 없음 → 결정론적 raw fixture·projection 생성과 staged/clean feature/two-parent merge 세 상태의 exact9/exact17/cumulative25 검사. 일반 projection 허용 조건은 넓히지 않고 event715와 sequence715 dispatcher만 추가한다.
+- 변경 경로: `C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md`의 exact17. 제품 Python/test/WI/result 경로 변경 0, WORK_STATUS만 새 기록을 추가한다.
+- 오류: `C01_RG_LAUNCHER_UNAVAILABLE_R1` 1회, PowerShell 대체 성공. 정식 제품 실패 0. TDD RED는 예상된 실패로 별도 집계한다.
+- 미검증: full tooling은 Main 후속 gate. actual coding backend/Provider/network/Telegram/DB/API/browser/WSL/deployment/persistent external Event/Release/user acceptance는 NOT_EXECUTED.
+- 다음: generated7 생성 → live checker/history/hash/determinism/exact17 staged → focused/syntax/cached diff 검증 → Main review에 인계. commit/push/merge/외부 작업/Subagent 생성 금지.
+- rollback: product commit 위 이번 exact17 diff만 역적용한다. 기존 seq1~700와 historical evidence·사용자 자료·다른 worktree를 보존한다.
+
+### C-01 acceptance projection focused 검증 마감
+
+- systematic-debugging으로 인접 seq700 collector test failure를 추적했다. 기존 테스트가 `load_bundle(ROOT)`로 새 seq715 현재 repository를 읽어 old BASE guard에 걸렸다. frozen seq700 fixture로 최소 교정하고 production seq700 collector는 보존했다.
+- `SEQ700_HISTORICAL_FIXTURE_CURRENT_REPOSITORY_MIX_R1` 1회: 인접 첫 실행 `1 failed, 14 passed, 300 deselected in 29.13s`, exit 1.
+- `C01_CURRENT_PROJECTION_STALE_BASE_AND_FAILURE_R1` 1회: 새 builder가 과거 repository.baseline_merge_parents와 active failure를 상속했다. 추가 RED `1 failed, 2 passed, 314 deselected in 6.88s`; 현재 BASE parents와 C-01 failure0/null을 명시하여 GREEN `3 passed, 314 deselected in 6.26s`. historical 실패 합계31과 ledger는 보존한다.
+- 최종 focused와 인접 회귀: `.venv\Scripts\python.exe -m pytest tests\tooling\test_project_progress.py -k 'C01MainlineAcceptance or C21PostmergeDevelopmentAuthorityReconciliation or C21FinalAcceptanceProjectionReconciliation' -q -p no:cacheprovider` → exit 0, `17 passed, 300 deselected in 36.45s`.
+- `C01_RAW_EVIDENCE_PARENT_MISSING_R1` 1회: generator가 새 `docs/evidence/raw` 부모 폴더 부재로 중단했다. 지정 경로 부모 생성 후 generated7을 재생성하여 해소했다. 부분 생성물도 deterministic 재생성으로 일치시켰다.
+- 첫 live checker: `.venv\Scripts\python.exe scripts\check_project_progress.py .` → exit 0, `PASS sequence=715 reporting=AUTO_CONTINUE`.
+- raw/history 감사: generated7 two-build/live 동일, manifest16 checksum, historical evidence272파일 byte 동일, seq1~700 raw prefix2157757 bytes/hash `60EF142108978724C37E395B5B5C39FDE6504B65F7F5FFDEE336F41E5E937692`, seq1~700 semantic 동일, checker/test syntax compile PASS.
+- 오류 fingerprint 각각1회, 정식 제품 FAILURE_REPORT 0. full tooling·future 실제 feature commit·GitHub merge·외부 runtime은 미실행이다. 세 Git 상태는 focused controlled Git receipt로 검증했다.
+- 다음: 최종 문서와 generated checksum 재결박, exact17 restage, live checker/exact-scope/determinism 재확인 뒤 Main review 인계.
+
+### C-01 acceptance projection 최종 인계
+
+- 판정: `COMPLETED` — writer의 exact17 projection 구현·focused 검증 완료. Main의 fresh full tooling 및 독립 review는 다음 단계다.
+- 마감 검증: live checker `PASS sequence=715 reporting=AUTO_CONTINUE`; generated7 two-build/live byte equality; manifest16 raw checksum; seq1~700 raw/semantic 동일과 새701~715 Event 순서/hash chain; product exact9 sole parent BASE; staged exact17 및 누적25; unstaged0/untracked0; checker/test syntax compile; `git diff --cached --check` 모두 exit 0/PASS.
+- historical evidence272파일 불변, current HEAD `f56ac2514d0c5bca41768e456ed57f2036ab3137` 유지. commit/push/merge/외부 실행 0. 다음: Main이 exact17 diff·증거를 독립 검토하고 fresh full tooling gate를 수행한다.
+
+### C-01 acceptance R2 — 독립 시나리오 결함·제품 fix 이후 재결박
+
+- 담당 `developer-primary`, 상태 `ACCEPTANCE_R2_VALIDATING`. HEAD `66c0e43a092215ea2e9be24606d7a28e10dff359`, sole parent `f56ac2514d0c5bca41768e456ed57f2036ab3137`, 최초 product parent `e215c0612363050dbe20315646f1612f31b8cdc0`. 이전 acceptance 변경은 미커밋으로 보존했고 역사1~700는 불변이다.
+- Main 승인 실측 산식: 최초 product9 + fix2 = occurrence11, product unique9, projection18, WORK_STATUS 한 경로만 중복이므로 누적26. 독립 `tests/verification/test_c01_independent_acceptance.py`를 기존 exact17에 포함하고 원문 SHA `641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569`를 보존한다. 제품 Python/test/WI/result 변경0.
+- canonical worker `worker-lease-c01-mainline-acceptance-20260910-001` / execution `c01-mainline-acceptance-execution-fence-epoch-2-66c0e43`, dependent write `write-lease-c01-mainline-acceptance-20260910-001` / token `c01-mainline-acceptance-write-fence-epoch-2-66c0e43`를 재취득했다. epoch1은 현재 쓰기 권한이 아니다.
+- 원 projection review SPEC FAIL / QUALITY CHANGES_REQUIRED C0/I1/M0, fingerprint `C01-ACCEPTANCE-INDEPENDENT-SCENARIO-MISSING-v1`: 기존 Developer tests18 재실행은 regression-only로 재분류. 별도 Tester의 설계/matrix 기반9개 시나리오로 해소하며 당시 기록은 삭제하지 않는다.
+- 독립 round1 `8 passed/1 failed/0 skipped`, 제품 fingerprint `C01-UNKNOWN-USAGE-CONSUMED-ZERO-RELEASE-v1` 1회. UNKNOWN cost/tokens0으로 예약을 조기 해제했다. immutable fix66c0e43 이후 동일 기대값 round2 `9 passed/0 failed/0 skipped`; 불확실성 예외·reservation1 보존. fix code review SPEC PASS / QUALITY APPROVED C0/I0/M0. 두 finding은 각각 별도 원인과 resolution으로 기록하고 historical failure ledger는 수정하지 않는다.
+- R2 TDD RED `-k c01_fix_chain_and_independent_design_scenarios`: exit1, `1 failed, 317 deselected in 1.81s`. chain/basis/raw replay/epoch2/Git exact18 보강 뒤 focused C01MainlineAcceptance exit0 `8 passed, 310 deselected in 16.38s`.
+- rehashed manifest RED `-k c01_rehashed_manifest`: exit1 `1 failed, 318 deselected in 3.02s`; finding 삭제/회귀-only 승격을 차단한 GREEN exit0 `1 passed, 318 deselected in 2.61s`. 예상된 TDD RED2회 외 반복 도구·제품 오류0.
+- source hashes·명령·round별 대상·범위는 canonical Tester report와 manifest basis에 분리 결박한다. raw의 독립 subject replay는 writer 재현이며 새 Tester 실행이 아니다. UUID entropy만 고정하고 test 원문은 보존한다.
+- 남은 검증: generated7 재생성, staged exact18, focused+seq699/700, 독립9 재현, live715, determinism/checksum17/history272/부모·ancestry·경로·syntax·diff. full tooling은 Main 담당. actual Provider·Telegram·backend swap E2E·DB/API/browser/WSL/deployment는 NOT_EXECUTED.
+- 다음: 위 검증 후 Main review에 인계. commit/push/merge/외부 작업/Subagent 생성 금지. rollback은 fix 위 projection exact18만 역적용한다.
+
+### C-01 acceptance R2 검증 완료·인계
+
+- 판정 `COMPLETED`; 이유: 독립 시나리오9의 원문·round1 실패·fix·round2 PASS 및 두 finding 해소를 chain/seq715/exact18에 재결박하고 검증했다. Main review/full tooling은 다음 gate다.
+- `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -k 'C01MainlineAcceptance or C21PostmergeDevelopmentAuthorityReconciliation or C21FinalAcceptanceProjectionReconciliation' -q -p no:cacheprovider` → exit0, `19 passed, 300 deselected in 39.38s`.
+- 불변66c0e43에서 writer 추가 재현 `-m pytest -p no:cacheprovider tests/verification/test_c01_independent_acceptance.py -q` → exit0, `9 passed in 0.36s`; 원 independent round2와 구분한다.
+- live checker exit0 `PASS sequence=715 reporting=AUTO_CONTINUE`; generated7 two-build/live 일치, manifest checksum17, source receipt6/authority/WI/독립 test hash 일치, epoch2 tokens 일치.
+- raw seq1~700 prefix2157757/SHA60EF142108978724C37E395B5B5C39FDE6504B65F7F5FFDEE336F41E5E937692와 semantic04F82C5795671A4382D87AB3F31761EC06657CA7023D17B405CBB75EC8385DDC 불변; historical evidence272 byte 불변; 새701~715 hash chain PASS.
+- Git 실제9/2/occurrence11/unique9/projection18/cumulative26, exact parent/ancestry·WORK_STATUS 외 제품 byte 보존·WORK_STATUS append-only, staged18/unstaged0/untracked0, syntax3파일/diff-check PASS. 새 반복 오류0; global ignore 접근 경고는 환경 경고다.
+- 최종 문서 checksum 재결박 뒤 live/determinism/index를 재확인하고 Main에 넘긴다. actual Provider·Telegram·backend swap E2E·외부 runtime, full tooling, commit/push/merge는 NOT_EXECUTED. seq1~700 및 historical failure ledger는 보존한다.
+
+### C-01 acceptance R3 — full tooling 실패 정정
+
+- Main full attempt1 exit1 `20 failed, 673 passed in 1675.07s`. `C01-G07-NULL-LINEAGE-LEGACY-CONSUMER-v1` count1(19 failure instances), `C01-GIT-MUTATION-ERA-EXPECTATION-v1` count1(1 instance)을 보존한다. Main status-poll wrapper syntax error1은 non-product다. R2 focused 완료와 full tooling 미통과를 구분한다.
+- Main 승인 exact20: 기존18 + scripts/check_g07_baseline.py + tests/tooling/test_g07_baseline.py. product unique9와 WORK_STATUS 한 경로 overlap으로 누적28. 제품code/WI/test 변경0, HEAD66c0e43 및 branch 유지.
+- epoch3 worker `worker-lease-c01-mainline-acceptance-projection-r3-20260910-001` / execution `c01-mainline-acceptance-execution-fence-epoch-3-66c0e43`; write `write-lease-c01-mainline-acceptance-projection-r3-20260910-001` / token `c01-mainline-acceptance-write-fence-epoch-3-66c0e43`. epoch1/2 무효, 이번 단일writer developer-primary.
+- G07 null=no-active(idNone/count0), existing object/count guard 보존. immutable ledger SHA C3C6A25E50946664F645FA1E1622555CCB553B57522E2D5BD6FF141B49470A73에서 current historical32/map OPS-R2 2를 도출. 역사seq700의31/map1·ledger·evidence raw는 보존한다. count31/active1/map-only tamper는 거부한다.
+- generic mutation test는 current715 specialized code를 정확히 기대하고 별도 generic frozen fixture는 기존 NOT_ANCESTOR 오류를 확인한다. collector 우선순위/3상태 strict predicate 완화0.
+- 최소 RED 명령 `pytest tests/tooling/test_g07_baseline.py tests/tooling/test_project_progress.py -k 'null_active_lineage or active_lineage_object_retains or c01_current_state or c01_ledger_derived or git_and_authority_bindings_are_checked_against_workspace' -q -p no:cacheprovider`: `5 failed,1 passed,373 deselected in11.42s`, exit1. 최초 GREEN은 Counter import 누락1회로3failed3passed18.90s; `C01-R3-COUNTER-IMPORT-MISSING-v1` count1, C01 local import로 해소. 동일 명령 `--tb=short` 추가 재실행 exit0 `6 passed,373 deselected in19.11s`.
+- 문서 patch anchor가 R2 제목과 달라 실패1회(`C01-R3-DOCUMENT-PATCH-ANCHOR-v1`), 변경 없이 거부되었고 실제 첫제목 anchor로 재적용 성공. 진단 단계 class setup 누락1/존재하지 않는 schema 경로조회1은 scratch에 별도 보존했다. 같은 제품 root 재발로 집계하지 않는다.
+- 다음: generated7/exact20 stage → 기존실패20 exact node IDs·focused+seq699/700·독립9·live/history/checksum19/determinism/경로·부모·syntax·diff 검증. 전체 tooling fresh 재실행은 Main 소유. 실제 Provider/Telegram/backend swap E2E/외부runtime/commit/push/merge 미실행.
+
+### C-01 acceptance R3 targeted 검증 완료
+
+- 상태 `COMPLETED`(writer targeted scope), Main full tooling fresh 재실행은 후속 gate. 이전20실패 full attempt1을 삭제하지 않는다.
+- 이전실패20 정확 node IDs pytest 실행: exit0 `20 passed in24.37s`. cache/--lf 미사용. full 명령은 scratch acceptance report에 보존.
+- C01MainlineAcceptance + seq699/700 + generic provenance negative: exit0 `21 passed,299 deselected in42.89s`. 독립9 writer 추가재현 exit0 `9 passed in0.33s`.
+- live715 AUTO_CONTINUE PASS. generated7 two-build/live equality, raw checksum19, currenthistory32/fullmap OPS-R2 2, epoch3 tokens/lease종료/HANDOFF/manifest 일치, historical evidence272 byte 및 seq1~700 raw/semantic·새701~715 chain PASS.
+- Git 실제 product unique9/occurrence11/projection20/cumulative28·parent/ancestry·private authority·제품byte보존·WORK_STATUS prefix보존, staged20/unstaged0/untracked0·syntax5·cached diff-check PASS. 최종 문서 재결박 뒤 live/audit 반복 인계.
+- 새 같은root 반복0. Counter import1/문서anchor1 해소; Main status-poll syntax1은 non-product. 실제 Provider/Telegram/backend swap E2E/외부runtime, full tooling 재실행, commit/push/merge 미실행. 다음은 Main review/full gate다.
+
+### C-01 acceptance R4 — 비의미 오기 정정·Main full tooling PASS receipt
+
+- Main full tooling R3 attempt2 `.venv\Scripts\python.exe -m pytest tests/tooling -q -p no:cacheprovider`: exit0, `697 passed in 1661.64s (0:27:41)`. Main 결과 전달이며 writer 실행 아님. R4 정정 이전 R3 exact20에서 실행됐고 부모 manifest SHA `D79B87D632DA0C5ACE12190D93B8ECCFA0050A429965D46E00E5B1FAC8A15D4F` 및 당시 exact20 checksum snapshot을 현재 manifest에 보존한다.
+- Main 전달 Reviewer final SPEC PASS / QUALITY APPROVED C0/I0/M1: WI 항목7 Developer-test 재실행 수20은 오기이며 실제18로 정정해 Minor1 resolved. canonical evidence는 이미18이었다. 로컬 추적 ID `C01-DEVELOPER-TEST-COUNT-TYPO-v1`; 새 독립 Tester 실행·제품·테스트 판정 로직 변경0.
+- `MAIN_RECONFIRMED_NON_SEMANTIC`, epoch4 worker `worker-lease-c01-mainline-acceptance-projection-r4-20260911-001` / execution `c01-mainline-acceptance-execution-fence-epoch-4-66c0e43`; write `write-lease-c01-mainline-acceptance-projection-r4-20260911-001` / token `c01-mainline-acceptance-write-fence-epoch-4-66c0e43`, write epoch4. 이전 epoch1/2/3 무효. HEAD66c0e43/branch/exact20/cumulative28 유지.
+- seq701~715/current projection metadata만 재결박하며 seq1~700/history272/product·원 독립suite는 보존. 테스트 변경은 승인 epoch 기대 literal2개만이며 checker 판정 로직 변경0이다.
+- R4 문서 패치 hunk 역순1회 `C01-R4-DOCUMENT-PATCH-HUNK-ORDER-v1`: 적용 전 atomic 거부·변경0 확인 후 순서 정정하여 성공. 비제품 도구 오류이고 반복 제품 실패로 집계하지 않는다. full attempt1 두 fingerprint각1/status-poll wrapper syntax error1 이력 유지.
+- 다음: writer 최소 관련 tests/live/checksum/determinism/history/exact/syntax/diff, Main 정정 후 focused/checker/checksum/determinism 재실행. R3 full697 PASS를 R4 이후 full 실행으로 표시하지 않는다. actual 외부 NOT_EXECUTED, commit/push/merge 금지. rollback은 fix66 위 exact20의 승인 diff만 역적용하며 역사·사용자 자료를 보존한다.
+
+### C-01 acceptance R4 writer targeted 완료
+
+- 판정 `COMPLETED`(writer targeted); `.venv\Scripts\python.exe -m pytest tests/tooling/test_project_progress.py -k C01MainlineAcceptance -q -p no:cacheprovider --tb=short` → exit0 `10 passed,310 deselected in24.13s`. live715 AUTO_CONTINUE PASS.
+- comprehensive audit exit0 `R4_AUDIT_PASS`: generated7 two-build/live equality, checksum19, R3부모 snapshot20, seq1~700 raw/semantic·새chain, historical272, exact20/cumulative28/product9/occurrence11/parent/ancestry/private authority/WORK_STATUS prefix, epoch4종료/progress/HANDOFF, syntax5/diff PASS. current history32/OPS-R2 2 유지.
+- checker의 metadata patch와 test epoch 기대 literal2개를 메모리에서 역변환하여 각 R3 source SHA 동일 확인. G07 checker/test·독립suite·raw2의 R3 bytes 불변. 제품/테스트 판정 로직 변경0. 허위 full PASS count698 재해시도 strict reconstruction에서 거부한다.
+- R4 hunk-order 도구오류1 해결, 새 제품/검증 실패0. 기존 Main attempt1 두 fingerprint각1/status-poll syntax1 보존. 최종 문서 재결박 뒤 live/audit 반복 후 추가 writer mutation을 종료한다. Main post-correction focused/checker/checksum/determinism은 후속 gate이며 R4 이후 full tooling 실행을 주장하지 않는다. 외부 NOT_EXECUTED, commit/push/merge0.
+
+## C-01 L3 final acceptance
+
+- C-01 `ACCEPTED`; C-02 `READY_NOT_STARTED`; active lease 없음.
+- WSL formal runtime와 browser/SSE evidence는 final manifest에 결박했다. Provider·Telegram 실제 호출은 `NOT_EXECUTED`다.

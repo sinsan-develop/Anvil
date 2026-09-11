@@ -1,0 +1,453 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_type": "E-API_LOCAL_FAKE_CONTRACT",
+  "execution": "DETERMINISTIC_LOCAL_FIXTURE",
+  "external_calls": 0,
+  "reviewed_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+  "cases": [
+    {
+      "backend": "claude",
+      "capabilities": {
+        "coding": true,
+        "checkpoint": true,
+        "steer": true
+      },
+      "packet": {
+        "task_graph_ref": "task-graph:1",
+        "permission_ref": "permission:1",
+        "evidence_ref": "evidence:1",
+        "resume_ref": "checkpoint:1"
+      },
+      "events": [
+        {
+          "type": "started",
+          "packet": {
+            "task_graph_ref": "task-graph:1",
+            "permission_ref": "permission:1",
+            "evidence_ref": "evidence:1",
+            "resume_ref": "checkpoint:1"
+          }
+        }
+      ],
+      "checkpoint": {
+        "checkpoint_ref": "checkpoint:1"
+      },
+      "stop": {
+        "status": "STOPPED",
+        "reason": "test complete",
+        "packet": {
+          "task_graph_ref": "task-graph:1",
+          "permission_ref": "permission:1",
+          "evidence_ref": "evidence:1",
+          "resume_ref": "checkpoint:1"
+        }
+      },
+      "result": {
+        "task_graph_ref": "task-graph:1",
+        "permission_ref": "permission:1",
+        "evidence_ref": "evidence:1",
+        "resume_ref": "checkpoint:1",
+        "status": "COMPLETED"
+      },
+      "packet_identity_preserved": true,
+      "result_identity_preserved": true
+    },
+    {
+      "backend": "codex",
+      "capabilities": {
+        "coding": true,
+        "checkpoint": true,
+        "steer": true
+      },
+      "packet": {
+        "task_graph_ref": "task-graph:1",
+        "permission_ref": "permission:1",
+        "evidence_ref": "evidence:1",
+        "resume_ref": "checkpoint:1"
+      },
+      "events": [
+        {
+          "type": "started",
+          "packet": {
+            "task_graph_ref": "task-graph:1",
+            "permission_ref": "permission:1",
+            "evidence_ref": "evidence:1",
+            "resume_ref": "checkpoint:1"
+          }
+        }
+      ],
+      "checkpoint": {
+        "checkpoint_ref": "checkpoint:1"
+      },
+      "stop": {
+        "status": "STOPPED",
+        "reason": "test complete",
+        "packet": {
+          "task_graph_ref": "task-graph:1",
+          "permission_ref": "permission:1",
+          "evidence_ref": "evidence:1",
+          "resume_ref": "checkpoint:1"
+        }
+      },
+      "result": {
+        "task_graph_ref": "task-graph:1",
+        "permission_ref": "permission:1",
+        "evidence_ref": "evidence:1",
+        "resume_ref": "checkpoint:1",
+        "status": "COMPLETED"
+      },
+      "packet_identity_preserved": true,
+      "result_identity_preserved": true
+    },
+    {
+      "backend": "local",
+      "capabilities": {
+        "coding": true,
+        "checkpoint": true,
+        "steer": true
+      },
+      "packet": {
+        "task_graph_ref": "task-graph:1",
+        "permission_ref": "permission:1",
+        "evidence_ref": "evidence:1",
+        "resume_ref": "checkpoint:1"
+      },
+      "events": [
+        {
+          "type": "started",
+          "packet": {
+            "task_graph_ref": "task-graph:1",
+            "permission_ref": "permission:1",
+            "evidence_ref": "evidence:1",
+            "resume_ref": "checkpoint:1"
+          }
+        }
+      ],
+      "checkpoint": {
+        "checkpoint_ref": "checkpoint:1"
+      },
+      "stop": {
+        "status": "STOPPED",
+        "reason": "test complete",
+        "packet": {
+          "task_graph_ref": "task-graph:1",
+          "permission_ref": "permission:1",
+          "evidence_ref": "evidence:1",
+          "resume_ref": "checkpoint:1"
+        }
+      },
+      "result": {
+        "task_graph_ref": "task-graph:1",
+        "permission_ref": "permission:1",
+        "evidence_ref": "evidence:1",
+        "resume_ref": "checkpoint:1",
+        "status": "COMPLETED"
+      },
+      "packet_identity_preserved": true,
+      "result_identity_preserved": true
+    }
+  ],
+  "independent_design_scenarios": [
+    {
+      "backend": "Claude",
+      "public_protocol_methods": [
+        "collect_result",
+        "probe_capabilities",
+        "request_checkpoint",
+        "start",
+        "steer",
+        "stop",
+        "stream_events"
+      ],
+      "protocol_conformance": true,
+      "called_methods": [
+        "probe_capabilities",
+        "start",
+        "stream_events",
+        "request_checkpoint",
+        "steer",
+        "stop",
+        "collect_result"
+      ],
+      "packet": {
+        "task_graph": {
+          "reference": "graph:independent",
+          "unrecognized": [
+            17
+          ]
+        },
+        "permission": {
+          "reference": "permission:read-only",
+          "future": {
+            "v": 4
+          }
+        },
+        "evidence": [
+          "artifact:prior-step",
+          {
+            "digest": "opaque-hash"
+          }
+        ],
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      },
+      "result": {
+        "task_graph": {
+          "reference": "graph:independent",
+          "unrecognized": [
+            17
+          ]
+        },
+        "permission": {
+          "reference": "permission:read-only",
+          "future": {
+            "v": 4
+          }
+        },
+        "evidence": [
+          "artifact:prior-step",
+          {
+            "digest": "opaque-hash"
+          }
+        ],
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      },
+      "events": [
+        {
+          "evidence": [
+            "artifact:prior-step",
+            {
+              "digest": "opaque-hash"
+            }
+          ]
+        }
+      ],
+      "checkpoint": {
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      }
+    },
+    {
+      "backend": "Codex",
+      "public_protocol_methods": [
+        "collect_result",
+        "probe_capabilities",
+        "request_checkpoint",
+        "start",
+        "steer",
+        "stop",
+        "stream_events"
+      ],
+      "protocol_conformance": true,
+      "called_methods": [
+        "probe_capabilities",
+        "start",
+        "stream_events",
+        "request_checkpoint",
+        "steer",
+        "stop",
+        "collect_result"
+      ],
+      "packet": {
+        "task_graph": {
+          "reference": "graph:independent",
+          "unrecognized": [
+            17
+          ]
+        },
+        "permission": {
+          "reference": "permission:read-only",
+          "future": {
+            "v": 4
+          }
+        },
+        "evidence": [
+          "artifact:prior-step",
+          {
+            "digest": "opaque-hash"
+          }
+        ],
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      },
+      "result": {
+        "task_graph": {
+          "reference": "graph:independent",
+          "unrecognized": [
+            17
+          ]
+        },
+        "permission": {
+          "reference": "permission:read-only",
+          "future": {
+            "v": 4
+          }
+        },
+        "evidence": [
+          "artifact:prior-step",
+          {
+            "digest": "opaque-hash"
+          }
+        ],
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      },
+      "events": [
+        {
+          "evidence": [
+            "artifact:prior-step",
+            {
+              "digest": "opaque-hash"
+            }
+          ]
+        }
+      ],
+      "checkpoint": {
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      }
+    },
+    {
+      "backend": "Local",
+      "public_protocol_methods": [
+        "collect_result",
+        "probe_capabilities",
+        "request_checkpoint",
+        "start",
+        "steer",
+        "stop",
+        "stream_events"
+      ],
+      "protocol_conformance": true,
+      "called_methods": [
+        "probe_capabilities",
+        "start",
+        "stream_events",
+        "request_checkpoint",
+        "steer",
+        "stop",
+        "collect_result"
+      ],
+      "packet": {
+        "task_graph": {
+          "reference": "graph:independent",
+          "unrecognized": [
+            17
+          ]
+        },
+        "permission": {
+          "reference": "permission:read-only",
+          "future": {
+            "v": 4
+          }
+        },
+        "evidence": [
+          "artifact:prior-step",
+          {
+            "digest": "opaque-hash"
+          }
+        ],
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      },
+      "result": {
+        "task_graph": {
+          "reference": "graph:independent",
+          "unrecognized": [
+            17
+          ]
+        },
+        "permission": {
+          "reference": "permission:read-only",
+          "future": {
+            "v": 4
+          }
+        },
+        "evidence": [
+          "artifact:prior-step",
+          {
+            "digest": "opaque-hash"
+          }
+        ],
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      },
+      "events": [
+        {
+          "evidence": [
+            "artifact:prior-step",
+            {
+              "digest": "opaque-hash"
+            }
+          ]
+        }
+      ],
+      "checkpoint": {
+        "resume": {
+          "checkpoint": "checkpoint:prior",
+          "completed": [
+            "step:done"
+          ]
+        }
+      }
+    }
+  ],
+  "test_provenance": {
+    "test_path": "tests/verification/test_c01_independent_acceptance.py",
+    "test_sha256": "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569",
+    "authoring_basis": "DESIGN_AND_MATRIX_BEFORE_IMPLEMENTATION_READ",
+    "implementation_read_before_authoring": 0,
+    "receipt_replay": "WRITER_REPRODUCTION_NOT_A_NEW_INDEPENDENT_TESTER_RUN",
+    "request_id_generation": "FIXED_UUID_ENTROPY_FOR_RECEIPT_REPLAY_ONLY",
+    "historical_developer_test_rerun": {
+      "product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+      "passed": 18,
+      "role": "REGRESSION_ONLY"
+    },
+    "round1": {
+      "passed": 8,
+      "failed": 1,
+      "product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137"
+    },
+    "round2": {
+      "passed": 9,
+      "failed": 0,
+      "bound_product_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359"
+    },
+    "external_execution": "NOT_EXECUTED",
+    "backend_swap_e2e": "NOT_EXECUTED"
+  }
+}

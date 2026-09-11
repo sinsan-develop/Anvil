@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C01-L3-REWORK-START-DIGEST-20260911",
+  "package_id": "C-01",
+  "event_sequence": 721,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-11T02:30:00+09:00",
+  "scope": "seq716-721 append-only; seq1-715 preserved; control exact10; product exact17",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 806317,
+    "file_sha256": "EFCDF1EC79B87C811EC952A99DEFC625F787D4A34BA3B20903543F4BF2405CBE",
+    "canonical_json_sha256": "1C8B36D8754163C748FF7C612F5B8D2DCEE22FD1390DB67EEED655CC33D8A552"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 186491,
+    "file_sha256": "CBA711331C11CE1F1D28824DAE601B4F199D4AA68E7345EB2AC687F4B8098A95",
+    "machine_summary_canonical_sha256": "BDDA1FCC0649F0524EFF6EE812AC2CE762C51872DC0DE5B36B610DF1C70588B6"
+  }
+}

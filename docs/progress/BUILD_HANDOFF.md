@@ -1,3 +1,22 @@
+# C-01 L3 final acceptance — seq727
+
+- seq1~721 raw event object bytes는 불변이며 seq722~727만 append했다.
+- C-01 ACCEPTED, active lease 없음, C-02 READY_NOT_STARTED다.
+- WSL/browser/authenticated SSE는 실제 검증했고 Provider·Telegram은 NOT_EXECUTED다.
+
+# C-01 L3 rework start — seq721
+
+- seq716 final independent review FAIL과 seq717 evidence invalidation을 append했다. seq1-715 bytes는 불변이다.
+- C-01은 REWORK_IN_PROGRESS, C-02는 BLOCKED_PENDING_C01_ACCEPTANCE다.
+- fresh epoch-5 worker/write lease는 exact17 제품/테스트 경로만 허용한다.
+- Provider·Telegram·credential·network·migration·push·PR·deployment는 실행하지 않았다.
+
+# C-01 acceptance — seq715
+
+- 결정론적 로컬 fixture 계약만 ACCEPTED. 다음 C-02, DIR-2 NOT_REACHED.
+- 실제 backend·Provider·Telegram·DB·API·브라우저·WSL·배포는 NOT_EXECUTED.
+- 아래 C-21 본문은 역사 기록이며 위 C-01 현재 상태를 대체하지 않는다.
+
 # C-21 Workbench UI WSL authenticated browser runtime retry R11 result — seq698
 
 - R11 one-shot은 mobile 430×844 horizontal overflow predicate failure로 종결했다. 제품 원인은 추정하지 않으며 independent review가 다음 조치다.
@@ -845,83 +864,54 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "sequence": 700,
-  "event_type": "REPOSITORY_RECONCILED",
-  "status": "MAIN_PACKAGE_ACCEPTED",
-  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
-  "development_remote_ref": "refs/remotes/development/main",
-  "baseline_merge_commit": "931b32418924de11626949b9303360696d614fb0",
-  "exact_paths": [
-    "docs/04_test_reports/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
-    "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
-    "docs/progress/BUILD_HANDOFF.md",
-    "docs/progress/build-progress.json",
-    "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-postmerge-development-authority-reconciliation.json",
-    "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
-    "scripts/check_project_progress.py",
-    "tests/tooling/test_project_progress.py"
-  ],
-  "exact_path_count": 12,
-  "exact_path_list_sha256": "D8DAA741A70EC152258458407C5E6C46FE973CFAAF3EB3CD8B636E380DB8CB3A",
-  "exact_path_list_ordinal_sha256": "988DDB6EE11ABF447F25CBC570BBAA8D951795496041DEC930EBBA15D1A82B1C",
-  "event_sequence": 700,
-  "last_event_id": "evt_c21_postmerge_development_main_authority_reconciled",
-  "reconciliation_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+  "event_sequence": 727,
+  "last_event_id": "evt_c01_l3_final_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "C",
-  "current_work_package": "C-21",
+  "current_work_package": "C-01",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
-  "repository_head": "931b32418924de11626949b9303360696d614fb0",
-  "repository_head_relation": "PRECOMMIT_EXACT12_FROM_MERGED_MAIN",
-  "repository_upstream": "NO_UPSTREAM",
-  "repository_projection_mode": "DEVELOPMENT_MAIN_AUTHORITY_SUCCESSOR_EXACT12",
-  "repository_validated_base_commit": "931b32418924de11626949b9303360696d614fb0",
+  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "valid_failure_count": 0,
+  "next_safe_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
+  "accepted": true,
+  "c01_status": "ACCEPTED",
+  "c02_status": "READY_NOT_STARTED",
+  "dir_status": "CLEARED",
+  "repository_head": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+  "repository_projection_mode": "C01_L3_FINAL_ACCEPTANCE_EXACT15",
+  "repository_upstream": "development/codex/c01-mainline-reconciliation-r5",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+    "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
+    "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+    "docs/completion_reports/C-01_completion.md",
+    "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c21-postmerge-development-authority-reconciliation.json",
-    "docs/validation/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
+    "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "accepted": true,
-  "c21_status": "MAIN_PACKAGE_ACCEPTED",
-  "c01_status": "READY_FOR_WORK_INSTRUCTION",
-  "dir2_status": "NOT_REACHED",
-  "blocking_count": 0,
-  "lineage": {
-    "baseline_merge_commit": "931b32418924de11626949b9303360696d614fb0",
-    "baseline_merge_parents": [
-      "eef349682ff5598e3488c9e75163c5e0a99a0bdb",
-      "a03aecc74b412515dab983148838c249fca62d3a"
-    ],
-    "feature_commit": "a03aecc74b412515dab983148838c249fca62d3a",
-    "feature_parent": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
-    "record_commit": "2db9eff352d32d60638ae9bf7c9dae153c862be8",
-    "record_parent": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
-    "ancestor_chain_required": true
+  "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+  "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+  "current_manifest": "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
+  "operational_evidence": "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+  "external_execution": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "new_migration": "NOT_CREATED",
+    "database_write_during_deployment": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "main_merge": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED"
   },
-  "evidence_boundary": {
-    "provider": "USER_OWNED_NOT_EXECUTED",
-    "telegram": "USER_OWNED_NOT_EXECUTED",
-    "external_action": "NOT_EXECUTED",
-    "historical_seq699": "PRESERVED_SUPERSEDED_BY_SEQ700_AUTHORITY_ONLY"
-  },
-  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 2,
-  "next_safe_action": "C01_READY_FOR_WORK_INSTRUCTION",
-  "dir_status": "CLEARED",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

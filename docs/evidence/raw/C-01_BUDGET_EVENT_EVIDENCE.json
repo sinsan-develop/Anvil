@@ -1,0 +1,277 @@
+{
+  "schema_version": "1.0.0",
+  "evidence_type": "E-EVT_IN_MEMORY",
+  "execution": "DETERMINISTIC_LOCAL_FIXTURE",
+  "external_calls": 0,
+  "reviewed_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+  "success": {
+    "events": [
+      {
+        "sequence": 1,
+        "event_type": "BUDGET_RESERVED",
+        "request_id": "request:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_id": "reservation:run-1:step-1",
+        "run_id": "run-1",
+        "step_id": "step-1",
+        "status": "RESERVED",
+        "tokens": 10,
+        "cost": "1",
+        "abort_status": null,
+        "usage_provenance": null
+      },
+      {
+        "sequence": 2,
+        "event_type": "USAGE_RECONCILED",
+        "request_id": "request:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reservation_id": "reservation:run-1:step-1",
+        "run_id": "run-1",
+        "step_id": "step-1",
+        "status": "CONSUMED",
+        "tokens": 3,
+        "cost": "0.03",
+        "abort_status": "COMPLETED",
+        "usage_provenance": "PROVIDER_FINAL"
+      }
+    ],
+    "adapter_calls": 1
+  },
+  "abort": {
+    "events": [
+      {
+        "sequence": 1,
+        "event_type": "BUDGET_RESERVED",
+        "request_id": "request:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "reservation_id": "reservation:run-1:step-abort",
+        "run_id": "run-1",
+        "step_id": "step-abort",
+        "status": "RESERVED",
+        "tokens": 10,
+        "cost": "1",
+        "abort_status": null,
+        "usage_provenance": null
+      },
+      {
+        "sequence": 2,
+        "event_type": "USAGE_RECONCILED",
+        "request_id": "request:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "reservation_id": "reservation:run-1:step-abort",
+        "run_id": "run-1",
+        "step_id": "step-abort",
+        "status": "CONSUMED",
+        "tokens": 1,
+        "cost": "0.01",
+        "abort_status": "ABORTED",
+        "usage_provenance": "ABORT_CONFIRMED"
+      }
+    ],
+    "adapter_calls": 1
+  },
+  "denied": {
+    "reason": "BUDGET_RESERVATION_FAILED",
+    "adapter_calls": 0
+  },
+  "duplicate_step": {
+    "reason": "BUDGET_RESERVATION_FAILED",
+    "adapter_calls": 1,
+    "additional_adapter_calls": 0
+  },
+  "independent_design_scenarios": {
+    "success": {
+      "denied": false,
+      "reconciliation_status": "CONSUMED",
+      "provider_calls": 1,
+      "reservation_seen_during_call": true,
+      "remaining_reservations": 0,
+      "events": [
+        {
+          "sequence": 1,
+          "request_id": "request:00000000000000000000000000000001",
+          "reservation_id": "reservation:run:independent:step:one",
+          "run_id": "run:independent",
+          "step_id": "step:one",
+          "status": "RESERVED",
+          "tokens": 20,
+          "cost": "1.00",
+          "abort_status": null,
+          "usage_provenance": null,
+          "type": "BUDGET_RESERVED"
+        },
+        {
+          "sequence": 2,
+          "request_id": "request:00000000000000000000000000000001",
+          "reservation_id": "reservation:run:independent:step:one",
+          "run_id": "run:independent",
+          "step_id": "step:one",
+          "status": "CONSUMED",
+          "tokens": 10,
+          "cost": "0.1",
+          "abort_status": "COMPLETED",
+          "usage_provenance": "PROVIDER_FINAL",
+          "type": "USAGE_RECONCILED"
+        }
+      ],
+      "final_usage": {
+        "input_tokens": 7,
+        "output_tokens": 3
+      },
+      "usage_provenance": "provider_reported",
+      "request_id": "request:00000000000000000000000000000001",
+      "aborted": false,
+      "abort_signal_received": false,
+      "retry_after_received": null,
+      "retry_after_returned": null
+    },
+    "budget_denial": {
+      "denied": true,
+      "reconciliation_status": null,
+      "provider_calls": 0,
+      "reservation_seen_during_call": false,
+      "remaining_reservations": 0,
+      "events": []
+    },
+    "duplicate": {
+      "denied": false,
+      "reconciliation_status": "CONSUMED",
+      "first_provider_calls": 1,
+      "second_denied": true,
+      "second_provider_calls": 0,
+      "provider_calls": 1,
+      "reservation_seen_during_call": true,
+      "remaining_reservations": 0,
+      "events": [
+        {
+          "sequence": 1,
+          "request_id": "request:00000000000000000000000000000003",
+          "reservation_id": "reservation:run:independent:step:one",
+          "run_id": "run:independent",
+          "step_id": "step:one",
+          "status": "RESERVED",
+          "tokens": 20,
+          "cost": "1.00",
+          "abort_status": null,
+          "usage_provenance": null,
+          "type": "BUDGET_RESERVED"
+        },
+        {
+          "sequence": 2,
+          "request_id": "request:00000000000000000000000000000003",
+          "reservation_id": "reservation:run:independent:step:one",
+          "run_id": "run:independent",
+          "step_id": "step:one",
+          "status": "CONSUMED",
+          "tokens": 10,
+          "cost": "0.1",
+          "abort_status": "COMPLETED",
+          "usage_provenance": "PROVIDER_FINAL",
+          "type": "USAGE_RECONCILED"
+        }
+      ],
+      "final_usage": {
+        "input_tokens": 7,
+        "output_tokens": 3
+      },
+      "usage_provenance": "provider_reported",
+      "request_id": "request:00000000000000000000000000000003",
+      "aborted": false,
+      "abort_signal_received": false,
+      "retry_after_received": null,
+      "retry_after_returned": null
+    },
+    "abort": {
+      "denied": false,
+      "reconciliation_status": "CONSUMED",
+      "provider_calls": 1,
+      "reservation_seen_during_call": true,
+      "remaining_reservations": 0,
+      "events": [
+        {
+          "sequence": 1,
+          "request_id": "request:00000000000000000000000000000005",
+          "reservation_id": "reservation:run:independent:step:one",
+          "run_id": "run:independent",
+          "step_id": "step:one",
+          "status": "RESERVED",
+          "tokens": 20,
+          "cost": "1.00",
+          "abort_status": null,
+          "usage_provenance": null,
+          "type": "BUDGET_RESERVED"
+        },
+        {
+          "sequence": 2,
+          "request_id": "request:00000000000000000000000000000005",
+          "reservation_id": "reservation:run:independent:step:one",
+          "run_id": "run:independent",
+          "step_id": "step:one",
+          "status": "CONSUMED",
+          "tokens": 10,
+          "cost": "0.1",
+          "abort_status": "ABORTED",
+          "usage_provenance": "PROVIDER_FINAL",
+          "type": "USAGE_RECONCILED"
+        }
+      ],
+      "final_usage": {
+        "input_tokens": 7,
+        "output_tokens": 3
+      },
+      "usage_provenance": "provider_reported",
+      "request_id": "request:00000000000000000000000000000005",
+      "aborted": true,
+      "abort_signal_received": true,
+      "retry_after_received": null,
+      "retry_after_returned": null
+    },
+    "unknown_usage": {
+      "denied": false,
+      "reconciliation_status": "USAGE_RECONCILIATION_REQUIRED",
+      "provider_calls": 1,
+      "reservation_seen_during_call": true,
+      "remaining_reservations": 1,
+      "events": [],
+      "final_usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      },
+      "usage_provenance": "unknown",
+      "request_id": "request:00000000000000000000000000000006",
+      "aborted": false,
+      "abort_signal_received": false,
+      "retry_after_received": 23,
+      "retry_after_returned": 23
+    },
+    "empty_capabilities": {
+      "supported": [],
+      "unsupported_reason": [
+        "missing capability: text_generation"
+      ],
+      "repeat_equal": true,
+      "provider_calls": 0
+    }
+  },
+  "test_provenance": {
+    "test_path": "tests/verification/test_c01_independent_acceptance.py",
+    "test_sha256": "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569",
+    "authoring_basis": "DESIGN_AND_MATRIX_BEFORE_IMPLEMENTATION_READ",
+    "implementation_read_before_authoring": 0,
+    "receipt_replay": "WRITER_REPRODUCTION_NOT_A_NEW_INDEPENDENT_TESTER_RUN",
+    "request_id_generation": "FIXED_UUID_ENTROPY_FOR_RECEIPT_REPLAY_ONLY",
+    "historical_developer_test_rerun": {
+      "product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+      "passed": 18,
+      "role": "REGRESSION_ONLY"
+    },
+    "round1": {
+      "passed": 8,
+      "failed": 1,
+      "product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137"
+    },
+    "round2": {
+      "passed": 9,
+      "failed": 0,
+      "bound_product_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359"
+    },
+    "external_execution": "NOT_EXECUTED",
+    "backend_swap_e2e": "NOT_EXECUTED"
+  }
+}

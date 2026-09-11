@@ -31,6 +31,10 @@ class ReadOnlyIntentRejected(EventGuardError):
 
 
 READ_ONLY_INTENTS = frozenset(("NAVIGATE", "VIEW", "OPEN", "SELECT"))
+OPERATIONAL_BUDGET_EVENTS = frozenset({
+    "BUDGET_RESERVED", "USAGE_RECONCILED", "USAGE_RECONCILIATION_REQUIRED",
+    "BUDGET_RESERVATION_FAILED",
+})
 
 
 def to_domain_state(projection: RunProjection) -> RunState:
@@ -68,6 +72,8 @@ class TransitionGuard:
             )
         if command.event_type == "RUN_BLOCKED":
             self.blocked_code(command.blocked_code)
+            return
+        if command.event_type in OPERATIONAL_BUDGET_EVENTS:
             return
         event = to_domain_event(command, projection.version + 1)
         try:

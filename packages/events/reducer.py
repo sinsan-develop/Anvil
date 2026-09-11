@@ -5,7 +5,7 @@ from __future__ import annotations
 from packages.domain.reducer import reduce_run
 
 from .models import RunProjection, StoredEvent
-from .transition_guard import to_domain_event, to_domain_state
+from .transition_guard import OPERATIONAL_BUDGET_EVENTS, to_domain_event, to_domain_state
 
 
 class EventHistoryGap(ValueError):
@@ -14,6 +14,9 @@ class EventHistoryGap(ValueError):
 
 class EventReducer:
     def reduce(self, projection: RunProjection, event: StoredEvent) -> RunProjection:
+        if event.event_type in OPERATIONAL_BUDGET_EVENTS:
+            from dataclasses import replace
+            return replace(projection, version=event.applied_version)
         if event.event_type == "RUN_BLOCKED":
             return RunProjection(
                 run_id=projection.run_id,

@@ -1,0 +1,577 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-01_MAINLINE_ACCEPTANCE",
+  "artifact_id": "WI-C-01-MAINLINE-ACCEPTANCE-PROJECTION-20260910-001",
+  "event_sequence": 715,
+  "historical_event_sequence": 700,
+  "appended_event_count": 15,
+  "historical_raw_event_prefix": {
+    "bytes": 2157757,
+    "sha256": "60EF142108978724C37E395B5B5C39FDE6504B65F7F5FFDEE336F41E5E937692"
+  },
+  "historical_event_semantic_sha256": "04F82C5795671A4382D87AB3F31761EC06657CA7023D17B405CBB75EC8385DDC",
+  "final_event_sha256": "FE20692EFBAFC9F5E559FA35FFB0DE78D2A3DA4B70D3BC6EC89911FC727CD762",
+  "accepted": true,
+  "status": "ACCEPTED",
+  "dir2_status": "NOT_REACHED",
+  "blocking_count": 0,
+  "acceptance_scope": "LOCAL_FIXTURE_CONTRACT_SCOPE",
+  "evidence_boundary": {
+    "actual_claude_runtime": "NOT_EXECUTED",
+    "actual_codex_runtime": "NOT_EXECUTED",
+    "actual_local_runtime": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "db": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "persistent_external_events": "NOT_EXECUTED",
+    "backend_swap_e2e": "NOT_EXECUTED",
+    "release": "NOT_EXECUTED",
+    "user_acceptance": "NOT_EXECUTED"
+  },
+  "product_work_instruction": {
+    "artifact_id": "C-01_WORK_INSTRUCTION",
+    "path": "docs/work_orders/C-01_WORK_INSTRUCTION.md",
+    "sha256": "F99FE2D6C009E7B897130DD3802460258F5CF406BE973DA0939D49DAA5E367A5",
+    "identity_kind": "CANONICAL_PATH_STEM_ALIAS"
+  },
+  "authority_hashes": {
+    "Anvil_설계서_v2.md": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "Anvil_작업계획서_v1.md": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "Anvil_통합검증매트릭스_v1.md": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "Anvil_테스트계획서_v1.md": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "docs/governance/ANVIL_OPERATING_RULES.md": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"
+  },
+  "acceptance_basis": {
+    "scope": "LOCAL_FIXTURE_CONTRACT_SCOPE",
+    "product_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+    "product_work_instruction": {
+      "artifact_id": "C-01_WORK_INSTRUCTION",
+      "path": "docs/work_orders/C-01_WORK_INSTRUCTION.md",
+      "sha256": "F99FE2D6C009E7B897130DD3802460258F5CF406BE973DA0939D49DAA5E367A5",
+      "identity_kind": "CANONICAL_PATH_STEM_ALIAS"
+    },
+    "authority_hashes": {
+      "Anvil_설계서_v2.md": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+      "Anvil_작업계획서_v1.md": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+      "Anvil_통합검증매트릭스_v1.md": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+      "Anvil_테스트계획서_v1.md": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+      "docs/governance/ANVIL_OPERATING_RULES.md": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"
+    },
+    "product_blob_sha256": {
+      "docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md": "B41E2D92A7313D14673BBC2BD5C8231D98EA1951BEC1A3BB64CF944CF25CD170",
+      "docs/WORK_STATUS.md": "D80551AD837AC4410FA3331E7D32CBB1F2010AB42E61C11C70F686B503046EF2",
+      "docs/work_orders/C-01_WORK_INSTRUCTION.md": "F99FE2D6C009E7B897130DD3802460258F5CF406BE973DA0939D49DAA5E367A5",
+      "packages/llm_gateway/contracts.py": "8F51FC2A81A681AD46C262DF55E1F6704694DB04DB3114337E10445BC67255D0",
+      "packages/orchestration/__init__.py": "A65644EA4ED0F2620A1C7B5CA0D2BCDBB2839E87A7554F78E12F761C88AA92D5",
+      "packages/orchestration/kernel.py": "6F0918F53543B7F0DBC2479293AAFAA1BF65351693DA3EB153C431E479DF9D32",
+      "packages/orchestration/native_agent_adapter.py": "D3495748486DEB888649BA30CE0D4A032FB6FF643F123CBE16B1297C5E6C1B00",
+      "tests/llm_gateway/test_c01_kernel.py": "A6AD70EB8AE2F7ADE5CC678AC5B73FFEE6B02F32A7DEDCD7A2181A43FFAE2D5E",
+      "tests/orchestration/test_c01_native_agent_adapter.py": "D9707D165F6551B771FA9B04C329FAED0D7DC52C2D74FF13853AEBBA3F32AE5D"
+    },
+    "product_chain": [
+      "e215c0612363050dbe20315646f1612f31b8cdc0",
+      "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+      "66c0e43a092215ea2e9be24606d7a28e10dff359"
+    ],
+    "full_tooling_attempt1": {
+      "source": "MAIN_TERMINAL_RECEIPT_NO_LOG_FILE",
+      "exit_code": 1,
+      "failed": 20,
+      "passed": 673,
+      "duration_seconds": "1675.07",
+      "findings": [
+        {
+          "fingerprint": "C01-G07-NULL-LINEAGE-LEGACY-CONSUMER-v1",
+          "count": 1,
+          "test_failure_instances": 19,
+          "resolution": "NULL_AWARE_CONSUMER_AND_LEDGER_DERIVED_CURRENT_HISTORY"
+        },
+        {
+          "fingerprint": "C01-GIT-MUTATION-ERA-EXPECTATION-v1",
+          "count": 1,
+          "test_failure_instances": 1,
+          "resolution": "EXACT_CURRENT_AND_SEPARATE_GENERIC_EXPECTATIONS"
+        }
+      ],
+      "non_product_tool_errors": [
+        {
+          "fingerprint": "C01-STATUS-POLL-WRAPPER-SYNTAX-ERROR-v1",
+          "count": 1
+        }
+      ],
+      "full_rerun_status_at_attempt1": "NOT_EXECUTED_MAIN_NEXT_GATE",
+      "full_rerun": "PASS_R3_ATTEMPT2_BEFORE_R4_CORRECTION"
+    },
+    "full_tooling_attempt2": {
+      "source": "MAIN_TERMINAL_RESULT_RELAY",
+      "executor": "MAIN_AGENT",
+      "command": ".venv\\Scripts\\python.exe -m pytest tests/tooling -q -p no:cacheprovider",
+      "result": "697 passed in 1661.64s (0:27:41)",
+      "exit_code": 0,
+      "passed": 697,
+      "failed": 0,
+      "duration_seconds": "1661.64",
+      "execution_revision": "R3_BEFORE_R4_NON_SEMANTIC_CORRECTION",
+      "execution_head": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+      "execution_state": "STAGED_EXACT20",
+      "parent_manifest_path": "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json",
+      "parent_manifest_sha256": "D79B87D632DA0C5ACE12190D93B8ECCFA0050A429965D46E00E5B1FAC8A15D4F",
+      "parent_exact20_sha256": {
+        "docs/04_test_reports/C-01_MAINLINE_ACCEPTANCE_RESULT.md": "783F929B14C8A8607E79A7E695CA4A9DE147CA43953B913FB32EEA70DDDF912E",
+        "docs/WORK_STATUS.md": "B0BAE8AA5CA5F99104D42C2E7D30E292104F39FA923CB806D52879E695AC2F90",
+        "docs/completion_reports/C-01_completion.md": "71F06454E530AFA8C702209FF3BA3E2AB2DB588A433B974D7F60D6E1AF49CB62",
+        "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json": "D79B87D632DA0C5ACE12190D93B8ECCFA0050A429965D46E00E5B1FAC8A15D4F",
+        "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json": "A5D6163FA2E1E5BA49F751D2FE3B0DC99A4BC7087517ABA22C8FFFC65189216B",
+        "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json": "78489DCE840710E7E38303D48F28136110D13DE07DFC61BD5A6089CE3A633D4B",
+        "docs/progress/BUILD_HANDOFF.md": "16B3DDD0B477C9FF5556AEB39A25981D560B188DA85C7DC74F0DD583592CC166",
+        "docs/progress/build-progress.json": "FD31FFA7E211353478BB669EC6F25B778DACE2C5A9DB0590EC612A2F7B167BEF",
+        "docs/progress/progress-events.json": "B3C844640225E2A6A9F17A57E080EFC351204B51A992A2BC5A940C5FEC65E4BB",
+        "docs/progress/progress-handoff-detached-digest-c01-mainline-acceptance.json": "03C357CE9F48539878728944B6737C5F0DE43B871A7FB5812437181DBFF465EB",
+        "docs/test_reports/C-01_MAINLINE_INDEPENDENT_TEST_REPORT.md": "1F428A2E19F74608AB56C2214716791F084EB93C23E049BF966F568049587C36",
+        "docs/validation/C-01_MAINLINE_ACCEPTANCE_VALIDATION.md": "8A6AF6216F0E91102EB11F38384C6FA5795A7F7A9552BAE04BF1D0E12211021E",
+        "docs/work_orders/C-01_INVOCATION_PROMPT.md": "942925D7A9E64E4CCD036EA47EA7A13EE03E4EF14BEB3EEF593E89CF9E419A93",
+        "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md": "EC691BDB02B705929800107FB9991483106FDFA6618E5D3B8B17DF4268652FA9",
+        "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md": "8937BB5FD5C6C3F588A003B88EE9747082063380EE7C64BC8CC21E985C91B247",
+        "scripts/check_g07_baseline.py": "2757ACB2121B3880D7A851B2DEBE218B18BC3C47C4C414D1ED7A5EF473FC0D11",
+        "scripts/check_project_progress.py": "DDFA88619012F01B50DD3CAA26EBE11B74C39DB29965829FDA68D73B21EDFDBE",
+        "tests/tooling/test_g07_baseline.py": "E547C46D93C7168884BCC4FCC0E451BB09749C6F6F39FE729523252F32CFA93B",
+        "tests/tooling/test_project_progress.py": "918915E4978B6B2DDFC780FEACF89CBD9093978AE2EC1B0306E25D40D7DB75D9",
+        "tests/verification/test_c01_independent_acceptance.py": "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569"
+      },
+      "proves_post_correction_full_suite": false
+    },
+    "projection_correction": {
+      "revision": "R4",
+      "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+      "authorization_source": "MAIN_EPOCH4_CORRECTION_INSTRUCTION",
+      "parent_work_instruction_sha256": "8937BB5FD5C6C3F588A003B88EE9747082063380EE7C64BC8CC21E985C91B247",
+      "work_instruction_sha256": "BFD03E5203F89396C6020C17A02FD387FB7F47B74196E354111354A3E8CA06BD",
+      "reviewer_final": {
+        "source": "MAIN_RELAY_OF_REVIEWER_FINAL",
+        "reviewed_revision": "R3",
+        "spec": "PASS",
+        "quality": "APPROVED",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 1
+      },
+      "minor_finding": {
+        "local_tracking_id": "C01-DEVELOPER-TEST-COUNT-TYPO-v1",
+        "count": 1,
+        "path": "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+        "item": 7,
+        "before": 20,
+        "after": 18,
+        "resolution": "RESOLVED_DOCUMENT_CORRECTION_CANONICAL_EVIDENCE_ALREADY_18"
+      },
+      "product_logic_changed": false,
+      "test_logic_changed": false,
+      "post_correction_main_gate": "FOCUSED_CHECKER_CHECKSUM_DETERMINISM_PENDING_MAIN"
+    },
+    "product_fix": {
+      "commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+      "parent": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+      "exact_paths": [
+        "packages/orchestration/kernel.py",
+        "tests/llm_gateway/test_c01_kernel.py"
+      ],
+      "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-unknown-usage-fix-report.md",
+      "source_sha256": "31E90A32F335548BE0471744F2903D37E7E1BCC0B391C75C4A561D15249CDA28",
+      "review": {
+        "spec": "PASS",
+        "quality": "APPROVED",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-unknown-usage-fix-review-report.md",
+        "source_sha256": "6FA6400006CD21FBC0FAF5EFEEFD8C02AC9A036F2929F976A851556953F84688"
+      }
+    },
+    "code_review": {
+      "spec": "PASS",
+      "quality": "APPROVED",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+      "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-product-review-report.md",
+      "source_sha256": "476E911CDB044ECDE80578EA0724E49EDC85A3117A74CC3820D56403AE66DBCB",
+      "test_rerun": "NOT_EXECUTED"
+    },
+    "developer_test_rerun": {
+      "verdict": "PASS",
+      "scope": "LOCAL_FIXTURE_CONTRACT_SCOPE",
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+      "role": "REGRESSION_ONLY_NOT_INDEPENDENT_ACCEPTANCE",
+      "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-independent-test-report.md",
+      "source_sha256": "EA461AD96A247A477FD096DB22B96E0713B8D7C2782DFFD2B4A6779539310973",
+      "command": ".venv\\Scripts\\python.exe -m pytest tests\\llm_gateway tests\\orchestration\\test_c01_native_agent_adapter.py tests\\agent_team\\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider",
+      "exit_code": 0,
+      "result": "18 passed in 0.80s",
+      "compile_command": ".venv\\Scripts\\python.exe -m compileall -q packages\\llm_gateway packages\\orchestration",
+      "compile_exit_code": 0,
+      "acceptance_authority": false
+    },
+    "projection_review_finding": {
+      "fingerprint": "C01-ACCEPTANCE-INDEPENDENT-SCENARIO-MISSING-v1",
+      "original_spec": "FAIL",
+      "original_quality": "CHANGES_REQUIRED",
+      "critical_findings": 0,
+      "important_findings": 1,
+      "minor_findings": 0,
+      "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-acceptance-review-report.md",
+      "source_sha256": "591BAD6EF52CE48C1D285379E4AB08001FEAD4CD40AC38505878FB6FC089D8AE",
+      "resolution": "RESOLVED_BY_DESIGN_DERIVED_SCENARIOS"
+    },
+    "independent_design_scenarios": {
+      "test_path": "tests/verification/test_c01_independent_acceptance.py",
+      "test_sha256": "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569",
+      "authoring_basis": "DESIGN_AND_MATRIX_BEFORE_IMPLEMENTATION_READ",
+      "implementation_read_before_authoring": 0,
+      "developer_tests_read_before_authoring": 0,
+      "completion_reports_read_before_authoring": 0,
+      "projection_read_before_authoring": 0,
+      "expectations_changed_between_rounds": false,
+      "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-independent-scenario-report.md",
+      "source_sha256": "B27E326FD627A9BD35771B9A4219917FD53A0FD0E894FAD0D644C15C2FCDCCD8",
+      "round1": {
+        "product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+        "passed": 8,
+        "failed": 1,
+        "skipped": 0,
+        "exit_code": 1,
+        "result": "8 passed, 1 failed in 0.42s"
+      },
+      "round2": {
+        "execution_head": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+        "execution_state": "WORKING_PRODUCT_FIX_THEN_IMMUTABLY_BOUND",
+        "bound_product_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+        "kernel_sha256": "6F0918F53543B7F0DBC2479293AAFAA1BF65351693DA3EB153C431E479DF9D32",
+        "passed": 9,
+        "failed": 0,
+        "skipped": 0,
+        "exit_code": 0,
+        "result": "9 passed in 0.28s"
+      },
+      "finding": {
+        "fingerprint": "C01-UNKNOWN-USAGE-CONSUMED-ZERO-RELEASE-v1",
+        "round1_status": "CONSUMED",
+        "round1_active_reservations": 0,
+        "expected_status": "USAGE_RECONCILIATION_REQUIRED",
+        "expected_active_reservations": 1,
+        "resolution": "RESOLVED_INDEPENDENT_ROUND2",
+        "fix_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359"
+      }
+    },
+    "independent_test": {
+      "verdict": "PASS",
+      "scope": "LOCAL_FIXTURE_CONTRACT_SCOPE",
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0,
+      "product_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+      "role": "DESIGN_DERIVED_INDEPENDENT_ACCEPTANCE",
+      "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-independent-scenario-report.md",
+      "source_sha256": "B27E326FD627A9BD35771B9A4219917FD53A0FD0E894FAD0D644C15C2FCDCCD8",
+      "command": "$env:PYTHONDONTWRITEBYTECODE='1'; & '.\\.venv\\Scripts\\python.exe' -m pytest -p no:cacheprovider tests/verification/test_c01_independent_acceptance.py -q",
+      "exit_code": 0,
+      "result": "9 passed in 0.28s",
+      "test_path": "tests/verification/test_c01_independent_acceptance.py",
+      "test_sha256": "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569",
+      "tracked_report": {
+        "path": "docs/test_reports/C-01_MAINLINE_INDEPENDENT_TEST_REPORT.md",
+        "sha256": "B9334CEBF642012A02A05C599F996A9324D1EFC6B2E21A031AEC29DDEFC07E73"
+      }
+    },
+    "validation_ids": {
+      "AV-AGT-002": {
+        "verdict": "PASS",
+        "scope": "DETERMINISTIC_CLAUDE_CODEX_LOCAL_FAKE",
+        "evidence_ref": "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json"
+      },
+      "AV-AGT-003": {
+        "verdict": "PASS",
+        "scope": "IN_MEMORY_RESERVATION_BEFORE_CALL",
+        "evidence_ref": "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json"
+      },
+      "AV-OPS-011": {
+        "verdict": "PASS",
+        "scope": "DETERMINISTIC_FAKE_CONTRACT_ONLY",
+        "evidence_ref": "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json"
+      }
+    },
+    "raw_evidence": [
+      {
+        "path": "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json",
+        "sha256": "A5D6163FA2E1E5BA49F751D2FE3B0DC99A4BC7087517ABA22C8FFFC65189216B"
+      },
+      {
+        "path": "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json",
+        "sha256": "78489DCE840710E7E38303D48F28136110D13DE07DFC61BD5A6089CE3A633D4B"
+      }
+    ],
+    "evidence_boundary": {
+      "actual_claude_runtime": "NOT_EXECUTED",
+      "actual_codex_runtime": "NOT_EXECUTED",
+      "actual_local_runtime": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "telegram": "NOT_EXECUTED",
+      "db": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "persistent_external_events": "NOT_EXECUTED",
+      "backend_swap_e2e": "NOT_EXECUTED",
+      "release": "NOT_EXECUTED",
+      "user_acceptance": "NOT_EXECUTED"
+    },
+    "main_decision": "ACCEPTED",
+    "main_actor": "main-agent-eoul",
+    "decision_authority": "MAIN_ACCEPTANCE_BRIEF_AFTER_SEPARATE_CODE_REVIEW_AND_INDEPENDENT_TEST",
+    "failure_history": {
+      "source_path": "docs/progress/failure-ledger.json",
+      "source_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+      "source_sha256": "C3C6A25E50946664F645FA1E1622555CCB553B57522E2D5BD6FF141B49470A73",
+      "active_lineage": null,
+      "active_count": 0,
+      "historical_accepted_failure_count": 32,
+      "historical_failure_counts_by_lineage": {
+        "A-01": 1,
+        "A-02": 1,
+        "A-03": 1,
+        "A-13": 1,
+        "A-14": 4,
+        "B-01": 2,
+        "B-02": 1,
+        "B-03": 1,
+        "B-09": 4,
+        "B-10": 2,
+        "B-11": 1,
+        "B-12": 1,
+        "C-21/LR-02A": 3,
+        "C-21/LR-02B": 1,
+        "C-21/LR-02C": 2,
+        "C-21/LR-02C/BACKUP-PORTABILITY": 1,
+        "C-21/LR-02C/OPS-R2": 2,
+        "G-05": 1,
+        "G-06": 1,
+        "PHASE_G_GATE": 1
+      },
+      "superseded_seq700_count": 31,
+      "superseded_seq700_ops_r2_count": 1
+    }
+  },
+  "acceptance_basis_sha256": "EA9B436A4D2EC7A51F5D3245A9479AD5181E09B1C1F54637F6ED265FE6C628E5",
+  "self_reference": false,
+  "sequence": 715,
+  "event_type": "MAIN_PACKAGE_ACCEPTED",
+  "baseline_merge_commit": "e215c0612363050dbe20315646f1612f31b8cdc0",
+  "baseline_merge_parents": [
+    "931b32418924de11626949b9303360696d614fb0",
+    "ef973bb3e61df5a3acded215dbebe73a71f4f873"
+  ],
+  "product_commit": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+  "product_parent": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+  "initial_product_commit": "f56ac2514d0c5bca41768e456ed57f2036ab3137",
+  "initial_product_parent": "e215c0612363050dbe20315646f1612f31b8cdc0",
+  "initial_product_paths": [
+    "docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/work_orders/C-01_WORK_INSTRUCTION.md",
+    "packages/llm_gateway/contracts.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/kernel.py",
+    "packages/orchestration/native_agent_adapter.py",
+    "tests/llm_gateway/test_c01_kernel.py",
+    "tests/orchestration/test_c01_native_agent_adapter.py"
+  ],
+  "product_fix_paths": [
+    "packages/orchestration/kernel.py",
+    "tests/llm_gateway/test_c01_kernel.py"
+  ],
+  "product_path_occurrence_count": 11,
+  "projection_parent": "66c0e43a092215ea2e9be24606d7a28e10dff359",
+  "projection_commit_binding": "STAGED_EXACT20_OR_SOLE_DIRECT_CHILD_OF_FIX_OR_MERGE_SECOND_PARENT",
+  "worker_lease_id": "worker-lease-c01-mainline-acceptance-projection-r4-20260911-001",
+  "write_lease_id": "write-lease-c01-mainline-acceptance-projection-r4-20260911-001",
+  "execution_fencing_token": "c01-mainline-acceptance-execution-fence-epoch-4-66c0e43",
+  "write_fencing_token": "c01-mainline-acceptance-write-fence-epoch-4-66c0e43",
+  "lease_epoch": 4,
+  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "development_remote_ref": "refs/remotes/development/main",
+  "exact_paths": [
+    "docs/04_test_reports/C-01_MAINLINE_ACCEPTANCE_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/completion_reports/C-01_completion.md",
+    "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json",
+    "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c01-mainline-acceptance.json",
+    "docs/test_reports/C-01_MAINLINE_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/C-01_MAINLINE_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "scripts/check_g07_baseline.py",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_g07_baseline.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_c01_independent_acceptance.py"
+  ],
+  "exact_path_count": 20,
+  "product_paths": [
+    "docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/work_orders/C-01_WORK_INSTRUCTION.md",
+    "packages/llm_gateway/contracts.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/kernel.py",
+    "packages/orchestration/native_agent_adapter.py",
+    "tests/llm_gateway/test_c01_kernel.py",
+    "tests/orchestration/test_c01_native_agent_adapter.py"
+  ],
+  "product_path_count": 9,
+  "cumulative_paths": [
+    "docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md",
+    "docs/04_test_reports/C-01_MAINLINE_ACCEPTANCE_RESULT.md",
+    "docs/WORK_STATUS.md",
+    "docs/completion_reports/C-01_completion.md",
+    "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json",
+    "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c01-mainline-acceptance.json",
+    "docs/test_reports/C-01_MAINLINE_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/C-01_MAINLINE_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "docs/work_orders/C-01_WORK_INSTRUCTION.md",
+    "packages/llm_gateway/contracts.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/kernel.py",
+    "packages/orchestration/native_agent_adapter.py",
+    "scripts/check_g07_baseline.py",
+    "scripts/check_project_progress.py",
+    "tests/llm_gateway/test_c01_kernel.py",
+    "tests/orchestration/test_c01_native_agent_adapter.py",
+    "tests/tooling/test_g07_baseline.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_c01_independent_acceptance.py"
+  ],
+  "cumulative_path_count": 28,
+  "exact_path_list_ordinal_sha256": "C2138F2370B8A6F2E6F88BF1295FD85EDEC221AF731C754DA21F76FDCCD3D384",
+  "cumulative_path_list_ordinal_sha256": "A5675215897B50DF2CB5891B6EBA2BCA1C07B5994E1EBC43FEF1E16BF042953A",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-01_MAINLINE_ACCEPTANCE_RESULT.md",
+      "bytes": 21027,
+      "sha256": "B278C5D155B361C442276EEF3A5738CD6781B27BED4757EF84097F4CE5BD4711"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 419387,
+      "sha256": "59C192863FD32C57965A1472D5BBB2FA1B73204F215D2BB8DE7B4DFCAFD59E10"
+    },
+    {
+      "path": "docs/completion_reports/C-01_completion.md",
+      "bytes": 4960,
+      "sha256": "977CA55A67130BB71E3764A7C3C0147755BBFB4D493A232D6F8CD9CBC742964E"
+    },
+    {
+      "path": "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json",
+      "bytes": 10874,
+      "sha256": "A5D6163FA2E1E5BA49F751D2FE3B0DC99A4BC7087517ABA22C8FFFC65189216B"
+    },
+    {
+      "path": "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json",
+      "bytes": 8603,
+      "sha256": "78489DCE840710E7E38303D48F28136110D13DE07DFC61BD5A6089CE3A633D4B"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 188203,
+      "sha256": "EDCCA43DB38784BD9FD4D5E12F36A3861EEADEAABDCA7A467687FB5757E34BD0"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 802346,
+      "sha256": "01FB4C4A3BC50F377F39D585CB5A01FAB7A10F96D0205F191DA3D5249B1C2CA0"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2189807,
+      "sha256": "767BC05A3111B99B26ADCA6A1D57E7047A6DD8F69CFDB2CF6F86D5117B711E75"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c01-mainline-acceptance.json",
+      "bytes": 747,
+      "sha256": "11B132F3BA059C6128A9A855DBCF37EB1CD5B0BE4DE9EE95350038C8E25B4EDB"
+    },
+    {
+      "path": "docs/test_reports/C-01_MAINLINE_INDEPENDENT_TEST_REPORT.md",
+      "bytes": 8800,
+      "sha256": "B9334CEBF642012A02A05C599F996A9324D1EFC6B2E21A031AEC29DDEFC07E73"
+    },
+    {
+      "path": "docs/validation/C-01_MAINLINE_ACCEPTANCE_VALIDATION.md",
+      "bytes": 4990,
+      "sha256": "7B4FE9730D3DD8E6DDDB7CD1B280D8F0199B5EC20A492FD0020C16437A60D685"
+    },
+    {
+      "path": "docs/work_orders/C-01_INVOCATION_PROMPT.md",
+      "bytes": 859,
+      "sha256": "4920BB85F39249CB38613FB31D5F472B579506189200DB5286C88F9FFC043ED7"
+    },
+    {
+      "path": "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+      "bytes": 534,
+      "sha256": "24357FE0A7352F3C718413DA388DD105A37849F5FDF8E0B5586998CE442BB953"
+    },
+    {
+      "path": "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "bytes": 10060,
+      "sha256": "BFD03E5203F89396C6020C17A02FD387FB7F47B74196E354111354A3E8CA06BD"
+    },
+    {
+      "path": "scripts/check_g07_baseline.py",
+      "bytes": 144335,
+      "sha256": "2757ACB2121B3880D7A851B2DEBE218B18BC3C47C4C414D1ED7A5EF473FC0D11"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2262139,
+      "sha256": "7D8F7E29AE0C4BC686FCCFEB0D99A8872D94EB412894132E210B1EE5F2BE572B"
+    },
+    {
+      "path": "tests/tooling/test_g07_baseline.py",
+      "bytes": 49591,
+      "sha256": "E547C46D93C7168884BCC4FCC0E451BB09749C6F6F39FE729523252F32CFA93B"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 676915,
+      "sha256": "79CA7A63D44E2C3FE47FDFD125C633760777E805792604A31F0246756B7AF448"
+    },
+    {
+      "path": "tests/verification/test_c01_independent_acceptance.py",
+      "bytes": 13580,
+      "sha256": "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569"
+    }
+  ]
+}

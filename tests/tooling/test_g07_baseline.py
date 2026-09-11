@@ -173,6 +173,34 @@ class G07BaselineTests(unittest.TestCase):
         self.assertEqual("B-10", progress["active_failure_lineage"]["step_lineage_id"])
         self.assertEqual(2, progress["active_failure_lineage"]["valid_failure_count"])
 
+    def test_null_active_lineage_counts_all_valid_entries_as_historical(self):
+        path = "docs/progress/build-progress.json"
+        progress = json.loads((ROOT / path).read_text(encoding="utf-8"))
+        progress.update(active_failure_lineage=None, valid_failure_count=0, historical_accepted_failure_count=32)
+        report = self.validate(json_docs={path: progress}, verify_hashes=False)
+        self.assertEqual((None, 0, 32), tuple(report["failure_counts"][key] for key in ("active_lineage", "active_lineage_valid_failure_count", "historical_accepted_failure_total")))
+        self.assertEqual(2, report["failure_counts"]["historical_by_lineage"]["C-21/LR-02C/OPS-R2"])
+        self.assertFalse({"ACTIVE_FAILURE_PROJECTION_MISMATCH", "HISTORICAL_FAILURE_PROJECTION_MISMATCH"} & self.codes(report))
+
+    def test_null_active_lineage_rejects_stale_historical_and_nonzero_active_counts(self):
+        path = "docs/progress/build-progress.json"
+        original = json.loads((ROOT / path).read_text(encoding="utf-8"))
+        for field, value, expected in (("historical_accepted_failure_count", 31, "HISTORICAL_FAILURE_PROJECTION_MISMATCH"), ("valid_failure_count", 1, "ACTIVE_FAILURE_PROJECTION_MISMATCH")):
+            progress = copy.deepcopy(original)
+            progress.update(active_failure_lineage=None, valid_failure_count=0, historical_accepted_failure_count=32)
+            progress[field] = value
+            self.assertIn(expected, self.codes(self.validate(json_docs={path: progress}, verify_hashes=False)))
+
+    def test_active_lineage_object_retains_partition_and_failure_guards(self):
+        path = "docs/progress/build-progress.json"
+        progress = json.loads((ROOT / path).read_text(encoding="utf-8"))
+        progress.update(active_failure_lineage={"step_lineage_id": "C-21/LR-02C/OPS-R2", "valid_failure_count": 2}, valid_failure_count=2, historical_accepted_failure_count=30)
+        report = self.validate(json_docs={path: progress}, verify_hashes=False)
+        self.assertEqual(("C-21/LR-02C/OPS-R2", 2, 30), tuple(report["failure_counts"][key] for key in ("active_lineage", "active_lineage_valid_failure_count", "historical_accepted_failure_total")))
+        self.assertFalse({"ACTIVE_FAILURE_PROJECTION_MISMATCH", "HISTORICAL_FAILURE_PROJECTION_MISMATCH"} & self.codes(report))
+        progress["active_failure_lineage"]["valid_failure_count"] = 1
+        self.assertIn("ACTIVE_FAILURE_PROJECTION_MISMATCH", self.codes(self.validate(json_docs={path: progress}, verify_hashes=False)))
+
     def test_authority_hash_and_version_drift_are_rejected(self):
         historical_root, historical_checker = _historical_checker(_G07_ACCEPTED, "g07_authority_frozen")
         design = (historical_root / "Anvil_설계서_v2.md").read_text(encoding="utf-8")

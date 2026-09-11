@@ -1,0 +1,165 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C01_L3_FINAL_ACCEPTANCE_PROJECTION",
+  "artifact_id": "C01-L3-FINAL-ACCEPTANCE-20260911",
+  "created_at": "2026-09-11T15:30:00+09:00",
+  "package_id": "C-01",
+  "event_sequence": 727,
+  "historical_event_sequence": 721,
+  "appended_event_count": 6,
+  "historical_commit": "a34d12da5f504a5d2694fc04f0924082cb1fc1d9",
+  "historical_raw_event_prefix": {
+    "bytes": 2200450,
+    "sha256": "7A3F29B91C4D1ABBCB5616B7DF3E4CD4DFDDF8CF8FEB47F0F9E3D8246741D910"
+  },
+  "status": "ACCEPTED",
+  "accepted": true,
+  "c01_status": "ACCEPTED",
+  "c02_status": "READY_NOT_STARTED",
+  "active_leases": 0,
+  "execution_authority_path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+  "execution_authority_sha256": "568E85F6766F28D9356FA2674D260C8EE8229ED4EFACE5AEBF63F9B68F65D9B3",
+  "invocation_path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+  "invocation_sha256": "9B2D51D6070A732EAAEF3A10C3CD31CE87D8590EDFB7E407021E3930FBB1AEA9",
+  "operational_evidence_path": "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+  "external_execution": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "new_migration": "NOT_CREATED",
+    "database_write_during_deployment": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "main_merge": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED"
+  },
+  "self_reference": false,
+  "historical_sequence": 721,
+  "sequence": 727,
+  "test_baseline_commit": "fd3c89665629addd78e74c2fe946fb9dfc893c36",
+  "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+  "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+  "branch": "codex/c01-mainline-reconciliation-r5",
+  "work_instruction_id": "WI-C-01-L3-FINAL-ACCEPTANCE-PROJECTION-20260911-001",
+  "test_exact_paths": [
+    "tests/verification/test_c01_l3_independent_acceptance.py"
+  ],
+  "test_exact_path_count": 1,
+  "test_exact_path_list_sha256": "A3356F810CF23AADE41F82CA981041E885DB5C55DFD0A5BECF0B173F668C541F",
+  "product_exact_paths": [
+    "packages/api/fastapi_app.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "packages/api/step_execution.py",
+    "packages/events/reducer.py",
+    "packages/events/transition_guard.py",
+    "packages/persistence/event_repository.py",
+    "packages/persistence/intervention_budget_repository.py",
+    "tests/api/test_c01_step_execution.py",
+    "tests/api/test_runtime_app.py",
+    "tests/events/test_event_store.py",
+    "tests/persistence/test_c01_step_execution_postgres.py",
+    "tests/verification/test_c01_l3_independent_acceptance.py"
+  ],
+  "product_exact_path_count": 13,
+  "product_exact_path_list_sha256": "B8F60DE00FFC3E588660B042EF238EBE4077F728A919EDE5CAAE5C66CAEFB921",
+  "control_exact_paths": [
+    "deploy/wsl/FormalSingleRuntimeManifest.json",
+    "deploy/wsl/formal-single-runtime.sh",
+    "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+    "docs/work_orders/C-01_WSL_FORMAL_SINGLE_RUNTIME_WORK_INSTRUCTION.md",
+    "tests/deploy/test_c01_wsl_formal_single_runtime_contract.py"
+  ],
+  "control_exact_path_count": 5,
+  "control_exact_path_list_sha256": "9E54F8465E6C99A76C50D01CAD0C21DA8A2C3903DCD71E2FE78024B7E5B0DEAE",
+  "final_record_exact_paths": [
+    "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
+    "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+    "docs/WORK_STATUS.md",
+    "docs/completion_reports/C-01_completion.md",
+    "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
+    "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "final_record_exact_path_count": 15,
+  "final_record_exact_path_list_sha256": "18AE0C3702951F494163E304A58BA5788B90C96CA60D52B46B5BD4DB6F1CE98C",
+  "record_binding": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OF_CONTROL",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
+      "bytes": 952,
+      "sha256": "8932C732DB168AB11C2EFBE638B273D632D091794BCF1CA18C849B79CC5B7DEA"
+    },
+    {
+      "path": "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+      "bytes": 9599,
+      "sha256": "BCC442FFFD7C63D77BAA71F31107BB2A3BF2EF8916615498AEE110811B9DB0A3"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 419618,
+      "sha256": "825E57AA1F4B395944433880A8F9F10CDFDEA7E487134036D22E4BD64DE99A4E"
+    },
+    {
+      "path": "docs/completion_reports/C-01_completion.md",
+      "bytes": 5206,
+      "sha256": "481A1F8274EF417BD00E517C55BADE3EEF112515EF67E425C91A458A35299B7D"
+    },
+    {
+      "path": "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+      "bytes": 2630,
+      "sha256": "C0F83E4469C184C62211236279FE2ED0A6E1EA834142A6BA61BC9CB16ED569F6"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 184020,
+      "sha256": "01C5249F65EB0E28D9AE68F8988217941DB82FE3A32F45B6E2863474B471F217"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 805397,
+      "sha256": "99644A6C36A3335E131B472FF17E8636DB0389B038F9E80A1E8A6DB0F4950391"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2209301,
+      "sha256": "CDE2B25246DCE76D0477CB3594F1571D5A391750309434D13C8D7046BD7B67F5"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
+      "bytes": 871,
+      "sha256": "24646140515F1C954C16D1BDBAA3509706F0077B196E4BCEE2827BD25E2B5FFC"
+    },
+    {
+      "path": "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
+      "bytes": 462,
+      "sha256": "A73CDB64483BE73FF712470C8946A570A75C68885DC6A148166128D639B9F1E1"
+    },
+    {
+      "path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+      "bytes": 329,
+      "sha256": "9B2D51D6070A732EAAEF3A10C3CD31CE87D8590EDFB7E407021E3930FBB1AEA9"
+    },
+    {
+      "path": "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "bytes": 4746,
+      "sha256": "568E85F6766F28D9356FA2674D260C8EE8229ED4EFACE5AEBF63F9B68F65D9B3"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2329746,
+      "sha256": "04A8817F0C3EB3CDE7F081D2FC1ED805D18CAEC5A7E350056831F0F7A93B1F42"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 695984,
+      "sha256": "1D1B3612FBB5965741EE88C95197F3F39ED0B73C50B7B4A9688C650576B63F20"
+    }
+  ]
+}

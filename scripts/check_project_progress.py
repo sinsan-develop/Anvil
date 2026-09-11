@@ -813,6 +813,38 @@ def validate_event_stream(
             "required_details": ["attempt", "worker_lease_id", "write_lease_id", "same_failure_count", "status"],
             "effect": "records bounded Provider WSL auth rework dispatch",
         }
+    if any(
+        isinstance(event, dict)
+        and event.get("sequence") == 721
+        and event.get("event_type") == "PACKAGE_RESUMED"
+        for event in stream.get("events", [])
+    ):
+        payload_contracts = dict(payload_contracts or {})
+        event_types.update({"INDEPENDENT_TEST_REVIEW_RECORDED", "PACKAGE_REWORK_REQUESTED"})
+        payload_contracts["INDEPENDENT_TEST_REVIEW_RECORDED"] = {
+            "required_details": ["verdict", "critical_findings", "important_findings"],
+            "effect": "records the final whole-branch C-01 L3 rejection",
+        }
+        payload_contracts["PACKAGE_REWORK_REQUESTED"] = {
+            "required_details": ["attempt", "worker_lease_id", "write_lease_id", "same_failure_count", "status"],
+            "effect": "records the approved C-01 L3 rework dispatch",
+        }
+    if any(
+        isinstance(event, dict)
+        and event.get("sequence") == 727
+        and event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+        for event in stream.get("events", [])
+    ):
+        payload_contracts = dict(payload_contracts or {})
+        event_types.update({"INDEPENDENT_TEST_JUDGMENT_RECORDED", "DEPLOYMENT_VERIFIED"})
+        payload_contracts["INDEPENDENT_TEST_JUDGMENT_RECORDED"] = {
+            "required_details": ["verdict", "criteria", "evidence_ref"],
+            "effect": "records final fail-closed C-01 L3 independent judgment",
+        }
+        payload_contracts["DEPLOYMENT_VERIFIED"] = {
+            "required_details": ["environment", "receipt", "candidate_commit", "container"],
+            "effect": "records bounded WSL formal runtime verification",
+        }
     if not isinstance(payload_contracts, dict) or set(payload_contracts) != event_types:
         errors.append("EVENT_PAYLOAD_CONTRACT_SET_INVALID")
         payload_contracts = {}
@@ -838,6 +870,27 @@ def validate_event_stream(
             or (
                 event.get("sequence") == 523
                 and event.get("event_id") == "evt_c21_provider_wsl_auth_package_completed"
+            )
+            or (
+                progress is not None
+                and progress.get("event_sequence") == 715
+                and event.get("sequence") == 715
+                and event.get("event_id") == "evt_c01_mainline_main_package_accepted"
+                and event["details"].get("projection_mode") == "C01_MAINLINE_ACCEPTANCE_EXACT20"
+            )
+            or (
+                progress is not None
+                and progress.get("event_sequence") == 721
+                and event.get("sequence") == 721
+                and event.get("event_id") == "evt_c01_l3_rework_package_resumed"
+                and event["details"].get("projection_mode") == "C01_L3_REWORK_CONTROL_EXACT10"
+            )
+            or (
+                progress is not None
+                and progress.get("event_sequence") == 727
+                and event.get("sequence") == 727
+                and event.get("event_id") == "evt_c01_l3_final_main_package_accepted"
+                and event["details"].get("projection_mode") == "C01_L3_FINAL_ACCEPTANCE_EXACT15"
             )
         )
     ]
@@ -12789,6 +12842,26 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 727:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        errors = _collect_c01_l3_final_acceptance_git(bundle)
+        repository = bundle.get("progress", {}).get("repository")
+        if (
+            isinstance(repository, Mapping)
+            and "validated_base_commit" in repository
+            and repository.get("validated_base_commit") != C01_L3_FINAL_CONTROL
+        ):
+            errors.append("GIT_VALIDATED_BASE_NOT_ANCESTOR")
+        return sorted(set(errors))
+    if bundle.get("progress", {}).get("event_sequence") == 721:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c01_l3_rework_control_git(bundle)
+    if bundle.get("progress", {}).get("event_sequence") == 715:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c01_mainline_acceptance_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 700:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13789,6 +13862,12 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_c01_l3_final_acceptance_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-01_L3_REWORK_START_MANIFEST.json":
+            errors.extend(validate_c01_l3_rework_control_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_c01_mainline_acceptance_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json":
             errors.extend(validate_c21_postmerge_development_authority_reconciliation_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_FINAL_ACCEPTANCE_PROJECTION_RECONCILIATION_MANIFEST.json":
@@ -24572,6 +24651,1755 @@ def _collect_c21_postmerge_development_authority_reconciliation_git(bundle: Mapp
         )
         return [] if valid else ["C21_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C01_ACCEPTANCE_P = "docs/progress/build-progress.json"
+C01_ACCEPTANCE_E = "docs/progress/progress-events.json"
+C01_ACCEPTANCE_H = "docs/progress/BUILD_HANDOFF.md"
+C01_ACCEPTANCE_D = "docs/progress/progress-handoff-detached-digest-c01-mainline-acceptance.json"
+C01_ACCEPTANCE_M = "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json"
+C01_ACCEPTANCE_BACKEND = "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json"
+C01_ACCEPTANCE_BUDGET = "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json"
+C01_ACCEPTANCE_WI = "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md"
+C01_ACCEPTANCE_PROMPT = "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md"
+C01_ACCEPTANCE_TEST = "docs/test_reports/C-01_MAINLINE_INDEPENDENT_TEST_REPORT.md"
+C01_ACCEPTANCE_RESULT = "docs/04_test_reports/C-01_MAINLINE_ACCEPTANCE_RESULT.md"
+C01_ACCEPTANCE_BASE = "e215c0612363050dbe20315646f1612f31b8cdc0"
+C01_ACCEPTANCE_BASE_PARENTS = ["931b32418924de11626949b9303360696d614fb0", "ef973bb3e61df5a3acded215dbebe73a71f4f873"]
+C01_ACCEPTANCE_INITIAL_PRODUCT = "f56ac2514d0c5bca41768e456ed57f2036ab3137"
+C01_ACCEPTANCE_PRODUCT = "66c0e43a092215ea2e9be24606d7a28e10dff359"
+C01_ACCEPTANCE_INDEPENDENT_TEST = "tests/verification/test_c01_independent_acceptance.py"
+C01_ACCEPTANCE_INDEPENDENT_TEST_SHA = "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569"
+C01_ACCEPTANCE_BRANCH = "codex/c01-mainline-reconciliation"
+C01_ACCEPTANCE_AT = "2026-09-11T00:42:04+09:00"
+C01_ACCEPTANCE_WI_ID = "WI-C-01-MAINLINE-ACCEPTANCE-PROJECTION-20260910-001"
+C01_PRODUCT_WI = {"artifact_id": "C-01_WORK_INSTRUCTION", "path": "docs/work_orders/C-01_WORK_INSTRUCTION.md", "sha256": "F99FE2D6C009E7B897130DD3802460258F5CF406BE973DA0939D49DAA5E367A5", "identity_kind": "CANONICAL_PATH_STEM_ALIAS"}
+C01_ACCEPTANCE_AUTHORITY = {
+    "Anvil_설계서_v2.md": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "Anvil_작업계획서_v1.md": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "Anvil_통합검증매트릭스_v1.md": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "Anvil_테스트계획서_v1.md": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "docs/governance/ANVIL_OPERATING_RULES.md": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+}
+
+
+def c01_mainline_acceptance_metadata() -> dict[str, Any]:
+    product = sorted([
+        "docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md", "docs/WORK_STATUS.md",
+        C01_PRODUCT_WI["path"], "packages/llm_gateway/contracts.py",
+        "packages/orchestration/__init__.py", "packages/orchestration/kernel.py",
+        "packages/orchestration/native_agent_adapter.py", "tests/llm_gateway/test_c01_kernel.py",
+        "tests/orchestration/test_c01_native_agent_adapter.py",
+    ])
+    paths = sorted([
+        C01_ACCEPTANCE_RESULT, "docs/WORK_STATUS.md", "docs/completion_reports/C-01_completion.md",
+        C01_ACCEPTANCE_M, C01_ACCEPTANCE_BACKEND, C01_ACCEPTANCE_BUDGET,
+        C01_ACCEPTANCE_H, C01_ACCEPTANCE_P, C01_ACCEPTANCE_E, C01_ACCEPTANCE_D,
+        C01_ACCEPTANCE_TEST, "docs/validation/C-01_MAINLINE_ACCEPTANCE_VALIDATION.md",
+        "docs/work_orders/C-01_INVOCATION_PROMPT.md", C01_ACCEPTANCE_PROMPT, C01_ACCEPTANCE_WI,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+        C01_ACCEPTANCE_INDEPENDENT_TEST,
+        "scripts/check_g07_baseline.py", "tests/tooling/test_g07_baseline.py",
+    ])
+    return {
+        "sequence": 715, "event_type": "MAIN_PACKAGE_ACCEPTED",
+        "baseline_merge_commit": C01_ACCEPTANCE_BASE, "baseline_merge_parents": C01_ACCEPTANCE_BASE_PARENTS,
+        "product_commit": C01_ACCEPTANCE_PRODUCT, "product_parent": C01_ACCEPTANCE_INITIAL_PRODUCT,
+        "initial_product_commit": C01_ACCEPTANCE_INITIAL_PRODUCT, "initial_product_parent": C01_ACCEPTANCE_BASE,
+        "initial_product_paths": product,
+        "product_fix_paths": ["packages/orchestration/kernel.py", "tests/llm_gateway/test_c01_kernel.py"],
+        "product_path_occurrence_count": 11,
+        "projection_parent": C01_ACCEPTANCE_PRODUCT,
+        "projection_commit_binding": "STAGED_EXACT20_OR_SOLE_DIRECT_CHILD_OF_FIX_OR_MERGE_SECOND_PARENT",
+        "worker_lease_id": "worker-lease-c01-mainline-acceptance-projection-r4-20260911-001",
+        "write_lease_id": "write-lease-c01-mainline-acceptance-projection-r4-20260911-001",
+        "execution_fencing_token": "c01-mainline-acceptance-execution-fence-epoch-4-66c0e43",
+        "write_fencing_token": "c01-mainline-acceptance-write-fence-epoch-4-66c0e43",
+        "lease_epoch": 4,
+        "development_remote_url": C21_POSTMERGE_AUTHORITY_DEVELOPMENT_URL,
+        "development_remote_ref": C21_POSTMERGE_AUTHORITY_DEVELOPMENT_REF,
+        "exact_paths": paths, "exact_path_count": 20, "product_paths": product,
+        "product_path_count": 9, "cumulative_paths": sorted(set(paths) | set(product)),
+        "cumulative_path_count": 28,
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+        "cumulative_path_list_ordinal_sha256": _c21_path_list_sha(sorted(set(paths) | set(product)), windows=False),
+    }
+
+
+def c01_mainline_acceptance_paths() -> list[str]:
+    return c01_mainline_acceptance_metadata()["exact_paths"]
+
+
+def _c01_evidence_boundary() -> dict[str, str]:
+    return {key: "NOT_EXECUTED" for key in (
+        "actual_claude_runtime", "actual_codex_runtime", "actual_local_runtime", "provider",
+        "network", "telegram", "db", "api", "browser", "wsl", "deployment",
+        "persistent_external_events", "backend_swap_e2e", "release", "user_acceptance",
+    )}
+
+
+def c01_mainline_fixture_evidence(root: Path) -> dict[str, bytes]:
+    """Replay the reviewed nonbilling fixtures; emit observations, never external evidence."""
+    import asyncio
+    import runpy
+    from decimal import Decimal
+
+    sys.path.insert(0, str(root))
+    try:
+        from packages.budget.models import BudgetLimit
+        from packages.budget.service import BudgetService
+        from packages.llm_gateway import DeterministicFakeAdapter, NativeAgentAdapter
+        from packages.orchestration import MainAgentKernel, NativeCodingAgentAdapter
+        from packages.orchestration.kernel import BudgetDenied
+        from packages.persistence.intervention_budget_repository import InMemoryInterventionBudgetRepository
+
+        fixture = runpy.run_path(str(root / "tests/orchestration/test_c01_native_agent_adapter.py"))
+        backend_type = fixture["_DeterministicNativeCodingBackend"]
+
+        async def exercise(backend: str) -> dict[str, Any]:
+            packet = {"task_graph_ref": "task-graph:1", "permission_ref": "permission:1", "evidence_ref": "evidence:1", "resume_ref": "checkpoint:1"}
+            result = {**packet, "status": "COMPLETED"}
+            adapter = backend_type(backend, result)
+            if not isinstance(adapter, NativeCodingAgentAdapter):
+                raise ValueError("C01_BACKEND_PROTOCOL_INVALID")
+            capabilities = await adapter.probe_capabilities()
+            handle = await adapter.start(packet)
+            events = [event async for event in adapter.stream_events(handle)]
+            checkpoint = await adapter.request_checkpoint(handle)
+            await adapter.steer(handle, {"instruction": "continue"})
+            stopped = await adapter.stop(handle, "test complete")
+            observed = await adapter.collect_result(handle)
+            return {"backend": backend, "capabilities": capabilities, "packet": packet, "events": events,
+                    "checkpoint": checkpoint, "stop": stopped, "result": observed,
+                    "packet_identity_preserved": handle.packet is packet, "result_identity_preserved": observed is result}
+
+        backend = {"schema_version": "1.0.0", "evidence_type": "E-API_LOCAL_FAKE_CONTRACT",
+                   "execution": "DETERMINISTIC_LOCAL_FIXTURE", "external_calls": 0,
+                   "reviewed_commit": C01_ACCEPTANCE_PRODUCT,
+                   "cases": [asyncio.run(exercise(name)) for name in ("claude", "codex", "local")]}
+
+        def setup(tokens: int, ids: list[str]):
+            fake = DeterministicFakeAdapter()
+            budget = BudgetService(InMemoryInterventionBudgetRepository())
+            budget.create_budget(BudgetLimit("b1", Decimal("10"), tokens, 1))
+            iterator = iter(ids)
+            kernel = MainAgentKernel(NativeAgentAdapter(fake), budget, request_id_factory=lambda: next(iterator))
+            return kernel, fake
+
+        arguments = {"run_id": "run-1", "step_id": "step-1", "budget_id": "b1", "provider": "UPSTAGE", "model": "m",
+                     "input_text": "secret-shaped prompt", "forecast_tokens": 10, "forecast_cost": Decimal("1")}
+        budget_receipt: dict[str, Any] = {"schema_version": "1.0.0", "evidence_type": "E-EVT_IN_MEMORY",
+                                        "execution": "DETERMINISTIC_LOCAL_FIXTURE", "external_calls": 0,
+                                        "reviewed_commit": C01_ACCEPTANCE_PRODUCT}
+        for name, letter in (("success", "a"), ("abort", "b")):
+            kernel, fake = setup(100, ["request:" + letter * 32])
+            result = kernel.run_step(**(arguments | ({"step_id": "step-abort", "abort_signal": lambda: True} if name == "abort" else {})))
+            budget_receipt[name] = {"events": [event.to_dict() for event in result.evidence], "adapter_calls": fake.calls}
+        kernel, fake = setup(5, ["request:" + "c" * 32])
+        try:
+            kernel.run_step(**arguments)
+            raise ValueError("C01_BUDGET_DENIAL_NOT_ENFORCED")
+        except BudgetDenied:
+            budget_receipt["denied"] = {"reason": "BUDGET_RESERVATION_FAILED", "adapter_calls": fake.calls}
+        kernel, fake = setup(100, ["request:" + "d" * 32, "request:" + "e" * 32])
+        kernel.run_step(**arguments)
+        before = fake.calls
+        try:
+            kernel.run_step(**arguments)
+            raise ValueError("C01_DUPLICATE_STEP_NOT_DENIED")
+        except BudgetDenied:
+            budget_receipt["duplicate_step"] = {"reason": "BUDGET_RESERVATION_FAILED", "adapter_calls": fake.calls, "additional_adapter_calls": fake.calls - before}
+        # The independent file and its expected behavior remain unchanged.
+        # Only UUID entropy is fixed for this receipt replay, not for Tester runs.
+        from unittest.mock import patch
+        from uuid import UUID
+        independent = runpy.run_path(str(root / C01_ACCEPTANCE_INDEPENDENT_TEST))
+        subject = independent["_PublicApiSubject"]()
+        backend["independent_design_scenarios"] = [
+            {"backend": name, **subject.lifecycle_roundtrip(name, independent["OPAQUE_REFS"])}
+            for name in ("Claude", "Codex", "Local")
+        ]
+        budget_receipt["independent_design_scenarios"] = {}
+        with patch("packages.orchestration.kernel.uuid4", side_effect=[UUID(int=index) for index in range(1, 8)]):
+            for mode in ("success", "budget_denial", "duplicate", "abort", "unknown_usage"):
+                budget_receipt["independent_design_scenarios"][mode] = subject.step(mode)
+        capabilities = subject.capabilities()
+        budget_receipt["independent_design_scenarios"]["empty_capabilities"] = {
+            "supported": capabilities["supported"], "unsupported_reason": list(capabilities["unsupported_reason"]),
+            "repeat_equal": capabilities["first_probe"] == capabilities["repeated_probe"],
+            "provider_calls": capabilities["provider_calls"],
+        }
+        provenance = {"test_path": C01_ACCEPTANCE_INDEPENDENT_TEST, "test_sha256": C01_ACCEPTANCE_INDEPENDENT_TEST_SHA,
+                      "authoring_basis": "DESIGN_AND_MATRIX_BEFORE_IMPLEMENTATION_READ", "implementation_read_before_authoring": 0,
+                      "receipt_replay": "WRITER_REPRODUCTION_NOT_A_NEW_INDEPENDENT_TESTER_RUN",
+                      "request_id_generation": "FIXED_UUID_ENTROPY_FOR_RECEIPT_REPLAY_ONLY",
+                      "historical_developer_test_rerun": {"product_commit": C01_ACCEPTANCE_INITIAL_PRODUCT, "passed": 18, "role": "REGRESSION_ONLY"},
+                      "round1": {"passed": 8, "failed": 1, "product_commit": C01_ACCEPTANCE_INITIAL_PRODUCT},
+                      "round2": {"passed": 9, "failed": 0, "bound_product_commit": C01_ACCEPTANCE_PRODUCT},
+                      "external_execution": "NOT_EXECUTED", "backend_swap_e2e": "NOT_EXECUTED"}
+        backend["test_provenance"] = provenance
+        budget_receipt["test_provenance"] = provenance
+        return {C01_ACCEPTANCE_BACKEND: _c21_resume_json_bytes(backend), C01_ACCEPTANCE_BUDGET: _c21_resume_json_bytes(budget_receipt)}
+    finally:
+        sys.path.pop(0)
+
+
+def _c01_acceptance_basis(files: Mapping[str, bytes], product_hashes: Mapping[str, str]) -> dict[str, Any]:
+    return {
+        "scope": "LOCAL_FIXTURE_CONTRACT_SCOPE", "product_commit": C01_ACCEPTANCE_PRODUCT,
+        "product_work_instruction": C01_PRODUCT_WI, "authority_hashes": C01_ACCEPTANCE_AUTHORITY,
+        "product_blob_sha256": dict(product_hashes),
+        "product_chain": [C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_INITIAL_PRODUCT, C01_ACCEPTANCE_PRODUCT],
+        "full_tooling_attempt1": {"source": "MAIN_TERMINAL_RECEIPT_NO_LOG_FILE", "exit_code": 1, "failed": 20, "passed": 673, "duration_seconds": "1675.07",
+                                  "findings": [{"fingerprint": "C01-G07-NULL-LINEAGE-LEGACY-CONSUMER-v1", "count": 1, "test_failure_instances": 19, "resolution": "NULL_AWARE_CONSUMER_AND_LEDGER_DERIVED_CURRENT_HISTORY"},
+                                               {"fingerprint": "C01-GIT-MUTATION-ERA-EXPECTATION-v1", "count": 1, "test_failure_instances": 1, "resolution": "EXACT_CURRENT_AND_SEPARATE_GENERIC_EXPECTATIONS"}],
+                                  "non_product_tool_errors": [{"fingerprint": "C01-STATUS-POLL-WRAPPER-SYNTAX-ERROR-v1", "count": 1}],
+                                  "full_rerun_status_at_attempt1": "NOT_EXECUTED_MAIN_NEXT_GATE",
+                                  "full_rerun": "PASS_R3_ATTEMPT2_BEFORE_R4_CORRECTION"},
+        "full_tooling_attempt2": {"source": "MAIN_TERMINAL_RESULT_RELAY", "executor": "MAIN_AGENT",
+                                  "command": ".venv\\Scripts\\python.exe -m pytest tests/tooling -q -p no:cacheprovider",
+                                  "result": "697 passed in 1661.64s (0:27:41)", "exit_code": 0, "passed": 697, "failed": 0,
+                                  "duration_seconds": "1661.64", "execution_revision": "R3_BEFORE_R4_NON_SEMANTIC_CORRECTION",
+                                  "execution_head": C01_ACCEPTANCE_PRODUCT, "execution_state": "STAGED_EXACT20",
+                                  "parent_manifest_path": C01_ACCEPTANCE_M,
+                                  "parent_manifest_sha256": "D79B87D632DA0C5ACE12190D93B8ECCFA0050A429965D46E00E5B1FAC8A15D4F",
+                                  "parent_exact20_sha256": {
+                                      "docs/04_test_reports/C-01_MAINLINE_ACCEPTANCE_RESULT.md": "783F929B14C8A8607E79A7E695CA4A9DE147CA43953B913FB32EEA70DDDF912E",
+                                      "docs/WORK_STATUS.md": "B0BAE8AA5CA5F99104D42C2E7D30E292104F39FA923CB806D52879E695AC2F90",
+                                      "docs/completion_reports/C-01_completion.md": "71F06454E530AFA8C702209FF3BA3E2AB2DB588A433B974D7F60D6E1AF49CB62",
+                                      "docs/evidence/manifests/C-01_MAINLINE_ACCEPTANCE_MANIFEST.json": "D79B87D632DA0C5ACE12190D93B8ECCFA0050A429965D46E00E5B1FAC8A15D4F",
+                                      "docs/evidence/raw/C-01_BACKEND_CONTRACT_EVIDENCE.json": "A5D6163FA2E1E5BA49F751D2FE3B0DC99A4BC7087517ABA22C8FFFC65189216B",
+                                      "docs/evidence/raw/C-01_BUDGET_EVENT_EVIDENCE.json": "78489DCE840710E7E38303D48F28136110D13DE07DFC61BD5A6089CE3A633D4B",
+                                      "docs/progress/BUILD_HANDOFF.md": "16B3DDD0B477C9FF5556AEB39A25981D560B188DA85C7DC74F0DD583592CC166",
+                                      "docs/progress/build-progress.json": "FD31FFA7E211353478BB669EC6F25B778DACE2C5A9DB0590EC612A2F7B167BEF",
+                                      "docs/progress/progress-events.json": "B3C844640225E2A6A9F17A57E080EFC351204B51A992A2BC5A940C5FEC65E4BB",
+                                      "docs/progress/progress-handoff-detached-digest-c01-mainline-acceptance.json": "03C357CE9F48539878728944B6737C5F0DE43B871A7FB5812437181DBFF465EB",
+                                      "docs/test_reports/C-01_MAINLINE_INDEPENDENT_TEST_REPORT.md": "1F428A2E19F74608AB56C2214716791F084EB93C23E049BF966F568049587C36",
+                                      "docs/validation/C-01_MAINLINE_ACCEPTANCE_VALIDATION.md": "8A6AF6216F0E91102EB11F38384C6FA5795A7F7A9552BAE04BF1D0E12211021E",
+                                      "docs/work_orders/C-01_INVOCATION_PROMPT.md": "942925D7A9E64E4CCD036EA47EA7A13EE03E4EF14BEB3EEF593E89CF9E419A93",
+                                      "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md": "EC691BDB02B705929800107FB9991483106FDFA6618E5D3B8B17DF4268652FA9",
+                                      "docs/work_orders/C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md": "8937BB5FD5C6C3F588A003B88EE9747082063380EE7C64BC8CC21E985C91B247",
+                                      "scripts/check_g07_baseline.py": "2757ACB2121B3880D7A851B2DEBE218B18BC3C47C4C414D1ED7A5EF473FC0D11",
+                                      "scripts/check_project_progress.py": "DDFA88619012F01B50DD3CAA26EBE11B74C39DB29965829FDA68D73B21EDFDBE",
+                                      "tests/tooling/test_g07_baseline.py": "E547C46D93C7168884BCC4FCC0E451BB09749C6F6F39FE729523252F32CFA93B",
+                                      "tests/tooling/test_project_progress.py": "918915E4978B6B2DDFC780FEACF89CBD9093978AE2EC1B0306E25D40D7DB75D9",
+                                      "tests/verification/test_c01_independent_acceptance.py": "641FB690DDAA138D64522DFC66B0FB178D53FB3EBE22B3301497632A4A15A569",
+                                  }, "proves_post_correction_full_suite": False},
+        "projection_correction": {"revision": "R4", "classification": "MAIN_RECONFIRMED_NON_SEMANTIC",
+                                  "authorization_source": "MAIN_EPOCH4_CORRECTION_INSTRUCTION",
+                                  "parent_work_instruction_sha256": "8937BB5FD5C6C3F588A003B88EE9747082063380EE7C64BC8CC21E985C91B247",
+                                  "work_instruction_sha256": _c21_resume_sha(files[C01_ACCEPTANCE_WI]),
+                                  "reviewer_final": {"source": "MAIN_RELAY_OF_REVIEWER_FINAL", "reviewed_revision": "R3",
+                                                     "spec": "PASS", "quality": "APPROVED", "critical_findings": 0,
+                                                     "important_findings": 0, "minor_findings": 1},
+                                  "minor_finding": {"local_tracking_id": "C01-DEVELOPER-TEST-COUNT-TYPO-v1", "count": 1,
+                                                    "path": C01_ACCEPTANCE_WI, "item": 7, "before": 20, "after": 18,
+                                                    "resolution": "RESOLVED_DOCUMENT_CORRECTION_CANONICAL_EVIDENCE_ALREADY_18"},
+                                  "product_logic_changed": False, "test_logic_changed": False,
+                                  "post_correction_main_gate": "FOCUSED_CHECKER_CHECKSUM_DETERMINISM_PENDING_MAIN"},
+        "product_fix": {"commit": C01_ACCEPTANCE_PRODUCT, "parent": C01_ACCEPTANCE_INITIAL_PRODUCT,
+                        "exact_paths": c01_mainline_acceptance_metadata()["product_fix_paths"],
+                        "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-unknown-usage-fix-report.md",
+                        "source_sha256": "31E90A32F335548BE0471744F2903D37E7E1BCC0B391C75C4A561D15249CDA28",
+                        "review": {"spec": "PASS", "quality": "APPROVED", "critical_findings": 0, "important_findings": 0, "minor_findings": 0,
+                                   "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-unknown-usage-fix-review-report.md",
+                                   "source_sha256": "6FA6400006CD21FBC0FAF5EFEEFD8C02AC9A036F2929F976A851556953F84688"}},
+        "code_review": {"spec": "PASS", "quality": "APPROVED", "critical_findings": 0, "important_findings": 0, "minor_findings": 0,
+                        "product_commit": C01_ACCEPTANCE_INITIAL_PRODUCT,
+                        "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-product-review-report.md",
+                        "source_sha256": "476E911CDB044ECDE80578EA0724E49EDC85A3117A74CC3820D56403AE66DBCB", "test_rerun": "NOT_EXECUTED"},
+        "developer_test_rerun": {"verdict": "PASS", "scope": "LOCAL_FIXTURE_CONTRACT_SCOPE", "passed": 18, "failed": 0, "skipped": 0,
+                             "product_commit": C01_ACCEPTANCE_INITIAL_PRODUCT, "role": "REGRESSION_ONLY_NOT_INDEPENDENT_ACCEPTANCE",
+                             "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-independent-test-report.md",
+                             "source_sha256": "EA461AD96A247A477FD096DB22B96E0713B8D7C2782DFFD2B4A6779539310973",
+                             "command": ".venv\\Scripts\\python.exe -m pytest tests\\llm_gateway tests\\orchestration\\test_c01_native_agent_adapter.py tests\\agent_team\\test_c21_provider_nonbilling_qa.py -q -p no:cacheprovider",
+                             "exit_code": 0, "result": "18 passed in 0.80s",
+                             "compile_command": ".venv\\Scripts\\python.exe -m compileall -q packages\\llm_gateway packages\\orchestration", "compile_exit_code": 0,
+                             "acceptance_authority": False},
+        "projection_review_finding": {"fingerprint": "C01-ACCEPTANCE-INDEPENDENT-SCENARIO-MISSING-v1",
+                                      "original_spec": "FAIL", "original_quality": "CHANGES_REQUIRED", "critical_findings": 0, "important_findings": 1, "minor_findings": 0,
+                                      "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-acceptance-review-report.md",
+                                      "source_sha256": "591BAD6EF52CE48C1D285379E4AB08001FEAD4CD40AC38505878FB6FC089D8AE",
+                                      "resolution": "RESOLVED_BY_DESIGN_DERIVED_SCENARIOS"},
+        "independent_design_scenarios": {
+            "test_path": C01_ACCEPTANCE_INDEPENDENT_TEST, "test_sha256": C01_ACCEPTANCE_INDEPENDENT_TEST_SHA,
+            "authoring_basis": "DESIGN_AND_MATRIX_BEFORE_IMPLEMENTATION_READ", "implementation_read_before_authoring": 0,
+            "developer_tests_read_before_authoring": 0, "completion_reports_read_before_authoring": 0, "projection_read_before_authoring": 0,
+            "expectations_changed_between_rounds": False,
+            "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-independent-scenario-report.md",
+            "source_sha256": "B27E326FD627A9BD35771B9A4219917FD53A0FD0E894FAD0D644C15C2FCDCCD8",
+            "round1": {"product_commit": C01_ACCEPTANCE_INITIAL_PRODUCT, "passed": 8, "failed": 1, "skipped": 0, "exit_code": 1, "result": "8 passed, 1 failed in 0.42s"},
+            "round2": {"execution_head": C01_ACCEPTANCE_INITIAL_PRODUCT, "execution_state": "WORKING_PRODUCT_FIX_THEN_IMMUTABLY_BOUND",
+                       "bound_product_commit": C01_ACCEPTANCE_PRODUCT, "kernel_sha256": "6F0918F53543B7F0DBC2479293AAFAA1BF65351693DA3EB153C431E479DF9D32",
+                       "passed": 9, "failed": 0, "skipped": 0, "exit_code": 0, "result": "9 passed in 0.28s"},
+            "finding": {"fingerprint": "C01-UNKNOWN-USAGE-CONSUMED-ZERO-RELEASE-v1", "round1_status": "CONSUMED", "round1_active_reservations": 0,
+                        "expected_status": "USAGE_RECONCILIATION_REQUIRED", "expected_active_reservations": 1,
+                        "resolution": "RESOLVED_INDEPENDENT_ROUND2", "fix_commit": C01_ACCEPTANCE_PRODUCT},
+        },
+        "independent_test": {"verdict": "PASS", "scope": "LOCAL_FIXTURE_CONTRACT_SCOPE", "passed": 9, "failed": 0, "skipped": 0,
+                             "product_commit": C01_ACCEPTANCE_PRODUCT, "role": "DESIGN_DERIVED_INDEPENDENT_ACCEPTANCE",
+                             "source_path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-independent-scenario-report.md",
+                             "source_sha256": "B27E326FD627A9BD35771B9A4219917FD53A0FD0E894FAD0D644C15C2FCDCCD8",
+                             "command": "$env:PYTHONDONTWRITEBYTECODE='1'; & '.\\.venv\\Scripts\\python.exe' -m pytest -p no:cacheprovider tests/verification/test_c01_independent_acceptance.py -q",
+                             "exit_code": 0, "result": "9 passed in 0.28s", "test_path": C01_ACCEPTANCE_INDEPENDENT_TEST,
+                             "test_sha256": _c21_resume_sha(files[C01_ACCEPTANCE_INDEPENDENT_TEST]),
+                             "tracked_report": {"path": C01_ACCEPTANCE_TEST, "sha256": _c21_resume_sha(files[C01_ACCEPTANCE_TEST])}},
+        "validation_ids": {
+            "AV-AGT-002": {"verdict": "PASS", "scope": "DETERMINISTIC_CLAUDE_CODEX_LOCAL_FAKE", "evidence_ref": C01_ACCEPTANCE_BACKEND},
+            "AV-AGT-003": {"verdict": "PASS", "scope": "IN_MEMORY_RESERVATION_BEFORE_CALL", "evidence_ref": C01_ACCEPTANCE_BUDGET},
+            "AV-OPS-011": {"verdict": "PASS", "scope": "DETERMINISTIC_FAKE_CONTRACT_ONLY", "evidence_ref": C01_ACCEPTANCE_BACKEND},
+        },
+        "raw_evidence": [{"path": path, "sha256": _c21_resume_sha(files[path])} for path in (C01_ACCEPTANCE_BACKEND, C01_ACCEPTANCE_BUDGET)],
+        "evidence_boundary": _c01_evidence_boundary(),
+        "main_decision": "ACCEPTED", "main_actor": "main-agent-eoul",
+        "decision_authority": "MAIN_ACCEPTANCE_BRIEF_AFTER_SEPARATE_CODE_REVIEW_AND_INDEPENDENT_TEST",
+    }
+
+
+def c01_mainline_acceptance_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes], product_hashes: Mapping[str, str], failure_ledger: bytes) -> dict[str, bytes]:
+    from collections import Counter
+
+    meta = c01_mainline_acceptance_metadata()
+    generated = {C01_ACCEPTANCE_P, C01_ACCEPTANCE_E, C01_ACCEPTANCE_H, C01_ACCEPTANCE_D, C01_ACCEPTANCE_M}
+    if set(historical) != {C01_ACCEPTANCE_P, C01_ACCEPTANCE_E, C01_ACCEPTANCE_H} or set(files) != set(meta["exact_paths"]) - generated or set(product_hashes) != set(meta["product_paths"]):
+        raise ValueError("C01_ACCEPTANCE_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C01_ACCEPTANCE_P])
+    if progress.get("event_sequence") != 700 or "C-01" in progress["completed_packages"]:
+        raise ValueError("C01_ACCEPTANCE_HISTORY_INVALID")
+    history_prefix = raw_event_object_prefix_bytes(historical[C01_ACCEPTANCE_E], 700)
+    basis = _c01_acceptance_basis(files, product_hashes)
+    historical_counts: Counter[str] = Counter(
+        entry["step_lineage_id"] for entry in _c21_resume_json(failure_ledger)["entries"]
+        if entry.get("result_status") == "FAILURE_REPORT" and entry.get("accepted") is True
+        and entry.get("counts_toward_valid_failure") is True and entry.get("validator_acceptance") is True
+    )
+    basis["failure_history"] = {"source_path": "docs/progress/failure-ledger.json", "source_commit": C01_ACCEPTANCE_PRODUCT,
+                                "source_sha256": _c21_resume_sha(failure_ledger), "active_lineage": None, "active_count": 0,
+                                "historical_accepted_failure_count": sum(historical_counts.values()),
+                                "historical_failure_counts_by_lineage": dict(sorted(historical_counts.items())),
+                                "superseded_seq700_count": progress["historical_accepted_failure_count"],
+                                "superseded_seq700_ops_r2_count": progress["historical_failure_counts_by_lineage"]["C-21/LR-02C/OPS-R2"]}
+    basis_hash = _c21_resume_sha(canonical_json_bytes(basis))
+    repository = dict(progress["repository"])
+    repository.update({"projection_mode": "C01_MAINLINE_ACCEPTANCE_EXACT20", "validated_base_commit": C01_ACCEPTANCE_BASE,
+                       "baseline_merge_parents": C01_ACCEPTANCE_BASE_PARENTS,
+                       "product_commit": C01_ACCEPTANCE_PRODUCT, "local_head": C01_ACCEPTANCE_PRODUCT, "remote_head": C01_ACCEPTANCE_BASE,
+                       "branch": C01_ACCEPTANCE_BRANCH, "upstream": "NO_UPSTREAM", "push_status": "NOT_EXECUTED",
+                       "head_relation": "PRECOMMIT_STAGED_EXACT20_FROM_REVIEWED_PRODUCT_FIX", "worktree_status": "STAGED_EXACT20",
+                       "development_remote_url": meta["development_remote_url"], "development_remote_ref": meta["development_remote_ref"],
+                       "exact_allowed_paths": meta["exact_paths"], "cumulative_paths": meta["cumulative_paths"],
+                       "projection_commit_binding": meta["projection_commit_binding"]})
+    additions: list[dict[str, Any]] = []
+    previous = _c21_resume_sha(canonical_json_bytes(_c21_resume_json(historical[C01_ACCEPTANCE_E])["events"][-1]))
+
+    def append(kind: str, step: str, details: dict[str, Any], actor: str = "developer-primary") -> None:
+        nonlocal previous
+        event = {"occurred_at": C01_ACCEPTANCE_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+                 "actor_type": "AGENT", "actor_id": actor, "project_id": "anvil", "run_id": None, "work_package_id": "C-01",
+                 "step_id": step, "actor": actor, "subject_ref": "C-01/" + step,
+                 "event_id": "evt_c01_" + step.lower().replace("-", "_") + "_" + kind.lower(),
+                 "sequence": 701 + len(additions), "event_type": kind, "previous_event_sha256": previous, "details": details}
+        additions.append(event)
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+
+    def lifecycle(step: str, lease_suffix: str, execution: str, write_token: str, paths: list[str], wi_id: str, wi_hash: str, head: str, epoch: int = 1):
+        worker = {"lease_id": "worker-lease-" + lease_suffix, "agent_id": "developer-primary", "work_package_id": "C-01", "lease_epoch": epoch,
+                  "execution_fencing_token": execution, "fencing_token": execution, "status": "ACTIVE", "subject_ref": "C-01/" + step}
+        write = {"lease_id": "write-lease-" + lease_suffix, "worker_lease_id": worker["lease_id"], "agent_id": "developer-primary",
+                 "work_package_id": "C-01", "write_epoch": epoch, "execution_fencing_token": execution, "write_fencing_token": write_token,
+                 "fencing_token": write_token, "status": "ACTIVE", "path_scope": paths}
+        append("WORKER_LEASE_ISSUED", step, worker)
+        append("WRITE_LEASE_ISSUED", step, write)
+        append("PACKAGE_STARTED", step, {"work_instruction_id": wi_id, "work_instruction_sha256": wi_hash, "package_status": "ACTIVE",
+                                          "dispatch_head": head, "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+                                          "execution_fencing_token": execution, "write_fencing_token": write_token})
+        revoked_write = {**write, "status": "REVOKED", "reason": "RESULT_HANDOFF", "revoked_at": C01_ACCEPTANCE_AT}
+        revoked_worker = {**worker, "status": "REVOKED", "reason": "RESULT_HANDOFF", "revoked_at": C01_ACCEPTANCE_AT}
+        append("WRITE_LEASE_REVOKED", step, revoked_write)
+        append("WORKER_LEASE_REVOKED", step, revoked_worker)
+        append("PACKAGE_COMPLETED", step, {"result_status": "COMPLETED", "package_status": "RESULT_REVIEW", "accepted": False,
+                                            "work_instruction_id": wi_id, "work_instruction_sha256": wi_hash,
+                                            "reviewed_product_commit": C01_ACCEPTANCE_INITIAL_PRODUCT if step == "PRODUCT" else C01_ACCEPTANCE_PRODUCT,
+                                            "followup_product_fix": basis["product_fix"] if step == "PRODUCT" else None,
+                                            "execution_fencing_token": execution, "write_fencing_token": write_token,
+                                            "evidence_ref": "docs/04_test_reports/C-01_IMPLEMENTATION_RESULT.md" if step == "PRODUCT" else C01_ACCEPTANCE_RESULT})
+        return revoked_worker, revoked_write
+
+    product_worker, product_write = lifecycle("PRODUCT", "c01-product-correction-20260910-001", "c01-product-execution-fence-epoch-1-e215c06",
+                                             "c01-product-write-fence-epoch-1-e215c06", meta["product_paths"], C01_PRODUCT_WI["artifact_id"], C01_PRODUCT_WI["sha256"], C01_ACCEPTANCE_BASE)
+    append("INDEPENDENT_TEST_REVIEW_RECORDED", "PRODUCT-REVIEW", {**basis["code_review"], "verdict": "PASS", "developer_commit": C01_ACCEPTANCE_INITIAL_PRODUCT,
+                                                                "followup_product_fix_review": basis["product_fix"], "projection_review_finding": basis["projection_review_finding"],
+                                                                "review_report_sha256": basis["code_review"]["source_sha256"], "evidence_ref": C01_ACCEPTANCE_RESULT}, "independent-code-reviewer")
+    append("INDEPENDENT_TEST_JUDGMENT_RECORDED", "INDEPENDENT-TEST", {"verdict": "PASS", "criteria": basis["validation_ids"], "evidence_ref": basis["independent_test"]["tracked_report"],
+                                                                    "reviewed_product_commit": C01_ACCEPTANCE_PRODUCT, "source_report_sha256": basis["independent_test"]["source_sha256"],
+                                                                    "developer_test_rerun": basis["developer_test_rerun"], "independent_design_scenarios": basis["independent_design_scenarios"], "scope": basis["scope"]}, "independent-tester")
+    worker, write = lifecycle("ACCEPTANCE-PROJECTION", "c01-mainline-acceptance-projection-r4-20260911-001", meta["execution_fencing_token"],
+                              meta["write_fencing_token"], meta["exact_paths"], C01_ACCEPTANCE_WI_ID,
+                              _c21_resume_sha(files[C01_ACCEPTANCE_WI]), C01_ACCEPTANCE_PRODUCT, epoch=4)
+    append("MAIN_PACKAGE_ACCEPTED", "MAINLINE", {"decision": "ACCEPTED", "accepted": True, "acceptance_scope": basis["scope"],
+                                                 "projection_correction": basis["projection_correction"],
+                                                 "full_tooling_receipt_ref": "MANIFEST_ACCEPTANCE_BASIS.full_tooling_attempt2",
+                                                 "test_report_ref": C01_ACCEPTANCE_TEST, "test_report_sha256": _c21_resume_sha(files[C01_ACCEPTANCE_TEST]),
+                                                 "manifest_ref": C01_ACCEPTANCE_M, "manifest_sha256": basis_hash, "manifest_hash_scope": "CANONICAL_ACCEPTANCE_BASIS_ONLY_NO_SELF_REFERENCE",
+                                                 "next_work_package": "C-02", "dir2_status": "NOT_REACHED", "evidence_boundary": _c01_evidence_boundary(),
+                                                 "acceptance_head": repository["local_head"], "acceptance_upstream_head": repository["remote_head"],
+                                                 "projection_mode": repository["projection_mode"], "validated_base_commit": C01_ACCEPTANCE_BASE,
+                                                 "head_relation": repository["head_relation"], "exact_allowed_paths": meta["exact_paths"]}, "main-agent-eoul")
+    events_raw = _c21_append_events(historical[C01_ACCEPTANCE_E], 700, additions)
+    instruction = {"artifact_id": C01_ACCEPTANCE_WI_ID, "artifact_path": C01_ACCEPTANCE_WI, "artifact_sha256": _c21_resume_sha(files[C01_ACCEPTANCE_WI]),
+                   "invocation_path": C01_ACCEPTANCE_PROMPT, "invocation_sha256": _c21_resume_sha(files[C01_ACCEPTANCE_PROMPT]),
+                   "executor": "developer-primary", "result_status": "COMPLETED", "package_status": "ACCEPTED", "accepted": True}
+    accepted_product = {**C01_PRODUCT_WI, "package_status": "ACCEPTED", "result_status": "COMPLETED", "accepted": True, "acceptance_scope": basis["scope"],
+                        "product_commit": C01_ACCEPTANCE_PRODUCT, "assigned_verification_ids": list(basis["validation_ids"])}
+    progress.update({"snapshot_id": "snapshot-c01-mainline-acceptance-seq715", "updated_at": C01_ACCEPTANCE_AT, "recorded_at": C01_ACCEPTANCE_AT,
+                     "event_sequence": 715, "last_event_id": additions[-1]["event_id"], "current_phase": "C", "current_work_package": "C-01", "status": "MAIN_PACKAGE_ACCEPTED",
+                     "completed_packages": [*progress["completed_packages"], "C-01"], "active_agent": None, "worker_lease": None, "write_lease": None,
+                     "valid_failure_count": 0, "active_failure_lineage": None,
+                     "historical_accepted_failure_count": basis["failure_history"]["historical_accepted_failure_count"],
+                     "historical_failure_counts_by_lineage": basis["failure_history"]["historical_failure_counts_by_lineage"],
+                     "completed_c01_product_worker_lease": product_worker, "completed_c01_product_write_lease": product_write,
+                     "completed_c01_acceptance_worker_lease": worker, "completed_c01_acceptance_write_lease": write,
+                     "active_work_instruction": instruction, "completed_work_instruction": instruction,
+                     "accepted_c01_work_instruction": accepted_product, "last_accepted_work_instruction": accepted_product,
+                     "repository": repository, "c01_mainline_acceptance": {"accepted": True, "status": "ACCEPTED", "acceptance_scope": basis["scope"], "acceptance_basis": basis,
+                                                                              "acceptance_basis_sha256": basis_hash, "dir2_status": "NOT_REACHED"},
+                     "next_work_package": {"package_id": "C-02", "status": "READY_FOR_WORK_INSTRUCTION"},
+                     "next_successor_work_package": {"package_id": "C-02", "status": "READY_FOR_WORK_INSTRUCTION"},
+                     "runtime_next_action": "C02_READY_FOR_WORK_INSTRUCTION", "next_safe_action": "C02_READY_FOR_WORK_INSTRUCTION",
+                     "current_progress_evidence_ref": {"package_id": "C-01", "path": C01_ACCEPTANCE_D, "manifest_path": C01_ACCEPTANCE_M},
+                     "latest_evidence_manifest_ref": {"path": C01_ACCEPTANCE_M, "artifact_id": C01_ACCEPTANCE_WI_ID},
+                     "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C01_LOCAL_FIXTURE_ACCEPTED", "C02_READY_FOR_WORK_INSTRUCTION"], "stop_before_dialogue_report": False}})
+    progress["registry_refs"]["progress_events"] = {"path": C01_ACCEPTANCE_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)} for path, raw in sorted({**files, C01_ACCEPTANCE_E: events_raw}.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status", "current_phase", "current_work_package", "active_agent", "worker_lease", "write_lease", "design_baseline_hash", "valid_failure_count", "next_safe_action",
+                                            "historical_accepted_failure_count", "historical_failure_counts_by_lineage", "completed_c01_acceptance_worker_lease", "completed_c01_acceptance_write_lease")}
+    handoff.update({"dir_status": progress["dir_review"]["status"], "dir2_status": "NOT_REACHED", "reporting_decision": "AUTO_CONTINUE",
+                    "projection_correction": basis["projection_correction"],
+                    "main_full_tooling_attempt2": {key: basis["full_tooling_attempt2"][key] for key in ("source", "result", "exit_code", "execution_revision", "parent_manifest_sha256", "proves_post_correction_full_suite")},
+                    "repository_head": repository["local_head"], "repository_upstream": repository["upstream"],
+                    "repository_projection_mode": repository["projection_mode"], "repository_head_relation": repository["head_relation"],
+                    "repository_validated_base_commit": C01_ACCEPTANCE_BASE, "repository_exact_allowed_paths": meta["exact_paths"],
+                    "accepted": True, "c01_status": "ACCEPTED", "acceptance_scope": basis["scope"], "product_commit": C01_ACCEPTANCE_PRODUCT,
+                    "evidence_boundary": _c01_evidence_boundary(), "next_work_package": progress["next_work_package"]})
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement, historical[C01_ACCEPTANCE_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C01_ACCEPTANCE_HANDOFF_INVALID")
+    handoff_raw = ("# C-01 acceptance — seq715\n\n- 결정론적 로컬 fixture 계약만 ACCEPTED. 다음 C-02, DIR-2 NOT_REACHED.\n- 실제 backend·Provider·Telegram·DB·API·브라우저·WSL·배포는 NOT_EXECUTED.\n- 아래 C-21 본문은 역사 기록이며 위 C-01 현재 상태를 대체하지 않는다.\n\n" + handoff_text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C01-MAINLINE-ACCEPTANCE-DIGEST-20260910", "package_id": "C-01", "event_sequence": 715,
+              "algorithm": "SHA-256", "self_reference": False,
+              "progress": {"path": C01_ACCEPTANCE_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+              "handoff": {"path": C01_ACCEPTANCE_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    prior = {**files, C01_ACCEPTANCE_E: events_raw, C01_ACCEPTANCE_P: progress_raw, C01_ACCEPTANCE_H: handoff_raw, C01_ACCEPTANCE_D: digest_raw}
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-01_MAINLINE_ACCEPTANCE", "artifact_id": C01_ACCEPTANCE_WI_ID,
+                "event_sequence": 715, "historical_event_sequence": 700, "appended_event_count": 15,
+                "historical_raw_event_prefix": {"bytes": len(history_prefix), "sha256": _c21_resume_sha(history_prefix)},
+                "historical_event_semantic_sha256": _c21_resume_sha(canonical_json_bytes(_c21_resume_json(historical[C01_ACCEPTANCE_E])["events"])),
+                "final_event_sha256": previous, "accepted": True, "status": "ACCEPTED", "dir2_status": "NOT_REACHED", "blocking_count": 0,
+                "acceptance_scope": basis["scope"], "evidence_boundary": _c01_evidence_boundary(), "product_work_instruction": C01_PRODUCT_WI,
+                "authority_hashes": C01_ACCEPTANCE_AUTHORITY, "acceptance_basis": basis, "acceptance_basis_sha256": basis_hash,
+                "self_reference": False, **meta,
+                "raw_checksums": [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)} for path, raw in sorted(prior.items())]}
+    return {C01_ACCEPTANCE_E: events_raw, C01_ACCEPTANCE_P: progress_raw, C01_ACCEPTANCE_H: handoff_raw, C01_ACCEPTANCE_D: digest_raw, C01_ACCEPTANCE_M: _c21_resume_json_bytes(manifest)}
+
+
+def c01_mainline_acceptance_from_root(root: Path) -> dict[str, bytes]:
+    for path, expected in (C01_ACCEPTANCE_AUTHORITY | {C01_PRODUCT_WI["path"]: C01_PRODUCT_WI["sha256"], C01_ACCEPTANCE_INDEPENDENT_TEST: C01_ACCEPTANCE_INDEPENDENT_TEST_SHA}).items():
+        if _c21_resume_sha((root / path).read_bytes()) != expected:
+            raise ValueError("C01_ACCEPTANCE_AUTHORITY_HASH_INVALID")
+    historical = {path: subprocess.check_output(["git", "show", f"{C01_ACCEPTANCE_PRODUCT}:{path}"], cwd=root) for path in (C01_ACCEPTANCE_P, C01_ACCEPTANCE_E, C01_ACCEPTANCE_H)}
+    product_hashes = {}
+    for path in c01_mainline_acceptance_metadata()["product_paths"]:
+        raw = subprocess.check_output(["git", "show", f"{C01_ACCEPTANCE_PRODUCT}:{path}"], cwd=root)
+        product_hashes[path] = _c21_resume_sha(raw)
+        if path != "docs/WORK_STATUS.md" and raw != (root / path).read_bytes():
+            raise ValueError("C01_ACCEPTANCE_REVIEWED_PRODUCT_MUTATED")
+    generated = {C01_ACCEPTANCE_P, C01_ACCEPTANCE_E, C01_ACCEPTANCE_H, C01_ACCEPTANCE_D, C01_ACCEPTANCE_M, C01_ACCEPTANCE_BACKEND, C01_ACCEPTANCE_BUDGET}
+    files = {path: (root / path).read_bytes() for path in set(c01_mainline_acceptance_paths()) - generated}
+    raw_evidence = c01_mainline_fixture_evidence(root)
+    failure_ledger = subprocess.check_output(["git", "show", f"{C01_ACCEPTANCE_PRODUCT}:docs/progress/failure-ledger.json"], cwd=root)
+    if (root / "docs/progress/failure-ledger.json").read_bytes() != failure_ledger:
+        raise ValueError("C01_ACCEPTANCE_FAILURE_LEDGER_MUTATED")
+    artifacts = c01_mainline_acceptance_artifacts(historical, files | raw_evidence, product_hashes, failure_ledger)
+    return artifacts | raw_evidence
+
+
+def validate_c01_mainline_acceptance_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        meta = c01_mainline_acceptance_metadata()
+        if any(manifest.get(key) != value for key, value in meta.items()) or any((manifest.get("manifest_type") != "C-01_MAINLINE_ACCEPTANCE", manifest.get("event_sequence") != 715,
+            manifest.get("historical_event_sequence") != 700, manifest.get("appended_event_count") != 15, manifest.get("accepted") is not True, manifest.get("status") != "ACCEPTED",
+            manifest.get("dir2_status") != "NOT_REACHED", manifest.get("blocking_count") != 0, manifest.get("self_reference") is not False,
+            manifest.get("acceptance_scope") != "LOCAL_FIXTURE_CONTRACT_SCOPE", manifest.get("product_work_instruction") != C01_PRODUCT_WI,
+            manifest.get("authority_hashes") != C01_ACCEPTANCE_AUTHORITY)):
+            return ["C01_ACCEPTANCE_MANIFEST_INVALID"]
+        if manifest.get("evidence_boundary") != _c01_evidence_boundary():
+            return ["C01_ACCEPTANCE_EVIDENCE_BOUNDARY_INVALID"]
+        basis = manifest["acceptance_basis"]
+        if basis.get("evidence_boundary") != _c01_evidence_boundary() or basis.get("scope") != "LOCAL_FIXTURE_CONTRACT_SCOPE" or basis.get("product_commit") != C01_ACCEPTANCE_PRODUCT or basis["independent_test"]["verdict"] != "PASS" or basis["code_review"]["spec"] != "PASS" or basis["code_review"]["quality"] != "APPROVED" or manifest.get("acceptance_basis_sha256") != _c21_resume_sha(canonical_json_bytes(basis)):
+            return ["C01_ACCEPTANCE_BASIS_INVALID"]
+        rows = manifest["raw_checksums"]
+        scenarios = basis["independent_design_scenarios"]
+        if (scenarios["implementation_read_before_authoring"] != 0 or scenarios["developer_tests_read_before_authoring"] != 0
+            or scenarios["completion_reports_read_before_authoring"] != 0 or scenarios["projection_read_before_authoring"] != 0
+            or scenarios["test_path"] != C01_ACCEPTANCE_INDEPENDENT_TEST or scenarios["test_sha256"] != C01_ACCEPTANCE_INDEPENDENT_TEST_SHA
+            or scenarios["expectations_changed_between_rounds"] is not False
+            or (scenarios["round1"]["passed"], scenarios["round1"]["failed"], scenarios["round1"]["product_commit"]) != (8, 1, C01_ACCEPTANCE_INITIAL_PRODUCT)
+            or (scenarios["round2"]["passed"], scenarios["round2"]["failed"], scenarios["round2"]["bound_product_commit"]) != (9, 0, C01_ACCEPTANCE_PRODUCT)
+            or scenarios["finding"]["resolution"] != "RESOLVED_INDEPENDENT_ROUND2"
+            or scenarios["finding"]["fingerprint"] != "C01-UNKNOWN-USAGE-CONSUMED-ZERO-RELEASE-v1"
+            or scenarios["finding"]["fix_commit"] != C01_ACCEPTANCE_PRODUCT
+            or basis["projection_review_finding"]["resolution"] != "RESOLVED_BY_DESIGN_DERIVED_SCENARIOS"
+            or basis["projection_review_finding"]["fingerprint"] != "C01-ACCEPTANCE-INDEPENDENT-SCENARIO-MISSING-v1"
+            or basis["projection_review_finding"]["important_findings"] != 1
+            or basis["projection_review_finding"]["original_spec"] != "FAIL" or basis["projection_review_finding"]["original_quality"] != "CHANGES_REQUIRED"
+            or basis["developer_test_rerun"]["acceptance_authority"] is not False
+            or (basis["developer_test_rerun"]["passed"], basis["developer_test_rerun"]["product_commit"]) != (18, C01_ACCEPTANCE_INITIAL_PRODUCT)
+            or basis["independent_test"]["role"] != "DESIGN_DERIVED_INDEPENDENT_ACCEPTANCE"
+            or (basis["independent_test"]["passed"], basis["independent_test"]["failed"]) != (9, 0)
+            or basis["product_chain"] != [C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_INITIAL_PRODUCT, C01_ACCEPTANCE_PRODUCT]
+            or basis["product_fix"]["review"]["spec"] != "PASS" or basis["product_fix"]["review"]["quality"] != "APPROVED"
+            or any(basis["product_fix"]["review"][key] != 0 for key in ("critical_findings", "important_findings", "minor_findings"))):
+            return ["C01_ACCEPTANCE_INDEPENDENT_SCENARIO_INVALID"]
+        if len(rows) != 19 or {row["path"] for row in rows} != set(meta["exact_paths"]) - {C01_ACCEPTANCE_M} or any(type(row["bytes"]) is not int or row["bytes"] < 1 or re.fullmatch(r"[A-F0-9]{64}", row["sha256"]) is None for row in rows):
+            return ["C01_ACCEPTANCE_CHECKSUMS_INVALID"]
+        return []
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return ["C01_ACCEPTANCE_MANIFEST_INVALID"]
+
+
+def validate_c01_mainline_acceptance_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        expected = c01_mainline_acceptance_from_root(root)
+        actual = {C01_ACCEPTANCE_P: bundle["progress"], C01_ACCEPTANCE_E: bundle["events"], C01_ACCEPTANCE_H: bundle["handoff"], C01_ACCEPTANCE_D: bundle["detached_digest"], C01_ACCEPTANCE_M: manifest}
+        errors = validate_c01_mainline_acceptance_manifest(manifest)
+        for path, value in actual.items():
+            reference = extract_handoff_summary(expected[path].decode()) if path == C01_ACCEPTANCE_H else _c21_resume_json(expected[path])
+            if not _c21_strict_json_equal(value, reference):
+                errors.append("C01_ACCEPTANCE_PROJECTION_INVALID")
+        for path, raw in expected.items():
+            if (root / path).read_bytes() != raw:
+                errors.append("C01_ACCEPTANCE_RAW_BYTES_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C01_ACCEPTANCE_PRODUCT}:{C01_ACCEPTANCE_E}"], cwd=root)
+        if raw_event_object_prefix_bytes(historical, 700) != raw_event_object_prefix_bytes((root / C01_ACCEPTANCE_E).read_bytes(), 700):
+            errors.append("C01_ACCEPTANCE_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, UnicodeError):
+        return ["C01_ACCEPTANCE_INPUT_INVALID"]
+
+
+def _collect_c01_mainline_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
+    """Only staged exact20, its clean sole child, or exact GitHub merge state may pass."""
+    try:
+        root = bundle["_root"]
+        meta = c01_mainline_acceptance_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if repository.get("validated_base_commit") != C01_ACCEPTANCE_BASE or repository.get("product_commit") != C01_ACCEPTANCE_PRODUCT:
+            return ["C01_ACCEPTANCE_GIT_BASE_OR_PRODUCT_INVALID"]
+        value = lambda *args: _git_value(root, *args)
+        check = lambda *args: _git_returncode(root, *args) == 0
+        head, branch, upstream = value("rev-parse", "HEAD"), value("branch", "--show-current"), value("rev-parse", "--abbrev-ref", "@{upstream}")
+        remote = value("rev-parse", C21_POSTMERGE_AUTHORITY_DEVELOPMENT_REF)
+        if value("remote", "get-url", "development") != C21_POSTMERGE_AUTHORITY_DEVELOPMENT_URL or remote is None:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if value("rev-parse", C01_ACCEPTANCE_BASE) != C01_ACCEPTANCE_BASE or value("rev-parse", C01_ACCEPTANCE_INITIAL_PRODUCT) != C01_ACCEPTANCE_INITIAL_PRODUCT or value("rev-parse", C01_ACCEPTANCE_PRODUCT) != C01_ACCEPTANCE_PRODUCT or value("show", "-s", "--format=%P", C01_ACCEPTANCE_BASE) != " ".join(C01_ACCEPTANCE_BASE_PARENTS) or value("show", "-s", "--format=%P", C01_ACCEPTANCE_INITIAL_PRODUCT) != C01_ACCEPTANCE_BASE or value("show", "-s", "--format=%P", C01_ACCEPTANCE_PRODUCT) != C01_ACCEPTANCE_INITIAL_PRODUCT or not all(check("merge-base", "--is-ancestor", parent, child) for parent, child in ((C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_INITIAL_PRODUCT), (C01_ACCEPTANCE_INITIAL_PRODUCT, C01_ACCEPTANCE_PRODUCT), (C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_PRODUCT))):
+            return ["C01_ACCEPTANCE_GIT_LINEAGE_INVALID"]
+        product_paths = value("diff", "--name-only", C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_PRODUCT)
+        initial_paths = value("diff", "--name-only", C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_INITIAL_PRODUCT)
+        fix_paths = value("diff", "--name-only", C01_ACCEPTANCE_INITIAL_PRODUCT, C01_ACCEPTANCE_PRODUCT)
+        if product_paths is None or initial_paths is None or fix_paths is None or sorted(_split_git_paths(product_paths)) != meta["product_paths"] or sorted(_split_git_paths(initial_paths)) != meta["initial_product_paths"] or sorted(_split_git_paths(fix_paths)) != meta["product_fix_paths"] or not all(check("diff", "--check", parent, child) for parent, child in ((C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_INITIAL_PRODUCT), (C01_ACCEPTANCE_INITIAL_PRODUCT, C01_ACCEPTANCE_PRODUCT), (C01_ACCEPTANCE_BASE, C01_ACCEPTANCE_PRODUCT))):
+            return ["C01_ACCEPTANCE_PRODUCT_EXACT9_INVALID"]
+        status = value("status", "--porcelain", "--untracked-files=all")
+        cached, unstaged, untracked = value("diff", "--cached", "--name-only"), value("diff", "--name-only"), value("ls-files", "--others", "--exclude-standard")
+        if None in (head, branch, status, cached, unstaged, untracked):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if unstaged or untracked or not check("diff", "--cached", "--check"):
+            return ["C01_ACCEPTANCE_PATH_OR_CLEAN_INVALID"]
+        feature_upstreams = {None, "development/" + C01_ACCEPTANCE_BRANCH}
+        if head == C01_ACCEPTANCE_PRODUCT:
+            cumulative = value("diff", "--cached", "--name-only", C01_ACCEPTANCE_BASE)
+            if branch != C01_ACCEPTANCE_BRANCH or upstream not in feature_upstreams or remote != C01_ACCEPTANCE_BASE:
+                return ["C01_ACCEPTANCE_BRANCH_OR_AUTHORITY_INVALID"]
+            return [] if sorted(_working_tree_paths(status)) == meta["exact_paths"] and sorted(_split_git_paths(cached)) == meta["exact_paths"] and cumulative is not None and sorted(_split_git_paths(cumulative)) == meta["cumulative_paths"] else ["C01_ACCEPTANCE_PATH_OR_CLEAN_INVALID"]
+        if status or cached:
+            return ["C01_ACCEPTANCE_PATH_OR_CLEAN_INVALID"]
+        if branch == C01_ACCEPTANCE_BRANCH:
+            if upstream not in feature_upstreams or remote != C01_ACCEPTANCE_BASE:
+                return ["C01_ACCEPTANCE_BRANCH_OR_AUTHORITY_INVALID"]
+            projection = head
+        elif branch == "main" and upstream == "development/main" and remote == head:
+            parents = value("show", "-s", "--format=%P", head)
+            if parents is None or len(parents.split()) != 2 or parents.split()[0] != C01_ACCEPTANCE_BASE:
+                return ["C01_ACCEPTANCE_MERGE_LINEAGE_INVALID"]
+            projection = parents.split()[1]
+        else:
+            return ["C01_ACCEPTANCE_BRANCH_OR_AUTHORITY_INVALID"]
+        if value("show", "-s", "--format=%P", projection) != C01_ACCEPTANCE_PRODUCT or not check("merge-base", "--is-ancestor", C01_ACCEPTANCE_PRODUCT, projection):
+            return ["C01_ACCEPTANCE_PROJECTION_PARENT_INVALID"]
+        exact = value("diff", "--name-only", C01_ACCEPTANCE_PRODUCT, projection)
+        cumulative = value("diff", "--name-only", C01_ACCEPTANCE_BASE, projection)
+        if exact is None or cumulative is None or sorted(_split_git_paths(exact)) != meta["exact_paths"] or sorted(_split_git_paths(cumulative)) != meta["cumulative_paths"] or not check("diff", "--check", C01_ACCEPTANCE_PRODUCT, projection) or not check("diff", "--check", C01_ACCEPTANCE_BASE, projection):
+            return ["C01_ACCEPTANCE_PATH_OR_CLEAN_INVALID"]
+        if branch == "main":
+            merged_paths = value("diff", "--name-only", C01_ACCEPTANCE_BASE, head)
+            if merged_paths is None or sorted(_split_git_paths(merged_paths)) != meta["cumulative_paths"] or value("diff", "--name-only", projection, head) != "" or not check("merge-base", "--is-ancestor", projection, head) or not check("diff", "--check", C01_ACCEPTANCE_BASE, head):
+                return ["C01_ACCEPTANCE_MERGE_CONTENT_INVALID"]
+        return []
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C01_L3_REWORK_P = "docs/progress/build-progress.json"
+C01_L3_REWORK_E = "docs/progress/progress-events.json"
+C01_L3_REWORK_H = "docs/progress/BUILD_HANDOFF.md"
+C01_L3_REWORK_D = "docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json"
+C01_L3_REWORK_M = "docs/evidence/manifests/C-01_L3_REWORK_START_MANIFEST.json"
+C01_L3_REWORK_WI = "docs/work_orders/C-01_L3_REWORK_WORK_INSTRUCTION.md"
+C01_L3_REWORK_PROMPT = "docs/work_orders/C-01_L3_REWORK_INVOCATION_PROMPT.md"
+C01_L3_REWORK_REPORT = ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md"
+C01_L3_REWORK_REVIEW = ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-final-branch-review-report.md"
+C01_L3_REWORK_REVIEW_SHA = "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46"
+C01_L3_REWORK_BASE = "0f39bad30e7f4ab865077530cbbd29d902d1485d"
+C01_L3_REWORK_CONTROL_COMMIT = "c80c40e2842b5e78d4475e804c8e3639169ce918"
+C01_L3_REWORK_AT = "2026-09-11T02:30:00+09:00"
+C01_L3_REWORK_WI_ID = "WI-C-01-L3-REWORK-20260911-001"
+C01_L3_REWORK_WORKER_ID = "worker-lease-c01-l3-rework-20260911-001"
+C01_L3_REWORK_WRITE_ID = "write-lease-c01-l3-rework-20260911-001"
+C01_L3_REWORK_EXECUTION_TOKEN = "c01-l3-rework-execution-fence-epoch-5-0f39bad"
+C01_L3_REWORK_WRITE_TOKEN = "c01-l3-rework-write-fence-epoch-5-0f39bad"
+
+
+def c01_l3_rework_control_metadata() -> dict[str, Any]:
+    product_paths = sorted([
+        "packages/api/registry.py",
+        "packages/api/fastapi_app.py",
+        "packages/api/runtime.py",
+        "packages/api/step_execution.py",
+        "packages/orchestration/kernel.py",
+        "packages/budget/models.py",
+        "packages/persistence/intervention_budget_repository.py",
+        "packages/persistence/event_repository.py",
+        "packages/events/reducer.py",
+        "packages/events/transition_guard.py",
+        "tests/api/test_c01_step_execution.py",
+        "tests/persistence/test_c01_step_execution_postgres.py",
+        "tests/llm_gateway/test_c01_kernel.py",
+        "tests/events/test_event_store.py",
+        "tests/api/test_registry_openapi.py",
+        "tests/api/test_runtime_app.py",
+        "tests/verification/test_c01_l3_independent_acceptance.py",
+    ])
+    control_paths = sorted([
+        C01_L3_REWORK_REPORT,
+        C01_L3_REWORK_M,
+        C01_L3_REWORK_H,
+        C01_L3_REWORK_P,
+        C01_L3_REWORK_E,
+        C01_L3_REWORK_D,
+        C01_L3_REWORK_PROMPT,
+        C01_L3_REWORK_WI,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+    correction_paths = sorted([
+        C01_L3_REWORK_REPORT,
+        C01_L3_REWORK_M,
+        C01_L3_REWORK_P,
+        C01_L3_REWORK_D,
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+    return {
+        "historical_sequence": 715,
+        "sequence": 721,
+        "base_commit": C01_L3_REWORK_BASE,
+        "control_commit": C01_L3_REWORK_CONTROL_COMMIT,
+        "branch": C01_ACCEPTANCE_BRANCH,
+        "work_instruction_id": C01_L3_REWORK_WI_ID,
+        "worker_lease_id": C01_L3_REWORK_WORKER_ID,
+        "write_lease_id": C01_L3_REWORK_WRITE_ID,
+        "lease_epoch": 5,
+        "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "write_fencing_token": C01_L3_REWORK_WRITE_TOKEN,
+        "control_exact_paths": control_paths,
+        "control_exact_path_count": len(control_paths),
+        "control_exact_path_list_sha256": _c21_path_list_sha(control_paths, windows=False),
+        "correction_exact_paths": correction_paths,
+        "correction_exact_path_count": len(correction_paths),
+        "correction_exact_path_list_sha256": _c21_path_list_sha(correction_paths, windows=False),
+        "product_exact_paths": product_paths,
+        "product_exact_path_count": len(product_paths),
+        "product_exact_path_list_sha256": _c21_path_list_sha(product_paths, windows=False),
+    }
+
+
+def _c01_l3_external_execution() -> dict[str, str]:
+    return {
+        "provider": "NOT_EXECUTED",
+        "telegram": "NOT_EXECUTED",
+        "credential_access": "NOT_EXECUTED",
+        "network": "NOT_EXECUTED",
+        "cost": "NOT_INCURRED",
+        "new_migration": "NOT_CREATED",
+        "database": "NOT_EXECUTED_CONTROL_ONLY",
+        "push": "NOT_EXECUTED",
+        "pull_request": "NOT_EXECUTED",
+        "deployment": "NOT_EXECUTED",
+    }
+
+
+def _c01_l3_api_contract() -> dict[str, Any]:
+    return {
+        "route": "POST /api/runs/{id}/steps/{stepId}:execute",
+        "permission": "run:execute",
+        "persistence": "REAL_POSTGRESQL_BUDGET_AND_EVENT",
+        "migrations": ["0005_event_store", "0009_intervention_budget"],
+        "backend": "DETERMINISTIC_INJECTED_NO_EXTERNAL_CALL",
+        "success": {"http_status": 200, "required_fields": ["request", "reservation", "run", "step", "backend", "result", "final_usage", "provenance", "event_receipts"]},
+        "unknown_usage": {"http_status": 409, "error_code": "USAGE_RECONCILIATION_REQUIRED", "reservation_status": "RECONCILIATION_REQUIRED", "persisted_event_type": "USAGE_RECONCILIATION_REQUIRED", "correlation": ["request", "reservation"]},
+        "event_fields": ["id", "type", "sequence", "timestamp", "actor", "correlation", "causation", "idempotency"],
+        "event_payload_exclusions": ["prompt", "credentials"],
+        "e_api": ["raw_request", "raw_response", "normalized_openapi_before_after_diff"],
+    }
+
+
+def c01_l3_rework_control_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c01_l3_rework_control_metadata()
+    generated = {C01_L3_REWORK_P, C01_L3_REWORK_E, C01_L3_REWORK_H, C01_L3_REWORK_D, C01_L3_REWORK_M}
+    expected_files = (set(meta["control_exact_paths"]) - generated) | {C01_L3_REWORK_REVIEW}
+    if set(historical) != {C01_L3_REWORK_P, C01_L3_REWORK_E, C01_L3_REWORK_H} or set(files) != expected_files:
+        raise ValueError("C01_L3_REWORK_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C01_L3_REWORK_P])
+    stream = _c21_resume_json(historical[C01_L3_REWORK_E])
+    if progress.get("event_sequence") != 715 or stream.get("last_sequence") != 715 or progress.get("c01_mainline_acceptance", {}).get("accepted") is not True:
+        raise ValueError("C01_L3_REWORK_HISTORY_INVALID")
+    if _c21_resume_sha(files[C01_L3_REWORK_REVIEW]) != C01_L3_REWORK_REVIEW_SHA:
+        raise ValueError("C01_L3_REWORK_REVIEW_HASH_INVALID")
+
+    review_ref = {"path": C01_L3_REWORK_REVIEW, "sha256": C01_L3_REWORK_REVIEW_SHA}
+    wi_sha = _c21_resume_sha(files[C01_L3_REWORK_WI])
+    prompt_sha = _c21_resume_sha(files[C01_L3_REWORK_PROMPT])
+    external = _c01_l3_external_execution()
+    api_contract = _c01_l3_api_contract()
+    history_prefix = raw_event_object_prefix_bytes(historical[C01_L3_REWORK_E], 715)
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    additions: list[dict[str, Any]] = []
+
+    def append(event_id: str, event_type: str, step: str, actor: str, details: dict[str, Any]) -> None:
+        nonlocal previous
+        event = {
+            "occurred_at": C01_L3_REWORK_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT",
+            "actor_id": actor,
+            "project_id": "anvil",
+            "run_id": None,
+            "work_package_id": "C-01",
+            "step_id": step,
+            "actor": actor,
+            "subject_ref": "C-01/" + step,
+            "event_id": event_id,
+            "sequence": 716 + len(additions),
+            "event_type": event_type,
+            "previous_event_sha256": previous,
+            "details": details,
+        }
+        additions.append(event)
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+
+    worker = {
+        "lease_id": C01_L3_REWORK_WORKER_ID,
+        "agent_id": "developer-primary",
+        "work_package_id": "C-01",
+        "lease_epoch": 5,
+        "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "status": "ACTIVE",
+        "subject_ref": "C-01/L3-REWORK",
+    }
+    write = {
+        "lease_id": C01_L3_REWORK_WRITE_ID,
+        "worker_lease_id": C01_L3_REWORK_WORKER_ID,
+        "agent_id": "developer-primary",
+        "work_package_id": "C-01",
+        "write_epoch": 5,
+        "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "write_fencing_token": C01_L3_REWORK_WRITE_TOKEN,
+        "fencing_token": C01_L3_REWORK_WRITE_TOKEN,
+        "status": "ACTIVE",
+        "path_scope": meta["product_exact_paths"],
+    }
+    append("evt_c01_l3_final_review_recorded", "INDEPENDENT_TEST_REVIEW_RECORDED", "L3-FINAL-REVIEW", "independent-code-reviewer", {
+        "verdict": "FAIL",
+        "quality": "CHANGES_REQUIRED",
+        "critical_findings": 1,
+        "important_findings": 1,
+        "minor_findings": 0,
+        "reviewed_commit": C01_L3_REWORK_BASE,
+        "review_report_ref": C01_L3_REWORK_REVIEW,
+        "review_report_sha256": C01_L3_REWORK_REVIEW_SHA,
+        "reason_codes": ["C01-L3-NOT-EXECUTED-PROMOTED-TO-PASS-v1", "C01-REQUIRED-EAPI-EEVT-SHAPE-MISSING-v1"],
+    })
+    append("evt_c01_l3_evidence_invalidated", "EVIDENCE_MANIFEST_INVALIDATED", "L3-EVIDENCE-INVALIDATION", "main-agent-eoul", {
+        "manifest_ref": C01_ACCEPTANCE_M,
+        "manifest_sha256": _c21_resume_sha(subprocess.check_output(["git", "show", f"{C01_L3_REWORK_BASE}:{C01_ACCEPTANCE_M}"], cwd=Path.cwd())),
+        "reason": "FINAL_INDEPENDENT_REVIEW_REJECTED_L3_ACCEPTANCE",
+        "invalidated_event_sequence": 715,
+        "invalidated_event_id": "evt_c01_mainline_main_package_accepted",
+        "invalidated_validation_ids": ["AV-AGT-002", "AV-AGT-003", "AV-OPS-011"],
+        "historical_bytes_mutated": False,
+    })
+    append("evt_c01_l3_rework_worker_lease_issued", "WORKER_LEASE_ISSUED", "L3-REWORK", "main-agent-eoul", worker)
+    append("evt_c01_l3_rework_write_lease_issued", "WRITE_LEASE_ISSUED", "L3-REWORK", "main-agent-eoul", write)
+    append("evt_c01_l3_rework_requested", "PACKAGE_REWORK_REQUESTED", "L3-REWORK", "main-agent-eoul", {
+        "attempt": 1,
+        "worker_lease_id": C01_L3_REWORK_WORKER_ID,
+        "write_lease_id": C01_L3_REWORK_WRITE_ID,
+        "same_failure_count": 0,
+        "status": "REWORK_REQUIRED",
+        "work_instruction_id": C01_L3_REWORK_WI_ID,
+        "work_instruction_sha256": wi_sha,
+        "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "write_fencing_token": C01_L3_REWORK_WRITE_TOKEN,
+        "review_ref": review_ref,
+        "api_contract": api_contract,
+    })
+
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": "C01_L3_REWORK_CONTROL_EXACT10",
+        "validated_base_commit": C01_L3_REWORK_BASE,
+        "local_head": C01_L3_REWORK_BASE,
+        "branch": C01_ACCEPTANCE_BRANCH,
+        "upstream": "NO_UPSTREAM",
+        "push_status": "NOT_EXECUTED",
+        "head_relation": "PRECOMMIT_STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
+        "worktree_status": "STAGED_EXACT10",
+        "exact_allowed_paths": meta["control_exact_paths"],
+        "control_commit_parent": C01_L3_REWORK_BASE,
+    })
+    append("evt_c01_l3_rework_package_resumed", "PACKAGE_RESUMED", "L3-REWORK", "main-agent-eoul", {
+        "resume_event_ref": "evt_c01_l3_rework_requested",
+        "work_instruction_id": C01_L3_REWORK_WI_ID,
+        "work_instruction_sha256": wi_sha,
+        "invocation_sha256": prompt_sha,
+        "worker_lease_id": C01_L3_REWORK_WORKER_ID,
+        "write_lease_id": C01_L3_REWORK_WRITE_ID,
+        "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "write_fencing_token": C01_L3_REWORK_WRITE_TOKEN,
+        "dispatch_head": repository["local_head"],
+        "dispatch_upstream_head": repository["remote_head"],
+        "projection_mode": repository["projection_mode"],
+        "validated_base_commit": repository["validated_base_commit"],
+        "head_relation": repository["head_relation"],
+        "exact_allowed_paths": repository["exact_allowed_paths"],
+        "package_status": "REWORK_IN_PROGRESS",
+    })
+    events_raw = _c21_append_events(historical[C01_L3_REWORK_E], 715, additions)
+
+    instruction = {
+        "artifact_id": C01_L3_REWORK_WI_ID,
+        "artifact_path": C01_L3_REWORK_WI,
+        "artifact_sha256": wi_sha,
+        "invocation_path": C01_L3_REWORK_PROMPT,
+        "invocation_sha256": prompt_sha,
+        "executor": "developer-primary",
+        "result_status": "REWORK_IN_PROGRESS",
+        "package_status": "ACTIVE",
+        "accepted": False,
+        "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "write_fencing_token": C01_L3_REWORK_WRITE_TOKEN,
+        "exact_paths": meta["product_exact_paths"],
+    }
+    previous_acceptance = dict(progress["c01_mainline_acceptance"])
+    previous_acceptance.update({
+        "accepted": False,
+        "status": "INVALIDATED_BY_FINAL_INDEPENDENT_REVIEW",
+        "invalidated_event_sequence": 717,
+        "historical_acceptance_event_sequence": 715,
+        "historical_acceptance_scope": "LOCAL_FIXTURE_CONTRACT_SCOPE",
+        "current_l3_acceptance": "NOT_ACCEPTED",
+    })
+    progress.update({
+        "snapshot_id": "snapshot-c01-l3-rework-seq721",
+        "updated_at": C01_L3_REWORK_AT,
+        "recorded_at": C01_L3_REWORK_AT,
+        "event_sequence": 721,
+        "last_event_id": additions[-1]["event_id"],
+        "current_phase": "C",
+        "current_work_package": "C-01",
+        "status": "REWORK_IN_PROGRESS",
+        "completed_packages": [package for package in progress["completed_packages"] if package != "C-01"],
+        "active_agent": "developer-primary",
+        "worker_lease": worker,
+        "write_lease": write,
+        "valid_failure_count": 0,
+        "active_failure_lineage": {"step_lineage_id": "C-01", "valid_failure_count": 0, "status": "REWORK_REQUIRED"},
+        "active_work_instruction": instruction,
+        "accepted_c01_work_instruction": instruction,
+        "repository": repository,
+        "c01_mainline_acceptance": previous_acceptance,
+        "c01_l3_rework": {
+            "status": "ACTIVE",
+            "accepted": False,
+            "review": review_ref,
+            "invalidated_event_sequence": 715,
+            "worker_lease_id": C01_L3_REWORK_WORKER_ID,
+            "write_lease_id": C01_L3_REWORK_WRITE_ID,
+            "api_contract": api_contract,
+            "external_execution": external,
+        },
+        "next_work_package": {"package_id": "C-01", "status": "ACTIVE"},
+        "next_successor_work_package": {"package_id": "C-02", "status": "BLOCKED_PENDING_C01_ACCEPTANCE"},
+        "runtime_next_action": "DEVELOPER_IMPLEMENT_C01_L3_REWORK",
+        "next_safe_action": "DEVELOPER_IMPLEMENT_C01_L3_REWORK",
+        "current_progress_evidence_ref": {"package_id": "C-01", "path": C01_L3_REWORK_D, "manifest_path": C01_L3_REWORK_M},
+        "latest_evidence_manifest_ref": {"path": C01_L3_REWORK_M, "artifact_id": "C01-L3-REWORK-START-20260911"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C01_L3_REWORK_APPROVED", "C02_BLOCKED_PENDING_C01_ACCEPTANCE"], "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C01_L3_REWORK_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)} for path, raw in sorted({**files, C01_L3_REWORK_E: events_raw}.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package", "active_agent",
+        "worker_lease", "write_lease", "design_baseline_hash", "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED",
+        "reporting_decision": "AUTO_CONTINUE",
+        "repository_head": repository["local_head"],
+        "repository_upstream": repository["upstream"],
+        "repository_projection_mode": repository["projection_mode"],
+        "repository_head_relation": repository["head_relation"],
+        "repository_validated_base_commit": repository["validated_base_commit"],
+        "repository_exact_allowed_paths": meta["control_exact_paths"],
+        "accepted": False,
+        "c01_status": "REWORK_IN_PROGRESS",
+        "c02_status": "BLOCKED_PENDING_C01_ACCEPTANCE",
+        "historical_acceptance_event_sequence": 715,
+        "final_review": review_ref,
+        "active_work_instruction": C01_L3_REWORK_WI_ID,
+        "active_work_instruction_sha256": wi_sha,
+        "active_invocation_sha256": prompt_sha,
+        "product_exact_paths": meta["product_exact_paths"],
+        "external_execution": external,
+        "next_work_package": progress["next_work_package"],
+        "next_successor_work_package": progress["next_successor_work_package"],
+    })
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement, historical[C01_L3_REWORK_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C01_L3_REWORK_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-01 L3 rework start — seq721\n\n"
+        "- seq716 final independent review FAIL과 seq717 evidence invalidation을 append했다. seq1-715 bytes는 불변이다.\n"
+        "- C-01은 REWORK_IN_PROGRESS, C-02는 BLOCKED_PENDING_C01_ACCEPTANCE다.\n"
+        "- fresh epoch-5 worker/write lease는 exact17 제품/테스트 경로만 허용한다.\n"
+        "- Provider·Telegram·credential·network·migration·push·PR·deployment는 실행하지 않았다.\n\n"
+        + handoff_text
+    ).encode()
+    digest = {
+        "schema_version": "1.0.0",
+        "digest_id": "C01-L3-REWORK-START-DIGEST-20260911",
+        "package_id": "C-01",
+        "event_sequence": 721,
+        "algorithm": "SHA-256",
+        "created_at": C01_L3_REWORK_AT,
+        "scope": "seq716-721 append-only; seq1-715 preserved; control exact10; product exact17",
+        "self_reference": False,
+        "progress": {"path": C01_L3_REWORK_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C01_L3_REWORK_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    control_files = {path: raw for path, raw in files.items() if path != C01_L3_REWORK_REVIEW}
+    prior = {**control_files, C01_L3_REWORK_E: events_raw, C01_L3_REWORK_P: progress_raw, C01_L3_REWORK_H: handoff_raw, C01_L3_REWORK_D: digest_raw}
+    manifest = {
+        "schema_version": "1.0.0",
+        "manifest_type": "C01_L3_REWORK_START_PROJECTION",
+        "artifact_id": "C01-L3-REWORK-START-20260911",
+        "created_at": C01_L3_REWORK_AT,
+        "event_sequence": 721,
+        "historical_event_sequence": 715,
+        "appended_event_count": 6,
+        "historical_commit": C01_L3_REWORK_BASE,
+        "historical_raw_event_prefix": {"bytes": len(history_prefix), "sha256": _c21_resume_sha(history_prefix)},
+        "final_event_sha256": previous,
+        "status": "REWORK_IN_PROGRESS",
+        "accepted": False,
+        "c01_status": "REWORK_IN_PROGRESS",
+        "c02_status": "BLOCKED_PENDING_C01_ACCEPTANCE",
+        "invalidated_acceptance": {"event_sequence": 715, "event_id": "evt_c01_mainline_main_package_accepted", "manifest_path": C01_ACCEPTANCE_M},
+        "review_receipt": review_ref,
+        "execution_authority_path": C01_L3_REWORK_WI,
+        "execution_authority_sha256": wi_sha,
+        "invocation_path": C01_L3_REWORK_PROMPT,
+        "invocation_sha256": prompt_sha,
+        "api_contract": api_contract,
+        "external_execution": external,
+        "self_reference": False,
+        **meta,
+        "raw_checksums": [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)} for path, raw in sorted(prior.items())],
+    }
+    return {
+        C01_L3_REWORK_E: events_raw,
+        C01_L3_REWORK_P: progress_raw,
+        C01_L3_REWORK_H: handoff_raw,
+        C01_L3_REWORK_D: digest_raw,
+        C01_L3_REWORK_M: _c21_resume_json_bytes(manifest),
+    }
+
+
+def c01_l3_rework_control_from_root(root: Path) -> dict[str, bytes]:
+    historical = {
+        path: subprocess.check_output(["git", "show", f"{C01_L3_REWORK_BASE}:{path}"], cwd=root)
+        for path in (C01_L3_REWORK_P, C01_L3_REWORK_E, C01_L3_REWORK_H)
+    }
+    generated = {C01_L3_REWORK_P, C01_L3_REWORK_E, C01_L3_REWORK_H, C01_L3_REWORK_D, C01_L3_REWORK_M}
+    files = {path: (root / path).read_bytes() for path in set(c01_l3_rework_control_metadata()["control_exact_paths"]) - generated}
+    files[C01_L3_REWORK_REVIEW] = (root / C01_L3_REWORK_REVIEW).read_bytes()
+    return c01_l3_rework_control_artifacts(historical, files)
+
+
+def validate_c01_l3_rework_control_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        meta = c01_l3_rework_control_metadata()
+        if any(manifest.get(key) != value for key, value in meta.items()):
+            return ["C01_L3_REWORK_MANIFEST_METADATA_INVALID"]
+        if any((
+            manifest.get("manifest_type") != "C01_L3_REWORK_START_PROJECTION",
+            manifest.get("event_sequence") != 721,
+            manifest.get("historical_event_sequence") != 715,
+            manifest.get("appended_event_count") != 6,
+            manifest.get("historical_commit") != C01_L3_REWORK_BASE,
+            manifest.get("status") != "REWORK_IN_PROGRESS",
+            manifest.get("accepted") is not False,
+            manifest.get("c01_status") != "REWORK_IN_PROGRESS",
+            manifest.get("c02_status") != "BLOCKED_PENDING_C01_ACCEPTANCE",
+            manifest.get("self_reference") is not False,
+            manifest.get("review_receipt") != {"path": C01_L3_REWORK_REVIEW, "sha256": C01_L3_REWORK_REVIEW_SHA},
+            manifest.get("api_contract") != _c01_l3_api_contract(),
+            manifest.get("external_execution") != _c01_l3_external_execution(),
+        )):
+            return ["C01_L3_REWORK_MANIFEST_INVALID"]
+        rows = manifest.get("raw_checksums")
+        expected = set(meta["control_exact_paths"]) - {C01_L3_REWORK_M}
+        if not isinstance(rows, list) or len(rows) != len(expected) or {row.get("path") for row in rows if isinstance(row, dict)} != expected:
+            return ["C01_L3_REWORK_CHECKSUM_SET_INVALID"]
+        if any(type(row.get("bytes")) is not int or row["bytes"] < 1 or re.fullmatch(r"[A-F0-9]{64}", str(row.get("sha256"))) is None for row in rows):
+            return ["C01_L3_REWORK_CHECKSUM_ROW_INVALID"]
+        return []
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return ["C01_L3_REWORK_MANIFEST_INVALID"]
+
+
+def validate_c01_l3_rework_control_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        expected = c01_l3_rework_control_from_root(root)
+        actual = {
+            C01_L3_REWORK_P: bundle["progress"],
+            C01_L3_REWORK_E: bundle["events"],
+            C01_L3_REWORK_H: bundle["handoff"],
+            C01_L3_REWORK_D: bundle["detached_digest"],
+            C01_L3_REWORK_M: manifest,
+        }
+        errors = validate_c01_l3_rework_control_manifest(manifest)
+        for path, value in actual.items():
+            reference = extract_handoff_summary(expected[path].decode()) if path == C01_L3_REWORK_H else _c21_resume_json(expected[path])
+            if not _c21_strict_json_equal(value, reference):
+                errors.append("C01_L3_REWORK_PROJECTION_INVALID")
+        for path, raw in expected.items():
+            if not (root / path).exists() or (root / path).read_bytes() != raw:
+                errors.append("C01_L3_REWORK_RAW_BYTES_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C01_L3_REWORK_BASE}:{C01_L3_REWORK_E}"], cwd=root)
+        if raw_event_object_prefix_bytes(historical, 715) != raw_event_object_prefix_bytes((root / C01_L3_REWORK_E).read_bytes(), 715):
+            errors.append("C01_L3_REWORK_HISTORY_MUTATED")
+        progress = bundle["progress"]
+        events = bundle["events"]["events"]
+        if (
+            progress.get("event_sequence") != 721
+            or progress.get("current_work_package") != "C-01"
+            or progress.get("status") != "REWORK_IN_PROGRESS"
+            or "C-01" in progress.get("completed_packages", [])
+            or progress.get("next_work_package") != {"package_id": "C-01", "status": "ACTIVE"}
+            or progress.get("next_successor_work_package") != {"package_id": "C-02", "status": "BLOCKED_PENDING_C01_ACCEPTANCE"}
+            or progress.get("c01_mainline_acceptance", {}).get("accepted") is not False
+            or progress.get("c01_mainline_acceptance", {}).get("status") != "INVALIDATED_BY_FINAL_INDEPENDENT_REVIEW"
+            or [event.get("event_type") for event in events[715:]] != ["INDEPENDENT_TEST_REVIEW_RECORDED", "EVIDENCE_MANIFEST_INVALIDATED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_REWORK_REQUESTED", "PACKAGE_RESUMED"]
+            or progress.get("worker_lease", {}).get("execution_fencing_token") != C01_L3_REWORK_EXECUTION_TOKEN
+            or progress.get("write_lease", {}).get("write_fencing_token") != C01_L3_REWORK_WRITE_TOKEN
+            or progress.get("write_lease", {}).get("path_scope") != c01_l3_rework_control_metadata()["product_exact_paths"]
+        ):
+            errors.append("C01_L3_REWORK_FAIL_CLOSED_STATE_INVALID")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, UnicodeError):
+        return ["C01_L3_REWORK_INPUT_INVALID"]
+
+
+def _c01_l3_decode_git_path(relative: str) -> str:
+    """Decode Git's quoted UTF-8 octets without changing historical path parsing."""
+    import ast
+
+    decoded = relative
+    if len(relative) >= 2 and relative[0] == '"' and relative[-1] == '"':
+        decoded = ast.literal_eval(relative)
+        try:
+            decoded = decoded.encode("latin-1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            pass
+    return decoded.replace("\\", "/")
+
+
+def _c01_l3_git_paths(output: str | None, *, status: bool = False) -> list[str]:
+    if not output:
+        return []
+    paths: set[str] = set()
+    for line in output.splitlines():
+        relative = line[3:].strip() if status else line.strip()
+        if not relative:
+            continue
+        if " -> " in relative:
+            paths.update(_c01_l3_decode_git_path(item) for item in relative.split(" -> ", 1))
+        else:
+            paths.add(_c01_l3_decode_git_path(relative))
+    return sorted(paths)
+
+
+def _collect_c01_l3_rework_control_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c01_l3_rework_control_metadata()
+        value = lambda *args: _git_value(root, *args)
+        check = lambda *args: _git_returncode(root, *args) == 0
+        head = value("rev-parse", "HEAD")
+        branch = value("branch", "--show-current")
+        status = value("status", "--porcelain", "--untracked-files=all")
+        cached = value("diff", "--cached", "--name-only")
+        unstaged = value("diff", "--name-only")
+        untracked = value("ls-files", "--others", "--exclude-standard")
+        if None in (head, branch, status, cached, unstaged, untracked):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if branch != C01_ACCEPTANCE_BRANCH or unstaged or untracked:
+            return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        if head == C01_L3_REWORK_BASE:
+            if not check("diff", "--cached", "--check"):
+                return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+            return [] if _c01_l3_git_paths(status, status=True) == meta["control_exact_paths"] and _c01_l3_git_paths(cached) == meta["control_exact_paths"] else ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        if not status and not cached and parents == C01_L3_REWORK_BASE:
+            exact = value("diff", "--name-only", C01_L3_REWORK_BASE, head)
+            if exact is not None and _c01_l3_git_paths(exact) == meta["control_exact_paths"] and check("merge-base", "--is-ancestor", C01_L3_REWORK_BASE, head) and check("diff", "--check", C01_L3_REWORK_BASE, head):
+                return []
+            return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        control_parent = value("show", "-s", "--format=%P", C01_L3_REWORK_CONTROL_COMMIT)
+        control_exact = value("diff", "--name-only", C01_L3_REWORK_BASE, C01_L3_REWORK_CONTROL_COMMIT)
+        if (
+            control_parent != C01_L3_REWORK_BASE
+            or control_exact is None
+            or _c01_l3_git_paths(control_exact) != meta["control_exact_paths"]
+            or not check("merge-base", "--is-ancestor", C01_L3_REWORK_BASE, C01_L3_REWORK_CONTROL_COMMIT)
+            or not check("diff", "--check", C01_L3_REWORK_BASE, C01_L3_REWORK_CONTROL_COMMIT)
+        ):
+            return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        if head == C01_L3_REWORK_CONTROL_COMMIT:
+            if not check("diff", "--cached", "--check"):
+                return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+            return [] if _c01_l3_git_paths(status, status=True) == meta["correction_exact_paths"] and _c01_l3_git_paths(cached) == meta["correction_exact_paths"] else ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        correction_exact = value("diff", "--name-only", C01_L3_REWORK_CONTROL_COMMIT, head)
+        if (
+            status
+            or cached
+            or parents != C01_L3_REWORK_CONTROL_COMMIT
+            or correction_exact is None
+            or _c01_l3_git_paths(correction_exact) != meta["correction_exact_paths"]
+            or not check("merge-base", "--is-ancestor", C01_L3_REWORK_CONTROL_COMMIT, head)
+            or not check("diff", "--check", C01_L3_REWORK_CONTROL_COMMIT, head)
+        ):
+            return ["C01_L3_REWORK_GIT_PROJECTION_INVALID"]
+        return []
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C01_L3_FINAL_P = "docs/progress/build-progress.json"
+C01_L3_FINAL_E = "docs/progress/progress-events.json"
+C01_L3_FINAL_H = "docs/progress/BUILD_HANDOFF.md"
+C01_L3_FINAL_D = "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json"
+C01_L3_FINAL_M = "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json"
+C01_L3_FINAL_RAW = "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json"
+C01_L3_FINAL_REPORT = "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md"
+C01_L3_FINAL_VALIDATION = "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md"
+C01_L3_FINAL_WSL_REPORT = "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md"
+C01_L3_FINAL_COMPLETION = "docs/completion_reports/C-01_completion.md"
+C01_L3_FINAL_STATUS = "docs/WORK_STATUS.md"
+C01_L3_FINAL_WI = "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md"
+C01_L3_FINAL_PROMPT = "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md"
+C01_L3_FINAL_HISTORICAL = "a34d12da5f504a5d2694fc04f0924082cb1fc1d9"
+C01_L3_FINAL_TEST_BASELINE = "fd3c89665629addd78e74c2fe946fb9dfc893c36"
+C01_L3_FINAL_PRODUCT = "bb2ff4374c81865cab127eca14d3d4c9de575465"
+C01_L3_FINAL_CONTROL = "2eba71ec37183ef6062157d7491ee48cb1fab6ba"
+C01_L3_FINAL_BRANCH = "codex/c01-mainline-reconciliation-r5"
+C01_L3_FINAL_AT = "2026-09-11T15:30:00+09:00"
+C01_L3_FINAL_WI_ID = "WI-C-01-L3-FINAL-ACCEPTANCE-PROJECTION-20260911-001"
+
+
+def c01_l3_final_acceptance_metadata() -> dict[str, Any]:
+    test_paths = ["tests/verification/test_c01_l3_independent_acceptance.py"]
+    product_paths = sorted([
+        "packages/api/fastapi_app.py", "packages/api/registry.py", "packages/api/runtime.py",
+        "packages/api/step_execution.py", "packages/events/reducer.py",
+        "packages/events/transition_guard.py", "packages/persistence/event_repository.py",
+        "packages/persistence/intervention_budget_repository.py", "tests/api/test_c01_step_execution.py",
+        "tests/api/test_runtime_app.py", "tests/events/test_event_store.py",
+        "tests/persistence/test_c01_step_execution_postgres.py",
+        "tests/verification/test_c01_l3_independent_acceptance.py",
+    ])
+    control_paths = sorted([
+        "deploy/wsl/FormalSingleRuntimeManifest.json", "deploy/wsl/formal-single-runtime.sh",
+        C01_L3_FINAL_WSL_REPORT, "docs/work_orders/C-01_WSL_FORMAL_SINGLE_RUNTIME_WORK_INSTRUCTION.md",
+        "tests/deploy/test_c01_wsl_formal_single_runtime_contract.py",
+    ])
+    final_paths = sorted([
+        C01_L3_FINAL_REPORT, C01_L3_FINAL_WSL_REPORT, C01_L3_FINAL_STATUS,
+        C01_L3_FINAL_COMPLETION, C01_L3_FINAL_M, C01_L3_FINAL_RAW, C01_L3_FINAL_H,
+        C01_L3_FINAL_P, C01_L3_FINAL_E, C01_L3_FINAL_D, C01_L3_FINAL_VALIDATION,
+        C01_L3_FINAL_PROMPT, C01_L3_FINAL_WI, "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+    return {
+        "historical_sequence": 721,
+        "sequence": 727,
+        "historical_commit": C01_L3_FINAL_HISTORICAL,
+        "test_baseline_commit": C01_L3_FINAL_TEST_BASELINE,
+        "product_commit": C01_L3_FINAL_PRODUCT,
+        "control_commit": C01_L3_FINAL_CONTROL,
+        "branch": C01_L3_FINAL_BRANCH,
+        "work_instruction_id": C01_L3_FINAL_WI_ID,
+        "test_exact_paths": test_paths,
+        "test_exact_path_count": len(test_paths),
+        "test_exact_path_list_sha256": _c21_path_list_sha(test_paths, windows=False),
+        "product_exact_paths": product_paths,
+        "product_exact_path_count": len(product_paths),
+        "product_exact_path_list_sha256": _c21_path_list_sha(product_paths, windows=False),
+        "control_exact_paths": control_paths,
+        "control_exact_path_count": len(control_paths),
+        "control_exact_path_list_sha256": _c21_path_list_sha(control_paths, windows=False),
+        "final_record_exact_paths": final_paths,
+        "final_record_exact_path_count": len(final_paths),
+        "final_record_exact_path_list_sha256": _c21_path_list_sha(final_paths, windows=False),
+        "record_binding": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OF_CONTROL",
+    }
+
+
+def _c01_l3_final_external_execution() -> dict[str, str]:
+    return {
+        "provider": "NOT_EXECUTED",
+        "telegram": "NOT_EXECUTED",
+        "new_migration": "NOT_CREATED",
+        "database_write_during_deployment": "NOT_EXECUTED",
+        "ysna": "NOT_EXECUTED",
+        "main_merge": "NOT_EXECUTED",
+        "pull_request": "NOT_EXECUTED",
+    }
+
+
+def _c01_l3_final_operational_evidence() -> dict[str, Any]:
+    return {
+        "schema_version": "1.0.0",
+        "evidence_type": "C01_L3_FINAL_OPERATIONAL_EVIDENCE",
+        "candidate_commit": C01_L3_FINAL_PRODUCT,
+        "control_commit": C01_L3_FINAL_CONTROL,
+        "local_verification": {
+            "postgresql15_independent_l3": {"result": "17 passed in 35.72s", "failed": 0, "skipped": 0, "exit_code": 0},
+            "product_api_event_adjacent_regression": {"result": "93 passed in 37.43s", "failed": 0, "exit_code": 0},
+            "product_review": {"spec": "PASS", "quality": "APPROVED", "critical": 0, "important": 0, "minor": 0},
+            "control_review": {"spec": "PASS", "quality": "APPROVED", "critical": 0, "important": 0, "minor": 0, "contract_passed": 30},
+        },
+        "formal_wsl": {
+            "receipt": "VERIFIED", "container": "anvil-web", "container_count": 1,
+            "host_port": 3770, "checkout": "CLEAN_DETACHED", "image_revision": C01_L3_FINAL_PRODUCT,
+            "healthy": True, "read_only": True, "cap_drop": ["ALL"],
+            "security_opt": ["no-new-privileges"], "networks": ["proxy-network"],
+            "public_ipv4": "0.0.0.0:3770", "extra_anvil_runtime_resources": 0,
+            "secret_output_count": 0, "secret_temp_residue": 0,
+        },
+        "same_origin_http": {
+            "dashboard": 200, "provider_workbench": 200, "health_live": 200,
+            "health_ready": 200, "openapi": 200, "auth_status": 200,
+            "execute_route": "POST /api/runs/{id}/steps/{stepId}:execute",
+        },
+        "browser": {
+            "dashboard_database": "READY", "migration": "0013_task_bootstrap_authority",
+            "workbench_identity": "WSL_ACCEPTANCE · wsl_acceptance_reader", "workbench_status": "READY",
+            "provider_count": 9, "primary_provider": "UPSTAGE", "console_error_count": 0,
+            "console_warning_count": 0,
+        },
+        "authenticated_sse": {
+            "session_issue_status": 201, "authenticated": True, "actor_role": "tester",
+            "initial_status": 200, "initial_bytes": 88, "content_type": "text/event-stream",
+            "event_id": "c21-wsl-event-1", "event_type": "RUN_CREATED",
+            "resume_status": 200, "resume_bytes": 0, "invalid_cursor_status": 409,
+            "forbidden_run_status": 403,
+        },
+        "external_execution": _c01_l3_final_external_execution(),
+    }
+
+
+def _c01_l3_final_markdown() -> tuple[bytes, bytes]:
+    report = """# C-01 L3 Final Acceptance Report
+
+## 판정
+
+`ACCEPTED`
+
+## 근거
+
+- PostgreSQL15 독립 L3 `17 passed in 35.72s`, 회귀 `93 passed in 37.43s`, 두 독립 review 모두 `SPEC PASS / QUALITY APPROVED / C0·I0·M0`이다.
+- 제품 `bb2ff4374c81865cab127eca14d3d4c9de575465`와 formal control `2eba71ec37183ef6062157d7491ee48cb1fab6ba`의 exact lineage·path set을 검증했다.
+- WSL `anvil-web` 단일 runtime, port3770, OCI exact product, health·read-only·cap-drop·no-new-privileges·proxy-network를 확인했다.
+- same-origin HTTP와 visible browser, cookie-authenticated SSE의 승인된 실제 증거를 결박했다.
+- 실제 Provider·Telegram 호출은 `NOT_EXECUTED`이며 이를 PASS로 승격하지 않는다.
+
+## 상태
+
+- seq722~727로 lease 회수부터 Main acceptance까지 기록한다.
+- C-01은 `ACCEPTED`, active lease는 없고 C-02는 `READY_NOT_STARTED`다.
+- C-02 Event·lease·WorkInstruction은 생성하지 않았다.
+""".encode("utf-8")
+    validation = """# C-01 L3 Final Acceptance Validation
+
+- seq1~721 raw event object bytes: `PRESERVED`
+- seq722~727 order: `PASS`
+- lineage `a34d12d → fd3c896 → bb2ff43 → 2eba71e → exact15 record`: `PASS`
+- deterministic builder, raw checksum, detached digest, mutation rejection: `PASS`
+- C-01 accepted / active lease none / C-02 ready-not-started: `PASS`
+- Provider·Telegram actual call: `NOT_EXECUTED`
+- product/runtime/DB mutation by this projection: `NOT_EXECUTED`
+""".encode("utf-8")
+    return report, validation
+
+
+def c01_l3_final_acceptance_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c01_l3_final_acceptance_metadata()
+    generated = {
+        C01_L3_FINAL_REPORT, C01_L3_FINAL_STATUS, C01_L3_FINAL_COMPLETION, C01_L3_FINAL_M,
+        C01_L3_FINAL_RAW, C01_L3_FINAL_H, C01_L3_FINAL_P, C01_L3_FINAL_E,
+        C01_L3_FINAL_D, C01_L3_FINAL_VALIDATION,
+    }
+    input_paths = set(meta["final_record_exact_paths"]) - generated
+    historical_paths = {C01_L3_FINAL_P, C01_L3_FINAL_E, C01_L3_FINAL_H, C01_L3_FINAL_STATUS, C01_L3_FINAL_COMPLETION}
+    if set(historical) != historical_paths or set(files) != input_paths:
+        raise ValueError("C01_L3_FINAL_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C01_L3_FINAL_P])
+    stream = _c21_resume_json(historical[C01_L3_FINAL_E])
+    if (
+        progress.get("event_sequence") != 721
+        or stream.get("last_sequence") != 721
+        or progress.get("status") != "REWORK_IN_PROGRESS"
+        or (progress.get("worker_lease") or {}).get("execution_fencing_token") != C01_L3_REWORK_EXECUTION_TOKEN
+        or (progress.get("write_lease") or {}).get("write_fencing_token") != C01_L3_REWORK_WRITE_TOKEN
+    ):
+        raise ValueError("C01_L3_FINAL_HISTORY_INVALID")
+
+    wi_sha = _c21_resume_sha(files[C01_L3_FINAL_WI])
+    prompt_sha = _c21_resume_sha(files[C01_L3_FINAL_PROMPT])
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    additions: list[dict[str, Any]] = []
+
+    def append(event_id: str, event_type: str, step: str, actor: str, details: dict[str, Any]) -> None:
+        nonlocal previous
+        event = {
+            "occurred_at": C01_L3_FINAL_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": actor, "project_id": "anvil", "run_id": None,
+            "work_package_id": "C-01", "step_id": step, "actor": actor,
+            "subject_ref": "C-01/" + step, "event_id": event_id,
+            "sequence": 722 + len(additions), "event_type": event_type,
+            "previous_event_sha256": previous, "details": details,
+        }
+        additions.append(event)
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+
+    append("evt_c01_l3_final_write_lease_revoked", "WRITE_LEASE_REVOKED", "L3-FINAL-ACCEPTANCE", "main-agent-eoul", {
+        "lease_id": C01_L3_REWORK_WRITE_ID, "worker_lease_id": C01_L3_REWORK_WORKER_ID,
+        "reason": "C01_L3_REWORK_IMPLEMENTATION_AND_VERIFICATION_COMPLETED",
+        "write_epoch": 5, "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "write_fencing_token": C01_L3_REWORK_WRITE_TOKEN, "status": "REVOKED",
+    })
+    append("evt_c01_l3_final_worker_lease_revoked", "WORKER_LEASE_REVOKED", "L3-FINAL-ACCEPTANCE", "main-agent-eoul", {
+        "lease_id": C01_L3_REWORK_WORKER_ID,
+        "reason": "C01_L3_REWORK_IMPLEMENTATION_AND_VERIFICATION_COMPLETED",
+        "lease_epoch": 5, "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "status": "REVOKED",
+    })
+    append("evt_c01_l3_final_package_completed", "PACKAGE_COMPLETED", "L3-FINAL-ACCEPTANCE", "developer-primary", {
+        "result_status": "COMPLETED", "package_status": "TEST_REVIEW", "accepted": False,
+        "product_commit": C01_L3_FINAL_PRODUCT, "control_commit": C01_L3_FINAL_CONTROL,
+        "product_exact_paths": meta["product_exact_paths"],
+        "postgresql15_independent_l3": "17 passed in 35.72s",
+        "product_api_event_adjacent_regression": "93 passed in 37.43s",
+        "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED",
+    })
+    append("evt_c01_l3_final_independent_judgment_recorded", "INDEPENDENT_TEST_JUDGMENT_RECORDED", "L3-FINAL-ACCEPTANCE", "independent-code-reviewer", {
+        "verdict": "PASS", "criteria": "C01_L3_PRODUCT_AND_FORMAL_CONTROL",
+        "evidence_ref": C01_L3_FINAL_RAW,
+        "product_review": "SPEC_PASS_QUALITY_APPROVED_C0_I0_M0",
+        "control_review": "SPEC_PASS_QUALITY_APPROVED_C0_I0_M0",
+    })
+    append("evt_c01_l3_final_deployment_verified", "DEPLOYMENT_VERIFIED", "L3-FINAL-ACCEPTANCE", "main-agent-eoul", {
+        "environment": "WSL_TEST_STAGING", "receipt": "VERIFIED",
+        "candidate_commit": C01_L3_FINAL_PRODUCT, "control_commit": C01_L3_FINAL_CONTROL,
+        "container": "anvil-web", "container_count": 1, "host_port": 3770,
+        "same_origin_http": "PASS", "browser": "PASS", "authenticated_sse": "PASS",
+        "database_writes": 0, "provider_calls": 0, "telegram_calls": 0,
+        "extra_runtime_resources": 0, "secret_output_count": 0,
+    })
+    append("evt_c01_l3_final_main_package_accepted", "MAIN_PACKAGE_ACCEPTED", "L3-FINAL-ACCEPTANCE", "main-agent-eoul", {
+        "decision": "ACCEPTED", "accepted": True,
+        "test_report_ref": C01_L3_FINAL_REPORT, "test_report_sha256": "BOUND_BY_FINAL_MANIFEST_RAW_CHECKSUM",
+        "manifest_ref": C01_L3_FINAL_M, "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "next_work_package": "C-02", "next_work_package_status": "READY_NOT_STARTED",
+        "projection_mode": "C01_L3_FINAL_ACCEPTANCE_EXACT15",
+        "validated_base_commit": C01_L3_FINAL_CONTROL,
+        "acceptance_head": C01_L3_FINAL_CONTROL,
+        "acceptance_upstream_head": C01_L3_FINAL_CONTROL,
+        "head_relation": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OF_CONTROL",
+        "exact_allowed_paths": meta["final_record_exact_paths"],
+        "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED",
+    })
+    events_raw = _c21_append_events(historical[C01_L3_FINAL_E], 721, additions)
+
+    completed_write = dict(progress["write_lease"])
+    completed_write.update({"status": "REVOKED", "revoked_event_sequence": 722})
+    completed_worker = dict(progress["worker_lease"])
+    completed_worker.update({"status": "REVOKED", "revoked_event_sequence": 723})
+    instruction = {
+        "artifact_id": C01_L3_FINAL_WI_ID, "artifact_path": C01_L3_FINAL_WI,
+        "artifact_sha256": wi_sha, "invocation_path": C01_L3_FINAL_PROMPT,
+        "invocation_sha256": prompt_sha, "executor": "developer-primary",
+        "result_status": "COMPLETED", "package_status": "ACCEPTED", "accepted": True,
+        "execution_fencing_token": C01_L3_REWORK_EXECUTION_TOKEN,
+        "write_fencing_token": C01_L3_REWORK_WRITE_TOKEN,
+        "exact_paths": meta["final_record_exact_paths"],
+    }
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": "C01_L3_FINAL_ACCEPTANCE_EXACT15",
+        "validated_base_commit": C01_L3_FINAL_CONTROL,
+        "local_head": C01_L3_FINAL_CONTROL, "branch": C01_L3_FINAL_BRANCH,
+        "upstream": "development/codex/c01-mainline-reconciliation-r5",
+        "remote_head": C01_L3_FINAL_CONTROL, "push_status": "NOT_EXECUTED_FINAL_RECORD",
+        "head_relation": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OF_CONTROL",
+        "worktree_status": "STAGED_EXACT15", "exact_allowed_paths": meta["final_record_exact_paths"],
+        "historical_commit": C01_L3_FINAL_HISTORICAL,
+        "test_baseline_commit": C01_L3_FINAL_TEST_BASELINE,
+        "product_commit": C01_L3_FINAL_PRODUCT, "control_commit": C01_L3_FINAL_CONTROL,
+    })
+    completed_packages = list(progress["completed_packages"])
+    if "C-01" not in completed_packages:
+        completed_packages.append("C-01")
+    progress.update({
+        "snapshot_id": "snapshot-c01-l3-final-acceptance-seq727",
+        "updated_at": C01_L3_FINAL_AT, "recorded_at": C01_L3_FINAL_AT,
+        "event_sequence": 727, "last_event_id": additions[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-01", "status": "ACCEPTED",
+        "completed_packages": completed_packages, "active_agent": None,
+        "worker_lease": None, "write_lease": None,
+        "completed_c01_l3_rework_worker_lease": completed_worker,
+        "completed_c01_l3_rework_write_lease": completed_write,
+        "valid_failure_count": 0, "active_failure_lineage": None,
+        "active_work_instruction": None, "accepted_c01_work_instruction": instruction,
+        "last_accepted_work_instruction": instruction, "completed_work_instruction": instruction,
+        "repository": repository,
+        "c01_l3_rework": {
+            "status": "ACCEPTED", "accepted": True, "product_commit": C01_L3_FINAL_PRODUCT,
+            "control_commit": C01_L3_FINAL_CONTROL, "final_evidence_ref": C01_L3_FINAL_RAW,
+            "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED",
+        },
+        "c01_mainline_acceptance": {
+            **progress["c01_mainline_acceptance"], "accepted": True, "status": "ACCEPTED",
+            "current_l3_acceptance": "ACCEPTED", "final_acceptance_event_sequence": 727,
+            "product_commit": C01_L3_FINAL_PRODUCT, "control_commit": C01_L3_FINAL_CONTROL,
+        },
+        "next_work_package": {"package_id": "C-02", "status": "READY_NOT_STARTED"},
+        "next_successor_work_package": None,
+        "runtime_next_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
+        "next_safe_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
+        "current_progress_evidence_ref": {"package_id": "C-01", "path": C01_L3_FINAL_D, "manifest_path": C01_L3_FINAL_M},
+        "latest_evidence_manifest_ref": {"path": C01_L3_FINAL_M, "artifact_id": "C01-L3-FINAL-ACCEPTANCE-20260911"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C01_ACCEPTED", "C02_READY_NOT_STARTED"], "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C01_L3_FINAL_E, "sha256": _c21_resume_sha(events_raw)}
+
+    raw_evidence = _c21_resume_json_bytes(_c01_l3_final_operational_evidence())
+    final_report, validation = _c01_l3_final_markdown()
+    status_raw = historical[C01_L3_FINAL_STATUS].rstrip() + "\n\n## C-01 L3 final acceptance\n\n- C-01 `ACCEPTED`; C-02 `READY_NOT_STARTED`; active lease 없음.\n- WSL formal runtime와 browser/SSE evidence는 final manifest에 결박했다. Provider·Telegram 실제 호출은 `NOT_EXECUTED`다.\n".encode("utf-8")
+    completion_raw = historical[C01_L3_FINAL_COMPLETION].rstrip() + "\n\n## L3 final acceptance successor\n\n- final status: `ACCEPTED`\n- product/control: `bb2ff4374c81865cab127eca14d3d4c9de575465` / `2eba71ec37183ef6062157d7491ee48cb1fab6ba`\n- WSL/browser/authenticated SSE: verified; Provider/Telegram: `NOT_EXECUTED`\n".encode("utf-8")
+
+    progress["latest_evidence_refs"] = [
+        {"path": C01_L3_FINAL_RAW, "sha256": _c21_resume_sha(raw_evidence)},
+        {"path": C01_L3_FINAL_REPORT, "sha256": _c21_resume_sha(final_report)},
+        {"path": C01_L3_FINAL_VALIDATION, "sha256": _c21_resume_sha(validation)},
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "accepted": True, "c01_status": "ACCEPTED", "c02_status": "READY_NOT_STARTED",
+        "dir_status": progress["dir_review"]["status"],
+        "repository_head": C01_L3_FINAL_CONTROL, "repository_projection_mode": repository["projection_mode"],
+        "repository_upstream": repository["upstream"],
+        "repository_exact_allowed_paths": meta["final_record_exact_paths"],
+        "product_commit": C01_L3_FINAL_PRODUCT, "control_commit": C01_L3_FINAL_CONTROL,
+        "current_manifest": C01_L3_FINAL_M, "operational_evidence": C01_L3_FINAL_RAW,
+        "external_execution": _c01_l3_final_external_execution(),
+        "reporting_decision": "AUTO_CONTINUE",
+    })
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(
+        r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement,
+        historical[C01_L3_FINAL_H].decode(), flags=re.DOTALL,
+    )
+    if count != 1:
+        raise ValueError("C01_L3_FINAL_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-01 L3 final acceptance — seq727\n\n"
+        "- seq1~721 raw event object bytes는 불변이며 seq722~727만 append했다.\n"
+        "- C-01 ACCEPTED, active lease 없음, C-02 READY_NOT_STARTED다.\n"
+        "- WSL/browser/authenticated SSE는 실제 검증했고 Provider·Telegram은 NOT_EXECUTED다.\n\n"
+        + handoff_text
+    ).encode()
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C01-L3-FINAL-ACCEPTANCE-DIGEST-20260911",
+        "package_id": "C-01", "event_sequence": 727, "algorithm": "SHA-256",
+        "created_at": C01_L3_FINAL_AT, "scope": "seq722-727 append-only; seq1-721 preserved; exact15 final record",
+        "self_reference": False,
+        "progress": {"path": C01_L3_FINAL_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C01_L3_FINAL_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+
+    artifacts = {
+        **files,
+        C01_L3_FINAL_E: events_raw, C01_L3_FINAL_P: progress_raw, C01_L3_FINAL_H: handoff_raw,
+        C01_L3_FINAL_D: digest_raw, C01_L3_FINAL_RAW: raw_evidence,
+        C01_L3_FINAL_REPORT: final_report, C01_L3_FINAL_VALIDATION: validation,
+        C01_L3_FINAL_STATUS: status_raw, C01_L3_FINAL_COMPLETION: completion_raw,
+    }
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C01_L3_FINAL_ACCEPTANCE_PROJECTION",
+        "artifact_id": "C01-L3-FINAL-ACCEPTANCE-20260911", "created_at": C01_L3_FINAL_AT,
+        "package_id": "C-01", "event_sequence": 727, "historical_event_sequence": 721,
+        "appended_event_count": 6, "historical_commit": C01_L3_FINAL_HISTORICAL,
+        "historical_raw_event_prefix": {
+            "bytes": len(raw_event_object_prefix_bytes(historical[C01_L3_FINAL_E], 721)),
+            "sha256": _c21_resume_sha(raw_event_object_prefix_bytes(historical[C01_L3_FINAL_E], 721)),
+        },
+        "status": "ACCEPTED", "accepted": True, "c01_status": "ACCEPTED",
+        "c02_status": "READY_NOT_STARTED", "active_leases": 0,
+        "execution_authority_path": C01_L3_FINAL_WI, "execution_authority_sha256": wi_sha,
+        "invocation_path": C01_L3_FINAL_PROMPT, "invocation_sha256": prompt_sha,
+        "operational_evidence_path": C01_L3_FINAL_RAW,
+        "external_execution": _c01_l3_final_external_execution(),
+        "self_reference": False, **meta,
+        "raw_checksums": [
+            {"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+            for path, raw in sorted(artifacts.items())
+        ],
+    }
+    artifacts[C01_L3_FINAL_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["final_record_exact_paths"]):
+        raise ValueError("C01_L3_FINAL_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c01_l3_final_acceptance_from_root(root: Path) -> dict[str, bytes]:
+    historical = {
+        path: subprocess.check_output(["git", "show", f"{commit}:{path}"], cwd=root)
+        for path, commit in {
+            C01_L3_FINAL_P: C01_L3_FINAL_HISTORICAL,
+            C01_L3_FINAL_E: C01_L3_FINAL_HISTORICAL,
+            C01_L3_FINAL_H: C01_L3_FINAL_HISTORICAL,
+            C01_L3_FINAL_STATUS: C01_L3_FINAL_CONTROL,
+            C01_L3_FINAL_COMPLETION: C01_L3_FINAL_CONTROL,
+        }.items()
+    }
+    generated = {
+        C01_L3_FINAL_REPORT, C01_L3_FINAL_STATUS, C01_L3_FINAL_COMPLETION, C01_L3_FINAL_M,
+        C01_L3_FINAL_RAW, C01_L3_FINAL_H, C01_L3_FINAL_P, C01_L3_FINAL_E,
+        C01_L3_FINAL_D, C01_L3_FINAL_VALIDATION,
+    }
+    files = {
+        path: (root / path).read_bytes()
+        for path in set(c01_l3_final_acceptance_metadata()["final_record_exact_paths"]) - generated
+    }
+    return c01_l3_final_acceptance_artifacts(historical, files)
+
+
+def validate_c01_l3_final_acceptance_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        meta = c01_l3_final_acceptance_metadata()
+        if any(manifest.get(key) != value for key, value in meta.items()):
+            return ["C01_L3_FINAL_MANIFEST_METADATA_INVALID"]
+        if any((
+            manifest.get("schema_version") != "1.0.0",
+            manifest.get("manifest_type") != "C01_L3_FINAL_ACCEPTANCE_PROJECTION",
+            manifest.get("artifact_id") != "C01-L3-FINAL-ACCEPTANCE-20260911",
+            manifest.get("package_id") != "C-01",
+            manifest.get("event_sequence") != 727,
+            manifest.get("historical_event_sequence") != 721,
+            manifest.get("appended_event_count") != 6,
+            manifest.get("historical_commit") != C01_L3_FINAL_HISTORICAL,
+            manifest.get("status") != "ACCEPTED",
+            manifest.get("accepted") is not True,
+            manifest.get("c01_status") != "ACCEPTED",
+            manifest.get("c02_status") != "READY_NOT_STARTED",
+            manifest.get("active_leases") != 0,
+            manifest.get("operational_evidence_path") != C01_L3_FINAL_RAW,
+            manifest.get("external_execution") != _c01_l3_final_external_execution(),
+            manifest.get("self_reference") is not False,
+        )):
+            return ["C01_L3_FINAL_MANIFEST_INVALID"]
+        rows = manifest.get("raw_checksums")
+        expected = set(meta["final_record_exact_paths"]) - {C01_L3_FINAL_M}
+        if not isinstance(rows, list) or len(rows) != len(expected):
+            return ["C01_L3_FINAL_CHECKSUM_SET_INVALID"]
+        if {row.get("path") for row in rows if isinstance(row, Mapping)} != expected:
+            return ["C01_L3_FINAL_CHECKSUM_SET_INVALID"]
+        if any(
+            type(row.get("bytes")) is not int
+            or row["bytes"] < 1
+            or re.fullmatch(r"[A-F0-9]{64}", str(row.get("sha256"))) is None
+            for row in rows
+        ):
+            return ["C01_L3_FINAL_CHECKSUM_ROW_INVALID"]
+        return []
+    except (KeyError, TypeError, ValueError, AttributeError):
+        return ["C01_L3_FINAL_MANIFEST_INVALID"]
+
+
+def validate_c01_l3_final_acceptance_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        expected = c01_l3_final_acceptance_from_root(root)
+        errors = validate_c01_l3_final_acceptance_manifest(manifest)
+        actual = {
+            C01_L3_FINAL_P: bundle["progress"],
+            C01_L3_FINAL_E: bundle["events"],
+            C01_L3_FINAL_H: bundle["handoff"],
+            C01_L3_FINAL_D: bundle["detached_digest"],
+            C01_L3_FINAL_M: manifest,
+        }
+        for path, value in actual.items():
+            reference = extract_handoff_summary(expected[path].decode()) if path == C01_L3_FINAL_H else _c21_resume_json(expected[path])
+            if not _c21_strict_json_equal(value, reference):
+                errors.append("C01_L3_FINAL_PROJECTION_INVALID")
+        for path, raw in expected.items():
+            target = root / path
+            if not target.exists() or target.read_bytes() != raw:
+                errors.append("C01_L3_FINAL_RAW_BYTES_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C01_L3_FINAL_HISTORICAL}:{C01_L3_FINAL_E}"], cwd=root)
+        current_raw = expected[C01_L3_FINAL_E]
+        if raw_event_object_prefix_bytes(historical, 721) != raw_event_object_prefix_bytes(current_raw, 721):
+            errors.append("C01_L3_FINAL_HISTORY_MUTATED")
+        progress = bundle["progress"]
+        events = bundle["events"]["events"]
+        if (
+            progress.get("event_sequence") != 727
+            or progress.get("current_work_package") != "C-01"
+            or progress.get("status") != "ACCEPTED"
+            or "C-01" not in progress.get("completed_packages", [])
+            or progress.get("active_agent") is not None
+            or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None
+            or progress.get("active_failure_lineage") is not None
+            or progress.get("next_work_package") != {"package_id": "C-02", "status": "READY_NOT_STARTED"}
+            or progress.get("next_successor_work_package") is not None
+            or progress.get("c01_l3_rework", {}).get("accepted") is not True
+            or progress.get("c01_mainline_acceptance", {}).get("current_l3_acceptance") != "ACCEPTED"
+            or [event.get("event_type") for event in events[721:]] != [
+                "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED",
+                "INDEPENDENT_TEST_JUDGMENT_RECORDED", "DEPLOYMENT_VERIFIED", "MAIN_PACKAGE_ACCEPTED",
+            ]
+            or events[721].get("details", {}).get("write_fencing_token") != C01_L3_REWORK_WRITE_TOKEN
+            or events[722].get("details", {}).get("execution_fencing_token") != C01_L3_REWORK_EXECUTION_TOKEN
+        ):
+            errors.append("C01_L3_FINAL_FAIL_CLOSED_STATE_INVALID")
+        expected_manifest = _c21_resume_json(expected[C01_L3_FINAL_M])
+        if not _c21_strict_json_equal(manifest, expected_manifest):
+            errors.append("C01_L3_FINAL_CHECKSUM_OR_DETERMINISM_INVALID")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, UnicodeError, json.JSONDecodeError):
+        return ["C01_L3_FINAL_INPUT_INVALID"]
+
+
+def _collect_c01_l3_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c01_l3_final_acceptance_metadata()
+        value = lambda *args: _git_value(root, *args)
+        check = lambda *args: _git_returncode(root, *args) == 0
+        head = value("rev-parse", "HEAD")
+        branch = value("branch", "--show-current")
+        status = value("status", "--porcelain", "--untracked-files=all")
+        cached = value("diff", "--cached", "--name-only")
+        unstaged = value("diff", "--name-only")
+        untracked = value("ls-files", "--others", "--exclude-standard")
+        test_parent = value("show", "-s", "--format=%P", C01_L3_FINAL_TEST_BASELINE)
+        product_parent = value("show", "-s", "--format=%P", C01_L3_FINAL_PRODUCT)
+        control_parent = value("show", "-s", "--format=%P", C01_L3_FINAL_CONTROL)
+        test_exact = value("diff", "--name-only", C01_L3_FINAL_HISTORICAL, C01_L3_FINAL_TEST_BASELINE)
+        product_exact = value("diff", "--name-only", C01_L3_FINAL_TEST_BASELINE, C01_L3_FINAL_PRODUCT)
+        control_exact = value("diff", "--name-only", C01_L3_FINAL_PRODUCT, C01_L3_FINAL_CONTROL)
+        if None in (head, branch, status, cached, unstaged, untracked, test_parent, product_parent, control_parent, test_exact, product_exact, control_exact):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if (
+            branch != C01_L3_FINAL_BRANCH
+            or test_parent != C01_L3_FINAL_HISTORICAL
+            or product_parent != C01_L3_FINAL_TEST_BASELINE
+            or control_parent != C01_L3_FINAL_PRODUCT
+            or _c01_l3_git_paths(test_exact) != meta["test_exact_paths"]
+            or _c01_l3_git_paths(product_exact) != meta["product_exact_paths"]
+            or _c01_l3_git_paths(control_exact) != meta["control_exact_paths"]
+            or not check("merge-base", "--is-ancestor", C01_L3_FINAL_HISTORICAL, C01_L3_FINAL_TEST_BASELINE)
+            or not check("merge-base", "--is-ancestor", C01_L3_FINAL_TEST_BASELINE, C01_L3_FINAL_PRODUCT)
+            or not check("merge-base", "--is-ancestor", C01_L3_FINAL_PRODUCT, C01_L3_FINAL_CONTROL)
+        ):
+            return ["C01_L3_FINAL_GIT_LINEAGE_INVALID"]
+        if head == C01_L3_FINAL_CONTROL:
+            valid = (
+                _c01_l3_git_paths(status, status=True) == meta["final_record_exact_paths"]
+                and _c01_l3_git_paths(cached) == meta["final_record_exact_paths"]
+                and not unstaged and not untracked
+                and check("diff", "--cached", "--check")
+            )
+            return [] if valid else ["C01_L3_FINAL_GIT_PROJECTION_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        exact = value("diff", "--name-only", C01_L3_FINAL_CONTROL, head)
+        if parents is None or exact is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        valid = (
+            not status and not cached and not unstaged and not untracked
+            and parents == C01_L3_FINAL_CONTROL
+            and _c01_l3_git_paths(exact) == meta["final_record_exact_paths"]
+            and check("merge-base", "--is-ancestor", C01_L3_FINAL_CONTROL, head)
+            and check("diff", "--check", C01_L3_FINAL_CONTROL, head)
+        )
+        return [] if valid else ["C01_L3_FINAL_GIT_PROJECTION_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 

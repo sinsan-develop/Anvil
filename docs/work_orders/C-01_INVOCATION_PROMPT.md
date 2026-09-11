@@ -1,1 +1,3 @@
-C-01 WorkInstruction을 기준으로 LLM Gateway·NativeAgentAdapter capability probe와 Minimal Main Agent Kernel을 구현하라. 지정 범위를 벗어나지 말고 deterministic fake adapter 테스트를 포함하라. 완료 후 WorkInstruction의 결과 보고 계약에 따라 구조화된 완료 보고를 제출하라.
+canonical ID `C-01_WORK_INSTRUCTION`의 `docs/work_orders/C-01_WORK_INSTRUCTION.md`, SHA-256 `F99FE2D6C009E7B897130DD3802460258F5CF406BE973DA0939D49DAA5E367A5`를 읽고 승인된 범위와 검증·보고 계약을 실행하라. ID는 기존 파일 stem alias이며 ID·경로·hash를 함께 확인한다. 최초 product `f56ac2514d0c5bca41768e456ed57f2036ab3137`과 그 sole child fix `66c0e43a092215ea2e9be24606d7a28e10dff359`는 완료한 불변 commit이므로 제품 재실행·수정은 Main의 별도 지시에 따른다.
+
+현재 acceptance 비의미 정정 R4는 별도 `C-01_MAINLINE_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md`의 epoch4/exact20 계약을 따른다. Main full tooling697 PASS는 정정 이전 R3 실행이며 Reviewer Minor 오기20→18을 resolved로 보존한다. 제품 WI나 immutable product commit 수정 지시가 아니다.

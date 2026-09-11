@@ -40,7 +40,7 @@ class GatewayRequest:
     provider: str
     model: str
     input_text: str
-    request_id: str = field(default_factory=lambda: f"req-{uuid4().hex}")
+    request_id: str = field(default_factory=lambda: f"request:{uuid4().hex}")
     abort_signal: object | None = None
     retry_after: str | None = None
 
@@ -108,7 +108,9 @@ class DeterministicFakeAdapter:
     """Test adapter which never performs network I/O."""
 
     def __init__(self, capabilities: set[str] | frozenset[str] | None = None) -> None:
-        self.capabilities = frozenset(capabilities or {"text_generation"})
+        self.capabilities = frozenset(
+            {"text_generation"} if capabilities is None else capabilities
+        )
         self.calls = 0
 
     def probe(self, required: set[str] | frozenset[str] = frozenset()) -> CapabilityProbe:

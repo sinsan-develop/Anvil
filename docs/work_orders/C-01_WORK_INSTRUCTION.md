@@ -37,3 +37,11 @@ Phase B Gate가 `ACCEPTED`인 기준선에서 C-01의 최소 수직 capability�
 ## 결과 보고
 
 `COMPLETED | FAILURE_REPORT | INCOMPLETE | BLOCKED` 중 하나로 판정하고, 변경 파일·정확한 명령/종료코드·테스트 결과·미검증 범위·rollback 방법을 포함한다.
+
+## 2026-09-10 product correction revision
+
+- 기존 `packages.llm_gateway.NativeAgentAdapter.probe/generate`는 C-21 호환 경계로 그대로 유지한다.
+- Native Coding Agent lifecycle은 별도 `packages.orchestration.NativeCodingAgentAdapter` Protocol로 둔다. C-01은 lifecycle method surface와 opaque packet/result 전달만 정의하며 `DelegationPacket`, Developer lifecycle, C-02 이후 validation 의미를 구현하거나 변경하지 않는다.
+- 자동 생성 gateway/kernel request ID의 canonical 형식은 `request:<32 lowercase hex>`다. 각 호출은 새 request ID를 생성한다. 명시적으로 제공된 기존 gateway request ID는 C-21 호환을 위해 유지한다.
+- Step 예약 ID는 기존 `reservation:{run_id}:{step_id}`를 유지한다. 따라서 같은 Step의 두 번째 실행은 새 request ID와 이미 결박된 예약 ID가 충돌하여 기존 atomic reservation boundary에서 Provider 호출 전에 거부된다.
+- 성공·abort 결과는 순서가 고정된 `BUDGET_RESERVED` → `USAGE_RECONCILED` evidence를 반환한다. evidence에는 prompt, credential, secret을 넣지 않고 Decimal 비용을 문자열로 직렬화한다.
