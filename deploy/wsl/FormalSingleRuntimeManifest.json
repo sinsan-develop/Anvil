@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "manifest_type": "C01_WSL_FORMAL_SINGLE_RUNTIME_CONTROL",
+  "status": "APPROVED_CONTROL_CONTRACT",
+  "source": {
+    "commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+    "parent": "fd3c89665629addd78e74c2fe946fb9dfc893c36",
+    "remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+    "remote_ref": "refs/remotes/origin/candidates/c01-step-execution-bb2ff43",
+    "checkout": "/srv/anvil-wsl/repo",
+    "working_tree": "CLEAN_DETACHED"
+  },
+  "candidate_changed_paths": [
+    "packages/api/fastapi_app.py",
+    "packages/api/registry.py",
+    "packages/api/runtime.py",
+    "packages/api/step_execution.py",
+    "packages/events/reducer.py",
+    "packages/events/transition_guard.py",
+    "packages/persistence/event_repository.py",
+    "packages/persistence/intervention_budget_repository.py",
+    "tests/api/test_c01_step_execution.py",
+    "tests/api/test_runtime_app.py",
+    "tests/events/test_event_store.py",
+    "tests/persistence/test_c01_step_execution_postgres.py",
+    "tests/verification/test_c01_l3_independent_acceptance.py"
+  ],
+  "prior_runtime": {
+    "oci_revision": "7b7e7cc0269b22115fd4ffe82bbe1f847e05f2bd",
+    "observed_container_id_prefix": "cb9ba3c39bc7",
+    "observed_read_only": false,
+    "observed_healthcheck": "ABSENT",
+    "security_delta": "HARDEN_REPLACEMENT_ONLY"
+  },
+  "runtime": {
+    "container_name": "anvil-web",
+    "public_host": "172.27.253.53",
+    "host_port": 3770,
+    "container_port": 3770,
+    "network": "proxy-network",
+    "extra_host": "host.docker.internal:host-gateway",
+    "restart": "unless-stopped",
+    "init": true,
+    "read_only": true,
+    "cap_drop": [
+      "ALL"
+    ],
+    "security_opt": [
+      "no-new-privileges"
+    ],
+    "tmpfs": "/tmp:rw,noexec,nosuid,size=32m",
+    "healthcheck": {
+      "command": "/opt/venv/bin/python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:3770/health/live', timeout=2)\"",
+      "interval_seconds": 15,
+      "timeout_seconds": 5,
+      "retries": 4,
+      "start_period_seconds": 10
+    },
+    "environment_source": "EXISTING_ANVIL_WEB_CONFIG_EXACT_ALLOWLIST",
+    "temporary_environment_pattern": "/srv/anvil-wsl/runtime/c01-formal-env.XXXXXX",
+    "environment_allowlist": [
+      "ANVIL_AUTH_MODE",
+      "ANVIL_CONSOLE_BASE_URL",
+      "ANVIL_DATABASE_URL",
+      "ANVIL_PUBLIC_HOST",
+      "ANVIL_RUNTIME_ENVIRONMENT",
+      "ANVIL_TEST_SESSION_ACTOR_ID",
+      "ANVIL_TEST_SESSION_BOOTSTRAP_TOKEN",
+      "ANVIL_TEST_SESSION_ENVIRONMENT_ID",
+      "ANVIL_TEST_SESSION_PERMISSION_SCOPES",
+      "ANVIL_TEST_SESSION_PROJECT_ID",
+      "ANVIL_TEST_SESSION_RUN_IDS",
+      "TELEGRAM_ALLOWED_IDENTITIES",
+      "TELEGRAM_INTERNAL_SIGNING_SECRET",
+      "TELEGRAM_WEBHOOK_SECRET"
+    ],
+    "permission_scope_policy": "PRESERVE_EXACT_NO_ADDITION",
+    "resource_inventory": {
+      "owner_name_pattern": "^anvil([-_]|$)",
+      "formal_container_exclusion": "anvil-web",
+      "required_initial_state": "NO_ADDITIONAL_ANVIL_RESOURCES",
+      "shared_host_policy": "IGNORE_NON_ANVIL_NAMED_RESOURCES"
+    }
+  },
+  "control": {
+    "binding": "RUNTIME_ARGUMENT_EQUALS_DETACHED_HEAD",
+    "candidate_parent": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+    "changed_path_count": 5,
+    "changed_paths": [
+      "deploy/wsl/FormalSingleRuntimeManifest.json",
+      "deploy/wsl/formal-single-runtime.sh",
+      "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+      "docs/work_orders/C-01_WSL_FORMAL_SINGLE_RUNTIME_WORK_INSTRUCTION.md",
+      "tests/deploy/test_c01_wsl_formal_single_runtime_contract.py"
+    ]
+  },
+  "exclusions": [
+    "DATABASE_WRITES",
+    "MIGRATION_CONTAINERS",
+    "PROVIDER_CALLS",
+    "TELEGRAM_CALLS",
+    "ENV_FILE_EDITS",
+    "EXTRA_CONTAINERS_NETWORKS_OR_VOLUMES",
+    "LEGACY_C21_CONTROL_CHANGES",
+    "PROTECTED_DEPLOYMENT_PATHS"
+  ]
+}
