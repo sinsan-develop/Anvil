@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 727,
+  "last_sequence": 728,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -39112,7 +39112,75 @@
         "provider": "NOT_EXECUTED",
         "telegram": "NOT_EXECUTED"
       }
+    },
+    {
+      "occurred_at": "2026-09-11T11:20:12+09:00",
+      "occurred_at_source": "BASELINE_MERGE_COMMIT_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-01",
+      "step_id": "POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION",
+      "actor": "developer-primary",
+      "subject_ref": "C-01/POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION",
+      "event_id": "evt_c01_postmerge_development_authority_reconciled",
+      "sequence": 728,
+      "event_type": "REPOSITORY_RECONCILED",
+      "previous_event_sha256": "88A9F1EA32176B7E9B889162EF9A114F7E6DD7DE32A07E4263BF9F071DAFD83E",
+      "details": {
+        "branch": "codex/c01-postmerge-authority-reconcile-r1",
+        "local_head": "b0e70278d3799860beb1eef94c382def53a45057",
+        "remote_head": "b0e70278d3799860beb1eef94c382def53a45057",
+        "upstream": "NO_UPSTREAM",
+        "observed_at": "2026-09-11T11:20:12+09:00",
+        "reason": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED_AFTER_C01_FINAL_RECORD_MERGE",
+        "decision": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+        "projection_mode": "C01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
+        "validated_base_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+        "head_relation": "EXACT12_PRECOMMIT_OR_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+          "docs/WORK_STATUS.md",
+          "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
+          "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+          "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+        "development_remote_ref": "refs/remotes/development/main",
+        "lineage": {
+          "baseline_merge_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+          "baseline_merge_parents": [
+            "e215c0612363050dbe20315646f1612f31b8cdc0",
+            "5d4a78555110dee16fce01e512a367524ba1eeec"
+          ],
+          "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
+          "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+          "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+          "control_parent": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+          "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+          "ancestor_chain_required": true
+        },
+        "evidence_boundary": {
+          "provider": "USER_OWNED_NOT_EXECUTED",
+          "telegram": "USER_OWNED_NOT_EXECUTED",
+          "external_action": "NOT_EXECUTED",
+          "runtime": "NOT_MUTATED",
+          "database": "NOT_MUTATED",
+          "secret": "NOT_ACCESSED",
+          "push": "NOT_EXECUTED",
+          "pull_request": "NOT_EXECUTED",
+          "merge": "NOT_EXECUTED_BY_RECONCILIATION"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c01_l3_final_main_package_accepted"
+  "last_event_id": "evt_c01_postmerge_development_authority_reconciled"
 }

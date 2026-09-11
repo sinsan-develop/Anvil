@@ -2121,3 +2121,9 @@
 
 - C-01 `ACCEPTED`; C-02 `READY_NOT_STARTED`; active lease 없음.
 - WSL formal runtime와 browser/SSE evidence는 final manifest에 결박했다. Provider·Telegram 실제 호출은 `NOT_EXECUTED`다.
+
+## C-01 post-merge development authority reconciliation
+
+- seq728 `REPOSITORY_RECONCILED / DEVELOPMENT_MAIN_AUTHORITY_RECONCILED`.
+- development main `b0e70278d3799860beb1eef94c382def53a45057`; C-01 `ACCEPTED`; C-02 `READY_NOT_STARTED`.
+- Provider/Telegram `USER_OWNED_NOT_EXECUTED`; active lease 없음.

@@ -1,3 +1,9 @@
+# C-01 post-merge development authority reconciliation — seq728
+
+- seq1~727 raw event object bytes를 보존하고 seq728만 append했다.
+- C-01 ACCEPTED, C-02 READY_NOT_STARTED, active lease 없음.
+- Provider/Telegram USER_OWNED_NOT_EXECUTED.
+
 # C-01 L3 final acceptance — seq727
 
 - seq1~721 raw event object bytes는 불변이며 seq722~727만 append했다.
@@ -864,8 +870,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 727,
-  "last_event_id": "evt_c01_l3_final_main_package_accepted",
+  "event_sequence": 728,
+  "last_event_id": "evt_c01_postmerge_development_authority_reconciled",
   "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-01",
@@ -876,42 +882,56 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "valid_failure_count": 0,
   "next_safe_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
   "accepted": true,
+  "reconciliation_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
   "c01_status": "ACCEPTED",
   "c02_status": "READY_NOT_STARTED",
   "dir_status": "CLEARED",
-  "repository_head": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
-  "repository_projection_mode": "C01_L3_FINAL_ACCEPTANCE_EXACT15",
-  "repository_upstream": "development/codex/c01-mainline-reconciliation-r5",
+  "repository_head": "b0e70278d3799860beb1eef94c382def53a45057",
+  "repository_upstream": "NO_UPSTREAM",
+  "repository_projection_mode": "C01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
+  "repository_validated_base_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+  "repository_head_relation": "EXACT12_PRECOMMIT_OR_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
-    "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+    "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
     "docs/WORK_STATUS.md",
-    "docs/completion_reports/C-01_completion.md",
-    "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
+    "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
-    "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
-    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
+    "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
+    "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
-  "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
-  "current_manifest": "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
-  "operational_evidence": "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
-  "external_execution": {
-    "provider": "NOT_EXECUTED",
-    "telegram": "NOT_EXECUTED",
-    "new_migration": "NOT_CREATED",
-    "database_write_during_deployment": "NOT_EXECUTED",
-    "ysna": "NOT_EXECUTED",
-    "main_merge": "NOT_EXECUTED",
-    "pull_request": "NOT_EXECUTED"
+  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "development_remote_ref": "refs/remotes/development/main",
+  "lineage": {
+    "baseline_merge_commit": "b0e70278d3799860beb1eef94c382def53a45057",
+    "baseline_merge_parents": [
+      "e215c0612363050dbe20315646f1612f31b8cdc0",
+      "5d4a78555110dee16fce01e512a367524ba1eeec"
+    ],
+    "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
+    "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+    "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+    "control_parent": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+    "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+    "ancestor_chain_required": true
   },
+  "evidence_boundary": {
+    "provider": "USER_OWNED_NOT_EXECUTED",
+    "telegram": "USER_OWNED_NOT_EXECUTED",
+    "external_action": "NOT_EXECUTED",
+    "runtime": "NOT_MUTATED",
+    "database": "NOT_MUTATED",
+    "secret": "NOT_ACCESSED",
+    "push": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED",
+    "merge": "NOT_EXECUTED_BY_RECONCILIATION"
+  },
+  "current_manifest": "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
