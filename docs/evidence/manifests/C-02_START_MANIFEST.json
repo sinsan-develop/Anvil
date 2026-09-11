@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-02_START_PROJECTION",
+  "artifact_id": "C02-START-PROJECTION-20260911",
+  "created_at": "2026-09-11T21:05:00+09:00",
+  "package_id": "C-02",
+  "event_sequence": 731,
+  "historical_event_sequence": 728,
+  "appended_event_count": 3,
+  "historical_raw_event_prefix": {
+    "bytes": 2212729,
+    "sha256": "4EC482417497D1649E5D95074AF5B5086DF608CCD8159E31C30E645F240B1F72"
+  },
+  "accepted": false,
+  "status": "ACTIVE",
+  "c01_status": "ACCEPTED",
+  "c02_status": "ACTIVE",
+  "c03_status": "BLOCKED_PENDING_C02_ACCEPTANCE",
+  "dir2_status": "NOT_REACHED",
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-02",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+    "fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "dispatch_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "issued_at": "2026-09-11T21:05:00+09:00",
+    "expires_at": "2026-09-12T09:05:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c02-delegation-r1-20260911-001",
+    "worker_lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+    "fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+    "write_fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-11T21:05:00+09:00",
+    "expires_at": "2026-09-12T09:05:00+09:00",
+    "path_scope": [
+      "packages/orchestration/delegation.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/e2e/harness.py",
+      "tests/orchestration/test_delegation_packet.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/e2e/**"
+    ],
+    "status": "ACTIVE"
+  },
+  "product_write_scope": [
+    "packages/orchestration/delegation.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/e2e/harness.py",
+    "tests/orchestration/test_delegation_packet.py",
+    "tests/orchestration/test_developer_lifecycle.py",
+    "tests/orchestration/test_developer_lifecycle_c04.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/e2e/**"
+  ],
+  "work_instruction_id": "WI-C-02-DELEGATION-AUTHORITY-R1-20260911-001",
+  "work_instruction_path": "docs/work_orders/C-02_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "272FA14D2D560BFBF1862FA986DB32A2B7B4351E75C5E9248B3DCCE74FCBEA5E",
+  "invocation_path": "docs/work_orders/C-02_INVOCATION_PROMPT.md",
+  "invocation_sha256": "F0489821A980D43BF6836E5DFCAE390293A39465F1214F3253D24A8A0EF7B551",
+  "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "evidence_boundary": {
+    "provider": "USER_OWNED_NOT_EXECUTED",
+    "telegram": "USER_OWNED_NOT_EXECUTED",
+    "external_action": "NOT_EXECUTED",
+    "runtime": "NOT_MUTATED",
+    "database": "NOT_MUTATED",
+    "secret": "NOT_ACCESSED",
+    "push": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED",
+    "merge": "NOT_EXECUTED"
+  },
+  "record_binding": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
+  "self_reference": false,
+  "sequence": 731,
+  "projection_mode": "C02_START_PROJECTION_EXACT10",
+  "validated_base_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+  "branch": "codex/c02-delegation-contract-r1",
+  "exact_paths": [
+    "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-02_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c02-start.json",
+    "docs/validation/C-02_START_VALIDATION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 10,
+  "exact_path_list_sha256": "A64AF7C080FBE6E0B38F84CF073F7BFF67D712649623853CC946E7EE2DB4FE0A",
+  "exact_path_list_ordinal_sha256": "EC0FE3129B1F2CC1A2F461EB0EA75A84DD4FB872E8A8255D9CB2E97A46BDE00B",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
+      "bytes": 486,
+      "sha256": "D356D1797ADD04E5CBEEBE128CC833AF568EC6D4580A39AE016BCF2F2F36F241"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 420338,
+      "sha256": "2FFB4503BA8A99D2ACB2A090D073ACBF9D3D1DDBCFBFAE642FDA4D4E0D72C00A"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 186687,
+      "sha256": "46111192F3D0BD68B10BFF2B0E459F13C30185CC8B7173789319A46B92404916"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 810475,
+      "sha256": "ED6B390F560CEE031CDFF337B89A0A7C20F940C061D0D64B883B4940FCB6C985"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2218640,
+      "sha256": "C431390A0B3A7EA8A1F859F9B4489B46A124A4532842A5DDBE2D84000CDDBCF4"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c02-start.json",
+      "bytes": 877,
+      "sha256": "867961D4D851D8AA699B877454E0ED55E6E62EC34616219359EABFBCA281717B"
+    },
+    {
+      "path": "docs/validation/C-02_START_VALIDATION.md",
+      "bytes": 522,
+      "sha256": "B37E1EB24E1DAD189B5BE4845E9FFCB3738BBF523D91D2FAD02ACB9D7E81C84B"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2397696,
+      "sha256": "FA8B5438FD8EF7072849E37651D6B26EAE47B40A7E2C662456CA68F617FB6B9D"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 725237,
+      "sha256": "FD2E5689F17C7D9FCD49E14CF939C64B8C0F03CA61E7F4BA0AA9EBC038B6029B"
+    }
+  ]
+}

@@ -1,3 +1,9 @@
+# C-02 start projection — seq731
+
+- seq1~728 raw event object bytes를 보존하고 seq729~731만 append했다.
+- C-02 ACTIVE, C-01 ACCEPTED, C-03 BLOCKED_PENDING_C02_ACCEPTANCE, DIR-2 NOT_REACHED.
+- Provider/Telegram USER_OWNED_NOT_EXECUTED.
+
 # C-01 post-merge development authority reconciliation — seq728
 
 - seq1~727 raw event object bytes를 보존하고 seq728만 append했다.
@@ -870,56 +876,96 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 728,
-  "last_event_id": "evt_c01_postmerge_development_authority_reconciled",
-  "status": "ACCEPTED",
+  "event_sequence": 731,
+  "last_event_id": "evt_c02_package_started",
+  "status": "ACTIVE",
   "current_phase": "C",
-  "current_work_package": "C-01",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "current_work_package": "C-02",
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-02",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+    "fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "dispatch_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "issued_at": "2026-09-11T21:05:00+09:00",
+    "expires_at": "2026-09-12T09:05:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c02-delegation-r1-20260911-001",
+    "worker_lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+    "fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+    "write_fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-11T21:05:00+09:00",
+    "expires_at": "2026-09-12T09:05:00+09:00",
+    "path_scope": [
+      "packages/orchestration/delegation.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/e2e/harness.py",
+      "tests/orchestration/test_delegation_packet.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/e2e/**"
+    ],
+    "status": "ACTIVE"
+  },
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
-  "accepted": true,
-  "reconciliation_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+  "next_safe_action": "DEVELOPER_IMPLEMENT_C02_DELEGATION_AUTHORITY_R1",
+  "accepted": false,
   "c01_status": "ACCEPTED",
-  "c02_status": "READY_NOT_STARTED",
+  "c02_status": "ACTIVE",
+  "c03_status": "BLOCKED_PENDING_C02_ACCEPTANCE",
   "dir_status": "CLEARED",
-  "repository_head": "b0e70278d3799860beb1eef94c382def53a45057",
-  "repository_upstream": "NO_UPSTREAM",
-  "repository_projection_mode": "C01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
-  "repository_validated_base_commit": "b0e70278d3799860beb1eef94c382def53a45057",
-  "repository_head_relation": "EXACT12_PRECOMMIT_OR_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "dir2_status": "NOT_REACHED",
+  "repository_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+  "repository_upstream": "development/main",
+  "repository_projection_mode": "C02_START_PROJECTION_EXACT10",
+  "repository_validated_base_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+  "repository_head_relation": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+    "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+    "docs/evidence/manifests/C-02_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
-    "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-    "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c02-start.json",
+    "docs/validation/C-02_START_VALIDATION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
-  "development_remote_ref": "refs/remotes/development/main",
-  "lineage": {
-    "baseline_merge_commit": "b0e70278d3799860beb1eef94c382def53a45057",
-    "baseline_merge_parents": [
-      "e215c0612363050dbe20315646f1612f31b8cdc0",
-      "5d4a78555110dee16fce01e512a367524ba1eeec"
-    ],
-    "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
-    "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
-    "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
-    "control_parent": "bb2ff4374c81865cab127eca14d3d4c9de575465",
-    "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
-    "ancestor_chain_required": true
-  },
+  "product_write_scope": [
+    "packages/orchestration/delegation.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/e2e/harness.py",
+    "tests/orchestration/test_delegation_packet.py",
+    "tests/orchestration/test_developer_lifecycle.py",
+    "tests/orchestration/test_developer_lifecycle_c04.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/e2e/**"
+  ],
+  "work_instruction_id": "WI-C-02-DELEGATION-AUTHORITY-R1-20260911-001",
+  "work_instruction_sha256": "272FA14D2D560BFBF1862FA986DB32A2B7B4351E75C5E9248B3DCCE74FCBEA5E",
+  "invocation_sha256": "F0489821A980D43BF6836E5DFCAE390293A39465F1214F3253D24A8A0EF7B551",
   "evidence_boundary": {
     "provider": "USER_OWNED_NOT_EXECUTED",
     "telegram": "USER_OWNED_NOT_EXECUTED",
@@ -929,9 +975,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "secret": "NOT_ACCESSED",
     "push": "NOT_EXECUTED",
     "pull_request": "NOT_EXECUTED",
-    "merge": "NOT_EXECUTED_BY_RECONCILIATION"
+    "merge": "NOT_EXECUTED"
   },
-  "current_manifest": "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-02_START_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

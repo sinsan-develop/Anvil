@@ -11392,9 +11392,19 @@ class C01PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
         for path, row in rows.items():
             self.assertEqual(len(first[path]), row["bytes"])
             self.assertEqual(hashlib.sha256(first[path]).hexdigest().upper(), row["sha256"])
-        self.assertEqual([], checker.validate_c01_postmerge_development_authority_reconciliation_projection(
-            self._bundle(checker, first), manifest
-        ))
+        original_read_bytes = Path.read_bytes
+
+        def read_frozen_seq728(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original_read_bytes(path)
+            return first.get(relative, original_read_bytes(path))
+
+        with mock.patch.object(Path, "read_bytes", read_frozen_seq728):
+            self.assertEqual([], checker.validate_c01_postmerge_development_authority_reconciliation_projection(
+                self._bundle(checker, first), manifest
+            ))
 
     def test_seq728_projection_rejects_history_state_boundary_and_checksum_mutations(self):
         checker = self._checker()
@@ -11587,6 +11597,266 @@ class C01PostmergeDevelopmentAuthorityReconciliationTests(unittest.TestCase):
             side_effect=AssertionError("seq727 predicate must not run"),
         ):
             self.assertEqual(["SEQ728_SELECTED"], checker._validate_git_projection(bundle))
+            selected.assert_called_once_with(bundle)
+
+
+class C02StartProjectionTests(unittest.TestCase):
+    CONTROL = "2eedcfa6b15594c2daa29bb52a5c10694c826776"
+    CONTROL_PARENT = "4619ee132ced203780bb0ec615088add661ec802"
+    DEVELOPMENT_MAIN = "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5"
+    BRANCH = "codex/c02-delegation-contract-r1"
+    EXACT10 = sorted([
+        "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-02_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c02-start.json",
+        "docs/validation/C-02_START_VALIDATION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(
+            hasattr(checker, "c02_start_projection_from_root"),
+            "C-02 start projection builder missing",
+        )
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C02_START_P]),
+            "events": json.loads(artifacts[checker.C02_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C02_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C02_START_D]),
+        }
+
+    def test_seq731_builder_is_deterministic_and_preserves_seq728_raw_objects(self):
+        checker = self._checker()
+        first = checker.c02_start_projection_from_root(ROOT)
+        self.assertEqual(first, checker.c02_start_projection_from_root(ROOT))
+        self.assertEqual(set(self.EXACT10), set(first))
+        prior = subprocess.check_output(
+            ["git", "show", f"{self.CONTROL}:docs/progress/progress-events.json"], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(prior, 728),
+            checker.raw_event_object_prefix_bytes(first[checker.C02_START_E], 728),
+        )
+        progress = json.loads(first[checker.C02_START_P])
+        events = json.loads(first[checker.C02_START_E])["events"]
+        manifest = json.loads(first[checker.C02_START_M])
+        self.assertEqual(
+            [(729, "WORKER_LEASE_ISSUED"), (730, "WRITE_LEASE_ISSUED"), (731, "PACKAGE_STARTED")],
+            [(row["sequence"], row["event_type"]) for row in events[-3:]],
+        )
+        self.assertTrue(all(row["actor"] == "developer-primary" for row in events[-3:]))
+        self.assertEqual(("C-02", "ACTIVE", "developer-primary"), (
+            progress["current_work_package"], progress["status"], progress["active_agent"]["actor_id"],
+        ))
+        self.assertEqual(
+            "c02-delegation-execution-fence-epoch-1-2eedcfa",
+            progress["worker_lease"]["execution_fencing_token"],
+        )
+        self.assertEqual(
+            "c02-delegation-write-fence-epoch-1-2eedcfa",
+            progress["write_lease"]["write_fencing_token"],
+        )
+        self.assertEqual({"package_id": "C-03", "status": "BLOCKED_PENDING_C02_ACCEPTANCE"}, progress["next_work_package"])
+        self.assertIn("C-01", progress["completed_packages"])
+        self.assertEqual("DEVELOPER_IMPLEMENT_C02_DELEGATION_AUTHORITY_R1", progress["next_safe_action"])
+        self.assertEqual(("ACCEPTED", "NOT_REACHED"), (manifest["c01_status"], manifest["dir2_status"]))
+        handoff = checker.extract_handoff_summary(first[checker.C02_START_H].decode())
+        self.assertEqual(("CLEARED", "NOT_REACHED"), (handoff["dir_status"], handoff["dir2_status"]))
+        self.assertEqual(("USER_OWNED_NOT_EXECUTED", "USER_OWNED_NOT_EXECUTED"), (
+            manifest["evidence_boundary"]["provider"], manifest["evidence_boundary"]["telegram"],
+        ))
+        rows = {row["path"]: row for row in manifest["raw_checksums"]}
+        self.assertEqual(set(self.EXACT10) - {checker.C02_START_M}, set(rows))
+        for path, row in rows.items():
+            self.assertEqual(len(first[path]), row["bytes"])
+            self.assertEqual(hashlib.sha256(first[path]).hexdigest().upper(), row["sha256"])
+        event_contract = json.loads((ROOT / "docs/progress/progress-event-contract.json").read_bytes())
+        self.assertEqual([], checker.validate_event_stream(
+            json.loads(first[checker.C02_START_E]), event_contract, progress
+        ))
+        self.assertEqual([], checker.validate_c02_start_projection(self._bundle(checker, first), manifest))
+
+    def test_seq731_projection_rejects_history_hash_lease_token_path_and_checksum_mutations(self):
+        checker = self._checker()
+        artifacts = checker.c02_start_projection_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C02_START_M])
+        mutations = (
+            ("history", lambda bundle: bundle["events"]["events"][727].update(event_id="tampered")),
+            ("work-instruction", lambda bundle: bundle["progress"]["active_work_instruction"].update(artifact_sha256="0" * 64)),
+            ("worker-token", lambda bundle: bundle["progress"]["worker_lease"].update(execution_fencing_token="wrong")),
+            ("write-token", lambda bundle: bundle["progress"]["write_lease"].update(write_fencing_token="wrong")),
+            ("write-path", lambda bundle: bundle["progress"]["write_lease"]["path_scope"].append("forbidden/**")),
+        )
+        for label, mutate in mutations:
+            with self.subTest(label=label):
+                changed = self._bundle(checker, artifacts)
+                mutate(changed)
+                self.assertTrue(checker.validate_c02_start_projection(changed, manifest))
+        for label, mutate in (
+            ("manifest-token", lambda value: value["worker_lease"].update(execution_fencing_token="wrong")),
+            ("manifest-hash", lambda value: value.update(work_instruction_sha256="0" * 64)),
+            ("manifest-path", lambda value: value["exact_paths"].append("extra")),
+            ("checksum", lambda value: value["raw_checksums"][0].update(sha256="0" * 64)),
+        ):
+            with self.subTest(label=label):
+                changed = copy.deepcopy(manifest)
+                mutate(changed)
+                self.assertTrue(checker.validate_c02_start_projection(self._bundle(checker, artifacts), changed))
+
+        original_read_bytes = Path.read_bytes
+        mutated_raw = artifacts[checker.C02_START_E].replace(
+            b'"event_id": "evt_g05_legacy_migration"',
+            b'"event_id": "xvt_g05_legacy_migration"',
+            1,
+        )
+
+        def read_mutated_event_file(path):
+            if path == ROOT / checker.C02_START_E:
+                return mutated_raw
+            return original_read_bytes(path)
+
+        with mock.patch.object(Path, "read_bytes", read_mutated_event_file):
+            errors = checker.validate_c02_start_projection(self._bundle(checker, artifacts), manifest)
+        self.assertIn("C02_START_HISTORY_MUTATED", errors)
+        self.assertIn("C02_START_RAW_BYTES_INVALID", errors)
+
+    def test_seq731_git_accepts_only_exact10_staged_or_clean_sole_direct_child(self):
+        checker = self._checker()
+        meta = checker.c02_start_projection_metadata()
+        child = "a" * 40
+        status_key = ("status", "--porcelain", "--untracked-files=all")
+        common = {
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("rev-parse", "development/main"): self.DEVELOPMENT_MAIN,
+            ("rev-parse", self.CONTROL): self.CONTROL,
+            ("show", "-s", "--format=%P", self.CONTROL): self.CONTROL_PARENT,
+            ("show", "-s", "--format=%P", self.CONTROL_PARENT): self.DEVELOPMENT_MAIN,
+            ("branch", "--show-current"): self.BRANCH,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): "development/main",
+        }
+        ancestry = {("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, self.CONTROL)}
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.CONTROL}}}
+
+        def run(values, checks):
+            with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: values.get(args)), mock.patch.object(
+                checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args in checks
+            ):
+                return checker._collect_c02_start_projection_git(bundle)
+
+        pre = common | {
+            ("rev-parse", "HEAD"): self.CONTROL,
+            status_key: "\n".join("M  " + path for path in self.EXACT10),
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT10),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        pre_checks = ancestry | {("diff", "--cached", "--check")}
+        self.assertEqual([], run(pre, pre_checks))
+        malformed = (
+            ("short-status-suffix", pre | {status_key: pre[status_key] + "\nx"}),
+            ("tab-only-status-suffix", pre | {status_key: pre[status_key] + "\t\n"}),
+            ("formfeed-status-separator", pre | {status_key: pre[status_key].replace("\n", "\f", 1)}),
+            (
+                "unknown-status-code",
+                pre | {status_key: pre[status_key].replace("M  " + self.EXACT10[0], "ZZ " + self.EXACT10[0], 1)},
+            ),
+            (
+                "duplicate-cached-path",
+                pre | {("diff", "--cached", "--name-only"): "\n".join(self.EXACT10 + [self.EXACT10[0]])},
+            ),
+            (
+                "cached-final-trailing-space",
+                pre | {("diff", "--cached", "--name-only"): "\n".join(self.EXACT10) + " \n"},
+            ),
+        )
+        for label, values in malformed:
+            with self.subTest(label=label):
+                self.assertTrue(run(values, pre_checks), label)
+        self.assertTrue(run(pre | {("diff", "--cached", "--name-only"): "\n".join(self.EXACT10[:-1])}, pre_checks))
+        self.assertTrue(run(pre | {status_key: pre[status_key] + "\nM  extra.txt"}, pre_checks))
+        self.assertTrue(run(pre | {("branch", "--show-current"): "wrong"}, pre_checks))
+        self.assertTrue(run(pre | {("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): "origin/main"}, pre_checks))
+        self.assertTrue(run(pre | {("rev-parse", "development/main"): "b" * 40}, pre_checks))
+
+        post = common | {
+            ("rev-parse", "HEAD"): child,
+            status_key: "",
+            ("show", "-s", "--format=%P", child): self.CONTROL,
+            ("diff", "--name-only", self.CONTROL, child): "\n".join(self.EXACT10),
+        }
+        post_checks = ancestry | {
+            ("merge-base", "--is-ancestor", self.CONTROL, child),
+            ("diff", "--check", self.CONTROL, child),
+        }
+        self.assertEqual([], run(post, post_checks))
+        self.assertTrue(run(post | {status_key: " M docs/WORK_STATUS.md"}, post_checks))
+        self.assertTrue(run(post | {("show", "-s", "--format=%P", child): f"{self.CONTROL} {'c' * 40}"}, post_checks))
+        self.assertEqual(
+            ["GIT_REQUIRED_COLLECTION_FAILED"],
+            run(post | {("show", "-s", "--format=%P", child): None}, post_checks),
+        )
+
+    def test_seq731_raw_git_stdout_collection_fails_closed_on_process_anomalies(self):
+        checker = self._checker()
+
+        def collect(*, returncode=0, stdout=b"value\r\n", stderr=b""):
+            result = subprocess.CompletedProcess(["git", "synthetic"], returncode, stdout, stderr)
+            with mock.patch.object(checker.subprocess, "run", return_value=result) as invoked:
+                collected = checker._c02_git_raw_stdout(ROOT, "synthetic")
+            invoked.assert_called_once_with(
+                ["git", "synthetic"], cwd=ROOT, capture_output=True, check=False
+            )
+            return collected
+
+        self.assertTrue(hasattr(checker, "_c02_git_raw_stdout"), "C-02 raw collector is required")
+        self.assertEqual("value\r\n", collect())
+        self.assertIsNone(collect(returncode=1))
+        self.assertIsNone(collect(stderr=b"warning"))
+        self.assertIsNone(collect(stdout="not-bytes"))
+        self.assertIsNone(collect(stderr="not-bytes"))
+        self.assertIsNone(collect(stdout=b"\xff"))
+
+        def quiet(*, returncode=0, stdout=b"", stderr=b""):
+            result = subprocess.CompletedProcess(["git", "synthetic"], returncode, stdout, stderr)
+            with mock.patch.object(checker.subprocess, "run", return_value=result) as invoked:
+                accepted = checker._c02_git_quiet_check(ROOT, "synthetic")
+            invoked.assert_called_once_with(
+                ["git", "synthetic"], cwd=ROOT, capture_output=True, check=False
+            )
+            return accepted
+
+        self.assertTrue(hasattr(checker, "_c02_git_quiet_check"), "C-02 quiet raw checker is required")
+        self.assertTrue(quiet())
+        self.assertFalse(quiet(returncode=1))
+        self.assertFalse(quiet(stderr=b"warning"))
+        self.assertFalse(quiet(stdout=b"warning"))
+        self.assertFalse(quiet(stdout=b"\xff"))
+        self.assertFalse(quiet(stdout=b"\0"))
+        self.assertFalse(quiet(stdout="not-bytes"))
+        self.assertFalse(quiet(stderr="not-bytes"))
+
+    def test_seq731_dispatchers_select_c02_predicates_before_generic_git(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 731}}
+        with mock.patch.object(
+            checker, "_collect_c02_start_projection_git", return_value=["SEQ731_SELECTED"]
+        ) as selected, mock.patch.object(
+            checker,
+            "_collect_c01_postmerge_development_authority_reconciliation_git",
+            side_effect=AssertionError("seq728 predicate must not run"),
+        ):
+            self.assertEqual(["SEQ731_SELECTED"], checker._validate_git_projection(bundle))
             selected.assert_called_once_with(bundle)
 
 

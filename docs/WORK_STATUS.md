@@ -2127,3 +2127,10 @@
 - seq728 `REPOSITORY_RECONCILED / DEVELOPMENT_MAIN_AUTHORITY_RECONCILED`.
 - development main `b0e70278d3799860beb1eef94c382def53a45057`; C-01 `ACCEPTED`; C-02 `READY_NOT_STARTED`.
 - Provider/Telegram `USER_OWNED_NOT_EXECUTED`; active lease 없음.
+
+## C-02 start projection
+
+- seq729~731 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`.
+- C-02 `ACTIVE`; C-01 `ACCEPTED`; C-03 `BLOCKED_PENDING_C02_ACCEPTANCE`; DIR-2 `NOT_REACHED`.
+- actor `developer-primary`; epoch 1 worker/write fencing token과 exact product scope를 결박했다.
+- Provider/Telegram `USER_OWNED_NOT_EXECUTED`; runtime/DB/Secret/network/commit/push/PR/merge `NOT_EXECUTED`.

@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c01-postmerge-development-authority-reconciliation-seq728",
-  "event_sequence": 728,
-  "updated_at": "2026-09-11T11:20:12+09:00",
-  "last_event_id": "evt_c01_postmerge_development_authority_reconciled",
+  "snapshot_id": "snapshot-c02-start-seq731",
+  "event_sequence": 731,
+  "updated_at": "2026-09-11T21:05:00+09:00",
+  "last_event_id": "evt_c02_package_started",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
-  "current_work_package": "C-01",
-  "status": "ACCEPTED",
+  "current_work_package": "C-02",
+  "status": "ACTIVE",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -49,8 +49,37 @@
     "C-21",
     "C-01"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-02",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c02-delegation-r1-20260911-001",
+    "worker_lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+    "fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+    "write_fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-11T21:05:00+09:00",
+    "expires_at": "2026-09-12T09:05:00+09:00",
+    "path_scope": [
+      "packages/orchestration/delegation.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/e2e/harness.py",
+      "tests/orchestration/test_delegation_packet.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/e2e/**"
+    ],
+    "status": "ACTIVE"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -82,7 +111,20 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+    "fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "dispatch_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "issued_at": "2026-09-11T21:05:00+09:00",
+    "expires_at": "2026-09-12T09:05:00+09:00",
+    "status": "ACTIVE"
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -286,41 +328,33 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
-      "sha256": "C7849483B731DF90DAEEE29005A1A071B770DD5FE9E86A6F5A1B5656B9EE9C24"
+      "path": "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
+      "sha256": "D356D1797ADD04E5CBEEBE128CC833AF568EC6D4580A39AE016BCF2F2F36F241"
     },
     {
       "path": "docs/WORK_STATUS.md",
-      "sha256": "2CCE0A51D18702CE0DDDAB08E000CD757D498DD3F7DFEB194E29BC9490C2E111"
+      "sha256": "2FFB4503BA8A99D2ACB2A090D073ACBF9D3D1DDBCFBFAE642FDA4D4E0D72C00A"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "EAF08C771640809C8242FCD0CB995AB5A744AB297E32FEFAF8EC6A0BC04D3C4E"
+      "sha256": "C431390A0B3A7EA8A1F859F9B4489B46A124A4532842A5DDBE2D84000CDDBCF4"
     },
     {
-      "path": "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-      "sha256": "425CC5D4FA865F1400D822961041A5C57B33F73B547DD43B6F51309CDD535A95"
-    },
-    {
-      "path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-      "sha256": "12956F7C4AD35EECF09AB62981CB45C47D1707B84525D915E07F1E8EEAEB0BCB"
-    },
-    {
-      "path": "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
-      "sha256": "1CE299E740F9D2A473DEFD30D09EB08BA1A740F89C8B43219C5FBB397BE50CA2"
+      "path": "docs/validation/C-02_START_VALIDATION.md",
+      "sha256": "B37E1EB24E1DAD189B5BE4845E9FFCB3738BBF523D91D2FAD02ACB9D7E81C84B"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "877144A211D56BC89AF6517E7418A059D8FF18A487BA59DDE633BD68CE5DBCA1"
+      "sha256": "FA8B5438FD8EF7072849E37651D6B26EAE47B40A7E2C662456CA68F617FB6B9D"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "2B1807AF9DEAF14E48D8B06321E26F0AD40D143CCEEFAF16230BC4392423F348"
+      "sha256": "FD2E5689F17C7D9FCD49E14CF939C64B8C0F03CA61E7F4BA0AA9EBC038B6029B"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
-    "artifact_id": "C01-POSTMERGE-DEVELOPMENT-AUTHORITY-RECONCILIATION-20260911"
+    "path": "docs/evidence/manifests/C-02_START_MANIFEST.json",
+    "artifact_id": "C02-START-PROJECTION-20260911"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -330,7 +364,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
+  "next_safe_action": "DEVELOPER_IMPLEMENT_C02_DELEGATION_AUTHORITY_R1",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -440,26 +474,24 @@
     }
   },
   "repository": {
-    "projection_mode": "C01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
-    "validated_base_commit": "b0e70278d3799860beb1eef94c382def53a45057",
-    "head_relation": "EXACT12_PRECOMMIT_OR_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
-    "branch": "codex/c01-postmerge-authority-reconcile-r1",
-    "upstream": "NO_UPSTREAM",
-    "remote_head": "b0e70278d3799860beb1eef94c382def53a45057",
+    "projection_mode": "C02_START_PROJECTION_EXACT10",
+    "validated_base_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "head_relation": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
+    "branch": "codex/c02-delegation-contract-r1",
+    "upstream": "development/main",
+    "remote_head": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "NOT_EXECUTED_RECONCILIATION_RECORD",
+    "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/04_test_reports/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+      "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
       "docs/WORK_STATUS.md",
-      "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+      "docs/evidence/manifests/C-02_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
-      "docs/validation/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c02-start.json",
+      "docs/validation/C-02_START_VALIDATION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
@@ -477,8 +509,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "STAGED_EXACT12",
-    "local_head": "b0e70278d3799860beb1eef94c382def53a45057",
+    "worktree_status": "STAGED_EXACT10",
+    "local_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1282,7 +1314,20 @@
     "baseline_merge_commit": "b0e70278d3799860beb1eef94c382def53a45057",
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
-    "control_parent": "bb2ff4374c81865cab127eca14d3d4c9de575465"
+    "control_parent": "4619ee132ced203780bb0ec615088add661ec802",
+    "control_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "development_main": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+    "product_write_scope": [
+      "packages/orchestration/delegation.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/e2e/harness.py",
+      "tests/orchestration/test_delegation_packet.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/e2e/**"
+    ]
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1406,8 +1451,9 @@
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
       "C01_ACCEPTED",
-      "C02_READY_NOT_STARTED",
-      "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED"
+      "C02_ACTIVE",
+      "C03_BLOCKED_PENDING_C02_ACCEPTANCE",
+      "DIR2_NOT_REACHED"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1457,7 +1503,27 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-C-02-DELEGATION-AUTHORITY-R1-20260911-001",
+    "artifact_path": "docs/work_orders/C-02_WORK_INSTRUCTION.md",
+    "artifact_sha256": "272FA14D2D560BFBF1862FA986DB32A2B7B4351E75C5E9248B3DCCE74FCBEA5E",
+    "invocation_path": "docs/work_orders/C-02_INVOCATION_PROMPT.md",
+    "invocation_sha256": "F0489821A980D43BF6836E5DFCAE390293A39465F1214F3253D24A8A0EF7B551",
+    "executor": "developer-primary",
+    "result_status": "IN_PROGRESS",
+    "package_status": "ACTIVE",
+    "product_write_scope": [
+      "packages/orchestration/delegation.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/e2e/harness.py",
+      "tests/orchestration/test_delegation_packet.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/e2e/**"
+    ]
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -1592,9 +1658,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "C-01",
-    "path": "docs/progress/progress-handoff-detached-digest-c01-postmerge-development-authority-reconciliation.json",
-    "manifest_path": "docs/evidence/manifests/C-01_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json"
+    "package_id": "C-02",
+    "path": "docs/progress/progress-handoff-detached-digest-c02-start.json",
+    "manifest_path": "docs/evidence/manifests/C-02_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1615,12 +1681,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "EAF08C771640809C8242FCD0CB995AB5A744AB297E32FEFAF8EC6A0BC04D3C4E"
+      "sha256": "C431390A0B3A7EA8A1F859F9B4489B46A124A4532842A5DDBE2D84000CDDBCF4"
     }
   },
   "next_work_package": {
-    "package_id": "C-02",
-    "status": "READY_NOT_STARTED"
+    "package_id": "C-03",
+    "status": "BLOCKED_PENDING_C02_ACCEPTANCE"
   },
   "next_successor_work_package": null,
   "historical_phase_b_gate": {
@@ -2009,8 +2075,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "8B714934D3BEFA58E947E34F42BB5C9CE59938C782121DF2DD0F1F471F0B93F6",
-  "runtime_next_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
+  "snapshot_hash": "57977117645A2B3F2950F9902299B0F8C3F722099F2DF522915E1918DEBE5A6F",
+  "runtime_next_action": "DEVELOPER_IMPLEMENT_C02_DELEGATION_AUTHORITY_R1",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3622,7 +3688,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-11T11:20:12+09:00",
+  "recorded_at": "2026-09-11T21:05:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -13435,6 +13501,25 @@
       "push": "NOT_EXECUTED",
       "pull_request": "NOT_EXECUTED",
       "merge": "NOT_EXECUTED_BY_RECONCILIATION"
+    }
+  },
+  "c02_start_projection": {
+    "status": "ACTIVE",
+    "accepted": false,
+    "event_sequence": 731,
+    "c01_status": "ACCEPTED",
+    "c03_status": "BLOCKED_PENDING_C02_ACCEPTANCE",
+    "dir2_status": "NOT_REACHED",
+    "evidence_boundary": {
+      "provider": "USER_OWNED_NOT_EXECUTED",
+      "telegram": "USER_OWNED_NOT_EXECUTED",
+      "external_action": "NOT_EXECUTED",
+      "runtime": "NOT_MUTATED",
+      "database": "NOT_MUTATED",
+      "secret": "NOT_ACCESSED",
+      "push": "NOT_EXECUTED",
+      "pull_request": "NOT_EXECUTED",
+      "merge": "NOT_EXECUTED"
     }
   }
 }

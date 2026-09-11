@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 728,
+  "last_sequence": 731,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -39180,7 +39180,131 @@
           "merge": "NOT_EXECUTED_BY_RECONCILIATION"
         }
       }
+    },
+    {
+      "occurred_at": "2026-09-11T21:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-02/START",
+      "event_id": "evt_c02_worker_lease_issued",
+      "sequence": 729,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "2A9D3CDAFE8202096FF16C1D2FE5D6EFD41C45295AB6B030B766085DFB2C9BD4",
+      "details": {
+        "lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+        "fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+        "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-02",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+        "dispatch_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+        "issued_at": "2026-09-11T21:05:00+09:00",
+        "expires_at": "2026-09-12T09:05:00+09:00",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-11T21:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-02/START",
+      "event_id": "evt_c02_write_lease_issued",
+      "sequence": 730,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "559BB192B4AF537CA58DE6A07A958E800630E36B658E05117A430A9147C34D0C",
+      "details": {
+        "lease_id": "write-lease-c02-delegation-r1-20260911-001",
+        "worker_lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+        "fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+        "write_fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-02",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-11T21:05:00+09:00",
+        "expires_at": "2026-09-12T09:05:00+09:00",
+        "path_scope": [
+          "packages/orchestration/delegation.py",
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/e2e/harness.py",
+          "tests/orchestration/test_delegation_packet.py",
+          "tests/orchestration/test_developer_lifecycle.py",
+          "tests/orchestration/test_developer_lifecycle_c04.py",
+          "tests/orchestration/test_takeover_c13.py",
+          "tests/e2e/**"
+        ],
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-11T21:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-02/START",
+      "event_id": "evt_c02_package_started",
+      "sequence": 731,
+      "event_type": "PACKAGE_STARTED",
+      "previous_event_sha256": "281EA2AFAF15E7B03FECEDAE11123FA64B9D158B1E6C1AC7F086D491E25E7382",
+      "details": {
+        "work_instruction_id": "WI-C-02-DELEGATION-AUTHORITY-R1-20260911-001",
+        "work_instruction_sha256": "272FA14D2D560BFBF1862FA986DB32A2B7B4351E75C5E9248B3DCCE74FCBEA5E",
+        "invocation_sha256": "F0489821A980D43BF6836E5DFCAE390293A39465F1214F3253D24A8A0EF7B551",
+        "package_status": "ACTIVE",
+        "worker_lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+        "write_lease_id": "write-lease-c02-delegation-r1-20260911-001",
+        "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+        "write_fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+        "dispatch_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+        "dispatch_upstream_head": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+        "projection_mode": "C02_START_PROJECTION_EXACT10",
+        "validated_base_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+        "head_relation": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
+          "docs/WORK_STATUS.md",
+          "docs/evidence/manifests/C-02_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c02-start.json",
+          "docs/validation/C-02_START_VALIDATION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_write_scope": [
+          "packages/orchestration/delegation.py",
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/e2e/harness.py",
+          "tests/orchestration/test_delegation_packet.py",
+          "tests/orchestration/test_developer_lifecycle.py",
+          "tests/orchestration/test_developer_lifecycle_c04.py",
+          "tests/orchestration/test_takeover_c13.py",
+          "tests/e2e/**"
+        ]
+      }
     }
   ],
-  "last_event_id": "evt_c01_postmerge_development_authority_reconciled"
+  "last_event_id": "evt_c02_package_started"
 }
