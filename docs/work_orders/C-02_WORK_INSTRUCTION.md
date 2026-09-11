@@ -3,6 +3,8 @@
 ## 권위와 기준선
 
 - Work Package: `C-02`
+- WorkInstruction ID: `WI-C-02-DELEGATION-AUTHORITY-R1-20260911-001`
+- Parent approval: `APPROVAL-20260814-WORKPLAN-V16-001`
 - 기준 commit: `d55763bdfe4595ce35ec1fce4da8aa0a0157afa5`
 - 설계서 SHA-256: `DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3`
 - 작업계획서 책임: 최소 `DelegationPacket`, Main→Developer 권한·컨텍스트·egress immutable snapshot 계약
