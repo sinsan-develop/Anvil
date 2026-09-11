@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0.0",
+  "artifact_id": "C02-DELEGATION-AUTHORITY-EVIDENCE-20260912",
+  "package_id": "C-02",
+  "evidence_source": "MAIN_RECEIVED_REVIEW_AND_INDEPENDENT_TESTER_RESULTS",
+  "product": {
+    "commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+    "parent": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+    "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "start_control_parent": "4619ee132ced203780bb0ec615088add661ec802",
+    "development_main": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+    "ancestor_chain": [
+      "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+      "4619ee132ced203780bb0ec615088add661ec802",
+      "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+      "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+      "db2b52fc85d022c5af51a1927a0133bf081f4586"
+    ],
+    "exact_paths": [
+      "packages/e2e/harness.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/delegation.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "tests/orchestration/test_delegation_packet.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_takeover_c13.py"
+    ]
+  },
+  "product_review": {
+    "spec": "PASS",
+    "quality": "APPROVED",
+    "critical_findings": 0,
+    "important_findings": 0,
+    "minor_findings": 0
+  },
+  "main_regression": {
+    "status": "PASS",
+    "pass_count": 193
+  },
+  "reviewer_regression": {
+    "status": "PASS",
+    "pass_count": 193
+  },
+  "independent_tester": {
+    "validation_results": {
+      "AV-AGT-001": "PASS",
+      "AV-SAFE-022": "PASS"
+    },
+    "hostile_case_count": 1468,
+    "runner_zero_case_count": 1458,
+    "regression_pass_count": 193,
+    "critical_findings": 0,
+    "important_findings": 0
+  },
+  "main_takeover_lineages": {
+    "C02-PRODUCT-SURROGATE-HASH-EXCEPTION-ESCAPE-v1": 3,
+    "C02-START-MALFORMED-GIT-COLLECTION-FAILOPEN-v1": 3
+  },
+  "full_repository_suite": {
+    "status": "NOT_COMPLETED",
+    "collection_error_count": 7
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "actual_runner": "NOT_EXECUTED"
+  },
+  "history": {
+    "preserved_through_sequence": 731,
+    "raw_event_objects_preserved": true
+  },
+  "canonical_evidence_refs": [
+    "docs/04_test_reports/C-02_FINAL_ACCEPTANCE_REPORT.md",
+    "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/C-02_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/completion_reports/C-02_completion.md",
+    "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json"
+  ]
+}

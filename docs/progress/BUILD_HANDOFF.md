@@ -1,3 +1,9 @@
+# C-02 final acceptance — seq736
+
+- seq1~731 raw event object bytes를 보존하고 seq732~736만 append했다.
+- C-02 ACCEPTED, C-03 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED, AUTO_CONTINUE.
+- full repository suite NOT_COMPLETED; external validation NOT_EXECUTED.
+
 # C-02 start projection — seq731
 
 - seq1~728 raw event object bytes를 보존하고 seq729~731만 append했다.
@@ -876,108 +882,70 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 731,
-  "last_event_id": "evt_c02_package_started",
-  "status": "ACTIVE",
+  "event_sequence": 736,
+  "last_event_id": "evt_c02_final_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-02",
-  "active_agent": {
-    "actor_id": "developer-primary",
-    "role": "PRIMARY_DEVELOPER",
-    "work_package_id": "C-02",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa"
-  },
-  "worker_lease": {
-    "lease_id": "worker-lease-c02-delegation-r1-20260911-001",
-    "fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
-    "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
-    "lease_epoch": 1,
-    "actor_id": "developer-primary",
-    "subject_ref": "C-02",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
-    "dispatch_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
-    "issued_at": "2026-09-11T21:05:00+09:00",
-    "expires_at": "2026-09-12T09:05:00+09:00",
-    "status": "ACTIVE"
-  },
-  "write_lease": {
-    "lease_id": "write-lease-c02-delegation-r1-20260911-001",
-    "worker_lease_id": "worker-lease-c02-delegation-r1-20260911-001",
-    "fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
-    "write_fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
-    "write_epoch": 1,
-    "actor_id": "developer-primary",
-    "subject_ref": "C-02",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-11T21:05:00+09:00",
-    "expires_at": "2026-09-12T09:05:00+09:00",
-    "path_scope": [
-      "packages/orchestration/delegation.py",
-      "packages/orchestration/__init__.py",
-      "packages/orchestration/developer_lifecycle.py",
-      "packages/e2e/harness.py",
-      "tests/orchestration/test_delegation_packet.py",
-      "tests/orchestration/test_developer_lifecycle.py",
-      "tests/orchestration/test_developer_lifecycle_c04.py",
-      "tests/orchestration/test_takeover_c13.py",
-      "tests/e2e/**"
-    ],
-    "status": "ACTIVE"
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "DEVELOPER_IMPLEMENT_C02_DELEGATION_AUTHORITY_R1",
-  "accepted": false,
+  "next_safe_action": "ISSUE_C03_WORK_INSTRUCTION",
+  "accepted": true,
   "c01_status": "ACCEPTED",
-  "c02_status": "ACTIVE",
-  "c03_status": "BLOCKED_PENDING_C02_ACCEPTANCE",
+  "c02_status": "ACCEPTED",
+  "c03_status": "READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
   "dir2_status": "NOT_REACHED",
-  "repository_head": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+  "repository_head": "db2b52fc85d022c5af51a1927a0133bf081f4586",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C02_START_PROJECTION_EXACT10",
-  "repository_validated_base_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
-  "repository_head_relation": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
+  "repository_projection_mode": "C02_FINAL_ACCEPTANCE_EXACT16",
+  "repository_validated_base_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+  "repository_head_relation": "STAGED_EXACT16_OR_SOLE_DIRECT_CHILD",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-02_START_PROJECTION_REPORT.md",
+    "docs/04_test_reports/C-02_FINAL_ACCEPTANCE_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-02_START_MANIFEST.json",
+    "docs/completion_reports/C-02_completion.md",
+    "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-02_DELEGATION_AUTHORITY_EVIDENCE.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c02-start.json",
-    "docs/validation/C-02_START_VALIDATION.md",
+    "docs/progress/progress-handoff-detached-digest-c02-final-acceptance.json",
+    "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/C-02_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
-    "tests/tooling/test_project_progress.py"
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_c02_independent_acceptance.py"
   ],
-  "product_write_scope": [
-    "packages/orchestration/delegation.py",
-    "packages/orchestration/__init__.py",
-    "packages/orchestration/developer_lifecycle.py",
+  "product_exact_paths": [
     "packages/e2e/harness.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/delegation.py",
+    "packages/orchestration/developer_lifecycle.py",
     "tests/orchestration/test_delegation_packet.py",
     "tests/orchestration/test_developer_lifecycle.py",
     "tests/orchestration/test_developer_lifecycle_c04.py",
-    "tests/orchestration/test_takeover_c13.py",
-    "tests/e2e/**"
+    "tests/orchestration/test_takeover_c13.py"
   ],
   "work_instruction_id": "WI-C-02-DELEGATION-AUTHORITY-R1-20260911-001",
   "work_instruction_sha256": "272FA14D2D560BFBF1862FA986DB32A2B7B4351E75C5E9248B3DCCE74FCBEA5E",
-  "invocation_sha256": "F0489821A980D43BF6836E5DFCAE390293A39465F1214F3253D24A8A0EF7B551",
   "evidence_boundary": {
-    "provider": "USER_OWNED_NOT_EXECUTED",
-    "telegram": "USER_OWNED_NOT_EXECUTED",
-    "external_action": "NOT_EXECUTED",
-    "runtime": "NOT_MUTATED",
-    "database": "NOT_MUTATED",
-    "secret": "NOT_ACCESSED",
-    "push": "NOT_EXECUTED",
-    "pull_request": "NOT_EXECUTED",
-    "merge": "NOT_EXECUTED"
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "actual_runner": "NOT_EXECUTED"
   },
-  "current_manifest": "docs/evidence/manifests/C-02_START_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json",
+  "independent_test_report": "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

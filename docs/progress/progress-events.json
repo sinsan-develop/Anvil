@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 731,
+  "last_sequence": 736,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -39304,7 +39304,211 @@
           "tests/e2e/**"
         ]
       }
+    },
+    {
+      "occurred_at": "2026-09-12T08:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-02/FINAL-ACCEPTANCE",
+      "event_id": "evt_c02_final_write_lease_revoked",
+      "sequence": 732,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "previous_event_sha256": "99C720DBCD38B246A2FEF095C309107CF8BB175E07BAE0C4165B4A205C4DAF54",
+      "details": {
+        "lease_id": "write-lease-c02-delegation-r1-20260911-001",
+        "worker_lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+        "reason": "C02_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED",
+        "write_epoch": 1,
+        "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+        "write_fencing_token": "c02-delegation-write-fence-epoch-1-2eedcfa",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T08:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-02/FINAL-ACCEPTANCE",
+      "event_id": "evt_c02_final_worker_lease_revoked",
+      "sequence": 733,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "previous_event_sha256": "A66AC193FBB26B58DE9C916F341D501897D7E5B532A50B453DB6564F0015B77A",
+      "details": {
+        "lease_id": "worker-lease-c02-delegation-r1-20260911-001",
+        "reason": "C02_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED",
+        "lease_epoch": 1,
+        "execution_fencing_token": "c02-delegation-execution-fence-epoch-1-2eedcfa",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T08:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "developer-primary",
+      "subject_ref": "C-02/FINAL-ACCEPTANCE",
+      "event_id": "evt_c02_final_package_completed",
+      "sequence": 734,
+      "event_type": "PACKAGE_COMPLETED",
+      "previous_event_sha256": "A3A0B1E16D47B2429E5582F15E903204B510FEE31E178B78158DA97050E93C4D",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+        "product_parent": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+        "product_exact_paths": [
+          "packages/e2e/harness.py",
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/delegation.py",
+          "packages/orchestration/developer_lifecycle.py",
+          "tests/orchestration/test_delegation_packet.py",
+          "tests/orchestration/test_developer_lifecycle.py",
+          "tests/orchestration/test_developer_lifecycle_c04.py",
+          "tests/orchestration/test_takeover_c13.py"
+        ],
+        "ancestor_chain": [
+          "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+          "4619ee132ced203780bb0ec615088add661ec802",
+          "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+          "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+          "db2b52fc85d022c5af51a1927a0133bf081f4586"
+        ],
+        "required_validation": {
+          "AV-AGT-001": "PASS",
+          "AV-SAFE-022": "PASS"
+        },
+        "main_and_reviewer_regression_pass_count": 193,
+        "main_takeover_lineages": {
+          "C02-PRODUCT-SURROGATE-HASH-EXCEPTION-ESCAPE-v1": 3,
+          "C02-START-MALFORMED-GIT-COLLECTION-FAILOPEN-v1": 3
+        },
+        "full_repository_suite": "NOT_COMPLETED",
+        "collection_error_count": 7,
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "actual_runner": "NOT_EXECUTED"
+        }
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T08:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "independent-tester",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "independent-tester",
+      "subject_ref": "C-02/FINAL-ACCEPTANCE",
+      "event_id": "evt_c02_final_independent_test_judgment_recorded",
+      "sequence": 735,
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "previous_event_sha256": "243B4FE7888ECF1A615216410E22E3DC6093EBDD60B90E6A1D6AE9506AB1BFDB",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "AV-AGT-001_AND_AV-SAFE-022",
+        "evidence_ref": "docs/evidence/raw/C-02_DELEGATION_AUTHORITY_EVIDENCE.json",
+        "test_report_ref": "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
+        "hostile_case_count": 1468,
+        "runner_zero_case_count": 1458,
+        "regression_pass_count": 193,
+        "critical_findings": 0,
+        "important_findings": 0
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T08:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-02",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-02/FINAL-ACCEPTANCE",
+      "event_id": "evt_c02_final_main_package_accepted",
+      "sequence": 736,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "previous_event_sha256": "269FA3E1CA7C5D8DA1B92CAE979537CC3E515C9D18674B08562EB16C7AEBFA39",
+      "details": {
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "test_report_ref": "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
+        "test_report_sha256": "53FE43762D8785A547F86FB0788E80B747D427676DC0FA25093D9C99CE664BE6",
+        "manifest_ref": "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "next_work_package": "C-03",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "projection_mode": "C02_FINAL_ACCEPTANCE_EXACT16",
+        "validated_base_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+        "acceptance_head": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+        "acceptance_upstream_head": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+        "head_relation": "STAGED_EXACT16_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-02_FINAL_ACCEPTANCE_REPORT.md",
+          "docs/WORK_STATUS.md",
+          "docs/completion_reports/C-02_completion.md",
+          "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/evidence/raw/C-02_DELEGATION_AUTHORITY_EVIDENCE.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c02-final-acceptance.json",
+          "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
+          "docs/validation/C-02_FINAL_ACCEPTANCE_VALIDATION.md",
+          "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py",
+          "tests/verification/test_c02_independent_acceptance.py"
+        ],
+        "product_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+        "ancestor_chain": [
+          "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+          "4619ee132ced203780bb0ec615088add661ec802",
+          "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+          "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+          "db2b52fc85d022c5af51a1927a0133bf081f4586"
+        ],
+        "dir2_status": "NOT_REACHED",
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "actual_runner": "NOT_EXECUTED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c02_package_started"
+  "last_event_id": "evt_c02_final_main_package_accepted"
 }

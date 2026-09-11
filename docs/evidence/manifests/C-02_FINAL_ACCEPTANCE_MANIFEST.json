@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-02_FINAL_ACCEPTANCE_PROJECTION",
+  "artifact_id": "C02-FINAL-ACCEPTANCE-20260912",
+  "created_at": "2026-09-12T08:45:00+09:00",
+  "package_id": "C-02",
+  "event_sequence": 736,
+  "historical_event_sequence": 731,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 2218456,
+    "sha256": "C5D32CD5C44FA4A66C19F5DFF32D283FE256141B27B6FA208F64D751483C9048"
+  },
+  "accepted": true,
+  "status": "ACCEPTED",
+  "c01_status": "ACCEPTED",
+  "c02_status": "ACCEPTED",
+  "c03_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "product_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+  "product_parent": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+  "product_exact_paths": [
+    "packages/e2e/harness.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/delegation.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "tests/orchestration/test_delegation_packet.py",
+    "tests/orchestration/test_developer_lifecycle.py",
+    "tests/orchestration/test_developer_lifecycle_c04.py",
+    "tests/orchestration/test_takeover_c13.py"
+  ],
+  "ancestor_chain": [
+    "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
+    "4619ee132ced203780bb0ec615088add661ec802",
+    "2eedcfa6b15594c2daa29bb52a5c10694c826776",
+    "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
+    "db2b52fc85d022c5af51a1927a0133bf081f4586"
+  ],
+  "work_instruction_id": "WI-C-02-DELEGATION-AUTHORITY-R1-20260911-001",
+  "work_instruction_path": "docs/work_orders/C-02_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "272FA14D2D560BFBF1862FA986DB32A2B7B4351E75C5E9248B3DCCE74FCBEA5E",
+  "validation_results": {
+    "AV-AGT-001": "PASS",
+    "AV-SAFE-022": "PASS"
+  },
+  "hostile_case_count": 1468,
+  "runner_zero_case_count": 1458,
+  "regression_pass_count": 193,
+  "critical_findings": 0,
+  "important_findings": 0,
+  "main_takeover_lineages": {
+    "C02-PRODUCT-SURROGATE-HASH-EXCEPTION-ESCAPE-v1": 3,
+    "C02-START-MALFORMED-GIT-COLLECTION-FAILOPEN-v1": 3
+  },
+  "full_repository_suite_status": "NOT_COMPLETED",
+  "collection_error_count": 7,
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "actual_runner": "NOT_EXECUTED"
+  },
+  "record_binding": "STAGED_EXACT16_OR_SOLE_DIRECT_CHILD",
+  "self_reference": false,
+  "sequence": 736,
+  "projection_mode": "C02_FINAL_ACCEPTANCE_EXACT16",
+  "validated_base_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
+  "branch": "codex/c02-delegation-contract-r1",
+  "exact_paths": [
+    "docs/04_test_reports/C-02_FINAL_ACCEPTANCE_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/completion_reports/C-02_completion.md",
+    "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-02_DELEGATION_AUTHORITY_EVIDENCE.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c02-final-acceptance.json",
+    "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/C-02_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_c02_independent_acceptance.py"
+  ],
+  "exact_path_count": 16,
+  "exact_path_list_sha256": "804812F0CA9C31E52B76A685F3A18E9173E829DE14D39C83B4368AFBFE65C211",
+  "exact_path_list_ordinal_sha256": "39CD28B057BCDAB8B0B9C80551D01B942D8A9D93B1E9850B0D43F7F70C9F0B6A",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-02_FINAL_ACCEPTANCE_REPORT.md",
+      "bytes": 1196,
+      "sha256": "7CB858C7385926740298EFE7AD9F0953AD03298F2416E79B2E0157386A2383C8"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 420856,
+      "sha256": "F7BC0CCFA36C591BC70A46F882E23A82F7E070750D4A45B99E7F3BEA2F97452C"
+    },
+    {
+      "path": "docs/completion_reports/C-02_completion.md",
+      "bytes": 459,
+      "sha256": "AAD14EFB2C273F1C125A48E490094A65112D6667FCC1C10E1DD9AAAA1952AEF7"
+    },
+    {
+      "path": "docs/evidence/raw/C-02_DELEGATION_AUTHORITY_EVIDENCE.json",
+      "bytes": 2785,
+      "sha256": "F5946FBB1D2372D4F2024B63A6E531B04706A77F7A0248EBB2E96F80EB632AB9"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 185437,
+      "sha256": "CBB207D23068367F2811D5CCBE3B55F6AADD77896C484C0BD9A7A6719BE306A4"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 812962,
+      "sha256": "C392B1D8F74680530CA76249785AD399B823C98C8D88816E3BE888F8E1D8A9EF"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2227529,
+      "sha256": "BEC2ED58C212CA22490B25758B1AA0CAAFDD574967279F07937DDEEB29874ABB"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c02-final-acceptance.json",
+      "bytes": 877,
+      "sha256": "1422A81E8F7B1B27201CDFE21560A174C5D0D1D62B5CA78A876A3641C11CEBE0"
+    },
+    {
+      "path": "docs/test_reports/C-02_INDEPENDENT_TEST_REPORT.md",
+      "bytes": 598,
+      "sha256": "53FE43762D8785A547F86FB0788E80B747D427676DC0FA25093D9C99CE664BE6"
+    },
+    {
+      "path": "docs/validation/C-02_FINAL_ACCEPTANCE_VALIDATION.md",
+      "bytes": 632,
+      "sha256": "846A1E85B74A04D55E41C8E1506AAF7E028921B7AE2827242E55647B4FEB73FF"
+    },
+    {
+      "path": "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+      "bytes": 313,
+      "sha256": "708EE104D705B4F1CEDBBB6F24E68623FF9A552BD0FD39A8351C5AC7BB99C105"
+    },
+    {
+      "path": "docs/work_orders/C-02_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "bytes": 1468,
+      "sha256": "AE8D6CBFA21164137E161EF0DB96DE135B701C545EA858702F9AC21875471A80"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2435926,
+      "sha256": "7B0178B11CB407CD2FECFA17E5FA2C6E9BBC9FC64E5CCA318CD28FF372939DAD"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 740230,
+      "sha256": "99F139AF107B1FE3613D78899BC0A94C35959556F7823B5F7FB59EA0E94D6020"
+    },
+    {
+      "path": "tests/verification/test_c02_independent_acceptance.py",
+      "bytes": 1489,
+      "sha256": "150AEAD0D67C249B1E5B9FB0F6020BA5A6702134AA00D62FCE8D30FF5B56D948"
+    }
+  ]
+}
