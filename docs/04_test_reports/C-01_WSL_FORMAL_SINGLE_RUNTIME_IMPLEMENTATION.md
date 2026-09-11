@@ -2,7 +2,7 @@
 
 ## 판정
 
-`IMPLEMENTED_PENDING_R5_REVIEW_AND_REEXECUTION`
+`WSL_FORMAL_RUNTIME_VERIFIED_PENDING_SUCCESSOR_PROJECTION`
 
 ## 구현 이유
 
@@ -50,3 +50,14 @@
 - R5는 Docker 불변식을 Anvil 소유 이름 범위 `^anvil([-_]|$)`로 제한한다. 실행 전 정식 `anvil-web` 외 Anvil 컨테이너·네트워크·볼륨은 0이어야 하고, 실행 중 추가 Anvil 자원 및 Docker 목록 조회 실패는 계속 거부한다. 공유 host의 비관련 프로젝트 자원 변동만 무시한다.
 - R5 TDD에서 기존 구현이 비관련 `daon2-*` 변동을 REJECT하는 RED를 재현했고, 소유 범위 수정 후 정상·비관련 변동은 ACCEPT, 추가 Anvil 컨테이너·네트워크·볼륨 및 목록 조회 실패3종은 REJECT했다.
 - R5 Main 정적 검증: 계약 `30 passed`, `bash -n` PASS, manifest JSON parse PASS, diff-check PASS. 초기 snapshot과 실행 중 invariant를 각각 검증한다. 독립 review 및 exact5 commit 전 상태다.
+
+## R5 실제 실행 결과
+
+- R5 control `2eba71ec37183ef6062157d7491ee48cb1fab6ba`는 제품 후보 `bb2ff4374c81865cab127eca14d3d4c9de575465`의 exact5 단일 후속 commit이며, 독립 review `SPEC PASS / QUALITY APPROVED / C0·I0·M0` 뒤 development 원격과 WSL clean detached control path에 고정했다.
+- 표준 control 실행은 exit0과 `VERIFIED` 영수증을 반환했다: 정식 컨테이너 `anvil-web` 1개, public port3770, candidate exact `bb2ff43`, DB write0, Provider call0, Telegram call0, 추가 runtime resource0, Secret 출력0.
+- 독립 post-deploy 확인에서 WSL app checkout은 clean detached `bb2ff43`; image와 OCI revision은 exact `bb2ff43`; runtime은 healthy, read-only rootfs, cap-drop ALL, no-new-privileges, `proxy-network` 단일 연결, IPv4 `0.0.0.0:3770` 및 선택적 IPv6 `:::3770`이다.
+- 공식 Host 기준 Dashboard, Provider Workbench, `/health/live`, `/health/ready`, `/openapi.json`, `/auth/session/status`는 모두 HTTP200이며 OpenAPI에는 `POST /api/runs/{id}/steps/{stepId}:execute`가 존재한다.
+- 기존 허용 Run `c21-wsl-run`의 authenticated SSE는 initial `200 / 88 bytes / text/event-stream`, `Last-Event-ID: c21-wsl-event-1` 재개 `200 / 0 bytes`, invalid cursor409, 비허용 Run403이다. 이어서 process-only bootstrap credential을 출력하지 않고 세션을 발급해 HTTP201, cookie principal `actor_role=tester`, initial event `RUN_CREATED`, strict resume 200/0 bytes를 확인했으며 root-only 임시 cookie/header/body는 종료 trap으로 삭제했다.
+- 실제 visible browser에서 Dashboard의 Database READY/migration0013과 Provider Workbench의 `WSL_ACCEPTANCE · wsl_acceptance_reader`, READY, 9개 Provider, UPSTAGE PRIMARY를 확인했다. browser console error/warn은 0이며 Dashboard를 사용자 표시 상태로 유지했다.
+- post-deploy Anvil inventory는 `anvil-web`만 존재하고 Anvil 이름 network0·volume0, Secret 임시 파일0이다. 실제 Provider·Telegram 외부 검증은 승인된 제외 범위대로 실행하지 않았다.
+- 다음 단계는 이 실제 증거를 기존 seq1~721과 historical evidence를 변경하지 않는 successor acceptance projection으로 append하고 checker·manifest·progress/HANDOFF를 재결박하는 것이다.

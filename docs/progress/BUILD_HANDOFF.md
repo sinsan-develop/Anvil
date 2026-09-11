@@ -1,3 +1,9 @@
+# C-01 L3 final acceptance — seq727
+
+- seq1~721 raw event object bytes는 불변이며 seq722~727만 append했다.
+- C-01 ACCEPTED, active lease 없음, C-02 READY_NOT_STARTED다.
+- WSL/browser/authenticated SSE는 실제 검증했고 Provider·Telegram은 NOT_EXECUTED다.
+
 # C-01 L3 rework start — seq721
 
 - seq716 final independent review FAIL과 seq717 evidence invalidation을 append했다. seq1-715 bytes는 불변이다.
@@ -858,125 +864,55 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 721,
-  "last_event_id": "evt_c01_l3_rework_package_resumed",
-  "status": "REWORK_IN_PROGRESS",
+  "event_sequence": 727,
+  "last_event_id": "evt_c01_l3_final_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-01",
-  "active_agent": "developer-primary",
-  "worker_lease": {
-    "lease_id": "worker-lease-c01-l3-rework-20260911-001",
-    "agent_id": "developer-primary",
-    "work_package_id": "C-01",
-    "lease_epoch": 5,
-    "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
-    "fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
-    "status": "ACTIVE",
-    "subject_ref": "C-01/L3-REWORK"
-  },
-  "write_lease": {
-    "lease_id": "write-lease-c01-l3-rework-20260911-001",
-    "worker_lease_id": "worker-lease-c01-l3-rework-20260911-001",
-    "agent_id": "developer-primary",
-    "work_package_id": "C-01",
-    "write_epoch": 5,
-    "execution_fencing_token": "c01-l3-rework-execution-fence-epoch-5-0f39bad",
-    "write_fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
-    "fencing_token": "c01-l3-rework-write-fence-epoch-5-0f39bad",
-    "status": "ACTIVE",
-    "path_scope": [
-      "packages/api/fastapi_app.py",
-      "packages/api/registry.py",
-      "packages/api/runtime.py",
-      "packages/api/step_execution.py",
-      "packages/budget/models.py",
-      "packages/events/reducer.py",
-      "packages/events/transition_guard.py",
-      "packages/orchestration/kernel.py",
-      "packages/persistence/event_repository.py",
-      "packages/persistence/intervention_budget_repository.py",
-      "tests/api/test_c01_step_execution.py",
-      "tests/api/test_registry_openapi.py",
-      "tests/api/test_runtime_app.py",
-      "tests/events/test_event_store.py",
-      "tests/llm_gateway/test_c01_kernel.py",
-      "tests/persistence/test_c01_step_execution_postgres.py",
-      "tests/verification/test_c01_l3_independent_acceptance.py"
-    ]
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "DEVELOPER_IMPLEMENT_C01_L3_REWORK",
+  "next_safe_action": "C02_READY_AWAIT_WORK_INSTRUCTION",
+  "accepted": true,
+  "c01_status": "ACCEPTED",
+  "c02_status": "READY_NOT_STARTED",
   "dir_status": "CLEARED",
-  "dir2_status": "NOT_REACHED",
-  "reporting_decision": "AUTO_CONTINUE",
-  "repository_head": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
-  "repository_upstream": "NO_UPSTREAM",
-  "repository_projection_mode": "C01_L3_REWORK_CONTROL_EXACT10",
-  "repository_head_relation": "PRECOMMIT_STAGED_EXACT10_OR_SOLE_DIRECT_CHILD",
-  "repository_validated_base_commit": "0f39bad30e7f4ab865077530cbbd29d902d1485d",
+  "repository_head": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+  "repository_projection_mode": "C01_L3_FINAL_ACCEPTANCE_EXACT15",
+  "repository_upstream": "development/codex/c01-mainline-reconciliation-r5",
   "repository_exact_allowed_paths": [
-    ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-l3-rework-control-report.md",
-    "docs/evidence/manifests/C-01_L3_REWORK_START_MANIFEST.json",
+    "docs/04_test_reports/C-01_L3_FINAL_ACCEPTANCE_REPORT.md",
+    "docs/04_test_reports/C-01_WSL_FORMAL_SINGLE_RUNTIME_IMPLEMENTATION.md",
+    "docs/WORK_STATUS.md",
+    "docs/completion_reports/C-01_completion.md",
+    "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c01-l3-rework-start.json",
-    "docs/work_orders/C-01_L3_REWORK_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-01_L3_REWORK_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c01-l3-final-acceptance.json",
+    "docs/validation/C-01_L3_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-01_L3_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "accepted": false,
-  "c01_status": "REWORK_IN_PROGRESS",
-  "c02_status": "BLOCKED_PENDING_C01_ACCEPTANCE",
-  "historical_acceptance_event_sequence": 715,
-  "final_review": {
-    "path": ".superpowers/sdd/Anvil_작업계획서_v1/task-C-01-final-branch-review-report.md",
-    "sha256": "E9D8A4B643C9FDAEF97B06FABDB0159527B6CD506B1238AC9F8BA9ED859A9B46"
-  },
-  "active_work_instruction": "WI-C-01-L3-REWORK-20260911-001",
-  "active_work_instruction_sha256": "2984497CE246F1FFB13F828F513CDD3084DC8C485C97DADA51C5D0C4F556F5EE",
-  "active_invocation_sha256": "B2882419B8D469EA9C39B5EB4A69900F9E500F045A8EBC913C6D33496EE5B9CA",
-  "product_exact_paths": [
-    "packages/api/fastapi_app.py",
-    "packages/api/registry.py",
-    "packages/api/runtime.py",
-    "packages/api/step_execution.py",
-    "packages/budget/models.py",
-    "packages/events/reducer.py",
-    "packages/events/transition_guard.py",
-    "packages/orchestration/kernel.py",
-    "packages/persistence/event_repository.py",
-    "packages/persistence/intervention_budget_repository.py",
-    "tests/api/test_c01_step_execution.py",
-    "tests/api/test_registry_openapi.py",
-    "tests/api/test_runtime_app.py",
-    "tests/events/test_event_store.py",
-    "tests/llm_gateway/test_c01_kernel.py",
-    "tests/persistence/test_c01_step_execution_postgres.py",
-    "tests/verification/test_c01_l3_independent_acceptance.py"
-  ],
+  "product_commit": "bb2ff4374c81865cab127eca14d3d4c9de575465",
+  "control_commit": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
+  "current_manifest": "docs/evidence/manifests/C-01_L3_FINAL_ACCEPTANCE_MANIFEST.json",
+  "operational_evidence": "docs/evidence/raw/C-01_L3_FINAL_OPERATIONAL_EVIDENCE.json",
   "external_execution": {
     "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
-    "credential_access": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "cost": "NOT_INCURRED",
     "new_migration": "NOT_CREATED",
-    "database": "NOT_EXECUTED_CONTROL_ONLY",
-    "push": "NOT_EXECUTED",
-    "pull_request": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED"
+    "database_write_during_deployment": "NOT_EXECUTED",
+    "ysna": "NOT_EXECUTED",
+    "main_merge": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED"
   },
-  "next_work_package": {
-    "package_id": "C-01",
-    "status": "ACTIVE"
-  },
-  "next_successor_work_package": {
-    "package_id": "C-02",
-    "status": "BLOCKED_PENDING_C01_ACCEPTANCE"
-  }
+  "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 

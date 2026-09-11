@@ -2116,3 +2116,8 @@
 - comprehensive audit exit0 `R4_AUDIT_PASS`: generated7 two-build/live equality, checksum19, R3부모 snapshot20, seq1~700 raw/semantic·새chain, historical272, exact20/cumulative28/product9/occurrence11/parent/ancestry/private authority/WORK_STATUS prefix, epoch4종료/progress/HANDOFF, syntax5/diff PASS. current history32/OPS-R2 2 유지.
 - checker의 metadata patch와 test epoch 기대 literal2개를 메모리에서 역변환하여 각 R3 source SHA 동일 확인. G07 checker/test·독립suite·raw2의 R3 bytes 불변. 제품/테스트 판정 로직 변경0. 허위 full PASS count698 재해시도 strict reconstruction에서 거부한다.
 - R4 hunk-order 도구오류1 해결, 새 제품/검증 실패0. 기존 Main attempt1 두 fingerprint각1/status-poll syntax1 보존. 최종 문서 재결박 뒤 live/audit 반복 후 추가 writer mutation을 종료한다. Main post-correction focused/checker/checksum/determinism은 후속 gate이며 R4 이후 full tooling 실행을 주장하지 않는다. 외부 NOT_EXECUTED, commit/push/merge0.
+
+## C-01 L3 final acceptance
+
+- C-01 `ACCEPTED`; C-02 `READY_NOT_STARTED`; active lease 없음.
+- WSL formal runtime와 browser/SSE evidence는 final manifest에 결박했다. Provider·Telegram 실제 호출은 `NOT_EXECUTED`다.
