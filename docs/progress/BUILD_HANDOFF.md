@@ -1,3 +1,9 @@
+# C-04 start projection — seq751
+
+- seq1~748 raw event bytes preserved; seq749~751 only appended.
+- C-03 ACCEPTED, C-04 IN_PROGRESS, C-05 NOT_READY, DIR-2 NOT_REACHED.
+- control product/external execution 없음.
+
 # C-03 final acceptance — seq748
 
 - seq1~743 preserved; seq744~748 only appended.
@@ -906,154 +912,235 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 748,
-  "last_event_id": "evt_c03_final_main_package_accepted",
-  "status": "ACCEPTED",
+  "event_sequence": 751,
+  "last_event_id": "evt_c04_write_lease_issued",
+  "status": "IN_PROGRESS",
   "current_phase": "C",
-  "current_work_package": "C-03",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
-  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 0,
-  "next_safe_action": "ISSUE_C04_WORK_INSTRUCTION",
-  "accepted": true,
-  "c03_status": "ACCEPTED",
-  "c04_status": "READY_FOR_WORK_INSTRUCTION",
-  "dir_status": "CLEARED",
-  "dir2_status": "NOT_REACHED",
-  "completed_worker_lease": {
-    "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
-    "fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
-    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
-    "lease_epoch": 1,
+  "current_work_package": "C-04",
+  "active_agent": {
     "actor_id": "developer-primary",
-    "subject_ref": "C-03",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
-    "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
-    "issued_at": "2026-09-12T09:05:00+09:00",
-    "expires_at": "2026-09-12T21:05:00+09:00",
-    "status": "REVOKED",
-    "revoked_at": "2026-09-12T12:05:00+09:00",
-    "revocation_reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-04",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c"
   },
-  "completed_write_lease": {
-    "lease_id": "write-lease-c03-developer-lifecycle-r2-20260912-001",
-    "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
-    "fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
-    "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
-    "write_epoch": 2,
+  "worker_lease": {
+    "lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+    "fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+    "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+    "lease_epoch": 2,
     "actor_id": "developer-primary",
-    "subject_ref": "C-03",
+    "subject_ref": "C-04",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-12T09:50:00+09:00",
-    "expires_at": "2026-09-12T21:50:00+09:00",
+    "baseline_git_commit": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "dispatch_head": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "issued_at": "2026-09-12T15:00:00+09:00",
+    "expires_at": "2026-09-13T03:00:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c04-steer-resume-r2-20260912-001",
+    "worker_lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+    "fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+    "write_fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+    "write_epoch": 3,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-04",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-12T15:00:00+09:00",
+    "expires_at": "2026-09-13T03:00:00+09:00",
     "path_scope": [
       "packages/orchestration/developer_lifecycle.py",
       "packages/orchestration/__init__.py",
+      "packages/api/delegation_lifecycle.py",
+      "packages/api/registry.py",
+      "packages/api/__init__.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
       "tests/orchestration/test_developer_lifecycle.py",
-      "packages/e2e/harness.py"
+      "tests/api/test_c04_delegation_lifecycle.py",
+      "tests/api/test_registry_openapi.py"
     ],
-    "status": "REVOKED",
-    "revoked_at": "2026-09-12T12:05:00+09:00",
-    "revocation_reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
+    "status": "ACTIVE"
   },
-  "repository_head": "219eedd7adf287c55818eab930d6a665a2fc0980",
-  "repository_upstream": "development/codex/c03-developer-lifecycle-r1",
-  "repository_projection_mode": "C03_FINAL_ACCEPTANCE_EXACT15",
-  "repository_validated_base_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
-  "repository_head_relation": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "valid_failure_count": 0,
+  "next_safe_action": "DEVELOPER_IMPLEMENT_C04_STEER_RESUME",
+  "accepted": false,
+  "c03_status": "ACCEPTED",
+  "c04_status": "IN_PROGRESS",
+  "c05_status": "NOT_READY",
+  "dir_status": "CLEARED",
+  "dir2_status": "NOT_REACHED",
+  "repository_head": "028765cea128c73fb2404e6cefefce12175cb9f4",
+  "repository_upstream": "development/main",
+  "repository_projection_mode": "C04_START_PROJECTION_EXACT12",
+  "repository_validated_base_commit": "028765cea128c73fb2404e6cefefce12175cb9f4",
+  "repository_head_relation": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-03_FINAL_ACCEPTANCE_REPORT.md",
+    "docs/04_test_reports/C-04_START_PROJECTION_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/completion_reports/C-03_completion.md",
-    "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
+    "docs/evidence/manifests/C-04_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c03-final-acceptance.json",
-    "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
-    "docs/validation/C-03_FINAL_ACCEPTANCE_VALIDATION.md",
-    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c04-start.json",
+    "docs/validation/C-04_START_VALIDATION.md",
+    "docs/work_orders/C-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-04_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "product_exact_paths": [
+  "product_write_scope": [
     "packages/orchestration/developer_lifecycle.py",
     "packages/orchestration/__init__.py",
+    "packages/api/delegation_lifecycle.py",
+    "packages/api/registry.py",
+    "packages/api/__init__.py",
+    "tests/orchestration/test_developer_lifecycle_c04.py",
     "tests/orchestration/test_developer_lifecycle.py",
-    "packages/e2e/harness.py"
+    "tests/api/test_c04_delegation_lifecycle.py",
+    "tests/api/test_registry_openapi.py"
   ],
-  "lineage": {
-    "development_main_base": "1c3948ff1a741832a2f012f464f1a301490356c1",
-    "start_control_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
-    "r2_control_commit": "e778a0c0d4152a7e164e2f016994595dee4b7274",
-    "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
-    "ancestor_chain": [
-      "1c3948ff1a741832a2f012f464f1a301490356c1",
-      "2dcd4da89e92425be52b570ae2110f60dfcc29de",
-      "e778a0c0d4152a7e164e2f016994595dee4b7274",
-      "219eedd7adf287c55818eab930d6a665a2fc0980"
+  "work_instruction_id": "WI-C-04-STEER-RESUME-R2-20260912-001",
+  "work_instruction_sha256": "F319574EEFE4A4D695F2CD89AEAAEEDDB3702FB535F4747B559D82E0F1018796",
+  "invocation_sha256": "AA7F2D6ED7F8C9204946C4AC63C95504EDCFA09CB876425CD5AD01EC52E9ED5E",
+  "acceptance_binding": {
+    "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "work_instruction_id": "WI-C-04-STEER-RESUME-R2-20260912-001",
+    "work_instruction_sha256": "F319574EEFE4A4D695F2CD89AEAAEEDDB3702FB535F4747B559D82E0F1018796",
+    "invocation_sha256": "AA7F2D6ED7F8C9204946C4AC63C95504EDCFA09CB876425CD5AD01EC52E9ED5E",
+    "superseded_work_instruction_sha256": "51052949EEDD05C7BCE1307504AB794237F602F21328B1199FC12E6E23185E7B",
+    "superseded_invocation_sha256": "2B5005FBB23921EA466CD8B6174FDFF8D58007BB8E63F7580F6E310B008AE231",
+    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+    "function_scope_change": "UNCHANGED",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+    "acceptance": [
+      {
+        "requirement_id": "AV-AGT-005",
+        "level": "L6",
+        "method": "FI",
+        "evidence": [
+          "E-EVT",
+          "E-PRG"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-006",
+        "level": "L3",
+        "method": "AN",
+        "evidence": [
+          "E-EVT"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-029",
+        "level": "L4",
+        "method": "AE",
+        "evidence": [
+          "E-SHOT"
+        ],
+        "status": "DEFERRED_U02"
+      }
     ]
   },
-  "test_evidence": {
-    "main_full": {
-      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration tests/e2e",
-      "passed": 241,
-      "failed": 0,
-      "skipped": 0,
-      "scope": "POSTCOMMIT_PRODUCT_HEAD"
-    },
-    "focused_c03_c04": {
-      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration/test_developer_lifecycle.py tests/orchestration/test_developer_lifecycle_c04.py",
-      "passed": 78,
-      "failed": 0,
-      "skipped": 0,
-      "scope": "POSTCOMMIT_PRODUCT_HEAD"
-    }
-  },
-  "review_evidence": {
-    "control_r2": {
-      "verdict": "PASS",
-      "critical_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0
-    },
-    "product_initial": {
-      "verdict": "REWORK",
-      "critical_findings": 0,
-      "important_findings": 4,
-      "minor_findings": 1
-    },
-    "product_round1": {
-      "disposition": "ADDRESSED",
-      "important_addressed": 4,
-      "minor_addressed": 1
-    },
-    "product_round2": {
-      "scoped_reviews": 2,
-      "new_findings_disposition": "ADDRESSED",
-      "critical_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0
-    }
+  "lifecycle_contract": {
+    "milestone": "M1",
+    "predecessor_contract": "C03_ACCEPTED_PRESERVED",
+    "developer_actor_id": "developer-primary",
+    "path_match_mode": "SEGMENT_AWARE_EXACT_IDENTITY",
+    "exact_product_paths": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "packages/api/delegation_lifecycle.py",
+      "packages/api/registry.py",
+      "packages/api/__init__.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/api/test_c04_delegation_lifecycle.py",
+      "tests/api/test_registry_openapi.py"
+    ],
+    "confusable_prefix_rejected": "packages/** != packages_evil/**",
+    "runner_delivery_once": [
+      "STEER",
+      "CHECKPOINT_PAUSE",
+      "RESUME",
+      "STOP"
+    ],
+    "idempotency_key_required": true,
+    "human_input_priority": true,
+    "terminal_observation_preserved": true,
+    "linearizable_concurrency": true,
+    "checkpoint_format": "UTF8_CANONICAL_JSON_BYTES",
+    "checkpoint_content_hash": "SHA-256",
+    "checkpoint_bindings": [
+      "session_id",
+      "delegation_id",
+      "packet_hash",
+      "baseline_hash",
+      "context_hash",
+      "resume_epoch"
+    ],
+    "new_service_instance_restore": true,
+    "crash_recreate_cycles": 3,
+    "reject": [
+      "STALE_EPOCH",
+      "IDENTITY_DRIFT",
+      "PACKET_DRIFT",
+      "BASELINE_DRIFT",
+      "CONTEXT_DRIFT",
+      "DUPLICATE_COMMAND"
+    ],
+    "paused_stop": true,
+    "deterministic_json_safe_projection": true,
+    "immutable_projection": true,
+    "secret_projection_forbidden": true,
+    "raw_result_artifact_handoff": true,
+    "workbench_fields": [
+      "role",
+      "objective",
+      "in_scope",
+      "out_of_scope",
+      "permission",
+      "budget",
+      "cost_usage",
+      "status",
+      "current_action",
+      "checkpoint",
+      "evidence",
+      "allowed_commands",
+      "stop_authority"
+    ],
+    "canonical_delegation_operations": [
+      "GET",
+      "STEER",
+      "CANCEL",
+      "RESUME"
+    ],
+    "registry_projection_required": true
   },
   "external_validation": {
-    "actual_external_developer_backend": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "fastapi_binding": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "external_developer_backend": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
-    "secret": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "api": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED"
+    "network": "NOT_EXECUTED",
+    "browser": "DEFERRED_U02",
+    "e_shot": "DEFERRED_U02",
+    "product_code": "NOT_MUTATED_BY_CONTROL"
   },
-  "current_manifest": "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-04_START_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

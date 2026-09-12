@@ -13105,5 +13105,107 @@ class C03FinalAcceptanceProjectionTests(unittest.TestCase):
             selected.assert_called_once_with(dispatch)
 
 
+class C04StartProjectionTests(unittest.TestCase):
+    BASE = "028765cea128c73fb2404e6cefefce12175cb9f4"
+    EXACT12 = sorted([
+        "docs/04_test_reports/C-04_START_PROJECTION_REPORT.md",
+        "docs/WORK_STATUS.md",
+        "docs/evidence/manifests/C-04_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c04-start.json",
+        "docs/validation/C-04_START_VALIDATION.md",
+        "docs/work_orders/C-04_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-04_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        loaded = _load_checker_or_none()
+        self.assertIsNotNone(loaded)
+        self.assertTrue(hasattr(loaded, "c04_start_projection_from_root"))
+        return loaded
+
+    def test_c04_start_materialization_is_deterministic_and_exact(self):
+        checker = self._checker()
+        generated = checker.c04_start_projection_from_root(ROOT)
+        self.assertEqual(self.EXACT12, sorted(generated))
+        self.assertEqual(generated, checker.c04_start_projection_from_root(ROOT))
+        progress = json.loads(generated[checker.C04_START_P])
+        events = json.loads(generated[checker.C04_START_E])["events"]
+        self.assertEqual(751, progress["event_sequence"])
+        self.assertEqual("C-04", progress["current_work_package"])
+        self.assertEqual("IN_PROGRESS", progress["status"])
+        self.assertEqual({"package_id": "C-05", "status": "NOT_READY"}, progress["next_work_package"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"], [e["event_type"] for e in events[-3:]])
+        self.assertEqual("developer-primary", progress["worker_lease"]["actor_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(3, progress["write_lease"]["write_epoch"])
+        self.assertEqual(checker.c04_start_product_write_scope(), progress["write_lease"]["path_scope"])
+
+    def test_c04_contract_is_fail_closed_and_boundary_truthful(self):
+        checker = self._checker()
+        generated = checker.c04_start_projection_from_root(ROOT)
+        manifest = json.loads(generated[checker.C04_START_M])
+        contract = manifest["lifecycle_contract"]
+        self.assertEqual("SEGMENT_AWARE_EXACT_IDENTITY", contract["path_match_mode"])
+        self.assertTrue(contract["human_input_priority"])
+        self.assertTrue(contract["terminal_observation_preserved"])
+        self.assertEqual(3, contract["crash_recreate_cycles"])
+        self.assertEqual(["GET", "STEER", "CANCEL", "RESUME"], contract["canonical_delegation_operations"])
+        self.assertEqual("DEFERRED_U02", manifest["external_validation"]["browser"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["provider"])
+        mutated = copy.deepcopy(manifest)
+        mutated["lifecycle_contract"]["human_input_priority"] = False
+        with mock.patch.object(checker, "c04_start_projection_from_root", return_value=generated):
+            bundle = checker.load_bundle(ROOT)
+            self.assertIn("C04_START_PROJECTION_INVALID", checker.validate_c04_start_projection(bundle, mutated))
+
+    def test_c04_preserves_seq748_raw_prefix_and_dispatches_first(self):
+        checker = self._checker()
+        generated = checker.c04_start_projection_from_root(ROOT)
+        historical = subprocess.check_output(["git", "show", f"{self.BASE}:{checker.C04_START_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 748), checker.raw_event_object_prefix_bytes(generated[checker.C04_START_E], 748))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 751}}
+        with mock.patch.object(checker, "_collect_c04_start_projection_git", return_value=["SEQ751_SELECTED"]) as selected, mock.patch.object(
+            checker, "_collect_c03_final_acceptance_git", side_effect=AssertionError("seq748 must not run")
+        ):
+            self.assertEqual(["SEQ751_SELECTED"], checker._validate_git_projection(dispatch))
+            selected.assert_called_once_with(dispatch)
+
+    def test_c04_git_predicate_accepts_exact_precommit_and_sole_child_only(self):
+        checker = self._checker()
+        bundle = checker.load_bundle(ROOT)
+        self.assertEqual([], checker._collect_c04_start_projection_git(bundle))
+        completion = "a" * 40
+        rows = {
+            ("rev-parse", "HEAD"): completion,
+            ("branch", "--show-current"): checker.C04_START_BRANCH,
+            ("status", "--porcelain", "--untracked-files=all"): "",
+            ("remote", "get-url", "development"): checker.C04_START_DEVELOPMENT_URL,
+            ("rev-parse", checker.C04_START_DEVELOPMENT_REF): self.BASE,
+            ("rev-parse", self.BASE): self.BASE,
+            ("show", "-s", "--format=%P", completion): self.BASE,
+            ("diff", "--name-only", self.BASE, completion): "\n".join(self.EXACT12),
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{checker.C04_START_BRANCH}"): f"development/{checker.C04_START_BRANCH}",
+        }
+
+        def raw(_root, *args):
+            if args == ("rev-parse", "--path-format=absolute", "--git-path", "info/exclude"):
+                return "D:/Project/Anvil/.git/info/exclude\n"
+            if args[:2] == ("-c", "core.excludesFile=D:/Project/Anvil/.git/info/exclude"):
+                return rows.get(args[2:], "")
+            return None
+
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=raw), mock.patch.object(
+            checker, "_c02_git_quiet_check", return_value=True
+        ):
+            self.assertEqual([], checker._collect_c04_start_projection_git(bundle))
+            rows[("show", "-s", "--format=%P", completion)] = "b" * 40
+            self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
+
+
 if __name__ == "__main__":
     unittest.main()

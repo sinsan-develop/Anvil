@@ -1,0 +1,297 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-04_START_PROJECTION",
+  "artifact_id": "C04-START-PROJECTION-20260912",
+  "created_at": "2026-09-12T15:00:00+09:00",
+  "package_id": "C-04",
+  "event_sequence": 751,
+  "historical_event_sequence": 748,
+  "appended_event_count": 3,
+  "historical_raw_event_prefix": {
+    "bytes": 2257219,
+    "sha256": "918A593B8935A320E1DCEF2E2005C73EFFD37D6171ADD4AB6EA55174D3B66886"
+  },
+  "accepted": false,
+  "status": "IN_PROGRESS",
+  "c03_status": "ACCEPTED",
+  "c04_status": "IN_PROGRESS",
+  "c05_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-04",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+    "fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+    "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+    "lease_epoch": 2,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-04",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "dispatch_head": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "issued_at": "2026-09-12T15:00:00+09:00",
+    "expires_at": "2026-09-13T03:00:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c04-steer-resume-r2-20260912-001",
+    "worker_lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+    "fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+    "write_fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+    "write_epoch": 3,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-04",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-12T15:00:00+09:00",
+    "expires_at": "2026-09-13T03:00:00+09:00",
+    "path_scope": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "packages/api/delegation_lifecycle.py",
+      "packages/api/registry.py",
+      "packages/api/__init__.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/api/test_c04_delegation_lifecycle.py",
+      "tests/api/test_registry_openapi.py"
+    ],
+    "status": "ACTIVE"
+  },
+  "product_write_scope": [
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/__init__.py",
+    "packages/api/delegation_lifecycle.py",
+    "packages/api/registry.py",
+    "packages/api/__init__.py",
+    "tests/orchestration/test_developer_lifecycle_c04.py",
+    "tests/orchestration/test_developer_lifecycle.py",
+    "tests/api/test_c04_delegation_lifecycle.py",
+    "tests/api/test_registry_openapi.py"
+  ],
+  "work_instruction_id": "WI-C-04-STEER-RESUME-R2-20260912-001",
+  "work_instruction_path": "docs/work_orders/C-04_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "F319574EEFE4A4D695F2CD89AEAAEEDDB3702FB535F4747B559D82E0F1018796",
+  "invocation_path": "docs/work_orders/C-04_INVOCATION_PROMPT.md",
+  "invocation_sha256": "AA7F2D6ED7F8C9204946C4AC63C95504EDCFA09CB876425CD5AD01EC52E9ED5E",
+  "authority": {
+    "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC",
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "work_instruction_id": "WI-C-04-STEER-RESUME-R2-20260912-001",
+    "work_instruction_sha256": "F319574EEFE4A4D695F2CD89AEAAEEDDB3702FB535F4747B559D82E0F1018796",
+    "invocation_sha256": "AA7F2D6ED7F8C9204946C4AC63C95504EDCFA09CB876425CD5AD01EC52E9ED5E",
+    "superseded_work_instruction_sha256": "51052949EEDD05C7BCE1307504AB794237F602F21328B1199FC12E6E23185E7B",
+    "superseded_invocation_sha256": "2B5005FBB23921EA466CD8B6174FDFF8D58007BB8E63F7580F6E310B008AE231",
+    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+    "function_scope_change": "UNCHANGED",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+    "acceptance": [
+      {
+        "requirement_id": "AV-AGT-005",
+        "level": "L6",
+        "method": "FI",
+        "evidence": [
+          "E-EVT",
+          "E-PRG"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-006",
+        "level": "L3",
+        "method": "AN",
+        "evidence": [
+          "E-EVT"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-029",
+        "level": "L4",
+        "method": "AE",
+        "evidence": [
+          "E-SHOT"
+        ],
+        "status": "DEFERRED_U02"
+      }
+    ]
+  },
+  "lifecycle_contract": {
+    "milestone": "M1",
+    "predecessor_contract": "C03_ACCEPTED_PRESERVED",
+    "developer_actor_id": "developer-primary",
+    "path_match_mode": "SEGMENT_AWARE_EXACT_IDENTITY",
+    "exact_product_paths": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "packages/api/delegation_lifecycle.py",
+      "packages/api/registry.py",
+      "packages/api/__init__.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "tests/api/test_c04_delegation_lifecycle.py",
+      "tests/api/test_registry_openapi.py"
+    ],
+    "confusable_prefix_rejected": "packages/** != packages_evil/**",
+    "runner_delivery_once": [
+      "STEER",
+      "CHECKPOINT_PAUSE",
+      "RESUME",
+      "STOP"
+    ],
+    "idempotency_key_required": true,
+    "human_input_priority": true,
+    "terminal_observation_preserved": true,
+    "linearizable_concurrency": true,
+    "checkpoint_format": "UTF8_CANONICAL_JSON_BYTES",
+    "checkpoint_content_hash": "SHA-256",
+    "checkpoint_bindings": [
+      "session_id",
+      "delegation_id",
+      "packet_hash",
+      "baseline_hash",
+      "context_hash",
+      "resume_epoch"
+    ],
+    "new_service_instance_restore": true,
+    "crash_recreate_cycles": 3,
+    "reject": [
+      "STALE_EPOCH",
+      "IDENTITY_DRIFT",
+      "PACKET_DRIFT",
+      "BASELINE_DRIFT",
+      "CONTEXT_DRIFT",
+      "DUPLICATE_COMMAND"
+    ],
+    "paused_stop": true,
+    "deterministic_json_safe_projection": true,
+    "immutable_projection": true,
+    "secret_projection_forbidden": true,
+    "raw_result_artifact_handoff": true,
+    "workbench_fields": [
+      "role",
+      "objective",
+      "in_scope",
+      "out_of_scope",
+      "permission",
+      "budget",
+      "cost_usage",
+      "status",
+      "current_action",
+      "checkpoint",
+      "evidence",
+      "allowed_commands",
+      "stop_authority"
+    ],
+    "canonical_delegation_operations": [
+      "GET",
+      "STEER",
+      "CANCEL",
+      "RESUME"
+    ],
+    "registry_projection_required": true
+  },
+  "external_validation": {
+    "ui": "NOT_EXECUTED",
+    "fastapi_binding": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "external_developer_backend": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "browser": "DEFERRED_U02",
+    "e_shot": "DEFERRED_U02",
+    "product_code": "NOT_MUTATED_BY_CONTROL"
+  },
+  "record_binding": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
+  "self_reference": false,
+  "sequence": 751,
+  "projection_mode": "C04_START_PROJECTION_EXACT12",
+  "validated_base_commit": "028765cea128c73fb2404e6cefefce12175cb9f4",
+  "branch": "codex/c04-steer-resume-r1",
+  "exact_paths": [
+    "docs/04_test_reports/C-04_START_PROJECTION_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-04_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c04-start.json",
+    "docs/validation/C-04_START_VALIDATION.md",
+    "docs/work_orders/C-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-04_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 12,
+  "exact_path_list_sha256": "9CC982CC8BEEFF42232DE0DD637297FEEB6B09820B18471BD1CC7A32C8FF18E0",
+  "exact_path_list_ordinal_sha256": "A917007AA9CB5E2F5C521BA380BE5FBABB9F5ECC1A6D62DEB1589362D5E5A222",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-04_START_PROJECTION_REPORT.md",
+      "bytes": 497,
+      "sha256": "7D47B0C7B83A97946C00D2FA0CDBD361FAE6700B3BD5CA088918A8BABBE8B196"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 423053,
+      "sha256": "D52A35240CE0276867F246041CB586F1579E01A0E55E8A873F29B9A61F11F4C2"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 192357,
+      "sha256": "55BA820132462B5FF6AB093747513F5CAAC67A50425CA293E01EB0EC037BD682"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 837404,
+      "sha256": "082A5818224ADF54E85C4B87B888319DB43B0D5E3618A2FA68AE270B83B9621C"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2267069,
+      "sha256": "4437F381D2FAB4A7E5E41521EEED42C449010BE18FF29D2DFDDA604D4B488CE8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c04-start.json",
+      "bytes": 877,
+      "sha256": "6F9BAA1571570731D384689853664A8B35B4B140806A3DD575C9E8A85F92987F"
+    },
+    {
+      "path": "docs/validation/C-04_START_VALIDATION.md",
+      "bytes": 799,
+      "sha256": "14AA954743972590D889EAF6AA9A3D6A0FEF478C879F5C5C11BE7E75108415AA"
+    },
+    {
+      "path": "docs/work_orders/C-04_INVOCATION_PROMPT.md",
+      "bytes": 618,
+      "sha256": "AA7F2D6ED7F8C9204946C4AC63C95504EDCFA09CB876425CD5AD01EC52E9ED5E"
+    },
+    {
+      "path": "docs/work_orders/C-04_WORK_INSTRUCTION.md",
+      "bytes": 5264,
+      "sha256": "F319574EEFE4A4D695F2CD89AEAAEEDDB3702FB535F4747B559D82E0F1018796"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2887426,
+      "sha256": "69A7A08D5CF9DE148B3D6FB81010A3520C1B0EF6B88F9A7D0B8B680613FDDA1B"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 798374,
+      "sha256": "18CF0A73FA552BB7C74D3648F5B596EA177B73A36689366489BB19510BD31BAA"
+    }
+  ]
+}
