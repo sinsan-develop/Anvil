@@ -1,0 +1,254 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-03_CONTROL_R2",
+  "artifact_id": "C03-CONTROL-R2-20260912",
+  "created_at": "2026-09-12T09:50:00+09:00",
+  "package_id": "C-03",
+  "event_sequence": 743,
+  "historical_event_sequence": 740,
+  "appended_event_count": 3,
+  "historical_raw_event_prefix": {
+    "bytes": 2240403,
+    "sha256": "0B8395E5E366A682D12FB70B25566E70A6CAE2F2DA3261D3500D0FA8E6DF4EF0"
+  },
+  "accepted": false,
+  "status": "IN_PROGRESS",
+  "c02_status": "ACCEPTED",
+  "c03_status": "IN_PROGRESS",
+  "c04_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "worker_lease": {
+    "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+    "fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "issued_at": "2026-09-12T09:05:00+09:00",
+    "expires_at": "2026-09-12T21:05:00+09:00",
+    "status": "ACTIVE"
+  },
+  "retired_write_lease": {
+    "lease_id": "write-lease-c03-developer-lifecycle-r1-20260912-001",
+    "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+    "fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+    "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-12T09:05:00+09:00",
+    "expires_at": "2026-09-12T21:05:00+09:00",
+    "path_scope": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "tests/orchestration/test_developer_lifecycle.py"
+    ],
+    "status": "REVOKED_SUPERSEDED_BY_WI_R2",
+    "revoked_at": "2026-09-12T09:50:00+09:00",
+    "revocation_reason": "WI_R2_EXACT4_HARNESS_COMPATIBILITY_SCOPE_APPROVED",
+    "superseded_by": "write-lease-c03-developer-lifecycle-r2-20260912-001"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c03-developer-lifecycle-r2-20260912-001",
+    "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+    "fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
+    "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
+    "write_epoch": 2,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-12T09:50:00+09:00",
+    "expires_at": "2026-09-12T21:50:00+09:00",
+    "path_scope": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "packages/e2e/harness.py"
+    ],
+    "status": "ACTIVE"
+  },
+  "product_write_scope": [
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/__init__.py",
+    "tests/orchestration/test_developer_lifecycle.py",
+    "packages/e2e/harness.py"
+  ],
+  "work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R2-20260912-001",
+  "work_instruction_path": "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1",
+  "invocation_path": "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+  "invocation_sha256": "8DC8354D9D4BA4DD7A46FF0882FBF08B6C0E25AF9F30C385CAF9EA416E112996",
+  "revision_binding": {
+    "parent_human_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "direct_scope_approval_id": "C-03-WI-R2-HARNESS-COMPAT-APPROVED-20260912",
+    "main_revision_authority_id": "MAIN-AUTH-C03-WI-R2-20260912-001",
+    "prior_work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001",
+    "prior_work_instruction_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
+    "prior_binding_status": "INVALIDATED_BY_WI_CONTENT_HASH_CHANGE",
+    "new_work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R2-20260912-001",
+    "new_work_instruction_sha256": "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1",
+    "functional_scope_change": "UNCHANGED",
+    "requirement_change": "UNCHANGED",
+    "important_risk_change": "UNCHANGED",
+    "scope_added": [
+      "packages/e2e/harness.py"
+    ],
+    "scope_removed": [],
+    "reason": "PENDING_STOP_FAIL_CLOSED_REQUIRES_EXISTING_TAKEOVER_CALLER_TO_WAIT_BEFORE_STOP",
+    "rollback": "REMOVE_R2_EXACT4_PRODUCT_DELTA_AND_REISSUE_A_NEW_LEASE_BEFORE_ANY_R1_SCOPE_WRITE"
+  },
+  "compatibility_contract": {
+    "only_path": "packages/e2e/harness.py",
+    "only_symbol": "SyntheticE2EHarness.record_takeover",
+    "required_order": [
+      "START",
+      "WAIT_OR_PUBLIC_STATE_TRANSITION",
+      "STOP"
+    ],
+    "lifecycle_caller_exception": "FORBIDDEN",
+    "other_e2e_changes": "FORBIDDEN",
+    "test_change": "FORBIDDEN"
+  },
+  "lifecycle_contract": {
+    "milestone": "M1",
+    "developer_count": 1,
+    "developer_actor_id": "developer-primary",
+    "read_only_runtime": true,
+    "ordered_lifecycle": [
+      "START",
+      "WAIT",
+      "STOP",
+      "RAW_RESULT_AUTO_RECEIVE"
+    ],
+    "same_session_reuse_requires_identical_packet_and_baseline": true,
+    "runner_session_id_must_equal_requested_session_id": true,
+    "exact_product_paths": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "tests/orchestration/test_developer_lifecycle.py",
+      "packages/e2e/harness.py"
+    ],
+    "path_match_mode": "SEGMENT_AWARE_EXACT_PATH",
+    "confusable_prefix_rejected": "packages/** != packages_evil/**",
+    "raw_freeze": {
+      "format": "UTF8_CANONICAL_JSON_BYTES",
+      "string_keys_only": true,
+      "string_coercion_forbidden": true,
+      "sets_rejected": true,
+      "sorted_keys": true,
+      "nan_rejected": true
+    },
+    "auto_receive_is_auto_accept": false,
+    "pending_stop_behavior": "FAIL_CLOSED",
+    "compatibility": {
+      "only_path": "packages/e2e/harness.py",
+      "only_symbol": "SyntheticE2EHarness.record_takeover",
+      "required_order": [
+        "START",
+        "WAIT_OR_PUBLIC_STATE_TRANSITION",
+        "STOP"
+      ],
+      "lifecycle_caller_exception": "FORBIDDEN",
+      "other_e2e_changes": "FORBIDDEN",
+      "test_change": "FORBIDDEN"
+    }
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "actual_runner": "NOT_EXECUTED",
+    "c04_plus": "NOT_STARTED",
+    "product_code": "NOT_MUTATED_BY_CONTROL"
+  },
+  "record_binding": "DETACHED_STAGED_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD",
+  "self_reference": false,
+  "sequence": 743,
+  "projection_mode": "C03_CONTROL_R2_EXACT12",
+  "validated_base_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+  "branch": "codex/c03-developer-lifecycle-r1",
+  "exact_paths": [
+    "docs/04_test_reports/C-03_CONTROL_R2_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-03_CONTROL_R2_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c03-control-r2.json",
+    "docs/validation/C-03_CONTROL_R2_VALIDATION.md",
+    "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 12,
+  "exact_path_list_sha256": "0DD271A39C76560A68D2383F86454232F619DD2BCA03F6750952A2D3A0A9240C",
+  "exact_path_list_ordinal_sha256": "BCB20A137B571BF2635C7FCD5BF32373DF1313466F921BB2A41B4AA78CF76BE0",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-03_CONTROL_R2_REPORT.md",
+      "bytes": 641,
+      "sha256": "E9FC54DA1AE0FC2897DC7AB090EE655A45ED6D58E3F5CFF625A13C113256DDDF"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 422240,
+      "sha256": "7392955F63C26F2743696F36E2F9A162B7CF5B1BF8DCDEE6F79F90AAAA7B25F8"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 190037,
+      "sha256": "15FEEFAAD61F71BC0C5FE2D4D67B4B08855C7D512177187E7424278572CC1263"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 826760,
+      "sha256": "F4870848B1BAB696F7B93E9231D6F20D519BC101DD0493FBB0E8BD86882D5EA3"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2247509,
+      "sha256": "E30D2C655A4AA3D8EE3A5B96C9F5D6DA1BA48FBE6C41B5473A2FF3D79FC0452A"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c03-control-r2.json",
+      "bytes": 865,
+      "sha256": "923B24EFA7279C1C032E39FDF02DE5C18FC15AED7337426E1F3B23258FBE87B6"
+    },
+    {
+      "path": "docs/validation/C-03_CONTROL_R2_VALIDATION.md",
+      "bytes": 720,
+      "sha256": "53D6B0FA1E196E4B684155F5245BDDA2E1DAE5166F5E10252A35E15D3AF12787"
+    },
+    {
+      "path": "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+      "bytes": 466,
+      "sha256": "8DC8354D9D4BA4DD7A46FF0882FBF08B6C0E25AF9F30C385CAF9EA416E112996"
+    },
+    {
+      "path": "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+      "bytes": 4711,
+      "sha256": "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2532347,
+      "sha256": "5C0BF95C0D963A8827D7EA44C56ED06E6C5C162D9D15130E41410A6386BF7A14"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 777057,
+      "sha256": "4528C4F9C53CCF623F1DD09BAB57CAC0112F3D018B2DCC0AAC11ECA7DF1121CC"
+    }
+  ]
+}

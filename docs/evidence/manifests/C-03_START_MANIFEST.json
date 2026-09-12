@@ -1,0 +1,210 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-03_START_PROJECTION",
+  "artifact_id": "C03-START-PROJECTION-20260912",
+  "created_at": "2026-09-12T09:05:00+09:00",
+  "package_id": "C-03",
+  "event_sequence": 740,
+  "historical_event_sequence": 737,
+  "appended_event_count": 3,
+  "historical_raw_event_prefix": {
+    "bytes": 2233616,
+    "sha256": "9EC2A2A0EF37E2FA4F76939D396106ED24D5C38F1FF2ACFBF72EF69A1ECF073E"
+  },
+  "accepted": false,
+  "status": "IN_PROGRESS",
+  "c02_status": "ACCEPTED",
+  "c03_status": "IN_PROGRESS",
+  "c04_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-03",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+    "fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "issued_at": "2026-09-12T09:05:00+09:00",
+    "expires_at": "2026-09-12T21:05:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c03-developer-lifecycle-r1-20260912-001",
+    "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+    "fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+    "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-12T09:05:00+09:00",
+    "expires_at": "2026-09-12T21:05:00+09:00",
+    "path_scope": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "tests/orchestration/test_developer_lifecycle.py"
+    ],
+    "status": "ACTIVE"
+  },
+  "product_write_scope": [
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/__init__.py",
+    "tests/orchestration/test_developer_lifecycle.py"
+  ],
+  "work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001",
+  "work_instruction_path": "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
+  "invocation_path": "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+  "invocation_sha256": "36CA899CBDBA0289734AAF5D44D073B0CD082C0EC26447237622B0A957B0636A",
+  "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "acceptance_binding": {
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "requirement_ids": [
+      "AV-AGT-004"
+    ],
+    "verification_level": "L3",
+    "method": "AI",
+    "evidence_types": [
+      "E-GIT",
+      "E-ART"
+    ],
+    "work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001",
+    "work_instruction_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
+    "invocation_sha256": "36CA899CBDBA0289734AAF5D44D073B0CD082C0EC26447237622B0A957B0636A"
+  },
+  "lifecycle_contract": {
+    "milestone": "M1",
+    "developer_count": 1,
+    "developer_actor_id": "developer-primary",
+    "read_only_runtime": true,
+    "ordered_lifecycle": [
+      "START",
+      "WAIT",
+      "STOP",
+      "RAW_RESULT_AUTO_RECEIVE"
+    ],
+    "same_session_reuse_requires_identical_packet_and_baseline": true,
+    "runner_session_id_must_equal_requested_session_id": true,
+    "exact_product_paths": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "tests/orchestration/test_developer_lifecycle.py"
+    ],
+    "path_match_mode": "SEGMENT_AWARE_EXACT_PATH",
+    "confusable_prefix_rejected": "packages/** != packages_evil/**",
+    "raw_freeze": {
+      "format": "UTF8_CANONICAL_JSON_BYTES",
+      "string_keys_only": true,
+      "string_coercion_forbidden": true,
+      "sets_rejected": true,
+      "sorted_keys": true,
+      "nan_rejected": true
+    },
+    "auto_receive_is_auto_accept": false
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "actual_runner": "NOT_EXECUTED",
+    "c04_plus": "NOT_STARTED",
+    "product_code": "NOT_MUTATED_BY_CONTROL"
+  },
+  "record_binding": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
+  "self_reference": false,
+  "sequence": 740,
+  "projection_mode": "C03_START_PROJECTION_EXACT12",
+  "validated_base_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
+  "branch": "codex/c03-developer-lifecycle-r1",
+  "exact_paths": [
+    "docs/04_test_reports/C-03_START_PROJECTION_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/evidence/manifests/C-03_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c03-start.json",
+    "docs/validation/C-03_START_VALIDATION.md",
+    "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 12,
+  "exact_path_list_sha256": "092114EB0D2E4C9088BBA780F8A411DFFD720381C6FC3D0B38FDE1B63E190509",
+  "exact_path_list_ordinal_sha256": "A15C8A32017C9BD6EDB8BE8D15BD12FC2756F988602A3E0E1832140D3D632129",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-03_START_PROJECTION_REPORT.md",
+      "bytes": 510,
+      "sha256": "D67D861B62FC86FFC06BF8C78B42F27176E7E73F1AE8F3F159A6321427410C39"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 421845,
+      "sha256": "1EB57C1811C969D1D9DB4EE171C28FDD5FE5D94EFA66C7650D398FAD64AF3C77"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 188728,
+      "sha256": "2014E4F4FB6D03CBFF2E962F102EF5A9F9B0A863FE1B5E1093F3917CCAFEFB8D"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 820936,
+      "sha256": "ECE790C3C847C7CB5EF3BC62F72296478848A4B469AFC77D5B3A6228B21C3F2C"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2240587,
+      "sha256": "4B8FEDD81EC2B4BD2E49FD4C8D8035416359042A5733802320DFFF567977D4AE"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c03-start.json",
+      "bytes": 877,
+      "sha256": "ACD8859E332A03DF75B0FEF60023E1A3EDED0C3093F6042F0D8571528A2AFB9D"
+    },
+    {
+      "path": "docs/validation/C-03_START_VALIDATION.md",
+      "bytes": 668,
+      "sha256": "049BD72751E8498F0EF6476705B1CE0EF00A512C40B8246ADEE3BEE3D22EF8A5"
+    },
+    {
+      "path": "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+      "bytes": 584,
+      "sha256": "36CA899CBDBA0289734AAF5D44D073B0CD082C0EC26447237622B0A957B0636A"
+    },
+    {
+      "path": "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+      "bytes": 3411,
+      "sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2505828,
+      "sha256": "37B0864DFD113DF25C6BADD4B105957A34B0075D0CB7110198B404139044DA52"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 767488,
+      "sha256": "3AA7004CC1380035176F0FAB14CF004D5AE2E5EF6F587D82BDE2AAE3E7E2667F"
+    }
+  ]
+}

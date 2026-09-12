@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C03-CONTROL-R2-DIGEST-20260912",
+  "package_id": "C-03",
+  "event_sequence": 743,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-12T09:50:00+09:00",
+  "scope": "seq741-743 append-only C-03 control R2; seq1-740 preserved; exact12",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 826760,
+    "file_sha256": "F4870848B1BAB696F7B93E9231D6F20D519BC101DD0493FBB0E8BD86882D5EA3",
+    "canonical_json_sha256": "AB0C1FD1E6836368072BD1F23A40A2CB33B551FF924FF86A534AC55793CB448D"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 190037,
+    "file_sha256": "15FEEFAAD61F71BC0C5FE2D4D67B4B08855C7D512177187E7424278572CC1263",
+    "machine_summary_canonical_sha256": "B95F794CE6D1AF55E6EF4018F5F94AE293AECC3B07C8D75FF43BFF29A0710906"
+  }
+}

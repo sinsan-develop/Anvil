@@ -1,1 +1,1 @@
-C-03 WorkInstruction에 따라 DelegationPacket 기반 read-only Developer lifecycle(start/wait/stop/raw result)을 구현하라. 실제 subprocess나 외부 시스템은 호출하지 말고 deterministic fake runner와 상태 전이·idempotency·policy 거부 테스트를 포함해 결과를 보고하라.
+C-03 R2 WorkInstruction과 새 epoch-2 write lease를 먼저 검증하고 exact4 제품 경로만 단일 writer로 수정하라. 기존 lifecycle fail-closed 계약을 완화하지 말고 `SyntheticE2EHarness.record_takeover`만 공개 start→wait(또는 공개 state 전이)→stop 순서를 따르게 한다. 다른 E2E 기능·테스트와 외부 시스템, C-04 이상 기능은 변경·실행하지 말고 TDD RED→GREEN 및 정확한 결과를 반환하라.

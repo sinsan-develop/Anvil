@@ -10,7 +10,7 @@ from .delegation import (
 from .developer_lifecycle import (
     DeveloperLifecycleService, DeveloperRunner, DeveloperSession,
     DeterministicFakeDeveloperRunner, InvalidLifecycleTransition, LifecycleError,
-    LifecycleStatus, PacketRejected, RawResult, RawResultEnvelope,
+    LifecycleStatus, PacketRejected, RawResult, RawResultArtifact, RawResultEnvelope,
     ReadOnlyDeveloperRunner, ReadOnlyPolicy, ReadOnlyPolicyRejected,
     CheckpointHandoff, LifecycleProjection, ResumeRejected,
 )
@@ -47,7 +47,7 @@ __all__ = [
     "DelegationValidationReceipt", "ValidationReceipt", "validate_packet",
     "DeveloperLifecycleService", "DeveloperRunner", "DeveloperSession",
     "DeterministicFakeDeveloperRunner", "InvalidLifecycleTransition", "LifecycleError",
-    "LifecycleStatus", "PacketRejected", "RawResult", "RawResultEnvelope",
+    "LifecycleStatus", "PacketRejected", "RawResult", "RawResultArtifact", "RawResultEnvelope",
     "ReadOnlyDeveloperRunner", "ReadOnlyPolicy", "ReadOnlyPolicyRejected",
     "CheckpointHandoff", "LifecycleProjection", "ResumeRejected",
     "EvidenceReference", "ResultEnvelope", "ResultReasonCode", "ResultTest",
