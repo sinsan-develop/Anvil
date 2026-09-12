@@ -911,6 +911,13 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C05_START_PROJECTION_EXACT11"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 763
+                and event.get("sequence") == 763
+                and event.get("event_id") == "evt_c05_scope_package_resumed"
+                and event["details"].get("projection_mode") == "C05_SCOPE_REVISION_EXACT9"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -12924,6 +12931,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 763:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c05_scope_revision_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 760:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13988,6 +13999,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-05_SCOPE_REVISION_MANIFEST.json":
+            errors.extend(validate_c05_scope_revision(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-05_START_MANIFEST.json":
             errors.extend(validate_c05_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json":
@@ -35336,6 +35349,473 @@ def _collect_c05_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
             and check("diff", "--quiet", successor, head)
         )
         return [] if valid else ["C05_START_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C05_SCOPE_P = "docs/progress/build-progress.json"
+C05_SCOPE_E = "docs/progress/progress-events.json"
+C05_SCOPE_H = "docs/progress/BUILD_HANDOFF.md"
+C05_SCOPE_D = "docs/progress/progress-handoff-detached-digest-c05-scope-revision.json"
+C05_SCOPE_M = "docs/evidence/manifests/C-05_SCOPE_REVISION_MANIFEST.json"
+C05_SCOPE_REPORT = "docs/04_test_reports/C-05_SCOPE_REVISION_REPORT.md"
+C05_SCOPE_VALIDATION = "docs/validation/C-05_SCOPE_REVISION_VALIDATION.md"
+C05_SCOPE_BASE = "c62d07327f09280951e591b5d726b0ca5ae5b8ef"
+C05_SCOPE_DEVELOPMENT_MAIN = "7182e056b577689c77bf26f2c394e7cfa7211129"
+C05_SCOPE_BRANCH = "codex/c05-result-envelope-revalidation-r1"
+C05_SCOPE_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C05_SCOPE_DEVELOPMENT_REF = "development/main"
+C05_SCOPE_AT = "2026-09-13T12:00:00+09:00"
+C05_SCOPE_EXPIRES_AT = "2026-09-13T22:00:00+09:00"
+C05_SCOPE_WRITE_LEASE_ID = "write-lease-c05-result-envelope-r2-compat-20260913-002"
+C05_SCOPE_WRITE_TOKEN = "c05-result-envelope-write-fence-epoch-5-c62d073"
+
+
+def c05_scope_revision_paths() -> list[str]:
+    return sorted([
+        C05_SCOPE_REPORT, C05_SCOPE_M, C05_SCOPE_H, C05_SCOPE_P, C05_SCOPE_E,
+        C05_SCOPE_D, C05_SCOPE_VALIDATION, "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c05_scope_product_write_scope() -> list[str]:
+    return sorted([
+        "packages/orchestration/result_envelope.py",
+        "packages/orchestration/__init__.py",
+        "tests/orchestration/test_result_envelope_c05.py",
+        "tests/orchestration/test_failure_report_c06.py",
+    ])
+
+
+def c05_scope_reviewed_merge_paths() -> list[str]:
+    return sorted(set(c05_start_projection_paths()) | set(c05_scope_revision_paths()))
+
+
+def c05_scope_revision_metadata() -> dict[str, Any]:
+    paths = c05_scope_revision_paths()
+    merged = c05_scope_reviewed_merge_paths()
+    return {
+        "sequence": 763, "projection_mode": "C05_SCOPE_REVISION_EXACT9",
+        "validated_base_commit": C05_SCOPE_BASE,
+        "development_main": C05_SCOPE_DEVELOPMENT_MAIN, "branch": C05_SCOPE_BRANCH,
+        "exact_paths": paths, "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+        "reviewed_merge_paths": merged, "reviewed_merge_path_count": len(merged),
+        "reviewed_merge_path_list_sha256": _c21_path_list_sha(merged, windows=True),
+        "reviewed_merge_path_list_ordinal_sha256": _c21_path_list_sha(merged, windows=False),
+    }
+
+
+def _c05_scope_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C05_SCOPE_WRITE_LEASE_ID,
+        "worker_lease_id": C05_START_WORKER_LEASE_ID,
+        "fencing_token": C05_SCOPE_WRITE_TOKEN,
+        "write_fencing_token": C05_SCOPE_WRITE_TOKEN,
+        "write_epoch": 5, "actor_id": "developer-primary", "subject_ref": "C-05",
+        "baseline_hash": C05_START_DESIGN_SHA256,
+        "issued_at": C05_SCOPE_AT, "expires_at": C05_SCOPE_EXPIRES_AT,
+        "path_scope": c05_scope_product_write_scope(), "status": "ACTIVE",
+    }
+
+
+def _c05_scope_retired_write_lease() -> dict[str, Any]:
+    retired = _c05_start_write_lease()
+    retired.update({
+        "status": "REVOKED_SUPERSEDED_BY_COMPATIBILITY_SCOPE",
+        "revoked_at": C05_SCOPE_AT,
+        "revocation_reason": "C05_R2_INCOMPLETE_REASON_CODE_REQUIRES_EXISTING_C06_FIXTURE_COMPATIBILITY",
+        "superseded_by": C05_SCOPE_WRITE_LEASE_ID,
+    })
+    return retired
+
+
+def _c05_scope_revision_binding() -> dict[str, Any]:
+    return {
+        "revision_class": "MAIN_INTERNAL_TECHNICAL_SCOPE_REVISION",
+        "authority_basis": ["APPROVED_WORK_PLAN_C05", "C05_R2_RESULT_CONTRACT", "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"],
+        "base_control_commit": C05_SCOPE_BASE,
+        "prior_work_instruction_id": C05_START_WI_ID,
+        "prior_work_instruction_sha256": C05_START_WI_SHA256,
+        "work_instruction_status": "UNCHANGED",
+        "functional_scope_change": "UNCHANGED", "requirement_change": "UNCHANGED",
+        "important_risk_change": "UNCHANGED",
+        "scope_added": ["tests/orchestration/test_failure_report_c06.py"],
+        "scope_removed": [],
+        "reason": "FULL_REGRESSION_FIXTURE_MUST_SUPPLY_VALID_INCOMPLETE_REASON_CODE",
+    }
+
+
+def _c05_scope_fixture_compatibility_contract() -> dict[str, Any]:
+    return {
+        "only_path": "tests/orchestration/test_failure_report_c06.py",
+        "only_test": "test_other_result_status_is_never_failure_report",
+        "target_status": "INCOMPLETE",
+        "required_reason_code": "RESULT_CONTRACT_INCOMPLETE",
+        "only_change": "ADD_VALID_INCOMPLETE_REASON_CODE",
+        "c06_validator_implementation": "FORBIDDEN",
+        "other_c06_changes": "FORBIDDEN",
+        "production_behavior_change": "FORBIDDEN",
+    }
+
+
+def _c05_scope_markdown() -> tuple[bytes, bytes]:
+    report = """# C-05 Compatibility Scope Revision Report
+
+- 판정: IN_PROGRESS; internal compatibility scope revision authorized
+- seq761~763: WRITE_LEASE_REVOKED to WRITE_LEASE_ISSUED to PACKAGE_RESUMED
+- worker lease epoch3 maintained; write lease epoch4 revoked, epoch5 exact4 active
+- added scope: tests/orchestration/test_failure_report_c06.py
+- allowed change: test_other_result_status_is_never_failure_report fixture에 valid INCOMPLETE reason code 추가
+- C06 validator와 다른 C06 변경: FORBIDDEN
+- 기능/요구/중요 위험: UNCHANGED
+- C-04 ACCEPTED; C-05 IN_PROGRESS; C-06 NOT_READY; DIR-2 NOT_REACHED
+- 제품/외부 실행/commit/push: NOT_EXECUTED
+""".encode("utf-8")
+    validation = """# C-05 Compatibility Scope Revision Validation
+
+- seq1~760 raw event object bytes preserved; seq761~763 only appended
+- canonical revoke to issue to resume order and event hash chain validated
+- C05 start historical evidence unchanged
+- epoch3 worker lease maintained; epoch4 write lease retired; exact4 epoch5 write lease active
+- C06 scope is one existing fixture test only; C06 validator implementation forbidden
+- precommit exact9, clean sole direct-child exact9, reviewed two-parent merge with tree equality only
+- C-05 IN_PROGRESS, C-06 NOT_READY, DIR-2 NOT_REACHED
+- product implementation and external execution NOT_EXECUTED
+""".encode("utf-8")
+    return report, validation
+
+
+def c05_scope_revision_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c05_scope_revision_metadata()
+    generated = {C05_SCOPE_REPORT, C05_SCOPE_M, C05_SCOPE_H, C05_SCOPE_P, C05_SCOPE_E, C05_SCOPE_D, C05_SCOPE_VALIDATION}
+    if set(historical) != {C05_SCOPE_H, C05_SCOPE_P, C05_SCOPE_E} or set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C05_SCOPE_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C05_SCOPE_P])
+    stream = _c21_resume_json(historical[C05_SCOPE_E])
+    if (
+        progress.get("event_sequence") != 760 or stream.get("last_sequence") != 760
+        or len(stream.get("events", [])) != 760
+        or progress.get("current_work_package") != "C-05" or progress.get("status") != "IN_PROGRESS"
+        or progress.get("worker_lease") != _c05_start_worker_lease()
+        or progress.get("write_lease") != _c05_start_write_lease()
+        or progress.get("next_work_package") != {"package_id": "C-06", "status": "NOT_READY"}
+    ):
+        raise ValueError("C05_SCOPE_HISTORY_INVALID")
+    old_write = _c05_start_write_lease()
+    retired = _c05_scope_retired_write_lease()
+    new_write = _c05_scope_write_lease()
+    binding = _c05_scope_revision_binding()
+    compatibility = _c05_scope_fixture_compatibility_contract()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+
+    def envelope(sequence: int, event_type: str, event_id: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C05_SCOPE_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": "developer-primary", "project_id": "anvil",
+            "run_id": None, "work_package_id": "C-05", "step_id": "CONTROL-SCOPE-REVISION-R1",
+            "actor": "developer-primary", "subject_ref": "C-05/CONTROL-SCOPE-REVISION-R1",
+            "event_id": event_id, "sequence": sequence, "event_type": event_type,
+            "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+        return event
+
+    events = [
+        envelope(761, "WRITE_LEASE_REVOKED", "evt_c05_scope_write_lease_revoked", {
+            "lease_id": old_write["lease_id"], "reason": retired["revocation_reason"],
+            "superseded_by": C05_SCOPE_WRITE_LEASE_ID,
+        }),
+        envelope(762, "WRITE_LEASE_ISSUED", "evt_c05_scope_write_lease_issued", new_write),
+        envelope(763, "PACKAGE_RESUMED", "evt_c05_scope_package_resumed", {
+            "resume_event_ref": "evt_c05_scope_write_lease_issued", "package_status": "IN_PROGRESS",
+            "work_instruction_id": C05_START_WI_ID, "work_instruction_sha256": C05_START_WI_SHA256,
+            "invocation_sha256": C05_START_PROMPT_SHA256, "revision_binding": binding,
+            "fixture_compatibility_contract": compatibility,
+            "worker_lease_id": C05_START_WORKER_LEASE_ID, "write_lease_id": C05_SCOPE_WRITE_LEASE_ID,
+            "execution_fencing_token": C05_START_EXECUTION_TOKEN, "write_fencing_token": C05_SCOPE_WRITE_TOKEN,
+            "dispatch_head": C05_SCOPE_BASE, "dispatch_upstream_head": C05_SCOPE_DEVELOPMENT_MAIN,
+            "projection_mode": meta["projection_mode"], "validated_base_commit": C05_SCOPE_BASE,
+            "head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE",
+            "exact_allowed_paths": meta["exact_paths"], "reviewed_merge_paths": meta["reviewed_merge_paths"],
+            "product_write_scope": c05_scope_product_write_scope(),
+        }),
+    ]
+    events_raw = _c21_append_events(historical[C05_SCOPE_E], 760, events)
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C05_SCOPE_BASE,
+        "control_head": C05_SCOPE_BASE, "control_parent": C05_SCOPE_DEVELOPMENT_MAIN,
+        "development_main": C05_SCOPE_DEVELOPMENT_MAIN, "local_head": C05_SCOPE_BASE,
+        "branch": C05_SCOPE_BRANCH, "upstream": C05_SCOPE_DEVELOPMENT_REF,
+        "remote_head": C05_SCOPE_DEVELOPMENT_MAIN,
+        "head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE",
+        "worktree_status": "STAGED_EXACT9", "exact_allowed_paths": meta["exact_paths"],
+        "reviewed_merge_paths": meta["reviewed_merge_paths"], "product_write_scope": c05_scope_product_write_scope(),
+        "development_remote_url": C05_SCOPE_DEVELOPMENT_URL, "push_status": "NOT_EXECUTED",
+    })
+    instruction = dict(progress["active_work_instruction"])
+    instruction.update({"product_write_scope": c05_scope_product_write_scope(), "scope_revision": binding, "fixture_compatibility_contract": compatibility})
+    progress.update({
+        "snapshot_id": "snapshot-c05-scope-revision-seq763", "updated_at": C05_SCOPE_AT,
+        "recorded_at": C05_SCOPE_AT, "event_sequence": 763, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-05", "status": "IN_PROGRESS",
+        "worker_lease": _c05_start_worker_lease(), "write_lease": new_write,
+        "retired_c05_epoch4_write_lease": retired, "active_work_instruction": instruction,
+        "repository": repository,
+        "c05_scope_revision": {
+            "status": "IN_PROGRESS", "accepted": False, "event_sequence": 763,
+            "c04_status": "ACCEPTED", "c06_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+            "revision_binding": binding, "fixture_compatibility_contract": compatibility,
+            "result_envelope_contract": _c05_result_envelope_contract(), "external_validation": _c05_start_boundary(),
+        },
+        "next_work_package": {"package_id": "C-06", "status": "NOT_READY"},
+        "runtime_next_action": "DEVELOPER_IMPLEMENT_C05_RESULT_ENVELOPE_R2_EXACT4",
+        "next_safe_action": "DEVELOPER_IMPLEMENT_C05_RESULT_ENVELOPE_R2_EXACT4",
+        "current_progress_evidence_ref": {"package_id": "C-05", "path": C05_SCOPE_D, "manifest_path": C05_SCOPE_M},
+        "latest_evidence_manifest_ref": {"path": C05_SCOPE_M, "artifact_id": "C05-SCOPE-REVISION-20260913"},
+        "reporting_decision": {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": ["C05_INTERNAL_COMPATIBILITY_SCOPE_REVISION", "C05_IN_PROGRESS", "C06_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False,
+        },
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C05_SCOPE_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw, validation_raw = _c05_scope_markdown()
+    latest = {**files, C05_SCOPE_E: events_raw, C05_SCOPE_REPORT: report_raw, C05_SCOPE_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash", "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "accepted": False, "c04_status": "ACCEPTED", "c05_status": "IN_PROGRESS",
+        "c06_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED",
+        "retired_c05_epoch4_write_lease": retired,
+        "repository_head": C05_SCOPE_BASE, "repository_upstream": C05_SCOPE_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C05_SCOPE_BASE,
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "reviewed_merge_paths": meta["reviewed_merge_paths"],
+        "product_write_scope": c05_scope_product_write_scope(),
+        "work_instruction_id": C05_START_WI_ID, "work_instruction_sha256": C05_START_WI_SHA256,
+        "invocation_sha256": C05_START_PROMPT_SHA256,
+        "revision_binding": binding, "fixture_compatibility_contract": compatibility,
+        "current_manifest": C05_SCOPE_M, "external_validation": _c05_start_boundary(),
+        "reporting_decision": "AUTO_CONTINUE",
+    })
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement, historical[C05_SCOPE_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C05_SCOPE_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-05 compatibility scope revision — seq763\n\n"
+        "- seq1~760 raw event object bytes preserved; seq761~763 only appended.\n"
+        "- worker epoch3 maintained; write epoch4 retired and exact4 epoch5 issued.\n"
+        "- product and external systems not executed.\n\n" + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C05-SCOPE-REVISION-DIGEST-20260913",
+        "package_id": "C-05", "event_sequence": 763, "algorithm": "SHA-256",
+        "created_at": C05_SCOPE_AT,
+        "scope": "seq761-763 append-only C-05 compatibility scope revision; seq1-760 preserved; exact9",
+        "self_reference": False,
+        "progress": {"path": C05_SCOPE_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C05_SCOPE_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {
+        **files, C05_SCOPE_REPORT: report_raw, C05_SCOPE_H: handoff_raw,
+        C05_SCOPE_P: progress_raw, C05_SCOPE_E: events_raw, C05_SCOPE_D: digest_raw,
+        C05_SCOPE_VALIDATION: validation_raw,
+    }
+    historical_prefix = raw_event_object_prefix_bytes(historical[C05_SCOPE_E], 760)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-05_SCOPE_REVISION",
+        "artifact_id": "C05-SCOPE-REVISION-20260913", "created_at": C05_SCOPE_AT,
+        "package_id": "C-05", "event_sequence": 763, "historical_event_sequence": 760,
+        "appended_event_count": 3,
+        "historical_raw_event_prefix": {"bytes": len(historical_prefix), "sha256": _c21_resume_sha(historical_prefix)},
+        "accepted": False, "status": "IN_PROGRESS", "c04_status": "ACCEPTED",
+        "c05_status": "IN_PROGRESS", "c06_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "worker_lease": _c05_start_worker_lease(), "retired_write_lease": retired,
+        "write_lease": new_write, "product_write_scope": c05_scope_product_write_scope(),
+        "work_instruction_id": C05_START_WI_ID, "work_instruction_path": C05_START_WI,
+        "work_instruction_sha256": C05_START_WI_SHA256,
+        "invocation_path": C05_START_PROMPT, "invocation_sha256": C05_START_PROMPT_SHA256,
+        "revision_binding": binding, "fixture_compatibility_contract": compatibility,
+        "result_envelope_contract": _c05_result_envelope_contract(),
+        "external_validation": _c05_start_boundary(), "record_binding": repository["head_relation"],
+        "self_reference": False, **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+        for path, payload in sorted(artifacts.items())
+    ]
+    artifacts[C05_SCOPE_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C05_SCOPE_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c05_scope_revision_from_root(root: Path) -> dict[str, bytes]:
+    historical = {
+        path: subprocess.check_output(["git", "show", f"{C05_SCOPE_BASE}:{path}"], cwd=root)
+        for path in {C05_SCOPE_H, C05_SCOPE_P, C05_SCOPE_E}
+    }
+    generated = {C05_SCOPE_REPORT, C05_SCOPE_M, C05_SCOPE_H, C05_SCOPE_P, C05_SCOPE_E, C05_SCOPE_D, C05_SCOPE_VALIDATION}
+    files = {path: (root / path).read_bytes() for path in set(c05_scope_revision_paths()) - generated}
+    return c05_scope_revision_artifacts(historical, files)
+
+
+def validate_c05_scope_revision(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c05_scope_revision_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c05_scope_revision_paths()}
+        actual = {
+            C05_SCOPE_P: bundle.get("progress"),
+            C05_SCOPE_E: bundle.get("events"),
+            C05_SCOPE_H: bundle.get("handoff"),
+            C05_SCOPE_D: bundle.get("detached_digest"),
+            C05_SCOPE_M: manifest,
+        }
+        references = {
+            C05_SCOPE_P: _c21_resume_json(expected[C05_SCOPE_P]),
+            C05_SCOPE_E: _c21_resume_json(expected[C05_SCOPE_E]),
+            C05_SCOPE_H: extract_handoff_summary(expected[C05_SCOPE_H].decode()),
+            C05_SCOPE_D: _c21_resume_json(expected[C05_SCOPE_D]),
+            C05_SCOPE_M: _c21_resume_json(expected[C05_SCOPE_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], references[path]) for path in actual) else ["C05_SCOPE_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C05_SCOPE_RAW_BYTES_INVALID")
+        progress = actual[C05_SCOPE_P]
+        if (
+            not isinstance(progress, Mapping)
+            or progress.get("event_sequence") != 763
+            or progress.get("current_work_package") != "C-05"
+            or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c05_start_worker_lease()
+            or progress.get("write_lease") != _c05_scope_write_lease()
+            or progress.get("retired_c05_epoch4_write_lease") != _c05_scope_retired_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-06", "status": "NOT_READY"}
+            or progress.get("next_safe_action") != "DEVELOPER_IMPLEMENT_C05_RESULT_ENVELOPE_R2_EXACT4"
+        ):
+            errors.append("C05_SCOPE_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C05_SCOPE_BASE}:{C05_SCOPE_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 760) != raw_event_object_prefix_bytes(actual_raw[C05_SCOPE_E], 760):
+            errors.append("C05_SCOPE_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C05_SCOPE_INPUT_INVALID"]
+
+
+def _collect_c05_scope_revision_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c05_scope_revision_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C05_SCOPE_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch = optional("branch", "--show-current")
+        status_raw = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C05_SCOPE_DEVELOPMENT_REF)
+        base_ref = value("rev-parse", C05_SCOPE_BASE)
+        base_parent = value("show", "-s", "--format=%P", C05_SCOPE_BASE)
+        if None in (head, branch, status_raw, development_url, development_main, base_ref, base_parent):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C05_SCOPE_DEVELOPMENT_URL or base_ref != C05_SCOPE_BASE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if (
+            base_parent.split() != [C05_SCOPE_DEVELOPMENT_MAIN]
+            or not check("merge-base", "--is-ancestor", C05_SCOPE_DEVELOPMENT_MAIN, C05_SCOPE_BASE)
+        ):
+            return ["C05_SCOPE_GIT_LINEAGE_INVALID"]
+        dirty = _c02_strict_porcelain_paths(status_raw)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        feature_upstreams = {C05_SCOPE_DEVELOPMENT_REF, f"development/{C05_SCOPE_BRANCH}"}
+        if head == C05_SCOPE_BASE:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C05_SCOPE_BRANCH}")
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            if None in (upstream, cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                branch == C05_SCOPE_BRANCH
+                and development_main == C05_SCOPE_DEVELOPMENT_MAIN
+                and upstream == C05_SCOPE_DEVELOPMENT_REF
+                and dirty == meta["exact_paths"] and cached == meta["exact_paths"]
+                and not unstaged and not untracked and check("diff", "--cached", "--check")
+            )
+            return [] if valid else ["C05_SCOPE_PATH_OR_CLEAN_INVALID"]
+        if branch == C05_SCOPE_BRANCH:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C05_SCOPE_BRANCH}")
+            parents = value("show", "-s", "--format=%P", head)
+            changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C05_SCOPE_BASE, head))
+            if None in (upstream, parents, changed):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                development_main == C05_SCOPE_DEVELOPMENT_MAIN and upstream in feature_upstreams
+                and not dirty and parents.split() == [C05_SCOPE_BASE]
+                and changed == meta["exact_paths"]
+                and check("merge-base", "--is-ancestor", C05_SCOPE_BASE, head)
+                and check("diff", "--check", C05_SCOPE_BASE, head)
+            )
+            return [] if valid else ["C05_SCOPE_PATH_OR_CLEAN_INVALID"]
+        if branch == "main":
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main")
+            if upstream != C05_SCOPE_DEVELOPMENT_REF:
+                return ["C05_SCOPE_BRANCH_OR_UPSTREAM_INVALID"]
+        elif branch != "":
+            return ["C05_SCOPE_BRANCH_OR_UPSTREAM_INVALID"]
+        if development_main != head:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        parents = value("show", "-s", "--format=%P", head)
+        if parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        parent_list = parents.split()
+        if len(parent_list) != 2 or parent_list[0] != C05_SCOPE_DEVELOPMENT_MAIN:
+            return ["C05_SCOPE_MERGE_LINEAGE_INVALID"]
+        successor = parent_list[1]
+        successor_parent = value("show", "-s", "--format=%P", successor)
+        successor_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C05_SCOPE_BASE, successor))
+        merge_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C05_SCOPE_DEVELOPMENT_MAIN, head))
+        if None in (successor_parent, successor_changed, merge_changed):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if (
+            successor_parent.split() != [C05_SCOPE_BASE]
+            or not check("merge-base", "--is-ancestor", C05_SCOPE_BASE, successor)
+            or not check("merge-base", "--is-ancestor", C05_SCOPE_BASE, head)
+            or not check("merge-base", "--is-ancestor", C05_SCOPE_DEVELOPMENT_MAIN, head)
+        ):
+            return ["C05_SCOPE_MERGE_LINEAGE_INVALID"]
+        valid = (
+            not dirty and successor_changed == meta["exact_paths"]
+            and merge_changed == meta["reviewed_merge_paths"]
+            and check("diff", "--check", C05_SCOPE_BASE, successor)
+            and check("diff", "--check", C05_SCOPE_DEVELOPMENT_MAIN, head)
+            and check("diff", "--quiet", successor, head)
+        )
+        return [] if valid else ["C05_SCOPE_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

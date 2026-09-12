@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 760,
+  "last_sequence": 763,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -40909,7 +40909,159 @@
         ],
         "status": "ACTIVE"
       }
+    },
+    {
+      "occurred_at": "2026-09-13T12:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-05",
+      "step_id": "CONTROL-SCOPE-REVISION-R1",
+      "actor": "developer-primary",
+      "subject_ref": "C-05/CONTROL-SCOPE-REVISION-R1",
+      "event_id": "evt_c05_scope_write_lease_revoked",
+      "sequence": 761,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "previous_event_sha256": "2DB8F95C03CAC65946195F1AAFA9FC0E755B93C8F4B09E98C943BDCD45D7002B",
+      "details": {
+        "lease_id": "write-lease-c05-result-envelope-r2-20260913-001",
+        "reason": "C05_R2_INCOMPLETE_REASON_CODE_REQUIRES_EXISTING_C06_FIXTURE_COMPATIBILITY",
+        "superseded_by": "write-lease-c05-result-envelope-r2-compat-20260913-002"
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T12:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-05",
+      "step_id": "CONTROL-SCOPE-REVISION-R1",
+      "actor": "developer-primary",
+      "subject_ref": "C-05/CONTROL-SCOPE-REVISION-R1",
+      "event_id": "evt_c05_scope_write_lease_issued",
+      "sequence": 762,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "EF95B7D9E7A058B1AB8A761E535454AC388BD1C425FC75C097B83C7B5952889E",
+      "details": {
+        "lease_id": "write-lease-c05-result-envelope-r2-compat-20260913-002",
+        "worker_lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+        "fencing_token": "c05-result-envelope-write-fence-epoch-5-c62d073",
+        "write_fencing_token": "c05-result-envelope-write-fence-epoch-5-c62d073",
+        "write_epoch": 5,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-05",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-13T12:00:00+09:00",
+        "expires_at": "2026-09-13T22:00:00+09:00",
+        "path_scope": [
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/result_envelope.py",
+          "tests/orchestration/test_failure_report_c06.py",
+          "tests/orchestration/test_result_envelope_c05.py"
+        ],
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T12:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-05",
+      "step_id": "CONTROL-SCOPE-REVISION-R1",
+      "actor": "developer-primary",
+      "subject_ref": "C-05/CONTROL-SCOPE-REVISION-R1",
+      "event_id": "evt_c05_scope_package_resumed",
+      "sequence": 763,
+      "event_type": "PACKAGE_RESUMED",
+      "previous_event_sha256": "099BD6084094786575510AFA4DAD23409DF59440F997B9E05A9D5ECD317A77A5",
+      "details": {
+        "resume_event_ref": "evt_c05_scope_write_lease_issued",
+        "package_status": "IN_PROGRESS",
+        "work_instruction_id": "WI-C-05-RESULT-ENVELOPE-R2-20260913-001",
+        "work_instruction_sha256": "7D6DDA57A80F501A7496B1E3980FFE846E0908A222302F716AED6749EF55D562",
+        "invocation_sha256": "4951C34296810D0BC25EE89CC73772DC1BEFB238F875B98B14AF89A2633E1F0E",
+        "revision_binding": {
+          "revision_class": "MAIN_INTERNAL_TECHNICAL_SCOPE_REVISION",
+          "authority_basis": [
+            "APPROVED_WORK_PLAN_C05",
+            "C05_R2_RESULT_CONTRACT",
+            "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"
+          ],
+          "base_control_commit": "c62d07327f09280951e591b5d726b0ca5ae5b8ef",
+          "prior_work_instruction_id": "WI-C-05-RESULT-ENVELOPE-R2-20260913-001",
+          "prior_work_instruction_sha256": "7D6DDA57A80F501A7496B1E3980FFE846E0908A222302F716AED6749EF55D562",
+          "work_instruction_status": "UNCHANGED",
+          "functional_scope_change": "UNCHANGED",
+          "requirement_change": "UNCHANGED",
+          "important_risk_change": "UNCHANGED",
+          "scope_added": [
+            "tests/orchestration/test_failure_report_c06.py"
+          ],
+          "scope_removed": [],
+          "reason": "FULL_REGRESSION_FIXTURE_MUST_SUPPLY_VALID_INCOMPLETE_REASON_CODE"
+        },
+        "fixture_compatibility_contract": {
+          "only_path": "tests/orchestration/test_failure_report_c06.py",
+          "only_test": "test_other_result_status_is_never_failure_report",
+          "target_status": "INCOMPLETE",
+          "required_reason_code": "RESULT_CONTRACT_INCOMPLETE",
+          "only_change": "ADD_VALID_INCOMPLETE_REASON_CODE",
+          "c06_validator_implementation": "FORBIDDEN",
+          "other_c06_changes": "FORBIDDEN",
+          "production_behavior_change": "FORBIDDEN"
+        },
+        "worker_lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+        "write_lease_id": "write-lease-c05-result-envelope-r2-compat-20260913-002",
+        "execution_fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05",
+        "write_fencing_token": "c05-result-envelope-write-fence-epoch-5-c62d073",
+        "dispatch_head": "c62d07327f09280951e591b5d726b0ca5ae5b8ef",
+        "dispatch_upstream_head": "7182e056b577689c77bf26f2c394e7cfa7211129",
+        "projection_mode": "C05_SCOPE_REVISION_EXACT9",
+        "validated_base_commit": "c62d07327f09280951e591b5d726b0ca5ae5b8ef",
+        "head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-05_SCOPE_REVISION_REPORT.md",
+          "docs/evidence/manifests/C-05_SCOPE_REVISION_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c05-scope-revision.json",
+          "docs/validation/C-05_SCOPE_REVISION_VALIDATION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "reviewed_merge_paths": [
+          "docs/04_test_reports/C-05_SCOPE_REVISION_REPORT.md",
+          "docs/04_test_reports/C-05_START_PROJECTION_REPORT.md",
+          "docs/evidence/manifests/C-05_SCOPE_REVISION_MANIFEST.json",
+          "docs/evidence/manifests/C-05_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c05-scope-revision.json",
+          "docs/progress/progress-handoff-detached-digest-c05-start.json",
+          "docs/validation/C-05_SCOPE_REVISION_VALIDATION.md",
+          "docs/validation/C-05_START_VALIDATION.md",
+          "docs/work_orders/C-05_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-05_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_write_scope": [
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/result_envelope.py",
+          "tests/orchestration/test_failure_report_c06.py",
+          "tests/orchestration/test_result_envelope_c05.py"
+        ]
+      }
     }
   ],
-  "last_event_id": "evt_c05_write_lease_issued"
+  "last_event_id": "evt_c05_scope_package_resumed"
 }
