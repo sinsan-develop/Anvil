@@ -1,3 +1,21 @@
+# C-05 final acceptance - seq768
+
+- seq1~763 raw event object bytes and historical evidence preserved.
+- C-05 ACCEPTED, C-06 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED.
+- product exact4 verified; external runtime evidence not promoted.
+
+# C-05 compatibility scope revision — seq763
+
+- seq1~760 raw event object bytes preserved; seq761~763 only appended.
+- worker epoch3 maintained; write epoch4 retired and exact4 epoch5 issued.
+- product and external systems not executed.
+
+# C-05 Result Envelope R2 start projection — seq760
+
+- seq1~757 raw event object bytes and historical evidence preserved.
+- C-04 ACCEPTED, C-05 IN_PROGRESS, C-06 NOT_READY, DIR-2 NOT_REACHED.
+- exact3 product scope leased; control product/external execution none.
+
 # C-04 detached-smoke portability reconciliation — seq757
 
 - seq1~756 raw event object bytes and historical evidence preserved.
@@ -923,72 +941,182 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 757,
-  "last_event_id": "evt_c04_detached_smoke_portability_repository_reconciled",
+  "event_sequence": 768,
+  "last_event_id": "evt_c05_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "C",
-  "current_work_package": "C-04",
+  "current_work_package": "C-05",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "ISSUE_C05_WORK_INSTRUCTION",
+  "next_safe_action": "ISSUE_C06_WORK_INSTRUCTION",
   "accepted": true,
-  "reconciliation_status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
-  "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
-  "c04_status": "ACCEPTED",
-  "c05_status": "READY_FOR_WORK_INSTRUCTION",
-  "dir2_status": "NOT_REACHED",
+  "c05_status": "ACCEPTED",
+  "c06_status": "READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
-  "repository_head": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
+  "dir2_status": "NOT_REACHED",
+  "completed_worker_lease": {
+    "lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+    "fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05",
+    "execution_fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05",
+    "lease_epoch": 3,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-05",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "7182e056b577689c77bf26f2c394e7cfa7211129",
+    "dispatch_head": "7182e056b577689c77bf26f2c394e7cfa7211129",
+    "issued_at": "2026-09-13T10:00:00+09:00",
+    "expires_at": "2026-09-13T22:00:00+09:00",
+    "status": "REVOKED",
+    "revoked_at": "2026-09-13T15:30:00+09:00",
+    "revocation_reason": "C05_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
+  },
+  "completed_write_lease": {
+    "lease_id": "write-lease-c05-result-envelope-r2-compat-20260913-002",
+    "worker_lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+    "fencing_token": "c05-result-envelope-write-fence-epoch-5-c62d073",
+    "write_fencing_token": "c05-result-envelope-write-fence-epoch-5-c62d073",
+    "write_epoch": 5,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-05",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-13T12:00:00+09:00",
+    "expires_at": "2026-09-13T22:00:00+09:00",
+    "path_scope": [
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/result_envelope.py",
+      "tests/orchestration/test_failure_report_c06.py",
+      "tests/orchestration/test_result_envelope_c05.py"
+    ],
+    "status": "REVOKED",
+    "revoked_at": "2026-09-13T15:30:00+09:00",
+    "revocation_reason": "C05_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
+  },
+  "repository_head": "695779fda8e4f56a09ff5b7a42c162a35b486c39",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_EXACT9",
-  "repository_validated_base_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
-  "repository_head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "repository_projection_mode": "C05_FINAL_ACCEPTANCE_EXACT7",
+  "repository_validated_base_commit": "695779fda8e4f56a09ff5b7a42c162a35b486c39",
+  "repository_head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_RESULT.md",
-    "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json",
+    "docs/evidence/manifests/C-05_FINAL_ACCEPTANCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c04-detached-smoke-portability-reconciliation.json",
-    "docs/validation/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_VALIDATION.md",
+    "docs/progress/progress-handoff-detached-digest-c05-final-acceptance.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "lineage": {
-    "prior_development_main": "028765cea128c73fb2404e6cefefce12175cb9f4",
-    "prior_feature_acceptance": "d70e149edd99d3a09073970d913288ca4ab44d9c",
-    "prior_merged_main": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
-    "prior_merged_main_parents": [
-      "028765cea128c73fb2404e6cefefce12175cb9f4",
-      "d70e149edd99d3a09073970d913288ca4ab44d9c"
-    ],
-    "fix_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
-    "fix_parent": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
-    "fix_exact_paths": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_project_progress.py"
-    ],
-    "merge_tree_equals_prior_feature_acceptance": true,
-    "ancestor_checks_required": true
+  "product_exact_paths": [
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/result_envelope.py",
+    "tests/orchestration/test_failure_report_c06.py",
+    "tests/orchestration/test_result_envelope_c05.py"
+  ],
+  "product_file_sha256": {
+    "packages/orchestration/result_envelope.py": "794059B98F3F282B4545CCC3CCC618DF69BB34AE482371D09C7E8007095067FA",
+    "packages/orchestration/__init__.py": "7DBDCA72C9FCDDAE56EC7B3169A0B4933654BC4F41B9583F0A21BF7E0D820F9D",
+    "tests/orchestration/test_result_envelope_c05.py": "08CB815C898A14EB0019108494FFD3C589B72D358483D70257851F625F04E75F",
+    "tests/orchestration/test_failure_report_c06.py": "2FFEB7822770B2F4D2A4304651944BBDAC84CF7FB791F2E80D95BE82B8C9D20E"
   },
+  "lineage": {
+    "development_main_base": "7182e056b577689c77bf26f2c394e7cfa7211129",
+    "start_control_commit": "c62d07327f09280951e591b5d726b0ca5ae5b8ef",
+    "scope_revision_commit": "79d6d73eec0daebe6969b161afff0c98121b68ae",
+    "product_commit": "695779fda8e4f56a09ff5b7a42c162a35b486c39",
+    "ancestor_chain": [
+      "7182e056b577689c77bf26f2c394e7cfa7211129",
+      "c62d07327f09280951e591b5d726b0ca5ae5b8ef",
+      "79d6d73eec0daebe6969b161afff0c98121b68ae",
+      "695779fda8e4f56a09ff5b7a42c162a35b486c39"
+    ]
+  },
+  "test_evidence": {
+    "focused": {
+      "passed": 117,
+      "failed": 0
+    },
+    "related": {
+      "passed": 139,
+      "failed": 0
+    },
+    "main_precommit": {
+      "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/orchestration tests/api tests/e2e",
+      "passed": 562,
+      "failed": 0,
+      "scope": "PRODUCT_EXACT4_PRECOMMIT"
+    },
+    "main_postcommit": {
+      "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/orchestration tests/api tests/e2e",
+      "passed": 562,
+      "failed": 0,
+      "scope": "PRODUCT_COMMIT"
+    },
+    "compile_exact4": {
+      "passed": 4,
+      "failed": 0
+    },
+    "diff_check": {
+      "passed": true
+    }
+  },
+  "independent_product_review": {
+    "spec": "PASS",
+    "quality": "APPROVED",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "non_product_tool_errors": [
+    {
+      "fingerprint": "C05_PATCH_QUOTING_FAMILY",
+      "count": 3,
+      "classification": "SUBAGENT_TOOL_ERROR_MAIN_TAKEOVER",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_ACTIVE_PRODUCT_DIFF_CHECKER_EXPECTED",
+      "count": 1,
+      "classification": "EXPECTED_TRANSIENT_FAIL_CLOSED",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_SCOPE_PATH_OR_CLEAN_INVALID",
+      "count": 1,
+      "classification": "EXPECTED_POST_PRODUCT_PRE_FINAL_FAIL_CLOSED",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_REVIEWER_OVERBROAD_TEST_COLLECTION",
+      "count": 1,
+      "classification": "NON_AUTHORITATIVE_COLLECTION_ERROR",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_FINAL_TEST_BYTES_LITERAL_PATCH_QUOTE",
+      "count": 1,
+      "classification": "MAIN_TEST_PATCH_TRANSPORT_ERROR_CORRECTED",
+      "product_failure": false
+    }
+  ],
   "external_validation": {
-    "ui": "NOT_EXECUTED",
-    "fastapi_binding": "NOT_EXECUTED",
+    "product_code": "IMPLEMENTED_AND_LOCALLY_VERIFIED",
+    "c06_failure_aggregation": "NOT_EXECUTED",
+    "c07_outcome_resolution": "NOT_EXECUTED",
     "database": "NOT_EXECUTED",
-    "external_developer_backend": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
     "secret": "NOT_ACCESSED",
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "browser": "DEFERRED_U02",
-    "e_shot": "DEFERRED_U02"
+    "network": "NOT_EXECUTED"
   },
-  "current_manifest": "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-05_FINAL_ACCEPTANCE_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

@@ -17,7 +17,7 @@ from .developer_lifecycle import (
     WorkbenchProjection, ResumeRejected,
 )
 from .result_envelope import (
-    EvidenceReference, ResultEnvelope, ResultReasonCode, ResultTest,
+    EvidenceReference, ResultDomainReasonCode, ResultEnvelope, ResultReasonCode, ResultTest,
     ResultValidationResult, canonical_hash, canonical_json, validate_result,
 )
 from .failure_report import (
@@ -54,7 +54,7 @@ __all__ = [
     "ReadOnlyDeveloperRunner", "ReadOnlyPolicy", "ReadOnlyPolicyRejected",
     "CheckpointHandoff", "LifecycleProjection", "ResultHandoffProjection",
     "WorkbenchProjection", "ResumeRejected",
-    "EvidenceReference", "ResultEnvelope", "ResultReasonCode", "ResultTest",
+    "EvidenceReference", "ResultDomainReasonCode", "ResultEnvelope", "ResultReasonCode", "ResultTest",
     "ResultValidationResult", "canonical_hash", "canonical_json", "validate_result",
     "FailureReportReasonCode", "FailureReportValidationResult",
     "compute_failure_fingerprint", "validate_failure_report",

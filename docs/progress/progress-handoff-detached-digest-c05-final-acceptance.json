@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C05-FINAL-ACCEPTANCE-DIGEST-20260913",
+  "package_id": "C-05",
+  "event_sequence": 768,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-13T15:30:00+09:00",
+  "scope": "seq764-768 append-only C-05 final acceptance; seq1-763 preserved; exact7",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 861548,
+    "file_sha256": "D72C967DEA4FA3BC8B99CA0345E5C8E0C1879C6A5B064FB14F7D16C583EBD9B8",
+    "canonical_json_sha256": "3CE7073BE07657B61422DF6EF37D372DED68F82DFEE92A84DE1AD35C4102F1E9"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 191772,
+    "file_sha256": "907505798E27D1CDE0E33273DA4270B90DCA3F281D86136AC214A83EB994BB82",
+    "machine_summary_canonical_sha256": "FD9C53AC4E5A97A02A4DEA5D275397C92E22259C769C6D27CED975E0EB3D69C4"
+  }
+}
