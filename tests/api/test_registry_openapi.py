@@ -37,10 +37,17 @@ def test_registry_is_the_single_openapi_source_and_has_no_command_aliases() -> N
         ("POST", "/api/design-intent-reviews/{id}:continue"),
         ("POST", "/api/deployments/{id}:rollback"),
         ("GET", "/api/evidence-manifests/{id}"),
+        ("GET", "/api/delegations/{id}"),
+        ("POST", "/api/delegations/{id}:steer"),
+        ("POST", "/api/delegations/{id}:cancel"),
+        ("POST", "/api/delegations/{id}:resume"),
     }
     assert required <= entries
     assert ("POST", "/api/work-instructions/{id}/runs") not in entries
     assert ("POST", "/api/execution-plans/{id}/runs") not in entries
+    assert ("POST", "/api/delegations/{id}/steer") not in entries
+    assert ("POST", "/api/delegations/{id}/cancel") not in entries
+    assert ("POST", "/api/delegations/{id}/resume") not in entries
     assert all("/pause" not in path and "/approve" not in path for _, path in entries)
     assert len(entries) == len(api_registry.endpoints)
 

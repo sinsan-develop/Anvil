@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 748,
+  "last_sequence": 756,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -40164,7 +40164,451 @@
           "network": "NOT_EXECUTED"
         }
       }
+    },
+    {
+      "occurred_at": "2026-09-12T15:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "START",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-04/START",
+      "event_id": "evt_c04_work_instruction_issued",
+      "sequence": 749,
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "previous_event_sha256": "F63D1E7D3CE698EA4DF3DFB660466010C37947D2E3296A9FB2BFDE88C62C3948",
+      "details": {
+        "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC",
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_id": "WI-C-04-STEER-RESUME-R2-20260912-001",
+        "work_instruction_sha256": "F319574EEFE4A4D695F2CD89AEAAEEDDB3702FB535F4747B559D82E0F1018796",
+        "invocation_sha256": "AA7F2D6ED7F8C9204946C4AC63C95504EDCFA09CB876425CD5AD01EC52E9ED5E",
+        "superseded_work_instruction_sha256": "51052949EEDD05C7BCE1307504AB794237F602F21328B1199FC12E6E23185E7B",
+        "superseded_invocation_sha256": "2B5005FBB23921EA466CD8B6174FDFF8D58007BB8E63F7580F6E310B008AE231",
+        "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "acceptance": [
+          {
+            "requirement_id": "AV-AGT-005",
+            "level": "L6",
+            "method": "FI",
+            "evidence": [
+              "E-EVT",
+              "E-PRG"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-006",
+            "level": "L3",
+            "method": "AN",
+            "evidence": [
+              "E-EVT"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-029",
+            "level": "L4",
+            "method": "AE",
+            "evidence": [
+              "E-SHOT"
+            ],
+            "status": "DEFERRED_U02"
+          }
+        ],
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/orchestration/__init__.py",
+          "packages/api/delegation_lifecycle.py",
+          "packages/api/registry.py",
+          "packages/api/__init__.py",
+          "tests/orchestration/test_developer_lifecycle_c04.py",
+          "tests/orchestration/test_developer_lifecycle.py",
+          "tests/api/test_c04_delegation_lifecycle.py",
+          "tests/api/test_registry_openapi.py"
+        ],
+        "projection_mode": "C04_START_PROJECTION_EXACT12",
+        "validated_base_commit": "028765cea128c73fb2404e6cefefce12175cb9f4",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-04_START_PROJECTION_REPORT.md",
+          "docs/WORK_STATUS.md",
+          "docs/evidence/manifests/C-04_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c04-start.json",
+          "docs/validation/C-04_START_VALIDATION.md",
+          "docs/work_orders/C-04_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-04_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "lifecycle_contract": {
+          "milestone": "M1",
+          "predecessor_contract": "C03_ACCEPTED_PRESERVED",
+          "developer_actor_id": "developer-primary",
+          "path_match_mode": "SEGMENT_AWARE_EXACT_IDENTITY",
+          "exact_product_paths": [
+            "packages/orchestration/developer_lifecycle.py",
+            "packages/orchestration/__init__.py",
+            "packages/api/delegation_lifecycle.py",
+            "packages/api/registry.py",
+            "packages/api/__init__.py",
+            "tests/orchestration/test_developer_lifecycle_c04.py",
+            "tests/orchestration/test_developer_lifecycle.py",
+            "tests/api/test_c04_delegation_lifecycle.py",
+            "tests/api/test_registry_openapi.py"
+          ],
+          "confusable_prefix_rejected": "packages/** != packages_evil/**",
+          "runner_delivery_once": [
+            "STEER",
+            "CHECKPOINT_PAUSE",
+            "RESUME",
+            "STOP"
+          ],
+          "idempotency_key_required": true,
+          "human_input_priority": true,
+          "terminal_observation_preserved": true,
+          "linearizable_concurrency": true,
+          "checkpoint_format": "UTF8_CANONICAL_JSON_BYTES",
+          "checkpoint_content_hash": "SHA-256",
+          "checkpoint_bindings": [
+            "session_id",
+            "delegation_id",
+            "packet_hash",
+            "baseline_hash",
+            "context_hash",
+            "resume_epoch"
+          ],
+          "new_service_instance_restore": true,
+          "crash_recreate_cycles": 3,
+          "reject": [
+            "STALE_EPOCH",
+            "IDENTITY_DRIFT",
+            "PACKET_DRIFT",
+            "BASELINE_DRIFT",
+            "CONTEXT_DRIFT",
+            "DUPLICATE_COMMAND"
+          ],
+          "paused_stop": true,
+          "deterministic_json_safe_projection": true,
+          "immutable_projection": true,
+          "secret_projection_forbidden": true,
+          "raw_result_artifact_handoff": true,
+          "workbench_fields": [
+            "role",
+            "objective",
+            "in_scope",
+            "out_of_scope",
+            "permission",
+            "budget",
+            "cost_usage",
+            "status",
+            "current_action",
+            "checkpoint",
+            "evidence",
+            "allowed_commands",
+            "stop_authority"
+          ],
+          "canonical_delegation_operations": [
+            "GET",
+            "STEER",
+            "CANCEL",
+            "RESUME"
+          ],
+          "registry_projection_required": true
+        }
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T15:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-04/START",
+      "event_id": "evt_c04_worker_lease_issued",
+      "sequence": 750,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "AD525066AE33B0CDFFC74BBB53AEBFB6649A8F495E851F89644B2326E693968B",
+      "details": {
+        "lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+        "fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+        "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+        "lease_epoch": 2,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-04",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "028765cea128c73fb2404e6cefefce12175cb9f4",
+        "dispatch_head": "028765cea128c73fb2404e6cefefce12175cb9f4",
+        "issued_at": "2026-09-12T15:00:00+09:00",
+        "expires_at": "2026-09-13T03:00:00+09:00",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T15:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-04/START",
+      "event_id": "evt_c04_write_lease_issued",
+      "sequence": 751,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "352DF105B55FDA371BB2FFD2012CA3F2EF8384EC1EB114EFD84ABB818D599E52",
+      "details": {
+        "lease_id": "write-lease-c04-steer-resume-r2-20260912-001",
+        "worker_lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+        "fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+        "write_fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+        "write_epoch": 3,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-04",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-12T15:00:00+09:00",
+        "expires_at": "2026-09-13T03:00:00+09:00",
+        "path_scope": [
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/orchestration/__init__.py",
+          "packages/api/delegation_lifecycle.py",
+          "packages/api/registry.py",
+          "packages/api/__init__.py",
+          "tests/orchestration/test_developer_lifecycle_c04.py",
+          "tests/orchestration/test_developer_lifecycle.py",
+          "tests/api/test_c04_delegation_lifecycle.py",
+          "tests/api/test_registry_openapi.py"
+        ],
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T18:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-04/FINAL-ACCEPTANCE",
+      "event_id": "evt_c04_final_write_lease_revoked",
+      "sequence": 752,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "previous_event_sha256": "FF704FB68E4643B705951AEE97E26A590FFB107723A53DDC401CF7D2F9857B54",
+      "details": {
+        "lease_id": "write-lease-c04-steer-resume-r2-20260912-001",
+        "worker_lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+        "reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED",
+        "write_epoch": 3,
+        "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+        "write_fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T18:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-04/FINAL-ACCEPTANCE",
+      "event_id": "evt_c04_final_worker_lease_revoked",
+      "sequence": 753,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "previous_event_sha256": "C5E0B2749689744C5CCAD2CB9A1B2C6531F070F496DD9184DD71403E3163C3B1",
+      "details": {
+        "lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+        "reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED",
+        "lease_epoch": 2,
+        "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T18:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "developer-primary",
+      "subject_ref": "C-04/FINAL-ACCEPTANCE",
+      "event_id": "evt_c04_final_package_completed",
+      "sequence": 754,
+      "event_type": "PACKAGE_COMPLETED",
+      "previous_event_sha256": "C349FCB6DD700DE2136B60C27A62CAC9569F729B7977BD2D9375EF069BAF55E4",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": true,
+        "product_commit": "9e7248320aeaf465debd176354c4fad82f97c35c",
+        "product_parent": "be827a302b08ab0365dff2977c951e1005d30fe8",
+        "product_exact_paths": [
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/orchestration/__init__.py",
+          "packages/api/delegation_lifecycle.py",
+          "packages/api/registry.py",
+          "packages/api/__init__.py",
+          "tests/orchestration/test_developer_lifecycle_c04.py",
+          "tests/orchestration/test_developer_lifecycle.py",
+          "tests/api/test_c04_delegation_lifecycle.py",
+          "tests/api/test_registry_openapi.py"
+        ],
+        "lineage": {
+          "development_main_base": "028765cea128c73fb2404e6cefefce12175cb9f4",
+          "start_control_commit": "be827a302b08ab0365dff2977c951e1005d30fe8",
+          "product_commit": "9e7248320aeaf465debd176354c4fad82f97c35c",
+          "ancestor_chain": [
+            "028765cea128c73fb2404e6cefefce12175cb9f4",
+            "be827a302b08ab0365dff2977c951e1005d30fe8",
+            "9e7248320aeaf465debd176354c4fad82f97c35c"
+          ]
+        },
+        "main_precommit_pass_count": 460,
+        "main_postcommit_pass_count": 460,
+        "final_reviewer_r6": {
+          "spec": "PASS",
+          "quality": "APPROVED",
+          "critical": 0,
+          "important": 0,
+          "minor": 0
+        },
+        "external_validation": {
+          "ui": "NOT_EXECUTED",
+          "fastapi_binding": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "external_developer_backend": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "secret": "NOT_ACCESSED",
+          "wsl": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "browser": "DEFERRED_U02",
+          "e_shot": "DEFERRED_U02"
+        }
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T18:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "independent-tester",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "independent-tester",
+      "subject_ref": "C-04/FINAL-ACCEPTANCE",
+      "event_id": "evt_c04_final_independent_test_judgment_recorded",
+      "sequence": 755,
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "previous_event_sha256": "5664A2191A07B89B8E4FE58B1532B0432BFFFDF38706B4D82C74F696D6E3352F",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "C04_R6_L3_AI",
+        "evidence_ref": "D:\\tmp\\anvil-c04-independent-r6-final\\artifact_manifest.json",
+        "node_count": 45,
+        "case_count": 353,
+        "external_io_count": 0,
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "artifact_manifest_sha256": "7950C856DDA2287638DF6D4756AE0138AECDF19F79D1F246BD8B293BC729CA70"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T18:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-04/FINAL-ACCEPTANCE",
+      "event_id": "evt_c04_final_main_package_accepted",
+      "sequence": 756,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "previous_event_sha256": "4404CE2E34C1BD7EA8539D2ABBD3FCC5E6FAB4CB2B4263BEBE6E22E1C1991EC4",
+      "details": {
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "manifest_ref": "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "test_report_ref": "D:\\tmp\\anvil-c04-independent-r6-final\\verification_report.md",
+        "test_report_sha256": "F9CFE42A25A5C30DCE1346818E04AE68A67BD8BE3AD00A8C7F3978951C07B99F",
+        "next_work_package": "C-05",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "projection_mode": "C04_FINAL_ACCEPTANCE_EXACT7",
+        "validated_base_commit": "9e7248320aeaf465debd176354c4fad82f97c35c",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c04-final-acceptance.json",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "acceptance_head": "9e7248320aeaf465debd176354c4fad82f97c35c",
+        "acceptance_upstream_head": "9e7248320aeaf465debd176354c4fad82f97c35c",
+        "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "product_commit": "9e7248320aeaf465debd176354c4fad82f97c35c",
+        "lineage": {
+          "development_main_base": "028765cea128c73fb2404e6cefefce12175cb9f4",
+          "start_control_commit": "be827a302b08ab0365dff2977c951e1005d30fe8",
+          "product_commit": "9e7248320aeaf465debd176354c4fad82f97c35c",
+          "ancestor_chain": [
+            "028765cea128c73fb2404e6cefefce12175cb9f4",
+            "be827a302b08ab0365dff2977c951e1005d30fe8",
+            "9e7248320aeaf465debd176354c4fad82f97c35c"
+          ]
+        },
+        "dir2_status": "NOT_REACHED",
+        "external_validation": {
+          "ui": "NOT_EXECUTED",
+          "fastapi_binding": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "external_developer_backend": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "secret": "NOT_ACCESSED",
+          "wsl": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "browser": "DEFERRED_U02",
+          "e_shot": "DEFERRED_U02"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c03_final_main_package_accepted"
+  "last_event_id": "evt_c04_final_main_package_accepted"
 }

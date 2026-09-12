@@ -78,6 +78,10 @@ def _permission(method: str, path: str) -> str:
         "POST /api/runs/{id}/steps/{stepId}:execute": "run:execute",
         "POST /api/design-specifications/{id}:approve": "human:design:approve",
         "GET /api/evidence-manifests/{id}": "evidence:read",
+        "GET /api/delegations/{id}": "delegation:read",
+        "POST /api/delegations/{id}:steer": "delegation:steer",
+        "POST /api/delegations/{id}:cancel": "delegation:cancel",
+        "POST /api/delegations/{id}:resume": "delegation:resume",
     }
     key = f"{method} {path}"
     if key in exact:
@@ -172,6 +176,10 @@ _V1_ENDPOINTS: tuple[tuple[str, str, str], ...] = (
     ("POST", "/api/secrets/{id}:rotate", "49.15"),
     ("POST", "/api/secrets/{id}:revoke", "49.15"),
     ("GET", "/api/evidence-manifests/{id}", "49.15"),
+    ("GET", "/api/delegations/{id}", "C-04"),
+    ("POST", "/api/delegations/{id}:steer", "C-04"),
+    ("POST", "/api/delegations/{id}:cancel", "C-04"),
+    ("POST", "/api/delegations/{id}:resume", "C-04"),
     ("GET", "/api/learning-sources/{id}/revocation-impact", "49.15"),
     ("POST", "/api/learning-sources/{id}:revoke", "49.15"),
 )

@@ -1,3 +1,15 @@
+# C-04 final acceptance — seq756
+
+- seq1~751 preserved; seq752~756 only appended.
+- C-04 ACCEPTED, C-05 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED.
+- product exact9 immutable; deferred/external evidence not promoted.
+
+# C-04 start projection — seq751
+
+- seq1~748 raw event bytes preserved; seq749~751 only appended.
+- C-03 ACCEPTED, C-04 IN_PROGRESS, C-05 NOT_READY, DIR-2 NOT_REACHED.
+- control product/external execution 없음.
+
 # C-03 final acceptance — seq748
 
 - seq1~743 preserved; seq744~748 only appended.
@@ -906,154 +918,203 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 748,
-  "last_event_id": "evt_c03_final_main_package_accepted",
+  "event_sequence": 756,
+  "last_event_id": "evt_c04_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "C",
-  "current_work_package": "C-03",
+  "current_work_package": "C-04",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "ISSUE_C04_WORK_INSTRUCTION",
+  "next_safe_action": "ISSUE_C05_WORK_INSTRUCTION",
   "accepted": true,
-  "c03_status": "ACCEPTED",
-  "c04_status": "READY_FOR_WORK_INSTRUCTION",
+  "c04_status": "ACCEPTED",
+  "c05_status": "READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
   "dir2_status": "NOT_REACHED",
   "completed_worker_lease": {
-    "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
-    "fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
-    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
-    "lease_epoch": 1,
+    "lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+    "fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+    "execution_fencing_token": "c04-steer-resume-execution-fence-epoch-2-028765c",
+    "lease_epoch": 2,
     "actor_id": "developer-primary",
-    "subject_ref": "C-03",
+    "subject_ref": "C-04",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
-    "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
-    "issued_at": "2026-09-12T09:05:00+09:00",
-    "expires_at": "2026-09-12T21:05:00+09:00",
+    "baseline_git_commit": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "dispatch_head": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "issued_at": "2026-09-12T15:00:00+09:00",
+    "expires_at": "2026-09-13T03:00:00+09:00",
     "status": "REVOKED",
-    "revoked_at": "2026-09-12T12:05:00+09:00",
-    "revocation_reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
+    "revoked_at": "2026-09-12T18:00:00+09:00",
+    "revocation_reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
   },
   "completed_write_lease": {
-    "lease_id": "write-lease-c03-developer-lifecycle-r2-20260912-001",
-    "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
-    "fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
-    "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
-    "write_epoch": 2,
+    "lease_id": "write-lease-c04-steer-resume-r2-20260912-001",
+    "worker_lease_id": "worker-lease-c04-steer-resume-r2-20260912-001",
+    "fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+    "write_fencing_token": "c04-steer-resume-write-fence-epoch-3-028765c",
+    "write_epoch": 3,
     "actor_id": "developer-primary",
-    "subject_ref": "C-03",
+    "subject_ref": "C-04",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-12T09:50:00+09:00",
-    "expires_at": "2026-09-12T21:50:00+09:00",
+    "issued_at": "2026-09-12T15:00:00+09:00",
+    "expires_at": "2026-09-13T03:00:00+09:00",
     "path_scope": [
       "packages/orchestration/developer_lifecycle.py",
       "packages/orchestration/__init__.py",
+      "packages/api/delegation_lifecycle.py",
+      "packages/api/registry.py",
+      "packages/api/__init__.py",
+      "tests/orchestration/test_developer_lifecycle_c04.py",
       "tests/orchestration/test_developer_lifecycle.py",
-      "packages/e2e/harness.py"
+      "tests/api/test_c04_delegation_lifecycle.py",
+      "tests/api/test_registry_openapi.py"
     ],
     "status": "REVOKED",
-    "revoked_at": "2026-09-12T12:05:00+09:00",
-    "revocation_reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
+    "revoked_at": "2026-09-12T18:00:00+09:00",
+    "revocation_reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
   },
-  "repository_head": "219eedd7adf287c55818eab930d6a665a2fc0980",
-  "repository_upstream": "development/codex/c03-developer-lifecycle-r1",
-  "repository_projection_mode": "C03_FINAL_ACCEPTANCE_EXACT15",
-  "repository_validated_base_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
-  "repository_head_relation": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "repository_head": "9e7248320aeaf465debd176354c4fad82f97c35c",
+  "repository_upstream": "development/codex/c04-steer-resume-r1",
+  "repository_projection_mode": "C04_FINAL_ACCEPTANCE_EXACT7",
+  "repository_validated_base_commit": "9e7248320aeaf465debd176354c4fad82f97c35c",
+  "repository_head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-03_FINAL_ACCEPTANCE_REPORT.md",
-    "docs/WORK_STATUS.md",
-    "docs/completion_reports/C-03_completion.md",
-    "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
+    "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c03-final-acceptance.json",
-    "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
-    "docs/validation/C-03_FINAL_ACCEPTANCE_VALIDATION.md",
-    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c04-final-acceptance.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
   "product_exact_paths": [
     "packages/orchestration/developer_lifecycle.py",
     "packages/orchestration/__init__.py",
+    "packages/api/delegation_lifecycle.py",
+    "packages/api/registry.py",
+    "packages/api/__init__.py",
+    "tests/orchestration/test_developer_lifecycle_c04.py",
     "tests/orchestration/test_developer_lifecycle.py",
-    "packages/e2e/harness.py"
+    "tests/api/test_c04_delegation_lifecycle.py",
+    "tests/api/test_registry_openapi.py"
   ],
   "lineage": {
-    "development_main_base": "1c3948ff1a741832a2f012f464f1a301490356c1",
-    "start_control_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
-    "r2_control_commit": "e778a0c0d4152a7e164e2f016994595dee4b7274",
-    "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+    "development_main_base": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "start_control_commit": "be827a302b08ab0365dff2977c951e1005d30fe8",
+    "product_commit": "9e7248320aeaf465debd176354c4fad82f97c35c",
     "ancestor_chain": [
-      "1c3948ff1a741832a2f012f464f1a301490356c1",
-      "2dcd4da89e92425be52b570ae2110f60dfcc29de",
-      "e778a0c0d4152a7e164e2f016994595dee4b7274",
-      "219eedd7adf287c55818eab930d6a665a2fc0980"
+      "028765cea128c73fb2404e6cefefce12175cb9f4",
+      "be827a302b08ab0365dff2977c951e1005d30fe8",
+      "9e7248320aeaf465debd176354c4fad82f97c35c"
     ]
   },
   "test_evidence": {
-    "main_full": {
-      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration tests/e2e",
-      "passed": 241,
+    "main_precommit": {
+      "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/orchestration tests/api tests/e2e",
+      "passed": 460,
       "failed": 0,
-      "skipped": 0,
+      "scope": "PRECOMMIT_EXACT9"
+    },
+    "main_postcommit": {
+      "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/orchestration tests/api tests/e2e",
+      "passed": 460,
+      "failed": 0,
       "scope": "POSTCOMMIT_PRODUCT_HEAD"
     },
-    "focused_c03_c04": {
-      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration/test_developer_lifecycle.py tests/orchestration/test_developer_lifecycle_c04.py",
-      "passed": 78,
-      "failed": 0,
-      "skipped": 0,
-      "scope": "POSTCOMMIT_PRODUCT_HEAD"
+    "broad_tooling_non_authoritative": {
+      "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py",
+      "passed": 366,
+      "failed": 3,
+      "duration_seconds": 1839.96,
+      "classification": "PRE_EXISTING_C03_HISTORICAL_FIXTURE_DRIFT_OUTSIDE_C04_SCOPE",
+      "failure": "C03_START_WORK_INSTRUCTION_HASH_INVALID",
+      "current_product_and_parent_c03_wi_sha256": "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1",
+      "seq740_expected_c03_wi_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7"
     }
   },
-  "review_evidence": {
-    "control_r2": {
-      "verdict": "PASS",
-      "critical_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0
-    },
-    "product_initial": {
-      "verdict": "REWORK",
-      "critical_findings": 0,
-      "important_findings": 4,
-      "minor_findings": 1
-    },
-    "product_round1": {
-      "disposition": "ADDRESSED",
-      "important_addressed": 4,
-      "minor_addressed": 1
-    },
-    "product_round2": {
-      "scoped_reviews": 2,
-      "new_findings_disposition": "ADDRESSED",
-      "critical_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0
-    }
+  "final_reviewer_r6": {
+    "spec": "PASS",
+    "quality": "APPROVED",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
   },
+  "independent_acceptance_r6": {
+    "verdict": "PASS",
+    "nodes": 45,
+    "cases": 353,
+    "failed": 0,
+    "external_io_count": 0,
+    "artifact_directory": "D:\\tmp\\anvil-c04-independent-r6-final",
+    "artifact_manifest": "artifact_manifest.json",
+    "artifact_manifest_sha256": "7950C856DDA2287638DF6D4756AE0138AECDF19F79D1F246BD8B293BC729CA70",
+    "verification_level": "L3",
+    "method": "AI"
+  },
+  "non_product_tool_errors": [
+    {
+      "fingerprint": "C04_START_PATH_OR_CLEAN_INVALID",
+      "count": 1,
+      "classification": "EXPECTED_TRANSIENT_POST_PRODUCT_CHECKER",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "POWERSHELL_SELECT_STRING_DOLLAR_QUESTION_FALSE_POSITIVE",
+      "count": 1,
+      "classification": "MAIN_TOOL_FALSE_POSITIVE",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "MAIN_COORDINATION_SEND_MESSAGE_SCHEMA_PARSE",
+      "count": 4,
+      "classification": "MAIN_COORDINATION_TOOL_INPUT_ERROR_CORRECTED",
+      "unknown_field_count": 2,
+      "missing_message_count": 2,
+      "product_failure": false
+    },
+    {
+      "fingerprint": "SANDBOX_DENY_READ_ACL_EXEC_CREATE",
+      "count": 1,
+      "classification": "SUBAGENT_TOOL_ENVIRONMENT_ERROR_CORRECTED",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "TEST_FIXTURE_EAGER_FALLBACK_READ",
+      "count": 1,
+      "classification": "SUBAGENT_TEST_FIXTURE_ERROR_CORRECTED",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C04_START_TEST_USED_CURRENT_SUCCESSOR_BUNDLE",
+      "count": 2,
+      "classification": "SUCCESSOR_TEST_FIXTURE_ERROR_CORRECTED",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C03_START_WORK_INSTRUCTION_HASH_INVALID",
+      "count": 3,
+      "classification": "PRE_EXISTING_HISTORICAL_FIXTURE_DRIFT_OUTSIDE_C04_SCOPE",
+      "product_failure": false
+    }
+  ],
   "external_validation": {
-    "actual_external_developer_backend": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "fastapi_binding": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "external_developer_backend": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
-    "secret": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "api": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED"
+    "network": "NOT_EXECUTED",
+    "browser": "DEFERRED_U02",
+    "e_shot": "DEFERRED_U02"
   },
-  "current_manifest": "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

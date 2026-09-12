@@ -341,6 +341,9 @@ class RecordingRunner:
         self.start_calls = []
         self.poll_calls = []
         self.stop_calls = []
+        self.steer_calls = []
+        self.checkpoint_calls = []
+        self.resume_calls = []
 
     def start(self, session_id, delegation_packet):
         self.start_calls.append((session_id, delegation_packet.packet_hash))
@@ -348,6 +351,16 @@ class RecordingRunner:
     def poll(self, session_id):
         self.poll_calls.append(session_id)
         return self.results.pop(0) if self.results else None
+
+    def steer(self, session_id, instruction, idempotency_key):
+        self.steer_calls.append((session_id, instruction, idempotency_key))
+
+    def request_checkpoint(self, session_id, idempotency_key):
+        self.checkpoint_calls.append((session_id, idempotency_key))
+        return {"runner": "recording"}
+
+    def resume(self, session_id, checkpoint, idempotency_key):
+        self.resume_calls.append((session_id, checkpoint.checkpoint_hash, idempotency_key))
 
     def stop(self, session_id):
         self.stop_calls.append(session_id)

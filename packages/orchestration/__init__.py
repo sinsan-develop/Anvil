@@ -10,9 +10,11 @@ from .delegation import (
 from .developer_lifecycle import (
     DeveloperLifecycleService, DeveloperRunner, DeveloperSession,
     DeterministicFakeDeveloperRunner, InvalidLifecycleTransition, LifecycleError,
+    LifecycleTargetMismatch, LifecycleVersionMismatch,
     LifecycleStatus, PacketRejected, RawResult, RawResultArtifact, RawResultEnvelope,
     ReadOnlyDeveloperRunner, ReadOnlyPolicy, ReadOnlyPolicyRejected,
-    CheckpointHandoff, LifecycleProjection, ResumeRejected,
+    CheckpointHandoff, LifecycleProjection, ResultHandoffProjection,
+    WorkbenchProjection, ResumeRejected,
 )
 from .result_envelope import (
     EvidenceReference, ResultEnvelope, ResultReasonCode, ResultTest,
@@ -47,9 +49,11 @@ __all__ = [
     "DelegationValidationReceipt", "ValidationReceipt", "validate_packet",
     "DeveloperLifecycleService", "DeveloperRunner", "DeveloperSession",
     "DeterministicFakeDeveloperRunner", "InvalidLifecycleTransition", "LifecycleError",
+    "LifecycleTargetMismatch", "LifecycleVersionMismatch",
     "LifecycleStatus", "PacketRejected", "RawResult", "RawResultArtifact", "RawResultEnvelope",
     "ReadOnlyDeveloperRunner", "ReadOnlyPolicy", "ReadOnlyPolicyRejected",
-    "CheckpointHandoff", "LifecycleProjection", "ResumeRejected",
+    "CheckpointHandoff", "LifecycleProjection", "ResultHandoffProjection",
+    "WorkbenchProjection", "ResumeRejected",
     "EvidenceReference", "ResultEnvelope", "ResultReasonCode", "ResultTest",
     "ResultValidationResult", "canonical_hash", "canonical_json", "validate_result",
     "FailureReportReasonCode", "FailureReportValidationResult",

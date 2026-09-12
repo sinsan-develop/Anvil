@@ -2,6 +2,7 @@
 
 from .design_contracts import ApproveDesignRequest, ApproveDesignResponse, ContractError, ContractErrorCode
 from .common import ApiContractError, ApplicationRequest, SessionPrincipal, StableCursorCodec
+from .delegation_lifecycle import DelegationLifecyclePort
 from .fastapi_app import ApiPorts, create_app
 from .runtime import RuntimeConfigurationError, create_runtime_app
 from .telegram_webhook import TelegramWebhook, TelegramWebhookConfig
@@ -16,6 +17,7 @@ __all__ = [
     "ApproveDesignResponse",
     "ContractError",
     "ContractErrorCode",
+    "DelegationLifecyclePort",
     "EndpointSpec",
     "SessionPrincipal",
     "StableCursorCodec",

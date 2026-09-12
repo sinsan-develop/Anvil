@@ -2169,3 +2169,10 @@
 - product exact4와 Main 241/78 PASS, independent 23 nodes/66 cases PASS, review disposition을 결박했다.
 - C-03 `ACCEPTED`; C-04 `READY_FOR_WORK_INSTRUCTION`; DIR-2 `NOT_REACHED`; active lease 없음.
 - external Developer backend/Provider/Telegram/DB/API/browser/WSL/deploy/network `NOT_EXECUTED`.
+
+## C-04 start projection
+
+- seq749~751 `WORK_INSTRUCTION_ISSUED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED`.
+- C-03 `ACCEPTED`; C-04 `IN_PROGRESS`; C-05 `NOT_READY`; DIR-2 `NOT_REACHED`.
+- current R2 authority, epoch2/epoch3 leases and exact9 segment-aware product scope bound; control product mutation 없음.
+- actual external systems and UI binding `NOT_EXECUTED`; U-02 browser/E-SHOT `DEFERRED`.
