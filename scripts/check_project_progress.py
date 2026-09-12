@@ -12917,6 +12917,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 757:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c04_detached_smoke_portability_reconciliation_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 756:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13973,6 +13977,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json":
+            errors.extend(validate_c04_detached_smoke_portability_reconciliation(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_c04_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-04_START_MANIFEST.json":
@@ -34231,6 +34237,467 @@ def _collect_c04_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
             and check("diff", "--check", C04_FINAL_PRODUCT, completion) and check("diff", "--check", C04_FINAL_PRODUCT, head)
             and check("diff", "--quiet", completion, head))
         return [] if valid else ["C04_FINAL_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C04_PORTABILITY_P = "docs/progress/build-progress.json"
+C04_PORTABILITY_E = "docs/progress/progress-events.json"
+C04_PORTABILITY_H = "docs/progress/BUILD_HANDOFF.md"
+C04_PORTABILITY_D = "docs/progress/progress-handoff-detached-digest-c04-detached-smoke-portability-reconciliation.json"
+C04_PORTABILITY_M = "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json"
+C04_PORTABILITY_REPORT = "docs/04_test_reports/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_RESULT.md"
+C04_PORTABILITY_VALIDATION = "docs/validation/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_VALIDATION.md"
+C04_PORTABILITY_FIX = "1cc8f2803a362b01f294590dacf173dd4e98f60a"
+C04_PORTABILITY_MERGED_MAIN = "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11"
+C04_PORTABILITY_FEATURE_ACCEPTANCE = "d70e149edd99d3a09073970d913288ca4ab44d9c"
+C04_PORTABILITY_DEVELOPMENT_MAIN = "028765cea128c73fb2404e6cefefce12175cb9f4"
+C04_PORTABILITY_BRANCH = "codex/c04-detached-smoke-portability-r1"
+C04_PORTABILITY_DEVELOPMENT_REF = "refs/remotes/development/main"
+C04_PORTABILITY_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C04_PORTABILITY_AT = "2026-09-13T00:02:44+09:00"
+
+
+def c04_detached_smoke_portability_fix_paths() -> list[str]:
+    return sorted(["scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def c04_detached_smoke_portability_reconciliation_paths() -> list[str]:
+    return sorted([
+        C04_PORTABILITY_REPORT, C04_PORTABILITY_M, C04_PORTABILITY_H,
+        C04_PORTABILITY_P, C04_PORTABILITY_E, C04_PORTABILITY_D,
+        C04_PORTABILITY_VALIDATION, "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c04_detached_smoke_portability_reconciliation_metadata() -> dict[str, Any]:
+    paths = c04_detached_smoke_portability_reconciliation_paths()
+    return {
+        "sequence": 757,
+        "event_type": "REPOSITORY_RECONCILED",
+        "status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
+        "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+        "development_remote_url": C04_PORTABILITY_DEVELOPMENT_URL,
+        "development_remote_ref": C04_PORTABILITY_DEVELOPMENT_REF,
+        "validated_base_commit": C04_PORTABILITY_FIX,
+        "exact_paths": paths,
+        "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def _c04_portability_lineage() -> dict[str, Any]:
+    return {
+        "prior_development_main": C04_PORTABILITY_DEVELOPMENT_MAIN,
+        "prior_feature_acceptance": C04_PORTABILITY_FEATURE_ACCEPTANCE,
+        "prior_merged_main": C04_PORTABILITY_MERGED_MAIN,
+        "prior_merged_main_parents": [C04_PORTABILITY_DEVELOPMENT_MAIN, C04_PORTABILITY_FEATURE_ACCEPTANCE],
+        "fix_commit": C04_PORTABILITY_FIX,
+        "fix_parent": C04_PORTABILITY_MERGED_MAIN,
+        "fix_exact_paths": c04_detached_smoke_portability_fix_paths(),
+        "merge_tree_equals_prior_feature_acceptance": True,
+        "ancestor_checks_required": True,
+    }
+
+
+def _c04_portability_documents() -> tuple[bytes, bytes]:
+    report = f"""# C-04 Detached-Smoke Portability Reconciliation Result
+
+- 판정: `MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED`
+- authority: `MAIN_INTERNAL_TECHNICAL_CORRECTION`
+- 근거: merged-main detached smoke failure, existing C-04 acceptance, `AGENTS.md` section 5 internal implementation authority
+- fix commit: `{C04_PORTABILITY_FIX}`; parent merged main: `{C04_PORTABILITY_MERGED_MAIN}`
+- prior merge parents: `{C04_PORTABILITY_DEVELOPMENT_MAIN}`, `{C04_PORTABILITY_FEATURE_ACCEPTANCE}`
+- exact2: `scripts/check_project_progress.py`, `tests/tooling/test_project_progress.py`
+- seq1~756 raw event objects and all historical evidence: preserved
+- C-04: `ACCEPTED`; C-05: `READY_FOR_WORK_INSTRUCTION`; DIR-2: `NOT_REACHED`; active lease: none
+- authoritative C03/C04 focused: `15 PASS`; C-04 product regression: `460 PASS`
+- reviewer ACL helper same error: count3, non-product environment/tooling error
+- UI/FastAPI/DB/backend/Provider/Telegram/Secret/WSL/deploy/network/browser/E-SHOT: no new execution; prior C-04 boundary preserved
+- commit/push/PR/merge/external IO for this projection: `NOT_EXECUTED`
+""".encode("utf-8")
+    validation = """# C-04 Detached-Smoke Portability Reconciliation Validation
+
+- seq1~756 raw event objects: preserved; seq757 `REPOSITORY_RECONCILED`: appended once
+- authority classification: `MAIN_INTERNAL_TECHNICAL_CORRECTION`
+- fix → merged main and ordered prior merge parents: fail-closed
+- merged-main tree equals prior feature-acceptance tree: required
+- exact2 fix paths and exact9 projection paths: fail-closed
+- exact9 precommit, sole direct child, reviewed two-parent merge and detached development main: accepted
+- hash/path/ancestor/parent-order/merge-tree/dirty/upstream/remote mutation: rejected
+- C-04 ACCEPTED, C-05 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED and null leases: preserved
+- external/runtime validation: no new execution; historical evidence is not promoted
+""".encode("utf-8")
+    return report, validation
+
+
+def c04_detached_smoke_portability_reconciliation_artifacts(
+    historical: Mapping[str, bytes], files: Mapping[str, bytes]
+) -> dict[str, bytes]:
+    meta = c04_detached_smoke_portability_reconciliation_metadata()
+    generated = {
+        C04_PORTABILITY_REPORT, C04_PORTABILITY_M, C04_PORTABILITY_H,
+        C04_PORTABILITY_P, C04_PORTABILITY_E, C04_PORTABILITY_D,
+        C04_PORTABILITY_VALIDATION,
+    }
+    if set(historical) != {C04_PORTABILITY_H, C04_PORTABILITY_P, C04_PORTABILITY_E}:
+        raise ValueError("C04_PORTABILITY_HISTORY_SET_INVALID")
+    if set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C04_PORTABILITY_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C04_PORTABILITY_P])
+    stream = _c21_resume_json(historical[C04_PORTABILITY_E])
+    if (
+        progress.get("event_sequence") != 756 or stream.get("last_sequence") != 756
+        or len(stream.get("events", [])) != 756
+        or progress.get("current_phase") != "C" or progress.get("current_work_package") != "C-04"
+        or progress.get("status") != "ACCEPTED" or progress.get("active_agent") is not None
+        or progress.get("worker_lease") is not None or progress.get("write_lease") is not None
+        or progress.get("next_work_package") != {"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"}
+        or progress.get("next_safe_action") != "ISSUE_C05_WORK_INSTRUCTION"
+        or "C-04" not in progress.get("completed_packages", [])
+    ):
+        raise ValueError("C04_PORTABILITY_HISTORY_INVALID")
+    lineage = _c04_portability_lineage()
+    external = _c04_final_external_boundary()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    event = {
+        "occurred_at": C04_PORTABILITY_AT,
+        "occurred_at_source": "PRODUCT_FIX_COMMIT_TIME",
+        "actor_type": "AGENT", "actor_id": "main-agent-eoul", "project_id": "anvil",
+        "run_id": None, "work_package_id": "C-04", "step_id": "DETACHED-SMOKE-PORTABILITY-RECONCILIATION",
+        "actor": "main-agent-eoul", "subject_ref": "C-04/DETACHED-SMOKE-PORTABILITY-RECONCILIATION",
+        "event_id": "evt_c04_detached_smoke_portability_repository_reconciled",
+        "sequence": 757, "event_type": "REPOSITORY_RECONCILED", "previous_event_sha256": previous,
+        "details": {
+            "branch": C04_PORTABILITY_BRANCH, "local_head": C04_PORTABILITY_FIX,
+            "remote_head": C04_PORTABILITY_MERGED_MAIN, "upstream": "development/main",
+            "observed_at": C04_PORTABILITY_AT,
+            "reason": "C04_MERGED_MAIN_DETACHED_BRANCH_COLLECTION_CORRECTED",
+            "decision": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
+            "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+            "authority_basis": ["MERGED_MAIN_DETACHED_SMOKE_FAILURE", "EXISTING_C04_ACCEPTANCE", "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"],
+            "projection_mode": "C04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_EXACT9",
+            "validated_base_commit": C04_PORTABILITY_FIX,
+            "head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+            "exact_allowed_paths": meta["exact_paths"], "fix_exact_paths": c04_detached_smoke_portability_fix_paths(),
+            "lineage": lineage, "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION",
+            "dir2_status": "NOT_REACHED", "external_validation": external,
+        },
+    }
+    events_raw = _c21_append_events(historical[C04_PORTABILITY_E], 756, [event])
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": "C04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_EXACT9",
+        "validated_base_commit": C04_PORTABILITY_FIX, "local_head": C04_PORTABILITY_FIX,
+        "branch": C04_PORTABILITY_BRANCH, "upstream": "development/main",
+        "remote_head": C04_PORTABILITY_MERGED_MAIN,
+        "head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "worktree_status": "STAGED_EXACT9", "exact_allowed_paths": meta["exact_paths"],
+        "development_remote_url": C04_PORTABILITY_DEVELOPMENT_URL,
+        "development_remote_ref": C04_PORTABILITY_DEVELOPMENT_REF,
+        **lineage, "push_status": "NOT_EXECUTED_INTERNAL_TECHNICAL_CORRECTION",
+    })
+    progress.update({
+        "snapshot_id": "snapshot-c04-detached-smoke-portability-reconciliation-seq757",
+        "updated_at": C04_PORTABILITY_AT, "recorded_at": C04_PORTABILITY_AT,
+        "event_sequence": 757, "last_event_id": event["event_id"],
+        "current_phase": "C", "current_work_package": "C-04", "status": "ACCEPTED",
+        "active_agent": None, "worker_lease": None, "write_lease": None, "active_work_instruction": None,
+        "repository": repository,
+        "c04_detached_smoke_portability_reconciliation": {
+            "status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED", "accepted": True,
+            "event_sequence": 757, "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+            "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION",
+            "dir2_status": "NOT_REACHED", "lineage": lineage, "external_validation": external,
+        },
+        "next_work_package": {"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"},
+        "next_successor_work_package": None, "runtime_next_action": "ISSUE_C05_WORK_INSTRUCTION",
+        "next_safe_action": "ISSUE_C05_WORK_INSTRUCTION",
+        "current_progress_evidence_ref": {"package_id": "C-04", "path": C04_PORTABILITY_D, "manifest_path": C04_PORTABILITY_M},
+        "latest_evidence_manifest_ref": {"path": C04_PORTABILITY_M, "artifact_id": "C04-DETACHED-SMOKE-PORTABILITY-RECONCILIATION-20260913"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C04_ACCEPTED", "C05_READY_FOR_WORK_INSTRUCTION", "DIR2_NOT_REACHED", "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED"], "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C04_PORTABILITY_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw, validation_raw = _c04_portability_documents()
+    latest = {**files, C04_PORTABILITY_E: events_raw, C04_PORTABILITY_REPORT: report_raw, C04_PORTABILITY_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "accepted": True, "reconciliation_status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
+        "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+        "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION", "dir2_status": "NOT_REACHED",
+        "dir_status": progress["dir_review"]["status"], "repository_head": repository["local_head"],
+        "repository_upstream": repository["upstream"], "repository_projection_mode": repository["projection_mode"],
+        "repository_validated_base_commit": repository["validated_base_commit"], "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": repository["exact_allowed_paths"], "lineage": lineage,
+        "external_validation": external, "current_manifest": C04_PORTABILITY_M, "reporting_decision": "AUTO_CONTINUE",
+    })
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement, historical[C04_PORTABILITY_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C04_PORTABILITY_HANDOFF_INVALID")
+    handoff_raw = ("# C-04 detached-smoke portability reconciliation — seq757\n\n- seq1~756 raw event object bytes and historical evidence preserved.\n- C-04 ACCEPTED, C-05 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED, active lease none.\n\n" + handoff_text).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C04-DETACHED-SMOKE-PORTABILITY-RECONCILIATION-DIGEST-20260913",
+        "package_id": "C-04", "event_sequence": 757, "algorithm": "SHA-256", "created_at": C04_PORTABILITY_AT,
+        "scope": "seq757 append-only C04 detached-smoke portability exact9; seq1-756 preserved", "self_reference": False,
+        "progress": {"path": C04_PORTABILITY_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C04_PORTABILITY_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C04_PORTABILITY_REPORT: report_raw, C04_PORTABILITY_VALIDATION: validation_raw, C04_PORTABILITY_H: handoff_raw, C04_PORTABILITY_P: progress_raw, C04_PORTABILITY_E: events_raw, C04_PORTABILITY_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C04_PORTABILITY_E], 756)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION",
+        "artifact_id": "C04-DETACHED-SMOKE-PORTABILITY-RECONCILIATION-20260913", "created_at": C04_PORTABILITY_AT,
+        "package_id": "C-04", "event_sequence": 757, "historical_event_sequence": 756, "appended_event_count": 1,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "accepted": True, "status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
+        "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+        "authority_basis": ["MERGED_MAIN_DETACHED_SMOKE_FAILURE", "EXISTING_C04_ACCEPTANCE", "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"],
+        "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION", "dir2_status": "NOT_REACHED", "active_leases": 0,
+        "lineage": lineage, "external_validation": external,
+        "verification": {"authoritative_c03_c04_focused_passed": 15, "c04_product_regression_passed": 460, "reviewer_acl_helper_same_error_count": 3, "reviewer_acl_helper_classification": "NON_PRODUCT_TOOLING_ERROR"},
+        "record_binding": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "self_reference": False, **meta,
+    }
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)} for path, payload in sorted(artifacts.items())]
+    artifacts[C04_PORTABILITY_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C04_PORTABILITY_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c04_detached_smoke_portability_reconciliation_from_root(root: Path) -> dict[str, bytes]:
+    historical = {path: subprocess.check_output(["git", "show", f"{C04_PORTABILITY_FIX}:{path}"], cwd=root) for path in {C04_PORTABILITY_H, C04_PORTABILITY_P, C04_PORTABILITY_E}}
+    generated = {C04_PORTABILITY_REPORT, C04_PORTABILITY_M, C04_PORTABILITY_H, C04_PORTABILITY_P, C04_PORTABILITY_E, C04_PORTABILITY_D, C04_PORTABILITY_VALIDATION}
+    files = {path: (root / path).read_bytes() for path in set(c04_detached_smoke_portability_reconciliation_paths()) - generated}
+    return c04_detached_smoke_portability_reconciliation_artifacts(historical, files)
+
+
+def validate_c04_detached_smoke_portability_reconciliation_manifest(manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        meta = c04_detached_smoke_portability_reconciliation_metadata()
+        expected = {
+            "schema_version": "1.0.0",
+            "manifest_type": "C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION",
+            "artifact_id": "C04-DETACHED-SMOKE-PORTABILITY-RECONCILIATION-20260913",
+            "created_at": C04_PORTABILITY_AT, "package_id": "C-04",
+            "event_sequence": 757, "historical_event_sequence": 756, "appended_event_count": 1,
+            "accepted": True, "status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
+            "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+            "authority_basis": ["MERGED_MAIN_DETACHED_SMOKE_FAILURE", "EXISTING_C04_ACCEPTANCE", "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"],
+            "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION",
+            "dir2_status": "NOT_REACHED", "active_leases": 0,
+            "lineage": _c04_portability_lineage(), "external_validation": _c04_final_external_boundary(),
+            "verification": {"authoritative_c03_c04_focused_passed": 15, "c04_product_regression_passed": 460, "reviewer_acl_helper_same_error_count": 3, "reviewer_acl_helper_classification": "NON_PRODUCT_TOOLING_ERROR"},
+            "record_binding": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+            "self_reference": False, **meta,
+        }
+        errors = []
+        if any(not _c21_strict_json_equal(manifest.get(key), value) for key, value in expected.items()):
+            errors.append("C04_PORTABILITY_MANIFEST_INVALID")
+        prefix = manifest.get("historical_raw_event_prefix")
+        if (
+            not isinstance(prefix, Mapping) or type(prefix.get("bytes")) is not int or prefix["bytes"] < 1
+            or re.fullmatch(r"[A-F0-9]{64}", str(prefix.get("sha256"))) is None
+        ):
+            errors.append("C04_PORTABILITY_HISTORY_BINDING_INVALID")
+        rows = manifest.get("raw_checksums")
+        expected_paths = set(meta["exact_paths"]) - {C04_PORTABILITY_M}
+        if (
+            type(rows) is not list or len(rows) != len(expected_paths)
+            or {row.get("path") for row in rows if isinstance(row, Mapping)} != expected_paths
+            or any(
+                not isinstance(row, Mapping) or type(row.get("bytes")) is not int or row["bytes"] < 1
+                or re.fullmatch(r"[A-F0-9]{64}", str(row.get("sha256"))) is None
+                for row in rows
+            )
+        ):
+            errors.append("C04_PORTABILITY_CHECKSUMS_INVALID")
+        return sorted(set(errors))
+    except (OSError, TypeError, KeyError, ValueError, AttributeError):
+        return ["C04_PORTABILITY_MANIFEST_INVALID"]
+
+
+def validate_c04_detached_smoke_portability_reconciliation(
+    bundle: Mapping[str, Any], manifest: Mapping[str, Any]
+) -> list[str]:
+    try:
+        expected = c04_detached_smoke_portability_reconciliation_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c04_detached_smoke_portability_reconciliation_paths()}
+        actual = {
+            C04_PORTABILITY_P: bundle.get("progress"), C04_PORTABILITY_E: bundle.get("events"),
+            C04_PORTABILITY_H: bundle.get("handoff"), C04_PORTABILITY_D: bundle.get("detached_digest"),
+            C04_PORTABILITY_M: manifest,
+        }
+        references = {
+            C04_PORTABILITY_P: _c21_resume_json(expected[C04_PORTABILITY_P]),
+            C04_PORTABILITY_E: _c21_resume_json(expected[C04_PORTABILITY_E]),
+            C04_PORTABILITY_H: extract_handoff_summary(expected[C04_PORTABILITY_H].decode()),
+            C04_PORTABILITY_D: _c21_resume_json(expected[C04_PORTABILITY_D]),
+            C04_PORTABILITY_M: _c21_resume_json(expected[C04_PORTABILITY_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], references[path]) for path in actual) else ["C04_PORTABILITY_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C04_PORTABILITY_RAW_BYTES_INVALID")
+        progress = actual[C04_PORTABILITY_P]
+        reconciliation = progress.get("c04_detached_smoke_portability_reconciliation", {}) if isinstance(progress, Mapping) else {}
+        if (
+            not isinstance(progress, Mapping) or progress.get("event_sequence") != 757
+            or progress.get("current_phase") != "C" or progress.get("current_work_package") != "C-04"
+            or progress.get("status") != "ACCEPTED" or progress.get("active_agent") is not None
+            or progress.get("worker_lease") is not None or progress.get("write_lease") is not None
+            or progress.get("active_work_instruction") is not None
+            or progress.get("next_work_package") != {"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"}
+            or progress.get("next_safe_action") != "ISSUE_C05_WORK_INSTRUCTION"
+            or reconciliation.get("authority_classification") != "MAIN_INTERNAL_TECHNICAL_CORRECTION"
+            or reconciliation.get("dir2_status") != "NOT_REACHED"
+            or "C-04" not in progress.get("completed_packages", [])
+        ):
+            errors.append("C04_PORTABILITY_CANONICAL_STATE_INVALID")
+        errors.extend(validate_c04_detached_smoke_portability_reconciliation_manifest(manifest))
+        historical = subprocess.check_output(["git", "show", f"{C04_PORTABILITY_FIX}:{C04_PORTABILITY_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 756) != raw_event_object_prefix_bytes(actual_raw[C04_PORTABILITY_E], 756):
+            errors.append("C04_PORTABILITY_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C04_PORTABILITY_INPUT_INVALID"]
+
+
+def _collect_c04_detached_smoke_portability_reconciliation_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c04_detached_smoke_portability_reconciliation_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C04_PORTABILITY_FIX:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch = optional("branch", "--show-current")
+        status_raw = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C04_PORTABILITY_DEVELOPMENT_REF)
+        fix_ref = value("rev-parse", C04_PORTABILITY_FIX)
+        merged_main_ref = value("rev-parse", C04_PORTABILITY_MERGED_MAIN)
+        feature_ref = value("rev-parse", C04_PORTABILITY_FEATURE_ACCEPTANCE)
+        prior_main_ref = value("rev-parse", C04_PORTABILITY_DEVELOPMENT_MAIN)
+        fix_parent = value("show", "-s", "--format=%P", C04_PORTABILITY_FIX)
+        merged_parents = value("show", "-s", "--format=%P", C04_PORTABILITY_MERGED_MAIN)
+        fix_paths_raw = raw("diff", "--name-only", C04_PORTABILITY_MERGED_MAIN, C04_PORTABILITY_FIX)
+        if None in (head, branch, status_raw, development_url, development_main, fix_ref, merged_main_ref, feature_ref, prior_main_ref, fix_parent, merged_parents, fix_paths_raw):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C04_PORTABILITY_DEVELOPMENT_URL:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        fix_paths = _c02_strict_name_only_paths(fix_paths_raw)
+        if fix_paths is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if (
+            fix_ref != C04_PORTABILITY_FIX or merged_main_ref != C04_PORTABILITY_MERGED_MAIN
+            or feature_ref != C04_PORTABILITY_FEATURE_ACCEPTANCE or prior_main_ref != C04_PORTABILITY_DEVELOPMENT_MAIN
+            or fix_parent.split() != [C04_PORTABILITY_MERGED_MAIN]
+            or merged_parents.split() != [C04_PORTABILITY_DEVELOPMENT_MAIN, C04_PORTABILITY_FEATURE_ACCEPTANCE]
+            or fix_paths != c04_detached_smoke_portability_fix_paths()
+            or not check("merge-base", "--is-ancestor", C04_PORTABILITY_DEVELOPMENT_MAIN, C04_PORTABILITY_FEATURE_ACCEPTANCE)
+            or not check("merge-base", "--is-ancestor", C04_PORTABILITY_FEATURE_ACCEPTANCE, C04_PORTABILITY_MERGED_MAIN)
+            or not check("merge-base", "--is-ancestor", C04_PORTABILITY_DEVELOPMENT_MAIN, C04_PORTABILITY_MERGED_MAIN)
+            or not check("merge-base", "--is-ancestor", C04_PORTABILITY_MERGED_MAIN, C04_PORTABILITY_FIX)
+            or not check("diff", "--quiet", C04_PORTABILITY_FEATURE_ACCEPTANCE, C04_PORTABILITY_MERGED_MAIN)
+        ):
+            return ["C04_PORTABILITY_GIT_LINEAGE_INVALID"]
+        dirty = _c02_strict_porcelain_paths(status_raw)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        feature_upstreams = {"", "development/main", f"development/{C04_PORTABILITY_BRANCH}"}
+        if head == C04_PORTABILITY_FIX:
+            if branch != C04_PORTABILITY_BRANCH or development_main != C04_PORTABILITY_MERGED_MAIN:
+                return ["C04_PORTABILITY_BRANCH_OR_UPSTREAM_INVALID"]
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C04_PORTABILITY_BRANCH}")
+            if upstream is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            cached_raw = raw("diff", "--cached", "--name-only")
+            unstaged_raw = raw("diff", "--name-only")
+            untracked_raw = raw("ls-files", "--others", "--exclude-standard")
+            if None in (cached_raw, unstaged_raw, untracked_raw):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            cached = _c02_strict_name_only_paths(cached_raw)
+            unstaged = _c02_strict_name_only_paths(unstaged_raw)
+            untracked = _c02_strict_name_only_paths(untracked_raw)
+            if upstream not in feature_upstreams:
+                return ["C04_PORTABILITY_BRANCH_OR_UPSTREAM_INVALID"]
+            if None in (cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = dirty == meta["exact_paths"] and cached == meta["exact_paths"] and not unstaged and not untracked and check("diff", "--cached", "--check")
+            return [] if valid else ["C04_PORTABILITY_PATH_OR_CLEAN_INVALID"]
+        if branch == C04_PORTABILITY_BRANCH:
+            if development_main != C04_PORTABILITY_MERGED_MAIN:
+                return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C04_PORTABILITY_BRANCH}")
+            if upstream is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            if upstream not in feature_upstreams:
+                return ["C04_PORTABILITY_BRANCH_OR_UPSTREAM_INVALID"]
+            parents = value("show", "-s", "--format=%P", head)
+            changed_raw = raw("diff", "--name-only", C04_PORTABILITY_FIX, head)
+            if parents is None or changed_raw is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            changed = _c02_strict_name_only_paths(changed_raw)
+            if changed is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            if parents.split() != [C04_PORTABILITY_FIX] or not check("merge-base", "--is-ancestor", C04_PORTABILITY_FIX, head):
+                return ["GIT_DESCENDANT_RECORD_COMMIT_INVALID"]
+            valid = not dirty and changed == meta["exact_paths"] and check("diff", "--check", C04_PORTABILITY_FIX, head)
+            return [] if valid else ["C04_PORTABILITY_PATH_OR_CLEAN_INVALID"]
+        if branch == "main":
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main")
+            if upstream is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            if upstream != "development/main":
+                return ["C04_PORTABILITY_BRANCH_OR_UPSTREAM_INVALID"]
+        elif branch != "":
+            return ["C04_PORTABILITY_BRANCH_OR_UPSTREAM_INVALID"]
+        if development_main != head:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        future_parents = value("show", "-s", "--format=%P", head)
+        if future_parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        parent_list = future_parents.split()
+        if len(parent_list) != 2 or parent_list[0] != C04_PORTABILITY_MERGED_MAIN:
+            return ["C04_PORTABILITY_MERGE_LINEAGE_INVALID"]
+        successor = parent_list[1]
+        successor_parent = value("show", "-s", "--format=%P", successor)
+        successor_changed_raw = raw("diff", "--name-only", C04_PORTABILITY_FIX, successor)
+        merge_changed_raw = raw("diff", "--name-only", C04_PORTABILITY_FIX, head)
+        if None in (successor_parent, successor_changed_raw, merge_changed_raw):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        successor_changed = _c02_strict_name_only_paths(successor_changed_raw)
+        merge_changed = _c02_strict_name_only_paths(merge_changed_raw)
+        if None in (successor_changed, merge_changed):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if (
+            successor_parent.split() != [C04_PORTABILITY_FIX]
+            or not check("merge-base", "--is-ancestor", C04_PORTABILITY_FIX, successor)
+            or not check("merge-base", "--is-ancestor", C04_PORTABILITY_MERGED_MAIN, head)
+        ):
+            return ["C04_PORTABILITY_MERGE_LINEAGE_INVALID"]
+        valid = (
+            not dirty and successor_changed == meta["exact_paths"] and merge_changed == meta["exact_paths"]
+            and check("diff", "--check", C04_PORTABILITY_FIX, successor)
+            and check("diff", "--check", C04_PORTABILITY_FIX, head)
+            and check("diff", "--quiet", successor, head)
+        )
+        return [] if valid else ["C04_PORTABILITY_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

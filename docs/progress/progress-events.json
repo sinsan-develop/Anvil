@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 756,
+  "last_sequence": 757,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -40608,7 +40608,90 @@
           "e_shot": "DEFERRED_U02"
         }
       }
+    },
+    {
+      "occurred_at": "2026-09-13T00:02:44+09:00",
+      "occurred_at_source": "PRODUCT_FIX_COMMIT_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-04",
+      "step_id": "DETACHED-SMOKE-PORTABILITY-RECONCILIATION",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-04/DETACHED-SMOKE-PORTABILITY-RECONCILIATION",
+      "event_id": "evt_c04_detached_smoke_portability_repository_reconciled",
+      "sequence": 757,
+      "event_type": "REPOSITORY_RECONCILED",
+      "previous_event_sha256": "742DC5E8722E96D40754CF17054F496BF6E6C14681FB00D0DC79CA6B1E012F13",
+      "details": {
+        "branch": "codex/c04-detached-smoke-portability-r1",
+        "local_head": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
+        "remote_head": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
+        "upstream": "development/main",
+        "observed_at": "2026-09-13T00:02:44+09:00",
+        "reason": "C04_MERGED_MAIN_DETACHED_BRANCH_COLLECTION_CORRECTED",
+        "decision": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
+        "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+        "authority_basis": [
+          "MERGED_MAIN_DETACHED_SMOKE_FAILURE",
+          "EXISTING_C04_ACCEPTANCE",
+          "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"
+        ],
+        "projection_mode": "C04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_EXACT9",
+        "validated_base_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
+        "head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_RESULT.md",
+          "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c04-detached-smoke-portability-reconciliation.json",
+          "docs/validation/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_VALIDATION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "fix_exact_paths": [
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "lineage": {
+          "prior_development_main": "028765cea128c73fb2404e6cefefce12175cb9f4",
+          "prior_feature_acceptance": "d70e149edd99d3a09073970d913288ca4ab44d9c",
+          "prior_merged_main": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
+          "prior_merged_main_parents": [
+            "028765cea128c73fb2404e6cefefce12175cb9f4",
+            "d70e149edd99d3a09073970d913288ca4ab44d9c"
+          ],
+          "fix_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
+          "fix_parent": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
+          "fix_exact_paths": [
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "merge_tree_equals_prior_feature_acceptance": true,
+          "ancestor_checks_required": true
+        },
+        "c04_status": "ACCEPTED",
+        "c05_status": "READY_FOR_WORK_INSTRUCTION",
+        "dir2_status": "NOT_REACHED",
+        "external_validation": {
+          "ui": "NOT_EXECUTED",
+          "fastapi_binding": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "external_developer_backend": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "secret": "NOT_ACCESSED",
+          "wsl": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "browser": "DEFERRED_U02",
+          "e_shot": "DEFERRED_U02"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c04_final_main_package_accepted"
+  "last_event_id": "evt_c04_detached_smoke_portability_repository_reconciled"
 }

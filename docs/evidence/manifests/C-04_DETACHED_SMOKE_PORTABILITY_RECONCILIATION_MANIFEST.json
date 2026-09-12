@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION",
+  "artifact_id": "C04-DETACHED-SMOKE-PORTABILITY-RECONCILIATION-20260913",
+  "created_at": "2026-09-13T00:02:44+09:00",
+  "package_id": "C-04",
+  "event_sequence": 757,
+  "historical_event_sequence": 756,
+  "appended_event_count": 1,
+  "historical_raw_event_prefix": {
+    "bytes": 2275770,
+    "sha256": "8EC4B22C43E4D1D680C3AEE21768F27CECDC5797455FBE20F2067D721DD8A1C8"
+  },
+  "accepted": true,
+  "status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
+  "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+  "authority_basis": [
+    "MERGED_MAIN_DETACHED_SMOKE_FAILURE",
+    "EXISTING_C04_ACCEPTANCE",
+    "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"
+  ],
+  "c04_status": "ACCEPTED",
+  "c05_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "active_leases": 0,
+  "lineage": {
+    "prior_development_main": "028765cea128c73fb2404e6cefefce12175cb9f4",
+    "prior_feature_acceptance": "d70e149edd99d3a09073970d913288ca4ab44d9c",
+    "prior_merged_main": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
+    "prior_merged_main_parents": [
+      "028765cea128c73fb2404e6cefefce12175cb9f4",
+      "d70e149edd99d3a09073970d913288ca4ab44d9c"
+    ],
+    "fix_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
+    "fix_parent": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
+    "fix_exact_paths": [
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "merge_tree_equals_prior_feature_acceptance": true,
+    "ancestor_checks_required": true
+  },
+  "external_validation": {
+    "ui": "NOT_EXECUTED",
+    "fastapi_binding": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "external_developer_backend": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "browser": "DEFERRED_U02",
+    "e_shot": "DEFERRED_U02"
+  },
+  "verification": {
+    "authoritative_c03_c04_focused_passed": 15,
+    "c04_product_regression_passed": 460,
+    "reviewer_acl_helper_same_error_count": 3,
+    "reviewer_acl_helper_classification": "NON_PRODUCT_TOOLING_ERROR"
+  },
+  "record_binding": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "self_reference": false,
+  "sequence": 757,
+  "event_type": "REPOSITORY_RECONCILED",
+  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+  "development_remote_ref": "refs/remotes/development/main",
+  "validated_base_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
+  "exact_paths": [
+    "docs/04_test_reports/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_RESULT.md",
+    "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c04-detached-smoke-portability-reconciliation.json",
+    "docs/validation/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_VALIDATION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "exact_path_list_sha256": "BA2772235B603FFA14826E34E920A4DDC68CEE2DF9F1BD027C82310B3BF6C8A8",
+  "exact_path_list_ordinal_sha256": "BA2772235B603FFA14826E34E920A4DDC68CEE2DF9F1BD027C82310B3BF6C8A8",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_RESULT.md",
+      "bytes": 1140,
+      "sha256": "334A7B452D444E214FBA3F370137D5E02874655328811827305693F57FDF1A23"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 187203,
+      "sha256": "86502C46FC3365ECD947A3CE89001394563A241B5421BA6C7A22029294222906"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 843915,
+      "sha256": "AA3703EC359C82B12C6BDE625796D8514829432719224374AACB1A3F190015D7"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2279931,
+      "sha256": "4C73C5C9A832301349257212225FFD5BF46627E1A1B8F666C13AA430266B6BD3"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c04-detached-smoke-portability-reconciliation.json",
+      "bytes": 905,
+      "sha256": "D95DAC283ED4E627ED636B29B517EDD00CC8A160970EEA664D94B4AEF9B33FC5"
+    },
+    {
+      "path": "docs/validation/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_VALIDATION.md",
+      "bytes": 777,
+      "sha256": "1F372E6D38A30F90E2B03B10C92B140A9DE7804FC23196A9A1606BAE501D4CA6"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2946287,
+      "sha256": "D34A1008366A57E562091A36406864EB0B9217A1677F7DE29E2411C58CA0F192"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 821703,
+      "sha256": "16B97F2167E88AAE814AC6865AAA8023B7EC2EBA14BC884E79FBF99370D50DEF"
+    }
+  ]
+}
