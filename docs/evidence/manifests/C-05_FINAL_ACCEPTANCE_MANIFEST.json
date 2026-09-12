@@ -1,0 +1,205 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-05_FINAL_ACCEPTANCE",
+  "artifact_id": "C05-FINAL-ACCEPTANCE-20260913",
+  "created_at": "2026-09-13T15:30:00+09:00",
+  "package_id": "C-05",
+  "event_sequence": 768,
+  "historical_event_sequence": 763,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 2296261,
+    "sha256": "A43ED254F3233786695E9A26F596A24DF15127BA667AFD4EB4E1CD73F1542892"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "c05_status": "ACCEPTED",
+  "c06_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "active_leases": 0,
+  "product_commit": "695779fda8e4f56a09ff5b7a42c162a35b486c39",
+  "product_parent": "79d6d73eec0daebe6969b161afff0c98121b68ae",
+  "product_exact_paths": [
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/result_envelope.py",
+    "tests/orchestration/test_failure_report_c06.py",
+    "tests/orchestration/test_result_envelope_c05.py"
+  ],
+  "product_file_sha256": {
+    "packages/orchestration/result_envelope.py": "794059B98F3F282B4545CCC3CCC618DF69BB34AE482371D09C7E8007095067FA",
+    "packages/orchestration/__init__.py": "7DBDCA72C9FCDDAE56EC7B3169A0B4933654BC4F41B9583F0A21BF7E0D820F9D",
+    "tests/orchestration/test_result_envelope_c05.py": "08CB815C898A14EB0019108494FFD3C589B72D358483D70257851F625F04E75F",
+    "tests/orchestration/test_failure_report_c06.py": "2FFEB7822770B2F4D2A4304651944BBDAC84CF7FB791F2E80D95BE82B8C9D20E"
+  },
+  "lineage": {
+    "development_main_base": "7182e056b577689c77bf26f2c394e7cfa7211129",
+    "start_control_commit": "c62d07327f09280951e591b5d726b0ca5ae5b8ef",
+    "scope_revision_commit": "79d6d73eec0daebe6969b161afff0c98121b68ae",
+    "product_commit": "695779fda8e4f56a09ff5b7a42c162a35b486c39",
+    "ancestor_chain": [
+      "7182e056b577689c77bf26f2c394e7cfa7211129",
+      "c62d07327f09280951e591b5d726b0ca5ae5b8ef",
+      "79d6d73eec0daebe6969b161afff0c98121b68ae",
+      "695779fda8e4f56a09ff5b7a42c162a35b486c39"
+    ]
+  },
+  "test_evidence": {
+    "focused": {
+      "passed": 117,
+      "failed": 0
+    },
+    "related": {
+      "passed": 139,
+      "failed": 0
+    },
+    "main_precommit": {
+      "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/orchestration tests/api tests/e2e",
+      "passed": 562,
+      "failed": 0,
+      "scope": "PRODUCT_EXACT4_PRECOMMIT"
+    },
+    "main_postcommit": {
+      "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/orchestration tests/api tests/e2e",
+      "passed": 562,
+      "failed": 0,
+      "scope": "PRODUCT_COMMIT"
+    },
+    "compile_exact4": {
+      "passed": 4,
+      "failed": 0
+    },
+    "diff_check": {
+      "passed": true
+    }
+  },
+  "independent_product_review": {
+    "spec": "PASS",
+    "quality": "APPROVED",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "non_product_tool_errors": [
+    {
+      "fingerprint": "C05_PATCH_QUOTING_FAMILY",
+      "count": 3,
+      "classification": "SUBAGENT_TOOL_ERROR_MAIN_TAKEOVER",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_ACTIVE_PRODUCT_DIFF_CHECKER_EXPECTED",
+      "count": 1,
+      "classification": "EXPECTED_TRANSIENT_FAIL_CLOSED",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_SCOPE_PATH_OR_CLEAN_INVALID",
+      "count": 1,
+      "classification": "EXPECTED_POST_PRODUCT_PRE_FINAL_FAIL_CLOSED",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_REVIEWER_OVERBROAD_TEST_COLLECTION",
+      "count": 1,
+      "classification": "NON_AUTHORITATIVE_COLLECTION_ERROR",
+      "product_failure": false
+    },
+    {
+      "fingerprint": "C05_FINAL_TEST_BYTES_LITERAL_PATCH_QUOTE",
+      "count": 1,
+      "classification": "MAIN_TEST_PATCH_TRANSPORT_ERROR_CORRECTED",
+      "product_failure": false
+    }
+  ],
+  "external_validation": {
+    "product_code": "IMPLEMENTED_AND_LOCALLY_VERIFIED",
+    "c06_failure_aggregation": "NOT_EXECUTED",
+    "c07_outcome_resolution": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED"
+  },
+  "record_binding": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "self_reference": false,
+  "sequence": 768,
+  "projection_mode": "C05_FINAL_ACCEPTANCE_EXACT7",
+  "validated_base_commit": "695779fda8e4f56a09ff5b7a42c162a35b486c39",
+  "development_main": "7182e056b577689c77bf26f2c394e7cfa7211129",
+  "branch": "codex/c05-result-envelope-revalidation-r1",
+  "exact_paths": [
+    "docs/evidence/manifests/C-05_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c05-final-acceptance.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 7,
+  "exact_path_list_sha256": "D692CD1244B439495538199B55E3E333FA5944419EF8F862C6337ED7BD41F964",
+  "exact_path_list_ordinal_sha256": "D692CD1244B439495538199B55E3E333FA5944419EF8F862C6337ED7BD41F964",
+  "reviewed_merge_paths": [
+    "docs/04_test_reports/C-05_SCOPE_REVISION_REPORT.md",
+    "docs/04_test_reports/C-05_START_PROJECTION_REPORT.md",
+    "docs/evidence/manifests/C-05_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-05_SCOPE_REVISION_MANIFEST.json",
+    "docs/evidence/manifests/C-05_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c05-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c05-scope-revision.json",
+    "docs/progress/progress-handoff-detached-digest-c05-start.json",
+    "docs/validation/C-05_SCOPE_REVISION_VALIDATION.md",
+    "docs/validation/C-05_START_VALIDATION.md",
+    "docs/work_orders/C-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-05_WORK_INSTRUCTION.md",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/result_envelope.py",
+    "scripts/check_project_progress.py",
+    "tests/orchestration/test_failure_report_c06.py",
+    "tests/orchestration/test_result_envelope_c05.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 191772,
+      "sha256": "907505798E27D1CDE0E33273DA4270B90DCA3F281D86136AC214A83EB994BB82"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 861548,
+      "sha256": "D72C967DEA4FA3BC8B99CA0345E5C8E0C1879C6A5B064FB14F7D16C583EBD9B8"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2307382,
+      "sha256": "FC163A199F11481B1B7479FE825B1D51BE381E862FF01B6B8DE971E13CA9B9BD"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c05-final-acceptance.json",
+      "bytes": 876,
+      "sha256": "7DEBA87155CBAB77A5F0E72003556F22F4F95EAAE7DD0CAA22F96DEC057D18CD"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3033553,
+      "sha256": "7EC1264411D76A49A480B6694A72EB9A21CC0472FC313DD76AAAF2EB1A291EA0"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 855587,
+      "sha256": "5FCEEAE66B7065044B6EE8068230606C996D8EB25B837FED7D7B318C2FEE436C"
+    }
+  ]
+}
