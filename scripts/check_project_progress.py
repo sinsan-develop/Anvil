@@ -904,6 +904,13 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C04_START_PROJECTION_EXACT12"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 760
+                and event.get("sequence") == 758
+                and event.get("event_id") == "evt_c05_work_instruction_issued"
+                and event["details"].get("projection_mode") == "C05_START_PROJECTION_EXACT11"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -12917,6 +12924,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 760:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c05_start_projection_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 757:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13977,6 +13988,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-05_START_MANIFEST.json":
+            errors.extend(validate_c05_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json":
             errors.extend(validate_c04_detached_smoke_portability_reconciliation(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json":
@@ -34698,6 +34711,631 @@ def _collect_c04_detached_smoke_portability_reconciliation_git(bundle: Mapping[s
             and check("diff", "--quiet", successor, head)
         )
         return [] if valid else ["C04_PORTABILITY_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C05_START_P = "docs/progress/build-progress.json"
+C05_START_E = "docs/progress/progress-events.json"
+C05_START_H = "docs/progress/BUILD_HANDOFF.md"
+C05_START_D = "docs/progress/progress-handoff-detached-digest-c05-start.json"
+C05_START_M = "docs/evidence/manifests/C-05_START_MANIFEST.json"
+C05_START_REPORT = "docs/04_test_reports/C-05_START_PROJECTION_REPORT.md"
+C05_START_VALIDATION = "docs/validation/C-05_START_VALIDATION.md"
+C05_START_WI = "docs/work_orders/C-05_WORK_INSTRUCTION.md"
+C05_START_PROMPT = "docs/work_orders/C-05_INVOCATION_PROMPT.md"
+C05_START_BASE = "7182e056b577689c77bf26f2c394e7cfa7211129"
+C05_START_BRANCH = "codex/c05-result-envelope-revalidation-r1"
+C05_START_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C05_START_DEVELOPMENT_REF = "development/main"
+C05_START_AT = "2026-09-13T10:00:00+09:00"
+C05_START_EXPIRES_AT = "2026-09-13T22:00:00+09:00"
+C05_START_WI_ID = "WI-C-05-RESULT-ENVELOPE-R2-20260913-001"
+C05_START_WI_SHA256 = "7D6DDA57A80F501A7496B1E3980FFE846E0908A222302F716AED6749EF55D562"
+C05_START_PROMPT_SHA256 = "4951C34296810D0BC25EE89CC73772DC1BEFB238F875B98B14AF89A2633E1F0E"
+C05_START_SUPERSEDED_WI_SHA256 = "FA57250A558B503DBFB0C6CA7AEB72B2E8017B0D8664EEB050ADABC10ECB678E"
+C05_START_SUPERSEDED_PROMPT_SHA256 = "7201AD35D34371EA4F0D379B64027F68AAE1B262FA70F15D88369E56790C9327"
+C05_START_WORK_PLAN_SHA256 = "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18"
+C05_START_DESIGN_SHA256 = "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3"
+C05_START_MATRIX_SHA256 = "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5"
+C05_START_TEST_PLAN_SHA256 = "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644"
+C05_START_GOVERNANCE_SHA256 = "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E"
+C05_START_WORKER_LEASE_ID = "worker-lease-c05-result-envelope-r2-20260913-001"
+C05_START_WRITE_LEASE_ID = "write-lease-c05-result-envelope-r2-20260913-001"
+C05_START_EXECUTION_TOKEN = "c05-result-envelope-execution-fence-epoch-3-7182e05"
+C05_START_WRITE_TOKEN = "c05-result-envelope-write-fence-epoch-4-7182e05"
+
+
+def c05_start_projection_paths() -> list[str]:
+    return sorted([
+        C05_START_REPORT, C05_START_M, C05_START_H, C05_START_P, C05_START_E,
+        C05_START_D, C05_START_VALIDATION, C05_START_WI, C05_START_PROMPT,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c05_start_product_write_scope() -> list[str]:
+    return sorted([
+        "packages/orchestration/result_envelope.py",
+        "packages/orchestration/__init__.py",
+        "tests/orchestration/test_result_envelope_c05.py",
+    ])
+
+
+def c05_start_projection_metadata() -> dict[str, Any]:
+    paths = c05_start_projection_paths()
+    return {
+        "sequence": 760,
+        "projection_mode": "C05_START_PROJECTION_EXACT11",
+        "validated_base_commit": C05_START_BASE,
+        "branch": C05_START_BRANCH,
+        "exact_paths": paths,
+        "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def _c05_start_worker_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C05_START_WORKER_LEASE_ID,
+        "fencing_token": C05_START_EXECUTION_TOKEN,
+        "execution_fencing_token": C05_START_EXECUTION_TOKEN,
+        "lease_epoch": 3,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-05",
+        "baseline_hash": C05_START_DESIGN_SHA256,
+        "baseline_git_commit": C05_START_BASE,
+        "dispatch_head": C05_START_BASE,
+        "issued_at": C05_START_AT,
+        "expires_at": C05_START_EXPIRES_AT,
+        "status": "ACTIVE",
+    }
+
+
+def _c05_start_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C05_START_WRITE_LEASE_ID,
+        "worker_lease_id": C05_START_WORKER_LEASE_ID,
+        "fencing_token": C05_START_WRITE_TOKEN,
+        "write_fencing_token": C05_START_WRITE_TOKEN,
+        "write_epoch": 4,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-05",
+        "baseline_hash": C05_START_DESIGN_SHA256,
+        "issued_at": C05_START_AT,
+        "expires_at": C05_START_EXPIRES_AT,
+        "path_scope": c05_start_product_write_scope(),
+        "status": "ACTIVE",
+    }
+
+
+def _c05_result_envelope_contract() -> dict[str, Any]:
+    return {
+        "schema_version": "subagent_result/v1",
+        "statuses": ["COMPLETED", "FAILURE_REPORT", "INCOMPLETE", "BLOCKED", "CANCELLED"],
+        "reason_code_optional_field": True,
+        "reason_codes": {
+            "COMPLETED": [],
+            "FAILURE_REPORT": [],
+            "INCOMPLETE": ["RESULT_CONTRACT_INCOMPLETE", "TRANSIENT_EXECUTION_ERROR", "CHECKPOINTED_INTERRUPTION"],
+            "BLOCKED": ["DECISION_REQUIRED", "POLICY_BLOCKED", "ENVIRONMENT_BLOCKED", "PERMISSION_BLOCKED"],
+            "CANCELLED": ["DELEGATION_REASSIGN", "RUN_CANCEL_REQUESTED"],
+        },
+        "completed_failure_report_reason_code": "CANONICAL_NULL",
+        "checkpointed_interruption_checkpoint_ref": "REQUIRED",
+        "failure_fingerprint_validity_owner": "C06",
+        "transition_owner": "C07",
+        "identifier_authority": "CANONICAL_NON_EMPTY_TEXT_NO_AD_HOC_REGEX",
+        "c02_valid_operational_identifiers": "PRESERVED_RAW_CANONICAL",
+        "json_array_type": "LIST_ONLY",
+        "json_object_keys": "STRING_ONLY",
+        "nested_fields": ["evidence_refs", "tests", "handoff"],
+        "type_coercion": "FORBIDDEN",
+        "exception_leakage": "FORBIDDEN",
+        "non_finite_numbers": "REJECTED",
+        "handoff_inline_raw_policy": "FORBIDDEN_FAIL_CLOSED",
+        "handoff_raw_material_transport": "CHECKSUM_BOUND_EVIDENCE_REFS_ONLY",
+        "handoff_forbidden_key_semantics": [
+            "TRANSCRIPT", "TRANSCRIPTS", "STDOUT", "STDERR",
+            "RAW_LOG", "RAW_LOGS", "RAW_TRANSCRIPT", "RAW_TRANSCRIPTS",
+        ],
+        "handoff_key_match": "CASE_INSENSITIVE_REMOVE_UNDERSCORE_HYPHEN_WHITESPACE_CONTAINS_RAW_LOG_OR_RAW_TRANSCRIPT",
+        "handoff_bounds": {
+            "canonical_json_bytes": 65536,
+            "max_depth": 8,
+            "max_object_keys": 128,
+            "max_array_items": 256,
+            "max_string_utf8_bytes": 16384,
+        },
+        "c06_aggregation": "NOT_IMPLEMENTED",
+        "c07_resolution": "NOT_IMPLEMENTED",
+    }
+
+
+def _c05_start_boundary() -> dict[str, str]:
+    return {
+        "product_code": "NOT_MUTATED_BY_CONTROL",
+        "c06_failure_aggregation": "NOT_EXECUTED",
+        "c07_outcome_resolution": "NOT_EXECUTED",
+        "database": "NOT_EXECUTED",
+        "api": "NOT_EXECUTED",
+        "ui": "NOT_EXECUTED",
+        "browser": "NOT_EXECUTED",
+        "external_call": "NOT_EXECUTED",
+        "provider": "NOT_EXECUTED",
+        "telegram": "NOT_EXECUTED",
+        "secret": "NOT_ACCESSED",
+        "wsl": "NOT_EXECUTED",
+        "deployment": "NOT_EXECUTED",
+        "network": "NOT_EXECUTED",
+    }
+
+
+def _c05_start_authority() -> dict[str, Any]:
+    return {
+        "revision_class": "MAIN_INTERNAL_TECHNICAL_REVISION",
+        "authority_basis": ["APPROVED_WORK_PLAN_C05", "C04_ACCEPTED", "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_id": C05_START_WI_ID,
+        "work_instruction_sha256": C05_START_WI_SHA256,
+        "invocation_sha256": C05_START_PROMPT_SHA256,
+        "superseded_work_instruction_sha256": C05_START_SUPERSEDED_WI_SHA256,
+        "superseded_invocation_sha256": C05_START_SUPERSEDED_PROMPT_SHA256,
+        "design_sha256": C05_START_DESIGN_SHA256,
+        "work_plan_sha256": C05_START_WORK_PLAN_SHA256,
+        "matrix_sha256": C05_START_MATRIX_SHA256,
+        "test_plan_sha256": C05_START_TEST_PLAN_SHA256,
+        "governance_sha256": C05_START_GOVERNANCE_SHA256,
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "acceptance": [
+            {"requirement_id": "AV-AGT-007", "level": "L2", "method": "AU", "evidence": ["E-API"]},
+            {"requirement_id": "AV-AGT-012", "level": "L2", "method": "AU", "evidence": ["E-EVT"]},
+            {"requirement_id": "AV-AGT-026", "level": "L3", "method": "MI", "evidence": ["E-ART"]},
+        ],
+    }
+
+
+def _c05_start_markdown() -> tuple[bytes, bytes]:
+    report = """# C-05 Start Projection Report
+
+- 판정: `IN_PROGRESS`
+- seq758~760: `WORK_INSTRUCTION_ISSUED → WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED`
+- C-04: `ACCEPTED`; C-05: `IN_PROGRESS`; C-06: `NOT_READY`; DIR-2: `NOT_REACHED`
+- R2 `MAIN_INTERNAL_TECHNICAL_REVISION`; exact3 product write scope; control product mutation 없음
+- optional reason_code, status allowlist, checkpoint binding, C02 identifier authority, JSON nested fail-closed contract bound
+- C06 fingerprint validity/aggregation and C07 resolver/transition not implemented
+- DB/API/browser/external backend/Provider/Telegram/Secret/WSL/deploy/network: `NOT_EXECUTED`
+""".encode("utf-8")
+    validation = """# C-05 Start Projection Validation
+
+- seq1~757 raw event object bytes preserved
+- seq758~760 authority → worker lease → write lease hash chain validated
+- C-04 ACCEPTED, C-05 IN_PROGRESS, C-06 NOT_READY, DIR-2 NOT_REACHED exact
+- current R2 WI/prompt and design/plan/matrix/test/governance hashes bound
+- exact3 product scope, epoch3 worker and epoch4 write fencing bound
+- five statuses and status-specific optional reason_code domain bound
+- CHECKPOINTED_INTERRUPTION requires checkpoint_ref
+- C02-valid canonical non-empty operational identifiers accepted without C05 ad-hoc regex
+- JSON array/object/nested evidence/test/handoff reject coercion and exception leakage
+- C06 fingerprint validity/aggregation and C07 transition ownership preserved
+- exact11 staged, sole direct-child, or reviewed merge only
+- product/DB/API/browser/external calls not executed
+""".encode("utf-8")
+    return report, validation
+
+
+def c05_start_projection_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c05_start_projection_metadata()
+    generated = {C05_START_REPORT, C05_START_M, C05_START_H, C05_START_P, C05_START_E, C05_START_D, C05_START_VALIDATION}
+    if set(historical) != {C05_START_H, C05_START_P, C05_START_E} or set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C05_START_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C05_START_P])
+    stream = _c21_resume_json(historical[C05_START_E])
+    if (
+        progress.get("event_sequence") != 757
+        or stream.get("last_sequence") != 757
+        or len(stream.get("events", [])) != 757
+        or progress.get("current_work_package") != "C-04"
+        or progress.get("status") != "ACCEPTED"
+        or progress.get("active_agent") is not None
+        or progress.get("worker_lease") is not None
+        or progress.get("write_lease") is not None
+        or progress.get("next_work_package") != {"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"}
+        or progress.get("next_safe_action") != "ISSUE_C05_WORK_INSTRUCTION"
+    ):
+        raise ValueError("C05_START_HISTORY_INVALID")
+    worker = _c05_start_worker_lease()
+    write = _c05_start_write_lease()
+    authority = _c05_start_authority()
+    contract = _c05_result_envelope_contract()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C05_START_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT",
+            "actor_id": actor,
+            "project_id": "anvil",
+            "run_id": None,
+            "work_package_id": "C-05",
+            "step_id": "START",
+            "actor": actor,
+            "subject_ref": "C-05/START",
+            "event_id": event_id,
+            "sequence": sequence,
+            "event_type": event_type,
+            "previous_event_sha256": previous,
+            "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+        return event
+
+    events = [
+        envelope(758, "WORK_INSTRUCTION_ISSUED", "evt_c05_work_instruction_issued", "main-agent-eoul", {
+            **authority,
+            "approval_ref": authority["parent_approval_id"],
+            "product_write_scope": c05_start_product_write_scope(),
+            "projection_mode": meta["projection_mode"],
+            "validated_base_commit": C05_START_BASE,
+            "exact_allowed_paths": meta["exact_paths"],
+            "result_envelope_contract": contract,
+        }),
+        envelope(759, "WORKER_LEASE_ISSUED", "evt_c05_worker_lease_issued", "developer-primary", worker),
+        envelope(760, "WRITE_LEASE_ISSUED", "evt_c05_write_lease_issued", "developer-primary", write),
+    ]
+    events_raw = _c21_append_events(historical[C05_START_E], 757, events)
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"],
+        "validated_base_commit": C05_START_BASE,
+        "control_head": C05_START_BASE,
+        "development_main": C05_START_BASE,
+        "local_head": C05_START_BASE,
+        "branch": C05_START_BRANCH,
+        "upstream": C05_START_DEVELOPMENT_REF,
+        "remote_head": C05_START_BASE,
+        "head_relation": "EXACT11_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "worktree_status": "STAGED_EXACT11",
+        "exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c05_start_product_write_scope(),
+        "development_remote_url": C05_START_DEVELOPMENT_URL,
+        "push_status": "NOT_EXECUTED",
+    })
+    instruction = {
+        "artifact_id": C05_START_WI_ID,
+        "artifact_path": C05_START_WI,
+        "artifact_sha256": C05_START_WI_SHA256,
+        "invocation_path": C05_START_PROMPT,
+        "invocation_sha256": C05_START_PROMPT_SHA256,
+        "executor": "developer-primary",
+        "result_status": "IN_PROGRESS",
+        "package_status": "IN_PROGRESS",
+        "product_write_scope": c05_start_product_write_scope(),
+        "acceptance_binding": authority,
+    }
+    active = {
+        "actor_id": "developer-primary",
+        "role": "PRIMARY_DEVELOPER",
+        "work_package_id": "C-05",
+        "status": "ACTIVE",
+        "execution_fencing_token": C05_START_EXECUTION_TOKEN,
+    }
+    progress.update({
+        "snapshot_id": "snapshot-c05-start-seq760",
+        "updated_at": C05_START_AT,
+        "recorded_at": C05_START_AT,
+        "event_sequence": 760,
+        "last_event_id": events[-1]["event_id"],
+        "current_phase": "C",
+        "current_work_package": "C-05",
+        "status": "IN_PROGRESS",
+        "active_agent": active,
+        "worker_lease": worker,
+        "write_lease": write,
+        "active_work_instruction": instruction,
+        "repository": repository,
+        "c05_start_projection": {
+            "status": "IN_PROGRESS",
+            "accepted": False,
+            "event_sequence": 760,
+            "c04_status": "ACCEPTED",
+            "c06_status": "NOT_READY",
+            "dir2_status": "NOT_REACHED",
+            "authority": authority,
+            "result_envelope_contract": contract,
+            "external_validation": _c05_start_boundary(),
+        },
+        "next_work_package": {"package_id": "C-06", "status": "NOT_READY"},
+        "next_successor_work_package": None,
+        "runtime_next_action": "DEVELOPER_IMPLEMENT_C05_RESULT_ENVELOPE_R2",
+        "next_safe_action": "DEVELOPER_IMPLEMENT_C05_RESULT_ENVELOPE_R2",
+        "current_progress_evidence_ref": {"package_id": "C-05", "path": C05_START_D, "manifest_path": C05_START_M},
+        "latest_evidence_manifest_ref": {"path": C05_START_M, "artifact_id": "C05-START-PROJECTION-20260913"},
+        "reporting_decision": {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": ["C04_ACCEPTED", "C05_IN_PROGRESS", "C06_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False,
+        },
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C05_START_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw, validation_raw = _c05_start_markdown()
+    latest = {**files, C05_START_E: events_raw, C05_START_REPORT: report_raw, C05_START_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash", "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "accepted": False,
+        "c04_status": "ACCEPTED",
+        "c05_status": "IN_PROGRESS",
+        "c06_status": "NOT_READY",
+        "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED",
+        "repository_head": C05_START_BASE,
+        "repository_upstream": C05_START_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C05_START_BASE,
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c05_start_product_write_scope(),
+        "work_instruction_id": C05_START_WI_ID,
+        "work_instruction_sha256": C05_START_WI_SHA256,
+        "invocation_sha256": C05_START_PROMPT_SHA256,
+        "acceptance_binding": authority,
+        "result_envelope_contract": contract,
+        "external_validation": _c05_start_boundary(),
+        "current_manifest": C05_START_M,
+        "reporting_decision": "AUTO_CONTINUE",
+    })
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(
+        r"```json anvil-recovery-summary\s*\{.*?\}\s*```",
+        lambda _: replacement,
+        historical[C05_START_H].decode(),
+        flags=re.DOTALL,
+    )
+    if count != 1:
+        raise ValueError("C05_START_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-05 Result Envelope R2 start projection — seq760\n\n"
+        "- seq1~757 raw event object bytes and historical evidence preserved.\n"
+        "- C-04 ACCEPTED, C-05 IN_PROGRESS, C-06 NOT_READY, DIR-2 NOT_REACHED.\n"
+        "- exact3 product scope leased; control product/external execution none.\n\n"
+        + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0",
+        "digest_id": "C05-START-PROJECTION-DIGEST-20260913",
+        "package_id": "C-05",
+        "event_sequence": 760,
+        "algorithm": "SHA-256",
+        "created_at": C05_START_AT,
+        "scope": "seq758-760 append-only C-05 R2 start projection; seq1-757 preserved; exact11",
+        "self_reference": False,
+        "progress": {
+            "path": C05_START_P,
+            "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress)),
+        },
+        "handoff": {
+            "path": C05_START_H,
+            "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff)),
+        },
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {
+        **files,
+        C05_START_REPORT: report_raw,
+        C05_START_H: handoff_raw,
+        C05_START_P: progress_raw,
+        C05_START_E: events_raw,
+        C05_START_D: digest_raw,
+        C05_START_VALIDATION: validation_raw,
+    }
+    historical_prefix = raw_event_object_prefix_bytes(historical[C05_START_E], 757)
+    manifest = {
+        "artifact_id": "C05-START-PROJECTION-20260913",
+        "manifest_type": "WORK_PACKAGE_START_PROJECTION",
+        "package_id": "C-05",
+        "created_at": C05_START_AT,
+        "status": "IN_PROGRESS",
+        "accepted": False,
+        "c04_status": "ACCEPTED",
+        "c05_status": "IN_PROGRESS",
+        "c06_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED",
+        "worker_lease": worker,
+        "write_lease": write,
+        "work_instruction_id": C05_START_WI_ID,
+        "work_instruction_path": C05_START_WI,
+        "work_instruction_sha256": C05_START_WI_SHA256,
+        "invocation_path": C05_START_PROMPT,
+        "invocation_sha256": C05_START_PROMPT_SHA256,
+        "authority": authority,
+        "result_envelope_contract": contract,
+        "external_validation": _c05_start_boundary(),
+        "historical_event_prefix": {
+            "sequence_end": 757,
+            "bytes": len(historical_prefix),
+            "sha256": _c21_resume_sha(historical_prefix),
+        },
+        "record_binding": repository["head_relation"],
+        "self_reference": False,
+        **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+        for path, payload in sorted(artifacts.items())
+    ]
+    artifacts[C05_START_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C05_START_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c05_start_projection_from_root(root: Path) -> dict[str, bytes]:
+    if _c21_resume_sha((root / C05_START_WI).read_bytes()) != C05_START_WI_SHA256:
+        raise ValueError("C05_START_WORK_INSTRUCTION_HASH_INVALID")
+    if _c21_resume_sha((root / C05_START_PROMPT).read_bytes()) != C05_START_PROMPT_SHA256:
+        raise ValueError("C05_START_INVOCATION_HASH_INVALID")
+    historical = {
+        path: subprocess.check_output(["git", "show", f"{C05_START_BASE}:{path}"], cwd=root)
+        for path in {C05_START_H, C05_START_P, C05_START_E}
+    }
+    generated = {C05_START_REPORT, C05_START_M, C05_START_H, C05_START_P, C05_START_E, C05_START_D, C05_START_VALIDATION}
+    files = {path: (root / path).read_bytes() for path in set(c05_start_projection_paths()) - generated}
+    return c05_start_projection_artifacts(historical, files)
+
+
+def validate_c05_start_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c05_start_projection_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c05_start_projection_paths()}
+        actual = {
+            C05_START_P: bundle.get("progress"),
+            C05_START_E: bundle.get("events"),
+            C05_START_H: bundle.get("handoff"),
+            C05_START_D: bundle.get("detached_digest"),
+            C05_START_M: manifest,
+        }
+        refs = {
+            C05_START_P: _c21_resume_json(expected[C05_START_P]),
+            C05_START_E: _c21_resume_json(expected[C05_START_E]),
+            C05_START_H: extract_handoff_summary(expected[C05_START_H].decode()),
+            C05_START_D: _c21_resume_json(expected[C05_START_D]),
+            C05_START_M: _c21_resume_json(expected[C05_START_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], refs[path]) for path in actual) else ["C05_START_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C05_START_RAW_BYTES_INVALID")
+        progress = actual[C05_START_P]
+        if (
+            not isinstance(progress, Mapping)
+            or progress.get("event_sequence") != 760
+            or progress.get("current_work_package") != "C-05"
+            or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c05_start_worker_lease()
+            or progress.get("write_lease") != _c05_start_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-06", "status": "NOT_READY"}
+            or progress.get("next_safe_action") != "DEVELOPER_IMPLEMENT_C05_RESULT_ENVELOPE_R2"
+        ):
+            errors.append("C05_START_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C05_START_BASE}:{C05_START_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 757) != raw_event_object_prefix_bytes(actual_raw[C05_START_E], 757):
+            errors.append("C05_START_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C05_START_INPUT_INVALID"]
+
+
+def _collect_c05_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c05_start_projection_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C05_START_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch = optional("branch", "--show-current")
+        status_raw = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C05_START_DEVELOPMENT_REF)
+        base_ref = value("rev-parse", C05_START_BASE)
+        if None in (head, branch, status_raw, development_url, development_main, base_ref):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C05_START_DEVELOPMENT_URL or base_ref != C05_START_BASE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        dirty = _c02_strict_porcelain_paths(status_raw)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        feature_upstreams = {C05_START_DEVELOPMENT_REF, f"development/{C05_START_BRANCH}"}
+        if head == C05_START_BASE:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C05_START_BRANCH}")
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            if None in (upstream, cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                branch == C05_START_BRANCH
+                and development_main == C05_START_BASE
+                and upstream == C05_START_DEVELOPMENT_REF
+                and dirty == meta["exact_paths"]
+                and cached == meta["exact_paths"]
+                and not unstaged
+                and not untracked
+                and check("diff", "--cached", "--check")
+            )
+            return [] if valid else ["C05_START_PATH_OR_CLEAN_INVALID"]
+        if branch == C05_START_BRANCH:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C05_START_BRANCH}")
+            parents = value("show", "-s", "--format=%P", head)
+            changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C05_START_BASE, head))
+            if None in (upstream, parents, changed):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                development_main == C05_START_BASE
+                and upstream in feature_upstreams
+                and not dirty
+                and parents.split() == [C05_START_BASE]
+                and changed == meta["exact_paths"]
+                and check("merge-base", "--is-ancestor", C05_START_BASE, head)
+                and check("diff", "--check", C05_START_BASE, head)
+            )
+            return [] if valid else ["C05_START_PATH_OR_CLEAN_INVALID"]
+        if branch == "main":
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main")
+            if upstream != C05_START_DEVELOPMENT_REF:
+                return ["C05_START_BRANCH_OR_UPSTREAM_INVALID"]
+        elif branch != "":
+            return ["C05_START_BRANCH_OR_UPSTREAM_INVALID"]
+        if development_main != head:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        parents = value("show", "-s", "--format=%P", head)
+        if parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        parent_list = parents.split()
+        if len(parent_list) != 2 or parent_list[0] != C05_START_BASE:
+            return ["C05_START_MERGE_LINEAGE_INVALID"]
+        successor = parent_list[1]
+        successor_parent = value("show", "-s", "--format=%P", successor)
+        successor_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C05_START_BASE, successor))
+        merge_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C05_START_BASE, head))
+        if None in (successor_parent, successor_changed, merge_changed):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if (
+            successor_parent.split() != [C05_START_BASE]
+            or not check("merge-base", "--is-ancestor", C05_START_BASE, successor)
+            or not check("merge-base", "--is-ancestor", C05_START_BASE, head)
+        ):
+            return ["C05_START_MERGE_LINEAGE_INVALID"]
+        valid = (
+            not dirty
+            and successor_changed == meta["exact_paths"]
+            and merge_changed == meta["exact_paths"]
+            and check("diff", "--check", C05_START_BASE, successor)
+            and check("diff", "--check", C05_START_BASE, head)
+            and check("diff", "--quiet", successor, head)
+        )
+        return [] if valid else ["C05_START_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

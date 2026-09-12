@@ -1,3 +1,9 @@
+# C-05 Result Envelope R2 start projection — seq760
+
+- seq1~757 raw event object bytes and historical evidence preserved.
+- C-04 ACCEPTED, C-05 IN_PROGRESS, C-06 NOT_READY, DIR-2 NOT_REACHED.
+- exact3 product scope leased; control product/external execution none.
+
 # C-04 detached-smoke portability reconciliation — seq757
 
 - seq1~756 raw event object bytes and historical evidence preserved.
@@ -923,72 +929,219 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 757,
-  "last_event_id": "evt_c04_detached_smoke_portability_repository_reconciled",
-  "status": "ACCEPTED",
+  "event_sequence": 760,
+  "last_event_id": "evt_c05_write_lease_issued",
+  "status": "IN_PROGRESS",
   "current_phase": "C",
-  "current_work_package": "C-04",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "current_work_package": "C-05",
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-05",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+    "fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05",
+    "execution_fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05",
+    "lease_epoch": 3,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-05",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "7182e056b577689c77bf26f2c394e7cfa7211129",
+    "dispatch_head": "7182e056b577689c77bf26f2c394e7cfa7211129",
+    "issued_at": "2026-09-13T10:00:00+09:00",
+    "expires_at": "2026-09-13T22:00:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c05-result-envelope-r2-20260913-001",
+    "worker_lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+    "fencing_token": "c05-result-envelope-write-fence-epoch-4-7182e05",
+    "write_fencing_token": "c05-result-envelope-write-fence-epoch-4-7182e05",
+    "write_epoch": 4,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-05",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-13T10:00:00+09:00",
+    "expires_at": "2026-09-13T22:00:00+09:00",
+    "path_scope": [
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/result_envelope.py",
+      "tests/orchestration/test_result_envelope_c05.py"
+    ],
+    "status": "ACTIVE"
+  },
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "ISSUE_C05_WORK_INSTRUCTION",
-  "accepted": true,
-  "reconciliation_status": "MAIN_INTERNAL_TECHNICAL_CORRECTION_RECONCILED",
-  "authority_classification": "MAIN_INTERNAL_TECHNICAL_CORRECTION",
+  "next_safe_action": "DEVELOPER_IMPLEMENT_C05_RESULT_ENVELOPE_R2",
+  "accepted": false,
   "c04_status": "ACCEPTED",
-  "c05_status": "READY_FOR_WORK_INSTRUCTION",
-  "dir2_status": "NOT_REACHED",
+  "c05_status": "IN_PROGRESS",
+  "c06_status": "NOT_READY",
   "dir_status": "CLEARED",
-  "repository_head": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
+  "dir2_status": "NOT_REACHED",
+  "repository_head": "7182e056b577689c77bf26f2c394e7cfa7211129",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_EXACT9",
-  "repository_validated_base_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
-  "repository_head_relation": "EXACT9_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "repository_projection_mode": "C05_START_PROJECTION_EXACT11",
+  "repository_validated_base_commit": "7182e056b577689c77bf26f2c394e7cfa7211129",
+  "repository_head_relation": "EXACT11_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_RESULT.md",
-    "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json",
+    "docs/04_test_reports/C-05_START_PROJECTION_REPORT.md",
+    "docs/evidence/manifests/C-05_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c04-detached-smoke-portability-reconciliation.json",
-    "docs/validation/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_VALIDATION.md",
+    "docs/progress/progress-handoff-detached-digest-c05-start.json",
+    "docs/validation/C-05_START_VALIDATION.md",
+    "docs/work_orders/C-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-05_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "lineage": {
-    "prior_development_main": "028765cea128c73fb2404e6cefefce12175cb9f4",
-    "prior_feature_acceptance": "d70e149edd99d3a09073970d913288ca4ab44d9c",
-    "prior_merged_main": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
-    "prior_merged_main_parents": [
-      "028765cea128c73fb2404e6cefefce12175cb9f4",
-      "d70e149edd99d3a09073970d913288ca4ab44d9c"
+  "product_write_scope": [
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/result_envelope.py",
+    "tests/orchestration/test_result_envelope_c05.py"
+  ],
+  "work_instruction_id": "WI-C-05-RESULT-ENVELOPE-R2-20260913-001",
+  "work_instruction_sha256": "7D6DDA57A80F501A7496B1E3980FFE846E0908A222302F716AED6749EF55D562",
+  "invocation_sha256": "4951C34296810D0BC25EE89CC73772DC1BEFB238F875B98B14AF89A2633E1F0E",
+  "acceptance_binding": {
+    "revision_class": "MAIN_INTERNAL_TECHNICAL_REVISION",
+    "authority_basis": [
+      "APPROVED_WORK_PLAN_C05",
+      "C04_ACCEPTED",
+      "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"
     ],
-    "fix_commit": "1cc8f2803a362b01f294590dacf173dd4e98f60a",
-    "fix_parent": "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11",
-    "fix_exact_paths": [
-      "scripts/check_project_progress.py",
-      "tests/tooling/test_project_progress.py"
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "work_instruction_id": "WI-C-05-RESULT-ENVELOPE-R2-20260913-001",
+    "work_instruction_sha256": "7D6DDA57A80F501A7496B1E3980FFE846E0908A222302F716AED6749EF55D562",
+    "invocation_sha256": "4951C34296810D0BC25EE89CC73772DC1BEFB238F875B98B14AF89A2633E1F0E",
+    "superseded_work_instruction_sha256": "FA57250A558B503DBFB0C6CA7AEB72B2E8017B0D8664EEB050ADABC10ECB678E",
+    "superseded_invocation_sha256": "7201AD35D34371EA4F0D379B64027F68AAE1B262FA70F15D88369E56790C9327",
+    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+    "function_scope_change": "UNCHANGED",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+    "acceptance": [
+      {
+        "requirement_id": "AV-AGT-007",
+        "level": "L2",
+        "method": "AU",
+        "evidence": [
+          "E-API"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-012",
+        "level": "L2",
+        "method": "AU",
+        "evidence": [
+          "E-EVT"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-026",
+        "level": "L3",
+        "method": "MI",
+        "evidence": [
+          "E-ART"
+        ]
+      }
+    ]
+  },
+  "result_envelope_contract": {
+    "schema_version": "subagent_result/v1",
+    "statuses": [
+      "COMPLETED",
+      "FAILURE_REPORT",
+      "INCOMPLETE",
+      "BLOCKED",
+      "CANCELLED"
     ],
-    "merge_tree_equals_prior_feature_acceptance": true,
-    "ancestor_checks_required": true
+    "reason_code_optional_field": true,
+    "reason_codes": {
+      "COMPLETED": [],
+      "FAILURE_REPORT": [],
+      "INCOMPLETE": [
+        "RESULT_CONTRACT_INCOMPLETE",
+        "TRANSIENT_EXECUTION_ERROR",
+        "CHECKPOINTED_INTERRUPTION"
+      ],
+      "BLOCKED": [
+        "DECISION_REQUIRED",
+        "POLICY_BLOCKED",
+        "ENVIRONMENT_BLOCKED",
+        "PERMISSION_BLOCKED"
+      ],
+      "CANCELLED": [
+        "DELEGATION_REASSIGN",
+        "RUN_CANCEL_REQUESTED"
+      ]
+    },
+    "completed_failure_report_reason_code": "CANONICAL_NULL",
+    "checkpointed_interruption_checkpoint_ref": "REQUIRED",
+    "failure_fingerprint_validity_owner": "C06",
+    "transition_owner": "C07",
+    "identifier_authority": "CANONICAL_NON_EMPTY_TEXT_NO_AD_HOC_REGEX",
+    "c02_valid_operational_identifiers": "PRESERVED_RAW_CANONICAL",
+    "json_array_type": "LIST_ONLY",
+    "json_object_keys": "STRING_ONLY",
+    "nested_fields": [
+      "evidence_refs",
+      "tests",
+      "handoff"
+    ],
+    "type_coercion": "FORBIDDEN",
+    "exception_leakage": "FORBIDDEN",
+    "non_finite_numbers": "REJECTED",
+    "handoff_inline_raw_policy": "FORBIDDEN_FAIL_CLOSED",
+    "handoff_raw_material_transport": "CHECKSUM_BOUND_EVIDENCE_REFS_ONLY",
+    "handoff_forbidden_key_semantics": [
+      "TRANSCRIPT",
+      "TRANSCRIPTS",
+      "STDOUT",
+      "STDERR",
+      "RAW_LOG",
+      "RAW_LOGS",
+      "RAW_TRANSCRIPT",
+      "RAW_TRANSCRIPTS"
+    ],
+    "handoff_key_match": "CASE_INSENSITIVE_REMOVE_UNDERSCORE_HYPHEN_WHITESPACE_CONTAINS_RAW_LOG_OR_RAW_TRANSCRIPT",
+    "handoff_bounds": {
+      "canonical_json_bytes": 65536,
+      "max_depth": 8,
+      "max_object_keys": 128,
+      "max_array_items": 256,
+      "max_string_utf8_bytes": 16384
+    },
+    "c06_aggregation": "NOT_IMPLEMENTED",
+    "c07_resolution": "NOT_IMPLEMENTED"
   },
   "external_validation": {
-    "ui": "NOT_EXECUTED",
-    "fastapi_binding": "NOT_EXECUTED",
+    "product_code": "NOT_MUTATED_BY_CONTROL",
+    "c06_failure_aggregation": "NOT_EXECUTED",
+    "c07_outcome_resolution": "NOT_EXECUTED",
     "database": "NOT_EXECUTED",
-    "external_developer_backend": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
     "secret": "NOT_ACCESSED",
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "browser": "DEFERRED_U02",
-    "e_shot": "DEFERRED_U02"
+    "network": "NOT_EXECUTED"
   },
-  "current_manifest": "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-05_START_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

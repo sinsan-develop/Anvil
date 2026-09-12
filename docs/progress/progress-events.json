@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 757,
+  "last_sequence": 760,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -40691,7 +40691,225 @@
           "e_shot": "DEFERRED_U02"
         }
       }
+    },
+    {
+      "occurred_at": "2026-09-13T10:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-05",
+      "step_id": "START",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-05/START",
+      "event_id": "evt_c05_work_instruction_issued",
+      "sequence": 758,
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "previous_event_sha256": "EFFFCF748C952BEBE52F41C9E98FA95DD1CA2A2E6E21D2E3AAD5853BCB8C7FF8",
+      "details": {
+        "revision_class": "MAIN_INTERNAL_TECHNICAL_REVISION",
+        "authority_basis": [
+          "APPROVED_WORK_PLAN_C05",
+          "C04_ACCEPTED",
+          "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY"
+        ],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_id": "WI-C-05-RESULT-ENVELOPE-R2-20260913-001",
+        "work_instruction_sha256": "7D6DDA57A80F501A7496B1E3980FFE846E0908A222302F716AED6749EF55D562",
+        "invocation_sha256": "4951C34296810D0BC25EE89CC73772DC1BEFB238F875B98B14AF89A2633E1F0E",
+        "superseded_work_instruction_sha256": "FA57250A558B503DBFB0C6CA7AEB72B2E8017B0D8664EEB050ADABC10ECB678E",
+        "superseded_invocation_sha256": "7201AD35D34371EA4F0D379B64027F68AAE1B262FA70F15D88369E56790C9327",
+        "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "acceptance": [
+          {
+            "requirement_id": "AV-AGT-007",
+            "level": "L2",
+            "method": "AU",
+            "evidence": [
+              "E-API"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-012",
+            "level": "L2",
+            "method": "AU",
+            "evidence": [
+              "E-EVT"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-026",
+            "level": "L3",
+            "method": "MI",
+            "evidence": [
+              "E-ART"
+            ]
+          }
+        ],
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/result_envelope.py",
+          "tests/orchestration/test_result_envelope_c05.py"
+        ],
+        "projection_mode": "C05_START_PROJECTION_EXACT11",
+        "validated_base_commit": "7182e056b577689c77bf26f2c394e7cfa7211129",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-05_START_PROJECTION_REPORT.md",
+          "docs/evidence/manifests/C-05_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c05-start.json",
+          "docs/validation/C-05_START_VALIDATION.md",
+          "docs/work_orders/C-05_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-05_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "result_envelope_contract": {
+          "schema_version": "subagent_result/v1",
+          "statuses": [
+            "COMPLETED",
+            "FAILURE_REPORT",
+            "INCOMPLETE",
+            "BLOCKED",
+            "CANCELLED"
+          ],
+          "reason_code_optional_field": true,
+          "reason_codes": {
+            "COMPLETED": [],
+            "FAILURE_REPORT": [],
+            "INCOMPLETE": [
+              "RESULT_CONTRACT_INCOMPLETE",
+              "TRANSIENT_EXECUTION_ERROR",
+              "CHECKPOINTED_INTERRUPTION"
+            ],
+            "BLOCKED": [
+              "DECISION_REQUIRED",
+              "POLICY_BLOCKED",
+              "ENVIRONMENT_BLOCKED",
+              "PERMISSION_BLOCKED"
+            ],
+            "CANCELLED": [
+              "DELEGATION_REASSIGN",
+              "RUN_CANCEL_REQUESTED"
+            ]
+          },
+          "completed_failure_report_reason_code": "CANONICAL_NULL",
+          "checkpointed_interruption_checkpoint_ref": "REQUIRED",
+          "failure_fingerprint_validity_owner": "C06",
+          "transition_owner": "C07",
+          "identifier_authority": "CANONICAL_NON_EMPTY_TEXT_NO_AD_HOC_REGEX",
+          "c02_valid_operational_identifiers": "PRESERVED_RAW_CANONICAL",
+          "json_array_type": "LIST_ONLY",
+          "json_object_keys": "STRING_ONLY",
+          "nested_fields": [
+            "evidence_refs",
+            "tests",
+            "handoff"
+          ],
+          "type_coercion": "FORBIDDEN",
+          "exception_leakage": "FORBIDDEN",
+          "non_finite_numbers": "REJECTED",
+          "handoff_inline_raw_policy": "FORBIDDEN_FAIL_CLOSED",
+          "handoff_raw_material_transport": "CHECKSUM_BOUND_EVIDENCE_REFS_ONLY",
+          "handoff_forbidden_key_semantics": [
+            "TRANSCRIPT",
+            "TRANSCRIPTS",
+            "STDOUT",
+            "STDERR",
+            "RAW_LOG",
+            "RAW_LOGS",
+            "RAW_TRANSCRIPT",
+            "RAW_TRANSCRIPTS"
+          ],
+          "handoff_key_match": "CASE_INSENSITIVE_REMOVE_UNDERSCORE_HYPHEN_WHITESPACE_CONTAINS_RAW_LOG_OR_RAW_TRANSCRIPT",
+          "handoff_bounds": {
+            "canonical_json_bytes": 65536,
+            "max_depth": 8,
+            "max_object_keys": 128,
+            "max_array_items": 256,
+            "max_string_utf8_bytes": 16384
+          },
+          "c06_aggregation": "NOT_IMPLEMENTED",
+          "c07_resolution": "NOT_IMPLEMENTED"
+        }
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T10:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-05",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-05/START",
+      "event_id": "evt_c05_worker_lease_issued",
+      "sequence": 759,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "70D9A0C9A4BCEEA8026549A9567D5A5F6B368C05D4E922AA81172D1509EF8C1E",
+      "details": {
+        "lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+        "fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05",
+        "execution_fencing_token": "c05-result-envelope-execution-fence-epoch-3-7182e05",
+        "lease_epoch": 3,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-05",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "7182e056b577689c77bf26f2c394e7cfa7211129",
+        "dispatch_head": "7182e056b577689c77bf26f2c394e7cfa7211129",
+        "issued_at": "2026-09-13T10:00:00+09:00",
+        "expires_at": "2026-09-13T22:00:00+09:00",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T10:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-05",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-05/START",
+      "event_id": "evt_c05_write_lease_issued",
+      "sequence": 760,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "6DD01C3C1C52804B44F6E36550C550A30C06EACE630DEF41FC90299EA55F7AC2",
+      "details": {
+        "lease_id": "write-lease-c05-result-envelope-r2-20260913-001",
+        "worker_lease_id": "worker-lease-c05-result-envelope-r2-20260913-001",
+        "fencing_token": "c05-result-envelope-write-fence-epoch-4-7182e05",
+        "write_fencing_token": "c05-result-envelope-write-fence-epoch-4-7182e05",
+        "write_epoch": 4,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-05",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-13T10:00:00+09:00",
+        "expires_at": "2026-09-13T22:00:00+09:00",
+        "path_scope": [
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/result_envelope.py",
+          "tests/orchestration/test_result_envelope_c05.py"
+        ],
+        "status": "ACTIVE"
+      }
     }
   ],
-  "last_event_id": "evt_c04_detached_smoke_portability_repository_reconciled"
+  "last_event_id": "evt_c05_write_lease_issued"
 }
