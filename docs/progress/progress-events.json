@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 743,
+  "last_sequence": 748,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -39930,7 +39930,241 @@
           "packages/e2e/harness.py"
         ]
       }
+    },
+    {
+      "occurred_at": "2026-09-12T12:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-03/FINAL-ACCEPTANCE",
+      "event_id": "evt_c03_final_write_lease_revoked",
+      "sequence": 744,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "previous_event_sha256": "526BD287ACEF99D3603B10A4535BE4D5DDABE65E29B175D2B2C66673EA9D3BE6",
+      "details": {
+        "lease_id": "write-lease-c03-developer-lifecycle-r2-20260912-001",
+        "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+        "reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED",
+        "write_epoch": 2,
+        "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+        "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T12:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-03/FINAL-ACCEPTANCE",
+      "event_id": "evt_c03_final_worker_lease_revoked",
+      "sequence": 745,
+      "event_type": "WORKER_LEASE_REVOKED",
+      "previous_event_sha256": "9E4BD8FA27F8B9A1FAED8C6D0B23ACE806358B3C2FD43806F8A035BE3E3B40D5",
+      "details": {
+        "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+        "reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED",
+        "lease_epoch": 1,
+        "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+        "status": "REVOKED"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T12:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "developer-primary",
+      "subject_ref": "C-03/FINAL-ACCEPTANCE",
+      "event_id": "evt_c03_final_package_completed",
+      "sequence": 746,
+      "event_type": "PACKAGE_COMPLETED",
+      "previous_event_sha256": "79D071D21C7EDAFA4D26824E6A8A209E3FA652E3AA611521C5300ECCDE9807D9",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+        "product_parent": "e778a0c0d4152a7e164e2f016994595dee4b7274",
+        "product_exact_paths": [
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/orchestration/__init__.py",
+          "tests/orchestration/test_developer_lifecycle.py",
+          "packages/e2e/harness.py"
+        ],
+        "lineage": {
+          "development_main_base": "1c3948ff1a741832a2f012f464f1a301490356c1",
+          "start_control_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+          "r2_control_commit": "e778a0c0d4152a7e164e2f016994595dee4b7274",
+          "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+          "ancestor_chain": [
+            "1c3948ff1a741832a2f012f464f1a301490356c1",
+            "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+            "e778a0c0d4152a7e164e2f016994595dee4b7274",
+            "219eedd7adf287c55818eab930d6a665a2fc0980"
+          ]
+        },
+        "required_validation": {
+          "AV-AGT-004": "PASS"
+        },
+        "main_full_pass_count": 241,
+        "focused_pass_count": 78,
+        "external_validation": {
+          "actual_external_developer_backend": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "secret": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED"
+        }
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T12:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "independent-tester",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "independent-tester",
+      "subject_ref": "C-03/FINAL-ACCEPTANCE",
+      "event_id": "evt_c03_final_independent_test_judgment_recorded",
+      "sequence": 747,
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "previous_event_sha256": "55D097183CAC7D5075308262F3BD921B69947DD5C6217C571DBAB2A14BE608B5",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "AV-AGT-004_L3_AI",
+        "evidence_ref": "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
+        "test_report_ref": "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
+        "node_count": 23,
+        "case_count": 66,
+        "external_io_count": 0,
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "review_evidence": {
+          "control_r2": {
+            "verdict": "PASS",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0
+          },
+          "product_initial": {
+            "verdict": "REWORK",
+            "critical_findings": 0,
+            "important_findings": 4,
+            "minor_findings": 1
+          },
+          "product_round1": {
+            "disposition": "ADDRESSED",
+            "important_addressed": 4,
+            "minor_addressed": 1
+          },
+          "product_round2": {
+            "scoped_reviews": 2,
+            "new_findings_disposition": "ADDRESSED",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0
+          }
+        }
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T12:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "FINAL-ACCEPTANCE",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-03/FINAL-ACCEPTANCE",
+      "event_id": "evt_c03_final_main_package_accepted",
+      "sequence": 748,
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "previous_event_sha256": "818799DFC5CBD45377E78A276759983701E4E0525858115ECFD63FF910142831",
+      "details": {
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "test_report_ref": "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
+        "test_report_sha256": "GENERATED_RAW_CHECKSUM_BOUND",
+        "manifest_ref": "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "next_work_package": "C-04",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "projection_mode": "C03_FINAL_ACCEPTANCE_EXACT15",
+        "validated_base_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+        "acceptance_head": "219eedd7adf287c55818eab930d6a665a2fc0980",
+        "acceptance_upstream_head": "219eedd7adf287c55818eab930d6a665a2fc0980",
+        "head_relation": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-03_FINAL_ACCEPTANCE_REPORT.md",
+          "docs/WORK_STATUS.md",
+          "docs/completion_reports/C-03_completion.md",
+          "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c03-final-acceptance.json",
+          "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
+          "docs/validation/C-03_FINAL_ACCEPTANCE_VALIDATION.md",
+          "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+        "lineage": {
+          "development_main_base": "1c3948ff1a741832a2f012f464f1a301490356c1",
+          "start_control_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+          "r2_control_commit": "e778a0c0d4152a7e164e2f016994595dee4b7274",
+          "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+          "ancestor_chain": [
+            "1c3948ff1a741832a2f012f464f1a301490356c1",
+            "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+            "e778a0c0d4152a7e164e2f016994595dee4b7274",
+            "219eedd7adf287c55818eab930d6a665a2fc0980"
+          ]
+        },
+        "dir2_status": "NOT_REACHED",
+        "external_validation": {
+          "actual_external_developer_backend": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "telegram": "NOT_EXECUTED",
+          "secret": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c03_control_r2_package_resumed"
+  "last_event_id": "evt_c03_final_main_package_accepted"
 }

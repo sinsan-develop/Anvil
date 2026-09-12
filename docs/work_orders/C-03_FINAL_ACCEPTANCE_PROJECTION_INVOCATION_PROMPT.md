@@ -1,0 +1,1 @@
+C-03 final acceptance projection WorkInstruction을 읽고 immutable product `219eedd7adf287c55818eab930d6a665a2fc0980`의 exact4, Main·독립 검증과 review disposition을 seq1~743 보존 방식으로 결박하라. 제품·외부 시스템을 수정하거나 실행하지 말고 exact15 governance 경로만 TDD로 생성한다. C-03 ACCEPTED, C-04 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED와 null lease를 fail-closed checker로 검증하고 commit/push/merge 없이 보고하라.

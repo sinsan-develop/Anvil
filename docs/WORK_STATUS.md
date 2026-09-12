@@ -2162,3 +2162,10 @@
 - R1 worker lease 유지; R1 write lease 폐기; exact4 epoch2 write lease 발급.
 - `packages/e2e/harness.py`는 `record_takeover` start→wait/state transition→stop 호환만 허용한다.
 - 기능/요구/중요 위험 `UNCHANGED`; C-03 `IN_PROGRESS`; C-04 `NOT_READY`; DIR-2 `NOT_REACHED`.
+
+## C-03 final acceptance
+
+- seq744~748 completion/independent judgment/Main acceptance를 append했다.
+- product exact4와 Main 241/78 PASS, independent 23 nodes/66 cases PASS, review disposition을 결박했다.
+- C-03 `ACCEPTED`; C-04 `READY_FOR_WORK_INSTRUCTION`; DIR-2 `NOT_REACHED`; active lease 없음.
+- external Developer backend/Provider/Telegram/DB/API/browser/WSL/deploy/network `NOT_EXECUTED`.

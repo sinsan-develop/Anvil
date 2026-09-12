@@ -1,3 +1,9 @@
+# C-03 final acceptance — seq748
+
+- seq1~743 preserved; seq744~748 only appended.
+- C-03 ACCEPTED, C-04 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED.
+- product exact4 immutable; external execution not promoted.
+
 # C-03 control R2 — seq743
 
 - seq1~740 raw event object bytes preserved; seq741~743 only appended.
@@ -900,19 +906,23 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 743,
-  "last_event_id": "evt_c03_control_r2_package_resumed",
-  "status": "IN_PROGRESS",
+  "event_sequence": 748,
+  "last_event_id": "evt_c03_final_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-03",
-  "active_agent": {
-    "actor_id": "developer-primary",
-    "role": "PRIMARY_DEVELOPER",
-    "work_package_id": "C-03",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f"
-  },
-  "worker_lease": {
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
+  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "valid_failure_count": 0,
+  "next_safe_action": "ISSUE_C04_WORK_INSTRUCTION",
+  "accepted": true,
+  "c03_status": "ACCEPTED",
+  "c04_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir_status": "CLEARED",
+  "dir2_status": "NOT_REACHED",
+  "completed_worker_lease": {
     "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
     "fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
     "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
@@ -924,9 +934,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
     "issued_at": "2026-09-12T09:05:00+09:00",
     "expires_at": "2026-09-12T21:05:00+09:00",
-    "status": "ACTIVE"
+    "status": "REVOKED",
+    "revoked_at": "2026-09-12T12:05:00+09:00",
+    "revocation_reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
   },
-  "write_lease": {
+  "completed_write_lease": {
     "lease_id": "write-lease-c03-developer-lifecycle-r2-20260912-001",
     "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
     "fencing_token": "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da",
@@ -943,112 +955,105 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "tests/orchestration/test_developer_lifecycle.py",
       "packages/e2e/harness.py"
     ],
-    "status": "ACTIVE"
+    "status": "REVOKED",
+    "revoked_at": "2026-09-12T12:05:00+09:00",
+    "revocation_reason": "C03_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
   },
-  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 0,
-  "next_safe_action": "DEVELOPER_IMPLEMENT_C03_READ_ONLY_LIFECYCLE_R2_EXACT4",
-  "accepted": false,
-  "c02_status": "ACCEPTED",
-  "c03_status": "IN_PROGRESS",
-  "c04_status": "NOT_READY",
-  "dir_status": "CLEARED",
-  "dir2_status": "NOT_REACHED",
-  "retired_c03_r1_write_lease": {
-    "lease_id": "write-lease-c03-developer-lifecycle-r1-20260912-001",
-    "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
-    "fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
-    "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
-    "write_epoch": 1,
-    "actor_id": "developer-primary",
-    "subject_ref": "C-03",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-12T09:05:00+09:00",
-    "expires_at": "2026-09-12T21:05:00+09:00",
-    "path_scope": [
-      "packages/orchestration/developer_lifecycle.py",
-      "packages/orchestration/__init__.py",
-      "tests/orchestration/test_developer_lifecycle.py"
-    ],
-    "status": "REVOKED_SUPERSEDED_BY_WI_R2",
-    "revoked_at": "2026-09-12T09:50:00+09:00",
-    "revocation_reason": "WI_R2_EXACT4_HARNESS_COMPATIBILITY_SCOPE_APPROVED",
-    "superseded_by": "write-lease-c03-developer-lifecycle-r2-20260912-001"
-  },
-  "repository_head": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
-  "repository_upstream": "development/main",
-  "repository_projection_mode": "C03_CONTROL_R2_EXACT12",
-  "repository_validated_base_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
-  "repository_head_relation": "DETACHED_STAGED_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD",
+  "repository_head": "219eedd7adf287c55818eab930d6a665a2fc0980",
+  "repository_upstream": "development/codex/c03-developer-lifecycle-r1",
+  "repository_projection_mode": "C03_FINAL_ACCEPTANCE_EXACT15",
+  "repository_validated_base_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+  "repository_head_relation": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-03_CONTROL_R2_REPORT.md",
+    "docs/04_test_reports/C-03_FINAL_ACCEPTANCE_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-03_CONTROL_R2_MANIFEST.json",
+    "docs/completion_reports/C-03_completion.md",
+    "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c03-control-r2.json",
-    "docs/validation/C-03_CONTROL_R2_VALIDATION.md",
-    "docs/work_orders/C-03_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c03-final-acceptance.json",
+    "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/C-03_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "product_write_scope": [
+  "product_exact_paths": [
     "packages/orchestration/developer_lifecycle.py",
     "packages/orchestration/__init__.py",
     "tests/orchestration/test_developer_lifecycle.py",
     "packages/e2e/harness.py"
   ],
-  "work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R2-20260912-001",
-  "work_instruction_sha256": "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1",
-  "invocation_sha256": "8DC8354D9D4BA4DD7A46FF0882FBF08B6C0E25AF9F30C385CAF9EA416E112996",
-  "revision_binding": {
-    "parent_human_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
-    "direct_scope_approval_id": "C-03-WI-R2-HARNESS-COMPAT-APPROVED-20260912",
-    "main_revision_authority_id": "MAIN-AUTH-C03-WI-R2-20260912-001",
-    "prior_work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001",
-    "prior_work_instruction_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
-    "prior_binding_status": "INVALIDATED_BY_WI_CONTENT_HASH_CHANGE",
-    "new_work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R2-20260912-001",
-    "new_work_instruction_sha256": "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1",
-    "functional_scope_change": "UNCHANGED",
-    "requirement_change": "UNCHANGED",
-    "important_risk_change": "UNCHANGED",
-    "scope_added": [
-      "packages/e2e/harness.py"
-    ],
-    "scope_removed": [],
-    "reason": "PENDING_STOP_FAIL_CLOSED_REQUIRES_EXISTING_TAKEOVER_CALLER_TO_WAIT_BEFORE_STOP",
-    "rollback": "REMOVE_R2_EXACT4_PRODUCT_DELTA_AND_REISSUE_A_NEW_LEASE_BEFORE_ANY_R1_SCOPE_WRITE"
+  "lineage": {
+    "development_main_base": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "start_control_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+    "r2_control_commit": "e778a0c0d4152a7e164e2f016994595dee4b7274",
+    "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+    "ancestor_chain": [
+      "1c3948ff1a741832a2f012f464f1a301490356c1",
+      "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+      "e778a0c0d4152a7e164e2f016994595dee4b7274",
+      "219eedd7adf287c55818eab930d6a665a2fc0980"
+    ]
   },
-  "compatibility_contract": {
-    "only_path": "packages/e2e/harness.py",
-    "only_symbol": "SyntheticE2EHarness.record_takeover",
-    "required_order": [
-      "START",
-      "WAIT_OR_PUBLIC_STATE_TRANSITION",
-      "STOP"
-    ],
-    "lifecycle_caller_exception": "FORBIDDEN",
-    "other_e2e_changes": "FORBIDDEN",
-    "test_change": "FORBIDDEN"
+  "test_evidence": {
+    "main_full": {
+      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration tests/e2e",
+      "passed": 241,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "POSTCOMMIT_PRODUCT_HEAD"
+    },
+    "focused_c03_c04": {
+      "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration/test_developer_lifecycle.py tests/orchestration/test_developer_lifecycle_c04.py",
+      "passed": 78,
+      "failed": 0,
+      "skipped": 0,
+      "scope": "POSTCOMMIT_PRODUCT_HEAD"
+    }
   },
-  "current_manifest": "docs/evidence/manifests/C-03_CONTROL_R2_MANIFEST.json",
+  "review_evidence": {
+    "control_r2": {
+      "verdict": "PASS",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0
+    },
+    "product_initial": {
+      "verdict": "REWORK",
+      "critical_findings": 0,
+      "important_findings": 4,
+      "minor_findings": 1
+    },
+    "product_round1": {
+      "disposition": "ADDRESSED",
+      "important_addressed": 4,
+      "minor_addressed": 1
+    },
+    "product_round2": {
+      "scoped_reviews": 2,
+      "new_findings_disposition": "ADDRESSED",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0
+    }
+  },
   "external_validation": {
+    "actual_external_developer_backend": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
-    "secret": "NOT_ACCESSED",
+    "secret": "NOT_EXECUTED",
     "database": "NOT_EXECUTED",
     "api": "NOT_EXECUTED",
     "browser": "NOT_EXECUTED",
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "actual_runner": "NOT_EXECUTED",
-    "c04_plus": "NOT_STARTED",
-    "product_code": "NOT_MUTATED_BY_CONTROL"
+    "network": "NOT_EXECUTED"
   },
+  "current_manifest": "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

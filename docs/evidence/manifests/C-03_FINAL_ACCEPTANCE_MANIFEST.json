@@ -1,0 +1,229 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-03_FINAL_ACCEPTANCE",
+  "artifact_id": "C03-FINAL-ACCEPTANCE-20260912",
+  "created_at": "2026-09-12T12:05:00+09:00",
+  "package_id": "C-03",
+  "event_sequence": 748,
+  "historical_event_sequence": 743,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 2247314,
+    "sha256": "C1934515FD0EF36CA98045EB2470FDDC63E32E7BC38037E9076E5B2A0FCB6FE7"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": true,
+  "status": "ACCEPTED",
+  "c03_status": "ACCEPTED",
+  "c04_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir2_status": "NOT_REACHED",
+  "active_leases": 0,
+  "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+  "product_parent": "e778a0c0d4152a7e164e2f016994595dee4b7274",
+  "product_exact_paths": [
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/__init__.py",
+    "tests/orchestration/test_developer_lifecycle.py",
+    "packages/e2e/harness.py"
+  ],
+  "lineage": {
+    "development_main_base": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "start_control_commit": "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+    "r2_control_commit": "e778a0c0d4152a7e164e2f016994595dee4b7274",
+    "product_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+    "ancestor_chain": [
+      "1c3948ff1a741832a2f012f464f1a301490356c1",
+      "2dcd4da89e92425be52b570ae2110f60dfcc29de",
+      "e778a0c0d4152a7e164e2f016994595dee4b7274",
+      "219eedd7adf287c55818eab930d6a665a2fc0980"
+    ]
+  },
+  "test_evidence": {
+    "main_full_passed": 241,
+    "focused_c03_c04_passed": 78,
+    "commands": {
+      "main_full": {
+        "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration tests/e2e",
+        "passed": 241,
+        "failed": 0,
+        "skipped": 0,
+        "scope": "POSTCOMMIT_PRODUCT_HEAD"
+      },
+      "focused_c03_c04": {
+        "command": ".venv/Scripts/python.exe -m pytest -q -p no:cacheprovider tests/orchestration/test_developer_lifecycle.py tests/orchestration/test_developer_lifecycle_c04.py",
+        "passed": 78,
+        "failed": 0,
+        "skipped": 0,
+        "scope": "POSTCOMMIT_PRODUCT_HEAD"
+      }
+    }
+  },
+  "independent_acceptance": {
+    "command_id": "INDEPENDENT_ACCEPTANCE_FINAL_READ_ONLY_23_NODES_66_CASES",
+    "verdict": "PASS",
+    "nodes": 23,
+    "cases": 66,
+    "failed": 0,
+    "external_io_count": 0,
+    "method": "AI",
+    "verification_level": "L3",
+    "evidence_types": [
+      "E-GIT",
+      "E-ART"
+    ]
+  },
+  "independent_trace": {
+    "raw_evidence_path": "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
+    "harness_bytes": 43781,
+    "harness_sha256": "5027C870EAE6D573ECF8C35FA9641179C85E44DDF92572F05A3012D74B5F6487",
+    "result_bytes": 52027,
+    "result_sha256": "773B9F38677C254CC312A3FF424137245459987ECB8A96B6516987F8166575AB",
+    "node_count": 23,
+    "case_count": 66,
+    "finding_count": 8,
+    "invalid_infrastructure_attempt_count": 0,
+    "subject_external_io_count": 0,
+    "r1_disposition": "SUPERSEDED",
+    "finalizer_status": "NOT_EXECUTED"
+  },
+  "review_evidence": {
+    "control_r2": {
+      "verdict": "PASS",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0
+    },
+    "product_initial": {
+      "verdict": "REWORK",
+      "critical_findings": 0,
+      "important_findings": 4,
+      "minor_findings": 1
+    },
+    "product_round1": {
+      "disposition": "ADDRESSED",
+      "important_addressed": 4,
+      "minor_addressed": 1
+    },
+    "product_round2": {
+      "scoped_reviews": 2,
+      "new_findings_disposition": "ADDRESSED",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0
+    }
+  },
+  "external_validation": {
+    "actual_external_developer_backend": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED"
+  },
+  "execution_authority_path": "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+  "execution_authority_sha256": "EE8435DDEDB782E7C955CEFFB6D11E01FE302B755DC3B62D24D0FADEEDFB4DC7",
+  "invocation_path": "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+  "invocation_sha256": "C13800B8F95C53587098DE17B9150E0C3F32AE75BCA32437E3EEB9C06E76BEB0",
+  "record_binding": "STAGED_EXACT15_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "self_reference": false,
+  "sequence": 748,
+  "projection_mode": "C03_FINAL_ACCEPTANCE_EXACT15",
+  "validated_base_commit": "219eedd7adf287c55818eab930d6a665a2fc0980",
+  "branch": "codex/c03-developer-lifecycle-r1",
+  "exact_paths": [
+    "docs/04_test_reports/C-03_FINAL_ACCEPTANCE_REPORT.md",
+    "docs/WORK_STATUS.md",
+    "docs/completion_reports/C-03_completion.md",
+    "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c03-final-acceptance.json",
+    "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
+    "docs/validation/C-03_FINAL_ACCEPTANCE_VALIDATION.md",
+    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 15,
+  "exact_path_list_sha256": "B3735BB5B6A2242B99EC42BF455B6543F1D7565540E59D93F7132F211B45F253",
+  "exact_path_list_ordinal_sha256": "AEF092687E7CFF5D80DD15F0A02743452A27DCF125333630CA37BE339976034D",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-03_FINAL_ACCEPTANCE_REPORT.md",
+      "bytes": 1133,
+      "sha256": "36CF8D5057CAC6CD32416C69003E4F91E12765D35293A29AD4EB9BEE1D8AA3C5"
+    },
+    {
+      "path": "docs/WORK_STATUS.md",
+      "bytes": 422648,
+      "sha256": "71D286F4E459544D724E4B89E2ABB7E4E93670E6FBBEEF89C8F56972DCFC5577"
+    },
+    {
+      "path": "docs/completion_reports/C-03_completion.md",
+      "bytes": 791,
+      "sha256": "C8C829156C563522CC0500614486034182CEC3F77FFB6E0D954ABE722539E1BB"
+    },
+    {
+      "path": "docs/evidence/raw/C-03_DEVELOPER_LIFECYCLE_EVIDENCE.json",
+      "bytes": 203347,
+      "sha256": "F6C444F9E5ED388734A3A1D0349D7CD5D1A11DCC04EAA0D417AD775D22F352E7"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 189558,
+      "sha256": "AEFC3505A3CB224D85B246D2294E5B8BBDF4D3A9D9FE5AC43019F3D1729FE8CF"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 828462,
+      "sha256": "72510EC8F12E590111007C13994F2743FA56F7952DE3A0CA6E48F6D3B49656C3"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2257415,
+      "sha256": "05A4284AE1A4D33DA208417119C8C4C85A7FE5068E59CC67D0AA40BB021461DD"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c03-final-acceptance.json",
+      "bytes": 877,
+      "sha256": "C52F1CA08AE1045C897AA70A3D3CDBDEAC9274D325C7FB1D21F8FDC483B09F0A"
+    },
+    {
+      "path": "docs/test_reports/C-03_INDEPENDENT_TEST_REPORT.md",
+      "bytes": 1019,
+      "sha256": "19B9DF37C802606D1D95150106CD69801FAB6BEEB10108D5018C3ACA113FEC07"
+    },
+    {
+      "path": "docs/validation/C-03_FINAL_ACCEPTANCE_VALIDATION.md",
+      "bytes": 825,
+      "sha256": "7FEDFC95A9801AF25DFA3D22A25B1DE49B4EE0A342D0CE0857AC5E0A1C5FC41D"
+    },
+    {
+      "path": "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_INVOCATION_PROMPT.md",
+      "bytes": 491,
+      "sha256": "C13800B8F95C53587098DE17B9150E0C3F32AE75BCA32437E3EEB9C06E76BEB0"
+    },
+    {
+      "path": "docs/work_orders/C-03_FINAL_ACCEPTANCE_PROJECTION_WORK_INSTRUCTION.md",
+      "bytes": 2638,
+      "sha256": "EE8435DDEDB782E7C955CEFFB6D11E01FE302B755DC3B62D24D0FADEEDFB4DC7"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 2858873,
+      "sha256": "6DF95B6282ADEFC7DFF690B6748D2D57F5763C845B8915558A3BEADD96DCF0FF"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 792307,
+      "sha256": "1BAF1F3946FB9C8C65B0EE0CB1B05C1D7EA5B72B347B9F1294A1DA7C503865FB"
+    }
+  ]
+}
