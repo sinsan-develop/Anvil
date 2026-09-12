@@ -2148,3 +2148,10 @@
 - development main `a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658`; C-02 `ACCEPTED`; C-03 `READY_FOR_WORK_INSTRUCTION`; DIR-2 `NOT_REACHED`.
 - full repository suite `NOT_COMPLETED`; Provider/Telegram/network/DB/browser/WSL/deployment/actual runner `NOT_EXECUTED`; active lease 없음.
 - tooling contract suite는 상호배타 분할 347 PASS; monolithic sandbox/tmpdir retry는 assertion·product failure가 아닌 환경 성능 실패로 중단.
+
+## C-03 start projection
+
+- seq738~740 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`.
+- C-02 `ACCEPTED`; C-03 `IN_PROGRESS`; C-04 `NOT_READY`; DIR-2 `NOT_REACHED`.
+- `AV-AGT-004` / `L3` / `AI` / `E-GIT,E-ART`, Developer 1명 read-only lifecycle과 exact3 scope를 결박했다.
+- control 제품 변경 및 Provider/Telegram/Secret/DB/API/browser/WSL/deploy/network/actual runner `NOT_EXECUTED`.

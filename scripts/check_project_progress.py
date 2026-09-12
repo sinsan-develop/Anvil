@@ -901,6 +901,13 @@ def validate_event_stream(
             )
             or (
                 progress is not None
+                and progress.get("event_sequence") == 740
+                and event.get("sequence") == 740
+                and event.get("event_id") == "evt_c03_package_started"
+                and event["details"].get("projection_mode") == "C03_START_PROJECTION_EXACT12"
+            )
+            or (
+                progress is not None
                 and progress.get("event_sequence") == 736
                 and event.get("sequence") == 736
                 and event.get("event_id") == "evt_c02_final_main_package_accepted"
@@ -12856,6 +12863,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 740:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c03_start_projection_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 737:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13892,6 +13903,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-03_START_MANIFEST.json":
+            errors.extend(validate_c03_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json":
             errors.extend(validate_c02_postmerge_development_authority_reconciliation_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-02_FINAL_ACCEPTANCE_MANIFEST.json":
@@ -29457,6 +29470,521 @@ def _collect_c02_postmerge_development_authority_reconciliation_git(
             and check("diff", "--quiet", postcommit, head)
         )
         return [] if valid else ["C02_POSTMERGE_AUTHORITY_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C03_START_P = "docs/progress/build-progress.json"
+C03_START_E = "docs/progress/progress-events.json"
+C03_START_H = "docs/progress/BUILD_HANDOFF.md"
+C03_START_D = "docs/progress/progress-handoff-detached-digest-c03-start.json"
+C03_START_M = "docs/evidence/manifests/C-03_START_MANIFEST.json"
+C03_START_REPORT = "docs/04_test_reports/C-03_START_PROJECTION_REPORT.md"
+C03_START_VALIDATION = "docs/validation/C-03_START_VALIDATION.md"
+C03_START_STATUS = "docs/WORK_STATUS.md"
+C03_START_WI = "docs/work_orders/C-03_WORK_INSTRUCTION.md"
+C03_START_PROMPT = "docs/work_orders/C-03_INVOCATION_PROMPT.md"
+C03_START_BASE = "1c3948ff1a741832a2f012f464f1a301490356c1"
+C03_START_BRANCH = "codex/c03-developer-lifecycle-r1"
+C03_START_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C03_START_DEVELOPMENT_REF = "development/main"
+C03_START_AT = "2026-09-12T09:05:00+09:00"
+C03_START_EXPIRES_AT = "2026-09-12T21:05:00+09:00"
+C03_START_WI_ID = "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001"
+C03_START_WI_SHA256 = "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7"
+C03_START_PROMPT_SHA256 = "36CA899CBDBA0289734AAF5D44D073B0CD082C0EC26447237622B0A957B0636A"
+C03_START_WORK_PLAN_SHA256 = "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18"
+C03_START_DESIGN_SHA256 = "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3"
+C03_START_WORKER_LEASE_ID = "worker-lease-c03-developer-lifecycle-r1-20260912-001"
+C03_START_WRITE_LEASE_ID = "write-lease-c03-developer-lifecycle-r1-20260912-001"
+C03_START_EXECUTION_TOKEN = "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f"
+C03_START_WRITE_TOKEN = "c03-developer-lifecycle-write-fence-epoch-1-1c3948f"
+
+
+def c03_start_projection_paths() -> list[str]:
+    return sorted([
+        C03_START_REPORT, C03_START_STATUS, C03_START_M, C03_START_H,
+        C03_START_P, C03_START_E, C03_START_D, C03_START_VALIDATION,
+        C03_START_WI, C03_START_PROMPT,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c03_start_product_write_scope() -> list[str]:
+    return [
+        "packages/orchestration/developer_lifecycle.py",
+        "packages/orchestration/__init__.py",
+        "tests/orchestration/test_developer_lifecycle.py",
+    ]
+
+
+def c03_start_projection_metadata() -> dict[str, Any]:
+    paths = c03_start_projection_paths()
+    return {
+        "sequence": 740,
+        "projection_mode": "C03_START_PROJECTION_EXACT12",
+        "validated_base_commit": C03_START_BASE,
+        "branch": C03_START_BRANCH,
+        "exact_paths": paths,
+        "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def c03_freeze_raw(value: Any) -> bytes:
+    def validate(item: Any) -> None:
+        if item is None or type(item) in {str, int, float, bool}:
+            return
+        if isinstance(item, list):
+            for child in item:
+                validate(child)
+            return
+        if isinstance(item, dict):
+            for key, child in item.items():
+                if type(key) is not str:
+                    raise ValueError("C03_RAW_KEY_NOT_STRING")
+                validate(child)
+            return
+        raise ValueError("C03_RAW_UNSUPPORTED_TYPE")
+
+    validate(value)
+    try:
+        return json.dumps(
+            value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+        ).encode("utf-8")
+    except (TypeError, ValueError, OverflowError) as error:
+        raise ValueError("C03_RAW_UNSUPPORTED_TYPE") from error
+
+
+def _c03_start_worker_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C03_START_WORKER_LEASE_ID,
+        "fencing_token": C03_START_EXECUTION_TOKEN,
+        "execution_fencing_token": C03_START_EXECUTION_TOKEN,
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-03",
+        "baseline_hash": C03_START_DESIGN_SHA256,
+        "baseline_git_commit": C03_START_BASE,
+        "dispatch_head": C03_START_BASE,
+        "issued_at": C03_START_AT,
+        "expires_at": C03_START_EXPIRES_AT,
+        "status": "ACTIVE",
+    }
+
+
+def _c03_start_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C03_START_WRITE_LEASE_ID,
+        "worker_lease_id": C03_START_WORKER_LEASE_ID,
+        "fencing_token": C03_START_WRITE_TOKEN,
+        "write_fencing_token": C03_START_WRITE_TOKEN,
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-03",
+        "baseline_hash": C03_START_DESIGN_SHA256,
+        "issued_at": C03_START_AT,
+        "expires_at": C03_START_EXPIRES_AT,
+        "path_scope": c03_start_product_write_scope(),
+        "status": "ACTIVE",
+    }
+
+
+def _c03_start_boundary() -> dict[str, str]:
+    return {
+        "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED",
+        "secret": "NOT_ACCESSED", "database": "NOT_EXECUTED",
+        "api": "NOT_EXECUTED", "browser": "NOT_EXECUTED",
+        "wsl": "NOT_EXECUTED", "deployment": "NOT_EXECUTED",
+        "network": "NOT_EXECUTED", "actual_runner": "NOT_EXECUTED",
+        "c04_plus": "NOT_STARTED", "product_code": "NOT_MUTATED_BY_CONTROL",
+    }
+
+
+def _c03_lifecycle_contract() -> dict[str, Any]:
+    return {
+        "milestone": "M1",
+        "developer_count": 1,
+        "developer_actor_id": "developer-primary",
+        "read_only_runtime": True,
+        "ordered_lifecycle": ["START", "WAIT", "STOP", "RAW_RESULT_AUTO_RECEIVE"],
+        "same_session_reuse_requires_identical_packet_and_baseline": True,
+        "runner_session_id_must_equal_requested_session_id": True,
+        "exact_product_paths": c03_start_product_write_scope(),
+        "path_match_mode": "SEGMENT_AWARE_EXACT_PATH",
+        "confusable_prefix_rejected": "packages/** != packages_evil/**",
+        "raw_freeze": {
+            "format": "UTF8_CANONICAL_JSON_BYTES",
+            "string_keys_only": True,
+            "string_coercion_forbidden": True,
+            "sets_rejected": True,
+            "sorted_keys": True,
+            "nan_rejected": True,
+        },
+        "auto_receive_is_auto_accept": False,
+    }
+
+
+def _c03_start_markdown() -> tuple[bytes, bytes]:
+    report = """# C-03 Start Projection Report
+
+- 판정: `IN_PROGRESS`
+- seq738~740: `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`
+- C-02: `ACCEPTED`; C-03: `IN_PROGRESS`; C-04: `NOT_READY`; DIR-2: `NOT_REACHED`
+- acceptance: `AV-AGT-004` / `L3` / `AI` / `E-GIT,E-ART`
+- M1: Developer 1명 read-only start→wait→stop→raw result 자동 수신
+- 제품 허용 경로: exact3; control 단계 제품 변경 없음
+- Provider/Telegram/Secret/DB/API/browser/WSL/deploy/network/actual runner: `NOT_EXECUTED`
+""".encode("utf-8")
+    validation = """# C-03 Start Projection Validation
+
+- seq1~737 raw event object bytes: preserved
+- seq738~740 lease/write/package start 순서와 hash chain: validated
+- C-02 ACCEPTED, C-03 IN_PROGRESS, C-04 NOT_READY, DIR-2 NOT_REACHED: exact
+- WorkInstruction/invocation/design/work-plan/AV-AGT-004 L3 AI E-GIT E-ART: bound
+- session 재사용 packet/baseline mismatch, runner session mismatch: fail-closed contract
+- segment-aware exact3 path, packages_evil prefix 충돌: rejected contract
+- raw freeze non-string key/set/non-finite/non-JSON type: rejected contract
+- exact12 staged at base 또는 clean sole direct-child only
+- 외부 시스템 및 actual runner: `NOT_EXECUTED`
+""".encode("utf-8")
+    return report, validation
+
+
+def c03_start_projection_artifacts(
+    historical: Mapping[str, bytes], files: Mapping[str, bytes]
+) -> dict[str, bytes]:
+    meta = c03_start_projection_metadata()
+    generated = {
+        C03_START_REPORT, C03_START_STATUS, C03_START_M, C03_START_H,
+        C03_START_P, C03_START_E, C03_START_D, C03_START_VALIDATION,
+    }
+    if set(historical) != {C03_START_STATUS, C03_START_H, C03_START_P, C03_START_E}:
+        raise ValueError("C03_START_INPUT_SET_INVALID")
+    if set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C03_START_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C03_START_P])
+    stream = _c21_resume_json(historical[C03_START_E])
+    if (
+        progress.get("event_sequence") != 737
+        or stream.get("last_sequence") != 737
+        or len(stream.get("events", [])) != 737
+        or progress.get("current_work_package") != "C-02"
+        or progress.get("status") != "ACCEPTED"
+        or progress.get("worker_lease") is not None
+        or progress.get("write_lease") is not None
+        or progress.get("next_work_package") != {"package_id": "C-03", "status": "READY_FOR_WORK_INSTRUCTION"}
+        or "C-02" not in progress.get("completed_packages", [])
+        or progress.get("work_plan_hash") != C03_START_WORK_PLAN_SHA256
+        or progress.get("design_baseline_hash") != C03_START_DESIGN_SHA256
+    ):
+        raise ValueError("C03_START_HISTORY_INVALID")
+    worker = _c03_start_worker_lease()
+    write = _c03_start_write_lease()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+
+    def envelope(sequence: int, event_type: str, event_id: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C03_START_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": "developer-primary",
+            "project_id": "anvil", "run_id": None, "work_package_id": "C-03",
+            "step_id": "START", "actor": "developer-primary", "subject_ref": "C-03/START",
+            "event_id": event_id, "sequence": sequence, "event_type": event_type,
+            "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+        return event
+
+    authority = {
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "requirement_ids": ["AV-AGT-004"], "verification_level": "L3",
+        "method": "AI", "evidence_types": ["E-GIT", "E-ART"],
+        "work_instruction_id": C03_START_WI_ID,
+        "work_instruction_sha256": C03_START_WI_SHA256,
+        "invocation_sha256": C03_START_PROMPT_SHA256,
+    }
+    lifecycle = _c03_lifecycle_contract()
+    events = [
+        envelope(738, "WORKER_LEASE_ISSUED", "evt_c03_worker_lease_issued", worker),
+        envelope(739, "WRITE_LEASE_ISSUED", "evt_c03_write_lease_issued", write),
+        envelope(740, "PACKAGE_STARTED", "evt_c03_package_started", {
+            **authority,
+            "package_status": "IN_PROGRESS",
+            "worker_lease_id": C03_START_WORKER_LEASE_ID,
+            "write_lease_id": C03_START_WRITE_LEASE_ID,
+            "execution_fencing_token": C03_START_EXECUTION_TOKEN,
+            "write_fencing_token": C03_START_WRITE_TOKEN,
+            "dispatch_head": C03_START_BASE,
+            "dispatch_upstream_head": C03_START_BASE,
+            "projection_mode": meta["projection_mode"],
+            "validated_base_commit": C03_START_BASE,
+            "head_relation": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
+            "exact_allowed_paths": meta["exact_paths"],
+            "product_write_scope": c03_start_product_write_scope(),
+            "lifecycle_contract": lifecycle,
+        }),
+    ]
+    events_raw = _c21_append_events(historical[C03_START_E], 737, events)
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"],
+        "validated_base_commit": C03_START_BASE,
+        "control_head": C03_START_BASE,
+        "development_main": C03_START_BASE,
+        "local_head": C03_START_BASE,
+        "branch": C03_START_BRANCH,
+        "upstream": C03_START_DEVELOPMENT_REF,
+        "remote_head": C03_START_BASE,
+        "head_relation": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
+        "worktree_status": "STAGED_EXACT12",
+        "exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c03_start_product_write_scope(),
+        "development_remote_url": C03_START_DEVELOPMENT_URL,
+        "push_status": "NOT_EXECUTED",
+    })
+    instruction = {
+        "artifact_id": C03_START_WI_ID, "artifact_path": C03_START_WI,
+        "artifact_sha256": C03_START_WI_SHA256,
+        "invocation_path": C03_START_PROMPT, "invocation_sha256": C03_START_PROMPT_SHA256,
+        "executor": "developer-primary", "result_status": "IN_PROGRESS",
+        "package_status": "IN_PROGRESS", "product_write_scope": c03_start_product_write_scope(),
+        "acceptance_binding": authority,
+    }
+    active_agent = {
+        "actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+        "work_package_id": "C-03", "status": "ACTIVE",
+        "execution_fencing_token": C03_START_EXECUTION_TOKEN,
+    }
+    progress.update({
+        "snapshot_id": "snapshot-c03-start-seq740",
+        "updated_at": C03_START_AT, "recorded_at": C03_START_AT,
+        "event_sequence": 740, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-03", "status": "IN_PROGRESS",
+        "active_agent": active_agent, "worker_lease": worker, "write_lease": write,
+        "active_work_instruction": instruction, "repository": repository,
+        "c03_start_projection": {
+            "status": "IN_PROGRESS", "accepted": False, "event_sequence": 740,
+            "c02_status": "ACCEPTED", "c04_status": "NOT_READY",
+            "dir2_status": "NOT_REACHED", "acceptance_binding": authority,
+            "lifecycle_contract": lifecycle, "external_validation": _c03_start_boundary(),
+        },
+        "next_work_package": {"package_id": "C-04", "status": "NOT_READY"},
+        "next_successor_work_package": None,
+        "runtime_next_action": "DEVELOPER_IMPLEMENT_C03_READ_ONLY_LIFECYCLE",
+        "next_safe_action": "DEVELOPER_IMPLEMENT_C03_READ_ONLY_LIFECYCLE",
+        "current_progress_evidence_ref": {"package_id": "C-03", "path": C03_START_D, "manifest_path": C03_START_M},
+        "latest_evidence_manifest_ref": {"path": C03_START_M, "artifact_id": "C03-START-PROJECTION-20260912"},
+        "reporting_decision": {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": ["C02_ACCEPTED", "C03_IN_PROGRESS", "C04_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False,
+        },
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C03_START_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw, validation_raw = _c03_start_markdown()
+    status_raw = historical[C03_START_STATUS] + (
+        "\n## C-03 start projection\n\n"
+        "- seq738~740 `WORKER_LEASE_ISSUED → WRITE_LEASE_ISSUED → PACKAGE_STARTED`.\n"
+        "- C-02 `ACCEPTED`; C-03 `IN_PROGRESS`; C-04 `NOT_READY`; DIR-2 `NOT_REACHED`.\n"
+        "- `AV-AGT-004` / `L3` / `AI` / `E-GIT,E-ART`, Developer 1명 read-only lifecycle과 exact3 scope를 결박했다.\n"
+        "- control 제품 변경 및 Provider/Telegram/Secret/DB/API/browser/WSL/deploy/network/actual runner `NOT_EXECUTED`.\n"
+    ).encode("utf-8")
+    latest = {**files, C03_START_E: events_raw, C03_START_REPORT: report_raw,
+              C03_START_STATUS: status_raw, C03_START_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "accepted": False, "c02_status": "ACCEPTED", "c03_status": "IN_PROGRESS",
+        "c04_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "repository_head": C03_START_BASE,
+        "repository_upstream": C03_START_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C03_START_BASE,
+        "repository_head_relation": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c03_start_product_write_scope(),
+        "work_instruction_id": C03_START_WI_ID,
+        "work_instruction_sha256": C03_START_WI_SHA256,
+        "invocation_sha256": C03_START_PROMPT_SHA256,
+        "acceptance_binding": authority, "lifecycle_contract": lifecycle,
+        "external_validation": _c03_start_boundary(), "current_manifest": C03_START_M,
+        "reporting_decision": "AUTO_CONTINUE",
+    })
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(
+        r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement,
+        historical[C03_START_H].decode(), flags=re.DOTALL,
+    )
+    if count != 1:
+        raise ValueError("C03_START_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-03 start projection — seq740\n\n"
+        "- seq1~737 raw event object bytes를 보존하고 seq738~740만 append했다.\n"
+        "- C-02 ACCEPTED, C-03 IN_PROGRESS, C-04 NOT_READY, DIR-2 NOT_REACHED.\n"
+        "- control 제품 변경과 외부 시스템 실행 없음.\n\n" + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C03-START-PROJECTION-DIGEST-20260912",
+        "package_id": "C-03", "event_sequence": 740, "algorithm": "SHA-256",
+        "created_at": C03_START_AT,
+        "scope": "seq738-740 append-only C-03 start projection; seq1-737 preserved; exact12",
+        "self_reference": False,
+        "progress": {"path": C03_START_P, "bytes": len(progress_raw),
+                     "file_sha256": _c21_resume_sha(progress_raw),
+                     "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C03_START_H, "bytes": len(handoff_raw),
+                    "file_sha256": _c21_resume_sha(handoff_raw),
+                    "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C03_START_REPORT: report_raw, C03_START_STATUS: status_raw,
+                 C03_START_H: handoff_raw, C03_START_P: progress_raw, C03_START_E: events_raw,
+                 C03_START_D: digest_raw, C03_START_VALIDATION: validation_raw}
+    historical_prefix = raw_event_object_prefix_bytes(historical[C03_START_E], 737)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-03_START_PROJECTION",
+        "artifact_id": "C03-START-PROJECTION-20260912", "created_at": C03_START_AT,
+        "package_id": "C-03", "event_sequence": 740, "historical_event_sequence": 737,
+        "appended_event_count": 3,
+        "historical_raw_event_prefix": {"bytes": len(historical_prefix), "sha256": _c21_resume_sha(historical_prefix)},
+        "accepted": False, "status": "IN_PROGRESS", "c02_status": "ACCEPTED",
+        "c03_status": "IN_PROGRESS", "c04_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "active_agent": active_agent, "worker_lease": worker, "write_lease": write,
+        "product_write_scope": c03_start_product_write_scope(),
+        "work_instruction_id": C03_START_WI_ID, "work_instruction_path": C03_START_WI,
+        "work_instruction_sha256": C03_START_WI_SHA256,
+        "invocation_path": C03_START_PROMPT, "invocation_sha256": C03_START_PROMPT_SHA256,
+        "work_plan_sha256": C03_START_WORK_PLAN_SHA256, "design_sha256": C03_START_DESIGN_SHA256,
+        "acceptance_binding": authority, "lifecycle_contract": lifecycle,
+        "external_validation": _c03_start_boundary(),
+        "record_binding": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD", "self_reference": False,
+        **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+        for path, payload in sorted(artifacts.items())
+    ]
+    artifacts[C03_START_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C03_START_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c03_start_projection_from_root(root: Path) -> dict[str, bytes]:
+    if _c21_resume_sha((root / C03_START_WI).read_bytes()) != C03_START_WI_SHA256:
+        raise ValueError("C03_START_WORK_INSTRUCTION_HASH_INVALID")
+    if _c21_resume_sha((root / C03_START_PROMPT).read_bytes()) != C03_START_PROMPT_SHA256:
+        raise ValueError("C03_START_INVOCATION_HASH_INVALID")
+    historical = {
+        path: subprocess.check_output(["git", "show", f"{C03_START_BASE}:{path}"], cwd=root)
+        for path in {C03_START_STATUS, C03_START_H, C03_START_P, C03_START_E}
+    }
+    generated = {C03_START_REPORT, C03_START_STATUS, C03_START_M, C03_START_H,
+                 C03_START_P, C03_START_E, C03_START_D, C03_START_VALIDATION}
+    files = {path: (root / path).read_bytes() for path in set(c03_start_projection_paths()) - generated}
+    return c03_start_projection_artifacts(historical, files)
+
+
+def validate_c03_start_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c03_start_projection_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c03_start_projection_paths()}
+        actual = {
+            C03_START_P: bundle.get("progress"), C03_START_E: bundle.get("events"),
+            C03_START_H: bundle.get("handoff"), C03_START_D: bundle.get("detached_digest"),
+            C03_START_M: manifest,
+        }
+        references = {
+            C03_START_P: _c21_resume_json(expected[C03_START_P]),
+            C03_START_E: _c21_resume_json(expected[C03_START_E]),
+            C03_START_H: extract_handoff_summary(expected[C03_START_H].decode()),
+            C03_START_D: _c21_resume_json(expected[C03_START_D]),
+            C03_START_M: _c21_resume_json(expected[C03_START_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], references[path]) for path in actual) else ["C03_START_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C03_START_RAW_BYTES_INVALID")
+        progress = actual[C03_START_P]
+        if (
+            not isinstance(progress, Mapping) or progress.get("event_sequence") != 740
+            or progress.get("current_phase") != "C" or progress.get("current_work_package") != "C-03"
+            or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c03_start_worker_lease()
+            or progress.get("write_lease") != _c03_start_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-04", "status": "NOT_READY"}
+            or progress.get("next_safe_action") != "DEVELOPER_IMPLEMENT_C03_READ_ONLY_LIFECYCLE"
+        ):
+            errors.append("C03_START_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C03_START_BASE}:{C03_START_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 737) != raw_event_object_prefix_bytes(actual_raw[C03_START_E], 737):
+            errors.append("C03_START_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C03_START_INPUT_INVALID"]
+
+
+def _collect_c03_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c03_start_projection_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C03_START_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch = value("branch", "--show-current")
+        status = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C03_START_DEVELOPMENT_REF)
+        base_ref = value("rev-parse", C03_START_BASE)
+        if None in (head, branch, status, development_url, development_main, base_ref):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C03_START_DEVELOPMENT_URL or development_main != C03_START_BASE or base_ref != C03_START_BASE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if branch != C03_START_BRANCH:
+            return ["C03_START_BRANCH_OR_UPSTREAM_INVALID"]
+        upstream = value("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C03_START_BRANCH}")
+        if upstream is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        dirty = _c02_strict_porcelain_paths(status)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if head == C03_START_BASE:
+            if upstream != C03_START_DEVELOPMENT_REF:
+                return ["C03_START_BRANCH_OR_UPSTREAM_INVALID"]
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            if None in (cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = dirty == meta["exact_paths"] and cached == meta["exact_paths"] and not unstaged and not untracked and check("diff", "--cached", "--check")
+            return [] if valid else ["C03_START_PATH_OR_CLEAN_INVALID"]
+        if upstream != f"development/{C03_START_BRANCH}":
+            return ["C03_START_BRANCH_OR_UPSTREAM_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C03_START_BASE, head))
+        if parents is None or changed is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        valid = (
+            not dirty and parents.split() == [C03_START_BASE]
+            and changed == meta["exact_paths"]
+            and check("merge-base", "--is-ancestor", C03_START_BASE, head)
+            and check("diff", "--check", C03_START_BASE, head)
+        )
+        return [] if valid else ["C03_START_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

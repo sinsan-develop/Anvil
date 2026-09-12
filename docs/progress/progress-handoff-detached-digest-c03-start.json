@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C03-START-PROJECTION-DIGEST-20260912",
+  "package_id": "C-03",
+  "event_sequence": 740,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-12T09:05:00+09:00",
+  "scope": "seq738-740 append-only C-03 start projection; seq1-737 preserved; exact12",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 820936,
+    "file_sha256": "ECE790C3C847C7CB5EF3BC62F72296478848A4B469AFC77D5B3A6228B21C3F2C",
+    "canonical_json_sha256": "EA095FD0E7250ECD134A4806E682DE944E0289EA7C90A7B776C5DA009D973AB8"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 188728,
+    "file_sha256": "2014E4F4FB6D03CBFF2E962F102EF5A9F9B0A863FE1B5E1093F3917CCAFEFB8D",
+    "machine_summary_canonical_sha256": "258EE0B8C000C7CEC67DC87CBFEBB9E92C80728CE317A5612280B674969218A4"
+  }
+}

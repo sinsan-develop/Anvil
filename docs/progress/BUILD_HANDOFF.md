@@ -1,3 +1,9 @@
+# C-03 start projection — seq740
+
+- seq1~737 raw event object bytes를 보존하고 seq738~740만 append했다.
+- C-02 ACCEPTED, C-03 IN_PROGRESS, C-04 NOT_READY, DIR-2 NOT_REACHED.
+- control 제품 변경과 외부 시스템 실행 없음.
+
 # C-02 post-merge development authority reconciliation — seq737
 
 - seq1~736 raw event object bytes를 보존하고 seq737만 append했다.
@@ -888,127 +894,146 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 737,
-  "last_event_id": "evt_c02_postmerge_development_authority_reconciled",
-  "status": "ACCEPTED",
+  "event_sequence": 740,
+  "last_event_id": "evt_c03_package_started",
+  "status": "IN_PROGRESS",
   "current_phase": "C",
-  "current_work_package": "C-02",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "current_work_package": "C-03",
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-03",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+    "fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+    "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
+    "issued_at": "2026-09-12T09:05:00+09:00",
+    "expires_at": "2026-09-12T21:05:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c03-developer-lifecycle-r1-20260912-001",
+    "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+    "fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+    "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-12T09:05:00+09:00",
+    "expires_at": "2026-09-12T21:05:00+09:00",
+    "path_scope": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "tests/orchestration/test_developer_lifecycle.py"
+    ],
+    "status": "ACTIVE"
+  },
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "ISSUE_C03_WORK_INSTRUCTION",
-  "accepted": true,
-  "reconciliation_status": "DEVELOPMENT_MAIN_AUTHORITY_RECONCILED",
+  "next_safe_action": "DEVELOPER_IMPLEMENT_C03_READ_ONLY_LIFECYCLE",
+  "accepted": false,
   "c02_status": "ACCEPTED",
-  "c03_status": "READY_FOR_WORK_INSTRUCTION",
-  "dir2_status": "NOT_REACHED",
+  "c03_status": "IN_PROGRESS",
+  "c04_status": "NOT_READY",
   "dir_status": "CLEARED",
-  "repository_head": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
+  "dir2_status": "NOT_REACHED",
+  "repository_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_EXACT12",
-  "repository_validated_base_commit": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
-  "repository_head_relation": "EXACT12_PRECOMMIT_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+  "repository_projection_mode": "C03_START_PROJECTION_EXACT12",
+  "repository_validated_base_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
+  "repository_head_relation": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_RESULT.md",
+    "docs/04_test_reports/C-03_START_PROJECTION_REPORT.md",
     "docs/WORK_STATUS.md",
-    "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+    "docs/evidence/manifests/C-03_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c02-postmerge-development-authority-reconciliation.json",
-    "docs/validation/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_VALIDATION.md",
-    "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c03-start.json",
+    "docs/validation/C-03_START_VALIDATION.md",
+    "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-03_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "development_remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
-  "development_remote_ref": "refs/remotes/development/main",
-  "lineage": {
-    "baseline_merge_commit": "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658",
-    "baseline_merge_parents": [
-      "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
-      "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0"
+  "product_write_scope": [
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/__init__.py",
+    "tests/orchestration/test_developer_lifecycle.py"
+  ],
+  "work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001",
+  "work_instruction_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
+  "invocation_sha256": "36CA899CBDBA0289734AAF5D44D073B0CD082C0EC26447237622B0A957B0636A",
+  "acceptance_binding": {
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "requirement_ids": [
+      "AV-AGT-004"
     ],
-    "feature_final_commit": "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
-    "feature_final_parent": "db2b52fc85d022c5af51a1927a0133bf081f4586",
-    "product_commit": "db2b52fc85d022c5af51a1927a0133bf081f4586",
-    "product_parent": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
-    "start_projection_commit": "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
-    "start_projection_parent": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
-    "control_commit": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
-    "control_parent": "4619ee132ced203780bb0ec615088add661ec802",
-    "authority_commit": "4619ee132ced203780bb0ec615088add661ec802",
-    "authority_parent": "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
-    "ancestor_chain": [
-      "d55763bdfe4595ce35ec1fce4da8aa0a0157afa5",
-      "4619ee132ced203780bb0ec615088add661ec802",
-      "2eedcfa6b15594c2daa29bb52a5c10694c826776",
-      "5179870e6e9f9e2c62afaa4ada9383936d0a7036",
-      "db2b52fc85d022c5af51a1927a0133bf081f4586",
-      "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
-      "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658"
+    "verification_level": "L3",
+    "method": "AI",
+    "evidence_types": [
+      "E-GIT",
+      "E-ART"
     ],
-    "merge_tree_equals_feature_final": true,
-    "ancestor_chain_required": true
+    "work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001",
+    "work_instruction_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
+    "invocation_sha256": "36CA899CBDBA0289734AAF5D44D073B0CD082C0EC26447237622B0A957B0636A"
+  },
+  "lifecycle_contract": {
+    "milestone": "M1",
+    "developer_count": 1,
+    "developer_actor_id": "developer-primary",
+    "read_only_runtime": true,
+    "ordered_lifecycle": [
+      "START",
+      "WAIT",
+      "STOP",
+      "RAW_RESULT_AUTO_RECEIVE"
+    ],
+    "same_session_reuse_requires_identical_packet_and_baseline": true,
+    "runner_session_id_must_equal_requested_session_id": true,
+    "exact_product_paths": [
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/__init__.py",
+      "tests/orchestration/test_developer_lifecycle.py"
+    ],
+    "path_match_mode": "SEGMENT_AWARE_EXACT_PATH",
+    "confusable_prefix_rejected": "packages/** != packages_evil/**",
+    "raw_freeze": {
+      "format": "UTF8_CANONICAL_JSON_BYTES",
+      "string_keys_only": true,
+      "string_coercion_forbidden": true,
+      "sets_rejected": true,
+      "sorted_keys": true,
+      "nan_rejected": true
+    },
+    "auto_receive_is_auto_accept": false
   },
   "external_validation": {
     "provider": "NOT_EXECUTED",
     "telegram": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
     "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
     "browser": "NOT_EXECUTED",
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "actual_runner": "NOT_EXECUTED"
+    "network": "NOT_EXECUTED",
+    "actual_runner": "NOT_EXECUTED",
+    "c04_plus": "NOT_STARTED",
+    "product_code": "NOT_MUTATED_BY_CONTROL"
   },
-  "tooling_validation": {
-    "monolithic": {
-      "status": "INTERRUPTED_ENVIRONMENT_PERFORMANCE_FAILURE",
-      "elapsed_approx_minutes": 220,
-      "fingerprint": "C02-TOOLING-SANDBOX-TMPDIR-PERMISSION-RETRY-v1",
-      "cause": "SANDBOX_DENIED_D_TMP_MKDIR_WHILE_OS_ACCESS_REPORTED_WRITABLE_AND_TEMPFILE_RETRIED_TO_TMP_MAX_AS_NAME_COLLISIONS",
-      "assertion_failure": false,
-      "product_failure": false
-    },
-    "partitioned_full": {
-      "status": "PASS",
-      "selection": "MUTUALLY_EXCLUSIVE_COMPLETE_347",
-      "total_passed": 347,
-      "environment": "NORMAL_D_TMP_WRITABLE",
-      "partitions": [
-        {
-          "selector": "not ProjectProgressContractTests",
-          "passed": 151,
-          "deselected": 196,
-          "duration_seconds": 444.91,
-          "node_sha256": null
-        },
-        {
-          "selector": "ProjectProgressContractTests and not c21",
-          "passed": 82,
-          "deselected": 265,
-          "duration_seconds_approx": 231.5,
-          "node_sha256": "954F68C8045759DE112568BE8FBED75A9058257D35D1B22709DBF6CA9206C10B"
-        },
-        {
-          "selector": "ProjectProgressContractTests and c21",
-          "passed": 114,
-          "deselected": 233,
-          "duration_seconds": 3423.04,
-          "node_sha256": "064D08FF09B714675766C3C59FBCBDCA5EA5A22870D1EC7D0A99088A0A0A1213"
-        }
-      ]
-    },
-    "sandbox_diagnostic_partial_batches": "NOT_COMPLETED_EVIDENCE"
-  },
-  "full_repository_suite": {
-    "status": "NOT_COMPLETED",
-    "collection_error_count": 7
-  },
-  "current_manifest": "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-03_START_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

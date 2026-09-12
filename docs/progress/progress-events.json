@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 737,
+  "last_sequence": 740,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -39635,7 +39635,161 @@
         },
         "dir2_status": "NOT_REACHED"
       }
+    },
+    {
+      "occurred_at": "2026-09-12T09:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-03/START",
+      "event_id": "evt_c03_worker_lease_issued",
+      "sequence": 738,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "C50F8572E7E5BFB04AC4F1C63144BC258E4A128D5AFB34D31592C681D2C69FAA",
+      "details": {
+        "lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+        "fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+        "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-03",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
+        "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
+        "issued_at": "2026-09-12T09:05:00+09:00",
+        "expires_at": "2026-09-12T21:05:00+09:00",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T09:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-03/START",
+      "event_id": "evt_c03_write_lease_issued",
+      "sequence": 739,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "7855813E0D6AB4FD1193A55026B58AFF760639FA7495B8887FD8A14FD994D02D",
+      "details": {
+        "lease_id": "write-lease-c03-developer-lifecycle-r1-20260912-001",
+        "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+        "fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+        "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-03",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-12T09:05:00+09:00",
+        "expires_at": "2026-09-12T21:05:00+09:00",
+        "path_scope": [
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/orchestration/__init__.py",
+          "tests/orchestration/test_developer_lifecycle.py"
+        ],
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-12T09:05:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-03",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-03/START",
+      "event_id": "evt_c03_package_started",
+      "sequence": 740,
+      "event_type": "PACKAGE_STARTED",
+      "previous_event_sha256": "5242530CD76255CE745C54A697B6970C53F5992F595A5C3BCB87213B84C961E4",
+      "details": {
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "requirement_ids": [
+          "AV-AGT-004"
+        ],
+        "verification_level": "L3",
+        "method": "AI",
+        "evidence_types": [
+          "E-GIT",
+          "E-ART"
+        ],
+        "work_instruction_id": "WI-C-03-DEVELOPER-LIFECYCLE-R1-20260912-001",
+        "work_instruction_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
+        "invocation_sha256": "36CA899CBDBA0289734AAF5D44D073B0CD082C0EC26447237622B0A957B0636A",
+        "package_status": "IN_PROGRESS",
+        "worker_lease_id": "worker-lease-c03-developer-lifecycle-r1-20260912-001",
+        "write_lease_id": "write-lease-c03-developer-lifecycle-r1-20260912-001",
+        "execution_fencing_token": "c03-developer-lifecycle-execution-fence-epoch-1-1c3948f",
+        "write_fencing_token": "c03-developer-lifecycle-write-fence-epoch-1-1c3948f",
+        "dispatch_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
+        "dispatch_upstream_head": "1c3948ff1a741832a2f012f464f1a301490356c1",
+        "projection_mode": "C03_START_PROJECTION_EXACT12",
+        "validated_base_commit": "1c3948ff1a741832a2f012f464f1a301490356c1",
+        "head_relation": "STAGED_EXACT12_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-03_START_PROJECTION_REPORT.md",
+          "docs/WORK_STATUS.md",
+          "docs/evidence/manifests/C-03_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c03-start.json",
+          "docs/validation/C-03_START_VALIDATION.md",
+          "docs/work_orders/C-03_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-03_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_write_scope": [
+          "packages/orchestration/developer_lifecycle.py",
+          "packages/orchestration/__init__.py",
+          "tests/orchestration/test_developer_lifecycle.py"
+        ],
+        "lifecycle_contract": {
+          "milestone": "M1",
+          "developer_count": 1,
+          "developer_actor_id": "developer-primary",
+          "read_only_runtime": true,
+          "ordered_lifecycle": [
+            "START",
+            "WAIT",
+            "STOP",
+            "RAW_RESULT_AUTO_RECEIVE"
+          ],
+          "same_session_reuse_requires_identical_packet_and_baseline": true,
+          "runner_session_id_must_equal_requested_session_id": true,
+          "exact_product_paths": [
+            "packages/orchestration/developer_lifecycle.py",
+            "packages/orchestration/__init__.py",
+            "tests/orchestration/test_developer_lifecycle.py"
+          ],
+          "path_match_mode": "SEGMENT_AWARE_EXACT_PATH",
+          "confusable_prefix_rejected": "packages/** != packages_evil/**",
+          "raw_freeze": {
+            "format": "UTF8_CANONICAL_JSON_BYTES",
+            "string_keys_only": true,
+            "string_coercion_forbidden": true,
+            "sets_rejected": true,
+            "sorted_keys": true,
+            "nan_rejected": true
+          },
+          "auto_receive_is_auto_accept": false
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c02_postmerge_development_authority_reconciled"
+  "last_event_id": "evt_c03_package_started"
 }
