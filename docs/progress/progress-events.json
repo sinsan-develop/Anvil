@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 787,
+  "last_sequence": 790,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -42361,7 +42361,171 @@
           "in_memory_atomic_projection": "IMPLEMENTED_AND_VERIFIED"
         }
       }
+    },
+    {
+      "occurred_at": "2026-09-13T23:55:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-08",
+      "step_id": "START",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-08/START",
+      "event_id": "evt_c08_work_instruction_issued",
+      "sequence": 788,
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "previous_event_sha256": "82ED705133D712900A2F1F62D4F2AAA13EC45FE3840902913155810F8A62D386",
+      "details": {
+        "revision_class": "EXISTING_APPROVED_WORK_INSTRUCTION_REVALIDATION",
+        "authority_basis": [
+          "APPROVED_WORK_PLAN_C08",
+          "C07_ACCEPTED",
+          "A13_PREEXISTING_READ_ONLY_SCAN",
+          "DESIGN_6_30"
+        ],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_sha256": "D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C",
+        "invocation_sha256": "D74DDD5969200A6FD7DDB9AAA2C6A218E98C8F3500E6423FEBF89FFAECCB4C37",
+        "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "preexisting_product_commit": "4e2dc79aef6a593bcb423739d88b8095b501d226",
+        "acceptance": [
+          {
+            "requirement_id": "AV-GATE-006",
+            "level": "L3",
+            "method": "AI",
+            "evidence": [
+              "E-GIT",
+              "E-CMD"
+            ]
+          },
+          {
+            "requirement_id": "AV-GATE-009",
+            "level": "L3",
+            "method": "AI",
+            "evidence": [
+              "E-CMD"
+            ]
+          },
+          {
+            "requirement_id": "AV-GATE-023",
+            "level": "L3",
+            "method": "AI",
+            "evidence": [
+              "E-TEST"
+            ]
+          }
+        ],
+        "work_instruction_id": "WI-C-08-REPOSITORY-INTELLIGENCE",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
+          "packages/repository_intelligence/indexes.py",
+          "packages/repository_intelligence/models.py",
+          "packages/repository_intelligence/scanner.py",
+          "tests/repository_intelligence/fixtures/app.py",
+          "tests/repository_intelligence/fixtures/tests/spec_app.py",
+          "tests/repository_intelligence/fixtures/ui.ts",
+          "tests/repository_intelligence/fixtures/util.py",
+          "tests/repository_intelligence/test_indexes.py"
+        ],
+        "projection_mode": "C08_START_PROJECTION_EXACT9",
+        "validated_base_commit": "5529fe5261744e42227fcb3444952cf18e8114ec",
+        "dispatch_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
+        "dispatch_upstream_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
+        "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-08_START_PROJECTION_REPORT.md",
+          "docs/evidence/manifests/C-08_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c08-start.json",
+          "docs/validation/C-08_START_VALIDATION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T23:55:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-08",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-08/START",
+      "event_id": "evt_c08_worker_lease_issued",
+      "sequence": 789,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "CC7C903D24B49B3C1506FFECAC766D2C15FE8AF067A9ED21E170602BFEFFAD5C",
+      "details": {
+        "lease_id": "worker-lease-c08-repository-intelligence-20260913-001",
+        "fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5",
+        "execution_fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-08",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "5529fe5261744e42227fcb3444952cf18e8114ec",
+        "dispatch_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
+        "issued_at": "2026-09-13T23:55:00+09:00",
+        "expires_at": "2026-09-14T11:55:00+09:00",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T23:55:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-08",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-08/START",
+      "event_id": "evt_c08_write_lease_issued",
+      "sequence": 790,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "F9266E333B3D6FC287DA7D10891AEDECE7AD6F88A2C8B5B0100902AC737034E4",
+      "details": {
+        "lease_id": "write-lease-c08-repository-intelligence-20260913-001",
+        "worker_lease_id": "worker-lease-c08-repository-intelligence-20260913-001",
+        "fencing_token": "c08-repository-intelligence-write-fence-epoch-1-5529fe5",
+        "write_fencing_token": "c08-repository-intelligence-write-fence-epoch-1-5529fe5",
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-08",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-13T23:55:00+09:00",
+        "expires_at": "2026-09-14T11:55:00+09:00",
+        "path_scope": [
+          "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
+          "packages/repository_intelligence/indexes.py",
+          "packages/repository_intelligence/models.py",
+          "packages/repository_intelligence/scanner.py",
+          "tests/repository_intelligence/fixtures/app.py",
+          "tests/repository_intelligence/fixtures/tests/spec_app.py",
+          "tests/repository_intelligence/fixtures/ui.ts",
+          "tests/repository_intelligence/fixtures/util.py",
+          "tests/repository_intelligence/test_indexes.py"
+        ],
+        "status": "ACTIVE"
+      }
     }
   ],
-  "last_event_id": "evt_c07_final_main_package_accepted"
+  "last_event_id": "evt_c08_write_lease_issued"
 }

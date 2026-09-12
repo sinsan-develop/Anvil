@@ -960,6 +960,13 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C07_FINAL_ACCEPTANCE_EXACT7"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 790
+                and event.get("sequence") == 788
+                and event.get("event_id") == "evt_c08_work_instruction_issued"
+                and event["details"].get("projection_mode") == "C08_START_PROJECTION_EXACT9"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -12973,6 +12980,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 790:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c08_start_projection_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 787:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14073,6 +14084,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c07_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-07_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_c07_final_acceptance(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-08_START_MANIFEST.json":
+            errors.extend(validate_c08_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-06_SCOPE_REVISION_MANIFEST.json":
             errors.extend(validate_c06_scope_revision(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-05_FINAL_ACCEPTANCE_MANIFEST.json":
@@ -38408,6 +38421,397 @@ def _collect_c07_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
             and check("diff", "--quiet", completion, head)
         )
         return [] if valid else ["C07_FINAL_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C08_START_P = "docs/progress/build-progress.json"
+C08_START_E = "docs/progress/progress-events.json"
+C08_START_H = "docs/progress/BUILD_HANDOFF.md"
+C08_START_D = "docs/progress/progress-handoff-detached-digest-c08-start.json"
+C08_START_M = "docs/evidence/manifests/C-08_START_MANIFEST.json"
+C08_START_REPORT = "docs/04_test_reports/C-08_START_PROJECTION_REPORT.md"
+C08_START_VALIDATION = "docs/validation/C-08_START_VALIDATION.md"
+C08_START_WI = "docs/work_orders/C-08_WORK_INSTRUCTION.md"
+C08_START_PROMPT = "docs/work_orders/C-08_INVOCATION_PROMPT.md"
+C08_START_BASE = "5529fe5261744e42227fcb3444952cf18e8114ec"
+C08_START_BRANCH = "codex/c08-repository-intelligence-r1"
+C08_START_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C08_START_DEVELOPMENT_REF = "development/main"
+C08_START_AT = "2026-09-13T23:55:00+09:00"
+C08_START_EXPIRES_AT = "2026-09-14T11:55:00+09:00"
+C08_START_WI_SHA256 = "D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C"
+C08_START_PROMPT_SHA256 = "D74DDD5969200A6FD7DDB9AAA2C6A218E98C8F3500E6423FEBF89FFAECCB4C37"
+C08_START_DESIGN_SHA256 = C07_START_DESIGN_SHA256
+C08_START_WORK_PLAN_SHA256 = C07_START_WORK_PLAN_SHA256
+C08_START_MATRIX_SHA256 = C07_START_MATRIX_SHA256
+C08_START_TEST_PLAN_SHA256 = C07_START_TEST_PLAN_SHA256
+C08_START_GOVERNANCE_SHA256 = C07_START_GOVERNANCE_SHA256
+C08_START_WORKER_LEASE_ID = "worker-lease-c08-repository-intelligence-20260913-001"
+C08_START_WRITE_LEASE_ID = "write-lease-c08-repository-intelligence-20260913-001"
+C08_START_EXECUTION_TOKEN = "c08-repository-intelligence-execution-fence-epoch-1-5529fe5"
+C08_START_WRITE_TOKEN = "c08-repository-intelligence-write-fence-epoch-1-5529fe5"
+
+
+def c08_start_projection_paths() -> list[str]:
+    return sorted([
+        C08_START_REPORT, C08_START_M, C08_START_H, C08_START_P, C08_START_E,
+        C08_START_D, C08_START_VALIDATION,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c08_start_product_write_scope() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
+        "packages/repository_intelligence/indexes.py",
+        "packages/repository_intelligence/models.py",
+        "packages/repository_intelligence/scanner.py",
+        "tests/repository_intelligence/fixtures/app.py",
+        "tests/repository_intelligence/fixtures/tests/spec_app.py",
+        "tests/repository_intelligence/fixtures/ui.ts",
+        "tests/repository_intelligence/fixtures/util.py",
+        "tests/repository_intelligence/test_indexes.py",
+    ])
+
+
+def c08_start_projection_metadata() -> dict[str, Any]:
+    paths = c08_start_projection_paths()
+    return {
+        "sequence": 790, "projection_mode": "C08_START_PROJECTION_EXACT9",
+        "validated_base_commit": C08_START_BASE, "branch": C08_START_BRANCH,
+        "exact_paths": paths, "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def _c08_start_worker_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C08_START_WORKER_LEASE_ID, "fencing_token": C08_START_EXECUTION_TOKEN,
+        "execution_fencing_token": C08_START_EXECUTION_TOKEN, "lease_epoch": 1,
+        "actor_id": "developer-primary", "subject_ref": "C-08",
+        "baseline_hash": C08_START_DESIGN_SHA256, "baseline_git_commit": C08_START_BASE,
+        "dispatch_head": C08_START_BASE, "issued_at": C08_START_AT,
+        "expires_at": C08_START_EXPIRES_AT, "status": "ACTIVE",
+    }
+
+
+def _c08_start_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C08_START_WRITE_LEASE_ID, "worker_lease_id": C08_START_WORKER_LEASE_ID,
+        "fencing_token": C08_START_WRITE_TOKEN, "write_fencing_token": C08_START_WRITE_TOKEN,
+        "write_epoch": 1, "actor_id": "developer-primary", "subject_ref": "C-08",
+        "baseline_hash": C08_START_DESIGN_SHA256, "issued_at": C08_START_AT,
+        "expires_at": C08_START_EXPIRES_AT, "path_scope": c08_start_product_write_scope(),
+        "status": "ACTIVE",
+    }
+
+
+def _c08_start_authority() -> dict[str, Any]:
+    return {
+        "revision_class": "EXISTING_APPROVED_WORK_INSTRUCTION_REVALIDATION",
+        "authority_basis": ["APPROVED_WORK_PLAN_C08", "C07_ACCEPTED", "A13_PREEXISTING_READ_ONLY_SCAN", "DESIGN_6_30"],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_sha256": C08_START_WI_SHA256,
+        "invocation_sha256": C08_START_PROMPT_SHA256,
+        "design_sha256": C08_START_DESIGN_SHA256,
+        "work_plan_sha256": C08_START_WORK_PLAN_SHA256,
+        "matrix_sha256": C08_START_MATRIX_SHA256,
+        "test_plan_sha256": C08_START_TEST_PLAN_SHA256,
+        "governance_sha256": C08_START_GOVERNANCE_SHA256,
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "preexisting_product_commit": "4e2dc79aef6a593bcb423739d88b8095b501d226",
+        "acceptance": [
+            {"requirement_id": "AV-GATE-006", "level": "L3", "method": "AI", "evidence": ["E-GIT", "E-CMD"]},
+            {"requirement_id": "AV-GATE-009", "level": "L3", "method": "AI", "evidence": ["E-CMD"]},
+            {"requirement_id": "AV-GATE-023", "level": "L3", "method": "AI", "evidence": ["E-TEST"]},
+        ],
+    }
+
+
+def _c08_start_boundary() -> dict[str, str]:
+    return {
+        "product_code": "PREEXISTING_PRODUCT_UNDER_REVALIDATION",
+        "fixture_validation": "PENDING_DEVELOPER_REVALIDATION",
+        "actual_repository_success_claim": "FORBIDDEN",
+        "persistent_transaction": "NOT_EXECUTED", "database": "NOT_EXECUTED",
+        "api": "NOT_EXECUTED", "ui": "NOT_EXECUTED", "browser": "NOT_EXECUTED",
+        "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "secret": "NOT_ACCESSED",
+        "wsl": "NOT_EXECUTED", "deployment": "NOT_EXECUTED", "network": "NOT_EXECUTED",
+        "external_call": "NOT_EXECUTED",
+    }
+
+
+def c08_start_projection_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c08_start_projection_metadata()
+    generated = {C08_START_REPORT, C08_START_M, C08_START_H, C08_START_P, C08_START_E, C08_START_D, C08_START_VALIDATION}
+    if set(historical) != {C08_START_H, C08_START_P, C08_START_E} or set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C08_START_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C08_START_P])
+    stream = _c21_resume_json(historical[C08_START_E])
+    if (
+        progress.get("event_sequence") != 787 or stream.get("last_sequence") != 787
+        or len(stream.get("events", [])) != 787 or progress.get("current_work_package") != "C-07"
+        or progress.get("status") != "ACCEPTED" or progress.get("worker_lease") is not None
+        or progress.get("write_lease") is not None
+        or progress.get("next_work_package") != {"package_id": "C-08", "status": "READY_FOR_WORK_INSTRUCTION"}
+    ):
+        raise ValueError("C08_START_HISTORY_INVALID")
+    authority = _c08_start_authority()
+    worker = _c08_start_worker_lease()
+    write = _c08_start_write_lease()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C08_START_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": actor, "project_id": "anvil", "run_id": None,
+            "work_package_id": "C-08", "step_id": "START", "actor": actor,
+            "subject_ref": "C-08/START", "event_id": event_id, "sequence": sequence,
+            "event_type": event_type, "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+        return event
+    wi_details = {
+        **authority, "work_instruction_id": "WI-C-08-REPOSITORY-INTELLIGENCE",
+        "approval_ref": authority["parent_approval_id"], "product_write_scope": c08_start_product_write_scope(),
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C08_START_BASE,
+        "dispatch_head": C08_START_BASE, "dispatch_upstream_head": C08_START_BASE,
+        "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD", "exact_allowed_paths": meta["exact_paths"],
+    }
+    events = [
+        envelope(788, "WORK_INSTRUCTION_ISSUED", "evt_c08_work_instruction_issued", "main-agent-eoul", wi_details),
+        envelope(789, "WORKER_LEASE_ISSUED", "evt_c08_worker_lease_issued", "developer-primary", worker),
+        envelope(790, "WRITE_LEASE_ISSUED", "evt_c08_write_lease_issued", "developer-primary", write),
+    ]
+    events_raw = _c21_append_events(historical[C08_START_E], 787, events)
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C08_START_BASE,
+        "development_main": C08_START_BASE, "control_head": C08_START_BASE,
+        "local_head": C08_START_BASE, "branch": C08_START_BRANCH,
+        "upstream": C08_START_DEVELOPMENT_REF, "remote_head": C08_START_BASE,
+        "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD", "worktree_status": "STAGED_EXACT9",
+        "exact_allowed_paths": meta["exact_paths"], "product_write_scope": c08_start_product_write_scope(),
+        "push_status": "NOT_EXECUTED", "development_remote_url": C08_START_DEVELOPMENT_URL,
+    })
+    active_wi = {
+        "artifact_id": "WI-C-08-REPOSITORY-INTELLIGENCE", "artifact_path": C08_START_WI,
+        "artifact_sha256": C08_START_WI_SHA256, "invocation_path": C08_START_PROMPT,
+        "invocation_sha256": C08_START_PROMPT_SHA256, "executor": "developer-primary",
+        "result_status": "IN_PROGRESS", "package_status": "IN_PROGRESS",
+        "product_write_scope": c08_start_product_write_scope(), "acceptance_binding": authority,
+    }
+    progress.update({
+        "snapshot_id": "snapshot-c08-start-seq790", "updated_at": C08_START_AT,
+        "recorded_at": C08_START_AT, "event_sequence": 790, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-08", "status": "IN_PROGRESS",
+        "active_agent": {"actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-08", "status": "ACTIVE", "execution_fencing_token": C08_START_EXECUTION_TOKEN},
+        "worker_lease": worker, "write_lease": write, "active_work_instruction": active_wi,
+        "repository": repository,
+        "c08_start_projection": {"status": "IN_PROGRESS", "accepted": False, "event_sequence": 790,
+            "c07_status": "ACCEPTED", "c08_status": "IN_PROGRESS", "c09_status": "NOT_READY",
+            "dir2_status": "NOT_REACHED", "authority": authority,
+            "product_exact_paths": c08_start_product_write_scope(), "external_validation": _c08_start_boundary()},
+        "next_work_package": {"package_id": "C-09", "status": "NOT_READY"},
+        "next_successor_work_package": None, "runtime_next_action": "DISPATCH_C08_DEVELOPER",
+        "next_safe_action": "DISPATCH_C08_DEVELOPER",
+        "current_progress_evidence_ref": {"package_id": "C-08", "path": C08_START_D, "manifest_path": C08_START_M},
+        "latest_evidence_manifest_ref": {"path": C08_START_M, "artifact_id": "C08-START-PROJECTION-20260913"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C08_IN_PROGRESS", "C09_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C08_START_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw = (
+        "# C-08 start projection report\n\n"
+        "- Existing approved C-08 WorkInstruction and invocation hashes are bound without mutation.\n"
+        "- Preexisting product is revalidated under a fresh exact9 lease; historical reports are not current acceptance.\n"
+    ).encode("utf-8")
+    validation_raw = (
+        "# C-08 start validation\n\n"
+        "- seq1~787 raw event prefix preserved; seq788~790 appended.\n"
+        "- exact9 control paths and exact9 product lease.\n"
+        "- C-07 ACCEPTED, C-08 IN_PROGRESS, C-09 NOT_READY, DIR-2 NOT_REACHED.\n"
+    ).encode("utf-8")
+    latest = {**files, C08_START_E: events_raw, C08_START_REPORT: report_raw, C08_START_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    handoff.update({
+        "accepted": False, "c07_status": "ACCEPTED", "c08_status": "IN_PROGRESS",
+        "c09_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "repository_head": C08_START_BASE,
+        "repository_upstream": C08_START_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C08_START_BASE,
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "product_exact_paths": c08_start_product_write_scope(),
+        "work_instruction_sha256": C08_START_WI_SHA256,
+        "invocation_sha256": C08_START_PROMPT_SHA256, "acceptance_binding": authority,
+        "external_validation": _c08_start_boundary(), "current_manifest": C08_START_M,
+        "reporting_decision": "AUTO_CONTINUE"})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement, historical[C08_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C08_START_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-08 repository intelligence start - seq790\n\n"
+        "- seq1~787 raw event objects preserved; seq788~790 appended.\n"
+        "- preexisting product is under current revalidation; external validation not executed.\n\n" + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C08-START-DIGEST-20260913",
+        "package_id": "C-08", "event_sequence": 790, "algorithm": "SHA-256",
+        "created_at": C08_START_AT, "scope": "seq788-790 append-only C-08 start; seq1-787 preserved; exact9",
+        "self_reference": False,
+        "progress": {"path": C08_START_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C08_START_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C08_START_REPORT: report_raw, C08_START_H: handoff_raw,
+                 C08_START_P: progress_raw, C08_START_E: events_raw,
+                 C08_START_D: digest_raw, C08_START_VALIDATION: validation_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C08_START_E], 787)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-08_START_PROJECTION",
+        "artifact_id": "C08-START-PROJECTION-20260913", "created_at": C08_START_AT,
+        "package_id": "C-08", "event_sequence": 790, "historical_event_sequence": 787,
+        "appended_event_count": 3,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": False, "status": "IN_PROGRESS",
+        "c07_status": "ACCEPTED", "c08_status": "IN_PROGRESS", "c09_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "worker_lease": worker, "write_lease": write,
+        "work_instruction_path": C08_START_WI, "work_instruction_sha256": C08_START_WI_SHA256,
+        "invocation_path": C08_START_PROMPT, "invocation_sha256": C08_START_PROMPT_SHA256,
+        "authority": authority, "product_exact_paths": c08_start_product_write_scope(),
+        "external_validation": _c08_start_boundary(), "record_binding": repository["head_relation"],
+        "self_reference": False, **meta}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+                                 for path, payload in sorted(artifacts.items())]
+    artifacts[C08_START_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C08_START_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c08_start_projection_from_root(root: Path) -> dict[str, bytes]:
+    if _c21_resume_sha((root / C08_START_WI).read_bytes()) != C08_START_WI_SHA256:
+        raise ValueError("C08_START_WORK_INSTRUCTION_HASH_INVALID")
+    if _c21_resume_sha((root / C08_START_PROMPT).read_bytes()) != C08_START_PROMPT_SHA256:
+        raise ValueError("C08_START_INVOCATION_HASH_INVALID")
+    historical = {path: subprocess.check_output(["git", "show", f"{C08_START_BASE}:{path}"], cwd=root)
+                  for path in {C08_START_H, C08_START_P, C08_START_E}}
+    generated = {C08_START_REPORT, C08_START_M, C08_START_H, C08_START_P, C08_START_E, C08_START_D, C08_START_VALIDATION}
+    files = {path: (root / path).read_bytes() for path in set(c08_start_projection_paths()) - generated}
+    return c08_start_projection_artifacts(historical, files)
+
+
+def validate_c08_start_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c08_start_projection_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c08_start_projection_paths()}
+        actual = {
+            C08_START_P: bundle.get("progress"), C08_START_E: bundle.get("events"),
+            C08_START_H: bundle.get("handoff"), C08_START_D: bundle.get("detached_digest"),
+            C08_START_M: manifest,
+        }
+        refs = {
+            C08_START_P: _c21_resume_json(expected[C08_START_P]),
+            C08_START_E: _c21_resume_json(expected[C08_START_E]),
+            C08_START_H: extract_handoff_summary(expected[C08_START_H].decode()),
+            C08_START_D: _c21_resume_json(expected[C08_START_D]),
+            C08_START_M: _c21_resume_json(expected[C08_START_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], refs[path]) for path in actual) else ["C08_START_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C08_START_RAW_BYTES_INVALID")
+        progress = actual[C08_START_P]
+        if (
+            not isinstance(progress, Mapping) or progress.get("event_sequence") != 790
+            or progress.get("current_work_package") != "C-08" or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c08_start_worker_lease()
+            or progress.get("write_lease") != _c08_start_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-09", "status": "NOT_READY"}
+            or progress.get("next_safe_action") != "DISPATCH_C08_DEVELOPER"
+        ):
+            errors.append("C08_START_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C08_START_BASE}:{C08_START_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 787) != raw_event_object_prefix_bytes(actual_raw[C08_START_E], 787):
+            errors.append("C08_START_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C08_START_INPUT_INVALID"]
+
+
+def _collect_c08_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c08_start_projection_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C08_START_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch = optional("branch", "--show-current")
+        status_raw = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C08_START_DEVELOPMENT_REF)
+        base_ref = value("rev-parse", C08_START_BASE)
+        if None in (head, branch, status_raw, development_url, development_main, base_ref):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C08_START_DEVELOPMENT_URL or base_ref != C08_START_BASE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        dirty = _c02_strict_porcelain_paths(status_raw)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        feature_upstreams = {C08_START_DEVELOPMENT_REF, f"development/{C08_START_BRANCH}"}
+        if head == C08_START_BASE:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C08_START_BRANCH}")
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            if None in (upstream, cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                branch == C08_START_BRANCH and development_main == C08_START_BASE
+                and upstream == C08_START_DEVELOPMENT_REF and dirty == meta["exact_paths"]
+                and cached == meta["exact_paths"] and not unstaged and not untracked
+                and check("diff", "--cached", "--check")
+            )
+            return [] if valid else ["C08_START_PATH_OR_CLEAN_INVALID"]
+        if branch != C08_START_BRANCH:
+            return ["C08_START_BRANCH_OR_UPSTREAM_INVALID"]
+        upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C08_START_BRANCH}")
+        parents = value("show", "-s", "--format=%P", head)
+        changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C08_START_BASE, head))
+        if None in (upstream, parents, changed):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        valid = (
+            development_main == C08_START_BASE and upstream in feature_upstreams and not dirty
+            and parents.split() == [C08_START_BASE] and changed == meta["exact_paths"]
+            and check("merge-base", "--is-ancestor", C08_START_BASE, head)
+            and check("diff", "--check", C08_START_BASE, head)
+        )
+        return [] if valid else ["C08_START_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

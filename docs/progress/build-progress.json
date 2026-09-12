@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c07-final-acceptance-seq787",
-  "event_sequence": 787,
-  "updated_at": "2026-09-13T23:30:00+09:00",
-  "last_event_id": "evt_c07_final_main_package_accepted",
+  "snapshot_id": "snapshot-c08-start-seq790",
+  "event_sequence": 790,
+  "updated_at": "2026-09-13T23:55:00+09:00",
+  "last_event_id": "evt_c08_write_lease_issued",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
-  "current_work_package": "C-07",
-  "status": "ACCEPTED",
+  "current_work_package": "C-08",
+  "status": "IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -55,8 +55,37 @@
     "C-06",
     "C-07"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-08",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c08-repository-intelligence-20260913-001",
+    "worker_lease_id": "worker-lease-c08-repository-intelligence-20260913-001",
+    "fencing_token": "c08-repository-intelligence-write-fence-epoch-1-5529fe5",
+    "write_fencing_token": "c08-repository-intelligence-write-fence-epoch-1-5529fe5",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-08",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-13T23:55:00+09:00",
+    "expires_at": "2026-09-14T11:55:00+09:00",
+    "path_scope": [
+      "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
+      "packages/repository_intelligence/indexes.py",
+      "packages/repository_intelligence/models.py",
+      "packages/repository_intelligence/scanner.py",
+      "tests/repository_intelligence/fixtures/app.py",
+      "tests/repository_intelligence/fixtures/tests/spec_app.py",
+      "tests/repository_intelligence/fixtures/ui.ts",
+      "tests/repository_intelligence/fixtures/util.py",
+      "tests/repository_intelligence/test_indexes.py"
+    ],
+    "status": "ACTIVE"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -88,7 +117,20 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-c08-repository-intelligence-20260913-001",
+    "fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5",
+    "execution_fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-08",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "5529fe5261744e42227fcb3444952cf18e8114ec",
+    "dispatch_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
+    "issued_at": "2026-09-13T23:55:00+09:00",
+    "expires_at": "2026-09-14T11:55:00+09:00",
+    "status": "ACTIVE"
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -292,21 +334,29 @@
   },
   "latest_evidence_refs": [
     {
+      "path": "docs/04_test_reports/C-08_START_PROJECTION_REPORT.md",
+      "sha256": "678524DD0211C77E60FBB36A0A107BB2B1A105565FD0D0AFF2CBFA924230CE91"
+    },
+    {
       "path": "docs/progress/progress-events.json",
-      "sha256": "8152C4010D2F398A0083D01AAA589D76F9D51B684F83BCD8E1E86A819ED41F7F"
+      "sha256": "A39043AAC0ABFB9985B67DF213F35433E2313C7521F0B3DE611AF390571A547A"
+    },
+    {
+      "path": "docs/validation/C-08_START_VALIDATION.md",
+      "sha256": "3EBDC19E69E8631FD1AD310AE02BB2D349D4AAE651B32BF14CB8442E39EAB9FF"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "553C163246B6CC211CCA08F1AE70263ED01F8C039BD079C85BD53D589545A4F9"
+      "sha256": "C20C60CE86113C882ADEB9F3A59F35C1060C724D686E7DCF886B8904408B4538"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "A7FE871597C5C3F6D642743CC354536CEEC4DE66C9D5909DE7B4B79AF13FAEE8"
+      "sha256": "B07578EF4F0DE2D1FDE73CDBCECD3C752C1C9A63BB943D6436F76F2A88CAE68B"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-07_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C07-FINAL-ACCEPTANCE-20260913"
+    "path": "docs/evidence/manifests/C-08_START_MANIFEST.json",
+    "artifact_id": "C08-START-PROJECTION-20260913"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -316,7 +366,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "ISSUE_C08_WORK_INSTRUCTION",
+  "next_safe_action": "DISPATCH_C08_DEVELOPER",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -426,21 +476,23 @@
     }
   },
   "repository": {
-    "projection_mode": "C07_FINAL_ACCEPTANCE_EXACT7",
-    "validated_base_commit": "9102c87ae8738a7c497b3f0b7c0b935f166e44f6",
-    "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
-    "branch": "codex/c07-outcome-resolver-atomic-r1",
+    "projection_mode": "C08_START_PROJECTION_EXACT9",
+    "validated_base_commit": "5529fe5261744e42227fcb3444952cf18e8114ec",
+    "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD",
+    "branch": "codex/c08-repository-intelligence-r1",
     "upstream": "development/main",
-    "remote_head": "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf",
+    "remote_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "PRODUCT_LOCAL_COMPLETION_NOT_PUSHED",
+    "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/C-07_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/04_test_reports/C-08_START_PROJECTION_REPORT.md",
+      "docs/evidence/manifests/C-08_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c07-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c08-start.json",
+      "docs/validation/C-08_START_VALIDATION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
@@ -458,8 +510,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "STAGED_EXACT7",
-    "local_head": "9102c87ae8738a7c497b3f0b7c0b935f166e44f6",
+    "worktree_status": "STAGED_EXACT9",
+    "local_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1264,12 +1316,18 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "ef73c70e8b6c508027ba75e8ccfba59ff67d2cd6",
-    "development_main": "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf",
+    "control_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
+    "development_main": "5529fe5261744e42227fcb3444952cf18e8114ec",
     "product_write_scope": [
-      "packages/orchestration/__init__.py",
-      "packages/orchestration/outcome_resolver.py",
-      "tests/orchestration/test_outcome_resolver_c07.py"
+      "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
+      "packages/repository_intelligence/indexes.py",
+      "packages/repository_intelligence/models.py",
+      "packages/repository_intelligence/scanner.py",
+      "tests/repository_intelligence/fixtures/app.py",
+      "tests/repository_intelligence/fixtures/tests/spec_app.py",
+      "tests/repository_intelligence/fixtures/ui.ts",
+      "tests/repository_intelligence/fixtures/util.py",
+      "tests/repository_intelligence/test_indexes.py"
     ],
     "product_parent": "ef73c70e8b6c508027ba75e8ccfba59ff67d2cd6",
     "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
@@ -1454,8 +1512,8 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C07_ACCEPTED",
-      "C08_READY_FOR_WORK_INSTRUCTION",
+      "C08_IN_PROGRESS",
+      "C09_NOT_READY",
       "DIR2_NOT_REACHED"
     ],
     "stop_before_dialogue_report": false
@@ -1506,7 +1564,76 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-C-08-REPOSITORY-INTELLIGENCE",
+    "artifact_path": "docs/work_orders/C-08_WORK_INSTRUCTION.md",
+    "artifact_sha256": "D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C",
+    "invocation_path": "docs/work_orders/C-08_INVOCATION_PROMPT.md",
+    "invocation_sha256": "D74DDD5969200A6FD7DDB9AAA2C6A218E98C8F3500E6423FEBF89FFAECCB4C37",
+    "executor": "developer-primary",
+    "result_status": "IN_PROGRESS",
+    "package_status": "IN_PROGRESS",
+    "product_write_scope": [
+      "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
+      "packages/repository_intelligence/indexes.py",
+      "packages/repository_intelligence/models.py",
+      "packages/repository_intelligence/scanner.py",
+      "tests/repository_intelligence/fixtures/app.py",
+      "tests/repository_intelligence/fixtures/tests/spec_app.py",
+      "tests/repository_intelligence/fixtures/ui.ts",
+      "tests/repository_intelligence/fixtures/util.py",
+      "tests/repository_intelligence/test_indexes.py"
+    ],
+    "acceptance_binding": {
+      "revision_class": "EXISTING_APPROVED_WORK_INSTRUCTION_REVALIDATION",
+      "authority_basis": [
+        "APPROVED_WORK_PLAN_C08",
+        "C07_ACCEPTED",
+        "A13_PREEXISTING_READ_ONLY_SCAN",
+        "DESIGN_6_30"
+      ],
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+      "work_instruction_sha256": "D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C",
+      "invocation_sha256": "D74DDD5969200A6FD7DDB9AAA2C6A218E98C8F3500E6423FEBF89FFAECCB4C37",
+      "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+      "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+      "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+      "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+      "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+      "function_scope_change": "UNCHANGED",
+      "requirements_change": "UNCHANGED",
+      "material_risk_change": "UNCHANGED",
+      "preexisting_product_commit": "4e2dc79aef6a593bcb423739d88b8095b501d226",
+      "acceptance": [
+        {
+          "requirement_id": "AV-GATE-006",
+          "level": "L3",
+          "method": "AI",
+          "evidence": [
+            "E-GIT",
+            "E-CMD"
+          ]
+        },
+        {
+          "requirement_id": "AV-GATE-009",
+          "level": "L3",
+          "method": "AI",
+          "evidence": [
+            "E-CMD"
+          ]
+        },
+        {
+          "requirement_id": "AV-GATE-023",
+          "level": "L3",
+          "method": "AI",
+          "evidence": [
+            "E-TEST"
+          ]
+        }
+      ]
+    }
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -1709,9 +1836,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "C-07",
-    "path": "docs/progress/progress-handoff-detached-digest-c07-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/C-07_FINAL_ACCEPTANCE_MANIFEST.json"
+    "package_id": "C-08",
+    "path": "docs/progress/progress-handoff-detached-digest-c08-start.json",
+    "manifest_path": "docs/evidence/manifests/C-08_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1732,12 +1859,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "8152C4010D2F398A0083D01AAA589D76F9D51B684F83BCD8E1E86A819ED41F7F"
+      "sha256": "A39043AAC0ABFB9985B67DF213F35433E2313C7521F0B3DE611AF390571A547A"
     }
   },
   "next_work_package": {
-    "package_id": "C-08",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "C-09",
+    "status": "NOT_READY"
   },
   "next_successor_work_package": null,
   "historical_phase_b_gate": {
@@ -2126,8 +2253,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "E719247ADD776BAB319E8534066B1CBA7337CCFA5DC34A5855A5603D4B36CDE4",
-  "runtime_next_action": "ISSUE_C08_WORK_INSTRUCTION",
+  "snapshot_hash": "B127AC3885B667CF1E3F468D133395AB875B331F0ED568DE7FD8429E1966A5EB",
+  "runtime_next_action": "DISPATCH_C08_DEVELOPER",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3739,7 +3866,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-13T23:30:00+09:00",
+  "recorded_at": "2026-09-13T23:55:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -15441,6 +15568,92 @@
       "network": "NOT_EXECUTED",
       "external_call": "NOT_EXECUTED",
       "in_memory_atomic_projection": "IMPLEMENTED_AND_VERIFIED"
+    }
+  },
+  "c08_start_projection": {
+    "status": "IN_PROGRESS",
+    "accepted": false,
+    "event_sequence": 790,
+    "c07_status": "ACCEPTED",
+    "c08_status": "IN_PROGRESS",
+    "c09_status": "NOT_READY",
+    "dir2_status": "NOT_REACHED",
+    "authority": {
+      "revision_class": "EXISTING_APPROVED_WORK_INSTRUCTION_REVALIDATION",
+      "authority_basis": [
+        "APPROVED_WORK_PLAN_C08",
+        "C07_ACCEPTED",
+        "A13_PREEXISTING_READ_ONLY_SCAN",
+        "DESIGN_6_30"
+      ],
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+      "work_instruction_sha256": "D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C",
+      "invocation_sha256": "D74DDD5969200A6FD7DDB9AAA2C6A218E98C8F3500E6423FEBF89FFAECCB4C37",
+      "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+      "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+      "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+      "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+      "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+      "function_scope_change": "UNCHANGED",
+      "requirements_change": "UNCHANGED",
+      "material_risk_change": "UNCHANGED",
+      "preexisting_product_commit": "4e2dc79aef6a593bcb423739d88b8095b501d226",
+      "acceptance": [
+        {
+          "requirement_id": "AV-GATE-006",
+          "level": "L3",
+          "method": "AI",
+          "evidence": [
+            "E-GIT",
+            "E-CMD"
+          ]
+        },
+        {
+          "requirement_id": "AV-GATE-009",
+          "level": "L3",
+          "method": "AI",
+          "evidence": [
+            "E-CMD"
+          ]
+        },
+        {
+          "requirement_id": "AV-GATE-023",
+          "level": "L3",
+          "method": "AI",
+          "evidence": [
+            "E-TEST"
+          ]
+        }
+      ]
+    },
+    "product_exact_paths": [
+      "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
+      "packages/repository_intelligence/indexes.py",
+      "packages/repository_intelligence/models.py",
+      "packages/repository_intelligence/scanner.py",
+      "tests/repository_intelligence/fixtures/app.py",
+      "tests/repository_intelligence/fixtures/tests/spec_app.py",
+      "tests/repository_intelligence/fixtures/ui.ts",
+      "tests/repository_intelligence/fixtures/util.py",
+      "tests/repository_intelligence/test_indexes.py"
+    ],
+    "external_validation": {
+      "product_code": "PREEXISTING_PRODUCT_UNDER_REVALIDATION",
+      "fixture_validation": "PENDING_DEVELOPER_REVALIDATION",
+      "actual_repository_success_claim": "FORBIDDEN",
+      "persistent_transaction": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "ui": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "telegram": "NOT_EXECUTED",
+      "secret": "NOT_ACCESSED",
+      "wsl": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "external_call": "NOT_EXECUTED"
     }
   }
 }
