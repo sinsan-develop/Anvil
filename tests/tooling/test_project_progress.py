@@ -13207,6 +13207,43 @@ class C04StartProjectionTests(unittest.TestCase):
             rows[("show", "-s", "--format=%P", completion)] = "b" * 40
             self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
 
+    def test_c04_start_git_collector_treats_detached_empty_branch_as_collected(self):
+        checker = self._checker()
+        bundle = {
+            "_root": ROOT,
+            "progress": {"repository": {"validated_base_commit": checker.C04_START_BASE}},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            exclude_path = Path(tmp) / "exclude"
+            exclude_path.write_text("", encoding="utf-8")
+            rows = {
+                ("rev-parse", "HEAD"): checker.C04_START_BASE,
+                ("branch", "--show-current"): "",
+                ("status", "--porcelain", "--untracked-files=all"): "",
+                ("remote", "get-url", "development"): checker.C04_START_DEVELOPMENT_URL,
+                ("rev-parse", checker.C04_START_DEVELOPMENT_REF): checker.C04_START_BASE,
+                ("rev-parse", checker.C04_START_BASE): checker.C04_START_BASE,
+                ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{checker.C04_START_BRANCH}"): checker.C04_START_DEVELOPMENT_REF,
+                ("diff", "--cached", "--name-only"): "\n".join(self.EXACT12),
+                ("diff", "--name-only"): "",
+                ("ls-files", "--others", "--exclude-standard"): "",
+            }
+
+            def raw(_root, *args):
+                if args == ("rev-parse", "--path-format=absolute", "--git-path", "info/exclude"):
+                    return f"{exclude_path}\n"
+                if args[:2] == ("-c", f"core.excludesFile={exclude_path}"):
+                    return rows.get(args[2:], "")
+                return None
+
+            with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=raw), mock.patch.object(
+                checker, "_c02_git_quiet_check", return_value=True
+            ):
+                self.assertEqual(
+                    ["C04_START_PATH_OR_CLEAN_INVALID"],
+                    checker._collect_c04_start_projection_git(bundle),
+                )
+
 
 class C04FinalAcceptanceProjectionTests(unittest.TestCase):
     PRODUCT = "9e7248320aeaf465debd176354c4fad82f97c35c"

@@ -33915,7 +33915,9 @@ def _collect_c04_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
         raw = lambda *args: _c02_git_raw_stdout(root, "-c", f"core.excludesFile={exclude_path}", *args)
         value = lambda *args: _c02_strict_git_scalar(raw(*args))
         check = lambda *args: _c02_git_quiet_check(root, "-c", "core.excludesFile=.git/info/exclude", *args)
-        head = value("rev-parse", "HEAD"); branch = value("branch", "--show-current"); status = raw("status", "--porcelain", "--untracked-files=all")
+        head = value("rev-parse", "HEAD"); branch_raw = raw("branch", "--show-current"); rows = _c02_strict_raw_lines(branch_raw)
+        branch = "" if rows == [] else rows[0] if rows is not None and len(rows) == 1 and rows[0] == rows[0].strip() else None
+        status = raw("status", "--porcelain", "--untracked-files=all")
         dev_url = value("remote", "get-url", "development"); dev_main = value("rev-parse", C04_START_DEVELOPMENT_REF); base = value("rev-parse", C04_START_BASE)
         if None in (head, branch, status, dev_url, dev_main, base): return ["GIT_REQUIRED_COLLECTION_FAILED"]
         if dev_url != C04_START_DEVELOPMENT_URL or base != C04_START_BASE: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
