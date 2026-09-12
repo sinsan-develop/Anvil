@@ -205,6 +205,7 @@ class SyntheticE2EHarness:
             receipt = self.ledger.record(result)
             self._event(run, "FailureReport", result_id=result.result_id, count=receipt.valid_failure_count)
         worker = self.leases.issue_worker(run_id, "developer-primary", datetime.now(timezone.utc), timedelta(minutes=5))
+        self.lifecycle.wait(run_id)
         receipt = self.takeover.takeover(receipt, session_id=run_id, expected_lineage="lineage-fixture",
                                          expected_fingerprint="fixture-failure", execution_fencing_token=worker.execution_fencing_token)
         if not receipt.accepted: raise E2EError("TAKEOVER_REJECTED")
