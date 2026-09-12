@@ -91,7 +91,10 @@ def test_successful_test_without_failure_evidence_is_not_a_failure():
 
 
 def test_other_result_status_is_never_failure_report():
-    value = report(status=ResultStatus.INCOMPLETE.value)
+    value = report(
+        status=ResultStatus.INCOMPLETE.value,
+        reason_code="RESULT_CONTRACT_INCOMPLETE",
+    )
     result = validate_failure_report(value)
     assert not result.valid
     assert result.reason_codes[0] == FailureReportReasonCode.NOT_FAILURE_REPORT.value
