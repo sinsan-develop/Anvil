@@ -901,6 +901,13 @@ def validate_event_stream(
             )
             or (
                 progress is not None
+                and progress.get("event_sequence") == 743
+                and event.get("sequence") == 743
+                and event.get("event_id") == "evt_c03_control_r2_package_resumed"
+                and event["details"].get("projection_mode") == "C03_CONTROL_R2_EXACT12"
+            )
+            or (
+                progress is not None
                 and progress.get("event_sequence") == 740
                 and event.get("sequence") == 740
                 and event.get("event_id") == "evt_c03_package_started"
@@ -12863,6 +12870,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 743:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c03_control_r2_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 740:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13903,6 +13914,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-03_CONTROL_R2_MANIFEST.json":
+            errors.extend(validate_c03_control_r2(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-03_START_MANIFEST.json":
             errors.extend(validate_c03_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-02_POSTMERGE_DEVELOPMENT_AUTHORITY_RECONCILIATION_MANIFEST.json":
@@ -29985,6 +29998,465 @@ def _collect_c03_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
             and check("diff", "--check", C03_START_BASE, head)
         )
         return [] if valid else ["C03_START_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C03_R2_P = "docs/progress/build-progress.json"
+C03_R2_E = "docs/progress/progress-events.json"
+C03_R2_H = "docs/progress/BUILD_HANDOFF.md"
+C03_R2_D = "docs/progress/progress-handoff-detached-digest-c03-control-r2.json"
+C03_R2_M = "docs/evidence/manifests/C-03_CONTROL_R2_MANIFEST.json"
+C03_R2_REPORT = "docs/04_test_reports/C-03_CONTROL_R2_REPORT.md"
+C03_R2_VALIDATION = "docs/validation/C-03_CONTROL_R2_VALIDATION.md"
+C03_R2_STATUS = "docs/WORK_STATUS.md"
+C03_R2_WI = "docs/work_orders/C-03_WORK_INSTRUCTION.md"
+C03_R2_PROMPT = "docs/work_orders/C-03_INVOCATION_PROMPT.md"
+C03_R2_BASE = "2dcd4da89e92425be52b570ae2110f60dfcc29de"
+C03_R2_DEVELOPMENT_MAIN = "1c3948ff1a741832a2f012f464f1a301490356c1"
+C03_R2_PRODUCT_BRANCH = "codex/c03-developer-lifecycle-r1"
+C03_R2_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C03_R2_DEVELOPMENT_REF = "development/main"
+C03_R2_AT = "2026-09-12T09:50:00+09:00"
+C03_R2_EXPIRES_AT = "2026-09-12T21:50:00+09:00"
+C03_R2_WI_ID = "WI-C-03-DEVELOPER-LIFECYCLE-R2-20260912-001"
+C03_R2_WI_SHA256 = "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1"
+C03_R2_PROMPT_SHA256 = "8DC8354D9D4BA4DD7A46FF0882FBF08B6C0E25AF9F30C385CAF9EA416E112996"
+C03_R2_WRITE_LEASE_ID = "write-lease-c03-developer-lifecycle-r2-20260912-001"
+C03_R2_WRITE_TOKEN = "c03-developer-lifecycle-write-fence-epoch-2-2dcd4da"
+
+
+def c03_control_r2_paths() -> list[str]:
+    return sorted([
+        C03_R2_REPORT, C03_R2_STATUS, C03_R2_M, C03_R2_H, C03_R2_P, C03_R2_E,
+        C03_R2_D, C03_R2_VALIDATION, C03_R2_WI, C03_R2_PROMPT,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c03_control_r2_product_scope() -> list[str]:
+    return [
+        "packages/orchestration/developer_lifecycle.py",
+        "packages/orchestration/__init__.py",
+        "tests/orchestration/test_developer_lifecycle.py",
+        "packages/e2e/harness.py",
+    ]
+
+
+def c03_control_r2_metadata() -> dict[str, Any]:
+    paths = c03_control_r2_paths()
+    return {
+        "sequence": 743, "projection_mode": "C03_CONTROL_R2_EXACT12",
+        "validated_base_commit": C03_R2_BASE, "branch": C03_R2_PRODUCT_BRANCH,
+        "exact_paths": paths, "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def _c03_r2_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C03_R2_WRITE_LEASE_ID,
+        "worker_lease_id": C03_START_WORKER_LEASE_ID,
+        "fencing_token": C03_R2_WRITE_TOKEN, "write_fencing_token": C03_R2_WRITE_TOKEN,
+        "write_epoch": 2, "actor_id": "developer-primary", "subject_ref": "C-03",
+        "baseline_hash": C03_START_DESIGN_SHA256,
+        "issued_at": C03_R2_AT, "expires_at": C03_R2_EXPIRES_AT,
+        "path_scope": c03_control_r2_product_scope(), "status": "ACTIVE",
+    }
+
+
+def _c03_r2_retired_write_lease() -> dict[str, Any]:
+    lease = _c03_start_write_lease()
+    lease.update({
+        "status": "REVOKED_SUPERSEDED_BY_WI_R2",
+        "revoked_at": C03_R2_AT,
+        "revocation_reason": "WI_R2_EXACT4_HARNESS_COMPATIBILITY_SCOPE_APPROVED",
+        "superseded_by": C03_R2_WRITE_LEASE_ID,
+    })
+    return lease
+
+
+def _c03_r2_revision_binding() -> dict[str, Any]:
+    return {
+        "parent_human_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "direct_scope_approval_id": "C-03-WI-R2-HARNESS-COMPAT-APPROVED-20260912",
+        "main_revision_authority_id": "MAIN-AUTH-C03-WI-R2-20260912-001",
+        "prior_work_instruction_id": C03_START_WI_ID,
+        "prior_work_instruction_sha256": C03_START_WI_SHA256,
+        "prior_binding_status": "INVALIDATED_BY_WI_CONTENT_HASH_CHANGE",
+        "new_work_instruction_id": C03_R2_WI_ID,
+        "new_work_instruction_sha256": C03_R2_WI_SHA256,
+        "functional_scope_change": "UNCHANGED",
+        "requirement_change": "UNCHANGED",
+        "important_risk_change": "UNCHANGED",
+        "scope_added": ["packages/e2e/harness.py"], "scope_removed": [],
+        "reason": "PENDING_STOP_FAIL_CLOSED_REQUIRES_EXISTING_TAKEOVER_CALLER_TO_WAIT_BEFORE_STOP",
+        "rollback": "REMOVE_R2_EXACT4_PRODUCT_DELTA_AND_REISSUE_A_NEW_LEASE_BEFORE_ANY_R1_SCOPE_WRITE",
+    }
+
+
+def _c03_r2_compatibility_contract() -> dict[str, Any]:
+    return {
+        "only_path": "packages/e2e/harness.py",
+        "only_symbol": "SyntheticE2EHarness.record_takeover",
+        "required_order": ["START", "WAIT_OR_PUBLIC_STATE_TRANSITION", "STOP"],
+        "lifecycle_caller_exception": "FORBIDDEN",
+        "other_e2e_changes": "FORBIDDEN",
+        "test_change": "FORBIDDEN",
+    }
+
+
+def _c03_r2_lifecycle_contract() -> dict[str, Any]:
+    contract = _c03_lifecycle_contract()
+    contract["exact_product_paths"] = c03_control_r2_product_scope()
+    contract["pending_stop_behavior"] = "FAIL_CLOSED"
+    contract["compatibility"] = _c03_r2_compatibility_contract()
+    return contract
+
+
+def _c03_r2_markdown() -> tuple[bytes, bytes]:
+    report = """# C-03 Control R2 Report
+
+- 판정: `IN_PROGRESS`, internal compatibility revision accepted for execution
+- seq741~743: `WRITE_LEASE_REVOKED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`
+- worker lease: R1 epoch1 maintained; write lease: R1 revoked, R2 exact4 epoch2 active
+- scope difference: `packages/e2e/harness.py` exact1 added only for `SyntheticE2EHarness.record_takeover` start→wait→stop compatibility
+- 기능/요구/중요 위험: `UNCHANGED`; lifecycle caller exception: `FORBIDDEN`
+- C-02 `ACCEPTED`; C-03 `IN_PROGRESS`; C-04 `NOT_READY`; DIR-2 `NOT_REACHED`
+- 제품/외부 시스템/actual runner/commit/push: `NOT_EXECUTED`
+""".encode("utf-8")
+    validation = """# C-03 Control R2 Validation
+
+- seq1~740 raw event object bytes preserved; seq741~743 only appended
+- canonical revoke→issue→resume order and event hash chain validated
+- original human approval parent, direct scope approval, Main revision rationale and R1 binding invalidation exact
+- R1 worker lease maintained; R1 write lease retired; exact4 epoch2 write lease active
+- harness compatibility limited to record_takeover public start→wait/state-transition→stop; caller exception and other E2E changes forbidden
+- detached staged exact12 or clean sole direct-child on detached/product branch only
+- C-03 IN_PROGRESS, C-04 NOT_READY, DIR-2 NOT_REACHED
+- product implementation and external execution NOT_EXECUTED
+""".encode("utf-8")
+    return report, validation
+
+
+def c03_control_r2_artifacts(
+    historical: Mapping[str, bytes], files: Mapping[str, bytes]
+) -> dict[str, bytes]:
+    meta = c03_control_r2_metadata()
+    generated = {C03_R2_REPORT, C03_R2_STATUS, C03_R2_M, C03_R2_H,
+                 C03_R2_P, C03_R2_E, C03_R2_D, C03_R2_VALIDATION}
+    if set(historical) != {C03_R2_STATUS, C03_R2_H, C03_R2_P, C03_R2_E}:
+        raise ValueError("C03_R2_INPUT_SET_INVALID")
+    if set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C03_R2_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C03_R2_P])
+    stream = _c21_resume_json(historical[C03_R2_E])
+    if (
+        progress.get("event_sequence") != 740 or stream.get("last_sequence") != 740
+        or len(stream.get("events", [])) != 740
+        or progress.get("current_work_package") != "C-03" or progress.get("status") != "IN_PROGRESS"
+        or progress.get("worker_lease") != _c03_start_worker_lease()
+        or progress.get("write_lease") != _c03_start_write_lease()
+        or progress.get("next_work_package") != {"package_id": "C-04", "status": "NOT_READY"}
+    ):
+        raise ValueError("C03_R2_HISTORY_INVALID")
+    old_write = _c03_start_write_lease()
+    retired = _c03_r2_retired_write_lease()
+    new_write = _c03_r2_write_lease()
+    binding = _c03_r2_revision_binding()
+    compatibility = _c03_r2_compatibility_contract()
+    lifecycle = _c03_r2_lifecycle_contract()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+
+    def envelope(sequence: int, event_type: str, event_id: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C03_R2_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": "developer-primary", "project_id": "anvil",
+            "run_id": None, "work_package_id": "C-03", "step_id": "CONTROL-R2",
+            "actor": "developer-primary", "subject_ref": "C-03/CONTROL-R2",
+            "event_id": event_id, "sequence": sequence, "event_type": event_type,
+            "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+        return event
+
+    events = [
+        envelope(741, "WRITE_LEASE_REVOKED", "evt_c03_control_r2_write_lease_revoked", {
+            "lease_id": old_write["lease_id"],
+            "reason": retired["revocation_reason"],
+            "prior_work_instruction_id": C03_START_WI_ID,
+            "prior_work_instruction_sha256": C03_START_WI_SHA256,
+            "superseded_by": C03_R2_WRITE_LEASE_ID,
+        }),
+        envelope(742, "WRITE_LEASE_ISSUED", "evt_c03_control_r2_write_lease_issued", new_write),
+        envelope(743, "PACKAGE_RESUMED", "evt_c03_control_r2_package_resumed", {
+            "resume_event_ref": "evt_c03_control_r2_write_lease_issued",
+            "package_status": "IN_PROGRESS", "work_instruction_id": C03_R2_WI_ID,
+            "work_instruction_sha256": C03_R2_WI_SHA256,
+            "invocation_sha256": C03_R2_PROMPT_SHA256,
+            "revision_binding": binding, "compatibility_contract": compatibility,
+            "worker_lease_id": C03_START_WORKER_LEASE_ID,
+            "write_lease_id": C03_R2_WRITE_LEASE_ID,
+            "execution_fencing_token": C03_START_EXECUTION_TOKEN,
+            "write_fencing_token": C03_R2_WRITE_TOKEN,
+            "dispatch_head": C03_R2_BASE, "dispatch_upstream_head": C03_R2_DEVELOPMENT_MAIN,
+            "projection_mode": meta["projection_mode"], "validated_base_commit": C03_R2_BASE,
+            "head_relation": "DETACHED_STAGED_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD",
+            "exact_allowed_paths": meta["exact_paths"],
+            "product_write_scope": c03_control_r2_product_scope(),
+        }),
+    ]
+    events_raw = _c21_append_events(historical[C03_R2_E], 740, events)
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C03_R2_BASE,
+        "control_head": C03_R2_BASE, "control_parent": C03_R2_DEVELOPMENT_MAIN,
+        "development_main": C03_R2_DEVELOPMENT_MAIN, "local_head": C03_R2_BASE,
+        "branch": "DETACHED_OR_C03_PRODUCT_BRANCH", "upstream": C03_R2_DEVELOPMENT_REF,
+        "remote_head": C03_R2_DEVELOPMENT_MAIN,
+        "head_relation": "DETACHED_STAGED_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD",
+        "worktree_status": "DETACHED_STAGED_EXACT12", "exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c03_control_r2_product_scope(),
+        "development_remote_url": C03_R2_DEVELOPMENT_URL, "push_status": "NOT_EXECUTED",
+    })
+    instruction = {
+        "artifact_id": C03_R2_WI_ID, "artifact_path": C03_R2_WI,
+        "artifact_sha256": C03_R2_WI_SHA256,
+        "invocation_path": C03_R2_PROMPT, "invocation_sha256": C03_R2_PROMPT_SHA256,
+        "executor": "developer-primary", "result_status": "IN_PROGRESS",
+        "package_status": "IN_PROGRESS", "product_write_scope": c03_control_r2_product_scope(),
+        "revision_binding": binding, "compatibility_contract": compatibility,
+    }
+    progress.update({
+        "snapshot_id": "snapshot-c03-control-r2-seq743", "updated_at": C03_R2_AT,
+        "recorded_at": C03_R2_AT, "event_sequence": 743, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-03", "status": "IN_PROGRESS",
+        "worker_lease": _c03_start_worker_lease(), "write_lease": new_write,
+        "retired_c03_r1_write_lease": retired, "active_work_instruction": instruction,
+        "repository": repository,
+        "c03_control_r2": {
+            "status": "IN_PROGRESS", "accepted": False, "event_sequence": 743,
+            "c02_status": "ACCEPTED", "c04_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+            "revision_binding": binding, "compatibility_contract": compatibility,
+            "lifecycle_contract": lifecycle, "external_validation": _c03_start_boundary(),
+        },
+        "next_work_package": {"package_id": "C-04", "status": "NOT_READY"},
+        "next_successor_work_package": None,
+        "runtime_next_action": "DEVELOPER_IMPLEMENT_C03_READ_ONLY_LIFECYCLE_R2_EXACT4",
+        "next_safe_action": "DEVELOPER_IMPLEMENT_C03_READ_ONLY_LIFECYCLE_R2_EXACT4",
+        "current_progress_evidence_ref": {"package_id": "C-03", "path": C03_R2_D, "manifest_path": C03_R2_M},
+        "latest_evidence_manifest_ref": {"path": C03_R2_M, "artifact_id": "C03-CONTROL-R2-20260912"},
+        "reporting_decision": {
+            "decision": "AUTO_CONTINUE",
+            "reason_codes": ["C03_INTERNAL_COMPATIBILITY_REVISION", "C04_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False,
+        },
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C03_R2_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw, validation_raw = _c03_r2_markdown()
+    status_raw = historical[C03_R2_STATUS] + (
+        "\n## C-03 control R2\n\n"
+        "- seq741~743 `WRITE_LEASE_REVOKED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`.\n"
+        "- R1 worker lease 유지; R1 write lease 폐기; exact4 epoch2 write lease 발급.\n"
+        "- `packages/e2e/harness.py`는 `record_takeover` start→wait/state transition→stop 호환만 허용한다.\n"
+        "- 기능/요구/중요 위험 `UNCHANGED`; C-03 `IN_PROGRESS`; C-04 `NOT_READY`; DIR-2 `NOT_REACHED`.\n"
+    ).encode("utf-8")
+    latest = {**files, C03_R2_E: events_raw, C03_R2_REPORT: report_raw,
+              C03_R2_STATUS: status_raw, C03_R2_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action",
+    )}
+    handoff.update({
+        "accepted": False, "c02_status": "ACCEPTED", "c03_status": "IN_PROGRESS",
+        "c04_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "retired_c03_r1_write_lease": retired,
+        "repository_head": C03_R2_BASE, "repository_upstream": C03_R2_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C03_R2_BASE,
+        "repository_head_relation": "DETACHED_STAGED_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD",
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c03_control_r2_product_scope(),
+        "work_instruction_id": C03_R2_WI_ID, "work_instruction_sha256": C03_R2_WI_SHA256,
+        "invocation_sha256": C03_R2_PROMPT_SHA256, "revision_binding": binding,
+        "compatibility_contract": compatibility, "current_manifest": C03_R2_M,
+        "external_validation": _c03_start_boundary(), "reporting_decision": "AUTO_CONTINUE",
+    })
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(
+        r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement,
+        historical[C03_R2_H].decode(), flags=re.DOTALL,
+    )
+    if count != 1:
+        raise ValueError("C03_R2_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-03 control R2 — seq743\n\n"
+        "- seq1~740 raw event object bytes preserved; seq741~743 only appended.\n"
+        "- worker epoch1 maintained; write epoch1 retired and exact4 epoch2 issued.\n"
+        "- product and external systems not executed.\n\n" + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C03-CONTROL-R2-DIGEST-20260912",
+        "package_id": "C-03", "event_sequence": 743, "algorithm": "SHA-256",
+        "created_at": C03_R2_AT,
+        "scope": "seq741-743 append-only C-03 control R2; seq1-740 preserved; exact12",
+        "self_reference": False,
+        "progress": {"path": C03_R2_P, "bytes": len(progress_raw),
+                     "file_sha256": _c21_resume_sha(progress_raw),
+                     "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C03_R2_H, "bytes": len(handoff_raw),
+                    "file_sha256": _c21_resume_sha(handoff_raw),
+                    "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C03_R2_REPORT: report_raw, C03_R2_STATUS: status_raw,
+                 C03_R2_H: handoff_raw, C03_R2_P: progress_raw, C03_R2_E: events_raw,
+                 C03_R2_D: digest_raw, C03_R2_VALIDATION: validation_raw}
+    historical_prefix = raw_event_object_prefix_bytes(historical[C03_R2_E], 740)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-03_CONTROL_R2",
+        "artifact_id": "C03-CONTROL-R2-20260912", "created_at": C03_R2_AT,
+        "package_id": "C-03", "event_sequence": 743, "historical_event_sequence": 740,
+        "appended_event_count": 3,
+        "historical_raw_event_prefix": {"bytes": len(historical_prefix), "sha256": _c21_resume_sha(historical_prefix)},
+        "accepted": False, "status": "IN_PROGRESS", "c02_status": "ACCEPTED",
+        "c03_status": "IN_PROGRESS", "c04_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "worker_lease": _c03_start_worker_lease(), "retired_write_lease": retired,
+        "write_lease": new_write, "product_write_scope": c03_control_r2_product_scope(),
+        "work_instruction_id": C03_R2_WI_ID, "work_instruction_path": C03_R2_WI,
+        "work_instruction_sha256": C03_R2_WI_SHA256,
+        "invocation_path": C03_R2_PROMPT, "invocation_sha256": C03_R2_PROMPT_SHA256,
+        "revision_binding": binding, "compatibility_contract": compatibility,
+        "lifecycle_contract": lifecycle, "external_validation": _c03_start_boundary(),
+        "record_binding": "DETACHED_STAGED_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD",
+        "self_reference": False, **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+        for path, payload in sorted(artifacts.items())
+    ]
+    artifacts[C03_R2_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C03_R2_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c03_control_r2_from_root(root: Path) -> dict[str, bytes]:
+    if _c21_resume_sha((root / C03_R2_WI).read_bytes()) != C03_R2_WI_SHA256:
+        raise ValueError("C03_R2_WORK_INSTRUCTION_HASH_INVALID")
+    if _c21_resume_sha((root / C03_R2_PROMPT).read_bytes()) != C03_R2_PROMPT_SHA256:
+        raise ValueError("C03_R2_INVOCATION_HASH_INVALID")
+    historical = {
+        path: subprocess.check_output(["git", "show", f"{C03_R2_BASE}:{path}"], cwd=root)
+        for path in {C03_R2_STATUS, C03_R2_H, C03_R2_P, C03_R2_E}
+    }
+    generated = {C03_R2_REPORT, C03_R2_STATUS, C03_R2_M, C03_R2_H,
+                 C03_R2_P, C03_R2_E, C03_R2_D, C03_R2_VALIDATION}
+    files = {path: (root / path).read_bytes() for path in set(c03_control_r2_paths()) - generated}
+    return c03_control_r2_artifacts(historical, files)
+
+
+def validate_c03_control_r2(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c03_control_r2_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c03_control_r2_paths()}
+        actual = {C03_R2_P: bundle.get("progress"), C03_R2_E: bundle.get("events"),
+                  C03_R2_H: bundle.get("handoff"), C03_R2_D: bundle.get("detached_digest"),
+                  C03_R2_M: manifest}
+        references = {C03_R2_P: _c21_resume_json(expected[C03_R2_P]),
+                      C03_R2_E: _c21_resume_json(expected[C03_R2_E]),
+                      C03_R2_H: extract_handoff_summary(expected[C03_R2_H].decode()),
+                      C03_R2_D: _c21_resume_json(expected[C03_R2_D]),
+                      C03_R2_M: _c21_resume_json(expected[C03_R2_M])}
+        errors = [] if all(_c21_strict_json_equal(actual[path], references[path]) for path in actual) else ["C03_R2_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C03_R2_RAW_BYTES_INVALID")
+        progress = actual[C03_R2_P]
+        if (
+            not isinstance(progress, Mapping) or progress.get("event_sequence") != 743
+            or progress.get("current_work_package") != "C-03" or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c03_start_worker_lease()
+            or progress.get("write_lease") != _c03_r2_write_lease()
+            or progress.get("retired_c03_r1_write_lease") != _c03_r2_retired_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-04", "status": "NOT_READY"}
+        ):
+            errors.append("C03_R2_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C03_R2_BASE}:{C03_R2_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 740) != raw_event_object_prefix_bytes(actual_raw[C03_R2_E], 740):
+            errors.append("C03_R2_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C03_R2_INPUT_INVALID"]
+
+
+def _collect_c03_control_r2_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c03_control_r2_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C03_R2_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch_raw = raw("branch", "--show-current")
+        branch_rows = _c02_strict_raw_lines(branch_raw)
+        branch = (
+            ""
+            if branch_rows == []
+            else branch_rows[0]
+            if branch_rows is not None
+            and len(branch_rows) == 1
+            and branch_rows[0]
+            and branch_rows[0] == branch_rows[0].strip()
+            else None
+        )
+        status = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C03_R2_DEVELOPMENT_REF)
+        base_ref = value("rev-parse", C03_R2_BASE)
+        base_parent = value("show", "-s", "--format=%P", C03_R2_BASE)
+        if None in (head, branch, status, development_url, development_main, base_ref, base_parent):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C03_R2_DEVELOPMENT_URL or development_main != C03_R2_DEVELOPMENT_MAIN:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if base_ref != C03_R2_BASE or base_parent.split() != [C03_R2_DEVELOPMENT_MAIN] or not check("merge-base", "--is-ancestor", C03_R2_DEVELOPMENT_MAIN, C03_R2_BASE):
+            return ["C03_R2_GIT_LINEAGE_INVALID"]
+        dirty = _c02_strict_porcelain_paths(status)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if head == C03_R2_BASE:
+            if branch != "":
+                return ["C03_R2_BRANCH_INVALID"]
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            if None in (cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = dirty == meta["exact_paths"] and cached == meta["exact_paths"] and not unstaged and not untracked and check("diff", "--cached", "--check")
+            return [] if valid else ["C03_R2_PATH_OR_CLEAN_INVALID"]
+        if branch not in {"", C03_R2_PRODUCT_BRANCH}:
+            return ["C03_R2_BRANCH_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C03_R2_BASE, head))
+        if parents is None or changed is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        valid = (
+            not dirty and parents.split() == [C03_R2_BASE] and changed == meta["exact_paths"]
+            and check("merge-base", "--is-ancestor", C03_R2_BASE, head)
+            and check("diff", "--check", C03_R2_BASE, head)
+        )
+        return [] if valid else ["C03_R2_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

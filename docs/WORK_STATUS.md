@@ -2155,3 +2155,10 @@
 - C-02 `ACCEPTED`; C-03 `IN_PROGRESS`; C-04 `NOT_READY`; DIR-2 `NOT_REACHED`.
 - `AV-AGT-004` / `L3` / `AI` / `E-GIT,E-ART`, Developer 1명 read-only lifecycle과 exact3 scope를 결박했다.
 - control 제품 변경 및 Provider/Telegram/Secret/DB/API/browser/WSL/deploy/network/actual runner `NOT_EXECUTED`.
+
+## C-03 control R2
+
+- seq741~743 `WRITE_LEASE_REVOKED → WRITE_LEASE_ISSUED → PACKAGE_RESUMED`.
+- R1 worker lease 유지; R1 write lease 폐기; exact4 epoch2 write lease 발급.
+- `packages/e2e/harness.py`는 `record_takeover` start→wait/state transition→stop 호환만 허용한다.
+- 기능/요구/중요 위험 `UNCHANGED`; C-03 `IN_PROGRESS`; C-04 `NOT_READY`; DIR-2 `NOT_REACHED`.
