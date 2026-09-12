@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 779,
+  "last_sequence": 782,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -41892,7 +41892,184 @@
           "external_call": "NOT_EXECUTED"
         }
       }
+    },
+    {
+      "occurred_at": "2026-09-13T22:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-07",
+      "step_id": "START",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-07/START",
+      "event_id": "evt_c07_work_instruction_issued",
+      "sequence": 780,
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "previous_event_sha256": "82D9B69EA983A830BC702B9DDF19A9B52DD6379C28248A530790E98A98BF8347",
+      "details": {
+        "revision_class": "EXISTING_APPROVED_WORK_INSTRUCTION_REVALIDATION",
+        "authority_basis": [
+          "APPROVED_WORK_PLAN_C07",
+          "C05_C06_ACCEPTED",
+          "DESIGN_46_8_1_48_9"
+        ],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_sha256": "22D19D1FC23319BEC1E4D6CD69A437BDA0A7CE66F804024655FDF2EF518DE041",
+        "invocation_sha256": "3F289C89D11CFF7BF3C1C73B747A983A956018AAED79FC63B26A7A54CA6A6053",
+        "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "valid_failure_count_ownership": "EXTERNAL_CANONICAL_INPUT_ONLY",
+        "failure_count_accumulation_owner": "C-12",
+        "takeover_execution_owner": "C-13",
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "acceptance": [
+          {
+            "requirement_id": "AV-AGT-013",
+            "level": "L3",
+            "method": "AN",
+            "evidence": [
+              "E-EVT"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-014",
+            "level": "L3",
+            "method": "AI",
+            "evidence": [
+              "E-EVT"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-015",
+            "level": "L3",
+            "method": "AN",
+            "evidence": [
+              "E-EVT"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-016",
+            "level": "L3",
+            "method": "AI",
+            "evidence": [
+              "E-EVT"
+            ]
+          },
+          {
+            "requirement_id": "AV-AGT-017",
+            "level": "L3",
+            "method": "AN",
+            "evidence": [
+              "E-EVT"
+            ]
+          },
+          {
+            "requirement_id": "AV-STAT-009",
+            "level": "L3",
+            "method": "AI",
+            "evidence": [
+              "E-EVT",
+              "E-PRG"
+            ]
+          }
+        ],
+        "work_instruction_id": "WI-C-07-OUTCOME-RESOLVER",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/outcome_resolver.py",
+          "tests/orchestration/test_outcome_resolver_c07.py"
+        ],
+        "projection_mode": "C07_START_PROJECTION_EXACT9",
+        "validated_base_commit": "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf",
+        "dispatch_head": "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf",
+        "dispatch_upstream_head": "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf",
+        "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-07_START_PROJECTION_REPORT.md",
+          "docs/evidence/manifests/C-07_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c07-start.json",
+          "docs/validation/C-07_START_VALIDATION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T22:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-07",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-07/START",
+      "event_id": "evt_c07_worker_lease_issued",
+      "sequence": 781,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "049389442CAEDA7DD1A23263248B0CC71FBD7AE09D15220D60690619C10EA259",
+      "details": {
+        "lease_id": "worker-lease-c07-outcome-resolver-20260913-001",
+        "fencing_token": "c07-outcome-resolver-execution-fence-epoch-1-99cf0e8",
+        "execution_fencing_token": "c07-outcome-resolver-execution-fence-epoch-1-99cf0e8",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-07",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf",
+        "dispatch_head": "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf",
+        "issued_at": "2026-09-13T22:00:00+09:00",
+        "expires_at": "2026-09-14T10:00:00+09:00",
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T22:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-07",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-07/START",
+      "event_id": "evt_c07_write_lease_issued",
+      "sequence": 782,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "7A7181B81C8FAF4EAAF4CC86E0BC9917B033AC38B47DDBEFE26306F5E4CCB7B7",
+      "details": {
+        "lease_id": "write-lease-c07-outcome-resolver-20260913-001",
+        "worker_lease_id": "worker-lease-c07-outcome-resolver-20260913-001",
+        "fencing_token": "c07-outcome-resolver-write-fence-epoch-1-99cf0e8",
+        "write_fencing_token": "c07-outcome-resolver-write-fence-epoch-1-99cf0e8",
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-07",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-13T22:00:00+09:00",
+        "expires_at": "2026-09-14T10:00:00+09:00",
+        "path_scope": [
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/outcome_resolver.py",
+          "tests/orchestration/test_outcome_resolver_c07.py"
+        ],
+        "status": "ACTIVE"
+      }
     }
   ],
-  "last_event_id": "evt_c06_final_main_package_accepted"
+  "last_event_id": "evt_c07_write_lease_issued"
 }
