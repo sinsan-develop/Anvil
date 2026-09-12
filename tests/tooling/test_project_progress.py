@@ -14650,6 +14650,256 @@ class C06FinalAcceptanceProjectionTests(unittest.TestCase):
             self.assertEqual(["SEQ779_SELECTED"], checker._validate_git_projection(dispatch))
             selected.assert_called_once_with(dispatch)
 
+class C07StartProjectionTests(unittest.TestCase):
+    BASE = "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf"
+    BRANCH = "codex/c07-outcome-resolver-atomic-r1"
+    EXACT9 = sorted([
+        "docs/04_test_reports/C-07_START_PROJECTION_REPORT.md",
+        "docs/evidence/manifests/C-07_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c07-start.json",
+        "docs/validation/C-07_START_VALIDATION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+    PRODUCT3 = sorted([
+        "packages/orchestration/__init__.py",
+        "packages/orchestration/outcome_resolver.py",
+        "tests/orchestration/test_outcome_resolver_c07.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c07_start_projection_from_root"), "C-07 start builder missing")
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C07_START_P]),
+            "events": json.loads(artifacts[checker.C07_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C07_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C07_START_D]),
+        }
+
+    def test_seq782_builder_is_exact_deterministic_and_preserves_history(self):
+        checker = self._checker()
+        artifacts = checker.c07_start_projection_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c07_start_projection_from_root(ROOT))
+        self.assertEqual(self.EXACT9, sorted(artifacts))
+        historical = subprocess.check_output(["git", "show", f"{self.BASE}:{checker.C07_START_E}"], cwd=ROOT)
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 779),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C07_START_E], 779),
+        )
+        progress = json.loads(artifacts[checker.C07_START_P])
+        events = json.loads(artifacts[checker.C07_START_E])["events"]
+        self.assertEqual((780, 781, 782), tuple(event["sequence"] for event in events[-3:]))
+        self.assertEqual(
+            ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+            [event["event_type"] for event in events[-3:]],
+        )
+        self.assertEqual(("C-07", "IN_PROGRESS", "developer-primary"), (
+            progress["current_work_package"], progress["status"], progress["active_agent"]["actor_id"]))
+        self.assertEqual(self.PRODUCT3, progress["write_lease"]["path_scope"])
+        self.assertEqual({"package_id": "C-08", "status": "NOT_READY"}, progress["next_work_package"])
+        self.assertEqual("NOT_REACHED", progress["c07_start_projection"]["dir2_status"])
+
+    def test_seq782_manifest_binds_existing_wi_exact3_and_c12_boundary(self):
+        checker = self._checker()
+        artifacts = checker.c07_start_projection_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C07_START_M])
+        self.assertEqual("22D19D1FC23319BEC1E4D6CD69A437BDA0A7CE66F804024655FDF2EF518DE041", manifest["work_instruction_sha256"])
+        self.assertEqual("3F289C89D11CFF7BF3C1C73B747A983A956018AAED79FC63B26A7A54CA6A6053", manifest["invocation_sha256"])
+        self.assertEqual(self.PRODUCT3, manifest["product_exact_paths"])
+        self.assertEqual("EXTERNAL_CANONICAL_INPUT_ONLY", manifest["authority"]["valid_failure_count_ownership"])
+        self.assertEqual("C12_NOT_IMPLEMENTED", manifest["external_validation"]["failure_count_accumulation"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["database"])
+
+    def test_seq782_validator_rejects_manifest_and_history_tampering(self):
+        checker = self._checker()
+        artifacts = checker.c07_start_projection_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C07_START_M])
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c07_start_projection(self._bundle(checker, artifacts), manifest))
+            changed = copy.deepcopy(manifest)
+            changed["authority"]["valid_failure_count_ownership"] = "C07_ACCUMULATES"
+            self.assertIn("C07_START_PROJECTION_INVALID", checker.validate_c07_start_projection(self._bundle(checker, artifacts), changed))
+        mutated = artifacts[checker.C07_START_E].replace(
+            b"\"event_id\": \"evt_g05_legacy_migration\"",
+            b"\"event_id\": \"xvt_g05_legacy_migration\"",
+            1,
+        )
+        def mutated_history(path):
+            if path == ROOT / checker.C07_START_E:
+                return mutated
+            return frozen(path)
+        with mock.patch.object(Path, "read_bytes", mutated_history):
+            self.assertIn("C07_START_HISTORY_MUTATED", checker.validate_c07_start_projection(self._bundle(checker, artifacts), manifest))
+
+    def test_seq782_git_accepts_exact_precommit_and_dispatches_first(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE}}}
+        rows = {
+            ("rev-parse", "HEAD"): self.BASE,
+            ("branch", "--show-current"): self.BRANCH,
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join("M  " + path for path in self.EXACT9),
+            ("remote", "get-url", "development"): checker.C07_START_DEVELOPMENT_URL,
+            ("rev-parse", checker.C07_START_DEVELOPMENT_REF): self.BASE,
+            ("rev-parse", self.BASE): self.BASE,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): checker.C07_START_DEVELOPMENT_REF,
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT9),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(
+            checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args == ("diff", "--cached", "--check")
+        ):
+            self.assertEqual([], checker._collect_c07_start_projection_git(bundle))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 782}}
+        with mock.patch.object(checker, "_collect_c07_start_projection_git", return_value=["SEQ782_SELECTED"]) as selected, mock.patch.object(
+            checker, "_collect_c06_final_acceptance_git", side_effect=AssertionError("seq779 must not run")
+        ):
+            self.assertEqual(["SEQ782_SELECTED"], checker._validate_git_projection(dispatch))
+            selected.assert_called_once_with(dispatch)
+
+
+class C07FinalAcceptanceProjectionTests(unittest.TestCase):
+    DEVELOPMENT_MAIN = "99cf0e8f232dd861f17b87aa2b7f4f4b8c0af0cf"
+    START = "ef73c70e8b6c508027ba75e8ccfba59ff67d2cd6"
+    PRODUCT = "9102c87ae8738a7c497b3f0b7c0b935f166e44f6"
+    BRANCH = "codex/c07-outcome-resolver-atomic-r1"
+    EXACT7 = sorted([
+        "docs/evidence/manifests/C-07_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c07-final-acceptance.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+    PRODUCT3 = C07StartProjectionTests.PRODUCT3
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c07_final_acceptance_from_root"), "C-07 final builder missing")
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C07_FINAL_P]),
+            "events": json.loads(artifacts[checker.C07_FINAL_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C07_FINAL_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C07_FINAL_D]),
+        }
+
+    def test_seq787_builder_is_exact_append_only_and_accepts_c07(self):
+        checker = self._checker()
+        artifacts = checker.c07_final_acceptance_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c07_final_acceptance_from_root(ROOT))
+        self.assertEqual(self.EXACT7, sorted(artifacts))
+        historical = subprocess.check_output(["git", "show", f"{self.PRODUCT}:{checker.C07_FINAL_E}"], cwd=ROOT)
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 782),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C07_FINAL_E], 782),
+        )
+        progress = json.loads(artifacts[checker.C07_FINAL_P])
+        events = json.loads(artifacts[checker.C07_FINAL_E])["events"]
+        self.assertEqual((783, 784, 785, 786, 787), tuple(event["sequence"] for event in events[-5:]))
+        self.assertEqual("ACCEPTED", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertIn("C-07", progress["completed_packages"])
+        self.assertEqual({"package_id": "C-08", "status": "READY_FOR_WORK_INSTRUCTION"}, progress["next_work_package"])
+        self.assertEqual("ISSUE_C08_WORK_INSTRUCTION", progress["next_safe_action"])
+
+    def test_seq787_manifest_binds_product_review_tests_and_truth_boundary(self):
+        checker = self._checker()
+        manifest = json.loads(checker.c07_final_acceptance_from_root(ROOT)[checker.C07_FINAL_M])
+        self.assertEqual(self.PRODUCT, manifest["product_commit"])
+        self.assertEqual(self.PRODUCT3, manifest["product_exact_paths"])
+        self.assertEqual("F31C4A0073BE6E95518C6AB1CA50EE51149E9F3F2A4239681DFC41C645C4C31E", manifest["independent_review_report_sha256"])
+        self.assertEqual({"critical": 0, "important": 0, "minor": 0, "quality": "APPROVED", "spec": "PASS"}, manifest["independent_product_review"])
+        self.assertEqual(521, manifest["test_evidence"]["main_postcommit"]["passed"])
+        self.assertEqual("EXTERNAL_CANONICAL_INPUT_ONLY", manifest["contract"]["valid_failure_count_ownership"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["database"])
+        self.assertEqual("C13_NOT_IMPLEMENTED", manifest["external_validation"]["takeover_execution"])
+
+    def test_seq787_validator_rejects_manifest_and_history_tampering(self):
+        checker = self._checker()
+        artifacts = checker.c07_final_acceptance_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C07_FINAL_M])
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c07_final_acceptance(self._bundle(checker, artifacts), manifest))
+            changed = copy.deepcopy(manifest)
+            changed["product_file_sha256"]["packages/orchestration/outcome_resolver.py"] = "0" * 64
+            self.assertIn("C07_FINAL_PROJECTION_INVALID", checker.validate_c07_final_acceptance(self._bundle(checker, artifacts), changed))
+        mutated = artifacts[checker.C07_FINAL_E].replace(
+            b"\"event_id\": \"evt_g05_legacy_migration\"",
+            b"\"event_id\": \"xvt_g05_legacy_migration\"",
+            1,
+        )
+        def mutated_history(path):
+            if path == ROOT / checker.C07_FINAL_E:
+                return mutated
+            return frozen(path)
+        with mock.patch.object(Path, "read_bytes", mutated_history):
+            self.assertIn("C07_FINAL_HISTORY_MUTATED", checker.validate_c07_final_acceptance(self._bundle(checker, artifacts), manifest))
+
+    def test_seq787_git_accepts_exact_precommit_and_dispatches_first(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.PRODUCT}}}
+        rows = {
+            ("rev-parse", "HEAD"): self.PRODUCT,
+            ("branch", "--show-current"): self.BRANCH,
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join("M  " + path for path in self.EXACT7),
+            ("remote", "get-url", "development"): checker.C07_FINAL_DEVELOPMENT_URL,
+            ("rev-parse", checker.C07_FINAL_DEVELOPMENT_REF): self.DEVELOPMENT_MAIN,
+            ("rev-parse", self.PRODUCT): self.PRODUCT,
+            ("show", "-s", "--format=%P", self.PRODUCT): self.START,
+            ("show", "-s", "--format=%P", self.START): self.DEVELOPMENT_MAIN,
+            ("diff", "--name-only", self.START, self.PRODUCT): "\n".join(self.PRODUCT3),
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): checker.C07_FINAL_DEVELOPMENT_REF,
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT7),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        checks = {
+            ("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, self.START),
+            ("merge-base", "--is-ancestor", self.START, self.PRODUCT),
+            ("diff", "--cached", "--check"),
+        }
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(
+            checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args in checks
+        ):
+            self.assertEqual([], checker._collect_c07_final_acceptance_git(bundle))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 787}}
+        with mock.patch.object(checker, "_collect_c07_final_acceptance_git", return_value=["SEQ787_SELECTED"]) as selected, mock.patch.object(
+            checker, "_collect_c07_start_projection_git", side_effect=AssertionError("seq782 must not run")
+        ):
+            self.assertEqual(["SEQ787_SELECTED"], checker._validate_git_projection(dispatch))
+            selected.assert_called_once_with(dispatch)
+
 
 if __name__ == "__main__":
     unittest.main()
