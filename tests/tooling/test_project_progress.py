@@ -14298,5 +14298,177 @@ class C06StartProjectionTests(unittest.TestCase):
             selected.assert_called_once_with(dispatch)
 
 
+class C06ScopeRevisionProjectionTests(unittest.TestCase):
+    BASE = "7c719063c31530bc33ffff23fd5d72371ae28057"
+    DEVELOPMENT_MAIN = "042bd4050a3c826996a104b5219f8a1a9ba5a972"
+    BRANCH = "codex/c06-failure-report-revalidation-r1"
+    EXACT9 = sorted([
+        "docs/04_test_reports/C-06_SCOPE_REVISION_REPORT.md",
+        "docs/evidence/manifests/C-06_SCOPE_REVISION_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c06-scope-revision.json",
+        "docs/validation/C-06_SCOPE_REVISION_VALIDATION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+    PRODUCT6 = sorted([
+        "packages/e2e/harness.py",
+        "packages/orchestration/failure_ledger.py",
+        "packages/orchestration/failure_report.py",
+        "tests/orchestration/test_failure_ledger_c12.py",
+        "tests/orchestration/test_failure_report_c06.py",
+        "tests/orchestration/test_takeover_c13.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c06_scope_revision_from_root"), "C-06 scope revision builder missing")
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C06_SCOPE_P]),
+            "events": json.loads(artifacts[checker.C06_SCOPE_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C06_SCOPE_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C06_SCOPE_D]),
+        }
+
+    def test_seq774_builder_is_exact_append_only_and_reissues_exact6_write_lease(self):
+        checker = self._checker()
+        artifacts = checker.c06_scope_revision_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c06_scope_revision_from_root(ROOT))
+        self.assertEqual(self.EXACT9, sorted(artifacts))
+        historical = subprocess.check_output(["git", "show", f"{self.BASE}:{checker.C06_SCOPE_E}"], cwd=ROOT)
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 771),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C06_SCOPE_E], 771),
+        )
+        progress = json.loads(artifacts[checker.C06_SCOPE_P])
+        events = json.loads(artifacts[checker.C06_SCOPE_E])["events"]
+        self.assertEqual(
+            [(772, "WRITE_LEASE_REVOKED"), (773, "WRITE_LEASE_ISSUED"), (774, "PACKAGE_RESUMED")],
+            [(event["sequence"], event["event_type"]) for event in events[-3:]],
+        )
+        self.assertEqual(checker._c06_start_worker_lease(), progress["worker_lease"])
+        self.assertEqual(self.PRODUCT6, sorted(progress["write_lease"]["path_scope"]))
+        self.assertEqual(("C-06", "IN_PROGRESS", {"package_id": "C-07", "status": "NOT_READY"}),
+                         (progress["current_work_package"], progress["status"], progress["next_work_package"]))
+
+    def test_seq774_manifest_binds_review_findings_without_scope_or_risk_change(self):
+        checker = self._checker()
+        artifacts = checker.c06_scope_revision_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C06_SCOPE_M])
+        self.assertEqual(self.PRODUCT6, sorted(manifest["product_write_scope"]))
+        self.assertEqual(["packages/orchestration/failure_ledger.py"], manifest["revision_binding"]["scope_added"])
+        self.assertEqual("UNCHANGED", manifest["revision_binding"]["functional_scope_change"])
+        self.assertEqual("UNCHANGED", manifest["revision_binding"]["requirement_change"])
+        self.assertEqual("UNCHANGED", manifest["revision_binding"]["important_risk_change"])
+        self.assertEqual(
+            ["C06-INVALID-LEDGER-MUTATION-v1", "C06-FINGERPRINT-EVIDENCE-UNBOUND-v1", "C06-C05-VALID-TEST-MATRIX-FALSE-NEGATIVE-v1"],
+            manifest["review_rework_contract"]["finding_ids"],
+        )
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["database"])
+
+    def test_seq774_validator_rejects_manifest_history_and_scope_tampering(self):
+        checker = self._checker()
+        artifacts = checker.c06_scope_revision_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C06_SCOPE_M])
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c06_scope_revision(self._bundle(checker, artifacts), manifest))
+            changed = copy.deepcopy(manifest)
+            changed["product_write_scope"].append("packages/evil.py")
+            self.assertIn("C06_SCOPE_PROJECTION_INVALID", checker.validate_c06_scope_revision(self._bundle(checker, artifacts), changed))
+        mutated = artifacts[checker.C06_SCOPE_E].replace(
+            b'"event_id": "evt_g05_legacy_migration"',
+            b'"event_id": "xvt_g05_legacy_migration"',
+            1,
+        )
+        def mutated_history(path):
+            if path == ROOT / checker.C06_SCOPE_E:
+                return mutated
+            return frozen(path)
+        with mock.patch.object(Path, "read_bytes", mutated_history):
+            self.assertIn("C06_SCOPE_HISTORY_MUTATED", checker.validate_c06_scope_revision(self._bundle(checker, artifacts), manifest))
+
+    def test_seq774_git_accepts_only_exact_precommit_or_sole_direct_child_and_dispatches_first(self):
+        checker = self._checker()
+        successor = "a" * 40
+        merged = "b" * 40
+        status_key = ("status", "--porcelain", "--untracked-files=all")
+        common = {
+            ("remote", "get-url", "development"): checker.C06_SCOPE_DEVELOPMENT_URL,
+            ("rev-parse", checker.C06_SCOPE_DEVELOPMENT_REF): self.DEVELOPMENT_MAIN,
+            ("rev-parse", self.BASE): self.BASE,
+            ("show", "-s", "--format=%P", self.BASE): self.DEVELOPMENT_MAIN,
+        }
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE}}}
+        def run(rows, checks):
+            with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(
+                checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args in checks
+            ):
+                return checker._collect_c06_scope_revision_git(bundle)
+        lineage = {("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, self.BASE)}
+        pre = common | {
+            ("rev-parse", "HEAD"): self.BASE,
+            ("branch", "--show-current"): self.BRANCH,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): checker.C06_SCOPE_DEVELOPMENT_REF,
+            status_key: "\n".join("M  " + path for path in self.EXACT9),
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT9),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        self.assertEqual([], run(pre, lineage | {("diff", "--cached", "--check")}))
+        self.assertTrue(run(pre | {("diff", "--cached", "--name-only"): "\n".join(self.EXACT9[:-1])}, lineage | {("diff", "--cached", "--check")}))
+        post = common | {
+            ("rev-parse", "HEAD"): successor,
+            ("branch", "--show-current"): self.BRANCH,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): checker.C06_SCOPE_DEVELOPMENT_REF,
+            ("show", "-s", "--format=%P", successor): self.BASE,
+            ("diff", "--name-only", self.BASE, successor): "\n".join(self.EXACT9),
+            status_key: "",
+        }
+        post_checks = lineage | {("merge-base", "--is-ancestor", self.BASE, successor), ("diff", "--check", self.BASE, successor)}
+        self.assertEqual([], run(post, post_checks))
+        self.assertEqual([], run(post | {("branch", "--show-current"): ""}, post_checks))
+        self.assertTrue(run(post | {("show", "-s", "--format=%P", successor): f"{self.BASE} {self.DEVELOPMENT_MAIN}"}, post_checks))
+        merge = common | {
+            ("rev-parse", "HEAD"): merged,
+            ("rev-parse", checker.C06_SCOPE_DEVELOPMENT_REF): merged,
+            ("branch", "--show-current"): "main",
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main"): checker.C06_SCOPE_DEVELOPMENT_REF,
+            ("show", "-s", "--format=%P", merged): f"{self.DEVELOPMENT_MAIN} {successor}",
+            ("show", "-s", "--format=%P", successor): self.BASE,
+            ("diff", "--name-only", self.BASE, successor): "\n".join(self.EXACT9),
+            ("diff", "--name-only", self.DEVELOPMENT_MAIN, merged): "\n".join(checker.c06_scope_reviewed_merge_paths()),
+            status_key: "",
+        }
+        merge_checks = lineage | {
+            ("merge-base", "--is-ancestor", self.BASE, successor),
+            ("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, merged),
+            ("diff", "--check", self.BASE, successor),
+            ("diff", "--check", self.DEVELOPMENT_MAIN, merged),
+            ("diff", "--quiet", successor, merged),
+        }
+        self.assertEqual([], run(merge, merge_checks))
+        self.assertTrue(run(merge, merge_checks - {("diff", "--quiet", successor, merged)}))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 774}}
+        with mock.patch.object(checker, "_collect_c06_scope_revision_git", return_value=["SEQ774_SELECTED"]) as selected, mock.patch.object(
+            checker, "_collect_c06_start_projection_git", side_effect=AssertionError("seq771 must not run")
+        ):
+            self.assertEqual(["SEQ774_SELECTED"], checker._validate_git_projection(dispatch))
+            selected.assert_called_once_with(dispatch)
+
+
 if __name__ == "__main__":
     unittest.main()

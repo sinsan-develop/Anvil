@@ -932,6 +932,13 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C06_START_PROJECTION_EXACT9"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 774
+                and event.get("sequence") == 774
+                and event.get("event_id") == "evt_c06_scope_package_resumed"
+                and event["details"].get("projection_mode") == "C06_SCOPE_REVISION_EXACT9"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -12945,6 +12952,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 774:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c06_scope_revision_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 771:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14023,6 +14034,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-06_START_MANIFEST.json":
             errors.extend(validate_c06_start_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-06_SCOPE_REVISION_MANIFEST.json":
+            errors.extend(validate_c06_scope_revision(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-05_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_c05_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-05_SCOPE_REVISION_MANIFEST.json":
@@ -36647,6 +36660,436 @@ def _collect_c06_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
             and check("diff", "--check", C06_START_BASE, head)
         )
         return [] if valid else ["C06_START_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C06_SCOPE_P = "docs/progress/build-progress.json"
+C06_SCOPE_E = "docs/progress/progress-events.json"
+C06_SCOPE_H = "docs/progress/BUILD_HANDOFF.md"
+C06_SCOPE_D = "docs/progress/progress-handoff-detached-digest-c06-scope-revision.json"
+C06_SCOPE_M = "docs/evidence/manifests/C-06_SCOPE_REVISION_MANIFEST.json"
+C06_SCOPE_REPORT = "docs/04_test_reports/C-06_SCOPE_REVISION_REPORT.md"
+C06_SCOPE_VALIDATION = "docs/validation/C-06_SCOPE_REVISION_VALIDATION.md"
+C06_SCOPE_BASE = "7c719063c31530bc33ffff23fd5d72371ae28057"
+C06_SCOPE_DEVELOPMENT_MAIN = C06_START_BASE
+C06_SCOPE_BRANCH = C06_START_BRANCH
+C06_SCOPE_DEVELOPMENT_URL = C06_START_DEVELOPMENT_URL
+C06_SCOPE_DEVELOPMENT_REF = C06_START_DEVELOPMENT_REF
+C06_SCOPE_AT = "2026-09-13T20:00:00+09:00"
+C06_SCOPE_EXPIRES_AT = "2026-09-14T08:00:00+09:00"
+C06_SCOPE_WRITE_LEASE_ID = "write-lease-c06-failure-report-r2-review-20260913-002"
+C06_SCOPE_WRITE_TOKEN = "c06-failure-report-write-fence-epoch-2-7c71906"
+
+
+def c06_scope_revision_paths() -> list[str]:
+    return sorted([
+        C06_SCOPE_REPORT, C06_SCOPE_M, C06_SCOPE_H, C06_SCOPE_P, C06_SCOPE_E,
+        C06_SCOPE_D, C06_SCOPE_VALIDATION, "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c06_scope_product_write_scope() -> list[str]:
+    return sorted(set(c06_start_product_write_scope()) | {"packages/orchestration/failure_ledger.py"})
+
+
+def c06_scope_reviewed_merge_paths() -> list[str]:
+    return sorted(set(c06_start_projection_paths()) | set(c06_scope_revision_paths()))
+
+
+def c06_scope_revision_metadata() -> dict[str, Any]:
+    paths = c06_scope_revision_paths()
+    merged = c06_scope_reviewed_merge_paths()
+    return {
+        "sequence": 774, "projection_mode": "C06_SCOPE_REVISION_EXACT9",
+        "validated_base_commit": C06_SCOPE_BASE,
+        "development_main": C06_SCOPE_DEVELOPMENT_MAIN, "branch": C06_SCOPE_BRANCH,
+        "exact_paths": paths, "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+        "reviewed_merge_paths": merged, "reviewed_merge_path_count": len(merged),
+        "reviewed_merge_path_list_sha256": _c21_path_list_sha(merged, windows=True),
+        "reviewed_merge_path_list_ordinal_sha256": _c21_path_list_sha(merged, windows=False),
+    }
+
+
+def _c06_scope_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C06_SCOPE_WRITE_LEASE_ID,
+        "worker_lease_id": C06_START_WORKER_LEASE_ID,
+        "fencing_token": C06_SCOPE_WRITE_TOKEN,
+        "write_fencing_token": C06_SCOPE_WRITE_TOKEN,
+        "write_epoch": 2, "actor_id": "main-agent-eoul", "subject_ref": "C-06",
+        "baseline_hash": C05_START_DESIGN_SHA256,
+        "issued_at": C06_SCOPE_AT, "expires_at": C06_SCOPE_EXPIRES_AT,
+        "path_scope": c06_scope_product_write_scope(), "status": "ACTIVE",
+    }
+
+
+def _c06_scope_retired_write_lease() -> dict[str, Any]:
+    retired = _c06_start_write_lease()
+    retired.update({
+        "status": "REVOKED_SUPERSEDED_BY_REVIEW_REWORK_SCOPE",
+        "revoked_at": C06_SCOPE_AT,
+        "revocation_reason": "C06_INDEPENDENT_REVIEW_REQUIRES_LEDGER_NO_MUTATION_COMPATIBILITY",
+        "superseded_by": C06_SCOPE_WRITE_LEASE_ID,
+    })
+    return retired
+
+
+def _c06_scope_revision_binding() -> dict[str, Any]:
+    return {
+        "revision_class": "MAIN_INTERNAL_TECHNICAL_SCOPE_REVISION",
+        "authority_basis": [
+            "APPROVED_WORK_PLAN_C06", "C06_INDEPENDENT_REVIEW_REWORK",
+            "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY",
+            "MAIN_AGENT_TAKEOVER_AFTER_THREE_IDENTICAL_PLATFORM_FAILURES",
+        ],
+        "base_control_commit": C06_SCOPE_BASE,
+        "prior_work_instruction_id": "WI-C-06-FAILURE-REPORT",
+        "prior_work_instruction_sha256": C06_START_WI_SHA256,
+        "work_instruction_status": "UNCHANGED",
+        "functional_scope_change": "UNCHANGED", "requirement_change": "UNCHANGED",
+        "important_risk_change": "UNCHANGED",
+        "scope_added": ["packages/orchestration/failure_ledger.py"],
+        "scope_removed": [],
+        "reason": "INVALID_FAILURE_REPORT_MUST_NOT_MUTATE_LEDGER_OR_BLOCK_CORRECTED_REPLAY",
+    }
+
+
+def _c06_scope_review_rework_contract() -> dict[str, Any]:
+    return {
+        "review_verdict": "REWORK",
+        "finding_ids": [
+            "C06-INVALID-LEDGER-MUTATION-v1",
+            "C06-FINGERPRINT-EVIDENCE-UNBOUND-v1",
+            "C06-C05-VALID-TEST-MATRIX-FALSE-NEGATIVE-v1",
+        ],
+        "ledger_invalid_report_mutation": "FORBIDDEN",
+        "corrected_same_result_id": "ACCEPT_AS_FIRST_VALID_REPORT",
+        "failing_test_or_gate_binding": "EXACT_FAILED_RESULT_TEST_COMMAND",
+        "c05_valid_neutral_test_statuses": ["PASS", "SKIP", "SKIPPED", "XFAIL", "NOT_RUN"],
+        "failure_exit_code": "NONE_OR_NONZERO_INTEGER",
+        "prose_classification": "FORBIDDEN",
+    }
+
+
+def c06_scope_revision_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c06_scope_revision_metadata()
+    generated = {C06_SCOPE_REPORT, C06_SCOPE_M, C06_SCOPE_H, C06_SCOPE_P, C06_SCOPE_E, C06_SCOPE_D, C06_SCOPE_VALIDATION}
+    if set(historical) != {C06_SCOPE_H, C06_SCOPE_P, C06_SCOPE_E} or set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C06_SCOPE_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C06_SCOPE_P])
+    stream = _c21_resume_json(historical[C06_SCOPE_E])
+    if (
+        progress.get("event_sequence") != 771 or stream.get("last_sequence") != 771
+        or len(stream.get("events", [])) != 771
+        or progress.get("current_work_package") != "C-06" or progress.get("status") != "IN_PROGRESS"
+        or progress.get("worker_lease") != _c06_start_worker_lease()
+        or progress.get("write_lease") != _c06_start_write_lease()
+        or progress.get("next_work_package") != {"package_id": "C-07", "status": "NOT_READY"}
+    ):
+        raise ValueError("C06_SCOPE_HISTORY_INVALID")
+    retired = _c06_scope_retired_write_lease()
+    write = _c06_scope_write_lease()
+    binding = _c06_scope_revision_binding()
+    review = _c06_scope_review_rework_contract()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    def envelope(sequence: int, event_type: str, event_id: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C06_SCOPE_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": "main-agent-eoul", "project_id": "anvil",
+            "run_id": None, "work_package_id": "C-06", "step_id": "CONTROL-SCOPE-REVISION-R2",
+            "actor": "main-agent-eoul", "subject_ref": "C-06/CONTROL-SCOPE-REVISION-R2",
+            "event_id": event_id, "sequence": sequence, "event_type": event_type,
+            "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+        return event
+    events = [
+        envelope(772, "WRITE_LEASE_REVOKED", "evt_c06_scope_write_lease_revoked", {
+            "lease_id": C06_START_WRITE_LEASE_ID, "reason": retired["revocation_reason"],
+            "superseded_by": C06_SCOPE_WRITE_LEASE_ID,
+        }),
+        envelope(773, "WRITE_LEASE_ISSUED", "evt_c06_scope_write_lease_issued", write),
+        envelope(774, "PACKAGE_RESUMED", "evt_c06_scope_package_resumed", {
+            "resume_event_ref": "evt_c06_scope_write_lease_issued", "package_status": "IN_PROGRESS",
+            "work_instruction_id": "WI-C-06-FAILURE-REPORT", "work_instruction_sha256": C06_START_WI_SHA256,
+            "invocation_sha256": C06_START_PROMPT_SHA256, "revision_binding": binding,
+            "review_rework_contract": review, "worker_lease_id": C06_START_WORKER_LEASE_ID,
+            "write_lease_id": C06_SCOPE_WRITE_LEASE_ID,
+            "execution_fencing_token": C06_START_EXECUTION_TOKEN,
+            "write_fencing_token": C06_SCOPE_WRITE_TOKEN,
+            "dispatch_head": C06_SCOPE_BASE, "dispatch_upstream_head": C06_SCOPE_DEVELOPMENT_MAIN,
+            "projection_mode": meta["projection_mode"], "validated_base_commit": C06_SCOPE_BASE,
+            "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE",
+            "exact_allowed_paths": meta["exact_paths"],
+            "product_write_scope": c06_scope_product_write_scope(),
+        }),
+    ]
+    events_raw = _c21_append_events(historical[C06_SCOPE_E], 771, events)
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C06_SCOPE_BASE,
+        "development_main": C06_SCOPE_DEVELOPMENT_MAIN, "control_head": C06_SCOPE_BASE,
+        "control_parent": C06_SCOPE_DEVELOPMENT_MAIN, "local_head": C06_SCOPE_BASE,
+        "branch": C06_SCOPE_BRANCH, "upstream": C06_SCOPE_DEVELOPMENT_REF,
+        "remote_head": C06_SCOPE_DEVELOPMENT_MAIN,
+        "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE",
+        "worktree_status": "STAGED_EXACT9", "exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c06_scope_product_write_scope(),
+        "reviewed_merge_paths": meta["reviewed_merge_paths"],
+        "development_remote_url": C06_SCOPE_DEVELOPMENT_URL, "push_status": "NOT_EXECUTED",
+    })
+    instruction = dict(progress["active_work_instruction"])
+    instruction.update({"executor": "main-agent-eoul", "product_write_scope": c06_scope_product_write_scope(),
+                        "scope_revision": binding, "review_rework_contract": review})
+    active_agent = dict(progress["active_agent"])
+    active_agent.update({"actor_id": "main-agent-eoul", "role": "MAIN_AGENT_TAKEOVER",
+                         "execution_fencing_token": C06_START_EXECUTION_TOKEN})
+    progress.update({
+        "snapshot_id": "snapshot-c06-scope-revision-seq774", "updated_at": C06_SCOPE_AT,
+        "recorded_at": C06_SCOPE_AT, "event_sequence": 774, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-06", "status": "IN_PROGRESS",
+        "active_agent": active_agent, "worker_lease": _c06_start_worker_lease(), "write_lease": write,
+        "retired_c06_epoch1_write_lease": retired, "active_work_instruction": instruction,
+        "repository": repository,
+        "c06_scope_revision": {
+            "status": "IN_PROGRESS", "accepted": False, "event_sequence": 774,
+            "c05_status": "ACCEPTED", "c06_status": "IN_PROGRESS", "c07_status": "NOT_READY",
+            "dir2_status": "NOT_REACHED", "revision_binding": binding,
+            "review_rework_contract": review, "external_validation": _c06_start_boundary(),
+        },
+        "next_work_package": {"package_id": "C-07", "status": "NOT_READY"},
+        "runtime_next_action": "MAIN_AGENT_REWORK_C06_EXACT6",
+        "next_safe_action": "MAIN_AGENT_REWORK_C06_EXACT6",
+        "current_progress_evidence_ref": {"package_id": "C-06", "path": C06_SCOPE_D, "manifest_path": C06_SCOPE_M},
+        "latest_evidence_manifest_ref": {"path": C06_SCOPE_M, "artifact_id": "C06-SCOPE-REVISION-20260913"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C06_REVIEW_REWORK", "C06_IN_PROGRESS", "C07_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C06_SCOPE_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw = (
+        "# C-06 scope revision report\n\n"
+        "- Independent review REWORK expands the product lease by one compatibility path: failure_ledger.py.\n"
+        "- seq772~774 revokes exact5, issues exact6, and resumes Main Agent takeover work.\n"
+        "- Functional scope, requirements, material risk, and external validation remain unchanged.\n"
+    ).encode("utf-8")
+    validation_raw = (
+        "# C-06 scope revision validation\n\n"
+        "- seq1~771 raw event object bytes preserved; seq772~774 only appended.\n"
+        "- exact9 control paths; exact6 product lease; C-07 remains NOT_READY.\n"
+        "- invalid ledger mutation and fingerprint evidence binding findings are fail-closed rework.\n"
+    ).encode("utf-8")
+    latest = {**files, C06_SCOPE_E: events_raw, C06_SCOPE_REPORT: report_raw, C06_SCOPE_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    handoff.update({
+        "accepted": False, "c05_status": "ACCEPTED", "c06_status": "IN_PROGRESS",
+        "c07_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "retired_c06_epoch1_write_lease": retired,
+        "repository_head": C06_SCOPE_BASE, "repository_upstream": C06_SCOPE_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C06_SCOPE_BASE,
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "reviewed_merge_paths": meta["reviewed_merge_paths"],
+        "product_write_scope": c06_scope_product_write_scope(),
+        "work_instruction_sha256": C06_START_WI_SHA256, "invocation_sha256": C06_START_PROMPT_SHA256,
+        "revision_binding": binding, "review_rework_contract": review,
+        "external_validation": _c06_start_boundary(), "current_manifest": C06_SCOPE_M,
+        "reporting_decision": "AUTO_CONTINUE",
+    })
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement, historical[C06_SCOPE_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C06_SCOPE_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-06 independent review rework - seq774\n\n"
+        "- seq1~771 preserved; exact6 write lease active under Main Agent takeover.\n"
+        "- product and external systems not executed by this control revision.\n\n" + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C06-SCOPE-REVISION-DIGEST-20260913",
+        "package_id": "C-06", "event_sequence": 774, "algorithm": "SHA-256",
+        "created_at": C06_SCOPE_AT,
+        "scope": "seq772-774 append-only C-06 review rework scope revision; seq1-771 preserved; exact9",
+        "self_reference": False,
+        "progress": {"path": C06_SCOPE_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C06_SCOPE_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C06_SCOPE_REPORT: report_raw, C06_SCOPE_H: handoff_raw,
+                 C06_SCOPE_P: progress_raw, C06_SCOPE_E: events_raw,
+                 C06_SCOPE_D: digest_raw, C06_SCOPE_VALIDATION: validation_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C06_SCOPE_E], 771)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-06_SCOPE_REVISION",
+        "artifact_id": "C06-SCOPE-REVISION-20260913", "created_at": C06_SCOPE_AT,
+        "package_id": "C-06", "event_sequence": 774, "historical_event_sequence": 771,
+        "appended_event_count": 3,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": False, "status": "IN_PROGRESS",
+        "c05_status": "ACCEPTED", "c06_status": "IN_PROGRESS", "c07_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "worker_lease": _c06_start_worker_lease(),
+        "retired_write_lease": retired, "write_lease": write,
+        "product_write_scope": c06_scope_product_write_scope(),
+        "work_instruction_path": C06_START_WI, "work_instruction_sha256": C06_START_WI_SHA256,
+        "invocation_path": C06_START_PROMPT, "invocation_sha256": C06_START_PROMPT_SHA256,
+        "revision_binding": binding, "review_rework_contract": review,
+        "external_validation": _c06_start_boundary(), "record_binding": repository["head_relation"],
+        "self_reference": False, **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+        for path, payload in sorted(artifacts.items())
+    ]
+    artifacts[C06_SCOPE_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C06_SCOPE_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c06_scope_revision_from_root(root: Path) -> dict[str, bytes]:
+    historical = {path: subprocess.check_output(["git", "show", f"{C06_SCOPE_BASE}:{path}"], cwd=root)
+                  for path in {C06_SCOPE_H, C06_SCOPE_P, C06_SCOPE_E}}
+    generated = {C06_SCOPE_REPORT, C06_SCOPE_M, C06_SCOPE_H, C06_SCOPE_P, C06_SCOPE_E, C06_SCOPE_D, C06_SCOPE_VALIDATION}
+    files = {path: (root / path).read_bytes() for path in set(c06_scope_revision_paths()) - generated}
+    return c06_scope_revision_artifacts(historical, files)
+
+
+def validate_c06_scope_revision(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c06_scope_revision_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c06_scope_revision_paths()}
+        actual = {C06_SCOPE_P: bundle.get("progress"), C06_SCOPE_E: bundle.get("events"),
+                  C06_SCOPE_H: bundle.get("handoff"), C06_SCOPE_D: bundle.get("detached_digest"),
+                  C06_SCOPE_M: manifest}
+        refs = {C06_SCOPE_P: _c21_resume_json(expected[C06_SCOPE_P]),
+                C06_SCOPE_E: _c21_resume_json(expected[C06_SCOPE_E]),
+                C06_SCOPE_H: extract_handoff_summary(expected[C06_SCOPE_H].decode()),
+                C06_SCOPE_D: _c21_resume_json(expected[C06_SCOPE_D]),
+                C06_SCOPE_M: _c21_resume_json(expected[C06_SCOPE_M])}
+        errors = [] if all(_c21_strict_json_equal(actual[path], refs[path]) for path in actual) else ["C06_SCOPE_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C06_SCOPE_RAW_BYTES_INVALID")
+        progress = actual[C06_SCOPE_P]
+        if (
+            not isinstance(progress, Mapping) or progress.get("event_sequence") != 774
+            or progress.get("current_work_package") != "C-06" or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c06_start_worker_lease()
+            or progress.get("write_lease") != _c06_scope_write_lease()
+            or progress.get("retired_c06_epoch1_write_lease") != _c06_scope_retired_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-07", "status": "NOT_READY"}
+            or progress.get("next_safe_action") != "MAIN_AGENT_REWORK_C06_EXACT6"
+        ):
+            errors.append("C06_SCOPE_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C06_SCOPE_BASE}:{C06_SCOPE_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 771) != raw_event_object_prefix_bytes(actual_raw[C06_SCOPE_E], 771):
+            errors.append("C06_SCOPE_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C06_SCOPE_INPUT_INVALID"]
+
+
+def _collect_c06_scope_revision_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        meta = c06_scope_revision_metadata()
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C06_SCOPE_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD")
+        branch = optional("branch", "--show-current")
+        status_raw = raw("status", "--porcelain", "--untracked-files=all")
+        development_url = value("remote", "get-url", "development")
+        development_main = value("rev-parse", C06_SCOPE_DEVELOPMENT_REF)
+        base_ref = value("rev-parse", C06_SCOPE_BASE)
+        base_parent = value("show", "-s", "--format=%P", C06_SCOPE_BASE)
+        if None in (head, branch, status_raw, development_url, development_main, base_ref, base_parent):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if development_url != C06_SCOPE_DEVELOPMENT_URL or base_ref != C06_SCOPE_BASE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if base_parent.split() != [C06_SCOPE_DEVELOPMENT_MAIN] or not check("merge-base", "--is-ancestor", C06_SCOPE_DEVELOPMENT_MAIN, C06_SCOPE_BASE):
+            return ["C06_SCOPE_GIT_LINEAGE_INVALID"]
+        dirty = _c02_strict_porcelain_paths(status_raw)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if head == C06_SCOPE_BASE:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C06_SCOPE_BRANCH}")
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            if None in (upstream, cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                branch in {C06_SCOPE_BRANCH, ""} and development_main == C06_SCOPE_DEVELOPMENT_MAIN
+                and upstream in {C06_SCOPE_DEVELOPMENT_REF, f"development/{C06_SCOPE_BRANCH}"}
+                and dirty == meta["exact_paths"] and cached == meta["exact_paths"]
+                and not unstaged and not untracked and check("diff", "--cached", "--check")
+            )
+            return [] if valid else ["C06_SCOPE_PATH_OR_CLEAN_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        if parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if parents.split() == [C06_SCOPE_BASE]:
+            changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C06_SCOPE_BASE, head))
+            if changed is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                branch in {C06_SCOPE_BRANCH, ""} and development_main == C06_SCOPE_DEVELOPMENT_MAIN
+                and not dirty and changed == meta["exact_paths"]
+                and check("merge-base", "--is-ancestor", C06_SCOPE_BASE, head)
+                and check("diff", "--check", C06_SCOPE_BASE, head)
+            )
+            return [] if valid else ["C06_SCOPE_PATH_OR_CLEAN_INVALID"]
+        if branch in {"main", ""}:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main")
+            merge_parents = value("show", "-s", "--format=%P", head)
+            if upstream is None or merge_parents is None:
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            parent_list = merge_parents.split()
+            if len(parent_list) != 2 or parent_list[0] != C06_SCOPE_DEVELOPMENT_MAIN:
+                return ["C06_SCOPE_GIT_LINEAGE_INVALID"]
+            completion = parent_list[1]
+            completion_parent = value("show", "-s", "--format=%P", completion)
+            completion_paths = _c02_strict_name_only_paths(raw("diff", "--name-only", C06_SCOPE_BASE, completion))
+            merge_paths = _c02_strict_name_only_paths(raw("diff", "--name-only", C06_SCOPE_DEVELOPMENT_MAIN, head))
+            if None in (completion_parent, completion_paths, merge_paths):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (
+                upstream == C06_SCOPE_DEVELOPMENT_REF and development_main == head and not dirty
+                and completion_parent.split() == [C06_SCOPE_BASE]
+                and completion_paths == meta["exact_paths"]
+                and merge_paths == meta["reviewed_merge_paths"]
+                and check("merge-base", "--is-ancestor", C06_SCOPE_BASE, completion)
+                and check("merge-base", "--is-ancestor", C06_SCOPE_DEVELOPMENT_MAIN, head)
+                and check("diff", "--check", C06_SCOPE_BASE, completion)
+                and check("diff", "--check", C06_SCOPE_DEVELOPMENT_MAIN, head)
+                and check("diff", "--quiet", completion, head)
+            )
+            return [] if valid else ["C06_SCOPE_PATH_OR_CLEAN_INVALID"]
+        return ["C06_SCOPE_BRANCH_OR_UPSTREAM_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

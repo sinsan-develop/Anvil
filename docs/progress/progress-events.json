@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 771,
+  "last_sequence": 774,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -41467,7 +41467,157 @@
         ],
         "status": "ACTIVE"
       }
+    },
+    {
+      "occurred_at": "2026-09-13T20:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-06",
+      "step_id": "CONTROL-SCOPE-REVISION-R2",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-06/CONTROL-SCOPE-REVISION-R2",
+      "event_id": "evt_c06_scope_write_lease_revoked",
+      "sequence": 772,
+      "event_type": "WRITE_LEASE_REVOKED",
+      "previous_event_sha256": "9524496F7B551E51374E88EDD20F71793741430883C5BA9DBCF86B161C9D3CDB",
+      "details": {
+        "lease_id": "write-lease-c06-failure-report-20260913-001",
+        "reason": "C06_INDEPENDENT_REVIEW_REQUIRES_LEDGER_NO_MUTATION_COMPATIBILITY",
+        "superseded_by": "write-lease-c06-failure-report-r2-review-20260913-002"
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T20:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-06",
+      "step_id": "CONTROL-SCOPE-REVISION-R2",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-06/CONTROL-SCOPE-REVISION-R2",
+      "event_id": "evt_c06_scope_write_lease_issued",
+      "sequence": 773,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "E4C7ED6A4368313751DCFE3F4882B555926E27A89D06C735F5C4A8DB6B808EA0",
+      "details": {
+        "lease_id": "write-lease-c06-failure-report-r2-review-20260913-002",
+        "worker_lease_id": "worker-lease-c06-failure-report-20260913-001",
+        "fencing_token": "c06-failure-report-write-fence-epoch-2-7c71906",
+        "write_fencing_token": "c06-failure-report-write-fence-epoch-2-7c71906",
+        "write_epoch": 2,
+        "actor_id": "main-agent-eoul",
+        "subject_ref": "C-06",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-13T20:00:00+09:00",
+        "expires_at": "2026-09-14T08:00:00+09:00",
+        "path_scope": [
+          "packages/e2e/harness.py",
+          "packages/orchestration/failure_ledger.py",
+          "packages/orchestration/failure_report.py",
+          "tests/orchestration/test_failure_ledger_c12.py",
+          "tests/orchestration/test_failure_report_c06.py",
+          "tests/orchestration/test_takeover_c13.py"
+        ],
+        "status": "ACTIVE"
+      }
+    },
+    {
+      "occurred_at": "2026-09-13T20:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-06",
+      "step_id": "CONTROL-SCOPE-REVISION-R2",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-06/CONTROL-SCOPE-REVISION-R2",
+      "event_id": "evt_c06_scope_package_resumed",
+      "sequence": 774,
+      "event_type": "PACKAGE_RESUMED",
+      "previous_event_sha256": "E12AA76D44F25B8AE77CD5579287C32BF69C758A4BB1FB85CB04C0E211AC155A",
+      "details": {
+        "resume_event_ref": "evt_c06_scope_write_lease_issued",
+        "package_status": "IN_PROGRESS",
+        "work_instruction_id": "WI-C-06-FAILURE-REPORT",
+        "work_instruction_sha256": "2CAF6BE8B2AEBB012939363B13C6B44B3BDD5302374C495ED4D034FED662FE57",
+        "invocation_sha256": "BE3E51945F91B4A25DB7617904906D8A68F9FFDC02A56DBF1F4BEF12D5AF1493",
+        "revision_binding": {
+          "revision_class": "MAIN_INTERNAL_TECHNICAL_SCOPE_REVISION",
+          "authority_basis": [
+            "APPROVED_WORK_PLAN_C06",
+            "C06_INDEPENDENT_REVIEW_REWORK",
+            "AGENTS_SECTION_5_INTERNAL_IMPLEMENTATION_AUTHORITY",
+            "MAIN_AGENT_TAKEOVER_AFTER_THREE_IDENTICAL_PLATFORM_FAILURES"
+          ],
+          "base_control_commit": "7c719063c31530bc33ffff23fd5d72371ae28057",
+          "prior_work_instruction_id": "WI-C-06-FAILURE-REPORT",
+          "prior_work_instruction_sha256": "2CAF6BE8B2AEBB012939363B13C6B44B3BDD5302374C495ED4D034FED662FE57",
+          "work_instruction_status": "UNCHANGED",
+          "functional_scope_change": "UNCHANGED",
+          "requirement_change": "UNCHANGED",
+          "important_risk_change": "UNCHANGED",
+          "scope_added": [
+            "packages/orchestration/failure_ledger.py"
+          ],
+          "scope_removed": [],
+          "reason": "INVALID_FAILURE_REPORT_MUST_NOT_MUTATE_LEDGER_OR_BLOCK_CORRECTED_REPLAY"
+        },
+        "review_rework_contract": {
+          "review_verdict": "REWORK",
+          "finding_ids": [
+            "C06-INVALID-LEDGER-MUTATION-v1",
+            "C06-FINGERPRINT-EVIDENCE-UNBOUND-v1",
+            "C06-C05-VALID-TEST-MATRIX-FALSE-NEGATIVE-v1"
+          ],
+          "ledger_invalid_report_mutation": "FORBIDDEN",
+          "corrected_same_result_id": "ACCEPT_AS_FIRST_VALID_REPORT",
+          "failing_test_or_gate_binding": "EXACT_FAILED_RESULT_TEST_COMMAND",
+          "c05_valid_neutral_test_statuses": [
+            "PASS",
+            "SKIP",
+            "SKIPPED",
+            "XFAIL",
+            "NOT_RUN"
+          ],
+          "failure_exit_code": "NONE_OR_NONZERO_INTEGER",
+          "prose_classification": "FORBIDDEN"
+        },
+        "worker_lease_id": "worker-lease-c06-failure-report-20260913-001",
+        "write_lease_id": "write-lease-c06-failure-report-r2-review-20260913-002",
+        "execution_fencing_token": "c06-failure-report-execution-fence-epoch-1-042bd40",
+        "write_fencing_token": "c06-failure-report-write-fence-epoch-2-7c71906",
+        "dispatch_head": "7c719063c31530bc33ffff23fd5d72371ae28057",
+        "dispatch_upstream_head": "042bd4050a3c826996a104b5219f8a1a9ba5a972",
+        "projection_mode": "C06_SCOPE_REVISION_EXACT9",
+        "validated_base_commit": "7c719063c31530bc33ffff23fd5d72371ae28057",
+        "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_TWO_PARENT_MERGE",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-06_SCOPE_REVISION_REPORT.md",
+          "docs/evidence/manifests/C-06_SCOPE_REVISION_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c06-scope-revision.json",
+          "docs/validation/C-06_SCOPE_REVISION_VALIDATION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_write_scope": [
+          "packages/e2e/harness.py",
+          "packages/orchestration/failure_ledger.py",
+          "packages/orchestration/failure_report.py",
+          "tests/orchestration/test_failure_ledger_c12.py",
+          "tests/orchestration/test_failure_report_c06.py",
+          "tests/orchestration/test_takeover_c13.py"
+        ]
+      }
     }
   ],
-  "last_event_id": "evt_c06_write_lease_issued"
+  "last_event_id": "evt_c06_scope_package_resumed"
 }
