@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C04-DETACHED-SMOKE-PORTABILITY-RECONCILIATION-DIGEST-20260913",
+  "package_id": "C-04",
+  "event_sequence": 757,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-13T00:02:44+09:00",
+  "scope": "seq757 append-only C04 detached-smoke portability exact9; seq1-756 preserved",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 843915,
+    "file_sha256": "AA3703EC359C82B12C6BDE625796D8514829432719224374AACB1A3F190015D7",
+    "canonical_json_sha256": "6693E36A3A843665519C173BB2C44F54BBA513221595AE0022CD89CBCBCAC5E2"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 187203,
+    "file_sha256": "86502C46FC3365ECD947A3CE89001394563A241B5421BA6C7A22029294222906",
+    "machine_summary_canonical_sha256": "166BCADC4949DA6236958A2F00A1DB6480DFBF97D2F46AADD957052D90CE4AC1"
+  }
+}

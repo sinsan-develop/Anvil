@@ -13207,6 +13207,43 @@ class C04StartProjectionTests(unittest.TestCase):
             rows[("show", "-s", "--format=%P", completion)] = "b" * 40
             self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
 
+    def test_c04_start_git_collector_treats_detached_empty_branch_as_collected(self):
+        checker = self._checker()
+        bundle = {
+            "_root": ROOT,
+            "progress": {"repository": {"validated_base_commit": checker.C04_START_BASE}},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            exclude_path = Path(tmp) / "exclude"
+            exclude_path.write_text("", encoding="utf-8")
+            rows = {
+                ("rev-parse", "HEAD"): checker.C04_START_BASE,
+                ("branch", "--show-current"): "",
+                ("status", "--porcelain", "--untracked-files=all"): "",
+                ("remote", "get-url", "development"): checker.C04_START_DEVELOPMENT_URL,
+                ("rev-parse", checker.C04_START_DEVELOPMENT_REF): checker.C04_START_BASE,
+                ("rev-parse", checker.C04_START_BASE): checker.C04_START_BASE,
+                ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{checker.C04_START_BRANCH}"): checker.C04_START_DEVELOPMENT_REF,
+                ("diff", "--cached", "--name-only"): "\n".join(self.EXACT12),
+                ("diff", "--name-only"): "",
+                ("ls-files", "--others", "--exclude-standard"): "",
+            }
+
+            def raw(_root, *args):
+                if args == ("rev-parse", "--path-format=absolute", "--git-path", "info/exclude"):
+                    return f"{exclude_path}\n"
+                if args[:2] == ("-c", f"core.excludesFile={exclude_path}"):
+                    return rows.get(args[2:], "")
+                return None
+
+            with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=raw), mock.patch.object(
+                checker, "_c02_git_quiet_check", return_value=True
+            ):
+                self.assertEqual(
+                    ["C04_START_PATH_OR_CLEAN_INVALID"],
+                    checker._collect_c04_start_projection_git(bundle),
+                )
+
 
 class C04FinalAcceptanceProjectionTests(unittest.TestCase):
     PRODUCT = "9e7248320aeaf465debd176354c4fad82f97c35c"
@@ -13330,6 +13367,225 @@ class C04FinalAcceptanceProjectionTests(unittest.TestCase):
         with mock.patch.object(checker, "_collect_c04_final_acceptance_git", return_value=["SEQ756_SELECTED"]) as selected, mock.patch.object(checker, "_collect_c04_start_projection_git", side_effect=AssertionError("seq751 must not run")):
             self.assertEqual(["SEQ756_SELECTED"], checker._validate_git_projection(dispatch))
             selected.assert_called_once_with(dispatch)
+
+
+class C04DetachedSmokePortabilityReconciliationTests(unittest.TestCase):
+    FIX = "1cc8f2803a362b01f294590dacf173dd4e98f60a"
+    MERGED_MAIN = "36cf22d41d260e0d3275bc231bb67a4a8f0b6a11"
+    FEATURE_ACCEPTANCE = "d70e149edd99d3a09073970d913288ca4ab44d9c"
+    DEVELOPMENT_MAIN = "028765cea128c73fb2404e6cefefce12175cb9f4"
+    BRANCH = "codex/c04-detached-smoke-portability-r1"
+    FIX_PATHS = sorted([
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+    EXACT9 = sorted([
+        "docs/04_test_reports/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_RESULT.md",
+        "docs/evidence/manifests/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c04-detached-smoke-portability-reconciliation.json",
+        "docs/validation/C-04_DETACHED_SMOKE_PORTABILITY_RECONCILIATION_VALIDATION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(
+            hasattr(checker, "c04_detached_smoke_portability_reconciliation_from_root"),
+            "C-04 portability reconciliation builder missing",
+        )
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C04_PORTABILITY_P]),
+            "events": json.loads(artifacts[checker.C04_PORTABILITY_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C04_PORTABILITY_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C04_PORTABILITY_D]),
+        }
+
+    def test_seq757_builder_is_exact_deterministic_and_preserves_seq756_raw_objects(self):
+        checker = self._checker()
+        first = checker.c04_detached_smoke_portability_reconciliation_from_root(ROOT)
+        self.assertEqual(first, checker.c04_detached_smoke_portability_reconciliation_from_root(ROOT))
+        self.assertEqual(self.EXACT9, sorted(first))
+        historical = subprocess.check_output(
+            ["git", "show", f"{self.FIX}:docs/progress/progress-events.json"], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 756),
+            checker.raw_event_object_prefix_bytes(first[checker.C04_PORTABILITY_E], 756),
+        )
+        progress = json.loads(first[checker.C04_PORTABILITY_P])
+        events = json.loads(first[checker.C04_PORTABILITY_E])["events"]
+        manifest = json.loads(first[checker.C04_PORTABILITY_M])
+        self.assertEqual((757, "REPOSITORY_RECONCILED"), (events[-1]["sequence"], events[-1]["event_type"]))
+        self.assertEqual(
+            ("C-04", "ACCEPTED", None, None, None),
+            (progress["current_work_package"], progress["status"], progress["active_agent"], progress["worker_lease"], progress["write_lease"]),
+        )
+        self.assertEqual({"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"}, progress["next_work_package"])
+        self.assertEqual("ISSUE_C05_WORK_INSTRUCTION", progress["next_safe_action"])
+        self.assertEqual("NOT_REACHED", manifest["dir2_status"])
+        self.assertEqual("MAIN_INTERNAL_TECHNICAL_CORRECTION", manifest["authority_classification"])
+        self.assertEqual(self.FIX_PATHS, manifest["lineage"]["fix_exact_paths"])
+        rows = {row["path"]: row for row in manifest["raw_checksums"]}
+        self.assertEqual(set(self.EXACT9) - {checker.C04_PORTABILITY_M}, set(rows))
+        for path, row in rows.items():
+            self.assertEqual(len(first[path]), row["bytes"])
+            self.assertEqual(hashlib.sha256(first[path]).hexdigest().upper(), row["sha256"])
+
+    def test_seq757_projection_rejects_history_state_lineage_and_checksum_mutations(self):
+        checker = self._checker()
+        artifacts = checker.c04_detached_smoke_portability_reconciliation_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C04_PORTABILITY_M])
+        original = Path.read_bytes
+
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c04_detached_smoke_portability_reconciliation(self._bundle(checker, artifacts), manifest))
+            for label, mutate in (
+                ("c04", lambda bundle: bundle["progress"].update(status="BLOCKED")),
+                ("c05", lambda bundle: bundle["progress"]["next_work_package"].update(status="ACTIVE")),
+                ("lease", lambda bundle: bundle["progress"].update(worker_lease={"status": "ACTIVE"})),
+            ):
+                with self.subTest(label=label):
+                    changed = self._bundle(checker, artifacts); mutate(changed)
+                    self.assertTrue(checker.validate_c04_detached_smoke_portability_reconciliation(changed, manifest))
+            for label, mutate in (
+                ("authority", lambda value: value.update(authority_classification="HUMAN_APPROVAL")),
+                ("fix", lambda value: value["lineage"].update(fix_commit="0" * 40)),
+                ("paths", lambda value: value["lineage"].update(fix_exact_paths=self.FIX_PATHS[:-1])),
+                ("checksum", lambda value: value["raw_checksums"][0].update(sha256="0" * 64)),
+            ):
+                with self.subTest(label=label):
+                    changed = copy.deepcopy(manifest); mutate(changed)
+                    self.assertTrue(checker.validate_c04_detached_smoke_portability_reconciliation(self._bundle(checker, artifacts), changed))
+
+        mutated_events = artifacts[checker.C04_PORTABILITY_E].replace(
+            b'"event_id": "evt_g05_legacy_migration"',
+            b'"event_id": "xvt_g05_legacy_migration"',
+            1,
+        )
+        def mutated_history(path):
+            if path == ROOT / checker.C04_PORTABILITY_E:
+                return mutated_events
+            return frozen(path)
+        with mock.patch.object(Path, "read_bytes", mutated_history):
+            errors = checker.validate_c04_detached_smoke_portability_reconciliation(self._bundle(checker, artifacts), manifest)
+        self.assertIn("C04_PORTABILITY_HISTORY_MUTATED", errors)
+        self.assertIn("C04_PORTABILITY_RAW_BYTES_INVALID", errors)
+
+    def test_seq757_git_accepts_only_precommit_direct_child_and_reviewed_merge(self):
+        checker = self._checker()
+        meta = checker.c04_detached_smoke_portability_reconciliation_metadata()
+        successor = "a" * 40
+        merged = "b" * 40
+        status_key = ("status", "--porcelain", "--untracked-files=all")
+        common = {
+            ("remote", "get-url", "development"): checker.C04_PORTABILITY_DEVELOPMENT_URL,
+            ("rev-parse", checker.C04_PORTABILITY_DEVELOPMENT_REF): self.MERGED_MAIN,
+            ("rev-parse", self.FIX): self.FIX,
+            ("rev-parse", self.MERGED_MAIN): self.MERGED_MAIN,
+            ("rev-parse", self.FEATURE_ACCEPTANCE): self.FEATURE_ACCEPTANCE,
+            ("rev-parse", self.DEVELOPMENT_MAIN): self.DEVELOPMENT_MAIN,
+            ("show", "-s", "--format=%P", self.FIX): self.MERGED_MAIN,
+            ("show", "-s", "--format=%P", self.MERGED_MAIN): f"{self.DEVELOPMENT_MAIN} {self.FEATURE_ACCEPTANCE}",
+            ("diff", "--name-only", self.MERGED_MAIN, self.FIX): "\n".join(self.FIX_PATHS),
+        }
+        lineage_checks = {
+            ("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, self.FEATURE_ACCEPTANCE),
+            ("merge-base", "--is-ancestor", self.FEATURE_ACCEPTANCE, self.MERGED_MAIN),
+            ("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, self.MERGED_MAIN),
+            ("merge-base", "--is-ancestor", self.MERGED_MAIN, self.FIX),
+            ("diff", "--quiet", self.FEATURE_ACCEPTANCE, self.MERGED_MAIN),
+        }
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.FIX}}}
+
+        def run(values, checks):
+            with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: values.get(args)), mock.patch.object(
+                checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args in checks
+            ):
+                return checker._collect_c04_detached_smoke_portability_reconciliation_git(bundle)
+
+        pre = common | {
+            ("rev-parse", "HEAD"): self.FIX,
+            ("branch", "--show-current"): self.BRANCH,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): "",
+            status_key: "\n".join("M  " + path for path in self.EXACT9),
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT9),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        pre_checks = lineage_checks | {("diff", "--cached", "--check")}
+        self.assertEqual([], run(pre, pre_checks))
+        self.assertTrue(run(pre | {("diff", "--cached", "--name-only"): "\n".join(self.EXACT9[:-1])}, pre_checks))
+        self.assertTrue(run(pre | {("show", "-s", "--format=%P", self.FIX): self.FEATURE_ACCEPTANCE}, pre_checks))
+
+        post = common | {
+            ("rev-parse", "HEAD"): successor,
+            ("branch", "--show-current"): self.BRANCH,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): f"development/{self.BRANCH}",
+            ("show", "-s", "--format=%P", successor): self.FIX,
+            ("diff", "--name-only", self.FIX, successor): "\n".join(self.EXACT9),
+            status_key: "",
+        }
+        post_checks = lineage_checks | {
+            ("merge-base", "--is-ancestor", self.FIX, successor),
+            ("diff", "--check", self.FIX, successor),
+        }
+        self.assertEqual([], run(post, post_checks))
+        self.assertTrue(run(post | {("show", "-s", "--format=%P", successor): f"{self.FIX} {'c' * 40}"}, post_checks))
+
+        merge = common | {
+            ("rev-parse", "HEAD"): merged,
+            ("rev-parse", checker.C04_PORTABILITY_DEVELOPMENT_REF): merged,
+            ("branch", "--show-current"): "main",
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main"): "development/main",
+            ("show", "-s", "--format=%P", merged): f"{self.MERGED_MAIN} {successor}",
+            ("show", "-s", "--format=%P", successor): self.FIX,
+            ("diff", "--name-only", self.FIX, successor): "\n".join(self.EXACT9),
+            ("diff", "--name-only", self.FIX, merged): "\n".join(self.EXACT9),
+            status_key: "",
+        }
+        merge_checks = lineage_checks | {
+            ("merge-base", "--is-ancestor", self.FIX, successor),
+            ("merge-base", "--is-ancestor", self.MERGED_MAIN, merged),
+            ("diff", "--check", self.FIX, successor),
+            ("diff", "--check", self.FIX, merged),
+            ("diff", "--quiet", successor, merged),
+        }
+        self.assertEqual([], run(merge, merge_checks))
+        self.assertTrue(run(merge | {("show", "-s", "--format=%P", merged): f"{successor} {self.MERGED_MAIN}"}, merge_checks))
+        self.assertTrue(run(merge, merge_checks - {("diff", "--quiet", successor, merged)}))
+        self.assertTrue(run(merge | {("diff", "--name-only", self.FIX, merged): self.EXACT9[0]}, merge_checks))
+        self.assertEqual([], run(merge | {("branch", "--show-current"): ""}, merge_checks))
+
+    def test_seq757_dispatches_before_seq756(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 757}}
+        with mock.patch.object(
+            checker,
+            "_collect_c04_detached_smoke_portability_reconciliation_git",
+            return_value=["SEQ757_SELECTED"],
+        ) as selected, mock.patch.object(
+            checker,
+            "_collect_c04_final_acceptance_git",
+            side_effect=AssertionError("seq756 predicate must not run"),
+        ):
+            self.assertEqual(["SEQ757_SELECTED"], checker._validate_git_projection(bundle))
+            selected.assert_called_once_with(bundle)
 
 
 if __name__ == "__main__":
