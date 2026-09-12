@@ -14178,5 +14178,125 @@ class C05FinalAcceptanceProjectionTests(unittest.TestCase):
         self.assertTrue(run(merge, merge_checks - {("diff", "--quiet", completion, merged)}))
 
 
+class C06StartProjectionTests(unittest.TestCase):
+    BASE = "042bd4050a3c826996a104b5219f8a1a9ba5a972"
+    BRANCH = "codex/c06-failure-report-revalidation-r1"
+    EXACT9 = sorted([
+        "docs/04_test_reports/C-06_START_PROJECTION_REPORT.md",
+        "docs/evidence/manifests/C-06_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c06-start.json",
+        "docs/validation/C-06_START_VALIDATION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c06_start_projection_from_root"), "C-06 start builder missing")
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C06_START_P]),
+            "events": json.loads(artifacts[checker.C06_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C06_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C06_START_D]),
+        }
+
+    def test_seq771_builder_is_exact_deterministic_and_preserves_history(self):
+        checker = self._checker()
+        artifacts = checker.c06_start_projection_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c06_start_projection_from_root(ROOT))
+        self.assertEqual(self.EXACT9, sorted(artifacts))
+        historical = subprocess.check_output(["git", "show", f"{self.BASE}:{checker.C06_START_E}"], cwd=ROOT)
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 768),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C06_START_E], 768),
+        )
+        progress = json.loads(artifacts[checker.C06_START_P])
+        events = json.loads(artifacts[checker.C06_START_E])["events"]
+        self.assertEqual((769, 770, 771), tuple(event["sequence"] for event in events[-3:]))
+        self.assertEqual(
+            ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+            [event["event_type"] for event in events[-3:]],
+        )
+        self.assertEqual(("C-06", "IN_PROGRESS", "developer-primary"), (
+            progress["current_work_package"], progress["status"], progress["active_agent"]["actor_id"]))
+        self.assertEqual("ACTIVE", progress["worker_lease"]["status"])
+        self.assertEqual("ACTIVE", progress["write_lease"]["status"])
+        self.assertEqual({"package_id": "C-07", "status": "NOT_READY"}, progress["next_work_package"])
+        self.assertEqual("NOT_REACHED", progress["c06_start_projection"]["dir2_status"])
+
+    def test_seq771_manifest_binds_existing_wi_exact5_and_truth_boundary(self):
+        checker = self._checker()
+        artifacts = checker.c06_start_projection_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C06_START_M])
+        self.assertEqual("2CAF6BE8B2AEBB012939363B13C6B44B3BDD5302374C495ED4D034FED662FE57", manifest["work_instruction_sha256"])
+        self.assertEqual("BE3E51945F91B4A25DB7617904906D8A68F9FFDC02A56DBF1F4BEF12D5AF1493", manifest["invocation_sha256"])
+        self.assertEqual(checker.c06_start_product_write_scope(), manifest["product_exact_paths"])
+        self.assertEqual("UNCHANGED", manifest["authority"]["requirements_change"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["database"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["provider"])
+
+    def test_seq771_validator_rejects_manifest_and_history_tampering(self):
+        checker = self._checker()
+        artifacts = checker.c06_start_projection_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C06_START_M])
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c06_start_projection(self._bundle(checker, artifacts), manifest))
+            changed = copy.deepcopy(manifest)
+            changed["work_instruction_sha256"] = "0" * 64
+            self.assertIn("C06_START_PROJECTION_INVALID", checker.validate_c06_start_projection(self._bundle(checker, artifacts), changed))
+        mutated = artifacts[checker.C06_START_E].replace(
+            b"\"event_id\": \"evt_g05_legacy_migration\"",
+            b"\"event_id\": \"xvt_g05_legacy_migration\"",
+            1,
+        )
+        def mutated_history(path):
+            if path == ROOT / checker.C06_START_E:
+                return mutated
+            return frozen(path)
+        with mock.patch.object(Path, "read_bytes", mutated_history):
+            self.assertIn("C06_START_HISTORY_MUTATED", checker.validate_c06_start_projection(self._bundle(checker, artifacts), manifest))
+
+    def test_seq771_git_accepts_exact_precommit_and_dispatches_first(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE}}}
+        rows = {
+            ("rev-parse", "HEAD"): self.BASE,
+            ("branch", "--show-current"): self.BRANCH,
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join("M  " + path for path in self.EXACT9),
+            ("remote", "get-url", "development"): checker.C06_START_DEVELOPMENT_URL,
+            ("rev-parse", checker.C06_START_DEVELOPMENT_REF): self.BASE,
+            ("rev-parse", self.BASE): self.BASE,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): checker.C06_START_DEVELOPMENT_REF,
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT9),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(
+            checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args == ("diff", "--cached", "--check")
+        ):
+            self.assertEqual([], checker._collect_c06_start_projection_git(bundle))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 771}}
+        with mock.patch.object(checker, "_collect_c06_start_projection_git", return_value=["SEQ771_SELECTED"]) as selected, mock.patch.object(
+            checker, "_collect_c05_final_acceptance_git", side_effect=AssertionError("seq768 must not run")
+        ):
+            self.assertEqual(["SEQ771_SELECTED"], checker._validate_git_projection(dispatch))
+            selected.assert_called_once_with(dispatch)
+
+
 if __name__ == "__main__":
     unittest.main()
