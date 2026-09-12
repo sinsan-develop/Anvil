@@ -12,7 +12,7 @@ import re
 from pathlib import Path, PurePosixPath
 from typing import Any, Iterable
 
-from .inventory import canonical_sha256
+from .inventory import canonical_sha256, is_reparse_point
 
 
 _SOURCE = {".py", ".ts", ".tsx", ".js", ".jsx"}
@@ -78,15 +78,35 @@ def _warning_sort(row: dict[str, Any]) -> tuple[bytes, bytes, bytes, int]:
     )
 
 
+def _canonical_inventory_path(raw_path: object) -> tuple[str, str | None]:
+    value = str(raw_path).replace("\\", "/")
+    segments = value.split("/")
+    if ".." in segments:
+        return value, "PATH_OUTSIDE_REPOSITORY"
+    if (
+        not value
+        or value == "."
+        or value.startswith("/")
+        or re.match(r"^[A-Za-z]:", value)
+        or any(segment in {"", "."} for segment in segments)
+        or PurePosixPath(value).as_posix() != value
+    ):
+        return value, "PATH_NOT_CANONICAL_RELATIVE"
+    return value, None
+
+
 def _safe_source(repository: Path, relative: str) -> tuple[Path | None, str | None]:
-    raw = repository / Path(relative)
-    try:
-        if raw.is_symlink() or raw.lstat().st_ino != raw.stat().st_ino:
+    raw = repository
+    for part in PurePosixPath(relative).parts:
+        raw = raw / part
+        try:
+            path_stat = raw.lstat()
+        except FileNotFoundError:
+            break
+        except OSError:
+            return None, "PATH_UNREADABLE"
+        if is_reparse_point(raw, path_stat):
             return None, "PATH_REPARSE_POINT_DENIED"
-    except FileNotFoundError:
-        pass
-    except OSError:
-        return None, "PATH_UNREADABLE"
     candidate = raw.resolve(strict=False)
     root = repository.resolve(strict=True)
     try:
@@ -155,15 +175,21 @@ def _python_rows(
                 )
         elif isinstance(node, ast.ImportFrom):
             prefix = "." * node.level
-            targets = [prefix + node.module] if node.module else [prefix + alias.name for alias in node.names]
-            for target in targets:
+            base_target = prefix + node.module if node.module else None
+            targets = (
+                [(f"{base_target}.{alias.name}", base_target) for alias in node.names]
+                if base_target
+                else [(prefix + alias.name, None) for alias in node.names]
+            )
+            for target, fallback_target in targets:
                 dependencies.append(
                     {
                         "path": path,
                         "target": target,
+                        "fallback_target": fallback_target,
                         "kind": "import",
                         "unresolved": True,
-                        "external": not prefix and target.split(".", 1)[0] in _PY_EXTERNAL,
+                        "external": not prefix and (base_target or target).split(".", 1)[0] in _PY_EXTERNAL,
                         "line": node.lineno,
                     }
                 )
@@ -233,6 +259,54 @@ def _is_test_path(path: str) -> bool:
     )
 
 
+def _mask_ts_non_code(text: str) -> str:
+    """Blank comments and string literals while preserving offsets/newlines."""
+
+    masked = list(text)
+    index = 0
+    state = "code"
+    quote = ""
+    while index < len(text):
+        current = text[index]
+        following = text[index + 1] if index + 1 < len(text) else ""
+        if state == "code":
+            if current in {"'", '"', "`"}:
+                state = "string"
+                quote = current
+                masked[index] = " "
+            elif current == "/" and following == "/":
+                state = "line_comment"
+                masked[index] = masked[index + 1] = " "
+                index += 1
+            elif current == "/" and following == "*":
+                state = "block_comment"
+                masked[index] = masked[index + 1] = " "
+                index += 1
+        elif state == "string":
+            if current != "\n":
+                masked[index] = " "
+            if current == "\\" and following:
+                if following != "\n":
+                    masked[index + 1] = " "
+                index += 1
+            elif current == quote:
+                state = "code"
+        elif state == "line_comment":
+            if current == "\n":
+                state = "code"
+            else:
+                masked[index] = " "
+        else:
+            if current != "\n":
+                masked[index] = " "
+            if current == "*" and following == "/":
+                masked[index + 1] = " "
+                index += 1
+                state = "code"
+        index += 1
+    return "".join(masked)
+
+
 def build_indexes(
     repository: Path,
     inventory: Iterable[dict[str, Any]],
@@ -245,8 +319,19 @@ def build_indexes(
     dependencies: list[dict[str, Any]] = []
     tests: list[dict[str, Any]] = []
     warnings: list[dict[str, Any]] = []
+    ts_sources: list[tuple[str, str]] = []
+    ts_definition_spans: set[tuple[str, int, int, str]] = set()
     inventory_rows = [row for row in inventory if row.get("type") == "file"]
-    paths = sorted({str(row["path"]) for row in inventory_rows}, key=_encoded)
+    raw_paths = sorted({str(row["path"]) for row in inventory_rows}, key=_encoded)
+    paths: list[str] = []
+    for raw_path in raw_paths:
+        canonical, error = _canonical_inventory_path(raw_path)
+        if error:
+            warnings.append(
+                {"path": canonical, "kind": "path_warning", "code": error, "message": error}
+            )
+        else:
+            paths.append(canonical)
     files = [path for path in paths if PurePosixPath(path).suffix.lower() in _SOURCE]
     source_paths = set(files)
 
@@ -292,7 +377,9 @@ def build_indexes(
             warnings.extend(py_warnings)
             continue
 
-        for match in _TS_SYMBOL.finditer(text):
+        ts_sources.append((path, text))
+        code_text = _mask_ts_non_code(text)
+        for match in _TS_SYMBOL.finditer(code_text):
             symbols.append(
                 {
                     "name": match.group(1),
@@ -301,6 +388,7 @@ def build_indexes(
                     "line": text.count("\n", 0, match.start()) + 1,
                 }
             )
+            ts_definition_spans.add((path, match.start(1), match.end(1), match.group(1)))
         for match in _TS_IMPORT.finditer(text):
             target = match.group(1)
             dependencies.append(
@@ -337,20 +425,22 @@ def build_indexes(
                 }
             )
 
-        defined_names = {row["name"] for row in symbols}
+    defined_names = {str(row["name"]) for row in symbols}
+    for path, text in ts_sources:
+        code_text = _mask_ts_non_code(text)
         for name in sorted(defined_names, key=_encoded):
-            for match in re.finditer(r"\b" + re.escape(name) + r"\b", text):
-                line = text.count("\n", 0, match.start()) + 1
-                if not any(
-                    row["path"] == path
-                    and row["name"] == name
-                    and row["line"] == line
-                    and row["kind"] in {"function", "class", "symbol"}
-                    for row in symbols
-                ):
-                    reference_candidates.append(
-                        {"name": name, "kind": "reference", "path": path, "line": line}
-                    )
+            pattern = re.compile(r"(?<![\w$])" + re.escape(name) + r"(?![\w$])")
+            for match in pattern.finditer(code_text):
+                if (path, match.start(), match.end(), name) in ts_definition_spans:
+                    continue
+                reference_candidates.append(
+                    {
+                        "name": name,
+                        "kind": "reference",
+                        "path": path,
+                        "line": text.count("\n", 0, match.start()) + 1,
+                    }
+                )
 
     for row in dependencies:
         is_python = PurePosixPath(str(row["path"])).suffix.lower() == ".py"
@@ -360,6 +450,17 @@ def build_indexes(
             source_paths,
             python=is_python,
         )
+        fallback_target = row.pop("fallback_target", None)
+        if resolved is None and fallback_target:
+            fallback_resolved = _resolved_path(
+                str(row["path"]),
+                str(fallback_target),
+                source_paths,
+                python=is_python,
+            )
+            if fallback_resolved is not None or row.get("external"):
+                row["target"] = fallback_target
+                resolved = fallback_resolved
         if resolved is not None:
             row["resolved_path"] = resolved
             row["unresolved"] = False
@@ -368,6 +469,19 @@ def build_indexes(
             row["unresolved"] = False
         else:
             row["resolved_path"] = None
+
+    dependencies = list(
+        {
+            (
+                str(row["path"]),
+                int(row["line"]),
+                str(row["kind"]),
+                str(row["target"]),
+                row.get("resolved_path"),
+            ): row
+            for row in dependencies
+        }.values()
+    )
 
     defined = {str(row["name"]) for row in symbols}
     references = [row for row in reference_candidates if str(row["name"]) in defined]
@@ -410,6 +524,8 @@ def build_indexes(
     direct_files: set[str] = set()
     callers: set[str] = set()
     importers: set[str] = set()
+    importer_hops: dict[str, int] = {}
+    dependency_hops: set[tuple[int, str, str]] = set()
     related_tests: set[str] = set()
     query_kind = "none"
     normalized_impact = impact.replace("\\", "/") if impact else None
@@ -430,11 +546,22 @@ def build_indexes(
                 if str(row.get("name")) == normalized_impact
                 and str(row["path"]) not in direct_files
             )
-        importers.update(
-            str(row["path"])
-            for row in dependencies
-            if row.get("resolved_path") in direct_files and str(row["path"]) not in direct_files
-        )
+        frontier = set(direct_files)
+        hop = 1
+        while frontier:
+            next_frontier: set[str] = set()
+            for row in dependencies:
+                resolved_path = row.get("resolved_path")
+                importer = str(row["path"])
+                if resolved_path not in frontier or importer in direct_files:
+                    continue
+                dependency_hops.add((hop, importer, str(resolved_path)))
+                if importer not in importer_hops:
+                    importer_hops[importer] = hop
+                    importers.add(importer)
+                    next_frontier.add(importer)
+            frontier = next_frontier
+            hop += 1
         impacted_sources = direct_files | importers | callers
         related_tests.update(path for path in impacted_sources if _is_test_path(path))
         for test in tests:
@@ -442,15 +569,22 @@ def build_indexes(
                 related_tests.add(str(test["path"]))
 
     related_paths = sorted(direct_files | callers | importers | related_tests, key=_encoded)
-    test_selection = [
-        {
-            "path": path,
-            "reasons": [
-                "IMPACT_REFERENCE" if path in callers else "IMPORTS_IMPACTED_FILE"
-            ],
-        }
-        for path in sorted(related_tests, key=_encoded)
-    ]
+    test_selection = []
+    for path in sorted(related_tests, key=_encoded):
+        reasons: list[str] = []
+        if path in callers:
+            reasons.append("IMPACT_REFERENCE")
+        minimum_hop = importer_hops.get(path)
+        if minimum_hop is not None:
+            reasons.append(
+                "DIRECT_IMPORT_DEPENDENCY"
+                if minimum_hop == 1
+                else "TRANSITIVE_IMPORT_DEPENDENCY"
+            )
+        selection: dict[str, Any] = {"path": path, "reasons": reasons}
+        if minimum_hop is not None:
+            selection["minimum_hop"] = minimum_hop
+        test_selection.append(selection)
     risks = [
         {
             "code": "UNRESOLVED_DEPENDENCY",
@@ -482,6 +616,18 @@ def build_indexes(
             "direct_files": sorted(direct_files, key=_encoded),
             "callers": sorted(callers, key=_encoded),
             "importers": sorted(importers, key=_encoded),
+            "dependency_hops": [
+                {
+                    "from_path": from_path,
+                    "hop": hop,
+                    "reason": "IMPORT_DEPENDENCY",
+                    "to_path": to_path,
+                }
+                for hop, from_path, to_path in sorted(
+                    dependency_hops,
+                    key=lambda item: (item[0], _encoded(item[1]), _encoded(item[2])),
+                )
+            ],
             "related_tests": sorted(related_tests, key=_encoded),
             "related_paths": related_paths,
             "test_selection": test_selection,
