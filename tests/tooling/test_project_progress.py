@@ -13177,8 +13177,9 @@ class C04StartProjectionTests(unittest.TestCase):
 
     def test_c04_git_predicate_accepts_exact_precommit_and_sole_child_only(self):
         checker = self._checker()
-        bundle = checker.load_bundle(ROOT)
-        self.assertEqual([], checker._collect_c04_start_projection_git(bundle))
+        generated = checker.c04_start_projection_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(generated[checker.C04_START_P])}
+        self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
         completion = "a" * 40
         rows = {
             ("rev-parse", "HEAD"): completion,
@@ -13205,6 +13206,130 @@ class C04StartProjectionTests(unittest.TestCase):
             self.assertEqual([], checker._collect_c04_start_projection_git(bundle))
             rows[("show", "-s", "--format=%P", completion)] = "b" * 40
             self.assertIn("C04_START_PATH_OR_CLEAN_INVALID", checker._collect_c04_start_projection_git(bundle))
+
+
+class C04FinalAcceptanceProjectionTests(unittest.TestCase):
+    PRODUCT = "9e7248320aeaf465debd176354c4fad82f97c35c"
+    START = "be827a302b08ab0365dff2977c951e1005d30fe8"
+    DEVELOPMENT_MAIN = "028765cea128c73fb2404e6cefefce12175cb9f4"
+    BRANCH = "codex/c04-steer-resume-r1"
+    EXACT7 = sorted([
+        "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c04-final-acceptance.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c04_final_acceptance_from_root"), "C-04 final builder missing")
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C04_FINAL_P]),
+            "events": json.loads(artifacts[checker.C04_FINAL_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C04_FINAL_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C04_FINAL_D]),
+        }
+
+    def test_seq756_builder_is_exact_append_only_and_accepts_c04(self):
+        checker = self._checker()
+        artifacts = checker.c04_final_acceptance_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c04_final_acceptance_from_root(ROOT))
+        self.assertEqual(self.EXACT7, sorted(artifacts))
+        historical = subprocess.check_output(["git", "show", f"{self.PRODUCT}:{checker.C04_FINAL_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(historical, 751), checker.raw_event_object_prefix_bytes(artifacts[checker.C04_FINAL_E], 751))
+        progress = json.loads(artifacts[checker.C04_FINAL_P])
+        events = json.loads(artifacts[checker.C04_FINAL_E])["events"]
+        self.assertEqual((752, 753, 754, 755, 756), tuple(event["sequence"] for event in events[-5:]))
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED", "MAIN_PACKAGE_ACCEPTED"],
+            [event["event_type"] for event in events[-5:]],
+        )
+        self.assertEqual(("C-04", "ACCEPTED", None, None, None), (progress["current_work_package"], progress["status"], progress["active_agent"], progress["worker_lease"], progress["write_lease"]))
+        self.assertEqual({"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"}, progress["next_work_package"])
+        self.assertEqual("ISSUE_C05_WORK_INSTRUCTION", progress["next_safe_action"])
+        self.assertEqual("NOT_REACHED", progress["c04_final_acceptance"]["dir2_status"])
+
+    def test_seq756_manifest_binds_product_evidence_reviews_and_truthful_boundary(self):
+        checker = self._checker()
+        artifacts = checker.c04_final_acceptance_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C04_FINAL_M])
+        self.assertEqual([self.DEVELOPMENT_MAIN, self.START, self.PRODUCT], manifest["lineage"]["ancestor_chain"])
+        self.assertEqual(checker.c04_start_product_write_scope(), manifest["product_exact_paths"])
+        self.assertEqual((460, 460), (manifest["test_evidence"]["main_precommit"]["passed"], manifest["test_evidence"]["main_postcommit"]["passed"]))
+        self.assertEqual({"spec": "PASS", "quality": "APPROVED", "critical": 0, "important": 0, "minor": 0}, manifest["final_reviewer_r6"])
+        self.assertEqual((45, 353, 0), (manifest["independent_acceptance_r6"]["nodes"], manifest["independent_acceptance_r6"]["cases"], manifest["independent_acceptance_r6"]["external_io_count"]))
+        self.assertEqual("7950C856DDA2287638DF6D4756AE0138AECDF19F79D1F246BD8B293BC729CA70", manifest["independent_acceptance_r6"]["artifact_manifest_sha256"])
+        fingerprints = {row["fingerprint"] for row in manifest["non_product_tool_errors"]}
+        self.assertTrue({"C04_START_PATH_OR_CLEAN_INVALID", "POWERSHELL_SELECT_STRING_DOLLAR_QUESTION_FALSE_POSITIVE", "MAIN_COORDINATION_SEND_MESSAGE_SCHEMA_PARSE", "C03_START_WORK_INSTRUCTION_HASH_INVALID"}.issubset(fingerprints))
+        broad = manifest["test_evidence"]["broad_tooling_non_authoritative"]
+        self.assertEqual((366, 3, "PRE_EXISTING_C03_HISTORICAL_FIXTURE_DRIFT_OUTSIDE_C04_SCOPE"), (broad["passed"], broad["failed"], broad["classification"]))
+        self.assertEqual("DEFERRED_U02", manifest["external_validation"]["browser"])
+        for key in ("ui", "fastapi_binding", "database", "external_developer_backend", "provider", "telegram", "wsl", "deployment", "network"):
+            self.assertEqual("NOT_EXECUTED", manifest["external_validation"][key])
+
+    def test_seq756_validator_rejects_manifest_and_history_tampering(self):
+        checker = self._checker()
+        artifacts = checker.c04_final_acceptance_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C04_FINAL_M])
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c04_final_acceptance(self._bundle(checker, artifacts), manifest))
+            changed = copy.deepcopy(manifest); changed["product_commit"] = "0" * 40
+            self.assertIn("C04_FINAL_PROJECTION_INVALID", checker.validate_c04_final_acceptance(self._bundle(checker, artifacts), changed))
+        mutated = artifacts[checker.C04_FINAL_E].replace(b'"event_id": "evt_g05_legacy_migration"', b'"event_id": "xvt_g05_legacy_migration"', 1)
+        def mutated_history(path):
+            if path == ROOT / checker.C04_FINAL_E:
+                return mutated
+            return frozen(path)
+        with mock.patch.object(Path, "read_bytes", mutated_history):
+            self.assertIn("C04_FINAL_HISTORY_MUTATED", checker.validate_c04_final_acceptance(self._bundle(checker, artifacts), manifest))
+
+    def test_seq756_git_accepts_exact_precommit_and_binds_direct_lineage(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.PRODUCT}}}
+        completion = "a" * 40
+        rows = {
+            ("rev-parse", "HEAD"): self.PRODUCT,
+            ("branch", "--show-current"): self.BRANCH,
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join("M  " + path for path in self.EXACT7),
+            ("remote", "get-url", "development"): checker.C04_FINAL_DEVELOPMENT_URL,
+            ("rev-parse", checker.C04_FINAL_DEVELOPMENT_REF): self.DEVELOPMENT_MAIN,
+            ("rev-parse", self.PRODUCT): self.PRODUCT,
+            ("show", "-s", "--format=%P", self.PRODUCT): self.START,
+            ("show", "-s", "--format=%P", self.START): self.DEVELOPMENT_MAIN,
+            ("diff", "--name-only", self.START, self.PRODUCT): "\n".join(checker.c04_start_product_write_scope()),
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): f"development/{self.BRANCH}",
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT7),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        checks = {
+            ("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, self.START),
+            ("merge-base", "--is-ancestor", self.START, self.PRODUCT),
+            ("diff", "--cached", "--check"),
+        }
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args in checks):
+            self.assertEqual([], checker._collect_c04_final_acceptance_git(bundle))
+            rows[("show", "-s", "--format=%P", self.PRODUCT)] = "b" * 40
+            self.assertIn("C04_FINAL_GIT_LINEAGE_INVALID", checker._collect_c04_final_acceptance_git(bundle))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 756}}
+        with mock.patch.object(checker, "_collect_c04_final_acceptance_git", return_value=["SEQ756_SELECTED"]) as selected, mock.patch.object(checker, "_collect_c04_start_projection_git", side_effect=AssertionError("seq751 must not run")):
+            self.assertEqual(["SEQ756_SELECTED"], checker._validate_git_projection(dispatch))
+            selected.assert_called_once_with(dispatch)
 
 
 if __name__ == "__main__":

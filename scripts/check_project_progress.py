@@ -891,6 +891,13 @@ def validate_event_stream(
             event["details"].get("projection_mode") == VALIDATED_BASE_PROJECTION_MODE
             or (
                 progress is not None
+                and progress.get("event_sequence") == 756
+                and event.get("sequence") == 756
+                and event.get("event_id") == "evt_c04_final_main_package_accepted"
+                and event["details"].get("projection_mode") == "C04_FINAL_ACCEPTANCE_EXACT7"
+            )
+            or (
+                progress is not None
                 and progress.get("event_sequence") == 751
                 and event.get("sequence") == 749
                 and event.get("event_id") == "evt_c04_work_instruction_issued"
@@ -12910,6 +12917,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 756:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c04_final_acceptance_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 751:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -13962,6 +13973,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c21_workbench_ui_wsl_auth_browser_runtime_retry_r3_result_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-21_WORKBENCH_UI_WSL_IMMUTABLE_RUNTIME_CONTROL_V2_PUBLICATION_MANIFEST.json":
             errors.extend(validate_c21_workbench_ui_wsl_immutable_runtime_control_v2_publication_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_c04_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-04_START_MANIFEST.json":
             errors.extend(validate_c04_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-03_FINAL_ACCEPTANCE_MANIFEST.json":
@@ -33920,6 +33933,302 @@ def _collect_c04_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
             and not dirty and parents.split() == [C04_START_BASE] and changed == meta["exact_paths"]
             and check("merge-base", "--is-ancestor", C04_START_BASE, head) and check("diff", "--check", C04_START_BASE, head))
         return [] if valid else ["C04_START_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C04_FINAL_P = "docs/progress/build-progress.json"
+C04_FINAL_E = "docs/progress/progress-events.json"
+C04_FINAL_H = "docs/progress/BUILD_HANDOFF.md"
+C04_FINAL_D = "docs/progress/progress-handoff-detached-digest-c04-final-acceptance.json"
+C04_FINAL_M = "docs/evidence/manifests/C-04_FINAL_ACCEPTANCE_MANIFEST.json"
+C04_FINAL_PRODUCT = "9e7248320aeaf465debd176354c4fad82f97c35c"
+C04_FINAL_START = "be827a302b08ab0365dff2977c951e1005d30fe8"
+C04_FINAL_DEVELOPMENT_MAIN = C04_START_BASE
+C04_FINAL_BRANCH = C04_START_BRANCH
+C04_FINAL_DEVELOPMENT_URL = C04_START_DEVELOPMENT_URL
+C04_FINAL_DEVELOPMENT_REF = C04_START_DEVELOPMENT_REF
+C04_FINAL_AT = "2026-09-12T18:00:00+09:00"
+C04_FINAL_INDEPENDENT_MANIFEST_SHA256 = "7950C856DDA2287638DF6D4756AE0138AECDF19F79D1F246BD8B293BC729CA70"
+
+
+def c04_final_acceptance_paths() -> list[str]:
+    return sorted([
+        C04_FINAL_M, C04_FINAL_H, C04_FINAL_P, C04_FINAL_E, C04_FINAL_D,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c04_final_acceptance_metadata() -> dict[str, Any]:
+    paths = c04_final_acceptance_paths()
+    return {
+        "sequence": 756, "projection_mode": "C04_FINAL_ACCEPTANCE_EXACT7",
+        "validated_base_commit": C04_FINAL_PRODUCT, "branch": C04_FINAL_BRANCH,
+        "exact_paths": paths, "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def _c04_final_external_boundary() -> dict[str, str]:
+    return {
+        "ui": "NOT_EXECUTED", "fastapi_binding": "NOT_EXECUTED", "database": "NOT_EXECUTED",
+        "external_developer_backend": "NOT_EXECUTED", "provider": "NOT_EXECUTED",
+        "telegram": "NOT_EXECUTED", "secret": "NOT_ACCESSED", "wsl": "NOT_EXECUTED",
+        "deployment": "NOT_EXECUTED", "network": "NOT_EXECUTED",
+        "browser": "DEFERRED_U02", "e_shot": "DEFERRED_U02",
+    }
+
+
+def _c04_final_evidence() -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], list[dict[str, Any]]]:
+    command = ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/orchestration tests/api tests/e2e"
+    tests = {
+        "main_precommit": {"command": command, "passed": 460, "failed": 0, "scope": "PRECOMMIT_EXACT9"},
+        "main_postcommit": {"command": command, "passed": 460, "failed": 0, "scope": "POSTCOMMIT_PRODUCT_HEAD"},
+        "broad_tooling_non_authoritative": {
+            "command": ".venv/Scripts/python.exe -B -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py",
+            "passed": 366, "failed": 3, "duration_seconds": 1839.96,
+            "classification": "PRE_EXISTING_C03_HISTORICAL_FIXTURE_DRIFT_OUTSIDE_C04_SCOPE",
+            "failure": "C03_START_WORK_INSTRUCTION_HASH_INVALID",
+            "current_product_and_parent_c03_wi_sha256": "38338658EF832C6CC146896943158F9516E9A4692C909D4E7BAF5D9F01A544D1",
+            "seq740_expected_c03_wi_sha256": "96A6F7EF446E663560BC1CD6E05F58D1314AD682B8FFAE308B42FB38552E10B7",
+        },
+    }
+    reviewer = {"spec": "PASS", "quality": "APPROVED", "critical": 0, "important": 0, "minor": 0}
+    independent = {
+        "verdict": "PASS", "nodes": 45, "cases": 353, "failed": 0, "external_io_count": 0,
+        "artifact_directory": r"D:\tmp\anvil-c04-independent-r6-final",
+        "artifact_manifest": "artifact_manifest.json",
+        "artifact_manifest_sha256": C04_FINAL_INDEPENDENT_MANIFEST_SHA256,
+        "verification_level": "L3", "method": "AI",
+    }
+    tool_errors = [
+        {"fingerprint": "C04_START_PATH_OR_CLEAN_INVALID", "count": 1, "classification": "EXPECTED_TRANSIENT_POST_PRODUCT_CHECKER", "product_failure": False},
+        {"fingerprint": "POWERSHELL_SELECT_STRING_DOLLAR_QUESTION_FALSE_POSITIVE", "count": 1, "classification": "MAIN_TOOL_FALSE_POSITIVE", "product_failure": False},
+        {"fingerprint": "MAIN_COORDINATION_SEND_MESSAGE_SCHEMA_PARSE", "count": 4, "classification": "MAIN_COORDINATION_TOOL_INPUT_ERROR_CORRECTED", "unknown_field_count": 2, "missing_message_count": 2, "product_failure": False},
+        {"fingerprint": "SANDBOX_DENY_READ_ACL_EXEC_CREATE", "count": 1, "classification": "SUBAGENT_TOOL_ENVIRONMENT_ERROR_CORRECTED", "product_failure": False},
+        {"fingerprint": "TEST_FIXTURE_EAGER_FALLBACK_READ", "count": 1, "classification": "SUBAGENT_TEST_FIXTURE_ERROR_CORRECTED", "product_failure": False},
+        {"fingerprint": "C04_START_TEST_USED_CURRENT_SUCCESSOR_BUNDLE", "count": 2, "classification": "SUCCESSOR_TEST_FIXTURE_ERROR_CORRECTED", "product_failure": False},
+        {"fingerprint": "C03_START_WORK_INSTRUCTION_HASH_INVALID", "count": 3, "classification": "PRE_EXISTING_HISTORICAL_FIXTURE_DRIFT_OUTSIDE_C04_SCOPE", "product_failure": False},
+    ]
+    return tests, reviewer, independent, tool_errors
+
+
+def c04_final_acceptance_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c04_final_acceptance_metadata()
+    generated = {C04_FINAL_M, C04_FINAL_H, C04_FINAL_P, C04_FINAL_E, C04_FINAL_D}
+    if set(historical) != {C04_FINAL_H, C04_FINAL_P, C04_FINAL_E} or set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C04_FINAL_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C04_FINAL_P]); stream = _c21_resume_json(historical[C04_FINAL_E])
+    if (
+        progress.get("event_sequence") != 751 or stream.get("last_sequence") != 751
+        or len(stream.get("events", [])) != 751 or progress.get("current_work_package") != "C-04"
+        or progress.get("status") != "IN_PROGRESS" or progress.get("worker_lease") != _c04_start_worker_lease()
+        or progress.get("write_lease") != _c04_start_write_lease()
+    ):
+        raise ValueError("C04_FINAL_HISTORY_INVALID")
+    tests, reviewer, independent, tool_errors = _c04_final_evidence()
+    external = _c04_final_external_boundary()
+    lineage = {
+        "development_main_base": C04_FINAL_DEVELOPMENT_MAIN,
+        "start_control_commit": C04_FINAL_START,
+        "product_commit": C04_FINAL_PRODUCT,
+        "ancestor_chain": [C04_FINAL_DEVELOPMENT_MAIN, C04_FINAL_START, C04_FINAL_PRODUCT],
+    }
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C04_FINAL_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": actor, "project_id": "anvil", "run_id": None,
+            "work_package_id": "C-04", "step_id": "FINAL-ACCEPTANCE", "actor": actor,
+            "subject_ref": "C-04/FINAL-ACCEPTANCE", "event_id": event_id, "sequence": sequence,
+            "event_type": event_type, "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event)); return event
+    events = [
+        envelope(752, "WRITE_LEASE_REVOKED", "evt_c04_final_write_lease_revoked", "main-agent-eoul", {
+            "lease_id": C04_START_WRITE_LEASE_ID, "worker_lease_id": C04_START_WORKER_LEASE_ID,
+            "reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED", "write_epoch": 3,
+            "execution_fencing_token": C04_START_EXECUTION_TOKEN, "write_fencing_token": C04_START_WRITE_TOKEN, "status": "REVOKED"}),
+        envelope(753, "WORKER_LEASE_REVOKED", "evt_c04_final_worker_lease_revoked", "main-agent-eoul", {
+            "lease_id": C04_START_WORKER_LEASE_ID, "reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED",
+            "lease_epoch": 2, "execution_fencing_token": C04_START_EXECUTION_TOKEN, "status": "REVOKED"}),
+        envelope(754, "PACKAGE_COMPLETED", "evt_c04_final_package_completed", "developer-primary", {
+            "result_status": "COMPLETED", "package_status": "TEST_REVIEW", "accepted": True,
+            "product_commit": C04_FINAL_PRODUCT, "product_parent": C04_FINAL_START,
+            "product_exact_paths": c04_start_product_write_scope(), "lineage": lineage,
+            "main_precommit_pass_count": 460, "main_postcommit_pass_count": 460,
+            "final_reviewer_r6": reviewer, "external_validation": external}),
+        envelope(755, "INDEPENDENT_TEST_JUDGMENT_RECORDED", "evt_c04_final_independent_test_judgment_recorded", "independent-tester", {
+            "verdict": "PASS", "criteria": "C04_R6_L3_AI", "evidence_ref": r"D:\tmp\anvil-c04-independent-r6-final\artifact_manifest.json",
+            "node_count": 45, "case_count": 353, "external_io_count": 0,
+            "critical_findings": 0, "important_findings": 0, "minor_findings": 0,
+            "artifact_manifest_sha256": C04_FINAL_INDEPENDENT_MANIFEST_SHA256}),
+        envelope(756, "MAIN_PACKAGE_ACCEPTED", "evt_c04_final_main_package_accepted", "main-agent-eoul", {
+            "decision": "ACCEPTED", "accepted": True, "manifest_ref": C04_FINAL_M,
+            "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+            "test_report_ref": r"D:\tmp\anvil-c04-independent-r6-final\verification_report.md",
+            "test_report_sha256": "F9CFE42A25A5C30DCE1346818E04AE68A67BD8BE3AD00A8C7F3978951C07B99F",
+            "next_work_package": "C-05",
+            "next_work_package_status": "READY_FOR_WORK_INSTRUCTION", "projection_mode": meta["projection_mode"],
+            "validated_base_commit": C04_FINAL_PRODUCT, "exact_allowed_paths": meta["exact_paths"],
+            "acceptance_head": C04_FINAL_PRODUCT, "acceptance_upstream_head": C04_FINAL_PRODUCT,
+            "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+            "product_commit": C04_FINAL_PRODUCT, "lineage": lineage, "dir2_status": "NOT_REACHED",
+            "external_validation": external}),
+    ]
+    events_raw = _c21_append_events(historical[C04_FINAL_E], 751, events)
+    retired_write = _c04_start_write_lease(); retired_write.update({"status": "REVOKED", "revoked_at": C04_FINAL_AT, "revocation_reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"})
+    retired_worker = _c04_start_worker_lease(); retired_worker.update({"status": "REVOKED", "revoked_at": C04_FINAL_AT, "revocation_reason": "C04_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"})
+    repository = dict(progress["repository"]); repository.update({
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C04_FINAL_PRODUCT,
+        "product_commit": C04_FINAL_PRODUCT, "product_parent": C04_FINAL_START,
+        "control_head": C04_FINAL_START, "development_main": C04_FINAL_DEVELOPMENT_MAIN,
+        "local_head": C04_FINAL_PRODUCT, "branch": C04_FINAL_BRANCH,
+        "upstream": f"development/{C04_FINAL_BRANCH}", "remote_head": C04_FINAL_PRODUCT,
+        "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "worktree_status": "STAGED_EXACT7", "exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c04_start_product_write_scope(), "push_status": "PRODUCT_PUSHED_COMPLETION_NOT_PUSHED"})
+    completed = list(progress["completed_packages"])
+    if "C-04" not in completed: completed.append("C-04")
+    completed_wi = dict(progress["active_work_instruction"]); completed_wi.update({
+        "result_status": "COMPLETED", "package_status": "ACCEPTED", "accepted": True,
+        "product_commit": C04_FINAL_PRODUCT, "independent_tester_status": "PASS"})
+    progress.update({
+        "snapshot_id": "snapshot-c04-final-acceptance-seq756", "updated_at": C04_FINAL_AT,
+        "recorded_at": C04_FINAL_AT, "event_sequence": 756, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-04", "status": "ACCEPTED",
+        "completed_packages": completed, "active_agent": None, "worker_lease": None, "write_lease": None,
+        "completed_c04_product_worker_lease": retired_worker, "completed_c04_product_write_lease": retired_write,
+        "active_work_instruction": None, "last_completed_work_instruction": completed_wi, "repository": repository,
+        "c04_final_acceptance": {"status": "ACCEPTED", "accepted": True, "event_sequence": 756,
+            "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION", "dir2_status": "NOT_REACHED",
+            "lineage": lineage, "product_exact_paths": c04_start_product_write_scope(), "test_evidence": tests,
+            "final_reviewer_r6": reviewer, "independent_acceptance_r6": independent,
+            "non_product_tool_errors": tool_errors, "external_validation": external},
+        "next_work_package": {"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"},
+        "next_successor_work_package": None, "runtime_next_action": "ISSUE_C05_WORK_INSTRUCTION",
+        "next_safe_action": "ISSUE_C05_WORK_INSTRUCTION",
+        "current_progress_evidence_ref": {"package_id": "C-04", "path": C04_FINAL_D, "manifest_path": C04_FINAL_M},
+        "latest_evidence_manifest_ref": {"path": C04_FINAL_M, "artifact_id": "C04-FINAL-ACCEPTANCE-20260912"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C04_ACCEPTED", "C05_READY_FOR_WORK_INSTRUCTION", "DIR2_NOT_REACHED"], "stop_before_dialogue_report": False}})
+    progress["registry_refs"]["progress_events"] = {"path": C04_FINAL_E, "sha256": _c21_resume_sha(events_raw)}
+    latest = {**files, C04_FINAL_E: events_raw}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress); progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status", "current_phase", "current_work_package", "active_agent", "worker_lease", "write_lease", "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": True, "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION",
+        "dir_status": progress["dir_review"]["status"], "dir2_status": "NOT_REACHED",
+        "completed_worker_lease": retired_worker, "completed_write_lease": retired_write,
+        "repository_head": C04_FINAL_PRODUCT, "repository_upstream": f"development/{C04_FINAL_BRANCH}",
+        "repository_projection_mode": meta["projection_mode"], "repository_validated_base_commit": C04_FINAL_PRODUCT,
+        "repository_head_relation": repository["head_relation"], "repository_exact_allowed_paths": meta["exact_paths"],
+        "product_exact_paths": c04_start_product_write_scope(), "lineage": lineage, "test_evidence": tests,
+        "final_reviewer_r6": reviewer, "independent_acceptance_r6": independent,
+        "non_product_tool_errors": tool_errors, "external_validation": external,
+        "current_manifest": C04_FINAL_M, "reporting_decision": "AUTO_CONTINUE"})
+    replacement = "```json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + "```"
+    handoff_text, count = re.subn(r"```json anvil-recovery-summary\s*\{.*?\}\s*```", lambda _: replacement, historical[C04_FINAL_H].decode(), flags=re.DOTALL)
+    if count != 1: raise ValueError("C04_FINAL_HANDOFF_INVALID")
+    handoff_raw = ("# C-04 final acceptance — seq756\n\n- seq1~751 preserved; seq752~756 only appended.\n- C-04 ACCEPTED, C-05 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED.\n- product exact9 immutable; deferred/external evidence not promoted.\n\n" + handoff_text).encode("utf-8")
+    digest = {"schema_version": "1.0.0", "digest_id": "C04-FINAL-ACCEPTANCE-DIGEST-20260912",
+        "package_id": "C-04", "event_sequence": 756, "algorithm": "SHA-256", "created_at": C04_FINAL_AT,
+        "scope": "seq752-756 append-only C-04 final acceptance; seq1-751 preserved; exact7", "self_reference": False,
+        "progress": {"path": C04_FINAL_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw), "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C04_FINAL_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw), "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C04_FINAL_H: handoff_raw, C04_FINAL_P: progress_raw, C04_FINAL_E: events_raw, C04_FINAL_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C04_FINAL_E], 751)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-04_FINAL_ACCEPTANCE",
+        "artifact_id": "C04-FINAL-ACCEPTANCE-20260912", "created_at": C04_FINAL_AT,
+        "package_id": "C-04", "event_sequence": 756, "historical_event_sequence": 751,
+        "appended_event_count": 5, "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": True, "status": "ACCEPTED",
+        "c04_status": "ACCEPTED", "c05_status": "READY_FOR_WORK_INSTRUCTION", "dir2_status": "NOT_REACHED",
+        "active_leases": 0, "product_commit": C04_FINAL_PRODUCT, "product_parent": C04_FINAL_START,
+        "product_exact_paths": c04_start_product_write_scope(), "lineage": lineage, "test_evidence": tests,
+        "final_reviewer_r6": reviewer, "independent_acceptance_r6": independent,
+        "non_product_tool_errors": tool_errors, "external_validation": external,
+        "record_binding": repository["head_relation"], "self_reference": False, **meta}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)} for path, payload in sorted(artifacts.items())]
+    artifacts[C04_FINAL_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]): raise ValueError("C04_FINAL_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c04_final_acceptance_from_root(root: Path) -> dict[str, bytes]:
+    historical = {path: subprocess.check_output(["git", "show", f"{C04_FINAL_PRODUCT}:{path}"], cwd=root) for path in {C04_FINAL_H, C04_FINAL_P, C04_FINAL_E}}
+    generated = {C04_FINAL_M, C04_FINAL_H, C04_FINAL_P, C04_FINAL_E, C04_FINAL_D}
+    files = {path: (root / path).read_bytes() for path in set(c04_final_acceptance_paths()) - generated}
+    return c04_final_acceptance_artifacts(historical, files)
+
+
+def validate_c04_final_acceptance(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c04_final_acceptance_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c04_final_acceptance_paths()}
+        references = {C04_FINAL_P: _c21_resume_json(expected[C04_FINAL_P]), C04_FINAL_E: _c21_resume_json(expected[C04_FINAL_E]),
+            C04_FINAL_H: extract_handoff_summary(expected[C04_FINAL_H].decode()), C04_FINAL_D: _c21_resume_json(expected[C04_FINAL_D]), C04_FINAL_M: _c21_resume_json(expected[C04_FINAL_M])}
+        actual = {C04_FINAL_P: bundle.get("progress"), C04_FINAL_E: bundle.get("events"), C04_FINAL_H: bundle.get("handoff"), C04_FINAL_D: bundle.get("detached_digest"), C04_FINAL_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual[path], references[path]) for path in actual) else ["C04_FINAL_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected): errors.append("C04_FINAL_RAW_BYTES_INVALID")
+        progress = actual[C04_FINAL_P]
+        if (not isinstance(progress, Mapping) or progress.get("event_sequence") != 756 or progress.get("current_work_package") != "C-04"
+            or progress.get("status") != "ACCEPTED" or progress.get("active_agent") is not None or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None or progress.get("next_work_package") != {"package_id": "C-05", "status": "READY_FOR_WORK_INSTRUCTION"}
+            or progress.get("next_safe_action") != "ISSUE_C05_WORK_INSTRUCTION" or "C-04" not in progress.get("completed_packages", [])):
+            errors.append("C04_FINAL_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C04_FINAL_PRODUCT}:{C04_FINAL_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 751) != raw_event_object_prefix_bytes(actual_raw[C04_FINAL_E], 751): errors.append("C04_FINAL_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C04_FINAL_INPUT_INVALID"]
+
+
+def _collect_c04_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]; meta = c04_final_acceptance_metadata(); repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C04_FINAL_PRODUCT: return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args); value = lambda *args: _c02_strict_git_scalar(raw(*args)); check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD"); branch_raw = raw("branch", "--show-current"); rows = _c02_strict_raw_lines(branch_raw)
+        branch = "" if rows == [] else rows[0] if rows is not None and len(rows) == 1 and rows[0] == rows[0].strip() else None
+        status = raw("status", "--porcelain", "--untracked-files=all"); dev_url = value("remote", "get-url", "development")
+        dev_main = value("rev-parse", C04_FINAL_DEVELOPMENT_REF); product = value("rev-parse", C04_FINAL_PRODUCT)
+        product_parent = value("show", "-s", "--format=%P", C04_FINAL_PRODUCT); start_parent = value("show", "-s", "--format=%P", C04_FINAL_START)
+        product_paths = _c02_strict_name_only_paths(raw("diff", "--name-only", C04_FINAL_START, C04_FINAL_PRODUCT))
+        if None in (head, branch, status, dev_url, dev_main, product, product_parent, start_parent, product_paths): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if dev_url != C04_FINAL_DEVELOPMENT_URL or product != C04_FINAL_PRODUCT: return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        if (product_parent.split() != [C04_FINAL_START] or start_parent.split() != [C04_FINAL_DEVELOPMENT_MAIN]
+            or product_paths != sorted(c04_start_product_write_scope())
+            or not check("merge-base", "--is-ancestor", C04_FINAL_DEVELOPMENT_MAIN, C04_FINAL_START)
+            or not check("merge-base", "--is-ancestor", C04_FINAL_START, C04_FINAL_PRODUCT)):
+            return ["C04_FINAL_GIT_LINEAGE_INVALID"]
+        dirty = _c02_strict_porcelain_paths(status)
+        if dirty is None: return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if head == C04_FINAL_PRODUCT:
+            upstream = value("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C04_FINAL_BRANCH}")
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")); unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only")); untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            valid = branch == C04_FINAL_BRANCH and dev_main == C04_FINAL_DEVELOPMENT_MAIN and upstream == f"development/{C04_FINAL_BRANCH}" and dirty == meta["exact_paths"] and cached == meta["exact_paths"] and not unstaged and not untracked and check("diff", "--cached", "--check")
+            return [] if valid else ["C04_FINAL_PATH_OR_CLEAN_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        if parents is None: return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        parent_list = parents.split()
+        if len(parent_list) == 1:
+            upstream = value("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C04_FINAL_BRANCH}"); changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C04_FINAL_PRODUCT, head))
+            valid = branch == C04_FINAL_BRANCH and dev_main == C04_FINAL_DEVELOPMENT_MAIN and upstream == f"development/{C04_FINAL_BRANCH}" and not dirty and parent_list == [C04_FINAL_PRODUCT] and changed == meta["exact_paths"] and check("merge-base", "--is-ancestor", C04_FINAL_PRODUCT, head) and check("diff", "--check", C04_FINAL_PRODUCT, head)
+            return [] if valid else ["C04_FINAL_PATH_OR_CLEAN_INVALID"]
+        if branch not in {"", "main"} or dev_main != head or len(parent_list) != 2 or parent_list[0] != C04_FINAL_DEVELOPMENT_MAIN: return ["C04_FINAL_MERGE_LINEAGE_INVALID"]
+        if branch == "main" and value("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main") != C04_FINAL_DEVELOPMENT_REF: return ["C04_FINAL_BRANCH_OR_UPSTREAM_INVALID"]
+        completion = parent_list[1]; completion_parent = value("show", "-s", "--format=%P", completion)
+        completion_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C04_FINAL_PRODUCT, completion)); merge_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C04_FINAL_PRODUCT, head))
+        valid = (not dirty and completion_parent is not None and completion_parent.split() == [C04_FINAL_PRODUCT]
+            and completion_changed == meta["exact_paths"] and merge_changed == meta["exact_paths"]
+            and check("merge-base", "--is-ancestor", C04_FINAL_PRODUCT, completion)
+            and check("merge-base", "--is-ancestor", C04_FINAL_DEVELOPMENT_MAIN, head)
+            and check("diff", "--check", C04_FINAL_PRODUCT, completion) and check("diff", "--check", C04_FINAL_PRODUCT, head)
+            and check("diff", "--quiet", completion, head))
+        return [] if valid else ["C04_FINAL_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
