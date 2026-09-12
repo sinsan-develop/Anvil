@@ -6,7 +6,7 @@ fail-closed boundaries as an API without claiming HTTP/DB/production proof.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Mapping
 
@@ -18,7 +18,7 @@ from packages.orchestration.developer_lifecycle import (
     CheckpointHandoff, DeveloperLifecycleService, LifecycleStatus,
 )
 from packages.orchestration.failure_ledger import FailureLedger
-from packages.orchestration.failure_report import validate_failure_report
+from packages.orchestration.failure_report import compute_failure_fingerprint, validate_failure_report
 from packages.orchestration.result_envelope import (
     EvidenceReference, ResultEnvelope, ResultTest, canonical_hash,
 )
@@ -206,8 +206,13 @@ class SyntheticE2EHarness:
             self._event(run, "FailureReport", result_id=result.result_id, count=receipt.valid_failure_count)
         worker = self.leases.issue_worker(run_id, "developer-primary", datetime.now(timezone.utc), timedelta(minutes=5))
         self.lifecycle.wait(run_id)
-        receipt = self.takeover.takeover(receipt, session_id=run_id, expected_lineage="lineage-fixture",
-                                         expected_fingerprint="fixture-failure", execution_fencing_token=worker.execution_fencing_token)
+        receipt = self.takeover.takeover(
+            receipt,
+            session_id=run_id,
+            expected_lineage="lineage-fixture",
+            expected_fingerprint=result.failure_fingerprint,
+            execution_fencing_token=worker.execution_fencing_token,
+        )
         if not receipt.accepted: raise E2EError("TAKEOVER_REJECTED")
         run.phase, run.status = "MAIN_AGENT_TAKEOVER_REQUIRED", "BLOCKED"
         self._event(run, "MainAgentTakeoverRequired", report_count=3)
@@ -258,18 +263,27 @@ class SyntheticE2EHarness:
                                         unverified_scope=("provider", "database", "browser", "deployment"))
 
     def _failure(self, run: _Run, number: int) -> ResultEnvelope:
-        return ResultEnvelope(
+        candidate = ResultEnvelope(
             "subagent_result/v1", f"failure:{run.run_id}:{number}", run.packet.delegation_id,
                               f"attempt:{number}", number, "lineage-fixture", ResultStatus.FAILURE_REPORT,
             run.target_hash, "synthetic failure", actions_taken=("fixture failure reproduced",),
             changed_paths=("packages/e2e/harness.py",),
             evidence_refs=(EvidenceReference(f"evidence:failure:{number}", "sha256:" + "0" * 64, "fixture"),),
             tests=(ResultTest("fixture-test", "FAIL", 1),),
-            issue_id="fixture-issue", failure_fingerprint="fixture-failure",
+            issue_id="fixture-issue", failure_fingerprint=None,
             unresolved=("synthetic defect",), decision_needed="Main Agent takeover",
-            handoff={"problem_name": "fixture failure", "failure_stage": "fixture stage",
-                     "confirmed_cause": "fixture cause", "alternatives_considered": ("retry",)},
+            handoff={
+                "problem_name": "fixture failure",
+                "failure_stage": "fixture stage",
+                "confirmed_cause": "fixture cause",
+                "alternatives_considered": ("retry",),
+                "normalized_error_code": "E_FIXTURE",
+                "failing_test_or_gate": "fixture-test",
+                "relevant_stack_fingerprint": "stack:fixture",
+                "failure_origin": "CODE_DEFECT",
+            },
         )
+        return replace(candidate, failure_fingerprint=compute_failure_fingerprint(candidate))
 
     def _event(self, run: _Run, event_type: str, **details: Any) -> None:
         run.events.append({"sequence": len(run.events) + 1, "event_type": event_type, **details})

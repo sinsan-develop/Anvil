@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C06-SCOPE-REVISION-DIGEST-20260913",
+  "package_id": "C-06",
+  "event_sequence": 774,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-13T20:00:00+09:00",
+  "scope": "seq772-774 append-only C-06 review rework scope revision; seq1-771 preserved; exact9",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 874210,
+    "file_sha256": "CB4E1445E341EAE291999D462F6E36047913869E78262BC78EE42EBCC49414CB",
+    "canonical_json_sha256": "7889730DC17457DF0C156BCCAC083A26EB17886A184EA4F16441FCEB6112A112"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 193046,
+    "file_sha256": "C6E90ED4D7A425A01A281659EF9CC96C49DF7892A0D965B3955D9F9B02B9F01C",
+    "machine_summary_canonical_sha256": "F252DABB448DF1B3F2068062560079E6C314CD944D361D7EE882740FC0B179FD"
+  }
+}

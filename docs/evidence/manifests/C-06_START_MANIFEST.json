@@ -1,0 +1,199 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-06_START_PROJECTION",
+  "artifact_id": "C06-START-PROJECTION-20260913",
+  "created_at": "2026-09-13T18:00:00+09:00",
+  "package_id": "C-06",
+  "event_sequence": 771,
+  "historical_event_sequence": 768,
+  "appended_event_count": 3,
+  "historical_raw_event_prefix": {
+    "bytes": 2307186,
+    "sha256": "5F8B833E239E3EE74B329A15754F67A52F63E03DD1CD03A02658B2FB4C432C00"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": false,
+  "status": "IN_PROGRESS",
+  "c05_status": "ACCEPTED",
+  "c06_status": "IN_PROGRESS",
+  "c07_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "worker_lease": {
+    "lease_id": "worker-lease-c06-failure-report-20260913-001",
+    "fencing_token": "c06-failure-report-execution-fence-epoch-1-042bd40",
+    "execution_fencing_token": "c06-failure-report-execution-fence-epoch-1-042bd40",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-06",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "042bd4050a3c826996a104b5219f8a1a9ba5a972",
+    "dispatch_head": "042bd4050a3c826996a104b5219f8a1a9ba5a972",
+    "issued_at": "2026-09-13T18:00:00+09:00",
+    "expires_at": "2026-09-14T06:00:00+09:00",
+    "status": "ACTIVE"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c06-failure-report-20260913-001",
+    "worker_lease_id": "worker-lease-c06-failure-report-20260913-001",
+    "fencing_token": "c06-failure-report-write-fence-epoch-1-042bd40",
+    "write_fencing_token": "c06-failure-report-write-fence-epoch-1-042bd40",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-06",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-13T18:00:00+09:00",
+    "expires_at": "2026-09-14T06:00:00+09:00",
+    "path_scope": [
+      "packages/e2e/harness.py",
+      "packages/orchestration/failure_report.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_failure_report_c06.py",
+      "tests/orchestration/test_takeover_c13.py"
+    ],
+    "status": "ACTIVE"
+  },
+  "work_instruction_path": "docs/work_orders/C-06_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "2CAF6BE8B2AEBB012939363B13C6B44B3BDD5302374C495ED4D034FED662FE57",
+  "invocation_path": "docs/work_orders/C-06_INVOCATION_PROMPT.md",
+  "invocation_sha256": "BE3E51945F91B4A25DB7617904906D8A68F9FFDC02A56DBF1F4BEF12D5AF1493",
+  "authority": {
+    "revision_class": "EXISTING_APPROVED_WORK_INSTRUCTION_REVALIDATION",
+    "authority_basis": [
+      "APPROVED_WORK_PLAN_C06",
+      "C05_ACCEPTED",
+      "DESIGN_46_7_46_8_48_6"
+    ],
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    "work_instruction_sha256": "2CAF6BE8B2AEBB012939363B13C6B44B3BDD5302374C495ED4D034FED662FE57",
+    "invocation_sha256": "BE3E51945F91B4A25DB7617904906D8A68F9FFDC02A56DBF1F4BEF12D5AF1493",
+    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+    "function_scope_change": "UNCHANGED",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+    "acceptance": [
+      {
+        "requirement_id": "AV-AGT-008",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-EVT"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-009",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-EVT"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-010",
+        "level": "L5",
+        "method": "AN",
+        "evidence": [
+          "E-EVT"
+        ]
+      },
+      {
+        "requirement_id": "AV-AGT-011",
+        "level": "L3",
+        "method": "AN",
+        "evidence": [
+          "E-EVT"
+        ]
+      }
+    ]
+  },
+  "product_exact_paths": [
+    "packages/e2e/harness.py",
+    "packages/orchestration/failure_report.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_failure_report_c06.py",
+    "tests/orchestration/test_takeover_c13.py"
+  ],
+  "external_validation": {
+    "product_code": "NOT_MUTATED_BY_CONTROL",
+    "c07_outcome_resolver": "NOT_EXECUTED",
+    "failure_ledger": "NOT_EXECUTED",
+    "takeover": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "telegram": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED"
+  },
+  "record_binding": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD",
+  "self_reference": false,
+  "sequence": 771,
+  "projection_mode": "C06_START_PROJECTION_EXACT9",
+  "validated_base_commit": "042bd4050a3c826996a104b5219f8a1a9ba5a972",
+  "branch": "codex/c06-failure-report-revalidation-r1",
+  "exact_paths": [
+    "docs/04_test_reports/C-06_START_PROJECTION_REPORT.md",
+    "docs/evidence/manifests/C-06_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c06-start.json",
+    "docs/validation/C-06_START_VALIDATION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "exact_path_list_sha256": "8325CD3227E48B8DD90F7E06B43AEFE909F5689C4F4E5F0CDF13F267C5A3168E",
+  "exact_path_list_ordinal_sha256": "8325CD3227E48B8DD90F7E06B43AEFE909F5689C4F4E5F0CDF13F267C5A3168E",
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-06_START_PROJECTION_REPORT.md",
+      "bytes": 220,
+      "sha256": "4C7250A464B76E591A86D415BA9E43328FA3FEF300841E463CEDE122873BFE04"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 191050,
+      "sha256": "8C6718107009A721E967DF589FEF4CD8E2579D98A00248EDE61A56E9C50D12E7"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 869172,
+      "sha256": "43A3907E2C2AE7F13CD407671B5F637FAD8A5235E0923CC548C1539CCC4A5730"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2314175,
+      "sha256": "0585C5942D4D35BB81AE941F73EEB364CD4A0BA58BB62A42D706428E063D2BB5"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c06-start.json",
+      "bytes": 854,
+      "sha256": "6A69CF8A61B8709D9015C29E92D309274D0EB7CA6C563B8628B44AB9C22857A7"
+    },
+    {
+      "path": "docs/validation/C-06_START_VALIDATION.md",
+      "bytes": 180,
+      "sha256": "F5B9BBF0DEDA3DCEFAF4AB45253E31F6282CF7784CBA47E296C74BDA1F05683F"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3057521,
+      "sha256": "86321833AF8008500036ED4C516BBC1DD1D992B4B16BFA8BB73F367F8B4D5D23"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 862589,
+      "sha256": "8A153EAD386C9853E43621A668E8780EBBC300318B28DF29E59D6DCD449DF507"
+    }
+  ]
+}
