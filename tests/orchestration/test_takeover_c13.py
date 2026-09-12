@@ -10,21 +10,31 @@ from packages.orchestration import (
 from packages.tool_gateway import ToolPermissionRegistry
 
 H = "sha256:" + "a" * 64
+FINGERPRINT = "sha256:a658c9131e579ee8e83dc279fbeb7a943e2d7a7503e14010a950f2b4e1422b6e"
 
 
 def _report(result_id: str):
+    attempt_number = int(result_id.rsplit("-", 1)[-1])
     return {
         "schema_version": "subagent_result/v1", "result_id": result_id,
-        "delegation_id": "del-1", "attempt_id": result_id, "attempt_number": 1,
+        "delegation_id": "del-1", "attempt_id": result_id, "attempt_number": attempt_number,
         "step_lineage_id": "lineage-A", "status": ResultStatus.FAILURE_REPORT.value,
         "target_hash": H, "summary": "assertion failed", "actions_taken": ["inspect"],
         "changed_paths": ["packages/x.py"],
         "evidence_refs": [{"evidence_id": "ev-" + result_id, "checksum": H, "kind": "test"}],
-        "tests": [{"command": "pytest", "status": "FAIL", "exit_code": 1}],
+        "tests": [{"command": "pytest tests/test_sample.py::test_case", "status": "FAIL", "exit_code": 1}],
         "assumptions": [], "unresolved": ["repair"], "decision_needed": "repair",
-        "failure_fingerprint": "failure-A",
-        "handoff": {"problem_name": "assertion", "failure_stage": "test",
-                     "confirmed_cause": "bad assertion", "alternatives_considered": ["retry"]},
+        "failure_fingerprint": FINGERPRINT,
+        "handoff": {
+            "problem_name": "assertion",
+            "failure_stage": "test",
+            "confirmed_cause": "bad assertion",
+            "alternatives_considered": ["retry"],
+            "normalized_error_code": "E_ASSERTION",
+            "failing_test_or_gate": "pytest tests/test_sample.py::test_case",
+            "relevant_stack_fingerprint": "stack:assert-equal",
+            "failure_origin": "CODE_DEFECT",
+        },
     }
 
 
@@ -69,7 +79,7 @@ def _ready():
 def test_count_below_three_is_noop():
     lifecycle, leases, tools, ledger, receipts, worker, write = _ready()
     service = MainAgentTakeoverService(ledger, lifecycle, leases, tools)
-    result = service.takeover(receipts[1], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint="failure-A", execution_fencing_token="exec")
+    result = service.takeover(receipts[1], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint=FINGERPRINT, execution_fencing_token="exec")
     assert not result.accepted and TakeoverReasonCode.COUNT_BELOW_THREE.value in result.reason_codes
     assert leases.active_writes("run-1") == (write,)
     assert tools.active("run-1")
@@ -78,22 +88,22 @@ def test_count_below_three_is_noop():
 def test_third_failure_stops_releases_and_builds_packet_in_order():
     lifecycle, leases, tools, ledger, receipts, worker, write = _ready()
     service = MainAgentTakeoverService(ledger, lifecycle, leases, tools)
-    result = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint="failure-A", execution_fencing_token="exec")
+    result = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint=FINGERPRINT, execution_fencing_token="exec")
     assert result.accepted and result.packet and result.audit
     assert result.packet.trigger_type == "THIRD_VALID_FAILURE"
     assert lifecycle.current("run-1").status.name == "STOP_REQUESTED"
     assert leases.active_writes("run-1") == ()
     assert tools.active("run-1") == {}
-    replay = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint="failure-A", execution_fencing_token="exec")
+    replay = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint=FINGERPRINT, execution_fencing_token="exec")
     assert replay.accepted and replay.duplicate and len(service.audits) == 1
 
 
 def test_stale_lineage_and_fencing_fail_closed():
     lifecycle, leases, tools, ledger, receipts, worker, write = _ready()
     service = MainAgentTakeoverService(ledger, lifecycle, leases, tools)
-    bad_lineage = service.takeover(receipts[2], session_id="run-1", expected_lineage="other", expected_fingerprint="failure-A", execution_fencing_token="exec")
+    bad_lineage = service.takeover(receipts[2], session_id="run-1", expected_lineage="other", expected_fingerprint=FINGERPRINT, execution_fencing_token="exec")
     assert not bad_lineage.accepted and TakeoverReasonCode.STALE_LINEAGE.value in bad_lineage.reason_codes
-    bad_token = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint="failure-A", execution_fencing_token="old")
+    bad_token = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint=FINGERPRINT, execution_fencing_token="old")
     assert not bad_token.accepted and TakeoverReasonCode.STALE_FENCING_TOKEN.value in bad_token.reason_codes
     assert leases.active_writes("run-1") == (write,)
 
@@ -101,7 +111,7 @@ def test_stale_lineage_and_fencing_fail_closed():
 def test_missing_fencing_token_fails_closed_without_mutation():
     lifecycle, leases, tools, ledger, receipts, worker, write = _ready()
     service = MainAgentTakeoverService(ledger, lifecycle, leases, tools)
-    result = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint="failure-A")
+    result = service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint=FINGERPRINT)
     assert not result.accepted and TakeoverReasonCode.MISSING_FENCING_TOKEN.value in result.reason_codes
     assert leases.active_writes("run-1") == (write,)
     assert lifecycle.current("run-1").status.name == "RUNNING"
@@ -112,7 +122,7 @@ def test_concurrent_replay_creates_one_packet_and_zero_writes():
     lifecycle, leases, tools, ledger, receipts, worker, write = _ready()
     service = MainAgentTakeoverService(ledger, lifecycle, leases, tools)
     def call(_):
-        return service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint="failure-A", execution_fencing_token="exec")
+        return service.takeover(receipts[2], session_id="run-1", expected_lineage="lineage-A", expected_fingerprint=FINGERPRINT, execution_fencing_token="exec")
     with ThreadPoolExecutor(max_workers=8) as pool:
         results = list(pool.map(call, range(8)))
     assert sum(item.accepted and not item.duplicate for item in results) == 1

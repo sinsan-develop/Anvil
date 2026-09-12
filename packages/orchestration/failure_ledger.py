@@ -71,6 +71,8 @@ class FailureLedger:
         self._lock = RLock()
         self._counts: dict[str, FailureLedgerProjection] = {}
         self._results: dict[str, tuple[str, FailureLedgerEntry]] = {}
+        self._attempt_ids: dict[tuple[str, str], FailureLedgerEntry] = {}
+        self._attempt_numbers: dict[tuple[str, int], FailureLedgerEntry] = {}
         self._entries: list[FailureLedgerEntry] = []
 
     @property
@@ -123,19 +125,18 @@ class FailureLedger:
                     failure_key=prior_entry.failure_key, entry=prior_entry,
                 )
 
+            prior_attempt = self._attempt_ids.get((candidate.delegation_id, candidate.attempt_id))
+            if prior_attempt is None:
+                prior_attempt = self._attempt_numbers.get((candidate.delegation_id, candidate.attempt_number))
+            if prior_attempt is not None:
+                return FailureLedgerReceipt(
+                    False, reason_codes=(FailureLedgerReasonCode.CONFLICTING_REPLAY.value,),
+                    failure_key=prior_attempt.failure_key, entry=prior_attempt,
+                )
+
             validation = validate_failure_report(candidate)
             if not validation.valid:
-                entry = FailureLedgerEntry(
-                    sequence=len(self._entries) + 1, result_id=candidate.result_id,
-                    result_hash=result_hash, step_lineage_id=candidate.step_lineage_id,
-                    failure_fingerprint=candidate.failure_fingerprint, accepted=False,
-                    valid_failure_count=0, takeover_required=False,
-                    reason_codes=validation.reason_codes,
-                )
-                self._entries.append(entry)
-                self._results[candidate.result_id] = (result_hash, entry)
-                return FailureLedgerReceipt(False, failure_key=entry.failure_key,
-                                            reason_codes=validation.reason_codes, entry=entry)
+                return FailureLedgerReceipt(False, reason_codes=validation.reason_codes)
 
             key = f"{candidate.step_lineage_id}|{candidate.failure_fingerprint}"
             prior = self._counts.get(key)
@@ -156,6 +157,8 @@ class FailureLedger:
             self._counts[key] = projection
             self._entries.append(entry)
             self._results[candidate.result_id] = (result_hash, entry)
+            self._attempt_ids[(candidate.delegation_id, candidate.attempt_id)] = entry
+            self._attempt_numbers[(candidate.delegation_id, candidate.attempt_number)] = entry
             return FailureLedgerReceipt(True, valid_failure_count=count,
                                         takeover_required=takeover, failure_key=key, entry=entry)
 
