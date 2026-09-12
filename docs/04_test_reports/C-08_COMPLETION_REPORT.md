@@ -2,39 +2,72 @@
 
 ## 판정
 
-`COMPLETED` — fixture 기반 Repository Intelligence 확장과 정적 검증을 완료했다.
+`COMPLETED` — 승인된 fixture/unit/정적 범위에서 Repository Intelligence의 symbol·dependency·test·impact projection을 보완했고, 기존 A-13 read-only/no-write 계약을 포함한 필수 검증이 모두 통과했다.
 
-## 기준선
+## 기준선과 작업 권한
 
-- Work Package: C-08
-- 시작 branch: `codex/c08-repository-intelligence`
-- 시작 HEAD: `b923309` (`docs: issue C-08 repository intelligence work instruction`)
-- 시작 상태: WorkInstruction/InvocationPrompt만 포함된 clean worktree
+- Work Package: `C-08`
+- WorkInstruction SHA-256: `D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C`
+- 작업 branch: `codex/c08-repository-intelligence-r1`
+- dispatch/start HEAD: `f7931944d894990ec1dff01cf14a47e5384209c8`
+- 시작 상태: clean
+- 담당: `developer-primary`
+- execution fencing token: `c08-repository-intelligence-execution-fence-epoch-1-5529fe5`
+- write fencing token: `c08-repository-intelligence-write-fence-epoch-1-5529fe5`
+- 실제 변경은 활성 exact9 lease 안의 8경로이며 범위 밖 변경은 없다.
 
-## 조치 및 변경
+## 구현 결과
 
-- `packages/repository_intelligence/indexes.py`: Python AST 및 TypeScript 정규식 기반 symbol/dependency/test/impact 인덱스, 보수적 parse/path warning, stable sort와 canonical SHA-256 추가
-- `packages/repository_intelligence/models.py`, `scanner.py`: 기존 `ScanResult`/`scan_repository` 계약에 JSON-safe 인덱스 필드 연결. 기존 pre/post no-write proof는 유지
-- `tests/repository_intelligence/`: Python/TypeScript fixture, deterministic hash, hostile path 회귀 테스트 추가
+- Python AST에서 `import a, b`, `from . import x`를 각각의 결정론적 dependency로 투영한다.
+- dependency에 `resolved_path`를 추가하고 Python/TypeScript/JavaScript 상대 import, TS side-effect import, `require`를 보수적으로 해석한다.
+- test 파일명 추측 대신 실제 import dependency로 test `targets`와 `target_evidence`를 생성한다.
+- path impact는 `direct_files`, `importers`, `callers`, `related_tests`, `related_paths`, `test_selection`, `risk_evidence`를 분리한다.
+- Python reference는 AST Load 노드만 사용해 주석·문자열의 symbol 이름을 false reference로 만들지 않는다.
+- unsupported source language, syntax error, decode failure, hostile/reparse/outside path를 구조화된 warning으로 fail-closed한다.
+- inventory 입력 순서와 중복에 무관한 stable sort 및 canonical SHA-256을 유지한다.
+- `ScanRequest.impact_query`는 기존 positional 인자 뒤의 optional 필드로 추가하여 기존 public 호출 순서를 보존하고 `scan_repository`가 이를 impact projection에 전달한다.
+- C-08은 G0/G1/G7의 입력 자료를 생성할 뿐 gate 실행·도구 실행·제품 write를 수행하지 않는다.
 
-## 검증 증거
+## 변경 경로와 최종 SHA-256
 
-- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/repository_intelligence/test_indexes.py -q --disable-warnings` → 종료 코드 0, `3 passed`
-- `C:\Users\cyhuh\anaconda3\python.exe -m compileall -q packages/repository_intelligence tests/repository_intelligence` → 종료 코드 0
-- `git diff --check` → 종료 코드 0
+- `packages/repository_intelligence/indexes.py` — `F3EDC77FFD46C8D5BE7F66DAFBC637C079CFB8C0693D47D30810DB3F6C2CBE3E`
+- `packages/repository_intelligence/models.py` — `C075288DF44FEF52645D69910909B6D982722A2C51E01E66A740B232C8031AFE`
+- `packages/repository_intelligence/scanner.py` — `3AD6B6443130EA129C6C3D129B2944243081325C5FEDCAA9E932B189C944E826`
+- `tests/repository_intelligence/fixtures/app.py` — `207EDB38544F02794044710623322B57EF0470E71A99DA2B0C7B0471CADD1521`
+- `tests/repository_intelligence/fixtures/tests/spec_app.py` — `C87735E34A68F16F51B1B084FF73663CA5217D83F9E6133343087892B18B8FEE`
+- `tests/repository_intelligence/fixtures/ui.ts` — `6FE4E856DFF0B0C0679D8DD16B91BB36312B0195BCEA0D3BFE9A05B290EE6978`
+- `tests/repository_intelligence/test_indexes.py` — `095A1DD5015A676A6282D8D886F555453DA37E470499C689D7D278EF427A1B75`
+- `docs/04_test_reports/C-08_COMPLETION_REPORT.md` — 이 보고서
 
-전체 `tests` 실행은 기존 서로 다른 디렉터리의 `test_models.py` 모듈명 충돌로 수집 단계에서 중단되며, 본 변경의 실패로 분류하지 않는다. 실제 Provider/DB/API/브라우저/배포/운영 성능은 범위 밖으로 미검증이다.
+## TDD 및 검증 증거
 
-## 잔여 위험 및 복구
+### 기준선
 
-## 재작업 이력
+- `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `4 passed in 0.11s`
+- `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 111.53s`
 
-- `FAILURE_REPORT` 1회: 독립 검증에서 내부 symlink 판정, Python unresolved import, JS/TS `require`, 참조 인덱스 및 ScanResult hash/schema 노출, impact의 의존·테스트 연결이 부족하다고 판정했다.
-- 조치: resolve 전 lstat 검사와 경로 경고, known stems 기반 import 판정, require 파싱, `references` 필드, `index_sha256` 및 schema fields 연결, impact 관련 경로 확장을 적용했다.
-- 재검증: 동일 targeted pytest `3 passed`, compileall 및 diff check 통과.
-- `FAILURE_REPORT` 2회차: Python import와 상대 require의 확장자/모듈 경로 해석이 불충분했다.
-- 조치: 표준 외부 모듈 분류, Python known stems 판정, 상대 require의 확장자 및 `index` 후보 정규화를 추가하고 회귀 테스트를 확장했다.
+### RED
 
-- 외부 parser 없이 보수적으로 분석하므로 난해한 TypeScript 문법은 warning 없이 미색인될 수 있다.
-- 영향 투영은 지정 심볼/경로와 직접 관찰된 행을 중심으로 하며 의미론적 호출 그래프가 아니다.
-- 롤백은 C-08 커밋을 revert하면 된다. 기존 inventory, manifest, Git 및 no-write proof 동작은 변경하지 않았다.
+- 신규 gap 회귀 추가 후 `python -m pytest tests/repository_intelligence/test_indexes.py -q -p no:cacheprovider` → exit `1`, `8 failed, 3 passed`; 상대 import crash, structured warning 오배치, path impact/test 연결/side-effect import/determinism 누락을 재현했다.
+- public positional 호환 회귀 `python -m pytest tests/repository_intelligence/test_indexes.py::test_scan_request_preserves_positional_contract_and_adds_optional_impact_query -q -p no:cacheprovider` → exit `1`, `1 failed`; 새 필드가 기존 6번째 positional `schema_version`을 가로채는 문제를 재현했다.
+
+### GREEN 및 회귀
+
+- `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `12 passed in 0.10s`
+- `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 101.60s`
+- `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
+- `git diff --check` → exit `0`
+
+A-13 전체 회귀는 실제 임시 Git fixture에 대해 public `scan_repository` JSON 직렬화, read-only Git allowlist, pre/post snapshot 동일성, dirty/untracked 보존, mutation 탐지를 검증한다.
+
+## 미검증 범위와 잔여 위험
+
+- 실제 대규모 repository의 성능과 난해한 TypeScript/JavaScript 문법은 미검증이다. 외부 parser를 사용하지 않으므로 이해하지 못한 TS/JS 구문은 보수적으로 미색인될 수 있다.
+- Provider, Telegram, DB, API, 브라우저, WSL, 배포, 운영 성능은 WorkInstruction 범위 밖이며 실행하지 않았다.
+- C-14 gate engine은 이 Package의 범위가 아니다. 본 산출물은 G0/G1/G7 자료만 제공한다.
+- 파일 write, project process, network, DB/API/browser 호출을 제품 scanner에 추가하지 않았다. 기존 read-only Git metadata 수집만 유지했다.
+
+## Rollback
+
+- C-08 제품 commit 전체를 `git revert <C-08-product-commit>`하여 복구한다.
+- migration, DB, 외부 side effect, secret 변경이 없으므로 별도 데이터 rollback은 없다.

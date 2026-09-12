@@ -1,4 +1,5 @@
 from app import greet
+from util import prefix
 
-def test_greet():
-    assert greet('x')
+def test_behavior():
+    assert prefix(greet('x'))
