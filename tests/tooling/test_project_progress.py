@@ -14469,6 +14469,187 @@ class C06ScopeRevisionProjectionTests(unittest.TestCase):
             self.assertEqual(["SEQ774_SELECTED"], checker._validate_git_projection(dispatch))
             selected.assert_called_once_with(dispatch)
 
+class C06FinalAcceptanceProjectionTests(unittest.TestCase):
+    PRODUCT = "b952b56eacd69da271475ff439919d60a592c70c"
+    SCOPE = "0709051933e62a43d6c400071fadc62cf85b801e"
+    START = "7c719063c31530bc33ffff23fd5d72371ae28057"
+    DEVELOPMENT_MAIN = "042bd4050a3c826996a104b5219f8a1a9ba5a972"
+    BRANCH = "codex/c06-failure-report-revalidation-r1"
+    EXACT7 = sorted([
+        "docs/evidence/manifests/C-06_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c06-final-acceptance.json",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c06_final_acceptance_from_root"), "C-06 final builder missing")
+        return checker
+
+    def _bundle(self, checker, artifacts):
+        return {
+            "_root": ROOT,
+            "progress": json.loads(artifacts[checker.C06_FINAL_P]),
+            "events": json.loads(artifacts[checker.C06_FINAL_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C06_FINAL_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C06_FINAL_D]),
+        }
+
+    def test_seq779_builder_is_exact_append_only_and_accepts_c06(self):
+        checker = self._checker()
+        artifacts = checker.c06_final_acceptance_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c06_final_acceptance_from_root(ROOT))
+        self.assertEqual(self.EXACT7, sorted(artifacts))
+        historical = subprocess.check_output(["git", "show", f"{self.PRODUCT}:{checker.C06_FINAL_E}"], cwd=ROOT)
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(historical, 774),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C06_FINAL_E], 774),
+        )
+        progress = json.loads(artifacts[checker.C06_FINAL_P])
+        events = json.loads(artifacts[checker.C06_FINAL_E])["events"]
+        self.assertEqual(tuple(range(775, 780)), tuple(event["sequence"] for event in events[-5:]))
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED",
+             "INDEPENDENT_TEST_JUDGMENT_RECORDED", "MAIN_PACKAGE_ACCEPTED"],
+            [event["event_type"] for event in events[-5:]],
+        )
+        self.assertEqual(("C-06", "ACCEPTED", None, None, None), (
+            progress["current_work_package"], progress["status"], progress["active_agent"],
+            progress["worker_lease"], progress["write_lease"],
+        ))
+        self.assertEqual({"package_id": "C-07", "status": "READY_FOR_WORK_INSTRUCTION"}, progress["next_work_package"])
+        self.assertEqual("ISSUE_C07_WORK_INSTRUCTION", progress["next_safe_action"])
+        self.assertEqual("NOT_REACHED", progress["c06_final_acceptance"]["dir2_status"])
+
+    def test_seq779_manifest_binds_c02_contract_product_review_and_truthful_boundary(self):
+        checker = self._checker()
+        artifacts = checker.c06_final_acceptance_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C06_FINAL_M])
+        self.assertEqual(
+            [self.DEVELOPMENT_MAIN, self.START, self.SCOPE, self.PRODUCT],
+            manifest["lineage"]["ancestor_chain"],
+        )
+        self.assertEqual(checker.c06_scope_product_write_scope(), manifest["product_exact_paths"])
+        self.assertEqual("C02_DELEGATION_PACKET_AUTHORITATIVE", manifest["identifier_validation_authority"])
+        self.assertEqual("FAIL_CLOSED", manifest["c02_invalid_behavior"])
+        self.assertEqual("RAW_AND_CANONICAL", manifest["c02_valid_projection"])
+        self.assertEqual({"spec": "PASS", "quality": "APPROVED", "critical": 0, "important": 0, "minor": 0},
+                         manifest["independent_product_review"])
+        self.assertEqual((661, 661), (
+            manifest["test_evidence"]["main_precommit"]["passed"],
+            manifest["test_evidence"]["main_postcommit"]["passed"],
+        ))
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["database"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["provider"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["telegram"])
+
+    def test_seq779_validator_rejects_manifest_and_history_tampering(self):
+        checker = self._checker()
+        artifacts = checker.c06_final_acceptance_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C06_FINAL_M])
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c06_final_acceptance(self._bundle(checker, artifacts), manifest))
+            changed = copy.deepcopy(manifest)
+            changed["identifier_validation_authority"] = "AD_HOC_REGEX"
+            self.assertIn("C06_FINAL_PROJECTION_INVALID", checker.validate_c06_final_acceptance(self._bundle(checker, artifacts), changed))
+        mutated = artifacts[checker.C06_FINAL_E].replace(
+            b'"event_id": "evt_g05_legacy_migration"',
+            b'"event_id": "xvt_g05_legacy_migration"',
+            1,
+        )
+        def mutated_history(path):
+            if path == ROOT / checker.C06_FINAL_E:
+                return mutated
+            return frozen(path)
+        with mock.patch.object(Path, "read_bytes", mutated_history):
+            self.assertIn("C06_FINAL_HISTORY_MUTATED", checker.validate_c06_final_acceptance(self._bundle(checker, artifacts), manifest))
+
+    def test_seq779_git_accepts_only_exact_precommit_direct_child_or_reviewed_merge_and_dispatches_first(self):
+        checker = self._checker()
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.PRODUCT}}}
+        completion = "a" * 40
+        merged = "c" * 40
+        status_key = ("status", "--porcelain", "--untracked-files=all")
+        common = {
+            ("remote", "get-url", "development"): checker.C06_FINAL_DEVELOPMENT_URL,
+            ("rev-parse", self.PRODUCT): self.PRODUCT,
+            ("show", "-s", "--format=%P", self.PRODUCT): self.SCOPE,
+            ("show", "-s", "--format=%P", self.SCOPE): self.START,
+            ("show", "-s", "--format=%P", self.START): self.DEVELOPMENT_MAIN,
+            ("diff", "--name-only", self.SCOPE, self.PRODUCT): "\n".join(checker.c06_scope_product_write_scope()),
+        }
+        lineage = {
+            ("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, self.START),
+            ("merge-base", "--is-ancestor", self.START, self.SCOPE),
+            ("merge-base", "--is-ancestor", self.SCOPE, self.PRODUCT),
+        }
+        def run(rows, checks):
+            with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(
+                checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args in checks
+            ):
+                return checker._collect_c06_final_acceptance_git(bundle)
+        pre = common | {
+            ("rev-parse", "HEAD"): self.PRODUCT,
+            ("rev-parse", checker.C06_FINAL_DEVELOPMENT_REF): self.DEVELOPMENT_MAIN,
+            ("branch", "--show-current"): self.BRANCH,
+            status_key: "\n".join("M  " + path for path in self.EXACT7),
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): checker.C06_FINAL_DEVELOPMENT_REF,
+            ("diff", "--cached", "--name-only"): "\n".join(self.EXACT7),
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+        }
+        self.assertEqual([], run(pre, lineage | {("diff", "--cached", "--check")}))
+        direct = common | {
+            ("rev-parse", "HEAD"): completion,
+            ("rev-parse", checker.C06_FINAL_DEVELOPMENT_REF): self.DEVELOPMENT_MAIN,
+            ("branch", "--show-current"): self.BRANCH,
+            status_key: "",
+            ("show", "-s", "--format=%P", completion): self.PRODUCT,
+            ("diff", "--name-only", self.PRODUCT, completion): "\n".join(self.EXACT7),
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): checker.C06_FINAL_DEVELOPMENT_REF,
+        }
+        direct_checks = lineage | {("merge-base", "--is-ancestor", self.PRODUCT, completion), ("diff", "--check", self.PRODUCT, completion)}
+        self.assertEqual([], run(direct, direct_checks))
+        self.assertTrue(run(direct | {("show", "-s", "--format=%P", completion): f"{self.PRODUCT} {self.START}"}, direct_checks))
+        merge = common | {
+            ("rev-parse", "HEAD"): merged,
+            ("rev-parse", checker.C06_FINAL_DEVELOPMENT_REF): merged,
+            ("branch", "--show-current"): "main",
+            status_key: "",
+            ("show", "-s", "--format=%P", merged): f"{self.DEVELOPMENT_MAIN} {completion}",
+            ("show", "-s", "--format=%P", completion): self.PRODUCT,
+            ("diff", "--name-only", self.PRODUCT, completion): "\n".join(self.EXACT7),
+            ("diff", "--name-only", self.DEVELOPMENT_MAIN, merged): "\n".join(checker.c06_final_reviewed_merge_paths()),
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main"): checker.C06_FINAL_DEVELOPMENT_REF,
+        }
+        merge_checks = lineage | {
+            ("merge-base", "--is-ancestor", self.PRODUCT, completion),
+            ("merge-base", "--is-ancestor", self.DEVELOPMENT_MAIN, merged),
+            ("diff", "--check", self.PRODUCT, completion),
+            ("diff", "--check", self.DEVELOPMENT_MAIN, merged),
+            ("diff", "--quiet", completion, merged),
+        }
+        self.assertEqual([], run(merge, merge_checks))
+        self.assertTrue(run(merge, merge_checks - {("diff", "--quiet", completion, merged)}))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 779}}
+        with mock.patch.object(checker, "_collect_c06_final_acceptance_git", return_value=["SEQ779_SELECTED"]) as selected, mock.patch.object(
+            checker, "_collect_c06_scope_revision_git", side_effect=AssertionError("seq774 must not run")
+        ):
+            self.assertEqual(["SEQ779_SELECTED"], checker._validate_git_projection(dispatch))
+            selected.assert_called_once_with(dispatch)
+
 
 if __name__ == "__main__":
     unittest.main()
