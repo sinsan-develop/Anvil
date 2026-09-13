@@ -15402,5 +15402,178 @@ class C09StartProjectionTests(unittest.TestCase):
         self.assertTrue(checker._collect_c09_start_projection_git({"_root": ROOT, "progress": {"repository": {"validated_base_commit": "3" * 40}}}))
 
 
+
+class C09R3ControlTests(unittest.TestCase):
+    BASE = "3720675f746cc0ca6a885a3c37bddf5cc4fc82a1"
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c09_r3_from_root"), "C-09 R3 builder missing")
+        return checker
+
+    def test_seq806_builder_is_append_only_and_binds_review_epoch2(self):
+        checker = self._checker()
+        artifacts = checker.c09_r3_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c09_r3_from_root(ROOT))
+        self.assertEqual(11, len(artifacts))
+        manifest = json.loads(artifacts[checker.C09_R3_M])
+        self.assertEqual("8E778DA6563C079397187A85E427859946CE7F4D45233F3DD97562CB9CBCB9A0", manifest["exact_path_list_sha256"])
+        self.assertEqual("AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F", manifest["product_exact_path_list_sha256"])
+        old = subprocess.check_output(["git", "show", self.BASE + ":" + checker.C09_R3_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 798),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C09_R3_E], 798))
+        events = json.loads(artifacts[checker.C09_R3_E])["events"]
+        self.assertEqual(list(range(799, 807)), [e["sequence"] for e in events[-8:]])
+        self.assertEqual("APPROVAL-20260814-WORKPLAN-V16-001", events[801]["details"].get("approval_ref"))
+        self.assertEqual("evt_c09_r3_package_rework_requested", events[805]["details"].get("resume_event_ref"))
+        self.assertEqual(["INDEPENDENT_TEST_REVIEW_RECORDED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED",
+                          "WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED",
+                          "PACKAGE_REWORK_REQUESTED", "PACKAGE_RESUMED"], [e["event_type"] for e in events[-8:]])
+        for before, after in zip(events[-9:], events[-8:]):
+            self.assertEqual(hashlib.sha256(checker.canonical_json_bytes(before)).hexdigest().upper(), after["previous_event_sha256"])
+        p = json.loads(artifacts[checker.C09_R3_P])
+        self.assertEqual(("C-09", "REWORK_IN_PROGRESS", 2, 2),
+                         (p["current_work_package"], p["status"], p["worker_lease"]["lease_epoch"], p["write_lease"]["write_epoch"]))
+        self.assertEqual(1, p["c09_r3_rework"]["valid_failure_count"])
+        self.assertEqual(13, len(manifest["authority"]["corrective_findings"]))
+        self.assertEqual("NOT_REACHED", manifest["dir2_status"])
+        self.assertFalse(manifest["accepted"])
+        self.assertNotIn("tests/tool_gateway/test_registry.py", p["write_lease"]["path_scope"])
+        self.assertIn("tests/tool_gateway/test_tool_registry.py", p["write_lease"]["path_scope"])
+
+    def test_seq806_projection_tamper_and_malformed_inputs_fail_closed(self):
+        checker = self._checker()
+        artifacts = checker.c09_r3_from_root(ROOT)
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C09_R3_P]),
+                  "events": json.loads(artifacts[checker.C09_R3_E]),
+                  "handoff": checker.extract_handoff_summary(artifacts[checker.C09_R3_H].decode()),
+                  "detached_digest": json.loads(artifacts[checker.C09_R3_D])}
+        manifest = json.loads(artifacts[checker.C09_R3_M])
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c09_r3(bundle, manifest))
+            for key, value in (("authority", {}), ("frozen_product_raw", {}), ("target_hash", "0"*64),
+                               ("accepted", True), ("worker_lease", {}), ("write_lease", {}),
+                               ("raw_checksums", []), ("historical_event_sequence", 797)):
+                bad = copy.deepcopy(manifest)
+                bad[key] = value
+                with self.subTest(key=key):
+                    self.assertIn("C09_R3_PROJECTION_INVALID", checker.validate_c09_r3(bundle, bad))
+            bad = copy.deepcopy(bundle)
+            bad["progress"]["worker_lease"]["lease_epoch"] = 1
+            self.assertIn("C09_R3_PROJECTION_INVALID", checker.validate_c09_r3(bad, manifest))
+        history = {p: subprocess.check_output(["git", "show", self.BASE + ":" + p], cwd=ROOT)
+                   for p in (checker.C09_R3_P, checker.C09_R3_H, checker.C09_R3_E)}
+        files = {p: (ROOT/p).read_bytes() for p in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+        for raw in (b"null", b"[]", b"{", b'{"x":1,"x":2}', b'{"x":NaN}'):
+            bad = dict(history)
+            bad[checker.C09_R3_P] = raw
+            with self.subTest(raw=raw), self.assertRaises(ValueError):
+                checker.c09_r3_artifacts(bad, files, checker.C09_R3_FROZEN_PRODUCT)
+
+    def test_seq806_actual_collection_contract_rejects_missing_and_index_overlap(self):
+        checker = self._checker()
+        o = self._observation(checker)
+        worker, write = checker._c09_r3_leases()
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE},
+                   "worker_lease": worker, "write_lease": write}}
+        rows = {
+            ("rev-parse", "--show-toplevel"): str(ROOT), ("rev-parse", "HEAD"): self.BASE,
+            ("rev-parse", self.BASE): self.BASE, ("branch", "--show-current"): o["branch"],
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/"+o["branch"]): o["upstream"],
+            ("rev-parse", "development/main"): o["main_head"], ("remote", "get-url", "development"): o["remote_url"],
+            ("diff", "--cached", "--name-only"): "\n".join(o["staged"]),
+            ("diff", "--name-only"): "\n".join(o["unstaged"]),
+            ("ls-files", "--others", "--exclude-standard"): "\n".join(o["untracked"]),
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join(o["status_rows"]),
+            ("show", "-s", "--format=%P", self.BASE): o["main_head"],
+        }
+        original_exists = Path.exists
+        def fixture_exists(path):
+            return True if path == ROOT/"tests/tool_gateway/test_registry.py" else original_exists(path)
+        with mock.patch.object(checker, "_c09_r3_product_hashes", return_value=o["product_hashes"]), mock.patch.object(
+                Path, "exists", fixture_exists), mock.patch.object(
+                checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(
+                checker, "_c02_git_quiet_check", return_value=True):
+            self.assertEqual([], checker._collect_c09_r3_git(bundle))
+            rows[("diff", "--cached", "--name-only")] = "packages/paths/identity.py"
+            self.assertIn("C09_R3_INDEX_OVERLAP", checker._collect_c09_r3_git(bundle))
+            rows[("diff", "--cached", "--name-only")] = None
+            self.assertEqual(["GIT_REQUIRED_COLLECTION_FAILED"], checker._collect_c09_r3_git(bundle))
+
+    def _observation(self, checker, mode="staged"):
+        old = checker.c09_start_product_write_scope()
+        revised = checker.c09_r3_product_paths()
+        untracked = ["packages/execution_backends/docker.py", "packages/execution_backends/git_worktree.py",
+                     "packages/tool_gateway/models.py", "packages/tool_gateway/registry.py",
+                     "tests/execution_backends/test_docker.py", "tests/execution_backends/test_git_worktree.py",
+                     "tests/integration/test_c09_repository_workspace.py", "tests/tool_gateway/test_registry.py"]
+        if mode == "revised":
+            untracked = [p.replace("tests/tool_gateway/test_registry.py", "tests/tool_gateway/test_tool_registry.py") for p in untracked]
+        paths = revised if mode == "revised" else old
+        return {"head": self.BASE if mode == "staged" else "1"*40,
+                "parents": ["08aae12fdc4f8bd2d38b455f23408796ab4b8c82"] if mode == "staged" else [self.BASE],
+                "branch": "codex/c09-execution-backends-r1", "upstream": "development/main",
+                "remote_url": "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+                "main_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+                "base": self.BASE, "base_parents": ["08aae12fdc4f8bd2d38b455f23408796ab4b8c82"],
+                "staged": checker.c09_r3_paths() if mode == "staged" else [],
+                "unstaged": sorted(set(paths)-set(untracked)), "untracked": sorted(untracked),
+                "status_rows": (["M  "+p for p in checker.c09_r3_paths()] if mode == "staged" else []) +
+                    [" M "+p for p in sorted(set(paths)-set(untracked))] + ["?? "+p for p in sorted(untracked)],
+                "changed": [] if mode == "staged" else checker.c09_r3_paths(),
+                "product_hashes": copy.deepcopy(checker.C09_R3_FROZEN_PRODUCT),
+                "old_test_exists": mode != "revised", "diff_check": True, "cached_check": True,
+                "ancestor": True, "epoch2_valid": True}
+
+    def test_seq806_transition_positive_and_forbidden_edges(self):
+        checker = self._checker()
+        for mode in ("staged", "child", "revised"):
+            self.assertEqual([], checker.c09_r3_transition_errors(self._observation(checker, mode)))
+        self.assertIn("C09_R3_PRODUCT_SCOPE_REGRESSION",
+                      checker.c09_r3_transition_errors(self._observation(checker, "child"), previous_mode="R3_PRODUCT_DIRTY_REVISED_EXACT18"))
+        for key, value in (("remote_url", "wrong"), ("main_head", "0"*40), ("base", "0"*40),
+                           ("branch", "main"), ("upstream", "origin/main"), ("diff_check", False),
+                           ("cached_check", False), ("epoch2_valid", False)):
+            row = self._observation(checker)
+            row[key] = value
+            with self.subTest(key=key):
+                self.assertTrue(checker.c09_r3_transition_errors(row))
+        for mode, key, value in (("staged", "staged", ["packages/paths/identity.py"]),
+                                ("staged", "product_hashes", {}),
+                                ("staged", "untracked", ["../escape"]),
+                                ("staged", "status_rows", [" M ./packages/paths/identity.py"]),
+                                ("child", "parents", ["0"*40]),
+                                ("child", "parents", [self.BASE, "0"*40]),
+                                ("child", "changed", []),
+                                ("revised", "old_test_exists", True),
+                                ("revised", "untracked", [])):
+            row = self._observation(checker, mode)
+            row[key] = value
+            with self.subTest(mode=mode, key=key):
+                self.assertTrue(checker.c09_r3_transition_errors(row))
+
+    def test_seq806_builder_ignores_review_files_and_dispatches_first(self):
+        checker = self._checker()
+        original = Path.read_bytes
+        def no_ignored(path):
+            if ".superpowers" in path.parts:
+                raise AssertionError("ignored file read")
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", no_ignored):
+            self.assertEqual(11, len(checker.c09_r3_from_root(ROOT)))
+        bundle = {"_root": ROOT, "progress": {"event_sequence": 806}}
+        with mock.patch.object(checker, "_collect_c09_r3_git", return_value=["SEQ806_SELECTED"]), mock.patch.object(
+                checker, "_collect_c09_start_projection_git", side_effect=AssertionError("seq798 fallback")):
+            self.assertEqual(["SEQ806_SELECTED"], checker._validate_git_projection(bundle))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -981,6 +981,13 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C09_R2_START_PROJECTION_EXACT11"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 806
+                and event.get("sequence") == 802
+                and event.get("event_id") == "evt_c09_r3_work_instruction_issued"
+                and event["details"].get("projection_mode") == "C09_R3_REWORK_START_EXACT11"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -12994,6 +13001,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 806:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c09_r3_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 798:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14108,6 +14119,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c07_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-08_START_MANIFEST.json":
             errors.extend(validate_c08_start_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
+            errors.extend(validate_c09_r3(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_START_MANIFEST.json":
             errors.extend(validate_c09_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json":
@@ -39729,6 +39742,427 @@ def _collect_c09_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
                  and check("diff", "--quiet", child, head))
         return [] if valid else ["C09_START_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+
+
+C09_R3_BASE = "3720675f746cc0ca6a885a3c37bddf5cc4fc82a1"
+C09_R3_MAIN = C09_START_BASE
+C09_R3_P = C09_START_P
+C09_R3_E = C09_START_E
+C09_R3_H = C09_START_H
+C09_R3_M = "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json"
+C09_R3_D = "docs/progress/progress-handoff-detached-digest-c09-rework-start-r3.json"
+C09_R3_WI = "docs/work_orders/C-09_WORK_INSTRUCTION_R3.md"
+C09_R3_PROMPT = "docs/work_orders/C-09_INVOCATION_PROMPT_R3.md"
+C09_R3_REPORT = "docs/04_test_reports/C-09_REWORK_START_R3_REPORT.md"
+C09_R3_VALIDATION = "docs/validation/C-09_REWORK_START_R3_VALIDATION.md"
+C09_R3_AT = "2026-09-14T03:00:00+09:00"
+C09_R3_EXPIRES = "2026-09-14T15:00:00+09:00"
+C09_R3_FROZEN_PRODUCT = {"docs/04_test_reports/C-09_COMPLETION_REPORT.md":{"bytes":6245,"sha256":"CEF5F4969B4B15AA2185055721C09CD4A3873E98F2C66BADE4E1B0EC7988F3EA"},"packages/execution_backends/__init__.py":{"bytes":904,"sha256":"F4EE069805B56021C6D971F455A028B6BC18764D7A06A33DD7B19859EFD4E598"},"packages/execution_backends/docker.py":{"bytes":6941,"sha256":"93DAD16AE6A1B69AE2FB9CA405D60226593E56511621820C352A64B8A6096348"},"packages/execution_backends/git_worktree.py":{"bytes":11615,"sha256":"91C8ED15699033B3AB53FD4CAC74D37F3908AFC6F5F4DC3110EAE59A95510CFF"},"packages/execution_backends/models.py":{"bytes":14998,"sha256":"0E0039437F17000AD9FA12830C0C3B3866CF081DA446126A9EE858271706E891"},"packages/execution_backends/registry.py":{"bytes":2450,"sha256":"86B1F8B0D3A2910F7420E6CCD097A055D8B9A12306CE9C32460CBFA6C6C4682A"},"packages/paths/identity.py":{"bytes":6730,"sha256":"F0DE5A1FB614B61E676464439C05FDC2874B9310D5108F7941D04E22038009A0"},"packages/tool_gateway/__init__.py":{"bytes":527,"sha256":"805732D81FB8D97373F3DD611678723BC5C34BE21C6854C74DC28557B9D13472"},"packages/tool_gateway/gateway.py":{"bytes":8065,"sha256":"6A4F9EBA410AC869625890E17B8394D2D8259EC8179DCD4BB1E90279A670D1C9"},"packages/tool_gateway/models.py":{"bytes":2987,"sha256":"38873ED9334BAF5A80A75DCFA494A9B01276545C145D3AEEA97115749EEC237F"},"packages/tool_gateway/registry.py":{"bytes":2851,"sha256":"9B42EA83EDD7FE636762C128548F8BC7BA72573CEAC6D8A2C66A8C462D0A560F"},"tests/execution_backends/test_docker.py":{"bytes":3311,"sha256":"C2C004F266BD5B75BCF0E416880FD29CBAF02D0B9454D46491AE890DDB6837F1"},"tests/execution_backends/test_git_worktree.py":{"bytes":4955,"sha256":"E49B857531FE2AA5E28BAF05070EF546E9F8EAA712409E161DC3FFA6782D3E26"},"tests/execution_backends/test_registry.py":{"bytes":1934,"sha256":"F9C1D99EAD2C70071F28898EADA91C278958358834D6C0632785CABEAD6F6620"},"tests/integration/test_c09_repository_workspace.py":{"bytes":4075,"sha256":"3A011830729E1392AEDF98E54ED03411D6517937A05C9CC34BC0A6EE096B2E15"},"tests/paths/test_conflict_scope_identity.py":{"bytes":3727,"sha256":"9AD65E938D7FEC82323F700634640D6B9E97565692A345AB74CFC6FB7853119D"},"tests/tool_gateway/test_gateway.py":{"bytes":4021,"sha256":"3D9D44696E7C361456979791248A6BE4CCD7C541BD2936681B434DA6B3D32838"},"tests/tool_gateway/test_registry.py":{"bytes":859,"sha256":"81D805E814ABBECEEBC091B5D2F7466AF4C7D1A8162A724CE3D47489B652504F"}}
+C09_R3_FROZEN_STATUS = [" M docs/04_test_reports/C-09_COMPLETION_REPORT.md"," M packages/execution_backends/__init__.py"," M packages/execution_backends/models.py"," M packages/execution_backends/registry.py"," M packages/paths/identity.py"," M packages/tool_gateway/__init__.py"," M packages/tool_gateway/gateway.py"," M tests/execution_backends/test_registry.py"," M tests/paths/test_conflict_scope_identity.py"," M tests/tool_gateway/test_gateway.py","?? packages/execution_backends/docker.py","?? packages/execution_backends/git_worktree.py","?? packages/tool_gateway/models.py","?? packages/tool_gateway/registry.py","?? tests/execution_backends/test_docker.py","?? tests/execution_backends/test_git_worktree.py","?? tests/integration/test_c09_repository_workspace.py","?? tests/tool_gateway/test_registry.py"]
+C09_R3_FINDINGS = ["C09-R3-SCOPE-ADMISSION","C09-R3-OPAQUE-ID-OWNED-CONTAINMENT","C09-R3-DOCKER-TRUSTED-MOUNT-OWNERSHIP","C09-R3-DOCKER-RUNNABLE-STATE-MACHINE","C09-R3-TERMINAL-LIFECYCLE-AUDIT","C09-R3-CANONICAL-TOOL-SCHEMA","C09-R3-RETENTION-DISPOSAL-AUTHORITY","C09-R3-PREPARE-IDEMPOTENCY-MANIFEST","C09-R3-REAL-ARTIFACT-LIFECYCLE","C09-R3-GIT-CONFIG-BOUNDS","C09-R3-PHYSICAL-PATH-GUARD","C09-R3-C13-REVOKE-FENCE","C09-R3-PYTEST-BASENAME"]
+C09_R3_WI_TEXT = "# C-09 R3 corrective WorkInstruction\n\nWI-C-09-EXECUTION-BACKENDS-R3. 담당 developer-primary.\nMAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK. 기능/요구/중요위험 변경 UNCHANGED.\nR2 구현의 결함을 기존 승인 범위에서 바로잡는다. C-10 raw exec.run/임의 shell/patch/write/risk/egress/Secret 정책, 신규 backend/API/persistence는 추가하지 않는다.\n부모 승인 APPROVAL-20260814-WORKPLAN-V16-001 / 3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236.\n불변 R2 시작 commit 3720675f746cc0ca6a885a3c37bddf5cc4fc82a1, 부모/main 08aae12fdc4f8bd2d38b455f23408796ab4b8c82.\nbranch codex/c09-execution-backends-r1, upstream development/main, remote git@github-sinsan-develop:sinsan-develop/Anvil.git.\nR2 WI/prompt/manifest/report/digest/validation과 seq1~798은 보존한다. R3 control commit은 R2의 sole direct child여야 하며 제품 작업은 그 commit 뒤 시작한다.\n\n## 검증 및 권한\n\nR2의 상위 설계/계획/matrix/test/governance/parent approval hash와 direct AV-SAFE-010 L3, AV-SAFE-011 L5, AV-STAT-021 L5를 유지한다.\nAV-SAFE-028은 carry-forward 회귀다. 기존 C3/I7 계약을 유지하고 아래13 corrective cluster(제품결함12+pytest 배치1)를 모두 닫는다.\n기존 제품 dirty18은 control 작성 중 byte-frozen이다. 제품 developer의 첫 mutation은 untracked tests/tool_gateway/test_registry.py를 tests/tool_gateway/test_tool_registry.py로 이름만 이동한다.\ngit mv로 stage하지 않는다. 이후 old path 존재를 거부하며 revised exact18 이외 쓰기는 금지한다.\n제품 exact18 path hash AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F.\n- docs/04_test_reports/C-09_COMPLETION_REPORT.md\n- packages/execution_backends/__init__.py\n- packages/execution_backends/docker.py\n- packages/execution_backends/git_worktree.py\n- packages/execution_backends/models.py\n- packages/execution_backends/registry.py\n- packages/paths/identity.py\n- packages/tool_gateway/__init__.py\n- packages/tool_gateway/gateway.py\n- packages/tool_gateway/models.py\n- packages/tool_gateway/registry.py\n- tests/execution_backends/test_docker.py\n- tests/execution_backends/test_git_worktree.py\n- tests/execution_backends/test_registry.py\n- tests/integration/test_c09_repository_workspace.py\n- tests/paths/test_conflict_scope_identity.py\n- tests/tool_gateway/test_gateway.py\n- tests/tool_gateway/test_tool_registry.py\nworker worker-lease-c09-execution-backends-r3-20260914-002, epoch2, execution token c09-execution-backends-r3-execution-fence-epoch-2-6d9237f84bc14ea0.\nwrite write-lease-c09-execution-backends-r3-20260914-002, epoch2, write token c09-execution-backends-r3-write-fence-epoch-2-e15c7a03926b4fd8.\nissued 2026-09-14T03:00:00+09:00; expires 2026-09-14T15:00:00+09:00. R2 epoch1은 REVOKED이며 재활성화하지 않는다.\n최신 control direct-child HEAD/branch/status/dual token/만료를 검증한다. 기능/요구/중요위험 UNCHANGED이며 internal basename correction은 새 권한이 아니다.\n\n## 4. R3 WI에 결박할 고유 corrective finding 13개\n\n두 review의 중복을 합치되 어느 finding도 탈락시키지 않는다.\n\n1. `C09-R3-SCOPE-ADMISSION`: target scopes를 WorkspaceRef/WorkspaceGrant에 보존하고 path-bearing 도구를 IO 직전에 canonicalize한다. read_file뿐 아니라 status/search/symbols/diff의 scope 의미를 exact하게 정의하며 out-of-scope, ambiguous, reparse를 denial audit와 IO0로 차단한다.\n2. `C09-R3-OPAQUE-ID-OWNED-CONTAINMENT`: workspace/container/request/handle/artifact ID를 strict opaque identifier로 제한한다. 계산된 경로는 resolve 후 managed root containment를 검증하여 absolute, `..`, separator, device/UNC escape를 IO 전에 거부한다.\n3. `C09-R3-DOCKER-TRUSTED-MOUNT-OWNERSHIP`: backend-owned isolated workspace와 workspace/backend-bound exact mount table만 허용한다. source root, host root/socket/device/privileged, extra/duplicate/nested/ambiguous mount를 금지하고 remove 직전 container ID/name/label/endpoint ownership을 재검증한다.\n4. `C09-R3-DOCKER-RUNNABLE-STATE-MACHINE`: concrete driver는 create→inspect→start→inspect(running)→exec의 실행 가능한 상태전이를 갖는다. cancel/destroy는 owned stop/remove만 수행하며 stateful fake가 stopped-container exec를 실제로 실패시킨다. actual Docker daemon은 계속 `NOT_EXECUTED`다.\n5. `C09-R3-TERMINAL-LIFECYCLE-AUDIT`: IO 전에 PENDING/RUNNING handle 및 STARTED event를 등록한다. success, blocked, failure, timeout, cancel 각각 정확히 하나의 terminal event/receipt를 만들고 TimeoutError, TimeoutExpired, OSError 및 runner exception을 stable reason code로 정규화한다. Gateway도 모든 denial/failure/success audit를 남긴다.\n6. `C09-R3-CANONICAL-TOOL-SCHEMA`: 다섯 read tool의 provider/version/input schema/output schema/capability/side-effect/risk/backend tuple을 canonical constant로 결박한다. exact required/allowed keys, type, bound, `additionalProperties=false`, output contract를 dispatch/return에 검증하고 registry drift를 거부한다.\n7. `C09-R3-RETENTION-DISPOSAL-AUTHORITY`: cancel은 완료 결과를 덮지 않고 멱등이며 신규 dispatch를 막고 artifact 수집 후 기본 24시간 보존한다. destroy는 trusted issuer/fencing token 또는 기존 승인된 disposal authority, authority scope/expiry/hash, active-handle 0, retention expiry 또는 explicit override, protected artifact disposition, exact ownership을 모두 검증한다. caller reason만으로 즉시 삭제하지 않는다.\n8. `C09-R3-PREPARE-IDEMPOTENCY-MANIFEST`: canonical prepare payload hash에 repository identity, baseline commit, verified baseline manifest hash, target scopes, mapping revision/mount table, retention, backend trusted config를 포함한다. exact replay만 기존 ref를 반환하며 어떤 drift도 idempotency conflict다. manifest hash는 형식뿐 아니라 public evidence와 대조하고 WorkspaceRef/Grant/receipt/audit에 전달한다.\n9. `C09-R3-REAL-ARTIFACT-LIFECYCLE`: ArtifactRef는 atomic write된 backend-owned immutable object 또는 명시적 inline artifact만 가리킨다. collect는 run/session/workspace/handle ownership과 existence/hash/size를 재검증하고 실제 artifact가 없으면 빈 목록을 반환한다. destroy/cancel은 artifact disposition을 사실대로 보존한다.\n10. `C09-R3-GIT-CONFIG-BOUNDS`: managed root가 source/common-dir과 겹치면 생성 전에 거부한다. trusted minimal config, global/system null, hooks/filter/textconv/external diff 차단, fixed read argv/cwd/env를 강제한다. search/symbols는 monotonic deadline, visited files/bytes/rows, per-file read 및 incremental encoded-output cap을 실행 중 적용한다.\n11. `C09-R3-PHYSICAL-PATH-GUARD`: container lexical mapping과 host physical identity를 분리한다. root부터 leaf까지 no-follow/lstat 및 Windows reparse attribute를 검사하고 handle-open 후 identity/containment를 재검증한다. nested junction/symlink, broken link, missing leaf, replacement race, 실제 가능한 8.3 alias, duplicate/nested mapping을 hostile test로 고정한다. B-09 legacy adapter는 보존한다.\n12. `C09-R3-C13-REVOKE-FENCE`: 동일 C-13 ToolPermissionRegistry 인스턴스와 trusted session_id를 사용한다. grant generation 또는 atomic reservation을 IO 직전 소비하고 revoke가 미소비 reservation을 무효화하여 require 성공 뒤 pause/revoke/resume에서도 backend IO0, denial audit1을 보장한다. caller run_id와 replay로 우회하지 못한다.\n13. `C09-R3-PYTEST-BASENAME`: `test_tool_registry.py`로 치환하고 권위 exact suite를 `--import-mode=importlib` 없이 그대로 수집·PASS시킨다. importlib flag는 보조 검증으로만 허용하고 완료 증거를 대체하지 않는다.\n\n완료보고는 위 13개 cluster별 RED→GREEN 명령/exit/result를 기록하고 actual Docker/WSL/DB/API/UI/browser/Provider/Telegram/network/deploy/Secret은 실행하지 않았으면 그대로 `NOT_EXECUTED/NOT_ACCESSED`로 둔다.\n\n## 정확한 재검증\n\n- python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py\n- python -B -m pytest -q -p no:cacheprovider tests/repository_intelligence tests/tooling/test_a13_repository_scan.py\n- python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py\n- python -B -m compileall -q packages/paths packages/execution_backends packages/tool_gateway tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py\n- git diff --check\n\n권위 exact suite에 --import-mode=importlib을 붙인 결과를 대체 증거로 사용하지 않는다.\n13개 cluster별 focused RED→GREEN과 AT-1~5 위반시도→정확한 차단→immutable audit, 최소2 우회/IO0을 기록한다.\nconcurrency barrier require→pause→revoke→resume, source/common-dir zero-delta, scope 밖5개 read, nested junction/symlink/broken/missing/replacement/실제 가능한8.3, ID escape, baseline manifest replay drift, retention/authority/artifact tamper, timeout/OSError, schema drift, stateful Docker fake, Git global/filter 차단, incremental search/symbol budget를 확인한다.\n실제 local Git은 D:/tmp의 owned 격리 QA fixture에만 허용하고 exact cleanup/잔류0을 기록한다.\nDocker concrete driver는 stateful injected fake로 검증한다. actual Docker daemon/CLI, WSL, DB/API/UI/browser, Provider/Telegram, network/SSH/deploy/Secret은 NOT_EXECUTED/NOT_ACCESSED다.\nC13 public ToolPermissionRegistry는 기존 인스턴스/session_id/import/grant/require/revoke/active 계약을 보존한다.\n증거를 과장한 R2 completion을 새 실제 evidence에 맞춰 정정한다. 독립 Reviewer blocking0과 현재 EvidenceManifest 전 ACCEPTED를 주장하지 않는다.\n\n## 결과 및 중단\n\n판정→이유→조치, COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED/CANCELLED로 반환한다.\n정확한 명령/exit/hash/bytes/변경경로/미검증/잔여위험/rollback을 docs/04_test_reports/C-09_COMPLETION_REPORT.md에 기록한다.\n두 review는 동일 snapshot 판정이므로 product review failure1/rework1로만 집계한다. 허위 FAILURE_REPORT_ACCEPTED나 제품 commit을 기록하지 않는다.\n제품 범위 밖 수정 필요는 SCOPE_EXPANSION_REQUIRED, DIR-2 이전 계속 조건과 C-10 NOT_READY를 유지한다.\ncommit/push/PR/merge/배포는 수행하지 않는다.\ncontrol commit 뒤 seq799~806을 rewrite/revert하지 않는다. 중단은 별도 append-only successor에서 epoch2 write→worker revoke하고 실제 INCOMPLETE/BLOCKED/CANCELLED를 기록한다.\n제품 rollback은 active lease revoke 및 successor 기록 뒤 정확한 product commit 정상 revert. dirty 제품은 reset/clean/stash/delete하지 않는다.\nstateless CLI는 현재 상태만 판정한다. 단방향 transition은 caller의 trusted previous_mode가 revised로 기록된 경우 old18 복귀를 차단하며 영속 dispatch 관측을 주장하지 않는다.\n"
+C09_R3_PROMPT_TEXT = "# C-09 R3 invocation\n\nWI-C-09-EXECUTION-BACKENDS-R3의 revised exact18/epoch2 dual lease만 수행한다. control sole direct-child/HEAD/branch/status/token/expiry 검증 후 첫 mutation으로 untracked test_registry.py를 test_tool_registry.py로 rename하고 stage하지 않는다. WI의 13 corrective cluster (C09-R3-SCOPE-ADMISSION, C09-R3-OPAQUE-ID-OWNED-CONTAINMENT, C09-R3-DOCKER-TRUSTED-MOUNT-OWNERSHIP, C09-R3-DOCKER-RUNNABLE-STATE-MACHINE, C09-R3-TERMINAL-LIFECYCLE-AUDIT, C09-R3-CANONICAL-TOOL-SCHEMA, C09-R3-RETENTION-DISPOSAL-AUTHORITY, C09-R3-PREPARE-IDEMPOTENCY-MANIFEST, C09-R3-REAL-ARTIFACT-LIFECYCLE, C09-R3-GIT-CONFIG-BOUNDS, C09-R3-PHYSICAL-PATH-GUARD, C09-R3-C13-REVOKE-FENCE, C09-R3-PYTEST-BASENAME)를 각각 TDD RED→GREEN으로 닫고 WI의 정확한 3 pytest 명령과 compileall/diff-check를 그대로 실행한다. importlib flag로 exact suite를 대체하지 않는다. 기존 R2 evidence/seq798 및 control을 보존하고 제품 completion report에 cluster별 실제 결과/미검증/rollback을 기록한다. Docker는 stateful fake만, Git은 owned temp fixture만; external/Secret/commit/push/merge 금지. 범위 밖 필요/권한/환경 부족은 증거와 함께 Main에게 반환한다.\n"
+
+
+def c09_r3_paths() -> list[str]:
+    return sorted([C09_R3_M, C09_R3_D, C09_R3_P, C09_R3_H, C09_R3_E, C09_R3_WI,
+                   C09_R3_PROMPT, C09_R3_REPORT, C09_R3_VALIDATION,
+                   "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def c09_r3_product_paths() -> list[str]:
+    return sorted(p.replace("tests/tool_gateway/test_registry.py", "tests/tool_gateway/test_tool_registry.py")
+                  for p in c09_start_product_write_scope())
+
+
+def _c09_r3_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    worker = _c09_start_worker_lease()
+    worker.update({"lease_id": "worker-lease-c09-execution-backends-r3-20260914-002", "lease_epoch": 2,
+        "execution_fencing_token": "c09-execution-backends-r3-execution-fence-epoch-2-6d9237f84bc14ea0",
+        "baseline_git_commit": C09_R3_BASE, "dispatch_head": C09_R3_BASE,
+        "issued_at": C09_R3_AT, "expires_at": C09_R3_EXPIRES, "path_scope": c09_r3_product_paths()})
+    worker["fencing_token"] = worker["execution_fencing_token"]
+    write = _c09_start_write_lease()
+    write.update({"lease_id": "write-lease-c09-execution-backends-r3-20260914-002",
+        "worker_lease_id": worker["lease_id"], "write_epoch": 2,
+        "execution_fencing_token": worker["execution_fencing_token"],
+        "write_fencing_token": "c09-execution-backends-r3-write-fence-epoch-2-e15c7a03926b4fd8",
+        "issued_at": C09_R3_AT, "expires_at": C09_R3_EXPIRES, "path_scope": c09_r3_product_paths()})
+    write["fencing_token"] = write["write_fencing_token"]
+    return worker, write
+
+
+def _c09_r3_authority() -> dict[str, Any]:
+    authority = _c09_start_authority()
+    authority.update({"revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK",
+        "work_instruction_sha256": _c21_resume_sha(C09_R3_WI_TEXT.encode()),
+        "invocation_sha256": _c21_resume_sha(C09_R3_PROMPT_TEXT.encode()),
+        "supersedes": {"path": C09_START_WI, "sha256": C09_START_WI_SHA256},
+        "corrective_findings": list(C09_R3_FINDINGS),
+        "predecessor": {"commit": C09_R3_BASE, "manifest_path": C09_START_M,
+            "manifest_sha256": "0BBC4A2DC9FA96EBE095B61BF12E27403514DC77FF576351BADF89772BAED2A9",
+            "wi_sha256": C09_START_WI_SHA256, "prompt_sha256": C09_START_PROMPT_SHA256,
+            "events_sha256": "428497407696607E4D447FE69663F8CE116FA81248424C201D95FC7788B137C7",
+            "events_canonical_sha256": "4E5F166AF5042C3E0CCC8FAF54B819356463F42695F3E24850294D068B3D90A3"},
+        "review_reports": [
+            {"review": "spec", "sha256": "A654284E144944F7712004BAA29AEBCBA99A443A4ED77321BAF1221EDDBD87E5",
+             "critical": 4, "important": 8, "minor": 1},
+            {"review": "quality", "sha256": "27983DC4ADF2953D0FAB4ECC8D598FF1FDD18BBFF4555C0D34A5B4F44601F706",
+             "critical": 5, "important": 5, "minor": 0}]})
+    return authority
+
+
+
+
+def c09_r3_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes],
+                     frozen_product: Mapping[str, Any]) -> dict[str, bytes]:
+    if set(historical) != {C09_R3_P, C09_R3_E, C09_R3_H} or set(files) != {
+            "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"}:
+        raise ValueError("C09_R3_INPUT_SET_INVALID")
+    if not _c21_strict_json_equal(frozen_product, C09_R3_FROZEN_PRODUCT):
+        raise ValueError("C09_R3_R2_PRODUCT_DIRTY_MUTATED")
+    p = _c21_resume_json(historical[C09_R3_P])
+    stream = _c21_resume_json(historical[C09_R3_E])
+    authority = _c09_r3_authority()
+    if (not isinstance(p, dict) or not isinstance(stream, dict)
+        or p.get("event_sequence") != 798 or p.get("current_work_package") != "C-09"
+        or p.get("worker_lease") != _c09_start_worker_lease()
+        or p.get("write_lease") != _c09_start_write_lease()
+        or stream.get("last_sequence") != 798 or len(stream.get("events", [])) != 798
+        or _c21_resume_sha(historical[C09_R3_E]) != authority["predecessor"]["events_sha256"]
+        or _c21_resume_sha(canonical_json_bytes(stream["events"])) != authority["predecessor"]["events_canonical_sha256"]):
+        raise ValueError("C09_R3_HISTORY_INVALID")
+    paths = c09_r3_paths()
+    product = c09_r3_product_paths()
+    worker, write = _c09_r3_leases()
+    retired_worker, retired_write = copy.deepcopy(p["worker_lease"]), copy.deepcopy(p["write_lease"])
+    for lease in (retired_worker, retired_write):
+        lease.update({"status": "REVOKED", "revoked_at": C09_R3_AT,
+                      "reason": "C09_R2_INDEPENDENT_REVIEW_REWORK_REQUIRED"})
+    review = {"verdict": "REWORK_REQUIRED", "accepted": False, "quality": "REWORK_REQUIRED",
+        "critical_findings": {"spec": 4, "quality": 5}, "important_findings": {"spec": 8, "quality": 5},
+        "review_reports": authority["review_reports"], "corrective_findings": list(C09_R3_FINDINGS),
+        "unique_cluster_count": 13, "reviewed_head": C09_R3_BASE,
+        "reviewed_state": "R2_PRODUCT_EXACT18_UNSTAGED_DIRTY",
+        "reviewed_product_paths": c09_start_product_write_scope(),
+        "reviewed_product_path_list_sha256": _c21_path_list_sha(c09_start_product_write_scope(), windows=True),
+        "frozen_product_raw": copy.deepcopy(dict(frozen_product)),
+        "valid_failure_count": 1, "same_failure_count": 1, "rework_attempt": 1}
+    review_hash = _c21_resume_sha(canonical_json_bytes(review))
+    target = {"authority": authority, "review_digest": review_hash, "sequence": 806,
+        "frozen_product_raw": copy.deepcopy(dict(frozen_product)), "control_paths": paths,
+        "product_paths": product, "worker_lease": worker, "write_lease": write}
+    target_hash = _c21_resume_sha(canonical_json_bytes(target))
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    if previous != "12443ACE4183D9248DB3CB2025CFD659F38890A5B3A88313D2C9CA0E96D1E53A":
+        raise ValueError("C09_R3_LAST_PREDECESSOR_HASH_INVALID")
+    events = []
+    def event(kind: str, event_id: str, details: Mapping[str, Any]) -> None:
+        nonlocal previous
+        row = {"sequence": 799 + len(events), "event_type": kind, "event_id": event_id,
+            "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+            "project_id": "anvil", "run_id": None, "work_package_id": "C-09",
+            "step_id": "REWORK_R3", "subject_ref": "C-09/REWORK_R3",
+            "occurred_at": C09_R3_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        events.append(row)
+    event("INDEPENDENT_TEST_REVIEW_RECORDED", "evt_c09_r2_independent_product_review_recorded", review)
+    event("WRITE_LEASE_REVOKED", "evt_c09_r2_write_lease_revoked_for_rework", retired_write)
+    event("WORKER_LEASE_REVOKED", "evt_c09_r2_worker_lease_revoked_for_rework", retired_worker)
+    event("WORK_INSTRUCTION_ISSUED", "evt_c09_r3_work_instruction_issued",
+          {**authority, "work_instruction_id": "WI-C-09-EXECUTION-BACKENDS-R3",
+           "approval_ref": authority["parent_approval_id"],
+           "projection_mode": "C09_R3_REWORK_START_EXACT11", "dispatch_head": C09_R3_BASE,
+           "validated_base_commit": C09_R3_BASE, "product_write_scope": product,
+           "product_exact_path_list_sha256": _c21_path_list_sha(product, windows=True),
+           "target_hash": target_hash})
+    event("WORKER_LEASE_ISSUED", "evt_c09_r3_worker_lease_issued", worker)
+    event("WRITE_LEASE_ISSUED", "evt_c09_r3_write_lease_issued", write)
+    rework = {"attempt": 1, "valid_failure_count": 1, "same_failure_count": 1,
+              "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+              "execution_fencing_token": worker["execution_fencing_token"],
+              "write_fencing_token": write["write_fencing_token"], "review_digest": review_hash,
+              "work_instruction_id": "WI-C-09-EXECUTION-BACKENDS-R3", "status": "REWORK_REQUIRED"}
+    event("PACKAGE_REWORK_REQUESTED", "evt_c09_r3_package_rework_requested", rework)
+    event("PACKAGE_RESUMED", "evt_c09_r3_package_resumed",
+          {"resume_ref": "evt_c09_r3_package_rework_requested", "resume_sequence": 805,
+           "resume_event_ref": "evt_c09_r3_package_rework_requested",
+           "reason": "INDEPENDENT_REVIEW_CORRECTIVE_REWORK", "from_status": "REWORK_REQUIRED",
+           "package_status": "REWORK_IN_PROGRESS", "status": "REWORK_IN_PROGRESS", "accepted": False,
+           "next_safe_action": "DISPATCH_C09_R3_DEVELOPER", "c10_status": "NOT_READY", "dir2_status": "NOT_REACHED"})
+    event_raw = _c21_append_events(historical[C09_R3_E], 798, events)
+    repository = dict(p["repository"])
+    repository.update({"projection_mode": "C09_R3_REWORK_START_EXACT11", "validated_base_commit": C09_R3_BASE,
+        "local_head": C09_R3_BASE, "control_head": C09_R3_BASE, "remote_head": C09_R3_MAIN,
+        "development_main": C09_R3_MAIN, "branch": C09_START_BRANCH, "upstream": "development/main",
+        "development_remote_url": C09_START_DEVELOPMENT_URL,
+        "head_relation": "STAGED_CONTROL_OVER_FROZEN_PRODUCT_OR_SOLE_DIRECT_CHILD_REWORK",
+        "worktree_status": "R3_CONTROL_STAGED_OVER_FROZEN_R2_PRODUCT",
+        "exact_allowed_paths": paths, "product_write_scope": product, "push_status": "NOT_EXECUTED"})
+    active = {"artifact_id": "WI-C-09-EXECUTION-BACKENDS-R3", "artifact_path": C09_R3_WI,
+        "artifact_sha256": authority["work_instruction_sha256"], "invocation_path": C09_R3_PROMPT,
+        "invocation_sha256": authority["invocation_sha256"], "executor": "developer-primary",
+        "result_status": "REWORK_IN_PROGRESS", "package_status": "REWORK_IN_PROGRESS",
+        "product_write_scope": product, "acceptance_binding": authority}
+    p.update({"snapshot_id": "snapshot-c09-rework-r3-seq806", "event_sequence": 806,
+        "updated_at": C09_R3_AT, "recorded_at": C09_R3_AT, "last_event_id": events[-1]["event_id"],
+        "status": "REWORK_IN_PROGRESS", "active_work_instruction": active, "repository": repository,
+        "worker_lease": worker, "write_lease": write,
+        "retired_c09_r2_worker_lease": retired_worker, "retired_c09_r2_write_lease": retired_write,
+        "active_agent": {"actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-09", "status": "ACTIVE", "execution_fencing_token": worker["execution_fencing_token"]},
+        "c09_r3_rework": {**rework, "status": "REWORK_IN_PROGRESS", "accepted": False,
+            "authority": authority, "formal_failure_report_count": 0,
+            "product_review_failure_count": 1, "event_sequence": 806},
+        "next_work_package": {"package_id": "C-10", "status": "NOT_READY"},
+        "next_safe_action": "DISPATCH_C09_R3_DEVELOPER", "runtime_next_action": "DISPATCH_C09_R3_DEVELOPER",
+        "current_progress_evidence_ref": {"package_id": "C-09", "path": C09_R3_D, "manifest_path": C09_R3_M},
+        "latest_evidence_manifest_ref": {"path": C09_R3_M, "artifact_id": "C09-REWORK-START-R3"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C09_CORRECTIVE_REWORK", "C10_NOT_READY", "DIR2_NOT_REACHED"], "stop_before_dialogue_report": False}})
+    p["registry_refs"]["progress_events"] = {"path": C09_R3_E, "sha256": _c21_resume_sha(event_raw)}
+    report = ("# C-09 R3 corrective control 보고서\n\n"
+        "독립 spec C4/I8/M1, quality C5/I5/M0를 고유13 cluster로 결박했다. 같은 snapshot review failure1/rework1이며 formal FAILURE_REPORT0이다.\n"
+        "seq799~806 append, R2 epoch1 revoke, R3 epoch2 revised18 issue. 기존 제품 old18 bytes와 index를 보존한다.\n"
+        "TDD RED: seq806 3 failed/424 deselected, C-09 R3 builder missing. 도구 변수 초기화 오류1, 변경0 후 wrapper 재설정으로 해결, 반복0.\n"
+        "제품·commit/push/외부 실행0. control 검증은 제품 acceptance가 아니다.\n"
+        "control commit 후 중단은 append-only successor에서 epoch2 write→worker revoke; seq799~806 rewrite/revert 금지.\n").encode()
+    validation = ("# C-09 R3 제어 검증\n\n"
+        "checker, seq806 전용, C09 start/C08 회귀, py_compile, diff-check, historical prefix, frozen old18 hashes를 검증한다.\n"
+        "staged control11+frozen old18, sole-child control+frozen old18, rename-first revised18을 구분하고 authority/path/index/bytes/token tamper를 fail-closed한다.\n"
+        "trusted previous_mode가 revised인 경우 old18 복귀를 거부한다. stateless CLI 자체는 과거 관측을 영속화하지 않는다.\n"
+        "fresh clone은 ignored review 없이 tracked WI/event/manifest만 사용한다. raw10/self_reference=false 및 detached target hash를 결박한다.\n"
+        "Docker/WSL/DB/API/browser/Provider/Telegram/network/deploy/Secret은 NOT_EXECUTED.\n").encode()
+    latest = {**files, C09_R3_E: event_raw, C09_R3_WI: C09_R3_WI_TEXT.encode(),
+              C09_R3_PROMPT: C09_R3_PROMPT_TEXT.encode(), C09_R3_REPORT: report, C09_R3_VALIDATION: validation}
+
+    p["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(data)} for path, data in sorted(latest.items())]
+    p["snapshot_hash"] = compute_snapshot_hash(p)
+    progress_raw = _c21_resume_json_bytes(p)
+    summary = {k: p[k] for k in ("event_sequence", "last_event_id", "status", "current_phase",
+        "current_work_package", "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    summary.update({"accepted": False, "c09_status": "REWORK_IN_PROGRESS", "c10_status": "NOT_READY",
+        "dir_status": p["dir_review"]["status"], "dir2_status": "NOT_REACHED", "authority": authority,
+        "product_review_failure_count": 1, "formal_failure_report_count": 0,
+        "current_manifest": C09_R3_M, "reporting_decision": "AUTO_CONTINUE",
+        "repository_head": C09_R3_BASE, "repository_upstream": "development/main",
+        "repository_projection_mode": repository["projection_mode"],
+        "repository_validated_base_commit": C09_R3_BASE, "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": paths, "product_exact_paths": product,
+        "target_hash": target_hash})
+    fence = chr(96)*3
+    replacement = fence+"json anvil-recovery-summary\n"+_c21_resume_json_bytes(summary).decode()+fence
+    pattern = re.escape(fence)+r"json anvil-recovery-summary\s*\{.*?\}\s*"+re.escape(fence)
+    handoff, count = re.subn(pattern, lambda _: replacement, historical[C09_R3_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C09_R3_HANDOFF_INVALID")
+    handoff_raw = ("# C-09 R3 corrective rework seq806\n\n제품 old18 frozen, control만 작성.\n\n"+handoff).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C09-REWORK-R3-DIGEST",
+        "package_id": "C-09", "event_sequence": 806, "algorithm": "SHA-256", "self_reference": False,
+        "created_at": C09_R3_AT, "manifest_target_hash": target_hash,
+        "events_sha256": _c21_resume_sha(event_raw),
+        "progress": {"path": C09_R3_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw),
+                     "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(p))},
+        "handoff": {"path": C09_R3_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw),
+                    "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(summary))}}
+    artifacts = {**latest, C09_R3_P: progress_raw, C09_R3_H: handoff_raw, C09_R3_D: _c21_resume_json_bytes(digest)}
+    prefix = raw_event_object_prefix_bytes(historical[C09_R3_E], 798)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-09_REWORK_START_R3",
+        "artifact_id": "C09-REWORK-START-R3", "package_id": "C-09", "created_at": C09_R3_AT,
+        "event_sequence": 806, "historical_event_sequence": 798, "appended_event_count": 8,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "projection_mode": "C09_R3_REWORK_START_EXACT11", "validated_base_commit": C09_R3_BASE,
+        "authority": authority, "review": review, "review_digest": review_hash,
+        "accepted": False, "c09_status": "REWORK_IN_PROGRESS", "c10_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "worker_lease": worker, "write_lease": write,
+        "product_exact_paths": product, "product_exact_path_list_sha256": _c21_path_list_sha(product, windows=True),
+        "exact_paths": paths, "exact_path_count": 11, "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "target_hash": target_hash, "self_reference": False, "frozen_product_raw": copy.deepcopy(dict(frozen_product)),
+        "external_validation": _c09_start_boundary(),
+        "raw_checksums": [{"path": path, "bytes": len(data), "sha256": _c21_resume_sha(data)} for path, data in sorted(artifacts.items())]}
+    artifacts[C09_R3_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(paths):
+        raise ValueError("C09_R3_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c09_r3_from_root(root: Path) -> dict[str, bytes]:
+    authority = {"Anvil_설계서_v2.md": C09_START_DESIGN_SHA256,
+        "Anvil_작업계획서_v1.md": C09_START_WORK_PLAN_SHA256,
+        "Anvil_통합검증매트릭스_v1.md": C09_START_MATRIX_SHA256,
+        "Anvil_테스트계획서_v1.md": C09_START_TEST_PLAN_SHA256,
+        "docs/governance/ANVIL_OPERATING_RULES.md": C09_START_GOVERNANCE_SHA256,
+        "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md": _c09_start_authority()["parent_approval_sha256"]}
+    for path, expected in authority.items():
+        if _c21_resume_sha((root/path).read_bytes()) != expected:
+            raise ValueError("C09_R3_AUTHORITY_HASH_INVALID")
+    for path in (C09_START_WI, C09_START_PROMPT, C09_START_M, C09_START_D, C09_START_REPORT, C09_START_VALIDATION):
+        expected = subprocess.check_output(["git", "show", f"{C09_R3_BASE}:{path}"], cwd=root)
+        if (root/path).read_bytes() != expected:
+            raise ValueError("C09_R3_PREDECESSOR_ARTIFACT_MUTATED")
+    historical = {path: subprocess.check_output(["git", "show", f"{C09_R3_BASE}:{path}"], cwd=root)
+                  for path in (C09_R3_P, C09_R3_E, C09_R3_H)}
+    files = {path: (root/path).read_bytes() for path in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c09_r3_artifacts(historical, files, C09_R3_FROZEN_PRODUCT)
+
+
+def validate_c09_r3(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c09_r3_from_root(bundle["_root"])
+        refs = {C09_R3_P: _c21_resume_json(expected[C09_R3_P]),
+                C09_R3_E: _c21_resume_json(expected[C09_R3_E]),
+                C09_R3_H: extract_handoff_summary(expected[C09_R3_H].decode()),
+                C09_R3_D: _c21_resume_json(expected[C09_R3_D]), C09_R3_M: _c21_resume_json(expected[C09_R3_M])}
+        actual = {C09_R3_P: bundle.get("progress"), C09_R3_E: bundle.get("events"),
+                  C09_R3_H: bundle.get("handoff"), C09_R3_D: bundle.get("detached_digest"), C09_R3_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual[k], refs[k]) for k in actual) else ["C09_R3_PROJECTION_INVALID"]
+        if any((bundle["_root"]/path).read_bytes() != data for path, data in expected.items()):
+            errors.append("C09_R3_RAW_BYTES_INVALID")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError, UnicodeError):
+        return ["C09_R3_INPUT_INVALID"]
+
+
+
+
+def c09_r3_transition_errors(observation: Mapping[str, Any], *, previous_mode: str | None = None) -> list[str]:
+    try:
+        o = observation
+        if not isinstance(o, Mapping) or previous_mode not in {
+            None, "R3_CONTROL_STAGED_OVER_FROZEN_R2_PRODUCT",
+            "R3_CONTROL_COMMITTED_R2_PRODUCT_FROZEN", "R3_PRODUCT_DIRTY_REVISED_EXACT18"}:
+            return ["C09_R3_REPOSITORY_AUTHORITY_INVALID"]
+        if (o.get("base") != C09_R3_BASE or o.get("base_parents") != [C09_R3_MAIN]
+            or o.get("branch") != C09_START_BRANCH or o.get("upstream") != "development/main"
+            or o.get("main_head") != C09_R3_MAIN or o.get("remote_url") != C09_START_DEVELOPMENT_URL
+            or o.get("epoch2_valid") is not True or o.get("diff_check") is not True):
+            return ["C09_R3_REPOSITORY_AUTHORITY_INVALID"]
+        paths = {}
+        for key in ("staged", "unstaged", "untracked", "changed"):
+            rows = o.get(key)
+            if (not isinstance(rows, list) or any(not isinstance(p, str) or not _c02_strict_git_path(p) for p in rows)
+                or rows != sorted(set(rows))):
+                return ["C09_R3_CONTROL_STAGED_PATH_INVALID"]
+            paths[key] = rows
+        control = c09_r3_paths()
+        old, revised = c09_start_product_write_scope(), c09_r3_product_paths()
+        if set(paths["staged"]) & (set(old) | set(revised)):
+            return ["C09_R3_INDEX_OVERLAP"]
+        status = o.get("status_rows")
+        if not isinstance(status, list):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        actual_status = {}
+        for row in status:
+            if (not isinstance(row, str) or len(row) < 4 or row[2] != " "
+                or row[:2] not in {" M", "??", "M ", "A "}
+                or not _c02_strict_git_path(row[3:]) or row[3:] in actual_status):
+                return ["C09_R3_CONTROL_STAGED_PATH_INVALID"]
+            actual_status[row[3:]] = row[:2]
+        expected_status = {p: " M" for p in paths["unstaged"]}
+        for p in paths["untracked"]:
+            if p in expected_status:
+                return ["C09_R3_CONTROL_STAGED_PATH_INVALID"]
+            expected_status[p] = "??"
+        for p in paths["staged"]:
+            if p in expected_status or actual_status.get(p) not in {"A ", "M "}:
+                return ["C09_R3_CONTROL_STAGED_PATH_INVALID"]
+            expected_status[p] = actual_status[p]
+        if actual_status != expected_status:
+            return ["C09_R3_CONTROL_STAGED_PATH_INVALID"]
+        precommit = o.get("head") == C09_R3_BASE
+        if precommit:
+            if o.get("parents") != [C09_R3_MAIN] or paths["staged"] != control or o.get("cached_check") is not True:
+                return ["C09_R3_CONTROL_STAGED_PATH_INVALID"]
+        elif (not isinstance(o.get("head"), str) or re.fullmatch(r"[0-9a-f]{40}", o["head"]) is None
+              or o.get("parents") != [C09_R3_BASE] or paths["changed"] != control
+              or o.get("ancestor") is not True or paths["staged"]):
+            return ["C09_R3_REPOSITORY_AUTHORITY_INVALID"]
+        dirty = sorted(paths["unstaged"] + paths["untracked"])
+        expected_old = {row[3:]: row[:2] for row in C09_R3_FROZEN_STATUS}
+        expected_revised = {p.replace("tests/tool_gateway/test_registry.py", "tests/tool_gateway/test_tool_registry.py"): s
+                            for p, s in expected_old.items()}
+        product_status = {p: status for p, status in actual_status.items() if p not in control}
+        if dirty == old:
+            if previous_mode == "R3_PRODUCT_DIRTY_REVISED_EXACT18":
+                return ["C09_R3_PRODUCT_SCOPE_REGRESSION"]
+            if (product_status != expected_old or o.get("old_test_exists") is not True
+                or not _c21_strict_json_equal(o.get("product_hashes"), C09_R3_FROZEN_PRODUCT)):
+                return ["C09_R3_R2_PRODUCT_DIRTY_MUTATED"]
+            return []
+        if (not precommit and dirty == revised and product_status == expected_revised
+            and o.get("old_test_exists") is False):
+            return []
+        return ["C09_R3_PRODUCT_SCOPE_REGRESSION"] if o.get("old_test_exists") else ["C09_R3_PRODUCT_SCOPE_INVALID"]
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+def _c09_r3_product_hashes(root: Path, paths: list[str]) -> dict[str, Any]:
+    result = {}
+    for relative in paths:
+        path = root
+        for component in relative.split("/"):
+            path = path / component
+            metadata = path.lstat()
+            if path.is_symlink() or getattr(metadata, "st_file_attributes", 0) & 0x400:
+                raise ValueError("C09_R3_PRODUCT_REPARSE_INVALID")
+        if not path.is_file():
+            raise ValueError("C09_R3_PRODUCT_FILE_INVALID")
+        payload = path.read_bytes()
+        result[relative] = {"bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+    return result
+
+
+def _collect_c09_r3_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        top = value("rev-parse", "--show-toplevel")
+        if top is None or Path(top).resolve() != root.resolve():
+            return ["C09_R3_REPOSITORY_AUTHORITY_INVALID"]
+        p = bundle.get("progress", {})
+        worker, write = _c09_r3_leases()
+        repo = p.get("repository", {})
+        observation = {"head": value("rev-parse", "HEAD"),
+            "base": value("rev-parse", C09_R3_BASE),
+            "branch": optional("branch", "--show-current"),
+            "upstream": optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C09_START_BRANCH}"),
+            "main_head": value("rev-parse", "development/main"),
+            "remote_url": value("remote", "get-url", "development"),
+            "staged": _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")),
+            "unstaged": _c02_strict_name_only_paths(raw("diff", "--name-only")),
+            "untracked": _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard")),
+            "status_rows": _c02_strict_raw_lines(raw("status", "--porcelain", "--untracked-files=all")),
+            "cached_check": check("diff", "--cached", "--check"), "diff_check": check("diff", "--check"),
+            "epoch2_valid": (_c21_strict_json_equal(p.get("worker_lease"), worker)
+                and _c21_strict_json_equal(p.get("write_lease"), write)
+                and isinstance(repo, Mapping) and repo.get("validated_base_commit") == C09_R3_BASE),
+            "old_test_exists": (root/"tests/tool_gateway/test_registry.py").exists()}
+        if any(value is None for value in observation.values()):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        head_parents = value("show", "-s", "--format=%P", observation["head"])
+        base_parents = value("show", "-s", "--format=%P", C09_R3_BASE)
+        if head_parents is None or base_parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        observation["parents"] = head_parents.split()
+        observation["base_parents"] = base_parents.split()
+        observation["changed"] = ([] if observation["head"] == C09_R3_BASE else
+                                  _c02_strict_name_only_paths(raw("diff", "--name-only", C09_R3_BASE, observation["head"])))
+        observation["ancestor"] = check("merge-base", "--is-ancestor", C09_R3_BASE, observation["head"])
+        if observation["head"] != C09_R3_BASE:
+            observation["diff_check"] = observation["diff_check"] and check("diff", "--check", C09_R3_BASE, observation["head"])
+        dirty = sorted(observation["unstaged"] + observation["untracked"])
+        observation["product_hashes"] = (_c09_r3_product_hashes(root, c09_start_product_write_scope())
+            if dirty == c09_start_product_write_scope() else {})
+        return c09_r3_transition_errors(observation, previous_mode=bundle.get("_c09_r3_trusted_previous_mode"))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
