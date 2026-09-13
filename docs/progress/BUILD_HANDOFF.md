@@ -1,3 +1,9 @@
+# C-10 Main takeover start - seq855
+
+- user direction recorded after failure3 conflict hold.
+- TakeoverPacket bound; Main epoch4 dual lease active for product exact6.
+- external execution remains NOT_EXECUTED; DIR2 NOT_REACHED.
+
 # C-10 failure3 instruction conflict hold - seq849
 
 - seq1~845 raw events preserved; third same-root-cause review failure recorded.
@@ -1026,34 +1032,83 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 849,
-  "last_event_id": "evt_c10_failure3_instruction_conflict_waiting",
-  "status": "WAITING_APPROVAL",
+  "event_sequence": 855,
+  "last_event_id": "evt_c10_main_takeover_package_resumed",
+  "status": "REWORK_MAIN_TAKEOVER",
   "current_phase": "C",
   "current_work_package": "C-10",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "main-agent-eoul",
+    "role": "MAIN_AGENT",
+    "work_package_id": "C-10",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c10-main-takeover-20260914-004",
+    "fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "subject_ref": "C-10/MAIN-TAKEOVER",
+    "lease_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "role": "MAIN_AGENT",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+    "dispatch_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+    "issued_at": "2026-09-14T07:33:00+09:00",
+    "expires_at": "2026-09-14T19:33:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c10-main-takeover-20260914-004",
+    "worker_lease_id": "worker-lease-c10-main-takeover-20260914-004",
+    "fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+    "write_fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "write_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T07:33:00+09:00",
+    "expires_at": "2026-09-14T19:33:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "AWAIT_USER_DIRECTION_C10_FAILURE3",
+  "next_safe_action": "MAIN_IMPLEMENT_C10_FAILURE3_TAKEOVER",
   "accepted": false,
   "c09_status": "ACCEPTED",
-  "c10_status": "WAITING_APPROVAL",
+  "c10_status": "REWORK_MAIN_TAKEOVER",
   "c11_status": "NOT_READY",
   "dir_status": "CLEARED",
   "dir2_status": "NOT_REACHED",
-  "repository_head": "bc1b5c282f076aa95750d8f5505766327dfb559e",
+  "repository_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C10_R2_START_EXACT9",
+  "repository_projection_mode": "C10_MAIN_TAKEOVER_START_EXACT10",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-10_R2_START_MANIFEST.json",
+    "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c10-r2-start.json",
-    "docs/work_orders/C-10_INVOCATION_PROMPT_R2.md",
-    "docs/work_orders/C-10_WORK_INSTRUCTION_R2.md",
+    "docs/progress/progress-handoff-detached-digest-c10-main-takeover-start.json",
+    "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+    "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
@@ -1065,31 +1120,10 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/action_policy/test_c10_policy.py",
     "tests/action_policy/test_policy.py"
   ],
-  "independent_reviews": {
-    "verdict": "REWORK",
-    "blocking_findings": 3,
-    "spec_review": {
-      "critical": 1,
-      "important": 2,
-      "minor": 0
-    },
-    "quality_review": {
-      "critical": 1,
-      "important": 1,
-      "minor": 0
-    },
-    "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
-    "same_root_cause_occurrence": 3,
-    "finding_ids": [
-      "COMMAND_EFFECT_SCOPE_BYPASS",
-      "RAW_SECRET_KEY_SUFFIX_BYPASS",
-      "HOSTILE_MAPPING_OSERROR_AND_VERIFY_COMPATIBILITY"
-    ]
-  },
-  "review_rework_count": 3,
-  "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
-  "current_manifest": "docs/evidence/manifests/C-10_FAILURE3_CONFLICT_HOLD_MANIFEST.json",
-  "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK"
+  "user_direction": "ALLOW_C10_MAIN_DIRECT_TAKEOVER",
+  "takeover_packet_sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA",
+  "current_manifest": "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
+  "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 

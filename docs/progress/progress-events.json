@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 849,
+  "last_sequence": 855,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -46026,7 +46026,176 @@
         "reason": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
         "next_safe_action": "AWAIT_USER_DIRECTION_C10_FAILURE3"
       }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 850,
+      "event_id": "evt_c10_main_takeover_user_direction",
+      "event_type": "APPLY_APPROVAL_RECORDED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/MAIN-TAKEOVER",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T07:33:00+09:00",
+      "recorded_at": "2026-09-14T07:33:00+09:00",
+      "previous_event_sha256": "636CC4B966178AF6475AE77BD74F5833021A0C7B850A7E9AC30140766A2708E1",
+      "details": {
+        "approval_ref": "USER-20260914-C10-MAIN-TAKEOVER",
+        "target_hash": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+        "human_actor": "신산님",
+        "direction_sha256": "935088D3CD683FE8A10965538301343FA251C9AD61AAFAC7679F534A5831DE78",
+        "direction": "ALLOW_C10_MAIN_DIRECT_TAKEOVER"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 851,
+      "event_id": "evt_c10_main_takeover_packet_recorded",
+      "event_type": "HANDOFF_RECORDED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/MAIN-TAKEOVER",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T07:33:00+09:00",
+      "recorded_at": "2026-09-14T07:33:00+09:00",
+      "previous_event_sha256": "429D795BA507FF4637812C0D85BE5575D673B3D1D72802B41BFF468C3B0A5FF1",
+      "details": {
+        "handoff_ref": "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+        "handoff_sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA",
+        "developer_status": "STOPPED",
+        "runtime_tool_ownership": "REVOKED"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 852,
+      "event_id": "evt_c10_main_takeover_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/MAIN-TAKEOVER",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T07:33:00+09:00",
+      "recorded_at": "2026-09-14T07:33:00+09:00",
+      "previous_event_sha256": "7039678D45019FF0985B542133B768AF90A11A1394FF83A313EE21F42D99E2C5",
+      "details": {
+        "work_instruction_id": "WI-C-10-MAIN-TAKEOVER-001",
+        "work_instruction_sha256": "071565E3485134ECE6CC5A148F9B828FDF706B858ACE6310F54754FD8C32F486",
+        "invocation_sha256": "5666C63C09B5CCBDA03AD69A7F82848A8A37F7C4FCAB4EC226DC6E00B3948AA8",
+        "approval_ref": "USER-20260914-C10-MAIN-TAKEOVER",
+        "product_write_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 853,
+      "event_id": "evt_c10_main_takeover_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/MAIN-TAKEOVER",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T07:33:00+09:00",
+      "recorded_at": "2026-09-14T07:33:00+09:00",
+      "previous_event_sha256": "732424C111A9CCE7FDC02428E8D309A47158398F8094E50DB9E7494053A92351",
+      "details": {
+        "lease_id": "worker-lease-c10-main-takeover-20260914-004",
+        "fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+        "subject_ref": "C-10/MAIN-TAKEOVER",
+        "lease_epoch": 4,
+        "actor_id": "main-agent-eoul",
+        "role": "MAIN_AGENT",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+        "dispatch_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+        "issued_at": "2026-09-14T07:33:00+09:00",
+        "expires_at": "2026-09-14T19:33:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 854,
+      "event_id": "evt_c10_main_takeover_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/MAIN-TAKEOVER",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T07:33:00+09:00",
+      "recorded_at": "2026-09-14T07:33:00+09:00",
+      "previous_event_sha256": "10DCED73C69B792C48BCD8C37D71DEDB60C711D93056F1EB42F457DC3CED8C97",
+      "details": {
+        "lease_id": "write-lease-c10-main-takeover-20260914-004",
+        "worker_lease_id": "worker-lease-c10-main-takeover-20260914-004",
+        "fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+        "write_fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+        "write_epoch": 4,
+        "actor_id": "main-agent-eoul",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T07:33:00+09:00",
+        "expires_at": "2026-09-14T19:33:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 855,
+      "event_id": "evt_c10_main_takeover_package_resumed",
+      "event_type": "PACKAGE_RESUMED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/MAIN-TAKEOVER",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T07:33:00+09:00",
+      "recorded_at": "2026-09-14T07:33:00+09:00",
+      "previous_event_sha256": "8036F643AACFCFB8A17B4B21B0D60A77A82B498AF6C0131464F3ECDB58979E61",
+      "details": {
+        "resume_event_ref": "evt_c10_main_takeover_user_direction",
+        "projection_mode": "C10_MAIN_TAKEOVER_START_EXACT10",
+        "validated_base_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+        "dispatch_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+        "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "head_relation": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD_C10_MAIN_TAKEOVER",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c10-main-takeover-start.json",
+          "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+          "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+          "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "result_status": "REWORK_MAIN_TAKEOVER"
+      }
     }
   ],
-  "last_event_id": "evt_c10_failure3_instruction_conflict_waiting"
+  "last_event_id": "evt_c10_main_takeover_package_resumed"
 }

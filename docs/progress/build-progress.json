@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c10-failure3-conflict-hold-seq849",
-  "event_sequence": 849,
-  "updated_at": "2026-09-14T07:11:00+09:00",
-  "last_event_id": "evt_c10_failure3_instruction_conflict_waiting",
+  "snapshot_id": "snapshot-c10-main-takeover-start-seq855",
+  "event_sequence": 855,
+  "updated_at": "2026-09-14T07:33:00+09:00",
+  "last_event_id": "evt_c10_main_takeover_package_resumed",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-10",
-  "status": "WAITING_APPROVAL",
+  "status": "REWORK_MAIN_TAKEOVER",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -57,8 +57,34 @@
     "C-08",
     "C-09"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "main-agent-eoul",
+    "role": "MAIN_AGENT",
+    "work_package_id": "C-10",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c10-main-takeover-20260914-004",
+    "worker_lease_id": "worker-lease-c10-main-takeover-20260914-004",
+    "fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+    "write_fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "write_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T07:33:00+09:00",
+    "expires_at": "2026-09-14T19:33:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -90,7 +116,29 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-c10-main-takeover-20260914-004",
+    "fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "subject_ref": "C-10/MAIN-TAKEOVER",
+    "lease_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "role": "MAIN_AGENT",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+    "dispatch_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+    "issued_at": "2026-09-14T07:33:00+09:00",
+    "expires_at": "2026-09-14T19:33:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -271,10 +319,8 @@
   "active_failure_lineage": {
     "step_lineage_id": "C-10",
     "valid_failure_count": 0,
-    "same_failure_count": 0,
     "review_rework_count": 3,
-    "rework_attempt": 2,
-    "takeover_status": "REQUIRED_BLOCKED_BY_USER_INSTRUCTION",
+    "takeover_status": "MAIN_TAKEOVER",
     "fingerprint": "C10-COMMAND-POLICY-FAILCLOSED-GAP"
   },
   "historical_accepted_failure_count": 32,
@@ -302,26 +348,31 @@
   },
   "latest_evidence_refs": [
     {
+      "path": "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+      "sha256": "5666C63C09B5CCBDA03AD69A7F82848A8A37F7C4FCAB4EC226DC6E00B3948AA8"
+    },
+    {
+      "path": "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+      "sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA"
+    },
+    {
+      "path": "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+      "sha256": "071565E3485134ECE6CC5A148F9B828FDF706B858ACE6310F54754FD8C32F486"
+    },
+    {
       "path": "scripts/check_project_progress.py",
-      "sha256": "5805546D6E620DDF9F2292756EEC814C954B9D75EEC5534E11A96E3180A2E22D"
+      "sha256": "00DC05BF60621D97EE473F6AA8633E8F37D9AFADA8F522C04EEF7CB33AC32B8D"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "9A3354C11B06F0346CAA70544ED7FD943955849F1EA66B0FDEBB9470157C9AD3"
+      "sha256": "AA595D7653C130B7C260E3C4DE6ACF306EECD64DACF68A258C41A3BBE3E3E613"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-10_FAILURE3_CONFLICT_HOLD_MANIFEST.json",
-    "artifact_id": "C10-FAILURE3-CONFLICT-HOLD-20260914"
+    "path": "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
+    "artifact_id": "C10-MAIN-TAKEOVER-START-20260914"
   },
-  "pending_approvals": [
-    {
-      "approval_ref": "USER_DIRECTION_C10_FAILURE3_EXECUTION_OWNER",
-      "change_classification": "REQUIREMENT_CHANGE",
-      "reason": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
-      "required_direction": "ALLOW_MAIN_TAKEOVER_PRODUCT_WRITE_OR_WAIVE_FAILURE3_RULE"
-    }
-  ],
+  "pending_approvals": [],
   "dir_review": {
     "checkpoint": "DIR-1",
     "status": "CLEARED",
@@ -329,7 +380,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "AWAIT_USER_DIRECTION_C10_FAILURE3",
+  "next_safe_action": "MAIN_IMPLEMENT_C10_FAILURE3_TAKEOVER",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -439,9 +490,9 @@
     }
   },
   "repository": {
-    "projection_mode": "C10_R2_START_EXACT9",
-    "validated_base_commit": "bc1b5c282f076aa95750d8f5505766327dfb559e",
-    "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD_C10_R2",
+    "projection_mode": "C10_MAIN_TAKEOVER_START_EXACT10",
+    "validated_base_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+    "head_relation": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD_C10_MAIN_TAKEOVER",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/main",
     "remote_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
@@ -449,13 +500,14 @@
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/C-10_R2_START_MANIFEST.json",
+      "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c10-r2-start.json",
-      "docs/work_orders/C-10_INVOCATION_PROMPT_R2.md",
-      "docs/work_orders/C-10_WORK_INSTRUCTION_R2.md",
+      "docs/progress/progress-handoff-detached-digest-c10-main-takeover-start.json",
+      "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+      "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
@@ -473,8 +525,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "C10_R2_CONTROL_WITH_PRODUCT_EXACT6_DIRTY",
-    "local_head": "bc1b5c282f076aa95750d8f5505766327dfb559e",
+    "worktree_status": "C10_MAIN_TAKEOVER_CONTROL_WITH_PRODUCT_EXACT6_DIRTY",
+    "local_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1279,7 +1331,7 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "bc1b5c282f076aa95750d8f5505766327dfb559e",
+    "control_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
       "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
@@ -1620,13 +1672,13 @@
     }
   },
   "reporting_decision": {
-    "decision": "STOP_AND_REPORT_SCOPE_RISK",
+    "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C10_SAME_ROOT_CAUSE_3",
-      "MAIN_TAKEOVER_REQUIRED",
-      "ROOT_PRODUCT_WRITE_PROHIBITED"
+      "USER_DIRECTION_RECORDED",
+      "C10_MAIN_TAKEOVER_ACTIVE",
+      "DIR2_NOT_REACHED"
     ],
-    "stop_before_dialogue_report": true
+    "stop_before_dialogue_report": false
   },
   "accepted_c21_lr01_work_instruction": {
     "artifact_id": "WI-C-21-LR-01-20260903-001",
@@ -1675,14 +1727,14 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "active_work_instruction": {
-    "artifact_id": "WI-C-10-ACTION-POLICY-R2",
-    "artifact_path": "docs/work_orders/C-10_WORK_INSTRUCTION_R2.md",
-    "artifact_sha256": "2F027DB62ABAAFFA32C5F939BB4E3D2E47F0CEF6761BE882B99883D034046E97",
-    "invocation_path": "docs/work_orders/C-10_INVOCATION_PROMPT_R2.md",
-    "invocation_sha256": "66E086E825005EF45E922DB3C3EFE4B590EDB4CA0D17404E500B29B8D7CF6590",
-    "executor": "developer-primary",
-    "result_status": "BLOCKED_INSTRUCTION_CONFLICT",
-    "package_status": "WAITING_APPROVAL",
+    "artifact_id": "WI-C-10-MAIN-TAKEOVER-001",
+    "artifact_path": "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+    "artifact_sha256": "071565E3485134ECE6CC5A148F9B828FDF706B858ACE6310F54754FD8C32F486",
+    "invocation_path": "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+    "invocation_sha256": "5666C63C09B5CCBDA03AD69A7F82848A8A37F7C4FCAB4EC226DC6E00B3948AA8",
+    "executor": "main-agent-eoul",
+    "result_status": "REWORK_MAIN_TAKEOVER",
+    "package_status": "REWORK_MAIN_TAKEOVER",
     "product_write_scope": [
       "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
       "packages/action_policy/**",
@@ -1690,27 +1742,8 @@
       "tests/action_policy/**",
       "tests/tool_gateway/**"
     ],
-    "rework_attempt": 2,
-    "independent_review": {
-      "verdict": "REWORK",
-      "blocking_findings": 2,
-      "spec_review": {
-        "critical": 1,
-        "important": 1,
-        "minor": 0
-      },
-      "quality_review": {
-        "critical": 1,
-        "important": 1,
-        "minor": 0
-      },
-      "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
-      "finding_ids": [
-        "STRUCTURED_DESTRUCTIVE_COMMAND_POLICY_INCOMPLETE",
-        "RAW_SECRET_KEY_CANONICALIZATION_INCOMPLETE"
-      ]
-    },
-    "review_rework_count": 3
+    "takeover_packet_path": "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+    "takeover_packet_sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA"
   },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
@@ -1984,8 +2017,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-10",
-    "path": "docs/progress/progress-handoff-detached-digest-c10-failure3-hold.json",
-    "manifest_path": "docs/evidence/manifests/C-10_FAILURE3_CONFLICT_HOLD_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c10-main-takeover-start.json",
+    "manifest_path": "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -2006,7 +2039,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "85BC19B6C99C3405C214785245C031E99643273666948C124CD2F11D2C95DED7"
+      "sha256": "D14AEFAACEF99D7D8C14BBEA919ED3138CA243526A8D157DF1A7EAE56F2E6ADF"
     }
   },
   "next_work_package": {
@@ -2400,8 +2433,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "86F68D11FB8299C830FDE7BE2E7D4264EDAAE3DBBE3B70A8AC8A1D83AD6DD864",
-  "runtime_next_action": "AWAIT_USER_DIRECTION_C10_FAILURE3",
+  "snapshot_hash": "777C27BA370E7ABBE1B6CD3CE15B658A76951169FE0E0F15AE46600743163E5C",
+  "runtime_next_action": "MAIN_IMPLEMENT_C10_FAILURE3_TAKEOVER",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -4013,7 +4046,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-14T07:11:00+09:00",
+  "recorded_at": "2026-09-14T07:33:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -17110,12 +17143,12 @@
     "dir2_status": "NOT_REACHED"
   },
   "c10_start": {
-    "status": "WAITING_APPROVAL",
+    "status": "REWORK_MAIN_TAKEOVER",
     "accepted": false,
-    "event_sequence": 849,
+    "event_sequence": 855,
     "c09_status": "ACCEPTED",
     "c09_completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
-    "c10_status": "WAITING_APPROVAL",
+    "c10_status": "REWORK_MAIN_TAKEOVER",
     "c11_status": "NOT_READY",
     "dir2_status": "NOT_REACHED",
     "authority": {
@@ -17244,6 +17277,8 @@
     "review_rework_count": 3,
     "work_instruction_sha256": "2F027DB62ABAAFFA32C5F939BB4E3D2E47F0CEF6761BE882B99883D034046E97",
     "invocation_sha256": "66E086E825005EF45E922DB3C3EFE4B590EDB4CA0D17404E500B29B8D7CF6590",
-    "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED"
+    "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+    "user_direction": "ALLOW_C10_MAIN_DIRECT_TAKEOVER",
+    "takeover_packet_sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA"
   }
 }

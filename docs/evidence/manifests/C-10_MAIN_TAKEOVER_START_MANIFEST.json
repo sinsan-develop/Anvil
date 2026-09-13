@@ -1,0 +1,167 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-10_MAIN_TAKEOVER_START",
+  "artifact_id": "C10-MAIN-TAKEOVER-START-20260914",
+  "created_at": "2026-09-14T07:33:00+09:00",
+  "package_id": "C-10",
+  "event_sequence": 855,
+  "historical_event_sequence": 849,
+  "appended_event_count": 6,
+  "historical_raw_event_prefix": {
+    "bytes": 2515131,
+    "sha256": "132FB09BE8F13CE08104373F0312CE3D165802B6ED36642DD181872BF0E67DD7"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": false,
+  "status": "REWORK_MAIN_TAKEOVER",
+  "c09_status": "ACCEPTED",
+  "c10_status": "REWORK_MAIN_TAKEOVER",
+  "c11_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "user_direction": "ALLOW_C10_MAIN_DIRECT_TAKEOVER",
+  "user_direction_sha256": "935088D3CD683FE8A10965538301343FA251C9AD61AAFAC7679F534A5831DE78",
+  "same_root_cause_occurrence": 3,
+  "worker_lease": {
+    "lease_id": "worker-lease-c10-main-takeover-20260914-004",
+    "fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "subject_ref": "C-10/MAIN-TAKEOVER",
+    "lease_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "role": "MAIN_AGENT",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+    "dispatch_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+    "issued_at": "2026-09-14T07:33:00+09:00",
+    "expires_at": "2026-09-14T19:33:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c10-main-takeover-20260914-004",
+    "worker_lease_id": "worker-lease-c10-main-takeover-20260914-004",
+    "fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+    "write_fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+    "write_epoch": 4,
+    "actor_id": "main-agent-eoul",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T07:33:00+09:00",
+    "expires_at": "2026-09-14T19:33:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "takeover_packet_path": "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+  "takeover_packet_sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA",
+  "work_instruction_path": "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "071565E3485134ECE6CC5A148F9B828FDF706B858ACE6310F54754FD8C32F486",
+  "invocation_path": "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+  "invocation_sha256": "5666C63C09B5CCBDA03AD69A7F82848A8A37F7C4FCAB4EC226DC6E00B3948AA8",
+  "product_exact_paths": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/**",
+    "packages/tool_gateway/**",
+    "tests/action_policy/**",
+    "tests/tool_gateway/**"
+  ],
+  "projection_mode": "C10_MAIN_TAKEOVER_START_EXACT10",
+  "validated_base_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+  "branch": "codex/c09-execution-backends-r1",
+  "exact_paths": [
+    "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-main-takeover-start.json",
+    "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+    "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 10,
+  "exact_path_list_sha256": "3C0195FEC4E75070543EEF505E4D162091CEFD94395E29A11669633128F8DA45",
+  "record_binding": "STAGED_EXACT10_OR_SOLE_DIRECT_CHILD_C10_MAIN_TAKEOVER",
+  "self_reference": false,
+  "external_validation": {
+    "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
+    "secret_manager": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
+    "secret_value": "NOT_ACCESSED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 192480,
+      "sha256": "330707334111E8398582AECFF8D87CF428644A461F5503BC74C249A612FCBC5A"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 959105,
+      "sha256": "FA1912B20343B326197CEF6D467EBDF650DDED6711F4BCD5F5A2718EAAA5AE25"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2522864,
+      "sha256": "D14AEFAACEF99D7D8C14BBEA919ED3138CA243526A8D157DF1A7EAE56F2E6ADF"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c10-main-takeover-start.json",
+      "bytes": 863,
+      "sha256": "9631088363ABA6D6BDE55822D66648AAA1311A12B8592B03898E129109423639"
+    },
+    {
+      "path": "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
+      "bytes": 395,
+      "sha256": "5666C63C09B5CCBDA03AD69A7F82848A8A37F7C4FCAB4EC226DC6E00B3948AA8"
+    },
+    {
+      "path": "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
+      "bytes": 1389,
+      "sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA"
+    },
+    {
+      "path": "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+      "bytes": 1149,
+      "sha256": "071565E3485134ECE6CC5A148F9B828FDF706B858ACE6310F54754FD8C32F486"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3544482,
+      "sha256": "00DC05BF60621D97EE473F6AA8633E8F37D9AFADA8F522C04EEF7CB33AC32B8D"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 993426,
+      "sha256": "AA595D7653C130B7C260E3C4DE6ACF306EECD64DACF68A258C41A3BBE3E3E613"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C10-MAIN-TAKEOVER-START-DIGEST-20260914",
+  "package_id": "C-10",
+  "event_sequence": 855,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-14T07:33:00+09:00",
+  "scope": "seq850-855 append-only C-10 Main takeover start; exact10",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 959105,
+    "file_sha256": "FA1912B20343B326197CEF6D467EBDF650DDED6711F4BCD5F5A2718EAAA5AE25",
+    "canonical_json_sha256": "B1A855013141DFDFC68E28A49F9501B188A69E825559A7B972E0B3E1DBF3D49F"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 192480,
+    "file_sha256": "330707334111E8398582AECFF8D87CF428644A461F5503BC74C249A612FCBC5A",
+    "machine_summary_canonical_sha256": "4A2FAEF029E94BD25F1D3CEF67AD9B9DEBDAFD29F437D229EADD0913D546D53C"
+  }
+}
