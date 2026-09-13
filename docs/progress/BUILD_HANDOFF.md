@@ -1,3 +1,9 @@
+# C-08 final acceptance - seq795
+
+- seq1~790 raw event object bytes and historical evidence preserved.
+- C-08 ACCEPTED, C-09 READY_FOR_WORK_INSTRUCTION, DIR-2 NOT_REACHED.
+- Fixture/read-only repository intelligence verified; external runtime not promoted.
+
 # C-08 repository intelligence start - seq790
 
 - seq1~787 raw event objects preserved; seq788~790 appended.
@@ -973,19 +979,23 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 790,
-  "last_event_id": "evt_c08_write_lease_issued",
-  "status": "IN_PROGRESS",
+  "event_sequence": 795,
+  "last_event_id": "evt_c08_final_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-08",
-  "active_agent": {
-    "actor_id": "developer-primary",
-    "role": "PRIMARY_DEVELOPER",
-    "work_package_id": "C-08",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5"
-  },
-  "worker_lease": {
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
+  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "valid_failure_count": 0,
+  "next_safe_action": "ISSUE_C09_WORK_INSTRUCTION",
+  "accepted": true,
+  "c08_status": "ACCEPTED",
+  "c09_status": "READY_FOR_WORK_INSTRUCTION",
+  "dir_status": "CLEARED",
+  "dir2_status": "NOT_REACHED",
+  "completed_worker_lease": {
     "lease_id": "worker-lease-c08-repository-intelligence-20260913-001",
     "fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5",
     "execution_fencing_token": "c08-repository-intelligence-execution-fence-epoch-1-5529fe5",
@@ -997,9 +1007,11 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "dispatch_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
     "issued_at": "2026-09-13T23:55:00+09:00",
     "expires_at": "2026-09-14T11:55:00+09:00",
-    "status": "ACTIVE"
+    "status": "REVOKED",
+    "revoked_at": "2026-09-14T01:45:00+09:00",
+    "revocation_reason": "C08_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
   },
-  "write_lease": {
+  "completed_write_lease": {
     "lease_id": "write-lease-c08-repository-intelligence-20260913-001",
     "worker_lease_id": "worker-lease-c08-repository-intelligence-20260913-001",
     "fencing_token": "c08-repository-intelligence-write-fence-epoch-1-5529fe5",
@@ -1021,30 +1033,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "tests/repository_intelligence/fixtures/util.py",
       "tests/repository_intelligence/test_indexes.py"
     ],
-    "status": "ACTIVE"
+    "status": "REVOKED",
+    "revoked_at": "2026-09-14T01:45:00+09:00",
+    "revocation_reason": "C08_PRODUCT_IMPLEMENTATION_AND_REVIEW_COMPLETED"
   },
-  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "valid_failure_count": 0,
-  "next_safe_action": "DISPATCH_C08_DEVELOPER",
-  "accepted": false,
-  "c07_status": "ACCEPTED",
-  "c08_status": "IN_PROGRESS",
-  "c09_status": "NOT_READY",
-  "dir_status": "CLEARED",
-  "dir2_status": "NOT_REACHED",
-  "repository_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
+  "repository_head": "8095981d33deef082fe646495a2cbc80841839c3",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C08_START_PROJECTION_EXACT9",
-  "repository_validated_base_commit": "5529fe5261744e42227fcb3444952cf18e8114ec",
-  "repository_head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD",
+  "repository_projection_mode": "C08_FINAL_ACCEPTANCE_EXACT7",
+  "repository_validated_base_commit": "8095981d33deef082fe646495a2cbc80841839c3",
+  "repository_head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-08_START_PROJECTION_REPORT.md",
-    "docs/evidence/manifests/C-08_START_MANIFEST.json",
+    "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c08-start.json",
-    "docs/validation/C-08_START_VALIDATION.md",
+    "docs/progress/progress-handoff-detached-digest-c08-final-acceptance.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
@@ -1056,63 +1059,124 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/repository_intelligence/fixtures/app.py",
     "tests/repository_intelligence/fixtures/tests/spec_app.py",
     "tests/repository_intelligence/fixtures/ui.ts",
-    "tests/repository_intelligence/fixtures/util.py",
     "tests/repository_intelligence/test_indexes.py"
   ],
-  "work_instruction_sha256": "D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C",
-  "invocation_sha256": "D74DDD5969200A6FD7DDB9AAA2C6A218E98C8F3500E6423FEBF89FFAECCB4C37",
-  "acceptance_binding": {
-    "revision_class": "EXISTING_APPROVED_WORK_INSTRUCTION_REVALIDATION",
-    "authority_basis": [
-      "APPROVED_WORK_PLAN_C08",
-      "C07_ACCEPTED",
-      "A13_PREEXISTING_READ_ONLY_SCAN",
-      "DESIGN_6_30"
-    ],
-    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
-    "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
-    "work_instruction_sha256": "D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C",
-    "invocation_sha256": "D74DDD5969200A6FD7DDB9AAA2C6A218E98C8F3500E6423FEBF89FFAECCB4C37",
-    "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
-    "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
-    "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
-    "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
-    "function_scope_change": "UNCHANGED",
-    "requirements_change": "UNCHANGED",
-    "material_risk_change": "UNCHANGED",
-    "preexisting_product_commit": "4e2dc79aef6a593bcb423739d88b8095b501d226",
-    "acceptance": [
-      {
-        "requirement_id": "AV-GATE-006",
-        "level": "L3",
-        "method": "AI",
-        "evidence": [
-          "E-GIT",
-          "E-CMD"
-        ]
-      },
-      {
-        "requirement_id": "AV-GATE-009",
-        "level": "L3",
-        "method": "AI",
-        "evidence": [
-          "E-CMD"
-        ]
-      },
-      {
-        "requirement_id": "AV-GATE-023",
-        "level": "L3",
-        "method": "AI",
-        "evidence": [
-          "E-TEST"
-        ]
-      }
+  "product_file_sha256": {
+    "docs/04_test_reports/C-08_COMPLETION_REPORT.md": "CDE7935766F0A78869EE885C9025F6636449BF33206B2C0F74201384A367444F",
+    "packages/repository_intelligence/indexes.py": "C7A067871A9880DAFF9A20391133E2C3BA5EC294F5D6FBA43855DA97D866BEA4",
+    "packages/repository_intelligence/models.py": "C075288DF44FEF52645D69910909B6D982722A2C51E01E66A740B232C8031AFE",
+    "packages/repository_intelligence/scanner.py": "3AD6B6443130EA129C6C3D129B2944243081325C5FEDCAA9E932B189C944E826",
+    "tests/repository_intelligence/fixtures/app.py": "207EDB38544F02794044710623322B57EF0470E71A99DA2B0C7B0471CADD1521",
+    "tests/repository_intelligence/fixtures/tests/spec_app.py": "C87735E34A68F16F51B1B084FF73663CA5217D83F9E6133343087892B18B8FEE",
+    "tests/repository_intelligence/fixtures/ui.ts": "6FE4E856DFF0B0C0679D8DD16B91BB36312B0195BCEA0D3BFE9A05B290EE6978",
+    "tests/repository_intelligence/test_indexes.py": "097609950A8884FABE00F1253C153A8DA0DC27B144ABA120CC177887DEF9F781"
+  },
+  "lineage": {
+    "development_main_base": "5529fe5261744e42227fcb3444952cf18e8114ec",
+    "start_control_commit": "f7931944d894990ec1dff01cf14a47e5384209c8",
+    "product_commit": "8095981d33deef082fe646495a2cbc80841839c3",
+    "ancestor_chain": [
+      "5529fe5261744e42227fcb3444952cf18e8114ec",
+      "f7931944d894990ec1dff01cf14a47e5384209c8",
+      "5d0cd330f3e336be2ac6ba59d605280aa286feba",
+      "7e73e442171f32dc65c82268e88d015e2156c7df",
+      "b74c9e1713b4234b51942b69438f0398ba27c2c5",
+      "8095981d33deef082fe646495a2cbc80841839c3"
     ]
   },
+  "contract": {
+    "scan_mode": "READ_ONLY",
+    "symbol_dependency_test_impact": "DETERMINISTIC_FIXTURE_VERIFIED",
+    "path_guard": "CANONICAL_RELATIVE_AND_COMPONENT_REPARSE_FAIL_CLOSED",
+    "test_selection": "REVERSE_DEPENDENCY_MINIMUM_HOP",
+    "canonical_hash": "INVENTORY_ORDER_INDEPENDENT",
+    "gate_execution_owner": "C-14_AND_E-09"
+  },
+  "test_evidence": {
+    "repository_intelligence": {
+      "command": "python -B -m pytest tests/repository_intelligence -q -p no:cacheprovider",
+      "passed": 20,
+      "failed": 0
+    },
+    "a13_regression": {
+      "command": "python -B -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider",
+      "passed": 65,
+      "failed": 0
+    },
+    "main_revalidation": {
+      "repository_passed": 20,
+      "a13_passed": 65,
+      "failed": 0
+    },
+    "independent_hostile": {
+      "status": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    },
+    "compileall": {
+      "passed": true
+    },
+    "diff_check": {
+      "passed": true
+    }
+  },
+  "independent_product_review": {
+    "spec": "PASS",
+    "quality": "APPROVED",
+    "critical": 0,
+    "important": 0,
+    "minor": 0
+  },
+  "independent_review_report": {
+    "path": "D:/tmp/anvil-main-integration/.superpowers/sdd/Anvil_작업계획서_v1/c08-independent-product-review.md",
+    "sha256": "70E142D2A87E8B3DB20CC6D00C00DAC74E8918D612B5B34CBD5ED5FB9E41F9E1"
+  },
+  "review_rework": [
+    {
+      "fingerprint": "C08-TRANSITIVE-IMPACT-TEST-SELECTION-v1",
+      "count": 1,
+      "status": "CLOSED"
+    },
+    {
+      "fingerprint": "C08-PYTHON-IMPORTFROM-MULTI-SUBMODULE-v1",
+      "count": 1,
+      "status": "CLOSED"
+    },
+    {
+      "fingerprint": "C08-TS-REFERENCE-ORDER-AND-LEXICAL-FALSE-POSITIVE-v1",
+      "count": 1,
+      "status": "CLOSED"
+    },
+    {
+      "fingerprint": "C08-NESTED-REPARSE-NONCANONICAL-PATH-v1",
+      "count": 1,
+      "status": "CLOSED"
+    },
+    {
+      "fingerprint": "C08-SYMBOL-CALLER-TRANSITIVE-FRONTIER-v1",
+      "count": 1,
+      "status": "CLOSED"
+    },
+    {
+      "fingerprint": "C08-TS-NONCODE-DEPENDENCY-TEST-FALSE-POSITIVE-v1",
+      "count": 1,
+      "status": "CLOSED"
+    },
+    {
+      "fingerprint": "C08-DEPENDENCY-CYCLE-NONMINIMAL-HOP-v1",
+      "count": 1,
+      "status": "CLOSED"
+    },
+    {
+      "fingerprint": "C08-TS-MULTILINE-NAMED-TYPE-IMPORT-v1",
+      "count": 1,
+      "status": "CLOSED"
+    }
+  ],
   "external_validation": {
-    "product_code": "PREEXISTING_PRODUCT_UNDER_REVALIDATION",
-    "fixture_validation": "PENDING_DEVELOPER_REVALIDATION",
+    "product_code": "IMPLEMENTED_AND_LOCALLY_VERIFIED",
+    "fixture_validation": "VERIFIED",
     "actual_repository_success_claim": "FORBIDDEN",
     "persistent_transaction": "NOT_EXECUTED",
     "database": "NOT_EXECUTED",
@@ -1125,9 +1189,10 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
     "network": "NOT_EXECUTED",
-    "external_call": "NOT_EXECUTED"
+    "external_call": "NOT_EXECUTED",
+    "a13_read_only_no_write_regression": "VERIFIED"
   },
-  "current_manifest": "docs/evidence/manifests/C-08_START_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```
