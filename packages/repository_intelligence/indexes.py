@@ -31,8 +31,24 @@ _KNOWN_UNSUPPORTED_SOURCE = {
     ".swift",
 }
 _TS_IMPORT = re.compile(
-    r"^\s*import\s+(?:(?:[^;\n]*?)\s+from\s+)?[\"']([^\"']+)[\"']\s*;?",
-    re.M,
+    r"""
+    ^[ \t]*import[ \t]+
+    (?:
+        (?:type[ \t]+)?
+        (?:
+            [A-Za-z_$][\w$]*
+            (?:
+                [ \t]*,[ \t\r\n]*
+                (?:\{[^{};\"'`]*\}|\*[ \t]+as[ \t]+[A-Za-z_$][\w$]*)
+            )?
+            | \{[^{};\"'`]*\}
+            | \*[ \t]+as[ \t]+[A-Za-z_$][\w$]*
+        )
+        [ \t\r\n]+from[ \t\r\n]+
+    )?
+    [\"']([^\"'\r\n]+)[\"'][ \t]*;?
+    """,
+    re.M | re.X,
 )
 _REQUIRE = re.compile(r"\brequire\s*\(\s*[\"']([^\"']+)[\"']\s*\)")
 _TS_SYMBOL = re.compile(

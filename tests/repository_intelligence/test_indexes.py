@@ -453,3 +453,43 @@ def test_dependency_cycle_records_only_each_importers_minimum_hop_edge(tmp_path)
             "reasons": ["TRANSITIVE_IMPORT_DEPENDENCY"],
         }
     ]
+
+
+def test_typescript_multiline_named_and_type_imports_are_deterministic_dependencies(tmp_path):
+    files = {
+        "app.ts": "export function real() { return 1; }\nexport type Alias = string;\n",
+        "types.ts": "export interface Shape { value: string; }\n",
+        "consumer.ts": (
+            "import {\n"
+            "  real,\n"
+            "  type Alias,\n"
+            "} from './app';\n"
+            "import type {\n"
+            "  Shape,\n"
+            "} from './types';\n"
+            "import defaultValue from './app';\n"
+            "import { real as renamed } from './app';\n"
+            "import './app';\n"
+        ),
+    }
+    for relative, content in files.items():
+        (tmp_path / relative).write_text(content, encoding="utf-8")
+    forward_inventory = [{"path": path, "type": "file"} for path in files]
+    reverse_inventory = list(reversed(forward_inventory))
+
+    forward = build_indexes(tmp_path, forward_inventory, impact="app.ts")
+    reverse = build_indexes(tmp_path, reverse_inventory, impact="app.ts")
+
+    assert forward == reverse
+    assert forward["index_sha256"] == reverse["index_sha256"]
+    assert [
+        (row["line"], row["target"], row["resolved_path"])
+        for row in forward["dependencies"]
+        if row["path"] == "consumer.ts"
+    ] == [
+        (1, "./app", "app.ts"),
+        (5, "./types", "types.ts"),
+        (8, "./app", "app.ts"),
+        (9, "./app", "app.ts"),
+        (10, "./app", "app.ts"),
+    ]

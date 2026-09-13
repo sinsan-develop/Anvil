@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — 독립 review round1의 중요 3건·minor 1건과 round2의 중요 2건·minor 1건을 후속 TDD로 해소했다. 승인된 fixture/unit/정적 범위에서 Repository Intelligence의 symbol·dependency·test·impact projection을 보완했고, 기존 A-13 read-only/no-write 계약을 포함한 필수 검증이 모두 통과했다.
+`COMPLETED` — 독립 review round1의 중요 3건·minor 1건, round2의 중요 2건·minor 1건, round3의 중요 1건을 후속 TDD로 해소했다. 승인된 fixture/unit/정적 범위에서 Repository Intelligence의 symbol·dependency·test·impact projection을 보완했고, 기존 A-13 read-only/no-write 계약을 포함한 필수 검증이 모두 통과했다.
 
 ## 기준선과 작업 권한
 
@@ -12,6 +12,7 @@
 - dispatch/start HEAD: `f7931944d894990ec1dff01cf14a47e5384209c8`
 - round1 rework base: `5d0cd330f3e336be2ac6ba59d605280aa286feba`
 - round2 rework base: `7e73e442171f32dc65c82268e88d015e2156c7df`
+- round3 rework base: `b74c9e1713b4234b51942b69438f0398ba27c2c5`
 - 시작 상태: clean
 - 담당: `developer-primary`
 - execution fencing token: `c08-repository-intelligence-execution-fence-epoch-1-5529fe5`
@@ -29,6 +30,7 @@
 - `from package import mod, other`와 relative/dotted multi-alias는 실제 존재하는 submodule별 dependency로 투영하며, submodule이 없을 때만 module dependency로 보수적으로 fallback한다.
 - TypeScript/JavaScript symbol·reference는 전체 파일 symbol pass 뒤 reference pass를 수행하고 comment/string을 offset 보존 masking하여 forward-defined symbol caller와 false reference를 구분한다.
 - TypeScript/JavaScript import·require·test regex 결과도 masking된 code keyword span과 대조해 comment/string의 가짜 dependency·test·unresolved risk를 제거한다.
+- TypeScript/JavaScript의 한 줄 default/named/side-effect import와 multiline named/`import type` 구문을 결정론적 dependency로 투영하며, comment/string/template decoy의 import는 계속 배제한다.
 - dependency cycle에서는 각 importer가 처음 발견된 최소 hop edge 하나만 증거로 기록하고 더 긴 재방문 edge를 버린다.
 - build index 입력 path는 canonical relative 형식만 수용하고 absolute·`.`·`..` 및 모든 중간 symlink/junction/reparse component를 읽기 전에 fail-closed한다.
 - Python reference는 AST Load 노드만 사용해 주석·문자열의 symbol 이름을 false reference로 만들지 않는다.
@@ -39,13 +41,13 @@
 
 ## 변경 경로와 최종 SHA-256
 
-- `packages/repository_intelligence/indexes.py` — `7F44554166E272FB5757186C7813763D53AA49B6B1DB62A72F591C042EF9FF58`
+- `packages/repository_intelligence/indexes.py` — `C7A067871A9880DAFF9A20391133E2C3BA5EC294F5D6FBA43855DA97D866BEA4`
 - `packages/repository_intelligence/models.py` — `C075288DF44FEF52645D69910909B6D982722A2C51E01E66A740B232C8031AFE`
 - `packages/repository_intelligence/scanner.py` — `3AD6B6443130EA129C6C3D129B2944243081325C5FEDCAA9E932B189C944E826`
 - `tests/repository_intelligence/fixtures/app.py` — `207EDB38544F02794044710623322B57EF0470E71A99DA2B0C7B0471CADD1521`
 - `tests/repository_intelligence/fixtures/tests/spec_app.py` — `C87735E34A68F16F51B1B084FF73663CA5217D83F9E6133343087892B18B8FEE`
 - `tests/repository_intelligence/fixtures/ui.ts` — `6FE4E856DFF0B0C0679D8DD16B91BB36312B0195BCEA0D3BFE9A05B290EE6978`
-- `tests/repository_intelligence/test_indexes.py` — `7C30EB3DC960C157D898F4F272648F44E73B9FE60ABB81E1181A348D16628BFB`
+- `tests/repository_intelligence/test_indexes.py` — `097609950A8884FABE00F1253C153A8DA0DC27B144ABA120CC177887DEF9F781`
 - `docs/04_test_reports/C-08_COMPLETION_REPORT.md` — 이 보고서
 
 ## TDD 및 검증 증거
@@ -93,6 +95,19 @@
 - round2 A-13 전체: `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 94.93s`
 - round2 compileall: `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
 - round2 diff check: `git diff --check` → exit `0`
+
+### 독립 review round3 재작업
+
+- 판정: `Spec FAIL / REWORK`, `Critical 0 / Important 1 / Minor 0`; round2 세 fingerprint 해소는 유지됐다.
+- `C08-TS-MULTILINE-NAMED-TYPE-IMPORT-v1`: 정상 multiline named import와 multiline `import type`의 dependency가 누락되던 문제. `_TS_IMPORT`의 clause만 newline을 보수적으로 수용하도록 확장하고 기존 masking 기반 code-span gate를 유지했다.
+- RED: `python -m pytest tests/repository_intelligence/test_indexes.py::test_typescript_multiline_named_and_type_imports_are_deterministic_dependencies -q -p no:cacheprovider` → exit `1`, `1 failed`; multiline named/type import 2건 누락을 재현했다.
+- 신규 GREEN: 같은 명령 → exit `0`, `1 passed in 0.08s`
+- 관련 회귀: 신규 multiline, code-span decoy, side-effect, TS 2-pass, inventory/hash 결정성 5건 → exit `0`, `5 passed in 0.09s`
+- round3 최종 focused: `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `20 passed in 0.22s`
+- round3 최종 A-13 전체: `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 96.07s`
+- round3 compileall: `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
+- round3 diff check: `git diff --check` → exit `0`
+- 작업 도구 오류: sandbox ACL 및 Windows wrapper의 multiline 인자 전달 과정에서 보고서 patch 시도 7회가 실패했으며 제품 코드·테스트에는 영향이 없었다. Codex apply-patch 실행 파일에 UTF-8 patch 인자를 직접 전달해 해결했다.
 
 A-13 전체 회귀는 실제 임시 Git fixture에 대해 public `scan_repository` JSON 직렬화, read-only Git allowlist, pre/post snapshot 동일성, dirty/untracked 보존, mutation 탐지를 검증한다.
 
