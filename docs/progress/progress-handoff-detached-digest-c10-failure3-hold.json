@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C10-FAILURE3-HOLD-DIGEST-20260914",
+  "package_id": "C-10",
+  "event_sequence": 849,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-14T07:11:00+09:00",
+  "scope": "seq846-849 append-only failure3 conflict hold; exact7",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 957014,
+    "file_sha256": "D39952EF32CA400BCB01463C0083E55C437BA18430EB819FE00B00123E7A7166",
+    "canonical_json_sha256": "57BF8896D4D412051E375CE0A689DAC9456A6196E32BA1C4F7D5878636971135"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 190580,
+    "file_sha256": "1C2BA647C7407CCD1A693493B581715EE4C17F8017126A18DC415EDACF5C45FF",
+    "machine_summary_canonical_sha256": "EABEBB0AF7DA1DBF5DA768A5818022632E947239AB2CE596FD9057E87A1CFDB7"
+  }
+}

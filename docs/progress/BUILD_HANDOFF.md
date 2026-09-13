@@ -1,3 +1,9 @@
+# C-10 failure3 instruction conflict hold - seq849
+
+- seq1~845 raw events preserved; third same-root-cause review failure recorded.
+- epoch3 leases revoked and all product writes stopped.
+- project requires Main takeover, while current user instruction forbids root product writes.
+
 # C-10 R2 rework start - seq845
 
 - seq1~838 raw event objects preserved; R1 independent review blocking2 recorded.
@@ -1020,68 +1026,20 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 845,
-  "last_event_id": "evt_c10_r2_package_resumed",
-  "status": "REWORK_IN_PROGRESS",
+  "event_sequence": 849,
+  "last_event_id": "evt_c10_failure3_instruction_conflict_waiting",
+  "status": "WAITING_APPROVAL",
   "current_phase": "C",
   "current_work_package": "C-10",
-  "active_agent": {
-    "actor_id": "developer-primary",
-    "role": "PRIMARY_DEVELOPER",
-    "work_package_id": "C-10",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3"
-  },
-  "worker_lease": {
-    "lease_id": "worker-lease-c10-action-policy-r2-20260914-003",
-    "fencing_token": "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3",
-    "execution_fencing_token": "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3",
-    "subject_ref": "C-10/R2",
-    "lease_epoch": 3,
-    "actor_id": "developer-primary",
-    "role": "PRIMARY_DEVELOPER",
-    "work_package_id": "C-10",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "bc1b5c282f076aa95750d8f5505766327dfb559e",
-    "dispatch_head": "bc1b5c282f076aa95750d8f5505766327dfb559e",
-    "issued_at": "2026-09-14T06:40:00+09:00",
-    "expires_at": "2026-09-14T18:40:00+09:00",
-    "status": "ACTIVE",
-    "path_scope": [
-      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-      "packages/action_policy/**",
-      "packages/tool_gateway/**",
-      "tests/action_policy/**",
-      "tests/tool_gateway/**"
-    ]
-  },
-  "write_lease": {
-    "lease_id": "write-lease-c10-action-policy-r2-20260914-003",
-    "worker_lease_id": "worker-lease-c10-action-policy-r2-20260914-003",
-    "fencing_token": "c10-action-policy-r2-write-fence-epoch-3-3d7a5c91e2b64f08",
-    "write_fencing_token": "c10-action-policy-r2-write-fence-epoch-3-3d7a5c91e2b64f08",
-    "execution_fencing_token": "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3",
-    "write_epoch": 3,
-    "actor_id": "developer-primary",
-    "work_package_id": "C-10",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-14T06:40:00+09:00",
-    "expires_at": "2026-09-14T18:40:00+09:00",
-    "status": "ACTIVE",
-    "path_scope": [
-      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-      "packages/action_policy/**",
-      "packages/tool_gateway/**",
-      "tests/action_policy/**",
-      "tests/tool_gateway/**"
-    ]
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "DISPATCH_C10_R2_DEVELOPER",
+  "next_safe_action": "AWAIT_USER_DIRECTION_C10_FAILURE3",
   "accepted": false,
   "c09_status": "ACCEPTED",
-  "c10_status": "REWORK_IN_PROGRESS",
+  "c10_status": "WAITING_APPROVAL",
   "c11_status": "NOT_READY",
   "dir_status": "CLEARED",
   "dir2_status": "NOT_REACHED",
@@ -1109,10 +1067,10 @@ The former Phase B Gate successor projection remains historical only. The immuta
   ],
   "independent_reviews": {
     "verdict": "REWORK",
-    "blocking_findings": 2,
+    "blocking_findings": 3,
     "spec_review": {
       "critical": 1,
-      "important": 1,
+      "important": 2,
       "minor": 0
     },
     "quality_review": {
@@ -1121,14 +1079,17 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "minor": 0
     },
     "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+    "same_root_cause_occurrence": 3,
     "finding_ids": [
-      "STRUCTURED_DESTRUCTIVE_COMMAND_POLICY_INCOMPLETE",
-      "RAW_SECRET_KEY_CANONICALIZATION_INCOMPLETE"
+      "COMMAND_EFFECT_SCOPE_BYPASS",
+      "RAW_SECRET_KEY_SUFFIX_BYPASS",
+      "HOSTILE_MAPPING_OSERROR_AND_VERIFY_COMPATIBILITY"
     ]
   },
-  "review_rework_count": 2,
-  "current_manifest": "docs/evidence/manifests/C-10_R2_START_MANIFEST.json",
-  "reporting_decision": "AUTO_CONTINUE"
+  "review_rework_count": 3,
+  "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+  "current_manifest": "docs/evidence/manifests/C-10_FAILURE3_CONFLICT_HOLD_MANIFEST.json",
+  "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK"
 }
 ```
 

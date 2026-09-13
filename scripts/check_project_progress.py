@@ -1039,7 +1039,7 @@ def validate_event_stream(
             )
             or (
                 progress is not None
-                and progress.get("event_sequence") == 845
+                and progress.get("event_sequence") in {845, 849}
                 and event.get("sequence") == 845
                 and event.get("event_id") == "evt_c10_r2_package_resumed"
                 and event.get("event_type") == "PACKAGE_RESUMED"
@@ -13065,6 +13065,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 849:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c10_failure3_hold_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 845:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14217,6 +14221,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c10_rework_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-10_R2_START_MANIFEST.json":
             errors.extend(validate_c10_r2_start(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-10_FAILURE3_CONFLICT_HOLD_MANIFEST.json":
+            errors.extend(validate_c10_failure3_hold(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -42938,6 +42944,237 @@ def _collect_c10_r2_start_git(bundle: Mapping[str, Any]) -> list[str]:
                  and changed == control and check("merge-base", "--is-ancestor", base, head)
                  and check("diff", "--check", base, head))
         return [] if valid else ["C10_R2_PATH_INVALID"]
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C10_FAILURE3_HOLD_P = "docs/progress/build-progress.json"
+C10_FAILURE3_HOLD_E = "docs/progress/progress-events.json"
+C10_FAILURE3_HOLD_H = "docs/progress/BUILD_HANDOFF.md"
+C10_FAILURE3_HOLD_D = "docs/progress/progress-handoff-detached-digest-c10-failure3-hold.json"
+C10_FAILURE3_HOLD_M = "docs/evidence/manifests/C-10_FAILURE3_CONFLICT_HOLD_MANIFEST.json"
+C10_FAILURE3_HOLD_BASE = "10d40c0a97d24af63c0a8576d5ed39363628ceb1"
+C10_FAILURE3_HOLD_AT = "2026-09-14T07:11:00+09:00"
+
+
+def c10_failure3_hold_paths() -> list[str]:
+    return sorted([C10_FAILURE3_HOLD_M, C10_FAILURE3_HOLD_H, C10_FAILURE3_HOLD_P,
+        C10_FAILURE3_HOLD_E, C10_FAILURE3_HOLD_D,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def c10_failure3_hold_artifacts(historical: Mapping[str, bytes],
+                               files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {C10_FAILURE3_HOLD_M, C10_FAILURE3_HOLD_H, C10_FAILURE3_HOLD_P,
+                 C10_FAILURE3_HOLD_E, C10_FAILURE3_HOLD_D}
+    if set(historical) != {C10_FAILURE3_HOLD_H, C10_FAILURE3_HOLD_P, C10_FAILURE3_HOLD_E}:
+        raise ValueError("C10_FAILURE3_HISTORY_SET_INVALID")
+    if set(files) != set(c10_failure3_hold_paths()) - generated:
+        raise ValueError("C10_FAILURE3_FILE_SET_INVALID")
+    progress = _c21_resume_json(historical[C10_FAILURE3_HOLD_P])
+    stream = _c21_resume_json(historical[C10_FAILURE3_HOLD_E])
+    if progress.get("event_sequence") != 845 or len(stream.get("events", [])) != 845:
+        raise ValueError("C10_FAILURE3_HISTORY_INVALID")
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    old_worker, old_write = copy.deepcopy(progress["worker_lease"]), copy.deepcopy(progress["write_lease"])
+    old_worker["status"] = "REVOKED_FAILURE3_CONFLICT_HOLD"
+    old_write["status"] = "REVOKED_FAILURE3_CONFLICT_HOLD"
+
+    def envelope(sequence: int, event_type: str, event_id: str,
+                 details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {"schema_version": "1.0.0", "sequence": sequence, "event_id": event_id,
+            "event_type": event_type, "subject_type": "WORK_PACKAGE", "subject_id": "C-10",
+            "subject_ref": "C-10/FAILURE3-CONFLICT-HOLD", "actor_id": "main-agent-eoul",
+            "occurred_at": C10_FAILURE3_HOLD_AT, "recorded_at": C10_FAILURE3_HOLD_AT,
+            "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        return row
+
+    review = {"verdict": "REWORK", "blocking_findings": 3,
+        "spec_review": {"critical": 1, "important": 2, "minor": 0},
+        "quality_review": {"critical": 1, "important": 1, "minor": 0},
+        "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+        "same_root_cause_occurrence": 3,
+        "finding_ids": ["COMMAND_EFFECT_SCOPE_BYPASS", "RAW_SECRET_KEY_SUFFIX_BYPASS",
+                        "HOSTILE_MAPPING_OSERROR_AND_VERIFY_COMPATIBILITY"]}
+    events = [
+        envelope(846, "INDEPENDENT_TEST_JUDGMENT_RECORDED", "evt_c10_r2_failure3_judgment", {
+            **review, "criteria": ["C10_R2_SPEC_REVIEW", "C10_R2_QUALITY_SECURITY_REVIEW"],
+            "evidence_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md"}),
+        envelope(847, "WRITE_LEASE_REVOKED", "evt_c10_r2_write_lease_revoked", {
+            **old_write, "reason": "SAME_ROOT_CAUSE_REWORK_OCCURRENCE_3"}),
+        envelope(848, "WORKER_LEASE_REVOKED", "evt_c10_r2_worker_lease_revoked", {
+            **old_worker, "reason": "SAME_ROOT_CAUSE_REWORK_OCCURRENCE_3"}),
+        envelope(849, "PACKAGE_WAITING_APPROVAL", "evt_c10_failure3_instruction_conflict_waiting", {
+            "approval_ref": "USER_DIRECTION_C10_FAILURE3_EXECUTION_OWNER",
+            "change_classification": "REQUIREMENT_CHANGE",
+            "reason": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+            "next_safe_action": "AWAIT_USER_DIRECTION_C10_FAILURE3"}),
+    ]
+    events_raw = _c21_append_events(historical[C10_FAILURE3_HOLD_E], 845, events)
+    active_wi = copy.deepcopy(progress["active_work_instruction"])
+    active_wi.update({"result_status": "BLOCKED_INSTRUCTION_CONFLICT",
+                      "package_status": "WAITING_APPROVAL", "review_rework_count": 3})
+    progress.update({"snapshot_id": "snapshot-c10-failure3-conflict-hold-seq849",
+        "updated_at": C10_FAILURE3_HOLD_AT, "recorded_at": C10_FAILURE3_HOLD_AT,
+        "event_sequence": 849, "last_event_id": events[-1]["event_id"],
+        "status": "WAITING_APPROVAL", "active_agent": None, "worker_lease": None,
+        "write_lease": None, "active_work_instruction": active_wi,
+        "valid_failure_count": 0,
+        "active_failure_lineage": {"step_lineage_id": "C-10", "valid_failure_count": 0,
+            "same_failure_count": 0, "review_rework_count": 3, "rework_attempt": 2,
+            "takeover_status": "REQUIRED_BLOCKED_BY_USER_INSTRUCTION",
+            "fingerprint": "C10-COMMAND-POLICY-FAILCLOSED-GAP"},
+        "c10_start": {**copy.deepcopy(progress.get("c10_start", {})),
+            "status": "WAITING_APPROVAL", "accepted": False, "event_sequence": 849,
+            "c10_status": "WAITING_APPROVAL", "c11_status": "NOT_READY",
+            "review_rework_count": 3, "independent_reviews": review,
+            "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED"},
+        "next_work_package": {"package_id": "C-11", "status": "NOT_READY"},
+        "pending_approvals": [{"approval_ref": "USER_DIRECTION_C10_FAILURE3_EXECUTION_OWNER",
+            "change_classification": "REQUIREMENT_CHANGE",
+            "reason": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+            "required_direction": "ALLOW_MAIN_TAKEOVER_PRODUCT_WRITE_OR_WAIVE_FAILURE3_RULE"}],
+        "runtime_next_action": "AWAIT_USER_DIRECTION_C10_FAILURE3",
+        "next_safe_action": "AWAIT_USER_DIRECTION_C10_FAILURE3",
+        "current_progress_evidence_ref": {"package_id": "C-10", "path": C10_FAILURE3_HOLD_D,
+                                          "manifest_path": C10_FAILURE3_HOLD_M},
+        "latest_evidence_manifest_ref": {"path": C10_FAILURE3_HOLD_M,
+                                         "artifact_id": "C10-FAILURE3-CONFLICT-HOLD-20260914"},
+        "reporting_decision": {"decision": "STOP_AND_REPORT_SCOPE_RISK",
+            "reason_codes": ["C10_SAME_ROOT_CAUSE_3", "MAIN_TAKEOVER_REQUIRED",
+                             "ROOT_PRODUCT_WRITE_PROHIBITED"],
+            "stop_before_dialogue_report": True}})
+    progress["registry_refs"]["progress_events"] = {"path": C10_FAILURE3_HOLD_E,
+                                                        "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)}
+                                         for path, raw in sorted(files.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    repository = progress["repository"]
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status",
+        "current_phase", "current_work_package", "active_agent", "worker_lease", "write_lease",
+        "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": False, "c09_status": "ACCEPTED", "c10_status": "WAITING_APPROVAL",
+        "c11_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "repository_head": repository["local_head"],
+        "repository_upstream": repository["upstream"],
+        "repository_projection_mode": repository["projection_mode"],
+        "repository_exact_allowed_paths": repository["exact_allowed_paths"],
+        "product_exact_paths": c10_rework_product_paths(), "independent_reviews": review,
+        "review_rework_count": 3,
+        "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+        "current_manifest": C10_FAILURE3_HOLD_M, "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK"})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+                                  historical[C10_FAILURE3_HOLD_H].decode(), flags=re.DOTALL)
+    if count != 1: raise ValueError("C10_FAILURE3_HANDOFF_INVALID")
+    handoff_raw = ("# C-10 failure3 instruction conflict hold - seq849\n\n"
+        "- seq1~845 raw events preserved; third same-root-cause review failure recorded.\n"
+        "- epoch3 leases revoked and all product writes stopped.\n"
+        "- project requires Main takeover, while current user instruction forbids root product writes.\n\n"
+        + handoff_text).encode("utf-8")
+    digest = {"schema_version": "1.0.0", "digest_id": "C10-FAILURE3-HOLD-DIGEST-20260914",
+        "package_id": "C-10", "event_sequence": 849, "algorithm": "SHA-256",
+        "created_at": C10_FAILURE3_HOLD_AT, "scope": "seq846-849 append-only failure3 conflict hold; exact7",
+        "self_reference": False,
+        "progress": {"path": C10_FAILURE3_HOLD_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C10_FAILURE3_HOLD_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C10_FAILURE3_HOLD_P: progress_raw, C10_FAILURE3_HOLD_E: events_raw,
+                 C10_FAILURE3_HOLD_H: handoff_raw, C10_FAILURE3_HOLD_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C10_FAILURE3_HOLD_E], 845)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-10_FAILURE3_CONFLICT_HOLD",
+        "artifact_id": "C10-FAILURE3-CONFLICT-HOLD-20260914", "created_at": C10_FAILURE3_HOLD_AT,
+        "package_id": "C-10", "event_sequence": 849, "historical_event_sequence": 845,
+        "appended_event_count": 4,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": False, "status": "WAITING_APPROVAL",
+        "c09_status": "ACCEPTED", "c10_status": "WAITING_APPROVAL", "c11_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "independent_reviews": review, "review_rework_count": 3,
+        "instruction_conflict": "ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+        "product_exact_paths": c10_rework_product_paths(), "validated_base_commit": C10_FAILURE3_HOLD_BASE,
+        "branch": C09_START_BRANCH, "exact_paths": c10_failure3_hold_paths(),
+        "exact_path_count": len(c10_failure3_hold_paths()),
+        "exact_path_list_sha256": _c21_path_list_sha(c10_failure3_hold_paths(), windows=True),
+        "record_binding": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_FAILURE3_HOLD",
+        "self_reference": False, "external_validation": _c10_start_boundary()}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+                                  for path, raw in sorted(artifacts.items())]
+    artifacts[C10_FAILURE3_HOLD_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(c10_failure3_hold_paths()): raise ValueError("C10_FAILURE3_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c10_failure3_hold_from_root(root: Path) -> dict[str, bytes]:
+    parent = subprocess.check_output(["git", "show", "-s", "--format=%P", C10_FAILURE3_HOLD_BASE], cwd=root).decode().strip()
+    if parent != C10_R2_START_BASE: raise ValueError("C10_FAILURE3_LINEAGE_INVALID")
+    historical = {path: subprocess.check_output(["git", "show", f"{C10_FAILURE3_HOLD_BASE}:{path}"], cwd=root)
+                  for path in (C10_FAILURE3_HOLD_P, C10_FAILURE3_HOLD_E, C10_FAILURE3_HOLD_H)}
+    files = {path: (root / path).read_bytes()
+             for path in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c10_failure3_hold_artifacts(historical, files)
+
+
+def validate_c10_failure3_hold(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c10_failure3_hold_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c10_failure3_hold_paths()}
+        expected_objects = {C10_FAILURE3_HOLD_P: _c21_resume_json(expected[C10_FAILURE3_HOLD_P]),
+            C10_FAILURE3_HOLD_E: _c21_resume_json(expected[C10_FAILURE3_HOLD_E]),
+            C10_FAILURE3_HOLD_H: extract_handoff_summary(expected[C10_FAILURE3_HOLD_H].decode()),
+            C10_FAILURE3_HOLD_D: _c21_resume_json(expected[C10_FAILURE3_HOLD_D]),
+            C10_FAILURE3_HOLD_M: _c21_resume_json(expected[C10_FAILURE3_HOLD_M])}
+        actual_objects = {C10_FAILURE3_HOLD_P: bundle.get("progress"), C10_FAILURE3_HOLD_E: bundle.get("events"),
+            C10_FAILURE3_HOLD_H: bundle.get("handoff"), C10_FAILURE3_HOLD_D: bundle.get("detached_digest"),
+            C10_FAILURE3_HOLD_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual_objects[p], expected_objects[p])
+                           for p in actual_objects) else ["C10_FAILURE3_PROJECTION_INVALID"]
+        if any(actual_raw[p] != expected[p] for p in expected): errors.append("C10_FAILURE3_RAW_BYTES_INVALID")
+        progress = actual_objects[C10_FAILURE3_HOLD_P]
+        if (not isinstance(progress, Mapping) or progress.get("event_sequence") != 849
+            or progress.get("status") != "WAITING_APPROVAL" or progress.get("active_agent") is not None
+            or progress.get("worker_lease") is not None or progress.get("write_lease") is not None
+            or progress.get("next_safe_action") != "AWAIT_USER_DIRECTION_C10_FAILURE3"):
+            errors.append("C10_FAILURE3_CANONICAL_STATE_INVALID")
+        old = subprocess.check_output(["git", "show", f"{C10_FAILURE3_HOLD_BASE}:{C10_FAILURE3_HOLD_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(old, 845) != raw_event_object_prefix_bytes(actual_raw[C10_FAILURE3_HOLD_E], 845):
+            errors.append("C10_FAILURE3_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C10_FAILURE3_INPUT_INVALID"]
+
+
+def _collect_c10_failure3_hold_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]; raw = lambda *a: _c02_git_raw_stdout(root, *a)
+        value = lambda *a: _c02_strict_git_scalar(raw(*a)); optional = lambda *a: _c02_optional_git_scalar(raw(*a))
+        check = lambda *a: _c02_git_quiet_check(root, *a)
+        head, base, branch = value("rev-parse", "HEAD"), value("rev-parse", C10_FAILURE3_HOLD_BASE), optional("branch", "--show-current")
+        cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+        if None in (head, base, branch, cached, unstaged, untracked) or base != C10_FAILURE3_HOLD_BASE or branch != C09_START_BRANCH:
+            return ["C10_FAILURE3_REPOSITORY_AUTHORITY_INVALID"]
+        control, product = c10_failure3_hold_paths(), c10_rework_product_paths(); dirty = sorted(set(cached + unstaged + untracked))
+        if head == base:
+            valid = (dirty == sorted(set(control + product)) and cached == control
+                     and sorted(set(unstaged + untracked)) == product and check("diff", "--cached", "--check"))
+            return [] if valid else ["C10_FAILURE3_PATH_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        changed = _c02_strict_name_only_paths(raw("diff", "--name-only", base, head))
+        valid = (dirty == product and not cached and parents is not None and parents.split() == [base]
+                 and changed == control and check("merge-base", "--is-ancestor", base, head)
+                 and check("diff", "--check", base, head))
+        return [] if valid else ["C10_FAILURE3_PATH_INVALID"]
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

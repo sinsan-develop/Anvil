@@ -16290,5 +16290,57 @@ class C10R2StartControlTests(unittest.TestCase):
             }))
 
 
+class C10Failure3ConflictHoldControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq849_records_failure3_revokes_epoch3_and_waits_for_exact_direction(self):
+        checker = self._checker()
+        artifacts = checker.c10_failure3_hold_from_root(ROOT)
+        self.assertEqual(set(checker.c10_failure3_hold_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_FAILURE3_HOLD_M])
+        progress = json.loads(artifacts[checker.C10_FAILURE3_HOLD_P])
+        events = json.loads(artifacts[checker.C10_FAILURE3_HOLD_E])["events"]
+        self.assertEqual((845, 849, 4), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["INDEPENDENT_TEST_JUDGMENT_RECORDED", "WRITE_LEASE_REVOKED",
+             "WORKER_LEASE_REVOKED", "PACKAGE_WAITING_APPROVAL"],
+            [event["event_type"] for event in events[-4:]],
+        )
+        self.assertEqual("WAITING_APPROVAL", progress["status"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertEqual(3, progress["c10_start"]["review_rework_count"])
+        self.assertEqual("AWAIT_USER_DIRECTION_C10_FAILURE3", progress["next_safe_action"])
+        self.assertEqual("ROOT_PRODUCT_WRITE_PROHIBITED_VS_MAIN_TAKEOVER_REQUIRED",
+                         manifest["instruction_conflict"])
+
+    def test_seq849_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_failure3_hold_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_FAILURE3_HOLD_P]),
+            "events": json.loads(artifacts[checker.C10_FAILURE3_HOLD_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_FAILURE3_HOLD_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_FAILURE3_HOLD_D])}
+        manifest = json.loads(artifacts[checker.C10_FAILURE3_HOLD_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_failure3_hold(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_failure3_hold_git", return_value=["SEQ849_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_r2_start_git", side_effect=AssertionError("seq845 fallback")):
+            self.assertEqual(["SEQ849_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 849}
+            }))
+
+
 if __name__ == "__main__":
     unittest.main()
