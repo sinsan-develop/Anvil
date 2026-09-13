@@ -1038,6 +1038,14 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C10_REWORK_START_EXACT7"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 845
+                and event.get("sequence") == 845
+                and event.get("event_id") == "evt_c10_r2_package_resumed"
+                and event.get("event_type") == "PACKAGE_RESUMED"
+                and event["details"].get("projection_mode") == "C10_R2_START_EXACT9"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13057,6 +13065,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 845:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c10_r2_start_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 838:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14203,6 +14215,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c10_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-10_REWORK_START_MANIFEST.json":
             errors.extend(validate_c10_rework_start(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-10_R2_START_MANIFEST.json":
+            errors.extend(validate_c10_r2_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -42647,6 +42661,283 @@ def _collect_c10_rework_start_git(bundle: Mapping[str, Any]) -> list[str]:
                  and changed == control and check("merge-base", "--is-ancestor", base, head)
                  and check("diff", "--check", base, head))
         return [] if valid else ["C10_REWORK_PATH_INVALID"]
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C10_R2_START_P = "docs/progress/build-progress.json"
+C10_R2_START_E = "docs/progress/progress-events.json"
+C10_R2_START_H = "docs/progress/BUILD_HANDOFF.md"
+C10_R2_START_D = "docs/progress/progress-handoff-detached-digest-c10-r2-start.json"
+C10_R2_START_M = "docs/evidence/manifests/C-10_R2_START_MANIFEST.json"
+C10_R2_WI = "docs/work_orders/C-10_WORK_INSTRUCTION_R2.md"
+C10_R2_PROMPT = "docs/work_orders/C-10_INVOCATION_PROMPT_R2.md"
+C10_R2_WI_SHA256 = "2F027DB62ABAAFFA32C5F939BB4E3D2E47F0CEF6761BE882B99883D034046E97"
+C10_R2_PROMPT_SHA256 = "66E086E825005EF45E922DB3C3EFE4B590EDB4CA0D17404E500B29B8D7CF6590"
+C10_R2_START_BASE = "bc1b5c282f076aa95750d8f5505766327dfb559e"
+C10_R2_START_AT = "2026-09-14T06:40:00+09:00"
+C10_R2_START_EXPIRES_AT = "2026-09-14T18:40:00+09:00"
+C10_R2_WORKER_LEASE_ID = "worker-lease-c10-action-policy-r2-20260914-003"
+C10_R2_WRITE_LEASE_ID = "write-lease-c10-action-policy-r2-20260914-003"
+C10_R2_EXECUTION_TOKEN = "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3"
+C10_R2_WRITE_TOKEN = "c10-action-policy-r2-write-fence-epoch-3-3d7a5c91e2b64f08"
+
+
+def c10_r2_start_paths() -> list[str]:
+    return sorted([C10_R2_START_M, C10_R2_START_H, C10_R2_START_P, C10_R2_START_E,
+        C10_R2_START_D, C10_R2_WI, C10_R2_PROMPT,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def _c10_r2_worker_lease() -> dict[str, Any]:
+    return {"lease_id": C10_R2_WORKER_LEASE_ID, "fencing_token": C10_R2_EXECUTION_TOKEN,
+        "execution_fencing_token": C10_R2_EXECUTION_TOKEN, "subject_ref": "C-10/R2",
+        "lease_epoch": 3, "actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+        "work_package_id": "C-10", "baseline_hash": C08_START_DESIGN_SHA256,
+        "baseline_git_commit": C10_R2_START_BASE, "dispatch_head": C10_R2_START_BASE,
+        "issued_at": C10_R2_START_AT, "expires_at": C10_R2_START_EXPIRES_AT,
+        "status": "ACTIVE", "path_scope": c10_product_write_scope()}
+
+
+def _c10_r2_write_lease() -> dict[str, Any]:
+    return {"lease_id": C10_R2_WRITE_LEASE_ID, "worker_lease_id": C10_R2_WORKER_LEASE_ID,
+        "fencing_token": C10_R2_WRITE_TOKEN, "write_fencing_token": C10_R2_WRITE_TOKEN,
+        "execution_fencing_token": C10_R2_EXECUTION_TOKEN, "write_epoch": 3,
+        "actor_id": "developer-primary", "work_package_id": "C-10",
+        "baseline_hash": C08_START_DESIGN_SHA256, "issued_at": C10_R2_START_AT,
+        "expires_at": C10_R2_START_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c10_product_write_scope()}
+
+
+def c10_r2_start_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {C10_R2_START_M, C10_R2_START_H, C10_R2_START_P, C10_R2_START_E, C10_R2_START_D}
+    if set(historical) != {C10_R2_START_H, C10_R2_START_P, C10_R2_START_E}:
+        raise ValueError("C10_R2_HISTORY_SET_INVALID")
+    if set(files) != set(c10_r2_start_paths()) - generated:
+        raise ValueError("C10_R2_FILE_SET_INVALID")
+    progress = _c21_resume_json(historical[C10_R2_START_P])
+    stream = _c21_resume_json(historical[C10_R2_START_E])
+    if progress.get("event_sequence") != 838 or len(stream.get("events", [])) != 838:
+        raise ValueError("C10_R2_HISTORY_INVALID")
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    worker, write = _c10_r2_worker_lease(), _c10_r2_write_lease()
+    old_worker, old_write = copy.deepcopy(progress["worker_lease"]), copy.deepcopy(progress["write_lease"])
+    old_worker["status"] = "REVOKED_FOR_R2_REWORK"
+    old_write["status"] = "REVOKED_FOR_R2_REWORK"
+
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str,
+                 details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {"schema_version": "1.0.0", "sequence": sequence, "event_id": event_id,
+            "event_type": event_type, "subject_type": "WORK_PACKAGE", "subject_id": "C-10",
+            "subject_ref": "C-10/R2", "actor_id": actor, "occurred_at": C10_R2_START_AT,
+            "recorded_at": C10_R2_START_AT, "previous_event_sha256": previous,
+            "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        return row
+
+    review = {"verdict": "REWORK", "blocking_findings": 2,
+        "spec_review": {"critical": 1, "important": 1, "minor": 0},
+        "quality_review": {"critical": 1, "important": 1, "minor": 0},
+        "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+        "finding_ids": ["STRUCTURED_DESTRUCTIVE_COMMAND_POLICY_INCOMPLETE",
+                        "RAW_SECRET_KEY_CANONICALIZATION_INCOMPLETE"]}
+    events = [
+        envelope(839, "INDEPENDENT_TEST_JUDGMENT_RECORDED", "evt_c10_r1_rework_judgment", "main-agent-eoul", {
+            **review, "criteria": ["C10_R1_SPEC_REVIEW", "C10_R1_QUALITY_SECURITY_REVIEW"],
+            "evidence_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md"}),
+        envelope(840, "WRITE_LEASE_REVOKED", "evt_c10_r1_write_lease_revoked", "main-agent-eoul", {
+            **old_write, "reason": "R1_INDEPENDENT_REVIEW_REWORK"}),
+        envelope(841, "WORKER_LEASE_REVOKED", "evt_c10_r1_worker_lease_revoked", "main-agent-eoul", {
+            **old_worker, "reason": "R1_INDEPENDENT_REVIEW_REWORK"}),
+        envelope(842, "WORK_INSTRUCTION_ISSUED", "evt_c10_r2_work_instruction_issued", "main-agent-eoul", {
+            "work_instruction_id": "WI-C-10-ACTION-POLICY-R2", "work_instruction_sha256": C10_R2_WI_SHA256,
+            "invocation_sha256": C10_R2_PROMPT_SHA256,
+            "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+            "product_write_scope": c10_product_write_scope(), "review_rework_count": 2}),
+        envelope(843, "WORKER_LEASE_ISSUED", "evt_c10_r2_worker_lease_issued", "developer-primary", worker),
+        envelope(844, "WRITE_LEASE_ISSUED", "evt_c10_r2_write_lease_issued", "developer-primary", write),
+        envelope(845, "PACKAGE_RESUMED", "evt_c10_r2_package_resumed", "main-agent-eoul", {
+            "resume_event_ref": "evt_c10_r1_rework_judgment", "projection_mode": "C10_R2_START_EXACT9",
+            "validated_base_commit": C10_R2_START_BASE, "dispatch_head": C10_R2_START_BASE,
+            "dispatch_upstream_head": C09_R4_MAIN,
+            "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD_C10_R2",
+            "exact_allowed_paths": c10_r2_start_paths(), "result_status": "REWORK_IN_PROGRESS"}),
+    ]
+    events_raw = _c21_append_events(historical[C10_R2_START_E], 838, events)
+    repository = copy.deepcopy(progress["repository"])
+    repository.update({"projection_mode": "C10_R2_START_EXACT9",
+        "validated_base_commit": C10_R2_START_BASE, "control_head": C10_R2_START_BASE,
+        "local_head": C10_R2_START_BASE, "branch": C09_START_BRANCH,
+        "head_relation": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD_C10_R2",
+        "worktree_status": "C10_R2_CONTROL_WITH_PRODUCT_EXACT6_DIRTY",
+        "exact_allowed_paths": c10_r2_start_paths(), "product_exact_paths": c10_rework_product_paths(),
+        "product_write_scope": c10_product_write_scope(), "push_status": "NOT_EXECUTED"})
+    active_wi = {"artifact_id": "WI-C-10-ACTION-POLICY-R2", "artifact_path": C10_R2_WI,
+        "artifact_sha256": C10_R2_WI_SHA256, "invocation_path": C10_R2_PROMPT,
+        "invocation_sha256": C10_R2_PROMPT_SHA256, "executor": "developer-primary",
+        "result_status": "REWORK_IN_PROGRESS", "package_status": "REWORK_IN_PROGRESS",
+        "product_write_scope": c10_product_write_scope(), "rework_attempt": 2,
+        "independent_review": review}
+    progress.update({"snapshot_id": "snapshot-c10-r2-start-seq845", "updated_at": C10_R2_START_AT,
+        "recorded_at": C10_R2_START_AT, "event_sequence": 845,
+        "last_event_id": events[-1]["event_id"], "status": "REWORK_IN_PROGRESS",
+        "active_agent": {"actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-10", "status": "ACTIVE",
+            "execution_fencing_token": C10_R2_EXECUTION_TOKEN},
+        "worker_lease": worker, "write_lease": write, "active_work_instruction": active_wi,
+        "repository": repository, "valid_failure_count": 0,
+        "active_failure_lineage": {"step_lineage_id": "C-10", "valid_failure_count": 0,
+            "same_failure_count": 0, "review_rework_count": 2, "rework_attempt": 2,
+            "fingerprint": "C10-INDEPENDENT-REVIEW-REWORK-R2"},
+        "c10_start": {**copy.deepcopy(progress.get("c10_start", {})),
+            "status": "REWORK_IN_PROGRESS", "accepted": False, "event_sequence": 845,
+            "c10_status": "REWORK_IN_PROGRESS", "c11_status": "NOT_READY",
+            "review_rework_count": 2, "independent_reviews": review,
+            "work_instruction_sha256": C10_R2_WI_SHA256,
+            "invocation_sha256": C10_R2_PROMPT_SHA256},
+        "next_work_package": {"package_id": "C-11", "status": "NOT_READY"},
+        "runtime_next_action": "DISPATCH_C10_R2_DEVELOPER",
+        "next_safe_action": "DISPATCH_C10_R2_DEVELOPER",
+        "current_progress_evidence_ref": {"package_id": "C-10", "path": C10_R2_START_D,
+                                          "manifest_path": C10_R2_START_M},
+        "latest_evidence_manifest_ref": {"path": C10_R2_START_M,
+                                         "artifact_id": "C10-R2-START-20260914"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C10_R2_REWORK", "C11_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False}})
+    progress["registry_refs"]["progress_events"] = {"path": C10_R2_START_E,
+                                                        "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)}
+                                         for path, raw in sorted(files.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status",
+        "current_phase", "current_work_package", "active_agent", "worker_lease", "write_lease",
+        "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": False, "c09_status": "ACCEPTED", "c10_status": "REWORK_IN_PROGRESS",
+        "c11_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "repository_head": C10_R2_START_BASE,
+        "repository_upstream": repository["upstream"], "repository_projection_mode": repository["projection_mode"],
+        "repository_exact_allowed_paths": c10_r2_start_paths(),
+        "product_exact_paths": c10_rework_product_paths(), "independent_reviews": review,
+        "review_rework_count": 2, "current_manifest": C10_R2_START_M,
+        "reporting_decision": "AUTO_CONTINUE"})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+                                  historical[C10_R2_START_H].decode(), flags=re.DOTALL)
+    if count != 1: raise ValueError("C10_R2_HANDOFF_INVALID")
+    handoff_raw = ("# C-10 R2 rework start - seq845\n\n"
+        "- seq1~838 raw event objects preserved; R1 independent review blocking2 recorded.\n"
+        "- epoch2 revoked; R2 WI/prompt and current-time epoch3 dual lease issued.\n"
+        "- product exact6 only; external execution remains NOT_EXECUTED.\n\n" + handoff_text).encode("utf-8")
+    digest = {"schema_version": "1.0.0", "digest_id": "C10-R2-START-DIGEST-20260914",
+        "package_id": "C-10", "event_sequence": 845, "algorithm": "SHA-256",
+        "created_at": C10_R2_START_AT, "scope": "seq839-845 append-only C-10 R2 start; exact9",
+        "self_reference": False,
+        "progress": {"path": C10_R2_START_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C10_R2_START_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C10_R2_START_P: progress_raw, C10_R2_START_E: events_raw,
+                 C10_R2_START_H: handoff_raw, C10_R2_START_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C10_R2_START_E], 838)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-10_R2_START",
+        "artifact_id": "C10-R2-START-20260914", "created_at": C10_R2_START_AT,
+        "package_id": "C-10", "event_sequence": 845, "historical_event_sequence": 838,
+        "appended_event_count": 7,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": False,
+        "status": "REWORK_IN_PROGRESS", "c09_status": "ACCEPTED",
+        "c10_status": "REWORK_IN_PROGRESS", "c11_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "worker_lease": worker, "write_lease": write, "independent_reviews": review,
+        "review_rework_count": 2, "work_instruction_path": C10_R2_WI,
+        "work_instruction_sha256": C10_R2_WI_SHA256, "invocation_path": C10_R2_PROMPT,
+        "invocation_sha256": C10_R2_PROMPT_SHA256,
+        "product_exact_paths": c10_rework_product_paths(), "product_write_scope": c10_product_write_scope(),
+        "projection_mode": "C10_R2_START_EXACT9", "validated_base_commit": C10_R2_START_BASE,
+        "branch": C09_START_BRANCH, "exact_paths": c10_r2_start_paths(),
+        "exact_path_count": len(c10_r2_start_paths()),
+        "exact_path_list_sha256": _c21_path_list_sha(c10_r2_start_paths(), windows=True),
+        "record_binding": repository["head_relation"], "self_reference": False,
+        "external_validation": _c10_start_boundary()}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+                                  for path, raw in sorted(artifacts.items())]
+    artifacts[C10_R2_START_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(c10_r2_start_paths()): raise ValueError("C10_R2_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c10_r2_start_from_root(root: Path) -> dict[str, bytes]:
+    parent = subprocess.check_output(["git", "show", "-s", "--format=%P", C10_R2_START_BASE], cwd=root).decode().strip()
+    if parent != C10_REWORK_START_BASE: raise ValueError("C10_R2_LINEAGE_INVALID")
+    if _c21_resume_sha((root / C10_R2_WI).read_bytes()) != C10_R2_WI_SHA256: raise ValueError("C10_R2_WI_HASH_INVALID")
+    if _c21_resume_sha((root / C10_R2_PROMPT).read_bytes()) != C10_R2_PROMPT_SHA256: raise ValueError("C10_R2_PROMPT_HASH_INVALID")
+    historical = {path: subprocess.check_output(["git", "show", f"{C10_R2_START_BASE}:{path}"], cwd=root)
+                  for path in (C10_R2_START_P, C10_R2_START_E, C10_R2_START_H)}
+    files = {path: (root / path).read_bytes() for path in
+             (C10_R2_WI, C10_R2_PROMPT, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c10_r2_start_artifacts(historical, files)
+
+
+def validate_c10_r2_start(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c10_r2_start_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c10_r2_start_paths()}
+        expected_objects = {C10_R2_START_P: _c21_resume_json(expected[C10_R2_START_P]),
+            C10_R2_START_E: _c21_resume_json(expected[C10_R2_START_E]),
+            C10_R2_START_H: extract_handoff_summary(expected[C10_R2_START_H].decode()),
+            C10_R2_START_D: _c21_resume_json(expected[C10_R2_START_D]),
+            C10_R2_START_M: _c21_resume_json(expected[C10_R2_START_M])}
+        actual_objects = {C10_R2_START_P: bundle.get("progress"), C10_R2_START_E: bundle.get("events"),
+            C10_R2_START_H: bundle.get("handoff"), C10_R2_START_D: bundle.get("detached_digest"),
+            C10_R2_START_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual_objects[p], expected_objects[p])
+                           for p in actual_objects) else ["C10_R2_PROJECTION_INVALID"]
+        if any(actual_raw[p] != expected[p] for p in expected): errors.append("C10_R2_RAW_BYTES_INVALID")
+        progress = actual_objects[C10_R2_START_P]
+        if (not isinstance(progress, Mapping) or progress.get("event_sequence") != 845
+            or progress.get("status") != "REWORK_IN_PROGRESS"
+            or progress.get("worker_lease") != _c10_r2_worker_lease()
+            or progress.get("write_lease") != _c10_r2_write_lease()
+            or progress.get("next_safe_action") != "DISPATCH_C10_R2_DEVELOPER"):
+            errors.append("C10_R2_CANONICAL_STATE_INVALID")
+        old = subprocess.check_output(["git", "show", f"{C10_R2_START_BASE}:{C10_R2_START_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(old, 838) != raw_event_object_prefix_bytes(actual_raw[C10_R2_START_E], 838):
+            errors.append("C10_R2_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C10_R2_INPUT_INVALID"]
+
+
+def _collect_c10_r2_start_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]; raw = lambda *a: _c02_git_raw_stdout(root, *a)
+        value = lambda *a: _c02_strict_git_scalar(raw(*a)); optional = lambda *a: _c02_optional_git_scalar(raw(*a))
+        check = lambda *a: _c02_git_quiet_check(root, *a)
+        head, base, branch = value("rev-parse", "HEAD"), value("rev-parse", C10_R2_START_BASE), optional("branch", "--show-current")
+        cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+        if None in (head, base, branch, cached, unstaged, untracked) or base != C10_R2_START_BASE or branch != C09_START_BRANCH:
+            return ["C10_R2_REPOSITORY_AUTHORITY_INVALID"]
+        control, product = c10_r2_start_paths(), c10_rework_product_paths(); dirty = sorted(set(cached + unstaged + untracked))
+        if head == base:
+            valid = (dirty == sorted(set(control + product)) and cached == control
+                     and sorted(set(unstaged + untracked)) == product and check("diff", "--cached", "--check"))
+            return [] if valid else ["C10_R2_PATH_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        changed = _c02_strict_name_only_paths(raw("diff", "--name-only", base, head))
+        valid = (dirty == product and not cached and parents is not None and parents.split() == [base]
+                 and changed == control and check("merge-base", "--is-ancestor", base, head)
+                 and check("diff", "--check", base, head))
+        return [] if valid else ["C10_R2_PATH_INVALID"]
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

@@ -1,0 +1,176 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-10_R2_START",
+  "artifact_id": "C10-R2-START-20260914",
+  "created_at": "2026-09-14T06:40:00+09:00",
+  "package_id": "C-10",
+  "event_sequence": 845,
+  "historical_event_sequence": 838,
+  "appended_event_count": 7,
+  "historical_raw_event_prefix": {
+    "bytes": 2499559,
+    "sha256": "47A4514F33C75F77EB229D43822F5472E4EA917EC200C9B90BAE2E45EC7FD99E"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": false,
+  "status": "REWORK_IN_PROGRESS",
+  "c09_status": "ACCEPTED",
+  "c10_status": "REWORK_IN_PROGRESS",
+  "c11_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "worker_lease": {
+    "lease_id": "worker-lease-c10-action-policy-r2-20260914-003",
+    "fencing_token": "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3",
+    "execution_fencing_token": "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3",
+    "subject_ref": "C-10/R2",
+    "lease_epoch": 3,
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "bc1b5c282f076aa95750d8f5505766327dfb559e",
+    "dispatch_head": "bc1b5c282f076aa95750d8f5505766327dfb559e",
+    "issued_at": "2026-09-14T06:40:00+09:00",
+    "expires_at": "2026-09-14T18:40:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c10-action-policy-r2-20260914-003",
+    "worker_lease_id": "worker-lease-c10-action-policy-r2-20260914-003",
+    "fencing_token": "c10-action-policy-r2-write-fence-epoch-3-3d7a5c91e2b64f08",
+    "write_fencing_token": "c10-action-policy-r2-write-fence-epoch-3-3d7a5c91e2b64f08",
+    "execution_fencing_token": "c10-action-policy-r2-execution-fence-epoch-3-9f20d6a1c84b47e3",
+    "write_epoch": 3,
+    "actor_id": "developer-primary",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T06:40:00+09:00",
+    "expires_at": "2026-09-14T18:40:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "independent_reviews": {
+    "verdict": "REWORK",
+    "blocking_findings": 2,
+    "spec_review": {
+      "critical": 1,
+      "important": 1,
+      "minor": 0
+    },
+    "quality_review": {
+      "critical": 1,
+      "important": 1,
+      "minor": 0
+    },
+    "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+    "finding_ids": [
+      "STRUCTURED_DESTRUCTIVE_COMMAND_POLICY_INCOMPLETE",
+      "RAW_SECRET_KEY_CANONICALIZATION_INCOMPLETE"
+    ]
+  },
+  "review_rework_count": 2,
+  "work_instruction_path": "docs/work_orders/C-10_WORK_INSTRUCTION_R2.md",
+  "work_instruction_sha256": "2F027DB62ABAAFFA32C5F939BB4E3D2E47F0CEF6761BE882B99883D034046E97",
+  "invocation_path": "docs/work_orders/C-10_INVOCATION_PROMPT_R2.md",
+  "invocation_sha256": "66E086E825005EF45E922DB3C3EFE4B590EDB4CA0D17404E500B29B8D7CF6590",
+  "product_exact_paths": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py"
+  ],
+  "product_write_scope": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/**",
+    "packages/tool_gateway/**",
+    "tests/action_policy/**",
+    "tests/tool_gateway/**"
+  ],
+  "projection_mode": "C10_R2_START_EXACT9",
+  "validated_base_commit": "bc1b5c282f076aa95750d8f5505766327dfb559e",
+  "branch": "codex/c09-execution-backends-r1",
+  "exact_paths": [
+    "docs/evidence/manifests/C-10_R2_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-r2-start.json",
+    "docs/work_orders/C-10_INVOCATION_PROMPT_R2.md",
+    "docs/work_orders/C-10_WORK_INSTRUCTION_R2.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "exact_path_list_sha256": "F2B21F615466F6423F5859E951BA4F30E7A11FECC7067762F07D45CFD490CD04",
+  "record_binding": "STAGED_EXACT9_OR_SOLE_DIRECT_CHILD_C10_R2",
+  "self_reference": false,
+  "external_validation": {
+    "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
+    "secret_manager": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "external_call": "NOT_EXECUTED",
+    "secret_value": "NOT_ACCESSED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 192194,
+      "sha256": "AC8FF5A69D0BC2984D9107D3E7D778C000D6895AA23FDEE344FCD33A0B93ABEB"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 958739,
+      "sha256": "1FE9B8A45896273ADB99D545936189ECCF48001DCDDC7D8E1AB9985E7FB006FD"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2509901,
+      "sha256": "266CD6B461C20568F38F860424C671ED09950A6CD59962FECB12CDB5565014A8"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c10-r2-start.json",
+      "bytes": 840,
+      "sha256": "353A2575CBB65C09ACD19E02E260FF6C229A20DFCAE35888C3EE6697D28E131F"
+    },
+    {
+      "path": "docs/work_orders/C-10_INVOCATION_PROMPT_R2.md",
+      "bytes": 471,
+      "sha256": "66E086E825005EF45E922DB3C3EFE4B590EDB4CA0D17404E500B29B8D7CF6590"
+    },
+    {
+      "path": "docs/work_orders/C-10_WORK_INSTRUCTION_R2.md",
+      "bytes": 2175,
+      "sha256": "2F027DB62ABAAFFA32C5F939BB4E3D2E47F0CEF6761BE882B99883D034046E97"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3505717,
+      "sha256": "767ACF870992A71B09F26B3A02CBCD3CD422198F929AA93A0A63BE778F375125"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 987365,
+      "sha256": "D0C8F0D6EE5544CD61C4D41109F5888860CA9FC67AFCAA3F4BB229B9CD53857D"
+    }
+  ]
+}
