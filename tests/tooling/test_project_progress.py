@@ -15575,5 +15575,160 @@ class C09R3ControlTests(unittest.TestCase):
             self.assertEqual(["SEQ806_SELECTED"], checker._validate_git_projection(bundle))
 
 
+
+class C09R4ControlTests(unittest.TestCase):
+    BASE = "74f9878de521a6bc5a2c4f5165332c76edfc1354"
+    PARENT = "3720675f746cc0ca6a885a3c37bddf5cc4fc82a1"
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c09_r4_from_root"), "C-09 R4 builder missing")
+        return checker
+
+    def test_seq814_builder_preserves_806_and_retires_epoch2_at_failure2(self):
+        c = self._checker()
+        a = c.c09_r4_from_root(ROOT)
+        self.assertEqual(11, len(a))
+        m = json.loads(a[c.C09_R4_M])
+        self.assertEqual("EA7B2E08C7F6ED270EF6E0E47F49AB2277317DC5C915E1673420282D6B1BB10B", m["exact_path_list_sha256"])
+        self.assertEqual("AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F", m["product_exact_path_list_sha256"])
+        old = subprocess.check_output(["git", "show", self.BASE+":"+c.C09_R4_E], cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,806), c.raw_event_object_prefix_bytes(a[c.C09_R4_E],806))
+        events = json.loads(a[c.C09_R4_E])["events"]
+        self.assertEqual(list(range(807,815)), [x["sequence"] for x in events[-8:]])
+        self.assertEqual(["INDEPENDENT_TEST_REVIEW_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED",
+                          "WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED",
+                          "PACKAGE_REWORK_REQUESTED","PACKAGE_RESUMED"], [x["event_type"] for x in events[-8:]])
+        self.assertEqual("981F80242814EE270010773D9BAC6C5DD81EDADFCBF7A1AFD18E56D981D38FCF", events[806]["previous_event_sha256"])
+        for before, after in zip(events[-9:],events[-8:]):
+            self.assertEqual(hashlib.sha256(c.canonical_json_bytes(before)).hexdigest().upper(), after["previous_event_sha256"])
+        self.assertEqual("APPROVAL-20260814-WORKPLAN-V16-001",events[809]["details"]["approval_ref"])
+        self.assertEqual("evt_c09_r4_package_rework_requested",events[813]["details"]["resume_event_ref"])
+        self.assertEqual((2,2,"MAIN_TAKEOVER_AT_3"),tuple(events[806]["details"][k] for k in ("valid_failure_count","rework_attempt","next_valid_failure_action")))
+        p=json.loads(a[c.C09_R4_P])
+        self.assertEqual((3,3,2), (p["worker_lease"]["lease_epoch"],p["write_lease"]["write_epoch"],p["c09_r4_rework"]["attempt"]))
+        self.assertEqual("REVOKED",p["retired_c09_r3_worker_lease"]["status"])
+        self.assertEqual(13,len(m["authority"]["corrective_findings"]))
+        self.assertEqual({"bytes":2410633,"sha256":"8745062E0F6572E4908CEB995779E4551164F951AFBDEDC90C2F5E778BEF40B3"},m["historical_raw_event_prefix"])
+        self.assertEqual(10,len(m["raw_checksums"]))
+        for item in m["raw_checksums"]:
+            self.assertEqual(hashlib.sha256(a[item["path"]]).hexdigest().upper(),item["sha256"])
+
+    def _observation(self,c,mode="staged"):
+        product=c.c09_r3_product_paths()
+        untracked=[p for p in product if p in ("packages/execution_backends/docker.py","packages/execution_backends/git_worktree.py",
+             "packages/tool_gateway/models.py","packages/tool_gateway/registry.py","tests/execution_backends/test_docker.py",
+             "tests/execution_backends/test_git_worktree.py","tests/integration/test_c09_repository_workspace.py","tests/tool_gateway/test_tool_registry.py")]
+        staged=c.c09_r4_paths() if mode=="staged" else []
+        o={"base":self.BASE,"base_parents":[self.PARENT],"head":self.BASE if mode=="staged" else "1"*40,
+           "parents":[self.PARENT] if mode=="staged" else [self.BASE],
+           "main_head":"08aae12fdc4f8bd2d38b455f23408796ab4b8c82","remote_url":"git@github-sinsan-develop:sinsan-develop/Anvil.git",
+           "branch":"codex/c09-execution-backends-r1","upstream":"development/main","epoch3_valid":True,
+           "staged":staged,"unstaged":sorted(set(product)-set(untracked)),"untracked":sorted(untracked),
+           "changed":[] if mode=="staged" else c.c09_r4_paths(),"ancestor":True,"diff_check":True,"cached_check":True,
+           "control_tree_valid":True,"old_test_exists":False,"product_hashes":copy.deepcopy(c.C09_R4_FROZEN_PRODUCT),
+           "mode":"ACTIVE_R4" if mode=="active" else "FROZEN_R3"}
+        o["status_rows"]=["M  "+p for p in staged]+[" M "+p for p in o["unstaged"]]+["?? "+p for p in o["untracked"]]
+        if mode=="active":
+            o["product_hashes"][product[0]]["sha256"]="0"*64
+        if mode=="detached":
+            o.update(branch="",upstream="",staged=[],unstaged=[],untracked=[],status_rows=[],product_hashes={},mode="DETACHED_CONTROL")
+        return o
+
+    def test_seq814_transition_requires_explicit_mode_and_exact_authority_tree(self):
+        c=self._checker()
+        for mode in ("staged","child","active","detached"):
+            self.assertEqual([],c.c09_r4_transition_errors(self._observation(c,mode)),mode)
+        for key,value in (("base","0"*40),("base_parents",[]),("main_head","0"*40),("remote_url","wrong"),
+                          ("branch","main"),("upstream","origin/main"),("epoch3_valid",False),("control_tree_valid",False),
+                          ("staged",["packages/paths/identity.py"]),("product_hashes",{}),("old_test_exists",True),
+                          ("unstaged",["../outside"]),("status_rows",[" M ./packages/paths/identity.py"]),("mode","ACTIVE_R4")):
+            o=self._observation(c);o[key]=value
+            with self.subTest(key=key):self.assertTrue(c.c09_r4_transition_errors(o))
+        for key,value in (("parents",[self.BASE,"0"*40]),("parents",["0"*40]),("changed",[]),("product_hashes",{})):
+            o=self._observation(c,"child");o[key]=value
+            with self.subTest(key=key):self.assertTrue(c.c09_r4_transition_errors(o))
+        o=self._observation(c,"detached");o["branch"]="codex/c09-execution-backends-r1";o["upstream"]="development/main"
+        self.assertTrue(c.c09_r4_transition_errors(o))
+        self.assertIn("C09_R4_PRODUCT_SCOPE_REGRESSION",c.c09_r4_transition_errors(self._observation(c,"child"),previous_mode="ACTIVE_R4"))
+        o=self._observation(c,"active");o["mode"]="FROZEN_R3"
+        self.assertIn("C09_R4_R3_PRODUCT_DIRTY_MUTATED",c.c09_r4_transition_errors(o))
+
+    def test_seq814_projection_authority_review_event_tamper_and_ignored_independence(self):
+        c=self._checker();a=c.c09_r4_from_root(ROOT);original=Path.read_bytes
+        def read(path):
+            if ".superpowers" in path.parts:raise AssertionError("ignored dependency")
+            try:relative=path.relative_to(ROOT).as_posix()
+            except ValueError:return original(path)
+            return a[relative] if relative in a else original(path)
+        bundle={"_root":ROOT,"progress":json.loads(a[c.C09_R4_P]),"events":json.loads(a[c.C09_R4_E]),
+                "handoff":c.extract_handoff_summary(a[c.C09_R4_H].decode()),"detached_digest":json.loads(a[c.C09_R4_D])}
+        manifest=json.loads(a[c.C09_R4_M])
+        with mock.patch.object(Path,"read_bytes",read):
+            self.assertEqual(a,c.c09_r4_from_root(ROOT))
+            self.assertEqual([],c.validate_c09_r4(bundle,manifest))
+            for key,value in (("authority",{}),("review",{}),("review_digest","0"*64),("raw_checksums",[]),
+                              ("historical_raw_event_prefix",{}),("worker_lease",{}),("target_hash","0"*64),("accepted",True)):
+                bad=copy.deepcopy(manifest);bad[key]=value
+                with self.subTest(key=key):self.assertIn("C09_R4_PROJECTION_INVALID",c.validate_c09_r4(bundle,bad))
+            bad=copy.deepcopy(bundle);bad["events"]["events"][813]["details"]["resume_event_ref"]="wrong"
+            self.assertIn("C09_R4_PROJECTION_INVALID",c.validate_c09_r4(bad,manifest))
+        approval=ROOT/"docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md"
+        with mock.patch.object(Path,"read_bytes",lambda path:b"tampered" if path==approval else original(path)):
+            with self.assertRaisesRegex(ValueError,"C09_R4_AUTHORITY_HASH_INVALID"):c.c09_r4_from_root(ROOT)
+        history={p:subprocess.check_output(["git","show",self.BASE+":"+p],cwd=ROOT) for p in (c.C09_R4_P,c.C09_R4_H,c.C09_R4_E)}
+        files={p:original(ROOT/p) for p in ("scripts/check_project_progress.py","tests/tooling/test_project_progress.py")}
+        for raw in (b"null",b"[]",b"{",b'{"x":1,"x":2}',b'{"x":NaN}'):
+            bad=dict(history);bad[c.C09_R4_P]=raw
+            with self.subTest(raw=raw),self.assertRaises(ValueError):c.c09_r4_artifacts(bad,files,c.C09_R4_FROZEN_PRODUCT)
+        with mock.patch.object(c,"_collect_c09_r4_git",return_value=["SEQ814_SELECTED"]),mock.patch.object(c,"_collect_c09_r3_git",side_effect=AssertionError("old fallback")):
+            self.assertEqual(["SEQ814_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":814}}))
+
+
+
+    def test_seq814_cli_forwards_explicit_mode_and_rejects_unknown_or_legacy(self):
+        c=self._checker()
+        bundle={"progress":{"event_sequence":814,"reporting_decision":{"decision":"AUTO_CONTINUE"}}}
+        for mode in ("FROZEN_R3","ACTIVE_R4","DETACHED_CONTROL"):
+            def validate(b):
+                return [] if b.get("_c09_r4_mode")==mode and b.get("_c09_r4_trusted_previous_mode")=="ACTIVE_R4" else ["MODE_NOT_FORWARDED"]
+            with mock.patch.object(c,"load_bundle",return_value=copy.deepcopy(bundle)),mock.patch.object(c,"validate_bundle",side_effect=validate):
+                self.assertEqual(0,c.main([str(ROOT),"--c09-r4-mode="+mode,"--c09-r4-previous-mode=ACTIVE_R4"]))
+        with mock.patch.object(c,"load_bundle",side_effect=AssertionError("must reject before load")):
+            self.assertEqual(1,c.main(["--c09-r4-mode=wrong"]))
+            self.assertEqual(1,c.main(["--c09-r4-mode=ACTIVE_R4","--c09-r4-mode=FROZEN_R3"]))
+        with mock.patch.object(c,"load_bundle",return_value={"progress":{"event_sequence":806}}):
+            self.assertEqual(1,c.main(["--c09-r4-mode=ACTIVE_R4"]))
+
+    def test_seq814_collector_is_strict_and_compares_index_or_commit_raw_tree(self):
+        c=self._checker();o=self._observation(c)
+        worker,write=c._c09_r4_leases()
+        bundle={"_root":ROOT,"progress":{"worker_lease":worker,"write_lease":write,"repository":{"validated_base_commit":self.BASE}}}
+        rows={
+            ("rev-parse","--show-toplevel"):str(ROOT),("rev-parse","HEAD"):self.BASE,
+            ("rev-parse",self.BASE):self.BASE,("branch","--show-current"):o["branch"],
+            ("for-each-ref","--format=%(upstream:short)","--count=1","refs/heads/"+o["branch"]):o["upstream"],
+            ("rev-parse","development/main"):o["main_head"],("remote","get-url","development"):o["remote_url"],
+            ("diff","--cached","--name-only"):"\n".join(o["staged"]),("diff","--name-only"):"\n".join(o["unstaged"]),
+            ("ls-files","--others","--exclude-standard"):"\n".join(o["untracked"]),
+            ("status","--porcelain","--untracked-files=all"):"\n".join(o["status_rows"]),
+            ("show","-s","--format=%P",self.BASE):self.PARENT}
+        original_exists=Path.exists
+        def exists(path):return False if path==ROOT/"tests/tool_gateway/test_registry.py" else original_exists(path)
+        with mock.patch.object(c,"_c02_git_raw_stdout",side_effect=lambda root,*args:rows.get(args)),mock.patch.object(
+                c,"_c02_git_quiet_check",return_value=True),mock.patch.object(c,"_c09_r4_tree_matches",return_value=True) as tree,mock.patch.object(
+                c,"_c09_r3_product_hashes",return_value=o["product_hashes"]),mock.patch.object(Path,"exists",exists):
+            self.assertEqual([],c._collect_c09_r4_git(bundle))
+            tree.return_value=False
+            self.assertIn("C09_R4_REPOSITORY_AUTHORITY_INVALID",c._collect_c09_r4_git(bundle))
+            tree.return_value=True;rows[("diff","--cached","--name-only")]=None
+            self.assertEqual(["GIT_REQUIRED_COLLECTION_FAILED"],c._collect_c09_r4_git(bundle))
+        with mock.patch.object(c,"c09_r4_from_root",return_value={"control.txt":b"expected"}),mock.patch.object(c.subprocess,"check_output",return_value=b"expected"):
+            self.assertTrue(c._c09_r4_tree_matches(ROOT,""))
+        with mock.patch.object(c,"c09_r4_from_root",return_value={"control.txt":b"expected"}),mock.patch.object(c.subprocess,"check_output",return_value=b"tampered"):
+            self.assertFalse(c._c09_r4_tree_matches(ROOT,"1"*40))
+
+
 if __name__ == "__main__":
     unittest.main()

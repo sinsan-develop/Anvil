@@ -988,6 +988,13 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C09_R3_REWORK_START_EXACT11"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 814
+                and event.get("sequence") == 810
+                and event.get("event_id") == "evt_c09_r4_work_instruction_issued"
+                and event["details"].get("projection_mode") == "C09_R4_REWORK_START_EXACT11"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13001,6 +13008,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 814:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c09_r4_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 806:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14119,6 +14130,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c07_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-08_START_MANIFEST.json":
             errors.extend(validate_c08_start_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
+            errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
             errors.extend(validate_c09_r3(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_START_MANIFEST.json":
@@ -14317,9 +14330,32 @@ def validate_c21_wsl_qa_execution_result_projection(bundle: Mapping[str, Any], m
 
 def main(argv: list[str] | None = None) -> int:
     arguments = argv if argv is not None else sys.argv[1:]
+    r4_options: dict[str, str] = {}
+    if any(arg.startswith("--c09-r4-") for arg in arguments):
+        positional = []
+        option_keys = {"--c09-r4-mode": "_c09_r4_mode", "--c09-r4-previous-mode": "_c09_r4_trusted_previous_mode"}
+        for arg in arguments:
+            if arg.startswith("--"):
+                key, separator, value = arg.partition("=")
+                if (key not in option_keys or not separator or option_keys[key] in r4_options
+                    or value not in {"FROZEN_R3", "ACTIVE_R4", "DETACHED_CONTROL"}):
+                    print("C09_R4_EXECUTION_MODE_REQUIRED")
+                    return 1
+                r4_options[option_keys[key]] = value
+            else:
+                positional.append(arg)
+        if len(positional) > 1 or "_c09_r4_mode" not in r4_options:
+            print("C09_R4_EXECUTION_MODE_REQUIRED")
+            return 1
+        arguments = positional
     root = Path(arguments[0]).resolve() if arguments else Path.cwd()
     try:
         bundle = load_bundle(root)
+        if r4_options:
+            if bundle.get("progress", {}).get("event_sequence") != 814:
+                print("C09_R4_EXECUTION_MODE_SEQUENCE_INVALID")
+                return 1
+            bundle.update(r4_options)
         errors = validate_bundle(bundle)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
         print(f"LOAD_ERROR:{exc}")
@@ -40166,6 +40202,529 @@ def _collect_c09_r3_git(bundle: Mapping[str, Any]) -> list[str]:
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
+
+
+
+# C-09 R4: approved append-only epoch3 corrective control.
+C09_R4_BASE = "74f9878de521a6bc5a2c4f5165332c76edfc1354"
+C09_R4_PARENT = C09_R3_BASE
+C09_R4_MAIN = C09_R3_MAIN
+C09_R4_AT = "2026-09-14T05:00:00+09:00"
+C09_R4_EXPIRES = "2026-09-14T17:00:00+09:00"
+C09_R4_REPORT = "docs/04_test_reports/C-09_REWORK_START_R4_REPORT.md"
+C09_R4_M = "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json"
+C09_R4_H = "docs/progress/BUILD_HANDOFF.md"
+C09_R4_P = "docs/progress/build-progress.json"
+C09_R4_E = "docs/progress/progress-events.json"
+C09_R4_D = "docs/progress/progress-handoff-detached-digest-c09-rework-start-r4.json"
+C09_R4_VALIDATION = "docs/validation/C-09_REWORK_START_R4_VALIDATION.md"
+C09_R4_PROMPT = "docs/work_orders/C-09_INVOCATION_PROMPT_R4.md"
+C09_R4_WI = "docs/work_orders/C-09_WORK_INSTRUCTION_R4.md"
+C09_R4_FROZEN_PRODUCT = {
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md": {
+        "bytes": 7588,
+        "sha256": "D912BCED7B579D91C515DB3AB86D97FA9C730156510A738C10D0D91856023CCC"
+    },
+    "packages/execution_backends/__init__.py": {
+        "bytes": 904,
+        "sha256": "F4EE069805B56021C6D971F455A028B6BC18764D7A06A33DD7B19859EFD4E598"
+    },
+    "packages/execution_backends/docker.py": {
+        "bytes": 13965,
+        "sha256": "D638EDD235FBB4989BCB0FF173595BD36F34F90663CF369827EF09126796FC65"
+    },
+    "packages/execution_backends/git_worktree.py": {
+        "bytes": 15776,
+        "sha256": "223C79D45A92F32FAE8E10CA598C948DB54BB6244A5A582BE5BDF7C4009EF537"
+    },
+    "packages/execution_backends/models.py": {
+        "bytes": 23113,
+        "sha256": "B9DED0409C940C784A784FA3C76F445F86A11FA78F672B128583C1112581C171"
+    },
+    "packages/execution_backends/registry.py": {
+        "bytes": 2450,
+        "sha256": "86B1F8B0D3A2910F7420E6CCD097A055D8B9A12306CE9C32460CBFA6C6C4682A"
+    },
+    "packages/paths/identity.py": {
+        "bytes": 7911,
+        "sha256": "BC8EADBB6FDF3B660ECA585732F92020B8707C1B900F3CCDA84CBD8CD88911E4"
+    },
+    "packages/tool_gateway/__init__.py": {
+        "bytes": 527,
+        "sha256": "805732D81FB8D97373F3DD611678723BC5C34BE21C6854C74DC28557B9D13472"
+    },
+    "packages/tool_gateway/gateway.py": {
+        "bytes": 10578,
+        "sha256": "C7B31572E21AD3372C8716FDC076EDAA5612E9B5AAC5E0A17798C02FFCC529FD"
+    },
+    "packages/tool_gateway/models.py": {
+        "bytes": 3653,
+        "sha256": "7A8F6F1E7EFB061ECF30EAEAADF13359CA9CC19818882EFF5A66A10571808B9B"
+    },
+    "packages/tool_gateway/registry.py": {
+        "bytes": 5309,
+        "sha256": "66568E928DB8B0F5F384927C68483B25DA67484980AA9054AD7D43FEE3A21B54"
+    },
+    "tests/execution_backends/test_docker.py": {
+        "bytes": 8880,
+        "sha256": "E5DEECA66C1D77EFB030882E49758D38F1CD19C4DE4D507AE00504C52553B8B8"
+    },
+    "tests/execution_backends/test_git_worktree.py": {
+        "bytes": 11349,
+        "sha256": "0A14203632F08F573421CD5BE534726AB6D8E80C7F2BB09DF076C29D0A5B0644"
+    },
+    "tests/execution_backends/test_registry.py": {
+        "bytes": 1934,
+        "sha256": "F9C1D99EAD2C70071F28898EADA91C278958358834D6C0632785CABEAD6F6620"
+    },
+    "tests/integration/test_c09_repository_workspace.py": {
+        "bytes": 4619,
+        "sha256": "AF7A260B1BCFAC8872DD16301871167770B8401C3A5D197BABB1FDD8FFCE99A4"
+    },
+    "tests/paths/test_conflict_scope_identity.py": {
+        "bytes": 4438,
+        "sha256": "16EF6665531EE558B1DA68644539F9060B8A21AA24119BFE15F6E8B0C6261C5F"
+    },
+    "tests/tool_gateway/test_gateway.py": {
+        "bytes": 8150,
+        "sha256": "CCBEAB75AF5A6CAB72FF43DA0B2813023C481FA44C1609E876D108FF21C83335"
+    },
+    "tests/tool_gateway/test_tool_registry.py": {
+        "bytes": 1396,
+        "sha256": "F60A3AA1B204D015C5622046F7EDDFEF8A4A3A5AA19D5EDC0BE7C8A53597F0F3"
+    }
+}
+C09_R4_FROZEN_STATUS = [
+    " M docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+    " M packages/execution_backends/__init__.py",
+    " M packages/execution_backends/models.py",
+    " M packages/execution_backends/registry.py",
+    " M packages/paths/identity.py",
+    " M packages/tool_gateway/__init__.py",
+    " M packages/tool_gateway/gateway.py",
+    " M tests/execution_backends/test_registry.py",
+    " M tests/paths/test_conflict_scope_identity.py",
+    " M tests/tool_gateway/test_gateway.py",
+    "?? packages/execution_backends/docker.py",
+    "?? packages/execution_backends/git_worktree.py",
+    "?? packages/tool_gateway/models.py",
+    "?? packages/tool_gateway/registry.py",
+    "?? tests/execution_backends/test_docker.py",
+    "?? tests/execution_backends/test_git_worktree.py",
+    "?? tests/integration/test_c09_repository_workspace.py",
+    "?? tests/tool_gateway/test_tool_registry.py"
+]
+C09_R4_FINDINGS = [
+    "C09-R4-DOCKER-READ-AUTHORITY-ENVELOPE",
+    "C09-R4-ATOMIC-IDEMPOTENCY-SINGLE-IO",
+    "C09-R4-FULL-OWNER-IDENTITY",
+    "C09-R4-DOCKER-PER-HANDLE-CANCEL",
+    "C09-R4-CANONICAL-TERMINAL-RECEIPT-AUDIT",
+    "C09-R4-EARLY-CUMULATIVE-BOUNDS",
+    "C09-R4-TRUSTED-MANIFEST-EVIDENCE",
+    "C09-R4-NONMAPPING-INPUT-AUDIT",
+    "C09-R4-PER-SESSION-PERMISSION-RESERVATION",
+    "C09-R4-WORKSPACE-STATE-FENCE",
+    "C09-R4-OUTPUT-SCHEMA-VALIDATION",
+    "C09-R4-DOCKER-DIGEST-ORPHAN-EVIDENCE",
+    "C09-R4-PHYSICAL-HOSTILE-COVERAGE"
+]
+C09_R4_WI_TEXT = "# C-09 R4 epoch3 corrective WorkInstruction\n\nWI-C-09-EXECUTION-BACKENDS-R4. 담당 developer-primary.\nMAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK_R4. 기능/요구사항/중요위험 UNCHANGED.\n신규 backend/tool/API/persistence/egress/Secret/운영 authority를 추가하지 않는다. C10 일반 exec.run/raw shell/patch/write/risk/egress/Secret 정책은 제외한다.\n부모 승인 APPROVAL-20260814-WORKPLAN-V16-001 / 3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236.\nR3 HEAD 74f9878de521a6bc5a2c4f5165332c76edfc1354, sole parent R2 3720675f746cc0ca6a885a3c37bddf5cc4fc82a1.\nbranch codex/c09-execution-backends-r1; upstream development/main; remote git@github-sinsan-develop:sinsan-develop/Anvil.git; main 08aae12fdc4f8bd2d38b455f23408796ab4b8c82.\nR2/R3 WI·prompt·manifest·report·validation·digest 및 seq1~806은 byte-immutable이다.\nR4 control은 R3의 sole direct child이어야 한다. product dirty18은 control 작성 및 pre-dispatch 동안 frozen R3 bytes/index 그대로 보존한다.\n\n## 승인·lease·완료 경계\n\nAV-SAFE-010 L3 / AV-SAFE-011 L5 / AV-STAT-021 L5; AV-SAFE-028 carry-forward 회귀를 유지한다.\n설계 baseline DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3과 상위 계획/matrix/test/governance hash는 변경하지 않는다.\nspec R3 C1/I7/M1 / 9F580EACDFEFDFD41A68AD5D06AB1E5E230DA10BCB24046FF1A7D3416CB45B63.\nquality R3 round2 C3/I6/M0 / 7735526AF31614D04A2382395A8653183FEA9BBFC7CE834CB667081A27169A88.\n동일 snapshot 두 review를 중복 집계하지 않는다. product valid_failure_count=2, same_failure_count=2, rework_attempt=2, formal FAILURE_REPORT0.\n다음 같은 C09 lineage의 유효 REWORK_REQUIRED/FAILURE_REPORT가 확정되면 valid failure3: MAIN_TAKEOVER_AT_3.\n즉시 Developer 중지→epoch3 write→worker lease 회수→TakeoverPacket→Main 순차 인수. 같은 Developer에게 R5를 발행하지 않는다.\nworker worker-lease-c09-execution-backends-r4-20260914-003 / epoch3 / c09-execution-backends-r4-execution-fence-epoch-3-a84e19276fc34db5.\nwrite write-lease-c09-execution-backends-r4-20260914-003 / epoch3 / c09-execution-backends-r4-write-fence-epoch-3-3c91b6e5087a4fd2.\nissued 2026-09-14T05:00:00+09:00; expires 2026-09-14T17:00:00+09:00. 두 token과 baseline/HEAD/branch/status/만료 모두 확인한다. epoch2는 REVOKED이며 재활성화 금지.\nproduct exact18/hash AC308DAC4396006ABA4FFD3CCDB44FA90063F787C88EAA9F7E6B86E541D0887F:\n- docs/04_test_reports/C-09_COMPLETION_REPORT.md\n- packages/execution_backends/__init__.py\n- packages/execution_backends/docker.py\n- packages/execution_backends/git_worktree.py\n- packages/execution_backends/models.py\n- packages/execution_backends/registry.py\n- packages/paths/identity.py\n- packages/tool_gateway/__init__.py\n- packages/tool_gateway/gateway.py\n- packages/tool_gateway/models.py\n- packages/tool_gateway/registry.py\n- tests/execution_backends/test_docker.py\n- tests/execution_backends/test_git_worktree.py\n- tests/execution_backends/test_registry.py\n- tests/integration/test_c09_repository_workspace.py\n- tests/paths/test_conflict_scope_identity.py\n- tests/tool_gateway/test_gateway.py\n- tests/tool_gateway/test_tool_registry.py\n\n## 고유 corrective 13축\n1. `C09-R4-DOCKER-READ-AUTHORITY-ENVELOPE`: Docker helper 입력을 canonical envelope로 고정한다. repository_id, approved baseline commit, trusted manifest evidence hash, canonical target scopes, operation, validated arguments, timeout/output/traversal limits를 포함하고 helper가 모든 다섯 operation에서 scope를 적용한다. mount 내부 out-of-scope 데이터는 helper IO 전에 거부하고 zero disclosure를 증명한다.\n2. `C09-R4-ATOMIC-IDEMPOTENCY-SINGLE-IO`: replay lookup, canonical payload conflict, request/handle ID uniqueness, RUNNING registration과 winner IO authority 발급을 하나의 lock transaction으로 원자화한다. 동일 key/payload loser는 terminal을 기다려 같은 immutable receipt를 반환하며 신규 IO0, 다른 payload/같은 request ID 충돌은 fail-closed한다.\n3. `C09-R4-FULL-OWNER-IDENTITY`: public cancel/stream/collect 및 handle lookup은 run_id+session_id+workspace_id+backend_id 전체를 요구한다. 제공된 각 identity를 독립 비교하며 missing/partial/wrong/cross-backend substitution을 IO0 `HANDLE_OWNERSHIP_MISMATCH`로 거부한다.\n4. `C09-R4-DOCKER-PER-HANDLE-CANCEL`: 한 handle 취소가 shared workspace container를 stop하지 않는다. exec별 owned control/process ID로 그 실행만 graceful cancel하거나, 단일-active admission과 verified container recovery를 계약으로 명시한다. 두 concurrent handles 중 하나 cancel 후 다른 handle과 새 read가 정상이어야 한다.\n5. `C09-R4-CANONICAL-TERMINAL-RECEIPT-AUDIT`: 모든 terminal status는 immutable canonical receipt와 SHA-256을 가진다. run/session/workspace/backend/repository/tool/path/scopes, correlation/idempotency, baseline+manifest, requested/started/completed, timeout/output/traversal limits, masked fields, result/error digest를 포함한다. handle/event/artifact/ToolAudit가 같은 receipt를 참조하며 replay도 동일 bytes를 반환한다.\n6. `C09-R4-EARLY-CUMULATIVE-BOUNDS`: subprocess stdout/stderr를 streaming hard cap으로 제한하고 status/diff/search/symbols 모두 공통 monotonic deadline 및 visited files/bytes/rows/incremental encoded-output cap을 처리 중 적용한다. cap+1에서 추가 traversal/read/match/row 생성 없이 즉시 하나의 limit terminal receipt/audit로 종료한다.\n7. `C09-R4-TRUSTED-MANIFEST-EVIDENCE`: caller가 `verified_*` 문자열을 self-assert하지 못한다. public manifest bytes와 approved baseline commit을 검증하는 trusted verifier/evidence object가 digest를 산출하며 prepare payload, WorkspaceRef/Grant, Docker envelope, receipt/audit에 동일 hash를 결박한다. 임의 hash, missing bytes, commit mismatch, replay drift를 IO 전에 거부한다.\n8. `C09-R4-NONMAPPING-INPUT-AUDIT`: ToolRequest arguments는 ingress에서 string-key Mapping만 수용한다. list/tuple/scalar/foreign malformed Mapping, key collision, validator exception은 모두 안정된 `TOOL_SCHEMA_INVALID` denial audit exactly1/backend IO0로 변환하며 raw AttributeError를 누출하지 않는다.\n9. `C09-R4-PER-SESSION-PERMISSION-RESERVATION`: registry global lock을 long backend IO 동안 잡지 않는다. per-session generation/reservation token을 짧은 critical section에서 발급하고 backend `_mark_io` 직전에 atomic consume한다. revoke-before-IO는 stale token/queued/replay IO0을 보장하면서 session A slow IO가 session B grant/revoke를 지연시키지 않는다.\n10. `C09-R4-WORKSPACE-STATE-FENCE`: workspace state를 `ACTIVE→DISPOSING→DESTROYED` 또는 cleanup failure 시 `RETAINED`로 lock 아래 전환한다. destroy authority/active0 검사와 상태 전환을 원자화하고 `_workspace_for/_begin/execute`는 ACTIVE만 허용한다. authorize→execute barrier에서 신규 handle/IO0을 증명한다.\n11. `C09-R4-OUTPUT-SCHEMA-VALIDATION`: backend bounded result envelope를 gateway receipt에 연결한다. canonical ToolDefinition output schema를 실제 result에 검증한 뒤에만 SUCCEEDED terminal audit/receipt를 발급하고 malformed/oversized/missing output은 FAILED receipt/audit로 닫는다.\n12. `C09-R4-DOCKER-DIGEST-ORPHAN-EVIDENCE`: image digest를 exact 64 lowercase/normalized hex로 검증한다. prepare partial failure는 endpoint/container ID/name/labels/inspect mismatch/cleanup attempt/residue를 담은 immutable public read-only orphan evidence로 노출하고 trusted cleanup authority 경로와 연결한다. private map만으로 완료하지 않는다.\n13. `C09-R4-PHYSICAL-HOSTILE-COVERAGE`: broken link, missing leaf, component replacement race, actual available Windows 8.3 short path, junction/symlink ancestor, handle-open 후 identity change, duplicate/nested/ambiguous mapping registry를 hostile tests로 고정한다. 실제 8.3 기능이 host에서 비활성인 경우 명확히 SKIPPED하고 lexical `PROGRA~1` 흉내를 PASS로 승격하지 않는다.\n\nR3에서 이미 닫힌 source/common-dir zero mutation, opaque ID/managed containment, retention/disposal 기본 계약, Docker create/start/inspect/exact mounts, canonical tool registration, pytest basename, B-09 adapter는 회귀 검증으로 유지한다.\n\n## 정확한 재검증\n\n- python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py\n- python -B -m pytest -q -p no:cacheprovider tests/repository_intelligence tests/tooling/test_a13_repository_scan.py\n- python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py\n- python -B -m compileall -q packages/paths packages/execution_backends packages/tool_gateway tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py\n- git diff --check\n\n13축별 focused hostile RED→GREEN 명령/exit/result를 기록한다. Docker envelope 모든5도구 scope/out-of-scope IO0, concurrent same-key IO1/동일 immutable receipt와 different payload/request ID 충돌, full owner4축 missing/partial/cross-backend, 두 handle cancel 격리/new read, 모든 terminal canonical receipt/audit hash, cap+1 early stop, trusted manifest bytes/commit/replay, malformed Mapping audit1/IO0, session A slow IO중 B permission latency/stale token IO0, destroy→execute barrier/new IO0, malformed output schema, hex digest/public orphan recovery, physical hostile matrix를 모두 재검증한다.\n원본 Git source/common-dir zero mutation, managed containment/opaque ID, retention24h와 trusted disposal authority, Docker create→inspect→start→inspect/exact owned mounts, canonical registry, B09 legacy, C13 동일 ToolPermissionRegistry 인스턴스/session_id, pytest basename 유지 회귀를 포함한다.\n실제 가능한 Windows8.3를 조회하되 기능 비활성은 SKIPPED로 기록한다. lexical PROGRA~1 예제를 actual8.3 PASS로 주장하지 않는다.\nlocal owned Git fixture와 stateful Docker fake만 허용하며 fixture 사전 기록·수명·cleanup/잔류0을 기록한다. actual Docker daemon/WSL/DB/API/UI/browser/Provider/Telegram/network/deploy/Secret은 NOT_EXECUTED/NOT_ACCESSED.\n추가 --import-mode=importlib로 authoritative suite를 대체하지 않는다. 완료보고를 실제 residual/검증 결과에 맞춰 수정하고 ACCEPTED를 선행 주장하지 않는다.\n\n## 실행·결과·rollback\n\n개발자는 수정 전 FROZEN_R3, epoch3 수정 후 ACTIVE_R4 checker mode를 명시한다:\npython -B scripts/check_project_progress.py --c09-r4-mode=FROZEN_R3\npython -B scripts/check_project_progress.py --c09-r4-mode=ACTIVE_R4\nclean fresh-clone 검증은 detached R4 control commit에서 --c09-r4-mode=DETACHED_CONTROL로만 허용한다.\nstateless CLI는 과거 관측을 영속화하지 않는다. trusted previous_mode가 ACTIVE_R4인 경우 FROZEN_R3 역전은 거부한다.\ncontrol out-of-scope 수정, product stage/commit/push/PR/merge/외부 실행 금지. scope 밖 필요는 증거와 함께 Main으로 반환한다.\nC09 REWORK_IN_PROGRESS/C10 NOT_READY/DIR2 NOT_REACHED 유지. 판정→이유→조치, COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED/CANCELLED 결과 계약.\ncompletion report에13축별 exact command/exit/hash/bytes/미검증/잔여위험/rollback을 기록한다.\ncontrol commit 전 실패는 frozen18을 먼저 검증하고 Main 권한으로 control11만 unstage/복구한다. 제품 reset/clean/stash/checkout/delete 금지.\ncontrol commit 후 seq807~814/R4 artifacts rewrite/revert 금지. successor에서 epoch3 write→worker revoke 후 실제 중단 상태를 기록한다.\n제품 실패 dirty/artifact 보존. 안전한 product commit 뒤 rollback은 lease 회수/successor 뒤 해당 product commit 정상 revert뿐이다.\n"
+C09_R4_PROMPT_TEXT = "# C-09 R4 invocation\n\nWI-C-09-EXECUTION-BACKENDS-R4와 epoch3 dual lease의 unchanged exact18만 수행한다. R4 control sole direct-child/HEAD/branch/upstream/status/hash/두 token/만료를 검증하고 첫 수정 전 FROZEN_R3, 수정 후 ACTIVE_R4를 명시한다. 제품 valid failure2/rework2; 다음 유효 failure3이면 MAIN_TAKEOVER_AT_3: Developer 중지→write/worker 회수→TakeoverPacket→Main 인수이며 같은 Developer R5는 금지한다.\nWI의 고유13축(C09-R4-DOCKER-READ-AUTHORITY-ENVELOPE, C09-R4-ATOMIC-IDEMPOTENCY-SINGLE-IO, C09-R4-FULL-OWNER-IDENTITY, C09-R4-DOCKER-PER-HANDLE-CANCEL, C09-R4-CANONICAL-TERMINAL-RECEIPT-AUDIT, C09-R4-EARLY-CUMULATIVE-BOUNDS, C09-R4-TRUSTED-MANIFEST-EVIDENCE, C09-R4-NONMAPPING-INPUT-AUDIT, C09-R4-PER-SESSION-PERMISSION-RESERVATION, C09-R4-WORKSPACE-STATE-FENCE, C09-R4-OUTPUT-SCHEMA-VALIDATION, C09-R4-DOCKER-DIGEST-ORPHAN-EVIDENCE, C09-R4-PHYSICAL-HOSTILE-COVERAGE)을 각 hostile RED→GREEN으로 닫고 WI의 정확한3 pytest, compileall/diff 명령을 추가 import flag 없이 실행한다. source/common-dir/managed ownership/retention/C13/B09 회귀 유지. immutable terminal receipt와 실제 차단/IO0/누적 bound/concurrency 증거를 completion report에 기록한다. R2/R3 history와 control은 보존하고 product exact18 밖 mutation/stage/commit/push/외부 실행을 하지 않는다. actual8.3 불가/외부 runtime 미실행은 SKIPPED/NOT_EXECUTED로 구분한다. 결과 계약과 failure3 인수 경계에 따라 Main에게 반환한다.\n"
+
+def c09_r4_paths() -> list[str]:
+    return ["docs/04_test_reports/C-09_REWORK_START_R4_REPORT.md","docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json","docs/progress/BUILD_HANDOFF.md","docs/progress/build-progress.json","docs/progress/progress-events.json","docs/progress/progress-handoff-detached-digest-c09-rework-start-r4.json","docs/validation/C-09_REWORK_START_R4_VALIDATION.md","docs/work_orders/C-09_INVOCATION_PROMPT_R4.md","docs/work_orders/C-09_WORK_INSTRUCTION_R4.md","scripts/check_project_progress.py","tests/tooling/test_project_progress.py"]
+
+
+def _c09_r4_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    worker = _c09_start_worker_lease()
+    worker.update({"lease_id": "worker-lease-c09-execution-backends-r4-20260914-003", "lease_epoch": 3,
+        "execution_fencing_token": "c09-execution-backends-r4-execution-fence-epoch-3-a84e19276fc34db5",
+        "baseline_git_commit": C09_R4_BASE, "dispatch_head": C09_R4_BASE,
+        "issued_at": C09_R4_AT, "expires_at": C09_R4_EXPIRES, "path_scope": c09_r3_product_paths()})
+    worker["fencing_token"] = worker["execution_fencing_token"]
+    write = _c09_start_write_lease()
+    write.update({"lease_id": "write-lease-c09-execution-backends-r4-20260914-003",
+        "worker_lease_id": worker["lease_id"], "write_epoch": 3,
+        "execution_fencing_token": worker["execution_fencing_token"],
+        "write_fencing_token": "c09-execution-backends-r4-write-fence-epoch-3-3c91b6e5087a4fd2",
+        "issued_at": C09_R4_AT, "expires_at": C09_R4_EXPIRES, "path_scope": c09_r3_product_paths()})
+    write["fencing_token"] = write["write_fencing_token"]
+    return worker, write
+
+
+
+def _c09_r4_authority() -> dict[str, Any]:
+    authority = _c09_start_authority()
+    authority.update({"revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK_R4",
+        "work_instruction_sha256": _c21_resume_sha(C09_R4_WI_TEXT.encode()),
+        "invocation_sha256": _c21_resume_sha(C09_R4_PROMPT_TEXT.encode()),
+        "supersedes": {"path": C09_R3_WI, "sha256": "41D937BDD61E50997F49345A12A966EBDEE03BCBB7A9008E2AB38319A249D98B"},
+        "corrective_findings": list(C09_R4_FINDINGS), "next_valid_failure_action": "MAIN_TAKEOVER_AT_3",
+        "takeover_failure_threshold": 3, "same_developer_r5_allowed": False,
+        "predecessor": {"commit": C09_R4_BASE, "manifest_path": C09_R3_M,
+            "manifest_sha256": "DED042641E515893ABF75013E1ED2E188B428DEAD90291FDB35095346468C56D",
+            "wi_sha256": "41D937BDD61E50997F49345A12A966EBDEE03BCBB7A9008E2AB38319A249D98B",
+            "prompt_sha256": "8B3E5FE9FA0AD63D96D2E5F00B640A82AEEC773D53DEE8E5FDB8DAB1887EDDFC",
+            "events_sha256": "06D3660E3890D56E3AE5BD4179CF2D23C98D2717858A4DE676DB3992D85E1312",
+            "events_canonical_sha256": "3D29A691FB0759B87C015C5DDD759451BC5AC4E2544786A6C9966319DFB819D1"},
+        "review_reports": [
+            {"review": "spec-r3", "bytes": 7654, "sha256": "9F580EACDFEFDFD41A68AD5D06AB1E5E230DA10BCB24046FF1A7D3416CB45B63", "critical": 1, "important": 7, "minor": 1},
+            {"review": "quality-r3-round2", "bytes": 23493, "sha256": "7735526AF31614D04A2382395A8653183FEA9BBFC7CE834CB667081A27169A88", "critical": 3, "important": 6, "minor": 0}]})
+    return authority
+
+
+def c09_r4_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes],
+                     frozen_product: Mapping[str, Any]) -> dict[str, bytes]:
+    if set(historical) != {C09_R4_P, C09_R4_E, C09_R4_H} or set(files) != {
+            "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"}:
+        raise ValueError("C09_R4_INPUT_SET_INVALID")
+    if not _c21_strict_json_equal(frozen_product, C09_R4_FROZEN_PRODUCT):
+        raise ValueError("C09_R4_R3_PRODUCT_DIRTY_MUTATED")
+    p = _c21_resume_json(historical[C09_R4_P])
+    stream = _c21_resume_json(historical[C09_R4_E])
+    authority = _c09_r4_authority()
+    if (not isinstance(p, dict) or not isinstance(stream, dict)
+        or p.get("event_sequence") != 806 or p.get("current_work_package") != "C-09"
+        or p.get("worker_lease") != _c09_r3_leases()[0]
+        or p.get("write_lease") != _c09_r3_leases()[1]
+        or stream.get("last_sequence") != 806 or len(stream.get("events", [])) != 806
+        or _c21_resume_sha(historical[C09_R4_E]) != authority["predecessor"]["events_sha256"]
+        or _c21_resume_sha(canonical_json_bytes(stream["events"])) != authority["predecessor"]["events_canonical_sha256"]):
+        raise ValueError("C09_R4_HISTORY_INVALID")
+    paths = c09_r4_paths()
+    product = c09_r3_product_paths()
+    worker, write = _c09_r4_leases()
+    retired_worker, retired_write = copy.deepcopy(p["worker_lease"]), copy.deepcopy(p["write_lease"])
+    for lease in (retired_worker, retired_write):
+        lease.update({"status": "REVOKED", "revoked_at": C09_R4_AT,
+                      "reason": "C09_R3_INDEPENDENT_REVIEW_REWORK_REQUIRED"})
+    review = {"verdict": "REWORK_REQUIRED", "accepted": False, "quality": "REWORK_REQUIRED",
+        "critical_findings": {"spec": 1, "quality": 3}, "important_findings": {"spec": 7, "quality": 6},
+        "review_reports": authority["review_reports"], "corrective_findings": list(C09_R4_FINDINGS),
+        "unique_cluster_count": 13, "reviewed_head": C09_R4_BASE,
+        "reviewed_state": "R3_PRODUCT_REVISED_EXACT18_UNSTAGED_DIRTY",
+        "reviewed_product_paths": c09_r3_product_paths(),
+        "reviewed_product_path_list_sha256": _c21_path_list_sha(c09_r3_product_paths(), windows=True),
+        "frozen_product_raw": copy.deepcopy(dict(frozen_product)),
+        "valid_failure_count": 2, "same_failure_count": 2, "rework_attempt": 2,
+        "next_valid_failure_action": "MAIN_TAKEOVER_AT_3"}
+    review_hash = _c21_resume_sha(canonical_json_bytes(review))
+    target = {"authority": authority, "review_digest": review_hash, "sequence": 814,
+        "frozen_product_raw": copy.deepcopy(dict(frozen_product)), "control_paths": paths,
+        "product_paths": product, "worker_lease": worker, "write_lease": write}
+    target_hash = _c21_resume_sha(canonical_json_bytes(target))
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    if previous != "981F80242814EE270010773D9BAC6C5DD81EDADFCBF7A1AFD18E56D981D38FCF":
+        raise ValueError("C09_R4_LAST_PREDECESSOR_HASH_INVALID")
+    events = []
+    def event(kind: str, event_id: str, details: Mapping[str, Any]) -> None:
+        nonlocal previous
+        row = {"sequence": 807 + len(events), "event_type": kind, "event_id": event_id,
+            "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+            "project_id": "anvil", "run_id": None, "work_package_id": "C-09",
+            "step_id": "REWORK_R4", "subject_ref": "C-09/REWORK_R4",
+            "occurred_at": C09_R4_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        events.append(row)
+    event("INDEPENDENT_TEST_REVIEW_RECORDED", "evt_c09_r3_independent_product_review_recorded", review)
+    event("WRITE_LEASE_REVOKED", "evt_c09_r3_write_lease_revoked_for_r4", retired_write)
+    event("WORKER_LEASE_REVOKED", "evt_c09_r3_worker_lease_revoked_for_r4", retired_worker)
+    event("WORK_INSTRUCTION_ISSUED", "evt_c09_r4_work_instruction_issued",
+          {**authority, "work_instruction_id": "WI-C-09-EXECUTION-BACKENDS-R4",
+           "approval_ref": authority["parent_approval_id"],
+           "projection_mode": "C09_R4_REWORK_START_EXACT11", "dispatch_head": C09_R4_BASE,
+           "validated_base_commit": C09_R4_BASE, "product_write_scope": product,
+           "product_exact_path_list_sha256": _c21_path_list_sha(product, windows=True),
+           "target_hash": target_hash})
+    event("WORKER_LEASE_ISSUED", "evt_c09_r4_worker_lease_issued", worker)
+    event("WRITE_LEASE_ISSUED", "evt_c09_r4_write_lease_issued", write)
+    rework = {"attempt": 2, "valid_failure_count": 2, "same_failure_count": 2,
+              "next_valid_failure_action": "MAIN_TAKEOVER_AT_3", "takeover_failure_threshold": 3,
+              "same_developer_r5_allowed": False,
+              "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+              "execution_fencing_token": worker["execution_fencing_token"],
+              "write_fencing_token": write["write_fencing_token"], "review_digest": review_hash,
+              "work_instruction_id": "WI-C-09-EXECUTION-BACKENDS-R4", "status": "REWORK_REQUIRED"}
+    event("PACKAGE_REWORK_REQUESTED", "evt_c09_r4_package_rework_requested", rework)
+    event("PACKAGE_RESUMED", "evt_c09_r4_package_resumed",
+          {"resume_ref": "evt_c09_r4_package_rework_requested", "resume_sequence": 813,
+           "resume_event_ref": "evt_c09_r4_package_rework_requested",
+           "reason": "INDEPENDENT_REVIEW_CORRECTIVE_REWORK", "from_status": "REWORK_REQUIRED",
+           "package_status": "REWORK_IN_PROGRESS", "status": "REWORK_IN_PROGRESS", "accepted": False,
+           "next_safe_action": "DISPATCH_C09_R4_DEVELOPER", "c10_status": "NOT_READY", "dir2_status": "NOT_REACHED"})
+    event_raw = _c21_append_events(historical[C09_R4_E], 806, events)
+    repository = dict(p["repository"])
+    repository.update({"projection_mode": "C09_R4_REWORK_START_EXACT11", "validated_base_commit": C09_R4_BASE,
+        "local_head": C09_R4_BASE, "control_head": C09_R4_BASE, "remote_head": C09_R4_MAIN,
+        "development_main": C09_R4_MAIN, "branch": C09_START_BRANCH, "upstream": "development/main",
+        "development_remote_url": C09_START_DEVELOPMENT_URL,
+        "head_relation": "STAGED_CONTROL_OVER_FROZEN_PRODUCT_OR_SOLE_DIRECT_CHILD_REWORK",
+        "worktree_status": "R4_CONTROL_STAGED_OVER_FROZEN_R3_PRODUCT",
+        "exact_allowed_paths": paths, "product_write_scope": product, "push_status": "NOT_EXECUTED"})
+    active = {"artifact_id": "WI-C-09-EXECUTION-BACKENDS-R4", "artifact_path": C09_R4_WI,
+        "artifact_sha256": authority["work_instruction_sha256"], "invocation_path": C09_R4_PROMPT,
+        "invocation_sha256": authority["invocation_sha256"], "executor": "developer-primary",
+        "result_status": "REWORK_IN_PROGRESS", "package_status": "REWORK_IN_PROGRESS",
+        "product_write_scope": product, "acceptance_binding": authority}
+    p.update({"snapshot_id": "snapshot-c09-rework-r4-seq814", "event_sequence": 814,
+        "updated_at": C09_R4_AT, "recorded_at": C09_R4_AT, "last_event_id": events[-1]["event_id"],
+        "status": "REWORK_IN_PROGRESS", "active_work_instruction": active, "repository": repository,
+        "worker_lease": worker, "write_lease": write,
+        "retired_c09_r3_worker_lease": retired_worker, "retired_c09_r3_write_lease": retired_write,
+        "active_agent": {"actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-09", "status": "ACTIVE", "execution_fencing_token": worker["execution_fencing_token"]},
+        "c09_r4_rework": {**rework, "status": "REWORK_IN_PROGRESS", "accepted": False,
+            "authority": authority, "formal_failure_report_count": 0,
+            "product_review_failure_count": 2, "event_sequence": 814},
+        "next_work_package": {"package_id": "C-10", "status": "NOT_READY"},
+        "next_safe_action": "DISPATCH_C09_R4_DEVELOPER", "runtime_next_action": "DISPATCH_C09_R4_DEVELOPER",
+        "current_progress_evidence_ref": {"package_id": "C-09", "path": C09_R4_D, "manifest_path": C09_R4_M},
+        "latest_evidence_manifest_ref": {"path": C09_R4_M, "artifact_id": "C09-REWORK-START-R4"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "reason_codes": ["C09_CORRECTIVE_REWORK", "C10_NOT_READY", "DIR2_NOT_REACHED"], "stop_before_dialogue_report": False}})
+    p["registry_refs"]["progress_events"] = {"path": C09_R4_E, "sha256": _c21_resume_sha(event_raw)}
+    report = ("# C-09 R4 corrective control 보고서\n\n"
+        "R3 spec C1/I7/M1 및 quality round2 C3/I6/M0의 고유13축을 결박했다. valid failure2/rework2, 다음 유효 failure3은 MAIN_TAKEOVER_AT_3이며 같은 Developer R5 금지.\n"
+        "seq807~814 append, epoch2 write/worker revoke, epoch3 unchanged exact18 issue. 제품 frozen R3 bytes/index를 보존한다.\n"
+        "TDD RED: seq814 3 failed/429 deselected, C-09 R4 builder missing. control 검증은 제품 acceptance가 아니다.\n"
+        "제품 수정/stage/commit/push/외부 실행0. control commit 뒤 중단은 append-only epoch3 write→worker revoke로 기록한다.\n").encode()
+    validation = ("# C-09 R4 검증 계약\n\n"
+        "checker, seq814 tests, R3/R2/C08 회귀, compile/diff, seq1~806 raw/canonical, frozen product18/index를 검증한다.\n"
+        "staged control11+frozen18, sole-child+frozen18, 명시 ACTIVE_R4 exact18, detached exact control clean을 구분한다.\n"
+        "authority/ref/tree/status/raw/token/review/event/JSON tamper는 fail-closed. feature clean은 preservation loss로 거부한다.\n"
+        "trusted previous_mode ACTIVE_R4 뒤 FROZEN_R3는 거부하며 stateless CLI 영속 관측은 주장하지 않는다.\n"
+        "fresh clone ignored 비의존. 실제 clone/commit/runtime/배포는 미실행이며 pure fixture를 실제 운영 PASS로 승격하지 않는다.\n").encode()
+    latest = {**files, C09_R4_E: event_raw, C09_R4_WI: C09_R4_WI_TEXT.encode(),
+              C09_R4_PROMPT: C09_R4_PROMPT_TEXT.encode(), C09_R4_REPORT: report, C09_R4_VALIDATION: validation}
+
+    p["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(data)} for path, data in sorted(latest.items())]
+    p["snapshot_hash"] = compute_snapshot_hash(p)
+    progress_raw = _c21_resume_json_bytes(p)
+    summary = {k: p[k] for k in ("event_sequence", "last_event_id", "status", "current_phase",
+        "current_work_package", "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    summary.update({"accepted": False, "c09_status": "REWORK_IN_PROGRESS", "c10_status": "NOT_READY",
+        "dir_status": p["dir_review"]["status"], "dir2_status": "NOT_REACHED", "authority": authority,
+        "product_review_failure_count": 2, "formal_failure_report_count": 0,
+        "next_valid_failure_action": "MAIN_TAKEOVER_AT_3",
+        "current_manifest": C09_R4_M, "reporting_decision": "AUTO_CONTINUE",
+        "repository_head": C09_R4_BASE, "repository_upstream": "development/main",
+        "repository_projection_mode": repository["projection_mode"],
+        "repository_validated_base_commit": C09_R4_BASE, "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": paths, "product_exact_paths": product,
+        "target_hash": target_hash})
+    fence = chr(96)*3
+    replacement = fence+"json anvil-recovery-summary\n"+_c21_resume_json_bytes(summary).decode()+fence
+    pattern = re.escape(fence)+r"json anvil-recovery-summary\s*\{.*?\}\s*"+re.escape(fence)
+    handoff, count = re.subn(pattern, lambda _: replacement, historical[C09_R4_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C09_R4_HANDOFF_INVALID")
+    handoff_raw = ("# C-09 R4 corrective rework seq814\n\n제품 R3 exact18 frozen, control만 작성.\n\n"+handoff).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C09-REWORK-R4-DIGEST",
+        "package_id": "C-09", "event_sequence": 814, "algorithm": "SHA-256", "self_reference": False,
+        "created_at": C09_R4_AT, "manifest_target_hash": target_hash,
+        "events_sha256": _c21_resume_sha(event_raw),
+        "progress": {"path": C09_R4_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw),
+                     "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(p))},
+        "handoff": {"path": C09_R4_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw),
+                    "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(summary))}}
+    artifacts = {**latest, C09_R4_P: progress_raw, C09_R4_H: handoff_raw, C09_R4_D: _c21_resume_json_bytes(digest)}
+    prefix = raw_event_object_prefix_bytes(historical[C09_R4_E], 806)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-09_REWORK_START_R4",
+        "artifact_id": "C09-REWORK-START-R4", "package_id": "C-09", "created_at": C09_R4_AT,
+        "event_sequence": 814, "historical_event_sequence": 806, "appended_event_count": 8,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "projection_mode": "C09_R4_REWORK_START_EXACT11", "validated_base_commit": C09_R4_BASE,
+        "authority": authority, "review": review, "review_digest": review_hash,
+        "accepted": False, "c09_status": "REWORK_IN_PROGRESS", "c10_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "worker_lease": worker, "write_lease": write,
+        "product_exact_paths": product, "product_exact_path_list_sha256": _c21_path_list_sha(product, windows=True),
+        "exact_paths": paths, "exact_path_count": 11, "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "target_hash": target_hash, "self_reference": False, "frozen_product_raw": copy.deepcopy(dict(frozen_product)),
+        "external_validation": _c09_start_boundary(),
+        "raw_checksums": [{"path": path, "bytes": len(data), "sha256": _c21_resume_sha(data)} for path, data in sorted(artifacts.items())]}
+    artifacts[C09_R4_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(paths):
+        raise ValueError("C09_R4_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c09_r4_from_root(root: Path) -> dict[str, bytes]:
+    authority = {"Anvil_설계서_v2.md": C09_START_DESIGN_SHA256,
+        "Anvil_작업계획서_v1.md": C09_START_WORK_PLAN_SHA256,
+        "Anvil_통합검증매트릭스_v1.md": C09_START_MATRIX_SHA256,
+        "Anvil_테스트계획서_v1.md": C09_START_TEST_PLAN_SHA256,
+        "docs/governance/ANVIL_OPERATING_RULES.md": C09_START_GOVERNANCE_SHA256,
+        "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md": _c09_start_authority()["parent_approval_sha256"]}
+    for path, expected in authority.items():
+        if _c21_resume_sha((root/path).read_bytes()) != expected:
+            raise ValueError("C09_R4_AUTHORITY_HASH_INVALID")
+    for path in (C09_START_WI, C09_START_PROMPT, C09_START_M, C09_START_D, C09_START_REPORT, C09_START_VALIDATION,
+                 C09_R3_WI, C09_R3_PROMPT, C09_R3_M, C09_R3_D, C09_R3_REPORT, C09_R3_VALIDATION):
+        expected = subprocess.check_output(["git", "show", f"{C09_R4_BASE}:{path}"], cwd=root)
+        if (root/path).read_bytes() != expected:
+            raise ValueError("C09_R4_PREDECESSOR_ARTIFACT_MUTATED")
+    predecessor = _c09_r4_authority()["predecessor"]
+    for path, key in ((C09_R3_M, "manifest_sha256"), (C09_R3_WI, "wi_sha256"), (C09_R3_PROMPT, "prompt_sha256")):
+        if _c21_resume_sha((root/path).read_bytes()) != predecessor[key]:
+            raise ValueError("C09_R4_PREDECESSOR_HASH_INVALID")
+    historical = {path: subprocess.check_output(["git", "show", f"{C09_R4_BASE}:{path}"], cwd=root)
+                  for path in (C09_R4_P, C09_R4_E, C09_R4_H)}
+    files = {path: (root/path).read_bytes() for path in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c09_r4_artifacts(historical, files, C09_R4_FROZEN_PRODUCT)
+
+
+def validate_c09_r4(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c09_r4_from_root(bundle["_root"])
+        refs = {C09_R4_P: _c21_resume_json(expected[C09_R4_P]),
+                C09_R4_E: _c21_resume_json(expected[C09_R4_E]),
+                C09_R4_H: extract_handoff_summary(expected[C09_R4_H].decode()),
+                C09_R4_D: _c21_resume_json(expected[C09_R4_D]), C09_R4_M: _c21_resume_json(expected[C09_R4_M])}
+        actual = {C09_R4_P: bundle.get("progress"), C09_R4_E: bundle.get("events"),
+                  C09_R4_H: bundle.get("handoff"), C09_R4_D: bundle.get("detached_digest"), C09_R4_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual[k], refs[k]) for k in actual) else ["C09_R4_PROJECTION_INVALID"]
+        if any((bundle["_root"]/path).read_bytes() != data for path, data in expected.items()):
+            errors.append("C09_R4_RAW_BYTES_INVALID")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError, UnicodeError):
+        return ["C09_R4_INPUT_INVALID"]
+
+
+def c09_r4_transition_errors(observation: Mapping[str, Any], *, previous_mode: str | None = None) -> list[str]:
+    try:
+        o = observation
+        if not isinstance(o, Mapping) or previous_mode not in {None, "FROZEN_R3", "ACTIVE_R4", "DETACHED_CONTROL"}:
+            return ["C09_R4_REPOSITORY_AUTHORITY_INVALID"]
+        mode = o.get("mode")
+        if mode not in {"FROZEN_R3", "ACTIVE_R4", "DETACHED_CONTROL"}:
+            return ["C09_R4_EXECUTION_MODE_REQUIRED"]
+        if previous_mode == "ACTIVE_R4" and mode == "FROZEN_R3":
+            return ["C09_R4_PRODUCT_SCOPE_REGRESSION"]
+        detached = mode == "DETACHED_CONTROL"
+        if (o.get("base") != C09_R4_BASE or o.get("base_parents") != [C09_R4_PARENT]
+            or o.get("main_head") != C09_R4_MAIN or o.get("remote_url") != C09_START_DEVELOPMENT_URL
+            or o.get("branch") != ("" if detached else C09_START_BRANCH)
+            or o.get("upstream") != ("" if detached else "development/main")
+            or any(o.get(k) is not True for k in ("epoch3_valid", "diff_check", "cached_check", "control_tree_valid", "ancestor"))
+            or o.get("old_test_exists") is not False):
+            return ["C09_R4_REPOSITORY_AUTHORITY_INVALID"]
+        paths = {}
+        for key in ("staged", "unstaged", "untracked", "changed"):
+            rows = o.get(key)
+            if (not isinstance(rows, list) or any(not isinstance(p, str) or not _c02_strict_git_path(p) for p in rows)
+                or rows != sorted(set(rows))):
+                return ["C09_R4_CONTROL_STAGED_PATH_INVALID"]
+            paths[key] = rows
+        control, product = c09_r4_paths(), c09_r3_product_paths()
+        if set(paths["staged"]) & set(product):
+            return ["C09_R4_INDEX_OVERLAP"]
+        actual_status = {}
+        status = o.get("status_rows")
+        if not isinstance(status, list):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        for row in status:
+            if (not isinstance(row, str) or len(row) < 4 or row[2] != " "
+                or row[:2] not in {" M", "??", "M ", "A "}
+                or not _c02_strict_git_path(row[3:]) or row[3:] in actual_status):
+                return ["C09_R4_CONTROL_STAGED_PATH_INVALID"]
+            actual_status[row[3:]] = row[:2]
+        expected_status = {p: " M" for p in paths["unstaged"]}
+        for p in paths["untracked"]:
+            if p in expected_status:
+                return ["C09_R4_CONTROL_STAGED_PATH_INVALID"]
+            expected_status[p] = "??"
+        for p in paths["staged"]:
+            if p in expected_status or actual_status.get(p) not in {"A ", "M "}:
+                return ["C09_R4_CONTROL_STAGED_PATH_INVALID"]
+            expected_status[p] = actual_status[p]
+        if actual_status != expected_status:
+            return ["C09_R4_CONTROL_STAGED_PATH_INVALID"]
+        precommit = o.get("head") == C09_R4_BASE
+        if precommit:
+            if (mode != "FROZEN_R3" or o.get("parents") != [C09_R4_PARENT]
+                or paths["staged"] != control or paths["changed"]):
+                return ["C09_R4_CONTROL_STAGED_PATH_INVALID"]
+        elif (not isinstance(o.get("head"), str) or re.fullmatch(r"[0-9a-f]{40}", o["head"]) is None
+              or o.get("parents") != [C09_R4_BASE] or paths["changed"] != control or paths["staged"]):
+            return ["C09_R4_REPOSITORY_AUTHORITY_INVALID"]
+        dirty = sorted(paths["unstaged"] + paths["untracked"])
+        if detached:
+            return [] if not precommit and not dirty and not status else ["C09_R4_PORTABLE_CONTROL_INVALID"]
+        frozen_status = {row[3:]: row[:2] for row in C09_R4_FROZEN_STATUS}
+        if dirty != product or {p:s for p,s in actual_status.items() if p not in control} != frozen_status:
+            return ["C09_R4_PRODUCT_SCOPE_INVALID"]
+        hashes = o.get("product_hashes")
+        if not isinstance(hashes, Mapping) or set(hashes) != set(product):
+            return ["C09_R4_R3_PRODUCT_DIRTY_MUTATED"]
+        for entry in hashes.values():
+            if (not isinstance(entry, Mapping) or set(entry) != {"bytes", "sha256"}
+                or type(entry["bytes"]) is not int or entry["bytes"] < 0
+                or not isinstance(entry["sha256"], str) or re.fullmatch(r"[0-9A-F]{64}", entry["sha256"]) is None):
+                return ["C09_R4_R3_PRODUCT_DIRTY_MUTATED"]
+        if mode == "FROZEN_R3" and not _c21_strict_json_equal(hashes, C09_R4_FROZEN_PRODUCT):
+            return ["C09_R4_R3_PRODUCT_DIRTY_MUTATED"]
+        return []
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+def _c09_r4_tree_matches(root: Path, ref: str) -> bool:
+    try:
+        expected = c09_r4_from_root(root)
+        return all(subprocess.check_output(["git", "show", ref+":"+p], cwd=root) == raw
+                   for p, raw in expected.items())
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError):
+        return False
+
+
+def _collect_c09_r4_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        top = value("rev-parse", "--show-toplevel")
+        if top is None or Path(top).resolve() != root.resolve():
+            return ["C09_R4_REPOSITORY_AUTHORITY_INVALID"]
+        p = bundle.get("progress", {})
+        worker, write = _c09_r4_leases()
+        repo = p.get("repository", {})
+        branch = optional("branch", "--show-current")
+        observation = {"head": value("rev-parse", "HEAD"), "base": value("rev-parse", C09_R4_BASE),
+            "branch": branch, "upstream": "" if branch == "" else optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C09_START_BRANCH}"),
+            "main_head": value("rev-parse", "development/main"), "remote_url": value("remote", "get-url", "development"),
+            "staged": _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")),
+            "unstaged": _c02_strict_name_only_paths(raw("diff", "--name-only")),
+            "untracked": _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard")),
+            "status_rows": _c02_strict_raw_lines(raw("status", "--porcelain", "--untracked-files=all")),
+            "cached_check": check("diff", "--cached", "--check"), "diff_check": check("diff", "--check"),
+            "epoch3_valid": (_c21_strict_json_equal(p.get("worker_lease"), worker)
+                and _c21_strict_json_equal(p.get("write_lease"), write)
+                and isinstance(repo, Mapping) and repo.get("validated_base_commit") == C09_R4_BASE),
+            "old_test_exists": (root/"tests/tool_gateway/test_registry.py").exists(),
+            "mode": bundle.get("_c09_r4_mode", "FROZEN_R3")}
+        if any(v is None for v in observation.values()):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        head_parents = value("show", "-s", "--format=%P", observation["head"])
+        base_parents = value("show", "-s", "--format=%P", C09_R4_BASE)
+        if head_parents is None or base_parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        observation["parents"] = head_parents.split()
+        observation["base_parents"] = base_parents.split()
+        precommit = observation["head"] == C09_R4_BASE
+        observation["changed"] = [] if precommit else _c02_strict_name_only_paths(raw("diff", "--name-only", C09_R4_BASE, observation["head"]))
+        observation["ancestor"] = check("merge-base", "--is-ancestor", C09_R4_BASE, observation["head"])
+        if not precommit:
+            observation["diff_check"] = observation["diff_check"] and check("diff", "--check", C09_R4_BASE, observation["head"])
+        dirty = sorted(observation["unstaged"] + observation["untracked"])
+        observation["product_hashes"] = _c09_r3_product_hashes(root, c09_r3_product_paths()) if dirty == c09_r3_product_paths() else {}
+        observation["control_tree_valid"] = _c09_r4_tree_matches(root, "" if precommit else observation["head"])
+        return c09_r4_transition_errors(observation, previous_mode=bundle.get("_c09_r4_trusted_previous_mode"))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 if __name__ == "__main__":
     raise SystemExit(main())

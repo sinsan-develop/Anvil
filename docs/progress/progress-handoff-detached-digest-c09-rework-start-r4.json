@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C09-REWORK-R4-DIGEST",
+  "package_id": "C-09",
+  "event_sequence": 814,
+  "algorithm": "SHA-256",
+  "self_reference": false,
+  "created_at": "2026-09-14T05:00:00+09:00",
+  "manifest_target_hash": "C1075568C3A3B7FE4B8313E765CD6A8CEEFE51C21DD9213096EC6C9B3C0721D0",
+  "events_sha256": "E60F0C3AA671A5C98AE449C3FDDD33B23C9512B65CDEEC1E409DD2275A66014D",
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 924170,
+    "file_sha256": "79181855781880044040D624BFB1A52D6834E5A89C9D077D3EB80FD14D133635",
+    "canonical_json_sha256": "C094D8F5F2EE6520E5004FBF6E80E19AC1AE63A6EEC2BA571F0401A55232F75E"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 196708,
+    "file_sha256": "E111F33B8E4CBE6CDEDCDCF21C811ACCEF10E7FEEDB88965DB83DA71567CA15B",
+    "machine_summary_canonical_sha256": "A650887EB8B5A3E9D80ECCB0E2D22A6E87FE725E358F7C05272D031B6561F8B5"
+  }
+}
