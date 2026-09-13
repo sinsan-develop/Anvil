@@ -307,6 +307,18 @@ def _mask_ts_non_code(text: str) -> str:
     return "".join(masked)
 
 
+def _match_keyword_is_code(
+    code_text: str,
+    match: re.Match[str],
+    keyword_pattern: str,
+) -> bool:
+    keyword = re.search(keyword_pattern, match.group(0))
+    if keyword is None:
+        return False
+    start = match.start() + keyword.start()
+    return code_text[start : start + len(keyword.group(0))] == keyword.group(0)
+
+
 def build_indexes(
     repository: Path,
     inventory: Iterable[dict[str, Any]],
@@ -390,6 +402,8 @@ def build_indexes(
             )
             ts_definition_spans.add((path, match.start(1), match.end(1), match.group(1)))
         for match in _TS_IMPORT.finditer(text):
+            if not _match_keyword_is_code(code_text, match, r"\bimport\b"):
+                continue
             target = match.group(1)
             dependencies.append(
                 {
@@ -402,6 +416,8 @@ def build_indexes(
                 }
             )
         for match in _REQUIRE.finditer(text):
+            if not _match_keyword_is_code(code_text, match, r"\brequire\b"):
+                continue
             target = match.group(1)
             dependencies.append(
                 {
@@ -414,6 +430,8 @@ def build_indexes(
                 }
             )
         for match in _TS_TEST.finditer(text):
+            if not _match_keyword_is_code(code_text, match, r"\b(?:it|test|describe)\b"):
+                continue
             tests.append(
                 {
                     "name": match.group(1),
@@ -546,20 +564,24 @@ def build_indexes(
                 if str(row.get("name")) == normalized_impact
                 and str(row["path"]) not in direct_files
             )
-        frontier = set(direct_files)
+        seed_paths = direct_files | callers
+        frontier = set(seed_paths)
         hop = 1
         while frontier:
             next_frontier: set[str] = set()
             for row in dependencies:
                 resolved_path = row.get("resolved_path")
                 importer = str(row["path"])
-                if resolved_path not in frontier or importer in direct_files:
+                if (
+                    resolved_path not in frontier
+                    or importer in seed_paths
+                    or importer in importer_hops
+                ):
                     continue
                 dependency_hops.add((hop, importer, str(resolved_path)))
-                if importer not in importer_hops:
-                    importer_hops[importer] = hop
-                    importers.add(importer)
-                    next_frontier.add(importer)
+                importer_hops[importer] = hop
+                importers.add(importer)
+                next_frontier.add(importer)
             frontier = next_frontier
             hop += 1
         impacted_sources = direct_files | importers | callers

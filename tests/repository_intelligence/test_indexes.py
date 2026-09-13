@@ -326,3 +326,130 @@ def test_paths_must_be_canonical_relative_and_nested_symlink_components_fail_clo
         ("nested/../app.py", "PATH_OUTSIDE_REPOSITORY"),
         ("nested/link/linked.py", "PATH_REPARSE_POINT_DENIED"),
     ]
+
+
+def test_symbol_callers_seed_reverse_dependency_chain_and_test_selection(tmp_path):
+    files = {
+        "leaf.py": "def leaf():\n    return 'leaf'\n",
+        "caller.py": "def call_leaf():\n    return leaf()\n",
+        "wrapper.py": "from caller import call_leaf\ndef wrap():\n    return call_leaf()\n",
+        "tests/test_leaf_flow.py": "from wrapper import wrap\ndef test_flow():\n    assert wrap()\n",
+    }
+    for relative, content in files.items():
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    inventory = [{"path": path, "type": "file"} for path in files]
+
+    result = build_indexes(tmp_path, inventory, impact="leaf")
+
+    assert result["impact"]["direct_files"] == ["leaf.py"]
+    assert result["impact"]["callers"] == ["caller.py"]
+    assert result["impact"]["importers"] == ["tests/test_leaf_flow.py", "wrapper.py"]
+    assert result["impact"]["dependency_hops"] == [
+        {
+            "from_path": "wrapper.py",
+            "hop": 1,
+            "reason": "IMPORT_DEPENDENCY",
+            "to_path": "caller.py",
+        },
+        {
+            "from_path": "tests/test_leaf_flow.py",
+            "hop": 2,
+            "reason": "IMPORT_DEPENDENCY",
+            "to_path": "wrapper.py",
+        },
+    ]
+    assert result["impact"]["test_selection"] == [
+        {
+            "minimum_hop": 2,
+            "path": "tests/test_leaf_flow.py",
+            "reasons": ["TRANSITIVE_IMPORT_DEPENDENCY"],
+        }
+    ]
+
+
+def test_typescript_dependency_and_test_regex_accept_only_code_spans(tmp_path):
+    files = {
+        "app.ts": "export function real() { return 1; }\n",
+        "consumer.test.ts": (
+            "/*\n"
+            "import './comment-ghost';\n"
+            "const commentLoaded = require('./comment-phantom');\n"
+            "test('comment fake', () => {});\n"
+            "*/\n"
+            "const decoy = `\n"
+            "import './string-ghost';\n"
+            "require('./string-phantom');\n"
+            "test('string fake', () => {});\n"
+            "`;\n"
+            "import './app';\n"
+            "const loaded = require('./app');\n"
+            "test('real behavior', () => real());\n"
+        ),
+    }
+    for relative, content in files.items():
+        (tmp_path / relative).write_text(content, encoding="utf-8")
+    inventory = [{"path": path, "type": "file"} for path in files]
+
+    result = build_indexes(tmp_path, inventory, impact="app.ts")
+
+    assert [
+        (row["kind"], row["target"], row["unresolved"], row["resolved_path"])
+        for row in result["dependencies"]
+        if row["path"] == "consumer.test.ts"
+    ] == [
+        ("import", "./app", False, "app.ts"),
+        ("require", "./app", False, "app.ts"),
+    ]
+    assert [row["name"] for row in result["tests"]] == ["real behavior"]
+    assert not any(
+        row["code"] == "UNRESOLVED_DEPENDENCY"
+        and row["path"] == "consumer.test.ts"
+        for row in result["impact"]["risk_evidence"]
+    )
+
+
+def test_dependency_cycle_records_only_each_importers_minimum_hop_edge(tmp_path):
+    files = {
+        "leaf.py": "def leaf():\n    return 1\n",
+        "a.py": "import b\nfrom leaf import leaf\ndef a():\n    return leaf()\n",
+        "b.py": "import a\ndef b():\n    return a.a()\n",
+        "tests/test_cycle.py": "import b\ndef test_cycle():\n    assert b.b()\n",
+    }
+    for relative, content in files.items():
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    inventory = [{"path": path, "type": "file"} for path in files]
+
+    result = build_indexes(tmp_path, inventory, impact="leaf.py")
+
+    assert result["impact"]["importers"] == ["a.py", "b.py", "tests/test_cycle.py"]
+    assert result["impact"]["dependency_hops"] == [
+        {
+            "from_path": "a.py",
+            "hop": 1,
+            "reason": "IMPORT_DEPENDENCY",
+            "to_path": "leaf.py",
+        },
+        {
+            "from_path": "b.py",
+            "hop": 2,
+            "reason": "IMPORT_DEPENDENCY",
+            "to_path": "a.py",
+        },
+        {
+            "from_path": "tests/test_cycle.py",
+            "hop": 3,
+            "reason": "IMPORT_DEPENDENCY",
+            "to_path": "b.py",
+        },
+    ]
+    assert result["impact"]["test_selection"] == [
+        {
+            "minimum_hop": 3,
+            "path": "tests/test_cycle.py",
+            "reasons": ["TRANSITIVE_IMPORT_DEPENDENCY"],
+        }
+    ]

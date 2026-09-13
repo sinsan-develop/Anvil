@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED` — 독립 review round1의 `Spec FAIL / REWORK` 중요 3건·minor 1건을 후속 TDD로 해소했다. 승인된 fixture/unit/정적 범위에서 Repository Intelligence의 symbol·dependency·test·impact projection을 보완했고, 기존 A-13 read-only/no-write 계약을 포함한 필수 검증이 모두 통과했다.
+`COMPLETED` — 독립 review round1의 중요 3건·minor 1건과 round2의 중요 2건·minor 1건을 후속 TDD로 해소했다. 승인된 fixture/unit/정적 범위에서 Repository Intelligence의 symbol·dependency·test·impact projection을 보완했고, 기존 A-13 read-only/no-write 계약을 포함한 필수 검증이 모두 통과했다.
 
 ## 기준선과 작업 권한
 
@@ -11,6 +11,7 @@
 - 작업 branch: `codex/c08-repository-intelligence-r1`
 - dispatch/start HEAD: `f7931944d894990ec1dff01cf14a47e5384209c8`
 - round1 rework base: `5d0cd330f3e336be2ac6ba59d605280aa286feba`
+- round2 rework base: `7e73e442171f32dc65c82268e88d015e2156c7df`
 - 시작 상태: clean
 - 담당: `developer-primary`
 - execution fencing token: `c08-repository-intelligence-execution-fence-epoch-1-5529fe5`
@@ -24,8 +25,11 @@
 - test 파일명 추측 대신 실제 import dependency로 test `targets`와 `target_evidence`를 생성한다.
 - path impact는 `direct_files`, `importers`, `callers`, `related_tests`, `related_paths`, `test_selection`, `risk_evidence`를 분리한다.
 - reverse dependency를 fixed-point까지 추적하고 각 importer의 최소 hop과 연결 edge를 `dependency_hops` 및 G7 `test_selection.minimum_hop`으로 남긴다.
+- symbol reference caller도 reverse-dependency initial frontier로 사용해 caller를 import하는 consumer와 관련 test를 fixed-point로 연결한다.
 - `from package import mod, other`와 relative/dotted multi-alias는 실제 존재하는 submodule별 dependency로 투영하며, submodule이 없을 때만 module dependency로 보수적으로 fallback한다.
 - TypeScript/JavaScript symbol·reference는 전체 파일 symbol pass 뒤 reference pass를 수행하고 comment/string을 offset 보존 masking하여 forward-defined symbol caller와 false reference를 구분한다.
+- TypeScript/JavaScript import·require·test regex 결과도 masking된 code keyword span과 대조해 comment/string의 가짜 dependency·test·unresolved risk를 제거한다.
+- dependency cycle에서는 각 importer가 처음 발견된 최소 hop edge 하나만 증거로 기록하고 더 긴 재방문 edge를 버린다.
 - build index 입력 path는 canonical relative 형식만 수용하고 absolute·`.`·`..` 및 모든 중간 symlink/junction/reparse component를 읽기 전에 fail-closed한다.
 - Python reference는 AST Load 노드만 사용해 주석·문자열의 symbol 이름을 false reference로 만들지 않는다.
 - unsupported source language, syntax error, decode failure, hostile/reparse/outside path를 구조화된 warning으로 fail-closed한다.
@@ -35,13 +39,13 @@
 
 ## 변경 경로와 최종 SHA-256
 
-- `packages/repository_intelligence/indexes.py` — `EDDCDADC5E452C73D31C6207131F9C01ABC7752955E3CB0FC32A6FBBE5817899`
+- `packages/repository_intelligence/indexes.py` — `7F44554166E272FB5757186C7813763D53AA49B6B1DB62A72F591C042EF9FF58`
 - `packages/repository_intelligence/models.py` — `C075288DF44FEF52645D69910909B6D982722A2C51E01E66A740B232C8031AFE`
 - `packages/repository_intelligence/scanner.py` — `3AD6B6443130EA129C6C3D129B2944243081325C5FEDCAA9E932B189C944E826`
 - `tests/repository_intelligence/fixtures/app.py` — `207EDB38544F02794044710623322B57EF0470E71A99DA2B0C7B0471CADD1521`
 - `tests/repository_intelligence/fixtures/tests/spec_app.py` — `C87735E34A68F16F51B1B084FF73663CA5217D83F9E6133343087892B18B8FEE`
 - `tests/repository_intelligence/fixtures/ui.ts` — `6FE4E856DFF0B0C0679D8DD16B91BB36312B0195BCEA0D3BFE9A05B290EE6978`
-- `tests/repository_intelligence/test_indexes.py` — `646AC69FB64584CC6C2DB62B998270932E8249A137D41B793E4C6ED289FA5CCA`
+- `tests/repository_intelligence/test_indexes.py` — `7C30EB3DC960C157D898F4F272648F44E73B9FE60ABB81E1181A348D16628BFB`
 - `docs/04_test_reports/C-08_COMPLETION_REPORT.md` — 이 보고서
 
 ## TDD 및 검증 증거
@@ -76,6 +80,19 @@
 - round1 A-13 전체: `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 122.21s`
 - round1 compileall: `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
 - round1 diff check: `git diff --check` → exit `0`
+
+### 독립 review round2 재작업
+
+- 판정: `Spec FAIL / REWORK`, `Critical 0 / Important 2 / Minor 1`; round1 네 fingerprint 해소는 유지됐다.
+- `C08-SYMBOL-CALLER-FRONTIER-v1`: symbol 정의 파일만 reverse dependency seed로 사용해 caller→importer→test chain이 끊기던 문제. caller를 initial frontier에 포함하고 hop evidence와 transitive test selection을 생성하도록 수정했다.
+- `C08-TS-CODE-SPAN-PARSER-v1`: TS/JS import·require·test regex가 원문을 검색해 comment와 template/string 안의 가짜 dependency·test 및 `UNRESOLVED_DEPENDENCY` risk를 만들던 문제. match keyword가 masking 후에도 실제 code span인지 검증하도록 수정했다.
+- `C08-CYCLE-MINIMUM-HOP-EVIDENCE-v1`: dependency cycle에서 이미 방문한 importer의 더 긴 재방문 edge가 `dependency_hops`에 추가되던 문제. 최초 discovery의 최소-hop edge만 기록하도록 수정했다.
+- RED: `python -m pytest tests/repository_intelligence/test_indexes.py -k "symbol_callers_seed or regex_accept_only_code_spans or cycle_records_only" -q -p no:cacheprovider` → exit `1`, `3 failed, 16 deselected`
+- 개별 GREEN: 같은 명령 → exit `0`, `3 passed, 16 deselected in 0.10s`
+- round2 전체 focused: `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `19 passed in 0.20s`
+- round2 A-13 전체: `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 94.93s`
+- round2 compileall: `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
+- round2 diff check: `git diff --check` → exit `0`
 
 A-13 전체 회귀는 실제 임시 Git fixture에 대해 public `scan_repository` JSON 직렬화, read-only Git allowlist, pre/post snapshot 동일성, dirty/untracked 보존, mutation 탐지를 검증한다.
 
