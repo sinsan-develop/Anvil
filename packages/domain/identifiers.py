@@ -9,6 +9,21 @@ class IdentifierError(ValueError):
     """Raised when a domain identifier is absent or malformed."""
 
 
+class IdentifierEncodingError(IdentifierError):
+    """Raised when an operational identifier is not strict UTF-8 text."""
+
+
+def validate_operational_identifier(value: str, field: str) -> str:
+    """Canonical C-02 operational text authority; preserve valid text verbatim."""
+    if not isinstance(value, str) or not value or value != value.strip():
+        raise IdentifierError(f"{field} must be a canonical non-empty string")
+    try:
+        value.encode("utf-8", errors="strict")
+    except UnicodeEncodeError as exc:
+        raise IdentifierEncodingError(f"{field} must be strict UTF-8 text") from exc
+    return value
+
+
 @dataclass(frozen=True, slots=True)
 class AggregateId:
     value: str
@@ -29,3 +44,7 @@ class RunId(AggregateId):
 @dataclass(frozen=True, slots=True)
 class EventId(AggregateId):
     pass
+
+
+__all__ = ["AggregateId", "EventId", "IdentifierEncodingError", "IdentifierError",
+           "RunId", "validate_operational_identifier"]

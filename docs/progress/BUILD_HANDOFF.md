@@ -1,3 +1,9 @@
+# C-09 final acceptance - seq829
+
+- seq1~824 raw event object bytes preserved; seq825~829만 append했다.
+- product exact20과 acceptance control exact7은 unstaged exact27 단일 commit 후보다.
+- C-09 ACCEPTED; C-10은 시작하지 않았고 actual Docker/WSL/external은 미검증이다.
+
 # C-09 Main takeover seq824
 
 R4 product exact18 frozen, successor control exact14 only.
@@ -996,105 +1002,146 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 824,
-  "last_event_id": "evt_c09_main_takeover_package_resumed",
-  "status": "REWORK_MAIN_TAKEOVER",
+  "event_sequence": 829,
+  "last_event_id": "evt_c09_final_main_package_accepted",
+  "status": "ACCEPTED",
+  "current_phase": "C",
   "current_work_package": "C-09",
-  "active_agent": {
-    "actor_id": "main-agent-eoul",
-    "role": "MAIN_AGENT",
-    "work_package_id": "C-09",
-    "status": "ACTIVE_MAIN",
-    "execution_fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45"
-  },
-  "worker_lease": {
-    "lease_id": "worker-lease-c09-main-takeover-epoch-4-001",
-    "fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
-    "execution_fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
-    "lease_epoch": 4,
-    "actor_id": "main-agent-eoul",
-    "subject_ref": "C-09",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "85d72196eaafe3e458f8aea7016df94f810df086",
-    "dispatch_head": "85d72196eaafe3e458f8aea7016df94f810df086",
-    "issued_at": "2026-09-14T06:00:00+09:00",
-    "expires_at": "2026-09-14T18:00:00+09:00",
-    "status": "ACTIVE",
-    "path_scope": [
-      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
-      "packages/execution_backends/__init__.py",
-      "packages/execution_backends/docker.py",
-      "packages/execution_backends/git_worktree.py",
-      "packages/execution_backends/models.py",
-      "packages/execution_backends/registry.py",
-      "packages/paths/identity.py",
-      "packages/tool_gateway/__init__.py",
-      "packages/tool_gateway/gateway.py",
-      "packages/tool_gateway/models.py",
-      "packages/tool_gateway/registry.py",
-      "tests/execution_backends/test_docker.py",
-      "tests/execution_backends/test_git_worktree.py",
-      "tests/execution_backends/test_registry.py",
-      "tests/integration/test_c09_repository_workspace.py",
-      "tests/paths/test_conflict_scope_identity.py",
-      "tests/tool_gateway/test_gateway.py",
-      "tests/tool_gateway/test_tool_registry.py"
-    ],
-    "assigned_agent": "main-agent-eoul"
-  },
-  "write_lease": {
-    "lease_id": "write-lease-c09-main-takeover-epoch-4-001",
-    "worker_lease_id": "worker-lease-c09-main-takeover-epoch-4-001",
-    "fencing_token": "c09-main-takeover-write-fence-epoch-4-e6b86e541d0887f01",
-    "write_fencing_token": "c09-main-takeover-write-fence-epoch-4-e6b86e541d0887f01",
-    "execution_fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
-    "write_epoch": 4,
-    "actor_id": "main-agent-eoul",
-    "subject_ref": "C-09",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-14T06:00:00+09:00",
-    "expires_at": "2026-09-14T18:00:00+09:00",
-    "path_scope": [
-      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
-      "packages/execution_backends/__init__.py",
-      "packages/execution_backends/docker.py",
-      "packages/execution_backends/git_worktree.py",
-      "packages/execution_backends/models.py",
-      "packages/execution_backends/registry.py",
-      "packages/paths/identity.py",
-      "packages/tool_gateway/__init__.py",
-      "packages/tool_gateway/gateway.py",
-      "packages/tool_gateway/models.py",
-      "packages/tool_gateway/registry.py",
-      "tests/execution_backends/test_docker.py",
-      "tests/execution_backends/test_git_worktree.py",
-      "tests/execution_backends/test_registry.py",
-      "tests/integration/test_c09_repository_workspace.py",
-      "tests/paths/test_conflict_scope_identity.py",
-      "tests/tool_gateway/test_gateway.py",
-      "tests/tool_gateway/test_tool_registry.py"
-    ],
-    "status": "ACTIVE",
-    "assigned_agent": "main-agent-eoul"
-  },
-  "valid_failure_count": 0,
-  "c09_product_valid_failure_count": 3,
-  "c09_same_failure_count": 3,
-  "c09_rework_attempt": 3,
-  "c09_status": "REWORK_MAIN_TAKEOVER",
-  "c10_status": "NOT_READY",
-  "dir2_status": "NOT_REACHED",
-  "current_manifest": "docs/evidence/manifests/C-09_MAIN_TAKEOVER_START_MANIFEST.json",
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "valid_failure_count": 0,
+  "next_safe_action": "CREATE_SINGLE_RECOVERABLE_C09_COMMIT_WHEN_AUTHORIZED",
+  "accepted": true,
+  "c09_status": "ACCEPTED",
+  "c10_status": "READY_NOT_STARTED_PER_USER_DIRECTION",
+  "dir2_status": "NOT_REACHED",
   "dir_status": "CLEARED",
-  "repository_head": "85d72196eaafe3e458f8aea7016df94f810df086",
+  "repository_head": "10bbb879fb15ce4fa7b1a750f872c33af3cddf46",
   "repository_upstream": "development/main",
+  "repository_projection_mode": "C09_FINAL_ACCEPTANCE_CANDIDATE_EXACT27",
+  "repository_validated_base_commit": "10bbb879fb15ce4fa7b1a750f872c33af3cddf46",
+  "repository_head_relation": "UNSTAGED_EXACT27_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+  "repository_exact_allowed_paths": [
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json",
+    "packages/domain/identifiers.py",
+    "packages/execution_backends/__init__.py",
+    "packages/execution_backends/docker.py",
+    "packages/execution_backends/git_worktree.py",
+    "packages/execution_backends/models.py",
+    "packages/execution_backends/registry.py",
+    "packages/execution_backends/safeio.py",
+    "packages/paths/identity.py",
+    "packages/tool_gateway/__init__.py",
+    "packages/tool_gateway/gateway.py",
+    "packages/tool_gateway/models.py",
+    "packages/tool_gateway/registry.py",
+    "scripts/check_project_progress.py",
+    "tests/execution_backends/test_docker.py",
+    "tests/execution_backends/test_git_worktree.py",
+    "tests/execution_backends/test_registry.py",
+    "tests/integration/test_c09_repository_workspace.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/tool_gateway/test_gateway.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "product_exact_paths": [
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+    "packages/domain/identifiers.py",
+    "packages/execution_backends/__init__.py",
+    "packages/execution_backends/docker.py",
+    "packages/execution_backends/git_worktree.py",
+    "packages/execution_backends/models.py",
+    "packages/execution_backends/registry.py",
+    "packages/execution_backends/safeio.py",
+    "packages/paths/identity.py",
+    "packages/tool_gateway/__init__.py",
+    "packages/tool_gateway/gateway.py",
+    "packages/tool_gateway/models.py",
+    "packages/tool_gateway/registry.py",
+    "tests/execution_backends/test_docker.py",
+    "tests/execution_backends/test_git_worktree.py",
+    "tests/execution_backends/test_registry.py",
+    "tests/integration/test_c09_repository_workspace.py",
+    "tests/paths/test_conflict_scope_identity.py",
+    "tests/tool_gateway/test_gateway.py",
+    "tests/tool_gateway/test_tool_registry.py"
+  ],
+  "product_exact_path_list_sha256": "E5591545A1685D8653BC67A49885C1E1DBD486FFB19BE90301008608199A0CD8",
+  "control_exact_paths": [
+    "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "test_evidence": {
+    "passed": {
+      "authoritative": 106,
+      "c08_a13": 85,
+      "c13": 5,
+      "c02": 126,
+      "control": 9
+    },
+    "failed": 0,
+    "commands": {
+      "authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py",
+      "c08_a13": "python -B -m pytest -q -p no:cacheprovider tests/repository_intelligence tests/tooling/test_a13_repository_scan.py",
+      "c13": "python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py",
+      "c02": "python -B -m pytest -q -p no:cacheprovider tests/domain/test_identifiers.py tests/orchestration/test_delegation_packet.py",
+      "control": "python -B -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py -k C09MainTakeoverControlTests"
+    },
+    "compileall": {
+      "exit_code": 0,
+      "status": "PASS"
+    },
+    "diff_check": {
+      "exit_code": 0,
+      "status": "PASS"
+    }
+  },
+  "independent_reviews": {
+    "blocking_findings": 0,
+    "spec": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 1,
+      "minor_resolution": "COMPLETION_REPORT_COMMANDS_ADDED"
+    },
+    "quality": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 1,
+      "residual": "PENDING_PERMISSION_RESERVATION_MAY_ACCUMULATE_BEFORE_AUTHORIZE"
+    }
+  },
+  "external_validation": {
+    "actual_docker": "NOT_EXECUTED",
+    "actual_wsl": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "ssh_network": "NOT_ACCESSED",
+    "deployment": "NOT_EXECUTED",
+    "secret": "NOT_ACCESSED"
+  },
+  "current_manifest": "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE",
-  "product_raw_map_sha256": "6AE618D40896B16A0AD69BFBEDFBB900F9B2E22F9FEDD9DF8750F5C2C77B58AF",
-  "control_exact_path_count": 14,
-  "control_exact_path_list_sha256": "BDA2215C2AD7CECD1BDFAE660A327F0FC2B204ED9DDAB9D1226690877988BBF8",
-  "next_safe_action": "MAIN_IMPLEMENT_C09_CORRECTIVE_AXES",
-  "accepted": false
+  "staged": false,
+  "commit_performed": false
 }
 ```
 

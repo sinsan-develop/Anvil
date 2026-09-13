@@ -15797,10 +15797,41 @@ class C09MainTakeoverControlTests(unittest.TestCase):
                                 checker.C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256)):
             self.assertEqual(expected, hashlib.sha256(artifacts[path]).hexdigest().upper())
 
+    def test_active_scope_correction_is_exact20_and_preserves_frozen_exact18(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c09_main_takeover_active_product_paths"))
+        frozen = checker.c09_r3_product_paths()
+        active = checker.c09_main_takeover_active_product_paths()
+        self.assertEqual(18, len(frozen))
+        self.assertEqual(20, len(active))
+        self.assertEqual(
+            {
+                "packages/domain/identifiers.py",
+                "packages/execution_backends/safeio.py",
+            },
+            set(active) - set(frozen),
+        )
+        self.assertNotIn("packages/domain/__init__.py", active)
+        self.assertNotIn("packages/orchestration/delegation.py", active)
+        self.assertTrue(hasattr(checker, "C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS"))
+        self.assertEqual(
+            {
+                "scripts/check_project_progress.py",
+                "tests/tooling/test_project_progress.py",
+            },
+            set(checker.C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS),
+        )
+        self.assertEqual(
+            "PMO_TECHNICAL_RECOMMENDATION_USER_EXECUTION_DIRECTION",
+            checker.C09_MAIN_TAKEOVER_ACTIVE_SCOPE_CORRECTION["classification"],
+        )
+
     def _observation(self, checker, mode="staged"):
-        product = checker.c09_r3_product_paths()
+        product = (checker.c09_r3_product_paths() if mode == "staged"
+                   else checker.c09_main_takeover_active_product_paths())
         untracked = [path for path in product if path in {
             "packages/execution_backends/docker.py", "packages/execution_backends/git_worktree.py",
+            "packages/execution_backends/safeio.py",
             "packages/tool_gateway/models.py", "packages/tool_gateway/registry.py",
             "tests/execution_backends/test_docker.py", "tests/execution_backends/test_git_worktree.py",
             "tests/integration/test_c09_repository_workspace.py", "tests/tool_gateway/test_tool_registry.py"}]
@@ -15813,7 +15844,10 @@ class C09MainTakeoverControlTests(unittest.TestCase):
             "staged": staged, "unstaged": sorted(set(product) - set(untracked)), "untracked": sorted(untracked),
             "changed": [] if mode == "staged" else checker.c09_main_takeover_paths(),
             "status_rows": [], "ancestor": True, "diff_check": True, "cached_check": True,
-            "control_tree_valid": True, "product_hashes": checker._c09_main_takeover_current_product_raw(ROOT),
+            "control_tree_valid": True,
+            "product_hashes": (copy.deepcopy(checker.C09_MAIN_TAKEOVER_REVIEWED_PRODUCT_RAW)
+                               if mode == "staged"
+                               else checker._c09_main_takeover_current_product_raw(ROOT, product)),
             "mode": "FROZEN_R4" if mode == "staged" else "ACTIVE_MAIN"}
         observation["status_rows"] = (["M  " + path for path in staged]
             + [" M " + path for path in observation["unstaged"]]
@@ -15828,6 +15862,30 @@ class C09MainTakeoverControlTests(unittest.TestCase):
         checker = self._checker()
         for mode in ("staged", "child", "detached"):
             self.assertEqual([], checker.c09_main_takeover_transition_errors(self._observation(checker, mode)), mode)
+        active_with_control_correction = self._observation(checker, "child")
+        control_correction = [
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py",
+        ]
+        active_with_control_correction["unstaged"] = sorted(
+            active_with_control_correction["unstaged"]
+            + control_correction
+        )
+        active_with_control_correction["status_rows"] = (
+            [" M " + path for path in active_with_control_correction["unstaged"]]
+            + ["?? " + path for path in active_with_control_correction["untracked"]]
+        )
+        self.assertEqual(
+            [],
+            checker.c09_main_takeover_transition_errors(active_with_control_correction),
+        )
+        partial_control_correction = copy.deepcopy(active_with_control_correction)
+        partial_control_correction["unstaged"].remove("tests/tooling/test_project_progress.py")
+        partial_control_correction["status_rows"].remove(" M tests/tooling/test_project_progress.py")
+        self.assertIn(
+            "C09_MAIN_TAKEOVER_PRODUCT_SCOPE_INVALID",
+            checker.c09_main_takeover_transition_errors(partial_control_correction),
+        )
         for key, value in (("base", "0" * 40), ("base_parents", []), ("main_head", "0" * 40),
                            ("remote_url", "wrong"), ("branch", "main"), ("upstream", "origin/main"),
                            ("epoch4_valid", False), ("ancestor", False), ("control_tree_valid", False),
@@ -15842,11 +15900,12 @@ class C09MainTakeoverControlTests(unittest.TestCase):
         self.assertTrue(checker.c09_main_takeover_transition_errors(frozen_child))
         active_changed = self._observation(checker, "child")
         active_changed["product_hashes"] = copy.deepcopy(active_changed["product_hashes"])
-        first = checker.c09_r3_product_paths()[0]
+        first = checker.c09_main_takeover_active_product_paths()[0]
         active_changed["product_hashes"][first]["sha256"] = "A" * 64
         self.assertEqual([], checker.c09_main_takeover_transition_errors(active_changed))
         frozen_changed = self._observation(checker)
-        frozen_changed["product_hashes"] = active_changed["product_hashes"]
+        frozen_changed["product_hashes"] = copy.deepcopy(frozen_changed["product_hashes"])
+        frozen_changed["product_hashes"][checker.c09_r3_product_paths()[0]]["sha256"] = "A" * 64
         self.assertIn("C09_MAIN_TAKEOVER_PRODUCT_RAW_MUTATED",
                       checker.c09_main_takeover_transition_errors(frozen_changed))
         self.assertIn("C09_MAIN_TAKEOVER_MODE_REGRESSION",
@@ -15918,6 +15977,51 @@ class C09MainTakeoverControlTests(unittest.TestCase):
             self.assertFalse((clone / ".superpowers").exists())
             self.assertEqual(14, len(checker.c09_main_takeover_from_root(clone)))
 
+    def test_active_scope_correction_validates_immutable_seq824_without_rewriting_history(self):
+        checker = self._checker()
+        old_progress = json.loads(subprocess.check_output(
+            ["git", "show", checker.C09_MAIN_TAKEOVER_CONTROL_HEAD + ":" + checker.C09_MAIN_TAKEOVER_P],
+            cwd=ROOT,
+        ))
+        old_events = subprocess.check_output(
+            ["git", "show", checker.C09_MAIN_TAKEOVER_CONTROL_HEAD + ":" + checker.C09_MAIN_TAKEOVER_E],
+            cwd=ROOT,
+        )
+        current = checker.load_bundle(ROOT)
+        self.assertEqual(824, old_progress["event_sequence"])
+        self.assertEqual("REWORK_MAIN_TAKEOVER", old_progress["status"])
+        self.assertEqual(829, current["progress"]["event_sequence"])
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(old_events, 824),
+            checker.raw_event_object_prefix_bytes(
+                (ROOT / checker.C09_MAIN_TAKEOVER_E).read_bytes(), 824
+            ),
+        )
+
+    def test_product_raw_collector_selects_frozen_exact18_or_active_exact20(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "_c09_main_takeover_observed_product_raw"))
+        frozen = checker.c09_r3_product_paths()
+        active = checker.c09_main_takeover_active_product_paths()
+        self.assertEqual(
+            set(frozen),
+            set(checker._c09_main_takeover_observed_product_raw(
+                ROOT, precommit=True, dirty=frozen,
+            )),
+        )
+        self.assertEqual(
+            set(active),
+            set(checker._c09_main_takeover_observed_product_raw(
+                ROOT, precommit=False, dirty=active,
+            )),
+        )
+        self.assertEqual(
+            {},
+            checker._c09_main_takeover_observed_product_raw(
+                ROOT, precommit=True, dirty=active,
+            ),
+        )
+
     def test_seq824_control_builder_is_independent_from_live_product_mutation(self):
         checker = self._checker()
         product = set(checker.c09_r3_product_paths())
@@ -15942,7 +16046,7 @@ class C09MainTakeoverControlTests(unittest.TestCase):
         ):
             observation = self._observation(checker, "child")
             observation["product_hashes"] = copy.deepcopy(observation["product_hashes"])
-            observation["product_hashes"][checker.c09_r3_product_paths()[0]] = mutation
+            observation["product_hashes"][checker.c09_main_takeover_active_product_paths()[0]] = mutation
             self.assertIn("C09_MAIN_TAKEOVER_PRODUCT_RAW_INVALID",
                           checker.c09_main_takeover_transition_errors(observation))
 
@@ -15961,6 +16065,59 @@ class C09MainTakeoverControlTests(unittest.TestCase):
              mock.patch.object(checker, "_collect_c09_r4_git", side_effect=AssertionError("seq814 fallback")):
             self.assertEqual(["SEQ824_SELECTED"], checker._validate_git_projection({"_root": ROOT,
                 "progress": {"event_sequence": 824}}))
+
+
+class C09FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq829_builder_appends_minimal_acceptance_and_binds_exact20(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c09_final_acceptance_from_root"))
+        artifacts = checker.c09_final_acceptance_from_root(ROOT)
+        self.assertEqual(set(checker.c09_final_acceptance_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_M])
+        progress = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_P])
+        events = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_E])["events"]
+        self.assertEqual((824, 829, 5), (manifest["historical_event_sequence"], manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "PACKAGE_COMPLETED",
+             "INDEPENDENT_TEST_JUDGMENT_RECORDED", "MAIN_PACKAGE_ACCEPTED"],
+            [event["event_type"] for event in events[-5:]],
+        )
+        self.assertEqual("ACCEPTED", progress["status"])
+        self.assertEqual(829, progress["event_sequence"])
+        self.assertIsNone(progress["active_agent"])
+        self.assertIsNone(progress["worker_lease"])
+        self.assertIsNone(progress["write_lease"])
+        self.assertIn("C-09", progress["completed_packages"])
+        self.assertEqual(20, manifest["product_exact_path_count"])
+        self.assertEqual("E5591545A1685D8653BC67A49885C1E1DBD486FFB19BE90301008608199A0CD8", manifest["product_exact_path_list_sha256"])
+        self.assertEqual({"authoritative": 106, "c08_a13": 85, "c13": 5, "c02": 126, "control": 9}, manifest["test_evidence"]["passed"])
+        self.assertEqual(0, manifest["independent_reviews"]["blocking_findings"])
+        self.assertEqual("NOT_EXECUTED", manifest["external_validation"]["actual_docker"])
+        old = subprocess.check_output(["git", "show", checker.C09_MAIN_TAKEOVER_CONTROL_HEAD + ":" + checker.C09_FINAL_ACCEPTANCE_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 824), checker.raw_event_object_prefix_bytes(artifacts[checker.C09_FINAL_ACCEPTANCE_E], 824))
+
+    def test_seq829_validator_and_worktree_candidate_mode_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c09_final_acceptance_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_P]),
+            "events": json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C09_FINAL_ACCEPTANCE_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_D])}
+        manifest = json.loads(artifacts[checker.C09_FINAL_ACCEPTANCE_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c09_final_acceptance(bundle, manifest))
+        dispatch_bundle = {"_root": ROOT, "progress": {"event_sequence": 829}}
+        with mock.patch.object(checker, "_collect_c09_final_acceptance_git", return_value=["SEQ829_SELECTED"]), mock.patch.object(checker, "_collect_c09_main_takeover_git", side_effect=AssertionError("seq824 fallback")):
+            self.assertEqual(["SEQ829_SELECTED"], checker._validate_git_projection(dispatch_bundle))
 
 
 if __name__ == "__main__":

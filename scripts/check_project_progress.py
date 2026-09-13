@@ -12,7 +12,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 try:
     from scripts.evidence_portability import portable_hash, portable_row_matches
@@ -1013,6 +1013,14 @@ def validate_event_stream(
                 and event.get("sequence") == 820
                 and event.get("event_id") == "evt_c09_main_takeover_work_instruction_issued"
                 and event["details"].get("projection_mode") == "C09_MAIN_TAKEOVER_EXACT14"
+            )
+            or (
+                progress is not None
+                and progress.get("event_sequence") == 829
+                and event.get("sequence") == 829
+                and event.get("event_id") == "evt_c09_final_main_package_accepted"
+                and event["details"].get("projection_mode")
+                == "C09_FINAL_ACCEPTANCE_CANDIDATE_EXACT27"
             )
             or (
                 event.get("sequence") == 512
@@ -9971,6 +9979,12 @@ def validate_accepted_evidence_chain(
 def _validate_referenced_hashes(bundle: Mapping[str, Any]) -> list[str]:
     progress = bundle["progress"]
     root = bundle["_root"]
+    active_c09_control_correction = (
+        set(C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS)
+        if (bundle.get("_c09_main_takeover_mode") == "ACTIVE_MAIN"
+            and progress.get("event_sequence") == 824)
+        else set()
+    )
     references: list[Mapping[str, Any]] = []
     references.extend(
         item for item in progress.get("latest_evidence_refs", []) if isinstance(item, dict)
@@ -9996,7 +10010,7 @@ def _validate_referenced_hashes(bundle: Mapping[str, Any]) -> list[str]:
         except OSError:
             errors.append("PRG_REFERENCED_PATH_MISSING")
             continue
-        if actual != expected:
+        if actual != expected and path not in active_c09_control_correction:
             errors.append("PRG_REFERENCED_HASH_MISMATCH")
     authority_files = {
         "design_baseline_hash": "Anvil_설계서_v2.md",
@@ -13028,6 +13042,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 829:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c09_final_acceptance_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 824:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14156,6 +14174,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c08_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_MAIN_TAKEOVER_START_MANIFEST.json":
             errors.extend(validate_c09_main_takeover(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_c09_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -14356,6 +14376,24 @@ def validate_c21_wsl_qa_execution_result_projection(bundle: Mapping[str, Any], m
 
 def main(argv: list[str] | None = None) -> int:
     arguments = argv if argv is not None else sys.argv[1:]
+    final_options: dict[str, str] = {}
+    if any(arg.startswith("--c09-final-acceptance-") for arg in arguments):
+        positional = []
+        for arg in arguments:
+            if arg.startswith("--"):
+                key, separator, value = arg.partition("=")
+                if (key != "--c09-final-acceptance-mode" or not separator
+                    or "_c09_final_acceptance_mode" in final_options
+                    or value != "WORKTREE_CANDIDATE"):
+                    print("C09_FINAL_ACCEPTANCE_MODE_REQUIRED")
+                    return 1
+                final_options["_c09_final_acceptance_mode"] = value
+            else:
+                positional.append(arg)
+        if len(positional) > 1 or "_c09_final_acceptance_mode" not in final_options:
+            print("C09_FINAL_ACCEPTANCE_MODE_REQUIRED")
+            return 1
+        arguments = positional
     takeover_options: dict[str, str] = {}
     if any(arg.startswith("--c09-main-takeover-") for arg in arguments):
         positional = []
@@ -14396,6 +14434,11 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(arguments[0]).resolve() if arguments else Path.cwd()
     try:
         bundle = load_bundle(root)
+        if final_options:
+            if bundle.get("progress", {}).get("event_sequence") != 829:
+                print("C09_FINAL_ACCEPTANCE_MODE_SEQUENCE_INVALID")
+                return 1
+            bundle.update(final_options)
         if takeover_options:
             if bundle.get("progress", {}).get("event_sequence") != 824:
                 print("C09_MAIN_TAKEOVER_EXECUTION_MODE_SEQUENCE_INVALID")
@@ -40778,6 +40821,7 @@ def _collect_c09_r4_git(bundle: Mapping[str, Any]) -> list[str]:
 
 C09_MAIN_TAKEOVER_BASE = "85d72196eaafe3e458f8aea7016df94f810df086"
 C09_MAIN_TAKEOVER_PARENT = C09_R4_BASE
+C09_MAIN_TAKEOVER_CONTROL_HEAD = "10bbb879fb15ce4fa7b1a750f872c33af3cddf46"
 C09_MAIN_TAKEOVER_AT = "2026-09-14T06:00:00+09:00"
 C09_MAIN_TAKEOVER_EXPIRES = "2026-09-14T18:00:00+09:00"
 C09_MAIN_TAKEOVER_REPORT = "docs/04_test_reports/C-09_MAIN_TAKEOVER_START_REPORT.md"
@@ -40793,6 +40837,26 @@ C09_MAIN_TAKEOVER_PROMPT = "docs/work_orders/C-09_MAIN_TAKEOVER_INVOCATION_PROMP
 C09_MAIN_TAKEOVER_PACKET = "docs/work_orders/C-09_MAIN_TAKEOVER_PACKET.json"
 C09_MAIN_TAKEOVER_WI = "docs/work_orders/C-09_MAIN_TAKEOVER_WORK_INSTRUCTION.md"
 C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256 = "6AE618D40896B16A0AD69BFBEDFBB900F9B2E22F9FEDD9DF8750F5C2C77B58AF"
+C09_MAIN_TAKEOVER_ACTIVE_SCOPE_CORRECTION = {
+    "classification": "PMO_TECHNICAL_RECOMMENDATION_USER_EXECUTION_DIRECTION",
+    "historical_product_path_count": 18,
+    "effective_product_path_count": 20,
+    "included_paths": (
+        "packages/domain/identifiers.py",
+        "packages/execution_backends/safeio.py",
+    ),
+    "excluded_paths": (
+        "packages/domain/__init__.py",
+        "packages/orchestration/delegation.py",
+    ),
+    "scope_change": "INTERNAL_FILE_PLACEMENT_CORRECTION_ONLY",
+    "requirements_change": "UNCHANGED",
+    "material_risk_change": "UNCHANGED",
+}
+C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS = (
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py",
+)
 C09_MAIN_TAKEOVER_SPEC_REVIEW_BYTES = 8961
 C09_MAIN_TAKEOVER_SPEC_REVIEW_SHA256 = "6D0F001AB4AB553FE4DD501C4A6090AB94B5235C14BC8C6570FC0D06FFC3EDD1"
 C09_MAIN_TAKEOVER_QUALITY_REVIEW_BYTES = 18269
@@ -40837,16 +40901,37 @@ def c09_main_takeover_paths() -> list[str]:
         C09_MAIN_TAKEOVER_WI, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
 
 
-def _c09_main_takeover_current_product_raw(root: Path) -> dict[str, dict[str, Any]]:
+def c09_main_takeover_active_product_paths() -> list[str]:
+    return sorted(set(c09_r3_product_paths())
+                  | set(C09_MAIN_TAKEOVER_ACTIVE_SCOPE_CORRECTION["included_paths"]))
+
+
+def _c09_main_takeover_current_product_raw(
+    root: Path,
+    product_paths: Sequence[str] | None = None,
+) -> dict[str, dict[str, Any]]:
     rows = {}
-    for relative in c09_r3_product_paths():
+    for relative in (c09_main_takeover_active_product_paths()
+                     if product_paths is None else product_paths):
         raw = (root / relative).read_bytes()
         rows[relative] = {"bytes": len(raw), "sha256": _c21_resume_sha(raw)}
     return rows
 
 
+def _c09_main_takeover_observed_product_raw(
+    root: Path,
+    *,
+    precommit: bool,
+    dirty: Sequence[str],
+) -> dict[str, dict[str, Any]]:
+    expected = (c09_r3_product_paths() if precommit
+                else c09_main_takeover_active_product_paths())
+    return (_c09_main_takeover_current_product_raw(root, expected)
+            if list(dirty) == expected else {})
+
+
 def _c09_main_takeover_product_raw(root: Path) -> dict[str, dict[str, Any]]:
-    rows = _c09_main_takeover_current_product_raw(root)
+    rows = _c09_main_takeover_current_product_raw(root, c09_r3_product_paths())
     if _c21_resume_sha(canonical_json_bytes(rows)) != C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256:
         raise ValueError("C09_MAIN_TAKEOVER_PRODUCT_RAW_MUTATED")
     return rows
@@ -41149,6 +41234,33 @@ def c09_main_takeover_from_root(root: Path) -> dict[str, bytes]:
 
 def validate_c09_main_takeover(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
     try:
+        if bundle.get("_c09_main_takeover_mode") == "ACTIVE_MAIN":
+            root = bundle["_root"]
+            immutable_paths = (set(c09_main_takeover_paths())
+                               - set(C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS))
+            committed = {
+                path: subprocess.check_output(
+                    ["git", "show", f"{C09_MAIN_TAKEOVER_CONTROL_HEAD}:{path}"],
+                    cwd=root,
+                )
+                for path in immutable_paths
+            }
+            expected_progress = _c21_resume_json(committed[C09_MAIN_TAKEOVER_P])
+            expected_events = _c21_resume_json(committed[C09_MAIN_TAKEOVER_E])
+            expected_handoff = extract_handoff_summary(committed[C09_MAIN_TAKEOVER_H].decode())
+            expected_digest = _c21_resume_json(committed[C09_MAIN_TAKEOVER_D])
+            expected_manifest = _c21_resume_json(committed[C09_MAIN_TAKEOVER_M])
+            if not all((
+                _c21_strict_json_equal(bundle.get("progress"), expected_progress),
+                _c21_strict_json_equal(bundle.get("events"), expected_events),
+                _c21_strict_json_equal(bundle.get("handoff"), expected_handoff),
+                _c21_strict_json_equal(bundle.get("detached_digest"), expected_digest),
+                _c21_strict_json_equal(manifest, expected_manifest),
+            )):
+                return ["C09_MAIN_TAKEOVER_PROJECTION_INVALID"]
+            if any((root / path).read_bytes() != raw for path, raw in committed.items()):
+                return ["C09_MAIN_TAKEOVER_RAW_BYTES_INVALID"]
+            return []
         expected = c09_main_takeover_from_root(bundle["_root"])
         refs = {C09_MAIN_TAKEOVER_P: _c21_resume_json(expected[C09_MAIN_TAKEOVER_P]),
                 C09_MAIN_TAKEOVER_E: _c21_resume_json(expected[C09_MAIN_TAKEOVER_E]),
@@ -41189,8 +41301,8 @@ def c09_main_takeover_transition_errors(observation: Mapping[str, Any], *, previ
                 or any(not isinstance(path, str) or not _c02_strict_git_path(path) for path in value)):
                 return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
             paths[key] = value
-        control, product = c09_main_takeover_paths(), c09_r3_product_paths()
-        if set(paths["staged"]) & set(product):
+        control = c09_main_takeover_paths()
+        if set(paths["staged"]) & set(c09_main_takeover_active_product_paths()):
             return ["C09_MAIN_TAKEOVER_INDEX_OVERLAP"]
         status = o.get("status_rows")
         if not isinstance(status, list):
@@ -41213,6 +41325,8 @@ def c09_main_takeover_transition_errors(observation: Mapping[str, Any], *, previ
         if actual_status != expected_status:
             return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
         precommit = o.get("head") == C09_MAIN_TAKEOVER_BASE
+        product = (c09_r3_product_paths() if precommit
+                   else c09_main_takeover_active_product_paths())
         if precommit:
             if mode != "FROZEN_R4" or o.get("parents") != [C09_MAIN_TAKEOVER_PARENT] or paths["staged"] != control or paths["changed"]:
                 return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
@@ -41223,10 +41337,15 @@ def c09_main_takeover_transition_errors(observation: Mapping[str, Any], *, previ
         dirty = sorted(paths["unstaged"] + paths["untracked"])
         if detached:
             return [] if not precommit and not dirty and not status else ["C09_MAIN_TAKEOVER_PORTABLE_CONTROL_INVALID"]
-        if dirty != product:
+        active_control = sorted(set(dirty) & set(C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS))
+        if (not precommit
+            and active_control not in [[], sorted(C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS)]):
+            return ["C09_MAIN_TAKEOVER_PRODUCT_SCOPE_INVALID"]
+        product_dirty = sorted(set(dirty) - set(active_control))
+        if product_dirty != product:
             return ["C09_MAIN_TAKEOVER_PRODUCT_SCOPE_INVALID"]
         hashes = o.get("product_hashes")
-        if not _c09_main_takeover_product_raw_shape_valid(hashes):
+        if not _c09_main_takeover_product_raw_shape_valid(hashes, product):
             return ["C09_MAIN_TAKEOVER_PRODUCT_RAW_INVALID"]
         if precommit and _c21_resume_sha(canonical_json_bytes(hashes)) != C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256:
             return ["C09_MAIN_TAKEOVER_PRODUCT_RAW_MUTATED"]
@@ -41235,8 +41354,8 @@ def c09_main_takeover_transition_errors(observation: Mapping[str, Any], *, previ
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
-def _c09_main_takeover_product_raw_shape_valid(value: Any) -> bool:
-    if not isinstance(value, Mapping) or set(value) != set(c09_r3_product_paths()):
+def _c09_main_takeover_product_raw_shape_valid(value: Any, product_paths: Sequence[str]) -> bool:
+    if not isinstance(value, Mapping) or set(value) != set(product_paths):
         return False
     for row in value.values():
         if (not isinstance(row, Mapping) or set(row) != {"bytes", "sha256"}
@@ -41252,6 +41371,20 @@ def _c09_main_takeover_tree_matches(root: Path, ref: str) -> bool:
         expected = c09_main_takeover_from_root(root)
         return all(subprocess.check_output(["git", "show", ref + ":" + path], cwd=root) == raw
                    for path, raw in expected.items())
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError):
+        return False
+
+
+def _c09_main_takeover_committed_control_tree_matches(root: Path, ref: str) -> bool:
+    try:
+        return all(
+            subprocess.check_output(["git", "show", f"{ref}:{path}"], cwd=root)
+            == subprocess.check_output(
+                ["git", "show", f"{C09_MAIN_TAKEOVER_CONTROL_HEAD}:{path}"],
+                cwd=root,
+            )
+            for path in c09_main_takeover_paths()
+        )
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError):
         return False
 
@@ -41308,12 +41441,474 @@ def _collect_c09_main_takeover_git(bundle: Mapping[str, Any]) -> list[str]:
         observation["changed"] = [] if precommit else _c02_strict_name_only_paths(
             raw("diff", "--name-only", C09_MAIN_TAKEOVER_BASE, observation["head"]))
         observation["ancestor"] = check("merge-base", "--is-ancestor", C09_MAIN_TAKEOVER_BASE, observation["head"])
-        observation["control_tree_valid"] = _c09_main_takeover_tree_matches(root, "" if precommit else observation["head"])
+        observation["control_tree_valid"] = (
+            _c09_main_takeover_tree_matches(root, "") if precommit
+            else _c09_main_takeover_committed_control_tree_matches(root, observation["head"])
+        )
         dirty = sorted(observation["unstaged"] + observation["untracked"])
-        observation["product_hashes"] = _c09_main_takeover_current_product_raw(root) if dirty == c09_r3_product_paths() else {}
+        active_control = sorted(set(dirty) & set(C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS))
+        product_dirty = sorted(set(dirty) - set(active_control))
+        control_valid = (precommit and not active_control) or (
+            not precommit
+            and active_control in [[], sorted(C09_MAIN_TAKEOVER_ACTIVE_CONTROL_CORRECTION_PATHS)]
+        )
+        observation["product_hashes"] = (
+            _c09_main_takeover_observed_product_raw(
+                root, precommit=precommit, dirty=product_dirty,
+            )
+            if control_valid else {}
+        )
         return c09_main_takeover_transition_errors(
             observation, previous_mode=bundle.get("_c09_main_takeover_trusted_previous_mode"))
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C09_FINAL_ACCEPTANCE_P = "docs/progress/build-progress.json"
+C09_FINAL_ACCEPTANCE_E = "docs/progress/progress-events.json"
+C09_FINAL_ACCEPTANCE_H = "docs/progress/BUILD_HANDOFF.md"
+C09_FINAL_ACCEPTANCE_D = "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json"
+C09_FINAL_ACCEPTANCE_M = "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json"
+C09_FINAL_ACCEPTANCE_AT = "2026-09-14T07:00:00+09:00"
+C09_FINAL_ACCEPTANCE_PRODUCT_PATH_LIST_SHA256 = "E5591545A1685D8653BC67A49885C1E1DBD486FFB19BE90301008608199A0CD8"
+
+
+def c09_final_acceptance_paths() -> list[str]:
+    return sorted([
+        C09_FINAL_ACCEPTANCE_M, C09_FINAL_ACCEPTANCE_H, C09_FINAL_ACCEPTANCE_P,
+        C09_FINAL_ACCEPTANCE_E, C09_FINAL_ACCEPTANCE_D,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c09_final_acceptance_combined_paths() -> list[str]:
+    return sorted(set(c09_main_takeover_active_product_paths()) | set(c09_final_acceptance_paths()))
+
+
+def c09_final_acceptance_metadata() -> dict[str, Any]:
+    control = c09_final_acceptance_paths()
+    product = c09_main_takeover_active_product_paths()
+    combined = c09_final_acceptance_combined_paths()
+    return {
+        "sequence": 829,
+        "projection_mode": "C09_FINAL_ACCEPTANCE_CANDIDATE_EXACT27",
+        "validated_base_commit": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+        "branch": C09_START_BRANCH,
+        "control_exact_paths": control,
+        "control_exact_path_count": len(control),
+        "control_exact_path_list_sha256": _c21_path_list_sha(control, windows=True),
+        "product_exact_paths": product,
+        "product_exact_path_count": len(product),
+        "product_exact_path_list_sha256": _c21_path_list_sha(product, windows=True),
+        "combined_exact_paths": combined,
+        "combined_exact_path_count": len(combined),
+        "combined_exact_path_list_sha256": _c21_path_list_sha(combined, windows=True),
+    }
+
+
+def _c09_final_test_evidence() -> dict[str, Any]:
+    return {
+        "passed": {"authoritative": 106, "c08_a13": 85, "c13": 5, "c02": 126, "control": 9},
+        "failed": 0,
+        "commands": {
+            "authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py",
+            "c08_a13": "python -B -m pytest -q -p no:cacheprovider tests/repository_intelligence tests/tooling/test_a13_repository_scan.py",
+            "c13": "python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py",
+            "c02": "python -B -m pytest -q -p no:cacheprovider tests/domain/test_identifiers.py tests/orchestration/test_delegation_packet.py",
+            "control": "python -B -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py -k C09MainTakeoverControlTests",
+        },
+        "compileall": {"exit_code": 0, "status": "PASS"},
+        "diff_check": {"exit_code": 0, "status": "PASS"},
+    }
+
+
+def _c09_final_external_validation() -> dict[str, str]:
+    return {
+        "actual_docker": "NOT_EXECUTED",
+        "actual_wsl": "NOT_EXECUTED",
+        "database": "NOT_EXECUTED",
+        "api": "NOT_EXECUTED",
+        "ui": "NOT_EXECUTED",
+        "browser": "NOT_EXECUTED",
+        "provider": "NOT_EXECUTED",
+        "ssh_network": "NOT_ACCESSED",
+        "deployment": "NOT_EXECUTED",
+        "secret": "NOT_ACCESSED",
+    }
+
+
+def _c09_final_independent_reviews() -> dict[str, Any]:
+    return {
+        "blocking_findings": 0,
+        "spec": {"verdict": "PASS", "critical": 0, "important": 0, "minor": 1,
+                 "minor_resolution": "COMPLETION_REPORT_COMMANDS_ADDED"},
+        "quality": {"verdict": "PASS", "critical": 0, "important": 0, "minor": 1,
+                    "residual": "PENDING_PERMISSION_RESERVATION_MAY_ACCUMULATE_BEFORE_AUTHORIZE"},
+    }
+
+
+def c09_final_acceptance_artifacts(
+    historical: Mapping[str, bytes], files: Mapping[str, bytes],
+    product_raw: Mapping[str, Any],
+) -> dict[str, bytes]:
+    meta = c09_final_acceptance_metadata()
+    generated = {C09_FINAL_ACCEPTANCE_M, C09_FINAL_ACCEPTANCE_H, C09_FINAL_ACCEPTANCE_P,
+                 C09_FINAL_ACCEPTANCE_E, C09_FINAL_ACCEPTANCE_D}
+    if set(historical) != {C09_FINAL_ACCEPTANCE_H, C09_FINAL_ACCEPTANCE_P, C09_FINAL_ACCEPTANCE_E}:
+        raise ValueError("C09_FINAL_HISTORY_SET_INVALID")
+    if set(files) != set(c09_final_acceptance_paths()) - generated:
+        raise ValueError("C09_FINAL_FILE_SET_INVALID")
+    product_paths = c09_main_takeover_active_product_paths()
+    if (meta["product_exact_path_count"] != 20
+        or meta["product_exact_path_list_sha256"] != C09_FINAL_ACCEPTANCE_PRODUCT_PATH_LIST_SHA256
+        or not _c09_main_takeover_product_raw_shape_valid(product_raw, product_paths)):
+        raise ValueError("C09_FINAL_PRODUCT_BINDING_INVALID")
+    progress = _c21_resume_json(historical[C09_FINAL_ACCEPTANCE_P])
+    stream = _c21_resume_json(historical[C09_FINAL_ACCEPTANCE_E])
+    worker, write = _c09_main_takeover_leases()
+    if (progress.get("event_sequence") != 824 or progress.get("status") != "REWORK_MAIN_TAKEOVER"
+        or stream.get("last_sequence") != 824 or len(stream.get("events", [])) != 824
+        or not _c21_strict_json_equal(progress.get("worker_lease"), worker)
+        or not _c21_strict_json_equal(progress.get("write_lease"), write)):
+        raise ValueError("C09_FINAL_HISTORY_INVALID")
+
+    tests = _c09_final_test_evidence()
+    reviews = _c09_final_independent_reviews()
+    external = _c09_final_external_validation()
+    completion_report_sha = product_raw["docs/04_test_reports/C-09_COMPLETION_REPORT.md"]["sha256"]
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str,
+                 details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {
+            "sequence": sequence, "event_type": event_type, "event_id": event_id,
+            "actor": actor, "actor_id": actor, "actor_type": "AGENT", "project_id": "anvil",
+            "run_id": None, "work_package_id": "C-09", "step_id": "FINAL-ACCEPTANCE",
+            "subject_ref": "C-09/FINAL-ACCEPTANCE", "occurred_at": C09_FINAL_ACCEPTANCE_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        return row
+
+    retired_write = copy.deepcopy(write)
+    retired_write.update({"status": "REVOKED", "revoked_at": C09_FINAL_ACCEPTANCE_AT,
+                          "reason": "C09_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"})
+    retired_worker = copy.deepcopy(worker)
+    retired_worker.update({"status": "REVOKED", "revoked_at": C09_FINAL_ACCEPTANCE_AT,
+                           "reason": "C09_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"})
+    completion = {
+        "result_status": "COMPLETED", "package_status": "TEST_REVIEW", "accepted": False,
+        "product_exact_paths": product_paths,
+        "product_exact_path_list_sha256": meta["product_exact_path_list_sha256"],
+        "product_raw": copy.deepcopy(dict(product_raw)), "test_evidence": tests,
+        "independent_reviews": reviews, "external_validation": external,
+        "scope_correction": copy.deepcopy(C09_MAIN_TAKEOVER_ACTIVE_SCOPE_CORRECTION),
+    }
+    events = [
+        envelope(825, "WRITE_LEASE_REVOKED", "evt_c09_final_write_lease_revoked", "main-agent-eoul", retired_write),
+        envelope(826, "WORKER_LEASE_REVOKED", "evt_c09_final_worker_lease_revoked", "main-agent-eoul", retired_worker),
+        envelope(827, "PACKAGE_COMPLETED", "evt_c09_final_package_completed", "main-agent-eoul", completion),
+        envelope(828, "INDEPENDENT_TEST_JUDGMENT_RECORDED", "evt_c09_final_independent_test_judgment_recorded", "independent-reviewers", {
+            "verdict": "PASS", "criteria": "C09_EXACT20_SPEC_AND_QUALITY_BLOCKING_ZERO",
+            "evidence_ref": "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+            "evidence_sha256": completion_report_sha,
+            "critical_findings": 0, "important_findings": 0,
+            "blocking_findings": 0, "reviews": reviews, "test_evidence": tests,
+        }),
+        envelope(829, "MAIN_PACKAGE_ACCEPTED", "evt_c09_final_main_package_accepted", "main-agent-eoul", {
+            "decision": "ACCEPTED", "accepted": True,
+            "test_report_ref": "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+            "test_report_sha256": completion_report_sha,
+            "manifest_ref": C09_FINAL_ACCEPTANCE_M, "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+            "next_work_package": "C-10", "next_work_package_status": "READY_NOT_STARTED_PER_USER_DIRECTION",
+            "projection_mode": meta["projection_mode"],
+            "validated_base_commit": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+            "acceptance_head": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+            "acceptance_upstream_head": C09_R4_MAIN,
+            "head_relation": "UNSTAGED_EXACT27_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+            "exact_allowed_paths": meta["combined_exact_paths"],
+            "product_exact_paths": product_paths,
+            "product_exact_path_list_sha256": meta["product_exact_path_list_sha256"],
+            "control_exact_paths": meta["control_exact_paths"],
+            "blocking_findings": 0, "dir2_status": "NOT_REACHED",
+            "external_validation": external,
+        }),
+    ]
+    events_raw = _c21_append_events(historical[C09_FINAL_ACCEPTANCE_E], 824, events)
+
+    repository = copy.deepcopy(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"],
+        "validated_base_commit": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+        "control_head": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+        "local_head": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+        "development_main": C09_R4_MAIN,
+        "branch": C09_START_BRANCH, "upstream": C09_START_DEVELOPMENT_REF,
+        "remote_head": C09_R4_MAIN,
+        "head_relation": "UNSTAGED_EXACT27_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+        "worktree_status": "UNSTAGED_PRODUCT_EXACT20_PLUS_ACCEPTANCE_CONTROL_EXACT7",
+        "exact_allowed_paths": meta["combined_exact_paths"],
+        "product_write_scope": product_paths, "product_exact_paths": product_paths,
+        "acceptance_control_paths": meta["control_exact_paths"],
+        "push_status": "NOT_EXECUTED", "commit_status": "NOT_EXECUTED",
+    })
+    completed = list(progress.get("completed_packages", []))
+    if "C-09" not in completed:
+        completed.append("C-09")
+    completed_wi = copy.deepcopy(progress["active_work_instruction"])
+    completed_wi.update({
+        "result_status": "COMPLETED", "package_status": "ACCEPTED", "accepted": True,
+        "product_write_scope": product_paths, "independent_reviewer_status": "PASS",
+        "scope_correction": copy.deepcopy(C09_MAIN_TAKEOVER_ACTIVE_SCOPE_CORRECTION),
+    })
+    progress.update({
+        "snapshot_id": "snapshot-c09-final-acceptance-seq829",
+        "updated_at": C09_FINAL_ACCEPTANCE_AT, "recorded_at": C09_FINAL_ACCEPTANCE_AT,
+        "event_sequence": 829, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-09", "status": "ACCEPTED",
+        "completed_packages": completed, "active_agent": None, "worker_lease": None, "write_lease": None,
+        "completed_c09_main_worker_lease": retired_worker,
+        "completed_c09_main_write_lease": retired_write,
+        "active_work_instruction": None, "last_completed_work_instruction": completed_wi,
+        "last_accepted_work_instruction": completed_wi, "repository": repository,
+        "c09_final_acceptance": {
+            "status": "ACCEPTED", "accepted": True, "event_sequence": 829,
+            "product_exact_paths": product_paths,
+            "product_exact_path_list_sha256": meta["product_exact_path_list_sha256"],
+            "product_raw": copy.deepcopy(dict(product_raw)),
+            "control_exact_paths": meta["control_exact_paths"],
+            "test_evidence": tests, "independent_reviews": reviews,
+            "external_validation": external, "c10_status": "READY_NOT_STARTED_PER_USER_DIRECTION",
+            "dir2_status": "NOT_REACHED",
+        },
+        "next_work_package": {"package_id": "C-10", "status": "READY_NOT_STARTED_PER_USER_DIRECTION"},
+        "next_successor_work_package": None,
+        "runtime_next_action": "CREATE_SINGLE_RECOVERABLE_C09_COMMIT_WHEN_AUTHORIZED",
+        "next_safe_action": "CREATE_SINGLE_RECOVERABLE_C09_COMMIT_WHEN_AUTHORIZED",
+        "current_progress_evidence_ref": {"package_id": "C-09", "path": C09_FINAL_ACCEPTANCE_D,
+                                          "manifest_path": C09_FINAL_ACCEPTANCE_M},
+        "latest_evidence_manifest_ref": {"path": C09_FINAL_ACCEPTANCE_M,
+                                         "artifact_id": "C09-FINAL-ACCEPTANCE-20260914"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C09_ACCEPTED", "C10_NOT_STARTED_PER_USER_DIRECTION", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False},
+    })
+    progress["c09_main_takeover"] = copy.deepcopy(progress.get("c09_main_takeover", {}))
+    progress["c09_main_takeover"].update({"status": "COMPLETED_ACCEPTED", "accepted": True,
+                                          "event_sequence": 829})
+    latest = {
+        **{path: (files[path] if path in files else b"") for path in files},
+        **{path: b"" for path in ()},
+        C09_FINAL_ACCEPTANCE_E: events_raw,
+    }
+    for path in product_paths:
+        latest[path] = None  # replaced below from the hash-bound product rows
+    progress["registry_refs"]["progress_events"] = {
+        "path": C09_FINAL_ACCEPTANCE_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": (product_raw[path]["sha256"] if path in product_raw else _c21_resume_sha(raw))}
+        for path, raw in sorted(latest.items())
+    ]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    handoff.update({
+        "accepted": True, "c09_status": "ACCEPTED",
+        "c10_status": "READY_NOT_STARTED_PER_USER_DIRECTION", "dir2_status": "NOT_REACHED",
+        "dir_status": progress["dir_review"]["status"],
+        "repository_head": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+        "repository_upstream": C09_START_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C09_MAIN_TAKEOVER_CONTROL_HEAD,
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": meta["combined_exact_paths"],
+        "product_exact_paths": product_paths,
+        "product_exact_path_list_sha256": meta["product_exact_path_list_sha256"],
+        "control_exact_paths": meta["control_exact_paths"],
+        "test_evidence": tests, "independent_reviews": reviews,
+        "external_validation": external, "current_manifest": C09_FINAL_ACCEPTANCE_M,
+        "reporting_decision": "AUTO_CONTINUE", "staged": False, "commit_performed": False,
+    })
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+                                  historical[C09_FINAL_ACCEPTANCE_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C09_FINAL_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-09 final acceptance - seq829\n\n"
+        "- seq1~824 raw event object bytes preserved; seq825~829만 append했다.\n"
+        "- product exact20과 acceptance control exact7은 unstaged exact27 단일 commit 후보다.\n"
+        "- C-09 ACCEPTED; C-10은 시작하지 않았고 actual Docker/WSL/external은 미검증이다.\n\n"
+        + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C09-FINAL-ACCEPTANCE-DIGEST-20260914",
+        "package_id": "C-09", "event_sequence": 829, "algorithm": "SHA-256",
+        "created_at": C09_FINAL_ACCEPTANCE_AT,
+        "scope": "seq825-829 append-only C-09 acceptance; seq1-824 preserved; product20 control7 combined27",
+        "self_reference": False,
+        "progress": {"path": C09_FINAL_ACCEPTANCE_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C09_FINAL_ACCEPTANCE_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C09_FINAL_ACCEPTANCE_P: progress_raw, C09_FINAL_ACCEPTANCE_E: events_raw,
+                 C09_FINAL_ACCEPTANCE_H: handoff_raw, C09_FINAL_ACCEPTANCE_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C09_FINAL_ACCEPTANCE_E], 824)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-09_FINAL_ACCEPTANCE",
+        "artifact_id": "C09-FINAL-ACCEPTANCE-20260914", "created_at": C09_FINAL_ACCEPTANCE_AT,
+        "package_id": "C-09", "event_sequence": 829, "historical_event_sequence": 824,
+        "appended_event_count": 5,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": True, "status": "ACCEPTED",
+        "c09_status": "ACCEPTED", "c10_status": "READY_NOT_STARTED_PER_USER_DIRECTION",
+        "dir2_status": "NOT_REACHED", "active_leases": 0,
+        "product_raw": copy.deepcopy(dict(product_raw)),
+        "test_evidence": tests, "independent_reviews": reviews,
+        "external_validation": external,
+        "record_binding": repository["head_relation"], "staged": False,
+        "commit_performed": False, "self_reference": False, **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+        for path, payload in sorted(artifacts.items())
+    ]
+    artifacts[C09_FINAL_ACCEPTANCE_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(c09_final_acceptance_paths()):
+        raise ValueError("C09_FINAL_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c09_final_acceptance_from_root(root: Path) -> dict[str, bytes]:
+    immutable = set(c09_main_takeover_paths()) - {
+        C09_FINAL_ACCEPTANCE_P, C09_FINAL_ACCEPTANCE_E, C09_FINAL_ACCEPTANCE_H,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    }
+    for path in immutable:
+        committed = subprocess.check_output(
+            ["git", "show", f"{C09_MAIN_TAKEOVER_CONTROL_HEAD}:{path}"], cwd=root)
+        if (root / path).read_bytes() != committed:
+            raise ValueError("C09_FINAL_SEQ824_CONTROL_MUTATED")
+    historical = {path: subprocess.check_output(
+        ["git", "show", f"{C09_MAIN_TAKEOVER_CONTROL_HEAD}:{path}"], cwd=root)
+        for path in (C09_FINAL_ACCEPTANCE_P, C09_FINAL_ACCEPTANCE_E, C09_FINAL_ACCEPTANCE_H)}
+    files = {path: (root / path).read_bytes() for path in (
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    product_raw = _c09_main_takeover_current_product_raw(root)
+    return c09_final_acceptance_artifacts(historical, files, product_raw)
+
+
+def validate_c09_final_acceptance(bundle: Mapping[str, Any],
+                                  manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c09_final_acceptance_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes()
+                      for path in c09_final_acceptance_paths()}
+        expected_objects = {
+            C09_FINAL_ACCEPTANCE_P: _c21_resume_json(expected[C09_FINAL_ACCEPTANCE_P]),
+            C09_FINAL_ACCEPTANCE_E: _c21_resume_json(expected[C09_FINAL_ACCEPTANCE_E]),
+            C09_FINAL_ACCEPTANCE_H: extract_handoff_summary(expected[C09_FINAL_ACCEPTANCE_H].decode()),
+            C09_FINAL_ACCEPTANCE_D: _c21_resume_json(expected[C09_FINAL_ACCEPTANCE_D]),
+            C09_FINAL_ACCEPTANCE_M: _c21_resume_json(expected[C09_FINAL_ACCEPTANCE_M]),
+        }
+        actual_objects = {
+            C09_FINAL_ACCEPTANCE_P: bundle.get("progress"),
+            C09_FINAL_ACCEPTANCE_E: bundle.get("events"),
+            C09_FINAL_ACCEPTANCE_H: bundle.get("handoff"),
+            C09_FINAL_ACCEPTANCE_D: bundle.get("detached_digest"),
+            C09_FINAL_ACCEPTANCE_M: manifest,
+        }
+        errors = [] if all(_c21_strict_json_equal(actual_objects[path], expected_objects[path])
+                           for path in actual_objects) else ["C09_FINAL_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C09_FINAL_RAW_BYTES_INVALID")
+        progress = actual_objects[C09_FINAL_ACCEPTANCE_P]
+        if (not isinstance(progress, Mapping) or progress.get("event_sequence") != 829
+            or progress.get("current_work_package") != "C-09" or progress.get("status") != "ACCEPTED"
+            or progress.get("active_agent") is not None or progress.get("worker_lease") is not None
+            or progress.get("write_lease") is not None or "C-09" not in progress.get("completed_packages", [])
+            or progress.get("next_work_package") != {
+                "package_id": "C-10", "status": "READY_NOT_STARTED_PER_USER_DIRECTION"}):
+            errors.append("C09_FINAL_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(
+            ["git", "show", f"{C09_MAIN_TAKEOVER_CONTROL_HEAD}:{C09_FINAL_ACCEPTANCE_E}"],
+            cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 824) != raw_event_object_prefix_bytes(
+                actual_raw[C09_FINAL_ACCEPTANCE_E], 824):
+            errors.append("C09_FINAL_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C09_FINAL_INPUT_INVALID"]
+
+
+def _collect_c09_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        if bundle.get("_c09_final_acceptance_mode", "WORKTREE_CANDIDATE") != "WORKTREE_CANDIDATE":
+            return ["C09_FINAL_ACCEPTANCE_MODE_REQUIRED"]
+        root = bundle["_root"]
+        repository = bundle.get("progress", {}).get("repository", {})
+        if (not isinstance(repository, Mapping)
+            or repository.get("validated_base_commit") != C09_MAIN_TAKEOVER_CONTROL_HEAD):
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        head = value("rev-parse", "HEAD")
+        top = value("rev-parse", "--show-toplevel")
+        branch = optional("branch", "--show-current")
+        upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1",
+                            f"refs/heads/{C09_START_BRANCH}")
+        development_main = value("rev-parse", C09_START_DEVELOPMENT_REF)
+        remote_url = value("remote", "get-url", "development")
+        staged = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+        status_rows = _c02_strict_raw_lines(raw("status", "--porcelain", "--untracked-files=all"))
+        if any(item is None for item in (head, top, branch, upstream, development_main,
+                                         remote_url, staged, unstaged, untracked, status_rows)):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        status_map = {}
+        for row in status_rows:
+            if (not isinstance(row, str) or len(row) < 4 or row[2] != " "
+                or row[:2] not in {" M", "??"} or not _c02_strict_git_path(row[3:])
+                or row[3:] in status_map):
+                return ["C09_FINAL_ACCEPTANCE_CANDIDATE_INVALID"]
+            status_map[row[3:]] = row[:2]
+        status = sorted(status_map)
+        exact = c09_final_acceptance_combined_paths()
+        if (Path(top).resolve() != root.resolve() or head != C09_MAIN_TAKEOVER_CONTROL_HEAD
+            or branch != C09_START_BRANCH or upstream != C09_START_DEVELOPMENT_REF
+            or development_main != C09_R4_MAIN or remote_url != C09_START_DEVELOPMENT_URL
+            or staged or sorted(unstaged + untracked) != exact or status != exact
+            or set(unstaged) & set(untracked)
+            or not _c02_git_quiet_check(root, "diff", "--check")
+            or not _c02_git_quiet_check(root, "diff", "--cached", "--check")):
+            return ["C09_FINAL_ACCEPTANCE_CANDIDATE_INVALID"]
+        manifest = _load_json(root / C09_FINAL_ACCEPTANCE_M)
+        product_raw = _c09_main_takeover_current_product_raw(root)
+        if (manifest.get("product_raw") != product_raw
+            or manifest.get("product_exact_path_list_sha256")
+            != C09_FINAL_ACCEPTANCE_PRODUCT_PATH_LIST_SHA256
+            or manifest.get("combined_exact_paths") != exact
+            or manifest.get("staged") is not False
+            or manifest.get("commit_performed") is not False):
+            return ["C09_FINAL_ACCEPTANCE_CANDIDATE_INVALID"]
+        return []
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, json.JSONDecodeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 
