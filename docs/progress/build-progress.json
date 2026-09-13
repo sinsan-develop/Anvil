@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c08-final-acceptance-seq795",
-  "event_sequence": 795,
-  "updated_at": "2026-09-14T01:45:00+09:00",
-  "last_event_id": "evt_c08_final_main_package_accepted",
+  "snapshot_id": "snapshot-c09-start-seq798",
+  "event_sequence": 798,
+  "updated_at": "2026-09-14T02:00:00+09:00",
+  "last_event_id": "evt_c09_r2_write_lease_issued",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
-  "current_work_package": "C-08",
-  "status": "ACCEPTED",
+  "current_work_package": "C-09",
+  "status": "IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -56,8 +56,47 @@
     "C-07",
     "C-08"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-09",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b"
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c09-execution-backends-r2-20260913-001",
+    "worker_lease_id": "worker-lease-c09-execution-backends-r2-20260913-001",
+    "fencing_token": "c09-execution-backends-r2-write-fence-epoch-1-c41d7a598e2b4f10",
+    "write_fencing_token": "c09-execution-backends-r2-write-fence-epoch-1-c41d7a598e2b4f10",
+    "execution_fencing_token": "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-09",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T02:00:00+09:00",
+    "expires_at": "2026-09-14T14:00:00+09:00",
+    "path_scope": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_registry.py"
+    ],
+    "status": "ACTIVE"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -89,7 +128,40 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "lease_id": "worker-lease-c09-execution-backends-r2-20260913-001",
+    "fencing_token": "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b",
+    "execution_fencing_token": "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-09",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+    "dispatch_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+    "issued_at": "2026-09-14T02:00:00+09:00",
+    "expires_at": "2026-09-14T14:00:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_registry.py"
+    ]
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -293,21 +365,37 @@
   },
   "latest_evidence_refs": [
     {
+      "path": "docs/04_test_reports/C-09_START_PROJECTION_REPORT.md",
+      "sha256": "467FF52A991D2B23586A5698095DFAE79C4BF8BA273E75E6CBF4E0A59238F978"
+    },
+    {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2D3FAFE25655298754184732F5077CE640B28DB2F396C5AA43DC377640E73EFF"
+      "sha256": "428497407696607E4D447FE69663F8CE116FA81248424C201D95FC7788B137C7"
+    },
+    {
+      "path": "docs/validation/C-09_START_VALIDATION.md",
+      "sha256": "563C464CE743CC638893AA59D7CA3761BE296CC6302D41A9C834C1D066DA7A9A"
+    },
+    {
+      "path": "docs/work_orders/C-09_INVOCATION_PROMPT_R2.md",
+      "sha256": "E401EC350CBDD184A3578E1A6A4800740D95CEF4E242C7FBA1B1311FB685FC88"
+    },
+    {
+      "path": "docs/work_orders/C-09_WORK_INSTRUCTION_R2.md",
+      "sha256": "D1ABB9811550D152A6016C223EAED3F1859D0F96D01D6D35BED1AC3208458BBE"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "EA7A6C9E6B935A6E656C6F96A06B66BCBD52F4D3A812930B7AEF2A695D987E9E"
+      "sha256": "3232657702271937708C5460765884A392C438F0B49C907F5870A66E483FD00F"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "DB87B165EB07AC41186C7AC75E5F0D016A0D2B40C82AC6DFE560279EA55B3C5C"
+      "sha256": "9D5A97D5BC1E6CFF0CDCCA1B03F580BBC556475579528005BA1BE931D7DD7DA7"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C08-FINAL-ACCEPTANCE-20260914"
+    "path": "docs/evidence/manifests/C-09_START_MANIFEST.json",
+    "artifact_id": "C09-START-PROJECTION-20260913"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -317,7 +405,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "ISSUE_C09_WORK_INSTRUCTION",
+  "next_safe_action": "DISPATCH_C09_DEVELOPER",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -427,21 +515,25 @@
     }
   },
   "repository": {
-    "projection_mode": "C08_FINAL_ACCEPTANCE_EXACT7",
-    "validated_base_commit": "8095981d33deef082fe646495a2cbc80841839c3",
-    "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
-    "branch": "codex/c08-repository-intelligence-r1",
+    "projection_mode": "C09_R2_START_PROJECTION_EXACT11",
+    "validated_base_commit": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+    "head_relation": "STAGED_EXACT11_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+    "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/main",
-    "remote_head": "5529fe5261744e42227fcb3444952cf18e8114ec",
+    "remote_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "PRODUCT_LOCAL_COMPLETION_NOT_PUSHED",
+    "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/04_test_reports/C-09_START_PROJECTION_REPORT.md",
+      "docs/evidence/manifests/C-09_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c08-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c09-start.json",
+      "docs/validation/C-09_START_VALIDATION.md",
+      "docs/work_orders/C-09_INVOCATION_PROMPT_R2.md",
+      "docs/work_orders/C-09_WORK_INSTRUCTION_R2.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
@@ -459,8 +551,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "STAGED_EXACT7",
-    "local_head": "8095981d33deef082fe646495a2cbc80841839c3",
+    "worktree_status": "STAGED_EXACT11",
+    "local_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1265,18 +1357,27 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "f7931944d894990ec1dff01cf14a47e5384209c8",
-    "development_main": "5529fe5261744e42227fcb3444952cf18e8114ec",
+    "control_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+    "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
-      "docs/04_test_reports/C-08_COMPLETION_REPORT.md",
-      "packages/repository_intelligence/indexes.py",
-      "packages/repository_intelligence/models.py",
-      "packages/repository_intelligence/scanner.py",
-      "tests/repository_intelligence/fixtures/app.py",
-      "tests/repository_intelligence/fixtures/tests/spec_app.py",
-      "tests/repository_intelligence/fixtures/ui.ts",
-      "tests/repository_intelligence/fixtures/util.py",
-      "tests/repository_intelligence/test_indexes.py"
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_registry.py"
     ],
     "product_parent": "b74c9e1713b4234b51942b69438f0398ba27c2c5",
     "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
@@ -1466,8 +1567,8 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C08_ACCEPTED",
-      "C09_READY_FOR_WORK_INSTRUCTION",
+      "C09_IN_PROGRESS",
+      "C10_NOT_READY",
       "DIR2_NOT_REACHED"
     ],
     "stop_before_dialogue_report": false
@@ -1518,7 +1619,102 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-C-09-EXECUTION-BACKENDS-R2",
+    "artifact_path": "docs/work_orders/C-09_WORK_INSTRUCTION_R2.md",
+    "artifact_sha256": "D1ABB9811550D152A6016C223EAED3F1859D0F96D01D6D35BED1AC3208458BBE",
+    "invocation_path": "docs/work_orders/C-09_INVOCATION_PROMPT_R2.md",
+    "invocation_sha256": "E401EC350CBDD184A3578E1A6A4800740D95CEF4E242C7FBA1B1311FB685FC88",
+    "executor": "developer-primary",
+    "result_status": "IN_PROGRESS",
+    "package_status": "IN_PROGRESS",
+    "product_write_scope": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_registry.py"
+    ],
+    "acceptance_binding": {
+      "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC_SCOPE_RESTORATION",
+      "authority_basis": [
+        "APPROVED_WORK_PLAN_C09",
+        "C08_ACCEPTED",
+        "A13_PREEXISTING_READ_ONLY_SCAN",
+        "DESIGN_14_1_27_2_27_3_41"
+      ],
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+      "work_instruction_sha256": "D1ABB9811550D152A6016C223EAED3F1859D0F96D01D6D35BED1AC3208458BBE",
+      "invocation_sha256": "E401EC350CBDD184A3578E1A6A4800740D95CEF4E242C7FBA1B1311FB685FC88",
+      "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+      "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+      "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+      "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+      "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+      "function_scope_change": "UNCHANGED",
+      "requirements_change": "UNCHANGED",
+      "material_risk_change": "UNCHANGED",
+      "supersedes": {
+        "path": "docs/work_orders/C-09_WORK_INSTRUCTION.md",
+        "sha256": "A429119206BB2C42F0D6FE9AD45E674E1891142C72007FA4972DC091BFC9CFD8",
+        "reason": "LOWER_AUTHORITY_OBSERVE_ONLY_CONFLICTS_WITH_APPROVED_C09_BACKENDS"
+      },
+      "carry_forward_regression": [
+        "AV-SAFE-028"
+      ],
+      "predecessor": {
+        "package_id": "C-08",
+        "status": "ACCEPTED",
+        "sequence": 795,
+        "manifest_path": "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "ED2A84BE9B1924A9254D8D44BB99679FFA2EB0A7DC8091DCED24470CF16EA493",
+        "product_commit": "8095981d33deef082fe646495a2cbc80841839c3",
+        "reviewed_main_merge": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+      },
+      "acceptance": [
+        {
+          "requirement_id": "AV-SAFE-010",
+          "level": "L3",
+          "method": "AN",
+          "evidence": [
+            "E-GIT",
+            "E-DIFF"
+          ]
+        },
+        {
+          "requirement_id": "AV-SAFE-011",
+          "level": "L5",
+          "method": "AN",
+          "evidence": [
+            "E-GIT"
+          ]
+        },
+        {
+          "requirement_id": "AV-STAT-021",
+          "level": "L5",
+          "method": "AN",
+          "evidence": [
+            "E-GIT",
+            "E-EVT"
+          ]
+        }
+      ]
+    }
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -1702,9 +1898,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "C-08",
-    "path": "docs/progress/progress-handoff-detached-digest-c08-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json"
+    "package_id": "C-09",
+    "path": "docs/progress/progress-handoff-detached-digest-c09-start.json",
+    "manifest_path": "docs/evidence/manifests/C-09_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1725,12 +1921,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "2D3FAFE25655298754184732F5077CE640B28DB2F396C5AA43DC377640E73EFF"
+      "sha256": "428497407696607E4D447FE69663F8CE116FA81248424C201D95FC7788B137C7"
     }
   },
   "next_work_package": {
-    "package_id": "C-09",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "C-10",
+    "status": "NOT_READY"
   },
   "next_successor_work_package": null,
   "historical_phase_b_gate": {
@@ -2119,8 +2315,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "0EDCF950528FF962B98FF7607AFED77BB6C5B2E8DFEA808BD2CAF4B7EE62380D",
-  "runtime_next_action": "ISSUE_C09_WORK_INSTRUCTION",
+  "snapshot_hash": "AF876A48ECDD5A825FF029B2517460F927F79DD8183782E6617C82030B74B71E",
+  "runtime_next_action": "DISPATCH_C09_DEVELOPER",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3732,7 +3928,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-14T01:45:00+09:00",
+  "recorded_at": "2026-09-14T02:00:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -15707,6 +15903,120 @@
       "network": "NOT_EXECUTED",
       "external_call": "NOT_EXECUTED",
       "a13_read_only_no_write_regression": "VERIFIED"
+    }
+  },
+  "c09_start_projection": {
+    "status": "IN_PROGRESS",
+    "accepted": false,
+    "event_sequence": 798,
+    "c08_status": "ACCEPTED",
+    "c09_status": "IN_PROGRESS",
+    "c10_status": "NOT_READY",
+    "dir2_status": "NOT_REACHED",
+    "authority": {
+      "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC_SCOPE_RESTORATION",
+      "authority_basis": [
+        "APPROVED_WORK_PLAN_C09",
+        "C08_ACCEPTED",
+        "A13_PREEXISTING_READ_ONLY_SCAN",
+        "DESIGN_14_1_27_2_27_3_41"
+      ],
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+      "work_instruction_sha256": "D1ABB9811550D152A6016C223EAED3F1859D0F96D01D6D35BED1AC3208458BBE",
+      "invocation_sha256": "E401EC350CBDD184A3578E1A6A4800740D95CEF4E242C7FBA1B1311FB685FC88",
+      "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+      "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+      "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+      "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+      "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+      "function_scope_change": "UNCHANGED",
+      "requirements_change": "UNCHANGED",
+      "material_risk_change": "UNCHANGED",
+      "supersedes": {
+        "path": "docs/work_orders/C-09_WORK_INSTRUCTION.md",
+        "sha256": "A429119206BB2C42F0D6FE9AD45E674E1891142C72007FA4972DC091BFC9CFD8",
+        "reason": "LOWER_AUTHORITY_OBSERVE_ONLY_CONFLICTS_WITH_APPROVED_C09_BACKENDS"
+      },
+      "carry_forward_regression": [
+        "AV-SAFE-028"
+      ],
+      "predecessor": {
+        "package_id": "C-08",
+        "status": "ACCEPTED",
+        "sequence": 795,
+        "manifest_path": "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "ED2A84BE9B1924A9254D8D44BB99679FFA2EB0A7DC8091DCED24470CF16EA493",
+        "product_commit": "8095981d33deef082fe646495a2cbc80841839c3",
+        "reviewed_main_merge": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+      },
+      "acceptance": [
+        {
+          "requirement_id": "AV-SAFE-010",
+          "level": "L3",
+          "method": "AN",
+          "evidence": [
+            "E-GIT",
+            "E-DIFF"
+          ]
+        },
+        {
+          "requirement_id": "AV-SAFE-011",
+          "level": "L5",
+          "method": "AN",
+          "evidence": [
+            "E-GIT"
+          ]
+        },
+        {
+          "requirement_id": "AV-STAT-021",
+          "level": "L5",
+          "method": "AN",
+          "evidence": [
+            "E-GIT",
+            "E-EVT"
+          ]
+        }
+      ]
+    },
+    "product_exact_paths": [
+      "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+      "packages/execution_backends/__init__.py",
+      "packages/execution_backends/docker.py",
+      "packages/execution_backends/git_worktree.py",
+      "packages/execution_backends/models.py",
+      "packages/execution_backends/registry.py",
+      "packages/paths/identity.py",
+      "packages/tool_gateway/__init__.py",
+      "packages/tool_gateway/gateway.py",
+      "packages/tool_gateway/models.py",
+      "packages/tool_gateway/registry.py",
+      "tests/execution_backends/test_docker.py",
+      "tests/execution_backends/test_git_worktree.py",
+      "tests/execution_backends/test_registry.py",
+      "tests/integration/test_c09_repository_workspace.py",
+      "tests/paths/test_conflict_scope_identity.py",
+      "tests/tool_gateway/test_gateway.py",
+      "tests/tool_gateway/test_registry.py"
+    ],
+    "external_validation": {
+      "product_code": "PENDING_C09_R2_IMPLEMENTATION",
+      "fixture_validation": "NOT_EXECUTED",
+      "git_fixture": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "actual_repository_success_claim": "FORBIDDEN",
+      "persistent_transaction": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "ui": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "telegram": "NOT_EXECUTED",
+      "secret": "NOT_ACCESSED",
+      "wsl": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "external_call": "NOT_EXECUTED"
     }
   }
 }

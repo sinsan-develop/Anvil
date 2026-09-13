@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 795,
+  "last_sequence": 798,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -42846,7 +42846,229 @@
           "a13_read_only_no_write_regression": "VERIFIED"
         }
       }
+    },
+    {
+      "occurred_at": "2026-09-14T02:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "main-agent-eoul",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-09",
+      "step_id": "START",
+      "actor": "main-agent-eoul",
+      "subject_ref": "C-09/START",
+      "event_id": "evt_c09_r2_work_instruction_issued",
+      "sequence": 796,
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "previous_event_sha256": "1EF8CFF3E85F13C671FEBF6C1F42F3BC524CF828FC4B62827AC24D23E3900806",
+      "details": {
+        "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC_SCOPE_RESTORATION",
+        "authority_basis": [
+          "APPROVED_WORK_PLAN_C09",
+          "C08_ACCEPTED",
+          "A13_PREEXISTING_READ_ONLY_SCAN",
+          "DESIGN_14_1_27_2_27_3_41"
+        ],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_sha256": "D1ABB9811550D152A6016C223EAED3F1859D0F96D01D6D35BED1AC3208458BBE",
+        "invocation_sha256": "E401EC350CBDD184A3578E1A6A4800740D95CEF4E242C7FBA1B1311FB685FC88",
+        "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "supersedes": {
+          "path": "docs/work_orders/C-09_WORK_INSTRUCTION.md",
+          "sha256": "A429119206BB2C42F0D6FE9AD45E674E1891142C72007FA4972DC091BFC9CFD8",
+          "reason": "LOWER_AUTHORITY_OBSERVE_ONLY_CONFLICTS_WITH_APPROVED_C09_BACKENDS"
+        },
+        "carry_forward_regression": [
+          "AV-SAFE-028"
+        ],
+        "predecessor": {
+          "package_id": "C-08",
+          "status": "ACCEPTED",
+          "sequence": 795,
+          "manifest_path": "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json",
+          "manifest_sha256": "ED2A84BE9B1924A9254D8D44BB99679FFA2EB0A7DC8091DCED24470CF16EA493",
+          "product_commit": "8095981d33deef082fe646495a2cbc80841839c3",
+          "reviewed_main_merge": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+        },
+        "acceptance": [
+          {
+            "requirement_id": "AV-SAFE-010",
+            "level": "L3",
+            "method": "AN",
+            "evidence": [
+              "E-GIT",
+              "E-DIFF"
+            ]
+          },
+          {
+            "requirement_id": "AV-SAFE-011",
+            "level": "L5",
+            "method": "AN",
+            "evidence": [
+              "E-GIT"
+            ]
+          },
+          {
+            "requirement_id": "AV-STAT-021",
+            "level": "L5",
+            "method": "AN",
+            "evidence": [
+              "E-GIT",
+              "E-EVT"
+            ]
+          }
+        ],
+        "work_instruction_id": "WI-C-09-EXECUTION-BACKENDS-R2",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+          "packages/execution_backends/__init__.py",
+          "packages/execution_backends/docker.py",
+          "packages/execution_backends/git_worktree.py",
+          "packages/execution_backends/models.py",
+          "packages/execution_backends/registry.py",
+          "packages/paths/identity.py",
+          "packages/tool_gateway/__init__.py",
+          "packages/tool_gateway/gateway.py",
+          "packages/tool_gateway/models.py",
+          "packages/tool_gateway/registry.py",
+          "tests/execution_backends/test_docker.py",
+          "tests/execution_backends/test_git_worktree.py",
+          "tests/execution_backends/test_registry.py",
+          "tests/integration/test_c09_repository_workspace.py",
+          "tests/paths/test_conflict_scope_identity.py",
+          "tests/tool_gateway/test_gateway.py",
+          "tests/tool_gateway/test_registry.py"
+        ],
+        "projection_mode": "C09_R2_START_PROJECTION_EXACT11",
+        "validated_base_commit": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "dispatch_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "head_relation": "STAGED_EXACT11_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-09_START_PROJECTION_REPORT.md",
+          "docs/evidence/manifests/C-09_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c09-start.json",
+          "docs/validation/C-09_START_VALIDATION.md",
+          "docs/work_orders/C-09_INVOCATION_PROMPT_R2.md",
+          "docs/work_orders/C-09_WORK_INSTRUCTION_R2.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "occurred_at": "2026-09-14T02:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-09",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-09/START",
+      "event_id": "evt_c09_r2_worker_lease_issued",
+      "sequence": 797,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "previous_event_sha256": "98969D1A3757F89CB46B4B86C82A3BE45C75EBD5C0158D4F6086E18F72E8DC03",
+      "details": {
+        "lease_id": "worker-lease-c09-execution-backends-r2-20260913-001",
+        "fencing_token": "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b",
+        "execution_fencing_token": "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-09",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "dispatch_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "issued_at": "2026-09-14T02:00:00+09:00",
+        "expires_at": "2026-09-14T14:00:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+          "packages/execution_backends/__init__.py",
+          "packages/execution_backends/docker.py",
+          "packages/execution_backends/git_worktree.py",
+          "packages/execution_backends/models.py",
+          "packages/execution_backends/registry.py",
+          "packages/paths/identity.py",
+          "packages/tool_gateway/__init__.py",
+          "packages/tool_gateway/gateway.py",
+          "packages/tool_gateway/models.py",
+          "packages/tool_gateway/registry.py",
+          "tests/execution_backends/test_docker.py",
+          "tests/execution_backends/test_git_worktree.py",
+          "tests/execution_backends/test_registry.py",
+          "tests/integration/test_c09_repository_workspace.py",
+          "tests/paths/test_conflict_scope_identity.py",
+          "tests/tool_gateway/test_gateway.py",
+          "tests/tool_gateway/test_registry.py"
+        ]
+      }
+    },
+    {
+      "occurred_at": "2026-09-14T02:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "actor_type": "AGENT",
+      "actor_id": "developer-primary",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-09",
+      "step_id": "START",
+      "actor": "developer-primary",
+      "subject_ref": "C-09/START",
+      "event_id": "evt_c09_r2_write_lease_issued",
+      "sequence": 798,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "previous_event_sha256": "D84F0EC7EE4EBF49FD71F5F7171990297DABC276AA659E3C2D847D220D1F9A1C",
+      "details": {
+        "lease_id": "write-lease-c09-execution-backends-r2-20260913-001",
+        "worker_lease_id": "worker-lease-c09-execution-backends-r2-20260913-001",
+        "fencing_token": "c09-execution-backends-r2-write-fence-epoch-1-c41d7a598e2b4f10",
+        "write_fencing_token": "c09-execution-backends-r2-write-fence-epoch-1-c41d7a598e2b4f10",
+        "execution_fencing_token": "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b",
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-09",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T02:00:00+09:00",
+        "expires_at": "2026-09-14T14:00:00+09:00",
+        "path_scope": [
+          "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
+          "packages/execution_backends/__init__.py",
+          "packages/execution_backends/docker.py",
+          "packages/execution_backends/git_worktree.py",
+          "packages/execution_backends/models.py",
+          "packages/execution_backends/registry.py",
+          "packages/paths/identity.py",
+          "packages/tool_gateway/__init__.py",
+          "packages/tool_gateway/gateway.py",
+          "packages/tool_gateway/models.py",
+          "packages/tool_gateway/registry.py",
+          "tests/execution_backends/test_docker.py",
+          "tests/execution_backends/test_git_worktree.py",
+          "tests/execution_backends/test_registry.py",
+          "tests/integration/test_c09_repository_workspace.py",
+          "tests/paths/test_conflict_scope_identity.py",
+          "tests/tool_gateway/test_gateway.py",
+          "tests/tool_gateway/test_registry.py"
+        ],
+        "status": "ACTIVE"
+      }
     }
   ],
-  "last_event_id": "evt_c08_final_main_package_accepted"
+  "last_event_id": "evt_c09_r2_write_lease_issued"
 }

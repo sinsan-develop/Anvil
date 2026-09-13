@@ -974,6 +974,13 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C08_FINAL_ACCEPTANCE_EXACT7"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 798
+                and event.get("sequence") == 796
+                and event.get("event_id") == "evt_c09_r2_work_instruction_issued"
+                and event["details"].get("projection_mode") == "C09_R2_START_PROJECTION_EXACT11"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -12987,6 +12994,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 798:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c09_start_projection_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 795:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14097,6 +14108,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c07_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-08_START_MANIFEST.json":
             errors.extend(validate_c08_start_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-09_START_MANIFEST.json":
+            errors.extend(validate_c09_start_projection(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-08_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_c08_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-06_SCOPE_REVISION_MANIFEST.json":
@@ -39278,6 +39291,446 @@ def _collect_c08_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
         return [] if valid else ["C08_FINAL_PATH_OR_CLEAN_INVALID"]
     except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C09_START_WI_TEXT = "# C-09 R2 WorkInstruction — 실행 백엔드·경로 identity·read Tool Gateway\n\n판정: 승인된 상위 범위 복원. WI-C-09-EXECUTION-BACKENDS-R2의 executor는 developer-primary다.\nC-08은 seq795 ACCEPTED이며 dispatch 기준은 08aae12fdc4f8bd2d38b455f23408796ab4b8c82, branch codex/c09-execution-backends-r1, upstream development/main이다.\n부모 승인은 APPROVAL-20260814-WORKPLAN-V16-001 / 3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236이다.\n분류는 MAIN_RECONFIRMED_NON_SEMANTIC_SCOPE_RESTORATION, function_scope_change/requirements_change/material_risk_change 모두 UNCHANGED다.\n역사 docs/work_orders/C-09_WORK_INSTRUCTION.md / A429119206BB2C42F0D6FE9AD45E674E1891142C72007FA4972DC091BFC9CFD8은 수정하지 않고 superseded 참고로 보존한다.\n하위 observe-only 지시가 승인된 C-09 backend 범위를 축소했으므로 R2를 활성 계약으로 사용한다.\n\n## 권위와 선행\n\n우선순위는 신산님 최신 지시 → 설계 → 작업계획 → 검증 matrix → 테스트계획 → 운영규칙 → 이 WI → progress다.\n\n- Anvil_설계서_v2.md: DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3\n- Anvil_작업계획서_v1.md: 00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18\n- Anvil_통합검증매트릭스_v1.md: 289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5\n- Anvil_테스트계획서_v1.md: 9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644\n- docs/governance/ANVIL_OPERATING_RULES.md: 4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E\n\nC-08 product 8095981d33deef082fe646495a2cbc80841839c3 및 C-08_FINAL_ACCEPTANCE_MANIFEST.json을 현재 Main merge가 포함한다.\n직접 검증 ID는 AV-SAFE-010(E-GIT/E-DIFF), AV-SAFE-011(E-GIT), AV-STAT-021(E-GIT/E-EVT)이다.\nAV-SAFE-028은 predecessor 회귀/carry-forward이며 신규 책임 ID로 재배정하지 않는다.\n\n## exact18 단일 writer\n\n정렬 경로 hash: 57A7D45027FC24930F013C7EB0AB85B81B45E6A174B2DA9ADD90ECE95FA6F3D5.\n- docs/04_test_reports/C-09_COMPLETION_REPORT.md\n- packages/execution_backends/__init__.py\n- packages/execution_backends/docker.py\n- packages/execution_backends/git_worktree.py\n- packages/execution_backends/models.py\n- packages/execution_backends/registry.py\n- packages/paths/identity.py\n- packages/tool_gateway/__init__.py\n- packages/tool_gateway/gateway.py\n- packages/tool_gateway/models.py\n- packages/tool_gateway/registry.py\n- tests/execution_backends/test_docker.py\n- tests/execution_backends/test_git_worktree.py\n- tests/execution_backends/test_registry.py\n- tests/integration/test_c09_repository_workspace.py\n- tests/paths/test_conflict_scope_identity.py\n- tests/tool_gateway/test_gateway.py\n- tests/tool_gateway/test_registry.py\n\n두 ACTIVE lease의 actor/subject/baseline/epoch/token/만료와 exact scope를 시작 전에 확인한다.\nworker: worker-lease-c09-execution-backends-r2-20260913-001; epoch 1.\nexecution token: c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b.\nwrite: write-lease-c09-execution-backends-r2-20260913-001; epoch 1.\nwrite token: c09-execution-backends-r2-write-fence-epoch-1-c41d7a598e2b4f10.\n발급 2026-09-14T02:00:00+09:00, 만료 2026-09-14T14:00:00+09:00. 기록 시각은 runtime action 시각이 아니다.\npackages/repository_intelligence, leases, orchestration, api, persistence, action_policy, migrations, UI, deploy, dependency/lock 및 역사 evidence는 쓰기 비범위다.\n범위 밖 변경이 필요하면 SCOPE_EXPANSION_REQUIRED로 Main에게 증거를 반환한다.\n\n## 필수 completion contract — Critical 3\n\nC-1. GitWorktreeExecutionBackend와 DockerExecutionBackend는 prepare_workspace, execute, stream_events, cancel, collect_artifacts, destroy_workspace의 공통 protocol을 실제 구현한다.\ncaller observations를 성공 receipt로 포장하거나 모든 execute를 UNSUPPORTED로 끝내는 구현은 미완료다.\nC-2. RepositoryIdentity는 stable repository_id, canonical source root, explicit case policy, mapping revision을 분리한다.\nconflict key는 (repository_id, canonical_repo_relative_path, repository_case_policy)이며 host path나 remote URL에서 ID를 즉석 생성하지 않는다.\nC-3. 단일 Tool Gateway admission이 registry, session grant, workspace/backend owner, path 및 limits를 확인하고 성공/차단/실패 모두 immutable audit를 생성한다.\n\n## 필수 completion contract — Important 7\n\nI-1. execute는 registry-defined bounded read operation만 실제 수행한다.\nrepo.status, repo.search, repo.read_file, repo.symbols, git.diff 다섯 도구를 canonical registration으로 제공한다.\nExecutionRequest는 operation/검증된 인자/workspace identity이며 raw command authority가 아니다.\nC-10의 exec.run, 임의 shell/argv, test/build/lint Action, patch/write Action, risk engine, egress 정책 및 Secret Broker는 등록/구현하지 않는다.\n고정 argv의 read process와 lifecycle 내부 mutation은 이 제한과 구분한다.\n\nI-2. 원본 Git common dir에 worktree metadata를 만들지 않는다.\nsource 밖 backend-owned managed Git store에 승인 baseline을 local-only로 materialize하고 그 store에서 isolated worktree를 생성한다.\nsource를 향하는 writable alternates/links/metadata 공유와 remote fetch/push/clone/network를 금지한다.\nsource root/HEAD/branch/porcelain/index/refs/config/locks/full inventory, managed store/workspace 경로, baseline, 생성 refs/resources와 cleanup 결과를 기록한다.\nA-13 public scan_repository(ScanRequest(..., output_path=None)) 및 C-08 public 결과를 조합하며 private snapshot 복사·재구현을 하지 않는다.\naction 전 scan의 post_snapshot_sha256과 action 후 scan의 pre_snapshot_sha256을 비교한다. scanner 자체 no-write와 backend action 보존 증거를 구분한다.\nsource writes=0, owned workspace lifecycle mutation, read Tool side_effect=none을 별도 기록한다.\n\nI-3. cancel은 해당 handle의 신규 작업 차단/정상 종료/결과 확인과 artifact 수집을 수행하며 workspace/artifact를 기본 24시간 보존한다.\n이미 종료된 결과를 CANCELLED로 덮지 않으며 중복 cancel은 멱등이다.\ndestroy는 별도 disposal authorization seam으로 소유권, 실행 handle 없음, 보존기간 만료 또는 기존 승인된 폐기 authority를 검증한 뒤 exact owned 자원만 정리한다.\n새 destructive 승인 정책/UI는 만들지 않는다. 취소가 destroy를 자동 호출하지 않는다.\n강제 종료 정책/소유 증거/폐기 authority 부족은 BLOCKED/RETAINED다.\ntimeout/cancel/prepare 실패의 orphan manifest, dirty 결과/미보존 artifact, cleanup 실패/잔류를 사실대로 보고한다.\ntemp QA teardown authority를 제품 자동 폐기로 확대하지 않는다.\n\nI-4. WorkspaceSpec에는 승인 baseline commit/manifest, canonical target scopes와 RepositoryIdentity를 포함한다.\ndirty 존재만으로 차단하지 않는다. 대상 scopes와 dirty/untracked overlap, file/directory 충돌 또는 baseline 변동이면 prepare 전에 BASELINE_CONFLICT와 USER_DECISION_REQUIRED event/projection을 생성한다.\nprojection은 run/workspace 요청 identity, expected/observed baseline hash, 충돌 canonical paths, 원본 보존 evidence ref를 가진다.\n충돌 없는 dirty는 보존하면서 read/격리 prepare를 허용한다. 검사와 prepare 사이 baseline 변동도 차단한다.\n실패 시 source stash/clean/checkout/patch, workspace create/destroy 0이다. UI/API/DB 구현 및 event 영속화를 주장하지 않는다.\n\nI-5. C-13 takeover와 동일 ToolPermissionRegistry 인스턴스 및 trusted session_id 권한키를 공유한다.\ncaller run_id로 다른 grant를 사용하지 못하도록 workspace owner에 결박한다.\ngrant 교체 의미, require, 멱등 revoke 반환값, active 복사본 반환과 import 경로를 보존한다.\nnamespace/alias는 registration에만 명시하며 wildcard/암묵 grant/default registry를 만들지 않는다.\ndispatch 직전 현재 grant와 identity를 다시 검사한다. revoke 직후 신규·대기 dispatch와 동일 idempotency replay의 신규 IO는 0, denial audit는 존재해야 한다.\n활성 process 전체 강제 종료나 DB fencing 원자성을 C-09 PASS로 확대하지 않는다.\n\nI-6. metadata의 network deny와 driver argv/inspect의 격리를 별도로 검증한다.\nGit은 고정 read subcommand와 no external diff/textconv, 안전한 cwd/env, bounded output/time/resource를 강제하며 hooks/filter/config 실행 경로도 검사한다.\nuser-controlled executable/cwd/env, shell 문자열/shell=true, option/metacharacter injection, 외부 명령은 dispatch 전에 거부한다.\nDocker endpoint/image digest/mount는 trusted config만 사용한다. network=none, pull=never, source mount 금지, read-only workspace mount와 bounded resources를 argv 및 inspect 결과에서 확인한다.\nhost root/socket/device/privileged mount, 상대/중복 mapping, 전체 host env, Secret/ref 및 임의 env 주입을 거부한다.\ncontainer ID 소유 검증 없이 list/prune/stop/remove하지 않는다. fake runner는 concrete driver가 생성한 argv와 상태전이를 검사한다.\n\nI-7. WorkspaceRef는 stable repository ID와 source↔isolated worktree↔container mapping을 보유한다.\nDocker mount table은 workspace_id/backend_id에 결박하고 임의 /workspace stripping, basename 비교, 중첩 root 모호 선택을 금지한다.\nWindows drive/WSL /mnt/case/실제 symlink·junction/가능한 실제 8.3 alias/missing leaf의 deepest-existing-ancestor를 수렴시킨다.\nlexical alias/.. 선처리로 물리 대상을 오인하지 말고 모호/escape/UNC/device/broken link/reparse를 fail-closed한다.\nidentity key 수렴과 read 접근 reparse 거부를 구분한다. lexical short-name 흉내/WSL 문자열 매핑을 실제 filesystem 검증으로 승격하지 않는다.\n기존 B-09 conflict_scope_key(root_path, path, policy) 호출은 additive mapper로 보존하며 C-09 runtime은 stable-ID 경로를 사용한다.\n\n## lifecycle·audit·artifact 추가 완료조건\n\nprepare는 실제 owned workspace와 manifest를 생성하고 baseline/idempotency ID 충돌을 거부한다.\nstream_events는 handle-bound 시작/실제 read 결과 또는 bounded stdout/stderr/종료의 순서와 단일 terminal event를 제공한다.\ncross-run/backend handle·artifact·mapping 대체를 거부한다.\ncollect_artifacts는 실행이 실제 만든 output/diff/log만 immutable ArtifactRef/hash/size/media type으로 반환하며 빈 목록은 빈 목록으로 보고한다.\ncaller path 임의 수집, unknown/outside/special/reparse/oversize artifact를 거부한다.\n모든 결과(success/blocked/failed/timeout/cancelled)는 run/workspace/backend/tool/path identity, idempotency, limits, masked fields, start/end, result/error, canonical JSON bytes/SHA-256을 가진다.\ningress deep-freeze로 caller dict/list 사후 mutation을 차단하고 NaN/non-JSON/secret-shaped/oversize input/output은 fail-closed한다.\n새 실행은 새 ID/시각/receipt를 갖고 idempotency replay는 원 receipt를 반환한다. clock/ID는 결정적 테스트에 주입한다.\nrunner/process/control 객체는 serialization하지 않는다. JSON-safe 값이라는 이유로 C-04 영속복구 완료를 주장하지 않는다.\nlegacy list_files/metadata는 같은 admission 또는 명시적 trusted fixture adapter로 제한하여 우회 경로를 남기지 않는다.\n\n## 실행·검증 경계\n\n제품 구현 단계 local Git은 D:\\tmp 아래 고유 owned fixture에만 init/add/commit/managed worktree lifecycle을 허용한다.\n원본/remote 변경, fetch/pull/push/clone/network는 금지한다. temp 이름·수명·정리 계획을 기록하고 exact cleanup/잔류0을 증명한다.\nDocker는 deterministic injected runner만 사용하며 실제 daemon/CLI/pull/build/install/network는 실행하지 않는다.\nWSL은 pure 문자열/manifest mapping만 검증한다.\nDB/API/UI/browser/Provider/Telegram/SSH/network/deploy/Secret은 NOT_EXECUTED/NOT_ACCESSED다.\nmock/fake는 contract, temp Git은 local integration, 실제 daemon/WSL/운영은 NOT_EXECUTED로 구분한다.\n\nTDD 후 다음을 실행한다.\n\n- python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py\n- python -B -m pytest -q -p no:cacheprovider tests/repository_intelligence tests/tooling/test_a13_repository_scan.py\n- python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py\n- C-13 successor E2E registry 사용의 정확한 node를 read-only Impact Map으로 식별하여 회귀한다. lease 밖 test는 수정하지 않는다.\n- python -B -m compileall -q packages/paths packages/execution_backends packages/tool_gateway tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py\n- git diff --check\n\n두 concrete backend에 같은 lifecycle contract suite를 적용하고 success/denial/failure/timeout/cancel/artifact/destroy를 검사한다.\nAT-1~5: 각 L5는 위반 시도→정확한 blocked_code→immutable audit, 우회 최소2, dispatch0, 방어 부재 시 파괴되는 대상을 한 문장으로 기록한다.\nsource dirty/untracked/metadata zero-delta, 실제 junction/missing leaf/가능한 8.3, TOCTOU, bounded 5 read 도구, replay/revoke IO0 및 외부 IO sentinel을 포함한다.\n제품 exact18 증거와 독립 Tester blocking0/current EvidenceManifest 전에는 C-09 ACCEPTED를 선언하지 않는다.\n\n## 보고·rollback\n\n결과는 COMPLETED/FAILURE_REPORT/INCOMPLETE/BLOCKED/CANCELLED로 구분한다.\n정확한 branch/HEAD/status/기준 hash, 변경 path/diff, 명령/exit code, RED/GREEN, 오류 lineage/count, 미실행/잔여위험, progress 갱신 여부를 docs/04_test_reports/C-09_COMPLETION_REPORT.md에 기록한다.\n이 start-control은 제품 실행·제품 완료·외부 환경 성공이 아니다. C-10 NOT_READY, DIR-2 NOT_REACHED를 유지한다.\n후속 commit 뒤 rollback은 해당 C-09 제품/control commit의 정상 git revert다. DB/migration/외부 rollback은 없다.\nDeveloper는 commit/push/PR/merge를 수행하지 않고 결과를 Main에 반환한다.\n"
+C09_START_PROMPT_TEXT = "# C-09 R2 Invocation\n\nWI-C-09-EXECUTION-BACKENDS-R2와 exact18 ACTIVE worker/write lease만 수행한다. 시작 branch/HEAD/status 및 execution/write fencing token과 만료를 검증한 뒤 WI의 TDD·completion contract·지정 회귀를 실행한다. 두 concrete backend의 lifecycle, bounded read admission, source 관리정보 보존, stable identity, cancel 24h 보존과 별도 disposal authorization, 동일 C-13 registry/session_id 및 revoke 이후 IO0을 구현한다. 실제 local Git은 owned temp fixture에만 허용하고 Docker는 injected fake runner만 사용한다. WI의 외부 IO/Secret/범위 금지와 evidence 등급을 지킨다. 결과·정확한 명령/exit code·diff·오류·미검증·rollback을 지정 completion report에 기록한다. scope 필요는 SCOPE_EXPANSION_REQUIRED, dirty overlap은 BASELINE_CONFLICT/USER_DECISION_REQUIRED, 도구/환경 부족은 BLOCKED로 Main에게 반환한다. commit/push/PR/merge는 수행하지 않는다.\n"
+
+C09_START_P = "docs/progress/build-progress.json"
+C09_START_E = "docs/progress/progress-events.json"
+C09_START_H = "docs/progress/BUILD_HANDOFF.md"
+C09_START_D = "docs/progress/progress-handoff-detached-digest-c09-start.json"
+C09_START_M = "docs/evidence/manifests/C-09_START_MANIFEST.json"
+C09_START_REPORT = "docs/04_test_reports/C-09_START_PROJECTION_REPORT.md"
+C09_START_VALIDATION = "docs/validation/C-09_START_VALIDATION.md"
+C09_START_WI = "docs/work_orders/C-09_WORK_INSTRUCTION_R2.md"
+C09_START_PROMPT = "docs/work_orders/C-09_INVOCATION_PROMPT_R2.md"
+C09_START_BASE = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+C09_START_BRANCH = "codex/c09-execution-backends-r1"
+C09_START_DEVELOPMENT_URL = "git@github-sinsan-develop:sinsan-develop/Anvil.git"
+C09_START_DEVELOPMENT_REF = "development/main"
+C09_START_AT = "2026-09-14T02:00:00+09:00"
+C09_START_EXPIRES_AT = "2026-09-14T14:00:00+09:00"
+C09_START_WI_SHA256 = _c21_resume_sha(C09_START_WI_TEXT.encode("utf-8"))
+C09_START_PROMPT_SHA256 = _c21_resume_sha(C09_START_PROMPT_TEXT.encode("utf-8"))
+C09_START_DESIGN_SHA256 = C08_START_DESIGN_SHA256
+C09_START_WORK_PLAN_SHA256 = C08_START_WORK_PLAN_SHA256
+C09_START_MATRIX_SHA256 = C08_START_MATRIX_SHA256
+C09_START_TEST_PLAN_SHA256 = C08_START_TEST_PLAN_SHA256
+C09_START_GOVERNANCE_SHA256 = C08_START_GOVERNANCE_SHA256
+C09_START_WORKER_LEASE_ID = "worker-lease-c09-execution-backends-r2-20260913-001"
+C09_START_WRITE_LEASE_ID = "write-lease-c09-execution-backends-r2-20260913-001"
+C09_START_EXECUTION_TOKEN = "c09-execution-backends-r2-execution-fence-epoch-1-8f2e6c91a74d4b3b"
+C09_START_WRITE_TOKEN = "c09-execution-backends-r2-write-fence-epoch-1-c41d7a598e2b4f10"
+
+
+def c09_start_projection_paths() -> list[str]:
+    return sorted([
+        C09_START_REPORT, C09_START_M, C09_START_H, C09_START_P, C09_START_E,
+        C09_START_D, C09_START_VALIDATION, C09_START_WI, C09_START_PROMPT,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c09_start_product_write_scope() -> list[str]:
+    return ["docs/04_test_reports/C-09_COMPLETION_REPORT.md","packages/execution_backends/__init__.py","packages/execution_backends/docker.py","packages/execution_backends/git_worktree.py","packages/execution_backends/models.py","packages/execution_backends/registry.py","packages/paths/identity.py","packages/tool_gateway/__init__.py","packages/tool_gateway/gateway.py","packages/tool_gateway/models.py","packages/tool_gateway/registry.py","tests/execution_backends/test_docker.py","tests/execution_backends/test_git_worktree.py","tests/execution_backends/test_registry.py","tests/integration/test_c09_repository_workspace.py","tests/paths/test_conflict_scope_identity.py","tests/tool_gateway/test_gateway.py","tests/tool_gateway/test_registry.py"]
+
+
+def c09_start_projection_metadata() -> dict[str, Any]:
+    paths = c09_start_projection_paths()
+    return {
+        "sequence": 798, "projection_mode": "C09_R2_START_PROJECTION_EXACT11",
+        "validated_base_commit": C09_START_BASE, "branch": C09_START_BRANCH,
+        "exact_paths": paths, "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "exact_path_list_ordinal_sha256": _c21_path_list_sha(paths, windows=False),
+    }
+
+
+def _c09_start_worker_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C09_START_WORKER_LEASE_ID, "fencing_token": C09_START_EXECUTION_TOKEN,
+        "execution_fencing_token": C09_START_EXECUTION_TOKEN, "lease_epoch": 1,
+        "actor_id": "developer-primary", "subject_ref": "C-09",
+        "baseline_hash": C09_START_DESIGN_SHA256, "baseline_git_commit": C09_START_BASE,
+        "dispatch_head": C09_START_BASE, "issued_at": C09_START_AT,
+        "expires_at": C09_START_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c09_start_product_write_scope(),
+    }
+
+
+def _c09_start_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C09_START_WRITE_LEASE_ID, "worker_lease_id": C09_START_WORKER_LEASE_ID,
+        "fencing_token": C09_START_WRITE_TOKEN, "write_fencing_token": C09_START_WRITE_TOKEN,
+        "execution_fencing_token": C09_START_EXECUTION_TOKEN,
+        "write_epoch": 1, "actor_id": "developer-primary", "subject_ref": "C-09",
+        "baseline_hash": C09_START_DESIGN_SHA256, "issued_at": C09_START_AT,
+        "expires_at": C09_START_EXPIRES_AT, "path_scope": c09_start_product_write_scope(),
+        "status": "ACTIVE",
+    }
+
+
+def _c09_start_authority() -> dict[str, Any]:
+    return {
+        "revision_class": "MAIN_RECONFIRMED_NON_SEMANTIC_SCOPE_RESTORATION",
+        "authority_basis": ["APPROVED_WORK_PLAN_C09", "C08_ACCEPTED", "A13_PREEXISTING_READ_ONLY_SCAN", "DESIGN_14_1_27_2_27_3_41"],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_sha256": C09_START_WI_SHA256,
+        "invocation_sha256": C09_START_PROMPT_SHA256,
+        "design_sha256": C09_START_DESIGN_SHA256,
+        "work_plan_sha256": C09_START_WORK_PLAN_SHA256,
+        "matrix_sha256": C09_START_MATRIX_SHA256,
+        "test_plan_sha256": C09_START_TEST_PLAN_SHA256,
+        "governance_sha256": C09_START_GOVERNANCE_SHA256,
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "supersedes": {"path": "docs/work_orders/C-09_WORK_INSTRUCTION.md", "sha256": "A429119206BB2C42F0D6FE9AD45E674E1891142C72007FA4972DC091BFC9CFD8", "reason": "LOWER_AUTHORITY_OBSERVE_ONLY_CONFLICTS_WITH_APPROVED_C09_BACKENDS"},
+        "carry_forward_regression": ["AV-SAFE-028"],
+        "predecessor": {"package_id": "C-08", "status": "ACCEPTED", "sequence": 795,
+            "manifest_path": C08_FINAL_M, "manifest_sha256": "ED2A84BE9B1924A9254D8D44BB99679FFA2EB0A7DC8091DCED24470CF16EA493",
+            "product_commit": C08_FINAL_PRODUCT, "reviewed_main_merge": C09_START_BASE},
+        "acceptance": [
+            {"requirement_id": "AV-SAFE-010", "level": "L3", "method": "AN", "evidence": ["E-GIT", "E-DIFF"]},
+            {"requirement_id": "AV-SAFE-011", "level": "L5", "method": "AN", "evidence": ["E-GIT"]},
+            {"requirement_id": "AV-STAT-021", "level": "L5", "method": "AN", "evidence": ["E-GIT", "E-EVT"]},
+        ],
+    }
+
+
+def _c09_start_boundary() -> dict[str, str]:
+    return {
+        "product_code": "PENDING_C09_R2_IMPLEMENTATION",
+        "fixture_validation": "NOT_EXECUTED", "git_fixture": "NOT_EXECUTED", "docker": "NOT_EXECUTED",
+        "actual_repository_success_claim": "FORBIDDEN",
+        "persistent_transaction": "NOT_EXECUTED", "database": "NOT_EXECUTED",
+        "api": "NOT_EXECUTED", "ui": "NOT_EXECUTED", "browser": "NOT_EXECUTED",
+        "provider": "NOT_EXECUTED", "telegram": "NOT_EXECUTED", "secret": "NOT_ACCESSED",
+        "wsl": "NOT_EXECUTED", "deployment": "NOT_EXECUTED", "network": "NOT_EXECUTED",
+        "external_call": "NOT_EXECUTED",
+    }
+
+
+
+def c09_start_projection_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c09_start_projection_metadata()
+    generated = {C09_START_REPORT, C09_START_M, C09_START_H, C09_START_P, C09_START_E, C09_START_D, C09_START_VALIDATION, C09_START_WI, C09_START_PROMPT}
+    if set(historical) != {C09_START_H, C09_START_P, C09_START_E} or set(files) != set(meta["exact_paths"]) - generated:
+        raise ValueError("C09_START_INPUT_SET_INVALID")
+    progress = _c21_resume_json(historical[C09_START_P])
+    stream = _c21_resume_json(historical[C09_START_E])
+    if (
+        progress.get("event_sequence") != 795 or stream.get("last_sequence") != 795
+        or len(stream.get("events", [])) != 795 or progress.get("current_work_package") != "C-08"
+        or progress.get("status") != "ACCEPTED" or progress.get("worker_lease") is not None
+        or progress.get("write_lease") is not None
+        or progress.get("next_work_package") != {"package_id": "C-09", "status": "READY_FOR_WORK_INSTRUCTION"}
+    ):
+        raise ValueError("C09_START_HISTORY_INVALID")
+    documents = {C09_START_WI: C09_START_WI_TEXT.encode("utf-8"), C09_START_PROMPT: C09_START_PROMPT_TEXT.encode("utf-8")}
+    authority = _c09_start_authority()
+    worker = _c09_start_worker_lease()
+    write = _c09_start_write_lease()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        event = {
+            "occurred_at": C09_START_AT, "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "actor_type": "AGENT", "actor_id": actor, "project_id": "anvil", "run_id": None,
+            "work_package_id": "C-09", "step_id": "START", "actor": actor,
+            "subject_ref": "C-09/START", "event_id": event_id, "sequence": sequence,
+            "event_type": event_type, "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(event))
+        return event
+    wi_details = {
+        **authority, "work_instruction_id": "WI-C-09-EXECUTION-BACKENDS-R2",
+        "approval_ref": authority["parent_approval_id"], "product_write_scope": c09_start_product_write_scope(),
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C09_START_BASE,
+        "dispatch_head": C09_START_BASE, "dispatch_upstream_head": C09_START_BASE,
+        "head_relation": "STAGED_EXACT11_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN", "exact_allowed_paths": meta["exact_paths"],
+    }
+    events = [
+        envelope(796, "WORK_INSTRUCTION_ISSUED", "evt_c09_r2_work_instruction_issued", "main-agent-eoul", wi_details),
+        envelope(797, "WORKER_LEASE_ISSUED", "evt_c09_r2_worker_lease_issued", "developer-primary", worker),
+        envelope(798, "WRITE_LEASE_ISSUED", "evt_c09_r2_write_lease_issued", "developer-primary", write),
+    ]
+    events_raw = _c21_append_events(historical[C09_START_E], 795, events)
+    repository = dict(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C09_START_BASE,
+        "development_main": C09_START_BASE, "control_head": C09_START_BASE,
+        "local_head": C09_START_BASE, "branch": C09_START_BRANCH,
+        "upstream": C09_START_DEVELOPMENT_REF, "remote_head": C09_START_BASE,
+        "head_relation": "STAGED_EXACT11_OR_SOLE_DIRECT_CHILD_OR_REVIEWED_MERGE_OR_DETACHED_DEVELOPMENT_MAIN", "worktree_status": "STAGED_EXACT11",
+        "exact_allowed_paths": meta["exact_paths"], "product_write_scope": c09_start_product_write_scope(),
+        "push_status": "NOT_EXECUTED", "development_remote_url": C09_START_DEVELOPMENT_URL,
+    })
+    active_wi = {
+        "artifact_id": "WI-C-09-EXECUTION-BACKENDS-R2", "artifact_path": C09_START_WI,
+        "artifact_sha256": C09_START_WI_SHA256, "invocation_path": C09_START_PROMPT,
+        "invocation_sha256": C09_START_PROMPT_SHA256, "executor": "developer-primary",
+        "result_status": "IN_PROGRESS", "package_status": "IN_PROGRESS",
+        "product_write_scope": c09_start_product_write_scope(), "acceptance_binding": authority,
+    }
+    progress.update({
+        "snapshot_id": "snapshot-c09-start-seq798", "updated_at": C09_START_AT,
+        "recorded_at": C09_START_AT, "event_sequence": 798, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-09", "status": "IN_PROGRESS",
+        "active_agent": {"actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-09", "status": "ACTIVE", "execution_fencing_token": C09_START_EXECUTION_TOKEN},
+        "worker_lease": worker, "write_lease": write, "active_work_instruction": active_wi,
+        "repository": repository,
+        "c09_start_projection": {"status": "IN_PROGRESS", "accepted": False, "event_sequence": 798,
+            "c08_status": "ACCEPTED", "c09_status": "IN_PROGRESS", "c10_status": "NOT_READY",
+            "dir2_status": "NOT_REACHED", "authority": authority,
+            "product_exact_paths": c09_start_product_write_scope(), "external_validation": _c09_start_boundary()},
+        "next_work_package": {"package_id": "C-10", "status": "NOT_READY"},
+        "next_successor_work_package": None, "runtime_next_action": "DISPATCH_C09_DEVELOPER",
+        "next_safe_action": "DISPATCH_C09_DEVELOPER",
+        "current_progress_evidence_ref": {"package_id": "C-09", "path": C09_START_D, "manifest_path": C09_START_M},
+        "latest_evidence_manifest_ref": {"path": C09_START_M, "artifact_id": "C09-START-PROJECTION-20260913"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C09_IN_PROGRESS", "C10_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C09_START_E, "sha256": _c21_resume_sha(events_raw)}
+    report_raw = ("# C-09 시작 투영 보고서\n\n판정: START_CONTROL_READY_FOR_REVIEW, 제품 완료 아님.\n"
+        "담당 developer-primary, seq795 C-08 ACCEPTED에서 seq796~798 exact11을 생성한다.\n"
+        "기준 HEAD 08aae12fdc4f8bd2d38b455f23408796ab4b8c82, branch codex/c09-execution-backends-r1, 시작 clean.\n"
+        "R2는 승인 범위 복원이며 C3/I7을 WI completion contract에 반영했다. 제품 exact18은 아직 수정하지 않았다.\n"
+        "RED: python -B -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k seq798; "
+        "exit1, 4 failed, 416 deselected, C-09 start builder missing. 의도된 TDD RED 1회, 제품 정식 실패 0회.\n"
+        "도구 오류: apply deny-read ACLs 1건; 승인된 apply_patch wrapper로 해결, wrapper 반복 오류0.\n"
+        "추가 RED: C08 predecessor manifest hash 누락 1 failed/421 deselected를 재현해 결박했다.\n"
+        "내부 문맥 오류: dispatcher patch hunk 순서 불일치1회, 정렬 적용으로 해결; 동일 오류 반복0.\n"
+        "GREEN: C09 focused 6 passed/416 deselected; C09+C08 회귀 15 passed/407 deselected, exit0.\n"
+        "canonical checker PASS sequence=798 reporting=AUTO_CONTINUE; py_compile/diff-check exit0.\n"
+        "C08 함수23개/테스트class2개 AST 및 선행 제품·역사 evidence bytes 불변을 확인했다.\n"
+        "staged exact11, unstaged0, untracked0; 결과는 시작 제어 검증이며 제품/backend 실행 증거가 아니다.\n"
+        "독립 review round1 C0/I2: AV-STAT-021 L5 복원 및 실제 parent approval SHA 검증 누락을 보완했다.\n"
+        "R1 전용 RED 2 failed/422 deselected → GREEN 2 passed/422 deselected; 두 root cause 각1회, 반복0.\n"
+        "Git fixture/Docker/WSL/DB/API/browser/Provider/Telegram/network/deploy/Secret 실행0.\n"
+        "commit/push/PR/merge 미실행. Main 독립 검토가 다음 단계다.\n"
+        "rollback: commit 전 exact11 diff를 보존하고 Main 통제하에 되돌림; commit 뒤 해당 control commit 정상 git revert.\n").encode("utf-8")
+    validation_raw = ("# C-09 시작 투영 검증\n\n"
+        "seq1~795 raw event prefix는 불변이며 seq796 WORK_INSTRUCTION_ISSUED, seq797 WORKER_LEASE_ISSUED, seq798 WRITE_LEASE_ISSUED만 append한다.\n"
+        "exact11 시작 기록, 제품 exact18 lease, C-08 ACCEPTED, C-09 IN_PROGRESS, C-10 NOT_READY, DIR-2 NOT_REACHED.\n"
+        "필수 명령: python -B scripts/check_project_progress.py; "
+        "python -B -m pytest tests/tooling/test_project_progress.py -q -p no:cacheprovider -k 'seq798 or seq790 or seq795'; "
+        "python -m py_compile scripts/check_project_progress.py tests/tooling/test_project_progress.py; git diff --check; git diff --cached --check.\n"
+        "builder 결정성, 원본 prefix, authority/lease/hash/digest, seq798 우선 dispatch와 fail-closed Git 수집을 검증한다.\n"
+        "Git predicate positive는 staged/direct-child/reviewed-main/detached-main; "
+        "negative는 URL/ref/base/branch/upstream/parent/extra-parent/second-descendant/dirty/unstaged/untracked/path/noncanonical/traversal/tree mismatch다.\n"
+        "외부 Git fixture와 Docker/WSL/DB/API/browser/Provider/Telegram/network/deploy/Secret은 NOT_EXECUTED.\n"
+        "이 문서는 재현 가능한 검증 계약이다. 실제 명령의 exit code와 최종 GREEN은 writer 보고서에서 별도 기록하며 제품 acceptance가 아니다.\n").encode("utf-8")
+    latest = {**files, **documents, C09_START_E: events_raw, C09_START_REPORT: report_raw, C09_START_VALIDATION: validation_raw}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(payload)} for path, payload in sorted(latest.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    handoff.update({
+        "accepted": False, "c08_status": "ACCEPTED", "c09_status": "IN_PROGRESS",
+        "c10_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "repository_head": C09_START_BASE,
+        "repository_upstream": C09_START_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C09_START_BASE,
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "product_exact_paths": c09_start_product_write_scope(),
+        "work_instruction_sha256": C09_START_WI_SHA256,
+        "invocation_sha256": C09_START_PROMPT_SHA256, "acceptance_binding": authority,
+        "external_validation": _c09_start_boundary(), "current_manifest": C09_START_M,
+        "reporting_decision": "AUTO_CONTINUE"})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement, historical[C09_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C09_START_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-09 실행 백엔드 R2 시작 - seq798\n\n"
+        "- seq1~795 raw event objects preserved; seq788~798 appended.\n"
+        "- preexisting product is under current revalidation; external validation not executed.\n\n" + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C09-START-DIGEST-20260913",
+        "package_id": "C-09", "event_sequence": 798, "algorithm": "SHA-256",
+        "created_at": C09_START_AT, "scope": "seq788-798 append-only C-09 start; seq1-795 preserved; exact11",
+        "self_reference": False,
+        "progress": {"path": C09_START_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C09_START_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, **documents, C09_START_REPORT: report_raw, C09_START_H: handoff_raw,
+                 C09_START_P: progress_raw, C09_START_E: events_raw,
+                 C09_START_D: digest_raw, C09_START_VALIDATION: validation_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C09_START_E], 795)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-09_START_PROJECTION",
+        "artifact_id": "C09-START-PROJECTION-20260913", "created_at": C09_START_AT,
+        "package_id": "C-09", "event_sequence": 798, "historical_event_sequence": 795,
+        "appended_event_count": 3,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": False, "status": "IN_PROGRESS",
+        "c08_status": "ACCEPTED", "c09_status": "IN_PROGRESS", "c10_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "worker_lease": worker, "write_lease": write,
+        "work_instruction_path": C09_START_WI, "work_instruction_sha256": C09_START_WI_SHA256,
+        "invocation_path": C09_START_PROMPT, "invocation_sha256": C09_START_PROMPT_SHA256,
+        "authority": authority, "product_exact_paths": c09_start_product_write_scope(),
+        "product_exact_path_list_sha256": _c21_path_list_sha(c09_start_product_write_scope(), windows=True),
+        "external_validation": _c09_start_boundary(), "record_binding": repository["head_relation"],
+        "self_reference": False, **meta}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(payload), "sha256": _c21_resume_sha(payload)}
+                                 for path, payload in sorted(artifacts.items())]
+    artifacts[C09_START_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(meta["exact_paths"]):
+        raise ValueError("C09_START_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+
+def c09_start_projection_from_root(root: Path) -> dict[str, bytes]:
+    authority_files = {
+        "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        C08_FINAL_M: "ED2A84BE9B1924A9254D8D44BB99679FFA2EB0A7DC8091DCED24470CF16EA493",
+        "Anvil_설계서_v2.md": C09_START_DESIGN_SHA256,
+        "Anvil_작업계획서_v1.md": C09_START_WORK_PLAN_SHA256,
+        "Anvil_통합검증매트릭스_v1.md": C09_START_MATRIX_SHA256,
+        "Anvil_테스트계획서_v1.md": C09_START_TEST_PLAN_SHA256,
+        "docs/governance/ANVIL_OPERATING_RULES.md": C09_START_GOVERNANCE_SHA256,
+        "docs/work_orders/C-09_WORK_INSTRUCTION.md": "A429119206BB2C42F0D6FE9AD45E674E1891142C72007FA4972DC091BFC9CFD8",
+    }
+    for path, expected in authority_files.items():
+        if _c21_resume_sha((root / path).read_bytes()) != expected:
+            raise ValueError("C09_START_AUTHORITY_HASH_INVALID")
+    historical = {path: subprocess.check_output(["git", "show", f"{C09_START_BASE}:{path}"], cwd=root)
+                  for path in {C09_START_H, C09_START_P, C09_START_E}}
+    generated = {C09_START_REPORT, C09_START_M, C09_START_H, C09_START_P, C09_START_E, C09_START_D, C09_START_VALIDATION, C09_START_WI, C09_START_PROMPT}
+    files = {path: (root / path).read_bytes() for path in set(c09_start_projection_paths()) - generated}
+    return c09_start_projection_artifacts(historical, files)
+
+
+def validate_c09_start_projection(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c09_start_projection_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c09_start_projection_paths()}
+        actual = {
+            C09_START_P: bundle.get("progress"), C09_START_E: bundle.get("events"),
+            C09_START_H: bundle.get("handoff"), C09_START_D: bundle.get("detached_digest"),
+            C09_START_M: manifest,
+        }
+        refs = {
+            C09_START_P: _c21_resume_json(expected[C09_START_P]),
+            C09_START_E: _c21_resume_json(expected[C09_START_E]),
+            C09_START_H: extract_handoff_summary(expected[C09_START_H].decode()),
+            C09_START_D: _c21_resume_json(expected[C09_START_D]),
+            C09_START_M: _c21_resume_json(expected[C09_START_M]),
+        }
+        errors = [] if all(_c21_strict_json_equal(actual[path], refs[path]) for path in actual) else ["C09_START_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C09_START_RAW_BYTES_INVALID")
+        progress = actual[C09_START_P]
+        if (
+            not isinstance(progress, Mapping) or progress.get("event_sequence") != 798
+            or progress.get("current_work_package") != "C-09" or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c09_start_worker_lease()
+            or progress.get("write_lease") != _c09_start_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-10", "status": "NOT_READY"}
+            or progress.get("next_safe_action") != "DISPATCH_C09_DEVELOPER"
+        ):
+            errors.append("C09_START_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(["git", "show", f"{C09_START_BASE}:{C09_START_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 795) != raw_event_object_prefix_bytes(actual_raw[C09_START_E], 795):
+            errors.append("C09_START_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, UnicodeError, json.JSONDecodeError):
+        return ["C09_START_INPUT_INVALID"]
+
+
+
+def _collect_c09_start_projection_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C09_START_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        paths = c09_start_projection_paths()
+        head = value("rev-parse", "HEAD")
+        branch = optional("branch", "--show-current")
+        status = raw("status", "--porcelain", "--untracked-files=all")
+        url = value("remote", "get-url", "development")
+        main_head = value("rev-parse", C09_START_DEVELOPMENT_REF)
+        base = value("rev-parse", C09_START_BASE)
+        if None in (head, branch, status, url, main_head, base):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if url != C09_START_DEVELOPMENT_URL or base != C09_START_BASE:
+            return ["GIT_PRIVATE_AUTHORITY_MISMATCH"]
+        dirty = _c02_strict_porcelain_paths(status)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        upstreams = {C09_START_DEVELOPMENT_REF, f"development/{C09_START_BRANCH}"}
+        if head == C09_START_BASE:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C09_START_BRANCH}")
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            if None in (upstream, cached, unstaged, untracked):
+                return ["GIT_REQUIRED_COLLECTION_FAILED"]
+            valid = (branch == C09_START_BRANCH and main_head == C09_START_BASE
+                     and upstream in upstreams and dirty == paths and cached == paths
+                     and not unstaged and not untracked and check("diff", "--cached", "--check"))
+            return [] if valid else ["C09_START_PATH_OR_CLEAN_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        if parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        parent_list = parents.split()
+        if len(parent_list) == 1:
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C09_START_BRANCH}")
+            changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C09_START_BASE, head))
+            valid = (branch == C09_START_BRANCH and main_head == C09_START_BASE
+                     and upstream in upstreams and not dirty and parent_list == [C09_START_BASE]
+                     and changed == paths and check("merge-base", "--is-ancestor", C09_START_BASE, head)
+                     and check("diff", "--check", C09_START_BASE, head))
+            return [] if valid else ["C09_START_PATH_OR_CLEAN_INVALID"]
+        if branch == "main":
+            upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main")
+            if upstream != C09_START_DEVELOPMENT_REF:
+                return ["C09_START_BRANCH_OR_UPSTREAM_INVALID"]
+        elif branch != "":
+            return ["C09_START_BRANCH_OR_UPSTREAM_INVALID"]
+        if main_head != head or len(parent_list) != 2 or parent_list[0] != C09_START_BASE:
+            return ["C09_START_MERGE_LINEAGE_INVALID"]
+        child = parent_list[1]
+        child_parents = value("show", "-s", "--format=%P", child)
+        child_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C09_START_BASE, child))
+        merge_changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C09_START_BASE, head))
+        if None in (child_parents, child_changed, merge_changed):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        valid = (not dirty and child_parents.split() == [C09_START_BASE]
+                 and child_changed == paths and merge_changed == paths
+                 and check("merge-base", "--is-ancestor", C09_START_BASE, head)
+                 and check("merge-base", "--is-ancestor", child, head)
+                 and check("diff", "--check", C09_START_BASE, child)
+                 and check("diff", "--check", C09_START_BASE, head)
+                 and check("diff", "--quiet", child, head))
+        return [] if valid else ["C09_START_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
 
 
 if __name__ == "__main__":

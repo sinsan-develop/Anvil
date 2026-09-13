@@ -15180,5 +15180,227 @@ class C08FinalAcceptanceProjectionTests(unittest.TestCase):
             selected.assert_called_once_with(dispatch)
 
 
+class C09StartProjectionTests(unittest.TestCase):
+    BASE = "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+    BRANCH = "codex/c09-execution-backends-r1"
+    EXACT11 = sorted([
+        "docs/04_test_reports/C-09_START_PROJECTION_REPORT.md",
+        "docs/evidence/manifests/C-09_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c09-start.json",
+        "docs/validation/C-09_START_VALIDATION.md",
+        "docs/work_orders/C-09_INVOCATION_PROMPT_R2.md",
+        "docs/work_orders/C-09_WORK_INSTRUCTION_R2.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        self.assertTrue(hasattr(checker, "c09_start_projection_from_root"), "C-09 start builder missing")
+        return checker
+
+    def test_seq798_builder_preserves_prefix_and_issues_exact_leases(self):
+        checker = self._checker()
+        artifacts = checker.c09_start_projection_from_root(ROOT)
+        self.assertEqual(artifacts, checker.c09_start_projection_from_root(ROOT))
+        self.assertEqual(self.EXACT11, sorted(artifacts))
+        history = subprocess.check_output(["git", "show", f"{self.BASE}:{checker.C09_START_E}"], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(history, 795), checker.raw_event_object_prefix_bytes(artifacts[checker.C09_START_E], 795))
+        events = json.loads(artifacts[checker.C09_START_E])["events"]
+        self.assertEqual([796, 797, 798], [e["sequence"] for e in events[-3:]])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"], [e["event_type"] for e in events[-3:]])
+        for before, after in zip(events[-4:], events[-3:]):
+            self.assertEqual(hashlib.sha256(checker.canonical_json_bytes(before)).hexdigest().upper(), after["previous_event_sha256"])
+        progress = json.loads(artifacts[checker.C09_START_P])
+        self.assertEqual(("C-09", "IN_PROGRESS", "developer-primary", "DISPATCH_C09_DEVELOPER"), (progress["current_work_package"], progress["status"], progress["active_agent"]["actor_id"], progress["next_safe_action"]))
+        self.assertEqual({"package_id": "C-10", "status": "NOT_READY"}, progress["next_work_package"])
+        self.assertEqual("NOT_REACHED", progress["c09_start_projection"]["dir2_status"])
+        self.assertEqual(18, len(progress["write_lease"]["path_scope"]))
+        self.assertEqual(progress["worker_lease"]["execution_fencing_token"], progress["write_lease"]["execution_fencing_token"])
+        manifest = json.loads(artifacts[checker.C09_START_M])
+        self.assertEqual("43F5AA046BF2F43FA6E84C4BC64325FDC20BBE2A4882D40722B60CAF8D512C52", manifest["exact_path_list_sha256"])
+        self.assertEqual("57A7D45027FC24930F013C7EB0AB85B81B45E6A174B2DA9ADD90ECE95FA6F3D5", manifest["product_exact_path_list_sha256"])
+        self.assertEqual(["AV-SAFE-010", "AV-SAFE-011", "AV-STAT-021"], [x["requirement_id"] for x in manifest["authority"]["acceptance"]])
+        self.assertEqual(["AV-SAFE-028"], manifest["authority"]["carry_forward_regression"])
+        self.assertFalse(manifest["accepted"])
+
+    def test_seq798_builder_does_not_read_ignored_inputs(self):
+        checker = self._checker()
+        original = Path.read_bytes
+        def bounded(path):
+            if ".superpowers" in path.parts:
+                raise AssertionError("ignored input is not portable")
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", bounded):
+            self.assertEqual(self.EXACT11, sorted(checker.c09_start_projection_from_root(ROOT)))
+
+    def test_seq798_validator_rejects_each_projection_authority_and_raw_history_tamper(self):
+        checker = self._checker()
+        artifacts = checker.c09_start_projection_from_root(ROOT)
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        bundle = {
+            "_root": ROOT, "progress": json.loads(artifacts[checker.C09_START_P]),
+            "events": json.loads(artifacts[checker.C09_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C09_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C09_START_D]),
+        }
+        manifest = json.loads(artifacts[checker.C09_START_M])
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c09_start_projection(bundle, manifest))
+            for field in ("progress", "events", "handoff", "detached_digest"):
+                bad = copy.deepcopy(bundle)
+                bad[field] = {}
+                with self.subTest(field=field):
+                    self.assertIn("C09_START_PROJECTION_INVALID", checker.validate_c09_start_projection(bad, manifest))
+            for field, value in (("accepted", True), ("authority", {}), ("worker_lease", {}),
+                                 ("write_lease", {}), ("raw_checksums", []), ("product_exact_paths", []),
+                                 ("external_validation", {"docker": "PASS"})):
+                bad = copy.deepcopy(manifest)
+                bad[field] = value
+                with self.subTest(field=field):
+                    self.assertIn("C09_START_PROJECTION_INVALID", checker.validate_c09_start_projection(bundle, bad))
+            artifacts[checker.C09_START_E] = artifacts[checker.C09_START_E].replace(
+                b"evt_g05_legacy_migration", b"xvt_g05_legacy_migration", 1)
+            self.assertIn("C09_START_HISTORY_MUTATED", checker.validate_c09_start_projection(bundle, manifest))
+
+    def test_seq798_predecessor_manifest_is_hash_bound(self):
+        checker = self._checker()
+        manifest = json.loads(checker.c09_start_projection_from_root(ROOT)[checker.C09_START_M])
+        self.assertEqual("ED2A84BE9B1924A9254D8D44BB99679FFA2EB0A7DC8091DCED24470CF16EA493",
+                         manifest["authority"]["predecessor"].get("manifest_sha256"))
+        original = Path.read_bytes
+        def corrupt(path):
+            if path == ROOT / checker.C08_FINAL_M:
+                return b"{}"
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", corrupt):
+            with self.assertRaisesRegex(ValueError, "C09_START_AUTHORITY_HASH_INVALID"):
+                checker.c09_start_projection_from_root(ROOT)
+
+    def test_seq798_review_r1_stat021_requires_l5_and_rejects_downgrade(self):
+        checker = self._checker()
+        artifacts = checker.c09_start_projection_from_root(ROOT)
+        manifest = json.loads(artifacts[checker.C09_START_M])
+        progress = json.loads(artifacts[checker.C09_START_P])
+        events = json.loads(artifacts[checker.C09_START_E])
+        handoff = checker.extract_handoff_summary(artifacts[checker.C09_START_H].decode())
+        for authority in (manifest["authority"], progress["active_work_instruction"]["acceptance_binding"],
+                          progress["c09_start_projection"]["authority"], events["events"][-3]["details"],
+                          handoff["acceptance_binding"]):
+            stat = [row for row in authority["acceptance"] if row["requirement_id"] == "AV-STAT-021"]
+            self.assertEqual(1, len(stat))
+            self.assertEqual("L5", stat[0]["level"])
+        bundle = {"_root": ROOT, "progress": progress, "events": events, "handoff": handoff,
+                  "detached_digest": json.loads(artifacts[checker.C09_START_D])}
+        original = Path.read_bytes
+        def frozen(path):
+            try:
+                relative = path.relative_to(ROOT).as_posix()
+            except ValueError:
+                return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        downgraded = copy.deepcopy(manifest)
+        for row in downgraded["authority"]["acceptance"]:
+            if row["requirement_id"] == "AV-STAT-021":
+                row["level"] = "L3"
+        with mock.patch.object(Path, "read_bytes", frozen):
+            self.assertEqual([], checker.validate_c09_start_projection(bundle, manifest))
+            self.assertIn("C09_START_PROJECTION_INVALID", checker.validate_c09_start_projection(bundle, downgraded))
+
+    def test_seq798_review_r1_reads_and_verifies_parent_approval_file(self):
+        checker = self._checker()
+        approval = ROOT / "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md"
+        original = Path.read_bytes
+        reads = []
+        def corrupted(path):
+            if path == approval:
+                reads.append(path)
+                return original(path) + b"\nchanged approval"
+            return original(path)
+        with mock.patch.object(Path, "read_bytes", corrupted):
+            with self.assertRaisesRegex(ValueError, "C09_START_AUTHORITY_HASH_INVALID"):
+                checker.c09_start_projection_from_root(ROOT)
+        self.assertEqual([approval], reads)
+
+    def _git_rows(self, mode="staged"):
+        child, merge = "1" * 40, "2" * 40
+        head = self.BASE if mode == "staged" else child if mode == "child" else merge
+        branch = self.BRANCH if mode in ("staged", "child") else "main" if mode == "merge" else ""
+        paths = "\n".join(self.EXACT11)
+        return {
+            ("rev-parse", "HEAD"): head, ("branch", "--show-current"): branch,
+            ("status", "--porcelain", "--untracked-files=all"): "\n".join("M  " + p for p in self.EXACT11) if mode == "staged" else "",
+            ("remote", "get-url", "development"): "git@github-sinsan-develop:sinsan-develop/Anvil.git",
+            ("rev-parse", "development/main"): self.BASE if mode in ("staged", "child") else merge,
+            ("rev-parse", self.BASE): self.BASE,
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"): "development/main",
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1", "refs/heads/main"): "development/main",
+            ("diff", "--cached", "--name-only"): paths if mode == "staged" else "",
+            ("diff", "--name-only"): "", ("ls-files", "--others", "--exclude-standard"): "",
+            ("show", "-s", "--format=%P", child): self.BASE,
+            ("show", "-s", "--format=%P", merge): self.BASE + " " + child,
+            ("diff", "--name-only", self.BASE, child): paths,
+            ("diff", "--name-only", self.BASE, merge): paths,
+        }
+
+    def _git_errors(self, checker, rows, failed=()):
+        bundle = {"_root": ROOT, "progress": {"repository": {"validated_base_commit": self.BASE}}}
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=lambda root, *args: rows.get(args)), mock.patch.object(checker, "_c02_git_quiet_check", side_effect=lambda root, *args: args not in failed):
+            return checker._collect_c09_start_projection_git(bundle)
+
+    def test_seq798_git_positive_and_first_dispatch(self):
+        checker = self._checker()
+        for mode in ("staged", "child", "merge", "detached"):
+            with self.subTest(mode=mode):
+                self.assertEqual([], self._git_errors(checker, self._git_rows(mode)))
+        dispatch = {"_root": ROOT, "progress": {"event_sequence": 798}}
+        with mock.patch.object(checker, "_collect_c09_start_projection_git", return_value=["SEQ798_SELECTED"]), mock.patch.object(checker, "_collect_c08_final_acceptance_git", side_effect=AssertionError("seq795 must not run")):
+            self.assertEqual(["SEQ798_SELECTED"], checker._validate_git_projection(dispatch))
+
+    def test_seq798_git_rejects_untrusted_collection_and_changed_paths(self):
+        checker = self._checker()
+        changes = [
+            (("remote", "get-url", "development"), "git@other:other/Anvil.git"),
+            (("rev-parse", "development/main"), "3" * 40), (("rev-parse", self.BASE), "3" * 40),
+            (("branch", "--show-current"), "main"),
+            (("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{self.BRANCH}"), "origin/main"),
+            (("diff", "--name-only"), self.EXACT11[0]),
+            (("ls-files", "--others", "--exclude-standard"), "untracked.txt"),
+            (("diff", "--cached", "--name-only"), "\n".join(self.EXACT11[:-1])),
+            (("diff", "--cached", "--name-only"), "\n".join(self.EXACT11 + [self.EXACT11[0]])),
+            (("diff", "--cached", "--name-only"), "../escape"),
+            (("status", "--porcelain", "--untracked-files=all"), "M  ./docs/progress/build-progress.json"),
+            (("status", "--porcelain", "--untracked-files=all"), None),
+        ]
+        for key, value in changes:
+            rows = self._git_rows()
+            rows[key] = value
+            with self.subTest(key=key, value=value):
+                self.assertTrue(self._git_errors(checker, rows))
+        child, merge = "1" * 40, "2" * 40
+        for mode, key, value in [
+            ("child", ("show", "-s", "--format=%P", child), "3" * 40),
+            ("child", ("show", "-s", "--format=%P", child), self.BASE + " " + "3" * 40),
+            ("child", ("status", "--porcelain", "--untracked-files=all"), " M " + self.EXACT11[0]),
+            ("merge", ("show", "-s", "--format=%P", merge), self.BASE + " " + child + " " + "3" * 40),
+            ("merge", ("show", "-s", "--format=%P", child), "3" * 40),
+            ("merge", ("diff", "--name-only", self.BASE, merge), "\n".join(self.EXACT11[:-1])),
+        ]:
+            rows = self._git_rows(mode)
+            rows[key] = value
+            with self.subTest(mode=mode, key=key):
+                self.assertTrue(self._git_errors(checker, rows))
+        self.assertTrue(self._git_errors(checker, self._git_rows("merge"), failed=[("diff", "--quiet", child, merge)]))
+        self.assertTrue(checker._collect_c09_start_projection_git({"_root": ROOT, "progress": {"repository": {"validated_base_commit": "3" * 40}}}))
+
+
 if __name__ == "__main__":
     unittest.main()
