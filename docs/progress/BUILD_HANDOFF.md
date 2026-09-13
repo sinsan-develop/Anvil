@@ -1,3 +1,9 @@
+# C-10 action policy start - seq832
+
+- C-09 exact27 local completion commit: 8f5af5f0efc6f287ce556fd9a908e991a586f97e.
+- seq1~829 raw event objects preserved; seq830~832만 append했다.
+- developer-primary dual lease active; external/Secret runtime은 실행하지 않는다.
+
 # C-09 final acceptance - seq829
 
 - seq1~824 raw event object bytes preserved; seq825~829만 append했다.
@@ -1002,146 +1008,107 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 829,
-  "last_event_id": "evt_c09_final_main_package_accepted",
-  "status": "ACCEPTED",
+  "event_sequence": 832,
+  "last_event_id": "evt_c10_write_lease_issued",
+  "status": "IN_PROGRESS",
   "current_phase": "C",
-  "current_work_package": "C-09",
-  "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
+  "current_work_package": "C-10",
+  "active_agent": {
+    "actor_id": "developer-primary",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-10",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91"
+  },
+  "worker_lease": {
+    "lease_id": "worker-lease-c10-action-policy-20260914-001",
+    "fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+    "lease_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+    "dispatch_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+    "issued_at": "2026-09-14T08:00:00+09:00",
+    "expires_at": "2026-09-14T20:00:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
+  "write_lease": {
+    "lease_id": "write-lease-c10-action-policy-20260914-001",
+    "worker_lease_id": "worker-lease-c10-action-policy-20260914-001",
+    "fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+    "write_fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+    "write_epoch": 1,
+    "actor_id": "developer-primary",
+    "subject_ref": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T08:00:00+09:00",
+    "expires_at": "2026-09-14T20:00:00+09:00",
+    "status": "ACTIVE",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "packages/action_policy/**",
+      "packages/tool_gateway/**",
+      "tests/action_policy/**",
+      "tests/tool_gateway/**"
+    ]
+  },
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "CREATE_SINGLE_RECOVERABLE_C09_COMMIT_WHEN_AUTHORIZED",
-  "accepted": true,
+  "next_safe_action": "DISPATCH_C10_DEVELOPER",
+  "accepted": false,
   "c09_status": "ACCEPTED",
-  "c10_status": "READY_NOT_STARTED_PER_USER_DIRECTION",
-  "dir2_status": "NOT_REACHED",
+  "c09_completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+  "c10_status": "IN_PROGRESS",
+  "c11_status": "NOT_READY",
   "dir_status": "CLEARED",
-  "repository_head": "10bbb879fb15ce4fa7b1a750f872c33af3cddf46",
+  "dir2_status": "NOT_REACHED",
+  "repository_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C09_FINAL_ACCEPTANCE_CANDIDATE_EXACT27",
-  "repository_validated_base_commit": "10bbb879fb15ce4fa7b1a750f872c33af3cddf46",
-  "repository_head_relation": "UNSTAGED_EXACT27_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+  "repository_projection_mode": "C10_START_EXACT7",
+  "repository_validated_base_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+  "repository_head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_START",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-10_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json",
-    "packages/domain/identifiers.py",
-    "packages/execution_backends/__init__.py",
-    "packages/execution_backends/docker.py",
-    "packages/execution_backends/git_worktree.py",
-    "packages/execution_backends/models.py",
-    "packages/execution_backends/registry.py",
-    "packages/execution_backends/safeio.py",
-    "packages/paths/identity.py",
-    "packages/tool_gateway/__init__.py",
-    "packages/tool_gateway/gateway.py",
-    "packages/tool_gateway/models.py",
-    "packages/tool_gateway/registry.py",
-    "scripts/check_project_progress.py",
-    "tests/execution_backends/test_docker.py",
-    "tests/execution_backends/test_git_worktree.py",
-    "tests/execution_backends/test_registry.py",
-    "tests/integration/test_c09_repository_workspace.py",
-    "tests/paths/test_conflict_scope_identity.py",
-    "tests/tool_gateway/test_gateway.py",
-    "tests/tool_gateway/test_tool_registry.py",
-    "tests/tooling/test_project_progress.py"
-  ],
-  "product_exact_paths": [
-    "docs/04_test_reports/C-09_COMPLETION_REPORT.md",
-    "packages/domain/identifiers.py",
-    "packages/execution_backends/__init__.py",
-    "packages/execution_backends/docker.py",
-    "packages/execution_backends/git_worktree.py",
-    "packages/execution_backends/models.py",
-    "packages/execution_backends/registry.py",
-    "packages/execution_backends/safeio.py",
-    "packages/paths/identity.py",
-    "packages/tool_gateway/__init__.py",
-    "packages/tool_gateway/gateway.py",
-    "packages/tool_gateway/models.py",
-    "packages/tool_gateway/registry.py",
-    "tests/execution_backends/test_docker.py",
-    "tests/execution_backends/test_git_worktree.py",
-    "tests/execution_backends/test_registry.py",
-    "tests/integration/test_c09_repository_workspace.py",
-    "tests/paths/test_conflict_scope_identity.py",
-    "tests/tool_gateway/test_gateway.py",
-    "tests/tool_gateway/test_tool_registry.py"
-  ],
-  "product_exact_path_list_sha256": "E5591545A1685D8653BC67A49885C1E1DBD486FFB19BE90301008608199A0CD8",
-  "control_exact_paths": [
-    "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/progress/BUILD_HANDOFF.md",
-    "docs/progress/build-progress.json",
-    "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c09-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c10-start.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "test_evidence": {
-    "passed": {
-      "authoritative": 106,
-      "c08_a13": 85,
-      "c13": 5,
-      "c02": 126,
-      "control": 9
-    },
-    "failed": 0,
-    "commands": {
-      "authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py",
-      "c08_a13": "python -B -m pytest -q -p no:cacheprovider tests/repository_intelligence tests/tooling/test_a13_repository_scan.py",
-      "c13": "python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py",
-      "c02": "python -B -m pytest -q -p no:cacheprovider tests/domain/test_identifiers.py tests/orchestration/test_delegation_packet.py",
-      "control": "python -B -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py -k C09MainTakeoverControlTests"
-    },
-    "compileall": {
-      "exit_code": 0,
-      "status": "PASS"
-    },
-    "diff_check": {
-      "exit_code": 0,
-      "status": "PASS"
-    }
-  },
-  "independent_reviews": {
-    "blocking_findings": 0,
-    "spec": {
-      "verdict": "PASS",
-      "critical": 0,
-      "important": 0,
-      "minor": 1,
-      "minor_resolution": "COMPLETION_REPORT_COMMANDS_ADDED"
-    },
-    "quality": {
-      "verdict": "PASS",
-      "critical": 0,
-      "important": 0,
-      "minor": 1,
-      "residual": "PENDING_PERMISSION_RESERVATION_MAY_ACCUMULATE_BEFORE_AUTHORIZE"
-    }
-  },
+  "product_write_scope": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "packages/action_policy/**",
+    "packages/tool_gateway/**",
+    "tests/action_policy/**",
+    "tests/tool_gateway/**"
+  ],
+  "work_instruction_sha256": "62027847FE7D37A306D7DECE90727F81CFBBFCBD3172CC28EF473A1F8BA7532B",
+  "invocation_sha256": "F10BCAF5A706A9E6C196C335F7C5C054941FF90EEAC46CA6891DA2DC3AFB91C0",
   "external_validation": {
-    "actual_docker": "NOT_EXECUTED",
-    "actual_wsl": "NOT_EXECUTED",
+    "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
+    "secret_manager": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
     "database": "NOT_EXECUTED",
     "api": "NOT_EXECUTED",
-    "ui": "NOT_EXECUTED",
     "browser": "NOT_EXECUTED",
-    "provider": "NOT_EXECUTED",
-    "ssh_network": "NOT_ACCESSED",
+    "wsl": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "secret": "NOT_ACCESSED"
+    "external_call": "NOT_EXECUTED",
+    "secret_value": "NOT_ACCESSED"
   },
-  "current_manifest": "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
-  "reporting_decision": "AUTO_CONTINUE",
-  "staged": false,
-  "commit_performed": false
+  "current_manifest": "docs/evidence/manifests/C-10_START_MANIFEST.json",
+  "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 

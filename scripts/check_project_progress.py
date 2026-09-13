@@ -1023,6 +1023,13 @@ def validate_event_stream(
                 == "C09_FINAL_ACCEPTANCE_CANDIDATE_EXACT27"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 832
+                and event.get("sequence") == 830
+                and event.get("event_id") == "evt_c10_work_instruction_issued"
+                and event["details"].get("projection_mode") == "C10_START_EXACT7"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13042,6 +13049,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 832:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c10_start_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 829:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14176,6 +14187,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c09_main_takeover(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_c09_final_acceptance(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-10_START_MANIFEST.json":
+            errors.extend(validate_c10_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -41909,6 +41922,407 @@ def _collect_c09_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
         return []
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
             AttributeError, json.JSONDecodeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C10_START_P = "docs/progress/build-progress.json"
+C10_START_E = "docs/progress/progress-events.json"
+C10_START_H = "docs/progress/BUILD_HANDOFF.md"
+C10_START_D = "docs/progress/progress-handoff-detached-digest-c10-start.json"
+C10_START_M = "docs/evidence/manifests/C-10_START_MANIFEST.json"
+C10_START_WI = "docs/work_orders/C-10_WORK_INSTRUCTION.md"
+C10_START_PROMPT = "docs/work_orders/C-10_INVOCATION_PROMPT.md"
+C10_START_BASE = "8f5af5f0efc6f287ce556fd9a908e991a586f97e"
+C10_START_PARENT = C09_MAIN_TAKEOVER_CONTROL_HEAD
+C10_START_AT = "2026-09-14T08:00:00+09:00"
+C10_START_EXPIRES_AT = "2026-09-14T20:00:00+09:00"
+C10_START_WI_SHA256 = "62027847FE7D37A306D7DECE90727F81CFBBFCBD3172CC28EF473A1F8BA7532B"
+C10_START_PROMPT_SHA256 = "F10BCAF5A706A9E6C196C335F7C5C054941FF90EEAC46CA6891DA2DC3AFB91C0"
+C10_START_C09_MANIFEST_SHA256 = "44BA3CD8C27060B8A3088C02E9E07C42EF6040DAE795D762306C2A1310FB4658"
+C10_START_WORKER_LEASE_ID = "worker-lease-c10-action-policy-20260914-001"
+C10_START_WRITE_LEASE_ID = "write-lease-c10-action-policy-20260914-001"
+C10_START_EXECUTION_TOKEN = "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91"
+C10_START_WRITE_TOKEN = "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da"
+
+
+def c10_start_paths() -> list[str]:
+    return sorted([
+        C10_START_M, C10_START_H, C10_START_P, C10_START_E, C10_START_D,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def c10_product_write_scope() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+        "packages/action_policy/**", "packages/tool_gateway/**",
+        "tests/action_policy/**", "tests/tool_gateway/**",
+    ])
+
+
+def c10_start_metadata() -> dict[str, Any]:
+    paths = c10_start_paths()
+    return {
+        "sequence": 832, "projection_mode": "C10_START_EXACT7",
+        "validated_base_commit": C10_START_BASE, "branch": C09_START_BRANCH,
+        "exact_paths": paths, "exact_path_count": len(paths),
+        "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "product_write_scope": c10_product_write_scope(),
+        "product_write_scope_sha256": _c21_path_list_sha(c10_product_write_scope(), windows=True),
+    }
+
+
+def _c10_start_worker_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C10_START_WORKER_LEASE_ID, "fencing_token": C10_START_EXECUTION_TOKEN,
+        "execution_fencing_token": C10_START_EXECUTION_TOKEN, "lease_epoch": 1,
+        "actor_id": "developer-primary", "subject_ref": "C-10",
+        "baseline_hash": C08_START_DESIGN_SHA256, "baseline_git_commit": C10_START_BASE,
+        "dispatch_head": C10_START_BASE, "issued_at": C10_START_AT,
+        "expires_at": C10_START_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c10_product_write_scope(),
+    }
+
+
+def _c10_start_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C10_START_WRITE_LEASE_ID, "worker_lease_id": C10_START_WORKER_LEASE_ID,
+        "fencing_token": C10_START_WRITE_TOKEN, "write_fencing_token": C10_START_WRITE_TOKEN,
+        "execution_fencing_token": C10_START_EXECUTION_TOKEN, "write_epoch": 1,
+        "actor_id": "developer-primary", "subject_ref": "C-10",
+        "baseline_hash": C08_START_DESIGN_SHA256, "issued_at": C10_START_AT,
+        "expires_at": C10_START_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c10_product_write_scope(),
+    }
+
+
+def _c10_start_authority() -> dict[str, Any]:
+    return {
+        "revision_class": "APPROVED_WORK_PLAN_PACKAGE_START",
+        "authority_basis": ["APPROVED_WORK_PLAN_C10", "C09_ACCEPTED", "DESIGN_ACTION_SAFETY"],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_sha256": C10_START_WI_SHA256,
+        "invocation_sha256": C10_START_PROMPT_SHA256,
+        "design_sha256": C08_START_DESIGN_SHA256,
+        "work_plan_sha256": C08_START_WORK_PLAN_SHA256,
+        "matrix_sha256": C08_START_MATRIX_SHA256,
+        "test_plan_sha256": C08_START_TEST_PLAN_SHA256,
+        "governance_sha256": C08_START_GOVERNANCE_SHA256,
+        "function_scope_change": "UNCHANGED", "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "predecessor": {
+            "package_id": "C-09", "status": "ACCEPTED", "sequence": 829,
+            "completion_commit": C10_START_BASE,
+            "manifest_path": C09_FINAL_ACCEPTANCE_M,
+            "manifest_sha256": C10_START_C09_MANIFEST_SHA256,
+        },
+        "acceptance": [
+            {"requirement_id": "AV-SAFE-006", "level": "L5", "method": "AN", "evidence": ["E-CMD", "E-AUD"]},
+            {"requirement_id": "AV-SAFE-013", "level": "L5", "method": "AN", "evidence": ["E-CMD", "E-AUD"]},
+            {"requirement_id": "AV-SAFE-014", "level": "L5", "method": "AN", "evidence": ["E-DIFF", "E-AUD"]},
+            {"requirement_id": "AV-SAFE-016", "level": "L5", "method": "AN", "evidence": ["E-AUD"]},
+            {"requirement_id": "AV-SAFE-018", "level": "L5", "method": "AN", "evidence": ["E-DIFF", "E-AUD"]},
+            {"requirement_id": "AV-STAT-020", "level": "L3", "method": "AN", "evidence": ["E-EVT"]},
+        ],
+    }
+
+
+def _c10_start_boundary() -> dict[str, str]:
+    return {
+        "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
+        "secret_manager": "NOT_EXECUTED", "network": "NOT_EXECUTED",
+        "database": "NOT_EXECUTED", "api": "NOT_EXECUTED", "browser": "NOT_EXECUTED",
+        "wsl": "NOT_EXECUTED", "deployment": "NOT_EXECUTED",
+        "external_call": "NOT_EXECUTED", "secret_value": "NOT_ACCESSED",
+    }
+
+
+def c10_start_artifacts(historical: Mapping[str, bytes],
+                        files: Mapping[str, bytes]) -> dict[str, bytes]:
+    meta = c10_start_metadata()
+    generated = {C10_START_M, C10_START_H, C10_START_P, C10_START_E, C10_START_D}
+    if set(historical) != {C10_START_H, C10_START_P, C10_START_E}:
+        raise ValueError("C10_START_HISTORY_SET_INVALID")
+    if set(files) != set(c10_start_paths()) - generated:
+        raise ValueError("C10_START_FILE_SET_INVALID")
+    progress = _c21_resume_json(historical[C10_START_P])
+    stream = _c21_resume_json(historical[C10_START_E])
+    if (progress.get("event_sequence") != 829 or progress.get("status") != "ACCEPTED"
+        or progress.get("current_work_package") != "C-09" or stream.get("last_sequence") != 829
+        or len(stream.get("events", [])) != 829 or progress.get("active_agent") is not None
+        or progress.get("worker_lease") is not None or progress.get("write_lease") is not None
+        or progress.get("next_work_package") != {
+            "package_id": "C-10", "status": "READY_NOT_STARTED_PER_USER_DIRECTION"}):
+        raise ValueError("C10_START_HISTORY_INVALID")
+    worker, write = _c10_start_worker_lease(), _c10_start_write_lease()
+    authority, boundary = _c10_start_authority(), _c10_start_boundary()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+
+    def envelope(sequence: int, kind: str, event_id: str, actor: str,
+                 details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {
+            "sequence": sequence, "event_type": kind, "event_id": event_id,
+            "actor": actor, "actor_id": actor, "actor_type": "AGENT", "project_id": "anvil",
+            "run_id": None, "work_package_id": "C-10", "step_id": "START",
+            "subject_ref": "C-10/START", "occurred_at": C10_START_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "previous_event_sha256": previous, "details": dict(details),
+        }
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        return row
+
+    events = [
+        envelope(830, "WORK_INSTRUCTION_ISSUED", "evt_c10_work_instruction_issued", "main-agent-eoul", {
+            **authority, "work_instruction_id": "WI-C-10-ACTION-POLICY-001",
+            "approval_ref": authority["parent_approval_id"],
+            "product_write_scope": c10_product_write_scope(),
+            "projection_mode": meta["projection_mode"], "validated_base_commit": C10_START_BASE,
+            "dispatch_head": C10_START_BASE, "dispatch_upstream_head": C09_R4_MAIN,
+            "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_START",
+            "exact_allowed_paths": meta["exact_paths"],
+        }),
+        envelope(831, "WORKER_LEASE_ISSUED", "evt_c10_worker_lease_issued", "developer-primary", worker),
+        envelope(832, "WRITE_LEASE_ISSUED", "evt_c10_write_lease_issued", "developer-primary", write),
+    ]
+    events_raw = _c21_append_events(historical[C10_START_E], 829, events)
+    repository = copy.deepcopy(progress["repository"])
+    repository.update({
+        "projection_mode": meta["projection_mode"], "validated_base_commit": C10_START_BASE,
+        "control_head": C10_START_BASE, "local_head": C10_START_BASE,
+        "development_main": C09_R4_MAIN, "branch": C09_START_BRANCH,
+        "upstream": C09_START_DEVELOPMENT_REF, "remote_head": C09_R4_MAIN,
+        "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_START",
+        "worktree_status": "STAGED_C10_START_EXACT7", "exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c10_product_write_scope(),
+        "c09_completion_commit": C10_START_BASE,
+        "push_status": "NOT_EXECUTED", "development_remote_url": C09_START_DEVELOPMENT_URL,
+    })
+    active_wi = {
+        "artifact_id": "WI-C-10-ACTION-POLICY-001", "artifact_path": C10_START_WI,
+        "artifact_sha256": C10_START_WI_SHA256, "invocation_path": C10_START_PROMPT,
+        "invocation_sha256": C10_START_PROMPT_SHA256, "executor": "developer-primary",
+        "result_status": "IN_PROGRESS", "package_status": "IN_PROGRESS",
+        "product_write_scope": c10_product_write_scope(), "acceptance_binding": authority,
+    }
+    progress.update({
+        "snapshot_id": "snapshot-c10-start-seq832", "updated_at": C10_START_AT,
+        "recorded_at": C10_START_AT, "event_sequence": 832,
+        "last_event_id": events[-1]["event_id"], "current_phase": "C",
+        "current_work_package": "C-10", "status": "IN_PROGRESS",
+        "active_agent": {"actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-10", "status": "ACTIVE",
+            "execution_fencing_token": C10_START_EXECUTION_TOKEN},
+        "worker_lease": worker, "write_lease": write,
+        "active_work_instruction": active_wi, "repository": repository,
+        "c10_start": {"status": "IN_PROGRESS", "accepted": False, "event_sequence": 832,
+            "c09_status": "ACCEPTED", "c09_completion_commit": C10_START_BASE,
+            "c10_status": "IN_PROGRESS", "c11_status": "NOT_READY",
+            "dir2_status": "NOT_REACHED", "authority": authority,
+            "product_write_scope": c10_product_write_scope(), "external_validation": boundary},
+        "next_work_package": {"package_id": "C-11", "status": "NOT_READY"},
+        "next_successor_work_package": None,
+        "runtime_next_action": "DISPATCH_C10_DEVELOPER",
+        "next_safe_action": "DISPATCH_C10_DEVELOPER",
+        "current_progress_evidence_ref": {"package_id": "C-10", "path": C10_START_D,
+                                          "manifest_path": C10_START_M},
+        "latest_evidence_manifest_ref": {"path": C10_START_M,
+                                         "artifact_id": "C10-START-20260914"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C09_COMMIT_RECORDED", "C10_IN_PROGRESS", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False},
+    })
+    latest_refs = {
+        **{path: _c21_resume_sha(raw) for path, raw in files.items()},
+        C10_START_WI: C10_START_WI_SHA256, C10_START_PROMPT: C10_START_PROMPT_SHA256,
+        C09_FINAL_ACCEPTANCE_M: C10_START_C09_MANIFEST_SHA256,
+        C10_START_E: _c21_resume_sha(events_raw),
+    }
+    progress["registry_refs"]["progress_events"] = {
+        "path": C10_START_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": sha} for path, sha in sorted(latest_refs.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    handoff.update({
+        "accepted": False, "c09_status": "ACCEPTED",
+        "c09_completion_commit": C10_START_BASE, "c10_status": "IN_PROGRESS",
+        "c11_status": "NOT_READY", "dir_status": progress["dir_review"]["status"],
+        "dir2_status": "NOT_REACHED", "repository_head": C10_START_BASE,
+        "repository_upstream": C09_START_DEVELOPMENT_REF,
+        "repository_projection_mode": meta["projection_mode"],
+        "repository_validated_base_commit": C10_START_BASE,
+        "repository_head_relation": repository["head_relation"],
+        "repository_exact_allowed_paths": meta["exact_paths"],
+        "product_write_scope": c10_product_write_scope(),
+        "work_instruction_sha256": C10_START_WI_SHA256,
+        "invocation_sha256": C10_START_PROMPT_SHA256,
+        "external_validation": boundary, "current_manifest": C10_START_M,
+        "reporting_decision": "AUTO_CONTINUE",
+    })
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+                                  historical[C10_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C10_START_HANDOFF_INVALID")
+    handoff_raw = (
+        "# C-10 action policy start - seq832\n\n"
+        "- C-09 exact27 local completion commit: 8f5af5f0efc6f287ce556fd9a908e991a586f97e.\n"
+        "- seq1~829 raw event objects preserved; seq830~832만 append했다.\n"
+        "- developer-primary dual lease active; external/Secret runtime은 실행하지 않는다.\n\n"
+        + handoff_text
+    ).encode("utf-8")
+    digest = {
+        "schema_version": "1.0.0", "digest_id": "C10-START-DIGEST-20260914",
+        "package_id": "C-10", "event_sequence": 832, "algorithm": "SHA-256",
+        "created_at": C10_START_AT, "scope": "seq830-832 append-only C-10 start; seq1-829 preserved; exact7",
+        "self_reference": False,
+        "progress": {"path": C10_START_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C10_START_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))},
+    }
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C10_START_P: progress_raw, C10_START_E: events_raw,
+                 C10_START_H: handoff_raw, C10_START_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C10_START_E], 829)
+    manifest = {
+        "schema_version": "1.0.0", "manifest_type": "C-10_START",
+        "artifact_id": "C10-START-20260914", "created_at": C10_START_AT,
+        "package_id": "C-10", "event_sequence": 832, "historical_event_sequence": 829,
+        "appended_event_count": 3,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": False, "status": "IN_PROGRESS",
+        "c09_status": "ACCEPTED", "c09_completion_commit": C10_START_BASE,
+        "c10_status": "IN_PROGRESS", "c11_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "worker_lease": worker, "write_lease": write,
+        "work_instruction_path": C10_START_WI, "work_instruction_sha256": C10_START_WI_SHA256,
+        "invocation_path": C10_START_PROMPT, "invocation_sha256": C10_START_PROMPT_SHA256,
+        "authority": authority, "external_validation": boundary,
+        "record_binding": repository["head_relation"], "self_reference": False, **meta,
+    }
+    manifest["raw_checksums"] = [
+        {"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+        for path, raw in sorted(artifacts.items())]
+    artifacts[C10_START_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(c10_start_paths()):
+        raise ValueError("C10_START_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c10_start_from_root(root: Path) -> dict[str, bytes]:
+    parent = subprocess.check_output(
+        ["git", "show", "-s", "--format=%P", C10_START_BASE], cwd=root).decode().strip()
+    if parent != C10_START_PARENT:
+        raise ValueError("C10_START_LINEAGE_INVALID")
+    authority_hashes = {
+        C10_START_WI: C10_START_WI_SHA256, C10_START_PROMPT: C10_START_PROMPT_SHA256,
+        C09_FINAL_ACCEPTANCE_M: C10_START_C09_MANIFEST_SHA256,
+        "Anvil_설계서_v2.md": C08_START_DESIGN_SHA256,
+        "Anvil_작업계획서_v1.md": C08_START_WORK_PLAN_SHA256,
+        "Anvil_통합검증매트릭스_v1.md": C08_START_MATRIX_SHA256,
+        "Anvil_테스트계획서_v1.md": C08_START_TEST_PLAN_SHA256,
+        "docs/governance/ANVIL_OPERATING_RULES.md": C08_START_GOVERNANCE_SHA256,
+        "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md":
+            "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+    }
+    for path, expected in authority_hashes.items():
+        if _c21_resume_sha((root / path).read_bytes()) != expected:
+            raise ValueError("C10_START_AUTHORITY_HASH_INVALID")
+    historical = {path: subprocess.check_output(
+        ["git", "show", f"{C10_START_BASE}:{path}"], cwd=root)
+        for path in (C10_START_P, C10_START_E, C10_START_H)}
+    files = {path: (root / path).read_bytes()
+             for path in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c10_start_artifacts(historical, files)
+
+
+def validate_c10_start(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c10_start_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c10_start_paths()}
+        expected_objects = {
+            C10_START_P: _c21_resume_json(expected[C10_START_P]),
+            C10_START_E: _c21_resume_json(expected[C10_START_E]),
+            C10_START_H: extract_handoff_summary(expected[C10_START_H].decode()),
+            C10_START_D: _c21_resume_json(expected[C10_START_D]),
+            C10_START_M: _c21_resume_json(expected[C10_START_M]),
+        }
+        actual_objects = {C10_START_P: bundle.get("progress"), C10_START_E: bundle.get("events"),
+            C10_START_H: bundle.get("handoff"), C10_START_D: bundle.get("detached_digest"),
+            C10_START_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual_objects[path], expected_objects[path])
+                           for path in actual_objects) else ["C10_START_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C10_START_RAW_BYTES_INVALID")
+        progress = actual_objects[C10_START_P]
+        if (not isinstance(progress, Mapping) or progress.get("event_sequence") != 832
+            or progress.get("current_work_package") != "C-10" or progress.get("status") != "IN_PROGRESS"
+            or progress.get("worker_lease") != _c10_start_worker_lease()
+            or progress.get("write_lease") != _c10_start_write_lease()
+            or progress.get("next_work_package") != {"package_id": "C-11", "status": "NOT_READY"}
+            or progress.get("next_safe_action") != "DISPATCH_C10_DEVELOPER"):
+            errors.append("C10_START_CANONICAL_STATE_INVALID")
+        historical = subprocess.check_output(
+            ["git", "show", f"{C10_START_BASE}:{C10_START_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(historical, 829) != raw_event_object_prefix_bytes(
+                actual_raw[C10_START_E], 829):
+            errors.append("C10_START_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C10_START_INPUT_INVALID"]
+
+
+def _collect_c10_start_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        repository = bundle.get("progress", {}).get("repository", {})
+        if not isinstance(repository, Mapping) or repository.get("validated_base_commit") != C10_START_BASE:
+            return ["GIT_VALIDATED_BASE_NOT_ANCESTOR"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD"); base = value("rev-parse", C10_START_BASE)
+        branch = optional("branch", "--show-current")
+        upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1",
+                            f"refs/heads/{C09_START_BRANCH}")
+        main_head = value("rev-parse", C09_START_DEVELOPMENT_REF)
+        url = value("remote", "get-url", "development")
+        status_raw = raw("status", "--porcelain", "--untracked-files=all")
+        if None in (head, base, branch, upstream, main_head, url, status_raw):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if (base != C10_START_BASE or branch != C09_START_BRANCH
+            or upstream != C09_START_DEVELOPMENT_REF or main_head != C09_R4_MAIN
+            or url != C09_START_DEVELOPMENT_URL):
+            return ["C10_START_REPOSITORY_AUTHORITY_INVALID"]
+        dirty = _c02_strict_porcelain_paths(status_raw)
+        if dirty is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        if head == C10_START_BASE:
+            cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+            unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+            untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+            valid = (dirty == c10_start_paths() and cached == c10_start_paths()
+                     and not unstaged and not untracked and check("diff", "--cached", "--check"))
+            return [] if valid else ["C10_START_PATH_OR_CLEAN_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C10_START_BASE, head))
+        valid = (not dirty and parents is not None and parents.split() == [C10_START_BASE]
+                 and changed == c10_start_paths() and check("merge-base", "--is-ancestor", C10_START_BASE, head)
+                 and check("diff", "--check", C10_START_BASE, head))
+        return [] if valid else ["C10_START_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 829,
+  "last_sequence": 832,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -45212,7 +45212,202 @@
           "secret": "NOT_ACCESSED"
         }
       }
+    },
+    {
+      "sequence": 830,
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "event_id": "evt_c10_work_instruction_issued",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-10",
+      "step_id": "START",
+      "subject_ref": "C-10/START",
+      "occurred_at": "2026-09-14T08:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "059D23237A83097A30100A2161CCCED0264C4D17E1919DC806BB2F40B28B9A76",
+      "details": {
+        "revision_class": "APPROVED_WORK_PLAN_PACKAGE_START",
+        "authority_basis": [
+          "APPROVED_WORK_PLAN_C10",
+          "C09_ACCEPTED",
+          "DESIGN_ACTION_SAFETY"
+        ],
+        "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "parent_approval_sha256": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236",
+        "work_instruction_sha256": "62027847FE7D37A306D7DECE90727F81CFBBFCBD3172CC28EF473A1F8BA7532B",
+        "invocation_sha256": "F10BCAF5A706A9E6C196C335F7C5C054941FF90EEAC46CA6891DA2DC3AFB91C0",
+        "design_sha256": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "work_plan_sha256": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "matrix_sha256": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "test_plan_sha256": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "governance_sha256": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "function_scope_change": "UNCHANGED",
+        "requirements_change": "UNCHANGED",
+        "material_risk_change": "UNCHANGED",
+        "predecessor": {
+          "package_id": "C-09",
+          "status": "ACCEPTED",
+          "sequence": 829,
+          "completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+          "manifest_path": "docs/evidence/manifests/C-09_FINAL_ACCEPTANCE_MANIFEST.json",
+          "manifest_sha256": "44BA3CD8C27060B8A3088C02E9E07C42EF6040DAE795D762306C2A1310FB4658"
+        },
+        "acceptance": [
+          {
+            "requirement_id": "AV-SAFE-006",
+            "level": "L5",
+            "method": "AN",
+            "evidence": [
+              "E-CMD",
+              "E-AUD"
+            ]
+          },
+          {
+            "requirement_id": "AV-SAFE-013",
+            "level": "L5",
+            "method": "AN",
+            "evidence": [
+              "E-CMD",
+              "E-AUD"
+            ]
+          },
+          {
+            "requirement_id": "AV-SAFE-014",
+            "level": "L5",
+            "method": "AN",
+            "evidence": [
+              "E-DIFF",
+              "E-AUD"
+            ]
+          },
+          {
+            "requirement_id": "AV-SAFE-016",
+            "level": "L5",
+            "method": "AN",
+            "evidence": [
+              "E-AUD"
+            ]
+          },
+          {
+            "requirement_id": "AV-SAFE-018",
+            "level": "L5",
+            "method": "AN",
+            "evidence": [
+              "E-DIFF",
+              "E-AUD"
+            ]
+          },
+          {
+            "requirement_id": "AV-STAT-020",
+            "level": "L3",
+            "method": "AN",
+            "evidence": [
+              "E-EVT"
+            ]
+          }
+        ],
+        "work_instruction_id": "WI-C-10-ACTION-POLICY-001",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ],
+        "projection_mode": "C10_START_EXACT7",
+        "validated_base_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+        "dispatch_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+        "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_START",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-10_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c10-start.json",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "sequence": 831,
+      "event_type": "WORKER_LEASE_ISSUED",
+      "event_id": "evt_c10_worker_lease_issued",
+      "actor": "developer-primary",
+      "actor_id": "developer-primary",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-10",
+      "step_id": "START",
+      "subject_ref": "C-10/START",
+      "occurred_at": "2026-09-14T08:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "4AE1BB326C7F7BB0191B7A689630E271D84053FA85BE84531DE831A84547D5A0",
+      "details": {
+        "lease_id": "worker-lease-c10-action-policy-20260914-001",
+        "fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+        "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+        "dispatch_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+        "issued_at": "2026-09-14T08:00:00+09:00",
+        "expires_at": "2026-09-14T20:00:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ]
+      }
+    },
+    {
+      "sequence": 832,
+      "event_type": "WRITE_LEASE_ISSUED",
+      "event_id": "evt_c10_write_lease_issued",
+      "actor": "developer-primary",
+      "actor_id": "developer-primary",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-10",
+      "step_id": "START",
+      "subject_ref": "C-10/START",
+      "occurred_at": "2026-09-14T08:00:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "ECBCDE7C0D2DCC5FB8F542F3CFC6B6EE8BB60B268537BD5E19F37C4594D4FDC6",
+      "details": {
+        "lease_id": "write-lease-c10-action-policy-20260914-001",
+        "worker_lease_id": "worker-lease-c10-action-policy-20260914-001",
+        "fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+        "write_fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+        "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T08:00:00+09:00",
+        "expires_at": "2026-09-14T20:00:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ]
+      }
     }
   ],
-  "last_event_id": "evt_c09_final_main_package_accepted"
+  "last_event_id": "evt_c10_write_lease_issued"
 }

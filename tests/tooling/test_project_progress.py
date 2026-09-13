@@ -16120,5 +16120,64 @@ class C09FinalAcceptanceControlTests(unittest.TestCase):
             self.assertEqual(["SEQ829_SELECTED"], checker._validate_git_projection(dispatch_bundle))
 
 
+class C10StartControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq832_builder_binds_c09_commit_and_issues_dual_lease(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c10_start_from_root"))
+        artifacts = checker.c10_start_from_root(ROOT)
+        self.assertEqual(set(checker.c10_start_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_START_M])
+        progress = json.loads(artifacts[checker.C10_START_P])
+        events = json.loads(artifacts[checker.C10_START_E])["events"]
+        self.assertEqual((829, 832, 3), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["WORK_INSTRUCTION_ISSUED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+            [event["event_type"] for event in events[-3:]],
+        )
+        self.assertEqual(checker.C10_START_BASE, manifest["c09_completion_commit"])
+        self.assertEqual("C-10", progress["current_work_package"])
+        self.assertEqual("IN_PROGRESS", progress["status"])
+        self.assertEqual("developer-primary", progress["active_agent"]["actor_id"])
+        self.assertEqual("ACTIVE", progress["worker_lease"]["status"])
+        self.assertEqual("ACTIVE", progress["write_lease"]["status"])
+        self.assertEqual(checker.c10_product_write_scope(), progress["write_lease"]["path_scope"])
+        self.assertEqual({"package_id": "C-11", "status": "NOT_READY"}, progress["next_work_package"])
+        old = subprocess.check_output(
+            ["git", "show", checker.C10_START_BASE + ":" + checker.C10_START_E], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(old, 829),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C10_START_E], 829),
+        )
+
+    def test_seq832_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_start_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_START_P]),
+            "events": json.loads(artifacts[checker.C10_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_START_D])}
+        manifest = json.loads(artifacts[checker.C10_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_start(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_start_git", return_value=["SEQ832_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c09_final_acceptance_git", side_effect=AssertionError("seq829 fallback")):
+            self.assertEqual(["SEQ832_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 832}
+            }))
+
+
 if __name__ == "__main__":
     unittest.main()
