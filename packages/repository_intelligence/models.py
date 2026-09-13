@@ -38,12 +38,15 @@ class ScanRequest:
     temp_root: str | None = None
     limits: ScanLimits = field(default_factory=ScanLimits)
     schema_version: str = "1.0.0"
+    impact_query: str | None = None
 
     def __post_init__(self) -> None:
         if self.schema_version != "1.0.0":
             raise ValueError("unsupported scan request schema_version")
         if not self.repository_path or not self.allowed_root:
             raise ValueError("repository_path and allowed_root are required")
+        if self.impact_query is not None and not self.impact_query.strip():
+            raise ValueError("impact_query must be non-empty when provided")
 
 
 @dataclass(frozen=True, slots=True)

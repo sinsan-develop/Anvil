@@ -2,39 +2,123 @@
 
 ## 판정
 
-`COMPLETED` — fixture 기반 Repository Intelligence 확장과 정적 검증을 완료했다.
+`COMPLETED` — 독립 review round1의 중요 3건·minor 1건, round2의 중요 2건·minor 1건, round3의 중요 1건을 후속 TDD로 해소했다. 승인된 fixture/unit/정적 범위에서 Repository Intelligence의 symbol·dependency·test·impact projection을 보완했고, 기존 A-13 read-only/no-write 계약을 포함한 필수 검증이 모두 통과했다.
 
-## 기준선
+## 기준선과 작업 권한
 
-- Work Package: C-08
-- 시작 branch: `codex/c08-repository-intelligence`
-- 시작 HEAD: `b923309` (`docs: issue C-08 repository intelligence work instruction`)
-- 시작 상태: WorkInstruction/InvocationPrompt만 포함된 clean worktree
+- Work Package: `C-08`
+- WorkInstruction SHA-256: `D02670D73F12B574136EF27D99C336600B45F864E00A344CC306FAADEE81EC3C`
+- 작업 branch: `codex/c08-repository-intelligence-r1`
+- dispatch/start HEAD: `f7931944d894990ec1dff01cf14a47e5384209c8`
+- round1 rework base: `5d0cd330f3e336be2ac6ba59d605280aa286feba`
+- round2 rework base: `7e73e442171f32dc65c82268e88d015e2156c7df`
+- round3 rework base: `b74c9e1713b4234b51942b69438f0398ba27c2c5`
+- 시작 상태: clean
+- 담당: `developer-primary`
+- execution fencing token: `c08-repository-intelligence-execution-fence-epoch-1-5529fe5`
+- write fencing token: `c08-repository-intelligence-write-fence-epoch-1-5529fe5`
+- 실제 변경은 활성 exact9 lease 안의 8경로이며 범위 밖 변경은 없다.
 
-## 조치 및 변경
+## 구현 결과
 
-- `packages/repository_intelligence/indexes.py`: Python AST 및 TypeScript 정규식 기반 symbol/dependency/test/impact 인덱스, 보수적 parse/path warning, stable sort와 canonical SHA-256 추가
-- `packages/repository_intelligence/models.py`, `scanner.py`: 기존 `ScanResult`/`scan_repository` 계약에 JSON-safe 인덱스 필드 연결. 기존 pre/post no-write proof는 유지
-- `tests/repository_intelligence/`: Python/TypeScript fixture, deterministic hash, hostile path 회귀 테스트 추가
+- Python AST에서 `import a, b`, `from . import x`를 각각의 결정론적 dependency로 투영한다.
+- dependency에 `resolved_path`를 추가하고 Python/TypeScript/JavaScript 상대 import, TS side-effect import, `require`를 보수적으로 해석한다.
+- test 파일명 추측 대신 실제 import dependency로 test `targets`와 `target_evidence`를 생성한다.
+- path impact는 `direct_files`, `importers`, `callers`, `related_tests`, `related_paths`, `test_selection`, `risk_evidence`를 분리한다.
+- reverse dependency를 fixed-point까지 추적하고 각 importer의 최소 hop과 연결 edge를 `dependency_hops` 및 G7 `test_selection.minimum_hop`으로 남긴다.
+- symbol reference caller도 reverse-dependency initial frontier로 사용해 caller를 import하는 consumer와 관련 test를 fixed-point로 연결한다.
+- `from package import mod, other`와 relative/dotted multi-alias는 실제 존재하는 submodule별 dependency로 투영하며, submodule이 없을 때만 module dependency로 보수적으로 fallback한다.
+- TypeScript/JavaScript symbol·reference는 전체 파일 symbol pass 뒤 reference pass를 수행하고 comment/string을 offset 보존 masking하여 forward-defined symbol caller와 false reference를 구분한다.
+- TypeScript/JavaScript import·require·test regex 결과도 masking된 code keyword span과 대조해 comment/string의 가짜 dependency·test·unresolved risk를 제거한다.
+- TypeScript/JavaScript의 한 줄 default/named/side-effect import와 multiline named/`import type` 구문을 결정론적 dependency로 투영하며, comment/string/template decoy의 import는 계속 배제한다.
+- dependency cycle에서는 각 importer가 처음 발견된 최소 hop edge 하나만 증거로 기록하고 더 긴 재방문 edge를 버린다.
+- build index 입력 path는 canonical relative 형식만 수용하고 absolute·`.`·`..` 및 모든 중간 symlink/junction/reparse component를 읽기 전에 fail-closed한다.
+- Python reference는 AST Load 노드만 사용해 주석·문자열의 symbol 이름을 false reference로 만들지 않는다.
+- unsupported source language, syntax error, decode failure, hostile/reparse/outside path를 구조화된 warning으로 fail-closed한다.
+- inventory 입력 순서와 중복에 무관한 stable sort 및 canonical SHA-256을 유지한다.
+- `ScanRequest.impact_query`는 기존 positional 인자 뒤의 optional 필드로 추가하여 기존 public 호출 순서를 보존하고 `scan_repository`가 이를 impact projection에 전달한다.
+- C-08은 G0/G1/G7의 입력 자료를 생성할 뿐 gate 실행·도구 실행·제품 write를 수행하지 않는다.
 
-## 검증 증거
+## 변경 경로와 최종 SHA-256
 
-- `C:\Users\cyhuh\anaconda3\python.exe -m pytest tests/repository_intelligence/test_indexes.py -q --disable-warnings` → 종료 코드 0, `3 passed`
-- `C:\Users\cyhuh\anaconda3\python.exe -m compileall -q packages/repository_intelligence tests/repository_intelligence` → 종료 코드 0
-- `git diff --check` → 종료 코드 0
+- `packages/repository_intelligence/indexes.py` — `C7A067871A9880DAFF9A20391133E2C3BA5EC294F5D6FBA43855DA97D866BEA4`
+- `packages/repository_intelligence/models.py` — `C075288DF44FEF52645D69910909B6D982722A2C51E01E66A740B232C8031AFE`
+- `packages/repository_intelligence/scanner.py` — `3AD6B6443130EA129C6C3D129B2944243081325C5FEDCAA9E932B189C944E826`
+- `tests/repository_intelligence/fixtures/app.py` — `207EDB38544F02794044710623322B57EF0470E71A99DA2B0C7B0471CADD1521`
+- `tests/repository_intelligence/fixtures/tests/spec_app.py` — `C87735E34A68F16F51B1B084FF73663CA5217D83F9E6133343087892B18B8FEE`
+- `tests/repository_intelligence/fixtures/ui.ts` — `6FE4E856DFF0B0C0679D8DD16B91BB36312B0195BCEA0D3BFE9A05B290EE6978`
+- `tests/repository_intelligence/test_indexes.py` — `097609950A8884FABE00F1253C153A8DA0DC27B144ABA120CC177887DEF9F781`
+- `docs/04_test_reports/C-08_COMPLETION_REPORT.md` — 이 보고서
 
-전체 `tests` 실행은 기존 서로 다른 디렉터리의 `test_models.py` 모듈명 충돌로 수집 단계에서 중단되며, 본 변경의 실패로 분류하지 않는다. 실제 Provider/DB/API/브라우저/배포/운영 성능은 범위 밖으로 미검증이다.
+## TDD 및 검증 증거
 
-## 잔여 위험 및 복구
+### 기준선
 
-## 재작업 이력
+- `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `4 passed in 0.11s`
+- `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 111.53s`
 
-- `FAILURE_REPORT` 1회: 독립 검증에서 내부 symlink 판정, Python unresolved import, JS/TS `require`, 참조 인덱스 및 ScanResult hash/schema 노출, impact의 의존·테스트 연결이 부족하다고 판정했다.
-- 조치: resolve 전 lstat 검사와 경로 경고, known stems 기반 import 판정, require 파싱, `references` 필드, `index_sha256` 및 schema fields 연결, impact 관련 경로 확장을 적용했다.
-- 재검증: 동일 targeted pytest `3 passed`, compileall 및 diff check 통과.
-- `FAILURE_REPORT` 2회차: Python import와 상대 require의 확장자/모듈 경로 해석이 불충분했다.
-- 조치: 표준 외부 모듈 분류, Python known stems 판정, 상대 require의 확장자 및 `index` 후보 정규화를 추가하고 회귀 테스트를 확장했다.
+### RED
 
-- 외부 parser 없이 보수적으로 분석하므로 난해한 TypeScript 문법은 warning 없이 미색인될 수 있다.
-- 영향 투영은 지정 심볼/경로와 직접 관찰된 행을 중심으로 하며 의미론적 호출 그래프가 아니다.
-- 롤백은 C-08 커밋을 revert하면 된다. 기존 inventory, manifest, Git 및 no-write proof 동작은 변경하지 않았다.
+- 신규 gap 회귀 추가 후 `python -m pytest tests/repository_intelligence/test_indexes.py -q -p no:cacheprovider` → exit `1`, `8 failed, 3 passed`; 상대 import crash, structured warning 오배치, path impact/test 연결/side-effect import/determinism 누락을 재현했다.
+- public positional 호환 회귀 `python -m pytest tests/repository_intelligence/test_indexes.py::test_scan_request_preserves_positional_contract_and_adds_optional_impact_query -q -p no:cacheprovider` → exit `1`, `1 failed`; 새 필드가 기존 6번째 positional `schema_version`을 가로채는 문제를 재현했다.
+
+### GREEN 및 회귀
+
+- `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `12 passed in 0.10s`
+- `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 101.60s`
+- `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
+- `git diff --check` → exit `0`
+
+### 독립 review round1 재작업
+
+- 판정: `Spec FAIL / REWORK`, `Critical 0 / Important 3 / Minor 1`
+- `C08-IMPACT-REVERSE-FIXED-POINT-v1`: leaf←middle←top←test의 reverse dependency가 1-hop에서 중단되던 문제. 최소 hop edge와 transitive test selection을 fixed-point까지 생성하도록 수정했다.
+- `C08-PYTHON-FROM-IMPORT-ALIAS-v1`: `from pkg import mod, other`가 `pkg` 하나로 축약되던 문제. 실제 absolute/relative/dotted submodule별 dependency와 resolved path를 생성하도록 수정했다.
+- `C08-TS-TWO-PASS-REFERENCE-v1`: TS symbol reference가 file 처리 순서에 의존하고 raw comment/string까지 검색하던 문제. 전체 symbol-first 2-pass와 non-code masking으로 수정했다.
+- `C08-CANONICAL-NESTED-PATH-GUARD-v1`: absolute·dot-segment와 내부 target을 가리키는 nested symlink component가 허용되던 문제. canonical-relative 검증과 component별 reparse 검사를 추가했다.
+- RED: `python -m pytest tests/repository_intelligence/test_indexes.py -k "fixed_point or actual_absolute_relative_and_dotted_submodules or two_pass_order_independent or canonical_relative" -q -p no:cacheprovider` → exit `1`, `4 failed, 12 deselected`
+- 개별 GREEN: path guard `1 passed`; import alias와 기존 호환 `3 passed`; TS 2-pass와 기존 호환 `3 passed`; fixed-point `1 passed`
+- round1 전체 focused: `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `16 passed in 0.20s`
+- round1 A-13 전체: `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 122.21s`
+- round1 compileall: `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
+- round1 diff check: `git diff --check` → exit `0`
+
+### 독립 review round2 재작업
+
+- 판정: `Spec FAIL / REWORK`, `Critical 0 / Important 2 / Minor 1`; round1 네 fingerprint 해소는 유지됐다.
+- `C08-SYMBOL-CALLER-FRONTIER-v1`: symbol 정의 파일만 reverse dependency seed로 사용해 caller→importer→test chain이 끊기던 문제. caller를 initial frontier에 포함하고 hop evidence와 transitive test selection을 생성하도록 수정했다.
+- `C08-TS-CODE-SPAN-PARSER-v1`: TS/JS import·require·test regex가 원문을 검색해 comment와 template/string 안의 가짜 dependency·test 및 `UNRESOLVED_DEPENDENCY` risk를 만들던 문제. match keyword가 masking 후에도 실제 code span인지 검증하도록 수정했다.
+- `C08-CYCLE-MINIMUM-HOP-EVIDENCE-v1`: dependency cycle에서 이미 방문한 importer의 더 긴 재방문 edge가 `dependency_hops`에 추가되던 문제. 최초 discovery의 최소-hop edge만 기록하도록 수정했다.
+- RED: `python -m pytest tests/repository_intelligence/test_indexes.py -k "symbol_callers_seed or regex_accept_only_code_spans or cycle_records_only" -q -p no:cacheprovider` → exit `1`, `3 failed, 16 deselected`
+- 개별 GREEN: 같은 명령 → exit `0`, `3 passed, 16 deselected in 0.10s`
+- round2 전체 focused: `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `19 passed in 0.20s`
+- round2 A-13 전체: `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 94.93s`
+- round2 compileall: `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
+- round2 diff check: `git diff --check` → exit `0`
+
+### 독립 review round3 재작업
+
+- 판정: `Spec FAIL / REWORK`, `Critical 0 / Important 1 / Minor 0`; round2 세 fingerprint 해소는 유지됐다.
+- `C08-TS-MULTILINE-NAMED-TYPE-IMPORT-v1`: 정상 multiline named import와 multiline `import type`의 dependency가 누락되던 문제. `_TS_IMPORT`의 clause만 newline을 보수적으로 수용하도록 확장하고 기존 masking 기반 code-span gate를 유지했다.
+- RED: `python -m pytest tests/repository_intelligence/test_indexes.py::test_typescript_multiline_named_and_type_imports_are_deterministic_dependencies -q -p no:cacheprovider` → exit `1`, `1 failed`; multiline named/type import 2건 누락을 재현했다.
+- 신규 GREEN: 같은 명령 → exit `0`, `1 passed in 0.08s`
+- 관련 회귀: 신규 multiline, code-span decoy, side-effect, TS 2-pass, inventory/hash 결정성 5건 → exit `0`, `5 passed in 0.09s`
+- round3 최종 focused: `python -m pytest tests/repository_intelligence -q -p no:cacheprovider` → exit `0`, `20 passed in 0.22s`
+- round3 최종 A-13 전체: `python -m pytest tests/tooling/test_a13_repository_scan.py -q -p no:cacheprovider` → exit `0`, `65 passed in 96.07s`
+- round3 compileall: `python -B -m compileall -q packages/repository_intelligence tests/repository_intelligence` → exit `0`
+- round3 diff check: `git diff --check` → exit `0`
+- 작업 도구 오류: sandbox ACL 및 Windows wrapper의 multiline 인자 전달 과정에서 보고서 patch 시도 7회가 실패했으며 제품 코드·테스트에는 영향이 없었다. Codex apply-patch 실행 파일에 UTF-8 patch 인자를 직접 전달해 해결했다.
+
+A-13 전체 회귀는 실제 임시 Git fixture에 대해 public `scan_repository` JSON 직렬화, read-only Git allowlist, pre/post snapshot 동일성, dirty/untracked 보존, mutation 탐지를 검증한다.
+
+## 미검증 범위와 잔여 위험
+
+- 실제 대규모 repository의 성능과 난해한 TypeScript/JavaScript 문법은 미검증이다. 외부 parser를 사용하지 않으므로 이해하지 못한 TS/JS 구문은 보수적으로 미색인될 수 있다.
+- Provider, Telegram, DB, API, 브라우저, WSL, 배포, 운영 성능은 WorkInstruction 범위 밖이며 실행하지 않았다.
+- C-14 gate engine은 이 Package의 범위가 아니다. 본 산출물은 G0/G1/G7 자료만 제공한다.
+- 파일 write, project process, network, DB/API/browser 호출을 제품 scanner에 추가하지 않았다. 기존 read-only Git metadata 수집만 유지했다.
+
+## Rollback
+
+- C-08 제품 commit 전체를 `git revert <C-08-product-commit>`하여 복구한다.
+- migration, DB, 외부 side effect, secret 변경이 없으므로 별도 데이터 rollback은 없다.

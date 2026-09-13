@@ -135,7 +135,7 @@ def scan_repository(request: ScanRequest) -> ScanResult:
         repository, allowed_root, output, _temp_root = validate_scan_paths(request)
         pre = _capture_snapshot(repository, allowed_root, request)
         manifests = detect_manifests(pre["inventory"])
-        indexes = build_indexes(repository, pre["inventory"])
+        indexes = build_indexes(repository, pre["inventory"], impact=request.impact_query)
         post = _capture_snapshot(repository, allowed_root, request)
         deltas = _deltas(pre, post)
         proof = {
