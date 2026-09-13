@@ -871,6 +871,19 @@ def validate_event_stream(
             "required_details": ["environment", "receipt", "candidate_commit", "container"],
             "effect": "records bounded WSL formal runtime verification",
         }
+    if any(
+        isinstance(event, dict)
+        and event.get("sequence") == 820
+        and event.get("event_type") == "TAKEOVER_PACKET_CREATED"
+        and event.get("event_id") == "evt_c09_main_takeover_packet_created"
+        for event in stream.get("events", [])
+    ):
+        payload_contracts = dict(payload_contracts or {})
+        event_types.add("TAKEOVER_PACKET_CREATED")
+        payload_contracts["TAKEOVER_PACKET_CREATED"] = {
+            "required_details": ["packet_id", "path", "sha256", "corrective_axis_count"],
+            "effect": "records immutable C-09 failure3 Main takeover packet",
+        }
     if not isinstance(payload_contracts, dict) or set(payload_contracts) != event_types:
         errors.append("EVENT_PAYLOAD_CONTRACT_SET_INVALID")
         payload_contracts = {}
@@ -993,6 +1006,13 @@ def validate_event_stream(
                 and event.get("sequence") == 810
                 and event.get("event_id") == "evt_c09_r4_work_instruction_issued"
                 and event["details"].get("projection_mode") == "C09_R4_REWORK_START_EXACT11"
+            )
+            or (
+                progress is not None
+                and progress.get("event_sequence") == 824
+                and event.get("sequence") == 820
+                and event.get("event_id") == "evt_c09_main_takeover_work_instruction_issued"
+                and event["details"].get("projection_mode") == "C09_MAIN_TAKEOVER_EXACT14"
             )
             or (
                 event.get("sequence") == 512
@@ -13008,6 +13028,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 824:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c09_main_takeover_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 814:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14130,6 +14154,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c07_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-08_START_MANIFEST.json":
             errors.extend(validate_c08_start_projection(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-09_MAIN_TAKEOVER_START_MANIFEST.json":
+            errors.extend(validate_c09_main_takeover(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -14330,6 +14356,25 @@ def validate_c21_wsl_qa_execution_result_projection(bundle: Mapping[str, Any], m
 
 def main(argv: list[str] | None = None) -> int:
     arguments = argv if argv is not None else sys.argv[1:]
+    takeover_options: dict[str, str] = {}
+    if any(arg.startswith("--c09-main-takeover-") for arg in arguments):
+        positional = []
+        option_keys = {"--c09-main-takeover-mode": "_c09_main_takeover_mode",
+                       "--c09-main-takeover-previous-mode": "_c09_main_takeover_trusted_previous_mode"}
+        for arg in arguments:
+            if arg.startswith("--"):
+                key, separator, value = arg.partition("=")
+                if (key not in option_keys or not separator or option_keys[key] in takeover_options
+                    or value not in {"FROZEN_R4", "ACTIVE_MAIN", "DETACHED_CONTROL"}):
+                    print("C09_MAIN_TAKEOVER_EXECUTION_MODE_REQUIRED")
+                    return 1
+                takeover_options[option_keys[key]] = value
+            else:
+                positional.append(arg)
+        if len(positional) > 1 or "_c09_main_takeover_mode" not in takeover_options:
+            print("C09_MAIN_TAKEOVER_EXECUTION_MODE_REQUIRED")
+            return 1
+        arguments = positional
     r4_options: dict[str, str] = {}
     if any(arg.startswith("--c09-r4-") for arg in arguments):
         positional = []
@@ -14351,6 +14396,11 @@ def main(argv: list[str] | None = None) -> int:
     root = Path(arguments[0]).resolve() if arguments else Path.cwd()
     try:
         bundle = load_bundle(root)
+        if takeover_options:
+            if bundle.get("progress", {}).get("event_sequence") != 824:
+                print("C09_MAIN_TAKEOVER_EXECUTION_MODE_SEQUENCE_INVALID")
+                return 1
+            bundle.update(takeover_options)
         if r4_options:
             if bundle.get("progress", {}).get("event_sequence") != 814:
                 print("C09_R4_EXECUTION_MODE_SEQUENCE_INVALID")
@@ -40725,6 +40775,547 @@ def _collect_c09_r4_git(bundle: Mapping[str, Any]) -> list[str]:
         return c09_r4_transition_errors(observation, previous_mode=bundle.get("_c09_r4_trusted_previous_mode"))
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+C09_MAIN_TAKEOVER_BASE = "85d72196eaafe3e458f8aea7016df94f810df086"
+C09_MAIN_TAKEOVER_PARENT = C09_R4_BASE
+C09_MAIN_TAKEOVER_AT = "2026-09-14T06:00:00+09:00"
+C09_MAIN_TAKEOVER_EXPIRES = "2026-09-14T18:00:00+09:00"
+C09_MAIN_TAKEOVER_REPORT = "docs/04_test_reports/C-09_MAIN_TAKEOVER_START_REPORT.md"
+C09_MAIN_TAKEOVER_SPEC_REVIEW = "docs/04_test_reports/C-09_R4_PRODUCT_SPEC_REVIEW_ORIGINAL.md"
+C09_MAIN_TAKEOVER_QUALITY_REVIEW = "docs/04_test_reports/C-09_R4_PRODUCT_QUALITY_REVIEW_ORIGINAL.md"
+C09_MAIN_TAKEOVER_M = "docs/evidence/manifests/C-09_MAIN_TAKEOVER_START_MANIFEST.json"
+C09_MAIN_TAKEOVER_H = "docs/progress/BUILD_HANDOFF.md"
+C09_MAIN_TAKEOVER_P = "docs/progress/build-progress.json"
+C09_MAIN_TAKEOVER_E = "docs/progress/progress-events.json"
+C09_MAIN_TAKEOVER_D = "docs/progress/progress-handoff-detached-digest-c09-main-takeover-start.json"
+C09_MAIN_TAKEOVER_VALIDATION = "docs/validation/C-09_MAIN_TAKEOVER_START_VALIDATION.md"
+C09_MAIN_TAKEOVER_PROMPT = "docs/work_orders/C-09_MAIN_TAKEOVER_INVOCATION_PROMPT.md"
+C09_MAIN_TAKEOVER_PACKET = "docs/work_orders/C-09_MAIN_TAKEOVER_PACKET.json"
+C09_MAIN_TAKEOVER_WI = "docs/work_orders/C-09_MAIN_TAKEOVER_WORK_INSTRUCTION.md"
+C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256 = "6AE618D40896B16A0AD69BFBEDFBB900F9B2E22F9FEDD9DF8750F5C2C77B58AF"
+C09_MAIN_TAKEOVER_SPEC_REVIEW_BYTES = 8961
+C09_MAIN_TAKEOVER_SPEC_REVIEW_SHA256 = "6D0F001AB4AB553FE4DD501C4A6090AB94B5235C14BC8C6570FC0D06FFC3EDD1"
+C09_MAIN_TAKEOVER_QUALITY_REVIEW_BYTES = 18269
+C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256 = "E109EB0D58613E3ABF67D42801AA0C9573E6BBD8EAD70AF6899DCF5ADCEFB021"
+C09_MAIN_TAKEOVER_REVIEWED_PRODUCT_RAW = {
+    "docs/04_test_reports/C-09_COMPLETION_REPORT.md": {"bytes": 7222, "sha256": "89D95D90CCEB839B5265166200DCFD36C8C7A865790F68A661D94755601034A7"},
+    "packages/execution_backends/__init__.py": {"bytes": 953, "sha256": "AA4156344505C1EA5F8ADC8E6AA61CAEEF4C3CEA2A6502D234477967092D2E88"},
+    "packages/execution_backends/docker.py": {"bytes": 17020, "sha256": "C71B0CCF57811C89C68D906C9AF659A13FB8025FDCDD38D9FC237004ED6B92E6"},
+    "packages/execution_backends/git_worktree.py": {"bytes": 19833, "sha256": "03E9B9DF526E479D1F13FC991A138822B5FB6A7DDF3A5B54196FF9527DF34B4D"},
+    "packages/execution_backends/models.py": {"bytes": 28971, "sha256": "15AD6463A1B5771F8650F723B1D21A4A3E580CD7C676BF6D177FBC474578C850"},
+    "packages/execution_backends/registry.py": {"bytes": 2450, "sha256": "86B1F8B0D3A2910F7420E6CCD097A055D8B9A12306CE9C32460CBFA6C6C4682A"},
+    "packages/paths/identity.py": {"bytes": 9568, "sha256": "2EF117913B69DFF60D7EC6B755C96FBEA214BEA33A8F479DC54F46897991AA43"},
+    "packages/tool_gateway/__init__.py": {"bytes": 527, "sha256": "805732D81FB8D97373F3DD611678723BC5C34BE21C6854C74DC28557B9D13472"},
+    "packages/tool_gateway/gateway.py": {"bytes": 14088, "sha256": "400DD866002C4DB65977018239D56D7B2477AC0E362E1D73C705401C1C832ACD"},
+    "packages/tool_gateway/models.py": {"bytes": 4791, "sha256": "628E4C67E48828EB377BD62CF9A0DDD9B6A5FDD74AB750BF48AC79CB248E1032"},
+    "packages/tool_gateway/registry.py": {"bytes": 6216, "sha256": "CACF59E82FFA228CF580313CEA139A47B378ABDA1DDEF8642CB46C89AECA5EE8"},
+    "tests/execution_backends/test_docker.py": {"bytes": 13316, "sha256": "295AD4A61768646DC8718A1BA6FA704BA4A93E0D27E79FA665E4E8B36703A02F"},
+    "tests/execution_backends/test_git_worktree.py": {"bytes": 18576, "sha256": "A76CBF7943F6B070B4F2D319DB09D47D4F1CF092D5029578748DC939488C50BB"},
+    "tests/execution_backends/test_registry.py": {"bytes": 1934, "sha256": "F9C1D99EAD2C70071F28898EADA91C278958358834D6C0632785CABEAD6F6620"},
+    "tests/integration/test_c09_repository_workspace.py": {"bytes": 4814, "sha256": "190FE7996F75505E7AD537F28D07027A1E6567B343305AFC0460B93DA02E0726"},
+    "tests/paths/test_conflict_scope_identity.py": {"bytes": 5458, "sha256": "DA99CA6D64A800322A24551769F703A92A07F54ACD30D5CECAC9D5D33DDF6390"},
+    "tests/tool_gateway/test_gateway.py": {"bytes": 11543, "sha256": "E47E261FBB0C2DE9FD4C85E7E958CB2C688C7C780AFDD01B2CB3C46AC1E37CEE"},
+    "tests/tool_gateway/test_tool_registry.py": {"bytes": 1396, "sha256": "F60A3AA1B204D015C5622046F7EDDFEF8A4A3A5AA19D5EDC0BE7C8A53597F0F3"},
+}
+C09_MAIN_TAKEOVER_AXES = (
+    "C09-MT-DOCKER-SCOPE-ENVELOPE", "C09-MT-TRUSTED-MANIFEST-VERIFIER",
+    "C09-MT-FULL-OWNER-IDENTITY", "C09-MT-NONMAPPING-INGRESS-AUDIT",
+    "C09-MT-PER-SESSION-PERMISSION-RESERVATION", "C09-MT-WORKSPACE-RETAINED-FENCE",
+    "C09-MT-OUTPUT-SCHEMA-TERMINALIZATION", "C09-MT-CANONICAL-RECEIPT-LINKAGE",
+    "C09-MT-EARLY-CUMULATIVE-BOUNDS", "C09-MT-PUBLIC-ORPHAN-RECOVERY",
+    "C09-MT-CANCEL-BEFORE-IO-FENCE", "C09-MT-REVOKE-BEFORE-IO-TERMINALIZATION",
+    "C09-MT-DOCKER-PER-HANDLE-CORRELATION", "C09-MT-REQUEST-ID-UNIQUENESS",
+    "C09-MT-PHYSICAL-HOSTILE-EVIDENCE-HONESTY",
+)
+
+
+def c09_main_takeover_paths() -> list[str]:
+    return sorted([C09_MAIN_TAKEOVER_REPORT, C09_MAIN_TAKEOVER_SPEC_REVIEW,
+        C09_MAIN_TAKEOVER_QUALITY_REVIEW, C09_MAIN_TAKEOVER_M, C09_MAIN_TAKEOVER_H,
+        C09_MAIN_TAKEOVER_P, C09_MAIN_TAKEOVER_E, C09_MAIN_TAKEOVER_D,
+        C09_MAIN_TAKEOVER_VALIDATION, C09_MAIN_TAKEOVER_PROMPT, C09_MAIN_TAKEOVER_PACKET,
+        C09_MAIN_TAKEOVER_WI, "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def _c09_main_takeover_current_product_raw(root: Path) -> dict[str, dict[str, Any]]:
+    rows = {}
+    for relative in c09_r3_product_paths():
+        raw = (root / relative).read_bytes()
+        rows[relative] = {"bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+    return rows
+
+
+def _c09_main_takeover_product_raw(root: Path) -> dict[str, dict[str, Any]]:
+    rows = _c09_main_takeover_current_product_raw(root)
+    if _c21_resume_sha(canonical_json_bytes(rows)) != C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256:
+        raise ValueError("C09_MAIN_TAKEOVER_PRODUCT_RAW_MUTATED")
+    return rows
+
+
+def _c09_main_takeover_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    worker, write = _c09_r4_leases()
+    worker.update({"lease_id": "worker-lease-c09-main-takeover-epoch-4-001", "lease_epoch": 4,
+        "execution_fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
+        "fencing_token": "c09-main-takeover-execution-fence-epoch-4-85d72196eaafe3e45",
+        "actor_id": "main-agent-eoul", "assigned_agent": "main-agent-eoul",
+        "baseline_git_commit": C09_MAIN_TAKEOVER_BASE, "dispatch_head": C09_MAIN_TAKEOVER_BASE,
+        "issued_at": C09_MAIN_TAKEOVER_AT, "expires_at": C09_MAIN_TAKEOVER_EXPIRES,
+        "status": "ACTIVE", "path_scope": c09_r3_product_paths()})
+    write.update({"lease_id": "write-lease-c09-main-takeover-epoch-4-001",
+        "worker_lease_id": worker["lease_id"], "write_epoch": 4,
+        "execution_fencing_token": worker["execution_fencing_token"],
+        "write_fencing_token": "c09-main-takeover-write-fence-epoch-4-e6b86e541d0887f01",
+        "fencing_token": "c09-main-takeover-write-fence-epoch-4-e6b86e541d0887f01",
+        "actor_id": "main-agent-eoul", "assigned_agent": "main-agent-eoul",
+        "issued_at": C09_MAIN_TAKEOVER_AT, "expires_at": C09_MAIN_TAKEOVER_EXPIRES,
+        "status": "ACTIVE", "path_scope": c09_r3_product_paths()})
+    return worker, write
+
+
+def _c09_main_takeover_wi_text() -> bytes:
+    axes = "\n".join(f"{index}. `{axis}`" for index, axis in enumerate(C09_MAIN_TAKEOVER_AXES, 1))
+    return ("# C-09 Main takeover WorkInstruction\n\nWI-C-09-MAIN-TAKEOVER-001. executor main-agent-eoul.\n"
+        "R4 동일 snapshot spec C2/I8/M1 및 quality C0/I11/M0를 failure3으로 한 번만 수락한다. epoch3 write 후 worker lease를 폐기하고 epoch4 dual lease로 Main이 순차 인수한다.\n"
+        "기능 범위, 요구사항, 중요 위험은 UNCHANGED이고 APPROVAL-20260814-WORKPLAN-V16-001 binding을 유지한다.\n"
+        "제품 exact18 raw map SHA-256 6AE618D40896B16A0AD69BFBEDFBB900F9B2E22F9FEDD9DF8750F5C2C77B58AF를 frozen input으로 사용한다.\n"
+        "C-09 REWORK_MAIN_TAKEOVER, C-10 NOT_READY, DIR-2 NOT_REACHED를 유지하며 actual Docker/WSL/external은 실행하지 않는다.\n\n## Corrective axes\n" + axes + "\n\n"
+        "각 축을 deterministic hostile RED→GREEN과 authoritative suite로 닫고 R4/R3/R2/C08 회귀를 유지한다. terminal/audit/receipt, cumulative bound, concurrency/lock/revoke/destroy fence와 digest/orphan/path evidence를 실제 결과로 기록한다.\n"
+        "제품 완료 전 acceptance를 주장하지 않는다. rollback은 제품 exact18을 보존한 채 successor control exact14만 정상 unstage/revert한다.\n").encode()
+
+
+def _c09_main_takeover_prompt_text() -> bytes:
+    return ("# C-09 Main takeover invocation\n\nTakeoverPacket과 WI-C-09-MAIN-TAKEOVER-001에 결박된 exact18만 main-agent-eoul이 수정한다. "
+        "epoch3 token은 폐기됐으며 epoch4 execution/write token 둘 다 검증한다. 15 corrective axes를 순차 TDD로 해결하고 R4/R3/R2/C08 회귀를 유지한다. "
+        "FROZEN_R4에서 시작해 ACTIVE_MAIN으로 전환하며 clean detached 검증은 DETACHED_CONTROL만 사용한다. C10/DIR2/외부 실행/제품 commit·push·merge는 금지한다.\n").encode()
+
+
+def _c09_main_takeover_authority(wi_raw: bytes, prompt_raw: bytes) -> dict[str, Any]:
+    authority = _c09_start_authority()
+    authority.update({"revision_class": "MAIN_TAKEOVER_AT_VALID_FAILURE_3_UNCHANGED_SCOPE",
+        "scope_change": "UNCHANGED", "requirements_change": "UNCHANGED", "material_risk_change": "UNCHANGED",
+        "work_instruction_sha256": _c21_resume_sha(wi_raw), "invocation_sha256": _c21_resume_sha(prompt_raw),
+        "predecessor": {"commit": C09_MAIN_TAKEOVER_BASE, "sole_parent": C09_MAIN_TAKEOVER_PARENT,
+            "manifest_path": C09_R4_M, "manifest_sha256": "098DC75E0A748652E76DC43392B028E842AEB0A3995F3FFD5F99093899D86778",
+            "events_sha256": "E60F0C3AA671A5C98AE449C3FDDD33B23C9512B65CDEEC1E409DD2275A66014D"},
+        "failure_counting": {"valid_failure_count": 3, "same_failure_count": 3, "rework_attempt": 3,
+            "count_increment": 1, "spec_and_quality_same_snapshot_counted_once": True,
+            "formal_developer_failure_report_count": 0, "takeover_status": "MAIN_TAKEOVER_AT_3"},
+        "review_reports": [
+            {"path": C09_MAIN_TAKEOVER_SPEC_REVIEW, "bytes": C09_MAIN_TAKEOVER_SPEC_REVIEW_BYTES,
+             "sha256": C09_MAIN_TAKEOVER_SPEC_REVIEW_SHA256, "verdict": "REWORK_REQUIRED", "critical": 2, "important": 8, "minor": 1},
+            {"path": C09_MAIN_TAKEOVER_QUALITY_REVIEW, "bytes": C09_MAIN_TAKEOVER_QUALITY_REVIEW_BYTES,
+             "sha256": C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256, "verdict": "REWORK_REQUIRED", "critical": 0, "important": 11, "minor": 0}],
+        "corrective_axes": list(C09_MAIN_TAKEOVER_AXES)})
+    return authority
+
+
+def c09_main_takeover_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes],
+                                product_raw: Mapping[str, Any]) -> dict[str, bytes]:
+    if set(historical) != {C09_MAIN_TAKEOVER_P, C09_MAIN_TAKEOVER_E, C09_MAIN_TAKEOVER_H}:
+        raise ValueError("C09_MAIN_TAKEOVER_HISTORY_SET_INVALID")
+    expected_files = {"scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+                      C09_MAIN_TAKEOVER_SPEC_REVIEW, C09_MAIN_TAKEOVER_QUALITY_REVIEW}
+    if set(files) != expected_files:
+        raise ValueError("C09_MAIN_TAKEOVER_FILE_SET_INVALID")
+    if (len(files[C09_MAIN_TAKEOVER_SPEC_REVIEW]) != C09_MAIN_TAKEOVER_SPEC_REVIEW_BYTES
+        or _c21_resume_sha(files[C09_MAIN_TAKEOVER_SPEC_REVIEW]) != C09_MAIN_TAKEOVER_SPEC_REVIEW_SHA256
+        or len(files[C09_MAIN_TAKEOVER_QUALITY_REVIEW]) != C09_MAIN_TAKEOVER_QUALITY_REVIEW_BYTES
+        or _c21_resume_sha(files[C09_MAIN_TAKEOVER_QUALITY_REVIEW]) != C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256):
+        raise ValueError("C09_MAIN_TAKEOVER_REVIEW_RAW_INVALID")
+    if _c21_resume_sha(canonical_json_bytes(product_raw)) != C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256:
+        raise ValueError("C09_MAIN_TAKEOVER_PRODUCT_RAW_MUTATED")
+    progress = _c21_resume_json(historical[C09_MAIN_TAKEOVER_P])
+    stream = _c21_resume_json(historical[C09_MAIN_TAKEOVER_E])
+    if (not isinstance(progress, dict) or not isinstance(stream, dict)
+        or progress.get("event_sequence") != 814 or stream.get("last_sequence") != 814
+        or len(stream.get("events", [])) != 814
+        or _c21_resume_sha(historical[C09_MAIN_TAKEOVER_E]) != "E60F0C3AA671A5C98AE449C3FDDD33B23C9512B65CDEEC1E409DD2275A66014D"):
+        raise ValueError("C09_MAIN_TAKEOVER_HISTORY_INVALID")
+    predecessor_worker, predecessor_write = _c09_r4_leases()
+    if (not _c21_strict_json_equal(progress.get("worker_lease"), predecessor_worker)
+        or not _c21_strict_json_equal(progress.get("write_lease"), predecessor_write)):
+        raise ValueError("C09_MAIN_TAKEOVER_EPOCH3_INVALID")
+    wi_raw, prompt_raw = _c09_main_takeover_wi_text(), _c09_main_takeover_prompt_text()
+    authority = _c09_main_takeover_authority(wi_raw, prompt_raw)
+    worker, write = _c09_main_takeover_leases()
+    retired_worker, retired_write = copy.deepcopy(predecessor_worker), copy.deepcopy(predecessor_write)
+    retired_write.update({"status": "REVOKED", "revoked_at": C09_MAIN_TAKEOVER_AT,
+                          "reason": "C09_R4_VALID_FAILURE_3_MAIN_TAKEOVER"})
+    retired_worker.update({"status": "REVOKED", "revoked_at": C09_MAIN_TAKEOVER_AT,
+                           "reason": "C09_R4_VALID_FAILURE_3_MAIN_TAKEOVER"})
+    packet = {"schema_version": "1.0.0", "packet_id": "C09-MAIN-TAKEOVER-001",
+        "package_id": "C-09", "created_at": C09_MAIN_TAKEOVER_AT,
+        "developer_execution": "STOPPED", "runtime_tool_ownership": "REVOKED",
+        "reviewed_head": C09_MAIN_TAKEOVER_BASE, "reviewed_product_path_count": 18,
+        "reviewed_product_path_list_sha256": _c21_path_list_sha(c09_r3_product_paths(), windows=True),
+        "reviewed_product_raw_map_sha256": C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256,
+        "reviewed_product_raw": copy.deepcopy(dict(product_raw)),
+        "review_reports": authority["review_reports"], "failure_counting": authority["failure_counting"],
+        "corrective_axes": list(C09_MAIN_TAKEOVER_AXES),
+        "retired_epoch3_write_lease": retired_write, "retired_epoch3_worker_lease": retired_worker,
+        "successor_epoch4_worker_lease": worker, "successor_epoch4_write_lease": write,
+        "modes": ["FROZEN_R4", "ACTIVE_MAIN", "DETACHED_CONTROL"],
+        "c09_status": "REWORK_MAIN_TAKEOVER", "c10_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "external_execution": "NOT_EXECUTED", "accepted": False}
+    packet_raw = _c21_resume_json_bytes(packet)
+    paths = c09_main_takeover_paths()
+    target = {"authority": authority, "packet_sha256": _c21_resume_sha(packet_raw),
+        "product_raw_map_sha256": C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256,
+        "control_paths": paths, "worker_lease": worker, "write_lease": write, "event_sequence": 824}
+    target_hash = _c21_resume_sha(canonical_json_bytes(target))
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    if previous != "7AB9D2E5C97A799535C5439DDF9B8F1D06C2C868824D98B13236EB6898A079AC":
+        raise ValueError("C09_MAIN_TAKEOVER_LAST_EVENT_INVALID")
+    additions = []
+    def event(kind: str, event_id: str, details: Mapping[str, Any]) -> None:
+        nonlocal previous
+        row = {"sequence": 815 + len(additions), "event_type": kind, "event_id": event_id,
+            "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+            "project_id": "anvil", "run_id": None, "work_package_id": "C-09",
+            "step_id": "MAIN_TAKEOVER", "subject_ref": "C-09/MAIN_TAKEOVER",
+            "occurred_at": C09_MAIN_TAKEOVER_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row)); additions.append(row)
+    review_common = {"reviewed_head": C09_MAIN_TAKEOVER_BASE,
+        "reviewed_product_raw_map_sha256": C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256,
+        "same_snapshot_review_cycle": "R4", "accepted": False}
+    event("INDEPENDENT_TEST_REVIEW_RECORDED", "evt_c09_r4_combined_review_recorded",
+          {**review_common, "verdict": "REWORK_REQUIRED", "critical_findings": 2,
+           "important_findings": 19, "minor_findings": 1,
+           "review_reports": authority["review_reports"],
+           "failure_counting": authority["failure_counting"]})
+    event("PACKAGE_INTERRUPTED", "evt_c09_r4_developer_stopped_for_main_takeover",
+          {"reason": "C09_R4_VALID_FAILURE_3_MAIN_TAKEOVER",
+           "checkpoint_ref": C09_MAIN_TAKEOVER_BASE,
+           "developer_execution": "STOPPED", "runtime_tool_ownership": "REVOKED",
+           "stopped_agent": "developer-primary", "valid_failure_count": 3})
+    event("WRITE_LEASE_REVOKED", "evt_c09_r4_epoch3_write_lease_revoked", retired_write)
+    event("WORKER_LEASE_REVOKED", "evt_c09_r4_epoch3_worker_lease_revoked", retired_worker)
+    event("LEASE_TAKEOVER", "evt_c09_main_takeover_packet_bound",
+          {"prior_lease_id": predecessor_worker["lease_id"], "new_lease_id": worker["lease_id"],
+           "takeover_reason": "C09_R4_VALID_FAILURE_3_MAIN_TAKEOVER",
+           "packet_id": packet["packet_id"], "packet_path": C09_MAIN_TAKEOVER_PACKET,
+           "packet_sha256": _c21_resume_sha(packet_raw), "corrective_axis_count": 15,
+           "developer_execution": "STOPPED", "runtime_tool_ownership": "REVOKED"})
+    event("WORK_INSTRUCTION_ISSUED", "evt_c09_main_takeover_work_instruction_issued",
+          {**authority, "work_instruction_id": "WI-C-09-MAIN-TAKEOVER-001",
+           "approval_ref": authority["parent_approval_id"],
+           "product_write_scope": c09_r3_product_paths(),
+           "packet_id": packet["packet_id"], "projection_mode": "C09_MAIN_TAKEOVER_EXACT14", "target_hash": target_hash})
+    event("WORKER_LEASE_ISSUED", "evt_c09_main_takeover_epoch4_worker_lease_issued", worker)
+    event("WRITE_LEASE_ISSUED", "evt_c09_main_takeover_epoch4_write_lease_issued", write)
+    event("PACKAGE_REWORK_REQUESTED", "evt_c09_main_takeover_rework_requested",
+          {"attempt": 3, "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+           "same_failure_count": 3, "status": "REWORK_MAIN_TAKEOVER",
+           "packet_id": packet["packet_id"], "executor": "main-agent-eoul"})
+    event("PACKAGE_RESUMED", "evt_c09_main_takeover_package_resumed",
+          {"from_status": "REWORK_REQUIRED", "status": "REWORK_MAIN_TAKEOVER",
+           "executor": "main-agent-eoul", "valid_failure_count": 3,
+           "resume_event_ref": "evt_c09_main_takeover_rework_requested",
+           "dispatch_head": C09_MAIN_TAKEOVER_BASE, "dispatch_upstream_head": C09_R4_MAIN,
+           "projection_mode": "C09_MAIN_TAKEOVER_EXACT14", "validated_base_commit": C09_MAIN_TAKEOVER_BASE,
+           "head_relation": "STAGED_CONTROL_OVER_FROZEN_R4_PRODUCT_OR_SOLE_DIRECT_CHILD_MAIN_TAKEOVER",
+           "exact_allowed_paths": paths, "c10_status": "NOT_READY", "dir2_status": "NOT_REACHED", "accepted": False})
+    event_raw = _c21_append_events(historical[C09_MAIN_TAKEOVER_E], 814, additions)
+    report = ("# C-09 Main takeover start 보고서\n\n판정: REWORK_MAIN_TAKEOVER. 동일 R4 snapshot의 spec/quality REWORK_REQUIRED를 failure3으로 한 번만 수락했다.\n\n"
+        "seq815~824를 append하고 Developer 실행 중지·runtime tool 회수 후 epoch3 write→worker lease를 폐기한 뒤 TakeoverPacket 결박과 main-agent-eoul epoch4 worker/write lease를 발행했다. 제품 exact18 raw map과 원본 review 두 파일은 변경하지 않았다.\n\n"
+        "15 corrective axes는 TakeoverPacket/WI에 결박했다. C10 NOT_READY, DIR2 NOT_REACHED. actual Docker/WSL/external은 NOT_EXECUTED.\n"
+        "builder missing RED 1 failed 뒤 deterministic GREEN control을 생성했다. 이 control은 제품 합격 또는 C-09 완료 증거가 아니다.\n").encode()
+    validation = ("# C-09 Main takeover validation\n\nseq1~814 raw prefix, seq815~824 chain/order, exact14 path/hash, product exact18 reviewed raw map, review raw bytes/SHA, failure3 once, Developer STOPPED·runtime tool REVOKED, epoch3 write→worker revoke, epoch4 worker/write issue, WorkPlan V16 binding을 검사한다.\n"
+        "FROZEN_R4는 precommit reviewed raw exact, ACTIVE_MAIN은 sole direct child와 current exact18 raw schema, DETACHED_CONTROL은 clean child에서 HEAD/parent/ancestor/branch/upstream/status/path/index/tree/token을 fail-closed한다.\n"
+        "fresh clone은 ignored 파일에 의존하지 않으며 R4/R3/R2/C08 회귀를 수행한다. actual Docker/WSL/external은 미실행이다.\n").encode()
+    latest = {**files, C09_MAIN_TAKEOVER_REPORT: report, C09_MAIN_TAKEOVER_VALIDATION: validation,
+        C09_MAIN_TAKEOVER_WI: wi_raw, C09_MAIN_TAKEOVER_PROMPT: prompt_raw,
+        C09_MAIN_TAKEOVER_PACKET: packet_raw, C09_MAIN_TAKEOVER_E: event_raw}
+
+    p = copy.deepcopy(progress)
+    instruction = {"artifact_id": "WI-C-09-MAIN-TAKEOVER-001", "artifact_path": C09_MAIN_TAKEOVER_WI,
+        "artifact_sha256": _c21_resume_sha(wi_raw), "invocation_path": C09_MAIN_TAKEOVER_PROMPT,
+        "invocation_sha256": _c21_resume_sha(prompt_raw), "executor": "main-agent-eoul",
+        "result_status": "REWORK_IN_PROGRESS", "package_status": "REWORK_MAIN_TAKEOVER",
+        "accepted": False, "product_write_scope": c09_r3_product_paths(), "acceptance_binding": authority}
+    p.update({"snapshot_id": "snapshot-c09-main-takeover-seq824", "event_sequence": 824,
+        "updated_at": C09_MAIN_TAKEOVER_AT, "recorded_at": C09_MAIN_TAKEOVER_AT,
+        "last_event_id": additions[-1]["event_id"], "status": "REWORK_MAIN_TAKEOVER",
+        "valid_failure_count": progress.get("valid_failure_count", 0),
+        "active_work_instruction": instruction, "worker_lease": worker, "write_lease": write,
+        "retired_c09_r4_worker_lease": retired_worker, "retired_c09_r4_write_lease": retired_write,
+        "active_agent": {"actor_id": "main-agent-eoul", "role": "MAIN_AGENT", "work_package_id": "C-09",
+            "status": "ACTIVE_MAIN", "execution_fencing_token": worker["execution_fencing_token"]},
+        "active_failure_lineage": progress.get("active_failure_lineage"),
+        "c09_main_takeover": {"status": "ACTIVE_MAIN", "developer_execution": "STOPPED",
+            "runtime_tool_ownership": "REVOKED", "packet": packet,
+            "corrective_axes": list(C09_MAIN_TAKEOVER_AXES), "event_sequence": 824},
+        "next_work_package": {"package_id": "C-10", "status": "NOT_READY"},
+        "next_safe_action": "MAIN_IMPLEMENT_C09_CORRECTIVE_AXES", "runtime_next_action": "MAIN_IMPLEMENT_C09_CORRECTIVE_AXES",
+        "current_progress_evidence_ref": {"package_id": "C-09", "path": C09_MAIN_TAKEOVER_D,
+            "manifest_path": C09_MAIN_TAKEOVER_M},
+        "latest_evidence_manifest_ref": {"path": C09_MAIN_TAKEOVER_M, "artifact_id": "C09-MAIN-TAKEOVER-START"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C09_FAILURE3_MAIN_TAKEOVER", "C10_NOT_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False}})
+    p["repository"].update({"projection_mode": "C09_MAIN_TAKEOVER_EXACT14",
+        "validated_base_commit": C09_MAIN_TAKEOVER_BASE, "local_head": C09_MAIN_TAKEOVER_BASE,
+        "control_head": C09_MAIN_TAKEOVER_BASE,
+        "head_relation": "STAGED_CONTROL_OVER_FROZEN_R4_PRODUCT_OR_SOLE_DIRECT_CHILD_MAIN_TAKEOVER",
+        "worktree_status": "MAIN_TAKEOVER_CONTROL_STAGED_OVER_FROZEN_PRODUCT_EXACT18",
+        "exact_allowed_paths": paths, "product_write_scope": c09_r3_product_paths(), "push_status": "NOT_EXECUTED"})
+    p["registry_refs"]["progress_events"] = {
+        "path": C09_MAIN_TAKEOVER_E,
+        "sha256": _c21_resume_sha(event_raw),
+    }
+    p["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(raw)}
+        for path, raw in sorted(latest.items())
+    ]
+    p["snapshot_hash"] = compute_snapshot_hash(p)
+    p_raw = _c21_resume_json_bytes(p)
+    summary = {"event_sequence": 824, "last_event_id": additions[-1]["event_id"],
+        "status": "REWORK_MAIN_TAKEOVER", "current_work_package": "C-09", "active_agent": p["active_agent"],
+        "worker_lease": worker, "write_lease": write, "valid_failure_count": p["valid_failure_count"],
+        "c09_product_valid_failure_count": 3, "c09_same_failure_count": 3, "c09_rework_attempt": 3,
+        "c09_status": "REWORK_MAIN_TAKEOVER", "c10_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "current_manifest": C09_MAIN_TAKEOVER_M,
+        "design_baseline_hash": p["design_baseline_hash"], "dir_status": p["dir_review"]["status"],
+        "repository_head": p["repository"]["local_head"], "repository_upstream": p["repository"]["upstream"],
+        "reporting_decision": p["reporting_decision"]["decision"],
+        "product_raw_map_sha256": C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256,
+        "control_exact_path_count": 14, "control_exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "next_safe_action": "MAIN_IMPLEMENT_C09_CORRECTIVE_AXES", "accepted": False}
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(summary).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff, count = re.subn(pattern, lambda _: replacement, historical[C09_MAIN_TAKEOVER_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C09_MAIN_TAKEOVER_HANDOFF_INVALID")
+    handoff_raw = ("# C-09 Main takeover seq824\n\nR4 product exact18 frozen, successor control exact14 only.\n\n" + handoff).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C09-MAIN-TAKEOVER-START-DIGEST",
+        "package_id": "C-09", "event_sequence": 824, "algorithm": "SHA-256", "self_reference": False,
+        "created_at": C09_MAIN_TAKEOVER_AT, "target_hash": target_hash, "events_sha256": _c21_resume_sha(event_raw),
+        "progress": {"path": C09_MAIN_TAKEOVER_P, "bytes": len(p_raw), "file_sha256": _c21_resume_sha(p_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(p))},
+        "handoff": {"path": C09_MAIN_TAKEOVER_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(summary))}}
+    artifacts = {**latest, C09_MAIN_TAKEOVER_P: p_raw, C09_MAIN_TAKEOVER_H: handoff_raw,
+                 C09_MAIN_TAKEOVER_D: _c21_resume_json_bytes(digest)}
+    prefix = raw_event_object_prefix_bytes(historical[C09_MAIN_TAKEOVER_E], 814)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-09_MAIN_TAKEOVER_START",
+        "artifact_id": "C09-MAIN-TAKEOVER-START", "package_id": "C-09", "created_at": C09_MAIN_TAKEOVER_AT,
+        "event_sequence": 824, "historical_event_sequence": 814, "appended_event_count": 10,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "projection_mode": "C09_MAIN_TAKEOVER_EXACT14", "validated_base_commit": C09_MAIN_TAKEOVER_BASE,
+        "authority": authority, "takeover_packet_sha256": _c21_resume_sha(packet_raw),
+        "failure_counting": authority["failure_counting"], "corrective_axes": list(C09_MAIN_TAKEOVER_AXES),
+        "accepted": False, "c09_status": "REWORK_MAIN_TAKEOVER", "c10_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "worker_lease": worker, "write_lease": write, "product_exact_paths": c09_r3_product_paths(),
+        "product_exact_path_list_sha256": _c21_path_list_sha(c09_r3_product_paths(), windows=True),
+        "product_raw_map_sha256": C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256,
+        "product_raw": copy.deepcopy(dict(product_raw)), "product_mutation_count": 0,
+        "exact_paths": paths, "exact_path_count": 14, "exact_path_list_sha256": _c21_path_list_sha(paths, windows=True),
+        "target_hash": target_hash, "self_reference": False,
+        "external_validation": {"actual_docker": "NOT_EXECUTED", "actual_wsl": "NOT_EXECUTED",
+            "network": "NOT_ACCESSED", "provider": "NOT_ACCESSED", "telegram": "NOT_ACCESSED",
+            "db": "NOT_EXECUTED", "api": "NOT_EXECUTED", "ui": "NOT_EXECUTED", "browser": "NOT_EXECUTED"},
+        "raw_checksums": [{"path": path, "bytes": len(data), "sha256": _c21_resume_sha(data)}
+                          for path, data in sorted(artifacts.items())]}
+    artifacts[C09_MAIN_TAKEOVER_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(paths):
+        raise ValueError("C09_MAIN_TAKEOVER_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c09_main_takeover_from_root(root: Path) -> dict[str, bytes]:
+    parent = subprocess.check_output(["git", "show", "-s", "--format=%P", C09_MAIN_TAKEOVER_BASE], cwd=root).decode().strip()
+    if parent != C09_MAIN_TAKEOVER_PARENT:
+        raise ValueError("C09_MAIN_TAKEOVER_LINEAGE_INVALID")
+    for path, expected_sha in ((C09_R4_M, "098DC75E0A748652E76DC43392B028E842AEB0A3995F3FFD5F99093899D86778"),
+                               (C09_R4_WI, "7BFDD939DADE6D2605D6185ED1ACE03C6D5C6FED8E3123BA6792120C5268B2B3"),
+                               (C09_R4_PROMPT, "6E934F12E5B3D4D5C6536C4CAB2030953415726CE212F87A4535120A3D605616")):
+        raw = subprocess.check_output(["git", "show", f"{C09_MAIN_TAKEOVER_BASE}:{path}"], cwd=root)
+        if _c21_resume_sha(raw) != expected_sha or (root / path).read_bytes() != raw:
+            raise ValueError("C09_MAIN_TAKEOVER_PREDECESSOR_MUTATED")
+    historical = {path: subprocess.check_output(["git", "show", f"{C09_MAIN_TAKEOVER_BASE}:{path}"], cwd=root)
+                  for path in (C09_MAIN_TAKEOVER_P, C09_MAIN_TAKEOVER_E, C09_MAIN_TAKEOVER_H)}
+    files = {path: (root / path).read_bytes() for path in (
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+        C09_MAIN_TAKEOVER_SPEC_REVIEW, C09_MAIN_TAKEOVER_QUALITY_REVIEW)}
+    reviewed_product_raw = copy.deepcopy(C09_MAIN_TAKEOVER_REVIEWED_PRODUCT_RAW)
+    if _c21_resume_sha(canonical_json_bytes(reviewed_product_raw)) != C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256:
+        raise ValueError("C09_MAIN_TAKEOVER_REVIEWED_PRODUCT_CONSTANT_INVALID")
+    return c09_main_takeover_artifacts(historical, files, reviewed_product_raw)
+
+
+def validate_c09_main_takeover(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c09_main_takeover_from_root(bundle["_root"])
+        refs = {C09_MAIN_TAKEOVER_P: _c21_resume_json(expected[C09_MAIN_TAKEOVER_P]),
+                C09_MAIN_TAKEOVER_E: _c21_resume_json(expected[C09_MAIN_TAKEOVER_E]),
+                C09_MAIN_TAKEOVER_H: extract_handoff_summary(expected[C09_MAIN_TAKEOVER_H].decode()),
+                C09_MAIN_TAKEOVER_D: _c21_resume_json(expected[C09_MAIN_TAKEOVER_D]),
+                C09_MAIN_TAKEOVER_M: _c21_resume_json(expected[C09_MAIN_TAKEOVER_M])}
+        actual = {C09_MAIN_TAKEOVER_P: bundle.get("progress"), C09_MAIN_TAKEOVER_E: bundle.get("events"),
+                  C09_MAIN_TAKEOVER_H: bundle.get("handoff"), C09_MAIN_TAKEOVER_D: bundle.get("detached_digest"),
+                  C09_MAIN_TAKEOVER_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual[k], refs[k]) for k in actual) else ["C09_MAIN_TAKEOVER_PROJECTION_INVALID"]
+        if any((bundle["_root"] / path).read_bytes() != raw for path, raw in expected.items()):
+            errors.append("C09_MAIN_TAKEOVER_RAW_BYTES_INVALID")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError, UnicodeError):
+        return ["C09_MAIN_TAKEOVER_INPUT_INVALID"]
+
+
+def c09_main_takeover_transition_errors(observation: Mapping[str, Any], *, previous_mode: str | None = None) -> list[str]:
+    try:
+        if not isinstance(observation, Mapping) or previous_mode not in {None, "FROZEN_R4", "ACTIVE_MAIN", "DETACHED_CONTROL"}:
+            return ["C09_MAIN_TAKEOVER_REPOSITORY_AUTHORITY_INVALID"]
+        o = observation; mode = o.get("mode")
+        if mode not in {"FROZEN_R4", "ACTIVE_MAIN", "DETACHED_CONTROL"}:
+            return ["C09_MAIN_TAKEOVER_EXECUTION_MODE_REQUIRED"]
+        if previous_mode == "ACTIVE_MAIN" and mode == "FROZEN_R4":
+            return ["C09_MAIN_TAKEOVER_MODE_REGRESSION"]
+        detached = mode == "DETACHED_CONTROL"
+        if (o.get("base") != C09_MAIN_TAKEOVER_BASE or o.get("base_parents") != [C09_MAIN_TAKEOVER_PARENT]
+            or o.get("main_head") != C09_R4_MAIN or o.get("remote_url") != C09_START_DEVELOPMENT_URL
+            or o.get("branch") != ("" if detached else C09_START_BRANCH)
+            or o.get("upstream") != ("" if detached else "development/main")
+            or any(o.get(key) is not True for key in ("epoch4_valid", "ancestor", "diff_check", "cached_check", "control_tree_valid"))):
+            return ["C09_MAIN_TAKEOVER_REPOSITORY_AUTHORITY_INVALID"]
+        paths = {}
+        for key in ("staged", "unstaged", "untracked", "changed"):
+            value = o.get(key)
+            if (not isinstance(value, list) or value != sorted(set(value))
+                or any(not isinstance(path, str) or not _c02_strict_git_path(path) for path in value)):
+                return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
+            paths[key] = value
+        control, product = c09_main_takeover_paths(), c09_r3_product_paths()
+        if set(paths["staged"]) & set(product):
+            return ["C09_MAIN_TAKEOVER_INDEX_OVERLAP"]
+        status = o.get("status_rows")
+        if not isinstance(status, list):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        actual_status = {}
+        for row in status:
+            if (not isinstance(row, str) or len(row) < 4 or row[2] != " " or row[:2] not in {" M", "??", "M ", "A "}
+                or not _c02_strict_git_path(row[3:]) or row[3:] in actual_status):
+                return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
+            actual_status[row[3:]] = row[:2]
+        expected_status = {path: " M" for path in paths["unstaged"]}
+        for path in paths["untracked"]:
+            if path in expected_status:
+                return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
+            expected_status[path] = "??"
+        for path in paths["staged"]:
+            if path in expected_status or actual_status.get(path) not in {"A ", "M "}:
+                return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
+            expected_status[path] = actual_status[path]
+        if actual_status != expected_status:
+            return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
+        precommit = o.get("head") == C09_MAIN_TAKEOVER_BASE
+        if precommit:
+            if mode != "FROZEN_R4" or o.get("parents") != [C09_MAIN_TAKEOVER_PARENT] or paths["staged"] != control or paths["changed"]:
+                return ["C09_MAIN_TAKEOVER_PATH_SET_INVALID"]
+        elif (mode not in {"ACTIVE_MAIN", "DETACHED_CONTROL"}
+              or not isinstance(o.get("head"), str) or re.fullmatch(r"[0-9a-f]{40}", o["head"]) is None
+              or o.get("parents") != [C09_MAIN_TAKEOVER_BASE] or paths["changed"] != control or paths["staged"]):
+            return ["C09_MAIN_TAKEOVER_REPOSITORY_AUTHORITY_INVALID"]
+        dirty = sorted(paths["unstaged"] + paths["untracked"])
+        if detached:
+            return [] if not precommit and not dirty and not status else ["C09_MAIN_TAKEOVER_PORTABLE_CONTROL_INVALID"]
+        if dirty != product:
+            return ["C09_MAIN_TAKEOVER_PRODUCT_SCOPE_INVALID"]
+        hashes = o.get("product_hashes")
+        if not _c09_main_takeover_product_raw_shape_valid(hashes):
+            return ["C09_MAIN_TAKEOVER_PRODUCT_RAW_INVALID"]
+        if precommit and _c21_resume_sha(canonical_json_bytes(hashes)) != C09_MAIN_TAKEOVER_PRODUCT_RAW_MAP_SHA256:
+            return ["C09_MAIN_TAKEOVER_PRODUCT_RAW_MUTATED"]
+        return []
+    except (KeyError, ValueError, TypeError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+def _c09_main_takeover_product_raw_shape_valid(value: Any) -> bool:
+    if not isinstance(value, Mapping) or set(value) != set(c09_r3_product_paths()):
+        return False
+    for row in value.values():
+        if (not isinstance(row, Mapping) or set(row) != {"bytes", "sha256"}
+            or isinstance(row.get("bytes"), bool) or not isinstance(row.get("bytes"), int)
+            or row["bytes"] < 0 or not isinstance(row.get("sha256"), str)
+            or re.fullmatch(r"[0-9A-F]{64}", row["sha256"]) is None):
+            return False
+    return True
+
+
+def _c09_main_takeover_tree_matches(root: Path, ref: str) -> bool:
+    try:
+        expected = c09_main_takeover_from_root(root)
+        return all(subprocess.check_output(["git", "show", ref + ":" + path], cwd=root) == raw
+                   for path, raw in expected.items())
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError):
+        return False
+
+
+def _c09_main_takeover_cached_check(root: Path) -> bool:
+    """Preserve the immutable quality review while checking every other staged path."""
+    if _c02_git_quiet_check(root, "diff", "--cached", "--check"):
+        return True
+    try:
+        raw = (root / C09_MAIN_TAKEOVER_QUALITY_REVIEW).read_bytes()
+    except (OSError, ValueError, TypeError):
+        return False
+    if (len(raw) != C09_MAIN_TAKEOVER_QUALITY_REVIEW_BYTES
+        or _c21_resume_sha(raw) != C09_MAIN_TAKEOVER_QUALITY_REVIEW_SHA256):
+        return False
+    return _c02_git_quiet_check(
+        root,
+        "diff", "--cached", "--check", "--", ".",
+        f":(exclude){C09_MAIN_TAKEOVER_QUALITY_REVIEW}",
+    )
+
+
+def _collect_c09_main_takeover_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        top = value("rev-parse", "--show-toplevel")
+        if top is None or Path(top).resolve() != root.resolve():
+            return ["C09_MAIN_TAKEOVER_REPOSITORY_AUTHORITY_INVALID"]
+        progress = bundle.get("progress", {}); worker, write = _c09_main_takeover_leases()
+        branch = optional("branch", "--show-current")
+        observation = {"head": value("rev-parse", "HEAD"), "base": value("rev-parse", C09_MAIN_TAKEOVER_BASE),
+            "branch": branch, "upstream": "" if branch == "" else optional("for-each-ref", "--format=%(upstream:short)", "--count=1", f"refs/heads/{C09_START_BRANCH}"),
+            "main_head": value("rev-parse", "development/main"), "remote_url": value("remote", "get-url", "development"),
+            "staged": _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")),
+            "unstaged": _c02_strict_name_only_paths(raw("diff", "--name-only")),
+            "untracked": _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard")),
+            "status_rows": _c02_strict_raw_lines(raw("status", "--porcelain", "--untracked-files=all")),
+            "cached_check": _c09_main_takeover_cached_check(root), "diff_check": check("diff", "--check"),
+            "epoch4_valid": (_c21_strict_json_equal(progress.get("worker_lease"), worker)
+                and _c21_strict_json_equal(progress.get("write_lease"), write)),
+            "mode": bundle.get("_c09_main_takeover_mode", "FROZEN_R4")}
+        if any(item is None for item in observation.values()):
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        head_parents = value("show", "-s", "--format=%P", observation["head"])
+        base_parents = value("show", "-s", "--format=%P", C09_MAIN_TAKEOVER_BASE)
+        if head_parents is None or base_parents is None:
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        observation["parents"] = head_parents.split(); observation["base_parents"] = base_parents.split()
+        precommit = observation["head"] == C09_MAIN_TAKEOVER_BASE
+        observation["changed"] = [] if precommit else _c02_strict_name_only_paths(
+            raw("diff", "--name-only", C09_MAIN_TAKEOVER_BASE, observation["head"]))
+        observation["ancestor"] = check("merge-base", "--is-ancestor", C09_MAIN_TAKEOVER_BASE, observation["head"])
+        observation["control_tree_valid"] = _c09_main_takeover_tree_matches(root, "" if precommit else observation["head"])
+        dirty = sorted(observation["unstaged"] + observation["untracked"])
+        observation["product_hashes"] = _c09_main_takeover_current_product_raw(root) if dirty == c09_r3_product_paths() else {}
+        return c09_main_takeover_transition_errors(
+            observation, previous_mode=bundle.get("_c09_main_takeover_trusted_previous_mode"))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
 
 if __name__ == "__main__":
     raise SystemExit(main())
