@@ -1030,6 +1030,14 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C10_START_EXACT7"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 838
+                and event.get("sequence") == 836
+                and event.get("event_id") == "evt_c10_rework_required"
+                and event.get("event_type") == "PACKAGE_RESUMED"
+                and event["details"].get("projection_mode") == "C10_REWORK_START_EXACT7"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13049,6 +13057,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 838:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c10_rework_start_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 832:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14189,6 +14201,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c09_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-10_START_MANIFEST.json":
             errors.extend(validate_c10_start(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-10_REWORK_START_MANIFEST.json":
+            errors.extend(validate_c10_rework_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -42322,6 +42336,317 @@ def _collect_c10_start_git(bundle: Mapping[str, Any]) -> list[str]:
                  and changed == c10_start_paths() and check("merge-base", "--is-ancestor", C10_START_BASE, head)
                  and check("diff", "--check", C10_START_BASE, head))
         return [] if valid else ["C10_START_PATH_OR_CLEAN_INVALID"]
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C10_REWORK_START_P = "docs/progress/build-progress.json"
+C10_REWORK_START_E = "docs/progress/progress-events.json"
+C10_REWORK_START_H = "docs/progress/BUILD_HANDOFF.md"
+C10_REWORK_START_D = "docs/progress/progress-handoff-detached-digest-c10-rework-start.json"
+C10_REWORK_START_M = "docs/evidence/manifests/C-10_REWORK_START_MANIFEST.json"
+C10_REWORK_START_BASE = "1bd511cb50e64b32bc663206e19eaef7c6e5cc75"
+C10_REWORK_START_AT = "2026-09-14T06:04:00+09:00"
+C10_REWORK_START_EXPIRES_AT = "2026-09-14T18:04:00+09:00"
+C10_REWORK_WORKER_LEASE_ID = "worker-lease-c10-action-policy-r1-20260914-002"
+C10_REWORK_WRITE_LEASE_ID = "write-lease-c10-action-policy-r1-20260914-002"
+C10_REWORK_EXECUTION_TOKEN = "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83"
+C10_REWORK_WRITE_TOKEN = "c10-action-policy-r1-write-fence-epoch-2-84f1d603a7ce4b29"
+
+
+def c10_rework_product_paths() -> list[str]:
+    return sorted([
+        "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+        "packages/action_policy/__init__.py",
+        "packages/action_policy/admission.py",
+        "packages/action_policy/policy.py",
+        "tests/action_policy/test_c10_policy.py",
+        "tests/action_policy/test_policy.py",
+    ])
+
+
+def c10_rework_start_paths() -> list[str]:
+    return sorted([
+        C10_REWORK_START_M, C10_REWORK_START_H, C10_REWORK_START_P,
+        C10_REWORK_START_E, C10_REWORK_START_D,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py",
+    ])
+
+
+def _c10_rework_worker_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C10_REWORK_WORKER_LEASE_ID,
+        "fencing_token": C10_REWORK_EXECUTION_TOKEN,
+        "execution_fencing_token": C10_REWORK_EXECUTION_TOKEN,
+        "lease_epoch": 2, "actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+        "work_package_id": "C-10", "baseline_hash": C08_START_DESIGN_SHA256,
+        "baseline_git_commit": C10_REWORK_START_BASE, "dispatch_head": C10_REWORK_START_BASE,
+        "issued_at": C10_REWORK_START_AT, "expires_at": C10_REWORK_START_EXPIRES_AT,
+        "status": "ACTIVE", "path_scope": c10_product_write_scope(),
+        "subject_ref": "C-10/REWORK-R1",
+    }
+
+
+def _c10_rework_write_lease() -> dict[str, Any]:
+    return {
+        "lease_id": C10_REWORK_WRITE_LEASE_ID,
+        "worker_lease_id": C10_REWORK_WORKER_LEASE_ID,
+        "fencing_token": C10_REWORK_WRITE_TOKEN,
+        "write_fencing_token": C10_REWORK_WRITE_TOKEN,
+        "execution_fencing_token": C10_REWORK_EXECUTION_TOKEN,
+        "write_epoch": 2, "actor_id": "developer-primary", "work_package_id": "C-10",
+        "baseline_hash": C08_START_DESIGN_SHA256, "issued_at": C10_REWORK_START_AT,
+        "expires_at": C10_REWORK_START_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c10_product_write_scope(),
+    }
+
+
+def c10_rework_start_artifacts(historical: Mapping[str, bytes],
+                               files: Mapping[str, bytes]) -> dict[str, bytes]:
+    generated = {C10_REWORK_START_M, C10_REWORK_START_H, C10_REWORK_START_P,
+                 C10_REWORK_START_E, C10_REWORK_START_D}
+    if set(historical) != {C10_REWORK_START_H, C10_REWORK_START_P, C10_REWORK_START_E}:
+        raise ValueError("C10_REWORK_HISTORY_SET_INVALID")
+    if set(files) != set(c10_rework_start_paths()) - generated:
+        raise ValueError("C10_REWORK_FILE_SET_INVALID")
+    progress = _c21_resume_json(historical[C10_REWORK_START_P])
+    stream = _c21_resume_json(historical[C10_REWORK_START_E])
+    if (progress.get("event_sequence") != 832 or progress.get("status") != "IN_PROGRESS"
+            or len(stream.get("events", [])) != 832):
+        raise ValueError("C10_REWORK_HISTORY_INVALID")
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    worker, write = _c10_rework_worker_lease(), _c10_rework_write_lease()
+    old_worker, old_write = copy.deepcopy(progress["worker_lease"]), copy.deepcopy(progress["write_lease"])
+    old_worker["status"] = "REVOKED_INVALID_FUTURE_ISSUANCE"
+    old_write["status"] = "REVOKED_INVALID_FUTURE_ISSUANCE"
+
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str,
+                 details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {"schema_version": "1.0.0", "sequence": sequence, "event_id": event_id,
+               "event_type": event_type, "subject_type": "WORK_PACKAGE",
+               "subject_id": "C-10", "subject_ref": "C-10/REWORK-R1", "actor_id": actor,
+               "occurred_at": C10_REWORK_START_AT, "recorded_at": C10_REWORK_START_AT,
+               "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        return row
+
+    review = {
+        "verdict": "REWORK", "blocking_findings": 7,
+        "spec_review": {"critical": 2, "important": 4, "minor": 0},
+        "quality_review": {"critical": 3, "important": 4, "minor": 0},
+        "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+        "finding_ids": ["DESTRUCTIVE_COMMAND_BYPASS", "CONNECT_TIME_EGRESS_UNBOUND",
+            "PROTECTED_PATH_PRECEDENCE", "SECRET_CONTEXT_UNBOUND", "WINDOWS_DEVICE_ALIAS",
+            "NESTED_AUTHORITY_SHAPE_FAILOPEN", "HOSTILE_OR_MUTABLE_INGRESS"],
+    }
+    events = [
+        envelope(833, "WRITE_LEASE_REVOKED", "evt_c10_future_write_lease_revoked", "main-agent-eoul", {
+            **old_write, "reason": "ISSUED_AT_AFTER_ACTUAL_HOST_TIME",
+            "invalid_issued_at": C10_START_AT, "observed_at": C10_REWORK_START_AT}),
+        envelope(834, "WORKER_LEASE_REVOKED", "evt_c10_future_worker_lease_revoked", "main-agent-eoul", {
+            **old_worker, "reason": "ISSUED_AT_AFTER_ACTUAL_HOST_TIME",
+            "invalid_issued_at": C10_START_AT, "observed_at": C10_REWORK_START_AT}),
+        envelope(835, "INDEPENDENT_TEST_JUDGMENT_RECORDED", "evt_c10_independent_rework_judgment", "main-agent-eoul", {
+            **review, "criteria": ["C10_SPEC_REVIEW", "C10_QUALITY_SECURITY_REVIEW"],
+            "evidence_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md"}),
+        envelope(836, "PACKAGE_RESUMED", "evt_c10_rework_required", "main-agent-eoul", {
+            **review, "projection_mode": "C10_REWORK_START_EXACT7",
+            "product_exact_paths": c10_rework_product_paths(), "valid_failure_count": 1,
+            "same_failure_count": 1, "formal_failure_report_count": 0,
+            "authority_correction": "REAPPLY_ALL_EXACT6_UNDER_EPOCH2",
+            "resume_event_ref": "evt_c10_independent_rework_judgment",
+            "dispatch_head": C10_REWORK_START_BASE, "dispatch_upstream_head": C09_R4_MAIN,
+            "validated_base_commit": C10_REWORK_START_BASE,
+            "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_REWORK",
+            "exact_allowed_paths": c10_rework_start_paths()}),
+        envelope(837, "WORKER_LEASE_ISSUED", "evt_c10_rework_worker_lease_issued", "developer-primary", worker),
+        envelope(838, "WRITE_LEASE_ISSUED", "evt_c10_rework_write_lease_issued", "developer-primary", write),
+    ]
+    events_raw = _c21_append_events(historical[C10_REWORK_START_E], 832, events)
+    control_paths = c10_rework_start_paths()
+    repository = copy.deepcopy(progress["repository"])
+    repository.update({
+        "projection_mode": "C10_REWORK_START_EXACT7", "validated_base_commit": C10_REWORK_START_BASE,
+        "control_head": C10_REWORK_START_BASE, "local_head": C10_REWORK_START_BASE,
+        "branch": C09_START_BRANCH, "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_REWORK",
+        "worktree_status": "C10_REWORK_CONTROL_WITH_PRODUCT_EXACT6_DIRTY",
+        "exact_allowed_paths": control_paths, "product_exact_paths": c10_rework_product_paths(),
+        "product_write_scope": c10_product_write_scope(), "push_status": "NOT_EXECUTED",
+    })
+    active_wi = copy.deepcopy(progress["active_work_instruction"])
+    active_wi.update({"result_status": "REWORK_IN_PROGRESS", "package_status": "REWORK_IN_PROGRESS",
+                      "rework_attempt": 1, "independent_review": review})
+    progress.update({
+        "snapshot_id": "snapshot-c10-rework-start-seq838", "updated_at": C10_REWORK_START_AT,
+        "recorded_at": C10_REWORK_START_AT, "event_sequence": 838,
+        "last_event_id": events[-1]["event_id"], "status": "REWORK_IN_PROGRESS",
+        "active_agent": {"actor_id": "developer-primary", "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-10", "status": "ACTIVE",
+            "execution_fencing_token": C10_REWORK_EXECUTION_TOKEN},
+        "worker_lease": worker, "write_lease": write, "active_work_instruction": active_wi,
+        "repository": repository, "valid_failure_count": 0,
+        "active_failure_lineage": {"step_lineage_id": "C-10", "valid_failure_count": 0,
+            "same_failure_count": 0, "rework_attempt": 1,
+            "fingerprint": "C10-INDEPENDENT-REVIEW-REWORK-R1"},
+        "c10_start": {**copy.deepcopy(progress.get("c10_start", {})),
+            "status": "REWORK_IN_PROGRESS", "accepted": False, "event_sequence": 838,
+            "c10_status": "REWORK_IN_PROGRESS", "c11_status": "NOT_READY",
+            "independent_reviews": review, "superseded_lease_status": "INVALID_FUTURE_ISSUANCE_REVOKED"},
+        "next_work_package": {"package_id": "C-11", "status": "NOT_READY"},
+        "runtime_next_action": "DISPATCH_C10_REWORK_R1_DEVELOPER",
+        "next_safe_action": "DISPATCH_C10_REWORK_R1_DEVELOPER",
+        "current_progress_evidence_ref": {"package_id": "C-10", "path": C10_REWORK_START_D,
+                                          "manifest_path": C10_REWORK_START_M},
+        "latest_evidence_manifest_ref": {"path": C10_REWORK_START_M,
+                                         "artifact_id": "C10-REWORK-START-R1-20260914"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C10_REWORK_REQUIRED", "LEASE_AUTHORITY_CORRECTED", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False},
+    })
+    progress["registry_refs"]["progress_events"] = {"path": C10_REWORK_START_E,
+                                                        "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": _c21_resume_sha(raw)} for path, raw in sorted(files.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in (
+        "event_sequence", "last_event_id", "status", "current_phase", "current_work_package",
+        "active_agent", "worker_lease", "write_lease", "design_baseline_hash",
+        "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": False, "c09_status": "ACCEPTED", "c10_status": "REWORK_IN_PROGRESS",
+        "c11_status": "NOT_READY", "dir2_status": "NOT_REACHED", "repository_head": C10_REWORK_START_BASE,
+        "dir_status": progress["dir_review"]["status"],
+        "repository_upstream": repository["upstream"],
+        "repository_projection_mode": repository["projection_mode"],
+        "repository_exact_allowed_paths": control_paths,
+        "product_exact_paths": c10_rework_product_paths(), "independent_reviews": review,
+        "superseded_lease_status": "INVALID_FUTURE_ISSUANCE_REVOKED",
+        "current_manifest": C10_REWORK_START_M, "reporting_decision": "AUTO_CONTINUE"})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+                                  historical[C10_REWORK_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C10_REWORK_HANDOFF_INVALID")
+    handoff_raw = ("# C-10 rework start R1 - seq838\n\n"
+        "- seq1~832 raw event objects preserved. Future-issued epoch1 leases revoked.\n"
+        "- independent review blocking7; epoch2 current-time dual lease issued.\n"
+        "- exact6 must be re-applied under epoch2 before acceptance; external execution remains NOT_EXECUTED.\n\n"
+        + handoff_text).encode("utf-8")
+    digest = {"schema_version": "1.0.0", "digest_id": "C10-REWORK-START-R1-DIGEST-20260914",
+        "package_id": "C-10", "event_sequence": 838, "algorithm": "SHA-256",
+        "created_at": C10_REWORK_START_AT, "scope": "seq833-838 append-only C-10 rework start; exact7",
+        "self_reference": False,
+        "progress": {"path": C10_REWORK_START_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C10_REWORK_START_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C10_REWORK_START_P: progress_raw, C10_REWORK_START_E: events_raw,
+                 C10_REWORK_START_H: handoff_raw, C10_REWORK_START_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C10_REWORK_START_E], 832)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-10_REWORK_START",
+        "artifact_id": "C10-REWORK-START-R1-20260914", "created_at": C10_REWORK_START_AT,
+        "package_id": "C-10", "event_sequence": 838, "historical_event_sequence": 832,
+        "appended_event_count": 6,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": False,
+        "status": "REWORK_IN_PROGRESS", "c09_status": "ACCEPTED",
+        "c10_status": "REWORK_IN_PROGRESS", "c11_status": "NOT_READY", "dir2_status": "NOT_REACHED",
+        "superseded_lease_status": "INVALID_FUTURE_ISSUANCE_REVOKED",
+        "worker_lease": worker, "write_lease": write, "independent_reviews": review,
+        "product_exact_paths": c10_rework_product_paths(), "product_write_scope": c10_product_write_scope(),
+        "projection_mode": "C10_REWORK_START_EXACT7", "validated_base_commit": C10_REWORK_START_BASE,
+        "branch": C09_START_BRANCH, "exact_paths": control_paths,
+        "exact_path_count": len(control_paths),
+        "exact_path_list_sha256": _c21_path_list_sha(control_paths, windows=True),
+        "record_binding": repository["head_relation"], "self_reference": False,
+        "external_validation": _c10_start_boundary()}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw),
+        "sha256": _c21_resume_sha(raw)} for path, raw in sorted(artifacts.items())]
+    artifacts[C10_REWORK_START_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(control_paths):
+        raise ValueError("C10_REWORK_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c10_rework_start_from_root(root: Path) -> dict[str, bytes]:
+    parent = subprocess.check_output(
+        ["git", "show", "-s", "--format=%P", C10_REWORK_START_BASE], cwd=root).decode().strip()
+    if parent != C10_START_BASE:
+        raise ValueError("C10_REWORK_LINEAGE_INVALID")
+    historical = {path: subprocess.check_output(
+        ["git", "show", f"{C10_REWORK_START_BASE}:{path}"], cwd=root)
+        for path in (C10_REWORK_START_P, C10_REWORK_START_E, C10_REWORK_START_H)}
+    files = {path: (root / path).read_bytes()
+             for path in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c10_rework_start_artifacts(historical, files)
+
+
+def validate_c10_rework_start(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c10_rework_start_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c10_rework_start_paths()}
+        expected_objects = {C10_REWORK_START_P: _c21_resume_json(expected[C10_REWORK_START_P]),
+            C10_REWORK_START_E: _c21_resume_json(expected[C10_REWORK_START_E]),
+            C10_REWORK_START_H: extract_handoff_summary(expected[C10_REWORK_START_H].decode()),
+            C10_REWORK_START_D: _c21_resume_json(expected[C10_REWORK_START_D]),
+            C10_REWORK_START_M: _c21_resume_json(expected[C10_REWORK_START_M])}
+        actual_objects = {C10_REWORK_START_P: bundle.get("progress"), C10_REWORK_START_E: bundle.get("events"),
+            C10_REWORK_START_H: bundle.get("handoff"), C10_REWORK_START_D: bundle.get("detached_digest"),
+            C10_REWORK_START_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual_objects[p], expected_objects[p])
+                           for p in actual_objects) else ["C10_REWORK_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C10_REWORK_RAW_BYTES_INVALID")
+        progress = actual_objects[C10_REWORK_START_P]
+        if (not isinstance(progress, Mapping) or progress.get("event_sequence") != 838
+            or progress.get("status") != "REWORK_IN_PROGRESS"
+            or progress.get("worker_lease") != _c10_rework_worker_lease()
+            or progress.get("write_lease") != _c10_rework_write_lease()
+            or progress.get("next_safe_action") != "DISPATCH_C10_REWORK_R1_DEVELOPER"):
+            errors.append("C10_REWORK_CANONICAL_STATE_INVALID")
+        old = subprocess.check_output(
+            ["git", "show", f"{C10_REWORK_START_BASE}:{C10_REWORK_START_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(old, 832) != raw_event_object_prefix_bytes(
+                actual_raw[C10_REWORK_START_E], 832):
+            errors.append("C10_REWORK_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C10_REWORK_INPUT_INVALID"]
+
+
+def _collect_c10_rework_start_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        value = lambda *args: _c02_strict_git_scalar(raw(*args))
+        optional = lambda *args: _c02_optional_git_scalar(raw(*args))
+        check = lambda *args: _c02_git_quiet_check(root, *args)
+        head = value("rev-parse", "HEAD"); base = value("rev-parse", C10_REWORK_START_BASE)
+        branch = optional("branch", "--show-current")
+        cached = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+        if None in (head, base, branch, cached, unstaged, untracked) or base != C10_REWORK_START_BASE or branch != C09_START_BRANCH:
+            return ["C10_REWORK_REPOSITORY_AUTHORITY_INVALID"]
+        control, product = c10_rework_start_paths(), c10_rework_product_paths()
+        dirty = sorted(set(cached + unstaged + untracked))
+        if head == base:
+            valid = (dirty == sorted(set(control + product)) and cached == control
+                     and sorted(set(unstaged + untracked)) == product and check("diff", "--cached", "--check"))
+            return [] if valid else ["C10_REWORK_PATH_INVALID"]
+        parents = value("show", "-s", "--format=%P", head)
+        changed = _c02_strict_name_only_paths(raw("diff", "--name-only", base, head))
+        valid = (dirty == product and not cached and parents is not None and parents.split() == [base]
+                 and changed == control and check("merge-base", "--is-ancestor", base, head)
+                 and check("diff", "--check", base, head))
+        return [] if valid else ["C10_REWORK_PATH_INVALID"]
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 

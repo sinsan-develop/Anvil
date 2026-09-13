@@ -1,3 +1,9 @@
+# C-10 rework start R1 - seq838
+
+- seq1~832 raw event objects preserved. Future-issued epoch1 leases revoked.
+- independent review blocking7; epoch2 current-time dual lease issued.
+- exact6 must be re-applied under epoch2 before acceptance; external execution remains NOT_EXECUTED.
+
 # C-10 action policy start - seq832
 
 - C-09 exact27 local completion commit: 8f5af5f0efc6f287ce556fd9a908e991a586f97e.
@@ -1008,9 +1014,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 832,
-  "last_event_id": "evt_c10_write_lease_issued",
-  "status": "IN_PROGRESS",
+  "event_sequence": 838,
+  "last_event_id": "evt_c10_rework_write_lease_issued",
+  "status": "REWORK_IN_PROGRESS",
   "current_phase": "C",
   "current_work_package": "C-10",
   "active_agent": {
@@ -1018,20 +1024,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "role": "PRIMARY_DEVELOPER",
     "work_package_id": "C-10",
     "status": "ACTIVE",
-    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91"
+    "execution_fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83"
   },
   "worker_lease": {
-    "lease_id": "worker-lease-c10-action-policy-20260914-001",
-    "fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
-    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
-    "lease_epoch": 1,
+    "lease_id": "worker-lease-c10-action-policy-r1-20260914-002",
+    "fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+    "execution_fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+    "lease_epoch": 2,
     "actor_id": "developer-primary",
-    "subject_ref": "C-10",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-10",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
-    "dispatch_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
-    "issued_at": "2026-09-14T08:00:00+09:00",
-    "expires_at": "2026-09-14T20:00:00+09:00",
+    "baseline_git_commit": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+    "dispatch_head": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+    "issued_at": "2026-09-14T06:04:00+09:00",
+    "expires_at": "2026-09-14T18:04:00+09:00",
     "status": "ACTIVE",
     "path_scope": [
       "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
@@ -1039,20 +1046,21 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "packages/tool_gateway/**",
       "tests/action_policy/**",
       "tests/tool_gateway/**"
-    ]
+    ],
+    "subject_ref": "C-10/REWORK-R1"
   },
   "write_lease": {
-    "lease_id": "write-lease-c10-action-policy-20260914-001",
-    "worker_lease_id": "worker-lease-c10-action-policy-20260914-001",
-    "fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
-    "write_fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
-    "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
-    "write_epoch": 1,
+    "lease_id": "write-lease-c10-action-policy-r1-20260914-002",
+    "worker_lease_id": "worker-lease-c10-action-policy-r1-20260914-002",
+    "fencing_token": "c10-action-policy-r1-write-fence-epoch-2-84f1d603a7ce4b29",
+    "write_fencing_token": "c10-action-policy-r1-write-fence-epoch-2-84f1d603a7ce4b29",
+    "execution_fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+    "write_epoch": 2,
     "actor_id": "developer-primary",
-    "subject_ref": "C-10",
+    "work_package_id": "C-10",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-14T08:00:00+09:00",
-    "expires_at": "2026-09-14T20:00:00+09:00",
+    "issued_at": "2026-09-14T06:04:00+09:00",
+    "expires_at": "2026-09-14T18:04:00+09:00",
     "status": "ACTIVE",
     "path_scope": [
       "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
@@ -1064,50 +1072,59 @@ The former Phase B Gate successor projection remains historical only. The immuta
   },
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "DISPATCH_C10_DEVELOPER",
+  "next_safe_action": "DISPATCH_C10_REWORK_R1_DEVELOPER",
   "accepted": false,
   "c09_status": "ACCEPTED",
-  "c09_completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
-  "c10_status": "IN_PROGRESS",
+  "c10_status": "REWORK_IN_PROGRESS",
   "c11_status": "NOT_READY",
-  "dir_status": "CLEARED",
   "dir2_status": "NOT_REACHED",
-  "repository_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+  "repository_head": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+  "dir_status": "CLEARED",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C10_START_EXACT7",
-  "repository_validated_base_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
-  "repository_head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_START",
+  "repository_projection_mode": "C10_REWORK_START_EXACT7",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-10_START_MANIFEST.json",
+    "docs/evidence/manifests/C-10_REWORK_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c10-start.json",
+    "docs/progress/progress-handoff-detached-digest-c10-rework-start.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "product_write_scope": [
+  "product_exact_paths": [
     "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-    "packages/action_policy/**",
-    "packages/tool_gateway/**",
-    "tests/action_policy/**",
-    "tests/tool_gateway/**"
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py"
   ],
-  "work_instruction_sha256": "62027847FE7D37A306D7DECE90727F81CFBBFCBD3172CC28EF473A1F8BA7532B",
-  "invocation_sha256": "F10BCAF5A706A9E6C196C335F7C5C054941FF90EEAC46CA6891DA2DC3AFB91C0",
-  "external_validation": {
-    "product_code": "PARTIAL_PREEXISTING_PENDING_C10_GAP_IMPLEMENTATION",
-    "secret_manager": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "api": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
-    "wsl": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED",
-    "external_call": "NOT_EXECUTED",
-    "secret_value": "NOT_ACCESSED"
+  "independent_reviews": {
+    "verdict": "REWORK",
+    "blocking_findings": 7,
+    "spec_review": {
+      "critical": 2,
+      "important": 4,
+      "minor": 0
+    },
+    "quality_review": {
+      "critical": 3,
+      "important": 4,
+      "minor": 0
+    },
+    "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+    "finding_ids": [
+      "DESTRUCTIVE_COMMAND_BYPASS",
+      "CONNECT_TIME_EGRESS_UNBOUND",
+      "PROTECTED_PATH_PRECEDENCE",
+      "SECRET_CONTEXT_UNBOUND",
+      "WINDOWS_DEVICE_ALIAS",
+      "NESTED_AUTHORITY_SHAPE_FAILOPEN",
+      "HOSTILE_OR_MUTABLE_INGRESS"
+    ]
   },
-  "current_manifest": "docs/evidence/manifests/C-10_START_MANIFEST.json",
+  "superseded_lease_status": "INVALID_FUTURE_ISSUANCE_REVOKED",
+  "current_manifest": "docs/evidence/manifests/C-10_REWORK_START_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE"
 }
 ```

@@ -16179,5 +16179,65 @@ class C10StartControlTests(unittest.TestCase):
             }))
 
 
+class C10ReworkStartControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq838_revokes_future_lease_records_rework_and_issues_current_dual_lease(self):
+        checker = self._checker()
+        self.assertTrue(hasattr(checker, "c10_rework_start_from_root"))
+        artifacts = checker.c10_rework_start_from_root(ROOT)
+        self.assertEqual(set(checker.c10_rework_start_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_REWORK_START_M])
+        progress = json.loads(artifacts[checker.C10_REWORK_START_P])
+        events = json.loads(artifacts[checker.C10_REWORK_START_E])["events"]
+        self.assertEqual((832, 838, 6), (
+            manifest["historical_event_sequence"], manifest["event_sequence"],
+            manifest["appended_event_count"],
+        ))
+        self.assertEqual(
+            ["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+             "PACKAGE_RESUMED", "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+            [event["event_type"] for event in events[-6:]],
+        )
+        self.assertEqual("REWORK_IN_PROGRESS", progress["status"])
+        self.assertEqual(838, progress["event_sequence"])
+        self.assertEqual("developer-primary", progress["active_agent"]["actor_id"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertLessEqual(progress["worker_lease"]["issued_at"], checker.C10_REWORK_START_AT)
+        self.assertEqual(7, manifest["independent_reviews"]["blocking_findings"])
+        self.assertEqual("INVALID_FUTURE_ISSUANCE_REVOKED", manifest["superseded_lease_status"])
+        old = subprocess.check_output(
+            ["git", "show", checker.C10_REWORK_START_BASE + ":" + checker.C10_REWORK_START_E], cwd=ROOT
+        )
+        self.assertEqual(
+            checker.raw_event_object_prefix_bytes(old, 832),
+            checker.raw_event_object_prefix_bytes(artifacts[checker.C10_REWORK_START_E], 832),
+        )
+
+    def test_seq838_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_rework_start_from_root(ROOT)
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C10_REWORK_START_P]),
+            "events": json.loads(artifacts[checker.C10_REWORK_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_REWORK_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_REWORK_START_D])}
+        manifest = json.loads(artifacts[checker.C10_REWORK_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_rework_start(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_rework_start_git", return_value=["SEQ838_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_start_git", side_effect=AssertionError("seq832 fallback")):
+            self.assertEqual(["SEQ838_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 838}
+            }))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 832,
+  "last_sequence": 838,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -45407,7 +45407,257 @@
           "tests/tool_gateway/**"
         ]
       }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 833,
+      "event_id": "evt_c10_future_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/REWORK-R1",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T06:04:00+09:00",
+      "recorded_at": "2026-09-14T06:04:00+09:00",
+      "previous_event_sha256": "FA3F0B68B502EA7AA0D6A5B73D47B1E46F62FC5878FD0FBA6465D328C5783523",
+      "details": {
+        "lease_id": "write-lease-c10-action-policy-20260914-001",
+        "worker_lease_id": "worker-lease-c10-action-policy-20260914-001",
+        "fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+        "write_fencing_token": "c10-action-policy-write-fence-epoch-1-7eac42118dbe47da",
+        "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+        "write_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T08:00:00+09:00",
+        "expires_at": "2026-09-14T20:00:00+09:00",
+        "status": "REVOKED_INVALID_FUTURE_ISSUANCE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ],
+        "reason": "ISSUED_AT_AFTER_ACTUAL_HOST_TIME",
+        "invalid_issued_at": "2026-09-14T08:00:00+09:00",
+        "observed_at": "2026-09-14T06:04:00+09:00"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 834,
+      "event_id": "evt_c10_future_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/REWORK-R1",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T06:04:00+09:00",
+      "recorded_at": "2026-09-14T06:04:00+09:00",
+      "previous_event_sha256": "724E9B43225F3F935186E10E9A71EB3BF193E6B942722CD775994C09D7FBE4A7",
+      "details": {
+        "lease_id": "worker-lease-c10-action-policy-20260914-001",
+        "fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+        "execution_fencing_token": "c10-action-policy-execution-fence-epoch-1-0f92a3c3d3ad4b91",
+        "lease_epoch": 1,
+        "actor_id": "developer-primary",
+        "subject_ref": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+        "dispatch_head": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+        "issued_at": "2026-09-14T08:00:00+09:00",
+        "expires_at": "2026-09-14T20:00:00+09:00",
+        "status": "REVOKED_INVALID_FUTURE_ISSUANCE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ],
+        "reason": "ISSUED_AT_AFTER_ACTUAL_HOST_TIME",
+        "invalid_issued_at": "2026-09-14T08:00:00+09:00",
+        "observed_at": "2026-09-14T06:04:00+09:00"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 835,
+      "event_id": "evt_c10_independent_rework_judgment",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/REWORK-R1",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T06:04:00+09:00",
+      "recorded_at": "2026-09-14T06:04:00+09:00",
+      "previous_event_sha256": "B636679482CD32FEC18CB1E17897A8793D313ED2A46131CC9358E63363A5541B",
+      "details": {
+        "verdict": "REWORK",
+        "blocking_findings": 7,
+        "spec_review": {
+          "critical": 2,
+          "important": 4,
+          "minor": 0
+        },
+        "quality_review": {
+          "critical": 3,
+          "important": 4,
+          "minor": 0
+        },
+        "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+        "finding_ids": [
+          "DESTRUCTIVE_COMMAND_BYPASS",
+          "CONNECT_TIME_EGRESS_UNBOUND",
+          "PROTECTED_PATH_PRECEDENCE",
+          "SECRET_CONTEXT_UNBOUND",
+          "WINDOWS_DEVICE_ALIAS",
+          "NESTED_AUTHORITY_SHAPE_FAILOPEN",
+          "HOSTILE_OR_MUTABLE_INGRESS"
+        ],
+        "criteria": [
+          "C10_SPEC_REVIEW",
+          "C10_QUALITY_SECURITY_REVIEW"
+        ],
+        "evidence_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 836,
+      "event_id": "evt_c10_rework_required",
+      "event_type": "PACKAGE_RESUMED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/REWORK-R1",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T06:04:00+09:00",
+      "recorded_at": "2026-09-14T06:04:00+09:00",
+      "previous_event_sha256": "B839A058A54663FF94C1CCDB4079122CA445EA5E7FFE604F0CA215BBED39C8C3",
+      "details": {
+        "verdict": "REWORK",
+        "blocking_findings": 7,
+        "spec_review": {
+          "critical": 2,
+          "important": 4,
+          "minor": 0
+        },
+        "quality_review": {
+          "critical": 3,
+          "important": 4,
+          "minor": 0
+        },
+        "deduplication": "SAME_PRODUCT_SNAPSHOT_COUNTS_ONCE",
+        "finding_ids": [
+          "DESTRUCTIVE_COMMAND_BYPASS",
+          "CONNECT_TIME_EGRESS_UNBOUND",
+          "PROTECTED_PATH_PRECEDENCE",
+          "SECRET_CONTEXT_UNBOUND",
+          "WINDOWS_DEVICE_ALIAS",
+          "NESTED_AUTHORITY_SHAPE_FAILOPEN",
+          "HOSTILE_OR_MUTABLE_INGRESS"
+        ],
+        "projection_mode": "C10_REWORK_START_EXACT7",
+        "product_exact_paths": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ],
+        "valid_failure_count": 1,
+        "same_failure_count": 1,
+        "formal_failure_report_count": 0,
+        "authority_correction": "REAPPLY_ALL_EXACT6_UNDER_EPOCH2",
+        "resume_event_ref": "evt_c10_independent_rework_judgment",
+        "dispatch_head": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+        "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "validated_base_commit": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+        "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_C10_REWORK",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/C-10_REWORK_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c10-rework-start.json",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 837,
+      "event_id": "evt_c10_rework_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/REWORK-R1",
+      "actor_id": "developer-primary",
+      "occurred_at": "2026-09-14T06:04:00+09:00",
+      "recorded_at": "2026-09-14T06:04:00+09:00",
+      "previous_event_sha256": "341CBA0CDEB0BAB63F80619245C8FF704FE47684E3E87EC9370D8605A74CC9AA",
+      "details": {
+        "lease_id": "worker-lease-c10-action-policy-r1-20260914-002",
+        "fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+        "execution_fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+        "lease_epoch": 2,
+        "actor_id": "developer-primary",
+        "role": "PRIMARY_DEVELOPER",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+        "dispatch_head": "1bd511cb50e64b32bc663206e19eaef7c6e5cc75",
+        "issued_at": "2026-09-14T06:04:00+09:00",
+        "expires_at": "2026-09-14T18:04:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ],
+        "subject_ref": "C-10/REWORK-R1"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 838,
+      "event_id": "evt_c10_rework_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/REWORK-R1",
+      "actor_id": "developer-primary",
+      "occurred_at": "2026-09-14T06:04:00+09:00",
+      "recorded_at": "2026-09-14T06:04:00+09:00",
+      "previous_event_sha256": "A9693C7FC2EF11DDF90627FFF4FE78D0240D6F59E73B7296EAA9F92AB889AA06",
+      "details": {
+        "lease_id": "write-lease-c10-action-policy-r1-20260914-002",
+        "worker_lease_id": "worker-lease-c10-action-policy-r1-20260914-002",
+        "fencing_token": "c10-action-policy-r1-write-fence-epoch-2-84f1d603a7ce4b29",
+        "write_fencing_token": "c10-action-policy-r1-write-fence-epoch-2-84f1d603a7ce4b29",
+        "execution_fencing_token": "c10-action-policy-r1-execution-fence-epoch-2-2e9c5b7a146d4f83",
+        "write_epoch": 2,
+        "actor_id": "developer-primary",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T06:04:00+09:00",
+        "expires_at": "2026-09-14T18:04:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ]
+      }
     }
   ],
-  "last_event_id": "evt_c10_write_lease_issued"
+  "last_event_id": "evt_c10_rework_write_lease_issued"
 }
