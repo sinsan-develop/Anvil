@@ -1,5 +1,7 @@
 """Minimal Main Agent kernel for one budgeted model/action/observation step."""
 
+from packages.planning.service import PlanningMainAuthorityService, MainAuthorityRecord, MainAuthoritySource, MainAuthorityStatus
+
 from .kernel import BudgetDenied, BudgetUsageEvent, MainAgentKernel, StepBudget, StepResult
 from .native_agent_adapter import NativeCodingAgentAdapter
 from .delegation import (
@@ -40,10 +42,12 @@ from .takeover import (
 )
 from packages.planning.planner import (
     ExecutionPlan, ExecutionStep, PlannerError, RequestAnalysis, ScheduleDecision,
+    MainResponsibility, MainAuthoritySnapshot, ScopeApprovalRequest, build_execution_plan,
     StepKind, analyze_request, generate_work_instruction, schedule_ready_steps,
 )
 
 __all__ = [
+    "PlanningMainAuthorityService", "MainAuthorityRecord", "MainAuthoritySource", "MainAuthorityStatus",
     "BudgetDenied", "BudgetUsageEvent", "MainAgentKernel", "StepBudget", "StepResult",
     "NativeCodingAgentAdapter",
     "DataEgressProfile", "DataEgressSnapshot", "PermissionSnapshot",
@@ -69,6 +73,7 @@ __all__ = [
     "MainAgentTakeoverService", "TakeoverAudit", "TakeoverPacket", "TakeoverReasonCode",
     "TakeoverReceipt", "TakeoverService",
     "ExecutionPlan", "ExecutionStep", "PlannerError", "RequestAnalysis",
+    "MainResponsibility", "MainAuthoritySnapshot", "ScopeApprovalRequest", "build_execution_plan",
     "ScheduleDecision", "StepKind", "analyze_request", "generate_work_instruction",
     "schedule_ready_steps",
 ]

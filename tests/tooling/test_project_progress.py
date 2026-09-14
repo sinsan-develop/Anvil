@@ -16709,5 +16709,98 @@ class C11StartControlTests(unittest.TestCase):
             self.assertIn("C11_START_GIT_INVALID", checker._collect_c11_start_git({"_root": ROOT}))
 
 
+class C11FinalAcceptanceTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c11_final", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq880_binds_exact_product_and_acceptance_projection(self):
+        checker = self._checker()
+        artifacts = checker.c11_final_acceptance_from_root(ROOT)
+        self.assertEqual(set(checker.c11_final_control_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C11_FINAL_P])
+        manifest = json.loads(artifacts[checker.C11_FINAL_M])
+        events = json.loads(artifacts[checker.C11_FINAL_E])["events"]
+        self.assertEqual((875, 880, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(["PACKAGE_COMPLETED", "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+            "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED", "MAIN_PACKAGE_ACCEPTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-11", "ACCEPTED", None, None),
+            (progress["current_work_package"], progress["status"],
+             progress["worker_lease"], progress["write_lease"]))
+        self.assertEqual({"package_id": "C-12", "status": "READY_FOR_WORK_INSTRUCTION"},
+                         progress["next_work_package"])
+        self.assertEqual(checker.c11_final_product_paths(), manifest["product_exact_paths"])
+        self.assertEqual(checker.c11_final_combined_paths(), manifest["combined_exact_paths"])
+        self.assertEqual(0, manifest["blocking_findings"])
+
+    def test_seq880_preserves_seq875_bytes_and_validates_raw_projection(self):
+        checker = self._checker()
+        artifacts = checker.c11_final_acceptance_from_root(ROOT)
+        old = subprocess.check_output(["git", "show", checker.C11_FINAL_BASE + ":" + checker.C11_FINAL_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 875),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C11_FINAL_E], 875))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C11_FINAL_P]),
+            "events": json.loads(artifacts[checker.C11_FINAL_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C11_FINAL_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C11_FINAL_D])}
+        manifest = json.loads(artifacts[checker.C11_FINAL_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c11_final_acceptance(bundle, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["progress"]["c11_final_acceptance"]["independent_reviews"]["blocking_findings"] = 1
+            self.assertIn("C11_FINAL_PROJECTION_INVALID",
+                          checker.validate_c11_final_acceptance(bad, manifest))
+
+    def test_seq880_dispatch_is_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c11_final_acceptance_git",
+                               return_value=["SEQ880_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c11_start_git",
+                               side_effect=AssertionError("seq875 fallback")):
+            self.assertEqual(["SEQ880_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 880}}))
+
+    def test_seq880_exact15_git_gate_accepts_only_candidate_or_clean_child(self):
+        checker = self._checker()
+        exact = checker.c11_final_combined_paths()
+        head = checker.C11_FINAL_BASE
+        parent = checker.C11_FINAL_BASE
+        staged, unstaged, untracked = [], exact[:-1], [exact[-1]]
+        changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C11_FINAL_BASE, head): return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args: return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"): return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args: return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True), \
+             mock.patch.object(checker, "_load_json", return_value={
+                 "product_raw": checker._c11_final_product_raw(ROOT),
+                 "combined_exact_paths": exact, "blocking_findings": 0,
+                 "commit_performed": False}):
+            self.assertEqual([], checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+            unstaged, untracked = exact[:-2], [exact[-1]]
+            self.assertIn("C11_FINAL_ACCEPTANCE_CANDIDATE_INVALID",
+                          checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+            unstaged, untracked = [], []
+            head = "a" * 40
+            self.assertEqual([], checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C11_FINAL_ACCEPTANCE_CANDIDATE_INVALID",
+                          checker._collect_c11_final_acceptance_git({"_root": ROOT}))
+
+
 if __name__ == "__main__":
     unittest.main()

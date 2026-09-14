@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 875,
+  "last_sequence": 880,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -47139,7 +47139,357 @@
         "product_tdd_authorized_now": false,
         "runtime_next_action": "C11_START_CONTROL_COMPLETE_PENDING_PRODUCT_TDD_DIRECTION"
       }
+    },
+    {
+      "sequence": 876,
+      "event_id": "evt_c11_final_package_completed",
+      "event_type": "PACKAGE_COMPLETED",
+      "actor": "developer-primary-c11-r1",
+      "actor_id": "developer-primary-c11-r1",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-11",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-11/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T07:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "C36849ABAB1C67EE69DCFA432E4EAC5470C8CF28BCBFF998F34682707E1726AE",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_exact_paths": [
+          "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+          "packages/orchestration/__init__.py",
+          "packages/planning/__init__.py",
+          "packages/planning/models.py",
+          "packages/planning/planner.py",
+          "packages/planning/service.py",
+          "tests/planning/test_c11_admission.py",
+          "tests/planning/test_c11_planner.py"
+        ],
+        "product_raw": {
+          "docs/04_test_reports/C-11_COMPLETION_REPORT.md": {
+            "bytes": 19922,
+            "sha256": "4644D6A452A21670DEF4B126ABB5BD7824D159F81FC28B99D07CDC6DB565A532"
+          },
+          "packages/orchestration/__init__.py": {
+            "bytes": 4466,
+            "sha256": "B304F918E0E9EBBB7C1F0DA9DED6DFC1EA653F943CE9253D11DFB13C6483C9A6"
+          },
+          "packages/planning/__init__.py": {
+            "bytes": 894,
+            "sha256": "77813C44DFDCAB9B6352DDE483C74E3844354121ED1FC465F2C18109C6D11B89"
+          },
+          "packages/planning/models.py": {
+            "bytes": 8163,
+            "sha256": "B727FD9C03E9AC7378994589AAF7B90420016D5519E3A9174808F37529A55DBB"
+          },
+          "packages/planning/planner.py": {
+            "bytes": 31152,
+            "sha256": "D63FA8640C56F2846C8E084BEE1A19DC3C28A8181A29293596725C58A6352905"
+          },
+          "packages/planning/service.py": {
+            "bytes": 13719,
+            "sha256": "49FFCE7B1A47A2D33E1BD5E40E460FD9E929E51EC37A20F470EB7C9CCC87FFE6"
+          },
+          "tests/planning/test_c11_admission.py": {
+            "bytes": 40363,
+            "sha256": "5D19394E893748DC49CB1250E351BA27552B0A1951973BEE5D513224F97F2D82"
+          },
+          "tests/planning/test_c11_planner.py": {
+            "bytes": 7884,
+            "sha256": "FB33B57EE2D1B451C86DD187D4880D8D915CD85EF3D6633D195D70B6EE42B6C5"
+          }
+        },
+        "test_evidence": {
+          "passed": {
+            "c11_focused": 155,
+            "planning_orchestration": 660,
+            "affected_c08_c10": 980
+          },
+          "failed": 0,
+          "commands": {
+            "c11_focused": "python -B -m pytest -q -p no:cacheprovider tests/planning/test_c11_planner.py tests/planning/test_c11_admission.py",
+            "planning_orchestration": "python -B -m pytest -q -p no:cacheprovider tests/planning tests/orchestration --disable-warnings -ra",
+            "affected_c08_c10": "python -B -m pytest -q -p no:cacheprovider --basetemp <workspace-temp> tests/planning tests/orchestration tests/repository_intelligence tests/action_policy tests/tool_gateway -ra --tb=short"
+          },
+          "compileall": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "diff_check": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "environment_note": "default pytest temp ACL failed for 9 setup cases; explicit workspace basetemp rerun passed all 980"
+        },
+        "independent_reviews": {
+          "blocking_findings": 0,
+          "review_rework_count": 3,
+          "spec": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          },
+          "quality": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          },
+          "resolved_findings": [
+            "APPROVAL_AND_WORK_INSTRUCTION_LINEAGE",
+            "READY_STEP_DIFF_SCOPE",
+            "DESIGN_WORKPLAN_PARENT_BINDING",
+            "MAIN_AUTHORITY_SELF_ATTESTATION",
+            "CANONICAL_PARENT_HASH_SPLICE"
+          ]
+        },
+        "external_validation": {
+          "actual_main_liveness_authentication": "NOT_EXECUTED",
+          "human_approval_persistence": "NOT_EXECUTED",
+          "physical_path_identity": "NOT_EXECUTED",
+          "subagent_runtime_dispatch": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "secret_manager": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        },
+        "valid_failure_count": 0
+      }
+    },
+    {
+      "sequence": 877,
+      "event_id": "evt_c11_final_independent_test_judgment_recorded",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "actor": "independent-reviewers",
+      "actor_id": "independent-reviewers",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-11",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-11/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T07:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "AAB410C8B91817D2076E122D4C9FD7A84950DD95973AD316960737CF17E51A3B",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "C11_SPEC_AND_QUALITY_BLOCKING_ZERO_AFTER_REWORK3",
+        "evidence_ref": "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+        "evidence_sha256": "4644D6A452A21670DEF4B126ABB5BD7824D159F81FC28B99D07CDC6DB565A532",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "blocking_findings": 0,
+        "reviews": {
+          "blocking_findings": 0,
+          "review_rework_count": 3,
+          "spec": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          },
+          "quality": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          },
+          "resolved_findings": [
+            "APPROVAL_AND_WORK_INSTRUCTION_LINEAGE",
+            "READY_STEP_DIFF_SCOPE",
+            "DESIGN_WORKPLAN_PARENT_BINDING",
+            "MAIN_AUTHORITY_SELF_ATTESTATION",
+            "CANONICAL_PARENT_HASH_SPLICE"
+          ]
+        },
+        "test_evidence": {
+          "passed": {
+            "c11_focused": 155,
+            "planning_orchestration": 660,
+            "affected_c08_c10": 980
+          },
+          "failed": 0,
+          "commands": {
+            "c11_focused": "python -B -m pytest -q -p no:cacheprovider tests/planning/test_c11_planner.py tests/planning/test_c11_admission.py",
+            "planning_orchestration": "python -B -m pytest -q -p no:cacheprovider tests/planning tests/orchestration --disable-warnings -ra",
+            "affected_c08_c10": "python -B -m pytest -q -p no:cacheprovider --basetemp <workspace-temp> tests/planning tests/orchestration tests/repository_intelligence tests/action_policy tests/tool_gateway -ra --tb=short"
+          },
+          "compileall": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "diff_check": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "environment_note": "default pytest temp ACL failed for 9 setup cases; explicit workspace basetemp rerun passed all 980"
+        }
+      }
+    },
+    {
+      "sequence": 878,
+      "event_id": "evt_c11_final_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-11",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-11/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T07:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "6A2640F442378928411447672C5CBAE48259C66A79F2DBA7460955DCAEC409B8",
+      "details": {
+        "actor_id": "developer-primary-c11-r1",
+        "subject_ref": "C-11",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+        "issued_at": "2026-09-14T22:15:00+09:00",
+        "expires_at": "2026-09-15T10:15:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
+        "path_scope": [
+          "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+          "packages/orchestration/**",
+          "packages/planning/**",
+          "tests/orchestration/**",
+          "tests/planning/**"
+        ],
+        "lease_id": "write-lease-c11-20260914-001",
+        "worker_lease_id": "worker-lease-c11-20260914-001",
+        "write_epoch": 1,
+        "fencing_token": "c11-write-fence-epoch-1-32cde045f92f4b1b",
+        "write_fencing_token": "c11-write-fence-epoch-1-32cde045f92f4b1b",
+        "revoked_at": "2026-09-15T07:45:00+09:00",
+        "reason": "C11_PRODUCT_AND_REVIEWS_COMPLETED"
+      }
+    },
+    {
+      "sequence": 879,
+      "event_id": "evt_c11_final_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-11",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-11/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T07:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "E2FA8B2C10E0A9F14877361EB3A0718010B7B2E98DB3C038B1B004EC7E520663",
+      "details": {
+        "actor_id": "developer-primary-c11-r1",
+        "subject_ref": "C-11",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+        "issued_at": "2026-09-14T22:15:00+09:00",
+        "expires_at": "2026-09-15T10:15:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
+        "path_scope": [
+          "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+          "packages/orchestration/**",
+          "packages/planning/**",
+          "tests/orchestration/**",
+          "tests/planning/**"
+        ],
+        "lease_id": "worker-lease-c11-20260914-001",
+        "lease_epoch": 1,
+        "fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
+        "dispatch_head": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+        "revoked_at": "2026-09-15T07:45:00+09:00",
+        "reason": "C11_PRODUCT_AND_REVIEWS_COMPLETED"
+      }
+    },
+    {
+      "sequence": 880,
+      "event_id": "evt_c11_final_main_package_accepted",
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-11",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-11/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T07:45:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "24EC8BD96E24B28DE3703A30046F4CC70B723C50404F021C36A2EECC8433829D",
+      "details": {
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "projection_mode": "C11_FINAL_ACCEPTANCE_EXACT15",
+        "validated_base_commit": "312e193a6b3b399d9bc36368b82bec137be328b0",
+        "acceptance_head": "312e193a6b3b399d9bc36368b82bec137be328b0",
+        "acceptance_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "head_relation": "PRECOMMIT_EXACT15_OR_CLEAN_SOLE_DIRECT_CHILD_C11_ACCEPTANCE",
+        "test_report_ref": "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+        "test_report_sha256": "4644D6A452A21670DEF4B126ABB5BD7824D159F81FC28B99D07CDC6DB565A532",
+        "manifest_ref": "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "next_work_package": "C-12",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "blocking_findings": 0,
+        "dir2_status": "NOT_REACHED",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c11-final-acceptance.json",
+          "packages/orchestration/__init__.py",
+          "packages/planning/__init__.py",
+          "packages/planning/models.py",
+          "packages/planning/planner.py",
+          "packages/planning/service.py",
+          "scripts/check_project_progress.py",
+          "tests/planning/test_c11_admission.py",
+          "tests/planning/test_c11_planner.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_exact_paths": [
+          "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+          "packages/orchestration/__init__.py",
+          "packages/planning/__init__.py",
+          "packages/planning/models.py",
+          "packages/planning/planner.py",
+          "packages/planning/service.py",
+          "tests/planning/test_c11_admission.py",
+          "tests/planning/test_c11_planner.py"
+        ],
+        "external_validation": {
+          "actual_main_liveness_authentication": "NOT_EXECUTED",
+          "human_approval_persistence": "NOT_EXECUTED",
+          "physical_path_identity": "NOT_EXECUTED",
+          "subagent_runtime_dispatch": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "secret_manager": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c11_package_started"
+  "last_event_id": "evt_c11_final_main_package_accepted"
 }

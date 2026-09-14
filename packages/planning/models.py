@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 import re
+
+from .hashing import canonical_content_hash
 
 
 _HASH = re.compile(r"sha256:[0-9a-f]{64}\Z")
@@ -54,6 +56,25 @@ class WorkPlan:
             _required(item, "scope item")
         _utc(self.created_at, "created_at")
 
+    def canonical_payload(self) -> dict:
+        """C-11 content contract; legacy persistence constructors stay intact."""
+        return {"artifact_type": "WorkPlan", "artifact_id": self.artifact_id,
+            "revision": self.revision, "design_baseline_id": self.design_baseline_id,
+            "design_baseline_hash": self.design_baseline_hash, "scope": sorted(self.scope),
+            "created_at": self.created_at.isoformat()}
+
+    def validate_content_hash(self) -> None:
+        self.__post_init__()
+        if self.content_hash != canonical_content_hash(self.canonical_payload()):
+            raise ValueError("WorkPlan canonical content hash mismatch")
+
+    @classmethod
+    def create(cls, *, artifact_id: str, revision: int, design_baseline_id: str,
+               design_baseline_hash: str, scope: frozenset[str], created_at: datetime) -> WorkPlan:
+        draft = cls(artifact_id, revision, "sha256:" + "0" * 64, design_baseline_id,
+            design_baseline_hash, scope, created_at)
+        return replace(draft, content_hash=canonical_content_hash(draft.canonical_payload()))
+
 
 @dataclass(frozen=True, slots=True)
 class IterationPlan:
@@ -76,6 +97,27 @@ class IterationPlan:
         _hash(self.work_plan_hash, "work_plan_hash")
         _utc(self.created_at, "created_at")
 
+    def canonical_payload(self) -> dict:
+        return {"artifact_type": "IterationPlan", "artifact_id": self.artifact_id,
+            "revision": self.revision, "work_plan_id": self.work_plan_id,
+            "work_plan_hash": self.work_plan_hash, "sequence": self.sequence,
+            "created_at": self.created_at.isoformat()}
+
+    def validate_content_hash(self) -> None:
+        self.__post_init__()
+        if self.content_hash != canonical_content_hash(self.canonical_payload()):
+            raise ValueError("IterationPlan canonical content hash mismatch")
+
+    @classmethod
+    def create(cls, *, artifact_id: str, revision: int, work_plan: WorkPlan,
+               sequence: int, created_at: datetime) -> IterationPlan:
+        if type(work_plan) is not WorkPlan: raise ValueError("canonical WorkPlan required")
+        work_plan.validate_content_hash()
+        draft = cls(artifact_id, revision, "sha256:" + "0" * 64, work_plan.artifact_id,
+            work_plan.content_hash, sequence, created_at)
+        if created_at < work_plan.created_at: raise ValueError("iteration cannot predate work plan")
+        return replace(draft, content_hash=canonical_content_hash(draft.canonical_payload()))
+
 
 @dataclass(frozen=True, slots=True)
 class WorkInstruction:
@@ -94,6 +136,8 @@ class WorkInstruction:
     prohibited_actions: tuple[str, ...] = ()
     scope: tuple[str, ...] = ()
     request_analysis_hash: str | None = None
+    prohibited_paths: tuple[str, ...] = ()
+    validation_contract: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         _required(self.artifact_id, "artifact_id")
@@ -122,3 +166,15 @@ class WorkInstruction:
         for value in self.scope:
             _required(value, "scope item")
         _canonical_hash(self.request_analysis_hash, "request_analysis_hash")
+        # Legacy B-04 artifacts may omit these fields; C-11 requires a nonempty
+        # validation contract before deriving an executable plan.
+        for name in ("prohibited_paths", "validation_contract"):
+            values = getattr(self, name)
+            if type(values) not in (tuple, list):
+                raise ValueError(f"{name} must be a sequence")
+            frozen = tuple(values)
+            for value in frozen:
+                _required(value, name)
+            if len(set(frozen)) != len(frozen):
+                raise ValueError(f"{name} must not contain duplicates")
+            object.__setattr__(self, name, frozen)

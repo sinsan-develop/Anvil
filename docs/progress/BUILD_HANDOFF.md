@@ -1,3 +1,12 @@
+# C-11 final acceptance - seq880
+
+- seq1~875 raw event object bytes preserved; seq876~880만 append했다.
+- C-11 product exact8은 TDD와 3차 독립 재검토 뒤 Spec/Quality blocking 0으로 확정됐다.
+- Main 재검증은 focused 155, planning/orchestration 660, 영향 회귀 980 PASS다.
+- epoch1 dual lease를 완료 사유로 회수했으며 active lease는 0건이다.
+- C-11 ACCEPTED; C-12 READY_FOR_WORK_INSTRUCTION이지만 시작하지 않았다.
+- 실제 인증·liveness·DB·API·브라우저·Provider·network·Secret·WSL·Docker·배포는 미실행이다.
+
 # C-11 시작 통제 - seq875
 
 - 판정: 시작 통제만 IN_PROGRESS. C-11 제품 완료나 구현 착수 판정이 아니다.
@@ -1055,102 +1064,126 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 875,
-  "last_event_id": "evt_c11_package_started",
-  "status": "IN_PROGRESS",
+  "event_sequence": 880,
+  "last_event_id": "evt_c11_final_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-11",
-  "active_agent": {
-    "actor_id": "developer-primary-c11-r1",
-    "role": "PRIMARY_DEVELOPER",
-    "work_package_id": "C-11",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa"
-  },
-  "worker_lease": {
-    "actor_id": "developer-primary-c11-r1",
-    "subject_ref": "C-11",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
-    "issued_at": "2026-09-14T22:15:00+09:00",
-    "expires_at": "2026-09-15T10:15:00+09:00",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
-    "path_scope": [
-      "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
-      "packages/orchestration/**",
-      "packages/planning/**",
-      "tests/orchestration/**",
-      "tests/planning/**"
-    ],
-    "lease_id": "worker-lease-c11-20260914-001",
-    "lease_epoch": 1,
-    "fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
-    "dispatch_head": "002ebea5409eb9fa32cde045f92f4b1b69b587ed"
-  },
-  "write_lease": {
-    "actor_id": "developer-primary-c11-r1",
-    "subject_ref": "C-11",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
-    "issued_at": "2026-09-14T22:15:00+09:00",
-    "expires_at": "2026-09-15T10:15:00+09:00",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
-    "path_scope": [
-      "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
-      "packages/orchestration/**",
-      "packages/planning/**",
-      "tests/orchestration/**",
-      "tests/planning/**"
-    ],
-    "lease_id": "write-lease-c11-20260914-001",
-    "worker_lease_id": "worker-lease-c11-20260914-001",
-    "write_epoch": 1,
-    "fencing_token": "c11-write-fence-epoch-1-32cde045f92f4b1b",
-    "write_fencing_token": "c11-write-fence-epoch-1-32cde045f92f4b1b"
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "C11_START_CONTROL_COMPLETE_PENDING_PRODUCT_TDD_DIRECTION",
-  "accepted": false,
+  "next_safe_action": "AWAIT_PMO_C11_ACCEPTANCE_BEFORE_C12",
+  "accepted": true,
   "c10_status": "ACCEPTED",
-  "c11_status": "IN_PROGRESS",
-  "c12_status": "NOT_READY",
+  "c11_status": "ACCEPTED",
+  "c12_status": "READY_FOR_WORK_INSTRUCTION",
   "dir2_status": "NOT_REACHED",
   "dir_status": "CLEARED",
-  "repository_head": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+  "repository_head": "312e193a6b3b399d9bc36368b82bec137be328b0",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C11_START_EXACT9",
-  "repository_validated_base_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
-  "repository_head_relation": "PRECOMMIT_EXACT9_OR_CLEAN_SOLE_DIRECT_CHILD_C11_START",
+  "repository_projection_mode": "C11_FINAL_ACCEPTANCE_EXACT15",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-11_START_MANIFEST.json",
+    "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c11-start.json",
-    "docs/work_orders/C-11_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-11_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c11-final-acceptance.json",
+    "packages/orchestration/__init__.py",
+    "packages/planning/__init__.py",
+    "packages/planning/models.py",
+    "packages/planning/planner.py",
+    "packages/planning/service.py",
+    "scripts/check_project_progress.py",
+    "tests/planning/test_c11_admission.py",
+    "tests/planning/test_c11_planner.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "product_exact_paths": [
+    "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+    "packages/orchestration/__init__.py",
+    "packages/planning/__init__.py",
+    "packages/planning/models.py",
+    "packages/planning/planner.py",
+    "packages/planning/service.py",
+    "tests/planning/test_c11_admission.py",
+    "tests/planning/test_c11_planner.py"
+  ],
+  "control_exact_paths": [
+    "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c11-final-acceptance.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/C-11_START_MANIFEST.json",
-  "reporting_decision": "AUTO_CONTINUE",
-  "product_tdd_authorized_now": false,
+  "test_evidence": {
+    "passed": {
+      "c11_focused": 155,
+      "planning_orchestration": 660,
+      "affected_c08_c10": 980
+    },
+    "failed": 0,
+    "commands": {
+      "c11_focused": "python -B -m pytest -q -p no:cacheprovider tests/planning/test_c11_planner.py tests/planning/test_c11_admission.py",
+      "planning_orchestration": "python -B -m pytest -q -p no:cacheprovider tests/planning tests/orchestration --disable-warnings -ra",
+      "affected_c08_c10": "python -B -m pytest -q -p no:cacheprovider --basetemp <workspace-temp> tests/planning tests/orchestration tests/repository_intelligence tests/action_policy tests/tool_gateway -ra --tb=short"
+    },
+    "compileall": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "environment_note": "default pytest temp ACL failed for 9 setup cases; explicit workspace basetemp rerun passed all 980"
+  },
+  "independent_reviews": {
+    "blocking_findings": 0,
+    "review_rework_count": 3,
+    "spec": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    },
+    "quality": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    },
+    "resolved_findings": [
+      "APPROVAL_AND_WORK_INSTRUCTION_LINEAGE",
+      "READY_STEP_DIFF_SCOPE",
+      "DESIGN_WORKPLAN_PARENT_BINDING",
+      "MAIN_AUTHORITY_SELF_ATTESTATION",
+      "CANONICAL_PARENT_HASH_SPLICE"
+    ]
+  },
   "external_validation": {
-    "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
-    "network": "NOT_EXECUTED",
+    "actual_main_liveness_authentication": "NOT_EXECUTED",
+    "human_approval_persistence": "NOT_EXECUTED",
+    "physical_path_identity": "NOT_EXECUTED",
+    "subagent_runtime_dispatch": "NOT_EXECUTED",
     "database": "NOT_EXECUTED",
     "api": "NOT_EXECUTED",
     "browser": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
     "secret_manager": "NOT_EXECUTED",
     "wsl": "NOT_EXECUTED",
     "docker": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED",
-    "subagent_runtime": "NOT_EXECUTED"
-  }
+    "deployment": "NOT_EXECUTED"
+  },
+  "current_manifest": "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json",
+  "reporting_decision": "STOP_AND_REPORT_SCOPE_RISK",
+  "staged": false,
+  "commit_performed": false
 }
 ```
 
