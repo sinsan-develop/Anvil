@@ -1054,6 +1054,14 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C10_MAIN_TAKEOVER_START_EXACT10"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 865
+                and event.get("sequence") == 865
+                and event.get("event_id") == "evt_c10_final_main_package_accepted"
+                and event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+                and event["details"].get("projection_mode") == "C10_FINAL_ACCEPTANCE_EXACT13"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13073,6 +13081,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 865:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c10_final_acceptance_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 855:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14237,6 +14249,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c10_failure3_hold(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json":
             errors.extend(validate_c10_main_takeover_start(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_c10_final_acceptance(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -43476,6 +43490,344 @@ def _collect_c10_main_takeover_start_git(bundle: Mapping[str, Any]) -> list[str]
                  and check("diff", "--check", base, head))
         return [] if valid else ["C10_MAIN_TAKEOVER_PATH_INVALID"]
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C10_FINAL_ACCEPTANCE_P = "docs/progress/build-progress.json"
+C10_FINAL_ACCEPTANCE_E = "docs/progress/progress-events.json"
+C10_FINAL_ACCEPTANCE_H = "docs/progress/BUILD_HANDOFF.md"
+C10_FINAL_ACCEPTANCE_D = "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json"
+C10_FINAL_ACCEPTANCE_M = "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json"
+C10_FINAL_ACCEPTANCE_BASE = "b855377fbd7e740a9274e1084cb5a2af4308d664"
+C10_FINAL_ACCEPTANCE_AT = "2026-09-14T20:45:00+09:00"
+C10_FINAL_ACCEPTANCE_EXPIRES_AT = "2026-09-15T08:45:00+09:00"
+C10_FINAL_PRODUCT_PATH_LIST_SHA256 = "331352013FD98DDE31EB8DEC541008111E26C1B88D56CD412DEC9B2FA94E8042"
+C10_FINAL_WORKER_LEASE_ID = "worker-lease-c10-main-takeover-20260914-005"
+C10_FINAL_WRITE_LEASE_ID = "write-lease-c10-main-takeover-20260914-005"
+C10_FINAL_EXECUTION_TOKEN = "c10-main-takeover-execution-fence-epoch-5-64ab1fceaa13072d"
+C10_FINAL_WRITE_TOKEN = "c10-main-takeover-write-fence-epoch-5-e90b3d5cd217bb41"
+
+
+def c10_final_acceptance_paths() -> list[str]:
+    return sorted([C10_FINAL_ACCEPTANCE_M, C10_FINAL_ACCEPTANCE_H, C10_FINAL_ACCEPTANCE_P,
+        C10_FINAL_ACCEPTANCE_E, C10_FINAL_ACCEPTANCE_D,
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def c10_final_acceptance_combined_paths() -> list[str]:
+    return sorted(set(c10_rework_product_paths()) | set(c10_final_acceptance_paths()))
+
+
+def _c10_final_worker_lease() -> dict[str, Any]:
+    return {"lease_id": C10_FINAL_WORKER_LEASE_ID, "fencing_token": C10_FINAL_EXECUTION_TOKEN,
+        "execution_fencing_token": C10_FINAL_EXECUTION_TOKEN, "subject_ref": "C-10/FINAL-ACCEPTANCE",
+        "lease_epoch": 5, "actor_id": "main-agent-eoul", "role": "MAIN_AGENT",
+        "work_package_id": "C-10", "baseline_hash": C08_START_DESIGN_SHA256,
+        "baseline_git_commit": C10_FINAL_ACCEPTANCE_BASE, "dispatch_head": C10_FINAL_ACCEPTANCE_BASE,
+        "issued_at": C10_FINAL_ACCEPTANCE_AT, "expires_at": C10_FINAL_ACCEPTANCE_EXPIRES_AT,
+        "status": "ACTIVE", "path_scope": c10_rework_product_paths()}
+
+
+def _c10_final_write_lease() -> dict[str, Any]:
+    return {"lease_id": C10_FINAL_WRITE_LEASE_ID, "worker_lease_id": C10_FINAL_WORKER_LEASE_ID,
+        "fencing_token": C10_FINAL_WRITE_TOKEN, "write_fencing_token": C10_FINAL_WRITE_TOKEN,
+        "execution_fencing_token": C10_FINAL_EXECUTION_TOKEN, "write_epoch": 5,
+        "actor_id": "main-agent-eoul", "work_package_id": "C-10",
+        "baseline_hash": C08_START_DESIGN_SHA256, "issued_at": C10_FINAL_ACCEPTANCE_AT,
+        "expires_at": C10_FINAL_ACCEPTANCE_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c10_rework_product_paths()}
+
+
+def _c10_final_product_raw(root: Path) -> dict[str, Any]:
+    return {path: {"bytes": len((root / path).read_bytes()),
+                   "sha256": _c21_resume_sha((root / path).read_bytes())}
+            for path in c10_rework_product_paths()}
+
+
+def _c10_final_test_evidence() -> dict[str, Any]:
+    return {"passed": {"focused": 271, "combined": 300, "c09_authoritative": 106},
+        "failed": 0, "commands": {
+            "focused": "python -B -m pytest -q -p no:cacheprovider tests/action_policy/test_c10_policy.py",
+            "combined": "python -B -m pytest -q -p no:cacheprovider tests/action_policy tests/tool_gateway",
+            "c09_authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py --disable-warnings -ra"},
+        "compileall": {"status": "PASS", "exit_code": 0},
+        "diff_check": {"status": "PASS", "exit_code": 0}}
+
+
+def _c10_final_reviews() -> dict[str, Any]:
+    return {"blocking_findings": 0,
+        "spec": {"verdict": "PASS", "critical": 0, "important": 0, "minor": 0},
+        "quality": {"verdict": "PASS", "critical": 0, "important": 0, "minor": 0}}
+
+
+def _c10_final_external_validation() -> dict[str, str]:
+    return {"tool_gateway_dispatch": "NOT_EXECUTED", "secret_broker": "NOT_ACCESSED",
+        "network_dns": "NOT_ACCESSED", "filesystem_subprocess": "NOT_EXECUTED",
+        "database": "NOT_EXECUTED", "api": "NOT_EXECUTED", "ui": "NOT_EXECUTED",
+        "browser": "NOT_EXECUTED", "wsl": "NOT_EXECUTED", "docker": "NOT_EXECUTED",
+        "deployment": "NOT_EXECUTED"}
+
+
+def c10_final_acceptance_artifacts(historical: Mapping[str, bytes], files: Mapping[str, bytes],
+                                   product_raw: Mapping[str, Any]) -> dict[str, bytes]:
+    generated = {C10_FINAL_ACCEPTANCE_M, C10_FINAL_ACCEPTANCE_H, C10_FINAL_ACCEPTANCE_P,
+                 C10_FINAL_ACCEPTANCE_E, C10_FINAL_ACCEPTANCE_D}
+    if set(historical) != {C10_FINAL_ACCEPTANCE_H, C10_FINAL_ACCEPTANCE_P, C10_FINAL_ACCEPTANCE_E}:
+        raise ValueError("C10_FINAL_HISTORY_SET_INVALID")
+    if set(files) != set(c10_final_acceptance_paths()) - generated:
+        raise ValueError("C10_FINAL_FILE_SET_INVALID")
+    product_paths = c10_rework_product_paths()
+    if (set(product_raw) != set(product_paths)
+        or _c21_path_list_sha(product_paths, windows=True) != C10_FINAL_PRODUCT_PATH_LIST_SHA256
+        or any(set(row) != {"bytes", "sha256"} or row["bytes"] < 1 or len(row["sha256"]) != 64
+               for row in product_raw.values())):
+        raise ValueError("C10_FINAL_PRODUCT_BINDING_INVALID")
+    progress = _c21_resume_json(historical[C10_FINAL_ACCEPTANCE_P])
+    stream = _c21_resume_json(historical[C10_FINAL_ACCEPTANCE_E])
+    old_worker, old_write = _c10_main_worker_lease(), _c10_main_write_lease()
+    if (progress.get("event_sequence") != 855 or progress.get("status") != "REWORK_MAIN_TAKEOVER"
+        or stream.get("last_sequence") != 855 or len(stream.get("events", [])) != 855
+        or not _c21_strict_json_equal(progress.get("worker_lease"), old_worker)
+        or not _c21_strict_json_equal(progress.get("write_lease"), old_write)):
+        raise ValueError("C10_FINAL_HISTORY_INVALID")
+    tests, reviews, external = _c10_final_test_evidence(), _c10_final_reviews(), _c10_final_external_validation()
+    new_worker, new_write = _c10_final_worker_lease(), _c10_final_write_lease()
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    def envelope(sequence: int, event_type: str, event_id: str, actor: str,
+                 details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {"schema_version": "1.0.0", "sequence": sequence, "event_id": event_id,
+            "event_type": event_type, "subject_type": "WORK_PACKAGE", "subject_id": "C-10",
+            "subject_ref": "C-10/FINAL-ACCEPTANCE", "actor_id": actor,
+            "occurred_at": C10_FINAL_ACCEPTANCE_AT, "recorded_at": C10_FINAL_ACCEPTANCE_AT,
+            "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row)); return row
+    expired_write = copy.deepcopy(old_write); expired_write.update({"status": "REVOKED",
+        "revoked_at": C10_FINAL_ACCEPTANCE_AT, "reason": "LEASE_EXPIRED_BEFORE_FINAL_ACCEPTANCE"})
+    expired_worker = copy.deepcopy(old_worker); expired_worker.update({"status": "REVOKED",
+        "revoked_at": C10_FINAL_ACCEPTANCE_AT, "reason": "LEASE_EXPIRED_BEFORE_FINAL_ACCEPTANCE"})
+    completed_write = copy.deepcopy(new_write); completed_write.update({"status": "REVOKED",
+        "revoked_at": C10_FINAL_ACCEPTANCE_AT, "reason": "C10_PRODUCT_AND_REVIEWS_COMPLETED"})
+    completed_worker = copy.deepcopy(new_worker); completed_worker.update({"status": "REVOKED",
+        "revoked_at": C10_FINAL_ACCEPTANCE_AT, "reason": "C10_PRODUCT_AND_REVIEWS_COMPLETED"})
+    completion_report_sha = product_raw["docs/04_test_reports/C-10_COMPLETION_REPORT.md"]["sha256"]
+    events = [
+        envelope(856, "WRITE_LEASE_REVOKED", "evt_c10_final_expired_write_lease_revoked", "main-agent-eoul", expired_write),
+        envelope(857, "WORKER_LEASE_REVOKED", "evt_c10_final_expired_worker_lease_revoked", "main-agent-eoul", expired_worker),
+        envelope(858, "WORKER_LEASE_ISSUED", "evt_c10_final_worker_lease_issued", "main-agent-eoul", new_worker),
+        envelope(859, "WRITE_LEASE_ISSUED", "evt_c10_final_write_lease_issued", "main-agent-eoul", new_write),
+        envelope(860, "PACKAGE_RESUMED", "evt_c10_final_package_resumed", "main-agent-eoul", {
+            "resume_event_ref": "evt_c10_final_write_lease_issued",
+            "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13", "validated_base_commit": C10_FINAL_ACCEPTANCE_BASE,
+            "result_status": "FINAL_ACCEPTANCE_REVALIDATION", "product_exact_paths": product_paths,
+            "product_raw": copy.deepcopy(dict(product_raw)), "expired_epoch": 4, "renewed_epoch": 5}),
+        envelope(861, "WRITE_LEASE_REVOKED", "evt_c10_final_write_lease_revoked", "main-agent-eoul", completed_write),
+        envelope(862, "WORKER_LEASE_REVOKED", "evt_c10_final_worker_lease_revoked", "main-agent-eoul", completed_worker),
+        envelope(863, "PACKAGE_COMPLETED", "evt_c10_final_package_completed", "main-agent-eoul", {
+            "result_status": "COMPLETED", "package_status": "TEST_REVIEW", "accepted": False,
+            "product_exact_paths": product_paths, "product_raw": copy.deepcopy(dict(product_raw)),
+            "test_evidence": tests, "independent_reviews": reviews, "external_validation": external}),
+        envelope(864, "INDEPENDENT_TEST_JUDGMENT_RECORDED", "evt_c10_final_independent_test_judgment_recorded", "independent-reviewers", {
+            "verdict": "PASS", "criteria": "C10_EXACT6_SPEC_AND_QUALITY_BLOCKING_ZERO",
+            "evidence_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+            "evidence_sha256": completion_report_sha, "critical_findings": 0,
+            "important_findings": 0, "blocking_findings": 0, "reviews": reviews,
+            "test_evidence": tests}),
+        envelope(865, "MAIN_PACKAGE_ACCEPTED", "evt_c10_final_main_package_accepted", "main-agent-eoul", {
+            "decision": "ACCEPTED", "accepted": True, "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
+            "validated_base_commit": C10_FINAL_ACCEPTANCE_BASE, "acceptance_head": C10_FINAL_ACCEPTANCE_BASE,
+            "acceptance_upstream_head": C09_R4_MAIN,
+            "head_relation": "UNSTAGED_EXACT13_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+            "test_report_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+            "test_report_sha256": completion_report_sha, "manifest_ref": C10_FINAL_ACCEPTANCE_M,
+            "manifest_sha256": "SELF_REFERENCE_EXCLUDED", "next_work_package": "C-11",
+            "next_work_package_status": "READY_FOR_WORK_INSTRUCTION", "blocking_findings": 0,
+            "dir2_status": "NOT_REACHED", "exact_allowed_paths": c10_final_acceptance_combined_paths(),
+            "product_exact_paths": product_paths, "external_validation": external})]
+    events_raw = _c21_append_events(historical[C10_FINAL_ACCEPTANCE_E], 855, events)
+    repository = copy.deepcopy(progress["repository"]); repository.update({
+        "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13", "validated_base_commit": C10_FINAL_ACCEPTANCE_BASE,
+        "control_head": C10_FINAL_ACCEPTANCE_BASE, "local_head": C10_FINAL_ACCEPTANCE_BASE,
+        "branch": C09_START_BRANCH, "head_relation": "UNSTAGED_EXACT13_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+        "worktree_status": "UNSTAGED_PRODUCT_EXACT6_PLUS_ACCEPTANCE_CONTROL_EXACT7",
+        "exact_allowed_paths": c10_final_acceptance_combined_paths(), "product_write_scope": product_paths,
+        "product_exact_paths": product_paths, "acceptance_control_paths": c10_final_acceptance_paths(),
+        "push_status": "NOT_EXECUTED", "commit_status": "NOT_EXECUTED"})
+    completed = list(progress.get("completed_packages", []))
+    if "C-10" not in completed: completed.append("C-10")
+    completed_wi = copy.deepcopy(progress["active_work_instruction"]); completed_wi.update({
+        "result_status": "COMPLETED", "package_status": "ACCEPTED", "accepted": True,
+        "product_write_scope": product_paths, "independent_reviewer_status": "PASS"})
+    progress.update({"snapshot_id": "snapshot-c10-final-acceptance-seq865",
+        "updated_at": C10_FINAL_ACCEPTANCE_AT, "recorded_at": C10_FINAL_ACCEPTANCE_AT,
+        "event_sequence": 865, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-10", "status": "ACCEPTED",
+        "completed_packages": completed, "active_agent": None, "worker_lease": None, "write_lease": None,
+        "completed_c10_main_worker_lease": completed_worker, "completed_c10_main_write_lease": completed_write,
+        "active_work_instruction": None, "last_completed_work_instruction": completed_wi,
+        "last_accepted_work_instruction": completed_wi, "repository": repository,
+        "c10_final_acceptance": {"status": "ACCEPTED", "accepted": True, "event_sequence": 865,
+            "product_exact_paths": product_paths, "product_exact_path_list_sha256": C10_FINAL_PRODUCT_PATH_LIST_SHA256,
+            "product_raw": copy.deepcopy(dict(product_raw)), "control_exact_paths": c10_final_acceptance_paths(),
+            "test_evidence": tests, "independent_reviews": reviews, "external_validation": external,
+            "c11_status": "READY_FOR_WORK_INSTRUCTION", "dir2_status": "NOT_REACHED",
+            "expired_epoch": 4, "renewed_epoch": 5},
+        "next_work_package": {"package_id": "C-11", "status": "READY_FOR_WORK_INSTRUCTION"},
+        "next_successor_work_package": None, "runtime_next_action": "ISSUE_C11_WORK_INSTRUCTION",
+        "next_safe_action": "ISSUE_C11_WORK_INSTRUCTION",
+        "current_progress_evidence_ref": {"package_id": "C-10", "path": C10_FINAL_ACCEPTANCE_D,
+            "manifest_path": C10_FINAL_ACCEPTANCE_M},
+        "latest_evidence_manifest_ref": {"path": C10_FINAL_ACCEPTANCE_M,
+            "artifact_id": "C10-FINAL-ACCEPTANCE-20260914"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C10_ACCEPTED", "C11_READY", "DIR2_NOT_REACHED"],
+            "stop_before_dialogue_report": False}})
+    progress["c10_main_takeover"] = copy.deepcopy(progress.get("c10_main_takeover", {}))
+    progress["c10_main_takeover"].update({"status": "COMPLETED_ACCEPTED", "accepted": True,
+        "event_sequence": 865, "lease_renewal_epoch": 5})
+    progress["registry_refs"]["progress_events"] = {"path": C10_FINAL_ACCEPTANCE_E,
+        "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [
+        {"path": path, "sha256": product_raw[path]["sha256"]} for path in product_paths]
+    progress["latest_evidence_refs"].extend({"path": path, "sha256": _c21_resume_sha(raw)}
+        for path, raw in sorted({**files, C10_FINAL_ACCEPTANCE_E: events_raw}.items()))
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status",
+        "current_phase", "current_work_package", "active_agent", "worker_lease", "write_lease",
+        "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": True, "c10_status": "ACCEPTED",
+        "c11_status": "READY_FOR_WORK_INSTRUCTION", "dir2_status": "NOT_REACHED",
+        "dir_status": progress["dir_review"]["status"],
+        "repository_head": C10_FINAL_ACCEPTANCE_BASE,
+        "repository_upstream": repository["upstream"],
+        "repository_projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
+        "repository_exact_allowed_paths": c10_final_acceptance_combined_paths(),
+        "product_exact_paths": product_paths, "product_exact_path_list_sha256": C10_FINAL_PRODUCT_PATH_LIST_SHA256,
+        "control_exact_paths": c10_final_acceptance_paths(), "test_evidence": tests,
+        "independent_reviews": reviews, "external_validation": external,
+        "current_manifest": C10_FINAL_ACCEPTANCE_M, "reporting_decision": "AUTO_CONTINUE",
+        "staged": False, "commit_performed": False})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+        historical[C10_FINAL_ACCEPTANCE_H].decode(), flags=re.DOTALL)
+    if count != 1: raise ValueError("C10_FINAL_HANDOFF_INVALID")
+    handoff_raw = ("# C-10 final acceptance - seq865\n\n"
+        "- seq1~855 raw event object bytes preserved; seq856~865만 append했다.\n"
+        "- epoch4 만료를 회수하고 epoch5에서 exact6 hash를 재검증한 뒤 lease를 회수했다.\n"
+        "- C-10 ACCEPTED; C-11 READY_FOR_WORK_INSTRUCTION; DIR-2 NOT_REACHED.\n\n" + handoff_text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C10-FINAL-ACCEPTANCE-DIGEST-20260914",
+        "package_id": "C-10", "event_sequence": 865, "algorithm": "SHA-256",
+        "created_at": C10_FINAL_ACCEPTANCE_AT,
+        "scope": "seq856-865 append-only C-10 acceptance; seq1-855 preserved; product6 control7 combined13",
+        "self_reference": False,
+        "progress": {"path": C10_FINAL_ACCEPTANCE_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C10_FINAL_ACCEPTANCE_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C10_FINAL_ACCEPTANCE_P: progress_raw, C10_FINAL_ACCEPTANCE_E: events_raw,
+        C10_FINAL_ACCEPTANCE_H: handoff_raw, C10_FINAL_ACCEPTANCE_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C10_FINAL_ACCEPTANCE_E], 855)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-10_FINAL_ACCEPTANCE",
+        "artifact_id": "C10-FINAL-ACCEPTANCE-20260914", "created_at": C10_FINAL_ACCEPTANCE_AT,
+        "package_id": "C-10", "event_sequence": 865, "historical_event_sequence": 855,
+        "appended_event_count": 10,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "accepted": True, "status": "ACCEPTED",
+        "c10_status": "ACCEPTED", "c11_status": "READY_FOR_WORK_INSTRUCTION",
+        "dir2_status": "NOT_REACHED", "active_leases": 0, "expired_epoch": 4, "renewed_epoch": 5,
+        "product_exact_paths": product_paths, "product_exact_path_count": len(product_paths),
+        "product_exact_path_list_sha256": C10_FINAL_PRODUCT_PATH_LIST_SHA256,
+        "product_raw": copy.deepcopy(dict(product_raw)),
+        "control_exact_paths": c10_final_acceptance_paths(),
+        "control_exact_path_count": len(c10_final_acceptance_paths()),
+        "combined_exact_paths": c10_final_acceptance_combined_paths(),
+        "combined_exact_path_count": len(c10_final_acceptance_combined_paths()),
+        "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
+        "validated_base_commit": C10_FINAL_ACCEPTANCE_BASE,
+        "record_binding": repository["head_relation"], "test_evidence": tests,
+        "independent_reviews": reviews, "external_validation": external,
+        "staged": False, "commit_performed": False, "self_reference": False}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+        for path, raw in sorted(artifacts.items())]
+    artifacts[C10_FINAL_ACCEPTANCE_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(c10_final_acceptance_paths()):
+        raise ValueError("C10_FINAL_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c10_final_acceptance_from_root(root: Path) -> dict[str, bytes]:
+    historical = {path: subprocess.check_output(["git", "show", f"{C10_FINAL_ACCEPTANCE_BASE}:{path}"], cwd=root)
+        for path in (C10_FINAL_ACCEPTANCE_P, C10_FINAL_ACCEPTANCE_E, C10_FINAL_ACCEPTANCE_H)}
+    files = {path: (root / path).read_bytes()
+        for path in ("scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c10_final_acceptance_artifacts(historical, files, _c10_final_product_raw(root))
+
+
+def validate_c10_final_acceptance(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c10_final_acceptance_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes() for path in c10_final_acceptance_paths()}
+        expected_objects = {C10_FINAL_ACCEPTANCE_P: _c21_resume_json(expected[C10_FINAL_ACCEPTANCE_P]),
+            C10_FINAL_ACCEPTANCE_E: _c21_resume_json(expected[C10_FINAL_ACCEPTANCE_E]),
+            C10_FINAL_ACCEPTANCE_H: extract_handoff_summary(expected[C10_FINAL_ACCEPTANCE_H].decode()),
+            C10_FINAL_ACCEPTANCE_D: _c21_resume_json(expected[C10_FINAL_ACCEPTANCE_D]),
+            C10_FINAL_ACCEPTANCE_M: _c21_resume_json(expected[C10_FINAL_ACCEPTANCE_M])}
+        actual_objects = {C10_FINAL_ACCEPTANCE_P: bundle.get("progress"),
+            C10_FINAL_ACCEPTANCE_E: bundle.get("events"), C10_FINAL_ACCEPTANCE_H: bundle.get("handoff"),
+            C10_FINAL_ACCEPTANCE_D: bundle.get("detached_digest"), C10_FINAL_ACCEPTANCE_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual_objects[path], expected_objects[path])
+            for path in actual_objects) else ["C10_FINAL_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C10_FINAL_RAW_BYTES_INVALID")
+        state = actual_objects[C10_FINAL_ACCEPTANCE_P]
+        if (not isinstance(state, Mapping) or state.get("event_sequence") != 865
+            or state.get("current_work_package") != "C-10" or state.get("status") != "ACCEPTED"
+            or state.get("active_agent") is not None or state.get("worker_lease") is not None
+            or state.get("write_lease") is not None or "C-10" not in state.get("completed_packages", [])
+            or state.get("next_work_package") != {"package_id": "C-11", "status": "READY_FOR_WORK_INSTRUCTION"}):
+            errors.append("C10_FINAL_CANONICAL_STATE_INVALID")
+        old = subprocess.check_output(["git", "show", f"{C10_FINAL_ACCEPTANCE_BASE}:{C10_FINAL_ACCEPTANCE_E}"],
+            cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(old, 855) != raw_event_object_prefix_bytes(
+                actual_raw[C10_FINAL_ACCEPTANCE_E], 855):
+            errors.append("C10_FINAL_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C10_FINAL_INPUT_INVALID"]
+
+
+def _collect_c10_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]; raw = lambda *a: _c02_git_raw_stdout(root, *a)
+        value = lambda *a: _c02_strict_git_scalar(raw(*a)); optional = lambda *a: _c02_optional_git_scalar(raw(*a))
+        head, base, branch = value("rev-parse", "HEAD"), value("rev-parse", C10_FINAL_ACCEPTANCE_BASE), optional("branch", "--show-current")
+        staged = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
+        exact = c10_final_acceptance_combined_paths()
+        if (None in (head, base, branch, staged, unstaged, untracked)
+            or head != C10_FINAL_ACCEPTANCE_BASE or base != C10_FINAL_ACCEPTANCE_BASE
+            or branch != C09_START_BRANCH or staged or sorted(set(unstaged + untracked)) != exact
+            or set(unstaged) & set(untracked) or not _c02_git_quiet_check(root, "diff", "--check")
+            or not _c02_git_quiet_check(root, "diff", "--cached", "--check")):
+            return ["C10_FINAL_ACCEPTANCE_CANDIDATE_INVALID"]
+        current_manifest = _load_json(root / C10_FINAL_ACCEPTANCE_M)
+        if (current_manifest.get("product_raw") != _c10_final_product_raw(root)
+            or current_manifest.get("combined_exact_paths") != exact
+            or current_manifest.get("blocking_findings", 0) != 0
+            or current_manifest.get("staged") is not False
+            or current_manifest.get("commit_performed") is not False):
+            return ["C10_FINAL_ACCEPTANCE_CANDIDATE_INVALID"]
+        return []
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, json.JSONDecodeError):
         return ["GIT_REQUIRED_COLLECTION_FAILED"]
 
 

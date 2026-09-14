@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 855,
+  "last_sequence": 865,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -46195,7 +46195,509 @@
         ],
         "result_status": "REWORK_MAIN_TAKEOVER"
       }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 856,
+      "event_id": "evt_c10_final_expired_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "96F63E1E6883288CDDA8D222051C4412735DF2175EC7C9FED70589E3A791FD24",
+      "details": {
+        "lease_id": "write-lease-c10-main-takeover-20260914-004",
+        "worker_lease_id": "worker-lease-c10-main-takeover-20260914-004",
+        "fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+        "write_fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+        "write_epoch": 4,
+        "actor_id": "main-agent-eoul",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T07:33:00+09:00",
+        "expires_at": "2026-09-14T19:33:00+09:00",
+        "status": "REVOKED",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ],
+        "revoked_at": "2026-09-14T20:45:00+09:00",
+        "reason": "LEASE_EXPIRED_BEFORE_FINAL_ACCEPTANCE"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 857,
+      "event_id": "evt_c10_final_expired_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "E131F0E7E0DE67C62E5553BA05655CEDC98D4C24955939778C80D28A209D4CEA",
+      "details": {
+        "lease_id": "worker-lease-c10-main-takeover-20260914-004",
+        "fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
+        "subject_ref": "C-10/MAIN-TAKEOVER",
+        "lease_epoch": 4,
+        "actor_id": "main-agent-eoul",
+        "role": "MAIN_AGENT",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+        "dispatch_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+        "issued_at": "2026-09-14T07:33:00+09:00",
+        "expires_at": "2026-09-14T19:33:00+09:00",
+        "status": "REVOKED",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/**",
+          "packages/tool_gateway/**",
+          "tests/action_policy/**",
+          "tests/tool_gateway/**"
+        ],
+        "revoked_at": "2026-09-14T20:45:00+09:00",
+        "reason": "LEASE_EXPIRED_BEFORE_FINAL_ACCEPTANCE"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 858,
+      "event_id": "evt_c10_final_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "5FAE68B1C76B192E0676B13918B8637EFC185A32041438FB864CFF738AE36D0B",
+      "details": {
+        "lease_id": "worker-lease-c10-main-takeover-20260914-005",
+        "fencing_token": "c10-main-takeover-execution-fence-epoch-5-64ab1fceaa13072d",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-5-64ab1fceaa13072d",
+        "subject_ref": "C-10/FINAL-ACCEPTANCE",
+        "lease_epoch": 5,
+        "actor_id": "main-agent-eoul",
+        "role": "MAIN_AGENT",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+        "dispatch_head": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+        "issued_at": "2026-09-14T20:45:00+09:00",
+        "expires_at": "2026-09-15T08:45:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 859,
+      "event_id": "evt_c10_final_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "A972E4B54A969BE1D1AA14AB281A32D18B03C53B7072F46D21678F29F9C5DE9A",
+      "details": {
+        "lease_id": "write-lease-c10-main-takeover-20260914-005",
+        "worker_lease_id": "worker-lease-c10-main-takeover-20260914-005",
+        "fencing_token": "c10-main-takeover-write-fence-epoch-5-e90b3d5cd217bb41",
+        "write_fencing_token": "c10-main-takeover-write-fence-epoch-5-e90b3d5cd217bb41",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-5-64ab1fceaa13072d",
+        "write_epoch": 5,
+        "actor_id": "main-agent-eoul",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T20:45:00+09:00",
+        "expires_at": "2026-09-15T08:45:00+09:00",
+        "status": "ACTIVE",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ]
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 860,
+      "event_id": "evt_c10_final_package_resumed",
+      "event_type": "PACKAGE_RESUMED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "91CBB01B1BD16C5D48A60251219ABA27D19D9CE80BEF752D4174C71E65E6CB1B",
+      "details": {
+        "resume_event_ref": "evt_c10_final_write_lease_issued",
+        "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
+        "validated_base_commit": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+        "result_status": "FINAL_ACCEPTANCE_REVALIDATION",
+        "product_exact_paths": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ],
+        "product_raw": {
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md": {
+            "bytes": 12664,
+            "sha256": "8B388DDF5F90C4F2BD4359F5E2F3484D64B5A7EF7B2BEF8D66C023333D0153C9"
+          },
+          "packages/action_policy/__init__.py": {
+            "bytes": 395,
+            "sha256": "134DB462EC8FF31F5F2D56F244B63F17CC7C04171B5A508FF32EBF9E1CFCF11C"
+          },
+          "packages/action_policy/admission.py": {
+            "bytes": 31900,
+            "sha256": "8FC343BF2766D3CB3710C9D073E438A8E4327F19B2B5A64329D60B4B3980D676"
+          },
+          "packages/action_policy/policy.py": {
+            "bytes": 8182,
+            "sha256": "C7E1F361AFB4FFA54F985346D1E5C3CC37CEE4DDE5A51CD4FD14115BFCD0D018"
+          },
+          "tests/action_policy/test_c10_policy.py": {
+            "bytes": 29409,
+            "sha256": "17D05F41527F32B4A7B80DE5020C340FA096849B7369D093D5673F0F653EE719"
+          },
+          "tests/action_policy/test_policy.py": {
+            "bytes": 3883,
+            "sha256": "08F49C0A109457113B051F64058622D07BBD97182750CD080376E3C6DE555068"
+          }
+        },
+        "expired_epoch": 4,
+        "renewed_epoch": 5
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 861,
+      "event_id": "evt_c10_final_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "9AA7014C06B8C2C04AD2BFA0C07D58D0AAADF911D2A35DE6F840563D0949C772",
+      "details": {
+        "lease_id": "write-lease-c10-main-takeover-20260914-005",
+        "worker_lease_id": "worker-lease-c10-main-takeover-20260914-005",
+        "fencing_token": "c10-main-takeover-write-fence-epoch-5-e90b3d5cd217bb41",
+        "write_fencing_token": "c10-main-takeover-write-fence-epoch-5-e90b3d5cd217bb41",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-5-64ab1fceaa13072d",
+        "write_epoch": 5,
+        "actor_id": "main-agent-eoul",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "issued_at": "2026-09-14T20:45:00+09:00",
+        "expires_at": "2026-09-15T08:45:00+09:00",
+        "status": "REVOKED",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ],
+        "revoked_at": "2026-09-14T20:45:00+09:00",
+        "reason": "C10_PRODUCT_AND_REVIEWS_COMPLETED"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 862,
+      "event_id": "evt_c10_final_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "FD5EB0F67C1D4B9BADC18FCE59A4F0073055A5EA118C27D43B4E551626E1ED35",
+      "details": {
+        "lease_id": "worker-lease-c10-main-takeover-20260914-005",
+        "fencing_token": "c10-main-takeover-execution-fence-epoch-5-64ab1fceaa13072d",
+        "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-5-64ab1fceaa13072d",
+        "subject_ref": "C-10/FINAL-ACCEPTANCE",
+        "lease_epoch": 5,
+        "actor_id": "main-agent-eoul",
+        "role": "MAIN_AGENT",
+        "work_package_id": "C-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+        "dispatch_head": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+        "issued_at": "2026-09-14T20:45:00+09:00",
+        "expires_at": "2026-09-15T08:45:00+09:00",
+        "status": "REVOKED",
+        "path_scope": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ],
+        "revoked_at": "2026-09-14T20:45:00+09:00",
+        "reason": "C10_PRODUCT_AND_REVIEWS_COMPLETED"
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 863,
+      "event_id": "evt_c10_final_package_completed",
+      "event_type": "PACKAGE_COMPLETED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "A416CAC5A23485C176147A274EB6B3283EA5C7913C1DB033FC21DAF552D36969",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_exact_paths": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ],
+        "product_raw": {
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md": {
+            "bytes": 12664,
+            "sha256": "8B388DDF5F90C4F2BD4359F5E2F3484D64B5A7EF7B2BEF8D66C023333D0153C9"
+          },
+          "packages/action_policy/__init__.py": {
+            "bytes": 395,
+            "sha256": "134DB462EC8FF31F5F2D56F244B63F17CC7C04171B5A508FF32EBF9E1CFCF11C"
+          },
+          "packages/action_policy/admission.py": {
+            "bytes": 31900,
+            "sha256": "8FC343BF2766D3CB3710C9D073E438A8E4327F19B2B5A64329D60B4B3980D676"
+          },
+          "packages/action_policy/policy.py": {
+            "bytes": 8182,
+            "sha256": "C7E1F361AFB4FFA54F985346D1E5C3CC37CEE4DDE5A51CD4FD14115BFCD0D018"
+          },
+          "tests/action_policy/test_c10_policy.py": {
+            "bytes": 29409,
+            "sha256": "17D05F41527F32B4A7B80DE5020C340FA096849B7369D093D5673F0F653EE719"
+          },
+          "tests/action_policy/test_policy.py": {
+            "bytes": 3883,
+            "sha256": "08F49C0A109457113B051F64058622D07BBD97182750CD080376E3C6DE555068"
+          }
+        },
+        "test_evidence": {
+          "passed": {
+            "focused": 271,
+            "combined": 300,
+            "c09_authoritative": 106
+          },
+          "failed": 0,
+          "commands": {
+            "focused": "python -B -m pytest -q -p no:cacheprovider tests/action_policy/test_c10_policy.py",
+            "combined": "python -B -m pytest -q -p no:cacheprovider tests/action_policy tests/tool_gateway",
+            "c09_authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py --disable-warnings -ra"
+          },
+          "compileall": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "diff_check": {
+            "status": "PASS",
+            "exit_code": 0
+          }
+        },
+        "independent_reviews": {
+          "blocking_findings": 0,
+          "spec": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          },
+          "quality": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          }
+        },
+        "external_validation": {
+          "tool_gateway_dispatch": "NOT_EXECUTED",
+          "secret_broker": "NOT_ACCESSED",
+          "network_dns": "NOT_ACCESSED",
+          "filesystem_subprocess": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        }
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 864,
+      "event_id": "evt_c10_final_independent_test_judgment_recorded",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "independent-reviewers",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "BB1327C8AC437354098848F15AC709EB69CBB53937B1159ECCD6A3BCE4D19766",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "C10_EXACT6_SPEC_AND_QUALITY_BLOCKING_ZERO",
+        "evidence_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+        "evidence_sha256": "8B388DDF5F90C4F2BD4359F5E2F3484D64B5A7EF7B2BEF8D66C023333D0153C9",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "blocking_findings": 0,
+        "reviews": {
+          "blocking_findings": 0,
+          "spec": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          },
+          "quality": {
+            "verdict": "PASS",
+            "critical": 0,
+            "important": 0,
+            "minor": 0
+          }
+        },
+        "test_evidence": {
+          "passed": {
+            "focused": 271,
+            "combined": 300,
+            "c09_authoritative": 106
+          },
+          "failed": 0,
+          "commands": {
+            "focused": "python -B -m pytest -q -p no:cacheprovider tests/action_policy/test_c10_policy.py",
+            "combined": "python -B -m pytest -q -p no:cacheprovider tests/action_policy tests/tool_gateway",
+            "c09_authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py --disable-warnings -ra"
+          },
+          "compileall": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "diff_check": {
+            "status": "PASS",
+            "exit_code": 0
+          }
+        }
+      }
+    },
+    {
+      "schema_version": "1.0.0",
+      "sequence": 865,
+      "event_id": "evt_c10_final_main_package_accepted",
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "subject_type": "WORK_PACKAGE",
+      "subject_id": "C-10",
+      "subject_ref": "C-10/FINAL-ACCEPTANCE",
+      "actor_id": "main-agent-eoul",
+      "occurred_at": "2026-09-14T20:45:00+09:00",
+      "recorded_at": "2026-09-14T20:45:00+09:00",
+      "previous_event_sha256": "C0BEC911451327085F378F2E8850F2B7E5A9167F84217600BCC660A1FED82B04",
+      "details": {
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
+        "validated_base_commit": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+        "acceptance_head": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+        "acceptance_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "head_relation": "UNSTAGED_EXACT13_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+        "test_report_ref": "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+        "test_report_sha256": "8B388DDF5F90C4F2BD4359F5E2F3484D64B5A7EF7B2BEF8D66C023333D0153C9",
+        "manifest_ref": "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "next_work_package": "C-11",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "blocking_findings": 0,
+        "dir2_status": "NOT_REACHED",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "scripts/check_project_progress.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_exact_paths": [
+          "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+          "packages/action_policy/__init__.py",
+          "packages/action_policy/admission.py",
+          "packages/action_policy/policy.py",
+          "tests/action_policy/test_c10_policy.py",
+          "tests/action_policy/test_policy.py"
+        ],
+        "external_validation": {
+          "tool_gateway_dispatch": "NOT_EXECUTED",
+          "secret_broker": "NOT_ACCESSED",
+          "network_dns": "NOT_ACCESSED",
+          "filesystem_subprocess": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c10_main_takeover_package_resumed"
+  "last_event_id": "evt_c10_final_main_package_accepted"
 }

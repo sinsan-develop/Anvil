@@ -1,3 +1,9 @@
+# C-10 final acceptance - seq865
+
+- seq1~855 raw event object bytes preserved; seq856~865만 append했다.
+- epoch4 만료를 회수하고 epoch5에서 exact6 hash를 재검증한 뒤 lease를 회수했다.
+- C-10 ACCEPTED; C-11 READY_FOR_WORK_INSTRUCTION; DIR-2 NOT_REACHED.
+
 # C-10 Main takeover start - seq855
 
 - user direction recorded after failure3 conflict hold.
@@ -1032,84 +1038,38 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 855,
-  "last_event_id": "evt_c10_main_takeover_package_resumed",
-  "status": "REWORK_MAIN_TAKEOVER",
+  "event_sequence": 865,
+  "last_event_id": "evt_c10_final_main_package_accepted",
+  "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-10",
-  "active_agent": {
-    "actor_id": "main-agent-eoul",
-    "role": "MAIN_AGENT",
-    "work_package_id": "C-10",
-    "status": "ACTIVE",
-    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3"
-  },
-  "worker_lease": {
-    "lease_id": "worker-lease-c10-main-takeover-20260914-004",
-    "fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
-    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
-    "subject_ref": "C-10/MAIN-TAKEOVER",
-    "lease_epoch": 4,
-    "actor_id": "main-agent-eoul",
-    "role": "MAIN_AGENT",
-    "work_package_id": "C-10",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
-    "dispatch_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
-    "issued_at": "2026-09-14T07:33:00+09:00",
-    "expires_at": "2026-09-14T19:33:00+09:00",
-    "status": "ACTIVE",
-    "path_scope": [
-      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-      "packages/action_policy/**",
-      "packages/tool_gateway/**",
-      "tests/action_policy/**",
-      "tests/tool_gateway/**"
-    ]
-  },
-  "write_lease": {
-    "lease_id": "write-lease-c10-main-takeover-20260914-004",
-    "worker_lease_id": "worker-lease-c10-main-takeover-20260914-004",
-    "fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
-    "write_fencing_token": "c10-main-takeover-write-fence-epoch-4-5b17e2d94c8a603f",
-    "execution_fencing_token": "c10-main-takeover-execution-fence-epoch-4-8d2f71c5a6094be3",
-    "write_epoch": 4,
-    "actor_id": "main-agent-eoul",
-    "work_package_id": "C-10",
-    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "issued_at": "2026-09-14T07:33:00+09:00",
-    "expires_at": "2026-09-14T19:33:00+09:00",
-    "status": "ACTIVE",
-    "path_scope": [
-      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-      "packages/action_policy/**",
-      "packages/tool_gateway/**",
-      "tests/action_policy/**",
-      "tests/tool_gateway/**"
-    ]
-  },
+  "active_agent": null,
+  "worker_lease": null,
+  "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "MAIN_IMPLEMENT_C10_FAILURE3_TAKEOVER",
-  "accepted": false,
-  "c09_status": "ACCEPTED",
-  "c10_status": "REWORK_MAIN_TAKEOVER",
-  "c11_status": "NOT_READY",
-  "dir_status": "CLEARED",
+  "next_safe_action": "ISSUE_C11_WORK_INSTRUCTION",
+  "accepted": true,
+  "c10_status": "ACCEPTED",
+  "c11_status": "READY_FOR_WORK_INSTRUCTION",
   "dir2_status": "NOT_REACHED",
-  "repository_head": "e416898d231e0f6ef72d01c85378c0f3e48a0d11",
+  "dir_status": "CLEARED",
+  "repository_head": "b855377fbd7e740a9274e1084cb5a2af4308d664",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C10_MAIN_TAKEOVER_START_EXACT10",
+  "repository_projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c10-main-takeover-start.json",
-    "docs/work_orders/C-10_MAIN_TAKEOVER_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-10_MAIN_TAKEOVER_PACKET.md",
-    "docs/work_orders/C-10_MAIN_TAKEOVER_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+    "packages/action_policy/__init__.py",
+    "packages/action_policy/admission.py",
+    "packages/action_policy/policy.py",
     "scripts/check_project_progress.py",
+    "tests/action_policy/test_c10_policy.py",
+    "tests/action_policy/test_policy.py",
     "tests/tooling/test_project_progress.py"
   ],
   "product_exact_paths": [
@@ -1120,10 +1080,69 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/action_policy/test_c10_policy.py",
     "tests/action_policy/test_policy.py"
   ],
-  "user_direction": "ALLOW_C10_MAIN_DIRECT_TAKEOVER",
-  "takeover_packet_sha256": "C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA",
-  "current_manifest": "docs/evidence/manifests/C-10_MAIN_TAKEOVER_START_MANIFEST.json",
-  "reporting_decision": "AUTO_CONTINUE"
+  "product_exact_path_list_sha256": "331352013FD98DDE31EB8DEC541008111E26C1B88D56CD412DEC9B2FA94E8042",
+  "control_exact_paths": [
+    "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "test_evidence": {
+    "passed": {
+      "focused": 271,
+      "combined": 300,
+      "c09_authoritative": 106
+    },
+    "failed": 0,
+    "commands": {
+      "focused": "python -B -m pytest -q -p no:cacheprovider tests/action_policy/test_c10_policy.py",
+      "combined": "python -B -m pytest -q -p no:cacheprovider tests/action_policy tests/tool_gateway",
+      "c09_authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py --disable-warnings -ra"
+    },
+    "compileall": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "status": "PASS",
+      "exit_code": 0
+    }
+  },
+  "independent_reviews": {
+    "blocking_findings": 0,
+    "spec": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    },
+    "quality": {
+      "verdict": "PASS",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    }
+  },
+  "external_validation": {
+    "tool_gateway_dispatch": "NOT_EXECUTED",
+    "secret_broker": "NOT_ACCESSED",
+    "network_dns": "NOT_ACCESSED",
+    "filesystem_subprocess": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "current_manifest": "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+  "reporting_decision": "AUTO_CONTINUE",
+  "staged": false,
+  "commit_performed": false
 }
 ```
 
