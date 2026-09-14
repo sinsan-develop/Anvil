@@ -16572,5 +16572,142 @@ class C10PostcommitReconciliationControlTests(unittest.TestCase):
                 "_root": ROOT, "progress": {"event_sequence": 870}}))
 
 
+class C11StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c11_start", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq875_binds_current_baseline_authority_and_dual_lease(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        self.assertEqual(set(checker.c11_start_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C11_START_P])
+        manifest = json.loads(artifacts[checker.C11_START_M])
+        events = json.loads(artifacts[checker.C11_START_E])["events"]
+        self.assertEqual((870, 875, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(checker.C11_START_BASE, manifest["validated_base_commit"])
+        self.assertEqual(checker.C11_WI_SHA256, manifest["work_instruction_sha256"])
+        self.assertEqual(checker.C11_PROMPT_SHA256, manifest["invocation_sha256"])
+        self.assertEqual(["PMO_DIRECTION_RECORDED", "WORK_INSTRUCTION_ISSUED",
+            "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-11", "IN_PROGRESS", "developer-primary-c11-r1"),
+            (progress["current_work_package"], progress["status"],
+             progress["active_agent"]["actor_id"]))
+        self.assertEqual(checker.C11_WORKER_LEASE_ID, progress["worker_lease"]["lease_id"])
+        self.assertEqual(checker.C11_WRITE_LEASE_ID, progress["write_lease"]["lease_id"])
+        self.assertEqual({"package_id": "C-12", "status": "NOT_READY"},
+                         progress["next_work_package"])
+
+    def test_seq875_event_contract_accepts_start_and_rejects_incomplete_approval(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        progress = json.loads(artifacts[checker.C11_START_P])
+        stream = json.loads(artifacts[checker.C11_START_E])
+        contract = json.loads((ROOT / "docs/progress/progress-event-contract.json").read_bytes())
+        self.assertEqual([], checker.validate_event_stream(stream, contract, progress))
+        bad = copy.deepcopy(stream)
+        del bad["events"][-5]["details"]["user_direction_verbatim"]
+        self.assertIn("EVENT_PAYLOAD_MISSING", checker.validate_event_stream(bad, contract, progress))
+
+    def test_seq875_authorizes_only_nine_control_paths_and_no_product_dispatch(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        self.assertEqual(sorted([
+            "docs/work_orders/C-11_WORK_INSTRUCTION.md", "docs/work_orders/C-11_INVOCATION_PROMPT.md",
+            "docs/evidence/manifests/C-11_START_MANIFEST.json", "docs/progress/build-progress.json",
+            "docs/progress/BUILD_HANDOFF.md", "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-c11-start.json",
+            "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"]), sorted(artifacts))
+        progress = json.loads(artifacts[checker.C11_START_P])
+        authority = progress["c11_start"]["authority"]
+        for name in ("product_tdd_authorized_now", "c12_authorized", "external_execution_authorized", "push_authorized"):
+            self.assertIs(False, authority[name])
+        self.assertEqual("C11_START_CONTROL_COMPLETE_PENDING_PRODUCT_TDD_DIRECTION", progress["next_safe_action"])
+        self.assertEqual("2026-09-15T10:15:00+09:00", progress["write_lease"]["expires_at"])
+        self.assertEqual("c11-write-fence-epoch-1-32cde045f92f4b1b", progress["write_lease"]["write_fencing_token"])
+
+    def test_seq875_refuses_authority_and_predecessor_evidence_mutation(self):
+        checker = self._checker()
+        original = Path.read_bytes
+        for relative, reason in (("docs/work_orders/C-11_WORK_INSTRUCTION.md", "C11_START_AUTHORITY_HASH_INVALID"),
+                                 ("docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json", "C11_START_PREDECESSOR_EVIDENCE_MUTATED")):
+            target = ROOT / relative
+            def altered(path):
+                raw = original(path)
+                return raw + b"\n" if path == target else raw
+            with mock.patch.object(Path, "read_bytes", altered):
+                with self.assertRaisesRegex(ValueError, reason):
+                    checker.c11_start_from_root(ROOT)
+
+    def test_seq875_preserves_raw_prefix_and_refuses_lease_or_scope_drift(self):
+        checker = self._checker()
+        artifacts = checker.c11_start_from_root(ROOT)
+        old = subprocess.check_output(["git", "show", checker.C11_START_BASE + ":" + checker.C11_START_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 870),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C11_START_E], 870))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C11_START_P]),
+            "events": json.loads(artifacts[checker.C11_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C11_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C11_START_D])}
+        manifest = json.loads(artifacts[checker.C11_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c11_start(bundle, manifest))
+            for field, change in (("execution_fencing_token", "stale"), ("path_scope", ["packages/**"])):
+                bad = copy.deepcopy(bundle)
+                bad["progress"]["worker_lease"][field] = change
+                self.assertIn("C11_START_PROJECTION_INVALID", checker.validate_c11_start(bad, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["events"]["events"][0]["event_id"] = "changed-history"
+            self.assertIn("C11_START_PROJECTION_INVALID", checker.validate_c11_start(bad, manifest))
+
+    def test_seq875_dispatch_selects_c11_without_falling_back_to_c10(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c11_start_git", return_value=["SEQ875_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_postcommit_reconciliation_git", side_effect=AssertionError("old dispatch")):
+            self.assertEqual(["SEQ875_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 875}}))
+
+    def test_seq875_exact9_git_gate_accepts_only_precommit_or_clean_direct_child(self):
+        checker = self._checker()
+        exact = checker.c11_start_paths()
+        head = checker.C11_START_BASE
+        parent = checker.C11_START_BASE
+        staged, unstaged, untracked = [], exact, []
+        changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C11_START_BASE, head): return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args: return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"): return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args: return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True):
+            self.assertEqual([], checker._collect_c11_start_git({"_root": ROOT}))
+            unstaged = exact + ["packages/planning/planner.py"]
+            self.assertIn("C11_START_GIT_INVALID", checker._collect_c11_start_git({"_root": ROOT}))
+            unstaged = []
+            staged = exact
+            self.assertEqual([], checker._collect_c11_start_git({"_root": ROOT}))
+            staged = []
+            head = "a" * 40
+            self.assertEqual([], checker._collect_c11_start_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C11_START_GIT_INVALID", checker._collect_c11_start_git({"_root": ROOT}))
+            parent = checker.C11_START_BASE
+            changed = exact[:-1]
+            self.assertIn("C11_START_GIT_INVALID", checker._collect_c11_start_git({"_root": ROOT}))
+
+
 if __name__ == "__main__":
     unittest.main()

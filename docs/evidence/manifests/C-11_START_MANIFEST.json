@@ -1,0 +1,183 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-11_START",
+  "artifact_id": "C11-START-20260915",
+  "package_id": "C-11",
+  "created_at": "2026-09-15T06:05:15+09:00",
+  "event_sequence": 875,
+  "historical_event_sequence": 870,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 2554196,
+    "sha256": "6652802885266D32A7B1A4CD1E317846D28D66B19923C69D9E8BF2DF35ECD54B"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "validated_base_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+  "projection_mode": "C11_START_EXACT9",
+  "record_binding": "PRECOMMIT_EXACT9_OR_CLEAN_SOLE_DIRECT_CHILD_C11_START",
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/C-11_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c11-start.json",
+    "docs/work_orders/C-11_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-11_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "exact_path_list_sha256": "E8A62A4D74889630F6E4F052CE9F7DF6E116853C050A28C2305F258AB6A58743",
+  "worker_lease": {
+    "actor_id": "developer-primary-c11-r1",
+    "subject_ref": "C-11",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+    "issued_at": "2026-09-14T22:15:00+09:00",
+    "expires_at": "2026-09-15T10:15:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
+    "path_scope": [
+      "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+      "packages/orchestration/**",
+      "packages/planning/**",
+      "tests/orchestration/**",
+      "tests/planning/**"
+    ],
+    "lease_id": "worker-lease-c11-20260914-001",
+    "lease_epoch": 1,
+    "fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
+    "dispatch_head": "002ebea5409eb9fa32cde045f92f4b1b69b587ed"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-c11-r1",
+    "subject_ref": "C-11",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+    "issued_at": "2026-09-14T22:15:00+09:00",
+    "expires_at": "2026-09-15T10:15:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c11-execution-fence-epoch-1-002ebea5409eb9fa",
+    "path_scope": [
+      "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+      "packages/orchestration/**",
+      "packages/planning/**",
+      "tests/orchestration/**",
+      "tests/planning/**"
+    ],
+    "lease_id": "write-lease-c11-20260914-001",
+    "worker_lease_id": "worker-lease-c11-20260914-001",
+    "write_epoch": 1,
+    "fencing_token": "c11-write-fence-epoch-1-32cde045f92f4b1b",
+    "write_fencing_token": "c11-write-fence-epoch-1-32cde045f92f4b1b"
+  },
+  "product_write_scope": [
+    "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
+    "packages/orchestration/**",
+    "packages/planning/**",
+    "tests/orchestration/**",
+    "tests/planning/**"
+  ],
+  "work_instruction_path": "docs/work_orders/C-11_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "42CE4BDC9911C7E2D3CA779810D825C58113EF23C13433C137BABD57998C4C61",
+  "invocation_path": "docs/work_orders/C-11_INVOCATION_PROMPT.md",
+  "invocation_sha256": "74E77F0CE3830098FEA50701CDBA926F7A1CA70E078EF01EB358E062F3C23162",
+  "authority": {
+    "revision_class": "APPROVED_START_CONTROL_ONLY",
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "work_instruction_id": "WI-C-11-20260914-002",
+    "work_instruction_sha256": "42CE4BDC9911C7E2D3CA779810D825C58113EF23C13433C137BABD57998C4C61",
+    "invocation_sha256": "74E77F0CE3830098FEA50701CDBA926F7A1CA70E078EF01EB358E062F3C23162",
+    "baseline_commit": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+    "authority_hashes": {
+      "docs/work_orders/C-11_WORK_INSTRUCTION.md": "42CE4BDC9911C7E2D3CA779810D825C58113EF23C13433C137BABD57998C4C61",
+      "docs/work_orders/C-11_INVOCATION_PROMPT.md": "74E77F0CE3830098FEA50701CDBA926F7A1CA70E078EF01EB358E062F3C23162",
+      "Anvil_설계서_v2.md": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+      "Anvil_작업계획서_v1.md": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+      "Anvil_통합검증매트릭스_v1.md": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+      "Anvil_테스트계획서_v1.md": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+      "docs/governance/ANVIL_OPERATING_RULES.md": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+      "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236"
+    },
+    "approval_date": "2026-09-15",
+    "user_direction_verbatim": "승인해",
+    "source": "USER_DIRECT_APPROVAL_RELAYED_BY_MAIN",
+    "approved_control_paths": [
+      "docs/evidence/manifests/C-11_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c11-start.json",
+      "docs/work_orders/C-11_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-11_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "local_start_commit_authorized": true,
+    "product_tdd_authorized_now": false,
+    "c12_authorized": false,
+    "external_execution_authorized": false,
+    "push_authorized": false
+  },
+  "external_validation": {
+    "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "secret_manager": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "subagent_runtime": "NOT_EXECUTED"
+  },
+  "c12_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "self_reference": false,
+  "commit_binding": "SELF_REFERENCE_EXCLUDED_STRUCTURAL_RUNTIME_VALIDATION",
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 193783,
+      "sha256": "82746F5BEF94086C24F8BEE67365096AE3FDB52EBB9BF38FC78675A33B4633C9"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 963106,
+      "sha256": "3BCB05AD2F4EF61348A344B2F81A1067AAB78C98AFED041A51DCC9A13883A34E"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2565981,
+      "sha256": "80ADF3DD9CABC25F603B54D07C2DCD7839016F2642AD747B51AD8C3D1751D9C9"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c11-start.json",
+      "bytes": 845,
+      "sha256": "53C697191D243BEA7FF80B43CF64E68743B5C7754951F7A12E16BEB1226FAF81"
+    },
+    {
+      "path": "docs/work_orders/C-11_INVOCATION_PROMPT.md",
+      "bytes": 442,
+      "sha256": "74E77F0CE3830098FEA50701CDBA926F7A1CA70E078EF01EB358E062F3C23162"
+    },
+    {
+      "path": "docs/work_orders/C-11_WORK_INSTRUCTION.md",
+      "bytes": 3601,
+      "sha256": "42CE4BDC9911C7E2D3CA779810D825C58113EF23C13433C137BABD57998C4C61"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3614179,
+      "sha256": "4447EA419380E99D1D527F21BB522E38293CC1AD42F7AEC59E34A47D4A01ABD7"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1013369,
+      "sha256": "C24D1AD351AA097F8BD11F5CFC11223BF34472012293426FB0BDDBB646CA2D63"
+    }
+  ]
+}
