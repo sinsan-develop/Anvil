@@ -13081,6 +13081,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 870:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c10_postcommit_reconciliation_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 865:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14251,6 +14255,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c10_main_takeover_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_c10_final_acceptance(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json":
+            errors.extend(validate_c10_postcommit_reconciliation(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -43499,6 +43505,7 @@ C10_FINAL_ACCEPTANCE_H = "docs/progress/BUILD_HANDOFF.md"
 C10_FINAL_ACCEPTANCE_D = "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json"
 C10_FINAL_ACCEPTANCE_M = "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json"
 C10_FINAL_ACCEPTANCE_BASE = "b855377fbd7e740a9274e1084cb5a2af4308d664"
+C10_ACCEPTANCE_COMMIT = "8e651298d3cd36795ddb5fbfe34be272ddaa3910"
 C10_FINAL_ACCEPTANCE_AT = "2026-09-14T20:45:00+09:00"
 C10_FINAL_ACCEPTANCE_EXPIRES_AT = "2026-09-15T08:45:00+09:00"
 C10_FINAL_PRODUCT_PATH_LIST_SHA256 = "331352013FD98DDE31EB8DEC541008111E26C1B88D56CD412DEC9B2FA94E8042"
@@ -43808,14 +43815,25 @@ def _collect_c10_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
         root = bundle["_root"]; raw = lambda *a: _c02_git_raw_stdout(root, *a)
         value = lambda *a: _c02_strict_git_scalar(raw(*a)); optional = lambda *a: _c02_optional_git_scalar(raw(*a))
         head, base, branch = value("rev-parse", "HEAD"), value("rev-parse", C10_FINAL_ACCEPTANCE_BASE), optional("branch", "--show-current")
+        development_head = value("rev-parse", C09_START_DEVELOPMENT_REF)
+        development_url = value("remote", "get-url", "development")
         staged = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only"))
         unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only"))
         untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-standard"))
         exact = c10_final_acceptance_combined_paths()
-        if (None in (head, base, branch, staged, unstaged, untracked)
-            or head != C10_FINAL_ACCEPTANCE_BASE or base != C10_FINAL_ACCEPTANCE_BASE
-            or branch != C09_START_BRANCH or staged or sorted(set(unstaged + untracked)) != exact
-            or set(unstaged) & set(untracked) or not _c02_git_quiet_check(root, "diff", "--check")
+        dirty = sorted(set(unstaged + untracked)) if unstaged is not None and untracked is not None else None
+        precommit = head == C10_FINAL_ACCEPTANCE_BASE and not staged and dirty == exact
+        postcommit = False
+        if head == C10_ACCEPTANCE_COMMIT and not staged and dirty == []:
+            parents = value("show", "-s", "--format=%P", head)
+            changed = _c02_strict_name_only_paths(raw("diff", "--name-only", base, head))
+            postcommit = parents == base and changed == exact
+        if (None in (head, base, branch, development_head, development_url, staged, unstaged, untracked)
+            or base != C10_FINAL_ACCEPTANCE_BASE or branch != C09_START_BRANCH
+            or development_head != C09_R4_MAIN or development_url != C09_START_DEVELOPMENT_URL
+            or (not precommit and not postcommit) or set(unstaged) & set(untracked)
+            or not _c02_git_quiet_check(root, "merge-base", "--is-ancestor", base, head)
+            or not _c02_git_quiet_check(root, "diff", "--check")
             or not _c02_git_quiet_check(root, "diff", "--cached", "--check")):
             return ["C10_FINAL_ACCEPTANCE_CANDIDATE_INVALID"]
         current_manifest = _load_json(root / C10_FINAL_ACCEPTANCE_M)
@@ -43825,6 +43843,330 @@ def _collect_c10_final_acceptance_git(bundle: Mapping[str, Any]) -> list[str]:
             or current_manifest.get("staged") is not False
             or current_manifest.get("commit_performed") is not False):
             return ["C10_FINAL_ACCEPTANCE_CANDIDATE_INVALID"]
+        return []
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, json.JSONDecodeError):
+        return ["GIT_REQUIRED_COLLECTION_FAILED"]
+
+
+C10_POSTCOMMIT_P = "docs/progress/build-progress.json"
+C10_POSTCOMMIT_E = "docs/progress/progress-events.json"
+C10_POSTCOMMIT_H = "docs/progress/BUILD_HANDOFF.md"
+C10_POSTCOMMIT_D = "docs/progress/progress-handoff-detached-digest-c10-postcommit-reconciliation.json"
+C10_POSTCOMMIT_M = "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json"
+C10_POSTCOMMIT_AT = "2026-09-14T21:15:00+09:00"
+C10_POSTCOMMIT_EXPIRES_AT = "2026-09-15T09:15:00+09:00"
+C10_POSTCOMMIT_WORKER_LEASE_ID = "worker-lease-c10-postcommit-reconciliation-20260914-006"
+C10_POSTCOMMIT_WRITE_LEASE_ID = "write-lease-c10-postcommit-reconciliation-20260914-006"
+C10_POSTCOMMIT_EXECUTION_TOKEN = "c10-postcommit-execution-fence-epoch-6-a18d54c78b2e903f"
+C10_POSTCOMMIT_WRITE_TOKEN = "c10-postcommit-write-fence-epoch-6-391ea72f6c84bd05"
+C10_POSTCOMMIT_MODE = "C10_POSTCOMMIT_RECONCILIATION_EXACT8"
+C10_POSTCOMMIT_RELATION = "SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8"
+
+
+def c10_postcommit_reconciliation_paths() -> list[str]:
+    return sorted([C10_POSTCOMMIT_M, C10_POSTCOMMIT_H, C10_POSTCOMMIT_P,
+        C10_POSTCOMMIT_E, C10_POSTCOMMIT_D, "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def _c10_postcommit_worker_lease() -> dict[str, Any]:
+    return {"lease_id": C10_POSTCOMMIT_WORKER_LEASE_ID,
+        "fencing_token": C10_POSTCOMMIT_EXECUTION_TOKEN,
+        "execution_fencing_token": C10_POSTCOMMIT_EXECUTION_TOKEN,
+        "subject_ref": "C-10/POSTCOMMIT-RECONCILIATION", "lease_epoch": 6,
+        "actor_id": "main-agent-eoul", "role": "MAIN_AGENT", "work_package_id": "C-10",
+        "baseline_hash": C08_START_DESIGN_SHA256, "baseline_git_commit": C10_ACCEPTANCE_COMMIT,
+        "dispatch_head": C10_ACCEPTANCE_COMMIT, "issued_at": C10_POSTCOMMIT_AT,
+        "expires_at": C10_POSTCOMMIT_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c10_postcommit_reconciliation_paths()}
+
+
+def _c10_postcommit_write_lease() -> dict[str, Any]:
+    return {"lease_id": C10_POSTCOMMIT_WRITE_LEASE_ID,
+        "worker_lease_id": C10_POSTCOMMIT_WORKER_LEASE_ID,
+        "fencing_token": C10_POSTCOMMIT_WRITE_TOKEN,
+        "write_fencing_token": C10_POSTCOMMIT_WRITE_TOKEN,
+        "execution_fencing_token": C10_POSTCOMMIT_EXECUTION_TOKEN, "write_epoch": 6,
+        "actor_id": "main-agent-eoul", "work_package_id": "C-10",
+        "baseline_hash": C08_START_DESIGN_SHA256, "issued_at": C10_POSTCOMMIT_AT,
+        "expires_at": C10_POSTCOMMIT_EXPIRES_AT, "status": "ACTIVE",
+        "path_scope": c10_postcommit_reconciliation_paths()}
+
+
+def c10_postcommit_reconciliation_artifacts(historical: Mapping[str, bytes],
+                                             files: Mapping[str, bytes],
+                                             product_raw: Mapping[str, Any]) -> dict[str, bytes]:
+    generated = {C10_POSTCOMMIT_M, C10_POSTCOMMIT_H, C10_POSTCOMMIT_P,
+                 C10_POSTCOMMIT_E, C10_POSTCOMMIT_D}
+    if set(historical) != {C10_POSTCOMMIT_H, C10_POSTCOMMIT_P, C10_POSTCOMMIT_E}:
+        raise ValueError("C10_POSTCOMMIT_HISTORY_SET_INVALID")
+    if set(files) != set(c10_postcommit_reconciliation_paths()) - generated:
+        raise ValueError("C10_POSTCOMMIT_FILE_SET_INVALID")
+    progress = _c21_resume_json(historical[C10_POSTCOMMIT_P])
+    stream = _c21_resume_json(historical[C10_POSTCOMMIT_E])
+    if (progress.get("event_sequence") != 865 or progress.get("status") != "ACCEPTED"
+        or progress.get("worker_lease") is not None or progress.get("write_lease") is not None
+        or stream.get("last_sequence") != 865 or len(stream.get("events", [])) != 865):
+        raise ValueError("C10_POSTCOMMIT_HISTORY_INVALID")
+    if (set(product_raw) != set(c10_rework_product_paths())
+        or any(set(row) != {"bytes", "sha256"} or row["bytes"] < 1 or len(row["sha256"]) != 64
+               for row in product_raw.values())):
+        raise ValueError("C10_POSTCOMMIT_PRODUCT_BINDING_INVALID")
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    worker, write = _c10_postcommit_worker_lease(), _c10_postcommit_write_lease()
+    def envelope(sequence: int, event_type: str, event_id: str,
+                 details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {"schema_version": "1.0.0", "sequence": sequence, "event_id": event_id,
+            "event_type": event_type, "subject_type": "WORK_PACKAGE", "subject_id": "C-10",
+            "subject_ref": "C-10/POSTCOMMIT-RECONCILIATION", "actor_id": "main-agent-eoul",
+            "occurred_at": C10_POSTCOMMIT_AT, "recorded_at": C10_POSTCOMMIT_AT,
+            "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row)); return row
+    retired_write = copy.deepcopy(write); retired_write.update({"status": "REVOKED",
+        "revoked_at": C10_POSTCOMMIT_AT, "reason": "POSTCOMMIT_RECONCILIATION_RECORDED"})
+    retired_worker = copy.deepcopy(worker); retired_worker.update({"status": "REVOKED",
+        "revoked_at": C10_POSTCOMMIT_AT, "reason": "POSTCOMMIT_RECONCILIATION_RECORDED"})
+    exact = c10_postcommit_reconciliation_paths()
+    events = [
+        envelope(866, "WORKER_LEASE_ISSUED", "evt_c10_postcommit_worker_lease_issued", worker),
+        envelope(867, "WRITE_LEASE_ISSUED", "evt_c10_postcommit_write_lease_issued", write),
+        envelope(868, "REPOSITORY_RECONCILED", "evt_c10_postcommit_repository_reconciled", {
+            "branch": C09_START_BRANCH, "local_head": C10_ACCEPTANCE_COMMIT,
+            "remote_head": C09_R4_MAIN, "upstream": C09_START_DEVELOPMENT_REF,
+            "observed_at": C10_POSTCOMMIT_AT,
+            "reason": "C10_ACCEPTANCE_COMMIT_CLEAN_POSTCOMMIT_RECONCILIATION",
+            "projection_mode": C10_POSTCOMMIT_MODE,
+            "validated_base_commit": C10_ACCEPTANCE_COMMIT,
+            "head_relation": C10_POSTCOMMIT_RELATION, "exact_allowed_paths": exact,
+            "acceptance_parent": C10_FINAL_ACCEPTANCE_BASE,
+            "acceptance_exact_paths": c10_final_acceptance_combined_paths(),
+            "reconciliation_commit_sha256": "SELF_REFERENCE_EXCLUDED_STRUCTURAL_RUNTIME_VALIDATION"}),
+        envelope(869, "WRITE_LEASE_REVOKED", "evt_c10_postcommit_write_lease_revoked", retired_write),
+        envelope(870, "WORKER_LEASE_REVOKED", "evt_c10_postcommit_worker_lease_revoked", retired_worker)]
+    events_raw = _c21_append_events(historical[C10_POSTCOMMIT_E], 865, events)
+    repository = copy.deepcopy(progress["repository"]); repository.update({
+        "projection_mode": C10_POSTCOMMIT_MODE, "validated_base_commit": C10_ACCEPTANCE_COMMIT,
+        "control_head": C10_ACCEPTANCE_COMMIT, "local_head": C10_ACCEPTANCE_COMMIT,
+        "branch": C09_START_BRANCH, "upstream": C09_START_DEVELOPMENT_REF,
+        "remote_head": C09_R4_MAIN, "head_relation": C10_POSTCOMMIT_RELATION,
+        "worktree_status": "UNSTAGED_EXACT8_OR_SOLE_DIRECT_CHILD_CLEAN",
+        "exact_allowed_paths": exact, "postcommit_reconciliation_paths": exact,
+        "acceptance_commit": C10_ACCEPTANCE_COMMIT,
+        "acceptance_parent": C10_FINAL_ACCEPTANCE_BASE,
+        "acceptance_exact_paths": c10_final_acceptance_combined_paths(),
+        "commit_status": "ACCEPTANCE_COMMIT_PERFORMED_RECONCILIATION_STRUCTURALLY_BOUND",
+        "push_status": "NOT_EXECUTED"})
+    progress.update({"snapshot_id": "snapshot-c10-postcommit-reconciliation-seq870",
+        "updated_at": C10_POSTCOMMIT_AT, "recorded_at": C10_POSTCOMMIT_AT,
+        "event_sequence": 870, "last_event_id": events[-1]["event_id"],
+        "current_phase": "C", "current_work_package": "C-10", "status": "ACCEPTED",
+        "active_agent": None, "worker_lease": None, "write_lease": None,
+        "completed_c10_postcommit_worker_lease": retired_worker,
+        "completed_c10_postcommit_write_lease": retired_write, "repository": repository,
+        "c10_postcommit_reconciliation": {"status": "RECORDED", "event_sequence": 870,
+            "acceptance_commit": C10_ACCEPTANCE_COMMIT,
+            "acceptance_parent": C10_FINAL_ACCEPTANCE_BASE,
+            "acceptance_exact_paths": c10_final_acceptance_combined_paths(),
+            "reconciliation_commit_binding": C10_POSTCOMMIT_RELATION,
+            "product_raw": copy.deepcopy(dict(product_raw)),
+            "c11_status": "NOT_STARTED_PMO_HOLD", "dir2_status": "NOT_REACHED"},
+        "next_work_package": {"package_id": "C-11", "status": "READY_FOR_WORK_INSTRUCTION"},
+        "runtime_next_action": "HOLD_C11_PENDING_PMO_CONFIRMATION",
+        "next_safe_action": "HOLD_C11_PENDING_PMO_CONFIRMATION",
+        "current_progress_evidence_ref": {"package_id": "C-10", "path": C10_POSTCOMMIT_D,
+            "manifest_path": C10_POSTCOMMIT_M},
+        "latest_evidence_manifest_ref": {"path": C10_POSTCOMMIT_M,
+            "artifact_id": "C10-POSTCOMMIT-RECONCILIATION-20260914"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE",
+            "reason_codes": ["C10_POSTCOMMIT_RECONCILED", "C11_NOT_STARTED_PMO_HOLD"],
+            "stop_before_dialogue_report": False}})
+    progress["c10_final_acceptance"] = copy.deepcopy(progress.get("c10_final_acceptance", {}))
+    progress["c10_final_acceptance"].update({"postcommit_status": "RECONCILED_SEQ870",
+        "acceptance_commit": C10_ACCEPTANCE_COMMIT,
+        "reconciliation_commit_binding": C10_POSTCOMMIT_RELATION})
+    progress["registry_refs"]["progress_events"] = {"path": C10_POSTCOMMIT_E,
+        "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": product_raw[path]["sha256"]}
+        for path in sorted(product_raw)]
+    progress["latest_evidence_refs"].extend({"path": path, "sha256": _c21_resume_sha(raw)}
+        for path, raw in sorted({**files, C10_POSTCOMMIT_E: events_raw}.items()))
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status",
+        "current_phase", "current_work_package", "active_agent", "worker_lease", "write_lease",
+        "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": True, "c10_status": "ACCEPTED",
+        "c11_status": "NOT_STARTED_PMO_HOLD", "dir2_status": "NOT_REACHED",
+        "dir_status": progress["dir_review"]["status"], "repository_head": C10_ACCEPTANCE_COMMIT,
+        "repository_upstream": C09_START_DEVELOPMENT_REF,
+        "repository_projection_mode": C10_POSTCOMMIT_MODE,
+        "repository_validated_base_commit": C10_ACCEPTANCE_COMMIT,
+        "repository_head_relation": C10_POSTCOMMIT_RELATION,
+        "repository_exact_allowed_paths": exact, "acceptance_commit": C10_ACCEPTANCE_COMMIT,
+        "acceptance_parent": C10_FINAL_ACCEPTANCE_BASE,
+        "acceptance_exact_paths": c10_final_acceptance_combined_paths(),
+        "reconciliation_commit_binding": C10_POSTCOMMIT_RELATION,
+        "product_raw": copy.deepcopy(dict(product_raw)), "current_manifest": C10_POSTCOMMIT_M,
+        "reporting_decision": "AUTO_CONTINUE", "staged": False,
+        "acceptance_commit_performed": True,
+        "reconciliation_commit_performed": "STRUCTURAL_RUNTIME_VALIDATION_REQUIRED"})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+        historical[C10_POSTCOMMIT_H].decode(), flags=re.DOTALL)
+    if count != 1: raise ValueError("C10_POSTCOMMIT_HANDOFF_INVALID")
+    handoff_raw = ("# C-10 postcommit reconciliation - seq870\n\n"
+        "- acceptance commit 8e651298d3cd36795ddb5fbfe34be272ddaa3910은 b855377...의 exact13 direct child다.\n"
+        "- corrective exact8은 precommit dirty 또는 acceptance commit의 clean sole direct child로 검증한다.\n"
+        "- C-11은 PMO 확인 전 시작하지 않는다.\n\n" + handoff_text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C10-POSTCOMMIT-RECONCILIATION-DIGEST-20260914",
+        "package_id": "C-10", "event_sequence": 870, "algorithm": "SHA-256",
+        "created_at": C10_POSTCOMMIT_AT,
+        "scope": "seq866-870 append-only postcommit reconciliation; seq1-865 preserved; exact8",
+        "self_reference": False,
+        "progress": {"path": C10_POSTCOMMIT_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C10_POSTCOMMIT_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    digest_raw = _c21_resume_json_bytes(digest)
+    artifacts = {**files, C10_POSTCOMMIT_P: progress_raw, C10_POSTCOMMIT_E: events_raw,
+        C10_POSTCOMMIT_H: handoff_raw, C10_POSTCOMMIT_D: digest_raw}
+    prefix = raw_event_object_prefix_bytes(historical[C10_POSTCOMMIT_E], 865)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-10_POSTCOMMIT_RECONCILIATION",
+        "artifact_id": "C10-POSTCOMMIT-RECONCILIATION-20260914", "created_at": C10_POSTCOMMIT_AT,
+        "package_id": "C-10", "event_sequence": 870, "historical_event_sequence": 865,
+        "appended_event_count": 5,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "status": "ACCEPTED_POSTCOMMIT_RECONCILED",
+        "accepted": True, "acceptance_commit": C10_ACCEPTANCE_COMMIT,
+        "acceptance_parent": C10_FINAL_ACCEPTANCE_BASE,
+        "acceptance_exact_paths": c10_final_acceptance_combined_paths(),
+        "acceptance_commit_performed": True,
+        "reconciliation_commit_binding": C10_POSTCOMMIT_RELATION,
+        "reconciliation_commit_sha256": "SELF_REFERENCE_EXCLUDED_STRUCTURAL_RUNTIME_VALIDATION",
+        "projection_mode": C10_POSTCOMMIT_MODE, "exact_allowed_paths": exact,
+        "exact_path_count": len(exact), "product_raw": copy.deepcopy(dict(product_raw)),
+        "c11_status": "NOT_STARTED_PMO_HOLD", "dir2_status": "NOT_REACHED",
+        "remote_lineage": {"branch": C09_START_BRANCH, "upstream": C09_START_DEVELOPMENT_REF,
+            "remote_head": C09_R4_MAIN, "remote_url": C09_START_DEVELOPMENT_URL},
+        "staged": False, "commit_performed": False, "self_reference": False}
+    manifest["raw_checksums"] = [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+        for path, raw in sorted(artifacts.items())]
+    artifacts[C10_POSTCOMMIT_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(c10_postcommit_reconciliation_paths()):
+        raise ValueError("C10_POSTCOMMIT_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def c10_postcommit_reconciliation_from_root(root: Path) -> dict[str, bytes]:
+    parent = subprocess.check_output(["git", "show", "-s", "--format=%P", C10_ACCEPTANCE_COMMIT], cwd=root).decode().strip()
+    changed = _c02_strict_name_only_paths(_c02_git_raw_stdout(root, "diff", "--name-only",
+        C10_FINAL_ACCEPTANCE_BASE, C10_ACCEPTANCE_COMMIT))
+    if parent != C10_FINAL_ACCEPTANCE_BASE or changed != c10_final_acceptance_combined_paths():
+        raise ValueError("C10_POSTCOMMIT_ACCEPTANCE_LINEAGE_INVALID")
+    for path in set(c10_rework_product_paths()) - {"docs/04_test_reports/C-10_COMPLETION_REPORT.md"}:
+        committed = subprocess.check_output(["git", "show", f"{C10_ACCEPTANCE_COMMIT}:{path}"], cwd=root)
+        if (root / path).read_bytes() != committed:
+            raise ValueError("C10_POSTCOMMIT_PRODUCT_MUTATED")
+    historical = {path: subprocess.check_output(["git", "show", f"{C10_ACCEPTANCE_COMMIT}:{path}"], cwd=root)
+        for path in (C10_POSTCOMMIT_P, C10_POSTCOMMIT_E, C10_POSTCOMMIT_H)}
+    files = {path: (root / path).read_bytes() for path in (
+        "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    return c10_postcommit_reconciliation_artifacts(historical, files, _c10_final_product_raw(root))
+
+
+def validate_c10_postcommit_reconciliation(bundle: Mapping[str, Any],
+                                             manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c10_postcommit_reconciliation_from_root(bundle["_root"])
+        actual_raw = {path: (bundle["_root"] / path).read_bytes()
+                      for path in c10_postcommit_reconciliation_paths()}
+        expected_objects = {C10_POSTCOMMIT_P: _c21_resume_json(expected[C10_POSTCOMMIT_P]),
+            C10_POSTCOMMIT_E: _c21_resume_json(expected[C10_POSTCOMMIT_E]),
+            C10_POSTCOMMIT_H: extract_handoff_summary(expected[C10_POSTCOMMIT_H].decode()),
+            C10_POSTCOMMIT_D: _c21_resume_json(expected[C10_POSTCOMMIT_D]),
+            C10_POSTCOMMIT_M: _c21_resume_json(expected[C10_POSTCOMMIT_M])}
+        actual_objects = {C10_POSTCOMMIT_P: bundle.get("progress"), C10_POSTCOMMIT_E: bundle.get("events"),
+            C10_POSTCOMMIT_H: bundle.get("handoff"), C10_POSTCOMMIT_D: bundle.get("detached_digest"),
+            C10_POSTCOMMIT_M: manifest}
+        errors = [] if all(_c21_strict_json_equal(actual_objects[path], expected_objects[path])
+            for path in actual_objects) else ["C10_POSTCOMMIT_PROJECTION_INVALID"]
+        if any(actual_raw[path] != expected[path] for path in expected):
+            errors.append("C10_POSTCOMMIT_RAW_BYTES_INVALID")
+        state = actual_objects[C10_POSTCOMMIT_P]
+        if (not isinstance(state, Mapping) or state.get("event_sequence") != 870
+            or state.get("current_work_package") != "C-10" or state.get("status") != "ACCEPTED"
+            or state.get("worker_lease") is not None or state.get("write_lease") is not None
+            or state.get("next_safe_action") != "HOLD_C11_PENDING_PMO_CONFIRMATION"):
+            errors.append("C10_POSTCOMMIT_CANONICAL_STATE_INVALID")
+        old = subprocess.check_output(["git", "show", f"{C10_ACCEPTANCE_COMMIT}:{C10_POSTCOMMIT_E}"],
+            cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(old, 865) != raw_event_object_prefix_bytes(
+                actual_raw[C10_POSTCOMMIT_E], 865):
+            errors.append("C10_POSTCOMMIT_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C10_POSTCOMMIT_INPUT_INVALID"]
+
+
+def _collect_c10_postcommit_reconciliation_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]; raw = lambda *a: _c02_git_raw_stdout(root, *a)
+        value = lambda *a: _c02_strict_git_scalar(raw(*a)); optional = lambda *a: _c02_optional_git_scalar(raw(*a))
+        head = value("rev-parse", "HEAD"); branch = optional("branch", "--show-current")
+        upstream = optional("for-each-ref", "--format=%(upstream:short)", "--count=1",
+                            f"refs/heads/{C09_START_BRANCH}")
+        development_head = value("rev-parse", C09_START_DEVELOPMENT_REF)
+        development_url = value("remote", "get-url", "development")
+        acceptance_parent = value("show", "-s", "--format=%P", C10_ACCEPTANCE_COMMIT)
+        acceptance_changed = _c02_strict_name_only_paths(raw("diff", "--name-only",
+            C10_FINAL_ACCEPTANCE_BASE, C10_ACCEPTANCE_COMMIT))
+        staged = _c02_strict_name_only_paths(raw(
+            "-c", "core.excludesFile=NUL", "diff", "--cached", "--name-only"))
+        unstaged = _c02_strict_name_only_paths(raw(
+            "-c", "core.excludesFile=NUL", "diff", "--name-only"))
+        untracked = _c02_strict_name_only_paths(raw(
+            "-c", "core.excludesFile=NUL", "ls-files", "--others",
+            "--exclude-per-directory=.gitignore", "--exclude=.pytest_cache",
+            "--exclude=.pytest_cache/**"))
+        exact = c10_postcommit_reconciliation_paths()
+        dirty = sorted(set(unstaged + untracked)) if unstaged is not None and untracked is not None else None
+        precommit = head == C10_ACCEPTANCE_COMMIT and not staged and dirty == exact
+        postcommit = False
+        if head not in {None, C10_ACCEPTANCE_COMMIT} and not staged and dirty == []:
+            parent = value("show", "-s", "--format=%P", head)
+            changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C10_ACCEPTANCE_COMMIT, head))
+            postcommit = parent == C10_ACCEPTANCE_COMMIT and changed == exact
+        if (None in (head, branch, upstream, development_head, development_url,
+                     acceptance_parent, acceptance_changed, staged, unstaged, untracked)
+            or branch != C09_START_BRANCH or upstream != C09_START_DEVELOPMENT_REF
+            or development_head != C09_R4_MAIN or development_url != C09_START_DEVELOPMENT_URL
+            or acceptance_parent != C10_FINAL_ACCEPTANCE_BASE
+            or acceptance_changed != c10_final_acceptance_combined_paths()
+            or (not precommit and not postcommit) or set(unstaged) & set(untracked)
+            or not _c02_git_quiet_check(root, "merge-base", "--is-ancestor",
+                                        C10_FINAL_ACCEPTANCE_BASE, C10_ACCEPTANCE_COMMIT)
+            or not _c02_git_quiet_check(root, "merge-base", "--is-ancestor", C10_ACCEPTANCE_COMMIT, head)
+            or not _c02_git_quiet_check(root, "diff", "--check")
+            or not _c02_git_quiet_check(
+                root, "-c", "core.excludesFile=NUL", "diff", "--cached", "--check")):
+            return ["C10_POSTCOMMIT_RECONCILIATION_INVALID"]
+        current_manifest = _load_json(root / C10_POSTCOMMIT_M)
+        if (current_manifest.get("acceptance_commit") != C10_ACCEPTANCE_COMMIT
+            or current_manifest.get("acceptance_parent") != C10_FINAL_ACCEPTANCE_BASE
+            or current_manifest.get("acceptance_exact_paths") != c10_final_acceptance_combined_paths()
+            or current_manifest.get("exact_allowed_paths") != exact
+            or current_manifest.get("product_raw") != _c10_final_product_raw(root)
+            or current_manifest.get("reconciliation_commit_binding") != C10_POSTCOMMIT_RELATION
+            or current_manifest.get("commit_performed") is not False):
+            return ["C10_POSTCOMMIT_RECONCILIATION_INVALID"]
         return []
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
             AttributeError, json.JSONDecodeError):

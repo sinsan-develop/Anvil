@@ -2,7 +2,7 @@
 
 ## 판정
 
-`COMPLETED_ACCEPTED` — 신산님의 `Main takeover 승인`에 따라 동일 근본 원인 3회 실패 뒤 Main Agent가 C-10 exact6을 직접 인수했다. 누적 독립 review의 command effect, raw-secret, hostile Mapping 예외를 TDD로 수정했고 전체 회귀를 통과했다. 최종 독립 Spec/Quality review는 모두 blocking 0 `PASS`이며 canonical seq865에서 C-10을 `ACCEPTED`로 전이했다.
+`ACCEPTED_POSTCOMMIT_RECONCILIATION_CANDIDATE` — 신산님의 `Main takeover 승인`에 따라 동일 근본 원인 3회 실패 뒤 Main Agent가 C-10 exact6을 직접 인수했다. 누적 독립 review와 제품 회귀는 통과했고 seq865에서 C-10을 `ACCEPTED`로 전이했으나, acceptance commit 직후 canonical checker가 precommit 후보만 허용해 실패했다. C-11은 시작하지 않고 seq870 corrective successor에서 실제 acceptance commit과 pre/postcommit 구조 검증을 결박한다.
 
 ## 기준선·승인·유효 lease
 
@@ -10,6 +10,10 @@
 - takeover predecessor: `e416898d231e0f6ef72d01c85378c0f3e48a0d11`
 - takeover start control HEAD: `b855377fbd7e740a9274e1084cb5a2af4308d664`
 - canonical progress sequence: `855`
+- final acceptance sequence: `865`
+- postcommit reconciliation sequence: `870`
+- acceptance commit: `8e651298d3cd36795ddb5fbfe34be272ddaa3910`
+- acceptance commit parent: `b855377fbd7e740a9274e1084cb5a2af4308d664`
 - user direction: `Main takeover 승인`
 - user direction SHA-256: `935088D3CD683FE8A10965538301343FA251C9AD61AAFAC7679F534A5831DE78`
 - TakeoverPacket SHA-256: `C2E6EFE0D24806FD7F479085A5796AB2C6EDB6B1BDECF12F3F7DBADE6DA6B6EA`
@@ -23,6 +27,20 @@
 - lease expires: `2026-09-14T19:33:00+09:00`
 
 제품 mutation과 검증은 epoch4 아래 exact6에 한정했다. 이전 epoch lease와 실패 결과를 현재 쓰기 권위로 사용하지 않았다.
+
+## PMO postcommit 재검증과 corrective successor
+
+PMO 독립 완료검증에서 제품 회귀는 300 PASS, C-09 authoritative는 106 PASS였지만, clean acceptance commit HEAD에서 `python -B scripts/check_project_progress.py`가 exit 1 `C10_FINAL_ACCEPTANCE_CANDIDATE_INVALID`를 반환했다. 직접 원인은 `_collect_c10_final_acceptance_git`가 `HEAD == b855377...`인 unstaged exact13 precommit 후보만 허용하고 이미 생성된 direct-child acceptance commit을 거부한 것이다.
+
+corrective successor는 다음 경계를 고정한다.
+
+- seq865 precommit exact13 검증을 유지한다.
+- acceptance commit `8e65129...`이 `b855377...`의 단일 parent direct child이며 변경 경로가 exact13인지 검증한다.
+- seq870 corrective exact8은 acceptance commit 위 unstaged exact8 또는 그 commit의 clean sole direct child만 허용한다.
+- branch `codex/c09-execution-backends-r1`, upstream `development/main`, remote head와 configured SSH remote URL을 함께 검증한다.
+- acceptance 제품 exact6 중 보고서를 제외한 5개 파일은 `8e65129...` blob과 동일해야 하며 보고서는 이 reconciliation 증거만 추가한다.
+- inaccessible `.pytest_cache`를 포함한 unrelated dirty/untracked 자료는 읽기·수정·삭제하지 않는다.
+- C-11은 PMO 확인 전 시작하지 않으며 `next_safe_action=HOLD_C11_PENDING_PMO_CONFIRMATION`을 유지한다.
 
 ## 인수 사유와 blocking findings
 
@@ -103,9 +121,10 @@ RED 16건은 리뷰에 명시된 command effect 10건, 안전한 `python -B` 호
 - 실제 실행 계층은 canonical command identity, repository identity, environment와 fencing을 사용 시점에 다시 확인해야 한다.
 - 첫 번째부터 다섯 번째까지 독립 Spec/Quality review의 `REWORK`를 반영했고 최종 독립 Spec/Quality review는 blocking 0 `PASS`다.
 - epoch4 lease 만료를 seq856~857에서 회수하고 epoch5를 seq858~860에서 발급·재검증했으며, seq861~865에서 lease 회수·완료·독립판정·Main acceptance를 기록했다.
+- acceptance commit 이후 발견된 checker 불일치는 C-10 제품 기능 실패가 아니라 precommit-only control defect다. seq866~870은 epoch6 control/report exact8 lease 발급, repository reconciliation, lease 회수를 append-only로 기록한다.
 
 ## rollback
 
-Main Agent가 exact6 및 acceptance control을 local commit으로 고정한 뒤 문제가 발생하면 그 commit을 정상 revert한다. commit 전에는 combined exact13만 대상으로 하며 다른 dirty/untracked 파일은 변경하지 않는다.
+제품 rollback 기준은 acceptance commit `8e651298d3cd36795ddb5fbfe34be272ddaa3910`을 정상 revert하는 것이다. postcommit reconciliation rollback은 그 위 corrective exact8 sole direct-child commit만 정상 revert하며 제품 exact6의 나머지 5개 blob과 unrelated dirty/untracked 파일은 변경하지 않는다.
 
 현재까지 push·PR·merge·외부 API·브라우저·WSL·Docker·deploy는 수행하지 않았다.

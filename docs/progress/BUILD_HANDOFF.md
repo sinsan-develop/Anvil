@@ -1,3 +1,9 @@
+# C-10 postcommit reconciliation - seq870
+
+- acceptance commit 8e651298d3cd36795ddb5fbfe34be272ddaa3910은 b855377...의 exact13 direct child다.
+- corrective exact8은 precommit dirty 또는 acceptance commit의 clean sole direct child로 검증한다.
+- C-11은 PMO 확인 전 시작하지 않는다.
+
 # C-10 final acceptance - seq865
 
 - seq1~855 raw event object bytes preserved; seq856~865만 append했다.
@@ -1038,8 +1044,8 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 865,
-  "last_event_id": "evt_c10_final_main_package_accepted",
+  "event_sequence": 870,
+  "last_event_id": "evt_c10_postcommit_worker_lease_revoked",
   "status": "ACCEPTED",
   "current_phase": "C",
   "current_work_package": "C-10",
@@ -1048,16 +1054,30 @@ The former Phase B Gate successor projection remains historical only. The immuta
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "ISSUE_C11_WORK_INSTRUCTION",
+  "next_safe_action": "HOLD_C11_PENDING_PMO_CONFIRMATION",
   "accepted": true,
   "c10_status": "ACCEPTED",
-  "c11_status": "READY_FOR_WORK_INSTRUCTION",
+  "c11_status": "NOT_STARTED_PMO_HOLD",
   "dir2_status": "NOT_REACHED",
   "dir_status": "CLEARED",
-  "repository_head": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+  "repository_head": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
+  "repository_projection_mode": "C10_POSTCOMMIT_RECONCILIATION_EXACT8",
+  "repository_validated_base_commit": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+  "repository_head_relation": "SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8",
   "repository_exact_allowed_paths": [
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c10-postcommit-reconciliation.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "acceptance_commit": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+  "acceptance_parent": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+  "acceptance_exact_paths": [
     "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
     "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
@@ -1072,77 +1092,38 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "tests/action_policy/test_policy.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "product_exact_paths": [
-    "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-    "packages/action_policy/__init__.py",
-    "packages/action_policy/admission.py",
-    "packages/action_policy/policy.py",
-    "tests/action_policy/test_c10_policy.py",
-    "tests/action_policy/test_policy.py"
-  ],
-  "product_exact_path_list_sha256": "331352013FD98DDE31EB8DEC541008111E26C1B88D56CD412DEC9B2FA94E8042",
-  "control_exact_paths": [
-    "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/progress/BUILD_HANDOFF.md",
-    "docs/progress/build-progress.json",
-    "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
-    "scripts/check_project_progress.py",
-    "tests/tooling/test_project_progress.py"
-  ],
-  "test_evidence": {
-    "passed": {
-      "focused": 271,
-      "combined": 300,
-      "c09_authoritative": 106
+  "reconciliation_commit_binding": "SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8",
+  "product_raw": {
+    "docs/04_test_reports/C-10_COMPLETION_REPORT.md": {
+      "bytes": 14734,
+      "sha256": "DB0974E448734FC9B7CE2085B8FF6E7E281DA6064F9CC9F650C5C04C95D70BF3"
     },
-    "failed": 0,
-    "commands": {
-      "focused": "python -B -m pytest -q -p no:cacheprovider tests/action_policy/test_c10_policy.py",
-      "combined": "python -B -m pytest -q -p no:cacheprovider tests/action_policy tests/tool_gateway",
-      "c09_authoritative": "python -B -m pytest -q -p no:cacheprovider tests/paths tests/execution_backends tests/tool_gateway tests/integration/test_c09_repository_workspace.py --disable-warnings -ra"
+    "packages/action_policy/__init__.py": {
+      "bytes": 395,
+      "sha256": "134DB462EC8FF31F5F2D56F244B63F17CC7C04171B5A508FF32EBF9E1CFCF11C"
     },
-    "compileall": {
-      "status": "PASS",
-      "exit_code": 0
+    "packages/action_policy/admission.py": {
+      "bytes": 31900,
+      "sha256": "8FC343BF2766D3CB3710C9D073E438A8E4327F19B2B5A64329D60B4B3980D676"
     },
-    "diff_check": {
-      "status": "PASS",
-      "exit_code": 0
+    "packages/action_policy/policy.py": {
+      "bytes": 8182,
+      "sha256": "C7E1F361AFB4FFA54F985346D1E5C3CC37CEE4DDE5A51CD4FD14115BFCD0D018"
+    },
+    "tests/action_policy/test_c10_policy.py": {
+      "bytes": 29409,
+      "sha256": "17D05F41527F32B4A7B80DE5020C340FA096849B7369D093D5673F0F653EE719"
+    },
+    "tests/action_policy/test_policy.py": {
+      "bytes": 3883,
+      "sha256": "08F49C0A109457113B051F64058622D07BBD97182750CD080376E3C6DE555068"
     }
   },
-  "independent_reviews": {
-    "blocking_findings": 0,
-    "spec": {
-      "verdict": "PASS",
-      "critical": 0,
-      "important": 0,
-      "minor": 0
-    },
-    "quality": {
-      "verdict": "PASS",
-      "critical": 0,
-      "important": 0,
-      "minor": 0
-    }
-  },
-  "external_validation": {
-    "tool_gateway_dispatch": "NOT_EXECUTED",
-    "secret_broker": "NOT_ACCESSED",
-    "network_dns": "NOT_ACCESSED",
-    "filesystem_subprocess": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "api": "NOT_EXECUTED",
-    "ui": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
-    "wsl": "NOT_EXECUTED",
-    "docker": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED"
-  },
-  "current_manifest": "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE",
   "staged": false,
-  "commit_performed": false
+  "acceptance_commit_performed": true,
+  "reconciliation_commit_performed": "STRUCTURAL_RUNTIME_VALIDATION_REQUIRED"
 }
 ```
 

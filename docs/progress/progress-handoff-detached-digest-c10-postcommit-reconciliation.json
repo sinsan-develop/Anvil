@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C10-POSTCOMMIT-RECONCILIATION-DIGEST-20260914",
+  "package_id": "C-10",
+  "event_sequence": 870,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-14T21:15:00+09:00",
+  "scope": "seq866-870 append-only postcommit reconciliation; seq1-865 preserved; exact8",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 958322,
+    "file_sha256": "16426BB314AC362F6CD67FE545FC6FDDA8D7BB30FA71F2EFE83C66E08BD6987B",
+    "canonical_json_sha256": "D32A3F6E0859DE64FD97292F3D64B4F0BA7D09889975CB53C1CBA89AD1D43AAB"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 192551,
+    "file_sha256": "E1D76B7AC5151FDA0846FF326A7B33B7CEB5E7E78B73D1943DFC9D97190C130E",
+    "machine_summary_canonical_sha256": "F2D7BA25C50E079E8178C8F22DDBCF91D56C864B397DC42EB7405E0F1E1E7DFE"
+  }
+}

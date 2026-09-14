@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c10-final-acceptance-seq865",
-  "event_sequence": 865,
-  "updated_at": "2026-09-14T20:45:00+09:00",
-  "last_event_id": "evt_c10_final_main_package_accepted",
+  "snapshot_id": "snapshot-c10-postcommit-reconciliation-seq870",
+  "event_sequence": 870,
+  "updated_at": "2026-09-14T21:15:00+09:00",
+  "last_event_id": "evt_c10_postcommit_worker_lease_revoked",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
@@ -302,7 +302,7 @@
   "latest_evidence_refs": [
     {
       "path": "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-      "sha256": "8B388DDF5F90C4F2BD4359F5E2F3484D64B5A7EF7B2BEF8D66C023333D0153C9"
+      "sha256": "DB0974E448734FC9B7CE2085B8FF6E7E281DA6064F9CC9F650C5C04C95D70BF3"
     },
     {
       "path": "packages/action_policy/__init__.py",
@@ -325,21 +325,25 @@
       "sha256": "08F49C0A109457113B051F64058622D07BBD97182750CD080376E3C6DE555068"
     },
     {
+      "path": "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "sha256": "DB0974E448734FC9B7CE2085B8FF6E7E281DA6064F9CC9F650C5C04C95D70BF3"
+    },
+    {
       "path": "docs/progress/progress-events.json",
-      "sha256": "B369ACF0F803FBA2CCD021990805AAA8D02A9953A57CEDB5A37E3E736181C1BD"
+      "sha256": "F85E99568355832C7970F6A57207921CE02D4980737FCC72752EF82A45EECDDC"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "2B22EB8827A5F9F31D62F02B838409A3AAB68FBAD0A97BE3C377B2C059B18527"
+      "sha256": "B9C7F61F2A0E4DE8EB3354C9AC4AFCB0B64C33919351AEEB3241E61B5F3BA1BA"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "D7A381CE4D943767B50A3A0D4D065DC923AFB45B7910037BA362C1EC22D7563D"
+      "sha256": "DFA83DC12A351975DC9552CD356277BA939D740E6DC20B516CF145683FCCBB08"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C10-FINAL-ACCEPTANCE-20260914"
+    "path": "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
+    "artifact_id": "C10-POSTCOMMIT-RECONCILIATION-20260914"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -349,7 +353,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "ISSUE_C11_WORK_INSTRUCTION",
+  "next_safe_action": "HOLD_C11_PENDING_PMO_CONFIRMATION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -459,9 +463,9 @@
     }
   },
   "repository": {
-    "projection_mode": "C10_FINAL_ACCEPTANCE_EXACT13",
-    "validated_base_commit": "b855377fbd7e740a9274e1084cb5a2af4308d664",
-    "head_relation": "UNSTAGED_EXACT13_SINGLE_RECOVERABLE_COMMIT_CANDIDATE",
+    "projection_mode": "C10_POSTCOMMIT_RECONCILIATION_EXACT8",
+    "validated_base_commit": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+    "head_relation": "SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/main",
     "remote_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
@@ -470,17 +474,12 @@
     "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
       "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
-      "packages/action_policy/__init__.py",
-      "packages/action_policy/admission.py",
-      "packages/action_policy/policy.py",
+      "docs/progress/progress-handoff-detached-digest-c10-postcommit-reconciliation.json",
       "scripts/check_project_progress.py",
-      "tests/action_policy/test_c10_policy.py",
-      "tests/action_policy/test_policy.py",
       "tests/tooling/test_project_progress.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
@@ -497,8 +496,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "UNSTAGED_PRODUCT_EXACT6_PLUS_ACCEPTANCE_CONTROL_EXACT7",
-    "local_head": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+    "worktree_status": "UNSTAGED_EXACT8_OR_SOLE_DIRECT_CHILD_CLEAN",
+    "local_head": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1303,7 +1302,7 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+    "control_head": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
       "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
@@ -1386,8 +1385,35 @@
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "commit_status": "NOT_EXECUTED",
-    "c09_completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e"
+    "commit_status": "ACCEPTANCE_COMMIT_PERFORMED_RECONCILIATION_STRUCTURALLY_BOUND",
+    "c09_completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
+    "postcommit_reconciliation_paths": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c10-postcommit-reconciliation.json",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "acceptance_commit": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+    "acceptance_parent": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+    "acceptance_exact_paths": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+      "packages/action_policy/__init__.py",
+      "packages/action_policy/admission.py",
+      "packages/action_policy/policy.py",
+      "scripts/check_project_progress.py",
+      "tests/action_policy/test_c10_policy.py",
+      "tests/action_policy/test_policy.py",
+      "tests/tooling/test_project_progress.py"
+    ]
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1508,9 +1534,8 @@
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C10_ACCEPTED",
-      "C11_READY",
-      "DIR2_NOT_REACHED"
+      "C10_POSTCOMMIT_RECONCILED",
+      "C11_NOT_STARTED_PMO_HOLD"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1694,8 +1719,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-10",
-    "path": "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c10-postcommit-reconciliation.json",
+    "manifest_path": "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1716,7 +1741,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "B369ACF0F803FBA2CCD021990805AAA8D02A9953A57CEDB5A37E3E736181C1BD"
+      "sha256": "F85E99568355832C7970F6A57207921CE02D4980737FCC72752EF82A45EECDDC"
     }
   },
   "next_work_package": {
@@ -2110,8 +2135,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "5E513F5EA4CC7A1962608C5686B2BC255515E7539A5DC9EB67A94B98FCBBF913",
-  "runtime_next_action": "ISSUE_C11_WORK_INSTRUCTION",
+  "snapshot_hash": "5275D19B432E28FB5EAB8153D82ACCB3ED8139B62DB82FC267B3AE804917E75B",
+  "runtime_next_action": "HOLD_C11_PENDING_PMO_CONFIRMATION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3723,7 +3748,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-14T20:45:00+09:00",
+  "recorded_at": "2026-09-14T21:15:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -17108,12 +17133,119 @@
     "c11_status": "READY_FOR_WORK_INSTRUCTION",
     "dir2_status": "NOT_REACHED",
     "expired_epoch": 4,
-    "renewed_epoch": 5
+    "renewed_epoch": 5,
+    "postcommit_status": "RECONCILED_SEQ870",
+    "acceptance_commit": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+    "reconciliation_commit_binding": "SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8"
   },
   "c10_main_takeover": {
     "status": "COMPLETED_ACCEPTED",
     "accepted": true,
     "event_sequence": 865,
     "lease_renewal_epoch": 5
+  },
+  "completed_c10_postcommit_worker_lease": {
+    "lease_id": "worker-lease-c10-postcommit-reconciliation-20260914-006",
+    "fencing_token": "c10-postcommit-execution-fence-epoch-6-a18d54c78b2e903f",
+    "execution_fencing_token": "c10-postcommit-execution-fence-epoch-6-a18d54c78b2e903f",
+    "subject_ref": "C-10/POSTCOMMIT-RECONCILIATION",
+    "lease_epoch": 6,
+    "actor_id": "main-agent-eoul",
+    "role": "MAIN_AGENT",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+    "dispatch_head": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+    "issued_at": "2026-09-14T21:15:00+09:00",
+    "expires_at": "2026-09-15T09:15:00+09:00",
+    "status": "REVOKED",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c10-postcommit-reconciliation.json",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "revoked_at": "2026-09-14T21:15:00+09:00",
+    "reason": "POSTCOMMIT_RECONCILIATION_RECORDED"
+  },
+  "completed_c10_postcommit_write_lease": {
+    "lease_id": "write-lease-c10-postcommit-reconciliation-20260914-006",
+    "worker_lease_id": "worker-lease-c10-postcommit-reconciliation-20260914-006",
+    "fencing_token": "c10-postcommit-write-fence-epoch-6-391ea72f6c84bd05",
+    "write_fencing_token": "c10-postcommit-write-fence-epoch-6-391ea72f6c84bd05",
+    "execution_fencing_token": "c10-postcommit-execution-fence-epoch-6-a18d54c78b2e903f",
+    "write_epoch": 6,
+    "actor_id": "main-agent-eoul",
+    "work_package_id": "C-10",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "issued_at": "2026-09-14T21:15:00+09:00",
+    "expires_at": "2026-09-15T09:15:00+09:00",
+    "status": "REVOKED",
+    "path_scope": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/C-10_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c10-postcommit-reconciliation.json",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "revoked_at": "2026-09-14T21:15:00+09:00",
+    "reason": "POSTCOMMIT_RECONCILIATION_RECORDED"
+  },
+  "c10_postcommit_reconciliation": {
+    "status": "RECORDED",
+    "event_sequence": 870,
+    "acceptance_commit": "8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+    "acceptance_parent": "b855377fbd7e740a9274e1084cb5a2af4308d664",
+    "acceptance_exact_paths": [
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/C-10_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c10-final-acceptance.json",
+      "packages/action_policy/__init__.py",
+      "packages/action_policy/admission.py",
+      "packages/action_policy/policy.py",
+      "scripts/check_project_progress.py",
+      "tests/action_policy/test_c10_policy.py",
+      "tests/action_policy/test_policy.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "reconciliation_commit_binding": "SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8",
+    "product_raw": {
+      "docs/04_test_reports/C-10_COMPLETION_REPORT.md": {
+        "bytes": 14734,
+        "sha256": "DB0974E448734FC9B7CE2085B8FF6E7E281DA6064F9CC9F650C5C04C95D70BF3"
+      },
+      "packages/action_policy/__init__.py": {
+        "bytes": 395,
+        "sha256": "134DB462EC8FF31F5F2D56F244B63F17CC7C04171B5A508FF32EBF9E1CFCF11C"
+      },
+      "packages/action_policy/admission.py": {
+        "bytes": 31900,
+        "sha256": "8FC343BF2766D3CB3710C9D073E438A8E4327F19B2B5A64329D60B4B3980D676"
+      },
+      "packages/action_policy/policy.py": {
+        "bytes": 8182,
+        "sha256": "C7E1F361AFB4FFA54F985346D1E5C3CC37CEE4DDE5A51CD4FD14115BFCD0D018"
+      },
+      "tests/action_policy/test_c10_policy.py": {
+        "bytes": 29409,
+        "sha256": "17D05F41527F32B4A7B80DE5020C340FA096849B7369D093D5673F0F653EE719"
+      },
+      "tests/action_policy/test_policy.py": {
+        "bytes": 3883,
+        "sha256": "08F49C0A109457113B051F64058622D07BBD97182750CD080376E3C6DE555068"
+      }
+    },
+    "c11_status": "NOT_STARTED_PMO_HOLD",
+    "dir2_status": "NOT_REACHED"
   }
 }

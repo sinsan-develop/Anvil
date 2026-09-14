@@ -16447,6 +16447,130 @@ class C10FinalAcceptanceControlTests(unittest.TestCase):
                 "_root": ROOT, "progress": {"event_sequence": 865}
             }))
 
+    def test_seq865_git_collector_preserves_precommit_and_accepts_clean_direct_child(self):
+        checker = self._checker()
+        base = checker.C10_FINAL_ACCEPTANCE_BASE
+        committed = "8e651298d3cd36795ddb5fbfe34be272ddaa3910"
+        exact = checker.c10_final_acceptance_combined_paths()
+        outputs = {
+            ("rev-parse", "HEAD"): committed + "\n",
+            ("rev-parse", base): base + "\n",
+            ("branch", "--show-current"): checker.C09_START_BRANCH + "\n",
+            ("diff", "--cached", "--name-only"): "",
+            ("diff", "--name-only"): "",
+            ("ls-files", "--others", "--exclude-standard"): "",
+            ("show", "-s", "--format=%P", committed): base + "\n",
+            ("diff", "--name-only", base, committed): "\n".join(exact) + "\n",
+            ("rev-parse", checker.C09_START_DEVELOPMENT_REF): checker.C09_R4_MAIN + "\n",
+            ("remote", "get-url", "development"): checker.C09_START_DEVELOPMENT_URL + "\n",
+        }
+        manifest = {"product_raw": checker._c10_final_product_raw(ROOT),
+            "combined_exact_paths": exact, "blocking_findings": 0,
+            "staged": False, "commit_performed": False}
+        with mock.patch.object(checker, "_c02_git_raw_stdout",
+                               side_effect=lambda _root, *args: outputs[args]), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True), \
+             mock.patch.object(checker, "_load_json", return_value=manifest):
+            self.assertEqual([], checker._collect_c10_final_acceptance_git({"_root": ROOT}))
+
+
+class C10PostcommitReconciliationControlTests(unittest.TestCase):
+    def _checker(self):
+        checker = _load_checker_or_none()
+        self.assertIsNotNone(checker)
+        return checker
+
+    def test_seq870_records_acceptance_commit_and_exact8_structural_binding(self):
+        checker = self._checker()
+        artifacts = checker.c10_postcommit_reconciliation_from_root(ROOT)
+        self.assertEqual(set(checker.c10_postcommit_reconciliation_paths()), set(artifacts))
+        manifest = json.loads(artifacts[checker.C10_POSTCOMMIT_M])
+        progress = json.loads(artifacts[checker.C10_POSTCOMMIT_P])
+        events = json.loads(artifacts[checker.C10_POSTCOMMIT_E])["events"]
+        self.assertEqual((865, 870, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(["WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED",
+            "REPOSITORY_RECONCILED", "WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual("8e651298d3cd36795ddb5fbfe34be272ddaa3910",
+                         manifest["acceptance_commit"])
+        self.assertEqual("SOLE_DIRECT_CHILD_EXACT8_OR_PRECOMMIT_EXACT8",
+                         manifest["reconciliation_commit_binding"])
+        self.assertTrue(manifest["acceptance_commit_performed"])
+        self.assertFalse(manifest["commit_performed"])
+        self.assertEqual(("C-10", "ACCEPTED", None, None),
+            (progress["current_work_package"], progress["status"],
+             progress["worker_lease"], progress["write_lease"]))
+        self.assertEqual("HOLD_C11_PENDING_PMO_CONFIRMATION", progress["next_safe_action"])
+
+    def test_seq870_precommit_collector_avoids_global_ignore_and_cache_scan(self):
+        checker = self._checker()
+        exact = checker.c10_postcommit_reconciliation_paths()
+        untracked = [checker.C10_POSTCOMMIT_M, checker.C10_POSTCOMMIT_D]
+        tracked = sorted(set(exact) - set(untracked))
+        calls = []
+        outputs = {
+            ("rev-parse", "HEAD"): checker.C10_ACCEPTANCE_COMMIT + "\n",
+            ("branch", "--show-current"): checker.C09_START_BRANCH + "\n",
+            ("for-each-ref", "--format=%(upstream:short)", "--count=1",
+             f"refs/heads/{checker.C09_START_BRANCH}"): checker.C09_START_DEVELOPMENT_REF + "\n",
+            ("rev-parse", checker.C09_START_DEVELOPMENT_REF): checker.C09_R4_MAIN + "\n",
+            ("remote", "get-url", "development"): checker.C09_START_DEVELOPMENT_URL + "\n",
+            ("show", "-s", "--format=%P", checker.C10_ACCEPTANCE_COMMIT): checker.C10_FINAL_ACCEPTANCE_BASE + "\n",
+            ("diff", "--name-only", checker.C10_FINAL_ACCEPTANCE_BASE,
+             checker.C10_ACCEPTANCE_COMMIT): "\n".join(checker.c10_final_acceptance_combined_paths()) + "\n",
+            ("-c", "core.excludesFile=NUL", "diff", "--cached", "--name-only"): "",
+            ("-c", "core.excludesFile=NUL", "diff", "--name-only"):
+                "\n".join(tracked) + "\n",
+            ("-c", "core.excludesFile=NUL", "ls-files", "--others",
+             "--exclude-per-directory=.gitignore", "--exclude=.pytest_cache",
+             "--exclude=.pytest_cache/**"): "\n".join(sorted(untracked)) + "\n",
+        }
+        def git_output(_root, *args):
+            calls.append(args)
+            return outputs[args]
+        quiet_calls = []
+        def git_check(_root, *args):
+            quiet_calls.append(args)
+            return True
+        manifest = {"acceptance_commit": checker.C10_ACCEPTANCE_COMMIT,
+            "acceptance_parent": checker.C10_FINAL_ACCEPTANCE_BASE,
+            "acceptance_exact_paths": checker.c10_final_acceptance_combined_paths(),
+            "exact_allowed_paths": exact, "product_raw": checker._c10_final_product_raw(ROOT),
+            "reconciliation_commit_binding": checker.C10_POSTCOMMIT_RELATION,
+            "commit_performed": False}
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", side_effect=git_check), \
+             mock.patch.object(checker, "_load_json", return_value=manifest):
+            self.assertEqual([], checker._collect_c10_postcommit_reconciliation_git({"_root": ROOT}))
+        self.assertIn(("-c", "core.excludesFile=NUL", "ls-files", "--others",
+            "--exclude-per-directory=.gitignore", "--exclude=.pytest_cache",
+            "--exclude=.pytest_cache/**"), calls)
+        self.assertIn(("-c", "core.excludesFile=NUL", "diff", "--cached", "--check"),
+                      quiet_calls)
+
+    def test_seq870_validator_and_git_dispatch_are_successor_first(self):
+        checker = self._checker()
+        artifacts = checker.c10_postcommit_reconciliation_from_root(ROOT)
+        bundle = {"_root": ROOT,
+            "progress": json.loads(artifacts[checker.C10_POSTCOMMIT_P]),
+            "events": json.loads(artifacts[checker.C10_POSTCOMMIT_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C10_POSTCOMMIT_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C10_POSTCOMMIT_D])}
+        manifest = json.loads(artifacts[checker.C10_POSTCOMMIT_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c10_postcommit_reconciliation(bundle, manifest))
+        with mock.patch.object(checker, "_collect_c10_postcommit_reconciliation_git",
+                               return_value=["SEQ870_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c10_final_acceptance_git",
+                               side_effect=AssertionError("seq865 fallback")):
+            self.assertEqual(["SEQ870_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 870}}))
+
 
 if __name__ == "__main__":
     unittest.main()
