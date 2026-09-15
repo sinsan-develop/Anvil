@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c12-start-seq885",
-  "event_sequence": 885,
-  "updated_at": "2026-09-15T08:15:00+09:00",
-  "last_event_id": "evt_c12_package_started",
+  "snapshot_id": "snapshot-c12-rework-r1-seq891",
+  "event_sequence": 891,
+  "updated_at": "2026-09-15T20:25:00+09:00",
+  "last_event_id": "evt_c12_rework_write_lease_issued",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
   "current_work_package": "C-12",
-  "status": "IN_PROGRESS",
+  "status": "REWORK_IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -64,17 +64,17 @@
     "role": "PRIMARY_DEVELOPER",
     "work_package_id": "C-12",
     "status": "ACTIVE",
-    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804"
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688"
   },
   "write_lease": {
     "actor_id": "developer-primary-c12-r1",
-    "subject_ref": "C-12",
+    "subject_ref": "C-12/REWORK-R1",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
-    "issued_at": "2026-09-15T08:15:00+09:00",
-    "expires_at": "2026-09-15T20:15:00+09:00",
+    "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "issued_at": "2026-09-15T20:25:00+09:00",
+    "expires_at": "2026-09-16T08:25:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
     "path_scope": [
       "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
       "packages/orchestration/__init__.py",
@@ -83,11 +83,11 @@
       "tests/orchestration/test_failure_ledger_c12.py",
       "tests/orchestration/test_outcome_resolver_c07.py"
     ],
-    "lease_id": "write-lease-c12-20260915-001",
-    "worker_lease_id": "worker-lease-c12-20260915-001",
-    "write_epoch": 1,
-    "fencing_token": "c12-write-fence-epoch-1-b7b7eb6e7c0689f6",
-    "write_fencing_token": "c12-write-fence-epoch-1-b7b7eb6e7c0689f6"
+    "lease_id": "write-lease-c12-rework-r1-20260915-002",
+    "worker_lease_id": "worker-lease-c12-rework-r1-20260915-002",
+    "write_epoch": 2,
+    "fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00",
+    "write_fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00"
   },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -122,13 +122,13 @@
   },
   "worker_lease": {
     "actor_id": "developer-primary-c12-r1",
-    "subject_ref": "C-12",
+    "subject_ref": "C-12/REWORK-R1",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
-    "issued_at": "2026-09-15T08:15:00+09:00",
-    "expires_at": "2026-09-15T20:15:00+09:00",
+    "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "issued_at": "2026-09-15T20:25:00+09:00",
+    "expires_at": "2026-09-16T08:25:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
     "path_scope": [
       "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
       "packages/orchestration/__init__.py",
@@ -137,10 +137,10 @@
       "tests/orchestration/test_failure_ledger_c12.py",
       "tests/orchestration/test_outcome_resolver_c07.py"
     ],
-    "lease_id": "worker-lease-c12-20260915-001",
-    "lease_epoch": 1,
-    "fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
-    "dispatch_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7"
+    "lease_id": "worker-lease-c12-rework-r1-20260915-002",
+    "lease_epoch": 2,
+    "fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+    "dispatch_head": "4041fb51984786883609288a2f408b005bc964b0"
   },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -352,28 +352,20 @@
   "latest_evidence_refs": [
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7CE3C1619D0CF5E2D6AAF13F1C1EC1B6562E0BC04A11598C1E3B2D6E4ADF14A9"
-    },
-    {
-      "path": "docs/work_orders/C-12_INVOCATION_PROMPT.md",
-      "sha256": "489947C8C80FB32C90BAD2C8B2D5162EB1A700F0E1A6F4452C0EFEECC879C333"
-    },
-    {
-      "path": "docs/work_orders/C-12_WORK_INSTRUCTION.md",
-      "sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8"
+      "sha256": "6A92577F25438C756CBC2613F1EBF478559619567D5EE0921F2575F326AC59B0"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "FAE9347A25F134E41E3B9647F7B43AAA402BB281CA98735E336F0C7BD5B36C2D"
+      "sha256": "62F12945E613B8C7210B01BCD4ED94496F60136F147F617764068C2474301DE7"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "B5279963913F05A90098CDBAE0ECC241AA11D5E19F2CBA633A01884234605DB8"
+      "sha256": "5C8F32F821173DA768493A48098D167906594B0C277E414A26E9BF160C66E12C"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-12_START_MANIFEST.json",
-    "artifact_id": "C12-START-20260915"
+    "path": "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json",
+    "artifact_id": "C12-REWORK-R1-START-20260915"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -383,7 +375,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C12_PRODUCT_TDD_AND_REVIEW",
+  "next_safe_action": "C12_REWORK_R1_TDD",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -493,9 +485,9 @@
     }
   },
   "repository": {
-    "projection_mode": "C12_START_EXACT9",
-    "validated_base_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
-    "head_relation": "PRECOMMIT_EXACT9_OR_CLEAN_SOLE_DIRECT_CHILD_C12_START",
+    "projection_mode": "C12_REWORK_R1_EXACT7",
+    "validated_base_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_WITH_PRODUCT_SCOPE_DIRTY",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/main",
     "remote_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
@@ -503,13 +495,11 @@
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/C-12_START_MANIFEST.json",
+      "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c12-start.json",
-      "docs/work_orders/C-12_INVOCATION_PROMPT.md",
-      "docs/work_orders/C-12_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-c12-rework-r1-start.json",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
@@ -527,8 +517,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "PRECOMMIT_EXACT9_OR_CLEAN_SOLE_DIRECT_CHILD_C12_START",
-    "local_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
+    "worktree_status": "C12_REWORK_CONTROL_WITH_PRODUCT_SCOPE_DIRTY",
+    "local_head": "4041fb51984786883609288a2f408b005bc964b0",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1333,7 +1323,7 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
+    "control_head": "4041fb51984786883609288a2f408b005bc964b0",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
       "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
@@ -1567,8 +1557,8 @@
     "decision": "AUTO_CONTINUE",
     "stop_before_dialogue_report": false,
     "reason_codes": [
-      "C12_START_DIRECTED",
-      "PRODUCT_TDD_AUTHORIZED",
+      "C12_REWORK_REQUIRED",
+      "EXPIRED_LEASE_REISSUED",
       "DIR2_NOT_REACHED"
     ]
   },
@@ -1633,8 +1623,29 @@
       "tests/orchestration/test_failure_ledger_c12.py",
       "tests/orchestration/test_outcome_resolver_c07.py"
     ],
-    "result_status": "IN_PROGRESS",
-    "package_status": "IN_PROGRESS"
+    "result_status": "REWORK_IN_PROGRESS",
+    "package_status": "REWORK_IN_PROGRESS",
+    "rework_attempt": 1,
+    "independent_review": {
+      "verdict": "REWORK",
+      "blocking_findings": 2,
+      "important_findings": 2,
+      "finding_ids": [
+        "FORGED_OR_STALE_LEDGER_RECEIPT",
+        "CROSS_COMPONENT_TRANSACTION_GAP",
+        "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
+        "SAME_KEY_ORDER_NONDETERMINISM"
+      ],
+      "spec_review": {
+        "blocking": 2,
+        "important": 1
+      },
+      "quality_review": {
+        "blocking": 2,
+        "important": 2
+      },
+      "deduplication": "SAME_ROOT_FINDINGS_COUNT_ONCE"
+    }
   },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
@@ -1766,8 +1777,8 @@
   },
   "current_progress_evidence_ref": {
     "package_id": "C-12",
-    "path": "docs/progress/progress-handoff-detached-digest-c12-start.json",
-    "manifest_path": "docs/evidence/manifests/C-12_START_MANIFEST.json"
+    "path": "docs/progress/progress-handoff-detached-digest-c12-rework-r1-start.json",
+    "manifest_path": "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1788,7 +1799,7 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "7CE3C1619D0CF5E2D6AAF13F1C1EC1B6562E0BC04A11598C1E3B2D6E4ADF14A9"
+      "sha256": "6A92577F25438C756CBC2613F1EBF478559619567D5EE0921F2575F326AC59B0"
     }
   },
   "next_work_package": {
@@ -2182,8 +2193,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "46C804EE0FA2AD055DFDBD59318DDA2506ED05AE9F922B7357CC215E971364C2",
-  "runtime_next_action": "C12_PRODUCT_TDD_AND_REVIEW",
+  "snapshot_hash": "B7A72BE9DD6E9A40D172932AFA95CE4D134DC39996DCFF3226889A1A6A2EB4F1",
+  "runtime_next_action": "C12_REWORK_R1_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3795,7 +3806,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-15T08:15:00+09:00",
+  "recorded_at": "2026-09-15T20:25:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -17580,5 +17591,43 @@
     "c11_status": "ACCEPTED",
     "c13_status": "NOT_READY",
     "dir2_status": "NOT_REACHED"
+  },
+  "c12_rework": {
+    "accepted": false,
+    "status": "REWORK_IN_PROGRESS",
+    "event_sequence": 891,
+    "authority": {
+      "revision_class": "INTERNAL_REWORK_WITHIN_APPROVED_C12",
+      "work_instruction_id": "WI-C-12-20260915-001",
+      "work_instruction_sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8",
+      "baseline_commit": "4041fb51984786883609288a2f408b005bc964b0",
+      "c12_rework_authorized": true,
+      "c13_authorized": false,
+      "external_execution_authorized": false,
+      "push_authorized": false,
+      "human_reapproval_required": false
+    },
+    "independent_reviews": {
+      "verdict": "REWORK",
+      "blocking_findings": 2,
+      "important_findings": 2,
+      "finding_ids": [
+        "FORGED_OR_STALE_LEDGER_RECEIPT",
+        "CROSS_COMPONENT_TRANSACTION_GAP",
+        "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
+        "SAME_KEY_ORDER_NONDETERMINISM"
+      ],
+      "spec_review": {
+        "blocking": 2,
+        "important": 1
+      },
+      "quality_review": {
+        "blocking": 2,
+        "important": 2
+      },
+      "deduplication": "SAME_ROOT_FINDINGS_COUNT_ONCE"
+    },
+    "prior_lease_status": "REVOKED_EXPIRED",
+    "c13_status": "NOT_READY"
   }
 }

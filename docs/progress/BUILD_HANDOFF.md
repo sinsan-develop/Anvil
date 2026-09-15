@@ -1,3 +1,9 @@
+# C-12 rework R1 start - seq891
+
+- expired epoch1 dual lease revoked; epoch2 lease issued for the same approved product scope.
+- independent review: blocking2, important2; forged/stale receipt and transaction gaps require rework.
+- C-13 and all external execution remain NOT_AUTHORIZED.
+
 # C-12 시작 통제 - seq885
 
 - 판정: C-12 IN_PROGRESS. 승인된 WorkPlan의 다음 Package이며 신산님 직접 지시로 기존 미착수 경계를 해제했다.
@@ -1073,9 +1079,9 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 885,
-  "last_event_id": "evt_c12_package_started",
-  "status": "IN_PROGRESS",
+  "event_sequence": 891,
+  "last_event_id": "evt_c12_rework_write_lease_issued",
+  "status": "REWORK_IN_PROGRESS",
   "current_phase": "C",
   "current_work_package": "C-12",
   "active_agent": {
@@ -1083,17 +1089,17 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "role": "PRIMARY_DEVELOPER",
     "work_package_id": "C-12",
     "status": "ACTIVE",
-    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804"
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688"
   },
   "worker_lease": {
     "actor_id": "developer-primary-c12-r1",
-    "subject_ref": "C-12",
+    "subject_ref": "C-12/REWORK-R1",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
-    "issued_at": "2026-09-15T08:15:00+09:00",
-    "expires_at": "2026-09-15T20:15:00+09:00",
+    "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "issued_at": "2026-09-15T20:25:00+09:00",
+    "expires_at": "2026-09-16T08:25:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
     "path_scope": [
       "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
       "packages/orchestration/__init__.py",
@@ -1102,20 +1108,20 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "tests/orchestration/test_failure_ledger_c12.py",
       "tests/orchestration/test_outcome_resolver_c07.py"
     ],
-    "lease_id": "worker-lease-c12-20260915-001",
-    "lease_epoch": 1,
-    "fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
-    "dispatch_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7"
+    "lease_id": "worker-lease-c12-rework-r1-20260915-002",
+    "lease_epoch": 2,
+    "fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+    "dispatch_head": "4041fb51984786883609288a2f408b005bc964b0"
   },
   "write_lease": {
     "actor_id": "developer-primary-c12-r1",
-    "subject_ref": "C-12",
+    "subject_ref": "C-12/REWORK-R1",
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-    "baseline_git_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
-    "issued_at": "2026-09-15T08:15:00+09:00",
-    "expires_at": "2026-09-15T20:15:00+09:00",
+    "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "issued_at": "2026-09-15T20:25:00+09:00",
+    "expires_at": "2026-09-16T08:25:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
     "path_scope": [
       "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
       "packages/orchestration/__init__.py",
@@ -1124,53 +1130,64 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "tests/orchestration/test_failure_ledger_c12.py",
       "tests/orchestration/test_outcome_resolver_c07.py"
     ],
-    "lease_id": "write-lease-c12-20260915-001",
-    "worker_lease_id": "worker-lease-c12-20260915-001",
-    "write_epoch": 1,
-    "fencing_token": "c12-write-fence-epoch-1-b7b7eb6e7c0689f6",
-    "write_fencing_token": "c12-write-fence-epoch-1-b7b7eb6e7c0689f6"
+    "lease_id": "write-lease-c12-rework-r1-20260915-002",
+    "worker_lease_id": "worker-lease-c12-rework-r1-20260915-002",
+    "write_epoch": 2,
+    "fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00",
+    "write_fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00"
   },
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "C12_PRODUCT_TDD_AND_REVIEW",
+  "next_safe_action": "C12_REWORK_R1_TDD",
   "accepted": false,
   "c11_status": "ACCEPTED",
-  "c12_status": "IN_PROGRESS",
+  "c12_status": "REWORK_IN_PROGRESS",
   "c13_status": "NOT_READY",
   "dir2_status": "NOT_REACHED",
+  "repository_head": "4041fb51984786883609288a2f408b005bc964b0",
   "dir_status": "CLEARED",
-  "repository_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C12_START_EXACT9",
-  "repository_validated_base_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
-  "repository_head_relation": "PRECOMMIT_EXACT9_OR_CLEAN_SOLE_DIRECT_CHILD_C12_START",
+  "repository_projection_mode": "C12_REWORK_R1_EXACT7",
+  "repository_head_relation": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_WITH_PRODUCT_SCOPE_DIRTY",
   "repository_exact_allowed_paths": [
-    "docs/evidence/manifests/C-12_START_MANIFEST.json",
+    "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c12-start.json",
-    "docs/work_orders/C-12_INVOCATION_PROMPT.md",
-    "docs/work_orders/C-12_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-c12-rework-r1-start.json",
     "scripts/check_project_progress.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/C-12_START_MANIFEST.json",
-  "reporting_decision": "AUTO_CONTINUE",
-  "product_tdd_authorized_now": true,
-  "external_validation": {
-    "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
-    "network": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "api": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
-    "provider": "NOT_EXECUTED",
-    "secret_manager": "NOT_EXECUTED",
-    "wsl": "NOT_EXECUTED",
-    "docker": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED",
-    "subagent_runtime": "NOT_EXECUTED"
-  }
+  "product_write_scope": [
+    "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/failure_ledger.py",
+    "packages/orchestration/outcome_resolver.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_outcome_resolver_c07.py"
+  ],
+  "independent_reviews": {
+    "verdict": "REWORK",
+    "blocking_findings": 2,
+    "important_findings": 2,
+    "finding_ids": [
+      "FORGED_OR_STALE_LEDGER_RECEIPT",
+      "CROSS_COMPONENT_TRANSACTION_GAP",
+      "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
+      "SAME_KEY_ORDER_NONDETERMINISM"
+    ],
+    "spec_review": {
+      "blocking": 2,
+      "important": 1
+    },
+    "quality_review": {
+      "blocking": 2,
+      "important": 2
+    },
+    "deduplication": "SAME_ROOT_FINDINGS_COUNT_ONCE"
+  },
+  "current_manifest": "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json",
+  "reporting_decision": "AUTO_CONTINUE"
 }
 ```
 

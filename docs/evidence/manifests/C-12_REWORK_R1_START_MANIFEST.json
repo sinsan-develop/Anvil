@@ -1,0 +1,160 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-12_REWORK_R1_START",
+  "artifact_id": "C12-REWORK-R1-START-20260915",
+  "package_id": "C-12",
+  "created_at": "2026-09-15T20:25:00+09:00",
+  "event_sequence": 891,
+  "historical_event_sequence": 885,
+  "appended_event_count": 6,
+  "historical_raw_event_prefix": {
+    "bytes": 2592911,
+    "sha256": "6ACECB9DAB586A89CB281806540539D00F3CA1A4A366ABF3E598D970696BFCEA"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "REWORK_IN_PROGRESS",
+  "accepted": false,
+  "validated_base_commit": "4041fb51984786883609288a2f408b005bc964b0",
+  "projection_mode": "C12_REWORK_R1_EXACT7",
+  "record_binding": "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_WITH_PRODUCT_SCOPE_DIRTY",
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c12-rework-r1-start.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 7,
+  "exact_path_list_sha256": "CD3250CD73C1599FF14A03D377CDF5324E2786354C3F45CF49DDED3919A0A885",
+  "product_write_scope": [
+    "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/failure_ledger.py",
+    "packages/orchestration/outcome_resolver.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_outcome_resolver_c07.py"
+  ],
+  "worker_lease": {
+    "actor_id": "developer-primary-c12-r1",
+    "subject_ref": "C-12/REWORK-R1",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "issued_at": "2026-09-15T20:25:00+09:00",
+    "expires_at": "2026-09-16T08:25:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+    "path_scope": [
+      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/failure_ledger.py",
+      "packages/orchestration/outcome_resolver.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_outcome_resolver_c07.py"
+    ],
+    "lease_id": "worker-lease-c12-rework-r1-20260915-002",
+    "lease_epoch": 2,
+    "fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+    "dispatch_head": "4041fb51984786883609288a2f408b005bc964b0"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-c12-r1",
+    "subject_ref": "C-12/REWORK-R1",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "issued_at": "2026-09-15T20:25:00+09:00",
+    "expires_at": "2026-09-16T08:25:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+    "path_scope": [
+      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/failure_ledger.py",
+      "packages/orchestration/outcome_resolver.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_outcome_resolver_c07.py"
+    ],
+    "lease_id": "write-lease-c12-rework-r1-20260915-002",
+    "worker_lease_id": "worker-lease-c12-rework-r1-20260915-002",
+    "write_epoch": 2,
+    "fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00",
+    "write_fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00"
+  },
+  "independent_reviews": {
+    "verdict": "REWORK",
+    "blocking_findings": 2,
+    "important_findings": 2,
+    "finding_ids": [
+      "FORGED_OR_STALE_LEDGER_RECEIPT",
+      "CROSS_COMPONENT_TRANSACTION_GAP",
+      "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
+      "SAME_KEY_ORDER_NONDETERMINISM"
+    ],
+    "spec_review": {
+      "blocking": 2,
+      "important": 1
+    },
+    "quality_review": {
+      "blocking": 2,
+      "important": 2
+    },
+    "deduplication": "SAME_ROOT_FINDINGS_COUNT_ONCE"
+  },
+  "authority": {
+    "revision_class": "INTERNAL_REWORK_WITHIN_APPROVED_C12",
+    "work_instruction_id": "WI-C-12-20260915-001",
+    "work_instruction_sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8",
+    "baseline_commit": "4041fb51984786883609288a2f408b005bc964b0",
+    "c12_rework_authorized": true,
+    "c13_authorized": false,
+    "external_execution_authorized": false,
+    "push_authorized": false,
+    "human_reapproval_required": false
+  },
+  "c13_status": "NOT_READY",
+  "self_reference": false,
+  "external_validation": {
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "secret_manager": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 195940,
+      "sha256": "9F0DC75E72A9EB32E20163656BA02746C57FFF498025B1219B650E400D9D3311"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 974125,
+      "sha256": "5703EC7DC16D14C38FC75BAC21DC5E95CD0728C9D7FFE47F8F2562F9CB6ADD8F"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2606754,
+      "sha256": "6A92577F25438C756CBC2613F1EBF478559619567D5EE0921F2575F326AC59B0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c12-rework-r1-start.json",
+      "bytes": 850,
+      "sha256": "B7402B96728E734092B807D08923253DA1CD396E155642586A25AF4F086BBD05"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3676912,
+      "sha256": "62F12945E613B8C7210B01BCD4ED94496F60136F147F617764068C2474301DE7"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1028691,
+      "sha256": "5C8F32F821173DA768493A48098D167906594B0C277E414A26E9BF160C66E12C"
+    }
+  ]
+}

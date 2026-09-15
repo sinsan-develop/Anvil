@@ -16907,5 +16907,53 @@ class C12StartControlTests(unittest.TestCase):
             self.assertIn("C12_START_GIT_INVALID", checker._collect_c12_start_git({"_root": ROOT}))
 
 
+class C12ReworkLeaseControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c12_rework", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq891_reissues_expired_dual_lease_for_blocking_review_rework(self):
+        checker = self._checker()
+        artifacts = checker.c12_rework_start_from_root(ROOT)
+        self.assertEqual(set(checker.c12_rework_start_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C12_REWORK_P])
+        events = json.loads(artifacts[checker.C12_REWORK_E])["events"]
+        self.assertEqual(891, progress["event_sequence"])
+        self.assertEqual("REWORK_IN_PROGRESS", progress["status"])
+        self.assertEqual(2, progress["worker_lease"]["lease_epoch"])
+        self.assertEqual(2, progress["write_lease"]["write_epoch"])
+        self.assertEqual(checker.C12_REWORK_EXECUTION_TOKEN,
+                         progress["active_agent"]["execution_fencing_token"])
+        self.assertEqual(["WRITE_LEASE_REVOKED", "WORKER_LEASE_REVOKED",
+                          "INDEPENDENT_TEST_JUDGMENT_RECORDED", "PACKAGE_RESUMED",
+                          "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED"],
+                         [event["event_type"] for event in events[-6:]])
+
+    def test_seq891_preserves_history_and_c13_external_boundaries(self):
+        checker = self._checker()
+        artifacts = checker.c12_rework_start_from_root(ROOT)
+        old = subprocess.check_output(
+            ["git", "show", checker.C12_REWORK_BASE + ":" + checker.C12_REWORK_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 885),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C12_REWORK_E], 885))
+        progress = json.loads(artifacts[checker.C12_REWORK_P])
+        self.assertEqual({"package_id": "C-13", "status": "NOT_READY"},
+                         progress["next_work_package"])
+        authority = progress["c12_rework"]["authority"]
+        self.assertFalse(authority["c13_authorized"])
+        self.assertFalse(authority["external_execution_authorized"])
+        self.assertEqual([], progress["pending_approvals"])
+
+    def test_seq891_dispatches_rework_projection_before_seq885(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c12_rework_git", return_value=["SEQ891_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c12_start_git",
+                               side_effect=AssertionError("seq885 fallback")):
+            self.assertEqual(["SEQ891_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 891}}))
+
+
 if __name__ == "__main__":
     unittest.main()

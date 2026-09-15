@@ -1097,6 +1097,14 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "C12_START_EXACT9"
             )
             or (
+                progress is not None
+                and progress.get("event_sequence") == 891
+                and event.get("sequence") == 889
+                and event.get("event_id") == "evt_c12_rework_r1_resumed"
+                and event.get("event_type") == "PACKAGE_RESUMED"
+                and event["details"].get("projection_mode") == "C12_REWORK_R1_EXACT7"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13116,6 +13124,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 891:
+        if not (root / ".git").exists():
+            return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_c12_rework_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 885:
         if not (root / ".git").exists():
             return ["GIT_REQUIRED_COLLECTION_FAILED"]
@@ -14310,6 +14322,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_c11_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-12_START_MANIFEST.json":
             errors.extend(validate_c12_start(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json":
+            errors.extend(validate_c12_rework_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -45114,6 +45128,278 @@ def _collect_c12_start_git(bundle: Mapping[str, Any]) -> list[str]:
         return []
     except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
         return ["C12_START_GIT_INVALID"]
+
+
+C12_REWORK_BASE = "4041fb51984786883609288a2f408b005bc964b0"
+C12_REWORK_P = C12_START_P
+C12_REWORK_E = C12_START_E
+C12_REWORK_H = C12_START_H
+C12_REWORK_D = "docs/progress/progress-handoff-detached-digest-c12-rework-r1-start.json"
+C12_REWORK_M = "docs/evidence/manifests/C-12_REWORK_R1_START_MANIFEST.json"
+C12_REWORK_AT = "2026-09-15T20:25:00+09:00"
+C12_REWORK_EXPIRES_AT = "2026-09-16T08:25:00+09:00"
+C12_REWORK_WORKER_LEASE_ID = "worker-lease-c12-rework-r1-20260915-002"
+C12_REWORK_WRITE_LEASE_ID = "write-lease-c12-rework-r1-20260915-002"
+C12_REWORK_EXECUTION_TOKEN = "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688"
+C12_REWORK_WRITE_TOKEN = "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00"
+C12_REWORK_MODE = "C12_REWORK_R1_EXACT7"
+C12_REWORK_RELATION = "STAGED_EXACT7_OR_SOLE_DIRECT_CHILD_WITH_PRODUCT_SCOPE_DIRTY"
+
+
+def c12_rework_start_paths() -> list[str]:
+    return sorted([C12_REWORK_P, C12_REWORK_E, C12_REWORK_H, C12_REWORK_D,
+        C12_REWORK_M, "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py"])
+
+
+def _c12_rework_leases() -> tuple[dict[str, Any], dict[str, Any]]:
+    common = {"actor_id": "developer-primary-c12-r1", "subject_ref": "C-12/REWORK-R1",
+        "baseline_hash": C08_START_DESIGN_SHA256, "baseline_git_commit": C12_REWORK_BASE,
+        "issued_at": C12_REWORK_AT, "expires_at": C12_REWORK_EXPIRES_AT,
+        "status": "ACTIVE", "execution_fencing_token": C12_REWORK_EXECUTION_TOKEN,
+        "path_scope": c12_product_write_scope()}
+    worker = {**common, "lease_id": C12_REWORK_WORKER_LEASE_ID, "lease_epoch": 2,
+        "fencing_token": C12_REWORK_EXECUTION_TOKEN, "dispatch_head": C12_REWORK_BASE}
+    write = {**common, "lease_id": C12_REWORK_WRITE_LEASE_ID,
+        "worker_lease_id": C12_REWORK_WORKER_LEASE_ID, "write_epoch": 2,
+        "fencing_token": C12_REWORK_WRITE_TOKEN, "write_fencing_token": C12_REWORK_WRITE_TOKEN}
+    return worker, write
+
+
+def c12_rework_start_from_root(root: Path) -> dict[str, bytes]:
+    parent = _c02_strict_git_scalar(_c02_git_raw_stdout(
+        root, "show", "-s", "--format=%P", C12_REWORK_BASE))
+    changed = _c02_strict_name_only_paths(_c02_git_raw_stdout(
+        root, "diff", "--name-only", C12_START_BASE, C12_REWORK_BASE))
+    if parent != C12_START_BASE or changed != c12_start_paths():
+        raise ValueError("C12_REWORK_BASE_LINEAGE_INVALID")
+    historical = {path: subprocess.check_output(
+        ["git", "show", f"{C12_REWORK_BASE}:{path}"], cwd=root)
+        for path in (C12_REWORK_P, C12_REWORK_E, C12_REWORK_H)}
+    files = {path: (root / path).read_bytes() for path in (
+        "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py")}
+    progress = _c21_resume_json(historical[C12_REWORK_P])
+    stream = _c21_resume_json(historical[C12_REWORK_E])
+    if (progress.get("event_sequence") != 885 or stream.get("last_sequence") != 885
+        or len(stream.get("events", [])) != 885 or progress.get("status") != "IN_PROGRESS"
+        or progress.get("current_work_package") != "C-12"):
+        raise ValueError("C12_REWORK_HISTORY_INVALID")
+    old_worker = copy.deepcopy(progress["worker_lease"])
+    old_write = copy.deepcopy(progress["write_lease"])
+    if (old_worker.get("lease_epoch") != 1 or old_write.get("write_epoch") != 1
+        or old_worker.get("expires_at") != C12_START_EXPIRES_AT
+        or old_write.get("expires_at") != C12_START_EXPIRES_AT):
+        raise ValueError("C12_REWORK_PRIOR_LEASE_INVALID")
+    old_worker["status"] = "REVOKED_EXPIRED"
+    old_write["status"] = "REVOKED_EXPIRED"
+    worker, write = _c12_rework_leases()
+    findings = {"verdict": "REWORK", "blocking_findings": 2, "important_findings": 2,
+        "finding_ids": ["FORGED_OR_STALE_LEDGER_RECEIPT", "CROSS_COMPONENT_TRANSACTION_GAP",
+            "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION", "SAME_KEY_ORDER_NONDETERMINISM"],
+        "spec_review": {"blocking": 2, "important": 1},
+        "quality_review": {"blocking": 2, "important": 2},
+        "deduplication": "SAME_ROOT_FINDINGS_COUNT_ONCE"}
+    authority = {"revision_class": "INTERNAL_REWORK_WITHIN_APPROVED_C12",
+        "work_instruction_id": "WI-C-12-20260915-001",
+        "work_instruction_sha256": C12_WI_SHA256,
+        "baseline_commit": C12_REWORK_BASE, "c12_rework_authorized": True,
+        "c13_authorized": False, "external_execution_authorized": False,
+        "push_authorized": False, "human_reapproval_required": False}
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    def event(sequence: int, kind: str, name: str, details: Mapping[str, Any]) -> dict[str, Any]:
+        nonlocal previous
+        row = {"sequence": sequence, "event_id": name, "event_type": kind,
+            "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+            "project_id": "anvil", "run_id": None, "work_package_id": "C-12",
+            "step_id": "REWORK-R1", "subject_ref": "C-12/REWORK-R1",
+            "occurred_at": C12_REWORK_AT,
+            "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+            "previous_event_sha256": previous, "details": dict(details)}
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+        return row
+    projection = {"projection_mode": C12_REWORK_MODE,
+        "validated_base_commit": C12_REWORK_BASE, "head_relation": C12_REWORK_RELATION,
+        "exact_allowed_paths": c12_rework_start_paths(),
+        "product_write_scope": c12_product_write_scope()}
+    new_events = [
+        event(886, "WRITE_LEASE_REVOKED", "evt_c12_expired_write_lease_revoked",
+            {**old_write, "reason": "LEASE_EXPIRED_BEFORE_REWORK", "observed_at": C12_REWORK_AT}),
+        event(887, "WORKER_LEASE_REVOKED", "evt_c12_expired_worker_lease_revoked",
+            {**old_worker, "reason": "LEASE_EXPIRED_BEFORE_REWORK", "observed_at": C12_REWORK_AT}),
+        event(888, "INDEPENDENT_TEST_JUDGMENT_RECORDED", "evt_c12_independent_rework_judgment",
+            {**findings, "criteria": ["C12_SPEC_REVIEW", "C12_QUALITY_REVIEW"],
+             "evidence_ref": "docs/04_test_reports/C-12_COMPLETION_REPORT.md"}),
+        event(889, "PACKAGE_RESUMED", "evt_c12_rework_r1_resumed",
+            {**projection, **authority, **findings,
+             "resume_event_ref": "evt_c12_independent_rework_judgment",
+             "dispatch_head": C12_REWORK_BASE,
+             "dispatch_upstream_head": progress["repository"].get("remote_head"),
+             "next_action": "C12_REWORK_R1_TDD"}),
+        event(890, "WORKER_LEASE_ISSUED", "evt_c12_rework_worker_lease_issued",
+            {**worker, **projection}),
+        event(891, "WRITE_LEASE_ISSUED", "evt_c12_rework_write_lease_issued",
+            {**write, **projection}),
+    ]
+    events_raw = _c21_append_events(historical[C12_REWORK_E], 885, new_events)
+    repository = copy.deepcopy(progress["repository"])
+    repository.update({**projection, "control_head": C12_REWORK_BASE,
+        "local_head": C12_REWORK_BASE, "branch": C09_START_BRANCH,
+        "worktree_status": "C12_REWORK_CONTROL_WITH_PRODUCT_SCOPE_DIRTY",
+        "push_status": "NOT_EXECUTED"})
+    active_wi = copy.deepcopy(progress["active_work_instruction"])
+    active_wi.update({"result_status": "REWORK_IN_PROGRESS",
+        "package_status": "REWORK_IN_PROGRESS", "rework_attempt": 1,
+        "independent_review": findings})
+    progress.update({"snapshot_id": "snapshot-c12-rework-r1-seq891",
+        "event_sequence": 891, "updated_at": C12_REWORK_AT, "recorded_at": C12_REWORK_AT,
+        "last_event_id": new_events[-1]["event_id"], "status": "REWORK_IN_PROGRESS",
+        "active_agent": {"actor_id": worker["actor_id"], "role": "PRIMARY_DEVELOPER",
+            "work_package_id": "C-12", "status": "ACTIVE",
+            "execution_fencing_token": C12_REWORK_EXECUTION_TOKEN},
+        "worker_lease": worker, "write_lease": write, "active_work_instruction": active_wi,
+        "repository": repository, "pending_approvals": [],
+        "c12_rework": {"accepted": False, "status": "REWORK_IN_PROGRESS",
+            "event_sequence": 891, "authority": authority, "independent_reviews": findings,
+            "prior_lease_status": "REVOKED_EXPIRED", "c13_status": "NOT_READY"},
+        "next_work_package": {"package_id": "C-13", "status": "NOT_READY"},
+        "next_safe_action": "C12_REWORK_R1_TDD", "runtime_next_action": "C12_REWORK_R1_TDD",
+        "current_progress_evidence_ref": {"package_id": "C-12", "path": C12_REWORK_D,
+            "manifest_path": C12_REWORK_M},
+        "latest_evidence_manifest_ref": {"path": C12_REWORK_M,
+            "artifact_id": "C12-REWORK-R1-START-20260915"},
+        "reporting_decision": {"decision": "AUTO_CONTINUE", "stop_before_dialogue_report": False,
+            "reason_codes": ["C12_REWORK_REQUIRED", "EXPIRED_LEASE_REISSUED", "DIR2_NOT_REACHED"]}})
+    progress["registry_refs"]["progress_events"] = {
+        "path": C12_REWORK_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": _c21_resume_sha(raw)}
+        for path, raw in sorted({**files, C12_REWORK_E: events_raw}.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status",
+        "current_phase", "current_work_package", "active_agent", "worker_lease", "write_lease",
+        "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": False, "c11_status": "ACCEPTED",
+        "c12_status": "REWORK_IN_PROGRESS", "c13_status": "NOT_READY",
+        "dir2_status": "NOT_REACHED", "repository_head": C12_REWORK_BASE,
+        "dir_status": progress["dir_review"]["status"],
+        "repository_upstream": repository["upstream"],
+        "repository_projection_mode": C12_REWORK_MODE,
+        "repository_head_relation": C12_REWORK_RELATION,
+        "repository_exact_allowed_paths": c12_rework_start_paths(),
+        "product_write_scope": c12_product_write_scope(), "independent_reviews": findings,
+        "current_manifest": C12_REWORK_M, "reporting_decision": "AUTO_CONTINUE"})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement,
+        historical[C12_REWORK_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("C12_REWORK_HANDOFF_INVALID")
+    handoff_raw = ("# C-12 rework R1 start - seq891\n\n"
+        "- expired epoch1 dual lease revoked; epoch2 lease issued for the same approved product scope.\n"
+        "- independent review: blocking2, important2; forged/stale receipt and transaction gaps require rework.\n"
+        "- C-13 and all external execution remain NOT_AUTHORIZED.\n\n" + handoff_text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "C12-REWORK-R1-START-DIGEST-20260915",
+        "package_id": "C-12", "event_sequence": 891, "algorithm": "SHA-256",
+        "created_at": C12_REWORK_AT, "scope": "seq886-891 C-12 rework and epoch2 lease; exact7",
+        "self_reference": False,
+        "progress": {"path": C12_REWORK_P, "bytes": len(progress_raw),
+            "file_sha256": _c21_resume_sha(progress_raw),
+            "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff": {"path": C12_REWORK_H, "bytes": len(handoff_raw),
+            "file_sha256": _c21_resume_sha(handoff_raw),
+            "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    artifacts = {**files, C12_REWORK_P: progress_raw, C12_REWORK_E: events_raw,
+        C12_REWORK_H: handoff_raw, C12_REWORK_D: _c21_resume_json_bytes(digest)}
+    prefix = raw_event_object_prefix_bytes(historical[C12_REWORK_E], 885)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "C-12_REWORK_R1_START",
+        "artifact_id": "C12-REWORK-R1-START-20260915", "package_id": "C-12",
+        "created_at": C12_REWORK_AT, "event_sequence": 891,
+        "historical_event_sequence": 885, "appended_event_count": 6,
+        "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+        "historical_evidence_mutation_count": 0, "status": "REWORK_IN_PROGRESS",
+        "accepted": False, "validated_base_commit": C12_REWORK_BASE,
+        "projection_mode": C12_REWORK_MODE, "record_binding": C12_REWORK_RELATION,
+        "exact_allowed_paths": c12_rework_start_paths(), "exact_path_count": 7,
+        "exact_path_list_sha256": _c21_path_list_sha(c12_rework_start_paths(), windows=True),
+        "product_write_scope": c12_product_write_scope(), "worker_lease": worker,
+        "write_lease": write, "independent_reviews": findings, "authority": authority,
+        "c13_status": "NOT_READY", "self_reference": False,
+        "external_validation": {"database": "NOT_EXECUTED", "api": "NOT_EXECUTED",
+            "browser": "NOT_EXECUTED", "provider": "NOT_EXECUTED", "network": "NOT_EXECUTED",
+            "secret_manager": "NOT_EXECUTED", "wsl": "NOT_EXECUTED", "docker": "NOT_EXECUTED",
+            "deployment": "NOT_EXECUTED"},
+        "raw_checksums": [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+            for path, raw in sorted(artifacts.items())]}
+    artifacts[C12_REWORK_M] = _c21_resume_json_bytes(manifest)
+    if set(artifacts) != set(c12_rework_start_paths()):
+        raise ValueError("C12_REWORK_OUTPUT_SET_INVALID")
+    return artifacts
+
+
+def validate_c12_rework_start(bundle: Mapping[str, Any], manifest: Mapping[str, Any]) -> list[str]:
+    try:
+        expected = c12_rework_start_from_root(bundle["_root"])
+        actual_objects = {C12_REWORK_P: bundle.get("progress"), C12_REWORK_E: bundle.get("events"),
+            C12_REWORK_H: bundle.get("handoff"), C12_REWORK_D: bundle.get("detached_digest"),
+            C12_REWORK_M: manifest}
+        expected_objects = {path: (extract_handoff_summary(raw.decode()) if path == C12_REWORK_H
+            else _c21_resume_json(raw)) for path, raw in expected.items() if path in actual_objects}
+        errors = [] if all(_c21_strict_json_equal(actual_objects[path], expected_objects[path])
+            for path in actual_objects) else ["C12_REWORK_PROJECTION_INVALID"]
+        if any((bundle["_root"] / path).read_bytes() != raw for path, raw in expected.items()):
+            errors.append("C12_REWORK_RAW_BYTES_INVALID")
+        progress = actual_objects[C12_REWORK_P]
+        worker, write = _c12_rework_leases()
+        if (not isinstance(progress, Mapping) or progress.get("event_sequence") != 891
+            or progress.get("status") != "REWORK_IN_PROGRESS"
+            or progress.get("worker_lease") != worker or progress.get("write_lease") != write
+            or progress.get("next_safe_action") != "C12_REWORK_R1_TDD"):
+            errors.append("C12_REWORK_CANONICAL_STATE_INVALID")
+        old = subprocess.check_output(
+            ["git", "show", f"{C12_REWORK_BASE}:{C12_REWORK_E}"], cwd=bundle["_root"])
+        if raw_event_object_prefix_bytes(old, 885) != raw_event_object_prefix_bytes(
+                expected[C12_REWORK_E], 885):
+            errors.append("C12_REWORK_HISTORY_MUTATED")
+        return sorted(set(errors))
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError,
+            AttributeError, UnicodeError, json.JSONDecodeError):
+        return ["C12_REWORK_INPUT_INVALID"]
+
+
+def _collect_c12_rework_git(bundle: Mapping[str, Any]) -> list[str]:
+    try:
+        root = bundle["_root"]; raw = lambda *a: _c02_git_raw_stdout(root, *a)
+        head = _c02_strict_git_scalar(raw("rev-parse", "HEAD"))
+        branch = _c02_optional_git_scalar(raw("branch", "--show-current"))
+        staged = _c02_strict_name_only_paths(raw(
+            "-c", "core.excludesFile=NUL", "diff", "--cached", "--name-only"))
+        unstaged = _c02_strict_name_only_paths(raw(
+            "-c", "core.excludesFile=NUL", "diff", "--name-only"))
+        untracked = _c02_strict_name_only_paths(raw(
+            "-c", "core.excludesFile=NUL", "ls-files", "--others",
+            "--exclude-per-directory=.gitignore", "--exclude=.pytest_cache", "--exclude=.pytest_cache/**"))
+        if None in (head, branch, staged, unstaged, untracked):
+            return ["C12_REWORK_GIT_INVALID"]
+        control, scope = c12_rework_start_paths(), c12_product_write_scope()
+        dirty = sorted(set(staged + unstaged + untracked))
+        product_dirty = sorted(set(unstaged + untracked))
+        partitions = not (set(staged) & set(unstaged) or set(staged) & set(untracked)
+            or set(unstaged) & set(untracked))
+        precommit = (head == C12_REWORK_BASE and staged == control and product_dirty
+            and set(product_dirty).issubset(scope) and dirty == sorted(control + product_dirty) and partitions)
+        postcommit = False
+        if head != C12_REWORK_BASE and not staged and product_dirty and set(product_dirty).issubset(scope):
+            parent = _c02_strict_git_scalar(raw("show", "-s", "--format=%P", head))
+            changed = _c02_strict_name_only_paths(raw("diff", "--name-only", C12_REWORK_BASE, head))
+            postcommit = parent == C12_REWORK_BASE and changed == control and dirty == product_dirty
+        if (branch != C09_START_BRANCH or not (precommit or postcommit)
+            or not _c02_git_quiet_check(root, "diff", "--check")
+            or not _c02_git_quiet_check(root, "-c", "core.excludesFile=NUL", "diff", "--cached", "--check")):
+            return ["C12_REWORK_GIT_INVALID"]
+        return []
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, KeyError, AttributeError):
+        return ["C12_REWORK_GIT_INVALID"]
 
 
 if __name__ == "__main__":
