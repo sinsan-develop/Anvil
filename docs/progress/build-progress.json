@@ -1,15 +1,15 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c11-final-acceptance-seq880",
-  "event_sequence": 880,
-  "updated_at": "2026-09-15T07:45:00+09:00",
-  "last_event_id": "evt_c11_final_main_package_accepted",
+  "snapshot_id": "snapshot-c12-start-seq885",
+  "event_sequence": 885,
+  "updated_at": "2026-09-15T08:15:00+09:00",
+  "last_event_id": "evt_c12_package_started",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "C",
-  "current_work_package": "C-11",
-  "status": "ACCEPTED",
+  "current_work_package": "C-12",
+  "status": "IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -59,8 +59,36 @@
     "C-10",
     "C-11"
   ],
-  "active_agent": null,
-  "write_lease": null,
+  "active_agent": {
+    "actor_id": "developer-primary-c12-r1",
+    "role": "PRIMARY_DEVELOPER",
+    "work_package_id": "C-12",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-c12-r1",
+    "subject_ref": "C-12",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
+    "issued_at": "2026-09-15T08:15:00+09:00",
+    "expires_at": "2026-09-15T20:15:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
+    "path_scope": [
+      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/failure_ledger.py",
+      "packages/orchestration/outcome_resolver.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_outcome_resolver_c07.py"
+    ],
+    "lease_id": "write-lease-c12-20260915-001",
+    "worker_lease_id": "worker-lease-c12-20260915-001",
+    "write_epoch": 1,
+    "fencing_token": "c12-write-fence-epoch-1-b7b7eb6e7c0689f6",
+    "write_fencing_token": "c12-write-fence-epoch-1-b7b7eb6e7c0689f6"
+  },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
     "worker_lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -92,7 +120,28 @@
       "tests/deploy/test_wsl_staging_harness.py"
     ]
   },
-  "worker_lease": null,
+  "worker_lease": {
+    "actor_id": "developer-primary-c12-r1",
+    "subject_ref": "C-12",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
+    "issued_at": "2026-09-15T08:15:00+09:00",
+    "expires_at": "2026-09-15T20:15:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
+    "path_scope": [
+      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/failure_ledger.py",
+      "packages/orchestration/outcome_resolver.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_outcome_resolver_c07.py"
+    ],
+    "lease_id": "worker-lease-c12-20260915-001",
+    "lease_epoch": 1,
+    "fencing_token": "c12-execution-fence-epoch-1-c4335de145631804",
+    "dispatch_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7"
+  },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
     "agent_id": "developer-primary",
@@ -302,62 +351,31 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
-      "sha256": "4644D6A452A21670DEF4B126ABB5BD7824D159F81FC28B99D07CDC6DB565A532"
-    },
-    {
-      "path": "packages/orchestration/__init__.py",
-      "sha256": "B304F918E0E9EBBB7C1F0DA9DED6DFC1EA653F943CE9253D11DFB13C6483C9A6"
-    },
-    {
-      "path": "packages/planning/__init__.py",
-      "sha256": "77813C44DFDCAB9B6352DDE483C74E3844354121ED1FC465F2C18109C6D11B89"
-    },
-    {
-      "path": "packages/planning/models.py",
-      "sha256": "B727FD9C03E9AC7378994589AAF7B90420016D5519E3A9174808F37529A55DBB"
-    },
-    {
-      "path": "packages/planning/planner.py",
-      "sha256": "D63FA8640C56F2846C8E084BEE1A19DC3C28A8181A29293596725C58A6352905"
-    },
-    {
-      "path": "packages/planning/service.py",
-      "sha256": "49FFCE7B1A47A2D33E1BD5E40E460FD9E929E51EC37A20F470EB7C9CCC87FFE6"
-    },
-    {
-      "path": "tests/planning/test_c11_admission.py",
-      "sha256": "5D19394E893748DC49CB1250E351BA27552B0A1951973BEE5D513224F97F2D82"
-    },
-    {
-      "path": "tests/planning/test_c11_planner.py",
-      "sha256": "FB33B57EE2D1B451C86DD187D4880D8D915CD85EF3D6633D195D70B6EE42B6C5"
-    },
-    {
       "path": "docs/progress/progress-events.json",
-      "sha256": "361BD45BC42B5E018A8CC8E4A535C576D9073D61ADBC85E78DAB579808D918B1"
+      "sha256": "7CE3C1619D0CF5E2D6AAF13F1C1EC1B6562E0BC04A11598C1E3B2D6E4ADF14A9"
+    },
+    {
+      "path": "docs/work_orders/C-12_INVOCATION_PROMPT.md",
+      "sha256": "489947C8C80FB32C90BAD2C8B2D5162EB1A700F0E1A6F4452C0EFEECC879C333"
+    },
+    {
+      "path": "docs/work_orders/C-12_WORK_INSTRUCTION.md",
+      "sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8"
     },
     {
       "path": "scripts/check_project_progress.py",
-      "sha256": "53D0DDD7DABAB285997D0E36952AC3638D9E55FD78333F1040B0AE58ABA3A13C"
+      "sha256": "FAE9347A25F134E41E3B9647F7B43AAA402BB281CA98735E336F0C7BD5B36C2D"
     },
     {
       "path": "tests/tooling/test_project_progress.py",
-      "sha256": "36A7CD616144ECC365BE6CB961A4208DE8DA94A3A4B9D0889DA542268B234796"
+      "sha256": "B5279963913F05A90098CDBAE0ECC241AA11D5E19F2CBA633A01884234605DB8"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C11-FINAL-ACCEPTANCE-20260915"
+    "path": "docs/evidence/manifests/C-12_START_MANIFEST.json",
+    "artifact_id": "C12-START-20260915"
   },
-  "pending_approvals": [
-    {
-      "approval_ref": "USER_DIRECTION_C12_START",
-      "change_classification": "REQUIREMENT_CHANGE",
-      "reason": "C12_START_NOT_AUTHORIZED_IN_CURRENT_USER_APPROVAL",
-      "required_direction": "AUTHORIZE_C12_START"
-    }
-  ],
+  "pending_approvals": [],
   "dir_review": {
     "checkpoint": "DIR-1",
     "status": "CLEARED",
@@ -365,7 +383,7 @@
     "owner_reported_at": "2026-08-13T09:20:00+09:00",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "AWAIT_PMO_C11_ACCEPTANCE_BEFORE_C12",
+  "next_safe_action": "C12_PRODUCT_TDD_AND_REVIEW",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -475,9 +493,9 @@
     }
   },
   "repository": {
-    "projection_mode": "C11_FINAL_ACCEPTANCE_EXACT15",
-    "validated_base_commit": "312e193a6b3b399d9bc36368b82bec137be328b0",
-    "head_relation": "PRECOMMIT_EXACT15_OR_CLEAN_SOLE_DIRECT_CHILD_C11_ACCEPTANCE",
+    "projection_mode": "C12_START_EXACT9",
+    "validated_base_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
+    "head_relation": "PRECOMMIT_EXACT9_OR_CLEAN_SOLE_DIRECT_CHILD_C12_START",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/main",
     "remote_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
@@ -485,20 +503,14 @@
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-12_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c11-final-acceptance.json",
-      "packages/orchestration/__init__.py",
-      "packages/planning/__init__.py",
-      "packages/planning/models.py",
-      "packages/planning/planner.py",
-      "packages/planning/service.py",
+      "docs/progress/progress-handoff-detached-digest-c12-start.json",
+      "docs/work_orders/C-12_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-12_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
-      "tests/planning/test_c11_admission.py",
-      "tests/planning/test_c11_planner.py",
       "tests/tooling/test_project_progress.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
@@ -515,8 +527,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "UNSTAGED_PRODUCT_EXACT8_PLUS_ACCEPTANCE_CONTROL_EXACT7",
-    "local_head": "312e193a6b3b399d9bc36368b82bec137be328b0",
+    "worktree_status": "PRECOMMIT_EXACT9_OR_CLEAN_SOLE_DIRECT_CHILD_C12_START",
+    "local_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1321,14 +1333,15 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "312e193a6b3b399d9bc36368b82bec137be328b0",
+    "control_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
-      "docs/04_test_reports/C-11_COMPLETION_REPORT.md",
-      "packages/orchestration/**",
-      "packages/planning/**",
-      "tests/orchestration/**",
-      "tests/planning/**"
+      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/failure_ledger.py",
+      "packages/orchestration/outcome_resolver.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_outcome_resolver_c07.py"
     ],
     "product_parent": "b74c9e1713b4234b51942b69438f0398ba27c2c5",
     "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
@@ -1434,7 +1447,7 @@
       "tests/action_policy/test_policy.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "dispatch_head": "002ebea5409eb9fa32cde045f92f4b1b69b587ed",
+    "dispatch_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
     "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
   },
   "a01_precondition": {
@@ -1551,13 +1564,13 @@
     "independent_reviewer_status": "PASS"
   },
   "reporting_decision": {
-    "decision": "STOP_AND_REPORT_SCOPE_RISK",
+    "decision": "AUTO_CONTINUE",
+    "stop_before_dialogue_report": false,
     "reason_codes": [
-      "C11_ACCEPTED",
-      "C12_NOT_STARTED",
+      "C12_START_DIRECTED",
+      "PRODUCT_TDD_AUTHORIZED",
       "DIR2_NOT_REACHED"
-    ],
-    "stop_before_dialogue_report": true
+    ]
   },
   "accepted_c21_lr01_work_instruction": {
     "artifact_id": "WI-C-21-LR-01-20260903-001",
@@ -1605,7 +1618,24 @@
     "c01_boundary": "BLOCKED_PENDING_C21_INDEPENDENT_JUDGMENT",
     "external_side_effects": "NOT_EXECUTED"
   },
-  "active_work_instruction": null,
+  "active_work_instruction": {
+    "artifact_id": "WI-C-12-20260915-001",
+    "artifact_path": "docs/work_orders/C-12_WORK_INSTRUCTION.md",
+    "artifact_sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8",
+    "invocation_path": "docs/work_orders/C-12_INVOCATION_PROMPT.md",
+    "invocation_sha256": "489947C8C80FB32C90BAD2C8B2D5162EB1A700F0E1A6F4452C0EFEECC879C333",
+    "executor": "developer-primary-c12-r1",
+    "product_write_scope": [
+      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/failure_ledger.py",
+      "packages/orchestration/outcome_resolver.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_outcome_resolver_c07.py"
+    ],
+    "result_status": "IN_PROGRESS",
+    "package_status": "IN_PROGRESS"
+  },
   "completed_provider_wsl_auth_work_instruction": {
     "artifact_id": "WI-C-21-PROVIDER-WSL-AUTH-20260906-001",
     "path": "docs/work_orders/C-21_PROVIDER_WSL_AUTH_SUCCESSOR_WORK_INSTRUCTION.md",
@@ -1735,9 +1765,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "C-11",
-    "path": "docs/progress/progress-handoff-detached-digest-c11-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/C-11_FINAL_ACCEPTANCE_MANIFEST.json"
+    "package_id": "C-12",
+    "path": "docs/progress/progress-handoff-detached-digest-c12-start.json",
+    "manifest_path": "docs/evidence/manifests/C-12_START_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1758,12 +1788,12 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "361BD45BC42B5E018A8CC8E4A535C576D9073D61ADBC85E78DAB579808D918B1"
+      "sha256": "7CE3C1619D0CF5E2D6AAF13F1C1EC1B6562E0BC04A11598C1E3B2D6E4ADF14A9"
     }
   },
   "next_work_package": {
-    "package_id": "C-12",
-    "status": "READY_FOR_WORK_INSTRUCTION"
+    "package_id": "C-13",
+    "status": "NOT_READY"
   },
   "next_successor_work_package": null,
   "historical_phase_b_gate": {
@@ -2152,8 +2182,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "B2F4A54488965DF18361D27C6605F8C49CFC809414A7E949F0F1CAD1E37D0465",
-  "runtime_next_action": "AWAIT_PMO_C11_ACCEPTANCE_BEFORE_C12",
+  "snapshot_hash": "46C804EE0FA2AD055DFDBD59318DDA2506ED05AE9F922B7357CC215E971364C2",
+  "runtime_next_action": "C12_PRODUCT_TDD_AND_REVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3765,7 +3795,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-15T07:45:00+09:00",
+  "recorded_at": "2026-09-15T08:15:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -17488,6 +17518,67 @@
       "deployment": "NOT_EXECUTED"
     },
     "c12_status": "READY_FOR_WORK_INSTRUCTION",
+    "dir2_status": "NOT_REACHED"
+  },
+  "c12_start": {
+    "accepted": false,
+    "status": "IN_PROGRESS",
+    "event_sequence": 885,
+    "authority": {
+      "revision_class": "APPROVED_WORKPLAN_CONTINUATION",
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "pmo_direction_id": "PMO-C12-CONTINUE-20260915",
+      "pmo_source_task_id": "01a054f5-c2b4-7af0-b31a-c8148ef74642",
+      "work_instruction_id": "WI-C-12-20260915-001",
+      "work_instruction_sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8",
+      "invocation_sha256": "489947C8C80FB32C90BAD2C8B2D5162EB1A700F0E1A6F4452C0EFEECC879C333",
+      "baseline_commit": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
+      "authority_hashes": {
+        "docs/work_orders/C-12_WORK_INSTRUCTION.md": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8",
+        "docs/work_orders/C-12_INVOCATION_PROMPT.md": "489947C8C80FB32C90BAD2C8B2D5162EB1A700F0E1A6F4452C0EFEECC879C333",
+        "Anvil_설계서_v2.md": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "Anvil_작업계획서_v1.md": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "Anvil_통합검증매트릭스_v1.md": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "Anvil_테스트계획서_v1.md": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "docs/governance/ANVIL_OPERATING_RULES.md": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236"
+      },
+      "approval_date": "2026-09-15",
+      "user_direction_verbatim": "기존 C-12 미착수 지시를 해제하고 C-12를 즉시 시작해.",
+      "source": "USER_DIRECT_C12_START_AND_PMO_DIRECTION",
+      "approved_control_paths": [
+        "docs/evidence/manifests/C-12_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c12-start.json",
+        "docs/work_orders/C-12_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-12_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py"
+      ],
+      "local_start_commit_authorized": true,
+      "product_tdd_authorized_now": true,
+      "c12_start_authorized": true,
+      "c13_authorized": false,
+      "external_execution_authorized": false,
+      "push_authorized": false
+    },
+    "external_validation": {
+      "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
+      "network": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "subagent_runtime": "NOT_EXECUTED"
+    },
+    "c11_status": "ACCEPTED",
+    "c13_status": "NOT_READY",
     "dir2_status": "NOT_REACHED"
   }
 }

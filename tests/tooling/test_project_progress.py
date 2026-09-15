@@ -16802,5 +16802,110 @@ class C11FinalAcceptanceTests(unittest.TestCase):
                           checker._collect_c11_final_acceptance_git({"_root": ROOT}))
 
 
+class C12StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec = importlib.util.spec_from_file_location("check_project_progress_c12_start", CHECKER_PATH)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+
+    def test_seq885_binds_c11_acceptance_direction_and_dual_lease(self):
+        checker = self._checker()
+        artifacts = checker.c12_start_from_root(ROOT)
+        self.assertEqual(set(checker.c12_start_paths()), set(artifacts))
+        progress = json.loads(artifacts[checker.C12_START_P])
+        manifest = json.loads(artifacts[checker.C12_START_M])
+        events = json.loads(artifacts[checker.C12_START_E])["events"]
+        self.assertEqual((880, 885, 5), (manifest["historical_event_sequence"],
+            manifest["event_sequence"], manifest["appended_event_count"]))
+        self.assertEqual(checker.C12_START_BASE, manifest["validated_base_commit"])
+        self.assertEqual(checker.C12_WI_SHA256, manifest["work_instruction_sha256"])
+        self.assertEqual(checker.C12_PROMPT_SHA256, manifest["invocation_sha256"])
+        self.assertEqual(["PMO_DIRECTION_RECORDED", "WORK_INSTRUCTION_ISSUED",
+            "WORKER_LEASE_ISSUED", "WRITE_LEASE_ISSUED", "PACKAGE_STARTED"],
+            [event["event_type"] for event in events[-5:]])
+        self.assertEqual(("C-12", "IN_PROGRESS", "developer-primary-c12-r1"),
+            (progress["current_work_package"], progress["status"],
+             progress["active_agent"]["actor_id"]))
+        self.assertEqual(checker.C12_WORKER_LEASE_ID, progress["worker_lease"]["lease_id"])
+        self.assertEqual(checker.C12_WRITE_LEASE_ID, progress["write_lease"]["lease_id"])
+        self.assertEqual([], progress["pending_approvals"])
+        self.assertEqual({"package_id": "C-13", "status": "NOT_READY"},
+                         progress["next_work_package"])
+
+    def test_seq885_authorizes_only_start_control_and_c12_product_scope(self):
+        checker = self._checker()
+        artifacts = checker.c12_start_from_root(ROOT)
+        progress = json.loads(artifacts[checker.C12_START_P])
+        authority = progress["c12_start"]["authority"]
+        self.assertTrue(authority["c12_start_authorized"])
+        for name in ("c13_authorized", "external_execution_authorized", "push_authorized"):
+            self.assertIs(False, authority[name])
+        self.assertEqual(checker.c12_product_write_scope(),
+                         progress["write_lease"]["path_scope"])
+        self.assertEqual("C12_PRODUCT_TDD_AND_REVIEW", progress["next_safe_action"])
+
+    def test_seq885_preserves_seq880_bytes_and_rejects_fence_or_history_drift(self):
+        checker = self._checker()
+        artifacts = checker.c12_start_from_root(ROOT)
+        old = subprocess.check_output(
+            ["git", "show", checker.C12_START_BASE + ":" + checker.C12_START_E], cwd=ROOT)
+        self.assertEqual(checker.raw_event_object_prefix_bytes(old, 880),
+                         checker.raw_event_object_prefix_bytes(artifacts[checker.C12_START_E], 880))
+        bundle = {"_root": ROOT, "progress": json.loads(artifacts[checker.C12_START_P]),
+            "events": json.loads(artifacts[checker.C12_START_E]),
+            "handoff": checker.extract_handoff_summary(artifacts[checker.C12_START_H].decode()),
+            "detached_digest": json.loads(artifacts[checker.C12_START_D])}
+        manifest = json.loads(artifacts[checker.C12_START_M]); original = Path.read_bytes
+        def generated(path):
+            try: relative = path.relative_to(ROOT).as_posix()
+            except ValueError: return original(path)
+            return artifacts[relative] if relative in artifacts else original(path)
+        with mock.patch.object(Path, "read_bytes", generated):
+            self.assertEqual([], checker.validate_c12_start(bundle, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["progress"]["write_lease"]["write_fencing_token"] = "stale"
+            self.assertIn("C12_START_PROJECTION_INVALID",
+                          checker.validate_c12_start(bad, manifest))
+            bad = copy.deepcopy(bundle)
+            bad["events"]["events"][0]["event_id"] = "changed-history"
+            self.assertIn("C12_START_PROJECTION_INVALID",
+                          checker.validate_c12_start(bad, manifest))
+
+    def test_seq885_dispatch_and_exact9_git_gate_are_successor_first(self):
+        checker = self._checker()
+        with mock.patch.object(checker, "_collect_c12_start_git", return_value=["SEQ885_SELECTED"]), \
+             mock.patch.object(checker, "_collect_c11_final_acceptance_git",
+                               side_effect=AssertionError("seq880 fallback")):
+            self.assertEqual(["SEQ885_SELECTED"], checker._validate_git_projection({
+                "_root": ROOT, "progress": {"event_sequence": 885}}))
+
+        exact = checker.c12_start_paths(); head = checker.C12_START_BASE
+        parent = checker.C12_START_BASE; staged, unstaged, untracked = [], exact, []
+        changed = exact
+        def git_output(_root, *args):
+            if args == ("rev-parse", "HEAD"): return head + "\n"
+            if args == ("branch", "--show-current"): return checker.C09_START_BRANCH + "\n"
+            if args == ("show", "-s", "--format=%P", head): return parent + "\n"
+            if args == ("diff", "--name-only", checker.C12_START_BASE, head):
+                return "\n".join(changed) + "\n"
+            if "--cached" in args and "--name-only" in args:
+                return "\n".join(staged) + ("\n" if staged else "")
+            if args[-2:] == ("diff", "--name-only"):
+                return "\n".join(unstaged) + ("\n" if unstaged else "")
+            if "ls-files" in args:
+                return "\n".join(untracked) + ("\n" if untracked else "")
+            raise AssertionError(args)
+        with mock.patch.object(checker, "_c02_git_raw_stdout", side_effect=git_output), \
+             mock.patch.object(checker, "_c02_git_quiet_check", return_value=True):
+            self.assertEqual([], checker._collect_c12_start_git({"_root": ROOT}))
+            unstaged = exact + ["packages/orchestration/failure_ledger.py"]
+            self.assertIn("C12_START_GIT_INVALID", checker._collect_c12_start_git({"_root": ROOT}))
+            unstaged = []; head = "a" * 40
+            self.assertEqual([], checker._collect_c12_start_git({"_root": ROOT}))
+            parent = "b" * 40
+            self.assertIn("C12_START_GIT_INVALID", checker._collect_c12_start_git({"_root": ROOT}))
+
+
 if __name__ == "__main__":
     unittest.main()
