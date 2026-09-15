@@ -17,7 +17,7 @@ from typing import Mapping
 
 from packages.execution import DelegationStatus, ResultStatus, RunStatus
 
-from .failure_ledger import FailureLedgerEntry, FailureLedgerReceipt
+from .failure_ledger import FailureLedger, FailureLedgerEntry, FailureLedgerReceipt
 from .failure_report import validate_failure_report
 from .result_envelope import ResultDomainReasonCode, ResultEnvelope, validate_result
 
@@ -171,24 +171,84 @@ class ResolutionReceipt:
     rejection_events: tuple[ResolverRejectionEvent, ...] = ()
 
 
-class DelegationOutcomeResolver:
-    """Apply one terminal result to all C-07 projections under one lock."""
+@dataclass(frozen=True, slots=True)
+class _ResolverState:
+    runs: dict[str, RunProjection]
+    steps: dict[str, StepProjection]
+    attempts: dict[str, StepAttemptProjection]
+    delegations: dict[str, DelegationProjection]
+    leases: dict[str, LeaseProjection]
+    accepted_results: dict[str, tuple[str, str]]
+    events: tuple[ResolverEvent, ...]
+    event_sequence: int
 
-    def __init__(self, *, execution_fencing_token: str, write_fencing_token: str) -> None:
+
+class DelegationOutcomeResolver:
+    """Apply one terminal result to all C-07 projections under one lock.
+
+    Failure outcomes require the same authoritative ``FailureLedger`` passed to
+    this resolver and an uncommitted receipt from ``FailureLedger.prepare()``.
+    A receipt returned by standalone ``record()`` is intentionally rejected so
+    failure count and C-07 state cannot be committed in separate transactions.
+    A ``MainAgentTakeoverRequired`` consumer passes the event's ``failure_key``
+    to ``FailureLedger.takeover_candidate_receipt()`` before invoking C-13; the
+    triggering arrival receipt is not the canonical C-13 capability.
+    """
+
+    def __init__(
+        self, *, execution_fencing_token: str, write_fencing_token: str,
+        failure_ledger: FailureLedger | None = None,
+    ) -> None:
         _required(execution_fencing_token, "execution_fencing_token")
         _required(write_fencing_token, "write_fencing_token")
+        if failure_ledger is not None and not isinstance(failure_ledger, FailureLedger):
+            raise TypeError("failure_ledger must be a FailureLedger")
         self._execution_token = execution_fencing_token
         self._write_token = write_fencing_token
+        self._failure_ledger = failure_ledger
         self._lock = RLock()
-        self._runs: dict[str, RunProjection] = {}
-        self._steps: dict[str, StepProjection] = {}
-        self._attempts: dict[str, StepAttemptProjection] = {}
-        self._delegations: dict[str, DelegationProjection] = {}
-        self._leases: dict[str, LeaseProjection] = {}
-        self._accepted_results: dict[str, tuple[str, str]] = {}
-        self._events: list[ResolverEvent] = []
+        self._state = _ResolverState({}, {}, {}, {}, {}, {}, (), 0)
         self._rejection_events: list[ResolverRejectionEvent] = []
-        self._event_sequence = 0
+
+    @property
+    def _runs(self) -> dict[str, RunProjection]:
+        return self._state.runs
+
+    @_runs.setter
+    def _runs(self, value: dict[str, RunProjection]) -> None:
+        self._state = replace(self._state, runs=value)
+
+    @property
+    def _steps(self) -> dict[str, StepProjection]:
+        return self._state.steps
+
+    @_steps.setter
+    def _steps(self, value: dict[str, StepProjection]) -> None:
+        self._state = replace(self._state, steps=value)
+
+    @property
+    def _attempts(self) -> dict[str, StepAttemptProjection]:
+        return self._state.attempts
+
+    @property
+    def _delegations(self) -> dict[str, DelegationProjection]:
+        return self._state.delegations
+
+    @property
+    def _leases(self) -> dict[str, LeaseProjection]:
+        return self._state.leases
+
+    @property
+    def _accepted_results(self) -> dict[str, tuple[str, str]]:
+        return self._state.accepted_results
+
+    @property
+    def _events(self) -> tuple[ResolverEvent, ...]:
+        return self._state.events
+
+    @property
+    def _event_sequence(self) -> int:
+        return self._state.event_sequence
 
     @property
     def events(self) -> tuple[ResolverEvent, ...]:
@@ -424,21 +484,66 @@ class DelegationOutcomeResolver:
             if failure_count == 3:
                 events.append(self._takeover_required_event(candidate, sequence))
 
-            # Single-lock commit point.  No external service is called here.
-            self._runs[run.run_id] = next_run
-            self._steps[step.step_lineage_id] = next_step
-            self._attempts[attempt.attempt_id] = next_attempt
-            self._delegations[delegation.delegation_id] = next_delegation
-            self._leases[lease.delegation_id] = next_lease
-            self._accepted_results[candidate.result_id] = (
+            # Finish every potentially failing allocation/mutation on local
+            # copies before either canonical component is published.
+            state = self._state
+            next_runs = state.runs.copy()
+            next_runs[run.run_id] = next_run
+            next_steps = state.steps.copy()
+            next_steps[step.step_lineage_id] = next_step
+            next_attempts = state.attempts.copy()
+            next_attempts[attempt.attempt_id] = next_attempt
+            next_delegations = state.delegations.copy()
+            next_delegations[delegation.delegation_id] = next_delegation
+            next_leases = state.leases.copy()
+            next_leases[lease.delegation_id] = next_lease
+            next_accepted_results = state.accepted_results.copy()
+            next_accepted_results[candidate.result_id] = (
                 candidate.canonical_hash, candidate.delegation_id,
             )
-            self._events.extend(events)
-            self._event_sequence = sequence
+            next_state = _ResolverState(
+                next_runs, next_steps, next_attempts, next_delegations,
+                next_leases, next_accepted_results,
+                (*state.events, *events), sequence,
+            )
+
+            # The resolver lock is already held. The ledger holds its lock while
+            # publishing this pre-built resolver state and then its own state, so
+            # readers cannot observe a one-sided commit.
+            if candidate.status is ResultStatus.FAILURE_REPORT:
+                failure_receipt = resolution_context.failure_receipt
+                if (
+                    self._failure_ledger is None
+                    or failure_receipt is None
+                    or not self._failure_ledger._commit_prepared(
+                        failure_receipt,
+                        publish=lambda: self._publish_state(state, next_state),
+                        rollback=lambda: self._rollback_state(next_state, state),
+                    )
+                ):
+                    return self._reject_locked(
+                        candidate,
+                        (ResolverReasonCode.FAILURE_CONTEXT_MISMATCH.value,),
+                        correction=True,
+                    )
+            else:
+                self._publish_state(state, next_state)
             return ResolutionReceipt(
                 True, run=next_run, step=next_step, attempt=next_attempt,
                 delegation=next_delegation, lease=next_lease, events=tuple(events),
             )
+
+    def _publish_state(self, expected: _ResolverState, next_state: _ResolverState) -> None:
+        if self._state is not expected:  # pragma: no cover - resolver lock prevents drift
+            raise RuntimeError("resolver state changed before commit")
+        self._state = next_state
+
+    def _rollback_state(self, published: _ResolverState, previous: _ResolverState) -> None:
+        if self._state is previous:
+            return
+        if self._state is not published:  # pragma: no cover - resolver lock prevents drift
+            raise RuntimeError("resolver state changed before rollback")
+        object.__setattr__(self, "_state", previous)
 
     def _reject(
         self, candidate: ResultEnvelope | None, reason_codes: tuple[str, ...], *,
@@ -478,9 +583,8 @@ class DelegationOutcomeResolver:
             run=run, step=step, attempt=attempt, delegation=delegation, lease=lease,
         )
 
-    @staticmethod
     def _failure_context_reason(
-        candidate: ResultEnvelope, receipt: FailureLedgerReceipt | None,
+        self, candidate: ResultEnvelope, receipt: FailureLedgerReceipt | None,
     ) -> ResolverReasonCode | None:
         if receipt is None:
             return ResolverReasonCode.FAILURE_CONTEXT_REQUIRED
@@ -511,6 +615,8 @@ class DelegationOutcomeResolver:
             or entry.failure_fingerprint != candidate.failure_fingerprint
             or receipt.failure_key != f"{candidate.step_lineage_id}|{candidate.failure_fingerprint}"
         ):
+            return ResolverReasonCode.FAILURE_CONTEXT_MISMATCH
+        if self._failure_ledger is None or not self._failure_ledger.verify_prepared(receipt):
             return ResolverReasonCode.FAILURE_CONTEXT_MISMATCH
         return None
 
@@ -615,6 +721,8 @@ class DelegationOutcomeResolver:
 
     @staticmethod
     def _takeover_required_event(candidate: ResultEnvelope, sequence: int) -> ResolverEvent:
+        """Signal the canonical key used to fetch the committed C-13 receipt."""
+
         return ResolverEvent(
             event_id=f"evt:{sequence}:takeover:{candidate.result_id}",
             event_type="MainAgentTakeoverRequired", event_sequence=sequence,
@@ -622,6 +730,7 @@ class DelegationOutcomeResolver:
             result_id=candidate.result_id, delegation_id=candidate.delegation_id,
             step_lineage_id=candidate.step_lineage_id,
             payload=MappingProxyType({
+                "failure_key": f"{candidate.step_lineage_id}|{candidate.failure_fingerprint}",
                 "failure_fingerprint": candidate.failure_fingerprint or "",
                 "valid_failure_count": "3",
             }),

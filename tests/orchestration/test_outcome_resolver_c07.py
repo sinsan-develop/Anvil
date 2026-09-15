@@ -1,10 +1,14 @@
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
+from threading import Barrier
 
 import pytest
 
 from packages.execution import DelegationStatus, ResultStatus, RunStatus
-from packages.orchestration import EvidenceReference, FailureLedger, ResultEnvelope, ResultTest
+from packages.orchestration import (
+    EvidenceReference, FailureLedger, FailureLedgerEntry, FailureLedgerReceipt,
+    ResultEnvelope, ResultTest,
+)
 import packages.orchestration.outcome_resolver as outcome
 
 
@@ -66,9 +70,13 @@ def context(**changes):
     return outcome.OutcomeResolutionContext(**value)
 
 
-def resolver(*, step_state=outcome.StepState.RUNNING, run_status=RunStatus.ACTIVE):
+def resolver(
+    *, step_state=outcome.StepState.RUNNING, run_status=RunStatus.ACTIVE,
+    failure_ledger=None,
+):
     service = outcome.DelegationOutcomeResolver(
-        execution_fencing_token="exec-current", write_fencing_token="write-current"
+        execution_fencing_token="exec-current", write_fencing_token="write-current",
+        failure_ledger=failure_ledger,
     )
     service.register_run("run-1", run_status)
     service.register_step("step-1", run_id="run-1", state=step_state)
@@ -222,23 +230,23 @@ def test_blocked_never_leaves_step_ready_and_projects_run_reason():
 
 
 def test_terminal_run_statuses_reject_every_terminal_result_without_canonical_mutation():
-    failure_receipt, failure = _ledger_receipt(failure_envelope())
+    failure_ledger, failure_receipt, failure = _ledger_receipt(failure_envelope())
     cases = (
-        (envelope(), context(completion_guards_passed=True, lease_released=True)),
-        (failure, context(failure_receipt=failure_receipt)),
+        (envelope(), context(completion_guards_passed=True, lease_released=True), None),
+        (failure, context(failure_receipt=failure_receipt), failure_ledger),
         (envelope(status=ResultStatus.INCOMPLETE, reason_code="RESULT_CONTRACT_INCOMPLETE",
-                  unresolved=("repair",)), context()),
+                  unresolved=("repair",)), context(), None),
         (envelope(status=ResultStatus.BLOCKED, reason_code="DECISION_REQUIRED",
-                  decision_needed="owner action"), context(lease_released=True)),
+                  decision_needed="owner action"), context(lease_released=True), None),
         (envelope(status=ResultStatus.CANCELLED, reason_code="RUN_CANCEL_REQUESTED",
-                  unresolved=("cancel",)), context()),
+                  unresolved=("cancel",)), context(), None),
     )
     for run_status in (
         RunStatus.CANCELLED, RunStatus.SUCCEEDED, RunStatus.FAILED,
         RunStatus.FINISHED_WITH_FAILURES, RunStatus.REJECTED, RunStatus.DISCARDED,
     ):
-        for candidate, resolution_context in cases:
-            service = resolver(run_status=run_status)
+        for candidate, resolution_context, ledger in cases:
+            service = resolver(run_status=run_status, failure_ledger=ledger)
             before = service.snapshot()
             rejected = resolve(service, candidate, resolution_context)
             assert not rejected.accepted
@@ -279,32 +287,32 @@ def test_checkpointed_interruption_preserves_explicit_pause_status(paused_status
 
 @pytest.mark.parametrize("paused_status", [RunStatus.PAUSED_USER, RunStatus.PAUSED_QUOTA])
 def test_paused_run_rejects_every_non_checkpoint_result_without_canonical_mutation(paused_status):
-    first_receipt, first_failure = _ledger_receipt(failure_envelope())
-    third_receipt, third_failure = _ledger_receipt(failure_envelope(), count=3)
+    first_ledger, first_receipt, first_failure = _ledger_receipt(failure_envelope())
+    third_ledger, third_receipt, third_failure = _ledger_receipt(failure_envelope(), count=3)
     cases = (
-        (envelope(), context(completion_guards_passed=True, lease_released=True)),
-        (first_failure, context(failure_receipt=first_receipt)),
-        (third_failure, context(failure_receipt=third_receipt)),
+        (envelope(), context(completion_guards_passed=True, lease_released=True), None),
+        (first_failure, context(failure_receipt=first_receipt), first_ledger),
+        (third_failure, context(failure_receipt=third_receipt), third_ledger),
         (envelope(status=ResultStatus.INCOMPLETE, reason_code="RESULT_CONTRACT_INCOMPLETE",
-                  unresolved=("repair",)), context()),
+                  unresolved=("repair",)), context(), None),
         (envelope(status=ResultStatus.INCOMPLETE, reason_code="TRANSIENT_EXECUTION_ERROR",
-                  unresolved=("retry",)), context(retry_budget_remaining=True)),
+                  unresolved=("retry",)), context(retry_budget_remaining=True), None),
         (envelope(status=ResultStatus.BLOCKED, reason_code="DECISION_REQUIRED",
-                  decision_needed="owner action"), context(lease_released=True)),
+                  decision_needed="owner action"), context(lease_released=True), None),
         (envelope(status=ResultStatus.BLOCKED, reason_code="POLICY_BLOCKED",
-                  decision_needed="policy"), context(lease_released=True)),
+                  decision_needed="policy"), context(lease_released=True), None),
         (envelope(status=ResultStatus.BLOCKED, reason_code="ENVIRONMENT_BLOCKED",
-                  decision_needed="environment"), context(lease_released=True)),
+                  decision_needed="environment"), context(lease_released=True), None),
         (envelope(status=ResultStatus.BLOCKED, reason_code="PERMISSION_BLOCKED",
-                  decision_needed="permission"), context(lease_released=True)),
+                  decision_needed="permission"), context(lease_released=True), None),
         (envelope(status=ResultStatus.CANCELLED, reason_code="RUN_CANCEL_REQUESTED",
-                  unresolved=("cancel",)), context()),
+                  unresolved=("cancel",)), context(), None),
         (envelope(status=ResultStatus.CANCELLED, reason_code="DELEGATION_REASSIGN",
-                  unresolved=("reassign",)), context()),
+                  unresolved=("reassign",)), context(), None),
     )
-    for candidate, resolution_context in cases:
+    for candidate, resolution_context, ledger in cases:
         service = (
-            failure_resolver(candidate, run_status=paused_status)
+            failure_resolver(candidate, run_status=paused_status, failure_ledger=ledger)
             if candidate.status is ResultStatus.FAILURE_REPORT
             else resolver(run_status=paused_status)
         )
@@ -324,13 +332,17 @@ def _ledger_receipt(candidate, *, count=1):
             attempt_number=number,
             evidence_refs=(EvidenceReference(f"evidence-{number}", HASH),),
         )
-        receipt = ledger.record(current)
-    return receipt, current
+        receipt = ledger.prepare(current) if number == count else ledger.record(current)
+    return ledger, receipt, current
 
 
-def failure_resolver(candidate, *, run_status=RunStatus.ACTIVE):
-    service = outcome.DelegationOutcomeResolver(
-        execution_fencing_token="exec-current", write_fencing_token="write-current"
+def failure_resolver(
+    candidate, *, run_status=RunStatus.ACTIVE, failure_ledger=None,
+    resolver_type=outcome.DelegationOutcomeResolver,
+):
+    service = resolver_type(
+        execution_fencing_token="exec-current", write_fencing_token="write-current",
+        failure_ledger=failure_ledger,
     )
     service.register_run("run-1", run_status)
     service.register_step("step-1", run_id="run-1", state=outcome.StepState.RUNNING)
@@ -353,16 +365,327 @@ def test_failure_report_consumes_matching_immutable_c12_receipt_for_counts_one_t
          ("DelegationResultAccepted", "MainAgentTakeoverRequired")),
     )
     for count, step_state, run_status, event_types in expected:
-        receipt_from_ledger, candidate = _ledger_receipt(failure_envelope(), count=count)
-        service = failure_resolver(candidate)
+        ledger, receipt_from_ledger, candidate = _ledger_receipt(failure_envelope(), count=count)
+        service = failure_resolver(candidate, failure_ledger=ledger)
         accepted = resolve(service, candidate, context(failure_receipt=receipt_from_ledger))
         assert accepted.accepted
         assert accepted.step.state is step_state and accepted.run.status is run_status
         assert tuple(event.event_type for event in accepted.events) == event_types
+        assert ledger.valid_failure_count == count
+        assert ledger.entries[-1].result_id == candidate.result_id
+
+
+def test_three_report_permutations_emit_exactly_one_takeover_candidate_event():
+    projections = []
+    for order in ((1, 2, 3), (2, 3, 1)):
+        ledger = FailureLedger()
+        receipts = []
+        event_types = []
+        for number in order:
+            candidate = replace(
+                failure_envelope(), result_id=f"result-{number}",
+                attempt_id=f"attempt-{number}", attempt_number=number,
+                evidence_refs=(EvidenceReference(f"evidence-{number}", HASH),),
+            )
+            prepared = ledger.prepare(candidate)
+            service = failure_resolver(candidate, failure_ledger=ledger)
+            accepted = resolve(service, candidate, context(failure_receipt=prepared))
+            assert accepted.accepted
+            receipts.append(prepared)
+            event_types.extend(event.event_type for event in accepted.events)
+
+        assert [item.valid_failure_count for item in receipts] == [1, 2, 3]
+        assert event_types.count("MainAgentTakeoverRequired") == 1
+        takeover_event = next(
+            event for event in service.events
+            if event.event_type == "MainAgentTakeoverRequired"
+        )
+        assert takeover_event.payload["failure_key"] == f"step-1|{FINGERPRINT}"
+        projections.append(ledger.projection())
+
+    assert projections[0] == projections[1]
+    assert projections[0][0].latest_result_id == "result-3"
+
+
+@pytest.mark.parametrize("store_name", ["_runs", "_steps"])
+def test_resolver_storage_failure_keeps_ledger_and_c07_canonical_state_unchanged(store_name):
+    class FailingStore(dict):
+        def copy(self):
+            return type(self)(self)
+
+        def __setitem__(self, key, value):
+            raise RuntimeError(f"injected {store_name} storage failure")
+
+    ledger, prepared, candidate = _ledger_receipt(failure_envelope())
+    service = failure_resolver(candidate, failure_ledger=ledger)
+    setattr(service, store_name, FailingStore(getattr(service, store_name)))
+    before = service.snapshot()
+
+    with pytest.raises(RuntimeError, match="injected .* storage failure"):
+        resolve(service, candidate, context(failure_receipt=prepared))
+
+    assert service.snapshot() == before
+    assert ledger.entries == ()
+    assert ledger.projection() == ()
+
+
+def test_ledger_state_swap_failure_rolls_back_already_published_resolver_state():
+    class ExplodingLedger(FailureLedger):
+        def __init__(self):
+            self.explode_on_state_swap = False
+            super().__init__()
+
+        def __setattr__(self, name, value):
+            if name == "_state" and getattr(self, "explode_on_state_swap", False):
+                object.__setattr__(self, "explode_on_state_swap", False)
+                raise RuntimeError("injected ledger state swap failure")
+            super().__setattr__(name, value)
+
+    ledger = ExplodingLedger()
+    candidate = failure_envelope()
+    prepared = ledger.prepare(candidate)
+    service = failure_resolver(candidate, failure_ledger=ledger)
+    before = service.snapshot()
+    ledger.explode_on_state_swap = True
+
+    with pytest.raises(RuntimeError, match="injected ledger state swap failure"):
+        resolve(service, candidate, context(failure_receipt=prepared))
+
+    assert service.snapshot() == before
+    assert service.events == ()
+    assert ledger.entries == ()
+    assert ledger.projection() == ()
+    assert ledger.verify_prepared(prepared)
+
+    retried = resolve(service, candidate, context(failure_receipt=prepared))
+
+    assert retried.accepted
+    assert ledger.valid_failure_count == 1
+    assert len(service.events) == 1
+
+
+def test_ledger_state_swap_then_failure_restores_both_states_and_prepared_retry():
+    class ExplodingAfterSwapLedger(FailureLedger):
+        def __init__(self):
+            self.explode_after_state_swap = False
+            super().__init__()
+
+        def __setattr__(self, name, value):
+            super().__setattr__(name, value)
+            if name == "_state" and getattr(self, "explode_after_state_swap", False):
+                object.__setattr__(self, "explode_after_state_swap", False)
+                raise RuntimeError("injected failure after ledger state swap")
+
+    ledger = ExplodingAfterSwapLedger()
+    candidate = failure_envelope()
+    prepared = ledger.prepare(candidate)
+    service = failure_resolver(candidate, failure_ledger=ledger)
+    before = service.snapshot()
+    ledger.explode_after_state_swap = True
+
+    with pytest.raises(RuntimeError, match="injected failure after ledger state swap"):
+        resolve(service, candidate, context(failure_receipt=prepared))
+
+    assert service.snapshot() == before
+    assert service.events == ()
+    assert ledger.entries == ()
+    assert ledger.projection() == ()
+    assert ledger.verify_prepared(prepared)
+
+    retried = resolve(service, candidate, context(failure_receipt=prepared))
+
+    assert retried.accepted
+    assert ledger.valid_failure_count == 1
+    assert len(service.events) == 1
+
+
+@pytest.mark.parametrize("after_swap", (False, True), ids=("before-swap", "after-swap"))
+def test_resolver_state_swap_failure_preserves_transaction_and_prepared_retry(after_swap):
+    class ExplodingResolver(outcome.DelegationOutcomeResolver):
+        def __init__(self, **kwargs):
+            object.__setattr__(self, "explode_after_state_swap", None)
+            super().__init__(**kwargs)
+
+        def __setattr__(self, name, value):
+            explosion = getattr(self, "explode_after_state_swap", None)
+            if name == "_state" and explosion is not None:
+                object.__setattr__(self, "explode_after_state_swap", None)
+                if explosion:
+                    object.__setattr__(self, name, value)
+                raise RuntimeError("injected resolver state swap failure")
+            super().__setattr__(name, value)
+
+    ledger, prepared, candidate = _ledger_receipt(failure_envelope())
+    service = failure_resolver(
+        candidate, failure_ledger=ledger, resolver_type=ExplodingResolver,
+    )
+    before = service.snapshot()
+    service.explode_after_state_swap = after_swap
+
+    with pytest.raises(RuntimeError, match="injected resolver state swap failure"):
+        resolve(service, candidate, context(failure_receipt=prepared))
+
+    assert service.snapshot() == before
+    assert service.events == ()
+    assert ledger.entries == ()
+    assert ledger.projection() == ()
+    assert ledger.verify_prepared(prepared)
+
+    retried = resolve(service, candidate, context(failure_receipt=prepared))
+
+    assert retried.accepted
+    assert ledger.valid_failure_count == 1
+    assert len(service.events) == 1
+
+
+def test_normal_failure_commit_and_concurrent_readers_finish_without_deadlock():
+    ledger, prepared, candidate = _ledger_receipt(failure_envelope())
+    service = failure_resolver(candidate, failure_ledger=ledger)
+    start = Barrier(3)
+
+    def commit():
+        start.wait(timeout=2)
+        return resolve(service, candidate, context(failure_receipt=prepared))
+
+    def read_ledger():
+        start.wait(timeout=2)
+        return tuple(ledger.projection() for _ in range(100))
+
+    def read_resolver():
+        start.wait(timeout=2)
+        return tuple(service.snapshot() for _ in range(100))
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        commit_future = pool.submit(commit)
+        ledger_future = pool.submit(read_ledger)
+        resolver_future = pool.submit(read_resolver)
+        accepted = commit_future.result(timeout=3)
+        ledger_reads = ledger_future.result(timeout=3)
+        resolver_reads = resolver_future.result(timeout=3)
+
+    assert accepted.accepted
+    assert ledger_reads and resolver_reads
+    assert ledger.valid_failure_count == 1
+    assert len(service.events) == 1
+
+
+def test_failure_receipt_without_configured_ledger_authority_fails_closed():
+    ledger, ledger_receipt, candidate = _ledger_receipt(failure_envelope())
+    service = failure_resolver(candidate)
+    before = service.snapshot()
+
+    rejected = resolve(service, candidate, context(failure_receipt=ledger_receipt))
+
+    assert not rejected.accepted
+    assert rejected.reason_codes == (
+        outcome.ResolverReasonCode.FAILURE_CONTEXT_MISMATCH.value,
+    )
+    assert service.snapshot() == before
+    assert ledger.entries == ()
+
+
+def test_standalone_record_receipt_cannot_be_reused_for_c07_transaction():
+    ledger = FailureLedger()
+    candidate = failure_envelope()
+    committed = ledger.record(candidate)
+    service = failure_resolver(candidate, failure_ledger=ledger)
+    before = service.snapshot()
+
+    rejected = resolve(service, candidate, context(failure_receipt=committed))
+
+    assert rejected.reason_codes == (
+        outcome.ResolverReasonCode.FAILURE_CONTEXT_MISMATCH.value,
+    )
+    assert service.snapshot() == before
+    assert ledger.valid_failure_count == 1
+
+
+def test_self_consistent_receipt_not_issued_by_authoritative_ledger_is_rejected():
+    candidate = failure_envelope()
+    forged_entry = FailureLedgerEntry(
+        sequence=1, result_id=candidate.result_id,
+        result_hash=candidate.canonical_hash,
+        step_lineage_id=candidate.step_lineage_id,
+        failure_fingerprint=candidate.failure_fingerprint,
+        accepted=True, valid_failure_count=3, takeover_required=True,
+    )
+    forged = FailureLedgerReceipt(
+        accepted=True, valid_failure_count=3, takeover_required=True,
+        failure_key=f"{candidate.step_lineage_id}|{candidate.failure_fingerprint}",
+        entry=forged_entry,
+    )
+    authority = FailureLedger()
+    service = failure_resolver(candidate, failure_ledger=authority)
+    before = service.snapshot()
+
+    rejected = resolve(service, candidate, context(failure_receipt=forged))
+
+    assert not rejected.accepted
+    assert rejected.reason_codes == (
+        outcome.ResolverReasonCode.FAILURE_CONTEXT_MISMATCH.value,
+    )
+    assert service.snapshot() == before
+    assert authority.entries == ()
+
+
+def test_receipt_behind_authoritative_ledger_latest_count_is_rejected():
+    ledger = FailureLedger()
+    first = failure_envelope()
+    stale = ledger.record(first)
+    second = replace(
+        first, result_id="result-2", attempt_id="attempt-2", attempt_number=2,
+        evidence_refs=(EvidenceReference("evidence-2", HASH),),
+    )
+    assert ledger.record(second).valid_failure_count == 2
+    service = failure_resolver(first, failure_ledger=ledger)
+    before = service.snapshot()
+
+    rejected = resolve(service, first, context(failure_receipt=stale))
+
+    assert not rejected.accepted
+    assert rejected.reason_codes == (
+        outcome.ResolverReasonCode.FAILURE_CONTEXT_MISMATCH.value,
+    )
+    assert service.snapshot() == before
+    assert ledger.valid_failure_count == 2
+
+
+def test_c07_rejections_never_publish_prepared_failure_to_ledger():
+    cases = (
+        ("fencing", outcome.ResolverReasonCode.STALE_FENCING_TOKEN.value),
+        ("identity", outcome.ResolverReasonCode.RESULT_IDENTITY_MISMATCH.value),
+        ("transition", outcome.ResolverReasonCode.INVALID_TRANSITION.value),
+    )
+    for mode, reason in cases:
+        ledger = FailureLedger()
+        candidate = failure_envelope()
+        receipt = ledger.prepare(candidate)
+        service = (
+            resolver(step_state=outcome.StepState.COMPLETED, failure_ledger=ledger)
+            if mode == "transition"
+            else failure_resolver(candidate, failure_ledger=ledger)
+        )
+        before = service.snapshot()
+        actual = (
+            replace(candidate, attempt_id="attempt-other")
+            if mode == "identity"
+            else candidate
+        )
+
+        rejected = resolve(
+            service, actual, context(failure_receipt=receipt),
+            execution="stale" if mode == "fencing" else "exec-current",
+        )
+
+        assert not rejected.accepted
+        assert rejected.reason_codes == (reason,)
+        assert service.snapshot() == before
+        assert ledger.entries == ()
+        assert ledger.valid_failure_count == 0
 
 
 def test_failure_context_identity_or_count_mismatch_fails_closed():
-    ledger_receipt, candidate = _ledger_receipt(failure_envelope())
+    ledger, ledger_receipt, candidate = _ledger_receipt(failure_envelope())
     mutations = (
         replace(ledger_receipt, valid_failure_count=0),
         replace(ledger_receipt, valid_failure_count=4),
@@ -375,9 +698,10 @@ def test_failure_context_identity_or_count_mismatch_fails_closed():
                 entry=replace(ledger_receipt.entry, valid_failure_count=True)),
         replace(ledger_receipt, takeover_required=1,
                 entry=replace(ledger_receipt.entry, takeover_required=1)),
+        replace(ledger_receipt, _prepared=[]),
     )
     for failure_receipt in mutations:
-        service = failure_resolver(candidate)
+        service = failure_resolver(candidate, failure_ledger=ledger)
         before = service.snapshot()
         rejected = resolve(service, candidate, context(failure_receipt=failure_receipt))
         assert not rejected.accepted
@@ -387,9 +711,9 @@ def test_failure_context_identity_or_count_mismatch_fails_closed():
 
 @pytest.mark.parametrize("invalid_entry", [{}, "invalid", 1])
 def test_non_failure_ledger_entry_type_is_rejected_without_exception_or_canonical_mutation(invalid_entry):
-    ledger_receipt, candidate = _ledger_receipt(failure_envelope())
+    ledger, ledger_receipt, candidate = _ledger_receipt(failure_envelope())
     malformed = replace(ledger_receipt, entry=invalid_entry)
-    service = failure_resolver(candidate)
+    service = failure_resolver(candidate, failure_ledger=ledger)
     before = service.snapshot()
     try:
         rejected = resolve(service, candidate, context(failure_receipt=malformed))

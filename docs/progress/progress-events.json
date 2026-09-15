@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 891,
+  "last_sequence": 896,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -48041,7 +48041,312 @@
           "tests/orchestration/test_outcome_resolver_c07.py"
         ]
       }
+    },
+    {
+      "sequence": 892,
+      "event_id": "evt_c12_final_package_completed",
+      "event_type": "PACKAGE_COMPLETED",
+      "actor": "developer-primary-c12-r1",
+      "actor_id": "developer-primary-c12-r1",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-12",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-12/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T22:10:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "A53507A82550B74BA6FBEFB0A1F62BAB2541F136F89C0B6A470099B43AAE2E9F",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_exact_paths": [
+          "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+          "packages/orchestration/failure_ledger.py",
+          "packages/orchestration/outcome_resolver.py",
+          "tests/orchestration/test_failure_ledger_c12.py",
+          "tests/orchestration/test_outcome_resolver_c07.py"
+        ],
+        "product_raw": {
+          "docs/04_test_reports/C-12_COMPLETION_REPORT.md": {
+            "bytes": 14419,
+            "sha256": "D5FD8EC8C23E74E97BE15449A77F339DCE3F4F191DF3590FD8D6479CF423D222"
+          },
+          "packages/orchestration/failure_ledger.py": {
+            "bytes": 16141,
+            "sha256": "528DD9AF18AAEF0BDCB02997538E9944C3AD78A16C42DD1C9C7CDCC98689DEF9"
+          },
+          "packages/orchestration/outcome_resolver.py": {
+            "bytes": 33342,
+            "sha256": "ADCE05679EC92D1FD1D45805F9FDB786DE25F9C7ECCDF6155C2C0A8916461BB6"
+          },
+          "tests/orchestration/test_failure_ledger_c12.py": {
+            "bytes": 14286,
+            "sha256": "51213D0F48E9D852A2A1C569B5B1E0ED5F0084F1B8E0FCF5586CC15E86C1CF37"
+          },
+          "tests/orchestration/test_outcome_resolver_c07.py": {
+            "bytes": 34109,
+            "sha256": "0042FE92DC14B6BAD751D7AD2A725013251B69C93F8CA2C82E7FCAE442B17AA0"
+          }
+        },
+        "test_evidence": {
+          "passed": {
+            "c12_c06_c07_focused": 147,
+            "orchestration": 519,
+            "c11_planning": 155,
+            "review_attack_bundle": 12
+          },
+          "failed": 0,
+          "commands": {
+            "focused": "python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_failure_ledger_c12.py tests/orchestration/test_failure_report_c06.py tests/orchestration/test_outcome_resolver_c07.py",
+            "orchestration": "python -B -m pytest -q -p no:cacheprovider tests/orchestration",
+            "c11_planning": "python -B -m pytest -q -p no:cacheprovider tests/planning/test_c11_admission.py tests/planning/test_c11_planner.py"
+          },
+          "compileall": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "diff_check": {
+            "status": "PASS",
+            "exit_code": 0
+          }
+        },
+        "external_validation": {
+          "actual_takeover": "NOT_EXECUTED",
+          "lease_tool_recovery": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "secret_manager": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        },
+        "valid_failure_count": 0
+      }
+    },
+    {
+      "sequence": 893,
+      "event_id": "evt_c12_final_independent_test_judgment_recorded",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "actor": "independent-reviewers",
+      "actor_id": "independent-reviewers",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-12",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-12/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T22:10:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "71AA1411E83B1D5DAE48B46C4A0D144EBF71D4B389E333B5E613EF14CFC09492",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "C12_SPEC_AND_QUALITY_BLOCKING_IMPORTANT_ZERO_R7",
+        "evidence_ref": "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+        "evidence_sha256": "D5FD8EC8C23E74E97BE15449A77F339DCE3F4F191DF3590FD8D6479CF423D222",
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "reviews": {
+          "blocking_findings": 0,
+          "important_findings": 0,
+          "review_rework_count": 5,
+          "spec": {
+            "verdict": "ACCEPT",
+            "blocking": 0,
+            "important": 0
+          },
+          "quality": {
+            "verdict": "ACCEPT",
+            "blocking": 0,
+            "important": 0
+          },
+          "resolved_findings": [
+            "FORGED_OR_STALE_LEDGER_RECEIPT",
+            "CROSS_COMPONENT_TRANSACTION_GAP",
+            "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
+            "SAME_KEY_ORDER_NONDETERMINISM",
+            "LEDGER_POST_SWAP_EXCEPTION",
+            "RESOLVER_POST_SWAP_EXCEPTION",
+            "CANONICAL_C13_RECEIPT_COMPATIBILITY"
+          ]
+        },
+        "test_evidence": {
+          "passed": {
+            "c12_c06_c07_focused": 147,
+            "orchestration": 519,
+            "c11_planning": 155,
+            "review_attack_bundle": 12
+          },
+          "failed": 0,
+          "commands": {
+            "focused": "python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_failure_ledger_c12.py tests/orchestration/test_failure_report_c06.py tests/orchestration/test_outcome_resolver_c07.py",
+            "orchestration": "python -B -m pytest -q -p no:cacheprovider tests/orchestration",
+            "c11_planning": "python -B -m pytest -q -p no:cacheprovider tests/planning/test_c11_admission.py tests/planning/test_c11_planner.py"
+          },
+          "compileall": {
+            "status": "PASS",
+            "exit_code": 0
+          },
+          "diff_check": {
+            "status": "PASS",
+            "exit_code": 0
+          }
+        }
+      }
+    },
+    {
+      "sequence": 894,
+      "event_id": "evt_c12_final_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-12",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-12/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T22:10:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "A37653B0E9CBB8E33ED4FD2BBC6E78EC6272ACE525CA5CD8B42BD2D2396E9504",
+      "details": {
+        "actor_id": "developer-primary-c12-r1",
+        "subject_ref": "C-12/REWORK-R1",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+        "issued_at": "2026-09-15T20:25:00+09:00",
+        "expires_at": "2026-09-16T08:25:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+        "path_scope": [
+          "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/failure_ledger.py",
+          "packages/orchestration/outcome_resolver.py",
+          "tests/orchestration/test_failure_ledger_c12.py",
+          "tests/orchestration/test_outcome_resolver_c07.py"
+        ],
+        "lease_id": "write-lease-c12-rework-r1-20260915-002",
+        "worker_lease_id": "worker-lease-c12-rework-r1-20260915-002",
+        "write_epoch": 2,
+        "fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00",
+        "write_fencing_token": "c12-rework-r1-write-fence-epoch-2-3609288a2f408b00",
+        "revoked_at": "2026-09-15T22:10:00+09:00",
+        "reason": "C12_PRODUCT_AND_REVIEWS_COMPLETED"
+      }
+    },
+    {
+      "sequence": 895,
+      "event_id": "evt_c12_final_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-12",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-12/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T22:10:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "30189005F12B317C19C97C47D807EDFB1490E0E2CB88469E8B8BC2208441E49A",
+      "details": {
+        "actor_id": "developer-primary-c12-r1",
+        "subject_ref": "C-12/REWORK-R1",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "4041fb51984786883609288a2f408b005bc964b0",
+        "issued_at": "2026-09-15T20:25:00+09:00",
+        "expires_at": "2026-09-16T08:25:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+        "path_scope": [
+          "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+          "packages/orchestration/__init__.py",
+          "packages/orchestration/failure_ledger.py",
+          "packages/orchestration/outcome_resolver.py",
+          "tests/orchestration/test_failure_ledger_c12.py",
+          "tests/orchestration/test_outcome_resolver_c07.py"
+        ],
+        "lease_id": "worker-lease-c12-rework-r1-20260915-002",
+        "lease_epoch": 2,
+        "fencing_token": "c12-rework-r1-execution-fence-epoch-2-4041fb5198478688",
+        "dispatch_head": "4041fb51984786883609288a2f408b005bc964b0",
+        "revoked_at": "2026-09-15T22:10:00+09:00",
+        "reason": "C12_PRODUCT_AND_REVIEWS_COMPLETED"
+      }
+    },
+    {
+      "sequence": 896,
+      "event_id": "evt_c12_final_main_package_accepted",
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "C-12",
+      "step_id": "COMPLETION",
+      "subject_ref": "C-12/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-15T22:10:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "DAD2A5872D2DF51BADECBC75CC35CD4B6DD5CAA24B9050B6C1A6A9398D2DF08F",
+      "details": {
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "projection_mode": "C12_FINAL_ACCEPTANCE_EXACT12",
+        "validated_base_commit": "4112a48bcd47619a582d480399d8015bf41df007",
+        "acceptance_head": "4112a48bcd47619a582d480399d8015bf41df007",
+        "acceptance_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+        "head_relation": "PRECOMMIT_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD_C12_ACCEPTANCE",
+        "test_report_ref": "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+        "test_report_sha256": "D5FD8EC8C23E74E97BE15449A77F339DCE3F4F191DF3590FD8D6479CF423D222",
+        "manifest_ref": "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "next_work_package": "C-13",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "dir2_status": "NOT_REACHED",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-c12-final-acceptance.json",
+          "packages/orchestration/failure_ledger.py",
+          "packages/orchestration/outcome_resolver.py",
+          "scripts/check_project_progress.py",
+          "tests/orchestration/test_failure_ledger_c12.py",
+          "tests/orchestration/test_outcome_resolver_c07.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "product_exact_paths": [
+          "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
+          "packages/orchestration/failure_ledger.py",
+          "packages/orchestration/outcome_resolver.py",
+          "tests/orchestration/test_failure_ledger_c12.py",
+          "tests/orchestration/test_outcome_resolver_c07.py"
+        ],
+        "external_validation": {
+          "actual_takeover": "NOT_EXECUTED",
+          "lease_tool_recovery": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "secret_manager": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_c12_rework_write_lease_issued"
+  "last_event_id": "evt_c12_final_main_package_accepted"
 }
