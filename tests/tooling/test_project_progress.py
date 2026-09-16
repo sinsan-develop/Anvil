@@ -18643,5 +18643,59 @@ class DGateRegressionReconciliationControlTests(unittest.TestCase):
             self.assertEqual(["SEQ1061_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1061}}))
 
 
+class DGatePostcommitControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("d_gate_postcommit",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_seq1062_exact_outputs_preserve_gate_and_incomplete_tooling(self):
+        c=self._checker(); generated=c.d_gate_postcommit_from_root(ROOT)
+        self.assertEqual(set(c.d_gate_postcommit_paths()),set(generated))
+        self.assertEqual(7,len(generated))
+        p=json.loads(generated[c.D13_START_P]); m=json.loads(generated[c.D_GATE_POSTCOMMIT_M])
+        self.assertEqual((1062,"ACCEPTED",[]),(p["event_sequence"],p["d_gate"]["status"],p["pending_approvals"]))
+        self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertEqual((2752,9),(m["verification"]["product_regression"]["passed"],m["verification"]["product_regression"]["skipped"]))
+        self.assertEqual("INCOMPLETE",m["verification"]["full_tooling"]["status"])
+        self.assertEqual("NOT_PASS",m["verification"]["full_tooling"]["verdict"])
+        self.assertEqual([1,1],[x["exit_code"] for x in m["verification"]["full_tooling"]["attempts"]])
+        self.assertEqual(c.D_GATE_POSTCOMMIT_HEAD,p["repository"]["remote_head"])
+        old=subprocess.check_output(["git","show",f"{c.D_GATE_POSTCOMMIT_HEAD}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1061),c.raw_event_object_prefix_bytes(generated[c.D13_START_E],1061))
+
+    def test_seq1062_git_exact_dirty_and_remote_binding_fail_closed(self):
+        c=self._checker()
+        facts=dict(head=c.D_GATE_POSTCOMMIT_HEAD,upstream_head=c.D_GATE_POSTCOMMIT_HEAD,remote_head=c.D_GATE_POSTCOMMIT_HEAD,
+                   branch=c.C09_START_BRANCH,parent=c.C14_START_BASE,committed_paths=c.d_gate_regression_reconciliation_paths(),
+                   staged=[],dirty=c.d_gate_postcommit_paths())
+        self.assertEqual([],c.validate_d_gate_postcommit_git_facts(**facts))
+        for field,value in (("head","f"*40),("upstream_head","f"*40),("remote_head","f"*40),("parent","f"*40),
+                            ("committed_paths",facts["committed_paths"][:-1]),("dirty",facts["dirty"]+["extra.py"]),
+                            ("dirty",facts["dirty"][:-1]),("staged",[facts["dirty"][0]]),("branch","main")):
+            with self.subTest(field=field,value=value):
+                self.assertTrue(c.validate_d_gate_postcommit_git_facts(**{**facts,field:value}))
+
+    def test_seq1062_successor_git_dispatch(self):
+        c=self._checker()
+        with mock.patch.object(c,"_collect_d_gate_postcommit_git",return_value=["SEQ1062_SELECTED"]),mock.patch.object(c,"_collect_d_gate_regression_reconciliation_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1062_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1062}}))
+
+    def test_seq1062_projection_cannot_launder_tooling_or_mutate_gate_prefix(self):
+        c=self._checker(); a=c.d_gate_postcommit_from_root(ROOT)
+        original={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),
+                  "handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.D_GATE_POSTCOMMIT_D])}
+        m=json.loads(a[c.D_GATE_POSTCOMMIT_M])
+        for mutation in ("tooling","approvals","gate","historical_event","remote","manifest_paths"):
+            b=copy.deepcopy(original); manifest=copy.deepcopy(m)
+            if mutation=="tooling": b["progress"]["d_gate_postcommit_reconciliation"]["verification"]["full_tooling"]["verdict"]="PASS"
+            elif mutation=="approvals": b["progress"]["pending_approvals"]=["unexpected"]
+            elif mutation=="gate": b["progress"]["d_gate"]["status"]="FAILED"
+            elif mutation=="historical_event": b["events"]["events"][0]["actor"]="changed"
+            elif mutation=="remote": b["progress"]["repository"]["remote_head"]="f"*40
+            else: manifest["exact_allowed_paths"].append("extra.py")
+            with self.subTest(mutation=mutation):
+                self.assertIn("D_GATE_POSTCOMMIT_PROJECTION_INVALID",c.validate_d_gate_postcommit(b,manifest))
+
+
 if __name__ == "__main__":
     unittest.main()

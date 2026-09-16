@@ -1432,6 +1432,12 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "D_GATE_REGRESSION_RECONCILIATION_CUMULATIVE_EXACT200"
             )
             or (
+                progress is not None and progress.get("event_sequence") == 1062
+                and event.get("sequence") == 1062 and event.get("event_id") == "evt_d_gate_postcommit_reconciled"
+                and event.get("event_type") == "PHASE_GATE_DECIDED"
+                and event["details"].get("projection_mode") == "D_GATE_POSTCOMMIT_EXACT200_CONTROL_EXACT7"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13451,6 +13457,9 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 1062:
+        if not (root / ".git").exists(): return ["GIT_REQUIRED_COLLECTION_FAILED"]
+        return _collect_d_gate_postcommit_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 1061:
         if not (root / ".git").exists(): return ["GIT_REQUIRED_COLLECTION_FAILED"]
         return _collect_d_gate_regression_reconciliation_git(bundle)
@@ -14873,6 +14882,8 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_d_gate(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/D-GATE_REGRESSION_RECONCILIATION_MANIFEST.json":
             errors.extend(validate_d_gate_regression_reconciliation(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/D-GATE_POSTCOMMIT_RECONCILIATION_MANIFEST.json":
+            errors.extend(validate_d_gate_postcommit(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R4_MANIFEST.json":
             errors.extend(validate_c09_r4(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/C-09_REWORK_START_R3_MANIFEST.json":
@@ -52666,6 +52677,154 @@ def _collect_d_gate_regression_reconciliation_git(bundle):
     try:
         root=bundle["_root"]; raw=lambda *a:_c02_git_raw_stdout(root,*a); head=_c02_strict_git_scalar(raw("rev-parse","HEAD")); branch=_c02_optional_git_scalar(raw("branch","--show-current")); staged=_c02_strict_name_only_paths(raw("-c","core.excludesFile=NUL","diff","--cached","--name-only")); unstaged=_c02_strict_name_only_paths(raw("-c","core.excludesFile=NUL","diff","--name-only")); untracked=_c02_strict_name_only_paths(raw("-c","core.excludesFile=NUL","ls-files","--others","--exclude-per-directory=.gitignore","--exclude=.pytest_cache","--exclude=.pytest_cache/**")); dirty=sorted(set(staged+unstaged+untracked)); return [] if head==C14_START_BASE and branch==C09_START_BRANCH and dirty==d_gate_regression_reconciliation_paths() and not(set(staged)&set(unstaged) or set(staged)&set(untracked) or set(unstaged)&set(untracked)) and _c02_git_quiet_check(root,"diff","--check") else ["D_GATE_RECONCILIATION_GIT_INVALID"]
     except Exception:return ["D_GATE_RECONCILIATION_GIT_INVALID"]
+
+
+D_GATE_POSTCOMMIT_HEAD = "25dcaaa3854619f131cc93fa1ae5cd79479553ae"
+D_GATE_POSTCOMMIT_D = "docs/progress/progress-handoff-detached-digest-d-gate-postcommit-reconciliation.json"
+D_GATE_POSTCOMMIT_M = "docs/evidence/manifests/D-GATE_POSTCOMMIT_RECONCILIATION_MANIFEST.json"
+D_GATE_POSTCOMMIT_MODE = "D_GATE_POSTCOMMIT_EXACT200_CONTROL_EXACT7"
+D_GATE_POSTCOMMIT_AT = "2026-09-17T08:15:00+09:00"
+
+
+def d_gate_postcommit_paths():
+    return sorted([D13_START_P,D13_START_E,D13_START_H,D_GATE_POSTCOMMIT_D,D_GATE_POSTCOMMIT_M,
+                   "scripts/check_project_progress.py","tests/tooling/test_project_progress.py"])
+
+
+def d_gate_postcommit_verification():
+    return {"product_regression":{"status":"PASS","passed":2752,"skipped":9,"failed":0,"source":"MAIN_VERIFIED_PRIOR_RUN_NOT_RERUN_BY_RECONCILIATION"},
+            "focused_control":{"status":"PASS","command":"python -B -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py -k DGatePostcommitControlTests"},
+            "canonical_checker":{"status":"PASS","command":"python -B scripts/check_project_progress.py"},
+            "full_tooling":{"status":"INCOMPLETE","verdict":"NOT_PASS","d_gate_failure":False,
+                            "attempts":[{"mode":"single","elapsed":"approximately 2h","exit_code":1,"termination":"INTERRUPTED_BEFORE_COMPLETION"},
+                                        {"mode":"4-shard","elapsed":"approximately 4h40m","exit_code":1,"termination":"INTERRUPTED_BEFORE_COMPLETION"}]},
+            "worker_remote_probe":{"command":"git ls-remote development refs/heads/codex/c09-execution-backends-r1",
+                                   "status":"ENVIRONMENT_BLOCKED","exit_code":128,"reason":"SSH_ALIAS_DNS_RESOLUTION_FAILED",
+                                   "remote_verification_owner":"MAIN","worker_claimed_remote_pass":False},
+            "external_runtime":"NOT_EXECUTED"}
+
+
+def validate_d_gate_postcommit_git_facts(*,head,upstream_head,remote_head,branch,parent,committed_paths,staged,dirty):
+    if (head!=D_GATE_POSTCOMMIT_HEAD or upstream_head!=head or remote_head!=head or branch!=C09_START_BRANCH
+            or parent!=C14_START_BASE or committed_paths!=d_gate_regression_reconciliation_paths()
+            or staged or dirty!=d_gate_postcommit_paths()):
+        return ["D_GATE_POSTCOMMIT_GIT_INVALID"]
+    return []
+
+
+def d_gate_postcommit_from_root(root: Path) -> dict[str,bytes]:
+    """Rebuild from committed seq1061, never trust a mutable successor as baseline."""
+    raw=lambda *args:_c02_git_raw_stdout(root,*args)
+    committed=lambda path:subprocess.check_output(["git","show",f"{D_GATE_POSTCOMMIT_HEAD}:{path}"],cwd=root)
+    parent=_c02_strict_git_scalar(raw("show","-s","--format=%P",D_GATE_POSTCOMMIT_HEAD))
+    changed=_c02_strict_name_only_paths(raw("diff","--name-only",C14_START_BASE,D_GATE_POSTCOMMIT_HEAD))
+    if parent!=C14_START_BASE or changed!=d_gate_regression_reconciliation_paths():
+        raise ValueError("D_GATE_POSTCOMMIT_LINEAGE_INVALID")
+    historical={path:committed(path) for path in (D13_START_P,D13_START_E,D13_START_H)}
+    progress=_c21_resume_json(historical[D13_START_P]); stream=_c21_resume_json(historical[D13_START_E])
+    if (progress.get("event_sequence")!=1061 or stream.get("last_sequence")!=1061
+            or progress.get("repository",{}).get("projection_mode")!=D_GATE_RECONCILIATION_MODE
+            or progress.get("d_gate",{}).get("status")!="ACCEPTED" or progress.get("pending_approvals")!=[]
+            or progress.get("next_work_package")!={"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"}):
+        raise ValueError("D_GATE_POSTCOMMIT_HISTORY_INVALID")
+    exact=d_gate_postcommit_paths(); verification=d_gate_postcommit_verification()
+    prefix=raw_event_object_prefix_bytes(historical[D13_START_E],1061)
+    prior_manifest=committed(D_GATE_RECONCILIATION_M)
+    publication={"commit":D_GATE_POSTCOMMIT_HEAD,"parent":parent,"committed_exact_paths":changed,"committed_exact_path_count":200,
+                 "branch":C09_START_BRANCH,"upstream":"development/"+C09_START_BRANCH,"local_head":D_GATE_POSTCOMMIT_HEAD,
+                 "upstream_head":D_GATE_POSTCOMMIT_HEAD,"remote_head":D_GATE_POSTCOMMIT_HEAD,
+                 "remote_observation_source":"MAIN_VERIFIED_REMOTE_SHA_DIRECT_DISPATCH",
+                 "commit_status":"COMPLETED","push_status":"COMPLETED","postcommit_worktree_status":"CLEAN_BEFORE_SEQ1062_CONTROL_EDITS",
+                 "reconciliation_commit_status":"NOT_EXECUTED","reconciliation_push_status":"NOT_EXECUTED"}
+    event={"sequence":1062,"event_id":"evt_d_gate_postcommit_reconciled","event_type":"PHASE_GATE_DECIDED",
+           "actor":"main-agent-eoul","actor_id":"main-agent-eoul","actor_type":"AGENT","project_id":"anvil","run_id":None,
+           "work_package_id":"D-GATE","step_id":"POSTCOMMIT_RECONCILIATION","subject_ref":"D-GATE/POSTCOMMIT",
+           "occurred_at":D_GATE_POSTCOMMIT_AT,"occurred_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+           "previous_event_sha256":_c21_resume_sha(canonical_json_bytes(stream["events"][-1])),
+           "details":{"projection_mode":D_GATE_POSTCOMMIT_MODE,"publication":publication,"verification":verification,
+                      "validated_base_commit":D_GATE_POSTCOMMIT_HEAD,"acceptance_head":D_GATE_POSTCOMMIT_HEAD,
+                      "acceptance_upstream_head":D_GATE_POSTCOMMIT_HEAD,"gate":"Phase D Gate postcommit reconciliation",
+                      "head_relation":"EXACT200_DIRECT_CHILD_COMMITTED_PUSHED_CONTROL_EXACT7_UNCOMMITTED",
+                      "verdict":"ACCEPTED","evidence_ref":D_GATE_RECONCILIATION_M,"exact_allowed_paths":exact,
+                      "next_work_package":"E-01","next_package_status":"READY_FOR_WORK_INSTRUCTION"}}
+    events_raw=_c21_append_events(historical[D13_START_E],1061,[event])
+    repo=copy.deepcopy(progress["repository"]); repo.update(publication)
+    repo.update(projection_mode=D_GATE_POSTCOMMIT_MODE,validated_base_commit=D_GATE_POSTCOMMIT_HEAD,control_head=D_GATE_POSTCOMMIT_HEAD,
+                head_relation="EXACT200_DIRECT_CHILD_COMMITTED_PUSHED_CONTROL_EXACT7_UNCOMMITTED",worktree_status="UNSTAGED_RECONCILIATION_EXACT7",
+                exact_allowed_paths=exact)
+    progress.update(snapshot_id="snapshot-d-gate-postcommit-seq1062",event_sequence=1062,last_event_id=event["event_id"],
+                    updated_at=D_GATE_POSTCOMMIT_AT,recorded_at=D_GATE_POSTCOMMIT_AT,repository=repo,pending_approvals=[],
+                    d_gate_postcommit_reconciliation={"status":"RECORDED","event_sequence":1062,"publication":publication,"verification":verification},
+                    current_progress_evidence_ref={"package_id":"D-GATE","path":D_GATE_POSTCOMMIT_D,"manifest_path":D_GATE_POSTCOMMIT_M},
+                    latest_evidence_manifest_ref={"path":D_GATE_POSTCOMMIT_M,"artifact_id":"D-GATE-POSTCOMMIT-20260917"},
+                    next_safe_action="E01_READY_FULL_TOOLING_REMAINS_UNVERIFIED",runtime_next_action="E01_READY_FULL_TOOLING_REMAINS_UNVERIFIED")
+    progress["registry_refs"]["progress_events"]={"path":D13_START_E,"sha256":_c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"]=[{"path":D_GATE_RECONCILIATION_M,"sha256":_c21_resume_sha(prior_manifest)},
+                                     {"path":D13_START_E,"sha256":_c21_resume_sha(events_raw)}]
+    progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff=extract_handoff_summary(historical[D13_START_H].decode())
+    handoff.update({key:progress[key] for key in ("event_sequence","last_event_id","next_safe_action")})
+    handoff.update(repository_head=D_GATE_POSTCOMMIT_HEAD,repository_upstream=publication["upstream"],repository_projection_mode=D_GATE_POSTCOMMIT_MODE,repository_exact_allowed_paths=exact,
+                   current_manifest=D_GATE_POSTCOMMIT_M,publication=publication,verification=verification,commit_performed=True,push_performed=True,
+                   reconciliation_commit_performed=False,pending_approvals=[])
+    fence=chr(96)*3; replacement=fence+"json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+fence
+    pattern=re.escape(fence)+r"json anvil-recovery-summary\s*\{.*?\}\s*"+re.escape(fence)
+    text,count=re.subn(pattern,lambda _:replacement,historical[D13_START_H].decode(),flags=re.DOTALL)
+    if count!=1: raise ValueError("D_GATE_POSTCOMMIT_HANDOFF_INVALID")
+    handoff_raw=("# D Gate postcommit reconciliation - seq1062\n\n"
+                 "- exact200 commit/push 완료: 25dcaaa3854619f131cc93fa1ae5cd79479553ae; 시작 worktree clean.\n"
+                 "- 제품 회귀 2752 passed / 9 skipped; focused control 및 canonical checker PASS.\n"
+                 "- 전체 tooling 단일 약 2h / 4-shard 약 4h40m은 interrupt exit 1, INCOMPLETE / NOT_PASS다. D Gate 실패로 승격하지 않는다.\n"
+                 "- D Gate ACCEPTED / E-01 READY 유지; 이번 seq1062 exact7 control은 미커밋이며 remote는 Main 확인 증거다.\n\n"+text).encode()
+    digest={"schema_version":"1.0.0","digest_id":"D-GATE-POSTCOMMIT-DIGEST-20260917","package_id":"D-GATE","event_sequence":1062,
+            "algorithm":"SHA-256","created_at":D_GATE_POSTCOMMIT_AT,"scope":"seq1062 append-only; seq1-1061 raw prefix preserved; exact7",
+            "self_reference":False,"progress":{"path":D13_START_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),
+            "canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},"handoff":{"path":D13_START_H,"bytes":len(handoff_raw),
+            "file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}
+    generated={D13_START_P:progress_raw,D13_START_E:events_raw,D13_START_H:handoff_raw,D_GATE_POSTCOMMIT_D:_c21_resume_json_bytes(digest)}
+    generated.update({path:(root/path).read_bytes() for path in ("scripts/check_project_progress.py","tests/tooling/test_project_progress.py")})
+    manifest={"schema_version":"1.0.0","manifest_type":"D_GATE_POSTCOMMIT_RECONCILIATION","artifact_id":"D-GATE-POSTCOMMIT-20260917",
+              "created_at":D_GATE_POSTCOMMIT_AT,"package_id":"D-GATE","event_sequence":1062,"historical_event_sequence":1061,"appended_event_count":1,
+              "historical_raw_event_prefix":{"bytes":len(prefix),"sha256":_c21_resume_sha(prefix)},"historical_evidence_mutation_count":0,
+              "prior_manifest":{"path":D_GATE_RECONCILIATION_M,"bytes":len(prior_manifest),"sha256":_c21_resume_sha(prior_manifest)},
+              "accepted":True,"status":"ACCEPTED","d_gate":"ACCEPTED","e01_status":"READY_FOR_WORK_INSTRUCTION","pending_approvals":[],
+              "projection_mode":D_GATE_POSTCOMMIT_MODE,"exact_allowed_paths":exact,"exact_path_count":7,"publication":publication,"verification":verification,
+              "self_reference":False,"raw_checksums":[{"path":path,"bytes":len(value),"sha256":_c21_resume_sha(value)} for path,value in sorted(generated.items())]}
+    generated[D_GATE_POSTCOMMIT_M]=_c21_resume_json_bytes(manifest)
+    if sorted(generated)!=exact: raise ValueError("D_GATE_POSTCOMMIT_OUTPUT_SET_INVALID")
+    return generated
+
+
+def validate_d_gate_postcommit(bundle,manifest):
+    try:
+        expected=d_gate_postcommit_from_root(bundle["_root"])
+        objects={D13_START_P:bundle.get("progress"),D13_START_E:bundle.get("events"),D13_START_H:bundle.get("handoff"),
+                 D_GATE_POSTCOMMIT_D:bundle.get("detached_digest"),D_GATE_POSTCOMMIT_M:manifest}
+        errors=[]
+        for path,value in expected.items():
+            if (bundle["_root"]/path).read_bytes()!=value: errors.append("D_GATE_POSTCOMMIT_RAW_BYTES_INVALID")
+            if path in objects:
+                parsed=extract_handoff_summary(value.decode()) if path==D13_START_H else _c21_resume_json(value)
+                if not _c21_strict_json_equal(objects[path],parsed): errors.append("D_GATE_POSTCOMMIT_PROJECTION_INVALID")
+        return sorted(set(errors))
+    except Exception: return ["D_GATE_POSTCOMMIT_INPUT_INVALID"]
+
+
+def _collect_d_gate_postcommit_git(bundle):
+    try:
+        root=bundle["_root"]; raw=lambda *args:_c02_git_raw_stdout(root,*args)
+        scalar=lambda *args:_c02_strict_git_scalar(raw(*args))
+        staged=_c02_strict_name_only_paths(raw("-c","core.excludesFile=NUL","diff","--cached","--name-only"))
+        unstaged=_c02_strict_name_only_paths(raw("-c","core.excludesFile=NUL","diff","--name-only"))
+        untracked=_c02_strict_name_only_paths(raw("-c","core.excludesFile=NUL","ls-files","--others","--exclude-standard"))
+        publication=bundle["progress"].get("d_gate_postcommit_reconciliation",{}).get("publication",{})
+        errors=validate_d_gate_postcommit_git_facts(head=scalar("rev-parse","HEAD"),upstream_head=scalar("rev-parse","@{upstream}"),
+            remote_head=publication.get("remote_head"),branch=scalar("branch","--show-current"),parent=scalar("show","-s","--format=%P",D_GATE_POSTCOMMIT_HEAD),
+            committed_paths=_c02_strict_name_only_paths(raw("diff","--name-only",C14_START_BASE,D_GATE_POSTCOMMIT_HEAD)),staged=staged,dirty=sorted(set(unstaged+untracked)))
+        if scalar("rev-parse","--abbrev-ref","@{upstream}")!="development/"+C09_START_BRANCH or not _c02_git_quiet_check(root,"diff","--check"):
+            errors.append("D_GATE_POSTCOMMIT_GIT_INVALID")
+        return sorted(set(errors))
+    except Exception: return ["D_GATE_POSTCOMMIT_GIT_INVALID"]
 
 
 if __name__ == "__main__":
