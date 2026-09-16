@@ -1,0 +1,355 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-15_FINAL_ACCEPTANCE_DIR2",
+  "artifact_id": "C15-FINAL-DIR2-20260916",
+  "created_at": "2026-09-16T06:08:00+09:00",
+  "package_id": "C-15",
+  "event_sequence": 931,
+  "historical_event_sequence": 924,
+  "appended_event_count": 7,
+  "historical_raw_event_prefix": {
+    "bytes": 2697677,
+    "sha256": "1C8C66B2B62CBA31A68AF39B2A7BB5334DAC1F29BCC4EA77AA3B4282BC307525"
+  },
+  "historical_evidence_mutation_count": 0,
+  "accepted": true,
+  "status": "DIR_HOLD",
+  "c15_status": "ACCEPTED",
+  "dir2_status": "WAITING_OWNER_DIRECTION",
+  "dir2_verdict": "ALIGNED",
+  "active_leases": 0,
+  "subject_hash": "2868ADAC43C9DE5FB05100DFD0AA947AFBB04F708060CF5782C96B357AB848B7",
+  "report_path": "docs/test_reports/DIR-2_REPORT.md",
+  "report_sha256": "B4F11F77CDD83235E6C6F11F0D7DF7EA09F72A4431CA3DCFAF2F2A61F562C949",
+  "product_exact_paths": [
+    "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+    "packages/e2e/__init__.py",
+    "packages/e2e/harness.py",
+    "tests/e2e/test_synthetic_e2e.py"
+  ],
+  "product_raw": {
+    "docs/04_test_reports/C-15_COMPLETION_REPORT.md": {
+      "bytes": 19335,
+      "sha256": "F7B23810AD4F611A459C4223EE151DE4282A190B298C59ADE57F99732902F534"
+    },
+    "packages/e2e/__init__.py": {
+      "bytes": 506,
+      "sha256": "CB553895C98FEA359A41678C9E1CED71D10FDA12E0E3010769FFBEB75F96DA7E"
+    },
+    "packages/e2e/harness.py": {
+      "bytes": 31109,
+      "sha256": "E13BA9BD87AD828509D72CF70677DACE96ABE02E8D8EC50F17DFDA0F48676815"
+    },
+    "tests/e2e/test_synthetic_e2e.py": {
+      "bytes": 15505,
+      "sha256": "B4F3C85F4C64485B16EAA1574B8E9BA038C31A418D83812DD81740C5D501C212"
+    }
+  },
+  "exact_allowed_paths": [
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-14_START_MANIFEST.json",
+    "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+    "docs/evidence/manifests/C-15_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/dir-checkpoints.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c14-start.json",
+    "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+    "docs/progress/progress-handoff-detached-digest-c15-start.json",
+    "docs/test_reports/DIR-2_REPORT.md",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "packages/e2e/__init__.py",
+    "packages/e2e/harness.py",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "scripts/check_project_progress.py",
+    "tests/e2e/test_synthetic_e2e.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_gates_c14.py"
+  ],
+  "exact_path_count": 41,
+  "exact_path_list_sha256": "52E9E7104B51FFFFA99347E18E01D4FF88B8BD5285DE7CD15CB37E00B648B6AD",
+  "projection_mode": "C15_FINAL_ACCEPTANCE_DIR2_CUMULATIVE_EXACT41",
+  "validated_base_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+  "record_binding": "PRECOMMIT_C15_START_EXACT33_PLUS_PRODUCT_EXACT4_PLUS_DIR2_CONTROL_EXACT4",
+  "test_evidence": {
+    "passed": {
+      "c15": 40,
+      "related_without_stale_c01_snapshot": 910
+    },
+    "failed": {
+      "known_baseline": 1,
+      "c15": 0
+    },
+    "skipped": {
+      "c01_database_url_not_configured": 8,
+      "postgresql18_dsn_not_configured": 1
+    },
+    "commands": {
+      "c15": "python -B -m pytest -q -p no:cacheprovider tests/e2e/test_synthetic_e2e.py --disable-warnings -ra",
+      "related": "python -B -m pytest -q -p no:cacheprovider tests/e2e tests/verification tests/orchestration tests/planning tests/leases --ignore=tests/verification/test_c01_l3_independent_acceptance.py --disable-warnings -ra"
+    },
+    "compileall": {
+      "status": "PASS",
+      "exit_code": 0
+    },
+    "diff_check": {
+      "status": "PASS",
+      "exit_code": 0
+    }
+  },
+  "blocking_findings": 0,
+  "important_findings": 0,
+  "known_baseline_failure": {
+    "fingerprint": "C01_L3_UNAPPROVED_OPENAPI_PATH_DIFF",
+    "owner": "C-04/C-01_ACCEPTANCE_SNAPSHOT",
+    "unique_failure_count": 1,
+    "c15_regression": false,
+    "counted_as_pass": false,
+    "extra_routes": [
+      "GET /api/delegations/{id}",
+      "POST /api/delegations/{id}:steer",
+      "POST /api/delegations/{id}:cancel",
+      "POST /api/delegations/{id}:resume"
+    ]
+  },
+  "external_validation": {
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "secret_manager": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "external_authority_persistence": "NOT_EXECUTED"
+  },
+  "pending_approvals": [],
+  "commit_performed": false,
+  "push_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    {
+      "path": "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "bytes": 22494,
+      "sha256": "703A905896643C4F1C0A9FCAB19977754A60C40BEEA23A075206CAB4F8C73874"
+    },
+    {
+      "path": "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+      "bytes": 19335,
+      "sha256": "F7B23810AD4F611A459C4223EE151DE4282A190B298C59ADE57F99732902F534"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 10737,
+      "sha256": "A0AD46DB98A5899E2E870DE89EF820F805E97677F662D62701929BA2A0374F7C"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "bytes": 8885,
+      "sha256": "0FF49124A8B44FC427919C503751C070B2B6283A04D74ADEC2E97EFC17A011DD"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 11280,
+      "sha256": "94A8DD89BB7C0D89DDACA9E41AE4F38E5EDF15B1B5890F98510AF3EA013CBE22"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "bytes": 10662,
+      "sha256": "78D1607FFE803FCDE482BFB2635808EBC68C652039D7FA0305994C783C191F3F"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "bytes": 12576,
+      "sha256": "01A012E1FA8644B98D64CA0BFF3EE6B4E06DB9A11140186BFF2D370543AF9CF1"
+    },
+    {
+      "path": "docs/evidence/manifests/C-15_START_MANIFEST.json",
+      "bytes": 13958,
+      "sha256": "1AFBB1B24D47A33705AD13EC47CA24150BC1A6103D56B0492DDD70BC6ABA8007"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 198700,
+      "sha256": "F9BBF7A816D60682C2FB7BDC7CD65D0B93C19E333ED08816BE4AA5E7B9EB6703"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1004403,
+      "sha256": "F7060FE4A12058BBF905FF206F5412708CEB7CFA8F4275D7C2CB95F38FD5F961"
+    },
+    {
+      "path": "docs/progress/dir-checkpoints.json",
+      "bytes": 2537,
+      "sha256": "00EE6F014A448F54BF85BD5C14631EE3BD1A2EC723344834D3364ED4CC878C76"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2714805,
+      "sha256": "854F5A989D627B631AC7ADC48687D588D8F9363674F46ACD950845DBA699BD53"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "bytes": 894,
+      "sha256": "8F22521F72B6597C367B5578DDE2002BB01EA01BA4A918F1B421160FFAF024F0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "bytes": 861,
+      "sha256": "6FE5934F1406569B15033BC0E382B5AF64428889D30BBDE79F14F1F118809504"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+      "bytes": 880,
+      "sha256": "201FDB73C834546C3608F388376ECA290B9E154E66161D08D0999CCB1558808C"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+      "bytes": 888,
+      "sha256": "8CD70A638F58C1EAD12565D88070F4720E0E4B923076A3E80B869B6758BE1D6D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "bytes": 865,
+      "sha256": "9CEAA11AEBB0B17F74F829E55921E105BBEA267A47CEAAFE7E791125C8ECD8B0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+      "bytes": 1063,
+      "sha256": "504E24678B4429AB31A610F2615198AC0930069E06A6F01778990480E797C1C4"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c15-start.json",
+      "bytes": 866,
+      "sha256": "674BCF15E38C385D8E818AC631069D0F389100A5214A22C986CBDDD879681551"
+    },
+    {
+      "path": "docs/test_reports/DIR-2_REPORT.md",
+      "bytes": 1643,
+      "sha256": "B4F11F77CDD83235E6C6F11F0D7DF7EA09F72A4431CA3DCFAF2F2A61F562C949"
+    },
+    {
+      "path": "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "bytes": 555,
+      "sha256": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379"
+    },
+    {
+      "path": "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "bytes": 1749,
+      "sha256": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC"
+    },
+    {
+      "path": "packages/e2e/__init__.py",
+      "bytes": 506,
+      "sha256": "CB553895C98FEA359A41678C9E1CED71D10FDA12E0E3010769FFBEB75F96DA7E"
+    },
+    {
+      "path": "packages/e2e/harness.py",
+      "bytes": 31109,
+      "sha256": "E13BA9BD87AD828509D72CF70677DACE96ABE02E8D8EC50F17DFDA0F48676815"
+    },
+    {
+      "path": "packages/leases/service.py",
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    {
+      "path": "packages/orchestration/__init__.py",
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    {
+      "path": "packages/orchestration/developer_lifecycle.py",
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    {
+      "path": "packages/orchestration/takeover.py",
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    {
+      "path": "packages/tool_gateway/registry.py",
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    {
+      "path": "packages/verification/__init__.py",
+      "bytes": 963,
+      "sha256": "BCC2B4D3870A5D024F937876931CF4016E44CC08D71F1C41B572F6CE7522E489"
+    },
+    {
+      "path": "packages/verification/gates.py",
+      "bytes": 49991,
+      "sha256": "D09D9AD564820DAE4DF88DED9FCFD7DCA9D3B6C9D3AD719E9FCE97D40A980D8E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3847434,
+      "sha256": "B980C3AFF6F14791804BDC6E5533AE81CFF43B13950FAEA33C47FC44EC871E3A"
+    },
+    {
+      "path": "tests/e2e/test_synthetic_e2e.py",
+      "bytes": 15505,
+      "sha256": "B4F3C85F4C64485B16EAA1574B8E9BA038C31A418D83812DD81740C5D501C212"
+    },
+    {
+      "path": "tests/leases/test_worker_write_fencing.py",
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    {
+      "path": "tests/orchestration/test_failure_ledger_c12.py",
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    {
+      "path": "tests/orchestration/test_takeover_c13.py",
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    {
+      "path": "tests/tool_gateway/test_tool_registry.py",
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1064001,
+      "sha256": "A58323BA13BE66C0A9C53D923290BA70FB43B842DAC22841ED22967939823028"
+    },
+    {
+      "path": "tests/verification/test_gates_c14.py",
+      "bytes": 36442,
+      "sha256": "ACCD15AF02CA9FD6B5E4A3870A591922E8D5BA0B5023AE57BE7966FBE5FBA971"
+    }
+  ]
+}

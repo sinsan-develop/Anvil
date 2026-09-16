@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C14-START-DIGEST-20260916",
+  "package_id": "C-14",
+  "event_sequence": 910,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T10:00:00+09:00",
+  "scope": "seq907-910 C-14 autonomous start; seq1-906 preserved; cumulative exact23",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 996005,
+    "file_sha256": "9175C37EFA931115A90DDC55E3CC3BC27EAC907012D70F88EB2FD190C0069542",
+    "canonical_json_sha256": "0056F9F48B47D0FFE6AD19E7BB89B898FA33D3D5E663E62FF3E7D6402AD6EFA8"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 198296,
+    "file_sha256": "D54933D15194035C1C58BC80FB5214DC556AB81037C2A972D25CCEA6E8D6FA89",
+    "machine_summary_canonical_sha256": "0D9AB4FF6F94561DE7EBB25DEB1FF4A44E1F071C0BC7798D72F60715D95C89B3"
+  }
+}

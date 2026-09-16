@@ -1,0 +1,310 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "C-14_START",
+  "artifact_id": "C14-START-20260916",
+  "package_id": "C-14",
+  "created_at": "2026-09-16T10:00:00+09:00",
+  "event_sequence": 910,
+  "historical_event_sequence": 906,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 2648668,
+    "sha256": "3AA2B3DE6B612931C3242CA6F5E3722A2B4785F05DDD7A992757B243D2A8D956"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "validated_base_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+  "projection_mode": "C14_START_CUMULATIVE_EXACT23",
+  "record_binding": "PRECOMMIT_C13_EXACT21_PLUS_C14_START_EXACT2",
+  "exact_allowed_paths": [
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/evidence/manifests/C-14_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/progress/progress-handoff-detached-digest-c14-start.json",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "scripts/check_project_progress.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 23,
+  "exact_path_list_sha256": "914F129D781F0FD252CF678158F73DA8AF91A34C9BA511310B69DBEE717A2CDC",
+  "predecessor_product_raw": {
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md": {
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    "packages/leases/service.py": {
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    "packages/orchestration/__init__.py": {
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    "packages/orchestration/developer_lifecycle.py": {
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    "packages/orchestration/takeover.py": {
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    "packages/tool_gateway/registry.py": {
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    "tests/leases/test_worker_write_fencing.py": {
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    "tests/orchestration/test_failure_ledger_c12.py": {
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    "tests/orchestration/test_takeover_c13.py": {
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    "tests/tool_gateway/test_tool_registry.py": {
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    }
+  },
+  "worker_lease": {
+    "actor_id": "developer-primary-c14-r1",
+    "subject_ref": "C-14",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T10:00:00+09:00",
+    "expires_at": "2026-09-16T22:00:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c14-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
+      "tests/verification/test_gates_c14.py"
+    ],
+    "lease_id": "worker-lease-c14-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "c14-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-c14-r1",
+    "subject_ref": "C-14",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T10:00:00+09:00",
+    "expires_at": "2026-09-16T22:00:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c14-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
+      "tests/verification/test_gates_c14.py"
+    ],
+    "lease_id": "write-lease-c14-r1-20260916-001",
+    "worker_lease_id": "worker-lease-c14-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "c14-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "c14-r1-write-fence-epoch-1-234458b5283abafa"
+  },
+  "product_write_scope": [
+    "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "tests/verification/test_gates_c14.py"
+  ],
+  "work_instruction_path": "docs/work_orders/C-14_WORK_INSTRUCTION.md",
+  "work_instruction_sha256": "7FD6CE82630866CDF92513FF1413B76516F74E0310C9DAC131F340EEAF38CCC1",
+  "invocation_path": "docs/work_orders/C-14_INVOCATION_PROMPT.md",
+  "invocation_sha256": "F5F481A11FC866BB652E5835D694FE89126BC73CF2143AC7CEB2E910D4AE98BA",
+  "authority": {
+    "revision_class": "APPROVED_WORKPLAN_AUTONOMOUS_PACKAGE_START",
+    "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "work_instruction_id": "WI-C-14-R1-20260916-001",
+    "work_instruction_sha256": "7FD6CE82630866CDF92513FF1413B76516F74E0310C9DAC131F340EEAF38CCC1",
+    "invocation_sha256": "F5F481A11FC866BB652E5835D694FE89126BC73CF2143AC7CEB2E910D4AE98BA",
+    "baseline_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "source": "USER_DIRECT_WORKPLAN_CONTINUATION",
+    "user_direction_verbatim": "작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+    "approved_control_paths": [
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "packages/leases/service.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/takeover.py",
+      "packages/tool_gateway/registry.py",
+      "scripts/check_project_progress.py",
+      "tests/leases/test_worker_write_fencing.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/tool_gateway/test_tool_registry.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "c14_product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "push_authorized": false,
+    "new_project_approval_requested": false,
+    "pmo_report_is_approval": false
+  },
+  "external_validation": {
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "secret_manager": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
+    "subagent_runtime": "PENDING_DISPATCH"
+  },
+  "c13_status": "ACCEPTED",
+  "c15_status": "NOT_READY",
+  "dir2_status": "NOT_REACHED",
+  "pending_approvals": [],
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 10737,
+      "sha256": "A0AD46DB98A5899E2E870DE89EF820F805E97677F662D62701929BA2A0374F7C"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "bytes": 8885,
+      "sha256": "0FF49124A8B44FC427919C503751C070B2B6283A04D74ADEC2E97EFC17A011DD"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 198296,
+      "sha256": "D54933D15194035C1C58BC80FB5214DC556AB81037C2A972D25CCEA6E8D6FA89"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 996005,
+      "sha256": "9175C37EFA931115A90DDC55E3CC3BC27EAC907012D70F88EB2FD190C0069542"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2658186,
+      "sha256": "9CB83BB5CFAAED815216727ED4FBA459687686E8FD57838853A5EDBBF36D8E6B"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "bytes": 894,
+      "sha256": "8F22521F72B6597C367B5578DDE2002BB01EA01BA4A918F1B421160FFAF024F0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "bytes": 861,
+      "sha256": "6FE5934F1406569B15033BC0E382B5AF64428889D30BBDE79F14F1F118809504"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "bytes": 865,
+      "sha256": "9CEAA11AEBB0B17F74F829E55921E105BBEA267A47CEAAFE7E791125C8ECD8B0"
+    },
+    {
+      "path": "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "bytes": 555,
+      "sha256": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379"
+    },
+    {
+      "path": "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "bytes": 1749,
+      "sha256": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC"
+    },
+    {
+      "path": "packages/leases/service.py",
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    {
+      "path": "packages/orchestration/__init__.py",
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    {
+      "path": "packages/orchestration/developer_lifecycle.py",
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    {
+      "path": "packages/orchestration/takeover.py",
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    {
+      "path": "packages/tool_gateway/registry.py",
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3764014,
+      "sha256": "8760523C429FCC78C48C9D46A8513B17691019802AAD5F80E77ACE8E8C1D709F"
+    },
+    {
+      "path": "tests/leases/test_worker_write_fencing.py",
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    {
+      "path": "tests/orchestration/test_failure_ledger_c12.py",
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    {
+      "path": "tests/orchestration/test_takeover_c13.py",
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    {
+      "path": "tests/tool_gateway/test_tool_registry.py",
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1048523,
+      "sha256": "47545FD19B622DB50CEED2F7B54C31B914794804DC30877BABC40EC65B8D135D"
+    }
+  ]
+}

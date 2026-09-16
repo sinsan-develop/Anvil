@@ -38,6 +38,27 @@ class WorkerWriteFencingTests(unittest.TestCase):
             "run-1", second_worker.execution_fencing_token, second_write.write_fencing_token, NOW + timedelta(seconds=6)
         )
 
+    def test_takeover_snapshot_restores_worker_and_writes_exactly(self):
+        service = LeaseService(token_factory=iter(("exec-1", "write-1")).__next__)
+        worker = service.issue_worker("run-1", "worker-a", NOW, timedelta(minutes=5))
+        write = service.issue_write(worker, "repo-1:path.py:SENSITIVE", NOW, timedelta(minutes=5))
+        snapshot = service.takeover_snapshot(
+            "run-1", execution_token=worker.execution_fencing_token,
+        )
+        self.assertEqual(worker, service.active_worker("run-1"))
+
+        service.revoke_run("run-1", execution_token=worker.execution_fencing_token)
+        self.assertIsNone(service.active_worker("run-1"))
+        self.assertEqual((), service.active_writes("run-1"))
+        service.restore_takeover(snapshot)
+
+        self.assertEqual(worker, service.active_worker("run-1"))
+        self.assertEqual((write,), service.active_writes("run-1"))
+        service.require_current(
+            "run-1", worker.execution_fencing_token, write.write_fencing_token,
+            NOW + timedelta(minutes=1),
+        )
+
     @unittest.skipUnless(os.environ.get("ANVIL_B09_PG18_DSN"), "isolated PostgreSQL 18 DSN not configured")
     def test_postgres_orphan_reclaim_and_write_guard_fail_closed(self):
         import psycopg

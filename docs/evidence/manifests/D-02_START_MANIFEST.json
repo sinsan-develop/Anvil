@@ -1,0 +1,473 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "D-02_START",
+  "artifact_id": "D02-START-20260916",
+  "created_at": "2026-09-16T07:36:00+09:00",
+  "package_id": "D-02",
+  "event_sequence": 946,
+  "historical_event_sequence": 942,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 2749490,
+    "sha256": "C018E06483D36B28EC960A76722A44154CA697B8A039A39E1DFD974FDD56CDA4"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "d01_status": "ACCEPTED",
+  "active_leases": 2,
+  "product_write_scope": [
+    "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+    "packages/api/learning_snapshots.py",
+    "packages/knowledge/__init__.py",
+    "packages/knowledge/snapshots.py",
+    "tests/api/test_learning_snapshots_d02.py",
+    "tests/knowledge/test_snapshots_d02.py"
+  ],
+  "authority": {
+    "source": "APPROVED_WORK_PLAN_AUTONOMOUS_CONTINUATION",
+    "user_direction_verbatim": "작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+    "new_project_approval_requested": false,
+    "pmo_report_is_approval": false,
+    "d02_product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "work_instruction_sha256": "2350678782E65B3AFC7EBF6DFBED54634C297CDE2D60BA29451BFF6A212A3775",
+    "invocation_sha256": "8DE0A961652CDB23C89569988E63BCB434003BF61EC25B60CD2BCB029CD0D4F3",
+    "approved_control_paths": [
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+      "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+      "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+      "docs/evidence/manifests/C-15_START_MANIFEST.json",
+      "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+      "docs/evidence/manifests/D-01_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-01_START_MANIFEST.json",
+      "docs/evidence/manifests/D-02_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/dir-checkpoints.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c-gate.json",
+      "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+      "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+      "docs/progress/progress-handoff-detached-digest-c15-start.json",
+      "docs/progress/progress-handoff-detached-digest-d01-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d01-start.json",
+      "docs/progress/progress-handoff-detached-digest-d02-start.json",
+      "docs/test_reports/C-GATE_TEST_REPORT.md",
+      "docs/test_reports/DIR-2_REPORT.md",
+      "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-02_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-02_WORK_INSTRUCTION.md",
+      "packages/api/knowledge_memory.py",
+      "packages/e2e/__init__.py",
+      "packages/e2e/harness.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/memory.py",
+      "packages/leases/service.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/takeover.py",
+      "packages/tool_gateway/registry.py",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
+      "scripts/check_project_progress.py",
+      "tests/api/test_knowledge_memory_d01.py",
+      "tests/e2e/test_synthetic_e2e.py",
+      "tests/knowledge/test_memory_d01.py",
+      "tests/leases/test_worker_write_fencing.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/tool_gateway/test_tool_registry.py",
+      "tests/tooling/test_project_progress.py",
+      "tests/verification/test_gates_c14.py"
+    ]
+  },
+  "exact_allowed_paths": [
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+    "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-14_START_MANIFEST.json",
+    "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+    "docs/evidence/manifests/C-15_START_MANIFEST.json",
+    "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/D-01_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-01_START_MANIFEST.json",
+    "docs/evidence/manifests/D-02_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/dir-checkpoints.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-c-gate.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c14-start.json",
+    "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+    "docs/progress/progress-handoff-detached-digest-c15-start.json",
+    "docs/progress/progress-handoff-detached-digest-d01-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d01-start.json",
+    "docs/progress/progress-handoff-detached-digest-d02-start.json",
+    "docs/test_reports/C-GATE_TEST_REPORT.md",
+    "docs/test_reports/DIR-2_REPORT.md",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-02_WORK_INSTRUCTION.md",
+    "packages/api/knowledge_memory.py",
+    "packages/e2e/__init__.py",
+    "packages/e2e/harness.py",
+    "packages/knowledge/__init__.py",
+    "packages/knowledge/memory.py",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "scripts/check_project_progress.py",
+    "tests/api/test_knowledge_memory_d01.py",
+    "tests/e2e/test_synthetic_e2e.py",
+    "tests/knowledge/test_memory_d01.py",
+    "tests/leases/test_worker_write_fencing.py",
+    "tests/orchestration/test_failure_ledger_c12.py",
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_gates_c14.py"
+  ],
+  "exact_path_count": 61,
+  "exact_path_list_sha256": "F06D8031D96C7A24B9024306A04F1DDC6B5F0E66ED4573948FEC178372E4CDEB",
+  "projection_mode": "D02_START_CUMULATIVE_EXACT61",
+  "validated_base_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+  "record_binding": "PRECOMMIT_D01_FINAL_EXACT57_PLUS_D02_START_EXACT4",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "bytes": 16109,
+      "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+    },
+    {
+      "path": "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "bytes": 22494,
+      "sha256": "703A905896643C4F1C0A9FCAB19977754A60C40BEEA23A075206CAB4F8C73874"
+    },
+    {
+      "path": "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+      "bytes": 19335,
+      "sha256": "F7B23810AD4F611A459C4223EE151DE4282A190B298C59ADE57F99732902F534"
+    },
+    {
+      "path": "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+      "bytes": 22816,
+      "sha256": "96B035A722FFEE295156D9ED5660B34A5EBABB167F099AA470EC4AA485ECAD7D"
+    },
+    {
+      "path": "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+      "bytes": 643,
+      "sha256": "79705ACE62E05A680B328B24CC11ED12A572B65F5667607B8E71DE77111F64C7"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 10737,
+      "sha256": "A0AD46DB98A5899E2E870DE89EF820F805E97677F662D62701929BA2A0374F7C"
+    },
+    {
+      "path": "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "bytes": 8885,
+      "sha256": "0FF49124A8B44FC427919C503751C070B2B6283A04D74ADEC2E97EFC17A011DD"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 11280,
+      "sha256": "94A8DD89BB7C0D89DDACA9E41AE4F38E5EDF15B1B5890F98510AF3EA013CBE22"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "bytes": 10662,
+      "sha256": "78D1607FFE803FCDE482BFB2635808EBC68C652039D7FA0305994C783C191F3F"
+    },
+    {
+      "path": "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "bytes": 12576,
+      "sha256": "01A012E1FA8644B98D64CA0BFF3EE6B4E06DB9A11140186BFF2D370543AF9CF1"
+    },
+    {
+      "path": "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+      "bytes": 13198,
+      "sha256": "36339882A36FF3FBE17B7DD71DF261B14C0B105CF8268DD9A46CCD94697B46D5"
+    },
+    {
+      "path": "docs/evidence/manifests/C-15_START_MANIFEST.json",
+      "bytes": 13958,
+      "sha256": "1AFBB1B24D47A33705AD13EC47CA24150BC1A6103D56B0492DDD70BC6ABA8007"
+    },
+    {
+      "path": "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+      "bytes": 12092,
+      "sha256": "E090E674429CB3A3D31F2E6FA541A1064FC77C02C71E10089483203A36C911EB"
+    },
+    {
+      "path": "docs/evidence/manifests/D-01_FINAL_ACCEPTANCE_MANIFEST.json",
+      "bytes": 17499,
+      "sha256": "EDD82C2D4677532DCE4C2E2163CE04CF7CD09A9D50D28C84E75391D284E2CA1D"
+    },
+    {
+      "path": "docs/evidence/manifests/D-01_START_MANIFEST.json",
+      "bytes": 18882,
+      "sha256": "9913A31CB6F27E653DF12F263271BE5A97C54393632BC728B8B5C7380080CC3A"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 202938,
+      "sha256": "8F87C942CBE579D5B88087D7FC859DDDE2B1D062CE93BB185DBFB63A9EB5EC70"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1019819,
+      "sha256": "4A347F39F798C7541978F9705CAE2E49E00187829282F10FA86E5DF6028F6BB0"
+    },
+    {
+      "path": "docs/progress/dir-checkpoints.json",
+      "bytes": 2552,
+      "sha256": "A9157D741DD88DC1791C9D2E9A5156472CD5C18FD17820951E162DF74E68D72E"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 2768963,
+      "sha256": "93FA5C1FF0C8A1C27ED675ED4B2F2284C899C113268F8C0541D1044A08B52E87"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c-gate.json",
+      "bytes": 1054,
+      "sha256": "C661EDC984180FDD6757AC8DE04AF4FEAEF9CA0F730408ECF0A2968ADDC5188A"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "bytes": 894,
+      "sha256": "8F22521F72B6597C367B5578DDE2002BB01EA01BA4A918F1B421160FFAF024F0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "bytes": 861,
+      "sha256": "6FE5934F1406569B15033BC0E382B5AF64428889D30BBDE79F14F1F118809504"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+      "bytes": 880,
+      "sha256": "201FDB73C834546C3608F388376ECA290B9E154E66161D08D0999CCB1558808C"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+      "bytes": 888,
+      "sha256": "8CD70A638F58C1EAD12565D88070F4720E0E4B923076A3E80B869B6758BE1D6D"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "bytes": 865,
+      "sha256": "9CEAA11AEBB0B17F74F829E55921E105BBEA267A47CEAAFE7E791125C8ECD8B0"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+      "bytes": 1063,
+      "sha256": "504E24678B4429AB31A610F2615198AC0930069E06A6F01778990480E797C1C4"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-c15-start.json",
+      "bytes": 866,
+      "sha256": "674BCF15E38C385D8E818AC631069D0F389100A5214A22C986CBDDD879681551"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d01-final-acceptance.json",
+      "bytes": 881,
+      "sha256": "3AC131A9CFA756F9AADCB55820C7A9567BA816AEEDF52551F8568CB78BCEBEEF"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d01-start.json",
+      "bytes": 855,
+      "sha256": "EE5DC193322D0D358AA4A3150667908C485FADB7A8C4AB70B40A979690623456"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-d02-start.json",
+      "bytes": 865,
+      "sha256": "BA2FC7C6C1E7DB4C635350B3B99333D5C9C154F27042108089F1733F122A1C58"
+    },
+    {
+      "path": "docs/test_reports/C-GATE_TEST_REPORT.md",
+      "bytes": 978,
+      "sha256": "5FA2F2627D0689C9D70FCA8E0A80C0BCBCC98F25C14B9271B74138B6F23E8F80"
+    },
+    {
+      "path": "docs/test_reports/DIR-2_REPORT.md",
+      "bytes": 1643,
+      "sha256": "B4F11F77CDD83235E6C6F11F0D7DF7EA09F72A4431CA3DCFAF2F2A61F562C949"
+    },
+    {
+      "path": "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "bytes": 555,
+      "sha256": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379"
+    },
+    {
+      "path": "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "bytes": 1749,
+      "sha256": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC"
+    },
+    {
+      "path": "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+      "bytes": 340,
+      "sha256": "FB8DB49A70A6C7F6D30705E99013CB08A36DE930642B2929E3D3226D08EC6B49"
+    },
+    {
+      "path": "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+      "bytes": 4179,
+      "sha256": "91F655D13342B8C2BEF55DC346E24201A9FB7239707614F9900B24E016FE1AC6"
+    },
+    {
+      "path": "docs/work_orders/D-02_INVOCATION_PROMPT.md",
+      "bytes": 321,
+      "sha256": "8DE0A961652CDB23C89569988E63BCB434003BF61EC25B60CD2BCB029CD0D4F3"
+    },
+    {
+      "path": "docs/work_orders/D-02_WORK_INSTRUCTION.md",
+      "bytes": 4902,
+      "sha256": "2350678782E65B3AFC7EBF6DFBED54634C297CDE2D60BA29451BFF6A212A3775"
+    },
+    {
+      "path": "packages/api/knowledge_memory.py",
+      "bytes": 5005,
+      "sha256": "64F07C7DC9FD19B4934C76E041D4FCE96DB01057A2C21D6A872E4866C28A1C84"
+    },
+    {
+      "path": "packages/e2e/__init__.py",
+      "bytes": 506,
+      "sha256": "CB553895C98FEA359A41678C9E1CED71D10FDA12E0E3010769FFBEB75F96DA7E"
+    },
+    {
+      "path": "packages/e2e/harness.py",
+      "bytes": 31109,
+      "sha256": "E13BA9BD87AD828509D72CF70677DACE96ABE02E8D8EC50F17DFDA0F48676815"
+    },
+    {
+      "path": "packages/knowledge/__init__.py",
+      "bytes": 387,
+      "sha256": "BD16E2B7C813374F0CD4E2FC861B4BBBFD2336AB403B7F5722087FC1C9920292"
+    },
+    {
+      "path": "packages/knowledge/memory.py",
+      "bytes": 20520,
+      "sha256": "D730F3FC46BA374895B87C03580C346772D095C039BD3690094891D53483D1F7"
+    },
+    {
+      "path": "packages/leases/service.py",
+      "bytes": 10036,
+      "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+    },
+    {
+      "path": "packages/orchestration/__init__.py",
+      "bytes": 4818,
+      "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+    },
+    {
+      "path": "packages/orchestration/developer_lifecycle.py",
+      "bytes": 96227,
+      "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+    },
+    {
+      "path": "packages/orchestration/takeover.py",
+      "bytes": 33953,
+      "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+    },
+    {
+      "path": "packages/tool_gateway/registry.py",
+      "bytes": 10433,
+      "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+    },
+    {
+      "path": "packages/verification/__init__.py",
+      "bytes": 963,
+      "sha256": "BCC2B4D3870A5D024F937876931CF4016E44CC08D71F1C41B572F6CE7522E489"
+    },
+    {
+      "path": "packages/verification/gates.py",
+      "bytes": 49991,
+      "sha256": "D09D9AD564820DAE4DF88DED9FCFD7DCA9D3B6C9D3AD719E9FCE97D40A980D8E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 3925702,
+      "sha256": "8441C2EB68AF0B2830AF3EAF45B333AC2D1B78B64566AADD04FCCBAE0D5A226E"
+    },
+    {
+      "path": "tests/api/test_knowledge_memory_d01.py",
+      "bytes": 7723,
+      "sha256": "5C3E2BA90A0E6EBF67E91652CBF381AFC400E9AF2B8571B2CDF39DB5A96E6639"
+    },
+    {
+      "path": "tests/e2e/test_synthetic_e2e.py",
+      "bytes": 15505,
+      "sha256": "B4F3C85F4C64485B16EAA1574B8E9BA038C31A418D83812DD81740C5D501C212"
+    },
+    {
+      "path": "tests/knowledge/test_memory_d01.py",
+      "bytes": 19819,
+      "sha256": "9192BEA220BD5D2067074BF9644CA2149EA3AB880B9070C23C9142FB3307AE49"
+    },
+    {
+      "path": "tests/leases/test_worker_write_fencing.py",
+      "bytes": 7276,
+      "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+    },
+    {
+      "path": "tests/orchestration/test_failure_ledger_c12.py",
+      "bytes": 18439,
+      "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+    },
+    {
+      "path": "tests/orchestration/test_takeover_c13.py",
+      "bytes": 47735,
+      "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+    },
+    {
+      "path": "tests/tool_gateway/test_tool_registry.py",
+      "bytes": 2022,
+      "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1078105,
+      "sha256": "F43531F81BECD610109C04E8CF4AB52407622F1CA21D41C3CDA3C0540A97C3D0"
+    },
+    {
+      "path": "tests/verification/test_gates_c14.py",
+      "bytes": 36442,
+      "sha256": "ACCD15AF02CA9FD6B5E4A3870A591922E8D5BA0B5023AE57BE7966FBE5FBA971"
+    }
+  ]
+}

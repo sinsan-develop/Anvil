@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from itertools import permutations
 from threading import Event
 from types import SimpleNamespace
@@ -7,7 +8,10 @@ import pytest
 
 from packages.execution import ResultStatus
 from packages.orchestration import (
-    FailureLedger, FailureLedgerReasonCode, MainAgentTakeoverService,
+    FailureLedger, FailureLedgerReasonCode, LifecycleStatus,
+    MainAgentTakeoverService, TakeoverArtifactReference,
+    TakeoverEvidenceAuthority, TakeoverEvidenceRegistry,
+    TakeoverReferenceBundle, canonical_hash,
 )
 
 
@@ -280,27 +284,86 @@ def test_canonical_takeover_candidate_receipt_is_available_only_at_count_three()
 
 
 def test_canonical_candidate_receipt_is_accepted_by_existing_c13_for_all_permutations():
+    def artifact_reference(artifact_id, kind, checksum):
+        payload = {
+            "artifact_id": artifact_id, "kind": kind, "checksum": checksum,
+            "session_id": "run-1", "delegation_id": "del-1",
+            "step_lineage_id": "lineage-A",
+        }
+        return TakeoverArtifactReference(
+            artifact_id, kind, checksum, "run-1", "del-1", "lineage-A",
+            canonical_hash(payload),
+        )
+
     class Lifecycle:
+        def __init__(self):
+            self.status = LifecycleStatus.RUNNING
+
         def current(self, session_id):
-            return SimpleNamespace(session_id=session_id, delegation_id="del-1")
+            checkpoint = SimpleNamespace(
+                checkpoint_id="checkpoint-1", checkpoint_hash=HASH,
+                session_id=session_id, delegation_id="del-1", packet_hash=HASH,
+                verify=lambda: True,
+            )
+            return SimpleNamespace(
+                session_id=session_id, delegation_id="del-1", packet_hash=HASH,
+                checkpoint=checkpoint, status=self.status,
+            )
 
         def stop(self, session_id):
-            return None
+            self.status = LifecycleStatus.STOP_REQUESTED
+            return self.current(session_id)
+
+        def wait(self, session_id):
+            self.status = LifecycleStatus.STOPPED
+            return self.current(session_id)
+
+        def takeover_snapshot(self, session_id):
+            return self.status
+
+        def restore_takeover(self, snapshot):
+            self.status = snapshot
 
     class Leases:
         def __init__(self):
-            self._workers = {
-                "worker": SimpleNamespace(
-                    run_id="run-1", execution_fencing_token="exec",
-                )
-            }
+            self._worker = SimpleNamespace(execution_fencing_token="exec")
+            self._active = (SimpleNamespace(
+                execution_fencing_token="exec",
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=5),
+            ),)
+
+        def active_writes(self, session_id):
+            return self._active
+
+        def active_worker(self, session_id):
+            return self._worker
 
         def revoke_run(self, session_id, *, execution_token):
+            self._active = ()
+            self._worker = None
             return None
 
+        def takeover_snapshot(self, session_id, *, execution_token):
+            return self._worker, self._active
+
+        def restore_takeover(self, snapshot):
+            self._worker, self._active = snapshot
+
     class Tools:
+        def __init__(self):
+            self._active = {"run-1": frozenset({"shell"})}
+
         def revoke(self, session_id):
-            return None
+            self._active.pop(session_id, None)
+
+        def active(self, session_id):
+            return self._active.get(session_id, frozenset())
+
+        def takeover_snapshot(self, session_id):
+            return dict(self._active)
+
+        def restore_takeover(self, snapshot):
+            self._active = snapshot
 
     key = f"lineage-A|{FINGERPRINT}"
     for order in permutations((1, 2, 3)):
@@ -308,17 +371,52 @@ def test_canonical_candidate_receipt_is_accepted_by_existing_c13_for_all_permuta
         for number in order:
             assert ledger.record(report(f"r-{number}")).accepted
         receipt = ledger.takeover_candidate_receipt(key)
+        references = tuple(
+            artifact_reference(entry.result_id, "FAILURE_REPORT", entry.result_hash)
+            for entry in ledger.entries
+        )
+        work_instruction = artifact_reference("wi-1", "WORK_INSTRUCTION", HASH)
+        diff = artifact_reference("diff-1", "DIFF", HASH)
+        test_output = artifact_reference("test-1", "TEST_OUTPUT", HASH)
+        checkpoint = artifact_reference("checkpoint-1", "CHECKPOINT", HASH)
+        bundle_payload = {
+            "work_instruction": work_instruction.to_dict(),
+            "diff": diff.to_dict(), "test_output": test_output.to_dict(),
+            "checkpoint": checkpoint.to_dict(),
+            "failure_reports": [reference.to_dict() for reference in references],
+        }
+        reference_bundle = TakeoverReferenceBundle(
+            work_instruction, diff, test_output, checkpoint, references,
+            canonical_hash(bundle_payload),
+        )
+        evidence_authority = TakeoverEvidenceAuthority()
+        evidence_registry = TakeoverEvidenceRegistry(evidence_authority)
+        evidence_registry.publish(
+            work_instruction=work_instruction, diff=diff,
+            test_output=test_output, checkpoint=checkpoint,
+            authority=evidence_authority, sequence=1,
+        )
+        evidence_registry.seal(authority=evidence_authority)
+        lifecycle, leases, tools = Lifecycle(), Leases(), Tools()
         service = MainAgentTakeoverService(
-            ledger, Lifecycle(), Leases(), Tools(),
+            ledger, lifecycle, leases, tools,
+            evidence_registry=evidence_registry,
         )
 
         takeover = service.takeover(
             receipt, session_id="run-1", expected_lineage="lineage-A",
             expected_fingerprint=FINGERPRINT, execution_fencing_token="exec",
+            reference_bundle=reference_bundle,
+            expected_work_instruction_id="wi-1",
+            expected_work_instruction_checksum=HASH,
         )
 
         assert takeover.accepted
         assert takeover.packet.report_ids == ("r-1", "r-2", "r-3")
+        assert lifecycle.status is LifecycleStatus.STOPPED
+        assert leases.active_writes("run-1") == ()
+        assert tools.active("run-1") == frozenset()
+        assert len(service.packets) == len(service.audits) == 1
 
 
 def test_storage_failure_before_publish_leaves_every_canonical_collection_unchanged():

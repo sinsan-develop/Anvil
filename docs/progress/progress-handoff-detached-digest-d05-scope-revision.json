@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "D05-SCOPE-REVISION-DIGEST-20260916",
+  "package_id": "D-05",
+  "event_sequence": 974,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T10:23:41+09:00",
+  "scope": "seq974 append-only D-05 higher-design alignment; seq1-973 preserved; combined exact96",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1039724,
+    "file_sha256": "2EB317503E62784FCD3D470E7D8548DAEC7BD324AB3BBD61116B60FF397E92E2",
+    "canonical_json_sha256": "0E5F5F939D89F0426E5ABE85B6934E0EE5BD5B8FBDB9750DB58F348B58187CAA"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 207033,
+    "file_sha256": "90D295FC870347338B946FBE0970EDF8999B9A364D78AB7C7E495F8403259AEA",
+    "machine_summary_canonical_sha256": "E977351AAE3EBBEE822820CEF8DDE5350788DCB70BFBF7CDD80B179DB02027BC"
+  }
+}

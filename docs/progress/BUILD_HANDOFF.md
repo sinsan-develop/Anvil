@@ -1,3 +1,235 @@
+# D Gate historical C-01 OpenAPI regression reconciliation - seq1061
+
+- C-04에서 승인된 delegation route 4개를 C-01 historical schema 비교에서 명시적으로 제외했다.
+- C-01 execute 계약과 D Gate 판정은 불변이며 E-01은 READY_FOR_WORK_INSTRUCTION이다.
+
+# Phase D Gate acceptance - seq1060
+
+- D-01~D-13 누적 학습 계약과 D-13 전체 E2E를 수락했다.
+- AV-LRN-003~005 동일 target CRITICAL 확정 실패가 없어 DIRX-LRN-CRITICAL은 발생하지 않았다.
+- 실제 runtime consumer/UI/DB/HTTP/Provider/OS/deployment는 미실행이며 E-01 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-13 final acceptance - seq1059
+
+- 독립 ACCEPT와 lease 회수 완료.
+- D-GATE READY_FOR_WORK_INSTRUCTION.
+
+# D-13 start control - seq1054
+
+- D-12 acceptance 뒤 exact6 writer를 시작했다.
+- 실제 외부 runtime/DB/HTTP/Git mutation은 수행하지 않는다.
+
+# D-12 final acceptance - seq1050
+
+- 독립 ACCEPT와 lease 회수 완료.
+- D-13 READY_FOR_WORK_INSTRUCTION.
+
+# D-12 lease 시각 정정 - seq1045
+
+- 미래 시각 lease를 제품 수정 0건에서 회수하고 epoch-2 dual lease로 교체했다.
+- 승인 경계 변경 없이 D-12 TDD를 즉시 재개한다.
+
+# D-12 start control - seq1040
+
+- D-11 acceptance 뒤 exact6 writer를 시작했다.
+- 실제 외부 runtime/DB/HTTP/Git mutation은 수행하지 않는다.
+
+# D-11 final acceptance - seq1036
+
+- 독립 ACCEPT와 lease 회수 완료.
+- D-12 READY_FOR_WORK_INSTRUCTION.
+
+# D-11 start control - seq1031
+
+- D-10 acceptance 뒤 exact6 writer를 시작했다.
+- 실제 외부 runtime/DB/HTTP/Git mutation은 수행하지 않는다.
+
+# D-Hook Gate acceptance - seq1027
+
+- D-09/D-10 누적 Hook 계약 검증을 수락했다.
+- 실제 OS sandbox/process/durable persistence와 team 배포는 미실행이다.
+- D-11 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-10 final acceptance - seq1026
+
+- 독립 ACCEPT와 lease 회수 완료.
+- D-HOOK-GATE READY_FOR_WORK_INSTRUCTION.
+
+# D-10 start control - seq1021
+
+- D-09 acceptance 뒤 exact6 writer를 시작했다.
+- 실제 외부 runtime/DB/HTTP/Git mutation은 수행하지 않는다.
+
+# D-09 final acceptance - seq1017
+
+- 독립 ACCEPT와 lease 회수 완료.
+- D-10 READY_FOR_WORK_INSTRUCTION.
+
+# D-09 start control - seq1012
+
+- D-08 acceptance 뒤 exact6 writer를 시작했다.
+- 실제 외부 runtime/DB/HTTP/Git mutation은 수행하지 않는다.
+
+# D-08 final acceptance and D-Skill Gate - seq1008
+
+- D-08 R2 independent ACCEPT와 lease 회수를 기록했다.
+- fixture host-captured 3+ pilot/replay/human approval/rollback contract를 검증했고 operational pilot은 미실행이다.
+- 신규 Skill trusted_auto와 Hook 실행은 금지하며 D-09 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-08 start control - seq1002
+
+- D-07 acceptance 뒤 exact6 writer를 시작했다.
+- 실제 외부 runtime/DB/HTTP/Git mutation은 수행하지 않는다.
+
+# D-07 final acceptance - seq998
+
+- 독립 ACCEPT와 lease 회수 완료.
+- D-08 READY_FOR_WORK_INSTRUCTION.
+
+# D-07 start control - seq993
+
+- D-06 acceptance 뒤 exact6 writer를 시작했다.
+- 실제 외부 runtime/DB/HTTP/Git mutation은 수행하지 않는다.
+
+# D-06 final acceptance and D-Learning Gate - seq989
+
+- seq1~983 raw event bytes를 보존하고 seq984~989만 append했다.
+- D-06 R1 reviewer ACCEPT와 D-01~06 내부 Gate를 통과했다.
+- active lease 0, D-07 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-06 start control - seq983
+
+- D-05 독립 ACCEPT와 lease 회수 뒤 D-06 exact6 writer를 시작했다.
+- candidate evaluation·human approval·next-run activation·rollback·quarantine을 구현한다.
+- 실제 Skill/Hook runtime, DB/HTTP/queue와 Git mutation은 수행하지 않는다.
+
+# D-05 final acceptance - seq979
+
+- seq1~974 raw event object bytes를 보존하고 seq975~979만 append했다.
+- R1 authority/reissue rework를 닫고 reviewer ACCEPT, blocking/important 0을 확인했다.
+- focused 99 PASS, knowledge+api 1231 PASS이며 외부 queue/DB/HTTP는 수행하지 않았다.
+- active lease는 0건이고 D-06은 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-05 design alignment revision - seq974
+
+- 제품 mutation 전에 terminal Run 6종과 사용자 종료 Iteration을 상위 설계에 맞게 복원했다.
+- exact6, lease, fencing token은 변경하지 않았고 신규 승인을 요청하지 않았다.
+- D-05 TDD는 정정된 WorkInstruction hash로 계속한다.
+
+# D-05 start control - seq973
+
+- D-04 독립 ACCEPT와 lease 회수 뒤 D-05 exact6 writer를 시작했다.
+- terminal Run LearningReview·Reflection과 evidence-backed no-change를 구현한다.
+- 실제 queue/DB/HTTP/orchestration/activation과 Git mutation은 수행하지 않는다.
+
+# D-04 final acceptance - seq969
+
+- seq1~964 raw event bytes preserved; seq965~969 appended.
+- reviewer ACCEPT, blocking/important 0; focused 70, related 1132 PASS.
+- active leases 0; D-05 READY_FOR_WORK_INSTRUCTION.
+
+# D-04 start control - seq964
+
+- D-03 독립 ACCEPT와 lease 회수 뒤 D-04 exact6 writer를 시작했다.
+- CodePattern·ExampleReference·AntiPattern 추출과 metadata 조회만 구현한다.
+- 실제 AST/filesystem/network/DB/activation과 Git mutation은 수행하지 않는다.
+
+# D-03 final acceptance - seq960
+
+- seq1~955 raw event object bytes를 보존하고 seq956~960만 append했다.
+- R1~R3 rework를 닫고 reviewer ACCEPT, blocking/important 0을 확인했다.
+- focused 638 PASS, knowledge+api 1062 PASS이며 외부 IO는 수행하지 않았다.
+- active lease는 0건이고 D-04는 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-03 start control - seq955
+
+- D-02 독립 ACCEPT와 lease 회수 뒤 D-03 exact6 writer를 시작했다.
+- LearningSource 등록·검사·폐기 영향 계보만 구현한다.
+- 실제 filesystem/network/DB/Run pause와 Git mutation은 수행하지 않는다.
+
+# D-02 final acceptance - seq951
+
+- seq1~946 raw event object bytes를 보존하고 seq947~951만 append했다.
+- focused 51 PASS, knowledge+api 424 PASS와 독립 reviewer ACCEPT를 확인했다.
+- 실제 외부 IO는 수행하지 않았고 active lease는 0건이다.
+- D-03은 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-02 start control - seq946
+
+- D-01 독립 ACCEPT와 lease 회수 뒤 D-02 exact6 writer를 시작했다.
+- Session/Task/Run immutable LearningSnapshot과 next-run-only 적용만 구현한다.
+- 실제 DB/HTTP/browser/provider/deployment와 Git mutation은 수행하지 않는다.
+
+# D-01 final acceptance - seq942
+
+- seq1~937 raw event object bytes를 보존하고 seq938~942만 append했다.
+- 독립 R1/R2 REWORK를 닫고 R3 reviewer ACCEPT blocking/important 0을 확인했다.
+- focused 208 PASS, knowledge+api 373 PASS이며 실제 외부 IO는 수행하지 않았다.
+- active lease는 0건이고 D-02는 READY_FOR_WORK_INSTRUCTION이다.
+
+# D-01 start control - seq937
+
+- C Gate ACCEPTED / DIR-2 CLEARED를 선행조건으로 D-01 exact6 writer를 시작했다.
+- USER/MEMORY provenance, scope, expiry, priority conflict, capacity만 구현한다.
+- 실제 DB/HTTP/browser/provider/deployment와 Git mutation은 수행하지 않는다.
+
+# DIR-2 owner direction / C Gate decision - seq933
+
+- 신산님의 현재 직접 지시를 DIR-2 CONTINUE Event에 결박했다.
+- DIR-2 CLEARED 뒤 C Gate를 ACCEPTED로 판정했고 D-01은 READY_NOT_STARTED다.
+- active agent/worker/write lease는 모두 null이며 실제 외부 검증은 승격하지 않았다.
+
+# C-15 final acceptance / DIR-2 hold - seq931
+
+- C-15 독립 Reviewer ACCEPT, Blocking/Important 0으로 Main acceptance를 기록했다.
+- worker/write lease는 모두 회수했고 DIR-2는 ALIGNED / WAITING_OWNER_DIRECTION이다.
+- C Gate와 D-01은 canonical owner direction Event 전까지 시작하지 않는다.
+
+# C-15 시작 통제 - seq924
+
+- 승인된 작업계획서의 마지막 Phase C Package를 신규 승인 요청 없이 시작했다.
+- active writer는 developer-primary-c15-r1 한 명이며 synthetic E2E exact4만 담당한다.
+- 실제 Provider/DB/browser/deployment와 Git mutation은 수행하지 않는다.
+
+# C-14 final acceptance - seq920
+
+- seq1~915 raw event object bytes를 보존하고 seq916~920만 append했다.
+- 독립 R0 REWORK 3건을 R1에서 닫고 reviewer ACCEPT blocking/important 0을 확인했다.
+- C-14 130 PASS, 분리 회귀 702 PASS이며 기존 C-01 snapshot fail 1과 DB skip 8은 PASS가 아니다.
+- active lease는 0건이고 C-15는 READY_FOR_WORK_INSTRUCTION이다.
+
+# C-14 lease 시각 정정 - seq915
+
+- 판정: 미래 시각으로 발급된 seq908~909 lease는 제품 수정 0건 상태에서 회수했다.
+- seq911~915를 append하고 현재 host 시각에 유효한 epoch-2 dual lease로 교체했다.
+- 승인 경계 변경 없이 C-14 exact4 TDD를 즉시 재개한다.
+
+# C-14 시작 통제 - seq910
+
+- 판정: 승인된 작업계획서의 C-14 자동 시작이며 신규 승인 요청이 아니다.
+- C-13 accepted exact21을 보존하고 C-14 start control 2개를 누적했다.
+- active writer는 developer-primary-c14-r1 한 명이며 제품 exact4만 담당한다.
+- 외부 실행과 Git stage/commit/push는 수행하지 않는다.
+
+# C-13 final acceptance - seq906
+
+- seq1~901 raw event object bytes preserved; seq902~906만 append했다.
+- 두 차례 독립 REWORK의 결함을 닫고 C-13 product exact10을 최종 수락했다.
+- Main fresh 검증은 C13+C12 62, orchestration 558, lease/tool 29 PASS다.
+- active worker/write/tool capability는 0건이며 C-14는 READY_FOR_WORK_INSTRUCTION이다.
+- full repository 단일 수집은 기존 환경/collector 경계로 BLOCKED이며 통과로 표시하지 않았다.
+- DB·API·browser·Provider·network·Secret·WSL·Docker·deployment는 미실행이다.
+
+# C-13 시작 통제 - seq901
+
+- 판정: 승인된 작업계획서에 따른 C-13 자동 시작이며 신규 프로젝트 승인이 아니다.
+- C-12 ACCEPTED commit a3fa3ed를 clean 기준선으로 exact9 start control만 투영했다.
+- seq1~896 raw event object bytes는 보존하고 seq897~901만 append했다.
+- R2는 최신 WorkInstruction·diff·test output·checkpoint·실패보고 결박 누락을 TDD로 보완한다.
+- active writer는 developer-primary-c13-r1 한 명이며 dual fencing lease를 발급했다.
+- PMO 보고는 승인으로 취급하지 않고 pending approvals는 0건이다.
+- 외부 실행·DB·API·browser·Provider·network·Secret·WSL·Docker·deployment는 미실행이다.
+
 # C-12 final acceptance - seq896
 
 - seq1~891 raw event object bytes preserved; seq892~896만 append했다.
@@ -1088,119 +1320,263 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 896,
-  "last_event_id": "evt_c12_final_main_package_accepted",
+  "event_sequence": 1061,
+  "last_event_id": "evt_d_gate_historical_c01_openapi_reconciled",
   "status": "ACCEPTED",
-  "current_phase": "C",
-  "current_work_package": "C-12",
+  "current_phase": "D",
+  "current_work_package": "D-13",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "C13_READY_NOT_STARTED_THIS_TURN",
+  "next_safe_action": "E01_READY_AFTER_FULL_REGRESSION",
   "accepted": true,
-  "c11_status": "ACCEPTED",
-  "c12_status": "ACCEPTED",
-  "c13_status": "READY_FOR_WORK_INSTRUCTION",
-  "dir2_status": "NOT_REACHED",
+  "c_gate_status": "ACCEPTED",
+  "d_gate": "ACCEPTED",
+  "dirx_lrn_critical": "NOT_TRIGGERED",
+  "d_gate_regression_reconciliation": "PASS",
+  "dir2_status": "CLEARED",
   "dir_status": "CLEARED",
-  "repository_head": "4112a48bcd47619a582d480399d8015bf41df007",
+  "repository_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
   "repository_upstream": "development/main",
-  "repository_projection_mode": "C12_FINAL_ACCEPTANCE_EXACT12",
+  "repository_projection_mode": "D_GATE_REGRESSION_RECONCILIATION_CUMULATIVE_EXACT200",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+    "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-03_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-04_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-05_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-06_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-07_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-08_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-09_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-10_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-11_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-12_COMPLETION_REPORT.md",
+    "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+    "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+    "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-13_START_MANIFEST.json",
+    "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/C-14_START_MANIFEST.json",
+    "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+    "docs/evidence/manifests/C-15_START_MANIFEST.json",
+    "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/D-01_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-01_START_MANIFEST.json",
+    "docs/evidence/manifests/D-02_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-02_START_MANIFEST.json",
+    "docs/evidence/manifests/D-03_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-03_START_MANIFEST.json",
+    "docs/evidence/manifests/D-04_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-04_START_MANIFEST.json",
+    "docs/evidence/manifests/D-05_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-05_SCOPE_REVISION_MANIFEST.json",
+    "docs/evidence/manifests/D-05_START_MANIFEST.json",
+    "docs/evidence/manifests/D-06_FINAL_D_LEARNING_GATE_MANIFEST.json",
+    "docs/evidence/manifests/D-06_START_MANIFEST.json",
+    "docs/evidence/manifests/D-07_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-07_START_MANIFEST.json",
+    "docs/evidence/manifests/D-08_FINAL_D_SKILL_GATE_MANIFEST.json",
+    "docs/evidence/manifests/D-08_START_MANIFEST.json",
+    "docs/evidence/manifests/D-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-09_START_MANIFEST.json",
+    "docs/evidence/manifests/D-10_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-10_START_MANIFEST.json",
+    "docs/evidence/manifests/D-11_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-11_START_MANIFEST.json",
+    "docs/evidence/manifests/D-12_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-12_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/D-12_START_MANIFEST.json",
+    "docs/evidence/manifests/D-13_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/D-13_START_MANIFEST.json",
+    "docs/evidence/manifests/D-GATE_DECISION_MANIFEST.json",
+    "docs/evidence/manifests/D-GATE_REGRESSION_RECONCILIATION_MANIFEST.json",
+    "docs/evidence/manifests/D-HOOK-GATE_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
+    "docs/progress/dir-checkpoints.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c12-final-acceptance.json",
-    "packages/orchestration/failure_ledger.py",
-    "packages/orchestration/outcome_resolver.py",
+    "docs/progress/progress-handoff-detached-digest-c-gate.json",
+    "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c13-start.json",
+    "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-c14-start.json",
+    "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+    "docs/progress/progress-handoff-detached-digest-c15-start.json",
+    "docs/progress/progress-handoff-detached-digest-d-gate-regression-reconciliation.json",
+    "docs/progress/progress-handoff-detached-digest-d-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d-hook-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d01-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d01-start.json",
+    "docs/progress/progress-handoff-detached-digest-d02-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d02-start.json",
+    "docs/progress/progress-handoff-detached-digest-d03-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d03-start.json",
+    "docs/progress/progress-handoff-detached-digest-d04-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d04-start.json",
+    "docs/progress/progress-handoff-detached-digest-d05-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d05-scope-revision.json",
+    "docs/progress/progress-handoff-detached-digest-d05-start.json",
+    "docs/progress/progress-handoff-detached-digest-d06-final-d-learning-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d06-start.json",
+    "docs/progress/progress-handoff-detached-digest-d07-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d07-start.json",
+    "docs/progress/progress-handoff-detached-digest-d08-final-d-skill-gate.json",
+    "docs/progress/progress-handoff-detached-digest-d08-start.json",
+    "docs/progress/progress-handoff-detached-digest-d09-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d09-start.json",
+    "docs/progress/progress-handoff-detached-digest-d10-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d10-start.json",
+    "docs/progress/progress-handoff-detached-digest-d11-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d11-start.json",
+    "docs/progress/progress-handoff-detached-digest-d12-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d12-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-d12-start.json",
+    "docs/progress/progress-handoff-detached-digest-d13-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-d13-start.json",
+    "docs/test_reports/C-GATE_TEST_REPORT.md",
+    "docs/test_reports/DIR-2_REPORT.md",
+    "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-02_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-03_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-04_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-05_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-06_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-06_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-07_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-08_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-08_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-09_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-10_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-10_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-11_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-11_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-12_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-12_WORK_INSTRUCTION.md",
+    "docs/work_orders/D-13_INVOCATION_PROMPT.md",
+    "docs/work_orders/D-13_WORK_INSTRUCTION.md",
+    "packages/api/hook_runtime.py",
+    "packages/api/hooks.py",
+    "packages/api/knowledge_memory.py",
+    "packages/api/knowledge_patterns.py",
+    "packages/api/learning_candidates.py",
+    "packages/api/learning_e2e.py",
+    "packages/api/learning_journey.py",
+    "packages/api/learning_reviews.py",
+    "packages/api/learning_snapshots.py",
+    "packages/api/learning_sources.py",
+    "packages/api/model_registry.py",
+    "packages/api/skill_evolution.py",
+    "packages/api/skills.py",
+    "packages/e2e/__init__.py",
+    "packages/e2e/harness.py",
+    "packages/knowledge/__init__.py",
+    "packages/knowledge/candidates.py",
+    "packages/knowledge/hook_runtime.py",
+    "packages/knowledge/hooks.py",
+    "packages/knowledge/learning_e2e.py",
+    "packages/knowledge/learning_journey.py",
+    "packages/knowledge/memory.py",
+    "packages/knowledge/model_registry.py",
+    "packages/knowledge/patterns.py",
+    "packages/knowledge/reviews.py",
+    "packages/knowledge/skill_evolution.py",
+    "packages/knowledge/skills.py",
+    "packages/knowledge/snapshots.py",
+    "packages/knowledge/sources.py",
+    "packages/leases/service.py",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/developer_lifecycle.py",
+    "packages/orchestration/takeover.py",
+    "packages/tool_gateway/registry.py",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
     "scripts/check_project_progress.py",
+    "tests/api/test_hook_runtime_d10.py",
+    "tests/api/test_hooks_d09.py",
+    "tests/api/test_knowledge_memory_d01.py",
+    "tests/api/test_knowledge_patterns_d04.py",
+    "tests/api/test_learning_candidates_d06.py",
+    "tests/api/test_learning_e2e_d13.py",
+    "tests/api/test_learning_journey_d12.py",
+    "tests/api/test_learning_reviews_d05.py",
+    "tests/api/test_learning_snapshots_d02.py",
+    "tests/api/test_learning_sources_d03.py",
+    "tests/api/test_model_registry_d11.py",
+    "tests/api/test_skill_evolution_d08.py",
+    "tests/api/test_skills_d07.py",
+    "tests/e2e/test_synthetic_e2e.py",
+    "tests/knowledge/test_candidates_d06.py",
+    "tests/knowledge/test_hook_runtime_d10.py",
+    "tests/knowledge/test_hooks_d09.py",
+    "tests/knowledge/test_learning_e2e_d13.py",
+    "tests/knowledge/test_learning_journey_d12.py",
+    "tests/knowledge/test_memory_d01.py",
+    "tests/knowledge/test_model_registry_d11.py",
+    "tests/knowledge/test_patterns_d04.py",
+    "tests/knowledge/test_reviews_d05.py",
+    "tests/knowledge/test_skill_evolution_d08.py",
+    "tests/knowledge/test_skills_d07.py",
+    "tests/knowledge/test_snapshots_d02.py",
+    "tests/knowledge/test_sources_d03.py",
+    "tests/leases/test_worker_write_fencing.py",
     "tests/orchestration/test_failure_ledger_c12.py",
-    "tests/orchestration/test_outcome_resolver_c07.py",
-    "tests/tooling/test_project_progress.py"
+    "tests/orchestration/test_takeover_c13.py",
+    "tests/tool_gateway/test_tool_registry.py",
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_c01_l3_independent_acceptance.py",
+    "tests/verification/test_gates_c14.py"
   ],
-  "product_exact_paths": [
-    "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-    "packages/orchestration/failure_ledger.py",
-    "packages/orchestration/outcome_resolver.py",
-    "tests/orchestration/test_failure_ledger_c12.py",
-    "tests/orchestration/test_outcome_resolver_c07.py"
-  ],
-  "control_exact_paths": [
-    "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/progress/BUILD_HANDOFF.md",
-    "docs/progress/build-progress.json",
-    "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-c12-final-acceptance.json",
-    "scripts/check_project_progress.py",
-    "tests/tooling/test_project_progress.py"
-  ],
-  "test_evidence": {
-    "passed": {
-      "c12_c06_c07_focused": 147,
-      "orchestration": 519,
-      "c11_planning": 155,
-      "review_attack_bundle": 12
-    },
-    "failed": 0,
-    "commands": {
-      "focused": "python -B -m pytest -q -p no:cacheprovider tests/orchestration/test_failure_ledger_c12.py tests/orchestration/test_failure_report_c06.py tests/orchestration/test_outcome_resolver_c07.py",
-      "orchestration": "python -B -m pytest -q -p no:cacheprovider tests/orchestration",
-      "c11_planning": "python -B -m pytest -q -p no:cacheprovider tests/planning/test_c11_admission.py tests/planning/test_c11_planner.py"
-    },
-    "compileall": {
-      "status": "PASS",
-      "exit_code": 0
-    },
-    "diff_check": {
-      "status": "PASS",
-      "exit_code": 0
-    }
+  "reconciliation_evidence": {
+    "failure": "C01_L3_UNAPPROVED_OPENAPI_PATH_DIFF",
+    "cause": "HISTORICAL_C01_SCHEMA_ASSERTION_INCLUDED_ACCEPTED_C04_DELEGATION_ROUTES",
+    "approved_successor_operations": [
+      "GET /api/delegations/{id}",
+      "POST /api/delegations/{id}:cancel",
+      "POST /api/delegations/{id}:resume",
+      "POST /api/delegations/{id}:steer"
+    ],
+    "repair": "EXPLICITLY_PROJECT_APPROVED_SUCCESSOR_OPERATIONS_OUT_OF_C01_HISTORICAL_SCHEMA",
+    "focused_result": "1_PASS_8_DESELECTED",
+    "product_regression_before_repair": "2751_PASS_9_SKIP_1_FAIL",
+    "product_behavior_changed": false,
+    "d_gate_verdict_changed": false
   },
-  "independent_reviews": {
-    "blocking_findings": 0,
-    "important_findings": 0,
-    "review_rework_count": 5,
-    "spec": {
-      "verdict": "ACCEPT",
-      "blocking": 0,
-      "important": 0
-    },
-    "quality": {
-      "verdict": "ACCEPT",
-      "blocking": 0,
-      "important": 0
-    },
-    "resolved_findings": [
-      "FORGED_OR_STALE_LEDGER_RECEIPT",
-      "CROSS_COMPONENT_TRANSACTION_GAP",
-      "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
-      "SAME_KEY_ORDER_NONDETERMINISM",
-      "LEDGER_POST_SWAP_EXCEPTION",
-      "RESOLVER_POST_SWAP_EXCEPTION",
-      "CANONICAL_C13_RECEIPT_COMPATIBILITY"
-    ]
-  },
-  "external_validation": {
-    "actual_takeover": "NOT_EXECUTED",
-    "lease_tool_recovery": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "api": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
-    "provider": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "secret_manager": "NOT_EXECUTED",
-    "wsl": "NOT_EXECUTED",
-    "docker": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED"
-  },
-  "current_manifest": "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
+  "current_manifest": "docs/evidence/manifests/D-GATE_REGRESSION_RECONCILIATION_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE",
+  "pending_approvals": [],
   "staged": false,
-  "commit_performed": false
+  "commit_performed": false,
+  "d01_status": "ACCEPTED",
+  "d02_status": "ACCEPTED",
+  "d03_status": "ACCEPTED",
+  "d04_status": "ACCEPTED",
+  "d05_status": "ACCEPTED",
+  "d06_status": "ACCEPTED",
+  "d07_status": "ACCEPTED",
+  "d08_status": "ACCEPTED",
+  "d09_status": "ACCEPTED",
+  "d10_status": "ACCEPTED",
+  "d11_status": "ACCEPTED",
+  "d12_status": "ACCEPTED",
+  "d13_status": "ACCEPTED",
+  "e01_status": "READY_FOR_WORK_INSTRUCTION"
 }
 ```
 

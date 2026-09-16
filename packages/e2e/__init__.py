@@ -9,7 +9,8 @@ from .harness import (
     E2EResponse,
     E2EProjection,
     SyntheticE2EHarness,
+    SyntheticHumanContext,
     run_synthetic_e2e,
 )
 
-__all__ = ["E2EError", "E2EResponse", "E2EProjection", "SyntheticE2EHarness", "run_synthetic_e2e"]
+__all__ = ["E2EError", "E2EResponse", "E2EProjection", "SyntheticE2EHarness", "SyntheticHumanContext", "run_synthetic_e2e"]

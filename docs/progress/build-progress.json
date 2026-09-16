@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-c12-final-acceptance-seq896",
-  "event_sequence": 896,
-  "updated_at": "2026-09-15T22:10:00+09:00",
-  "last_event_id": "evt_c12_final_main_package_accepted",
+  "snapshot_id": "snapshot-d-gate-regression-reconciliation-seq1061",
+  "event_sequence": 1061,
+  "updated_at": "2026-09-17T01:00:00+09:00",
+  "last_event_id": "evt_d_gate_historical_c01_openapi_reconciled",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "current_phase": "C",
-  "current_work_package": "C-12",
+  "current_phase": "D",
+  "current_work_package": "D-13",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -58,7 +58,24 @@
     "C-09",
     "C-10",
     "C-11",
-    "C-12"
+    "C-12",
+    "C-13",
+    "C-14",
+    "C-15",
+    "C-GATE",
+    "D-01",
+    "D-02",
+    "D-03",
+    "D-04",
+    "D-05",
+    "D-06",
+    "D-07",
+    "D-08",
+    "D-09",
+    "D-10",
+    "D-11",
+    "D-12",
+    "D-13"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -303,51 +320,29 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-      "sha256": "D5FD8EC8C23E74E97BE15449A77F339DCE3F4F191DF3590FD8D6479CF423D222"
-    },
-    {
-      "path": "packages/orchestration/failure_ledger.py",
-      "sha256": "528DD9AF18AAEF0BDCB02997538E9944C3AD78A16C42DD1C9C7CDCC98689DEF9"
-    },
-    {
-      "path": "packages/orchestration/outcome_resolver.py",
-      "sha256": "ADCE05679EC92D1FD1D45805F9FDB786DE25F9C7ECCDF6155C2C0A8916461BB6"
-    },
-    {
-      "path": "tests/orchestration/test_failure_ledger_c12.py",
-      "sha256": "51213D0F48E9D852A2A1C569B5B1E0ED5F0084F1B8E0FCF5586CC15E86C1CF37"
-    },
-    {
-      "path": "tests/orchestration/test_outcome_resolver_c07.py",
-      "sha256": "0042FE92DC14B6BAD751D7AD2A725013251B69C93F8CA2C82E7FCAE442B17AA0"
+      "path": "tests/verification/test_c01_l3_independent_acceptance.py",
+      "sha256": "0CAA1C871AFECBF60527B00D74C55BA753217EDC16F453F343B2EE0B0AF8BF78"
     },
     {
       "path": "docs/progress/progress-events.json",
-      "sha256": "A368E1AE902B71AB7F072F390611F321D547322A5C3FCD1725D9F781B5214F32"
-    },
-    {
-      "path": "scripts/check_project_progress.py",
-      "sha256": "C0FF4736B094A1A4A819185E91AA3523F88E7A411D3E953F5C70878A6EBA3F16"
-    },
-    {
-      "path": "tests/tooling/test_project_progress.py",
-      "sha256": "7B3165FE9CA472C3121E0CAF084AE153983A96101E493B63C969C443666FDAA2"
+      "sha256": "E096F4E3933FB73E5A2F43F1491FFCB3335F135F5F46436BDB5DBE47259AE955"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "C12-FINAL-ACCEPTANCE-20260915"
+    "path": "docs/evidence/manifests/D-GATE_REGRESSION_RECONCILIATION_MANIFEST.json",
+    "artifact_id": "D-GATE-REGRESSION-RECONCILIATION-20260917"
   },
   "pending_approvals": [],
   "dir_review": {
-    "checkpoint": "DIR-1",
+    "checkpoint": "DIR-2",
     "status": "CLEARED",
-    "report_path": "docs/test_reports/DIR-1_REPORT.md",
-    "owner_reported_at": "2026-08-13T09:20:00+09:00",
+    "verdict": "ALIGNED",
+    "subject_hash": "2868ADAC43C9DE5FB05100DFD0AA947AFBB04F708060CF5782C96B357AB848B7",
+    "report_path": "docs/test_reports/DIR-2_REPORT.md",
+    "owner_direction_event_id": "evt_dir2_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C13_READY_NOT_STARTED_THIS_TURN",
+  "next_safe_action": "E01_READY_AFTER_FULL_REGRESSION",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -457,9 +452,9 @@
     }
   },
   "repository": {
-    "projection_mode": "C12_FINAL_ACCEPTANCE_EXACT12",
-    "validated_base_commit": "4112a48bcd47619a582d480399d8015bf41df007",
-    "head_relation": "PRECOMMIT_EXACT12_OR_CLEAN_SOLE_DIRECT_CHILD_C12_ACCEPTANCE",
+    "projection_mode": "D_GATE_REGRESSION_RECONCILIATION_CUMULATIVE_EXACT200",
+    "validated_base_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "head_relation": "PRECOMMIT_D_GATE_EXACT197_PLUS_C01_HISTORICAL_TEST_FIX1_PLUS_CONTROL_EXACT2",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/main",
     "remote_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
@@ -467,18 +462,206 @@
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-03_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-04_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-05_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-06_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-07_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-08_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-09_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-10_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-11_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-12_COMPLETION_REPORT.md",
+      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+      "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+      "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/C-14_START_MANIFEST.json",
+      "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+      "docs/evidence/manifests/C-15_START_MANIFEST.json",
+      "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+      "docs/evidence/manifests/D-01_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-01_START_MANIFEST.json",
+      "docs/evidence/manifests/D-02_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-02_START_MANIFEST.json",
+      "docs/evidence/manifests/D-03_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-03_START_MANIFEST.json",
+      "docs/evidence/manifests/D-04_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-04_START_MANIFEST.json",
+      "docs/evidence/manifests/D-05_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-05_SCOPE_REVISION_MANIFEST.json",
+      "docs/evidence/manifests/D-05_START_MANIFEST.json",
+      "docs/evidence/manifests/D-06_FINAL_D_LEARNING_GATE_MANIFEST.json",
+      "docs/evidence/manifests/D-06_START_MANIFEST.json",
+      "docs/evidence/manifests/D-07_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-07_START_MANIFEST.json",
+      "docs/evidence/manifests/D-08_FINAL_D_SKILL_GATE_MANIFEST.json",
+      "docs/evidence/manifests/D-08_START_MANIFEST.json",
+      "docs/evidence/manifests/D-09_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-09_START_MANIFEST.json",
+      "docs/evidence/manifests/D-10_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-10_START_MANIFEST.json",
+      "docs/evidence/manifests/D-11_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-11_START_MANIFEST.json",
+      "docs/evidence/manifests/D-12_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-12_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/D-12_START_MANIFEST.json",
+      "docs/evidence/manifests/D-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/D-13_START_MANIFEST.json",
+      "docs/evidence/manifests/D-GATE_DECISION_MANIFEST.json",
+      "docs/evidence/manifests/D-GATE_REGRESSION_RECONCILIATION_MANIFEST.json",
+      "docs/evidence/manifests/D-HOOK-GATE_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
+      "docs/progress/dir-checkpoints.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c12-final-acceptance.json",
-      "packages/orchestration/failure_ledger.py",
-      "packages/orchestration/outcome_resolver.py",
+      "docs/progress/progress-handoff-detached-digest-c-gate.json",
+      "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+      "docs/progress/progress-handoff-detached-digest-c14-start.json",
+      "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+      "docs/progress/progress-handoff-detached-digest-c15-start.json",
+      "docs/progress/progress-handoff-detached-digest-d-gate-regression-reconciliation.json",
+      "docs/progress/progress-handoff-detached-digest-d-gate.json",
+      "docs/progress/progress-handoff-detached-digest-d-hook-gate.json",
+      "docs/progress/progress-handoff-detached-digest-d01-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d01-start.json",
+      "docs/progress/progress-handoff-detached-digest-d02-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d02-start.json",
+      "docs/progress/progress-handoff-detached-digest-d03-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d03-start.json",
+      "docs/progress/progress-handoff-detached-digest-d04-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d04-start.json",
+      "docs/progress/progress-handoff-detached-digest-d05-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d05-scope-revision.json",
+      "docs/progress/progress-handoff-detached-digest-d05-start.json",
+      "docs/progress/progress-handoff-detached-digest-d06-final-d-learning-gate.json",
+      "docs/progress/progress-handoff-detached-digest-d06-start.json",
+      "docs/progress/progress-handoff-detached-digest-d07-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d07-start.json",
+      "docs/progress/progress-handoff-detached-digest-d08-final-d-skill-gate.json",
+      "docs/progress/progress-handoff-detached-digest-d08-start.json",
+      "docs/progress/progress-handoff-detached-digest-d09-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d09-start.json",
+      "docs/progress/progress-handoff-detached-digest-d10-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d10-start.json",
+      "docs/progress/progress-handoff-detached-digest-d11-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d11-start.json",
+      "docs/progress/progress-handoff-detached-digest-d12-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d12-lease-time-correction.json",
+      "docs/progress/progress-handoff-detached-digest-d12-start.json",
+      "docs/progress/progress-handoff-detached-digest-d13-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-d13-start.json",
+      "docs/test_reports/C-GATE_TEST_REPORT.md",
+      "docs/test_reports/DIR-2_REPORT.md",
+      "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-02_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-02_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-03_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-03_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-04_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-04_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-05_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-05_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-06_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-06_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-07_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-07_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-08_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-08_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-09_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-09_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-10_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-10_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-11_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-11_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-12_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-12_WORK_INSTRUCTION.md",
+      "docs/work_orders/D-13_INVOCATION_PROMPT.md",
+      "docs/work_orders/D-13_WORK_INSTRUCTION.md",
+      "packages/api/hook_runtime.py",
+      "packages/api/hooks.py",
+      "packages/api/knowledge_memory.py",
+      "packages/api/knowledge_patterns.py",
+      "packages/api/learning_candidates.py",
+      "packages/api/learning_e2e.py",
+      "packages/api/learning_journey.py",
+      "packages/api/learning_reviews.py",
+      "packages/api/learning_snapshots.py",
+      "packages/api/learning_sources.py",
+      "packages/api/model_registry.py",
+      "packages/api/skill_evolution.py",
+      "packages/api/skills.py",
+      "packages/e2e/__init__.py",
+      "packages/e2e/harness.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/candidates.py",
+      "packages/knowledge/hook_runtime.py",
+      "packages/knowledge/hooks.py",
+      "packages/knowledge/learning_e2e.py",
+      "packages/knowledge/learning_journey.py",
+      "packages/knowledge/memory.py",
+      "packages/knowledge/model_registry.py",
+      "packages/knowledge/patterns.py",
+      "packages/knowledge/reviews.py",
+      "packages/knowledge/skill_evolution.py",
+      "packages/knowledge/skills.py",
+      "packages/knowledge/snapshots.py",
+      "packages/knowledge/sources.py",
+      "packages/leases/service.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/takeover.py",
+      "packages/tool_gateway/registry.py",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
       "scripts/check_project_progress.py",
+      "tests/api/test_hook_runtime_d10.py",
+      "tests/api/test_hooks_d09.py",
+      "tests/api/test_knowledge_memory_d01.py",
+      "tests/api/test_knowledge_patterns_d04.py",
+      "tests/api/test_learning_candidates_d06.py",
+      "tests/api/test_learning_e2e_d13.py",
+      "tests/api/test_learning_journey_d12.py",
+      "tests/api/test_learning_reviews_d05.py",
+      "tests/api/test_learning_snapshots_d02.py",
+      "tests/api/test_learning_sources_d03.py",
+      "tests/api/test_model_registry_d11.py",
+      "tests/api/test_skill_evolution_d08.py",
+      "tests/api/test_skills_d07.py",
+      "tests/e2e/test_synthetic_e2e.py",
+      "tests/knowledge/test_candidates_d06.py",
+      "tests/knowledge/test_hook_runtime_d10.py",
+      "tests/knowledge/test_hooks_d09.py",
+      "tests/knowledge/test_learning_e2e_d13.py",
+      "tests/knowledge/test_learning_journey_d12.py",
+      "tests/knowledge/test_memory_d01.py",
+      "tests/knowledge/test_model_registry_d11.py",
+      "tests/knowledge/test_patterns_d04.py",
+      "tests/knowledge/test_reviews_d05.py",
+      "tests/knowledge/test_skill_evolution_d08.py",
+      "tests/knowledge/test_skills_d07.py",
+      "tests/knowledge/test_snapshots_d02.py",
+      "tests/knowledge/test_sources_d03.py",
+      "tests/leases/test_worker_write_fencing.py",
       "tests/orchestration/test_failure_ledger_c12.py",
-      "tests/orchestration/test_outcome_resolver_c07.py",
-      "tests/tooling/test_project_progress.py"
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/tool_gateway/test_tool_registry.py",
+      "tests/tooling/test_project_progress.py",
+      "tests/verification/test_c01_l3_independent_acceptance.py",
+      "tests/verification/test_gates_c14.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
       "docs/WORK_STATUS.md",
@@ -494,8 +677,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "UNSTAGED_PRODUCT_EXACT5_PLUS_ACCEPTANCE_CONTROL_EXACT7",
-    "local_head": "4112a48bcd47619a582d480399d8015bf41df007",
+    "worktree_status": "UNSTAGED_D_GATE_REGRESSION_RECONCILIATION_CUMULATIVE_EXACT200",
+    "local_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1300,15 +1483,15 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "4112a48bcd47619a582d480399d8015bf41df007",
+    "control_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
-      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-      "packages/orchestration/__init__.py",
-      "packages/orchestration/failure_ledger.py",
-      "packages/orchestration/outcome_resolver.py",
-      "tests/orchestration/test_failure_ledger_c12.py",
-      "tests/orchestration/test_outcome_resolver_c07.py"
+      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+      "packages/api/learning_e2e.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/learning_e2e.py",
+      "tests/api/test_learning_e2e_d13.py",
+      "tests/knowledge/test_learning_e2e_d13.py"
     ],
     "product_parent": "b74c9e1713b4234b51942b69438f0398ba27c2c5",
     "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
@@ -1323,11 +1506,12 @@
       "a0cdc6aabcca14ae36ce6077bf9d2f0d89a70658"
     ],
     "product_exact_paths": [
-      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-      "packages/orchestration/failure_ledger.py",
-      "packages/orchestration/outcome_resolver.py",
-      "tests/orchestration/test_failure_ledger_c12.py",
-      "tests/orchestration/test_outcome_resolver_c07.py"
+      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+      "packages/api/learning_e2e.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/learning_e2e.py",
+      "tests/api/test_learning_e2e_d13.py",
+      "tests/knowledge/test_learning_e2e_d13.py"
     ],
     "feature_final_commit": "fdb68e96e96057bc9d6d988d1f1e25a0506b67b0",
     "feature_final_parent": "db2b52fc85d022c5af51a1927a0133bf081f4586",
@@ -1374,11 +1558,15 @@
       "tests/tooling/test_project_progress.py"
     ],
     "acceptance_control_paths": [
-      "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-13_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-c12-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-13_WORK_INSTRUCTION.md",
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
@@ -1411,8 +1599,10 @@
       "tests/action_policy/test_policy.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "dispatch_head": "c4335de145631804b7b7eb6e7c0689f66e2964d7",
-    "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+    "acceptance_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "acceptance_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82"
   },
   "a01_precondition": {
     "status": "ACCEPTED",
@@ -1498,67 +1688,70 @@
     ]
   },
   "phase_gate": {
-    "gate": "A Gate",
+    "gate": "C Gate",
     "decision": "ACCEPTED",
     "checkpoint_status": "CLEARED_AND_DECIDED",
-    "decision_ref": "docs/test_reports/A-GATE_TEST_REPORT.md",
-    "approval_mode": "DIR1_OWNER_DIRECTION_APPLIED",
-    "approval_ref": "APPROVAL-20260813-DIR1-CONTINUE-001",
-    "owner_report_review_status": "ALIGNED_CONTINUE",
-    "b01_start_allowed": true,
-    "b01_started": true
+    "decision_ref": "docs/test_reports/C-GATE_TEST_REPORT.md",
+    "approval_mode": "DIR2_OWNER_DIRECTION_APPLIED",
+    "approval_ref": "APPROVAL-20260916-DIR2-CONTINUE-001",
+    "d01_start_allowed": true,
+    "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "artifact_id": "WI-C-12-20260915-001",
-    "artifact_path": "docs/work_orders/C-12_WORK_INSTRUCTION.md",
-    "artifact_sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8",
-    "invocation_path": "docs/work_orders/C-12_INVOCATION_PROMPT.md",
-    "invocation_sha256": "489947C8C80FB32C90BAD2C8B2D5162EB1A700F0E1A6F4452C0EFEECC879C333",
-    "executor": "developer-primary-c12-r1",
-    "product_write_scope": [
-      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-      "packages/orchestration/__init__.py",
-      "packages/orchestration/failure_ledger.py",
-      "packages/orchestration/outcome_resolver.py",
-      "tests/orchestration/test_failure_ledger_c12.py",
-      "tests/orchestration/test_outcome_resolver_c07.py"
-    ],
+    "work_package_id": "D-13",
+    "artifact_path": "docs/work_orders/D-13_WORK_INSTRUCTION.md",
+    "artifact_sha256": "42FE577495653D3972965954DF6FFB2FE69EC4449AAFDBC7B9F20304012D2D33",
+    "invocation_path": "docs/work_orders/D-13_INVOCATION_PROMPT.md",
+    "invocation_sha256": "2C92752D3D8719A7202A52DD027959D4B42654335302298643958684AFAE8FDD",
+    "status": "IN_PROGRESS",
     "result_status": "COMPLETED",
+    "accepted": true,
+    "product_write_scope": [
+      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+      "packages/api/learning_e2e.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/learning_e2e.py",
+      "tests/api/test_learning_e2e_d13.py",
+      "tests/knowledge/test_learning_e2e_d13.py"
+    ],
+    "worker_lease_id": "worker-lease-d13-r1-20260916-001",
+    "write_lease_id": "write-lease-d13-r1-20260916-001",
     "package_status": "ACCEPTED",
-    "rework_attempt": 1,
+    "independent_reviewer_status": "PASS",
     "independent_review": {
+      "verdict": "ACCEPT",
       "blocking_findings": 0,
       "important_findings": 0,
-      "review_rework_count": 5,
-      "spec": {
-        "verdict": "ACCEPT",
-        "blocking": 0,
-        "important": 0
-      },
-      "quality": {
-        "verdict": "ACCEPT",
-        "blocking": 0,
-        "important": 0
-      },
+      "minor_findings": 0,
+      "rework_rounds": 4,
       "resolved_findings": [
-        "FORGED_OR_STALE_LEDGER_RECEIPT",
-        "CROSS_COMPONENT_TRANSACTION_GAP",
-        "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
-        "SAME_KEY_ORDER_NONDETERMINISM",
-        "LEDGER_POST_SWAP_EXCEPTION",
-        "RESOLVER_POST_SWAP_EXCEPTION",
-        "CANONICAL_C13_RECEIPT_COMPATIBILITY"
+        "GENERIC_OWNER_REVISION_PROJECTION",
+        "SAME_TASK_NEW_RUN_ACCEPTED",
+        "PRE_RUN_TERMINAL_EVIDENCE_ACCEPTED",
+        "FINAL_DIFF_SEARCH_NOT_BOUND",
+        "OWNER_EVIDENCE_OPTIONAL",
+        "OWNER_REVISION_USE_PARTIAL_PUBLICATION"
+      ],
+      "verified_behaviors": [
+        "PUBLISH_LAST_OWNER_USE_BINDING",
+        "FAULT_RETRY_REUSES_CANONICAL_RECEIPT",
+        "LOCAL_AND_CANONICAL_USE_HASH_BOUND",
+        "MISSING_OR_FORGED_USE_FAIL_CLOSED",
+        "NEXT_TASK_ONLY_APPLICATION",
+        "SOURCE_REVOKE_AND_ROLLBACK_ISOLATION",
+        "TERMINAL_ATTESTATION_BINDING",
+        "NO_CHANGE_REVIEW",
+        "CONDITIONAL_DIRX_DEDUPLICATION"
       ]
-    },
-    "accepted": true,
-    "independent_reviewer_status": "PASS"
+    }
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "C12_ACCEPTED",
-      "C13_NOT_STARTED_THIS_TURN",
-      "DIR2_NOT_REACHED"
+      "D_GATE_ACCEPTED",
+      "HISTORICAL_TEST_RECONCILED",
+      "E01_REMAINS_READY",
+      "NO_APPROVAL_BOUNDARY"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1707,49 +1900,52 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "last_completed_work_instruction": {
-    "artifact_id": "WI-C-12-20260915-001",
-    "artifact_path": "docs/work_orders/C-12_WORK_INSTRUCTION.md",
-    "artifact_sha256": "73F0B259091FFB697CBD9209F77098CF16D9351C92795738261C57D038EDEFA8",
-    "invocation_path": "docs/work_orders/C-12_INVOCATION_PROMPT.md",
-    "invocation_sha256": "489947C8C80FB32C90BAD2C8B2D5162EB1A700F0E1A6F4452C0EFEECC879C333",
-    "executor": "developer-primary-c12-r1",
-    "product_write_scope": [
-      "docs/04_test_reports/C-12_COMPLETION_REPORT.md",
-      "packages/orchestration/__init__.py",
-      "packages/orchestration/failure_ledger.py",
-      "packages/orchestration/outcome_resolver.py",
-      "tests/orchestration/test_failure_ledger_c12.py",
-      "tests/orchestration/test_outcome_resolver_c07.py"
-    ],
+    "work_package_id": "D-13",
+    "artifact_path": "docs/work_orders/D-13_WORK_INSTRUCTION.md",
+    "artifact_sha256": "42FE577495653D3972965954DF6FFB2FE69EC4449AAFDBC7B9F20304012D2D33",
+    "invocation_path": "docs/work_orders/D-13_INVOCATION_PROMPT.md",
+    "invocation_sha256": "2C92752D3D8719A7202A52DD027959D4B42654335302298643958684AFAE8FDD",
+    "status": "IN_PROGRESS",
     "result_status": "COMPLETED",
+    "accepted": true,
+    "product_write_scope": [
+      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+      "packages/api/learning_e2e.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/learning_e2e.py",
+      "tests/api/test_learning_e2e_d13.py",
+      "tests/knowledge/test_learning_e2e_d13.py"
+    ],
+    "worker_lease_id": "worker-lease-d13-r1-20260916-001",
+    "write_lease_id": "write-lease-d13-r1-20260916-001",
     "package_status": "ACCEPTED",
-    "rework_attempt": 1,
+    "independent_reviewer_status": "PASS",
     "independent_review": {
+      "verdict": "ACCEPT",
       "blocking_findings": 0,
       "important_findings": 0,
-      "review_rework_count": 5,
-      "spec": {
-        "verdict": "ACCEPT",
-        "blocking": 0,
-        "important": 0
-      },
-      "quality": {
-        "verdict": "ACCEPT",
-        "blocking": 0,
-        "important": 0
-      },
+      "minor_findings": 0,
+      "rework_rounds": 4,
       "resolved_findings": [
-        "FORGED_OR_STALE_LEDGER_RECEIPT",
-        "CROSS_COMPONENT_TRANSACTION_GAP",
-        "PARTIAL_LEDGER_MUTATION_ON_EXCEPTION",
-        "SAME_KEY_ORDER_NONDETERMINISM",
-        "LEDGER_POST_SWAP_EXCEPTION",
-        "RESOLVER_POST_SWAP_EXCEPTION",
-        "CANONICAL_C13_RECEIPT_COMPATIBILITY"
+        "GENERIC_OWNER_REVISION_PROJECTION",
+        "SAME_TASK_NEW_RUN_ACCEPTED",
+        "PRE_RUN_TERMINAL_EVIDENCE_ACCEPTED",
+        "FINAL_DIFF_SEARCH_NOT_BOUND",
+        "OWNER_EVIDENCE_OPTIONAL",
+        "OWNER_REVISION_USE_PARTIAL_PUBLICATION"
+      ],
+      "verified_behaviors": [
+        "PUBLISH_LAST_OWNER_USE_BINDING",
+        "FAULT_RETRY_REUSES_CANONICAL_RECEIPT",
+        "LOCAL_AND_CANONICAL_USE_HASH_BOUND",
+        "MISSING_OR_FORGED_USE_FAIL_CLOSED",
+        "NEXT_TASK_ONLY_APPLICATION",
+        "SOURCE_REVOKE_AND_ROLLBACK_ISOLATION",
+        "TERMINAL_ATTESTATION_BINDING",
+        "NO_CHANGE_REVIEW",
+        "CONDITIONAL_DIRX_DEDUPLICATION"
       ]
-    },
-    "accepted": true,
-    "independent_reviewer_status": "PASS"
+    }
   },
   "runtime_boundary_approval": {
     "approval_id": "APPROVAL-20260814-YSNA-INTERNAL-DEPLOY-001",
@@ -1764,9 +1960,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "C-12",
-    "path": "docs/progress/progress-handoff-detached-digest-c12-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/C-12_FINAL_ACCEPTANCE_MANIFEST.json"
+    "package_id": "D-GATE",
+    "path": "docs/progress/progress-handoff-detached-digest-d-gate-regression-reconciliation.json",
+    "manifest_path": "docs/evidence/manifests/D-GATE_REGRESSION_RECONCILIATION_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -1779,7 +1975,7 @@
     },
     "dir_checkpoints": {
       "path": "docs/progress/dir-checkpoints.json",
-      "sha256": "D59282F07FDB30BC36601815A7E08E9D0FAA4C0B35BCA1D2E82A306FC9BF980E"
+      "sha256": "A9157D741DD88DC1791C9D2E9A5156472CD5C18FD17820951E162DF74E68D72E"
     },
     "progress_event_contract": {
       "path": "docs/progress/progress-event-contract.json",
@@ -1787,11 +1983,11 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "A368E1AE902B71AB7F072F390611F321D547322A5C3FCD1725D9F781B5214F32"
+      "sha256": "E096F4E3933FB73E5A2F43F1491FFCB3335F135F5F46436BDB5DBE47259AE955"
     }
   },
   "next_work_package": {
-    "package_id": "C-13",
+    "package_id": "E-01",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": null,
@@ -2181,8 +2377,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "E9A35E28580850E2637820B76FDDFA8BD02D9591105BD7EA0797C3D9D71C2E15",
-  "runtime_next_action": "C13_READY_NOT_STARTED_THIS_TURN",
+  "snapshot_hash": "4CABAADBD76C1B33E7743FFFD8AE2A23014F77776563396A569972AD94DA9039",
+  "runtime_next_action": "E01_READY_AFTER_FULL_REGRESSION",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -3794,7 +3990,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-15T22:10:00+09:00",
+  "recorded_at": "2026-09-17T01:00:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -17770,5 +17966,2582 @@
     },
     "c13_status": "READY_FOR_WORK_INSTRUCTION",
     "dir2_status": "NOT_REACHED"
+  },
+  "c13_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 906,
+    "authority": {
+      "revision_class": "APPROVED_WORKPLAN_AUTONOMOUS_PACKAGE_START",
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "work_instruction_id": "WI-C-13-R2-20260916-001",
+      "work_instruction_sha256": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC",
+      "invocation_sha256": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379",
+      "baseline_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+      "authority_hashes": {
+        "docs/work_orders/C-13_WORK_INSTRUCTION.md": "50BB663273657CFF0058C394E9FC4CD1E6748C94585054583ADEE52BD4545FFC",
+        "docs/work_orders/C-13_INVOCATION_PROMPT.md": "DA6CD10C97637AACEB6F8B9E07DA2BF7730455A5277EC3430E7F1877D9441379",
+        "Anvil_설계서_v2.md": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "Anvil_작업계획서_v1.md": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+        "Anvil_통합검증매트릭스_v1.md": "289933C795F689AF3AF3E44F48B563580EF1B5D9E266AD5583490EDBCABC3DB5",
+        "Anvil_테스트계획서_v1.md": "9C288947F6F77AADDF73ED150EC449B71BE7D1981358A71EA211687B6A75D644",
+        "docs/governance/ANVIL_OPERATING_RULES.md": "4AA7B81629924DC47519353CF396A7FF85BAC8FB50F7A1B63D9F1337E8F6216E",
+        "docs/approvals/APPROVAL-20260814-WORKPLAN-V16-001.md": "3DFC292FA2F3A312B64EC8B14B991977643E7FE0F2E39889C8219EE3E9F6C236"
+      },
+      "approval_date": "2026-09-16",
+      "user_direction_verbatim": "작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+      "source": "USER_DIRECT_WORKPLAN_CONTINUATION",
+      "approved_control_paths": [
+        "docs/evidence/manifests/C-13_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c13-start.json",
+        "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+        "scripts/check_project_progress.py",
+        "tests/tooling/test_project_progress.py"
+      ],
+      "c13_product_tdd_authorized_now": true,
+      "external_execution_authorized": false,
+      "push_authorized": false,
+      "new_project_approval_requested": false,
+      "pmo_report_is_approval": false
+    },
+    "external_validation": {
+      "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
+      "network": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "subagent_runtime": "PENDING_DISPATCH_AFTER_START_CONTROL_COMMIT"
+    },
+    "c12_status": "ACCEPTED",
+    "c14_status": "NOT_READY",
+    "dir2_status": "NOT_REACHED",
+    "error_count": 0
+  },
+  "completed_c13_worker_lease": {
+    "actor_id": "developer-primary-c13-r1",
+    "subject_ref": "C-13",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T00:35:00+09:00",
+    "expires_at": "2026-09-16T12:35:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "c13-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "packages/leases/service.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/takeover.py",
+      "packages/tool_gateway/registry.py",
+      "tests/leases/test_worker_write_fencing.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ],
+    "lease_id": "worker-lease-c13-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "c13-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T08:45:00+09:00",
+    "reason": "C13_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "completed_c13_write_lease": {
+    "actor_id": "developer-primary-c13-r1",
+    "subject_ref": "C-13",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T00:35:00+09:00",
+    "expires_at": "2026-09-16T12:35:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "c13-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "packages/leases/service.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/takeover.py",
+      "packages/tool_gateway/registry.py",
+      "tests/leases/test_worker_write_fencing.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ],
+    "lease_id": "write-lease-c13-r1-20260916-001",
+    "worker_lease_id": "worker-lease-c13-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "c13-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "c13-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T08:45:00+09:00",
+    "reason": "C13_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "c13_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 906,
+    "product_exact_paths": [
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+      "packages/leases/service.py",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/developer_lifecycle.py",
+      "packages/orchestration/takeover.py",
+      "packages/tool_gateway/registry.py",
+      "tests/leases/test_worker_write_fencing.py",
+      "tests/orchestration/test_failure_ledger_c12.py",
+      "tests/orchestration/test_takeover_c13.py",
+      "tests/tool_gateway/test_tool_registry.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/C-13_COMPLETION_REPORT.md": {
+        "bytes": 16109,
+        "sha256": "8C5FA72A4D4DACB1D56539A986B247099B57D07473BA854EAF25906290CDB042"
+      },
+      "packages/leases/service.py": {
+        "bytes": 10036,
+        "sha256": "0DE46292EB47B71E306A91A805419C50466F55D13B103386DBFBF06F02A1B2D4"
+      },
+      "packages/orchestration/__init__.py": {
+        "bytes": 4818,
+        "sha256": "04ACDEA58E9569F1EF03AB4ED1E7D3635661E0C98DEC697A76E62D21899A7119"
+      },
+      "packages/orchestration/developer_lifecycle.py": {
+        "bytes": 96227,
+        "sha256": "D2BF6F939E1C745F3E1F790630C92D55C98E922FAC9B481F9B051453D66E1ADA"
+      },
+      "packages/orchestration/takeover.py": {
+        "bytes": 33953,
+        "sha256": "7BAA7CDF9BDAF2BDE7E947BAD6467614791A517E7F6E680E2C1AD81269C9BD14"
+      },
+      "packages/tool_gateway/registry.py": {
+        "bytes": 10433,
+        "sha256": "9BA5C20337B24AA48A37DF17FE3DA1189F570BD8AF1DF1CB6BE7AF5870CC02BF"
+      },
+      "tests/leases/test_worker_write_fencing.py": {
+        "bytes": 7276,
+        "sha256": "15E39D26D948DD3958FF02A5903EA7B324AEE317C9095C2A7D3D3F0AA9747ECA"
+      },
+      "tests/orchestration/test_failure_ledger_c12.py": {
+        "bytes": 18439,
+        "sha256": "6B8C4AD4FC0267CECD38FE8C7EFA49CD39DE4181563D2636D99109290F919557"
+      },
+      "tests/orchestration/test_takeover_c13.py": {
+        "bytes": 47735,
+        "sha256": "617F983D1389AA312301C72129B90BB11FDE5712622DA99487C22D5456F7BDE3"
+      },
+      "tests/tool_gateway/test_tool_registry.py": {
+        "bytes": 2022,
+        "sha256": "AC5BE083781C0C8284B9C9A4EEC9303BEECE99215C7814C6A71E99CDF764F400"
+      }
+    },
+    "control_exact_paths": [
+      "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/C-13_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-c13-start.json",
+      "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+      "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "test_evidence": {
+      "passed": {
+        "c13": 47,
+        "c12": 18,
+        "c13_c12": 65,
+        "orchestration": 561,
+        "leases_tool_gateway": 29,
+        "c13_start_control": 4
+      },
+      "failed": 0,
+      "skipped": {
+        "postgresql18_dsn_not_configured": 1
+      },
+      "commands": {
+        "c13_c12": "python -m pytest -q -p no:cacheprovider tests/orchestration/test_takeover_c13.py tests/orchestration/test_failure_ledger_c12.py",
+        "orchestration": "python -m pytest -q -p no:cacheprovider tests/orchestration",
+        "leases_tool_gateway": "python -m pytest -q -p no:cacheprovider tests/leases tests/tool_gateway",
+        "start_control": "python -m pytest -q -p no:cacheprovider tests/tooling/test_project_progress.py -k C13StartControlTests"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0,
+        "isolated_cache_files": 356,
+        "residue": false
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "full_repository_collection": {
+        "status": "BLOCKED_PREEXISTING_ENVIRONMENT",
+        "reasons": [
+          "PYAML_NOT_INSTALLED",
+          "DUPLICATE_TEST_MODULE_BASENAMES",
+          "FIXTURE_REPOSITORIES_COLLECTED_AS_ROOT_TESTS"
+        ]
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "review_rework_rounds": 3,
+      "resolved_findings": [
+        "SELF_ATTESTED_STALE_EVIDENCE",
+        "MUTABLE_OR_MALFORMED_REFERENCE_BUNDLE",
+        "PARTIAL_STOP_LEASE_TOOL_STATE",
+        "UNSAFE_RESURRECTED_REPLAY",
+        "UNSEALED_TRUSTED_REGISTRY",
+        "WORKER_ONLY_REPLAY",
+        "CROSS_SERVICE_REGRANT_WINDOW",
+        "NON_TUPLE_FAILURE_REPORTS",
+        "DIRECT_SELF_SIGNED_SNAPSHOT_ADMISSION",
+        "POSTCONDITION_LATE_TOOL_GRANT_WINDOW"
+      ]
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "multiprocess_persistence_transaction": "NOT_EXECUTED"
+    },
+    "c14_status": "READY_FOR_WORK_INSTRUCTION",
+    "dir2_status": "NOT_REACHED"
+  },
+  "c14_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 920,
+    "authority": {
+      "revision_class": "APPROVED_WORKPLAN_AUTONOMOUS_PACKAGE_START",
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "work_instruction_id": "WI-C-14-R1-20260916-001",
+      "work_instruction_sha256": "7FD6CE82630866CDF92513FF1413B76516F74E0310C9DAC131F340EEAF38CCC1",
+      "invocation_sha256": "F5F481A11FC866BB652E5835D694FE89126BC73CF2143AC7CEB2E910D4AE98BA",
+      "baseline_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+      "source": "USER_DIRECT_WORKPLAN_CONTINUATION",
+      "user_direction_verbatim": "작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+      "approved_control_paths": [
+        "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+        "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/evidence/manifests/C-13_START_MANIFEST.json",
+        "docs/evidence/manifests/C-14_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+        "docs/progress/progress-handoff-detached-digest-c13-start.json",
+        "docs/progress/progress-handoff-detached-digest-c14-start.json",
+        "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+        "packages/leases/service.py",
+        "packages/orchestration/__init__.py",
+        "packages/orchestration/developer_lifecycle.py",
+        "packages/orchestration/takeover.py",
+        "packages/tool_gateway/registry.py",
+        "scripts/check_project_progress.py",
+        "tests/leases/test_worker_write_fencing.py",
+        "tests/orchestration/test_failure_ledger_c12.py",
+        "tests/orchestration/test_takeover_c13.py",
+        "tests/tool_gateway/test_tool_registry.py",
+        "tests/tooling/test_project_progress.py"
+      ],
+      "c14_product_tdd_authorized_now": true,
+      "external_execution_authorized": false,
+      "push_authorized": false,
+      "new_project_approval_requested": false,
+      "pmo_report_is_approval": false
+    },
+    "external_validation": {
+      "network": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "product_code": "NOT_MODIFIED_CLOCK_SKEW_STOP",
+      "subagent_runtime": "RESUME_AFTER_VALID_LEASE_TIME_CORRECTION"
+    },
+    "c13_status": "ACCEPTED",
+    "c15_status": "NOT_READY",
+    "dir2_status": "NOT_REACHED",
+    "error_count": 0,
+    "lease_time_correction": {
+      "reason": "FUTURE_DATED_CONTROL_CLOCK_CORRECTION_BEFORE_PRODUCT_MUTATION",
+      "observed_at": "2026-09-16T03:57:00+09:00",
+      "old_worker_lease_id": "worker-lease-c14-r1-20260916-001",
+      "old_write_lease_id": "write-lease-c14-r1-20260916-001",
+      "corrected_worker_lease_id": "worker-lease-c14-r1-20260916-002",
+      "corrected_write_lease_id": "write-lease-c14-r1-20260916-002",
+      "product_mutation_before_correction": "NOT_MODIFIED_CLOCK_SKEW_STOP"
+    }
+  },
+  "completed_c14_worker_lease": {
+    "actor_id": "developer-primary-c14-r1",
+    "subject_ref": "C-14",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T03:57:00+09:00",
+    "expires_at": "2026-09-16T15:57:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "c14-r1-execution-fence-epoch-2-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
+      "tests/verification/test_gates_c14.py"
+    ],
+    "lease_id": "worker-lease-c14-r1-20260916-002",
+    "lease_epoch": 2,
+    "fencing_token": "c14-r1-execution-fence-epoch-2-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T05:04:00+09:00",
+    "reason": "C14_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "completed_c14_write_lease": {
+    "actor_id": "developer-primary-c14-r1",
+    "subject_ref": "C-14",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T03:57:00+09:00",
+    "expires_at": "2026-09-16T15:57:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "c14-r1-execution-fence-epoch-2-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
+      "tests/verification/test_gates_c14.py"
+    ],
+    "lease_id": "write-lease-c14-r1-20260916-002",
+    "worker_lease_id": "worker-lease-c14-r1-20260916-002",
+    "write_epoch": 2,
+    "fencing_token": "c14-r1-write-fence-epoch-2-234458b5283abafa",
+    "write_fencing_token": "c14-r1-write-fence-epoch-2-234458b5283abafa",
+    "revoked_at": "2026-09-16T05:04:00+09:00",
+    "reason": "C14_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "c14_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 920,
+    "product_exact_paths": [
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+      "packages/verification/__init__.py",
+      "packages/verification/gates.py",
+      "tests/verification/test_gates_c14.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/C-14_COMPLETION_REPORT.md": {
+        "bytes": 22494,
+        "sha256": "703A905896643C4F1C0A9FCAB19977754A60C40BEEA23A075206CAB4F8C73874"
+      },
+      "packages/verification/__init__.py": {
+        "bytes": 963,
+        "sha256": "BCC2B4D3870A5D024F937876931CF4016E44CC08D71F1C41B572F6CE7522E489"
+      },
+      "packages/verification/gates.py": {
+        "bytes": 49991,
+        "sha256": "D09D9AD564820DAE4DF88DED9FCFD7DCA9D3B6C9D3AD719E9FCE97D40A980D8E"
+      },
+      "tests/verification/test_gates_c14.py": {
+        "bytes": 36442,
+        "sha256": "ACCD15AF02CA9FD6B5E4A3870A591922E8D5BA0B5023AE57BE7966FBE5FBA971"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "c14": 130,
+        "related_without_stale_c01_snapshot": 702
+      },
+      "failed": {
+        "known_baseline": 1,
+        "c14": 0
+      },
+      "skipped": {
+        "database_url_not_configured": 8
+      },
+      "commands": {
+        "c14": "python -B -m pytest -q -p no:cacheprovider tests/verification/test_gates_c14.py",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/verification tests/orchestration --ignore=tests/verification/test_c01_l3_independent_acceptance.py",
+        "baseline_failure": "python -B -m pytest -q -p no:cacheprovider tests/verification/test_c01_l3_independent_acceptance.py -x"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "initial_rework_findings": [
+        "CROSS_TARGET_FORGED_EVIDENCE_REPLAY",
+        "BLOCKING_DEFECT_OMISSION_REVIVES_APPLY",
+        "DEPENDENCY_MANIFEST_VARIANTS_MISSED"
+      ],
+      "resolved": true,
+      "verified_behaviors": [
+        "HOST_ISSUED_TARGET_AND_MANIFEST_SEAL",
+        "APPEND_ONLY_DEFECT_LIFECYCLE_AND_INDEPENDENT_RETEST",
+        "PYTHON_DEPENDENCY_MANIFEST_DETECTION"
+      ]
+    },
+    "known_baseline_failure": {
+      "fingerprint": "C01_L3_UNAPPROVED_OPENAPI_PATH_DIFF",
+      "owner": "C-04/C-01_ACCEPTANCE_SNAPSHOT",
+      "unique_failure_count": 1,
+      "c14_regression": false,
+      "counted_as_pass": false,
+      "extra_routes": [
+        "GET /api/delegations/{id}",
+        "POST /api/delegations/{id}:steer",
+        "POST /api/delegations/{id}:cancel",
+        "POST /api/delegations/{id}:resume"
+      ]
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "external_authority_persistence": "NOT_EXECUTED"
+    },
+    "c15_status": "READY_FOR_WORK_INSTRUCTION",
+    "dir2_status": "NOT_REACHED"
+  },
+  "c15_start": {
+    "accepted": false,
+    "status": "IN_PROGRESS",
+    "event_sequence": 924,
+    "authority": {
+      "revision_class": "APPROVED_WORKPLAN_AUTONOMOUS_PACKAGE_START",
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "work_instruction_id": "WI-C-15-R1-20260916-001",
+      "work_instruction_sha256": "598D9056681B28A736E9BC9548E343CFE9EB84DF1234299802529DE57F75AFC4",
+      "invocation_sha256": "71342EC42F9700304DA6DB6EFE169CE497241FDCA183FB231783F13CD728D89F",
+      "baseline_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+      "source": "USER_DIRECT_WORKPLAN_CONTINUATION",
+      "user_direction_verbatim": "작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+      "approved_control_paths": [
+        "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+        "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+        "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/evidence/manifests/C-13_START_MANIFEST.json",
+        "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+        "docs/evidence/manifests/C-14_START_MANIFEST.json",
+        "docs/evidence/manifests/C-15_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+        "docs/progress/progress-handoff-detached-digest-c13-start.json",
+        "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+        "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+        "docs/progress/progress-handoff-detached-digest-c14-start.json",
+        "docs/progress/progress-handoff-detached-digest-c15-start.json",
+        "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+        "packages/leases/service.py",
+        "packages/orchestration/__init__.py",
+        "packages/orchestration/developer_lifecycle.py",
+        "packages/orchestration/takeover.py",
+        "packages/tool_gateway/registry.py",
+        "packages/verification/__init__.py",
+        "packages/verification/gates.py",
+        "scripts/check_project_progress.py",
+        "tests/leases/test_worker_write_fencing.py",
+        "tests/orchestration/test_failure_ledger_c12.py",
+        "tests/orchestration/test_takeover_c13.py",
+        "tests/tool_gateway/test_tool_registry.py",
+        "tests/tooling/test_project_progress.py",
+        "tests/verification/test_gates_c14.py"
+      ],
+      "c15_product_tdd_authorized_now": true,
+      "external_execution_authorized": false,
+      "push_authorized": false,
+      "new_project_approval_requested": false,
+      "pmo_report_is_approval": false
+    },
+    "external_validation": {
+      "network": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "product_code": "NOT_MODIFIED_START_CONTROL_ONLY",
+      "fixture_mode": "SYNTHETIC_ONLY"
+    },
+    "c14_status": "ACCEPTED",
+    "dir2_status": "NOT_REACHED",
+    "error_count": 0
+  },
+  "c15_final": {
+    "accepted": true,
+    "status": "ACCEPTED",
+    "event_sequence": 931,
+    "blocking_findings": 0,
+    "important_findings": 0,
+    "test_evidence": {
+      "passed": {
+        "c15": 40,
+        "related_without_stale_c01_snapshot": 910
+      },
+      "failed": {
+        "known_baseline": 1,
+        "c15": 0
+      },
+      "skipped": {
+        "c01_database_url_not_configured": 8,
+        "postgresql18_dsn_not_configured": 1
+      },
+      "commands": {
+        "c15": "python -B -m pytest -q -p no:cacheprovider tests/e2e/test_synthetic_e2e.py --disable-warnings -ra",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/e2e tests/verification tests/orchestration tests/planning tests/leases --ignore=tests/verification/test_c01_l3_independent_acceptance.py --disable-warnings -ra"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "external_authority_persistence": "NOT_EXECUTED"
+    },
+    "dir2_status": "WAITING_OWNER_DIRECTION"
+  },
+  "d01_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 942,
+    "authority": {
+      "revision_class": "APPROVED_WORKPLAN_AUTONOMOUS_PACKAGE_START",
+      "parent_approval_id": "APPROVAL-20260814-WORKPLAN-V16-001",
+      "work_instruction_id": "WI-D-01-R1-20260916-001",
+      "work_instruction_sha256": "91F655D13342B8C2BEF55DC346E24201A9FB7239707614F9900B24E016FE1AC6",
+      "invocation_sha256": "FB8DB49A70A6C7F6D30705E99013CB08A36DE930642B2929E3D3226D08EC6B49",
+      "baseline_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+      "predecessor_gate": "C-GATE",
+      "dir2_status": "CLEARED",
+      "source": "USER_DIRECT_WORKPLAN_CONTINUATION",
+      "user_direction_verbatim": "작업계획서 완료될때까지 다시는 요청하지마 알겠니.",
+      "approved_control_paths": [
+        "docs/04_test_reports/C-13_COMPLETION_REPORT.md",
+        "docs/04_test_reports/C-14_COMPLETION_REPORT.md",
+        "docs/04_test_reports/C-15_COMPLETION_REPORT.md",
+        "docs/approvals/APPROVAL-20260916-DIR2-CONTINUE-001.md",
+        "docs/evidence/manifests/C-13_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/evidence/manifests/C-13_START_MANIFEST.json",
+        "docs/evidence/manifests/C-14_FINAL_ACCEPTANCE_MANIFEST.json",
+        "docs/evidence/manifests/C-14_LEASE_TIME_CORRECTION_MANIFEST.json",
+        "docs/evidence/manifests/C-14_START_MANIFEST.json",
+        "docs/evidence/manifests/C-15_FINAL_ACCEPTANCE_DIR2_MANIFEST.json",
+        "docs/evidence/manifests/C-15_START_MANIFEST.json",
+        "docs/evidence/manifests/C-GATE_DECISION_MANIFEST.json",
+        "docs/evidence/manifests/D-01_START_MANIFEST.json",
+        "docs/progress/BUILD_HANDOFF.md",
+        "docs/progress/build-progress.json",
+        "docs/progress/dir-checkpoints.json",
+        "docs/progress/progress-events.json",
+        "docs/progress/progress-handoff-detached-digest-c-gate.json",
+        "docs/progress/progress-handoff-detached-digest-c13-final-acceptance.json",
+        "docs/progress/progress-handoff-detached-digest-c13-start.json",
+        "docs/progress/progress-handoff-detached-digest-c14-final-acceptance.json",
+        "docs/progress/progress-handoff-detached-digest-c14-lease-time-correction.json",
+        "docs/progress/progress-handoff-detached-digest-c14-start.json",
+        "docs/progress/progress-handoff-detached-digest-c15-final-dir2.json",
+        "docs/progress/progress-handoff-detached-digest-c15-start.json",
+        "docs/progress/progress-handoff-detached-digest-d01-start.json",
+        "docs/test_reports/C-GATE_TEST_REPORT.md",
+        "docs/test_reports/DIR-2_REPORT.md",
+        "docs/work_orders/C-13_INVOCATION_PROMPT.md",
+        "docs/work_orders/C-13_WORK_INSTRUCTION.md",
+        "docs/work_orders/D-01_INVOCATION_PROMPT.md",
+        "docs/work_orders/D-01_WORK_INSTRUCTION.md",
+        "packages/e2e/__init__.py",
+        "packages/e2e/harness.py",
+        "packages/leases/service.py",
+        "packages/orchestration/__init__.py",
+        "packages/orchestration/developer_lifecycle.py",
+        "packages/orchestration/takeover.py",
+        "packages/tool_gateway/registry.py",
+        "packages/verification/__init__.py",
+        "packages/verification/gates.py",
+        "scripts/check_project_progress.py",
+        "tests/e2e/test_synthetic_e2e.py",
+        "tests/leases/test_worker_write_fencing.py",
+        "tests/orchestration/test_failure_ledger_c12.py",
+        "tests/orchestration/test_takeover_c13.py",
+        "tests/tool_gateway/test_tool_registry.py",
+        "tests/tooling/test_project_progress.py",
+        "tests/verification/test_gates_c14.py"
+      ],
+      "d01_product_tdd_authorized_now": true,
+      "external_execution_authorized": false,
+      "push_authorized": false,
+      "new_project_approval_requested": false,
+      "pmo_report_is_approval": false
+    },
+    "external_validation": {
+      "network": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http_api": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "secret_manager": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "storage_mode": "IN_MEMORY_CONTRACT_ONLY"
+    },
+    "c_gate_status": "ACCEPTED",
+    "dir2_status": "CLEARED",
+    "error_count": 0
+  },
+  "completed_d01_worker_lease": {
+    "actor_id": "developer-primary-d01-r1",
+    "subject_ref": "D-01",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T06:35:00+09:00",
+    "expires_at": "2026-09-16T18:35:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d01-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+      "packages/api/knowledge_memory.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/memory.py",
+      "tests/api/test_knowledge_memory_d01.py",
+      "tests/knowledge/test_memory_d01.py"
+    ],
+    "lease_id": "worker-lease-d01-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "d01-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T07:28:00+09:00",
+    "reason": "D01_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "completed_d01_write_lease": {
+    "actor_id": "developer-primary-d01-r1",
+    "subject_ref": "D-01",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T06:35:00+09:00",
+    "expires_at": "2026-09-16T18:35:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d01-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+      "packages/api/knowledge_memory.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/memory.py",
+      "tests/api/test_knowledge_memory_d01.py",
+      "tests/knowledge/test_memory_d01.py"
+    ],
+    "lease_id": "write-lease-d01-r1-20260916-001",
+    "worker_lease_id": "worker-lease-d01-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "d01-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "d01-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T07:28:00+09:00",
+    "reason": "D01_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "d01_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 942,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-01_COMPLETION_REPORT.md",
+      "packages/api/knowledge_memory.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/memory.py",
+      "tests/api/test_knowledge_memory_d01.py",
+      "tests/knowledge/test_memory_d01.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-01_COMPLETION_REPORT.md": {
+        "bytes": 22816,
+        "sha256": "96B035A722FFEE295156D9ED5660B34A5EBABB167F099AA470EC4AA485ECAD7D"
+      },
+      "packages/api/knowledge_memory.py": {
+        "bytes": 5005,
+        "sha256": "64F07C7DC9FD19B4934C76E041D4FCE96DB01057A2C21D6A872E4866C28A1C84"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 387,
+        "sha256": "BD16E2B7C813374F0CD4E2FC861B4BBBFD2336AB403B7F5722087FC1C9920292"
+      },
+      "packages/knowledge/memory.py": {
+        "bytes": 20520,
+        "sha256": "D730F3FC46BA374895B87C03580C346772D095C039BD3690094891D53483D1F7"
+      },
+      "tests/api/test_knowledge_memory_d01.py": {
+        "bytes": 7723,
+        "sha256": "5C3E2BA90A0E6EBF67E91652CBF381AFC400E9AF2B8571B2CDF39DB5A96E6639"
+      },
+      "tests/knowledge/test_memory_d01.py": {
+        "bytes": 19819,
+        "sha256": "9192BEA220BD5D2067074BF9644CA2149EA3AB880B9070C23C9142FB3307AE49"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 208,
+        "knowledge_api_related": 373,
+        "independent_adversarial_sample": 136
+      },
+      "failed": {
+        "d01_final": 0
+      },
+      "skipped": {
+        "d01_final": 0
+      },
+      "commands": {
+        "focused": "python -B -m pytest -q -p no:cacheprovider tests/knowledge/test_memory_d01.py tests/api/test_knowledge_memory_d01.py --disable-warnings -ra",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/knowledge tests/api --disable-warnings -ra",
+        "compileall": "python -B -m compileall -q packages/knowledge packages/api tests/knowledge tests/api",
+        "diff_check": "git diff --check"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 2,
+      "initial_findings": [
+        "CREDENTIAL_URI_SECRET_SCAN_BYPASS",
+        "SYSTEM_PROMPT_INJECTION_VARIANT_BYPASS"
+      ],
+      "r2_findings": [
+        "SYSTEM_MESSAGE_EARLIER_INSTRUCTION_BYPASS",
+        "NEGATED_OVERRIDE_FALSE_POSITIVE"
+      ],
+      "resolved": true,
+      "verified_behaviors": [
+        "BOUNDED_USER_MEMORY_STORE",
+        "SCOPE_ISOLATION",
+        "APPEND_ONLY_PROVENANCE_VERSION",
+        "INSTRUCTION_PRIORITY_AND_CONFLICT",
+        "CAPACITY_EXACT_BOUNDARY",
+        "SECRET_AND_OVERRIDE_FAIL_CLOSED",
+        "IMMUTABLE_PROJECTION",
+        "REQUEST_REPLAY_SERIALIZATION"
+      ]
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "persistent_replay": "NOT_EXECUTED",
+      "cross_process_concurrency": "NOT_EXECUTED"
+    },
+    "d02_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d02_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 951,
+    "d01_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "completed_d02_worker_lease": {
+    "actor_id": "developer-primary-d02-r1",
+    "subject_ref": "D-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T07:36:00+09:00",
+    "expires_at": "2026-09-16T19:36:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d02-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+      "packages/api/learning_snapshots.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/snapshots.py",
+      "tests/api/test_learning_snapshots_d02.py",
+      "tests/knowledge/test_snapshots_d02.py"
+    ],
+    "lease_id": "worker-lease-d02-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "d02-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T08:12:19+09:00",
+    "reason": "D02_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "completed_d02_write_lease": {
+    "actor_id": "developer-primary-d02-r1",
+    "subject_ref": "D-02",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T07:36:00+09:00",
+    "expires_at": "2026-09-16T19:36:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d02-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+      "packages/api/learning_snapshots.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/snapshots.py",
+      "tests/api/test_learning_snapshots_d02.py",
+      "tests/knowledge/test_snapshots_d02.py"
+    ],
+    "lease_id": "write-lease-d02-r1-20260916-001",
+    "worker_lease_id": "worker-lease-d02-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "d02-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "d02-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T08:12:19+09:00",
+    "reason": "D02_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "d02_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 951,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-02_COMPLETION_REPORT.md",
+      "packages/api/learning_snapshots.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/snapshots.py",
+      "tests/api/test_learning_snapshots_d02.py",
+      "tests/knowledge/test_snapshots_d02.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-02_COMPLETION_REPORT.md": {
+        "bytes": 12251,
+        "sha256": "91C300DFFBCACB0B76492AAA6CFCC77B103CA0DF90000E1BEBEE1C4AE79198CD"
+      },
+      "packages/api/learning_snapshots.py": {
+        "bytes": 2501,
+        "sha256": "DAACA8097D6213A5F1E616EDEC7188D585DD54D3A0DFE93C80151264C9ACB6C5"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 597,
+        "sha256": "30D5C3F7825730752B978C084C3632ADAF830778265D4363F0B8656FB00463A5"
+      },
+      "packages/knowledge/snapshots.py": {
+        "bytes": 17318,
+        "sha256": "42B620BC1ADE951D9C9B22327A217BAA62C7C6806096D138DB02D0D86BDC848F"
+      },
+      "tests/api/test_learning_snapshots_d02.py": {
+        "bytes": 5161,
+        "sha256": "741CC51AC1B2CA389988B1A6F6183771F4F6A9019A2DF2EB62E81081A6198848"
+      },
+      "tests/knowledge/test_snapshots_d02.py": {
+        "bytes": 14462,
+        "sha256": "4093CC2901A1DDC82305E6C429828A252B27B66D8248FA9F939CF181EA2F8315"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 51,
+        "knowledge_api_related": 424
+      },
+      "failed": {
+        "d02_final": 0
+      },
+      "skipped": {
+        "d02_final": 0
+      },
+      "commands": {
+        "focused": "python -B -m pytest -q -p no:cacheprovider tests/knowledge/test_snapshots_d02.py tests/api/test_learning_snapshots_d02.py --disable-warnings -ra",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/knowledge tests/api --disable-warnings -ra",
+        "compileall": "python -B -m compileall -q packages/knowledge packages/api tests/knowledge tests/api",
+        "diff_check": "git diff --check"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 0,
+      "resolved": true,
+      "verified_behaviors": [
+        "DISTINCT_TASK_RUN_SNAPSHOTS",
+        "NEXT_RUN_ONLY_CUTOFF",
+        "RESUME_ORIGINAL_HASH",
+        "REVOKED_QUARANTINED_FUTURE_BLOCKED",
+        "SCOPE_AND_ALIAS_IMMUTABILITY",
+        "HOST_BOUND_ACTIVATION_AND_REVISION",
+        "REQUEST_REPLAY_AND_CONCURRENCY"
+      ]
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "persistent_replay": "NOT_EXECUTED",
+      "cross_process_concurrency": "NOT_EXECUTED"
+    },
+    "d03_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d03_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 960,
+    "d02_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "completed_d03_worker_lease": {
+    "actor_id": "developer-primary-d03-r1",
+    "subject_ref": "D-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T08:17:06+09:00",
+    "expires_at": "2026-09-16T20:17:06+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d03-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-03_COMPLETION_REPORT.md",
+      "packages/api/learning_sources.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/sources.py",
+      "tests/api/test_learning_sources_d03.py",
+      "tests/knowledge/test_sources_d03.py"
+    ],
+    "lease_id": "worker-lease-d03-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "d03-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T09:12:00+09:00",
+    "reason": "D03_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "completed_d03_write_lease": {
+    "actor_id": "developer-primary-d03-r1",
+    "subject_ref": "D-03",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T08:17:06+09:00",
+    "expires_at": "2026-09-16T20:17:06+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d03-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-03_COMPLETION_REPORT.md",
+      "packages/api/learning_sources.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/sources.py",
+      "tests/api/test_learning_sources_d03.py",
+      "tests/knowledge/test_sources_d03.py"
+    ],
+    "lease_id": "write-lease-d03-r1-20260916-001",
+    "worker_lease_id": "worker-lease-d03-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "d03-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "d03-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T09:12:00+09:00",
+    "reason": "D03_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "d03_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 960,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-03_COMPLETION_REPORT.md",
+      "packages/api/learning_sources.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/sources.py",
+      "tests/api/test_learning_sources_d03.py",
+      "tests/knowledge/test_sources_d03.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-03_COMPLETION_REPORT.md": {
+        "bytes": 20485,
+        "sha256": "29149EDCA59B00D9DEE1CC40A0DE51F12C26BCE648B7C2FD132388F8547E5C41"
+      },
+      "packages/api/learning_sources.py": {
+        "bytes": 2526,
+        "sha256": "3057A5BDF53B755D934461BC22EA748822EDEEBF4BEB6602FC09AF4AD36DD844"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 951,
+        "sha256": "7E0AC73D501320428D40E909603EB716111E3CDE1DDA4B0464ABD299AAB367FB"
+      },
+      "packages/knowledge/sources.py": {
+        "bytes": 24972,
+        "sha256": "124DE0727753C6E8785B5E0DDE58F657769FF2F50EC4F030DF0A6BEFBF191121"
+      },
+      "tests/api/test_learning_sources_d03.py": {
+        "bytes": 7060,
+        "sha256": "6ABEA025E4057A0616EE8BDE83A97871A8C80D0638A3A7C14FBA354B9531D0D6"
+      },
+      "tests/knowledge/test_sources_d03.py": {
+        "bytes": 27161,
+        "sha256": "BEFA5B8F3B653B610CBDF582A37B1338541E5F0C4CE461716D0388853B0C9C9D"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 638,
+        "knowledge_api_related": 1062,
+        "independent_lineage_recursion_sample": 11
+      },
+      "failed": {
+        "d03_final": 0
+      },
+      "skipped": {
+        "d03_final": 0
+      },
+      "commands": {
+        "focused": "python -B -m pytest -q -p no:cacheprovider tests/knowledge/test_sources_d03.py tests/api/test_learning_sources_d03.py --disable-warnings -ra",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/knowledge tests/api --disable-warnings -ra",
+        "compileall": "python -B -m compileall -q packages/knowledge packages/api tests/knowledge tests/api",
+        "diff_check": "git diff --check"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 3,
+      "resolved_findings": [
+        "GENERIC_TOKEN_METADATA_PROJECTION",
+        "REVISION_WHITESPACE_NORMALIZATION",
+        "SPACE_SEPARATED_API_KEY",
+        "STRUCTURED_TAB_KEY_VALUE",
+        "STRUCTURED_EMPTY_VALUE_FALSE_POSITIVE"
+      ],
+      "verified_behaviors": [
+        "IMMUTABLE_SOURCE_PROVENANCE",
+        "SCOPE_LICENSE_INHERITANCE",
+        "METADATA_AND_BODY_CREDENTIAL_FAIL_CLOSED",
+        "DERIVED_USAGE_LINEAGE",
+        "REVOCATION_IMPACT_AND_ACTIVE_RUN_REPORT",
+        "IMMUTABLE_PROJECTION",
+        "REQUEST_REPLAY_AND_CONCURRENCY",
+        "RECURSION_AND_ALIAS_FAIL_CLOSED"
+      ]
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "filesystem_fetch": "NOT_EXECUTED",
+      "url_fetch": "NOT_EXECUTED",
+      "actual_run_pause": "NOT_EXECUTED"
+    },
+    "d04_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d04_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 969,
+    "d03_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "completed_d04_worker_lease": {
+    "actor_id": "developer-primary-d04-r1",
+    "subject_ref": "D-04",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T09:29:38+09:00",
+    "expires_at": "2026-09-16T21:29:38+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d04-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-04_COMPLETION_REPORT.md",
+      "packages/api/knowledge_patterns.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/patterns.py",
+      "tests/api/test_knowledge_patterns_d04.py",
+      "tests/knowledge/test_patterns_d04.py"
+    ],
+    "lease_id": "worker-lease-d04-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "d04-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T10:12:00+09:00",
+    "reason": "D04_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "completed_d04_write_lease": {
+    "actor_id": "developer-primary-d04-r1",
+    "subject_ref": "D-04",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T09:29:38+09:00",
+    "expires_at": "2026-09-16T21:29:38+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d04-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-04_COMPLETION_REPORT.md",
+      "packages/api/knowledge_patterns.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/patterns.py",
+      "tests/api/test_knowledge_patterns_d04.py",
+      "tests/knowledge/test_patterns_d04.py"
+    ],
+    "lease_id": "write-lease-d04-r1-20260916-001",
+    "worker_lease_id": "worker-lease-d04-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "d04-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "d04-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T10:12:00+09:00",
+    "reason": "D04_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "d04_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 969,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-04_COMPLETION_REPORT.md",
+      "packages/api/knowledge_patterns.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/patterns.py",
+      "tests/api/test_knowledge_patterns_d04.py",
+      "tests/knowledge/test_patterns_d04.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-04_COMPLETION_REPORT.md": {
+        "bytes": 12589,
+        "sha256": "5C0B4FE103646E345F4EEBB781205EBBA0A13CFC537EC6858B16A0AD0E166829"
+      },
+      "packages/api/knowledge_patterns.py": {
+        "bytes": 2286,
+        "sha256": "773DCC4C6CACC46D692826026D44FD3A7E73BE77824F8DF2289A761D5AF3F8C3"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 1174,
+        "sha256": "28AA18CD7BB65804A0B85FC73E839740EFAAC2484FFBD35C362A4E289EF5F01B"
+      },
+      "packages/knowledge/patterns.py": {
+        "bytes": 18897,
+        "sha256": "9AB92DC1FF5D565B6A58C67C7734B639CF737213D26A5EDA59D87F46AB8D290D"
+      },
+      "tests/api/test_knowledge_patterns_d04.py": {
+        "bytes": 5099,
+        "sha256": "282429A1432E5E0285770544C997A0AA965D9216B6A4BA6E3EF0B8A0AF4329B5"
+      },
+      "tests/knowledge/test_patterns_d04.py": {
+        "bytes": 17131,
+        "sha256": "42865BAD4BAF28FCFAE135BD52DC92D7596A9D29173A9D084BA971E38F7C847C"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 70,
+        "knowledge_api_related": 1132
+      },
+      "failed": {
+        "d04_final": 0
+      },
+      "skipped": {
+        "d04_final": 0
+      },
+      "commands": {
+        "focused": "python -B -m pytest -q -p no:cacheprovider tests/knowledge/test_patterns_d04.py tests/api/test_knowledge_patterns_d04.py --disable-warnings -ra",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/knowledge tests/api --disable-warnings -ra",
+        "compileall": "python -B -m compileall -q packages/knowledge packages/api tests/knowledge tests/api",
+        "diff_check": "git diff --check"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 1,
+      "resolved_findings": [
+        "VERIFICATION_REF_PASS_KEY_UNBOUND",
+        "EXPIRED_ATTESTATION_REISSUE_BLOCKED",
+        "REFERENCE_LOCATOR_OVEREXPOSURE"
+      ],
+      "verified_behaviors": [
+        "POSITIVE_EVIDENCE_FAIL_CLOSED",
+        "ANTIPATTERN_ONLY_EXCEPTION",
+        "MINIMAL_EXPLICIT_REFERENCE_LOAD",
+        "METADATA_ONLY_SEARCH",
+        "SOURCE_REVOKE_BLOCK",
+        "SCOPE_LICENSE_PROVENANCE",
+        "VERSION_REPLAY_CONCURRENCY"
+      ]
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "ast": "NOT_EXECUTED",
+      "filesystem_fetch": "NOT_EXECUTED",
+      "activation": "NOT_EXECUTED"
+    },
+    "d05_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d05_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 979,
+    "d01_d04_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "d05_scope_revision": {
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 979,
+    "previous_work_instruction_sha256": "D0596F3EEB56CA109E349AD4DBAF6CE3AF89680784A6BA56751B049A24DA60A8",
+    "work_instruction_sha256": "E531CB678FC3C365513327570EEE54FFBA53AF4CE12C806ADA9883D442E27DAE",
+    "terminal_statuses": [
+      "SUCCEEDED",
+      "FINISHED_WITH_FAILURES",
+      "FAILED",
+      "CANCELLED",
+      "REJECTED",
+      "DISCARDED"
+    ],
+    "human_closed_iteration": true,
+    "product_write_scope_unchanged": true,
+    "accepted": true
+  },
+  "completed_d05_worker_lease": {
+    "actor_id": "developer-primary-d05-r1",
+    "subject_ref": "D-05",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T10:16:29+09:00",
+    "expires_at": "2026-09-16T22:16:29+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d05-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-05_COMPLETION_REPORT.md",
+      "packages/api/learning_reviews.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/reviews.py",
+      "tests/api/test_learning_reviews_d05.py",
+      "tests/knowledge/test_reviews_d05.py"
+    ],
+    "lease_id": "worker-lease-d05-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "d05-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T11:17:00+09:00",
+    "reason": "D05_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "completed_d05_write_lease": {
+    "actor_id": "developer-primary-d05-r1",
+    "subject_ref": "D-05",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T10:16:29+09:00",
+    "expires_at": "2026-09-16T22:16:29+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d05-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-05_COMPLETION_REPORT.md",
+      "packages/api/learning_reviews.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/reviews.py",
+      "tests/api/test_learning_reviews_d05.py",
+      "tests/knowledge/test_reviews_d05.py"
+    ],
+    "lease_id": "write-lease-d05-r1-20260916-001",
+    "worker_lease_id": "worker-lease-d05-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "d05-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "d05-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T11:17:00+09:00",
+    "reason": "D05_PRODUCT_AND_INDEPENDENT_REVIEW_COMPLETED"
+  },
+  "d05_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 979,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-05_COMPLETION_REPORT.md",
+      "packages/api/learning_reviews.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/reviews.py",
+      "tests/api/test_learning_reviews_d05.py",
+      "tests/knowledge/test_reviews_d05.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-05_COMPLETION_REPORT.md": {
+        "bytes": 15133,
+        "sha256": "D3436511C4B9538C3CD7BF26C7C3F48E0C1F40B937D522CBB2DB3A2B159EA6F2"
+      },
+      "packages/api/learning_reviews.py": {
+        "bytes": 1926,
+        "sha256": "F1A517A9BEB0A2AB90A93526E284DF601DB59B6B58C5A123ACCD70D673B35D09"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 1366,
+        "sha256": "160D4538D4162535345C90FE0EB128D487A24E243F05937F02E5C61EAD6DEC6B"
+      },
+      "packages/knowledge/reviews.py": {
+        "bytes": 24745,
+        "sha256": "67C0D58374300F25F14BAAC6257E71883C133AEDE80DEDC3A1442A33AA2EFE22"
+      },
+      "tests/api/test_learning_reviews_d05.py": {
+        "bytes": 2787,
+        "sha256": "EE91A1CC1CFD3B962ECF397B7B2A0C79A1DDEAC62635F522DA550F631A979CAC"
+      },
+      "tests/knowledge/test_reviews_d05.py": {
+        "bytes": 20343,
+        "sha256": "D5B51F5E9165281CF82AAA0B3E3A99E780CC118F09F09D5EC1CD6663D5D5C1D9"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 99,
+        "knowledge_api_related": 1231,
+        "independent_r1_adversarial": 47
+      },
+      "failed": {
+        "d05_final": 0
+      },
+      "skipped": {
+        "d05_final": 0
+      },
+      "commands": {
+        "focused": "python -B -m pytest -q -p no:cacheprovider tests/knowledge/test_reviews_d05.py tests/api/test_learning_reviews_d05.py --disable-warnings -ra",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/knowledge tests/api --disable-warnings -ra",
+        "compileall": "python -B -m compileall -q packages/knowledge packages/api tests/knowledge tests/api",
+        "diff_check": "git diff --check"
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 1,
+      "resolved_findings": [
+        "CROSS_ACTOR_CONTEXT_ATTESTATION_AND_JOB_CONSUMPTION",
+        "EXPIRED_ATTESTATION_REISSUE_LOCKOUT"
+      ],
+      "verified_behaviors": [
+        "SIX_TERMINAL_RESULTS_AND_HUMAN_CLOSED_ITERATION",
+        "EVIDENCE_BACKED_NO_CHANGE_OR_CANDIDATE",
+        "PASS_ONLY_POSITIVE_EVIDENCE",
+        "EXACT_PROVENANCE_AND_REVOCATION",
+        "IMMUTABLE_REVIEW_AND_REFLECTION",
+        "REQUEST_REPLAY_AND_CONCURRENCY",
+        "ACTOR_CONTEXT_AUTHORITY_BINDING",
+        "SAFE_EXPIRED_ATTESTATION_REISSUE",
+        "JOB_CLAIM_FENCING"
+      ]
+    },
+    "external_validation": {
+      "queue_worker": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "run_orchestration": "NOT_EXECUTED"
+    },
+    "d06_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d06_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 989,
+    "d05_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "completed_d06_worker_lease": {
+    "actor_id": "developer-primary-d06-r1",
+    "subject_ref": "D-06",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T11:18:54+09:00",
+    "expires_at": "2026-09-16T23:18:54+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d06-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-06_COMPLETION_REPORT.md",
+      "packages/api/learning_candidates.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/candidates.py",
+      "tests/api/test_learning_candidates_d06.py",
+      "tests/knowledge/test_candidates_d06.py"
+    ],
+    "lease_id": "worker-lease-d06-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "d06-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T12:01:00+09:00",
+    "reason": "D06_PRODUCT_AND_REVIEW_COMPLETED"
+  },
+  "completed_d06_write_lease": {
+    "actor_id": "developer-primary-d06-r1",
+    "subject_ref": "D-06",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T11:18:54+09:00",
+    "expires_at": "2026-09-16T23:18:54+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d06-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-06_COMPLETION_REPORT.md",
+      "packages/api/learning_candidates.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/candidates.py",
+      "tests/api/test_learning_candidates_d06.py",
+      "tests/knowledge/test_candidates_d06.py"
+    ],
+    "lease_id": "write-lease-d06-r1-20260916-001",
+    "worker_lease_id": "worker-lease-d06-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "d06-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "d06-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T12:01:00+09:00",
+    "reason": "D06_PRODUCT_AND_REVIEW_COMPLETED"
+  },
+  "d06_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 989,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-06_COMPLETION_REPORT.md",
+      "packages/api/learning_candidates.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/candidates.py",
+      "tests/api/test_learning_candidates_d06.py",
+      "tests/knowledge/test_candidates_d06.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-06_COMPLETION_REPORT.md": {
+        "bytes": 20258,
+        "sha256": "3A8C5C41C121CA41D5BA9BF4661751802DECBD65A2FA8A271CFC8C5A4BCB3154"
+      },
+      "packages/api/learning_candidates.py": {
+        "bytes": 2541,
+        "sha256": "8C1B90C1FCA7B961A273221BA1768F48AA1D1D26E3E8BFE12D0D676553B2C587"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 1509,
+        "sha256": "2AF1C3F8C638A490F428392DEC09A94C99759E9672EDA8107688F778826C9A96"
+      },
+      "packages/knowledge/candidates.py": {
+        "bytes": 40010,
+        "sha256": "03AFB243EA2F4B93959273DA6B4868CC09C6AB263D598B4630CEB8C0EB057DC6"
+      },
+      "tests/api/test_learning_candidates_d06.py": {
+        "bytes": 3857,
+        "sha256": "85BE4F3E8AECAF17183793A277CE14E8E920831260BCB8384FE56313D93BBD2D"
+      },
+      "tests/knowledge/test_candidates_d06.py": {
+        "bytes": 32235,
+        "sha256": "F663EA41D283527CDE804910BA48669590D11847A2D4AC4C0C800BBE3EDE0252"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 75,
+        "knowledge_api_related": 1306,
+        "independent_r1": 16
+      },
+      "failed": {
+        "d06_final": 0
+      },
+      "skipped": {
+        "d06_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "commands": {
+        "focused": "python -B -m pytest -q -p no:cacheprovider tests/knowledge/test_candidates_d06.py tests/api/test_learning_candidates_d06.py --disable-warnings -ra",
+        "related": "python -B -m pytest -q -p no:cacheprovider tests/knowledge tests/api --disable-warnings -ra",
+        "compileall": "python -B -m compileall -q packages/knowledge packages/api tests/knowledge tests/api",
+        "diff_check": "git diff --check"
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 1,
+      "resolved_findings": [
+        "LATE_RUN_SELECTION_AND_BACKDATED_AUDIT",
+        "QUARANTINED_HEAD_BLOCKS_SAFE_REPLACEMENT"
+      ],
+      "verified_behaviors": [
+        "REVIEW_TO_CANDIDATE_LINEAGE",
+        "HUMAN_APPROVAL_ONLY",
+        "NEXT_RUN_SELECTION_ONE_SHOT",
+        "ROLLBACK_AND_AFFECTED_RUNS",
+        "SOURCE_REVOKE_QUARANTINE",
+        "SAFE_HEAD_RESTORATION",
+        "CANONICAL_REPLAY_CONCURRENCY"
+      ]
+    },
+    "external_validation": {
+      "skill_runtime": "NOT_EXECUTED",
+      "hook_runtime": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "queue": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "run_orchestration": "NOT_EXECUTED"
+    },
+    "d_learning_gate": "ACCEPTED",
+    "d07_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d_learning_gate": {
+    "status": "ACCEPTED",
+    "event_sequence": 989,
+    "packages": [
+      "D-01",
+      "D-02",
+      "D-03",
+      "D-04",
+      "D-05",
+      "D-06"
+    ],
+    "blocking_findings": 0,
+    "important_findings": 0
+  },
+  "d07_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 998,
+    "prior_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "d07_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 998,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-07_COMPLETION_REPORT.md",
+      "packages/api/skills.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/skills.py",
+      "tests/api/test_skills_d07.py",
+      "tests/knowledge/test_skills_d07.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-07_COMPLETION_REPORT.md": {
+        "bytes": 13013,
+        "sha256": "CAB2BD7BF4585A1DCD75DBEE6C3E05C3319E2325F91B9EDB48A5ADF6F65D67A9"
+      },
+      "packages/api/skills.py": {
+        "bytes": 2374,
+        "sha256": "677B448D6117E36E9ACA19E699A9AE883241074B6CF3536C51E484A81DCE9BD6"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 1594,
+        "sha256": "0EEE6ABF535CB1D4297A5213D07DF3E953888406EECF372ABF6991788A4192FA"
+      },
+      "packages/knowledge/skills.py": {
+        "bytes": 25012,
+        "sha256": "B6605F08A5E2C3D0C1E5740EFCD366CB1A48C1B21A24B721BB80A33EE91BF275"
+      },
+      "tests/api/test_skills_d07.py": {
+        "bytes": 4156,
+        "sha256": "8D3F6285D5DA702DAA207068FDEF92569839ED04FE3A45DDDD731713583DA936"
+      },
+      "tests/knowledge/test_skills_d07.py": {
+        "bytes": 23417,
+        "sha256": "8424A582DCD316E3FDD15B9484588BCFD11B69DBFFDEDE606A60461EA56923E6"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 89,
+        "knowledge_api_related": 1395,
+        "independent_r1": 9
+      },
+      "failed": {
+        "d07_final": 0
+      },
+      "skipped": {
+        "d07_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 1,
+      "resolved_findings": [
+        "UNAPPROVED_IMPLICIT_TRIGGER_AND_SCRIPT_EXPANSION"
+      ],
+      "verified_behaviors": [
+        "L0_BUDGET_AND_NO_BODY_LEAK",
+        "EXCLUSION_FIRST_MATCH",
+        "EXPLICIT_ONLY_WITHOUT_EXACT_TRIGGER_APPROVAL",
+        "FULL_L1_AFTER_SELECTION",
+        "EXPLICIT_EXACT_L2",
+        "REVOKE_ROLLBACK_CACHE_BLOCK",
+        "USAGE_LINEAGE"
+      ]
+    },
+    "external_validation": {
+      "filesystem": "NOT_EXECUTED",
+      "script_execution": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED"
+    },
+    "next_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d08_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 1008,
+    "prior_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "completed_d08_worker_lease": {
+    "actor_id": "developer-primary-d08-r1",
+    "subject_ref": "D-08",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T13:18:00+09:00",
+    "expires_at": "2026-09-17T01:18:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d08-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-08_COMPLETION_REPORT.md",
+      "packages/api/skill_evolution.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/skill_evolution.py",
+      "tests/api/test_skill_evolution_d08.py",
+      "tests/knowledge/test_skill_evolution_d08.py"
+    ],
+    "lease_id": "worker-lease-d08-r1-20260916-001",
+    "lease_epoch": 1,
+    "fencing_token": "d08-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "revoked_at": "2026-09-16T19:22:00+09:00",
+    "reason": "D08_PRODUCT_AND_REVIEW_COMPLETED"
+  },
+  "completed_d08_write_lease": {
+    "actor_id": "developer-primary-d08-r1",
+    "subject_ref": "D-08",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
+    "issued_at": "2026-09-16T13:18:00+09:00",
+    "expires_at": "2026-09-17T01:18:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "d08-r1-execution-fence-epoch-1-a3fa3ed09cd6998b",
+    "path_scope": [
+      "docs/04_test_reports/D-08_COMPLETION_REPORT.md",
+      "packages/api/skill_evolution.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/skill_evolution.py",
+      "tests/api/test_skill_evolution_d08.py",
+      "tests/knowledge/test_skill_evolution_d08.py"
+    ],
+    "lease_id": "write-lease-d08-r1-20260916-001",
+    "worker_lease_id": "worker-lease-d08-r1-20260916-001",
+    "write_epoch": 1,
+    "fencing_token": "d08-r1-write-fence-epoch-1-234458b5283abafa",
+    "write_fencing_token": "d08-r1-write-fence-epoch-1-234458b5283abafa",
+    "revoked_at": "2026-09-16T19:22:00+09:00",
+    "reason": "D08_PRODUCT_AND_REVIEW_COMPLETED"
+  },
+  "d08_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1008,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-08_COMPLETION_REPORT.md",
+      "packages/api/skill_evolution.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/skill_evolution.py",
+      "tests/api/test_skill_evolution_d08.py",
+      "tests/knowledge/test_skill_evolution_d08.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-08_COMPLETION_REPORT.md": {
+        "bytes": 23546,
+        "sha256": "FBAF39C07817A7E2EE4E0CF8E945AD7F5D5313A6F0EB7CC3D3AAC54644C98826"
+      },
+      "packages/api/skill_evolution.py": {
+        "bytes": 2117,
+        "sha256": "E415861D0C54D19C339E187F9E87A314D00C77E0A46E7326A25E73AD70A1F302"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 1754,
+        "sha256": "EB20E4D26961041FEDC633988B803DDE6E78F4D61AA8A46ED5F4AA692B52F922"
+      },
+      "packages/knowledge/skill_evolution.py": {
+        "bytes": 37301,
+        "sha256": "D4CC114DB144B6BAAD22FB42D81CC5FCD09B6DF03ADE7DA20232B82D6622E13D"
+      },
+      "tests/api/test_skill_evolution_d08.py": {
+        "bytes": 2215,
+        "sha256": "3C07BBB336F7AEA77363222B41919230E64A33A4B6D643DD25A2C659E93E06F4"
+      },
+      "tests/knowledge/test_skill_evolution_d08.py": {
+        "bytes": 31495,
+        "sha256": "80CBDEBC22B58408A9FD12E4F323559F8F02BB7FBD8CD656DD7787BB91F78055"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 104,
+        "knowledge_api_related": 1499,
+        "independent_adversarial_r2": 49,
+        "independent_classification_r2": 23
+      },
+      "failed": {
+        "d08_final": 0
+      },
+      "skipped": {
+        "d08_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 2,
+      "resolved_findings": [
+        "TRUSTED_AUTO_SEMANTIC_EXPANSION",
+        "BODY_CONTRACT_SEMVER_MISCLASSIFICATION",
+        "CREATE_ACTIVATION_CATALOG_TOCTOU",
+        "PILOT_IDENTITY_ALIAS",
+        "CONTRACT_SYNONYM_PATCH_BYPASS"
+      ],
+      "verified_behaviors": [
+        "CREATE_PATCH_SPLIT_MERGE_ARCHIVE_SHAPES",
+        "IMMUTABLE_VERSION_AND_DIFF",
+        "THREE_DISTINCT_REPRESENTATIVE_PILOTS",
+        "HUMAN_ONLY_NEW_SKILL",
+        "BOOKKEEPING_ONLY_TRUSTED_AUTO",
+        "ACTIVATION_HEAD_CAS",
+        "SOURCE_REVOKE_QUARANTINE",
+        "NEXT_RUN_ONE_SHOT",
+        "ROLLBACK_AFFECTED_RUNS_COUNTEREXAMPLE"
+      ]
+    },
+    "external_validation": {
+      "d07_consumer_integration": "NOT_EXECUTED",
+      "real_sandbox_pilot": "NOT_EXECUTED",
+      "filesystem_pending_directory": "NOT_EXECUTED",
+      "hook_execution": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED"
+    },
+    "d_skill_gate": "ACCEPTED",
+    "d09_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d_skill_gate": {
+    "status": "ACCEPTED",
+    "event_sequence": 1008,
+    "packages": [
+      "D-07",
+      "D-08"
+    ],
+    "blocking_findings": 0,
+    "important_findings": 0,
+    "evidence": {
+      "d07_d08_completed": "PASS",
+      "pilot_replay_contract": "PASS_FIXTURE_HOST_CAPTURED",
+      "distinct_representative_pilots": 3,
+      "human_approval_contract": "PASS_FIXTURE_HOST_CAPTURED",
+      "rollback_contract": "PASS_FIXTURE_HOST_CAPTURED",
+      "operational_pilot_execution": "NOT_EXECUTED",
+      "new_skill_trusted_auto": "PROHIBITED",
+      "hook_execution": "PROHIBITED_BEFORE_D_HOOK_GATE"
+    }
+  },
+  "d09_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 1017,
+    "prior_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "d09_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1017,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-09_COMPLETION_REPORT.md",
+      "packages/api/hooks.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/hooks.py",
+      "tests/api/test_hooks_d09.py",
+      "tests/knowledge/test_hooks_d09.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-09_COMPLETION_REPORT.md": {
+        "bytes": 16984,
+        "sha256": "8CA02A4ABAA9C9E6DC4886150C8CA19BD97ED55E5A9106E537073171556D66DD"
+      },
+      "packages/api/hooks.py": {
+        "bytes": 2055,
+        "sha256": "BB557E30C3B81E32984CEE08D06D49384C5027CCE7868CEA9F0696AC7FCC99F4"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 1830,
+        "sha256": "8A37C0A641C2AEB8B72F74244ED9D996DE8BBEAAA7796EABFBF34CB1520CD287"
+      },
+      "packages/knowledge/hooks.py": {
+        "bytes": 30778,
+        "sha256": "B9CC99BC96DC32E3F6CBBBFD4A734F44D0B2B27B1219BFE985A49ABB04AD954B"
+      },
+      "tests/api/test_hooks_d09.py": {
+        "bytes": 3540,
+        "sha256": "20B60A831C760726CF0D0B0458EDD3A48F384337A01813756F71670E2219883C"
+      },
+      "tests/knowledge/test_hooks_d09.py": {
+        "bytes": 25769,
+        "sha256": "AF1B5F7E4D79B1A575DCA4AF0EDF71F620AF37035A5DBC2C87558C228B2AEFD6"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 152,
+        "knowledge_api_related": 1651,
+        "independent_r1": 152
+      },
+      "failed": {
+        "d09_final": 0
+      },
+      "skipped": {
+        "d09_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 1,
+      "resolved_findings": [
+        "PATCH_MATCHER_EVENT_AND_NOOP_CONTRACT",
+        "RECURSION_IDEMPOTENCY_BYPASS",
+        "ROOT_RECURSIVE_GLOB_MISMATCH"
+      ],
+      "verified_behaviors": [
+        "VERSIONED_EVENT_MATCHER_PROGRAM_FAULT_POLICY",
+        "REPEATED_OBSERVATION_PROVENANCE",
+        "COMMAND_ONLY_PENDING_NON_EXECUTABLE",
+        "EXACT_MATCHER_FAIL_CLOSED",
+        "DENY_PRIORITY_AND_MODIFY_CONFLICT",
+        "FAIL_OPEN_CLOSED_AUDIT_PROJECTION",
+        "RECURSION_IDEMPOTENCY_RECEIPT"
+      ]
+    },
+    "external_validation": {
+      "program_execution": "NOT_EXECUTED",
+      "hook_execution": "NOT_EXECUTED",
+      "signature_verification": "NOT_EXECUTED",
+      "trust_activation": "NOT_EXECUTED",
+      "shadow": "NOT_EXECUTED",
+      "pilot": "NOT_EXECUTED",
+      "filesystem": "NOT_EXECUTED",
+      "process": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED"
+    },
+    "next_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d10_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 1026,
+    "prior_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "d10_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1026,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-10_COMPLETION_REPORT.md",
+      "packages/api/hook_runtime.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/hook_runtime.py",
+      "tests/api/test_hook_runtime_d10.py",
+      "tests/knowledge/test_hook_runtime_d10.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-10_COMPLETION_REPORT.md": {
+        "bytes": 18253,
+        "sha256": "9FA2B0A48820C051AFA39317E8EEFE74786A97A0D374FB6CE042E2BAF6CAFB24"
+      },
+      "packages/api/hook_runtime.py": {
+        "bytes": 2636,
+        "sha256": "6DCC95B62171B830BB17D596748F0DA1D7EB21106E7D1932726CB638DE628A34"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 2045,
+        "sha256": "E4A401951497A11E686781DB35D79040B40F56E5EF8E53A2BC1D7EA855106F31"
+      },
+      "packages/knowledge/hook_runtime.py": {
+        "bytes": 44032,
+        "sha256": "D99A26FAE223EF512746CD09315F1886AA642DC374CA7F0DEF93FC47E51018F9"
+      },
+      "tests/api/test_hook_runtime_d10.py": {
+        "bytes": 1871,
+        "sha256": "8E7FB49C886A0574083F1F61DAF5AA80DF1C79935A7C655F4FB3AE036CFA9E25"
+      },
+      "tests/knowledge/test_hook_runtime_d10.py": {
+        "bytes": 31098,
+        "sha256": "DE3C8B4F1A42B0469261F50CB7A06204755C27ED40085F57306EE7F95BB4B4C3"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 72,
+        "knowledge_api_related": 1723,
+        "independent_r1": 72
+      },
+      "failed": {
+        "d10_final": 0
+      },
+      "skipped": {
+        "d10_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 1,
+      "resolved_findings": [
+        "PILOT_FAULT_POLICY_DECISION_UNBOUND",
+        "FAIL_OPEN_SAFETY_HOOK_QUARANTINE_WITHOUT_FALLBACK"
+      ],
+      "verified_behaviors": [
+        "SHADOW_PILOT_HUMAN_TRUST",
+        "NEXT_RUN_ACTIVATION",
+        "HASH_DRIFT_TRUST_REVOCATION",
+        "TRUSTED_AUTO_EXCLUSION_NARROWING",
+        "FAULT_DECISION_RECEIPT",
+        "RECURSION_IDEMPOTENCY",
+        "QUARANTINE_FALLBACK_ATOMIC_PUBLICATION",
+        "ROLLBACK_AFFECTED_RUNS",
+        "SEALED_RESTART_RESTORE"
+      ]
+    },
+    "external_validation": {
+      "os_sandbox": "NOT_EXECUTED",
+      "process_execution": "NOT_EXECUTED",
+      "file_signature_verification": "NOT_EXECUTED",
+      "durable_persistence": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED"
+    },
+    "next_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d_hook_gate": {
+    "status": "ACCEPTED",
+    "event_sequence": 1027,
+    "packages": [
+      "D-09",
+      "D-10"
+    ],
+    "blocking_findings": 0,
+    "important_findings": 0,
+    "gate_evidence": {
+      "versioned_deterministic_registry": "PASS",
+      "shadow_pilot_sandbox_contract": "PASS_FIXTURE_FAKE_EXECUTOR",
+      "recursion_idempotency": "PASS",
+      "human_trust_contract": "PASS_FIXTURE_HOST_CAPTURED",
+      "hash_drift_trust_revocation": "PASS",
+      "trusted_auto_matcher_narrowing": "PASS",
+      "quarantine_rollback": "PASS",
+      "session_restart_restoration": "PASS_FIXTURE_SEALED_IN_MEMORY",
+      "operational_os_sandbox_process_durable_persistence": "NOT_EXECUTED",
+      "team_hook_deployment": "NOT_EXECUTED"
+    }
+  },
+  "d11_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 1036,
+    "prior_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "d11_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1036,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-11_COMPLETION_REPORT.md",
+      "packages/api/model_registry.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/model_registry.py",
+      "tests/api/test_model_registry_d11.py",
+      "tests/knowledge/test_model_registry_d11.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-11_COMPLETION_REPORT.md": {
+        "bytes": 18171,
+        "sha256": "8F7431B8B2C7FF21DA49F25C293834710B80E0CCF6A777D59EFBD10F98BFF953"
+      },
+      "packages/api/model_registry.py": {
+        "bytes": 2033,
+        "sha256": "AC93BB1FBADE13BE7821564334ACBEB0C734C057F97EA1EC82835CCD3F361159"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 2200,
+        "sha256": "76AEE97DF73149CB44BEAE413C39408EEE89F83D91F2A405C48E131774B90C7F"
+      },
+      "packages/knowledge/model_registry.py": {
+        "bytes": 32168,
+        "sha256": "D1F8CEF3EE77696DB7962650E3C1926A79444378192BD6FA7AFADD02B92A2AF6"
+      },
+      "tests/api/test_model_registry_d11.py": {
+        "bytes": 2328,
+        "sha256": "4720BF325506946AA454B5FAC79AE5B3E2D4B81E67E46094D3EF38099F9BAA73"
+      },
+      "tests/knowledge/test_model_registry_d11.py": {
+        "bytes": 31195,
+        "sha256": "803F20AE1BF51A75457892B546566FD969DA93F3BD2F47E7C51F2995D3045E25"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 94,
+        "knowledge_api_related": 1817,
+        "independent_r2": 94
+      },
+      "failed": {
+        "d11_final": 0
+      },
+      "skipped": {
+        "d11_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 2,
+      "resolved_findings": [
+        "CAPTURE_SEAL_NOT_REVALIDATED",
+        "OPENROUTER_SELF_UPSTREAM_ACCEPTED",
+        "PUBLICATION_FAILURE_GHOST_COMMIT"
+      ],
+      "verified_behaviors": [
+        "CANONICAL_NINE_PROVIDER_REGISTRY",
+        "PROMPT_PROVENANCE_AND_IMMUTABILITY",
+        "HOST_CAPTURE_INTEGRITY",
+        "IDENTICAL_BASELINE_BENCHMARK",
+        "PRIVACY_PRICE_CAPABILITY_TTL_DRIFT",
+        "ATOMIC_MULTI_ROLE_ROUTING_CAS",
+        "NEXT_RUN_ONLY_GUARD",
+        "OPENROUTER_UPSTREAM_PROVENANCE",
+        "FAILURE_ATOMIC_PUBLICATION",
+        "CHECKPOINT_TAMPER_AND_AUTHORITY"
+      ]
+    },
+    "external_validation": {
+      "provider_probe": "NOT_EXECUTED",
+      "provider_runtime": "NOT_EXECUTED",
+      "price_freshness": "NOT_EXECUTED",
+      "upstream_factuality": "NOT_EXECUTED",
+      "durable_persistence": "NOT_EXECUTED",
+      "signature_verification": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "runtime_consumer_integration": "NOT_EXECUTED"
+    },
+    "next_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d12_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 1050,
+    "prior_status": "ACCEPTED",
+    "error_count": 0,
+    "lease_time_correction": {
+      "reason": "FUTURE_DATED_CONTROL_CLOCK_CORRECTION_BEFORE_PRODUCT_MUTATION",
+      "observed_at": "2026-09-16T22:20:00+09:00",
+      "old_worker_lease_id": "worker-lease-d12-r1-20260916-001",
+      "old_write_lease_id": "write-lease-d12-r1-20260916-001",
+      "corrected_worker_lease_id": "worker-lease-d12-r1-20260916-002",
+      "corrected_write_lease_id": "write-lease-d12-r1-20260916-002",
+      "product_mutation_before_correction": "NOT_MODIFIED_CLOCK_SKEW_STOP"
+    }
+  },
+  "d12_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1050,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-12_COMPLETION_REPORT.md",
+      "packages/api/learning_journey.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/learning_journey.py",
+      "tests/api/test_learning_journey_d12.py",
+      "tests/knowledge/test_learning_journey_d12.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-12_COMPLETION_REPORT.md": {
+        "bytes": 20097,
+        "sha256": "00264B8A06F45FFC9162523B9AEF13073726066D75F35ECC0624DCDED49FAB30"
+      },
+      "packages/api/learning_journey.py": {
+        "bytes": 1499,
+        "sha256": "523AB02433887266A60B898789C042EE163CF4C5272686B6E115E4AC4D4BDBCF"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 2353,
+        "sha256": "781D9381429EAD39EA9A597446F6C121C3AB4B254D6E904501A4778C0EAC2285"
+      },
+      "packages/knowledge/learning_journey.py": {
+        "bytes": 43154,
+        "sha256": "13C78BC8CB0F00A798FB54C3EEB9158A708D2A20D8024119237676E704ADBB27"
+      },
+      "tests/api/test_learning_journey_d12.py": {
+        "bytes": 3212,
+        "sha256": "D12AD74E6B7CCE2B0986B867014F9D90E8EC02701D0CC9DF81BB73C91CB563EE"
+      },
+      "tests/knowledge/test_learning_journey_d12.py": {
+        "bytes": 24590,
+        "sha256": "296AC731712804EFD1FF3B1BB6C1474D9EBE3E5D8C52F608DD65E4FFA4748365"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 59,
+        "knowledge_api_related": 1876,
+        "independent_r3": 59
+      },
+      "failed": {
+        "d12_final": 0
+      },
+      "skipped": {
+        "d12_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "rework_rounds": 3,
+      "resolved_findings": [
+        "EPHEMERAL_EXECUTOR_REPLAY_DEPENDENCY",
+        "LIFECYCLE_TIMELINE_OMISSION",
+        "PACKETLESS_RECEIPT_DECISION_PROJECTION_OMISSION"
+      ],
+      "verified_behaviors": [
+        "COMPLETE_PROVENANCE_DAG_AND_LIFECYCLE_TIMELINE",
+        "SEALED_DETERMINISTIC_HOOK_REPLAY_WITHOUT_EXECUTOR",
+        "PACKETLESS_RECEIPT_VALUE_SAFE_DECISION_PROJECTION",
+        "SKILL_SELECTION_REASON_AND_EXCLUSION",
+        "STABLE_CURSOR_AND_HEAD_DRIFT_GUARD",
+        "CHECKPOINT_TAMPER_AND_AUTHORITY",
+        "MENU_STATE_CONTRACT",
+        "READ_ONLY_API_AND_SENSITIVE_VALUE_NON_EXPOSURE"
+      ]
+    },
+    "external_validation": {
+      "actual_ui": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "screenshot": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http_server": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "os_hook_program": "NOT_EXECUTED",
+      "process_execution": "NOT_EXECUTED",
+      "durable_process_restart": "NOT_EXECUTED",
+      "runtime_consumer_integration": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED"
+    },
+    "next_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d13_start": {
+    "accepted": true,
+    "status": "COMPLETED_ACCEPTED",
+    "event_sequence": 1059,
+    "prior_status": "ACCEPTED",
+    "error_count": 0
+  },
+  "d13_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1059,
+    "product_exact_paths": [
+      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
+      "packages/api/learning_e2e.py",
+      "packages/knowledge/__init__.py",
+      "packages/knowledge/learning_e2e.py",
+      "tests/api/test_learning_e2e_d13.py",
+      "tests/knowledge/test_learning_e2e_d13.py"
+    ],
+    "product_raw": {
+      "docs/04_test_reports/D-13_COMPLETION_REPORT.md": {
+        "bytes": 29513,
+        "sha256": "F8227749D89075F9452B6BF81586F64C811EBD301DA5E789E3607DA5A93F516E"
+      },
+      "packages/api/learning_e2e.py": {
+        "bytes": 1203,
+        "sha256": "7B2C161D38E90A9510113BAAF213C00FEFCCCD4DE6848FEC7837432266F0F43E"
+      },
+      "packages/knowledge/__init__.py": {
+        "bytes": 2494,
+        "sha256": "DA403780A8F7EA0B011A936F5EE461A30637170689F11990F4BF942D39E79E2A"
+      },
+      "packages/knowledge/learning_e2e.py": {
+        "bytes": 31473,
+        "sha256": "59967CDD6C132AC24D5F84556652900B5B56DBEB1EECD3FFA083BF57E5829698"
+      },
+      "tests/api/test_learning_e2e_d13.py": {
+        "bytes": 1999,
+        "sha256": "565F690C2A722256B5CA8A9CAA057C36E3BA410FA1A03B4F1EE786C74164B79F"
+      },
+      "tests/knowledge/test_learning_e2e_d13.py": {
+        "bytes": 32790,
+        "sha256": "E88E3970DAE20A880A0E5159DE5BE33118CF8D93932A9A2DE632A667482CC368"
+      }
+    },
+    "test_evidence": {
+      "passed": {
+        "focused": 104,
+        "knowledge_api_related": 1980,
+        "independent_r4": 104
+      },
+      "failed": {
+        "d13_final": 0
+      },
+      "skipped": {
+        "d13_final": 0
+      },
+      "compileall": {
+        "status": "PASS",
+        "exit_code": 0
+      },
+      "diff_check": {
+        "status": "PASS",
+        "exit_code": 0
+      }
+    },
+    "independent_reviews": {
+      "verdict": "ACCEPT",
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "rework_rounds": 4,
+      "resolved_findings": [
+        "GENERIC_OWNER_REVISION_PROJECTION",
+        "SAME_TASK_NEW_RUN_ACCEPTED",
+        "PRE_RUN_TERMINAL_EVIDENCE_ACCEPTED",
+        "FINAL_DIFF_SEARCH_NOT_BOUND",
+        "OWNER_EVIDENCE_OPTIONAL",
+        "OWNER_REVISION_USE_PARTIAL_PUBLICATION"
+      ],
+      "verified_behaviors": [
+        "PUBLISH_LAST_OWNER_USE_BINDING",
+        "FAULT_RETRY_REUSES_CANONICAL_RECEIPT",
+        "LOCAL_AND_CANONICAL_USE_HASH_BOUND",
+        "MISSING_OR_FORGED_USE_FAIL_CLOSED",
+        "NEXT_TASK_ONLY_APPLICATION",
+        "SOURCE_REVOKE_AND_ROLLBACK_ISOLATION",
+        "TERMINAL_ATTESTATION_BINDING",
+        "NO_CHANGE_REVIEW",
+        "CONDITIONAL_DIRX_DEDUPLICATION"
+      ]
+    },
+    "external_validation": {
+      "database": "NOT_EXECUTED",
+      "http_server": "NOT_EXECUTED",
+      "provider": "NOT_EXECUTED",
+      "ui": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "os_program": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "durable_process_restart": "NOT_EXECUTED",
+      "runtime_consumer_integration": "NOT_EXECUTED",
+      "cross_repository_transaction": "NOT_EXECUTED"
+    },
+    "next_status": "READY_FOR_WORK_INSTRUCTION"
+  },
+  "d_gate": {
+    "status": "ACCEPTED",
+    "event_sequence": 1060,
+    "packages": [
+      "D-01",
+      "D-02",
+      "D-03",
+      "D-04",
+      "D-05",
+      "D-06",
+      "D-07",
+      "D-08",
+      "D-09",
+      "D-10",
+      "D-11",
+      "D-12",
+      "D-13"
+    ],
+    "blocking_findings": 0,
+    "important_findings": 0,
+    "evidence_target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75",
+    "gate_evidence": {
+      "packages_d01_d13": "PASS",
+      "source_provenance_and_version": "PASS",
+      "approval_before_activation": "PASS",
+      "next_task_snapshot_isolation": "PASS",
+      "unapproved_candidate_behavior_unchanged": "PASS",
+      "rollback_and_source_revoke": "PASS",
+      "positive_exemplar_requires_verified_diff": "PASS",
+      "d13_full_learning_e2e": "PASS_104_FOCUSED_1980_KNOWLEDGE_API",
+      "critical_trigger_checks": {
+        "AV-LRN-003": {
+          "severity": "CRITICAL",
+          "status": "PASS",
+          "confirmed": true,
+          "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+        },
+        "AV-LRN-004": {
+          "severity": "CRITICAL",
+          "status": "PASS",
+          "confirmed": true,
+          "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+        },
+        "AV-LRN-005": {
+          "severity": "CRITICAL",
+          "status": "PASS",
+          "confirmed": true,
+          "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+        }
+      },
+      "dirx_trigger": {
+        "trigger_id": "DIRX-LRN-CRITICAL",
+        "triggered": false,
+        "reason": "NO_CONFIRMED_CRITICAL_FAILURE_ON_COMMON_TARGET"
+      },
+      "actual_runtime_consumer_ui_db_http_provider_os_deployment": "NOT_EXECUTED"
+    }
+  },
+  "dirx_lrn_critical": {
+    "status": "NOT_TRIGGERED",
+    "trigger_id": "DIRX-LRN-CRITICAL",
+    "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75",
+    "critical_checks": {
+      "AV-LRN-003": {
+        "severity": "CRITICAL",
+        "status": "PASS",
+        "confirmed": true,
+        "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+      },
+      "AV-LRN-004": {
+        "severity": "CRITICAL",
+        "status": "PASS",
+        "confirmed": true,
+        "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+      },
+      "AV-LRN-005": {
+        "severity": "CRITICAL",
+        "status": "PASS",
+        "confirmed": true,
+        "target_hash": "D388E9560C798EDF89A4B337F9684AC2D57672873EC1DD84FA7259E62051AB75"
+      }
+    }
+  },
+  "d_gate_regression_reconciliation": {
+    "status": "PASS",
+    "event_sequence": 1061,
+    "evidence": {
+      "failure": "C01_L3_UNAPPROVED_OPENAPI_PATH_DIFF",
+      "cause": "HISTORICAL_C01_SCHEMA_ASSERTION_INCLUDED_ACCEPTED_C04_DELEGATION_ROUTES",
+      "approved_successor_operations": [
+        "GET /api/delegations/{id}",
+        "POST /api/delegations/{id}:cancel",
+        "POST /api/delegations/{id}:resume",
+        "POST /api/delegations/{id}:steer"
+      ],
+      "repair": "EXPLICITLY_PROJECT_APPROVED_SUCCESSOR_OPERATIONS_OUT_OF_C01_HISTORICAL_SCHEMA",
+      "focused_result": "1_PASS_8_DESELECTED",
+      "product_regression_before_repair": "2751_PASS_9_SKIP_1_FAIL",
+      "product_behavior_changed": false,
+      "d_gate_verdict_changed": false
+    },
+    "test_path": "tests/verification/test_c01_l3_independent_acceptance.py",
+    "test_sha256": "0CAA1C871AFECBF60527B00D74C55BA753217EDC16F453F343B2EE0B0AF8BF78"
   }
 }

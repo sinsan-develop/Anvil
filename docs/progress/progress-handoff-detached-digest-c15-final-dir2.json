@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C15-FINAL-DIR2-DIGEST-20260916",
+  "package_id": "C-15",
+  "event_sequence": 931,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T06:08:00+09:00",
+  "scope": "seq925-931 append-only C-15 acceptance and DIR-2 report; seq1-924 preserved; exact41",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1004403,
+    "file_sha256": "F7060FE4A12058BBF905FF206F5412708CEB7CFA8F4275D7C2CB95F38FD5F961",
+    "canonical_json_sha256": "0C2C40EAABF002E8376C766CBB1F4C0CE43E985AAB26AE715A8FA8EB7959E823"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 198700,
+    "file_sha256": "F9BBF7A816D60682C2FB7BDC7CD65D0B93C19E333ED08816BE4AA5E7B9EB6703",
+    "machine_summary_canonical_sha256": "92F83D559EDF3773C3FAF6182F29769EBA0D77551875B499682F7B5B06013322"
+  },
+  "dir_registry": {
+    "path": "docs/progress/dir-checkpoints.json",
+    "bytes": 2537,
+    "file_sha256": "00EE6F014A448F54BF85BD5C14631EE3BD1A2EC723344834D3364ED4CC878C76"
+  }
+}

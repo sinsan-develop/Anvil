@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from secrets import token_urlsafe
-from typing import Callable
+from typing import Callable, Iterator
 from threading import RLock
 
 from .models import WorkerLease, WriteLease
@@ -18,6 +20,16 @@ class StaleFencingToken(LeaseError):
     code = "STALE_FENCING_TOKEN"
 
 
+@dataclass(frozen=True, slots=True)
+class LeaseTakeoverSnapshot:
+    """Exact, immutable run lease state used only for takeover compensation."""
+
+    run_id: str
+    worker: WorkerLease
+    writes: tuple[WriteLease, ...]
+    terminal: bool
+
+
 class LeaseService:
     def __init__(self, *, token_factory: Callable[[], str] = lambda: token_urlsafe(32)) -> None:
         self._token_factory = token_factory
@@ -25,10 +37,13 @@ class LeaseService:
         self._writes: dict[tuple[str, str], WriteLease] = {}
         self._worker_epochs: dict[str, int] = {}
         self._write_epochs: dict[tuple[str, str], int] = {}
+        self._takeover_guards: set[str] = set()
+        self._takeover_terminal: set[str] = set()
         self._lock = RLock()
 
     def issue_worker(self, run_id: str, worker_id: str, now: datetime, ttl: timedelta) -> WorkerLease:
         with self._lock:
+            self._reject_guarded_issue(run_id)
             return self._issue_worker(run_id, worker_id, now, ttl)
 
     def _issue_worker(self, run_id: str, worker_id: str, now: datetime, ttl: timedelta) -> WorkerLease:
@@ -39,6 +54,7 @@ class LeaseService:
 
     def take_over_expired(self, run_id: str, worker_id: str, now: datetime, ttl: timedelta) -> WorkerLease:
         with self._lock:
+            self._reject_guarded_issue(run_id)
             return self._take_over_expired(run_id, worker_id, now, ttl)
 
     def _take_over_expired(self, run_id: str, worker_id: str, now: datetime, ttl: timedelta) -> WorkerLease:
@@ -49,6 +65,7 @@ class LeaseService:
 
     def issue_write(self, worker: WorkerLease, scope: str, now: datetime, ttl: timedelta) -> WriteLease:
         with self._lock:
+            self._reject_guarded_issue(worker.run_id)
             return self._issue_write(worker, scope, now, ttl)
 
     def _issue_write(self, worker: WorkerLease, scope: str, now: datetime, ttl: timedelta) -> WriteLease:
@@ -91,10 +108,89 @@ class LeaseService:
             self._workers.pop(run_id, None)
             return worker, writes
 
+    def takeover_snapshot(
+        self, run_id: str, *, execution_token: str,
+    ) -> LeaseTakeoverSnapshot:
+        """Capture the exact current run state before a coordinated revoke."""
+        with self._lock:
+            worker = self._workers.get(run_id)
+            if worker is None or worker.execution_fencing_token != execution_token:
+                raise StaleFencingToken("current execution fencing token is required")
+            writes = tuple(
+                lease for (lease_run, _), lease in self._writes.items()
+                if lease_run == run_id
+            )
+            return LeaseTakeoverSnapshot(
+                run_id, worker, writes, run_id in self._takeover_terminal,
+            )
+
+    @contextmanager
+    def takeover_transaction(
+        self, run_id: str, *, execution_token: str,
+    ) -> Iterator[None]:
+        """Fence lease issue/takeover until a coordinated takeover commits."""
+        with self._lock:
+            worker = self._workers.get(run_id)
+            if worker is None or worker.execution_fencing_token != execution_token:
+                raise StaleFencingToken("current execution fencing token is required")
+            if run_id in self._takeover_guards:
+                raise LeaseError("takeover transaction is already active")
+            self._takeover_guards.add(run_id)
+            try:
+                yield
+            finally:
+                self._takeover_guards.remove(run_id)
+
+    def complete_takeover(self, run_id: str) -> None:
+        """Leave a terminal fence before the transaction lock is released."""
+        with self._lock:
+            if run_id not in self._takeover_guards:
+                raise LeaseError("takeover transaction is required")
+            if self._workers.get(run_id) is not None or any(
+                lease_run == run_id for lease_run, _ in self._writes
+            ):
+                raise LeaseError("lease capability remains active")
+            self._takeover_terminal.add(run_id)
+
+    def restore_takeover(self, snapshot: LeaseTakeoverSnapshot) -> None:
+        """Restore a prior snapshot without overwriting a newer lease owner."""
+        if type(snapshot) is not LeaseTakeoverSnapshot:
+            raise LeaseError("valid takeover lease snapshot is required")
+        with self._lock:
+            current_worker = self._workers.get(snapshot.run_id)
+            current_writes = tuple(
+                lease for (lease_run, _), lease in self._writes.items()
+                if lease_run == snapshot.run_id
+            )
+            if current_worker not in (None, snapshot.worker):
+                raise LeaseError("cannot overwrite a newer worker lease")
+            if current_writes and current_writes != snapshot.writes:
+                raise LeaseError("cannot overwrite newer write leases")
+            for key in tuple(self._writes):
+                if key[0] == snapshot.run_id:
+                    del self._writes[key]
+            self._workers[snapshot.run_id] = snapshot.worker
+            for lease in snapshot.writes:
+                self._writes[(lease.run_id, lease.conflict_scope_key)] = lease
+            if snapshot.terminal:
+                self._takeover_terminal.add(snapshot.run_id)
+            else:
+                self._takeover_terminal.discard(snapshot.run_id)
+
     def active_writes(self, run_id: str | None = None) -> tuple[WriteLease, ...]:
         with self._lock:
             values = tuple(self._writes.values())
             return values if run_id is None else tuple(item for item in values if item.run_id == run_id)
+
+    def active_worker(self, run_id: str) -> WorkerLease | None:
+        with self._lock:
+            return self._workers.get(run_id)
+
+    def _reject_guarded_issue(self, run_id: str) -> None:
+        if run_id in self._takeover_terminal:
+            raise LeaseError("lease issue is fenced by completed takeover")
+        if run_id in self._takeover_guards:
+            raise LeaseError("lease issue is fenced by active takeover transaction")
 
     def _new_worker(self, run_id: str, worker_id: str, now: datetime, ttl: timedelta) -> WorkerLease:
         if not run_id or not worker_id or ttl <= timedelta(0):

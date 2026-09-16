@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "C13-FINAL-ACCEPTANCE-DIGEST-20260916",
+  "package_id": "C-13",
+  "event_sequence": 906,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-16T08:45:00+09:00",
+  "scope": "seq902-906 append-only C-13 acceptance; seq1-901 preserved; product10 control11 combined21",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 992247,
+    "file_sha256": "D93F5834972A765C9CF6E878C07A458E3CAA6BA996087F64DDC50A79E34B5FB9",
+    "canonical_json_sha256": "2367F8D06DD96E61526412B6FDBD5F9289FB6E516511BB1F418D3D3BEB58D8F6"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 198599,
+    "file_sha256": "DC1A5FFFC2C67820D1FAA8AB90D53CE4E87CA777FCB4ED59A30F731A982B20E4",
+    "machine_summary_canonical_sha256": "362E46A0156B7E56253B3FBA0F113A5082A51274302A1D979F4C0C536148E849"
+  }
+}
