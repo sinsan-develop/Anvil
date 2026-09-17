@@ -1552,6 +1552,18 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "E09_FINAL_ACCEPTANCE_EXACT16"
             )
             or (
+                progress is not None and progress.get("event_sequence") == 1165
+                and event.get("sequence") == 1165 and event.get("event_id") == "evt_e10_final_main_package_accepted"
+                and event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+                and event["details"].get("projection_mode") == "E10_FINAL_ACCEPTANCE_EXACT16"
+            )
+            or (
+                progress is not None and progress.get("event_sequence") == 1160
+                and event.get("sequence") == 1160 and event.get("event_id") == "evt_e10_package_started"
+                and event.get("event_type") == "PACKAGE_STARTED"
+                and event["details"].get("projection_mode") == "E10_START_EXACT9_PRODUCT_EXACT5"
+            )
+            or (
                 progress is not None and progress.get("event_sequence") == 1151
                 and event.get("sequence") == 1151 and event.get("event_id") == "evt_e09_package_started"
                 and event.get("event_type") == "PACKAGE_STARTED"
@@ -13577,6 +13589,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 1165:
+        return _collect_e10_final_git(bundle)
+    if bundle.get("progress", {}).get("event_sequence") == 1160:
+        return _collect_e10_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 1156:
         return _collect_e09_final_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 1151:
@@ -15058,6 +15074,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_e04_final(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_e05_final(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_e10_final(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/E-10_START_MANIFEST.json":
+            errors.extend(validate_e10_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_e09_final(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-09_START_MANIFEST.json":
@@ -56155,6 +56175,222 @@ def _collect_e09_git(bundle):
 
 
 
+E10_BASE = "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342"
+E10_MODE = "E10_START_EXACT9_PRODUCT_EXACT5"
+E10_WI = "docs/work_orders/E-10_WORK_INSTRUCTION.md"
+E10_PROMPT = "docs/work_orders/E-10_INVOCATION_PROMPT.md"
+E10_D = "docs/progress/progress-handoff-detached-digest-e10-start.json"
+E10_M = "docs/evidence/manifests/E-10_START_MANIFEST.json"
+E10_AT = "2026-09-17T23:47:51+09:00"
+E10_EXPIRES = "2026-09-18T11:47:51+09:00"
+E10_WI_HASH = "C1BE07185E99335FB9A976CCC667753A7D2C73089DABF6BF7F55051359B10138"
+E10_PROMPT_HASH = "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D"
+
+
+def e10_product_write_scope():
+    return sorted(["packages/git_adapter/__init__.py", "packages/git_adapter/models.py",
+                   "packages/git_adapter/service.py", "tests/git_adapter/test_git_adapter_e10.py",
+                   "docs/04_test_reports/E-10_COMPLETION_REPORT.md"])
+
+
+def e10_control_paths():
+    return sorted([D13_START_P, D13_START_E, D13_START_H, E10_D, E10_M, E10_WI, E10_PROMPT,
+                   "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def e10_start_from_root(root):
+    committed = lambda p: subprocess.check_output(["git", "show", f"{E10_BASE}:{p}"], cwd=root)
+    old = {p: committed(p) for p in (D13_START_P, D13_START_E, D13_START_H)}
+    progress = _c21_resume_json(old[D13_START_P])
+    stream = _c21_resume_json(old[D13_START_E])
+    if (progress.get("event_sequence") != 1156 or stream.get("last_sequence") != 1156
+        or progress.get("e09_final_acceptance", {}).get("status") != "ACCEPTED"
+        or progress.get("next_work_package") != {"package_id": "E-10", "status": "READY_FOR_WORK_INSTRUCTION"}
+        or progress.get("pending_approvals") != []
+        or any(progress.get(key) is not None for key in ("active_agent", "worker_lease", "write_lease", "active_work_instruction"))):
+        raise ValueError("E10_HISTORY_INVALID")
+    if (_c21_resume_sha((root / E10_WI).read_bytes()) != E10_WI_HASH
+        or _c21_resume_sha((root / E10_PROMPT).read_bytes()) != E10_PROMPT_HASH):
+        raise ValueError("E10_AUTHORITY_INVALID")
+    scope = e10_product_write_scope()
+    exact = e10_control_paths()
+    actor = "developer-primary-e10-r1"
+    execution = "e10-r1-execution-fence-epoch-1-593311d87de760bd"
+    write_token = "e10-r1-write-fence-epoch-1-c6bb5485b89a1701"
+    execution = "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e"
+    write_token = "e10-r1-write-fence-epoch-1-e4d82ae4f47b47bc"
+    common = {"actor_id": actor, "subject_ref": "E-10", "baseline_hash": progress["design_baseline_hash"],
+              "baseline_git_commit": E10_BASE, "issued_at": E10_AT, "expires_at": E10_EXPIRES,
+              "status": "ACTIVE", "execution_fencing_token": execution, "path_scope": scope}
+    worker = {**common, "lease_id": "worker-lease-e10-r1-20260917-001", "lease_epoch": 1,
+              "fencing_token": execution, "dispatch_head": E10_BASE}
+    write = {**common, "lease_id": "write-lease-e10-r1-20260917-001", "worker_lease_id": worker["lease_id"],
+             "write_epoch": 1, "fencing_token": write_token, "write_fencing_token": write_token}
+    authority = {"source": "MAIN_APPROVED_E10_IMPLEMENTATION_DISPATCH", "new_project_approval_requested": False,
+                 "product_tdd_authorized_now": True, "external_execution_authorized": False,
+                 "work_instruction_sha256": E10_WI_HASH, "invocation_sha256": E10_PROMPT_HASH,
+                 "approved_control_paths": exact, "product_write_scope": scope,
+                 "independent_acceptance_required": True,
+                 "validation_ids": ["AV-GATE-004", "AV-GATE-016", "AV-GATE-017", "AV-GATE-018",
+                                    "AV-GATE-019", "AV-GATE-023", "AV-GATE-024", "AV-GATE-025",
+                                    "AV-STAT-023", "AV-UI-013", "AV-UI-014", "AV-FLOW-014",
+                                    "AV-FLOW-015", "AV-FLOW-024", "AV-FLOW-025"],
+                 "boundary": {"actual_browser_db_provider": "NOT_EXECUTED",
+                              "ui_menu_implementation": "U_PHASE_OWNED",
+                              "apply_deploy_external_action": "FORBIDDEN", "schema_change": "FORBIDDEN"}}
+    projection = {"projection_mode": E10_MODE, "validated_base_commit": E10_BASE,
+                  "dispatch_head": E10_BASE, "dispatch_upstream_head": E10_BASE,
+                  "head_relation": "PRECOMMIT_EXACT9_OR_SOLE_DIRECT_CHILD", "exact_allowed_paths": exact}
+    details = [
+        ("WORK_INSTRUCTION_ISSUED", "work_instruction_issued", {"work_instruction_id": "WI-E-10-R1-20260917-001",
+         "work_instruction_path": E10_WI, "work_instruction_sha256": E10_WI_HASH,
+         "invocation_path": E10_PROMPT, "invocation_sha256": E10_PROMPT_HASH,
+         "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001", "product_write_scope": scope, "authority": authority}),
+        ("WORKER_LEASE_ISSUED", "worker_lease_issued", worker),
+        ("WRITE_LEASE_ISSUED", "write_lease_issued", write),
+        ("PACKAGE_STARTED", "package_started", {**projection, "authority": authority, "product_write_scope": scope,
+         "work_instruction_id": "WI-E-10-R1-20260917-001", "package_status": "IN_PROGRESS",
+         "work_package_id": "E-10", "status": "IN_PROGRESS", "active_agent": actor,
+         "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+         "execution_fencing_token": execution, "write_fencing_token": write_token,
+         "work_instruction_sha256": E10_WI_HASH, "runtime_next_action": "E10_GIT_ADAPTER_TDD_THEN_REVIEW"}),
+    ]
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    additions = []
+    for sequence, (kind, suffix, data) in enumerate(details, 1157):
+        row = {"sequence": sequence, "event_id": "evt_e10_" + suffix, "event_type": kind,
+               "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+               "project_id": "anvil", "run_id": None, "work_package_id": "E-10", "step_id": "START",
+               "subject_ref": "E-10/START", "occurred_at": E10_AT,
+               "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+               "previous_event_sha256": previous, "details": data}
+        additions.append(row)
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+    events_raw = _c21_append_events(old[D13_START_E], 1156, additions)
+    repo = copy.deepcopy(progress["repository"])
+    repo.update({**projection, "control_head": E10_BASE, "local_head": E10_BASE, "remote_head": E10_BASE,
+                 "upstream_head": E10_BASE, "branch": C09_START_BRANCH, "product_write_scope": scope,
+                 "worktree_status": "UNSTAGED_START_CONTROL_WITH_OPTIONAL_AUTHORIZED_PRODUCT_DELTA",
+                 "push_status": "NOT_EXECUTED", "commit_status": "NOT_EXECUTED"})
+    progress.update({"snapshot_id": "snapshot-e10-start-seq1160", "event_sequence": 1160,
+                     "updated_at": E10_AT, "recorded_at": E10_AT, "last_event_id": additions[-1]["event_id"],
+                     "status": "IN_PROGRESS", "current_phase": "E", "current_work_package": "E-10",
+                     "active_agent": {"actor_id": actor, "role": "PRIMARY_DEVELOPER", "work_package_id": "E-10",
+                                      "status": "ACTIVE", "execution_fencing_token": execution},
+                     "worker_lease": worker, "write_lease": write,
+                     "active_work_instruction": {"work_package_id": "E-10", "artifact_path": E10_WI,
+                                                  "artifact_sha256": E10_WI_HASH, "invocation_path": E10_PROMPT,
+                                                  "invocation_sha256": E10_PROMPT_HASH, "status": "IN_PROGRESS",
+                                                  "result_status": None, "accepted": False,
+                                                  "product_write_scope": scope, "worker_lease_id": worker["lease_id"],
+                                                  "write_lease_id": write["lease_id"]},
+                     "e10_start": {"status": "IN_PROGRESS", "accepted": False, "event_sequence": 1160, "error_count": 0},
+                     "next_work_package": None, "next_successor_work_package": {"package_id": "E-10", "status": "NOT_READY"},
+                     "next_safe_action": "E10_GIT_ADAPTER_TDD_THEN_REVIEW",
+                     "runtime_next_action": "E10_GIT_ADAPTER_TDD_THEN_REVIEW", "pending_approvals": [],
+                     "repository": repo, "current_progress_evidence_ref": {"package_id": "E-10", "path": E10_D,
+                                                                            "manifest_path": E10_M},
+                     "latest_evidence_manifest_ref": {"path": E10_M, "artifact_id": "E10-START-20260917"},
+                     "reporting_decision": {"decision": "AUTO_CONTINUE", "stop_before_dialogue_report": False,
+                                            "reason_codes": ["E09_ACCEPTED", "E10_APPROVED_SCOPE"]}})
+    progress["next_successor_work_package"] = {"package_id": "E-11", "status": "NOT_READY"}
+    progress["registry_refs"]["progress_events"] = {"path": D13_START_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": p, "sha256": _c21_resume_sha((root / p).read_bytes())}
+                                         for p in (E10_WI, E10_PROMPT)]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status", "current_phase",
+                                               "current_work_package", "active_agent", "worker_lease", "write_lease",
+                                               "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": False, "d_gate": "ACCEPTED", "e09_status": "ACCEPTED",
+                    "e10_status": "IN_PROGRESS", "e11_status": "NOT_READY",
+                    "dir_status": progress["dir_review"]["status"], "repository_head": E10_BASE,
+                    "repository_upstream": repo.get("upstream"), "repository_projection_mode": E10_MODE,
+                    "repository_exact_allowed_paths": exact, "product_write_scope": scope,
+                    "current_manifest": E10_M, "reporting_decision": "AUTO_CONTINUE", "pending_approvals": [],
+                    "staged": False, "commit_performed": False})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    text, count = re.subn(pattern, lambda _: replacement, old[D13_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("E10_HANDOFF_INVALID")
+    handoff_raw = ("# E-10 start control seq1160\n\n"
+                   "- Product exact5/control exact9; E09 ACCEPTED. Historical seq1-1156 raw prefix immutable.\n"
+                   "- Git branch/commit/merge/PR host contracts only; actual remote mutation/network is not executed.\n"
+                   "- Dirty/untracked/index conflicts and destructive/history rewrite operations remain denied.\n\n" + text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "E10-START-DIGEST-20260917",
+              "package_id": "E-10", "event_sequence": 1160, "algorithm": "SHA-256", "created_at": E10_AT,
+              "scope": "append-only seq1157-1160; exact9 control", "self_reference": False,
+              "progress": {"path": D13_START_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw),
+                           "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+              "handoff": {"path": D13_START_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw),
+                          "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    generated = {D13_START_P: progress_raw, D13_START_E: events_raw, D13_START_H: handoff_raw,
+                 E10_D: _c21_resume_json_bytes(digest)}
+    generated.update({p: (root / p).read_bytes() for p in exact if p not in generated and p != E10_M})
+    prefix = raw_event_object_prefix_bytes(old[D13_START_E], 1156)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "E10_START", "artifact_id": "E10-START-20260917",
+                "created_at": E10_AT, "package_id": "E-10", "event_sequence": 1160,
+                "historical_event_sequence": 1156, "appended_event_count": 4,
+                "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+                "historical_evidence_mutation_count": 0, "status": "IN_PROGRESS", "accepted": False,
+                "active_leases": 2, "product_write_scope": scope, "authority": authority,
+                "exact_allowed_paths": exact, "exact_path_count": 9, "projection_mode": E10_MODE,
+                "validated_base_commit": E10_BASE, "pending_approvals": [], "staged": False,
+                "commit_performed": False, "self_reference": False,
+                "raw_checksums": [{"path": p, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+                                  for p, raw in sorted(generated.items())]}
+    generated[E10_M] = _c21_resume_json_bytes(manifest)
+    return generated
+
+
+def validate_e10_start(bundle, manifest):
+    try:
+        expected = e10_start_from_root(bundle["_root"])
+        actual = {D13_START_P: bundle.get("progress"), D13_START_E: bundle.get("events"),
+                  D13_START_H: bundle.get("handoff"), E10_D: bundle.get("detached_digest"), E10_M: manifest}
+        parsed = {p: (extract_handoff_summary(raw.decode()) if p == D13_START_H else _c21_resume_json(raw))
+                  for p, raw in expected.items() if p in actual}
+        errors = [] if all(_c21_strict_json_equal(actual[p], parsed[p]) for p in actual) else ["E10_START_PROJECTION_INVALID"]
+        if any((bundle["_root"] / p).read_bytes() != raw for p, raw in expected.items()):
+            errors.append("E10_START_RAW_BYTES_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E10_START_INPUT_INVALID"]
+
+
+def validate_e10_git_facts(*, head, branch, staged, dirty, parent=None, committed_paths=None):
+    control, product, paths = set(e10_control_paths()), set(e10_product_write_scope()), set(dirty)
+    pre = head == E10_BASE and control <= paths <= control | product
+    post = head != E10_BASE and parent == E10_BASE and committed_paths == sorted(control | product) and dirty == []
+    return [] if branch == C09_START_BRANCH and not staged and (pre or post) else ["E10_START_GIT_INVALID"]
+
+
+def _collect_e10_git(bundle):
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        head = _c02_strict_git_scalar(raw("rev-parse", "HEAD"))
+        staged = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")) or []
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only")) or []
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-per-directory=.gitignore",
+                                                  "--exclude=.pytest_cache", "--exclude=.pytest_cache/**")) or []
+        dirty = sorted(set(staged + unstaged + untracked))
+        parent = _c02_strict_git_scalar(raw("show", "-s", "--format=%P", head))
+        committed = (_c02_strict_name_only_paths(raw("diff", "--name-only", E10_BASE, head)) or []) if head != E10_BASE else []
+        errors = validate_e10_git_facts(head=head, branch=_c02_strict_git_scalar(raw("branch", "--show-current")),
+                                        staged=staged, dirty=dirty, parent=parent, committed_paths=committed)
+        if set(staged) & set(unstaged) or set(staged) & set(untracked) or set(unstaged) & set(untracked):
+            errors.append("E10_START_GIT_OVERLAP")
+        if not _c02_git_quiet_check(root, "diff", "--check"):
+            errors.append("E10_START_DIFF_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E10_START_GIT_INVALID"]
+
+
+
 E09_FINAL_AT = "2026-09-17T23:37:38+09:00"
 E09_FINAL_MODE = "E09_FINAL_ACCEPTANCE_EXACT16"
 E09_FINAL_D = "docs/progress/progress-handoff-detached-digest-e09-final-acceptance.json"
@@ -56425,6 +56661,291 @@ def _collect_e09_final_git(bundle):
         return sorted(set(errors))
     except Exception:
         return ["E09_FINAL_GIT_INVALID"]
+
+
+# E-10 WI EOF whitespace normalization; semantic content unchanged.
+E10_WI_HASH = "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322"
+
+E10_FINAL_AT = "2026-09-18T00:44:55+09:00"
+E10_FINAL_MODE = "E10_FINAL_ACCEPTANCE_EXACT16"
+E10_FINAL_D = "docs/progress/progress-handoff-detached-digest-e10-final-acceptance.json"
+E10_FINAL_M = "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json"
+E10_FINAL_PRODUCT_HASHES = {
+    "docs/04_test_reports/E-10_COMPLETION_REPORT.md": "25A2AC88A9F15A2954E6E794A783E640D65581FCDBA050486FA4C3AC1033D688",
+    "packages/git_adapter/__init__.py": "ACA315A3F72E1EB4DB6AA948CE083564B2BA89EA1A175AC163D74A535B7745A4",
+    "packages/git_adapter/models.py": "5430AA20A5FDB6DF14600EBD986DAF7366C5E664B9CD837A7983E776D28EBA9B",
+    "packages/git_adapter/service.py": "B9CC125F7538B2EDB6E1E747E835C9DF9612E309D22DD58E0BDABD31ABBBB6A8",
+    "tests/git_adapter/test_git_adapter_e10.py": "FCD7CCB4B9E68AEB7BC272B5E28F1CA0A43115636A71FE1F514F13D6913B5421",
+}
+E10_FINAL_CONTROL_HASHES = {
+    E10_WI: E10_WI_HASH,
+    E10_PROMPT: E10_PROMPT_HASH,
+    E10_D: "C485716D464CFF91A80207E119C9C584F3BB52085B3A204A075610C05471005D",
+    E10_M: "439084EFE66C3F1F42E89111F6483DA8937FBA9CE1AD8580E948A24A91660668",
+}
+
+
+# E-10 start evidence regenerated after WI EOF whitespace normalization.
+E10_FINAL_CONTROL_HASHES = {**E10_FINAL_CONTROL_HASHES,
+    E10_D: "4153706922669F9E9C4CF06B06DF223C4C538EA4F58C40A28D8B68B74A5888CC",
+    E10_M: "C31963DE1B11FD72E07FCB9B4BBAC4DF6FAB79DF90ECEDCA76421D47FBC1CF8A",
+}
+
+
+# Generated start digest/manifest include this checker and are bound by final raw_checksums.
+# Keep only non-generated control inputs in the constant frozen set to avoid self-reference.
+E10_FINAL_CONTROL_HASHES = {E10_WI: E10_WI_HASH, E10_PROMPT: E10_PROMPT_HASH}
+
+
+def e10_final_paths():
+    return sorted(set(e10_control_paths()) | set(e10_product_write_scope()) | {E10_FINAL_D, E10_FINAL_M})
+
+
+def e10_final_reviews():
+    common = {"source": "INDEPENDENT_READ_ONLY_REVIEW", "verdict": "ACCEPT",
+              "critical_findings": 0, "important_findings": 0, "minor_findings": 0,
+              "developer_transcript_used": False, "checker_sequence": 1160,
+              "checker_result": "PASS", "diff_check_exit": 0,
+              "unverified": ["actual Git/remote/PR/filesystem mutation", "OS physical identity capture",
+                             "durable multi-process authority and crash recovery", "DB/provider/network"]}
+    return {
+        "spec": {**common, "focused": {"passed": 401, "skipped": 0},
+                 "probes": {"return_alias": "CLOSED", "impossible_commit_identity": "CLOSED",
+                            "authorization_credentials": "CLOSED"}},
+        "quality": {**common, "focused": {"passed": 173, "skipped": 0},
+                    "probes": {"ref_alias": "CLOSED", "audit_pagination": "CLOSED",
+                               "credential_variants": 32, "concurrent_dispatch": "PASS"}},
+    }
+
+
+def e10_final_from_root(root):
+    current = _c21_resume_json((root / D13_START_P).read_bytes())
+    generated_paths = [D13_START_P, D13_START_E, D13_START_H, E10_FINAL_D, E10_FINAL_M]
+    for rel, expected in {**E10_FINAL_PRODUCT_HASHES, **E10_FINAL_CONTROL_HASHES}.items():
+        if _c21_resume_sha((root / rel).read_bytes()) != expected:
+            raise ValueError("E10_FINAL_FROZEN_DRIFT")
+    if current.get("event_sequence") == 1165 and all((root / rel).exists() for rel in generated_paths):
+        return {rel: (root / rel).read_bytes() for rel in generated_paths}
+    start = e10_start_from_root(root)
+    progress = _c21_resume_json(start[D13_START_P])
+    stream = _c21_resume_json(start[D13_START_E])
+    if (progress.get("event_sequence") != 1160 or stream.get("last_sequence") != 1160
+        or progress.get("status") != "IN_PROGRESS" or progress.get("current_work_package") != "E-10"
+        or (progress.get("worker_lease") or {}).get("lease_id") != "worker-lease-e10-r1-20260917-001"
+        or (progress.get("write_lease") or {}).get("lease_id") != "write-lease-e10-r1-20260917-001"):
+        raise ValueError("E10_FINAL_START_INVALID")
+    exact = e10_final_paths()
+    prefix = raw_event_object_prefix_bytes(start[D13_START_E], 1160)
+    reviews = e10_final_reviews()
+    product = {rel: {"bytes": len((root / rel).read_bytes()), "sha256": digest}
+               for rel, digest in E10_FINAL_PRODUCT_HASHES.items()}
+    target = _c21_resume_sha(canonical_json_bytes(product))
+    findings = [
+        {"finding_id": "E10-REF-ALIAS", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "full refs/heads aliases are denied; canonical short refs only"},
+        {"finding_id": "E10-CREDENTIAL-NONDISCLOSURE", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "normalized authorization, token and private-key credential forms are fail-closed"},
+        {"finding_id": "E10-AUDIT-PAGINATION", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "bounded stable cursor pages preserve every append-only sequence"},
+        {"finding_id": "E10-RETURN-ALIAS", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "returned receipts are detached from canonical grant, receipt and audit records"},
+        {"finding_id": "E10-IMPOSSIBLE-COMMIT", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "nonempty commit and no-ff merge reject self-parent result identities"},
+        {"finding_id": "E10-AUTHORIZATION-SCHEME", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "all nonempty HTTP Authorization credential schemes are denied after normalization"},
+    ]
+    external = {key: "NOT_EXECUTED" for key in ("git_mutation", "remote", "push", "pull_request", "merge",
+                                                   "network", "http", "api", "ui", "browser", "database", "provider")}
+    external.update(os_identity="NOT_INTEGRATED", durable_authority="NOT_INTEGRATED",
+                    multiprocess_persistence="NOT_INTEGRATED", crash_recovery="NOT_INTEGRATED",
+                    fake_driver_contract="VERIFIED_EXTERNAL_SIDE_EFFECTS_0")
+    worker = copy.deepcopy(progress["worker_lease"])
+    write = copy.deepcopy(progress["write_lease"])
+    worker.update(status="REVOKED", revoked_at=E10_FINAL_AT, reason="E10_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN")
+    write.update(status="REVOKED", revoked_at=E10_FINAL_AT, reason="E10_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN")
+    projection = {"projection_mode": E10_FINAL_MODE, "validated_base_commit": E10_BASE,
+                  "acceptance_head": E10_BASE, "acceptance_upstream_head": E10_BASE,
+                  "head_relation": "PRECOMMIT_EXACT14_PLUS_FINAL_CONTROL_EXACT2", "exact_allowed_paths": exact}
+    judgment = {"verdict": "PASS", "criteria": "AV-SAFE-015 AV-GATE-020 AV-GATE-025",
+                "evidence_ref": E10_FINAL_M, "evidence_sha256": "SELF_REFERENCE_EXCLUDED",
+                "evidence_target_hash": target, "reviews": reviews, "blocking_findings": 0,
+                "important_findings": 0, "minor_findings": 0, "resolved_review_findings": findings,
+                "review_rework_rounds": 2, "formal_failure_count": 0, "developer_transcript_used": False}
+    accepted = {**projection, "decision": "ACCEPTED", "accepted": True,
+                "test_report_ref": "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+                "test_report_sha256": product["docs/04_test_reports/E-10_COMPLETION_REPORT.md"]["sha256"],
+                "manifest_ref": E10_FINAL_M, "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+                "evidence_target_hash": target, "independent_reviews": reviews,
+                "next_work_package": "E-11", "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+                "formal_failure_count": 0, "review_rework_rounds": 2,
+                "resolved_review_findings": findings, "blocking_findings": 0,
+                "important_findings": 0, "minor_findings": 0, "external_validation": external}
+    details = [
+        ("PACKAGE_COMPLETED", "package_completed", "developer-primary-e10-r1",
+         {"result_status": "COMPLETED", "package_status": "TEST_REVIEW", "accepted": False,
+          "product_raw": product, "evidence_target_hash": target, "formal_failure_count": 0,
+          "review_rework_rounds": 2, "report_ref": "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "external_validation": external}),
+        ("INDEPENDENT_TEST_JUDGMENT_RECORDED", "independent_test_judgment_recorded", "independent-reviewer", judgment),
+        ("WRITE_LEASE_REVOKED", "final_write_lease_revoked", "main-agent-eoul", write),
+        ("WORKER_LEASE_REVOKED", "final_worker_lease_revoked", "main-agent-eoul", worker),
+        ("MAIN_PACKAGE_ACCEPTED", "main_package_accepted", "main-agent-eoul", accepted),
+    ]
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    rows = []
+    for sequence, (kind, suffix, actor, data) in enumerate(details, 1161):
+        row = {"sequence": sequence, "event_id": "evt_e10_final_" + suffix, "event_type": kind,
+               "actor": actor, "actor_id": actor, "actor_type": "AGENT", "project_id": "anvil",
+               "run_id": None, "work_package_id": "E-10", "step_id": "FINAL_ACCEPTANCE",
+               "subject_ref": "E-10/FINAL_ACCEPTANCE", "occurred_at": E10_FINAL_AT,
+               "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+               "previous_event_sha256": previous, "details": data}
+        rows.append(row)
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+    events_raw = _c21_append_events(start[D13_START_E], 1160, rows)
+    repo = copy.deepcopy(progress["repository"])
+    repo.update({**projection, "worktree_status": "UNSTAGED_E10_FINAL_EXACT16",
+                 "commit_status": "NOT_EXECUTED", "push_status": "NOT_EXECUTED"})
+    wi = copy.deepcopy(progress["active_work_instruction"])
+    wi.update(status="ACCEPTED", result_status="COMPLETED", accepted=True, independent_review=reviews)
+    completed = list(progress.get("completed_packages", []))
+    if "E-10" not in completed:
+        completed.append("E-10")
+    final = {"status": "ACCEPTED", "accepted": True, "event_sequence": 1165,
+             "product_raw": product, "evidence_target_hash": target, "independent_reviews": reviews,
+             "external_validation": external, "formal_failure_count": 0, "review_rework_rounds": 2,
+             "resolved_review_findings": findings, "baseline_hash": progress["design_baseline_hash"],
+             "work_instruction_sha256": E10_WI_HASH, "invocation_sha256": E10_PROMPT_HASH,
+             "work_plan_hash": progress["work_plan_hash"]}
+    progress.update({"snapshot_id": "snapshot-e10-final-seq1165", "event_sequence": 1165,
+                     "last_event_id": rows[-1]["event_id"], "updated_at": E10_FINAL_AT,
+                     "recorded_at": E10_FINAL_AT, "status": "ACCEPTED", "valid_failure_count": 0,
+                     "completed_packages": completed, "active_agent": None, "worker_lease": None,
+                     "write_lease": None, "active_work_instruction": None,
+                     "last_completed_work_instruction": wi, "last_accepted_work_instruction": wi,
+                     "e10_final_acceptance": final, "repository": repo,
+                     "next_work_package": {"package_id": "E-11", "status": "READY_FOR_WORK_INSTRUCTION"},
+                     "next_successor_work_package": None, "next_safe_action": "E11_READY_NOT_STARTED",
+                     "runtime_next_action": "E11_READY_NOT_STARTED", "pending_approvals": [],
+                     "current_progress_evidence_ref": {"package_id": "E-10", "path": E10_FINAL_D,
+                                                       "manifest_path": E10_FINAL_M},
+                     "latest_evidence_manifest_ref": {"path": E10_FINAL_M,
+                                                       "artifact_id": "E10-FINAL-ACCEPTANCE-20260918"},
+                     "reporting_decision": {"decision": "AUTO_CONTINUE", "stop_before_dialogue_report": False,
+                                            "reason_codes": ["E10_INDEPENDENT_ACCEPTED", "E11_READY_NOT_STARTED"]}})
+    progress["e10_start"].update(status="COMPLETED_ACCEPTED", accepted=True, event_sequence=1165,
+                                  formal_failure_count=0, review_rework_rounds=2,
+                                  resolved_review_findings=findings)
+    progress["registry_refs"]["progress_events"] = {"path": D13_START_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": rel, "sha256": row["sha256"]}
+                                         for rel, row in sorted(product.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status", "current_phase",
+                                               "current_work_package", "active_agent", "worker_lease", "write_lease",
+                                               "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": True, "d_gate": "ACCEPTED", "e09_status": "ACCEPTED",
+                    "e10_status": "ACCEPTED", "e11_status": "READY_FOR_WORK_INSTRUCTION",
+                    "dir_status": progress["dir_review"]["status"], "repository_head": E10_BASE,
+                    "repository_upstream": repo.get("upstream"), "repository_projection_mode": E10_FINAL_MODE,
+                    "repository_exact_allowed_paths": exact, "current_manifest": E10_FINAL_M,
+                    "evidence_target_hash": target, "independent_reviews": reviews,
+                    "resolved_review_findings": findings, "external_validation": external,
+                    "formal_failure_count": 0, "review_rework_rounds": 2,
+                    "reporting_decision": "AUTO_CONTINUE", "pending_approvals": [], "staged": False,
+                    "commit_performed": False, "active_work_instruction": None})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement, start[D13_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("E10_FINAL_HANDOFF_INVALID")
+    handoff_raw = ("# E-10 final acceptance seq1165\n\n"
+                   "- Independent Spec/Quality final review ACCEPT, C0/I0/M0; six review findings resolved.\n"
+                   "- Product exact5 frozen; formal FAILURE_REPORT0; review rework rounds2; epoch1 leases revoked. E11 READY.\n"
+                   "- Fake-driver host contract verified. Actual Git/remote/PR/OS identity/durable authority remain unverified.\n\n" + handoff_text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "E10-FINAL-DIGEST-20260918",
+              "package_id": "E-10", "event_sequence": 1165, "algorithm": "SHA-256",
+              "created_at": E10_FINAL_AT, "scope": "append-only seq1161-1165; exact16 frozen product/control",
+              "self_reference": False,
+              "progress": {"path": D13_START_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw),
+                           "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+              "handoff": {"path": D13_START_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw),
+                          "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    generated = {D13_START_P: progress_raw, D13_START_E: events_raw, D13_START_H: handoff_raw,
+                 E10_FINAL_D: _c21_resume_json_bytes(digest)}
+    generated.update({rel: (root / rel).read_bytes() for rel in exact if rel not in generated and rel != E10_FINAL_M})
+    all_raw = {rel: generated[rel] for rel in exact if rel != E10_FINAL_M}
+    manifest = {"schema_version": "1.0.0", "manifest_type": "E10_FINAL_ACCEPTANCE",
+                "artifact_id": "E10-FINAL-ACCEPTANCE-20260918", "created_at": E10_FINAL_AT,
+                "package_id": "E-10", "event_sequence": 1165, "historical_event_sequence": 1160,
+                "appended_event_count": 5, "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+                "historical_evidence_mutation_count": 0, **final, "active_leases": 0,
+                "e10_status": "ACCEPTED", "e11_status": "READY_FOR_WORK_INSTRUCTION",
+                "product_exact_paths": e10_product_write_scope(), "frozen_product_sha256": E10_FINAL_PRODUCT_HASHES,
+                "frozen_control_sha256": E10_FINAL_CONTROL_HASHES, "combined_exact_paths": exact,
+                "combined_exact_path_count": len(exact), "projection_mode": E10_FINAL_MODE,
+                "validated_base_commit": E10_BASE, "pending_approvals": [], "staged": False,
+                "commit_performed": False, "self_reference": False,
+                "raw_checksums": [{"path": rel, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+                                  for rel, raw in sorted(all_raw.items())]}
+    generated[E10_FINAL_M] = _c21_resume_json_bytes(manifest)
+    return generated
+
+
+def validate_e10_final(bundle, manifest):
+    try:
+        expected = e10_final_from_root(bundle["_root"])
+        actual = {D13_START_P: bundle.get("progress"), D13_START_E: bundle.get("events"),
+                  D13_START_H: bundle.get("handoff"), E10_FINAL_D: bundle.get("detached_digest"), E10_FINAL_M: manifest}
+        parsed = {rel: (extract_handoff_summary(raw.decode()) if rel == D13_START_H else _c21_resume_json(raw))
+                  for rel, raw in expected.items() if rel in actual}
+        errors = [] if all(_c21_strict_json_equal(actual[rel], parsed[rel]) for rel in actual) else ["E10_FINAL_PROJECTION_INVALID"]
+        if any((bundle["_root"] / rel).read_bytes() != raw for rel, raw in expected.items()):
+            errors.append("E10_FINAL_RAW_BYTES_INVALID")
+        progress = actual[D13_START_P]
+        rows = manifest.get("raw_checksums")
+        if (progress.get("event_sequence") != 1165 or progress.get("status") != "ACCEPTED"
+            or progress.get("next_work_package") != {"package_id": "E-11", "status": "READY_FOR_WORK_INSTRUCTION"}
+            or any(progress.get(key) is not None for key in ("active_agent", "worker_lease", "write_lease", "active_work_instruction"))
+            or manifest.get("formal_failure_count") != 0 or manifest.get("review_rework_rounds") != 2
+            or any((manifest.get("independent_reviews") or {}).get(role, {}).get("verdict") != "ACCEPT" for role in ("spec", "quality"))):
+            errors.append("E10_FINAL_STATE_INVALID")
+        if (not isinstance(rows, list) or {row.get("path") for row in rows} != set(e10_final_paths()) - {E10_FINAL_M}
+            or any(not portable_row_matches(bundle["_root"], row["path"], row.get("bytes"), row.get("sha256")) for row in rows)):
+            errors.append("E10_FINAL_MANIFEST_BINDING_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E10_FINAL_INPUT_INVALID"]
+
+
+def validate_e10_final_git_facts(*, head, branch, staged, dirty, parent=None, committed_paths=None):
+    pre = head == E10_BASE and dirty == e10_final_paths()
+    post = head != E10_BASE and parent == E10_BASE and committed_paths == e10_final_paths() and dirty == []
+    return [] if branch == C09_START_BRANCH and not staged and (pre or post) else ["E10_FINAL_GIT_INVALID"]
+
+
+def _collect_e10_final_git(bundle):
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        head = _c02_strict_git_scalar(raw("rev-parse", "HEAD"))
+        staged = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")) or []
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only")) or []
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-per-directory=.gitignore",
+                                                  "--exclude=.pytest_cache", "--exclude=.pytest_cache/**")) or []
+        dirty = sorted(set(staged + unstaged + untracked))
+        parent = _c02_strict_git_scalar(raw("show", "-s", "--format=%P", head))
+        committed = (_c02_strict_name_only_paths(raw("diff", "--name-only", E10_BASE, head)) or []) if head != E10_BASE else []
+        errors = validate_e10_final_git_facts(head=head, branch=_c02_strict_git_scalar(raw("branch", "--show-current")),
+                                              staged=staged, dirty=dirty, parent=parent, committed_paths=committed)
+        if set(staged) & set(unstaged) or set(staged) & set(untracked) or set(unstaged) & set(untracked):
+            errors.append("E10_FINAL_GIT_OVERLAP")
+        if not _c02_git_quiet_check(root, "diff", "--check"):
+            errors.append("E10_FINAL_DIFF_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E10_FINAL_GIT_INVALID"]
 
 if __name__ == "__main__":
     raise SystemExit(main())

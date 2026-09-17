@@ -1,3 +1,15 @@
+# E-10 final acceptance seq1165
+
+- Independent Spec/Quality final review ACCEPT, C0/I0/M0; six review findings resolved.
+- Product exact5 frozen; formal FAILURE_REPORT0; review rework rounds2; epoch1 leases revoked. E11 READY.
+- Fake-driver host contract verified. Actual Git/remote/PR/OS identity/durable authority remain unverified.
+
+# E-10 start control seq1160
+
+- Product exact5/control exact9; E09 ACCEPTED. Historical seq1-1156 raw prefix immutable.
+- Git branch/commit/merge/PR host contracts only; actual remote mutation/network is not executed.
+- Dirty/untracked/index conflicts and destructive/history rewrite operations remain denied.
+
 # E-09 final acceptance seq1156
 
 - Independent Spec/Quality final re-review ACCEPT, C0/I0/M0; six review findings resolved.
@@ -1452,46 +1464,46 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1156,
-  "last_event_id": "evt_e09_final_main_package_accepted",
+  "event_sequence": 1165,
+  "last_event_id": "evt_e10_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-09",
+  "current_work_package": "E-10",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E10_READY_NOT_STARTED",
+  "next_safe_action": "E11_READY_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e08_status": "ACCEPTED",
   "e09_status": "ACCEPTED",
-  "e10_status": "READY_FOR_WORK_INSTRUCTION",
+  "e10_status": "ACCEPTED",
+  "e11_status": "READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
-  "repository_head": "593311d87de760bdc6bb5485b89a17014e81976a",
+  "repository_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E09_FINAL_ACCEPTANCE_EXACT16",
+  "repository_projection_mode": "E10_FINAL_ACCEPTANCE_EXACT16",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-09_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-09_START_MANIFEST.json",
+    "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-10_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e09-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e09-start.json",
-    "docs/work_orders/E-09_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-09_WORK_INSTRUCTION.md",
-    "packages/verification/__init__.py",
-    "packages/verification/gates.py",
-    "packages/verification/release_gates.py",
+    "docs/progress/progress-handoff-detached-digest-e10-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e10-start.json",
+    "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+    "packages/git_adapter/__init__.py",
+    "packages/git_adapter/models.py",
+    "packages/git_adapter/service.py",
     "scripts/check_project_progress.py",
-    "tests/tooling/test_project_progress.py",
-    "tests/verification/test_gates_e09.py"
+    "tests/git_adapter/test_git_adapter_e10.py",
+    "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "84E92EFD87360B6C50ADA0C116D016F6C8967E4B721ED7EDDE3B605613275966",
+  "current_manifest": "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "408009AA84004DDB5F885F047D940E4565942E72EAA2987E440D556C0BC521B1",
   "independent_reviews": {
     "spec": {
       "source": "INDEPENDENT_READ_ONLY_REVIEW",
@@ -1500,30 +1512,23 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1151,
+      "checker_sequence": 1160,
       "checker_result": "PASS",
       "diff_check_exit": 0,
+      "unverified": [
+        "actual Git/remote/PR/filesystem mutation",
+        "OS physical identity capture",
+        "durable multi-process authority and crash recovery",
+        "DB/provider/network"
+      ],
       "focused": {
-        "passed": 228,
+        "passed": 401,
         "skipped": 0
       },
-      "adjacent": {
-        "passed": 1022,
-        "skipped": 8,
-        "skip_reason": "ANVIL_TEST_DATABASE_URL_NOT_SET"
-      },
-      "unverified": [
-        "actual DB/browser/production build/Provider",
-        "durable authentication/evidence registry",
-        "multi-process persistence",
-        "actual Apply/Deploy",
-        "U Phase menu UI"
-      ],
       "probes": {
-        "prior_findings_closed": 3,
-        "nested_nonreal": "BLOCKED",
-        "fixer_context_independence": "PASS",
-        "build_raw_binding": "PASS"
+        "return_alias": "CLOSED",
+        "impossible_commit_identity": "CLOSED",
+        "authorization_credentials": "CLOSED"
       }
     },
     "quality": {
@@ -1533,87 +1538,83 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1151,
+      "checker_sequence": 1160,
       "checker_result": "PASS",
       "diff_check_exit": 0,
+      "unverified": [
+        "actual Git/remote/PR/filesystem mutation",
+        "OS physical identity capture",
+        "durable multi-process authority and crash recovery",
+        "DB/provider/network"
+      ],
       "focused": {
-        "passed": 228,
+        "passed": 173,
         "skipped": 0
       },
-      "adjacent": {
-        "passed": 1022,
-        "skipped": 8,
-        "skip_reason": "ANVIL_TEST_DATABASE_URL_NOT_SET"
-      },
-      "unverified": [
-        "actual DB/browser/production build/Provider",
-        "durable authentication/evidence registry",
-        "multi-process persistence",
-        "actual Apply/Deploy",
-        "U Phase menu UI"
-      ],
       "probes": {
-        "prior_findings_closed": 4,
-        "public_handle_callback_count": 0,
-        "actor_generation_replay": "BLOCKED",
-        "concurrent_admission": "PASS"
+        "ref_alias": "CLOSED",
+        "audit_pagination": "CLOSED",
+        "credential_variants": 32,
+        "concurrent_dispatch": "PASS"
       }
     }
   },
   "resolved_review_findings": [
     {
-      "finding_id": "E09-NESTED-NONREAL-PROMOTION",
-      "severity": "CRITICAL",
-      "status": "RESOLVED",
-      "resolution": "G4-G6 nested evidence requires explicit real available matching environment metadata"
-    },
-    {
-      "finding_id": "E09-FIXER-CONTEXT-INDEPENDENCE",
-      "severity": "CRITICAL",
-      "status": "RESOLVED",
-      "resolution": "defect retest actor and context are independent from every recorded fixer"
-    },
-    {
-      "finding_id": "E09-BUILD-RAW-BINDING",
+      "finding_id": "E10-REF-ALIAS",
       "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "artifact and dependency hashes bind to matching raw checksum paths"
+      "resolution": "full refs/heads aliases are denied; canonical short refs only"
     },
     {
-      "finding_id": "E09-HOSTILE-BUNDLE-CALLBACK",
+      "finding_id": "E10-CREDENTIAL-NONDISCLOSURE",
       "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "all public handles validate exact registered identity before attribute access"
+      "resolution": "normalized authorization, token and private-key credential forms are fail-closed"
     },
     {
-      "finding_id": "E09-ACTOR-REVOCATION-REPLAY",
+      "finding_id": "E10-AUDIT-PAGINATION",
       "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "revoked actor identities cannot be re-registered or restore stale approvals"
+      "resolution": "bounded stable cursor pages preserve every append-only sequence"
     },
     {
-      "finding_id": "E09-ACTOR-GENERATION-ROLLBACK",
+      "finding_id": "E10-RETURN-ALIAS",
       "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "superseded actor generations cannot roll active authority back"
+      "resolution": "returned receipts are detached from canonical grant, receipt and audit records"
+    },
+    {
+      "finding_id": "E10-IMPOSSIBLE-COMMIT",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "nonempty commit and no-ff merge reject self-parent result identities"
+    },
+    {
+      "finding_id": "E10-AUTHORIZATION-SCHEME",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "all nonempty HTTP Authorization credential schemes are denied after normalization"
     }
   ],
   "external_validation": {
-    "provider": "NOT_EXECUTED",
+    "git_mutation": "NOT_EXECUTED",
+    "remote": "NOT_EXECUTED",
+    "push": "NOT_EXECUTED",
+    "pull_request": "NOT_EXECUTED",
+    "merge": "NOT_EXECUTED",
     "network": "NOT_EXECUTED",
     "http": "NOT_EXECUTED",
     "api": "NOT_EXECUTED",
     "ui": "NOT_EXECUTED",
     "browser": "NOT_EXECUTED",
-    "wsl": "NOT_EXECUTED",
-    "docker": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED",
-    "production_build": "NOT_EXECUTED",
-    "actual_db": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "os_identity": "NOT_INTEGRATED",
     "durable_authority": "NOT_INTEGRATED",
-    "durable_evidence_registry": "NOT_INTEGRATED",
     "multiprocess_persistence": "NOT_INTEGRATED",
-    "apply_deploy": "ADMISSION_ONLY_NOT_EXECUTED"
+    "crash_recovery": "NOT_INTEGRATED",
+    "fake_driver_contract": "VERIFIED_EXTERNAL_SIDE_EFFECTS_0"
   },
   "formal_failure_count": 0,
   "review_rework_rounds": 2,

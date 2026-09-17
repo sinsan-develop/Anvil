@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1156,
+  "last_sequence": 1165,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -71904,7 +71904,699 @@
           "apply_deploy": "ADMISSION_ONLY_NOT_EXECUTED"
         }
       }
+    },
+    {
+      "sequence": 1157,
+      "event_id": "evt_e10_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "START",
+      "subject_ref": "E-10/START",
+      "occurred_at": "2026-09-17T23:47:51+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "92316F34CB813D285D5E1B2D6CA142F0C6C1BE1186A667909C3A0E538B38ABE4",
+      "details": {
+        "work_instruction_id": "WI-E-10-R1-20260917-001",
+        "work_instruction_path": "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322",
+        "invocation_path": "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+        "invocation_sha256": "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "packages/git_adapter/__init__.py",
+          "packages/git_adapter/models.py",
+          "packages/git_adapter/service.py",
+          "tests/git_adapter/test_git_adapter_e10.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E10_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322",
+          "invocation_sha256": "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-10_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e10-start.json",
+            "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+            "packages/git_adapter/__init__.py",
+            "packages/git_adapter/models.py",
+            "packages/git_adapter/service.py",
+            "tests/git_adapter/test_git_adapter_e10.py"
+          ],
+          "independent_acceptance_required": true,
+          "validation_ids": [
+            "AV-GATE-004",
+            "AV-GATE-016",
+            "AV-GATE-017",
+            "AV-GATE-018",
+            "AV-GATE-019",
+            "AV-GATE-023",
+            "AV-GATE-024",
+            "AV-GATE-025",
+            "AV-STAT-023",
+            "AV-UI-013",
+            "AV-UI-014",
+            "AV-FLOW-014",
+            "AV-FLOW-015",
+            "AV-FLOW-024",
+            "AV-FLOW-025"
+          ],
+          "boundary": {
+            "actual_browser_db_provider": "NOT_EXECUTED",
+            "ui_menu_implementation": "U_PHASE_OWNED",
+            "apply_deploy_external_action": "FORBIDDEN",
+            "schema_change": "FORBIDDEN"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 1158,
+      "event_id": "evt_e10_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "START",
+      "subject_ref": "E-10/START",
+      "occurred_at": "2026-09-17T23:47:51+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "4CCD05C4695189436AE384153F83101EB1C2D546B960EA1DEAF1F2B30D7DCC94",
+      "details": {
+        "actor_id": "developer-primary-e10-r1",
+        "subject_ref": "E-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "issued_at": "2026-09-17T23:47:51+09:00",
+        "expires_at": "2026-09-18T11:47:51+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e",
+        "path_scope": [
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "packages/git_adapter/__init__.py",
+          "packages/git_adapter/models.py",
+          "packages/git_adapter/service.py",
+          "tests/git_adapter/test_git_adapter_e10.py"
+        ],
+        "lease_id": "worker-lease-e10-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e",
+        "dispatch_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342"
+      }
+    },
+    {
+      "sequence": 1159,
+      "event_id": "evt_e10_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "START",
+      "subject_ref": "E-10/START",
+      "occurred_at": "2026-09-17T23:47:51+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "5E6E37E9E4C073240C14A41ED4BA8552390BAA1BD6048729DCFDF4FF6522A688",
+      "details": {
+        "actor_id": "developer-primary-e10-r1",
+        "subject_ref": "E-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "issued_at": "2026-09-17T23:47:51+09:00",
+        "expires_at": "2026-09-18T11:47:51+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e",
+        "path_scope": [
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "packages/git_adapter/__init__.py",
+          "packages/git_adapter/models.py",
+          "packages/git_adapter/service.py",
+          "tests/git_adapter/test_git_adapter_e10.py"
+        ],
+        "lease_id": "write-lease-e10-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e10-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e10-r1-write-fence-epoch-1-e4d82ae4f47b47bc",
+        "write_fencing_token": "e10-r1-write-fence-epoch-1-e4d82ae4f47b47bc"
+      }
+    },
+    {
+      "sequence": 1160,
+      "event_id": "evt_e10_package_started",
+      "event_type": "PACKAGE_STARTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "START",
+      "subject_ref": "E-10/START",
+      "occurred_at": "2026-09-17T23:47:51+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "CE7A308CE0E47A61AE106C026E00A58559F58C030A72845C687304CC6AAAAA6F",
+      "details": {
+        "projection_mode": "E10_START_EXACT9_PRODUCT_EXACT5",
+        "validated_base_commit": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "dispatch_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "dispatch_upstream_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "head_relation": "PRECOMMIT_EXACT9_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/E-10_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e10-start.json",
+          "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E10_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322",
+          "invocation_sha256": "773059897C676F06A927BE5CBC8937B0ED8AF2ADF7211606A09C585DE9CF3A4D",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-10_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e10-start.json",
+            "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+            "packages/git_adapter/__init__.py",
+            "packages/git_adapter/models.py",
+            "packages/git_adapter/service.py",
+            "tests/git_adapter/test_git_adapter_e10.py"
+          ],
+          "independent_acceptance_required": true,
+          "validation_ids": [
+            "AV-GATE-004",
+            "AV-GATE-016",
+            "AV-GATE-017",
+            "AV-GATE-018",
+            "AV-GATE-019",
+            "AV-GATE-023",
+            "AV-GATE-024",
+            "AV-GATE-025",
+            "AV-STAT-023",
+            "AV-UI-013",
+            "AV-UI-014",
+            "AV-FLOW-014",
+            "AV-FLOW-015",
+            "AV-FLOW-024",
+            "AV-FLOW-025"
+          ],
+          "boundary": {
+            "actual_browser_db_provider": "NOT_EXECUTED",
+            "ui_menu_implementation": "U_PHASE_OWNED",
+            "apply_deploy_external_action": "FORBIDDEN",
+            "schema_change": "FORBIDDEN"
+          }
+        },
+        "product_write_scope": [
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "packages/git_adapter/__init__.py",
+          "packages/git_adapter/models.py",
+          "packages/git_adapter/service.py",
+          "tests/git_adapter/test_git_adapter_e10.py"
+        ],
+        "work_instruction_id": "WI-E-10-R1-20260917-001",
+        "package_status": "IN_PROGRESS",
+        "work_package_id": "E-10",
+        "status": "IN_PROGRESS",
+        "active_agent": "developer-primary-e10-r1",
+        "worker_lease_id": "worker-lease-e10-r1-20260917-001",
+        "write_lease_id": "write-lease-e10-r1-20260917-001",
+        "execution_fencing_token": "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e",
+        "write_fencing_token": "e10-r1-write-fence-epoch-1-e4d82ae4f47b47bc",
+        "work_instruction_sha256": "EAB4F114D041BCB38B6D6C69954FC99709FA117F20C8CFEEB08A5DA2F67C6322",
+        "runtime_next_action": "E10_GIT_ADAPTER_TDD_THEN_REVIEW"
+      }
+    },
+    {
+      "sequence": 1161,
+      "event_id": "evt_e10_final_package_completed",
+      "event_type": "PACKAGE_COMPLETED",
+      "actor": "developer-primary-e10-r1",
+      "actor_id": "developer-primary-e10-r1",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-10/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-18T00:44:55+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "99655E6EF503551AFD19C0D6C2B1595982978D706E310A30DA3F2A99C8F1CD32",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_raw": {
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md": {
+            "bytes": 15653,
+            "sha256": "25A2AC88A9F15A2954E6E794A783E640D65581FCDBA050486FA4C3AC1033D688"
+          },
+          "packages/git_adapter/__init__.py": {
+            "bytes": 167,
+            "sha256": "ACA315A3F72E1EB4DB6AA948CE083564B2BA89EA1A175AC163D74A535B7745A4"
+          },
+          "packages/git_adapter/models.py": {
+            "bytes": 7427,
+            "sha256": "5430AA20A5FDB6DF14600EBD986DAF7366C5E664B9CD837A7983E776D28EBA9B"
+          },
+          "packages/git_adapter/service.py": {
+            "bytes": 17576,
+            "sha256": "B9CC125F7538B2EDB6E1E747E835C9DF9612E309D22DD58E0BDABD31ABBBB6A8"
+          },
+          "tests/git_adapter/test_git_adapter_e10.py": {
+            "bytes": 27226,
+            "sha256": "FCD7CCB4B9E68AEB7BC272B5E28F1CA0A43115636A71FE1F514F13D6913B5421"
+          }
+        },
+        "evidence_target_hash": "408009AA84004DDB5F885F047D940E4565942E72EAA2987E440D556C0BC521B1",
+        "formal_failure_count": 0,
+        "review_rework_rounds": 2,
+        "report_ref": "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+        "external_validation": {
+          "git_mutation": "NOT_EXECUTED",
+          "remote": "NOT_EXECUTED",
+          "push": "NOT_EXECUTED",
+          "pull_request": "NOT_EXECUTED",
+          "merge": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "os_identity": "NOT_INTEGRATED",
+          "durable_authority": "NOT_INTEGRATED",
+          "multiprocess_persistence": "NOT_INTEGRATED",
+          "crash_recovery": "NOT_INTEGRATED",
+          "fake_driver_contract": "VERIFIED_EXTERNAL_SIDE_EFFECTS_0"
+        }
+      }
+    },
+    {
+      "sequence": 1162,
+      "event_id": "evt_e10_final_independent_test_judgment_recorded",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "actor": "independent-reviewer",
+      "actor_id": "independent-reviewer",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-10/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-18T00:44:55+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "3C9FFB1B322D565DE6488ABC1804AF7949BDC7ABBDA4547B081C19A6606C0531",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "AV-SAFE-015 AV-GATE-020 AV-GATE-025",
+        "evidence_ref": "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
+        "evidence_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "408009AA84004DDB5F885F047D940E4565942E72EAA2987E440D556C0BC521B1",
+        "reviews": {
+          "spec": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1160,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "unverified": [
+              "actual Git/remote/PR/filesystem mutation",
+              "OS physical identity capture",
+              "durable multi-process authority and crash recovery",
+              "DB/provider/network"
+            ],
+            "focused": {
+              "passed": 401,
+              "skipped": 0
+            },
+            "probes": {
+              "return_alias": "CLOSED",
+              "impossible_commit_identity": "CLOSED",
+              "authorization_credentials": "CLOSED"
+            }
+          },
+          "quality": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1160,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "unverified": [
+              "actual Git/remote/PR/filesystem mutation",
+              "OS physical identity capture",
+              "durable multi-process authority and crash recovery",
+              "DB/provider/network"
+            ],
+            "focused": {
+              "passed": 173,
+              "skipped": 0
+            },
+            "probes": {
+              "ref_alias": "CLOSED",
+              "audit_pagination": "CLOSED",
+              "credential_variants": 32,
+              "concurrent_dispatch": "PASS"
+            }
+          }
+        },
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "resolved_review_findings": [
+          {
+            "finding_id": "E10-REF-ALIAS",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "full refs/heads aliases are denied; canonical short refs only"
+          },
+          {
+            "finding_id": "E10-CREDENTIAL-NONDISCLOSURE",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "normalized authorization, token and private-key credential forms are fail-closed"
+          },
+          {
+            "finding_id": "E10-AUDIT-PAGINATION",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "bounded stable cursor pages preserve every append-only sequence"
+          },
+          {
+            "finding_id": "E10-RETURN-ALIAS",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "returned receipts are detached from canonical grant, receipt and audit records"
+          },
+          {
+            "finding_id": "E10-IMPOSSIBLE-COMMIT",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "nonempty commit and no-ff merge reject self-parent result identities"
+          },
+          {
+            "finding_id": "E10-AUTHORIZATION-SCHEME",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "all nonempty HTTP Authorization credential schemes are denied after normalization"
+          }
+        ],
+        "review_rework_rounds": 2,
+        "formal_failure_count": 0,
+        "developer_transcript_used": false
+      }
+    },
+    {
+      "sequence": 1163,
+      "event_id": "evt_e10_final_final_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-10/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-18T00:44:55+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "28DB006ADA4B9044F526E09AC6AD8686B2702054F087A3BE9580DCFDD6F1B85F",
+      "details": {
+        "actor_id": "developer-primary-e10-r1",
+        "subject_ref": "E-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "issued_at": "2026-09-17T23:47:51+09:00",
+        "expires_at": "2026-09-18T11:47:51+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e",
+        "path_scope": [
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "packages/git_adapter/__init__.py",
+          "packages/git_adapter/models.py",
+          "packages/git_adapter/service.py",
+          "tests/git_adapter/test_git_adapter_e10.py"
+        ],
+        "lease_id": "write-lease-e10-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e10-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e10-r1-write-fence-epoch-1-e4d82ae4f47b47bc",
+        "write_fencing_token": "e10-r1-write-fence-epoch-1-e4d82ae4f47b47bc",
+        "revoked_at": "2026-09-18T00:44:55+09:00",
+        "reason": "E10_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1164,
+      "event_id": "evt_e10_final_final_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-10/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-18T00:44:55+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "94EF3E536669E3F3C205114E6AA8C236541D8F3781AE61CA1B861991DB989729",
+      "details": {
+        "actor_id": "developer-primary-e10-r1",
+        "subject_ref": "E-10",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "issued_at": "2026-09-17T23:47:51+09:00",
+        "expires_at": "2026-09-18T11:47:51+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e",
+        "path_scope": [
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "packages/git_adapter/__init__.py",
+          "packages/git_adapter/models.py",
+          "packages/git_adapter/service.py",
+          "tests/git_adapter/test_git_adapter_e10.py"
+        ],
+        "lease_id": "worker-lease-e10-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e10-r1-execution-fence-epoch-1-30ca8a2d5a8f856e",
+        "dispatch_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "revoked_at": "2026-09-18T00:44:55+09:00",
+        "reason": "E10_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1165,
+      "event_id": "evt_e10_final_main_package_accepted",
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-10",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-10/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-18T00:44:55+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "5A9102AE21E07F99B21F223B7514FA0641F84D0C6A45A72C76B75BEEEBE8B1E2",
+      "details": {
+        "projection_mode": "E10_FINAL_ACCEPTANCE_EXACT16",
+        "validated_base_commit": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "acceptance_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "acceptance_upstream_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+        "head_relation": "PRECOMMIT_EXACT14_PLUS_FINAL_CONTROL_EXACT2",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/evidence/manifests/E-10_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e10-final-acceptance.json",
+          "docs/progress/progress-handoff-detached-digest-e10-start.json",
+          "docs/work_orders/E-10_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-10_WORK_INSTRUCTION.md",
+          "packages/git_adapter/__init__.py",
+          "packages/git_adapter/models.py",
+          "packages/git_adapter/service.py",
+          "scripts/check_project_progress.py",
+          "tests/git_adapter/test_git_adapter_e10.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "test_report_ref": "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
+        "test_report_sha256": "25A2AC88A9F15A2954E6E794A783E640D65581FCDBA050486FA4C3AC1033D688",
+        "manifest_ref": "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "408009AA84004DDB5F885F047D940E4565942E72EAA2987E440D556C0BC521B1",
+        "independent_reviews": {
+          "spec": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1160,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "unverified": [
+              "actual Git/remote/PR/filesystem mutation",
+              "OS physical identity capture",
+              "durable multi-process authority and crash recovery",
+              "DB/provider/network"
+            ],
+            "focused": {
+              "passed": 401,
+              "skipped": 0
+            },
+            "probes": {
+              "return_alias": "CLOSED",
+              "impossible_commit_identity": "CLOSED",
+              "authorization_credentials": "CLOSED"
+            }
+          },
+          "quality": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1160,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "unverified": [
+              "actual Git/remote/PR/filesystem mutation",
+              "OS physical identity capture",
+              "durable multi-process authority and crash recovery",
+              "DB/provider/network"
+            ],
+            "focused": {
+              "passed": 173,
+              "skipped": 0
+            },
+            "probes": {
+              "ref_alias": "CLOSED",
+              "audit_pagination": "CLOSED",
+              "credential_variants": 32,
+              "concurrent_dispatch": "PASS"
+            }
+          }
+        },
+        "next_work_package": "E-11",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "formal_failure_count": 0,
+        "review_rework_rounds": 2,
+        "resolved_review_findings": [
+          {
+            "finding_id": "E10-REF-ALIAS",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "full refs/heads aliases are denied; canonical short refs only"
+          },
+          {
+            "finding_id": "E10-CREDENTIAL-NONDISCLOSURE",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "normalized authorization, token and private-key credential forms are fail-closed"
+          },
+          {
+            "finding_id": "E10-AUDIT-PAGINATION",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "bounded stable cursor pages preserve every append-only sequence"
+          },
+          {
+            "finding_id": "E10-RETURN-ALIAS",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "returned receipts are detached from canonical grant, receipt and audit records"
+          },
+          {
+            "finding_id": "E10-IMPOSSIBLE-COMMIT",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "nonempty commit and no-ff merge reject self-parent result identities"
+          },
+          {
+            "finding_id": "E10-AUTHORIZATION-SCHEME",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "all nonempty HTTP Authorization credential schemes are denied after normalization"
+          }
+        ],
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "external_validation": {
+          "git_mutation": "NOT_EXECUTED",
+          "remote": "NOT_EXECUTED",
+          "push": "NOT_EXECUTED",
+          "pull_request": "NOT_EXECUTED",
+          "merge": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "provider": "NOT_EXECUTED",
+          "os_identity": "NOT_INTEGRATED",
+          "durable_authority": "NOT_INTEGRATED",
+          "multiprocess_persistence": "NOT_INTEGRATED",
+          "crash_recovery": "NOT_INTEGRATED",
+          "fake_driver_contract": "VERIFIED_EXTERNAL_SIDE_EFFECTS_0"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_e09_final_main_package_accepted"
+  "last_event_id": "evt_e10_final_main_package_accepted"
 }
