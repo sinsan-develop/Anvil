@@ -105,8 +105,8 @@ class GateResult:
     evidence_id: str | None = None
 
     def __post_init__(self) -> None:
-        if self.gate_code not in _GATES:
-            raise ValueError("gate_code must be G0, G1, G2 or G3")
+        if self.gate_code not in (*_GATES, "G4", "G5", "G6", "G7"):
+            raise ValueError("gate_code must be G0 through G7")
         if not isinstance(self.status, GateStatus):
             object.__setattr__(self, "status", GateStatus(self.status))
         _hash(self.target_hash, "target_hash")

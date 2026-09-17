@@ -1,0 +1,1 @@
+`WI-E-09-R1-20260917-001`을 읽고 E-09 exact5만 TDD로 구현하라. 기존 C-14 G0~G3 및 release foundation을 회귀시키지 말고, G4~G7 release evidence subject와 ProductValidation·Defect·사람 ReleaseDecision을 승인 문서 계약대로 결박하라. 실제 브라우저/DB/서비스/계정/Provider가 없으면 PASS로 승격하지 말고 BLOCKED/SKIPPED와 unverified scope를 보존한다. Main control 파일과 Git stage/commit/push는 금지한다.

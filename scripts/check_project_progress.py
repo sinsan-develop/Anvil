@@ -1546,6 +1546,18 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "E08_START_EXACT9_PRODUCT_EXACT6"
             )
             or (
+                progress is not None and progress.get("event_sequence") == 1156
+                and event.get("sequence") == 1156 and event.get("event_id") == "evt_e09_final_main_package_accepted"
+                and event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+                and event["details"].get("projection_mode") == "E09_FINAL_ACCEPTANCE_EXACT16"
+            )
+            or (
+                progress is not None and progress.get("event_sequence") == 1151
+                and event.get("sequence") == 1151 and event.get("event_id") == "evt_e09_package_started"
+                and event.get("event_type") == "PACKAGE_STARTED"
+                and event["details"].get("projection_mode") == "E09_START_EXACT9_PRODUCT_EXACT5"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13565,6 +13577,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 1156:
+        return _collect_e09_final_git(bundle)
+    if bundle.get("progress", {}).get("event_sequence") == 1151:
+        return _collect_e09_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 1147:
         return _collect_e08_final_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 1142:
@@ -15042,6 +15058,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_e04_final(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_e05_final(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_e09_final(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/E-09_START_MANIFEST.json":
+            errors.extend(validate_e09_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_e08_final(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-08_START_MANIFEST.json":
@@ -55920,6 +55940,491 @@ def _collect_e08_final_git(bundle):
     except Exception:
         return ["E08_FINAL_GIT_INVALID"]
 
+
+
+E09_BASE = "593311d87de760bdc6bb5485b89a17014e81976a"
+E09_MODE = "E09_START_EXACT9_PRODUCT_EXACT5"
+E09_WI = "docs/work_orders/E-09_WORK_INSTRUCTION.md"
+E09_PROMPT = "docs/work_orders/E-09_INVOCATION_PROMPT.md"
+E09_D = "docs/progress/progress-handoff-detached-digest-e09-start.json"
+E09_M = "docs/evidence/manifests/E-09_START_MANIFEST.json"
+E09_AT = "2026-09-17T22:40:00+09:00"
+E09_EXPIRES = "2026-09-18T10:40:00+09:00"
+E09_WI_HASH = "2DCA27CDB9DF351F62AA77FE0424711DB7E31AF2CD287C4239A8834B3B77B85D"
+E09_PROMPT_HASH = "F236AC1CF5D1B8D727B5DFCF3E3F5F0A02F5DAE12F7BC0FCF3EDF102ED893E7B"
+
+
+def e09_product_write_scope():
+    return sorted(["packages/verification/__init__.py", "packages/verification/gates.py",
+                   "packages/verification/release_gates.py", "tests/verification/test_gates_e09.py",
+                   "docs/04_test_reports/E-09_COMPLETION_REPORT.md"])
+
+
+def e09_control_paths():
+    return sorted([D13_START_P, D13_START_E, D13_START_H, E09_D, E09_M, E09_WI, E09_PROMPT,
+                   "scripts/check_project_progress.py", "tests/tooling/test_project_progress.py"])
+
+
+def e09_start_from_root(root):
+    committed = lambda p: subprocess.check_output(["git", "show", f"{E09_BASE}:{p}"], cwd=root)
+    old = {p: committed(p) for p in (D13_START_P, D13_START_E, D13_START_H)}
+    progress = _c21_resume_json(old[D13_START_P])
+    stream = _c21_resume_json(old[D13_START_E])
+    if (progress.get("event_sequence") != 1147 or stream.get("last_sequence") != 1147
+        or progress.get("e08_final_acceptance", {}).get("status") != "ACCEPTED"
+        or progress.get("next_work_package") != {"package_id": "E-09", "status": "READY_FOR_WORK_INSTRUCTION"}
+        or progress.get("pending_approvals") != []
+        or any(progress.get(key) is not None for key in ("active_agent", "worker_lease", "write_lease", "active_work_instruction"))):
+        raise ValueError("E09_HISTORY_INVALID")
+    if (_c21_resume_sha((root / E09_WI).read_bytes()) != E09_WI_HASH
+        or _c21_resume_sha((root / E09_PROMPT).read_bytes()) != E09_PROMPT_HASH):
+        raise ValueError("E09_AUTHORITY_INVALID")
+    scope = e09_product_write_scope()
+    exact = e09_control_paths()
+    actor = "developer-primary-e09-r1"
+    execution = "e09-r1-execution-fence-epoch-1-593311d87de760bd"
+    write_token = "e09-r1-write-fence-epoch-1-c6bb5485b89a1701"
+    common = {"actor_id": actor, "subject_ref": "E-09", "baseline_hash": progress["design_baseline_hash"],
+              "baseline_git_commit": E09_BASE, "issued_at": E09_AT, "expires_at": E09_EXPIRES,
+              "status": "ACTIVE", "execution_fencing_token": execution, "path_scope": scope}
+    worker = {**common, "lease_id": "worker-lease-e09-r1-20260917-001", "lease_epoch": 1,
+              "fencing_token": execution, "dispatch_head": E09_BASE}
+    write = {**common, "lease_id": "write-lease-e09-r1-20260917-001", "worker_lease_id": worker["lease_id"],
+             "write_epoch": 1, "fencing_token": write_token, "write_fencing_token": write_token}
+    authority = {"source": "MAIN_APPROVED_E09_IMPLEMENTATION_DISPATCH", "new_project_approval_requested": False,
+                 "product_tdd_authorized_now": True, "external_execution_authorized": False,
+                 "work_instruction_sha256": E09_WI_HASH, "invocation_sha256": E09_PROMPT_HASH,
+                 "approved_control_paths": exact, "product_write_scope": scope,
+                 "independent_acceptance_required": True,
+                 "validation_ids": ["AV-GATE-004", "AV-GATE-016", "AV-GATE-017", "AV-GATE-018",
+                                    "AV-GATE-019", "AV-GATE-023", "AV-GATE-024", "AV-GATE-025",
+                                    "AV-STAT-023", "AV-UI-013", "AV-UI-014", "AV-FLOW-014",
+                                    "AV-FLOW-015", "AV-FLOW-024", "AV-FLOW-025"],
+                 "boundary": {"actual_browser_db_provider": "NOT_EXECUTED",
+                              "ui_menu_implementation": "U_PHASE_OWNED",
+                              "apply_deploy_external_action": "FORBIDDEN", "schema_change": "FORBIDDEN"}}
+    projection = {"projection_mode": E09_MODE, "validated_base_commit": E09_BASE,
+                  "dispatch_head": E09_BASE, "dispatch_upstream_head": E09_BASE,
+                  "head_relation": "PRECOMMIT_EXACT9_OR_SOLE_DIRECT_CHILD", "exact_allowed_paths": exact}
+    details = [
+        ("WORK_INSTRUCTION_ISSUED", "work_instruction_issued", {"work_instruction_id": "WI-E-09-R1-20260917-001",
+         "work_instruction_path": E09_WI, "work_instruction_sha256": E09_WI_HASH,
+         "invocation_path": E09_PROMPT, "invocation_sha256": E09_PROMPT_HASH,
+         "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001", "product_write_scope": scope, "authority": authority}),
+        ("WORKER_LEASE_ISSUED", "worker_lease_issued", worker),
+        ("WRITE_LEASE_ISSUED", "write_lease_issued", write),
+        ("PACKAGE_STARTED", "package_started", {**projection, "authority": authority, "product_write_scope": scope,
+         "work_instruction_id": "WI-E-09-R1-20260917-001", "package_status": "IN_PROGRESS",
+         "work_package_id": "E-09", "status": "IN_PROGRESS", "active_agent": actor,
+         "worker_lease_id": worker["lease_id"], "write_lease_id": write["lease_id"],
+         "execution_fencing_token": execution, "write_fencing_token": write_token,
+         "work_instruction_sha256": E09_WI_HASH, "runtime_next_action": "E09_G4_G7_RELEASE_GATE_TDD_THEN_REVIEW"}),
+    ]
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    additions = []
+    for sequence, (kind, suffix, data) in enumerate(details, 1148):
+        row = {"sequence": sequence, "event_id": "evt_e09_" + suffix, "event_type": kind,
+               "actor": "main-agent-eoul", "actor_id": "main-agent-eoul", "actor_type": "AGENT",
+               "project_id": "anvil", "run_id": None, "work_package_id": "E-09", "step_id": "START",
+               "subject_ref": "E-09/START", "occurred_at": E09_AT,
+               "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+               "previous_event_sha256": previous, "details": data}
+        additions.append(row)
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+    events_raw = _c21_append_events(old[D13_START_E], 1147, additions)
+    repo = copy.deepcopy(progress["repository"])
+    repo.update({**projection, "control_head": E09_BASE, "local_head": E09_BASE, "remote_head": E09_BASE,
+                 "upstream_head": E09_BASE, "branch": C09_START_BRANCH, "product_write_scope": scope,
+                 "worktree_status": "UNSTAGED_START_CONTROL_WITH_OPTIONAL_AUTHORIZED_PRODUCT_DELTA",
+                 "push_status": "NOT_EXECUTED", "commit_status": "NOT_EXECUTED"})
+    progress.update({"snapshot_id": "snapshot-e09-start-seq1151", "event_sequence": 1151,
+                     "updated_at": E09_AT, "recorded_at": E09_AT, "last_event_id": additions[-1]["event_id"],
+                     "status": "IN_PROGRESS", "current_phase": "E", "current_work_package": "E-09",
+                     "active_agent": {"actor_id": actor, "role": "PRIMARY_DEVELOPER", "work_package_id": "E-09",
+                                      "status": "ACTIVE", "execution_fencing_token": execution},
+                     "worker_lease": worker, "write_lease": write,
+                     "active_work_instruction": {"work_package_id": "E-09", "artifact_path": E09_WI,
+                                                  "artifact_sha256": E09_WI_HASH, "invocation_path": E09_PROMPT,
+                                                  "invocation_sha256": E09_PROMPT_HASH, "status": "IN_PROGRESS",
+                                                  "result_status": None, "accepted": False,
+                                                  "product_write_scope": scope, "worker_lease_id": worker["lease_id"],
+                                                  "write_lease_id": write["lease_id"]},
+                     "e09_start": {"status": "IN_PROGRESS", "accepted": False, "event_sequence": 1151, "error_count": 0},
+                     "next_work_package": None, "next_successor_work_package": {"package_id": "E-10", "status": "NOT_READY"},
+                     "next_safe_action": "E09_G4_G7_RELEASE_GATE_TDD_THEN_REVIEW",
+                     "runtime_next_action": "E09_G4_G7_RELEASE_GATE_TDD_THEN_REVIEW", "pending_approvals": [],
+                     "repository": repo, "current_progress_evidence_ref": {"package_id": "E-09", "path": E09_D,
+                                                                            "manifest_path": E09_M},
+                     "latest_evidence_manifest_ref": {"path": E09_M, "artifact_id": "E09-START-20260917"},
+                     "reporting_decision": {"decision": "AUTO_CONTINUE", "stop_before_dialogue_report": False,
+                                            "reason_codes": ["E08_ACCEPTED", "E09_APPROVED_SCOPE"]}})
+    progress["registry_refs"]["progress_events"] = {"path": D13_START_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": p, "sha256": _c21_resume_sha((root / p).read_bytes())}
+                                         for p in (E09_WI, E09_PROMPT)]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status", "current_phase",
+                                               "current_work_package", "active_agent", "worker_lease", "write_lease",
+                                               "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": False, "d_gate": "ACCEPTED", "e08_status": "ACCEPTED",
+                    "e09_status": "IN_PROGRESS", "e10_status": "NOT_READY",
+                    "dir_status": progress["dir_review"]["status"], "repository_head": E09_BASE,
+                    "repository_upstream": repo.get("upstream"), "repository_projection_mode": E09_MODE,
+                    "repository_exact_allowed_paths": exact, "product_write_scope": scope,
+                    "current_manifest": E09_M, "reporting_decision": "AUTO_CONTINUE", "pending_approvals": [],
+                    "staged": False, "commit_performed": False})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    text, count = re.subn(pattern, lambda _: replacement, old[D13_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("E09_HANDOFF_INVALID")
+    handoff_raw = ("# E-09 start control seq1151\n\n"
+                   "- Product exact5/control exact9; E08 ACCEPTED. Historical seq1-1147 raw prefix immutable.\n"
+                   "- G4-G7 and release subject contracts only; actual menu UI/Provider/DB/deploy are not executed.\n"
+                   "- Missing real boundaries remain BLOCKED/SKIPPED; only authenticated HUMAN may make ReleaseDecision.\n\n" + text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "E09-START-DIGEST-20260917",
+              "package_id": "E-09", "event_sequence": 1151, "algorithm": "SHA-256", "created_at": E09_AT,
+              "scope": "append-only seq1148-1151; exact9 control", "self_reference": False,
+              "progress": {"path": D13_START_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw),
+                           "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+              "handoff": {"path": D13_START_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw),
+                          "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    generated = {D13_START_P: progress_raw, D13_START_E: events_raw, D13_START_H: handoff_raw,
+                 E09_D: _c21_resume_json_bytes(digest)}
+    generated.update({p: (root / p).read_bytes() for p in exact if p not in generated and p != E09_M})
+    prefix = raw_event_object_prefix_bytes(old[D13_START_E], 1147)
+    manifest = {"schema_version": "1.0.0", "manifest_type": "E09_START", "artifact_id": "E09-START-20260917",
+                "created_at": E09_AT, "package_id": "E-09", "event_sequence": 1151,
+                "historical_event_sequence": 1147, "appended_event_count": 4,
+                "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+                "historical_evidence_mutation_count": 0, "status": "IN_PROGRESS", "accepted": False,
+                "active_leases": 2, "product_write_scope": scope, "authority": authority,
+                "exact_allowed_paths": exact, "exact_path_count": 9, "projection_mode": E09_MODE,
+                "validated_base_commit": E09_BASE, "pending_approvals": [], "staged": False,
+                "commit_performed": False, "self_reference": False,
+                "raw_checksums": [{"path": p, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+                                  for p, raw in sorted(generated.items())]}
+    generated[E09_M] = _c21_resume_json_bytes(manifest)
+    return generated
+
+
+def validate_e09_start(bundle, manifest):
+    try:
+        expected = e09_start_from_root(bundle["_root"])
+        actual = {D13_START_P: bundle.get("progress"), D13_START_E: bundle.get("events"),
+                  D13_START_H: bundle.get("handoff"), E09_D: bundle.get("detached_digest"), E09_M: manifest}
+        parsed = {p: (extract_handoff_summary(raw.decode()) if p == D13_START_H else _c21_resume_json(raw))
+                  for p, raw in expected.items() if p in actual}
+        errors = [] if all(_c21_strict_json_equal(actual[p], parsed[p]) for p in actual) else ["E09_START_PROJECTION_INVALID"]
+        if any((bundle["_root"] / p).read_bytes() != raw for p, raw in expected.items()):
+            errors.append("E09_START_RAW_BYTES_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E09_START_INPUT_INVALID"]
+
+
+def validate_e09_git_facts(*, head, branch, staged, dirty, parent=None, committed_paths=None):
+    control, product, paths = set(e09_control_paths()), set(e09_product_write_scope()), set(dirty)
+    pre = head == E09_BASE and control <= paths <= control | product
+    post = head != E09_BASE and parent == E09_BASE and committed_paths == sorted(control | product) and dirty == []
+    return [] if branch == C09_START_BRANCH and not staged and (pre or post) else ["E09_START_GIT_INVALID"]
+
+
+def _collect_e09_git(bundle):
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        head = _c02_strict_git_scalar(raw("rev-parse", "HEAD"))
+        staged = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")) or []
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only")) or []
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-per-directory=.gitignore",
+                                                  "--exclude=.pytest_cache", "--exclude=.pytest_cache/**")) or []
+        dirty = sorted(set(staged + unstaged + untracked))
+        parent = _c02_strict_git_scalar(raw("show", "-s", "--format=%P", head))
+        committed = (_c02_strict_name_only_paths(raw("diff", "--name-only", E09_BASE, head)) or []) if head != E09_BASE else []
+        errors = validate_e09_git_facts(head=head, branch=_c02_strict_git_scalar(raw("branch", "--show-current")),
+                                        staged=staged, dirty=dirty, parent=parent, committed_paths=committed)
+        if set(staged) & set(unstaged) or set(staged) & set(untracked) or set(unstaged) & set(untracked):
+            errors.append("E09_START_GIT_OVERLAP")
+        if not _c02_git_quiet_check(root, "diff", "--check"):
+            errors.append("E09_START_DIFF_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E09_START_GIT_INVALID"]
+
+
+
+E09_FINAL_AT = "2026-09-17T23:37:38+09:00"
+E09_FINAL_MODE = "E09_FINAL_ACCEPTANCE_EXACT16"
+E09_FINAL_D = "docs/progress/progress-handoff-detached-digest-e09-final-acceptance.json"
+E09_FINAL_M = "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json"
+E09_FINAL_PRODUCT_HASHES = {
+    "docs/04_test_reports/E-09_COMPLETION_REPORT.md": "C31C05E1EE39E627CD2A9FED502E0A81F96CB819B5687B317C97C044DE26CD09",
+    "packages/verification/__init__.py": "C6E1F423E0A61C5A5819B400E4766485324797D6BD08D1779B1B94947BE52ABF",
+    "packages/verification/gates.py": "718FF29EC9CB142E1F2FBF8DC984A06158B7E5788D0717CAA31427D102D26B49",
+    "packages/verification/release_gates.py": "37FD271494916A36A60202D9A164686F282F34333CD64557D11489353EB18AC1",
+    "tests/verification/test_gates_e09.py": "9DC814A8619D264EBDB312778A1C4EC029A7BFA8D69FCED73F2BF3A68BE2B340",
+}
+E09_FINAL_CONTROL_HASHES = {
+    E09_WI: E09_WI_HASH,
+    E09_PROMPT: E09_PROMPT_HASH,
+    E09_D: "0ED62E01BCA0CA60D14810AE10ACD5B3BB525284C6CC3CF686E6759F17AA20D8",
+    E09_M: "76DF7904377591155850BD7F0BBA0065DE9401D75BFADF5B18DCBD27648C4D02",
+}
+
+
+def e09_final_paths():
+    return sorted(set(e09_control_paths()) | set(e09_product_write_scope()) | {E09_FINAL_D, E09_FINAL_M})
+
+
+def e09_final_reviews():
+    common = {"source": "INDEPENDENT_READ_ONLY_REVIEW", "verdict": "ACCEPT",
+              "critical_findings": 0, "important_findings": 0, "minor_findings": 0,
+              "developer_transcript_used": False, "checker_sequence": 1151,
+              "checker_result": "PASS", "diff_check_exit": 0,
+              "focused": {"passed": 228, "skipped": 0},
+              "adjacent": {"passed": 1022, "skipped": 8, "skip_reason": "ANVIL_TEST_DATABASE_URL_NOT_SET"},
+              "unverified": ["actual DB/browser/production build/Provider", "durable authentication/evidence registry",
+                             "multi-process persistence", "actual Apply/Deploy", "U Phase menu UI"]}
+    return {
+        "spec": {**common, "probes": {"prior_findings_closed": 3, "nested_nonreal": "BLOCKED",
+                                         "fixer_context_independence": "PASS", "build_raw_binding": "PASS"}},
+        "quality": {**common, "probes": {"prior_findings_closed": 4, "public_handle_callback_count": 0,
+                                            "actor_generation_replay": "BLOCKED", "concurrent_admission": "PASS"}},
+    }
+
+
+def e09_final_from_root(root):
+    current = _c21_resume_json((root / D13_START_P).read_bytes())
+    generated_paths = [D13_START_P, D13_START_E, D13_START_H, E09_FINAL_D, E09_FINAL_M]
+    for path, expected in {**E09_FINAL_PRODUCT_HASHES, **E09_FINAL_CONTROL_HASHES}.items():
+        if _c21_resume_sha((root / path).read_bytes()) != expected:
+            raise ValueError("E09_FINAL_FROZEN_DRIFT")
+    if current.get("event_sequence") == 1156 and all((root / path).exists() for path in generated_paths):
+        return {path: (root / path).read_bytes() for path in generated_paths}
+    start = e09_start_from_root(root)
+    progress = _c21_resume_json(start[D13_START_P])
+    stream = _c21_resume_json(start[D13_START_E])
+    if (progress.get("event_sequence") != 1151 or stream.get("last_sequence") != 1151
+        or progress.get("status") != "IN_PROGRESS" or progress.get("current_work_package") != "E-09"
+        or (progress.get("worker_lease") or {}).get("lease_id") != "worker-lease-e09-r1-20260917-001"
+        or (progress.get("write_lease") or {}).get("lease_id") != "write-lease-e09-r1-20260917-001"):
+        raise ValueError("E09_FINAL_START_INVALID")
+    exact = e09_final_paths()
+    prefix = raw_event_object_prefix_bytes(start[D13_START_E], 1151)
+    reviews = e09_final_reviews()
+    product = {path: {"bytes": len((root / path).read_bytes()), "sha256": digest}
+               for path, digest in E09_FINAL_PRODUCT_HASHES.items()}
+    target = _c21_resume_sha(canonical_json_bytes(product))
+    findings = [
+        {"finding_id": "E09-NESTED-NONREAL-PROMOTION", "severity": "CRITICAL", "status": "RESOLVED",
+         "resolution": "G4-G6 nested evidence requires explicit real available matching environment metadata"},
+        {"finding_id": "E09-FIXER-CONTEXT-INDEPENDENCE", "severity": "CRITICAL", "status": "RESOLVED",
+         "resolution": "defect retest actor and context are independent from every recorded fixer"},
+        {"finding_id": "E09-BUILD-RAW-BINDING", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "artifact and dependency hashes bind to matching raw checksum paths"},
+        {"finding_id": "E09-HOSTILE-BUNDLE-CALLBACK", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "all public handles validate exact registered identity before attribute access"},
+        {"finding_id": "E09-ACTOR-REVOCATION-REPLAY", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "revoked actor identities cannot be re-registered or restore stale approvals"},
+        {"finding_id": "E09-ACTOR-GENERATION-ROLLBACK", "severity": "IMPORTANT", "status": "RESOLVED",
+         "resolution": "superseded actor generations cannot roll active authority back"},
+    ]
+    external = {key: "NOT_EXECUTED" for key in ("provider", "network", "http", "api", "ui", "browser",
+                                                  "wsl", "docker", "deployment", "production_build")}
+    external.update(actual_db="NOT_EXECUTED", durable_authority="NOT_INTEGRATED",
+                    durable_evidence_registry="NOT_INTEGRATED", multiprocess_persistence="NOT_INTEGRATED",
+                    apply_deploy="ADMISSION_ONLY_NOT_EXECUTED")
+    worker = copy.deepcopy(progress["worker_lease"])
+    write = copy.deepcopy(progress["write_lease"])
+    worker.update(status="REVOKED", revoked_at=E09_FINAL_AT, reason="E09_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN")
+    write.update(status="REVOKED", revoked_at=E09_FINAL_AT, reason="E09_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN")
+    projection = {"projection_mode": E09_FINAL_MODE, "validated_base_commit": E09_BASE,
+                  "acceptance_head": E09_BASE, "acceptance_upstream_head": E09_BASE,
+                  "head_relation": "PRECOMMIT_EXACT14_PLUS_FINAL_CONTROL_EXACT2", "exact_allowed_paths": exact}
+    judgment = {"verdict": "PASS",
+                "criteria": "AV-GATE-004/016/017/018/019/023/024/025 AV-STAT-023 AV-UI-013/014 AV-FLOW-014/015/024/025",
+                "evidence_ref": E09_FINAL_M, "evidence_sha256": "SELF_REFERENCE_EXCLUDED",
+                "evidence_target_hash": target, "reviews": reviews, "blocking_findings": 0,
+                "important_findings": 0, "minor_findings": 0, "resolved_review_findings": findings,
+                "review_rework_rounds": 2, "formal_failure_count": 0, "developer_transcript_used": False}
+    accepted = {**projection, "decision": "ACCEPTED", "accepted": True,
+                "test_report_ref": "docs/04_test_reports/E-09_COMPLETION_REPORT.md",
+                "test_report_sha256": product["docs/04_test_reports/E-09_COMPLETION_REPORT.md"]["sha256"],
+                "manifest_ref": E09_FINAL_M, "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+                "evidence_target_hash": target, "independent_reviews": reviews,
+                "next_work_package": "E-10", "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+                "formal_failure_count": 0, "review_rework_rounds": 2,
+                "resolved_review_findings": findings, "blocking_findings": 0,
+                "important_findings": 0, "minor_findings": 0, "external_validation": external}
+    details = [
+        ("PACKAGE_COMPLETED", "package_completed", "developer-primary-e09-r1",
+         {"result_status": "COMPLETED", "package_status": "TEST_REVIEW", "accepted": False,
+          "product_raw": product, "evidence_target_hash": target, "formal_failure_count": 0,
+          "review_rework_rounds": 2, "report_ref": "docs/04_test_reports/E-09_COMPLETION_REPORT.md",
+          "external_validation": external}),
+        ("INDEPENDENT_TEST_JUDGMENT_RECORDED", "independent_test_judgment_recorded", "independent-reviewer", judgment),
+        ("WRITE_LEASE_REVOKED", "final_write_lease_revoked", "main-agent-eoul", write),
+        ("WORKER_LEASE_REVOKED", "final_worker_lease_revoked", "main-agent-eoul", worker),
+        ("MAIN_PACKAGE_ACCEPTED", "main_package_accepted", "main-agent-eoul", accepted),
+    ]
+    previous = _c21_resume_sha(canonical_json_bytes(stream["events"][-1]))
+    rows = []
+    for sequence, (kind, suffix, actor, data) in enumerate(details, 1152):
+        row = {"sequence": sequence, "event_id": "evt_e09_final_" + suffix, "event_type": kind,
+               "actor": actor, "actor_id": actor, "actor_type": "AGENT", "project_id": "anvil",
+               "run_id": None, "work_package_id": "E-09", "step_id": "FINAL_ACCEPTANCE",
+               "subject_ref": "E-09/FINAL_ACCEPTANCE", "occurred_at": E09_FINAL_AT,
+               "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+               "previous_event_sha256": previous, "details": data}
+        rows.append(row)
+        previous = _c21_resume_sha(canonical_json_bytes(row))
+    events_raw = _c21_append_events(start[D13_START_E], 1151, rows)
+    repo = copy.deepcopy(progress["repository"])
+    repo.update({**projection, "worktree_status": "UNSTAGED_E09_FINAL_EXACT16",
+                 "commit_status": "NOT_EXECUTED", "push_status": "NOT_EXECUTED"})
+    wi = copy.deepcopy(progress["active_work_instruction"])
+    wi.update(status="ACCEPTED", result_status="COMPLETED", accepted=True, independent_review=reviews)
+    completed = list(progress.get("completed_packages", []))
+    if "E-09" not in completed:
+        completed.append("E-09")
+    final = {"status": "ACCEPTED", "accepted": True, "event_sequence": 1156,
+             "product_raw": product, "evidence_target_hash": target, "independent_reviews": reviews,
+             "external_validation": external, "formal_failure_count": 0, "review_rework_rounds": 2,
+             "resolved_review_findings": findings, "baseline_hash": progress["design_baseline_hash"],
+             "work_instruction_sha256": E09_WI_HASH, "invocation_sha256": E09_PROMPT_HASH,
+             "work_plan_hash": progress["work_plan_hash"]}
+    progress.update({"snapshot_id": "snapshot-e09-final-seq1156", "event_sequence": 1156,
+                     "last_event_id": rows[-1]["event_id"], "updated_at": E09_FINAL_AT,
+                     "recorded_at": E09_FINAL_AT, "status": "ACCEPTED", "valid_failure_count": 0,
+                     "completed_packages": completed, "active_agent": None, "worker_lease": None,
+                     "write_lease": None, "active_work_instruction": None,
+                     "last_completed_work_instruction": wi, "last_accepted_work_instruction": wi,
+                     "e09_final_acceptance": final, "repository": repo,
+                     "next_work_package": {"package_id": "E-10", "status": "READY_FOR_WORK_INSTRUCTION"},
+                     "next_successor_work_package": None, "next_safe_action": "E10_READY_NOT_STARTED",
+                     "runtime_next_action": "E10_READY_NOT_STARTED", "pending_approvals": [],
+                     "current_progress_evidence_ref": {"package_id": "E-09", "path": E09_FINAL_D,
+                                                       "manifest_path": E09_FINAL_M},
+                     "latest_evidence_manifest_ref": {"path": E09_FINAL_M,
+                                                       "artifact_id": "E09-FINAL-ACCEPTANCE-20260917"},
+                     "reporting_decision": {"decision": "AUTO_CONTINUE", "stop_before_dialogue_report": False,
+                                            "reason_codes": ["E09_INDEPENDENT_ACCEPTED", "E10_READY_NOT_STARTED"]}})
+    progress["e09_start"].update(status="COMPLETED_ACCEPTED", accepted=True, event_sequence=1156,
+                                 formal_failure_count=0, review_rework_rounds=2,
+                                 resolved_review_findings=findings)
+    progress["registry_refs"]["progress_events"] = {"path": D13_START_E, "sha256": _c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"] = [{"path": path, "sha256": row["sha256"]}
+                                         for path, row in sorted(product.items())]
+    progress["snapshot_hash"] = compute_snapshot_hash(progress)
+    progress_raw = _c21_resume_json_bytes(progress)
+    handoff = {key: progress[key] for key in ("event_sequence", "last_event_id", "status", "current_phase",
+                                               "current_work_package", "active_agent", "worker_lease", "write_lease",
+                                               "design_baseline_hash", "valid_failure_count", "next_safe_action")}
+    handoff.update({"accepted": True, "d_gate": "ACCEPTED", "e08_status": "ACCEPTED",
+                    "e09_status": "ACCEPTED", "e10_status": "READY_FOR_WORK_INSTRUCTION",
+                    "dir_status": progress["dir_review"]["status"], "repository_head": E09_BASE,
+                    "repository_upstream": repo.get("upstream"), "repository_projection_mode": E09_FINAL_MODE,
+                    "repository_exact_allowed_paths": exact, "current_manifest": E09_FINAL_M,
+                    "evidence_target_hash": target, "independent_reviews": reviews,
+                    "resolved_review_findings": findings, "external_validation": external,
+                    "formal_failure_count": 0, "review_rework_rounds": 2,
+                    "reporting_decision": "AUTO_CONTINUE", "pending_approvals": [], "staged": False,
+                    "commit_performed": False, "active_work_instruction": None})
+    fence = chr(96) * 3
+    replacement = fence + "json anvil-recovery-summary\n" + _c21_resume_json_bytes(handoff).decode() + fence
+    pattern = re.escape(fence) + r"json anvil-recovery-summary\s*\{.*?\}\s*" + re.escape(fence)
+    handoff_text, count = re.subn(pattern, lambda _: replacement, start[D13_START_H].decode(), flags=re.DOTALL)
+    if count != 1:
+        raise ValueError("E09_FINAL_HANDOFF_INVALID")
+    handoff_raw = ("# E-09 final acceptance seq1156\n\n"
+                   "- Independent Spec/Quality final re-review ACCEPT, C0/I0/M0; six review findings resolved.\n"
+                   "- Product exact5 frozen; formal FAILURE_REPORT0; review rework rounds2; epoch1 leases revoked. E10 READY.\n"
+                   "- Host-only contract verified. Actual DB/browser/build/Provider/Apply/Deploy and durable authority remain unverified.\n\n" + handoff_text).encode()
+    digest = {"schema_version": "1.0.0", "digest_id": "E09-FINAL-DIGEST-20260917",
+              "package_id": "E-09", "event_sequence": 1156, "algorithm": "SHA-256",
+              "created_at": E09_FINAL_AT, "scope": "append-only seq1152-1156; exact16 frozen product/control",
+              "self_reference": False,
+              "progress": {"path": D13_START_P, "bytes": len(progress_raw), "file_sha256": _c21_resume_sha(progress_raw),
+                           "canonical_json_sha256": _c21_resume_sha(canonical_json_bytes(progress))},
+              "handoff": {"path": D13_START_H, "bytes": len(handoff_raw), "file_sha256": _c21_resume_sha(handoff_raw),
+                          "machine_summary_canonical_sha256": _c21_resume_sha(canonical_json_bytes(handoff))}}
+    generated = {D13_START_P: progress_raw, D13_START_E: events_raw, D13_START_H: handoff_raw,
+                 E09_FINAL_D: _c21_resume_json_bytes(digest)}
+    generated.update({path: (root / path).read_bytes() for path in exact if path not in generated and path != E09_FINAL_M})
+    all_raw = {path: generated[path] for path in exact if path != E09_FINAL_M}
+    manifest = {"schema_version": "1.0.0", "manifest_type": "E09_FINAL_ACCEPTANCE",
+                "artifact_id": "E09-FINAL-ACCEPTANCE-20260917", "created_at": E09_FINAL_AT,
+                "package_id": "E-09", "event_sequence": 1156, "historical_event_sequence": 1151,
+                "appended_event_count": 5, "historical_raw_event_prefix": {"bytes": len(prefix), "sha256": _c21_resume_sha(prefix)},
+                "historical_evidence_mutation_count": 0, **final, "active_leases": 0,
+                "e09_status": "ACCEPTED", "e10_status": "READY_FOR_WORK_INSTRUCTION",
+                "product_exact_paths": e09_product_write_scope(), "frozen_product_sha256": E09_FINAL_PRODUCT_HASHES,
+                "frozen_control_sha256": E09_FINAL_CONTROL_HASHES, "combined_exact_paths": exact,
+                "combined_exact_path_count": len(exact), "projection_mode": E09_FINAL_MODE,
+                "validated_base_commit": E09_BASE, "pending_approvals": [], "staged": False,
+                "commit_performed": False, "self_reference": False,
+                "raw_checksums": [{"path": path, "bytes": len(raw), "sha256": _c21_resume_sha(raw)}
+                                  for path, raw in sorted(all_raw.items())]}
+    generated[E09_FINAL_M] = _c21_resume_json_bytes(manifest)
+    return generated
+
+
+def validate_e09_final(bundle, manifest):
+    try:
+        expected = e09_final_from_root(bundle["_root"])
+        actual = {D13_START_P: bundle.get("progress"), D13_START_E: bundle.get("events"),
+                  D13_START_H: bundle.get("handoff"), E09_FINAL_D: bundle.get("detached_digest"), E09_FINAL_M: manifest}
+        parsed = {path: (extract_handoff_summary(raw.decode()) if path == D13_START_H else _c21_resume_json(raw))
+                  for path, raw in expected.items() if path in actual}
+        errors = [] if all(_c21_strict_json_equal(actual[path], parsed[path]) for path in actual) else ["E09_FINAL_PROJECTION_INVALID"]
+        if any((bundle["_root"] / path).read_bytes() != raw for path, raw in expected.items()):
+            errors.append("E09_FINAL_RAW_BYTES_INVALID")
+        progress = actual[D13_START_P]
+        rows = manifest.get("raw_checksums")
+        if (progress.get("event_sequence") != 1156 or progress.get("status") != "ACCEPTED"
+            or progress.get("next_work_package") != {"package_id": "E-10", "status": "READY_FOR_WORK_INSTRUCTION"}
+            or any(progress.get(key) is not None for key in ("active_agent", "worker_lease", "write_lease", "active_work_instruction"))
+            or manifest.get("formal_failure_count") != 0 or manifest.get("review_rework_rounds") != 2
+            or any((manifest.get("independent_reviews") or {}).get(role, {}).get("verdict") != "ACCEPT" for role in ("spec", "quality"))):
+            errors.append("E09_FINAL_STATE_INVALID")
+        if (not isinstance(rows, list) or {row.get("path") for row in rows} != set(e09_final_paths()) - {E09_FINAL_M}
+            or any(not portable_row_matches(bundle["_root"], row["path"], row.get("bytes"), row.get("sha256")) for row in rows)):
+            errors.append("E09_FINAL_MANIFEST_BINDING_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E09_FINAL_INPUT_INVALID"]
+
+
+def validate_e09_final_git_facts(*, head, branch, staged, dirty, parent=None, committed_paths=None):
+    pre = head == E09_BASE and dirty == e09_final_paths()
+    post = head != E09_BASE and parent == E09_BASE and committed_paths == e09_final_paths() and dirty == []
+    return [] if branch == C09_START_BRANCH and not staged and (pre or post) else ["E09_FINAL_GIT_INVALID"]
+
+
+def _collect_e09_final_git(bundle):
+    try:
+        root = bundle["_root"]
+        raw = lambda *args: _c02_git_raw_stdout(root, *args)
+        head = _c02_strict_git_scalar(raw("rev-parse", "HEAD"))
+        staged = _c02_strict_name_only_paths(raw("diff", "--cached", "--name-only")) or []
+        unstaged = _c02_strict_name_only_paths(raw("diff", "--name-only")) or []
+        untracked = _c02_strict_name_only_paths(raw("ls-files", "--others", "--exclude-per-directory=.gitignore",
+                                                  "--exclude=.pytest_cache", "--exclude=.pytest_cache/**")) or []
+        dirty = sorted(set(staged + unstaged + untracked))
+        parent = _c02_strict_git_scalar(raw("show", "-s", "--format=%P", head))
+        committed = (_c02_strict_name_only_paths(raw("diff", "--name-only", E09_BASE, head)) or []) if head != E09_BASE else []
+        errors = validate_e09_final_git_facts(head=head,
+                                              branch=_c02_strict_git_scalar(raw("branch", "--show-current")),
+                                              staged=staged, dirty=dirty, parent=parent, committed_paths=committed)
+        if set(staged) & set(unstaged) or set(staged) & set(untracked) or set(unstaged) & set(untracked):
+            errors.append("E09_FINAL_GIT_OVERLAP")
+        if not _c02_git_quiet_check(root, "diff", "--check"):
+            errors.append("E09_FINAL_DIFF_INVALID")
+        return sorted(set(errors))
+    except Exception:
+        return ["E09_FINAL_GIT_INVALID"]
 
 if __name__ == "__main__":
     raise SystemExit(main())

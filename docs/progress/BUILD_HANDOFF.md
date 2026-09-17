@@ -1,3 +1,15 @@
+# E-09 final acceptance seq1156
+
+- Independent Spec/Quality final re-review ACCEPT, C0/I0/M0; six review findings resolved.
+- Product exact5 frozen; formal FAILURE_REPORT0; review rework rounds2; epoch1 leases revoked. E10 READY.
+- Host-only contract verified. Actual DB/browser/build/Provider/Apply/Deploy and durable authority remain unverified.
+
+# E-09 start control seq1151
+
+- Product exact5/control exact9; E08 ACCEPTED. Historical seq1-1147 raw prefix immutable.
+- G4-G7 and release subject contracts only; actual menu UI/Provider/DB/deploy are not executed.
+- Missing real boundaries remain BLOCKED/SKIPPED; only authenticated HUMAN may make ReleaseDecision.
+
 # E-08 final acceptance seq1147
 
 - Independent Spec/Quality re-review ACCEPT, C0/I0/M0; six review findings resolved.
@@ -1440,47 +1452,46 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1147,
-  "last_event_id": "evt_e08_final_main_package_accepted",
+  "event_sequence": 1156,
+  "last_event_id": "evt_e09_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-08",
+  "current_work_package": "E-09",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E09_READY_NOT_STARTED",
+  "next_safe_action": "E10_READY_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e07_status": "ACCEPTED",
   "e08_status": "ACCEPTED",
-  "e09_status": "READY_FOR_WORK_INSTRUCTION",
+  "e09_status": "ACCEPTED",
+  "e10_status": "READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
-  "repository_head": "03878181590d13231fee3a47f7d43963d6a089c8",
+  "repository_head": "593311d87de760bdc6bb5485b89a17014e81976a",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E08_FINAL_ACCEPTANCE_EXACT17",
+  "repository_projection_mode": "E09_FINAL_ACCEPTANCE_EXACT16",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-08_START_MANIFEST.json",
+    "docs/04_test_reports/E-09_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-09_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e08-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e08-start.json",
-    "docs/work_orders/E-08_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-08_WORK_INSTRUCTION.md",
-    "packages/budget/__init__.py",
-    "packages/budget/models.py",
-    "packages/budget/routing.py",
-    "packages/budget/service.py",
+    "docs/progress/progress-handoff-detached-digest-e09-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e09-start.json",
+    "docs/work_orders/E-09_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-09_WORK_INSTRUCTION.md",
+    "packages/verification/__init__.py",
+    "packages/verification/gates.py",
+    "packages/verification/release_gates.py",
     "scripts/check_project_progress.py",
-    "tests/budget/test_budget_routing_e08.py",
-    "tests/tooling/test_project_progress.py"
+    "tests/tooling/test_project_progress.py",
+    "tests/verification/test_gates_e09.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "94E9979D524B163233496E53A24397330C4919FDCEBFF5B6B8CEB95063CBFEBA",
+  "current_manifest": "docs/evidence/manifests/E-09_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "84E92EFD87360B6C50ADA0C116D016F6C8967E4B721ED7EDDE3B605613275966",
   "independent_reviews": {
     "spec": {
       "source": "INDEPENDENT_READ_ONLY_REVIEW",
@@ -1489,31 +1500,30 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1142,
+      "checker_sequence": 1151,
       "checker_result": "PASS",
       "diff_check_exit": 0,
       "focused": {
-        "passed": 143,
+        "passed": 228,
         "skipped": 0
       },
       "adjacent": {
-        "passed": 153,
-        "skipped": 4,
-        "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+        "passed": 1022,
+        "skipped": 8,
+        "skip_reason": "ANVIL_TEST_DATABASE_URL_NOT_SET"
       },
       "unverified": [
-        "actual Provider/network",
-        "durable DB send-once",
-        "multi-process recovery",
-        "durable approval expiry authority",
-        "API/UI",
-        "WSL/Docker/deployment"
+        "actual DB/browser/production build/Provider",
+        "durable authentication/evidence registry",
+        "multi-process persistence",
+        "actual Apply/Deploy",
+        "U Phase menu UI"
       ],
       "probes": {
-        "prior_findings_closed": 6,
-        "quota_stop_fault_matrix": "PASS",
-        "partial_actual_dimensions": "PASS",
-        "callback_count": 0
+        "prior_findings_closed": 3,
+        "nested_nonreal": "BLOCKED",
+        "fixer_context_independence": "PASS",
+        "build_raw_binding": "PASS"
       }
     },
     "quality": {
@@ -1523,71 +1533,69 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1142,
+      "checker_sequence": 1151,
       "checker_result": "PASS",
       "diff_check_exit": 0,
       "focused": {
-        "passed": 143,
+        "passed": 228,
         "skipped": 0
       },
       "adjacent": {
-        "passed": 153,
-        "skipped": 4,
-        "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+        "passed": 1022,
+        "skipped": 8,
+        "skip_reason": "ANVIL_TEST_DATABASE_URL_NOT_SET"
       },
       "unverified": [
-        "actual Provider/network",
-        "durable DB send-once",
-        "multi-process recovery",
-        "durable approval expiry authority",
-        "API/UI",
-        "WSL/Docker/deployment"
+        "actual DB/browser/production build/Provider",
+        "durable authentication/evidence registry",
+        "multi-process persistence",
+        "actual Apply/Deploy",
+        "U Phase menu UI"
       ],
       "probes": {
-        "quota_stop_fault_combinations": 16,
-        "overforecast_combinations": 6,
-        "duplicate_send_count": 1,
-        "hard_limit_parallel": "SEND3_PAUSE97",
-        "callback_count": 0
+        "prior_findings_closed": 4,
+        "public_handle_callback_count": 0,
+        "actor_generation_replay": "BLOCKED",
+        "concurrent_admission": "PASS"
       }
     }
   },
   "resolved_review_findings": [
     {
-      "finding_id": "E08-LEDGER-ALIAS-001",
+      "finding_id": "E09-NESTED-NONREAL-PROMOTION",
       "severity": "CRITICAL",
       "status": "RESOLVED",
-      "resolution": "public budget inputs and outputs are exact-type detached values"
+      "resolution": "G4-G6 nested evidence requires explicit real available matching environment metadata"
     },
     {
-      "finding_id": "E08-ACTUAL-OVERFORECAST-002",
+      "finding_id": "E09-FIXER-CONTEXT-INDEPENDENCE",
       "severity": "CRITICAL",
       "status": "RESOLVED",
-      "resolution": "known overforecast dimensions preserve evidence and pause new admission"
+      "resolution": "defect retest actor and context are independent from every recorded fixer"
     },
     {
-      "finding_id": "E08-UNTRUSTED-CALLBACK-003",
+      "finding_id": "E09-BUILD-RAW-BINDING",
       "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "all untrusted scalar and mapping shapes validate callback-free before copying"
+      "resolution": "artifact and dependency hashes bind to matching raw checksum paths"
     },
     {
-      "finding_id": "E08-PARTIAL-ACTUAL-EXPOSURE-DROPPED",
-      "severity": "CRITICAL",
-      "status": "RESOLVED",
-      "resolution": "known cost or token dimensions survive partial reconciliation"
-    },
-    {
-      "finding_id": "E08-SAFETY-STOP-PUBLICATION-ROLLBACK",
+      "finding_id": "E09-HOSTILE-BUNDLE-CALLBACK",
       "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "overforecast and public reconcile stops are sticky across publication faults"
+      "resolution": "all public handles validate exact registered identity before attribute access"
     },
     {
-      "finding_id": "E08-QUOTA-STOP-ROLLBACK",
-      "severity": "CRITICAL",
+      "finding_id": "E09-ACTOR-REVOCATION-REPLAY",
+      "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "provider quota and hard-limit stops persist across response and owner faults"
+      "resolution": "revoked actor identities cannot be re-registered or restore stale approvals"
+    },
+    {
+      "finding_id": "E09-ACTOR-GENERATION-ROLLBACK",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "superseded actor generations cannot roll active authority back"
     }
   ],
   "external_validation": {
@@ -1600,14 +1608,15 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "wsl": "NOT_EXECUTED",
     "docker": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
-    "actual_worker": "NOT_EXECUTED",
-    "durable_db_send_once": "NOT_INTEGRATED",
-    "multiprocess_recovery": "NOT_INTEGRATED",
-    "durable_approval_expiry": "NOT_INTEGRATED",
-    "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
+    "production_build": "NOT_EXECUTED",
+    "actual_db": "NOT_EXECUTED",
+    "durable_authority": "NOT_INTEGRATED",
+    "durable_evidence_registry": "NOT_INTEGRATED",
+    "multiprocess_persistence": "NOT_INTEGRATED",
+    "apply_deploy": "ADMISSION_ONLY_NOT_EXECUTED"
   },
   "formal_failure_count": 0,
-  "review_rework_rounds": 3,
+  "review_rework_rounds": 2,
   "reporting_decision": "AUTO_CONTINUE",
   "pending_approvals": [],
   "staged": false,
