@@ -1,0 +1,250 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E01_FINAL_ACCEPTANCE",
+  "artifact_id": "E01-FINAL-ACCEPTANCE-20260917",
+  "created_at": "2026-09-17T09:22:30+09:00",
+  "package_id": "E-01",
+  "event_sequence": 1071,
+  "historical_event_sequence": 1066,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3496425,
+    "sha256": "64926AF08577505AE60292F7B1E8CCE9782C9A015B2594BCB14B5B55406F4310"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-01_COMPLETION_REPORT.md": {
+      "bytes": 19377,
+      "sha256": "86AB409F791CD708C71FB65BCA58D5826E4D54210DCA8FE857A2275DDBC79C98"
+    },
+    "packages/agent_team/__init__.py": {
+      "bytes": 3760,
+      "sha256": "FA6F959E2E1B085F97C914B098F521A9B38EB57B607C6B537EC24F524E792085"
+    },
+    "packages/agent_team/role_contracts.py": {
+      "bytes": 21636,
+      "sha256": "41F213C92CA6E01C99E6F1B94D25AC4C88E44CC342D9458DA8A3D6FFCA3217CD"
+    },
+    "packages/agent_team/role_results.py": {
+      "bytes": 12037,
+      "sha256": "1FFA2A078C8FD2081C556450808F4327AAB54DE97E1EF8A75F1F19CC513C4848"
+    },
+    "tests/agent_team/test_role_contracts_e01.py": {
+      "bytes": 13255,
+      "sha256": "F81F646515DC6D67D0337742BA4360EE13FD43D119AA27F38FDA3B3AC00DC8F3"
+    },
+    "tests/agent_team/test_role_results_e01.py": {
+      "bytes": 10091,
+      "sha256": "C42A4F56816902227427BEB813360AA2B17F03E80E99A40A3FC7988DB1A4AC82"
+    }
+  },
+  "evidence_target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+  "independent_reviews": {
+    "spec": {
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "independent_context": true,
+      "focused_passed": 76,
+      "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+      "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+      "review_round": "E01_R3",
+      "reviewer": "independent-spec-reviewer",
+      "minimal_passed": 384,
+      "adversarial_cases": 5,
+      "adversarial_assertions": 30
+    },
+    "quality": {
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "blocking_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "independent_context": true,
+      "focused_passed": 76,
+      "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+      "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+      "review_round": "E01_R3",
+      "reviewer": "independent-quality-reviewer",
+      "related_passed": 713,
+      "adversarial_verdict": "PASS"
+    }
+  },
+  "test_evidence": {
+    "focused_passed": 76,
+    "related_passed": 713,
+    "failed": 0,
+    "skipped": 0,
+    "evidence_class": "DEVELOPER_CONTRACT_TESTS_NOT_ACCEPTANCE"
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "os_worker": "NOT_EXECUTED",
+    "handoff": "NOT_EXECUTED",
+    "dag": "NOT_EXECUTED",
+    "parallel": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED"
+  },
+  "formal_valid_failure_count": 1,
+  "rework_count": 1,
+  "e01_status": "ACCEPTED",
+  "e02_status": "READY_FOR_WORK_INSTRUCTION",
+  "active_leases": 0,
+  "product_exact_paths": [
+    "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/role_contracts.py",
+    "packages/agent_team/role_results.py",
+    "tests/agent_team/test_role_contracts_e01.py",
+    "tests/agent_team/test_role_results_e01.py"
+  ],
+  "frozen_start_product_paths": [
+    "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-01_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e01-start.json",
+    "docs/work_orders/E-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-01_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/role_contracts.py",
+    "packages/agent_team/role_results.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_role_contracts_e01.py",
+    "tests/agent_team/test_role_results_e01.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "frozen_start_evidence": {
+    "docs/evidence/manifests/E-01_START_MANIFEST.json": "82C3CDECA3AE60CD378B5CF55F88D9D3DEFEF845E8C9D92231337E31970EF48B",
+    "docs/progress/progress-handoff-detached-digest-e01-start.json": "286C5C090E378A9720E2BE70773E44C3A5E73B88D5B9DB6DC92D83CB505B134E"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-01_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-01_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e01-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e01-start.json",
+    "docs/work_orders/E-01_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-01_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/role_contracts.py",
+    "packages/agent_team/role_results.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_role_contracts_e01.py",
+    "tests/agent_team/test_role_results_e01.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 17,
+  "control_exact_paths": [
+    "docs/evidence/manifests/E-01_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e01-final-acceptance.json",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "projection_mode": "E01_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "b820867f95d2941e378e5b78e3f31f67ace081b8",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+      "bytes": 19377,
+      "sha256": "86AB409F791CD708C71FB65BCA58D5826E4D54210DCA8FE857A2275DDBC79C98"
+    },
+    {
+      "path": "docs/evidence/manifests/E-01_START_MANIFEST.json",
+      "bytes": 4240,
+      "sha256": "82C3CDECA3AE60CD378B5CF55F88D9D3DEFEF845E8C9D92231337E31970EF48B"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 206990,
+      "sha256": "8871605C17DED263F6297BEA836F1D803B385820EC9E98BF592F9F9C1449B92B"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1105554,
+      "sha256": "6D28DC158992922E50DD736C98C3AC494D4CBECAC7006C3129E40132785B97EA"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3510604,
+      "sha256": "0C4906DF7C972EF50681927925BA9308DD6F0493F315F86949D99B120EB3A732"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e01-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "94918AB2914A514FF3BE78CF96044C4C8066A24C6BD913E9C615E9AA8AB4AA44"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e01-start.json",
+      "bytes": 835,
+      "sha256": "286C5C090E378A9720E2BE70773E44C3A5E73B88D5B9DB6DC92D83CB505B134E"
+    },
+    {
+      "path": "docs/work_orders/E-01_INVOCATION_PROMPT.md",
+      "bytes": 605,
+      "sha256": "321897F0829C2FF2C0606DA94D0E13D8BB3CAE3AD022EC1B1AE0FE0BA2BC4289"
+    },
+    {
+      "path": "docs/work_orders/E-01_WORK_INSTRUCTION.md",
+      "bytes": 4521,
+      "sha256": "04B1E6047D4B10BA459D8886C5EC9CC0EFCE2E595BB923726A3927A9073570C2"
+    },
+    {
+      "path": "packages/agent_team/__init__.py",
+      "bytes": 3760,
+      "sha256": "FA6F959E2E1B085F97C914B098F521A9B38EB57B607C6B537EC24F524E792085"
+    },
+    {
+      "path": "packages/agent_team/role_contracts.py",
+      "bytes": 21636,
+      "sha256": "41F213C92CA6E01C99E6F1B94D25AC4C88E44CC342D9458DA8A3D6FFCA3217CD"
+    },
+    {
+      "path": "packages/agent_team/role_results.py",
+      "bytes": 12037,
+      "sha256": "1FFA2A078C8FD2081C556450808F4327AAB54DE97E1EF8A75F1F19CC513C4848"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4310279,
+      "sha256": "E8D80ADF9BE264334FCA43E86D4F0B4BB28F803DBED7A7A0A2F0F68DE547ADB1"
+    },
+    {
+      "path": "tests/agent_team/test_role_contracts_e01.py",
+      "bytes": 13255,
+      "sha256": "F81F646515DC6D67D0337742BA4360EE13FD43D119AA27F38FDA3B3AC00DC8F3"
+    },
+    {
+      "path": "tests/agent_team/test_role_results_e01.py",
+      "bytes": 10091,
+      "sha256": "C42A4F56816902227427BEB813360AA2B17F03E80E99A40A3FC7988DB1A4AC82"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1154001,
+      "sha256": "EF13B81F9D9CF97D26880923F16361E93ED0FD2C9ECF1F272E958550F8C74224"
+    }
+  ]
+}

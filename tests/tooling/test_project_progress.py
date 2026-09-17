@@ -18614,10 +18614,13 @@ class DGateControlTests(unittest.TestCase):
     def test_seq1060_accepts_d_gate_without_dirx_and_readies_e01(self):
         c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
         if cur["event_sequence"]==1059: a=c.d_gate_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.D_GATE_M]); events=json.loads(a[c.D13_START_E])["events"]
-        else: p=json.loads((ROOT/c.D13_START_P).read_bytes()); m=json.loads((ROOT/c.D_GATE_M).read_bytes()); events=json.loads((ROOT/c.D13_START_E).read_bytes())["events"]
+        else: m=json.loads((ROOT/c.D_GATE_M).read_bytes()); events=json.loads((ROOT/c.D13_START_E).read_bytes())["events"]
         self.assertEqual((1060,"ACCEPTED","NOT_TRIGGERED","READY_FOR_WORK_INSTRUCTION"),(m["event_sequence"],m["d_gate"],m["dirx_lrn_critical"],m["e01_status"]))
-        self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
-        self.assertEqual("PHASE_GATE_DECIDED",[e for e in events if e["sequence"]==1060][0]["event_type"])
+        historical=[e for e in events if e["sequence"]==1060][0]
+        self.assertEqual("PHASE_GATE_DECIDED",historical["event_type"])
+        self.assertEqual(("E-01","READY_FOR_WORK_INSTRUCTION"),(historical["details"]["next_work_package"],historical["details"]["next_package_status"]))
+        if cur["event_sequence"]==1059:
+            self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
     def test_seq1060_binds_same_target_pass_for_all_dirx_checks(self):
         c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes()); a=c.d_gate_from_root(ROOT) if cur["event_sequence"]==1059 else {c.D_GATE_M:(ROOT/c.D_GATE_M).read_bytes()}; m=json.loads(a[c.D_GATE_M]); checks=m["gate_evidence"]["critical_trigger_checks"]
         self.assertEqual({"AV-LRN-003","AV-LRN-004","AV-LRN-005"},set(checks)); self.assertEqual(1,len({x["target_hash"] for x in checks.values()})); self.assertTrue(all(x["status"]=="PASS" and x["severity"]=="CRITICAL" and x["confirmed"] for x in checks.values()))
@@ -18633,10 +18636,14 @@ class DGateRegressionReconciliationControlTests(unittest.TestCase):
         s=importlib.util.spec_from_file_location("d_gate_reconciliation",CHECKER_PATH); m=importlib.util.module_from_spec(s); s.loader.exec_module(m); return m
     def test_seq1061_preserves_d_gate_and_readies_e01(self):
         c=self._checker(); cur=json.loads((ROOT/c.D13_START_P).read_bytes())
-        if cur["event_sequence"]==1060: a=c.d_gate_regression_reconciliation_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.D_GATE_RECONCILIATION_M])
-        else: p=json.loads((ROOT/c.D13_START_P).read_bytes()); m=json.loads((ROOT/c.D_GATE_RECONCILIATION_M).read_bytes())
+        if cur["event_sequence"]==1060: a=c.d_gate_regression_reconciliation_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.D_GATE_RECONCILIATION_M]); events=json.loads(a[c.D13_START_E])["events"]
+        else: m=json.loads((ROOT/c.D_GATE_RECONCILIATION_M).read_bytes()); events=json.loads((ROOT/c.D13_START_E).read_bytes())["events"]
         self.assertEqual((1061,"ACCEPTED","PASS","READY_FOR_WORK_INSTRUCTION"),(m["event_sequence"],m["d_gate"],m["reconciliation_status"],m["e01_status"]))
-        self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"]); self.assertFalse(m["evidence"]["product_behavior_changed"]); self.assertEqual(200,m["combined_exact_path_count"])
+        historical=[e for e in events if e["sequence"]==1061][0]
+        self.assertEqual(("E-01","READY_FOR_WORK_INSTRUCTION"),(historical["details"]["next_work_package"],historical["details"]["next_package_status"]))
+        if cur["event_sequence"]==1060:
+            self.assertEqual({"package_id":"E-01","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertFalse(m["evidence"]["product_behavior_changed"]); self.assertEqual(200,m["combined_exact_path_count"])
     def test_seq1061_git_dispatch_is_successor_first(self):
         c=self._checker()
         with mock.patch.object(c,"_collect_d_gate_regression_reconciliation_git",return_value=["SEQ1061_SELECTED"]),mock.patch.object(c,"_collect_d_gate_git",side_effect=AssertionError("fallback")):
@@ -18695,6 +18702,108 @@ class DGatePostcommitControlTests(unittest.TestCase):
             else: manifest["exact_allowed_paths"].append("extra.py")
             with self.subTest(mutation=mutation):
                 self.assertIn("D_GATE_POSTCOMMIT_PROJECTION_INVALID",c.validate_d_gate_postcommit(b,manifest))
+
+
+class E01StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e01_start",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_historical_gate_assertions_use_frozen_evidence_under_successor_state(self):
+        original=Path.read_bytes
+        def successor_bytes(path):
+            raw=original(path)
+            if path==ROOT/"docs/progress/build-progress.json":
+                successor=json.loads(raw)
+                successor.update(event_sequence=1066,current_work_package="E-01",status="IN_PROGRESS",next_work_package=None)
+                return json.dumps(successor).encode()
+            return raw
+        with mock.patch.object(Path,"read_bytes",successor_bytes):
+            for case,method in ((DGateControlTests,"test_seq1060_accepts_d_gate_without_dirx_and_readies_e01"),
+                                (DGateRegressionReconciliationControlTests,"test_seq1061_preserves_d_gate_and_readies_e01")):
+                with self.subTest(sequence=method): getattr(case(method),method)()
+
+    def test_start_preserves_committed_history_and_separates_scopes(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e01_start_from_root",None)), "E01 start projection missing")
+        a=c.e01_start_from_root(ROOT); p=json.loads(a[c.D13_START_P]); e=json.loads(a[c.D13_START_E])
+        self.assertEqual(9,len(a)); self.assertEqual(1066,p["event_sequence"])
+        self.assertEqual("IN_PROGRESS",p["status"]); self.assertEqual("E",p["current_phase"])
+        self.assertEqual("ACCEPTED",p["d_gate"]["status"])
+        self.assertEqual(6,len(p["write_lease"]["path_scope"]))
+        self.assertFalse(set(c.e01_product_write_scope()) & set(c.e01_control_paths()))
+        self.assertEqual(p["worker_lease"]["lease_id"],p["write_lease"]["worker_lease_id"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in e["events"][-4:]])
+        old=subprocess.check_output(["git","show",f"{c.E01_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1062),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1062))
+
+    def test_git_scope_rejects_escape_and_allows_only_authorized_product_delta(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"validate_e01_git_facts",None)), "E01 git guard missing")
+        facts=dict(head=c.E01_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e01_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e01_git_facts(**facts))
+        self.assertEqual([],c.validate_e01_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e01_product_write_scope())}))
+        for field,value in (("head","f"*40),("dirty",facts["dirty"]+["escape.py"]),("dirty",[]),("staged",[facts["dirty"][0]]),("branch","main")):
+            with self.subTest(field=field): self.assertTrue(c.validate_e01_git_facts(**{**facts,field:value}))
+
+
+class E01FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e01_final",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_final_acceptance_freezes_product_and_independent_evidence(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e01_final_from_root",None)),"E01 final control missing")
+        a=c.e01_final_from_root(ROOT); p=json.loads(a[c.D13_START_P]); m=json.loads(a[c.E01_FINAL_M])
+        self.assertEqual(7,len(a)); self.assertEqual(1071,p["event_sequence"])
+        self.assertEqual("ACCEPTED",p["status"]); self.assertEqual("ACCEPTED",p["d_gate"]["status"])
+        self.assertEqual({"package_id":"E-02","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertTrue(all(p[k] is None for k in ("active_agent","worker_lease","write_lease","active_work_instruction")))
+        self.assertEqual(1,p["e01_final_acceptance"]["rework_count"])
+        self.assertEqual(0,p["valid_failure_count"]); self.assertEqual([],p["pending_approvals"])
+        self.assertEqual(17,len(m["combined_exact_paths"])); self.assertEqual(15,len(m["frozen_start_product_paths"]))
+        self.assertEqual(c.E01_FINAL_PRODUCT_HASHES,{k:v["sha256"] for k,v in m["product_raw"].items()})
+        for review in m["independent_reviews"].values():
+            self.assertEqual("ACCEPT",review["verdict"]); self.assertFalse(review["developer_transcript_used"])
+            self.assertEqual([0,0,0],[review[k] for k in ("critical_findings","important_findings","minor_findings")])
+        self.assertEqual(384,m["independent_reviews"]["spec"]["minimal_passed"])
+        self.assertEqual(713,m["independent_reviews"]["quality"]["related_passed"])
+        self.assertEqual({"NOT_EXECUTED"},set(m["external_validation"].values()))
+
+    def test_final_preserves_raw_prefix_and_orders_terminal_events(self):
+        c=self._checker(); a=c.e01_final_from_root(ROOT); start=c.e01_start_from_root(ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1066),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1066))
+        rows=json.loads(a[c.D13_START_E])["events"][-5:]
+        self.assertEqual(list(range(1067,1072)),[r["sequence"] for r in rows])
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[r["event_type"] for r in rows])
+        self.assertEqual(rows[2]["details"]["worker_lease_id"],rows[3]["details"]["lease_id"])
+
+    def test_final_exact_git_scope_and_successor_dispatch(self):
+        c=self._checker(); facts=dict(head=c.E01_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e01_final_paths())
+        self.assertEqual([],c.validate_e01_final_git_facts(**facts))
+        for field,value in (("head","f"*40),("branch","main"),("staged",[facts["dirty"][0]]),("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape.py"])):
+            with self.subTest(field=field): self.assertTrue(c.validate_e01_final_git_facts(**{**facts,field:value}))
+        with mock.patch.object(c,"_collect_e01_final_git",return_value=["SEQ1071_SELECTED"]),mock.patch.object(c,"_collect_e01_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1071_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1071}}))
+
+    def test_final_tamper_and_product_drift_fail_closed(self):
+        c=self._checker(); a=c.e01_final_from_root(ROOT)
+        b={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),
+           "handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.E01_FINAL_D])}
+        m=json.loads(a[c.E01_FINAL_M])
+        for mutation in ("authority","approval","history","failure_count","review","paths"):
+            changed=copy.deepcopy(b); manifest=copy.deepcopy(m)
+            if mutation=="authority": changed["progress"]["worker_lease"]={"status":"ACTIVE"}
+            elif mutation=="approval": changed["progress"]["pending_approvals"]=["unexpected"]
+            elif mutation=="history": changed["events"]["events"][0]["actor"]="forged"
+            elif mutation=="failure_count": changed["progress"]["e01_final_acceptance"]["rework_count"]=0
+            elif mutation=="review": manifest["independent_reviews"]["spec"]["developer_transcript_used"]=True
+            else: manifest["combined_exact_paths"].append("escape.py")
+            with self.subTest(mutation=mutation): self.assertIn("E01_FINAL_PROJECTION_INVALID",c.validate_e01_final(changed,manifest))
+        original=Path.read_bytes; product=ROOT/c.e01_product_write_scope()[0]
+        with mock.patch.object(Path,"read_bytes",lambda path: original(path)+b"tampered" if path==product else original(path)):
+            with self.assertRaisesRegex(ValueError,"E01_FINAL_PRODUCT_DRIFT"): c.e01_final_from_root(ROOT)
 
 
 if __name__ == "__main__":

@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-d-gate-postcommit-seq1062",
-  "event_sequence": 1062,
-  "updated_at": "2026-09-17T08:15:00+09:00",
-  "last_event_id": "evt_d_gate_postcommit_reconciled",
+  "snapshot_id": "snapshot-e01-final-seq1071",
+  "event_sequence": 1071,
+  "updated_at": "2026-09-17T09:22:30+09:00",
+  "last_event_id": "evt_e01_final_main_package_accepted",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
-  "current_phase": "D",
-  "current_work_package": "D-13",
+  "current_phase": "E",
+  "current_work_package": "E-01",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -75,7 +75,8 @@
     "D-10",
     "D-11",
     "D-12",
-    "D-13"
+    "D-13",
+    "E-01"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -320,17 +321,33 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/evidence/manifests/D-GATE_REGRESSION_RECONCILIATION_MANIFEST.json",
-      "sha256": "315CB8AFA3CE9FA783DE2EF4991DE78298B93AEBF16B83E6AA30B3611CAA9148"
+      "path": "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+      "sha256": "86AB409F791CD708C71FB65BCA58D5826E4D54210DCA8FE857A2275DDBC79C98"
     },
     {
-      "path": "docs/progress/progress-events.json",
-      "sha256": "C038985E33A09120C69A2E9A21B756BDEC8C5A1D906438503BD4B4D5B70B3E98"
+      "path": "packages/agent_team/__init__.py",
+      "sha256": "FA6F959E2E1B085F97C914B098F521A9B38EB57B607C6B537EC24F524E792085"
+    },
+    {
+      "path": "packages/agent_team/role_contracts.py",
+      "sha256": "41F213C92CA6E01C99E6F1B94D25AC4C88E44CC342D9458DA8A3D6FFCA3217CD"
+    },
+    {
+      "path": "packages/agent_team/role_results.py",
+      "sha256": "1FFA2A078C8FD2081C556450808F4327AAB54DE97E1EF8A75F1F19CC513C4848"
+    },
+    {
+      "path": "tests/agent_team/test_role_contracts_e01.py",
+      "sha256": "F81F646515DC6D67D0337742BA4360EE13FD43D119AA27F38FDA3B3AC00DC8F3"
+    },
+    {
+      "path": "tests/agent_team/test_role_results_e01.py",
+      "sha256": "C42A4F56816902227427BEB813360AA2B17F03E80E99A40A3FC7988DB1A4AC82"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/D-GATE_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
-    "artifact_id": "D-GATE-POSTCOMMIT-20260917"
+    "path": "docs/evidence/manifests/E-01_FINAL_ACCEPTANCE_MANIFEST.json",
+    "artifact_id": "E01-FINAL-ACCEPTANCE-20260917"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -342,7 +359,7 @@
     "owner_direction_event_id": "evt_dir2_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "E01_READY_FULL_TOOLING_REMAINS_UNVERIFIED",
+  "next_safe_action": "E02_READY_FOR_WORK_INSTRUCTION_NOT_STARTED",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -452,22 +469,32 @@
     }
   },
   "repository": {
-    "projection_mode": "D_GATE_POSTCOMMIT_EXACT200_CONTROL_EXACT7",
-    "validated_base_commit": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
-    "head_relation": "EXACT200_DIRECT_CHILD_COMMITTED_PUSHED_CONTROL_EXACT7_UNCOMMITTED",
+    "projection_mode": "E01_FINAL_ACCEPTANCE_EXACT17",
+    "validated_base_commit": "b820867f95d2941e378e5b78e3f31f67ace081b8",
+    "head_relation": "PRECOMMIT_START_PRODUCT_EXACT15_PLUS_FINAL_CONTROL_EXACT2",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/codex/c09-execution-backends-r1",
-    "remote_head": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
+    "remote_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
-    "push_status": "COMPLETED",
+    "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/evidence/manifests/D-GATE_POSTCOMMIT_RECONCILIATION_MANIFEST.json",
+      "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/E-01_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/E-01_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-d-gate-postcommit-reconciliation.json",
+      "docs/progress/progress-handoff-detached-digest-e01-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-e01-start.json",
+      "docs/work_orders/E-01_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-01_WORK_INSTRUCTION.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/role_contracts.py",
+      "packages/agent_team/role_results.py",
       "scripts/check_project_progress.py",
+      "tests/agent_team/test_role_contracts_e01.py",
+      "tests/agent_team/test_role_results_e01.py",
       "tests/tooling/test_project_progress.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
@@ -484,8 +511,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "UNSTAGED_RECONCILIATION_EXACT7",
-    "local_head": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
+    "worktree_status": "UNSTAGED_E01_FINAL_EXACT17",
+    "local_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1290,15 +1317,15 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
+    "control_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
-      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
-      "packages/api/learning_e2e.py",
-      "packages/knowledge/__init__.py",
-      "packages/knowledge/learning_e2e.py",
-      "tests/api/test_learning_e2e_d13.py",
-      "tests/knowledge/test_learning_e2e_d13.py"
+      "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/role_contracts.py",
+      "packages/agent_team/role_results.py",
+      "tests/agent_team/test_role_contracts_e01.py",
+      "tests/agent_team/test_role_results_e01.py"
     ],
     "product_parent": "b74c9e1713b4234b51942b69438f0398ba27c2c5",
     "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
@@ -1377,7 +1404,7 @@
       "scripts/check_project_progress.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "commit_status": "COMPLETED",
+    "commit_status": "NOT_EXECUTED",
     "c09_completion_commit": "8f5af5f0efc6f287ce556fd9a908e991a586f97e",
     "postcommit_reconciliation_paths": [
       "docs/04_test_reports/C-10_COMPLETION_REPORT.md",
@@ -1406,10 +1433,10 @@
       "tests/action_policy/test_policy.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "dispatch_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
-    "dispatch_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
-    "acceptance_head": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
-    "acceptance_upstream_head": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
+    "dispatch_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
+    "dispatch_upstream_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
+    "acceptance_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
+    "acceptance_upstream_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
     "commit": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
     "parent": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
     "committed_exact_paths": [
@@ -1615,7 +1642,7 @@
       "tests/verification/test_gates_c14.py"
     ],
     "committed_exact_path_count": 200,
-    "upstream_head": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
+    "upstream_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
     "remote_observation_source": "MAIN_VERIFIED_REMOTE_SHA_DIRECT_DISPATCH",
     "postcommit_worktree_status": "CLEAN_BEFORE_SEQ1062_CONTROL_EDITS",
     "reconciliation_commit_status": "NOT_EXECUTED",
@@ -1715,60 +1742,65 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "work_package_id": "D-13",
-    "artifact_path": "docs/work_orders/D-13_WORK_INSTRUCTION.md",
-    "artifact_sha256": "42FE577495653D3972965954DF6FFB2FE69EC4449AAFDBC7B9F20304012D2D33",
-    "invocation_path": "docs/work_orders/D-13_INVOCATION_PROMPT.md",
-    "invocation_sha256": "2C92752D3D8719A7202A52DD027959D4B42654335302298643958684AFAE8FDD",
-    "status": "IN_PROGRESS",
+    "work_package_id": "E-01",
+    "artifact_path": "docs/work_orders/E-01_WORK_INSTRUCTION.md",
+    "artifact_sha256": "04B1E6047D4B10BA459D8886C5EC9CC0EFCE2E595BB923726A3927A9073570C2",
+    "invocation_path": "docs/work_orders/E-01_INVOCATION_PROMPT.md",
+    "invocation_sha256": "321897F0829C2FF2C0606DA94D0E13D8BB3CAE3AD022EC1B1AE0FE0BA2BC4289",
+    "status": "ACCEPTED",
     "result_status": "COMPLETED",
     "accepted": true,
     "product_write_scope": [
-      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
-      "packages/api/learning_e2e.py",
-      "packages/knowledge/__init__.py",
-      "packages/knowledge/learning_e2e.py",
-      "tests/api/test_learning_e2e_d13.py",
-      "tests/knowledge/test_learning_e2e_d13.py"
+      "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/role_contracts.py",
+      "packages/agent_team/role_results.py",
+      "tests/agent_team/test_role_contracts_e01.py",
+      "tests/agent_team/test_role_results_e01.py"
     ],
-    "worker_lease_id": "worker-lease-d13-r1-20260916-001",
-    "write_lease_id": "write-lease-d13-r1-20260916-001",
-    "package_status": "ACCEPTED",
-    "independent_reviewer_status": "PASS",
+    "worker_lease_id": "worker-lease-e01-r1-20260917-001",
+    "write_lease_id": "write-lease-e01-r1-20260917-001",
     "independent_review": {
-      "verdict": "ACCEPT",
-      "blocking_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0,
-      "rework_rounds": 4,
-      "resolved_findings": [
-        "GENERIC_OWNER_REVISION_PROJECTION",
-        "SAME_TASK_NEW_RUN_ACCEPTED",
-        "PRE_RUN_TERMINAL_EVIDENCE_ACCEPTED",
-        "FINAL_DIFF_SEARCH_NOT_BOUND",
-        "OWNER_EVIDENCE_OPTIONAL",
-        "OWNER_REVISION_USE_PARTIAL_PUBLICATION"
-      ],
-      "verified_behaviors": [
-        "PUBLISH_LAST_OWNER_USE_BINDING",
-        "FAULT_RETRY_REUSES_CANONICAL_RECEIPT",
-        "LOCAL_AND_CANONICAL_USE_HASH_BOUND",
-        "MISSING_OR_FORGED_USE_FAIL_CLOSED",
-        "NEXT_TASK_ONLY_APPLICATION",
-        "SOURCE_REVOKE_AND_ROLLBACK_ISOLATION",
-        "TERMINAL_ATTESTATION_BINDING",
-        "NO_CHANGE_REVIEW",
-        "CONDITIONAL_DIRX_DEDUPLICATION"
-      ]
+      "spec": {
+        "verdict": "ACCEPT",
+        "critical_findings": 0,
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "independent_context": true,
+        "focused_passed": 76,
+        "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+        "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+        "review_round": "E01_R3",
+        "reviewer": "independent-spec-reviewer",
+        "minimal_passed": 384,
+        "adversarial_cases": 5,
+        "adversarial_assertions": 30
+      },
+      "quality": {
+        "verdict": "ACCEPT",
+        "critical_findings": 0,
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "independent_context": true,
+        "focused_passed": 76,
+        "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+        "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+        "review_round": "E01_R3",
+        "reviewer": "independent-quality-reviewer",
+        "related_passed": 713,
+        "adversarial_verdict": "PASS"
+      }
     }
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "D_GATE_ACCEPTED",
-      "HISTORICAL_TEST_RECONCILED",
-      "E01_REMAINS_READY",
-      "NO_APPROVAL_BOUNDARY"
+      "E01_INDEPENDENT_ACCEPTED",
+      "E02_READY_NOT_STARTED"
     ],
     "stop_before_dialogue_report": false
   },
@@ -1917,51 +1949,58 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "last_completed_work_instruction": {
-    "work_package_id": "D-13",
-    "artifact_path": "docs/work_orders/D-13_WORK_INSTRUCTION.md",
-    "artifact_sha256": "42FE577495653D3972965954DF6FFB2FE69EC4449AAFDBC7B9F20304012D2D33",
-    "invocation_path": "docs/work_orders/D-13_INVOCATION_PROMPT.md",
-    "invocation_sha256": "2C92752D3D8719A7202A52DD027959D4B42654335302298643958684AFAE8FDD",
-    "status": "IN_PROGRESS",
+    "work_package_id": "E-01",
+    "artifact_path": "docs/work_orders/E-01_WORK_INSTRUCTION.md",
+    "artifact_sha256": "04B1E6047D4B10BA459D8886C5EC9CC0EFCE2E595BB923726A3927A9073570C2",
+    "invocation_path": "docs/work_orders/E-01_INVOCATION_PROMPT.md",
+    "invocation_sha256": "321897F0829C2FF2C0606DA94D0E13D8BB3CAE3AD022EC1B1AE0FE0BA2BC4289",
+    "status": "ACCEPTED",
     "result_status": "COMPLETED",
     "accepted": true,
     "product_write_scope": [
-      "docs/04_test_reports/D-13_COMPLETION_REPORT.md",
-      "packages/api/learning_e2e.py",
-      "packages/knowledge/__init__.py",
-      "packages/knowledge/learning_e2e.py",
-      "tests/api/test_learning_e2e_d13.py",
-      "tests/knowledge/test_learning_e2e_d13.py"
+      "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/role_contracts.py",
+      "packages/agent_team/role_results.py",
+      "tests/agent_team/test_role_contracts_e01.py",
+      "tests/agent_team/test_role_results_e01.py"
     ],
-    "worker_lease_id": "worker-lease-d13-r1-20260916-001",
-    "write_lease_id": "write-lease-d13-r1-20260916-001",
-    "package_status": "ACCEPTED",
-    "independent_reviewer_status": "PASS",
+    "worker_lease_id": "worker-lease-e01-r1-20260917-001",
+    "write_lease_id": "write-lease-e01-r1-20260917-001",
     "independent_review": {
-      "verdict": "ACCEPT",
-      "blocking_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0,
-      "rework_rounds": 4,
-      "resolved_findings": [
-        "GENERIC_OWNER_REVISION_PROJECTION",
-        "SAME_TASK_NEW_RUN_ACCEPTED",
-        "PRE_RUN_TERMINAL_EVIDENCE_ACCEPTED",
-        "FINAL_DIFF_SEARCH_NOT_BOUND",
-        "OWNER_EVIDENCE_OPTIONAL",
-        "OWNER_REVISION_USE_PARTIAL_PUBLICATION"
-      ],
-      "verified_behaviors": [
-        "PUBLISH_LAST_OWNER_USE_BINDING",
-        "FAULT_RETRY_REUSES_CANONICAL_RECEIPT",
-        "LOCAL_AND_CANONICAL_USE_HASH_BOUND",
-        "MISSING_OR_FORGED_USE_FAIL_CLOSED",
-        "NEXT_TASK_ONLY_APPLICATION",
-        "SOURCE_REVOKE_AND_ROLLBACK_ISOLATION",
-        "TERMINAL_ATTESTATION_BINDING",
-        "NO_CHANGE_REVIEW",
-        "CONDITIONAL_DIRX_DEDUPLICATION"
-      ]
+      "spec": {
+        "verdict": "ACCEPT",
+        "critical_findings": 0,
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "independent_context": true,
+        "focused_passed": 76,
+        "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+        "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+        "review_round": "E01_R3",
+        "reviewer": "independent-spec-reviewer",
+        "minimal_passed": 384,
+        "adversarial_cases": 5,
+        "adversarial_assertions": 30
+      },
+      "quality": {
+        "verdict": "ACCEPT",
+        "critical_findings": 0,
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "independent_context": true,
+        "focused_passed": 76,
+        "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+        "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+        "review_round": "E01_R3",
+        "reviewer": "independent-quality-reviewer",
+        "related_passed": 713,
+        "adversarial_verdict": "PASS"
+      }
     }
   },
   "runtime_boundary_approval": {
@@ -1977,9 +2016,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "D-GATE",
-    "path": "docs/progress/progress-handoff-detached-digest-d-gate-postcommit-reconciliation.json",
-    "manifest_path": "docs/evidence/manifests/D-GATE_POSTCOMMIT_RECONCILIATION_MANIFEST.json"
+    "package_id": "E-01",
+    "path": "docs/progress/progress-handoff-detached-digest-e01-final-acceptance.json",
+    "manifest_path": "docs/evidence/manifests/E-01_FINAL_ACCEPTANCE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -2000,11 +2039,11 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "C038985E33A09120C69A2E9A21B756BDEC8C5A1D906438503BD4B4D5B70B3E98"
+      "sha256": "0C4906DF7C972EF50681927925BA9308DD6F0493F315F86949D99B120EB3A732"
     }
   },
   "next_work_package": {
-    "package_id": "E-01",
+    "package_id": "E-02",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": null,
@@ -2394,8 +2433,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "42F1C5A1FAF4DE8D1C39A71AB0C69CF52EE8F9864827A77557B82AAC0BA03F64",
-  "runtime_next_action": "E01_READY_FULL_TOOLING_REMAINS_UNVERIFIED",
+  "snapshot_hash": "49D90BF4CBB2DA245FB538819982B665423CFBFD3C72E86C9055E2091FB0283E",
+  "runtime_next_action": "E02_READY_FOR_WORK_INSTRUCTION_NOT_STARTED",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -4007,7 +4046,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-17T08:15:00+09:00",
+  "recorded_at": "2026-09-17T09:22:30+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -20827,5 +20866,100 @@
       },
       "external_runtime": "NOT_EXECUTED"
     }
+  },
+  "e01_start": {
+    "status": "COMPLETED_ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1066,
+    "error_count": 0
+  },
+  "e01_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1071,
+    "product_raw": {
+      "docs/04_test_reports/E-01_COMPLETION_REPORT.md": {
+        "bytes": 19377,
+        "sha256": "86AB409F791CD708C71FB65BCA58D5826E4D54210DCA8FE857A2275DDBC79C98"
+      },
+      "packages/agent_team/__init__.py": {
+        "bytes": 3760,
+        "sha256": "FA6F959E2E1B085F97C914B098F521A9B38EB57B607C6B537EC24F524E792085"
+      },
+      "packages/agent_team/role_contracts.py": {
+        "bytes": 21636,
+        "sha256": "41F213C92CA6E01C99E6F1B94D25AC4C88E44CC342D9458DA8A3D6FFCA3217CD"
+      },
+      "packages/agent_team/role_results.py": {
+        "bytes": 12037,
+        "sha256": "1FFA2A078C8FD2081C556450808F4327AAB54DE97E1EF8A75F1F19CC513C4848"
+      },
+      "tests/agent_team/test_role_contracts_e01.py": {
+        "bytes": 13255,
+        "sha256": "F81F646515DC6D67D0337742BA4360EE13FD43D119AA27F38FDA3B3AC00DC8F3"
+      },
+      "tests/agent_team/test_role_results_e01.py": {
+        "bytes": 10091,
+        "sha256": "C42A4F56816902227427BEB813360AA2B17F03E80E99A40A3FC7988DB1A4AC82"
+      }
+    },
+    "evidence_target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+    "independent_reviews": {
+      "spec": {
+        "verdict": "ACCEPT",
+        "critical_findings": 0,
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "independent_context": true,
+        "focused_passed": 76,
+        "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+        "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+        "review_round": "E01_R3",
+        "reviewer": "independent-spec-reviewer",
+        "minimal_passed": 384,
+        "adversarial_cases": 5,
+        "adversarial_assertions": 30
+      },
+      "quality": {
+        "verdict": "ACCEPT",
+        "critical_findings": 0,
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "independent_context": true,
+        "focused_passed": 76,
+        "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+        "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+        "review_round": "E01_R3",
+        "reviewer": "independent-quality-reviewer",
+        "related_passed": 713,
+        "adversarial_verdict": "PASS"
+      }
+    },
+    "test_evidence": {
+      "focused_passed": 76,
+      "related_passed": 713,
+      "failed": 0,
+      "skipped": 0,
+      "evidence_class": "DEVELOPER_CONTRACT_TESTS_NOT_ACCEPTANCE"
+    },
+    "external_validation": {
+      "provider": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "ui": "NOT_EXECUTED",
+      "os_worker": "NOT_EXECUTED",
+      "handoff": "NOT_EXECUTED",
+      "dag": "NOT_EXECUTED",
+      "parallel": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED"
+    },
+    "formal_valid_failure_count": 1,
+    "rework_count": 1
   }
 }

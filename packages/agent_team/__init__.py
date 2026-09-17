@@ -1,5 +1,11 @@
 """Durable collaboration primitives for Anvil Agent Teams."""
 
+from .role_contracts import (
+    AgentDefinition, BudgetLimits, RoleAssignment, RoleDecision,
+    RolePolicyService, TestWriteGrant, TestWriteLease,
+)
+from .role_results import ReviewFinding, RoleEvidence, RoleResult, RoleResultReceipt, RoleResultService
+
 from .models import (
     ConversationRole,
     ConversationTurn,
@@ -65,6 +71,9 @@ from .remote_control import (
 )
 
 __all__ = [
+    "AgentDefinition", "BudgetLimits", "RoleAssignment", "RoleDecision",
+    "RolePolicyService", "TestWriteGrant", "TestWriteLease",
+    "ReviewFinding", "RoleEvidence", "RoleResult", "RoleResultReceipt", "RoleResultService",
     "ConversationRole",
     "ConversationTurn",
     "DecisionRequest",
