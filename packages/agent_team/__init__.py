@@ -136,3 +136,4 @@ __all__ = [
     "ConversationMessage", "OfflineQueue", "OperatorCommand", "ProgressEvent",
     "RemoteControlPlane", "RemoteSession",
 ]
+from .external_verifier import ExternalVerifierAdapter, ExternalVerificationError, ManualImportAuthorization

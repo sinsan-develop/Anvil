@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E03_START",
+  "artifact_id": "E03-START-20260917",
+  "created_at": "2026-09-17T10:23:00+09:00",
+  "package_id": "E-03",
+  "event_sequence": 1084,
+  "historical_event_sequence": 1080,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 3539228,
+    "sha256": "7E5E465610B9A1A61E9C0A97A0113FA1557CD52868FC75D142ECF8FBD43D32B4"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "active_leases": 2,
+  "product_write_scope": [
+    "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/external_verifier.py",
+    "packages/api/external_verification.py",
+    "tests/agent_team/test_external_verifier_e03.py",
+    "tests/api/test_external_verification_e03.py"
+  ],
+  "authority": {
+    "source": "MAIN_APPROVED_E03_IMPLEMENTATION_DISPATCH",
+    "new_project_approval_requested": false,
+    "product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+    "invocation_sha256": "56A7E9CF869F50B3E38E2F4150E3F2ADE5B2EDD50AC18FF1F8963EF497553A40",
+    "approved_control_paths": [
+      "docs/evidence/manifests/E-03_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-e03-start.json",
+      "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "product_write_scope": [
+      "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/external_verifier.py",
+      "packages/api/external_verification.py",
+      "tests/agent_team/test_external_verifier_e03.py",
+      "tests/api/test_external_verification_e03.py"
+    ],
+    "independent_acceptance_required": true,
+    "validation_ids": [
+      "AV-AGT-002",
+      "AV-AGT-027",
+      "AV-OPS-011"
+    ],
+    "remote_verification": {
+      "source": "MAIN_LIVE_REMOTE_READ",
+      "command": "git ls-remote development refs/heads/codex/c09-execution-backends-r1",
+      "exit_code": 0,
+      "sha": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+      "worker_live_remote": "NOT_EXECUTED_SSH_ALIAS_DNS_RESTRICTED"
+    }
+  },
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/E-03_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e03-start.json",
+    "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "projection_mode": "E03_START_EXACT9_PRODUCT_EXACT6",
+  "validated_base_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 208662,
+      "sha256": "16D830EDB0E4D378BE124976B29385DD88529BB88AC36315EBF2C721D4EF1153"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1116606,
+      "sha256": "82DB88190C561926186C0899F6A2F6C5A99E2BA5AA6A51BA5FF645A13F29535B"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3550723,
+      "sha256": "C93B68D0E955DD6804D69B3B648BE6A1D3B04210F401A15D606F88063409A446"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e03-start.json",
+      "bytes": 835,
+      "sha256": "DDF493CA0BD60B34F6C92B061BD7CFB1DF9FAEA7C970D7A5551CF0F8B6719EDF"
+    },
+    {
+      "path": "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+      "bytes": 500,
+      "sha256": "56A7E9CF869F50B3E38E2F4150E3F2ADE5B2EDD50AC18FF1F8963EF497553A40"
+    },
+    {
+      "path": "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+      "bytes": 4516,
+      "sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4355106,
+      "sha256": "C03B85254729BC1E3B86E2E6EE60BA55D2D4B33EC42C4C2EBC7D7B2E96162F97"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1164007,
+      "sha256": "E6A8376A6C5CE100E4EA9721BB7A289CF28E9B7ACB80A81059CEBB6ABA0195E5"
+    }
+  ]
+}

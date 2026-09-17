@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1080,
+  "last_sequence": 1091,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -66367,7 +66367,849 @@
           "resolution": "INDEPENDENT_ACCEPTED"
         }
       }
+    },
+    {
+      "sequence": 1081,
+      "event_id": "evt_e03_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "START",
+      "subject_ref": "E-03/START",
+      "occurred_at": "2026-09-17T10:23:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "2E63240E0EB18F14DB5AA32870F8EA84E419F20FD273488AD3BDE2DD0D2E1C68",
+      "details": {
+        "work_instruction_id": "WI-E-03-R1-20260917-001",
+        "work_instruction_path": "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+        "invocation_path": "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+        "invocation_sha256": "56A7E9CF869F50B3E38E2F4150E3F2ADE5B2EDD50AC18FF1F8963EF497553A40",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E03_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+          "invocation_sha256": "56A7E9CF869F50B3E38E2F4150E3F2ADE5B2EDD50AC18FF1F8963EF497553A40",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-03_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e03-start.json",
+            "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+            "packages/agent_team/__init__.py",
+            "packages/agent_team/external_verifier.py",
+            "packages/api/external_verification.py",
+            "tests/agent_team/test_external_verifier_e03.py",
+            "tests/api/test_external_verification_e03.py"
+          ],
+          "independent_acceptance_required": true,
+          "validation_ids": [
+            "AV-AGT-002",
+            "AV-AGT-027",
+            "AV-OPS-011"
+          ],
+          "remote_verification": {
+            "source": "MAIN_LIVE_REMOTE_READ",
+            "command": "git ls-remote development refs/heads/codex/c09-execution-backends-r1",
+            "exit_code": 0,
+            "sha": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+            "worker_live_remote": "NOT_EXECUTED_SSH_ALIAS_DNS_RESTRICTED"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 1082,
+      "event_id": "evt_e03_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "START",
+      "subject_ref": "E-03/START",
+      "occurred_at": "2026-09-17T10:23:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "75A057BC12A081FB31EF82AA69F48E60B094EA74A1B8931CBA14FD0624A5E9C3",
+      "details": {
+        "actor_id": "developer-primary-e03-r1",
+        "subject_ref": "E-03",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "issued_at": "2026-09-17T10:23:00+09:00",
+        "expires_at": "2026-09-17T22:23:00+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e03-r1-execution-fence-epoch-1-c9678884d8e44a53",
+        "path_scope": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py"
+        ],
+        "lease_id": "worker-lease-e03-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e03-r1-execution-fence-epoch-1-c9678884d8e44a53",
+        "dispatch_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481"
+      }
+    },
+    {
+      "sequence": 1083,
+      "event_id": "evt_e03_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "START",
+      "subject_ref": "E-03/START",
+      "occurred_at": "2026-09-17T10:23:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "C594120240453479F9E65F468B433DF195D41DABEEB4019E5A80C0EBD4F78420",
+      "details": {
+        "actor_id": "developer-primary-e03-r1",
+        "subject_ref": "E-03",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "issued_at": "2026-09-17T10:23:00+09:00",
+        "expires_at": "2026-09-17T22:23:00+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e03-r1-execution-fence-epoch-1-c9678884d8e44a53",
+        "path_scope": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py"
+        ],
+        "lease_id": "write-lease-e03-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e03-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e03-r1-write-fence-epoch-1-fc4ab7c070a2c84f",
+        "write_fencing_token": "e03-r1-write-fence-epoch-1-fc4ab7c070a2c84f"
+      }
+    },
+    {
+      "sequence": 1084,
+      "event_id": "evt_e03_package_started",
+      "event_type": "PACKAGE_STARTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "START",
+      "subject_ref": "E-03/START",
+      "occurred_at": "2026-09-17T10:23:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "DBE079FC102D87A3AC832C97A453744B755D70C67343969F2BFA1F5190A9E42D",
+      "details": {
+        "projection_mode": "E03_START_EXACT9_PRODUCT_EXACT6",
+        "validated_base_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "dispatch_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "dispatch_upstream_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "head_relation": "PRECOMMIT_EXACT9_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/E-03_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e03-start.json",
+          "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E03_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+          "invocation_sha256": "56A7E9CF869F50B3E38E2F4150E3F2ADE5B2EDD50AC18FF1F8963EF497553A40",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-03_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e03-start.json",
+            "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+            "packages/agent_team/__init__.py",
+            "packages/agent_team/external_verifier.py",
+            "packages/api/external_verification.py",
+            "tests/agent_team/test_external_verifier_e03.py",
+            "tests/api/test_external_verification_e03.py"
+          ],
+          "independent_acceptance_required": true,
+          "validation_ids": [
+            "AV-AGT-002",
+            "AV-AGT-027",
+            "AV-OPS-011"
+          ],
+          "remote_verification": {
+            "source": "MAIN_LIVE_REMOTE_READ",
+            "command": "git ls-remote development refs/heads/codex/c09-execution-backends-r1",
+            "exit_code": 0,
+            "sha": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+            "worker_live_remote": "NOT_EXECUTED_SSH_ALIAS_DNS_RESTRICTED"
+          }
+        },
+        "product_write_scope": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py"
+        ],
+        "work_instruction_id": "WI-E-03-R1-20260917-001",
+        "package_status": "IN_PROGRESS",
+        "work_package_id": "E-03",
+        "status": "IN_PROGRESS",
+        "active_agent": "developer-primary-e03-r1",
+        "worker_lease_id": "worker-lease-e03-r1-20260917-001",
+        "write_lease_id": "write-lease-e03-r1-20260917-001",
+        "execution_fencing_token": "e03-r1-execution-fence-epoch-1-c9678884d8e44a53",
+        "write_fencing_token": "e03-r1-write-fence-epoch-1-fc4ab7c070a2c84f",
+        "work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+        "runtime_next_action": "E03_MANUAL_BUNDLE_TDD_THEN_EXTERNAL_INDEPENDENT_REVIEW"
+      }
+    },
+    {
+      "sequence": 1085,
+      "event_id": "evt_e03_r2_rework_requested",
+      "event_type": "PACKAGE_REWORK_REQUESTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "R2",
+      "subject_ref": "E-03/R2",
+      "occurred_at": "2026-09-17T11:12:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "A8C5A1854BC05FCCE079CCC974192A8A703C96332052A6EC6D9690A154CBD827",
+      "details": {
+        "round": "R2",
+        "formal_failure_count": 2,
+        "fingerprint": "E03-SECRET-UNICODE-BYPASS-003",
+        "attempt": 2,
+        "worker_lease_id": "worker-lease-e03-r1-20260917-001",
+        "write_lease_id": "write-lease-e03-r1-20260917-001",
+        "same_failure_count": 2,
+        "status": "REWORK_REQUIRED",
+        "authority_source": "MAIN_INDEPENDENT_REVIEW_DISPATCH",
+        "developer_transcript_used": false,
+        "spec": {
+          "verdict": "ACCEPT",
+          "critical": 0,
+          "important": 0,
+          "minor": 0
+        },
+        "quality": {
+          "verdict": "REWORK",
+          "critical": 0,
+          "important": 1,
+          "minor": 1
+        },
+        "findings": [
+          "NORMALIZE_DECODE_FIXED_POINT_REQUIRED",
+          "JSON_EMPTY_CREDENTIAL_SEMANTICS"
+        ],
+        "accepted": false
+      }
+    },
+    {
+      "sequence": 1086,
+      "event_id": "evt_e03_r2_work_instruction_revised",
+      "event_type": "WORK_INSTRUCTION_REVISED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "R2",
+      "subject_ref": "E-03/R2",
+      "occurred_at": "2026-09-17T11:12:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "74DBC71251F9425B325CA2BA20ED289323141603A39490D88FAE60B9210B102B",
+      "details": {
+        "classification": "MAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK",
+        "semantic_diff": "NONE",
+        "scope_expansion": false,
+        "parent_work_instruction_path": "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+        "parent_work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+        "parent_start_manifest_path": "docs/evidence/manifests/E-03_START_MANIFEST.json",
+        "parent_start_manifest_sha256": "34A4C72A8EFC2BFC7D454554BBBF2E987B24FA720F6CD6AA95ED53853FE7B7FC",
+        "parent_event_sequence": 1084,
+        "derived_work_instruction_path": "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
+        "derived_work_instruction_sha256": "50846FD6E0A0536D37E248CB88A0B3ECB7617D00127D64AA5484A00354E295E6",
+        "human_approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "new_human_approval_requested": false,
+        "functional_scope_changed": false,
+        "requirements_changed": false,
+        "important_risk_changed": false,
+        "product_write_scope": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py"
+        ],
+        "leases_changed": false,
+        "projection_mode": "E03_R2_CORRECTIVE_EXACT18",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/E-03_R2_CORRECTIVE_REVISION_MANIFEST.json",
+          "docs/evidence/manifests/E-03_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e03-r2-corrective-revision.json",
+          "docs/progress/progress-handoff-detached-digest-e03-start.json",
+          "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
+          "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "scripts/check_project_progress.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "work_instruction_id": "WI-E-03-R2-CORRECTIVE-20260917-001",
+        "previous_work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+        "work_instruction_sha256": "50846FD6E0A0536D37E248CB88A0B3ECB7617D00127D64AA5484A00354E295E6",
+        "reason": "BOUNDED_UNICODE_FIXED_POINT_AND_JSON_SEMANTIC_CORRECTION",
+        "validated_base_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "dispatch_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "dispatch_upstream_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "head_relation": "PRECOMMIT_EXACT18"
+      }
+    },
+    {
+      "sequence": 1087,
+      "event_id": "evt_e03_final_package_completed",
+      "event_type": "PACKAGE_COMPLETED",
+      "actor": "developer-primary-e03-r1",
+      "actor_id": "developer-primary-e03-r1",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-03/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T11:37:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "3766E99075A2A4B00DBACE712663DC5FBF4663A6FCCEB556A715EC29468C0732",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_raw": {
+          "packages/agent_team/__init__.py": {
+            "bytes": 4045,
+            "sha256": "62AF540B23CD2FF4989B1A917766BB4B3AFFA1C936310E8F38F8E9E229853BD9"
+          },
+          "packages/agent_team/external_verifier.py": {
+            "bytes": 21588,
+            "sha256": "43B295D48ED2DDB0E7711BF39DD2D7EC929F0864058A3F0B833F0698F7F9116A"
+          },
+          "packages/api/external_verification.py": {
+            "bytes": 1505,
+            "sha256": "6756F93C4B29BF5E7157BC0B5617E97A0F94D866F973991F68591A355CE53203"
+          },
+          "tests/agent_team/test_external_verifier_e03.py": {
+            "bytes": 21245,
+            "sha256": "9081DEAF68C765E955BDD5C750C6CFBE6F6E2D93827F92535429C34C4C85F3D0"
+          },
+          "tests/api/test_external_verification_e03.py": {
+            "bytes": 4469,
+            "sha256": "A53B920E3B7D5B29525B12C5609C8864A4465D18F60BECCAED3056203FB0221E"
+          },
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md": {
+            "bytes": 23658,
+            "sha256": "5DD4BC8B8644BE73EFEA7B076E77C1082C2C8FE7EB3A6824F5FFF43712A36EEE"
+          }
+        },
+        "evidence_target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+        "formal_failure_count": 2,
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "os_worker": "NOT_EXECUTED",
+          "os_artifact_store": "NOT_EXECUTED",
+          "dag": "NOT_EXECUTED",
+          "parallel": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        },
+        "report_ref": "docs/04_test_reports/E-03_COMPLETION_REPORT.md"
+      }
+    },
+    {
+      "sequence": 1088,
+      "event_id": "evt_e03_final_independent_test_judgment_recorded",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "actor": "independent-reviewer",
+      "actor_id": "independent-reviewer",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-03/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T11:37:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "AB154F70493A28304F73953EB67C2132A610EDB4C51CE51CF18482A7483BBD91",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "AV-AGT-002/AV-AGT-027/AV-OPS-011;TEST-10.6",
+        "evidence_ref": "docs/evidence/manifests/E-03_FINAL_ACCEPTANCE_MANIFEST.json",
+        "evidence_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+        "reviews": {
+          "spec": {
+            "critical_findings": 0,
+            "important_findings": 0,
+            "blocking_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+            "review_round": "E03_R2",
+            "reviewer": "c09_spec_review",
+            "verdict": "ACCEPT",
+            "minor_findings": 0,
+            "commands": [
+              {
+                "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py",
+                "exit_code": 0,
+                "passed": 122
+              },
+              {
+                "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_delegation_packet.py tests/orchestration/test_result_envelope_c05.py tests/api/test_external_verification_e03.py tests/tooling/test_project_progress.py::E03StartControlTests tests/tooling/test_project_progress.py::E03R2CorrectiveControlTests",
+                "exit_code": 0,
+                "passed": 606
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "independent_probe": {
+              "product_assertions": 50,
+              "control_assertions": 24,
+              "result": "PASS"
+            },
+            "checker_sequence": 1086,
+            "checker_result": "PASS",
+            "staged_paths": [],
+            "unverified": [
+              "actual external Claude/Codex/Local execution and transfer",
+              "provider authenticity",
+              "operating API/browser/DB/deployment"
+            ]
+          },
+          "quality": {
+            "critical_findings": 0,
+            "important_findings": 0,
+            "blocking_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+            "review_round": "E03_R2",
+            "reviewer": "c10_quality_review",
+            "verdict": "PASS",
+            "minor_findings": 2,
+            "resolved_python_binary": "NOT_REPORTED",
+            "commands": [
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py --tb=short",
+                "exit_code": 0,
+                "passed": 122
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/knowledge/test_sources_d03.py --tb=short",
+                "exit_code": 0,
+                "passed": 600
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/tooling/test_project_progress.py -k 'E03StartControlTests or E03R2CorrectiveControlTests' --tb=short",
+                "exit_code": 0,
+                "passed": 5,
+                "deselected": 618
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team tests/orchestration tests/artifacts tests/api --tb=short",
+                "exit_code": 0,
+                "passed": 1306
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "independent_probe": {
+              "normalization_empty_safe_unicode": "PASS",
+              "prefix_hash_checks": "PASS"
+            },
+            "checker_sequence": 1086,
+            "checker_result": "PASS",
+            "staged_paths": [],
+            "unverified": [
+              "actual credentials/Claude/provider/network/HTTP/UI/DB/worker/OS store/parallel/production"
+            ],
+            "provider_authenticity": "UNVERIFIED"
+          }
+        },
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 2,
+        "residual_minors": [
+          {
+            "id": "E03-MINOR-EXPORT-ALL",
+            "blocking": false,
+            "owner_package": "E-04",
+            "timing": "PREDECESSOR_FOLLOW_UP",
+            "path": "packages/agent_team/__init__.py",
+            "finding": "external verifier three new symbols missing from __all__",
+            "resolution": "DEFERRED_BY_MAIN_NOT_FIXED"
+          },
+          {
+            "id": "E03-MINOR-HISTORICAL-STATUS",
+            "blocking": false,
+            "owner_package": "E-04",
+            "timing": "PREDECESSOR_FOLLOW_UP",
+            "path": "scripts/check_project_progress.py",
+            "finding": "frozen seq1084 helper duplicate e03_status and missing e04_status",
+            "resolution": "ADDITIVE_SUCCESSOR_CORRECTION_ONLY_NO_HISTORY_REWRITE"
+          }
+        ],
+        "developer_transcript_used": false
+      }
+    },
+    {
+      "sequence": 1089,
+      "event_id": "evt_e03_final_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-03/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T11:37:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "11E41D8989D9EE930829CCE093E23F02DEC08FB633AB6C5E30D599D3C8E51395",
+      "details": {
+        "actor_id": "developer-primary-e03-r1",
+        "subject_ref": "E-03",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "issued_at": "2026-09-17T10:23:00+09:00",
+        "expires_at": "2026-09-17T22:23:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e03-r1-execution-fence-epoch-1-c9678884d8e44a53",
+        "path_scope": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py"
+        ],
+        "lease_id": "write-lease-e03-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e03-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e03-r1-write-fence-epoch-1-fc4ab7c070a2c84f",
+        "write_fencing_token": "e03-r1-write-fence-epoch-1-fc4ab7c070a2c84f",
+        "revoked_at": "2026-09-17T11:37:00+09:00",
+        "reason": "E03_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1090,
+      "event_id": "evt_e03_final_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-03/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T11:37:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "2D9E2226520D678DD188D85DEB994B5FB4C04FE3153764B79170E247A5F536BF",
+      "details": {
+        "actor_id": "developer-primary-e03-r1",
+        "subject_ref": "E-03",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "issued_at": "2026-09-17T10:23:00+09:00",
+        "expires_at": "2026-09-17T22:23:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e03-r1-execution-fence-epoch-1-c9678884d8e44a53",
+        "path_scope": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py"
+        ],
+        "lease_id": "worker-lease-e03-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e03-r1-execution-fence-epoch-1-c9678884d8e44a53",
+        "dispatch_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "revoked_at": "2026-09-17T11:37:00+09:00",
+        "reason": "E03_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1091,
+      "event_id": "evt_e03_final_main_package_accepted",
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-03",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-03/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T11:37:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "A5AACE27797F0782BEF611754A80AE8129DEEA5252A4BD2B316F6F1781B9B2A6",
+      "details": {
+        "projection_mode": "E03_FINAL_ACCEPTANCE_EXACT20",
+        "validated_base_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "acceptance_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "acceptance_upstream_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+        "head_relation": "PRECOMMIT_EXACT18_PLUS_FINAL_CONTROL_EXACT2",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/E-03_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/evidence/manifests/E-03_R2_CORRECTIVE_REVISION_MANIFEST.json",
+          "docs/evidence/manifests/E-03_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e03-final-acceptance.json",
+          "docs/progress/progress-handoff-detached-digest-e03-r2-corrective-revision.json",
+          "docs/progress/progress-handoff-detached-digest-e03-start.json",
+          "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
+          "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/external_verifier.py",
+          "packages/api/external_verification.py",
+          "scripts/check_project_progress.py",
+          "tests/agent_team/test_external_verifier_e03.py",
+          "tests/api/test_external_verification_e03.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "test_report_ref": "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+        "test_report_sha256": "5DD4BC8B8644BE73EFEA7B076E77C1082C2C8FE7EB3A6824F5FFF43712A36EEE",
+        "manifest_ref": "docs/evidence/manifests/E-03_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+        "independent_reviews": {
+          "spec": {
+            "critical_findings": 0,
+            "important_findings": 0,
+            "blocking_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+            "review_round": "E03_R2",
+            "reviewer": "c09_spec_review",
+            "verdict": "ACCEPT",
+            "minor_findings": 0,
+            "commands": [
+              {
+                "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py",
+                "exit_code": 0,
+                "passed": 122
+              },
+              {
+                "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_delegation_packet.py tests/orchestration/test_result_envelope_c05.py tests/api/test_external_verification_e03.py tests/tooling/test_project_progress.py::E03StartControlTests tests/tooling/test_project_progress.py::E03R2CorrectiveControlTests",
+                "exit_code": 0,
+                "passed": 606
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "independent_probe": {
+              "product_assertions": 50,
+              "control_assertions": 24,
+              "result": "PASS"
+            },
+            "checker_sequence": 1086,
+            "checker_result": "PASS",
+            "staged_paths": [],
+            "unverified": [
+              "actual external Claude/Codex/Local execution and transfer",
+              "provider authenticity",
+              "operating API/browser/DB/deployment"
+            ]
+          },
+          "quality": {
+            "critical_findings": 0,
+            "important_findings": 0,
+            "blocking_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+            "review_round": "E03_R2",
+            "reviewer": "c10_quality_review",
+            "verdict": "PASS",
+            "minor_findings": 2,
+            "resolved_python_binary": "NOT_REPORTED",
+            "commands": [
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py --tb=short",
+                "exit_code": 0,
+                "passed": 122
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/knowledge/test_sources_d03.py --tb=short",
+                "exit_code": 0,
+                "passed": 600
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/tooling/test_project_progress.py -k 'E03StartControlTests or E03R2CorrectiveControlTests' --tb=short",
+                "exit_code": 0,
+                "passed": 5,
+                "deselected": 618
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team tests/orchestration tests/artifacts tests/api --tb=short",
+                "exit_code": 0,
+                "passed": 1306
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "independent_probe": {
+              "normalization_empty_safe_unicode": "PASS",
+              "prefix_hash_checks": "PASS"
+            },
+            "checker_sequence": 1086,
+            "checker_result": "PASS",
+            "staged_paths": [],
+            "unverified": [
+              "actual credentials/Claude/provider/network/HTTP/UI/DB/worker/OS store/parallel/production"
+            ],
+            "provider_authenticity": "UNVERIFIED"
+          }
+        },
+        "next_work_package": "E-04",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 2,
+        "residual_minors": [
+          {
+            "id": "E03-MINOR-EXPORT-ALL",
+            "blocking": false,
+            "owner_package": "E-04",
+            "timing": "PREDECESSOR_FOLLOW_UP",
+            "path": "packages/agent_team/__init__.py",
+            "finding": "external verifier three new symbols missing from __all__",
+            "resolution": "DEFERRED_BY_MAIN_NOT_FIXED"
+          },
+          {
+            "id": "E03-MINOR-HISTORICAL-STATUS",
+            "blocking": false,
+            "owner_package": "E-04",
+            "timing": "PREDECESSOR_FOLLOW_UP",
+            "path": "scripts/check_project_progress.py",
+            "finding": "frozen seq1084 helper duplicate e03_status and missing e04_status",
+            "resolution": "ADDITIVE_SUCCESSOR_CORRECTION_ONLY_NO_HISTORY_REWRITE"
+          }
+        ],
+        "formal_failure_count": 2,
+        "failure_lineage": {
+          "formal_failure_count": 2,
+          "rework_count": 2,
+          "primary_lineage": "E03-SOURCE-PROVENANCE-MIX-001",
+          "same_failure_fingerprint": "E03-SECRET-UNICODE-BYPASS-003",
+          "related": [
+            "E03-BUNDLE-TOCTOU-002"
+          ],
+          "resolution": "INDEPENDENT_ACCEPTED_WITH_TWO_NONBLOCKING_MINORS"
+        },
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "os_worker": "NOT_EXECUTED",
+          "os_artifact_store": "NOT_EXECUTED",
+          "dag": "NOT_EXECUTED",
+          "parallel": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_e02_final_main_package_accepted"
+  "last_event_id": "evt_e03_final_main_package_accepted"
 }

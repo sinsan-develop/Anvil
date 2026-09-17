@@ -1,3 +1,23 @@
+# E-03 최종 수락 — seq1091
+
+- Main 판정 ACCEPTED: spec ACCEPT C0/I0/M0, quality PASS C0/I0/M2. 독립 세션 증거이며 Developer transcript 미사용.
+- Minor2는 비차단으로 E04 선행 보완에 이관: __all__ 신규3 symbol 및 frozen seq1084 status helper의 additive correction. 현재 수정하지 않는다.
+- 제품 exact6/R2 corrective 문서 동결, raw prefix seq1~1086 보존. 양 lease 회수. formal failure count2 보존.
+- E04 READY이나 시작하지 않았다. commit/push/외부 실행 미수행.
+
+# E-03 R2 corrective revision — seq1086
+
+- 동일 Unicode fingerprint formal failure count2; spec ACCEPT C0/I0/M0, quality REWORK C0/I1/M1.
+- 원 WI/start manifest 및 seq1~1084 불변. 파생 WI는 비의미 내부 보완이며 제품 exact6/dual lease/위험 범위 변경 없음.
+- E03 IN_PROGRESS, E04 NOT_READY. 외부 실행/commit/push/acceptance 미수행. Developer 증거는 독립 acceptance가 아니다.
+
+# E-03 시작 통제 — seq1084
+
+- E-02 ACCEPTED. 제품 exact6와 control exact9는 분리한다.
+- Developer 증거는 최종 합격이 아니며 외부 독립 검증이 필요하다.
+- seq1080 control의 c967888 commit은 Main 완료. 이번 E-03 commit/push는 미수행이다. remote exact SHA는 MAIN_LIVE_REMOTE_READ이며 worker DNS 제한과 구분한다.
+- 편집 오류 E03-CONTROL-EDIT-C03-001 count1: checker append 중 C03 embedded evidence의 의도하지 않은 삭제를 syntax/diff로 탐지했다. 원인 세부는 미확정이며 HEAD의 해당 구간만 apply_patch로 복구했다. historical 1656749 bytes 동일, 삭제 diff 0, compile PASS, E01/E02 control 9 PASS. 제품 mutation 0에서 복구했으며 정식 제품 failure count에 포함하지 않는다.
+
 # E-02 최종 수락 — seq1080
 
 - 독립 spec/quality ACCEPT, C0/I0/M0. Developer transcript 미사용.
@@ -1351,145 +1371,175 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1080,
-  "last_event_id": "evt_e02_final_main_package_accepted",
+  "event_sequence": 1091,
+  "last_event_id": "evt_e03_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-02",
+  "current_work_package": "E-03",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E03_READY_FOR_WORK_INSTRUCTION_NOT_STARTED",
+  "next_safe_action": "E04_READY_WITH_TWO_MINOR_FOLLOWUPS_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e02_status": "ACCEPTED",
-  "e03_status": "READY_FOR_WORK_INSTRUCTION",
-  "e02_rework_count": 1,
-  "e02_formal_valid_failure_count": 1,
-  "e02_failure_lineage": {
-    "rework_count": 1,
-    "formal_valid_failure_count": 1,
-    "primary_lineage": "E02-ARTIFACT-TOCTOU-001",
-    "included_findings": [
-      "E02-SOURCE-AUTHORITY-TOCTOU-002",
-      "E02-BOUNDED-CONTEXT",
-      "E02-PREDECESSOR-CAUSALITY"
+  "e03_status": "ACCEPTED",
+  "e04_status": "READY_FOR_WORK_INSTRUCTION",
+  "active_work_instruction": null,
+  "e03_formal_failure_count": 2,
+  "e03_failure_lineage": {
+    "formal_failure_count": 2,
+    "rework_count": 2,
+    "primary_lineage": "E03-SOURCE-PROVENANCE-MIX-001",
+    "same_failure_fingerprint": "E03-SECRET-UNICODE-BYPASS-003",
+    "related": [
+      "E03-BUNDLE-TOCTOU-002"
     ],
-    "resolution": "INDEPENDENT_ACCEPTED"
+    "resolution": "INDEPENDENT_ACCEPTED_WITH_TWO_NONBLOCKING_MINORS"
   },
+  "residual_minors": [
+    {
+      "id": "E03-MINOR-EXPORT-ALL",
+      "blocking": false,
+      "owner_package": "E-04",
+      "timing": "PREDECESSOR_FOLLOW_UP",
+      "path": "packages/agent_team/__init__.py",
+      "finding": "external verifier three new symbols missing from __all__",
+      "resolution": "DEFERRED_BY_MAIN_NOT_FIXED"
+    },
+    {
+      "id": "E03-MINOR-HISTORICAL-STATUS",
+      "blocking": false,
+      "owner_package": "E-04",
+      "timing": "PREDECESSOR_FOLLOW_UP",
+      "path": "scripts/check_project_progress.py",
+      "finding": "frozen seq1084 helper duplicate e03_status and missing e04_status",
+      "resolution": "ADDITIVE_SUCCESSOR_CORRECTION_ONLY_NO_HISTORY_REWRITE"
+    }
+  ],
   "dir_status": "CLEARED",
-  "repository_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+  "repository_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E02_FINAL_ACCEPTANCE_EXACT17",
+  "repository_projection_mode": "E03_FINAL_ACCEPTANCE_EXACT20",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-02_START_MANIFEST.json",
+    "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-03_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-03_R2_CORRECTIVE_REVISION_MANIFEST.json",
+    "docs/evidence/manifests/E-03_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e02-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e02-start.json",
-    "docs/work_orders/E-02_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-e03-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e03-r2-corrective-revision.json",
+    "docs/progress/progress-handoff-detached-digest-e03-start.json",
+    "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
+    "docs/work_orders/E-03_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
-    "packages/agent_team/handoff.py",
-    "packages/api/role_handoff.py",
+    "packages/agent_team/external_verifier.py",
+    "packages/api/external_verification.py",
     "scripts/check_project_progress.py",
-    "tests/agent_team/test_handoff_e02.py",
-    "tests/api/test_role_handoff_e02.py",
+    "tests/agent_team/test_external_verifier_e03.py",
+    "tests/api/test_external_verification_e03.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+  "current_manifest": "docs/evidence/manifests/E-03_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
   "independent_reviews": {
     "spec": {
-      "verdict": "ACCEPT",
       "critical_findings": 0,
-      "blocking_findings": 0,
       "important_findings": 0,
-      "minor_findings": 0,
+      "blocking_findings": 0,
       "developer_transcript_used": false,
       "independent_context": true,
-      "focused_passed": 104,
-      "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
       "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
-      "review_round": "E02_R1",
-      "reviewer": "independent-spec-reviewer",
-      "minimal_passed": 375,
-      "adversarial_cases": 9,
-      "adversarial_verdict": "PASS",
+      "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+      "review_round": "E03_R2",
+      "reviewer": "c09_spec_review",
+      "verdict": "ACCEPT",
+      "minor_findings": 0,
       "commands": [
         {
-          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+          "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py",
           "exit_code": 0,
-          "passed": 104,
-          "seconds": 3.62
+          "passed": 122
         },
         {
-          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_result_envelope_c05.py tests/api/test_role_handoff_e02.py",
+          "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_delegation_packet.py tests/orchestration/test_result_envelope_c05.py tests/api/test_external_verification_e03.py tests/tooling/test_project_progress.py::E03StartControlTests tests/tooling/test_project_progress.py::E03R2CorrectiveControlTests",
           "exit_code": 0,
-          "passed": 375,
-          "seconds": 4.39
+          "passed": 606
         },
         {
           "command": "git diff --check",
           "exit_code": 0
         }
       ],
+      "independent_probe": {
+        "product_assertions": 50,
+        "control_assertions": 24,
+        "result": "PASS"
+      },
+      "checker_sequence": 1086,
+      "checker_result": "PASS",
+      "staged_paths": [],
       "unverified": [
-        "actual HTTP/UI",
-        "worker",
-        "Provider",
-        "DB",
-        "external runtime"
+        "actual external Claude/Codex/Local execution and transfer",
+        "provider authenticity",
+        "operating API/browser/DB/deployment"
       ]
     },
     "quality": {
-      "verdict": "ACCEPT",
       "critical_findings": 0,
-      "blocking_findings": 0,
       "important_findings": 0,
-      "minor_findings": 0,
+      "blocking_findings": 0,
       "developer_transcript_used": false,
       "independent_context": true,
-      "focused_passed": 104,
-      "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
       "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
-      "review_round": "E02_R1",
-      "reviewer": "independent-quality-reviewer",
-      "related_passed": 1184,
-      "adversarial_cases": 8,
-      "adversarial_verdict": "PASS",
+      "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+      "review_round": "E03_R2",
+      "reviewer": "c10_quality_review",
+      "verdict": "PASS",
+      "minor_findings": 2,
+      "resolved_python_binary": "NOT_REPORTED",
       "commands": [
         {
-          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py --tb=short",
           "exit_code": 0,
-          "passed": 104,
-          "seconds": 3.87
+          "passed": 122
         },
         {
-          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/orchestration tests/artifacts tests/api",
+          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/knowledge/test_sources_d03.py --tb=short",
           "exit_code": 0,
-          "passed": 1184,
-          "seconds": 20.3
+          "passed": 600
+        },
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/tooling/test_project_progress.py -k 'E03StartControlTests or E03R2CorrectiveControlTests' --tb=short",
+          "exit_code": 0,
+          "passed": 5,
+          "deselected": 618
+        },
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team tests/orchestration tests/artifacts tests/api --tb=short",
+          "exit_code": 0,
+          "passed": 1306
         },
         {
           "command": "git diff --check",
           "exit_code": 0
         }
       ],
+      "independent_probe": {
+        "normalization_empty_safe_unicode": "PASS",
+        "prefix_hash_checks": "PASS"
+      },
+      "checker_sequence": 1086,
+      "checker_result": "PASS",
+      "staged_paths": [],
       "unverified": [
-        "actual HTTP wiring",
-        "OS artifact store",
-        "external IO",
-        "parallel execution"
+        "actual credentials/Claude/provider/network/HTTP/UI/DB/worker/OS store/parallel/production"
       ],
-      "warnings": [
-        "existing python_multipart deprecation (1)"
-      ]
+      "provider_authenticity": "UNVERIFIED"
     }
   },
   "external_validation": {

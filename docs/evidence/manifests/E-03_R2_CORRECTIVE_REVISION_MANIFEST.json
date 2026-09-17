@@ -1,0 +1,157 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E03_R2_CORRECTIVE_REVISION",
+  "artifact_id": "E03-R2-CORRECTIVE-20260917",
+  "created_at": "2026-09-17T11:12:00+09:00",
+  "package_id": "E-03",
+  "event_sequence": 1086,
+  "historical_event_sequence": 1084,
+  "appended_event_count": 2,
+  "historical_raw_event_prefix": {
+    "bytes": 3550538,
+    "sha256": "13C33C1BF22205D7368D9038D506FD4B0E58F177B80D5290785BD61D5F206ED6"
+  },
+  "historical_evidence_mutation_count": 0,
+  "revision_binding": {
+    "classification": "MAIN_RECONFIRMED_NON_SEMANTIC_CORRECTIVE_REWORK",
+    "semantic_diff": "NONE",
+    "scope_expansion": false,
+    "parent_work_instruction_path": "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+    "parent_work_instruction_sha256": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+    "parent_start_manifest_path": "docs/evidence/manifests/E-03_START_MANIFEST.json",
+    "parent_start_manifest_sha256": "34A4C72A8EFC2BFC7D454554BBBF2E987B24FA720F6CD6AA95ED53853FE7B7FC",
+    "parent_event_sequence": 1084,
+    "derived_work_instruction_path": "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
+    "derived_work_instruction_sha256": "50846FD6E0A0536D37E248CB88A0B3ECB7617D00127D64AA5484A00354E295E6",
+    "human_approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+    "new_human_approval_requested": false,
+    "functional_scope_changed": false,
+    "requirements_changed": false,
+    "important_risk_changed": false,
+    "product_write_scope": [
+      "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/external_verifier.py",
+      "packages/api/external_verification.py",
+      "tests/agent_team/test_external_verifier_e03.py",
+      "tests/api/test_external_verification_e03.py"
+    ],
+    "leases_changed": false
+  },
+  "independent_rework": {
+    "round": "R2",
+    "formal_failure_count": 2,
+    "fingerprint": "E03-SECRET-UNICODE-BYPASS-003",
+    "attempt": 2,
+    "worker_lease_id": "worker-lease-e03-r1-20260917-001",
+    "write_lease_id": "write-lease-e03-r1-20260917-001",
+    "same_failure_count": 2,
+    "status": "REWORK_REQUIRED",
+    "authority_source": "MAIN_INDEPENDENT_REVIEW_DISPATCH",
+    "developer_transcript_used": false,
+    "spec": {
+      "verdict": "ACCEPT",
+      "critical": 0,
+      "important": 0,
+      "minor": 0
+    },
+    "quality": {
+      "verdict": "REWORK",
+      "critical": 0,
+      "important": 1,
+      "minor": 1
+    },
+    "findings": [
+      "NORMALIZE_DECODE_FIXED_POINT_REQUIRED",
+      "JSON_EMPTY_CREDENTIAL_SEMANTICS"
+    ],
+    "accepted": false
+  },
+  "frozen_start_sha256": {
+    "docs/work_orders/E-03_WORK_INSTRUCTION.md": "AB305CBEC74ABC20A2EF7B21A378F80018470642F673F0409FB6774602E61B03",
+    "docs/work_orders/E-03_INVOCATION_PROMPT.md": "56A7E9CF869F50B3E38E2F4150E3F2ADE5B2EDD50AC18FF1F8963EF497553A40",
+    "docs/evidence/manifests/E-03_START_MANIFEST.json": "34A4C72A8EFC2BFC7D454554BBBF2E987B24FA720F6CD6AA95ED53853FE7B7FC",
+    "docs/progress/progress-handoff-detached-digest-e03-start.json": "DDF493CA0BD60B34F6C92B061BD7CFB1DF9FAEA7C970D7A5551CF0F8B6719EDF"
+  },
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "product_write_scope": [
+    "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/external_verifier.py",
+    "packages/api/external_verification.py",
+    "tests/agent_team/test_external_verifier_e03.py",
+    "tests/api/test_external_verification_e03.py"
+  ],
+  "active_leases": 2,
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-03_R2_CORRECTIVE_REVISION_MANIFEST.json",
+    "docs/evidence/manifests/E-03_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e03-r2-corrective-revision.json",
+    "docs/progress/progress-handoff-detached-digest-e03-start.json",
+    "docs/work_orders/E-03_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
+    "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/external_verifier.py",
+    "packages/api/external_verification.py",
+    "scripts/check_project_progress.py",
+    "tests/agent_team/test_external_verifier_e03.py",
+    "tests/api/test_external_verification_e03.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 18,
+  "additive_control_paths": [
+    "docs/evidence/manifests/E-03_R2_CORRECTIVE_REVISION_MANIFEST.json",
+    "docs/progress/progress-handoff-detached-digest-e03-r2-corrective-revision.json",
+    "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md"
+  ],
+  "projection_mode": "E03_R2_CORRECTIVE_EXACT18",
+  "validated_base_commit": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+  "pending_approvals": [],
+  "external_execution": "NOT_EXECUTED",
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 212950,
+      "sha256": "1CC559AEBA60A83A360060E7C28B0713A6B8E42195221BD70F11E8FE41090CCF"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1121106,
+      "sha256": "4A97B5419436C44C909CF0BC194BB1E268A83D268414DC365C71E33ECE0DE959"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3556075,
+      "sha256": "D8F81DB0CB8942F31B07A0F99B6EB0A69F7D8EF27D2ABAE1B8D48171DC5450CC"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e03-r2-corrective-revision.json",
+      "bytes": 855,
+      "sha256": "E2BC54F69E3E285E4798D32E2C2AA8645739EC848A54326DF15B1BE11D0DE535"
+    },
+    {
+      "path": "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
+      "bytes": 3258,
+      "sha256": "50846FD6E0A0536D37E248CB88A0B3ECB7617D00127D64AA5484A00354E295E6"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4366111,
+      "sha256": "5C85E6F36F2B8886DB04AA1221247988A600E1A0711FBCBA474FD52BC9EFF0A7"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1167860,
+      "sha256": "0691AD240E69112B63FE722946420D079C9DBAFBB2C6FC0D320F6BF5BFE5D9B3"
+    }
+  ]
+}

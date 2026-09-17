@@ -18895,5 +18895,118 @@ class E02FinalAcceptanceControlTests(unittest.TestCase):
 
 
 
+class E03StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e03_start",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module); return module
+
+    def test_e03_start_freezes_history_and_issues_only_product_exact6(self):
+        c=self._checker()
+        self.assertTrue(callable(getattr(c,"e03_start_from_root",None)),"E03 start missing")
+        a=c.e03_start_from_root(ROOT); p=json.loads(a[c.D13_START_P]); e=json.loads(a[c.D13_START_E])
+        self.assertEqual(9,len(a)); self.assertEqual(1084,p["event_sequence"])
+        self.assertEqual("E-03",p["current_work_package"]); self.assertEqual("ACCEPTED",p["e02_final_acceptance"]["status"])
+        self.assertEqual(c.e03_product_write_scope(),p["write_lease"]["path_scope"])
+        self.assertEqual(p["worker_lease"]["lease_id"],p["write_lease"]["worker_lease_id"])
+        self.assertEqual("e03-r1-execution-fence-epoch-1-c9678884d8e44a53",p["worker_lease"]["execution_fencing_token"])
+        self.assertEqual("e03-r1-write-fence-epoch-1-fc4ab7c070a2c84f",p["write_lease"]["write_fencing_token"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in e["events"][-4:]])
+        old=subprocess.check_output(["git","show",f"{c.E03_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1080),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1080))
+
+    def test_e03_git_exact_control_and_optional_product_only(self):
+        c=self._checker(); facts=dict(head=c.E03_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e03_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e03_git_facts(**facts))
+        self.assertEqual([],c.validate_e03_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e03_product_write_scope())}))
+        for field,value in (("head","f"*40),("dirty",facts["dirty"]+["escape.py"]),("dirty",[]),("staged",[facts["dirty"][0]])):
+            with self.subTest(field=field): self.assertTrue(c.validate_e03_git_facts(**{**facts,field:value}))
+        with mock.patch.object(c,"_collect_e03_git",return_value=["SEQ1084_SELECTED"]),mock.patch.object(c,"_collect_e02_final_git",side_effect=AssertionError("fallback")):
+            self.assertEqual(["SEQ1084_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1084}}))
+
+
+
+class E03R2CorrectiveControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e03_r2",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+    def test_r2_additive_revision_preserves_start_and_dual_leases(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_r2_from_root",None)),"E03 R2 corrective control missing")
+        a=c.e03_r2_from_root(ROOT);p=json.loads(a[c.D13_START_P]);m=json.loads(a[c.E03_R2_M]);start=c.e03_start_from_root(ROOT)
+        old=json.loads(start[c.D13_START_P])
+        self.assertEqual(8,len(a));self.assertEqual(1086,p["event_sequence"])
+        self.assertEqual("IN_PROGRESS",p["status"]);self.assertEqual(2,p["e03_corrective_revision"]["formal_failure_count"])
+        self.assertEqual(old["valid_failure_count"],p["valid_failure_count"])
+        self.assertEqual([],p["pending_approvals"]);self.assertEqual({"package_id":"E-04","status":"NOT_READY"},p["next_successor_work_package"])
+        for key in ("worker_lease","write_lease","active_agent"):self.assertEqual(old[key],p[key])
+        self.assertEqual(18,len(m["combined_exact_paths"]));self.assertEqual(3,len(m["additive_control_paths"]))
+        self.assertEqual(c.E03_WI_HASH,m["revision_binding"]["parent_work_instruction_sha256"])
+        self.assertFalse(m["revision_binding"]["scope_expansion"]);self.assertEqual("NONE",m["revision_binding"]["semantic_diff"])
+        self.assertEqual(c.e03_product_write_scope(),m["product_write_scope"])
+        self.assertEqual(c.raw_event_object_prefix_bytes(start[c.D13_START_E],1084),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1084))
+        rows=json.loads(a[c.D13_START_E])["events"][-2:]
+        self.assertEqual([1085,1086],[r["sequence"] for r in rows])
+        self.assertEqual(["PACKAGE_REWORK_REQUESTED","WORK_INSTRUCTION_REVISED"],[r["event_type"] for r in rows])
+
+    def test_r2_exact_git_paths_and_sequence_dispatch(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_r2_paths",None)),"E03 R2 paths missing")
+        facts=dict(head=c.E03_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e03_r2_paths())
+        self.assertEqual([],c.validate_e03_r2_git_facts(**facts))
+        for key,value in (("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape"]),("head","f"*40),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e03_r2_git_facts(**{**facts,key:value}))
+        with mock.patch.object(c,"_collect_e03_r2_git",return_value=["R2_SELECTED"]):
+            self.assertEqual(["R2_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1086}}))
+
+    def test_r2_projection_tampering_is_rejected(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_r2_from_root",None)),"E03 R2 corrective control missing")
+        a=c.e03_r2_from_root(ROOT);m=json.loads(a[c.E03_R2_M])
+        b={"_root":ROOT,"progress":json.loads(a[c.D13_START_P]),"events":json.loads(a[c.D13_START_E]),"handoff":c.extract_handoff_summary(a[c.D13_START_H].decode()),"detached_digest":json.loads(a[c.E03_R2_D])}
+        for field in ("failure","history","lease","binding","scope"):
+            altered=copy.deepcopy(b);manifest=copy.deepcopy(m)
+            if field=="failure":altered["progress"]["e03_corrective_revision"]["formal_failure_count"]=0
+            elif field=="history":altered["events"]["events"][0]["actor"]="forged"
+            elif field=="lease":altered["progress"]["worker_lease"]["execution_fencing_token"]="forged"
+            elif field=="binding":manifest["revision_binding"]["parent_work_instruction_sha256"]="forged"
+            else:manifest["combined_exact_paths"].append("escape")
+            self.assertIn("E03_R2_PROJECTION_INVALID",c.validate_e03_r2(altered,manifest))
+
+
+class E03FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e03_final",CHECKER_PATH)
+        module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+
+    def test_final_acceptance_preserves_prefix_and_revokes_leases(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_final_from_root",None)),"E03 final control missing")
+        a=c.e03_final_from_root(ROOT);p=json.loads(a[c.D13_START_P]);m=json.loads(a[c.E03_FINAL_M]);before=c.e03_r2_from_root(ROOT)
+        self.assertEqual(7,len(a));self.assertEqual(1091,p["event_sequence"]);self.assertEqual("ACCEPTED",p["status"])
+        self.assertTrue(all(p[k] is None for k in ("active_agent","worker_lease","write_lease","active_work_instruction")))
+        self.assertEqual({"package_id":"E-04","status":"READY_FOR_WORK_INSTRUCTION"},p["next_work_package"])
+        self.assertEqual([],p["pending_approvals"]);self.assertEqual(2,p["e03_final_acceptance"]["formal_failure_count"])
+        self.assertEqual(c.raw_event_object_prefix_bytes(before[c.D13_START_E],1086),c.raw_event_object_prefix_bytes(a[c.D13_START_E],1086))
+        self.assertEqual(["PACKAGE_COMPLETED","INDEPENDENT_TEST_JUDGMENT_RECORDED","WRITE_LEASE_REVOKED","WORKER_LEASE_REVOKED","MAIN_PACKAGE_ACCEPTED"],[e["event_type"] for e in json.loads(a[c.D13_START_E])["events"][-5:]])
+        self.assertEqual(20,len(m["combined_exact_paths"]));self.assertEqual(18,len(m["frozen_start_product_paths"]))
+        self.assertEqual(2,len(m["residual_minors"]));self.assertTrue(all(v["owner_package"]=="E-04" for v in m["residual_minors"]))
+        self.assertEqual("ACCEPT",m["independent_reviews"]["spec"]["verdict"]);self.assertEqual("PASS",m["independent_reviews"]["quality"]["verdict"])
+        self.assertEqual(2,m["independent_reviews"]["quality"]["minor_findings"])
+        self.assertTrue(all(not r["developer_transcript_used"] for r in m["independent_reviews"].values()))
+
+    def test_final_exact_scope_and_dispatch(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_final_paths",None)),"E03 final paths missing")
+        facts=dict(head=c.E03_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e03_final_paths())
+        self.assertEqual([],c.validate_e03_final_git_facts(**facts))
+        for key,value in (("head","f"*40),("dirty",facts["dirty"][:-1]),("dirty",facts["dirty"]+["escape"]),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e03_final_git_facts(**{**facts,key:value}))
+        with mock.patch.object(c,"_collect_e03_final_git",return_value=["FINAL_SELECTED"]):
+            self.assertEqual(["FINAL_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1091}}))
+
+    def test_final_product_and_corrective_docs_are_frozen(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e03_final_from_root",None)),"E03 final control missing")
+        original=Path.read_bytes
+        for relative in c.e03_product_write_scope()+[c.E03_R2_WI,c.E03_R2_D,c.E03_R2_M]:
+            with self.subTest(path=relative),mock.patch.object(Path,"read_bytes",lambda p:original(p)+b"tampered" if p==ROOT/relative else original(p)):
+                with self.assertRaisesRegex(ValueError,"E03_FINAL_FROZEN_DRIFT"):c.e03_final_from_root(ROOT)
+
+
 if __name__ == "__main__":
     unittest.main()
