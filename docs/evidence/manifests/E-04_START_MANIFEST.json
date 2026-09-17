@@ -1,0 +1,137 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E04_START",
+  "artifact_id": "E04-START-20260917",
+  "created_at": "2026-09-17T11:55:00+09:00",
+  "package_id": "E-04",
+  "event_sequence": 1095,
+  "historical_event_sequence": 1091,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 3577562,
+    "sha256": "4B61DC5DDFE3BC9AFF89E68A7BD2EC03F8372F380130C3A2EA4FE269CC1198DB"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "active_leases": 2,
+  "product_write_scope": [
+    "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
+    "migrations/versions/0014_dag_queue.py",
+    "packages/agent_team/__init__.py",
+    "packages/api/task_graph.py",
+    "packages/persistence/dag_queue_repository.py",
+    "packages/queue/dag.py",
+    "packages/queue/models.py",
+    "packages/queue/service.py",
+    "tests/api/test_task_graph_e04.py",
+    "tests/persistence/test_dag_queue_e04.py",
+    "tests/queue/test_dag_e04.py",
+    "tests/queue/test_durable_queue.py"
+  ],
+  "authority": {
+    "source": "MAIN_APPROVED_E04_IMPLEMENTATION_DISPATCH",
+    "new_project_approval_requested": false,
+    "product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "work_instruction_sha256": "CADD68422BDD0CF7CB8214E3BAA4DB6F72B1DB6BC395BD047C2A7BAD8C36978D",
+    "invocation_sha256": "1E2AD4CA5D42920E2D28B26CCC89A2E33304B014AF110F72E894686C78ABAFD2",
+    "approved_control_paths": [
+      "docs/evidence/manifests/E-04_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-e04-start.json",
+      "docs/work_orders/E-04_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-04_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "product_write_scope": [
+      "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
+      "migrations/versions/0014_dag_queue.py",
+      "packages/agent_team/__init__.py",
+      "packages/api/task_graph.py",
+      "packages/persistence/dag_queue_repository.py",
+      "packages/queue/dag.py",
+      "packages/queue/models.py",
+      "packages/queue/service.py",
+      "tests/api/test_task_graph_e04.py",
+      "tests/persistence/test_dag_queue_e04.py",
+      "tests/queue/test_dag_e04.py",
+      "tests/queue/test_durable_queue.py"
+    ],
+    "independent_acceptance_required": true,
+    "validation_ids": [
+      "AV-AGT-033",
+      "AV-AGT-037"
+    ],
+    "remote_verification": {
+      "source": "MAIN_LIVE_REMOTE_READ",
+      "command": "git ls-remote development refs/heads/codex/c09-execution-backends-r1",
+      "exit_code": 0,
+      "sha": "ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f",
+      "worker_live_remote": "NOT_EXECUTED_SSH_ALIAS_DNS_RESTRICTED"
+    }
+  },
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/E-04_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e04-start.json",
+    "docs/work_orders/E-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-04_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "projection_mode": "E04_START_EXACT9_PRODUCT_EXACT12",
+  "validated_base_commit": "ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 210830,
+      "sha256": "A73CFA38D867378EB8814FDF9267ADA0EBADC51E8451CB143F5AEBEDC517ECE8"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1131792,
+      "sha256": "0A345AA6C87B6560B38784DEFC7A3B1196B129510C203311DF9192E295DDA770"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3590373,
+      "sha256": "40C5C7C8E66F48381B30AC5EBBFB0A083C535BCB25B58822E6D1833FA58B2AA2"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e04-start.json",
+      "bytes": 835,
+      "sha256": "5127E396AA1E25919423E2C2D457CE021EBBEC2DC751B6014683C8BDDD5471E5"
+    },
+    {
+      "path": "docs/work_orders/E-04_INVOCATION_PROMPT.md",
+      "bytes": 752,
+      "sha256": "1E2AD4CA5D42920E2D28B26CCC89A2E33304B014AF110F72E894686C78ABAFD2"
+    },
+    {
+      "path": "docs/work_orders/E-04_WORK_INSTRUCTION.md",
+      "bytes": 3991,
+      "sha256": "CADD68422BDD0CF7CB8214E3BAA4DB6F72B1DB6BC395BD047C2A7BAD8C36978D"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4391935,
+      "sha256": "3AE72F0C9F35D4A0F367DDE724A534F85E8573D27F00D242D1D0A51B9F927E21"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1174691,
+      "sha256": "6301D024FA35C638D73B0990C31CD5011E15CBC1B752B87496788F34236EDEEF"
+    }
+  ]
+}

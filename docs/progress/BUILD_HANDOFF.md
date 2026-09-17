@@ -1,3 +1,18 @@
+# E-04 final acceptance seq1100
+
+- Main ACCEPTED: independent spec ACCEPT C0/I0/M0, quality PASS C0/I0/M0. Quality isolated PG15 5 PASS/65.73s and Main 5 PASS/93.24s.
+- Product exact12 frozen; formal failure2 resolved and preserved. seq1-1095 raw prefix unchanged; dual leases revoked.
+- E05 READY, NOT STARTED. PG18 RC, worker/HTTP/UI/provider/production unverified. No commit/push.
+- Checker additive one-shot evidence, exact numstat and patch SHA are in machine summary below; historical replacements0.
+
+# E-04 start control seq1095
+
+E04-CONTROL-EDIT-C03-001 count1: unintended C03 embedded evidence deletion detected in final diff. Exact HEAD bytes restored using apply_patch; E04 delta retained. Historical byte equality test added. Mechanism unconfirmed, not formal product failure.
+
+- Product exact12/control exact9; E03 ACCEPTED, Minor2 additive successor correction, Minor1 E04 product follow-up.
+- seq1-1091 raw prefix immutable. PostgreSQL DSN unavailable: actual DB NOT_EXECUTED, not contract PASS.
+- Main local/upstream/remote exact evidence; worker live remote NOT_EXECUTED. No commit/push/E05.
+
 # E-03 최종 수락 — seq1091
 
 - Main 판정 ACCEPTED: spec ACCEPT C0/I0/M0, quality PASS C0/I0/M2. 독립 세션 증거이며 Developer transcript 미사용.
@@ -1371,189 +1386,189 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1091,
-  "last_event_id": "evt_e03_final_main_package_accepted",
+  "event_sequence": 1100,
+  "last_event_id": "evt_e04_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-03",
+  "current_work_package": "E-04",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E04_READY_WITH_TWO_MINOR_FOLLOWUPS_NOT_STARTED",
+  "next_safe_action": "E05_READY_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e03_status": "ACCEPTED",
-  "e04_status": "READY_FOR_WORK_INSTRUCTION",
+  "e04_status": "ACCEPTED",
+  "e05_status": "READY_FOR_WORK_INSTRUCTION",
   "active_work_instruction": null,
-  "e03_formal_failure_count": 2,
-  "e03_failure_lineage": {
-    "formal_failure_count": 2,
-    "rework_count": 2,
-    "primary_lineage": "E03-SOURCE-PROVENANCE-MIX-001",
-    "same_failure_fingerprint": "E03-SECRET-UNICODE-BYPASS-003",
-    "related": [
-      "E03-BUNDLE-TOCTOU-002"
-    ],
-    "resolution": "INDEPENDENT_ACCEPTED_WITH_TWO_NONBLOCKING_MINORS"
-  },
-  "residual_minors": [
+  "e04_formal_failure_count": 2,
+  "e04_failure_lineage": [
     {
-      "id": "E03-MINOR-EXPORT-ALL",
-      "blocking": false,
-      "owner_package": "E-04",
-      "timing": "PREDECESSOR_FOLLOW_UP",
-      "path": "packages/agent_team/__init__.py",
-      "finding": "external verifier three new symbols missing from __all__",
-      "resolution": "DEFERRED_BY_MAIN_NOT_FIXED"
+      "fingerprint": "E04-PG-CURSOR-MULTIROW-LOCK-001",
+      "formal_count": 1,
+      "status": "RESOLVED",
+      "resolution": "bounded SELECT INTO and actual PG15 cursor behavior probe PASS"
     },
     {
-      "id": "E03-MINOR-HISTORICAL-STATUS",
-      "blocking": false,
-      "owner_package": "E-04",
-      "timing": "PREDECESSOR_FOLLOW_UP",
-      "path": "scripts/check_project_progress.py",
-      "finding": "frozen seq1084 helper duplicate e03_status and missing e04_status",
-      "resolution": "ADDITIVE_SUCCESSOR_CORRECTION_ONLY_NO_HISTORY_REWRITE"
+      "fingerprint": "E04-DOWNGRADE-LIVE-DAG-TOCTOU-002",
+      "formal_count": 1,
+      "status": "RESOLVED",
+      "resolution": "advisory-before-table transaction fence and three actual PG15 race cases PASS"
     }
   ],
   "dir_status": "CLEARED",
-  "repository_head": "c9678884d8e44a53fc4ab7c070a2c84f29c4e481",
+  "repository_head": "ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E03_FINAL_ACCEPTANCE_EXACT20",
+  "repository_projection_mode": "E04_FINAL_ACCEPTANCE_EXACT23",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-03_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-03_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-03_R2_CORRECTIVE_REVISION_MANIFEST.json",
-    "docs/evidence/manifests/E-03_START_MANIFEST.json",
+    "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-04_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-04_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e03-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e03-r2-corrective-revision.json",
-    "docs/progress/progress-handoff-detached-digest-e03-start.json",
-    "docs/work_orders/E-03_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-03_R2_CORRECTIVE_WORK_INSTRUCTION.md",
-    "docs/work_orders/E-03_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-e04-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e04-start.json",
+    "docs/work_orders/E-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-04_WORK_INSTRUCTION.md",
+    "migrations/versions/0014_dag_queue.py",
     "packages/agent_team/__init__.py",
-    "packages/agent_team/external_verifier.py",
-    "packages/api/external_verification.py",
+    "packages/api/task_graph.py",
+    "packages/persistence/dag_queue_repository.py",
+    "packages/queue/dag.py",
+    "packages/queue/models.py",
+    "packages/queue/service.py",
     "scripts/check_project_progress.py",
-    "tests/agent_team/test_external_verifier_e03.py",
-    "tests/api/test_external_verification_e03.py",
+    "tests/api/test_task_graph_e04.py",
+    "tests/persistence/test_dag_queue_e04.py",
+    "tests/queue/test_dag_e04.py",
+    "tests/queue/test_durable_queue.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-03_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
+  "current_manifest": "docs/evidence/manifests/E-04_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "1C1ECC00772E10C4AACB86777C9AA338AEDC2A0F84BA7BB0F8490F4FDCEF8491",
   "independent_reviews": {
     "spec": {
       "critical_findings": 0,
       "important_findings": 0,
-      "blocking_findings": 0,
-      "developer_transcript_used": false,
-      "independent_context": true,
-      "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
-      "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
-      "review_round": "E03_R2",
-      "reviewer": "c09_spec_review",
-      "verdict": "ACCEPT",
       "minor_findings": 0,
+      "developer_transcript_used": false,
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "checker_sequence": 1095,
+      "checker_result": "PASS",
+      "verdict": "ACCEPT",
       "commands": [
         {
-          "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py",
+          "command": "NOT_REPORTED",
+          "evidence_label": "local",
           "exit_code": 0,
-          "passed": 122
+          "passed": 47,
+          "skipped": 1,
+          "deselected": 5
         },
         {
-          "command": "C:\\Users\\cyhuh\\anaconda3\\python.exe -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_delegation_packet.py tests/orchestration/test_result_envelope_c05.py tests/api/test_external_verification_e03.py tests/tooling/test_project_progress.py::E03StartControlTests tests/tooling/test_project_progress.py::E03R2CorrectiveControlTests",
+          "command": "NOT_REPORTED",
+          "evidence_label": "related",
           "exit_code": 0,
-          "passed": 606
-        },
-        {
-          "command": "git diff --check",
-          "exit_code": 0
+          "passed": 915,
+          "skipped": 1
         }
       ],
-      "independent_probe": {
-        "product_assertions": 50,
-        "control_assertions": 24,
-        "result": "PASS"
+      "static_probe": {
+        "passed": 14
       },
-      "checker_sequence": 1086,
-      "checker_result": "PASS",
+      "diff_check_exit": 0,
       "staged_paths": [],
+      "actual_pg_rerun": "NOT_EXECUTED",
       "unverified": [
-        "actual external Claude/Codex/Local execution and transfer",
-        "provider authenticity",
-        "operating API/browser/DB/deployment"
+        "PG18 RC",
+        "actual worker/HTTP/UI/provider/production"
       ]
     },
     "quality": {
       "critical_findings": 0,
       "important_findings": 0,
-      "blocking_findings": 0,
+      "minor_findings": 0,
       "developer_transcript_used": false,
-      "independent_context": true,
-      "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
-      "target_hash": "52F1E2A97F3564691452B0424A7E3A2AD1E3C0CE590878B0C702B81F3ACD8778",
-      "review_round": "E03_R2",
-      "reviewer": "c10_quality_review",
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "checker_sequence": 1095,
+      "checker_result": "PASS",
       "verdict": "PASS",
-      "minor_findings": 2,
-      "resolved_python_binary": "NOT_REPORTED",
       "commands": [
         {
-          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team/test_external_verifier_e03.py tests/api/test_external_verification_e03.py --tb=short",
+          "command": "NOT_REPORTED",
+          "evidence_label": "local",
           "exit_code": 0,
-          "passed": 122
+          "passed": 59,
+          "skipped": 34
         },
         {
-          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/knowledge/test_sources_d03.py --tb=short",
+          "command": "NOT_REPORTED",
+          "evidence_label": "control",
           "exit_code": 0,
-          "passed": 600
-        },
-        {
-          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/tooling/test_project_progress.py -k 'E03StartControlTests or E03R2CorrectiveControlTests' --tb=short",
-          "exit_code": 0,
-          "passed": 5,
-          "deselected": 618
-        },
-        {
-          "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/agent_team tests/orchestration tests/artifacts tests/api --tb=short",
-          "exit_code": 0,
-          "passed": 1306
-        },
-        {
-          "command": "git diff --check",
-          "exit_code": 0
+          "passed": 4
         }
       ],
-      "independent_probe": {
-        "normalization_empty_safe_unicode": "PASS",
-        "prefix_hash_checks": "PASS"
+      "actual_pg15": {
+        "exit_code": 0,
+        "passed": 5,
+        "deselected": 7,
+        "engine": "PG15",
+        "isolation": "unique ephemeral pgvector container and scratch database",
+        "existing_database_or_credential_touched": false,
+        "container_residue": 0,
+        "volume_residue": 0,
+        "tunnel_residue": 0,
+        "command": "NOT_REPORTED",
+        "test_selection": "tests/persistence/test_dag_queue_e04.py -k real_postgres",
+        "seconds": 65.73
       },
-      "checker_sequence": 1086,
-      "checker_result": "PASS",
-      "staged_paths": [],
       "unverified": [
-        "actual credentials/Claude/provider/network/HTTP/UI/DB/worker/OS store/parallel/production"
-      ],
-      "provider_authenticity": "UNVERIFIED"
+        "PG18 RC",
+        "actual worker/HTTP/UI/provider/production"
+      ]
     }
   },
+  "main_pg15": {
+    "exit_code": 0,
+    "passed": 5,
+    "deselected": 7,
+    "engine": "PG15",
+    "isolation": "unique ephemeral pgvector container and scratch database",
+    "existing_database_or_credential_touched": false,
+    "container_residue": 0,
+    "volume_residue": 0,
+    "tunnel_residue": 0,
+    "source": "MAIN_ISOLATED_POSTGRES_R2_VERIFICATION",
+    "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/persistence/test_dag_queue_e04.py -k real_postgres --tb=short",
+    "seconds": 93.24
+  },
   "external_validation": {
-    "provider": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "http": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
+    "pg18_rc": "NOT_EXECUTED",
+    "shared_development_database_apply": "NOT_EXECUTED",
+    "actual_worker": "NOT_EXECUTED",
+    "http_wiring": "NOT_EXECUTED",
     "ui": "NOT_EXECUTED",
-    "os_worker": "NOT_EXECUTED",
-    "os_artifact_store": "NOT_EXECUTED",
-    "dag": "NOT_EXECUTED",
-    "parallel": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED"
+    "provider": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "isolated_pg15": "PASS"
+  },
+  "checker_edit_evidence": {
+    "method": "MAIN_AUTHORIZED_BULK_MECHANICAL_ADDITIVE_ONE_SHOT",
+    "base_sha256": "D81A81B03EE5BD4230426FE2174DF17BF9B941C0F6159B50C006CF2D9C759A85",
+    "pre_final_sha256": "3AE72F0C9F35D4A0F367DDE724A534F85E8573D27F00D242D1D0A51B9F927E21",
+    "preserved_start_block_bytes": 14204,
+    "preserved_start_block_sha256": "74AF6F60E782E03AF3D73FA64D6923EEE3FE99198B3579FC6DA139ABF1B035B6",
+    "current_sha256": "D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39",
+    "normalized_unified_patch_sha256": "1BFB0FC96593F241BB7A380D0D4B1717D0234692A9690B14F275D46A95817B16",
+    "patch_bytes": 34793,
+    "numstat": {
+      "added": 329,
+      "deleted": 0
+    },
+    "historical_replacement_count": 0
   },
   "reporting_decision": "AUTO_CONTINUE",
   "pending_approvals": [],

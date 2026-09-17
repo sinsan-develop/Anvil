@@ -1,0 +1,413 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E04_FINAL_ACCEPTANCE",
+  "artifact_id": "E04-FINAL-ACCEPTANCE-20260917",
+  "created_at": "2026-09-17T13:15:00+09:00",
+  "package_id": "E-04",
+  "event_sequence": 1100,
+  "historical_event_sequence": 1095,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3590188,
+    "sha256": "FDF127647648E221136B6C3751240864548E4FCA2570DCC741FA320B9E4DBE53"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-04_COMPLETION_REPORT.md": {
+      "bytes": 30225,
+      "sha256": "4E3F88BA640B061216691CA82B46D06ED8FA9119FEBE43844A74ACCC98D69215"
+    },
+    "migrations/versions/0014_dag_queue.py": {
+      "bytes": 7170,
+      "sha256": "4EFB2A67B448A0B8FCA88185FFEC9C0CBE034C4E5A2373A500E4794184336EFB"
+    },
+    "packages/agent_team/__init__.py": {
+      "bytes": 4143,
+      "sha256": "BE3E1784CC6BE2C90B8CDF10FBF4F9EA9FC8C0BC962F03D3D219A576EC336FDA"
+    },
+    "packages/api/task_graph.py": {
+      "bytes": 1054,
+      "sha256": "D8283BFE0FDC6722E4381A008B9D6953D67162447E11597E3E0DF02CA445F95E"
+    },
+    "packages/persistence/dag_queue_repository.py": {
+      "bytes": 5883,
+      "sha256": "C6F1102182A5B616899A0369138B7016B7DD43E0524C2C02A6051FA72EF897C5"
+    },
+    "packages/queue/dag.py": {
+      "bytes": 6925,
+      "sha256": "31C50AA2BF9E5C7219CDF8B6BDB370281EA7C676927777E234AD6FA07E0D5F5C"
+    },
+    "packages/queue/models.py": {
+      "bytes": 2197,
+      "sha256": "E87576883B53AD240AD120F27D864DA1AB6DE7273A57347695BCE60AF5B5712E"
+    },
+    "packages/queue/service.py": {
+      "bytes": 6804,
+      "sha256": "306BFF3CCBBFA61CD4DFB508B0A5409F5477AE97B122CDB513BE84B5941B191E"
+    },
+    "tests/api/test_task_graph_e04.py": {
+      "bytes": 784,
+      "sha256": "24851B5197E06BA2C84561071F1ECD07777477C6495817A322BC96AC9855D649"
+    },
+    "tests/persistence/test_dag_queue_e04.py": {
+      "bytes": 16543,
+      "sha256": "E9A8AAF5498B0622545AF0AC4307A0DEFDEDFF0573A6986ECFC369EFC1BDF5BA"
+    },
+    "tests/queue/test_dag_e04.py": {
+      "bytes": 6439,
+      "sha256": "93E7F7259C5B9EB9307F2500DFAFBD13A398F36155D817174D437CD4AEC3C913"
+    },
+    "tests/queue/test_durable_queue.py": {
+      "bytes": 9643,
+      "sha256": "EF19B6B7E7D61602DDC9050C7C3ED5769B550344695D51F64C21F870AFA165F4"
+    }
+  },
+  "evidence_target_hash": "1C1ECC00772E10C4AACB86777C9AA338AEDC2A0F84BA7BB0F8490F4FDCEF8491",
+  "independent_reviews": {
+    "spec": {
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "checker_sequence": 1095,
+      "checker_result": "PASS",
+      "verdict": "ACCEPT",
+      "commands": [
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "local",
+          "exit_code": 0,
+          "passed": 47,
+          "skipped": 1,
+          "deselected": 5
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "related",
+          "exit_code": 0,
+          "passed": 915,
+          "skipped": 1
+        }
+      ],
+      "static_probe": {
+        "passed": 14
+      },
+      "diff_check_exit": 0,
+      "staged_paths": [],
+      "actual_pg_rerun": "NOT_EXECUTED",
+      "unverified": [
+        "PG18 RC",
+        "actual worker/HTTP/UI/provider/production"
+      ]
+    },
+    "quality": {
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "checker_sequence": 1095,
+      "checker_result": "PASS",
+      "verdict": "PASS",
+      "commands": [
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "local",
+          "exit_code": 0,
+          "passed": 59,
+          "skipped": 34
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "control",
+          "exit_code": 0,
+          "passed": 4
+        }
+      ],
+      "actual_pg15": {
+        "exit_code": 0,
+        "passed": 5,
+        "deselected": 7,
+        "engine": "PG15",
+        "isolation": "unique ephemeral pgvector container and scratch database",
+        "existing_database_or_credential_touched": false,
+        "container_residue": 0,
+        "volume_residue": 0,
+        "tunnel_residue": 0,
+        "command": "NOT_REPORTED",
+        "test_selection": "tests/persistence/test_dag_queue_e04.py -k real_postgres",
+        "seconds": 65.73
+      },
+      "unverified": [
+        "PG18 RC",
+        "actual worker/HTTP/UI/provider/production"
+      ]
+    }
+  },
+  "main_pg15": {
+    "exit_code": 0,
+    "passed": 5,
+    "deselected": 7,
+    "engine": "PG15",
+    "isolation": "unique ephemeral pgvector container and scratch database",
+    "existing_database_or_credential_touched": false,
+    "container_residue": 0,
+    "volume_residue": 0,
+    "tunnel_residue": 0,
+    "source": "MAIN_ISOLATED_POSTGRES_R2_VERIFICATION",
+    "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/persistence/test_dag_queue_e04.py -k real_postgres --tb=short",
+    "seconds": 93.24
+  },
+  "external_validation": {
+    "pg18_rc": "NOT_EXECUTED",
+    "shared_development_database_apply": "NOT_EXECUTED",
+    "actual_worker": "NOT_EXECUTED",
+    "http_wiring": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "production": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "isolated_pg15": "PASS"
+  },
+  "formal_failure_count": 2,
+  "failure_lineage": [
+    {
+      "fingerprint": "E04-PG-CURSOR-MULTIROW-LOCK-001",
+      "formal_count": 1,
+      "status": "RESOLVED",
+      "resolution": "bounded SELECT INTO and actual PG15 cursor behavior probe PASS"
+    },
+    {
+      "fingerprint": "E04-DOWNGRADE-LIVE-DAG-TOCTOU-002",
+      "formal_count": 1,
+      "status": "RESOLVED",
+      "resolution": "advisory-before-table transaction fence and three actual PG15 race cases PASS"
+    }
+  ],
+  "checker_edit_evidence": {
+    "method": "MAIN_AUTHORIZED_BULK_MECHANICAL_ADDITIVE_ONE_SHOT",
+    "base_sha256": "D81A81B03EE5BD4230426FE2174DF17BF9B941C0F6159B50C006CF2D9C759A85",
+    "pre_final_sha256": "3AE72F0C9F35D4A0F367DDE724A534F85E8573D27F00D242D1D0A51B9F927E21",
+    "preserved_start_block_bytes": 14204,
+    "preserved_start_block_sha256": "74AF6F60E782E03AF3D73FA64D6923EEE3FE99198B3579FC6DA139ABF1B035B6",
+    "current_sha256": "D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39",
+    "normalized_unified_patch_sha256": "1BFB0FC96593F241BB7A380D0D4B1717D0234692A9690B14F275D46A95817B16",
+    "patch_bytes": 34793,
+    "numstat": {
+      "added": 329,
+      "deleted": 0
+    },
+    "historical_replacement_count": 0
+  },
+  "predecessor_minor_followups": {
+    "E03-MINOR-EXPORT-ALL": "RESOLVED_E04",
+    "E03-MINOR-HISTORICAL-STATUS": "RESOLVED_ADDITIVE_SUCCESSOR_NO_HISTORY_REWRITE"
+  },
+  "active_leases": 0,
+  "e04_status": "ACCEPTED",
+  "e05_status": "READY_FOR_WORK_INSTRUCTION",
+  "product_exact_paths": [
+    "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
+    "migrations/versions/0014_dag_queue.py",
+    "packages/agent_team/__init__.py",
+    "packages/api/task_graph.py",
+    "packages/persistence/dag_queue_repository.py",
+    "packages/queue/dag.py",
+    "packages/queue/models.py",
+    "packages/queue/service.py",
+    "tests/api/test_task_graph_e04.py",
+    "tests/persistence/test_dag_queue_e04.py",
+    "tests/queue/test_dag_e04.py",
+    "tests/queue/test_durable_queue.py"
+  ],
+  "frozen_start_product_paths": [
+    "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-04_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e04-start.json",
+    "docs/work_orders/E-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-04_WORK_INSTRUCTION.md",
+    "migrations/versions/0014_dag_queue.py",
+    "packages/agent_team/__init__.py",
+    "packages/api/task_graph.py",
+    "packages/persistence/dag_queue_repository.py",
+    "packages/queue/dag.py",
+    "packages/queue/models.py",
+    "packages/queue/service.py",
+    "scripts/check_project_progress.py",
+    "tests/api/test_task_graph_e04.py",
+    "tests/persistence/test_dag_queue_e04.py",
+    "tests/queue/test_dag_e04.py",
+    "tests/queue/test_durable_queue.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "frozen_product_sha256": {
+    "docs/04_test_reports/E-04_COMPLETION_REPORT.md": "4E3F88BA640B061216691CA82B46D06ED8FA9119FEBE43844A74ACCC98D69215",
+    "migrations/versions/0014_dag_queue.py": "4EFB2A67B448A0B8FCA88185FFEC9C0CBE034C4E5A2373A500E4794184336EFB",
+    "packages/agent_team/__init__.py": "BE3E1784CC6BE2C90B8CDF10FBF4F9EA9FC8C0BC962F03D3D219A576EC336FDA",
+    "packages/api/task_graph.py": "D8283BFE0FDC6722E4381A008B9D6953D67162447E11597E3E0DF02CA445F95E",
+    "packages/persistence/dag_queue_repository.py": "C6F1102182A5B616899A0369138B7016B7DD43E0524C2C02A6051FA72EF897C5",
+    "packages/queue/dag.py": "31C50AA2BF9E5C7219CDF8B6BDB370281EA7C676927777E234AD6FA07E0D5F5C",
+    "packages/queue/models.py": "E87576883B53AD240AD120F27D864DA1AB6DE7273A57347695BCE60AF5B5712E",
+    "packages/queue/service.py": "306BFF3CCBBFA61CD4DFB508B0A5409F5477AE97B122CDB513BE84B5941B191E",
+    "tests/api/test_task_graph_e04.py": "24851B5197E06BA2C84561071F1ECD07777477C6495817A322BC96AC9855D649",
+    "tests/persistence/test_dag_queue_e04.py": "E9A8AAF5498B0622545AF0AC4307A0DEFDEDFF0573A6986ECFC369EFC1BDF5BA",
+    "tests/queue/test_dag_e04.py": "93E7F7259C5B9EB9307F2500DFAFBD13A398F36155D817174D437CD4AEC3C913",
+    "tests/queue/test_durable_queue.py": "EF19B6B7E7D61602DDC9050C7C3ED5769B550344695D51F64C21F870AFA165F4"
+  },
+  "frozen_start_sha256": {
+    "docs/work_orders/E-04_WORK_INSTRUCTION.md": "CADD68422BDD0CF7CB8214E3BAA4DB6F72B1DB6BC395BD047C2A7BAD8C36978D",
+    "docs/work_orders/E-04_INVOCATION_PROMPT.md": "1E2AD4CA5D42920E2D28B26CCC89A2E33304B014AF110F72E894686C78ABAFD2",
+    "docs/progress/progress-handoff-detached-digest-e04-start.json": "5127E396AA1E25919423E2C2D457CE021EBBEC2DC751B6014683C8BDDD5471E5",
+    "docs/evidence/manifests/E-04_START_MANIFEST.json": "C5C5DC9D9D6364A26A2F2A45ED47E51DB565337D667E986FACB385BFE0DB00C0"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-04_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-04_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e04-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e04-start.json",
+    "docs/work_orders/E-04_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-04_WORK_INSTRUCTION.md",
+    "migrations/versions/0014_dag_queue.py",
+    "packages/agent_team/__init__.py",
+    "packages/api/task_graph.py",
+    "packages/persistence/dag_queue_repository.py",
+    "packages/queue/dag.py",
+    "packages/queue/models.py",
+    "packages/queue/service.py",
+    "scripts/check_project_progress.py",
+    "tests/api/test_task_graph_e04.py",
+    "tests/persistence/test_dag_queue_e04.py",
+    "tests/queue/test_dag_e04.py",
+    "tests/queue/test_durable_queue.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 23,
+  "projection_mode": "E04_FINAL_ACCEPTANCE_EXACT23",
+  "validated_base_commit": "ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
+      "bytes": 30225,
+      "sha256": "4E3F88BA640B061216691CA82B46D06ED8FA9119FEBE43844A74ACCC98D69215"
+    },
+    {
+      "path": "docs/evidence/manifests/E-04_START_MANIFEST.json",
+      "bytes": 5036,
+      "sha256": "C5C5DC9D9D6364A26A2F2A45ED47E51DB565337D667E986FACB385BFE0DB00C0"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 213296,
+      "sha256": "F93C18EE1DC2C4C365F7735B56B2A1A2ED2D8A52F9D3A9B4284C6460F30C39CC"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1131152,
+      "sha256": "FA0F4848DA8E890F6D217D9DB32F407FD40F9F3144ACB5CF2AE45A5A741657FA"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3609848,
+      "sha256": "5E942F1BE63C11109C9292F0CD695BDCA6DD54D55BA9DBFEEF9B2FA2AE9E0343"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e04-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "2211C4149A11E9C7358335B4FCB3BE083DC7EBB7567B1CDDF30F9A3D7B434B4A"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e04-start.json",
+      "bytes": 835,
+      "sha256": "5127E396AA1E25919423E2C2D457CE021EBBEC2DC751B6014683C8BDDD5471E5"
+    },
+    {
+      "path": "docs/work_orders/E-04_INVOCATION_PROMPT.md",
+      "bytes": 752,
+      "sha256": "1E2AD4CA5D42920E2D28B26CCC89A2E33304B014AF110F72E894686C78ABAFD2"
+    },
+    {
+      "path": "docs/work_orders/E-04_WORK_INSTRUCTION.md",
+      "bytes": 3991,
+      "sha256": "CADD68422BDD0CF7CB8214E3BAA4DB6F72B1DB6BC395BD047C2A7BAD8C36978D"
+    },
+    {
+      "path": "migrations/versions/0014_dag_queue.py",
+      "bytes": 7170,
+      "sha256": "4EFB2A67B448A0B8FCA88185FFEC9C0CBE034C4E5A2373A500E4794184336EFB"
+    },
+    {
+      "path": "packages/agent_team/__init__.py",
+      "bytes": 4143,
+      "sha256": "BE3E1784CC6BE2C90B8CDF10FBF4F9EA9FC8C0BC962F03D3D219A576EC336FDA"
+    },
+    {
+      "path": "packages/api/task_graph.py",
+      "bytes": 1054,
+      "sha256": "D8283BFE0FDC6722E4381A008B9D6953D67162447E11597E3E0DF02CA445F95E"
+    },
+    {
+      "path": "packages/persistence/dag_queue_repository.py",
+      "bytes": 5883,
+      "sha256": "C6F1102182A5B616899A0369138B7016B7DD43E0524C2C02A6051FA72EF897C5"
+    },
+    {
+      "path": "packages/queue/dag.py",
+      "bytes": 6925,
+      "sha256": "31C50AA2BF9E5C7219CDF8B6BDB370281EA7C676927777E234AD6FA07E0D5F5C"
+    },
+    {
+      "path": "packages/queue/models.py",
+      "bytes": 2197,
+      "sha256": "E87576883B53AD240AD120F27D864DA1AB6DE7273A57347695BCE60AF5B5712E"
+    },
+    {
+      "path": "packages/queue/service.py",
+      "bytes": 6804,
+      "sha256": "306BFF3CCBBFA61CD4DFB508B0A5409F5477AE97B122CDB513BE84B5941B191E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4410086,
+      "sha256": "D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39"
+    },
+    {
+      "path": "tests/api/test_task_graph_e04.py",
+      "bytes": 784,
+      "sha256": "24851B5197E06BA2C84561071F1ECD07777477C6495817A322BC96AC9855D649"
+    },
+    {
+      "path": "tests/persistence/test_dag_queue_e04.py",
+      "bytes": 16543,
+      "sha256": "E9A8AAF5498B0622545AF0AC4307A0DEFDEDFF0573A6986ECFC369EFC1BDF5BA"
+    },
+    {
+      "path": "tests/queue/test_dag_e04.py",
+      "bytes": 6439,
+      "sha256": "93E7F7259C5B9EB9307F2500DFAFBD13A398F36155D817174D437CD4AEC3C913"
+    },
+    {
+      "path": "tests/queue/test_durable_queue.py",
+      "bytes": 9643,
+      "sha256": "EF19B6B7E7D61602DDC9050C7C3ED5769B550344695D51F64C21F870AFA165F4"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1178931,
+      "sha256": "D8EF4F9FE4463CDA1CF4E1B35AE2A6EA864E57CF5D15A7CA84683281AA9819AE"
+    }
+  ]
+}

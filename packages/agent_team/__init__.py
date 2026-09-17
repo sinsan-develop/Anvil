@@ -137,3 +137,5 @@ __all__ = [
     "RemoteControlPlane", "RemoteSession",
 ]
 from .external_verifier import ExternalVerifierAdapter, ExternalVerificationError, ManualImportAuthorization
+
+__all__ += ["ExternalVerifierAdapter", "ExternalVerificationError", "ManualImportAuthorization"]
