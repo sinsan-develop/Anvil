@@ -1,0 +1,1 @@
+Execute `WI-E-08-R1-20260917-001` on its exact baseline and active dual-fence lease. Use TDD, modify only the exact6 product scope, preserve all Main control files, and return the required structured completion report. Do not stage, commit, push, perform network/provider calls, change schema, or implement E-09.

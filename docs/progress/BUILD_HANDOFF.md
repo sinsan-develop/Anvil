@@ -1,3 +1,15 @@
+# E-08 final acceptance seq1147
+
+- Independent Spec/Quality re-review ACCEPT, C0/I0/M0; six review findings resolved.
+- Product exact6 frozen; formal FAILURE_REPORT0; review rework rounds3; epoch1 leases revoked. E09 READY.
+- In-memory host contract verified. Durable DB/Provider/approval expiry/API/UI/deployment remain unverified.
+
+# E-08 start control seq1142
+
+- Product exact6/control exact9; E07 ACCEPTED. Historical seq1-1138 raw prefix immutable.
+- B10 atomic repository dependency + E08 capability route/admission orchestration only; no schema/network/UI.
+- Hard-limit reservation failure sends0; quota is PAUSED_QUOTA; unknown usage remains exposure; no unapproved fallback.
+
 # E-07 final acceptance seq1138
 
 - Independent Spec/Quality re-review ACCEPT, C0/I0/M0; review findings2 resolved.
@@ -1428,142 +1440,174 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1138,
-  "last_event_id": "evt_e07_final_main_package_accepted",
+  "event_sequence": 1147,
+  "last_event_id": "evt_e08_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-07",
+  "current_work_package": "E-08",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E08_READY_NOT_STARTED",
+  "next_safe_action": "E09_READY_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e06_status": "ACCEPTED",
   "e07_status": "ACCEPTED",
-  "e08_status": "READY_FOR_WORK_INSTRUCTION",
+  "e08_status": "ACCEPTED",
+  "e09_status": "READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
-  "repository_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+  "repository_head": "03878181590d13231fee3a47f7d43963d6a089c8",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E07_FINAL_ACCEPTANCE_EXACT17",
+  "repository_projection_mode": "E08_FINAL_ACCEPTANCE_EXACT17",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-07_LEASE_TIME_CORRECTION_MANIFEST.json",
-    "docs/evidence/manifests/E-07_START_MANIFEST.json",
+    "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-08_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e07-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json",
-    "docs/progress/progress-handoff-detached-digest-e07-start.json",
-    "docs/work_orders/E-07_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-07_WORK_INSTRUCTION.md",
-    "packages/orchestration/__init__.py",
-    "packages/orchestration/exception_resolver.py",
+    "docs/progress/progress-handoff-detached-digest-e08-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e08-start.json",
+    "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+    "packages/budget/__init__.py",
+    "packages/budget/models.py",
+    "packages/budget/routing.py",
+    "packages/budget/service.py",
     "scripts/check_project_progress.py",
-    "tests/orchestration/test_exception_resolver_e07.py",
+    "tests/budget/test_budget_routing_e08.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "B60A931860B642CA3C1DA911FE5DF168961614315F2B6621599DF2FDD5FF805A",
+  "current_manifest": "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "94E9979D524B163233496E53A24397330C4919FDCEBFF5B6B8CEB95063CBFEBA",
   "independent_reviews": {
     "spec": {
       "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
       "critical_findings": 0,
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1133,
+      "checker_sequence": 1142,
       "checker_result": "PASS",
       "diff_check_exit": 0,
-      "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
-      "unverified": [
-        "durable DB inbox",
-        "multiprocess atomicity",
-        "actual scheduler/worker dispatch",
-        "Provider/HTTP/API/UI",
-        "WSL/Docker/deployment",
-        "E08 quota accounting"
-      ],
-      "verdict": "ACCEPT",
       "focused": {
-        "passed": 91,
-        "skipped": 0,
-        "seconds": 0.85
+        "passed": 143,
+        "skipped": 0
       },
+      "adjacent": {
+        "passed": 153,
+        "skipped": 4,
+        "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+      },
+      "unverified": [
+        "actual Provider/network",
+        "durable DB send-once",
+        "multi-process recovery",
+        "durable approval expiry authority",
+        "API/UI",
+        "WSL/Docker/deployment"
+      ],
       "probes": {
-        "late_hard_all_policies": "PASS",
-        "ordinary_past_guard": "PASS",
-        "max_events_512_fail_closed": "PASS_BLOCKED"
+        "prior_findings_closed": 6,
+        "quota_stop_fault_matrix": "PASS",
+        "partial_actual_dimensions": "PASS",
+        "callback_count": 0
       }
     },
     "quality": {
       "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
       "critical_findings": 0,
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1133,
+      "checker_sequence": 1142,
       "checker_result": "PASS",
       "diff_check_exit": 0,
-      "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
-      "unverified": [
-        "durable DB inbox",
-        "multiprocess atomicity",
-        "actual scheduler/worker dispatch",
-        "Provider/HTTP/API/UI",
-        "WSL/Docker/deployment",
-        "E08 quota accounting"
-      ],
-      "verdict": "ACCEPT",
       "focused": {
-        "passed": 91,
-        "skipped": 0,
-        "seconds": 0.86
+        "passed": 143,
+        "skipped": 0
       },
+      "adjacent": {
+        "passed": 153,
+        "skipped": 4,
+        "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+      },
+      "unverified": [
+        "actual Provider/network",
+        "durable DB send-once",
+        "multi-process recovery",
+        "durable approval expiry authority",
+        "API/UI",
+        "WSL/Docker/deployment"
+      ],
       "probes": {
-        "mutable_tz_callback_count": 0,
-        "utc_detachment": "PASS",
-        "concurrent_sequences_1_32": "PASS",
-        "max_events_512_fail_closed": "PASS_BLOCKED"
+        "quota_stop_fault_combinations": 16,
+        "overforecast_combinations": 6,
+        "duplicate_send_count": 1,
+        "hard_limit_parallel": "SEND3_PAUSE97",
+        "callback_count": 0
       }
     }
   },
   "resolved_review_findings": [
     {
-      "finding_id": "E07-LATE-HARD-EVIDENCE-REJECTED",
+      "finding_id": "E08-LEDGER-ALIAS-001",
       "severity": "CRITICAL",
       "status": "RESOLVED",
-      "resolution": "hard safety evidence appends by arrival and blocks while preserving occurred_at"
+      "resolution": "public budget inputs and outputs are exact-type detached values"
     },
     {
-      "finding_id": "E07-MUTABLE-TZINFO-ALIAS",
+      "finding_id": "E08-ACTUAL-OVERFORECAST-002",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "known overforecast dimensions preserve evidence and pause new admission"
+    },
+    {
+      "finding_id": "E08-UNTRUSTED-CALLBACK-003",
       "severity": "IMPORTANT",
       "status": "RESOLVED",
-      "resolution": "custom tzinfo rejected callback-free and builtin UTC datetime detached"
+      "resolution": "all untrusted scalar and mapping shapes validate callback-free before copying"
+    },
+    {
+      "finding_id": "E08-PARTIAL-ACTUAL-EXPOSURE-DROPPED",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "known cost or token dimensions survive partial reconciliation"
+    },
+    {
+      "finding_id": "E08-SAFETY-STOP-PUBLICATION-ROLLBACK",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "overforecast and public reconcile stops are sticky across publication faults"
+    },
+    {
+      "finding_id": "E08-QUOTA-STOP-ROLLBACK",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "provider quota and hard-limit stops persist across response and owner faults"
     }
   ],
   "external_validation": {
     "provider": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
     "http": "NOT_EXECUTED",
     "api": "NOT_EXECUTED",
     "ui": "NOT_EXECUTED",
     "browser": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
     "wsl": "NOT_EXECUTED",
     "docker": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED",
     "actual_worker": "NOT_EXECUTED",
-    "durable_db_inbox": "NOT_INTEGRATED",
-    "multiprocess_atomicity": "NOT_INTEGRATED",
-    "scheduler_runtime_binding": "NOT_INTEGRATED",
-    "e08_quota_accounting": "NOT_IMPLEMENTED",
+    "durable_db_send_once": "NOT_INTEGRATED",
+    "multiprocess_recovery": "NOT_INTEGRATED",
+    "durable_approval_expiry": "NOT_INTEGRATED",
     "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
   },
+  "formal_failure_count": 0,
+  "review_rework_rounds": 3,
   "reporting_decision": "AUTO_CONTINUE",
   "pending_approvals": [],
   "staged": false,

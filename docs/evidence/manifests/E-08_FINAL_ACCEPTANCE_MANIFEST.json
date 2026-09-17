@@ -1,0 +1,308 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E08_FINAL_ACCEPTANCE",
+  "artifact_id": "E08-FINAL-ACCEPTANCE-20260917",
+  "created_at": "2026-09-17T22:26:45+09:00",
+  "package_id": "E-08",
+  "event_sequence": 1147,
+  "historical_event_sequence": 1142,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3728850,
+    "sha256": "4ABC678EA38C13999160606ED238AB87092D0BB52F18683EE1E3E12A96D530D7"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "ACCEPTED",
+  "accepted": true,
+  "product_raw": {
+    "docs/04_test_reports/E-08_COMPLETION_REPORT.md": {
+      "bytes": 30766,
+      "sha256": "901784F455FB82BC64C48E703799B8FA5BDBCB9926DDEF2F4D57649CE0160F2B"
+    },
+    "packages/budget/__init__.py": {
+      "bytes": 711,
+      "sha256": "354DAB2109497DD46081186F039E4CD1A5103F69B04A0B723522657F0E760AFF"
+    },
+    "packages/budget/models.py": {
+      "bytes": 5904,
+      "sha256": "DFAC1F269B094A833D1AA7344B90BA7A961A30F2311650DCCE25316C4EECACD8"
+    },
+    "packages/budget/routing.py": {
+      "bytes": 13575,
+      "sha256": "E5A562C3993C4E1F955F1C68654F5663F7981A641BFB221160790B36732DF219"
+    },
+    "packages/budget/service.py": {
+      "bytes": 19532,
+      "sha256": "DA1FE2B4636370C93A09B8A79EBB9137480C44AEEAB15577DC97FFF44FD7F5C9"
+    },
+    "tests/budget/test_budget_routing_e08.py": {
+      "bytes": 45526,
+      "sha256": "B4427CE5212E1702FA9E1BDF9B5924AB99364F83CB1FF6B1284EF499151E11C4"
+    }
+  },
+  "evidence_target_hash": "94E9979D524B163233496E53A24397330C4919FDCEBFF5B6B8CEB95063CBFEBA",
+  "independent_reviews": {
+    "spec": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1142,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "focused": {
+        "passed": 143,
+        "skipped": 0
+      },
+      "adjacent": {
+        "passed": 153,
+        "skipped": 4,
+        "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+      },
+      "unverified": [
+        "actual Provider/network",
+        "durable DB send-once",
+        "multi-process recovery",
+        "durable approval expiry authority",
+        "API/UI",
+        "WSL/Docker/deployment"
+      ],
+      "probes": {
+        "prior_findings_closed": 6,
+        "quota_stop_fault_matrix": "PASS",
+        "partial_actual_dimensions": "PASS",
+        "callback_count": 0
+      }
+    },
+    "quality": {
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
+      "verdict": "ACCEPT",
+      "critical_findings": 0,
+      "important_findings": 0,
+      "minor_findings": 0,
+      "developer_transcript_used": false,
+      "checker_sequence": 1142,
+      "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "focused": {
+        "passed": 143,
+        "skipped": 0
+      },
+      "adjacent": {
+        "passed": 153,
+        "skipped": 4,
+        "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+      },
+      "unverified": [
+        "actual Provider/network",
+        "durable DB send-once",
+        "multi-process recovery",
+        "durable approval expiry authority",
+        "API/UI",
+        "WSL/Docker/deployment"
+      ],
+      "probes": {
+        "quota_stop_fault_combinations": 16,
+        "overforecast_combinations": 6,
+        "duplicate_send_count": 1,
+        "hard_limit_parallel": "SEND3_PAUSE97",
+        "callback_count": 0
+      }
+    }
+  },
+  "external_validation": {
+    "provider": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
+    "ui": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
+    "actual_worker": "NOT_EXECUTED",
+    "durable_db_send_once": "NOT_INTEGRATED",
+    "multiprocess_recovery": "NOT_INTEGRATED",
+    "durable_approval_expiry": "NOT_INTEGRATED",
+    "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
+  },
+  "formal_failure_count": 0,
+  "review_rework_rounds": 3,
+  "resolved_review_findings": [
+    {
+      "finding_id": "E08-LEDGER-ALIAS-001",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "public budget inputs and outputs are exact-type detached values"
+    },
+    {
+      "finding_id": "E08-ACTUAL-OVERFORECAST-002",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "known overforecast dimensions preserve evidence and pause new admission"
+    },
+    {
+      "finding_id": "E08-UNTRUSTED-CALLBACK-003",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "all untrusted scalar and mapping shapes validate callback-free before copying"
+    },
+    {
+      "finding_id": "E08-PARTIAL-ACTUAL-EXPOSURE-DROPPED",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "known cost or token dimensions survive partial reconciliation"
+    },
+    {
+      "finding_id": "E08-SAFETY-STOP-PUBLICATION-ROLLBACK",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "overforecast and public reconcile stops are sticky across publication faults"
+    },
+    {
+      "finding_id": "E08-QUOTA-STOP-ROLLBACK",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "provider quota and hard-limit stops persist across response and owner faults"
+    }
+  ],
+  "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "work_instruction_sha256": "83CCB950656482E60E45A164EFDF1CF4A227266CB78B554F7409CFB4D0A2E2C7",
+  "invocation_sha256": "85BDA0FCC4A41FFF0716580207827209686A14EBC5B4AB7462B06354CD30C5BD",
+  "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
+  "active_leases": 0,
+  "e08_status": "ACCEPTED",
+  "e09_status": "READY_FOR_WORK_INSTRUCTION",
+  "product_exact_paths": [
+    "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+    "packages/budget/__init__.py",
+    "packages/budget/models.py",
+    "packages/budget/routing.py",
+    "packages/budget/service.py",
+    "tests/budget/test_budget_routing_e08.py"
+  ],
+  "frozen_product_sha256": {
+    "docs/04_test_reports/E-08_COMPLETION_REPORT.md": "901784F455FB82BC64C48E703799B8FA5BDBCB9926DDEF2F4D57649CE0160F2B",
+    "packages/budget/__init__.py": "354DAB2109497DD46081186F039E4CD1A5103F69B04A0B723522657F0E760AFF",
+    "packages/budget/models.py": "DFAC1F269B094A833D1AA7344B90BA7A961A30F2311650DCCE25316C4EECACD8",
+    "packages/budget/routing.py": "E5A562C3993C4E1F955F1C68654F5663F7981A641BFB221160790B36732DF219",
+    "packages/budget/service.py": "DA1FE2B4636370C93A09B8A79EBB9137480C44AEEAB15577DC97FFF44FD7F5C9",
+    "tests/budget/test_budget_routing_e08.py": "B4427CE5212E1702FA9E1BDF9B5924AB99364F83CB1FF6B1284EF499151E11C4"
+  },
+  "frozen_control_sha256": {
+    "docs/work_orders/E-08_WORK_INSTRUCTION.md": "83CCB950656482E60E45A164EFDF1CF4A227266CB78B554F7409CFB4D0A2E2C7",
+    "docs/work_orders/E-08_INVOCATION_PROMPT.md": "85BDA0FCC4A41FFF0716580207827209686A14EBC5B4AB7462B06354CD30C5BD",
+    "docs/progress/progress-handoff-detached-digest-e08-start.json": "50A4106B6496A73D8B67EE788EEABE743AA3515EB173785A39572462501A74A4",
+    "docs/evidence/manifests/E-08_START_MANIFEST.json": "45F6E4A4C41CEB7BA2C23409A8D17A2D79B6603C36059919277190F0696CD0F5"
+  },
+  "combined_exact_paths": [
+    "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-08_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e08-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e08-start.json",
+    "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+    "packages/budget/__init__.py",
+    "packages/budget/models.py",
+    "packages/budget/routing.py",
+    "packages/budget/service.py",
+    "scripts/check_project_progress.py",
+    "tests/budget/test_budget_routing_e08.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "combined_exact_path_count": 17,
+  "projection_mode": "E08_FINAL_ACCEPTANCE_EXACT17",
+  "validated_base_commit": "03878181590d13231fee3a47f7d43963d6a089c8",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+      "bytes": 30766,
+      "sha256": "901784F455FB82BC64C48E703799B8FA5BDBCB9926DDEF2F4D57649CE0160F2B"
+    },
+    {
+      "path": "docs/evidence/manifests/E-08_START_MANIFEST.json",
+      "bytes": 4550,
+      "sha256": "45F6E4A4C41CEB7BA2C23409A8D17A2D79B6603C36059919277190F0696CD0F5"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 215947,
+      "sha256": "06CF4A3E83964CBC82F42A92AE9C1341A7C0EBC4F1498313C97B0E013ECF26C0"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1154711,
+      "sha256": "AAFDE2A303A023E51D19C820F6428A5E22C99275BF32E2496841834F22B37DF9"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3747830,
+      "sha256": "B9AD5910F276863702480EDDCEC40856B72736FEEE0AA3391ACD9C1C21D226F1"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e08-final-acceptance.json",
+      "bytes": 851,
+      "sha256": "67192B7C18F9B8ADD5E5F858CED11B7EF94F42A32E5023A6B7DFD43ADD5F7A33"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e08-start.json",
+      "bytes": 835,
+      "sha256": "50A4106B6496A73D8B67EE788EEABE743AA3515EB173785A39572462501A74A4"
+    },
+    {
+      "path": "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+      "bytes": 313,
+      "sha256": "85BDA0FCC4A41FFF0716580207827209686A14EBC5B4AB7462B06354CD30C5BD"
+    },
+    {
+      "path": "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+      "bytes": 3888,
+      "sha256": "83CCB950656482E60E45A164EFDF1CF4A227266CB78B554F7409CFB4D0A2E2C7"
+    },
+    {
+      "path": "packages/budget/__init__.py",
+      "bytes": 711,
+      "sha256": "354DAB2109497DD46081186F039E4CD1A5103F69B04A0B723522657F0E760AFF"
+    },
+    {
+      "path": "packages/budget/models.py",
+      "bytes": 5904,
+      "sha256": "DFAC1F269B094A833D1AA7344B90BA7A961A30F2311650DCCE25316C4EECACD8"
+    },
+    {
+      "path": "packages/budget/routing.py",
+      "bytes": 13575,
+      "sha256": "E5A562C3993C4E1F955F1C68654F5663F7981A641BFB221160790B36732DF219"
+    },
+    {
+      "path": "packages/budget/service.py",
+      "bytes": 19532,
+      "sha256": "DA1FE2B4636370C93A09B8A79EBB9137480C44AEEAB15577DC97FFF44FD7F5C9"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4566963,
+      "sha256": "481371F1C323250566DD38F28DBAB66E50673D9E4E80F3F13455A1E09DD4F52A"
+    },
+    {
+      "path": "tests/budget/test_budget_routing_e08.py",
+      "bytes": 45526,
+      "sha256": "B4427CE5212E1702FA9E1BDF9B5924AB99364F83CB1FF6B1284EF499151E11C4"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1206732,
+      "sha256": "0CAACA6837A226EF687C8F42F0AB5059530B0418F20A9F57E502CDB643764D68"
+    }
+  ]
+}

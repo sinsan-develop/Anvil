@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1138,
+  "last_sequence": 1147,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -70473,7 +70473,724 @@
           "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
         }
       }
+    },
+    {
+      "sequence": 1139,
+      "event_id": "evt_e08_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "START",
+      "subject_ref": "E-08/START",
+      "occurred_at": "2026-09-17T21:23:20+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "8369381FB0ED1D2F6DD2B55DD584761DC8CC6CFAB8DCEE2AD74393B1AECDF12A",
+      "details": {
+        "work_instruction_id": "WI-E-08-R1-20260917-001",
+        "work_instruction_path": "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "83CCB950656482E60E45A164EFDF1CF4A227266CB78B554F7409CFB4D0A2E2C7",
+        "invocation_path": "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+        "invocation_sha256": "85BDA0FCC4A41FFF0716580207827209686A14EBC5B4AB7462B06354CD30C5BD",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/routing.py",
+          "packages/budget/service.py",
+          "tests/budget/test_budget_routing_e08.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E08_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "83CCB950656482E60E45A164EFDF1CF4A227266CB78B554F7409CFB4D0A2E2C7",
+          "invocation_sha256": "85BDA0FCC4A41FFF0716580207827209686A14EBC5B4AB7462B06354CD30C5BD",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-08_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e08-start.json",
+            "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+            "packages/budget/__init__.py",
+            "packages/budget/models.py",
+            "packages/budget/routing.py",
+            "packages/budget/service.py",
+            "tests/budget/test_budget_routing_e08.py"
+          ],
+          "independent_acceptance_required": true,
+          "validation_ids": [
+            "AV-STAT-024",
+            "AV-STAT-025",
+            "AV-STAT-028",
+            "AV-STAT-036",
+            "AV-OPS-012",
+            "AV-OPS-019",
+            "AV-AGT-038",
+            "AV-FLOW-009"
+          ],
+          "boundary": {
+            "postgres_atomic_reservation": "EXISTING_B10_DEPENDENCY",
+            "provider_network": "NOT_EXECUTED",
+            "schema_change": "FORBIDDEN",
+            "e09_gate": "NOT_IMPLEMENTED"
+          }
+        }
+      }
+    },
+    {
+      "sequence": 1140,
+      "event_id": "evt_e08_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "START",
+      "subject_ref": "E-08/START",
+      "occurred_at": "2026-09-17T21:23:20+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "7B2DBD78774E62F59811E80666AA14A2B30393F8FC805C5F103B4194E6423257",
+      "details": {
+        "actor_id": "developer-primary-e08-r1",
+        "subject_ref": "E-08",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "issued_at": "2026-09-17T21:23:20+09:00",
+        "expires_at": "2026-09-18T09:23:20+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e08-r1-execution-fence-epoch-1-03878181590d1323",
+        "path_scope": [
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/routing.py",
+          "packages/budget/service.py",
+          "tests/budget/test_budget_routing_e08.py"
+        ],
+        "lease_id": "worker-lease-e08-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e08-r1-execution-fence-epoch-1-03878181590d1323",
+        "dispatch_head": "03878181590d13231fee3a47f7d43963d6a089c8"
+      }
+    },
+    {
+      "sequence": 1141,
+      "event_id": "evt_e08_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "START",
+      "subject_ref": "E-08/START",
+      "occurred_at": "2026-09-17T21:23:20+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "126E252BFB4EAC18F6EEFDE736B39035BD375843E17B0AA75655230E1756EDFD",
+      "details": {
+        "actor_id": "developer-primary-e08-r1",
+        "subject_ref": "E-08",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "issued_at": "2026-09-17T21:23:20+09:00",
+        "expires_at": "2026-09-18T09:23:20+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e08-r1-execution-fence-epoch-1-03878181590d1323",
+        "path_scope": [
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/routing.py",
+          "packages/budget/service.py",
+          "tests/budget/test_budget_routing_e08.py"
+        ],
+        "lease_id": "write-lease-e08-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e08-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e08-r1-write-fence-epoch-1-1fee3a47f7d43963",
+        "write_fencing_token": "e08-r1-write-fence-epoch-1-1fee3a47f7d43963"
+      }
+    },
+    {
+      "sequence": 1142,
+      "event_id": "evt_e08_package_started",
+      "event_type": "PACKAGE_STARTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "START",
+      "subject_ref": "E-08/START",
+      "occurred_at": "2026-09-17T21:23:20+09:00",
+      "occurred_at_source": "HOST_CLOCK_OBSERVED_BEFORE_PRODUCT_MUTATION",
+      "previous_event_sha256": "37B1C21C2DD7BF246BC1840A3B55FCD73D1F525F2004EB8BC208FD471BC0F7B9",
+      "details": {
+        "projection_mode": "E08_START_EXACT9_PRODUCT_EXACT6",
+        "validated_base_commit": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "dispatch_head": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "dispatch_upstream_head": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "head_relation": "PRECOMMIT_EXACT9_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/E-08_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e08-start.json",
+          "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E08_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "83CCB950656482E60E45A164EFDF1CF4A227266CB78B554F7409CFB4D0A2E2C7",
+          "invocation_sha256": "85BDA0FCC4A41FFF0716580207827209686A14EBC5B4AB7462B06354CD30C5BD",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-08_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e08-start.json",
+            "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+            "packages/budget/__init__.py",
+            "packages/budget/models.py",
+            "packages/budget/routing.py",
+            "packages/budget/service.py",
+            "tests/budget/test_budget_routing_e08.py"
+          ],
+          "independent_acceptance_required": true,
+          "validation_ids": [
+            "AV-STAT-024",
+            "AV-STAT-025",
+            "AV-STAT-028",
+            "AV-STAT-036",
+            "AV-OPS-012",
+            "AV-OPS-019",
+            "AV-AGT-038",
+            "AV-FLOW-009"
+          ],
+          "boundary": {
+            "postgres_atomic_reservation": "EXISTING_B10_DEPENDENCY",
+            "provider_network": "NOT_EXECUTED",
+            "schema_change": "FORBIDDEN",
+            "e09_gate": "NOT_IMPLEMENTED"
+          }
+        },
+        "product_write_scope": [
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/routing.py",
+          "packages/budget/service.py",
+          "tests/budget/test_budget_routing_e08.py"
+        ],
+        "work_instruction_id": "WI-E-08-R1-20260917-001",
+        "package_status": "IN_PROGRESS",
+        "work_package_id": "E-08",
+        "status": "IN_PROGRESS",
+        "active_agent": "developer-primary-e08-r1",
+        "worker_lease_id": "worker-lease-e08-r1-20260917-001",
+        "write_lease_id": "write-lease-e08-r1-20260917-001",
+        "execution_fencing_token": "e08-r1-execution-fence-epoch-1-03878181590d1323",
+        "write_fencing_token": "e08-r1-write-fence-epoch-1-1fee3a47f7d43963",
+        "work_instruction_sha256": "83CCB950656482E60E45A164EFDF1CF4A227266CB78B554F7409CFB4D0A2E2C7",
+        "runtime_next_action": "E08_BUDGET_ROUTING_TDD_THEN_REVIEW"
+      }
+    },
+    {
+      "sequence": 1143,
+      "event_id": "evt_e08_final_package_completed",
+      "event_type": "PACKAGE_COMPLETED",
+      "actor": "developer-primary-e08-r1",
+      "actor_id": "developer-primary-e08-r1",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-08/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-17T22:26:45+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "8D234A1E2EB515B91714D0D92373ECB73F32E64903B7D9FCC5ADA5051298B21D",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_raw": {
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md": {
+            "bytes": 30766,
+            "sha256": "901784F455FB82BC64C48E703799B8FA5BDBCB9926DDEF2F4D57649CE0160F2B"
+          },
+          "packages/budget/__init__.py": {
+            "bytes": 711,
+            "sha256": "354DAB2109497DD46081186F039E4CD1A5103F69B04A0B723522657F0E760AFF"
+          },
+          "packages/budget/models.py": {
+            "bytes": 5904,
+            "sha256": "DFAC1F269B094A833D1AA7344B90BA7A961A30F2311650DCCE25316C4EECACD8"
+          },
+          "packages/budget/routing.py": {
+            "bytes": 13575,
+            "sha256": "E5A562C3993C4E1F955F1C68654F5663F7981A641BFB221160790B36732DF219"
+          },
+          "packages/budget/service.py": {
+            "bytes": 19532,
+            "sha256": "DA1FE2B4636370C93A09B8A79EBB9137480C44AEEAB15577DC97FFF44FD7F5C9"
+          },
+          "tests/budget/test_budget_routing_e08.py": {
+            "bytes": 45526,
+            "sha256": "B4427CE5212E1702FA9E1BDF9B5924AB99364F83CB1FF6B1284EF499151E11C4"
+          }
+        },
+        "evidence_target_hash": "94E9979D524B163233496E53A24397330C4919FDCEBFF5B6B8CEB95063CBFEBA",
+        "formal_failure_count": 0,
+        "review_rework_rounds": 3,
+        "report_ref": "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "actual_worker": "NOT_EXECUTED",
+          "durable_db_send_once": "NOT_INTEGRATED",
+          "multiprocess_recovery": "NOT_INTEGRATED",
+          "durable_approval_expiry": "NOT_INTEGRATED",
+          "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
+        }
+      }
+    },
+    {
+      "sequence": 1144,
+      "event_id": "evt_e08_final_independent_test_judgment_recorded",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "actor": "independent-reviewer",
+      "actor_id": "independent-reviewer",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-08/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-17T22:26:45+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "04775A3DEDFBB2DFC6109A44B027B592C771B5E0E73440B4DA3ACE770E9CE8A5",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "AV-STAT-024/025/028/036 AV-OPS-012/019 AV-AGT-038 AV-FLOW-009",
+        "evidence_ref": "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
+        "evidence_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "94E9979D524B163233496E53A24397330C4919FDCEBFF5B6B8CEB95063CBFEBA",
+        "reviews": {
+          "spec": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1142,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "focused": {
+              "passed": 143,
+              "skipped": 0
+            },
+            "adjacent": {
+              "passed": 153,
+              "skipped": 4,
+              "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+            },
+            "unverified": [
+              "actual Provider/network",
+              "durable DB send-once",
+              "multi-process recovery",
+              "durable approval expiry authority",
+              "API/UI",
+              "WSL/Docker/deployment"
+            ],
+            "probes": {
+              "prior_findings_closed": 6,
+              "quota_stop_fault_matrix": "PASS",
+              "partial_actual_dimensions": "PASS",
+              "callback_count": 0
+            }
+          },
+          "quality": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1142,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "focused": {
+              "passed": 143,
+              "skipped": 0
+            },
+            "adjacent": {
+              "passed": 153,
+              "skipped": 4,
+              "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+            },
+            "unverified": [
+              "actual Provider/network",
+              "durable DB send-once",
+              "multi-process recovery",
+              "durable approval expiry authority",
+              "API/UI",
+              "WSL/Docker/deployment"
+            ],
+            "probes": {
+              "quota_stop_fault_combinations": 16,
+              "overforecast_combinations": 6,
+              "duplicate_send_count": 1,
+              "hard_limit_parallel": "SEND3_PAUSE97",
+              "callback_count": 0
+            }
+          }
+        },
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "resolved_review_findings": [
+          {
+            "finding_id": "E08-LEDGER-ALIAS-001",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "public budget inputs and outputs are exact-type detached values"
+          },
+          {
+            "finding_id": "E08-ACTUAL-OVERFORECAST-002",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "known overforecast dimensions preserve evidence and pause new admission"
+          },
+          {
+            "finding_id": "E08-UNTRUSTED-CALLBACK-003",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "all untrusted scalar and mapping shapes validate callback-free before copying"
+          },
+          {
+            "finding_id": "E08-PARTIAL-ACTUAL-EXPOSURE-DROPPED",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "known cost or token dimensions survive partial reconciliation"
+          },
+          {
+            "finding_id": "E08-SAFETY-STOP-PUBLICATION-ROLLBACK",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "overforecast and public reconcile stops are sticky across publication faults"
+          },
+          {
+            "finding_id": "E08-QUOTA-STOP-ROLLBACK",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "provider quota and hard-limit stops persist across response and owner faults"
+          }
+        ],
+        "review_rework_rounds": 3,
+        "formal_failure_count": 0,
+        "developer_transcript_used": false
+      }
+    },
+    {
+      "sequence": 1145,
+      "event_id": "evt_e08_final_final_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-08/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-17T22:26:45+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "3885990BD87A0F98B477F95C4F04929B2C22EDFBA1B5DC7E592F7569B3B9B36C",
+      "details": {
+        "actor_id": "developer-primary-e08-r1",
+        "subject_ref": "E-08",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "issued_at": "2026-09-17T21:23:20+09:00",
+        "expires_at": "2026-09-18T09:23:20+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e08-r1-execution-fence-epoch-1-03878181590d1323",
+        "path_scope": [
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/routing.py",
+          "packages/budget/service.py",
+          "tests/budget/test_budget_routing_e08.py"
+        ],
+        "lease_id": "write-lease-e08-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e08-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e08-r1-write-fence-epoch-1-1fee3a47f7d43963",
+        "write_fencing_token": "e08-r1-write-fence-epoch-1-1fee3a47f7d43963",
+        "revoked_at": "2026-09-17T22:26:45+09:00",
+        "reason": "E08_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1146,
+      "event_id": "evt_e08_final_final_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-08/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-17T22:26:45+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "5014DE27DBC1E76EBCFE8F51B1E0D1F8B1F813E789E02308420807D99F47300F",
+      "details": {
+        "actor_id": "developer-primary-e08-r1",
+        "subject_ref": "E-08",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "issued_at": "2026-09-17T21:23:20+09:00",
+        "expires_at": "2026-09-18T09:23:20+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e08-r1-execution-fence-epoch-1-03878181590d1323",
+        "path_scope": [
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/routing.py",
+          "packages/budget/service.py",
+          "tests/budget/test_budget_routing_e08.py"
+        ],
+        "lease_id": "worker-lease-e08-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e08-r1-execution-fence-epoch-1-03878181590d1323",
+        "dispatch_head": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "revoked_at": "2026-09-17T22:26:45+09:00",
+        "reason": "E08_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1147,
+      "event_id": "evt_e08_final_main_package_accepted",
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-08",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-08/FINAL_ACCEPTANCE",
+      "occurred_at": "2026-09-17T22:26:45+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "FE36A5E10DE2A3C29795E7678F1A0DE891602FF38D6422AEE6EEB98AA94DB184",
+      "details": {
+        "projection_mode": "E08_FINAL_ACCEPTANCE_EXACT17",
+        "validated_base_commit": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "acceptance_head": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "acceptance_upstream_head": "03878181590d13231fee3a47f7d43963d6a089c8",
+        "head_relation": "PRECOMMIT_EXACT15_PLUS_FINAL_CONTROL_EXACT2",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/evidence/manifests/E-08_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e08-final-acceptance.json",
+          "docs/progress/progress-handoff-detached-digest-e08-start.json",
+          "docs/work_orders/E-08_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-08_WORK_INSTRUCTION.md",
+          "packages/budget/__init__.py",
+          "packages/budget/models.py",
+          "packages/budget/routing.py",
+          "packages/budget/service.py",
+          "scripts/check_project_progress.py",
+          "tests/budget/test_budget_routing_e08.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "test_report_ref": "docs/04_test_reports/E-08_COMPLETION_REPORT.md",
+        "test_report_sha256": "901784F455FB82BC64C48E703799B8FA5BDBCB9926DDEF2F4D57649CE0160F2B",
+        "manifest_ref": "docs/evidence/manifests/E-08_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "94E9979D524B163233496E53A24397330C4919FDCEBFF5B6B8CEB95063CBFEBA",
+        "independent_reviews": {
+          "spec": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1142,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "focused": {
+              "passed": 143,
+              "skipped": 0
+            },
+            "adjacent": {
+              "passed": 153,
+              "skipped": 4,
+              "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+            },
+            "unverified": [
+              "actual Provider/network",
+              "durable DB send-once",
+              "multi-process recovery",
+              "durable approval expiry authority",
+              "API/UI",
+              "WSL/Docker/deployment"
+            ],
+            "probes": {
+              "prior_findings_closed": 6,
+              "quota_stop_fault_matrix": "PASS",
+              "partial_actual_dimensions": "PASS",
+              "callback_count": 0
+            }
+          },
+          "quality": {
+            "source": "INDEPENDENT_READ_ONLY_REVIEW",
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "checker_sequence": 1142,
+            "checker_result": "PASS",
+            "diff_check_exit": 0,
+            "focused": {
+              "passed": 143,
+              "skipped": 0
+            },
+            "adjacent": {
+              "passed": 153,
+              "skipped": 4,
+              "skip_reason": "POSTGRESQL18_DSN_NOT_CONFIGURED"
+            },
+            "unverified": [
+              "actual Provider/network",
+              "durable DB send-once",
+              "multi-process recovery",
+              "durable approval expiry authority",
+              "API/UI",
+              "WSL/Docker/deployment"
+            ],
+            "probes": {
+              "quota_stop_fault_combinations": 16,
+              "overforecast_combinations": 6,
+              "duplicate_send_count": 1,
+              "hard_limit_parallel": "SEND3_PAUSE97",
+              "callback_count": 0
+            }
+          }
+        },
+        "next_work_package": "E-09",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "formal_failure_count": 0,
+        "review_rework_rounds": 3,
+        "resolved_review_findings": [
+          {
+            "finding_id": "E08-LEDGER-ALIAS-001",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "public budget inputs and outputs are exact-type detached values"
+          },
+          {
+            "finding_id": "E08-ACTUAL-OVERFORECAST-002",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "known overforecast dimensions preserve evidence and pause new admission"
+          },
+          {
+            "finding_id": "E08-UNTRUSTED-CALLBACK-003",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "all untrusted scalar and mapping shapes validate callback-free before copying"
+          },
+          {
+            "finding_id": "E08-PARTIAL-ACTUAL-EXPOSURE-DROPPED",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "known cost or token dimensions survive partial reconciliation"
+          },
+          {
+            "finding_id": "E08-SAFETY-STOP-PUBLICATION-ROLLBACK",
+            "severity": "IMPORTANT",
+            "status": "RESOLVED",
+            "resolution": "overforecast and public reconcile stops are sticky across publication faults"
+          },
+          {
+            "finding_id": "E08-QUOTA-STOP-ROLLBACK",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "resolution": "provider quota and hard-limit stops persist across response and owner faults"
+          }
+        ],
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "api": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "wsl": "NOT_EXECUTED",
+          "docker": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED",
+          "actual_worker": "NOT_EXECUTED",
+          "durable_db_send_once": "NOT_INTEGRATED",
+          "multiprocess_recovery": "NOT_INTEGRATED",
+          "durable_approval_expiry": "NOT_INTEGRATED",
+          "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_e07_final_main_package_accepted"
+  "last_event_id": "evt_e08_final_main_package_accepted"
 }
