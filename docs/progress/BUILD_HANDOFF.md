@@ -1,3 +1,20 @@
+# E-07 final acceptance seq1138
+
+- Independent Spec/Quality re-review ACCEPT, C0/I0/M0; review findings2 resolved.
+- Product exact4 frozen; formal failure0; epoch2 dual leases revoked. E08 READY, NOT STARTED.
+- In-memory host contract verified. Durable DB/actual dispatch/UI/Provider/WSL/deployment NOT_INTEGRATED or NOT_EXECUTED.
+
+# E-07 lease 시각 정정 - seq1133
+
+- 미래 시각 lease를 제품 수정 0건에서 회수하고 epoch-2 dual lease로 교체했다.
+- 승인 경계 변경 없이 E-07 TDD를 즉시 재개한다.
+
+# E-07 start control seq1128
+
+- Product exact4/control exact9; E06 ACCEPTED. Historical seq1-1124 raw prefix immutable.
+- Immutable E04 TaskGraph + exception resolver/inbox only. Hard-stop overrides policy; dependency-only block and no false success.
+- DB inbox/API/UI/Provider/WSL/deploy NOT_EXECUTED; E08 budget reservation NOT_IMPLEMENTED.
+
 # E-06 final acceptance seq1124
 
 - Main takeover resolved; independent Spec/Quality C0/I0/M0. Product exact8 frozen, formal failure5 resolved.
@@ -1411,175 +1428,141 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1124,
-  "last_event_id": "evt_e06_final_main_package_accepted",
+  "event_sequence": 1138,
+  "last_event_id": "evt_e07_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-06",
+  "current_work_package": "E-07",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E07_READY_NOT_STARTED",
+  "next_safe_action": "E08_READY_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
   "e06_status": "ACCEPTED",
-  "e07_status": "READY_FOR_WORK_INSTRUCTION",
-  "e06_formal_failure_count": 5,
-  "e06_failure_lineage": [
-    {
-      "formal_count": 1,
-      "status": "RESOLVED",
-      "fingerprints": [
-        "E06-PHYSICAL-IDENTITY-ALIAS",
-        "E06-CLOCK-ROLLBACK-REVIVAL",
-        "E06-COMMIT-PROVENANCE-ATOMICITY"
-      ]
-    },
-    {
-      "formal_count": 1,
-      "status": "RESOLVED",
-      "fingerprints": [
-        "E06-DIRECT-HEAD-IDENTITY",
-        "E06-RECEIPT-CLOCK-BOUNDARY"
-      ]
-    },
-    {
-      "formal_count": 1,
-      "status": "RESOLVED",
-      "fingerprints": [
-        "E06-INDIRECT-SYMBOLIC-CHAIN"
-      ]
-    },
-    {
-      "formal_count": 1,
-      "status": "RESOLVED_MAIN_TAKEOVER_TRIGGER",
-      "fingerprints": [
-        "E06-POST-COMMIT-CHAIN-RETARGET"
-      ]
-    },
-    {
-      "formal_count": 1,
-      "status": "RESOLVED_BY_MAIN",
-      "fingerprints": [
-        "E06-BOUND-FINAL-COMPENSATION",
-        "E06-GIT-STORE-PHYSICAL-CONFINEMENT"
-      ]
-    }
-  ],
-  "main_takeover_packet": "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
+  "e07_status": "ACCEPTED",
+  "e08_status": "READY_FOR_WORK_INSTRUCTION",
   "dir_status": "CLEARED",
-  "repository_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+  "repository_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E06_FINAL_ACCEPTANCE_EXACT20",
+  "repository_projection_mode": "E07_FINAL_ACCEPTANCE_EXACT17",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-06_START_MANIFEST.json",
+    "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-07_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/E-07_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e06-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e06-start.json",
-    "docs/work_orders/E-06_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
-    "docs/work_orders/E-06_WORK_INSTRUCTION.md",
-    "packages/agent_team/__init__.py",
-    "packages/agent_team/worktree_writes.py",
-    "packages/leases/service.py",
-    "packages/tool_gateway/gateway.py",
+    "docs/progress/progress-handoff-detached-digest-e07-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-e07-start.json",
+    "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/exception_resolver.py",
     "scripts/check_project_progress.py",
-    "tests/agent_team/test_worktree_writes_e06.py",
-    "tests/leases/test_repository_write_e06.py",
-    "tests/tool_gateway/test_worktree_mutation_e06.py",
+    "tests/orchestration/test_exception_resolver_e07.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "0A0A6A82AC8E976D420E39C770E904A3B6EDDDBB840BC1BCB6ABC5E2F8F79ED9",
+  "current_manifest": "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "B60A931860B642CA3C1DA911FE5DF168961614315F2B6621599DF2FDD5FF805A",
   "independent_reviews": {
     "spec": {
-      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
       "critical_findings": 0,
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1113,
+      "checker_sequence": 1133,
       "checker_result": "PASS",
       "diff_check_exit": 0,
-      "exact_dirty_paths": 18,
-      "staged": 0,
-      "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+      "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
       "unverified": [
-        "DB UTC/multiprocess lease adapter",
-        "process-crash durable recovery",
-        "actual 8.3 alias",
-        "isolated PG18",
-        "Provider/HTTP/UI/WSL/deployment/production"
+        "durable DB inbox",
+        "multiprocess atomicity",
+        "actual scheduler/worker dispatch",
+        "Provider/HTTP/API/UI",
+        "WSL/Docker/deployment",
+        "E08 quota accounting"
       ],
       "verdict": "ACCEPT",
-      "commands": [
-        {
-          "evidence_label": "root/fanout/source-zero",
-          "passed": 3,
-          "skipped": 0,
-          "exit_code": 0,
-          "seconds": 78.54
-        }
-      ],
-      "independent_probe": {
-        "pre_handle_replacement": "WORKSPACE_GIT_STORE_DRIFT",
-        "source_mutation": 0,
-        "receipt": 0
+      "focused": {
+        "passed": 91,
+        "skipped": 0,
+        "seconds": 0.85
+      },
+      "probes": {
+        "late_hard_all_policies": "PASS",
+        "ordinary_past_guard": "PASS",
+        "max_events_512_fail_closed": "PASS_BLOCKED"
       }
     },
     "quality": {
-      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+      "source": "INDEPENDENT_READ_ONLY_REVIEW",
       "critical_findings": 0,
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1113,
+      "checker_sequence": 1133,
       "checker_result": "PASS",
       "diff_check_exit": 0,
-      "exact_dirty_paths": 18,
-      "staged": 0,
-      "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+      "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
       "unverified": [
-        "DB UTC/multiprocess lease adapter",
-        "process-crash durable recovery",
-        "actual 8.3 alias",
-        "isolated PG18",
-        "Provider/HTTP/UI/WSL/deployment/production"
+        "durable DB inbox",
+        "multiprocess atomicity",
+        "actual scheduler/worker dispatch",
+        "Provider/HTTP/API/UI",
+        "WSL/Docker/deployment",
+        "E08 quota accounting"
       ],
-      "verdict": "APPROVED",
-      "commands": [
-        {
-          "evidence_label": "object and ref publication/compensation",
-          "passed": 6,
-          "skipped": 0,
-          "exit_code": 0,
-          "seconds": 146.1
-        }
-      ],
-      "independent_probe": {
-        "foreign_blob_created": false,
-        "source_head_unchanged": true
+      "verdict": "ACCEPT",
+      "focused": {
+        "passed": 91,
+        "skipped": 0,
+        "seconds": 0.86
+      },
+      "probes": {
+        "mutable_tz_callback_count": 0,
+        "utc_detachment": "PASS",
+        "concurrent_sequences_1_32": "PASS",
+        "max_events_512_fail_closed": "PASS_BLOCKED"
       }
     }
   },
+  "resolved_review_findings": [
+    {
+      "finding_id": "E07-LATE-HARD-EVIDENCE-REJECTED",
+      "severity": "CRITICAL",
+      "status": "RESOLVED",
+      "resolution": "hard safety evidence appends by arrival and blocks while preserving occurred_at"
+    },
+    {
+      "finding_id": "E07-MUTABLE-TZINFO-ALIAS",
+      "severity": "IMPORTANT",
+      "status": "RESOLVED",
+      "resolution": "custom tzinfo rejected callback-free and builtin UTC datetime detached"
+    }
+  ],
   "external_validation": {
     "provider": "NOT_EXECUTED",
-    "real_db": "NOT_EXECUTED",
-    "http_wiring": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "api": "NOT_EXECUTED",
     "ui": "NOT_EXECUTED",
-    "external_send": "NOT_EXECUTED",
-    "pg18_rc": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "network": "NOT_EXECUTED",
+    "wsl": "NOT_EXECUTED",
+    "docker": "NOT_EXECUTED",
+    "deployment": "NOT_EXECUTED",
     "actual_worker": "NOT_EXECUTED",
-    "production": "NOT_EXECUTED",
-    "wsl_runtime": "NOT_EXECUTED",
-    "postgresql_batch_adapter": "NOT_INTEGRATED",
-    "process_crash_recovery": "NOT_INTEGRATED"
+    "durable_db_inbox": "NOT_INTEGRATED",
+    "multiprocess_atomicity": "NOT_INTEGRATED",
+    "scheduler_runtime_binding": "NOT_INTEGRATED",
+    "e08_quota_accounting": "NOT_IMPLEMENTED",
+    "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
   },
   "reporting_decision": "AUTO_CONTINUE",
   "pending_approvals": [],

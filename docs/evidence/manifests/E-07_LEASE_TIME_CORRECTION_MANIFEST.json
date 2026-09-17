@@ -1,0 +1,180 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E07_LEASE_TIME_CORRECTION",
+  "artifact_id": "E07-LEASE-TIME-CORRECTION-20260917",
+  "package_id": "E-07",
+  "created_at": "2026-09-17T20:31:40+09:00",
+  "event_sequence": 1133,
+  "historical_event_sequence": 1128,
+  "appended_event_count": 5,
+  "historical_raw_event_prefix": {
+    "bytes": 3689833,
+    "sha256": "2648A66795705A42017FD3EFE9D7455C8DDFD0CD110D3644CF91915FD340C653"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "validated_base_commit": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+  "projection_mode": "E07_LEASE_TIME_CORRECTION_EXACT11",
+  "record_binding": "PRECOMMIT_E07_START_EXACT9_PLUS_CLOCK_CORRECTION_EXACT2",
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/E-07_LEASE_TIME_CORRECTION_MANIFEST.json",
+    "docs/evidence/manifests/E-07_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json",
+    "docs/progress/progress-handoff-detached-digest-e07-start.json",
+    "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 11,
+  "exact_path_list_sha256": "CA5D47731D125A44841115773588D936A3472B4E3B30DA04F93F40AF47FB2BC9",
+  "old_worker_lease": {
+    "actor_id": "developer-primary-e07-r1",
+    "subject_ref": "E-07",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "issued_at": "2026-09-17T21:00:00+09:00",
+    "expires_at": "2026-09-18T09:00:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "e07-r1-execution-fence-epoch-1-8d65c871c119d6f3",
+    "path_scope": [
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
+      "tests/orchestration/test_exception_resolver_e07.py"
+    ],
+    "lease_id": "worker-lease-e07-r1-20260917-001",
+    "lease_epoch": 1,
+    "fencing_token": "e07-r1-execution-fence-epoch-1-8d65c871c119d6f3",
+    "dispatch_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991"
+  },
+  "old_write_lease": {
+    "actor_id": "developer-primary-e07-r1",
+    "subject_ref": "E-07",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "issued_at": "2026-09-17T21:00:00+09:00",
+    "expires_at": "2026-09-18T09:00:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "e07-r1-execution-fence-epoch-1-8d65c871c119d6f3",
+    "path_scope": [
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
+      "tests/orchestration/test_exception_resolver_e07.py"
+    ],
+    "lease_id": "write-lease-e07-r1-20260917-001",
+    "worker_lease_id": "worker-lease-e07-r1-20260917-001",
+    "write_epoch": 1,
+    "fencing_token": "e07-r1-write-fence-epoch-1-b195f00e53e7e18b",
+    "write_fencing_token": "e07-r1-write-fence-epoch-1-b195f00e53e7e18b"
+  },
+  "worker_lease": {
+    "actor_id": "developer-primary-e07-r1",
+    "subject_ref": "E-07",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "issued_at": "2026-09-17T20:31:40+09:00",
+    "expires_at": "2026-09-18T08:31:40+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "e07-r1-execution-fence-epoch-2-8d65c871c119d6f3",
+    "path_scope": [
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
+      "tests/orchestration/test_exception_resolver_e07.py"
+    ],
+    "lease_id": "worker-lease-e07-r1-20260917-002",
+    "lease_epoch": 2,
+    "fencing_token": "e07-r1-execution-fence-epoch-2-8d65c871c119d6f3",
+    "dispatch_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-e07-r1",
+    "subject_ref": "E-07",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "baseline_git_commit": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "issued_at": "2026-09-17T20:31:40+09:00",
+    "expires_at": "2026-09-18T08:31:40+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "e07-r1-execution-fence-epoch-2-8d65c871c119d6f3",
+    "path_scope": [
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
+      "tests/orchestration/test_exception_resolver_e07.py"
+    ],
+    "lease_id": "write-lease-e07-r1-20260917-002",
+    "worker_lease_id": "worker-lease-e07-r1-20260917-002",
+    "write_epoch": 2,
+    "fencing_token": "e07-r1-write-fence-epoch-2-b195f00e53e7e18b",
+    "write_fencing_token": "e07-r1-write-fence-epoch-2-b195f00e53e7e18b"
+  },
+  "product_write_scope": [
+    "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+    "packages/orchestration/__init__.py",
+    "packages/orchestration/exception_resolver.py",
+    "tests/orchestration/test_exception_resolver_e07.py"
+  ],
+  "correction_reason": "FUTURE_DATED_CONTROL_CLOCK_CORRECTION_BEFORE_PRODUCT_MUTATION",
+  "product_mutation_before_correction": "NOT_MODIFIED_CLOCK_SKEW_STOP",
+  "product_mutation_count_before_correction": 0,
+  "pending_approvals": [],
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/evidence/manifests/E-07_START_MANIFEST.json",
+      "bytes": 4474,
+      "sha256": "996561443145C94A2F1121716CD20BAB7C5EA6971597688D6FCEFD1D16C8BE83"
+    },
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 213127,
+      "sha256": "6F022B712626745C9456DE367B032E2F84DC8EE180238FB778AB4C51FAFC2998"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1145857,
+      "sha256": "E1157ABD09751506B0AAE3A85CE4168A8B77AE17A48756830083D549E666EA06"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3701748,
+      "sha256": "D3FAA471F72DBC3B905D7BAADC8518FB14677B5950FD6922486B648E6B0187FB"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json",
+      "bytes": 882,
+      "sha256": "B46C09B4077D7007FA931DFDE53D766DD83CC49F85EB4890B6251C6CF9561186"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e07-start.json",
+      "bytes": 835,
+      "sha256": "A95AA0F209BE9D8F326B2E23D62A36FA1574FCB9E9181A80A8D6A16345700B86"
+    },
+    {
+      "path": "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+      "bytes": 641,
+      "sha256": "909E1B9E4D968CD471BEBDA6B0BAC342759E2CA897C7AFF15830C7AD93215D61"
+    },
+    {
+      "path": "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+      "bytes": 4849,
+      "sha256": "64C4828CF385053DD7CC9E31F5DA531253B2C0F7829F49C125AF7C769A5C592D"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4506214,
+      "sha256": "A91B4085D921405711DF7DF18D6424953BFD10EC019861A1F4A4EE16345E1212"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1196421,
+      "sha256": "ED18CEA7A89814A48D862643FFFEB6D780A9165410F2B88C5C3FFCBAD05039B3"
+    }
+  ]
+}

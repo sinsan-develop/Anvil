@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-e06-final-seq1124",
-  "event_sequence": 1124,
-  "updated_at": "2026-09-17T19:30:00+09:00",
-  "last_event_id": "evt_e06_final_main_package_accepted",
+  "snapshot_id": "snapshot-e07-final-seq1138",
+  "event_sequence": 1138,
+  "updated_at": "2026-09-17T21:07:30+09:00",
+  "last_event_id": "evt_e07_final_main_package_accepted",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "E",
-  "current_work_package": "E-06",
+  "current_work_package": "E-07",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -81,7 +81,8 @@
     "E-03",
     "E-04",
     "E-05",
-    "E-06"
+    "E-06",
+    "E-07"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -326,41 +327,25 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
-      "sha256": "29D08D3AC0DDCC4FB9BDD97EA2770DD85B9B104A794CC0D4D779AC2A548E6B3B"
+      "path": "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "sha256": "BAA8952673A6ADFE4ACDF0A6CA32252B2522704DF7BF212107D5586B3AC9734F"
     },
     {
-      "path": "packages/agent_team/__init__.py",
-      "sha256": "C6C669C0975F9DE4FB18CCFE2691833E95660AE4A765284589304D330169C1AD"
+      "path": "packages/orchestration/__init__.py",
+      "sha256": "8784175763D72F61EA8AD8507D02BF769845137A84017C200113A1E3CDFBA67D"
     },
     {
-      "path": "packages/agent_team/worktree_writes.py",
-      "sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8"
+      "path": "packages/orchestration/exception_resolver.py",
+      "sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD"
     },
     {
-      "path": "packages/leases/service.py",
-      "sha256": "7D1392E5D897CD9BB25037CA0867E3431EB379307657136515D5AE646C34AB01"
-    },
-    {
-      "path": "packages/tool_gateway/gateway.py",
-      "sha256": "7024D1861BA2342F52AA7023EC99A9916ED58543D211FC882A77C1954EA2D555"
-    },
-    {
-      "path": "tests/agent_team/test_worktree_writes_e06.py",
-      "sha256": "3DB2A61FE5DB3316BC34195DDA53FFC7A5C1AB6890211CFE8EA5F8F23D5D7B1D"
-    },
-    {
-      "path": "tests/leases/test_repository_write_e06.py",
-      "sha256": "28C391CA8CA759597E80125E8C985E120ED463FBEAF662998A5D512C50F34C1B"
-    },
-    {
-      "path": "tests/tool_gateway/test_worktree_mutation_e06.py",
-      "sha256": "95013FF223F2070A7AC9CD1A4D0205C5FD43FB745C8FFA07B2C0B990D761A3C0"
+      "path": "tests/orchestration/test_exception_resolver_e07.py",
+      "sha256": "73E8E2D771B7D173199DC6746325B85AB9C6E0AFC2B65FC5951A2416B5C1066B"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "E06-FINAL-ACCEPTANCE-20260917"
+    "path": "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json",
+    "artifact_id": "E07-FINAL-ACCEPTANCE-20260917"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -372,7 +357,7 @@
     "owner_direction_event_id": "evt_dir2_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "E07_READY_NOT_STARTED",
+  "next_safe_action": "E08_READY_NOT_STARTED",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -482,35 +467,32 @@
     }
   },
   "repository": {
-    "projection_mode": "E06_FINAL_ACCEPTANCE_EXACT20",
-    "validated_base_commit": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
-    "head_relation": "PRECOMMIT_EXACT18_PLUS_FINAL_CONTROL_EXACT2",
+    "projection_mode": "E07_FINAL_ACCEPTANCE_EXACT17",
+    "validated_base_commit": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "head_relation": "PRECOMMIT_EXACT15_PLUS_FINAL_CONTROL_EXACT2",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/codex/c09-execution-backends-r1",
-    "remote_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "remote_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
-      "docs/evidence/manifests/E-06_START_MANIFEST.json",
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/E-07_LEASE_TIME_CORRECTION_MANIFEST.json",
+      "docs/evidence/manifests/E-07_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-e06-final-acceptance.json",
-      "docs/progress/progress-handoff-detached-digest-e06-start.json",
-      "docs/work_orders/E-06_INVOCATION_PROMPT.md",
-      "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
-      "docs/work_orders/E-06_WORK_INSTRUCTION.md",
-      "packages/agent_team/__init__.py",
-      "packages/agent_team/worktree_writes.py",
-      "packages/leases/service.py",
-      "packages/tool_gateway/gateway.py",
+      "docs/progress/progress-handoff-detached-digest-e07-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-e07-lease-time-correction.json",
+      "docs/progress/progress-handoff-detached-digest-e07-start.json",
+      "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
       "scripts/check_project_progress.py",
-      "tests/agent_team/test_worktree_writes_e06.py",
-      "tests/leases/test_repository_write_e06.py",
-      "tests/tool_gateway/test_worktree_mutation_e06.py",
+      "tests/orchestration/test_exception_resolver_e07.py",
       "tests/tooling/test_project_progress.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
@@ -527,8 +509,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "UNSTAGED_E06_FINAL_EXACT20",
-    "local_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "worktree_status": "UNSTAGED_E07_FINAL_EXACT17",
+    "local_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1333,17 +1315,13 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "control_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
-      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
-      "packages/agent_team/__init__.py",
-      "packages/agent_team/worktree_writes.py",
-      "packages/leases/service.py",
-      "packages/tool_gateway/gateway.py",
-      "tests/agent_team/test_worktree_writes_e06.py",
-      "tests/leases/test_repository_write_e06.py",
-      "tests/tool_gateway/test_worktree_mutation_e06.py"
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
+      "tests/orchestration/test_exception_resolver_e07.py"
     ],
     "product_parent": "b74c9e1713b4234b51942b69438f0398ba27c2c5",
     "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
@@ -1451,10 +1429,10 @@
       "tests/action_policy/test_policy.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "dispatch_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
-    "dispatch_upstream_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
-    "acceptance_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
-    "acceptance_upstream_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "dispatch_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "dispatch_upstream_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "acceptance_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
+    "acceptance_upstream_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
     "commit": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
     "parent": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
     "committed_exact_paths": [
@@ -1660,7 +1638,7 @@
       "tests/verification/test_gates_c14.py"
     ],
     "committed_exact_path_count": 200,
-    "upstream_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "upstream_head": "8d65c871c119d6f3b195f00e53e7e18bd2dba991",
     "remote_observation_source": "MAIN_VERIFIED_REMOTE_SHA_DIRECT_DISPATCH",
     "postcommit_worktree_status": "CLEAN_BEFORE_SEQ1062_CONTROL_EDITS",
     "reconciliation_commit_status": "NOT_EXECUTED",
@@ -1760,108 +1738,93 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "work_package_id": "E-06",
-    "artifact_path": "docs/work_orders/E-06_WORK_INSTRUCTION.md",
-    "artifact_sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD",
-    "invocation_path": "docs/work_orders/E-06_INVOCATION_PROMPT.md",
-    "invocation_sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1",
+    "work_package_id": "E-07",
+    "artifact_path": "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+    "artifact_sha256": "64C4828CF385053DD7CC9E31F5DA531253B2C0F7829F49C125AF7C769A5C592D",
+    "invocation_path": "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+    "invocation_sha256": "909E1B9E4D968CD471BEBDA6B0BAC342759E2CA897C7AFF15830C7AD93215D61",
     "status": "ACCEPTED",
     "result_status": "COMPLETED",
     "accepted": true,
     "product_write_scope": [
-      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
-      "packages/agent_team/__init__.py",
-      "packages/agent_team/worktree_writes.py",
-      "packages/leases/service.py",
-      "packages/tool_gateway/gateway.py",
-      "tests/agent_team/test_worktree_writes_e06.py",
-      "tests/leases/test_repository_write_e06.py",
-      "tests/tool_gateway/test_worktree_mutation_e06.py"
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
+      "tests/orchestration/test_exception_resolver_e07.py"
     ],
-    "worker_lease_id": "worker-lease-e06-r1-20260917-001",
-    "write_lease_id": "write-lease-e06-r1-20260917-001",
-    "executor": "main-agent-eoul",
-    "main_takeover_packet": "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
+    "worker_lease_id": "worker-lease-e07-r1-20260917-002",
+    "write_lease_id": "write-lease-e07-r1-20260917-002",
     "independent_review": {
       "spec": {
-        "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+        "source": "INDEPENDENT_READ_ONLY_REVIEW",
         "critical_findings": 0,
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1113,
+        "checker_sequence": 1133,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 18,
-        "staged": 0,
-        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
         "unverified": [
-          "DB UTC/multiprocess lease adapter",
-          "process-crash durable recovery",
-          "actual 8.3 alias",
-          "isolated PG18",
-          "Provider/HTTP/UI/WSL/deployment/production"
+          "durable DB inbox",
+          "multiprocess atomicity",
+          "actual scheduler/worker dispatch",
+          "Provider/HTTP/API/UI",
+          "WSL/Docker/deployment",
+          "E08 quota accounting"
         ],
         "verdict": "ACCEPT",
-        "commands": [
-          {
-            "evidence_label": "root/fanout/source-zero",
-            "passed": 3,
-            "skipped": 0,
-            "exit_code": 0,
-            "seconds": 78.54
-          }
-        ],
-        "independent_probe": {
-          "pre_handle_replacement": "WORKSPACE_GIT_STORE_DRIFT",
-          "source_mutation": 0,
-          "receipt": 0
+        "focused": {
+          "passed": 91,
+          "skipped": 0,
+          "seconds": 0.85
+        },
+        "probes": {
+          "late_hard_all_policies": "PASS",
+          "ordinary_past_guard": "PASS",
+          "max_events_512_fail_closed": "PASS_BLOCKED"
         }
       },
       "quality": {
-        "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+        "source": "INDEPENDENT_READ_ONLY_REVIEW",
         "critical_findings": 0,
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1113,
+        "checker_sequence": 1133,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 18,
-        "staged": 0,
-        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
         "unverified": [
-          "DB UTC/multiprocess lease adapter",
-          "process-crash durable recovery",
-          "actual 8.3 alias",
-          "isolated PG18",
-          "Provider/HTTP/UI/WSL/deployment/production"
+          "durable DB inbox",
+          "multiprocess atomicity",
+          "actual scheduler/worker dispatch",
+          "Provider/HTTP/API/UI",
+          "WSL/Docker/deployment",
+          "E08 quota accounting"
         ],
-        "verdict": "APPROVED",
-        "commands": [
-          {
-            "evidence_label": "object and ref publication/compensation",
-            "passed": 6,
-            "skipped": 0,
-            "exit_code": 0,
-            "seconds": 146.1
-          }
-        ],
-        "independent_probe": {
-          "foreign_blob_created": false,
-          "source_head_unchanged": true
+        "verdict": "ACCEPT",
+        "focused": {
+          "passed": 91,
+          "skipped": 0,
+          "seconds": 0.86
+        },
+        "probes": {
+          "mutable_tz_callback_count": 0,
+          "utc_detachment": "PASS",
+          "concurrent_sequences_1_32": "PASS",
+          "max_events_512_fail_closed": "PASS_BLOCKED"
         }
       }
     }
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
+    "stop_before_dialogue_report": false,
     "reason_codes": [
-      "E06_MAIN_TAKEOVER_RESOLVED",
-      "E06_INDEPENDENT_ACCEPTED",
-      "E07_READY_NOT_STARTED"
-    ],
-    "stop_before_dialogue_report": false
+      "E07_INDEPENDENT_ACCEPTED",
+      "E08_READY_NOT_STARTED"
+    ]
   },
   "accepted_c21_lr01_work_instruction": {
     "artifact_id": "WI-C-21-LR-01-20260903-001",
@@ -2008,96 +1971,82 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "last_completed_work_instruction": {
-    "work_package_id": "E-06",
-    "artifact_path": "docs/work_orders/E-06_WORK_INSTRUCTION.md",
-    "artifact_sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD",
-    "invocation_path": "docs/work_orders/E-06_INVOCATION_PROMPT.md",
-    "invocation_sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1",
+    "work_package_id": "E-07",
+    "artifact_path": "docs/work_orders/E-07_WORK_INSTRUCTION.md",
+    "artifact_sha256": "64C4828CF385053DD7CC9E31F5DA531253B2C0F7829F49C125AF7C769A5C592D",
+    "invocation_path": "docs/work_orders/E-07_INVOCATION_PROMPT.md",
+    "invocation_sha256": "909E1B9E4D968CD471BEBDA6B0BAC342759E2CA897C7AFF15830C7AD93215D61",
     "status": "ACCEPTED",
     "result_status": "COMPLETED",
     "accepted": true,
     "product_write_scope": [
-      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
-      "packages/agent_team/__init__.py",
-      "packages/agent_team/worktree_writes.py",
-      "packages/leases/service.py",
-      "packages/tool_gateway/gateway.py",
-      "tests/agent_team/test_worktree_writes_e06.py",
-      "tests/leases/test_repository_write_e06.py",
-      "tests/tool_gateway/test_worktree_mutation_e06.py"
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md",
+      "packages/orchestration/__init__.py",
+      "packages/orchestration/exception_resolver.py",
+      "tests/orchestration/test_exception_resolver_e07.py"
     ],
-    "worker_lease_id": "worker-lease-e06-r1-20260917-001",
-    "write_lease_id": "write-lease-e06-r1-20260917-001",
-    "executor": "main-agent-eoul",
-    "main_takeover_packet": "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
+    "worker_lease_id": "worker-lease-e07-r1-20260917-002",
+    "write_lease_id": "write-lease-e07-r1-20260917-002",
     "independent_review": {
       "spec": {
-        "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+        "source": "INDEPENDENT_READ_ONLY_REVIEW",
         "critical_findings": 0,
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1113,
+        "checker_sequence": 1133,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 18,
-        "staged": 0,
-        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
         "unverified": [
-          "DB UTC/multiprocess lease adapter",
-          "process-crash durable recovery",
-          "actual 8.3 alias",
-          "isolated PG18",
-          "Provider/HTTP/UI/WSL/deployment/production"
+          "durable DB inbox",
+          "multiprocess atomicity",
+          "actual scheduler/worker dispatch",
+          "Provider/HTTP/API/UI",
+          "WSL/Docker/deployment",
+          "E08 quota accounting"
         ],
         "verdict": "ACCEPT",
-        "commands": [
-          {
-            "evidence_label": "root/fanout/source-zero",
-            "passed": 3,
-            "skipped": 0,
-            "exit_code": 0,
-            "seconds": 78.54
-          }
-        ],
-        "independent_probe": {
-          "pre_handle_replacement": "WORKSPACE_GIT_STORE_DRIFT",
-          "source_mutation": 0,
-          "receipt": 0
+        "focused": {
+          "passed": 91,
+          "skipped": 0,
+          "seconds": 0.85
+        },
+        "probes": {
+          "late_hard_all_policies": "PASS",
+          "ordinary_past_guard": "PASS",
+          "max_events_512_fail_closed": "PASS_BLOCKED"
         }
       },
       "quality": {
-        "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+        "source": "INDEPENDENT_READ_ONLY_REVIEW",
         "critical_findings": 0,
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1113,
+        "checker_sequence": 1133,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 18,
-        "staged": 0,
-        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
         "unverified": [
-          "DB UTC/multiprocess lease adapter",
-          "process-crash durable recovery",
-          "actual 8.3 alias",
-          "isolated PG18",
-          "Provider/HTTP/UI/WSL/deployment/production"
+          "durable DB inbox",
+          "multiprocess atomicity",
+          "actual scheduler/worker dispatch",
+          "Provider/HTTP/API/UI",
+          "WSL/Docker/deployment",
+          "E08 quota accounting"
         ],
-        "verdict": "APPROVED",
-        "commands": [
-          {
-            "evidence_label": "object and ref publication/compensation",
-            "passed": 6,
-            "skipped": 0,
-            "exit_code": 0,
-            "seconds": 146.1
-          }
-        ],
-        "independent_probe": {
-          "foreign_blob_created": false,
-          "source_head_unchanged": true
+        "verdict": "ACCEPT",
+        "focused": {
+          "passed": 91,
+          "skipped": 0,
+          "seconds": 0.86
+        },
+        "probes": {
+          "mutable_tz_callback_count": 0,
+          "utc_detachment": "PASS",
+          "concurrent_sequences_1_32": "PASS",
+          "max_events_512_fail_closed": "PASS_BLOCKED"
         }
       }
     }
@@ -2115,9 +2064,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "E-06",
-    "path": "docs/progress/progress-handoff-detached-digest-e06-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json"
+    "package_id": "E-07",
+    "path": "docs/progress/progress-handoff-detached-digest-e07-final-acceptance.json",
+    "manifest_path": "docs/evidence/manifests/E-07_FINAL_ACCEPTANCE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -2138,11 +2087,11 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "59CB4FEDE8DD39001F748A8B1C635C6A2EFA5EDC448ECB600E7873A213DB8206"
+      "sha256": "7D4B72E7E505871D33FA54D906353AC8BE983BCE12170F8AE26F93DE7D3487C1"
     }
   },
   "next_work_package": {
-    "package_id": "E-07",
+    "package_id": "E-08",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": null,
@@ -2532,8 +2481,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "F48EA83AFE772C36E99BF60DCF41EEAD325873CA01A4DF633412B2064DA862E3",
-  "runtime_next_action": "E07_READY_NOT_STARTED",
+  "snapshot_hash": "1E44C236D2906C84F9E60AD3AC5113ABBDC7740F28CC45EA32A9C1B32D1F52A3",
+  "runtime_next_action": "E08_READY_NOT_STARTED",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -4145,7 +4094,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-17T19:30:00+09:00",
+  "recorded_at": "2026-09-17T21:07:30+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -22060,6 +22009,160 @@
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
     "work_instruction_sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD",
     "invocation_sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1",
+    "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18"
+  },
+  "e07_start": {
+    "status": "COMPLETED_ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1138,
+    "error_count": 0,
+    "lease_time_correction": {
+      "reason": "FUTURE_DATED_CONTROL_CLOCK_CORRECTION_BEFORE_PRODUCT_MUTATION",
+      "observed_at": "2026-09-17T20:31:40+09:00",
+      "old_worker_lease_id": "worker-lease-e07-r1-20260917-001",
+      "old_write_lease_id": "write-lease-e07-r1-20260917-001",
+      "corrected_worker_lease_id": "worker-lease-e07-r1-20260917-002",
+      "corrected_write_lease_id": "write-lease-e07-r1-20260917-002",
+      "product_mutation_before_correction": "NOT_MODIFIED_CLOCK_SKEW_STOP"
+    },
+    "formal_failure_count": 0,
+    "resolved_review_findings": [
+      {
+        "finding_id": "E07-LATE-HARD-EVIDENCE-REJECTED",
+        "severity": "CRITICAL",
+        "status": "RESOLVED",
+        "resolution": "hard safety evidence appends by arrival and blocks while preserving occurred_at"
+      },
+      {
+        "finding_id": "E07-MUTABLE-TZINFO-ALIAS",
+        "severity": "IMPORTANT",
+        "status": "RESOLVED",
+        "resolution": "custom tzinfo rejected callback-free and builtin UTC datetime detached"
+      }
+    ]
+  },
+  "e07_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1138,
+    "product_raw": {
+      "docs/04_test_reports/E-07_COMPLETION_REPORT.md": {
+        "bytes": 14594,
+        "sha256": "BAA8952673A6ADFE4ACDF0A6CA32252B2522704DF7BF212107D5586B3AC9734F"
+      },
+      "packages/orchestration/__init__.py": {
+        "bytes": 5451,
+        "sha256": "8784175763D72F61EA8AD8507D02BF769845137A84017C200113A1E3CDFBA67D"
+      },
+      "packages/orchestration/exception_resolver.py": {
+        "bytes": 15495,
+        "sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD"
+      },
+      "tests/orchestration/test_exception_resolver_e07.py": {
+        "bytes": 19382,
+        "sha256": "73E8E2D771B7D173199DC6746325B85AB9C6E0AFC2B65FC5951A2416B5C1066B"
+      }
+    },
+    "evidence_target_hash": "B60A931860B642CA3C1DA911FE5DF168961614315F2B6621599DF2FDD5FF805A",
+    "independent_reviews": {
+      "spec": {
+        "source": "INDEPENDENT_READ_ONLY_REVIEW",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "checker_sequence": 1133,
+        "checker_result": "PASS",
+        "diff_check_exit": 0,
+        "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
+        "unverified": [
+          "durable DB inbox",
+          "multiprocess atomicity",
+          "actual scheduler/worker dispatch",
+          "Provider/HTTP/API/UI",
+          "WSL/Docker/deployment",
+          "E08 quota accounting"
+        ],
+        "verdict": "ACCEPT",
+        "focused": {
+          "passed": 91,
+          "skipped": 0,
+          "seconds": 0.85
+        },
+        "probes": {
+          "late_hard_all_policies": "PASS",
+          "ordinary_past_guard": "PASS",
+          "max_events_512_fail_closed": "PASS_BLOCKED"
+        }
+      },
+      "quality": {
+        "source": "INDEPENDENT_READ_ONLY_REVIEW",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "checker_sequence": 1133,
+        "checker_result": "PASS",
+        "diff_check_exit": 0,
+        "resolver_sha256": "51242F6D6FA3806414C1BFE597CC82DE630184A77AB80F98823BD597B3BC1DFD",
+        "unverified": [
+          "durable DB inbox",
+          "multiprocess atomicity",
+          "actual scheduler/worker dispatch",
+          "Provider/HTTP/API/UI",
+          "WSL/Docker/deployment",
+          "E08 quota accounting"
+        ],
+        "verdict": "ACCEPT",
+        "focused": {
+          "passed": 91,
+          "skipped": 0,
+          "seconds": 0.86
+        },
+        "probes": {
+          "mutable_tz_callback_count": 0,
+          "utc_detachment": "PASS",
+          "concurrent_sequences_1_32": "PASS",
+          "max_events_512_fail_closed": "PASS_BLOCKED"
+        }
+      }
+    },
+    "external_validation": {
+      "provider": "NOT_EXECUTED",
+      "database": "NOT_EXECUTED",
+      "http": "NOT_EXECUTED",
+      "api": "NOT_EXECUTED",
+      "ui": "NOT_EXECUTED",
+      "browser": "NOT_EXECUTED",
+      "network": "NOT_EXECUTED",
+      "wsl": "NOT_EXECUTED",
+      "docker": "NOT_EXECUTED",
+      "deployment": "NOT_EXECUTED",
+      "actual_worker": "NOT_EXECUTED",
+      "durable_db_inbox": "NOT_INTEGRATED",
+      "multiprocess_atomicity": "NOT_INTEGRATED",
+      "scheduler_runtime_binding": "NOT_INTEGRATED",
+      "e08_quota_accounting": "NOT_IMPLEMENTED",
+      "pg18_rc": "SKIPPED_DSN_NOT_CONFIGURED"
+    },
+    "formal_failure_count": 0,
+    "resolved_review_findings": [
+      {
+        "finding_id": "E07-LATE-HARD-EVIDENCE-REJECTED",
+        "severity": "CRITICAL",
+        "status": "RESOLVED",
+        "resolution": "hard safety evidence appends by arrival and blocks while preserving occurred_at"
+      },
+      {
+        "finding_id": "E07-MUTABLE-TZINFO-ALIAS",
+        "severity": "IMPORTANT",
+        "status": "RESOLVED",
+        "resolution": "custom tzinfo rejected callback-free and builtin UTC datetime detached"
+      }
+    ],
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_instruction_sha256": "64C4828CF385053DD7CC9E31F5DA531253B2C0F7829F49C125AF7C769A5C592D",
+    "invocation_sha256": "909E1B9E4D968CD471BEBDA6B0BAC342759E2CA897C7AFF15830C7AD93215D61",
     "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18"
   }
 }

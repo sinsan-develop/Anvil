@@ -82,4 +82,16 @@ __all__ = [
     "MainResponsibility", "MainAuthoritySnapshot", "ScopeApprovalRequest", "build_execution_plan",
     "ScheduleDecision", "StepKind", "analyze_request", "generate_work_instruction",
     "schedule_ready_steps",
+    "ExceptionResolver", "FailurePolicy", "ExceptionResolutionError",
+    "ExceptionRecord", "ExceptionReceipt", "ExceptionEvent", "ExceptionProjection",
 ]
+
+
+def __getattr__(name):
+    # E04 DAG imports agent-team/orchestration owners during initialization.
+    # Resolve this additive facade lazily without changing existing schemas.
+    if name in {"ExceptionResolver", "FailurePolicy", "ExceptionResolutionError",
+                "ExceptionRecord", "ExceptionReceipt", "ExceptionEvent", "ExceptionProjection"}:
+        from . import exception_resolver
+        return getattr(exception_resolver, name)
+    raise AttributeError(name)
