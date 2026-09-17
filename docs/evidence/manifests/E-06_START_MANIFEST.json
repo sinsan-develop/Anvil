@@ -1,0 +1,129 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E06_START",
+  "artifact_id": "E06-START-20260917",
+  "created_at": "2026-09-17T14:50:00+09:00",
+  "package_id": "E-06",
+  "event_sequence": 1113,
+  "historical_event_sequence": 1109,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 3640029,
+    "sha256": "A444635E675142CED281FB002F1944547C22494DBCDAC7B341F7DE67FAC68C12"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "active_leases": 2,
+  "product_write_scope": [
+    "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/worktree_writes.py",
+    "packages/leases/service.py",
+    "packages/tool_gateway/gateway.py",
+    "tests/agent_team/test_worktree_writes_e06.py",
+    "tests/leases/test_repository_write_e06.py",
+    "tests/tool_gateway/test_worktree_mutation_e06.py"
+  ],
+  "authority": {
+    "source": "MAIN_APPROVED_E06_IMPLEMENTATION_DISPATCH",
+    "new_project_approval_requested": false,
+    "product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "work_instruction_sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD",
+    "invocation_sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1",
+    "approved_control_paths": [
+      "docs/evidence/manifests/E-06_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-e06-start.json",
+      "docs/work_orders/E-06_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-06_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "product_write_scope": [
+      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/worktree_writes.py",
+      "packages/leases/service.py",
+      "packages/tool_gateway/gateway.py",
+      "tests/agent_team/test_worktree_writes_e06.py",
+      "tests/leases/test_repository_write_e06.py",
+      "tests/tool_gateway/test_worktree_mutation_e06.py"
+    ],
+    "independent_acceptance_required": true,
+    "validation_ids": [
+      "AV-SAFE-023",
+      "AV-SAFE-028",
+      "AV-FLOW-006"
+    ],
+    "baseline_verification": {
+      "source": "MAIN_BASELINE_HANDOFF",
+      "local_and_upstream_sha": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+      "worker_live_remote": "NOT_EXECUTED",
+      "db_utc_multiprocess_adapter": "NOT_INTEGRATED"
+    }
+  },
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/E-06_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e06-start.json",
+    "docs/work_orders/E-06_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-06_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "projection_mode": "E06_START_EXACT9_PRODUCT_EXACT8",
+  "validated_base_commit": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 212401,
+      "sha256": "0E67E862CD47161A2355C7D620A73163716AB4C4798C146F912D53D414973C2C"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1141636,
+      "sha256": "6EA6DE72B18AAC95EDC322A69CB3E21F8C35DD224021D3D0C4C4FD8125D8AB75"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3651940,
+      "sha256": "344D249F4B906A376C930CC78FA71895E346DFA86C0226BB248F6FC6517FAEB2"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e06-start.json",
+      "bytes": 835,
+      "sha256": "B8FB1449A04D6FFDDBECCCC35FDC46D27816858D945AE16B9A12BAEB9C29FC7F"
+    },
+    {
+      "path": "docs/work_orders/E-06_INVOCATION_PROMPT.md",
+      "bytes": 550,
+      "sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1"
+    },
+    {
+      "path": "docs/work_orders/E-06_WORK_INSTRUCTION.md",
+      "bytes": 4850,
+      "sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4456737,
+      "sha256": "85AF7194A13626D60DE8CF8B1F772E7DDC0D63D4B8D59CE2E9A80BE7E49B3FC2"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1187181,
+      "sha256": "30879F1B5F3D0A61FE93B3D91DEC45C4B993DCDCBD946D97D9448CAED84976AD"
+    }
+  ]
+}

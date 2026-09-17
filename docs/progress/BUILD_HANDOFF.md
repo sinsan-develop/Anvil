@@ -1,3 +1,15 @@
+# E-06 final acceptance seq1124
+
+- Main takeover resolved; independent Spec/Quality C0/I0/M0. Product exact8 frozen, formal failure5 resolved.
+- Historical seq1-1113 raw prefix unchanged; Developer and Main dual leases revoked. E07 READY, NOT STARTED.
+- Windows local Git/filesystem verified. DB UTC/multiprocess and process-crash durability NOT_INTEGRATED; Provider/UI/WSL/deployment NOT_EXECUTED.
+
+# E-06 start control seq1113
+
+- Product exact8/control exact9; E05 ACCEPTED. Historical seq1-1109 raw prefix immutable.
+- C09 backend/path and lease/tool owners reused. Isolated local git integration authorized; DB UTC/multiprocess adapter NOT_INTEGRATED. No Provider/remote/commit publication/acceptance/E07.
+- Checker additive one-shot: clean anchor D0B4D456B7EC4EA5270219E41CC31FED905332C580F3D0995B443458264793FC, historical deletion0.
+
 # E-05 final acceptance seq1109
 
 - Main ACCEPTED: independent spec ACCEPT C0/I0/M0 and quality PASS C0/I0/M0. Main-relayed evidence below; exact commands not reported remain NOT_REPORTED.
@@ -1399,68 +1411,92 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1109,
-  "last_event_id": "evt_e05_final_main_package_accepted",
+  "event_sequence": 1124,
+  "last_event_id": "evt_e06_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-05",
+  "current_work_package": "E-06",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E06_READY_NOT_STARTED",
+  "next_safe_action": "E07_READY_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e05_status": "ACCEPTED",
-  "e06_status": "READY_FOR_WORK_INSTRUCTION",
-  "active_work_instruction": null,
-  "e05_formal_failure_count": 2,
-  "e05_failure_lineage": [
+  "e06_status": "ACCEPTED",
+  "e07_status": "READY_FOR_WORK_INSTRUCTION",
+  "e06_formal_failure_count": 5,
+  "e06_failure_lineage": [
     {
       "formal_count": 1,
       "status": "RESOLVED",
       "fingerprints": [
-        "E05-DISPATCH-CANCEL-TOCTOU-001",
-        "E05-RESERVATION-REUSE-002",
-        "E05-BUDGET-OWNER-ATOMICITY-003",
-        "E05-QUEUE-CLAIM-POLICY-BYPASS-004"
+        "E06-PHYSICAL-IDENTITY-ALIAS",
+        "E06-CLOCK-ROLLBACK-REVIVAL",
+        "E06-COMMIT-PROVENANCE-ATOMICITY"
       ]
     },
     {
       "formal_count": 1,
       "status": "RESOLVED",
       "fingerprints": [
-        "E05-REENTRANT-DISPATCH-LOCK-INVERSION-005",
-        "E05-REGISTER-BUDGET-DRIFT-006"
+        "E06-DIRECT-HEAD-IDENTITY",
+        "E06-RECEIPT-CLOCK-BOUNDARY"
+      ]
+    },
+    {
+      "formal_count": 1,
+      "status": "RESOLVED",
+      "fingerprints": [
+        "E06-INDIRECT-SYMBOLIC-CHAIN"
+      ]
+    },
+    {
+      "formal_count": 1,
+      "status": "RESOLVED_MAIN_TAKEOVER_TRIGGER",
+      "fingerprints": [
+        "E06-POST-COMMIT-CHAIN-RETARGET"
+      ]
+    },
+    {
+      "formal_count": 1,
+      "status": "RESOLVED_BY_MAIN",
+      "fingerprints": [
+        "E06-BOUND-FINAL-COMPENSATION",
+        "E06-GIT-STORE-PHYSICAL-CONFINEMENT"
       ]
     }
   ],
+  "main_takeover_packet": "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
   "dir_status": "CLEARED",
-  "repository_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+  "repository_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E05_FINAL_ACCEPTANCE_EXACT17",
+  "repository_projection_mode": "E06_FINAL_ACCEPTANCE_EXACT20",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-05_START_MANIFEST.json",
+    "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-06_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e05-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e05-start.json",
-    "docs/work_orders/E-05_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-e06-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e06-start.json",
+    "docs/work_orders/E-06_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
+    "docs/work_orders/E-06_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
-    "packages/agent_team/concurrency.py",
-    "packages/queue/service.py",
+    "packages/agent_team/worktree_writes.py",
+    "packages/leases/service.py",
+    "packages/tool_gateway/gateway.py",
     "scripts/check_project_progress.py",
-    "tests/agent_team/test_concurrency_e05.py",
-    "tests/queue/test_concurrency_claim_e05.py",
+    "tests/agent_team/test_worktree_writes_e06.py",
+    "tests/leases/test_repository_write_e06.py",
+    "tests/tool_gateway/test_worktree_mutation_e06.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "A4BB837274666C66CCA2A68777BCAB0829909D536A848E8619A5F9EE50A80161",
+  "current_manifest": "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "0A0A6A82AC8E976D420E39C770E904A3B6EDDDBB840BC1BCB6ABC5E2F8F79ED9",
   "independent_reviews": {
     "spec": {
       "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
@@ -1468,43 +1504,34 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1104,
+      "checker_sequence": 1113,
       "checker_result": "PASS",
       "diff_check_exit": 0,
-      "exact_dirty_paths": 15,
+      "exact_dirty_paths": 18,
       "staged": 0,
+      "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+      "unverified": [
+        "DB UTC/multiprocess lease adapter",
+        "process-crash durable recovery",
+        "actual 8.3 alias",
+        "isolated PG18",
+        "Provider/HTTP/UI/WSL/deployment/production"
+      ],
       "verdict": "ACCEPT",
-      "python_executable": "C:\\Users\\cyhuh\\anaconda3\\python.exe",
       "commands": [
         {
-          "command": "NOT_REPORTED",
-          "evidence_label": "focused plus E05Start control",
-          "passed": 81,
+          "evidence_label": "root/fanout/source-zero",
+          "passed": 3,
           "skipped": 0,
-          "exit_code": 0
-        },
-        {
-          "command": "NOT_REPORTED",
-          "evidence_label": "related agent_team queue leases budget orchestration",
-          "passed": 1024,
-          "skipped": 6,
-          "exit_code": 0
+          "exit_code": 0,
+          "seconds": 78.54
         }
       ],
-      "independent_probes": {
-        "hostile_inline": 24,
-        "ordinary_E04_contention_retry": 3,
-        "control_history": 6,
-        "exit_code": 0
-      },
-      "prefix_sequence": 1100,
-      "unverified": [
-        "actual Provider",
-        "PostgreSQL batch adapter/real DB",
-        "HTTP/UI",
-        "external send",
-        "isolated PG18"
-      ]
+      "independent_probe": {
+        "pre_handle_replacement": "WORKSPACE_GIT_STORE_DRIFT",
+        "source_mutation": 0,
+        "receipt": 0
+      }
     },
     "quality": {
       "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
@@ -1512,75 +1539,33 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "checker_sequence": 1104,
+      "checker_sequence": 1113,
       "checker_result": "PASS",
       "diff_check_exit": 0,
-      "exact_dirty_paths": 15,
+      "exact_dirty_paths": 18,
       "staged": 0,
-      "verdict": "PASS",
-      "python_executable": "NOT_REPORTED",
+      "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+      "unverified": [
+        "DB UTC/multiprocess lease adapter",
+        "process-crash durable recovery",
+        "actual 8.3 alias",
+        "isolated PG18",
+        "Provider/HTTP/UI/WSL/deployment/production"
+      ],
+      "verdict": "APPROVED",
       "commands": [
         {
-          "command": "NOT_REPORTED",
-          "evidence_label": "focused",
-          "passed": 79,
+          "evidence_label": "object and ref publication/compensation",
+          "passed": 6,
           "skipped": 0,
-          "exit_code": 0
-        },
-        {
-          "command": "NOT_REPORTED",
-          "evidence_label": "R2 reentry/lock inversion",
-          "passed": 7,
-          "skipped": 0,
-          "exit_code": 0
-        },
-        {
-          "command": "NOT_REPORTED",
-          "evidence_label": "related agent_team orchestration queue leases budget",
-          "passed": 1024,
-          "skipped": 6,
-          "exit_code": 0
-        },
-        {
-          "command": "NOT_REPORTED",
-          "evidence_label": "E04 queue regression",
-          "passed": 7,
-          "skipped": 5,
-          "exit_code": 0
-        },
-        {
-          "command": "NOT_REPORTED",
-          "evidence_label": "control",
-          "passed": 8,
-          "skipped": 0,
-          "exit_code": 0
+          "exit_code": 0,
+          "seconds": 146.1
         }
       ],
-      "independent_adversarial_probe": {
-        "exit_code": 0,
-        "same_thread_reentry_publication": 0,
-        "inflight": 0,
-        "different_request_duplicates": 0,
-        "shared_queue_outer_CAS_publication": 0,
-        "retry_claims": 2,
-        "token_exception_publication": 0,
-        "queue_drift_publication": 0,
-        "ordinary_64_way_wins": [
-          1,
-          1,
-          0
-        ],
-        "ordinary_attempts": 2,
-        "ordinary_quarantine": 1
-      },
-      "unverified": [
-        "actual Provider",
-        "PostgreSQL batch adapter/real DB",
-        "HTTP/UI",
-        "external send",
-        "isolated PG18",
-        "host-injected unbounded callback timeout outside contract"
-      ]
+      "independent_probe": {
+        "foreign_blob_created": false,
+        "source_head_unchanged": true
+      }
     }
   },
   "external_validation": {
@@ -1592,34 +1577,15 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "pg18_rc": "NOT_EXECUTED",
     "actual_worker": "NOT_EXECUTED",
     "production": "NOT_EXECUTED",
-    "postgresql_batch_adapter": "NOT_INTEGRATED"
-  },
-  "checker_edit_evidence": {
-    "method": "MAIN_AUTHORIZED_BULK_MECHANICAL_ADDITIVE_ONE_SHOT",
-    "base_sha256": "D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39",
-    "pre_final_sha256": "4DF3480F8A38992FE5DF51A2CD937985124D92CDE210E9D7EDE28018D2572464",
-    "pre_final_bytes": 4424161,
-    "preserved_start_block_sha256": "E0C19EBF2C1C18D483A99C12DDF0550859DADC16C60E0BB29F46B3869AB16F11",
-    "preserved_start_block_bytes": 13434,
-    "current_sha256": "D0B4D456B7EC4EA5270219E41CC31FED905332C580F3D0995B443458264793FC",
-    "normalized_unified_patch_sha256": "6FE8287D41D8553F3DA41CAC2100A3BAE237606FAA40F4031992412C2AAA7668",
-    "patch_bytes": 34202,
-    "numstat": {
-      "added": 302,
-      "deleted": 0
-    },
-    "historical_replacement_count": 0,
-    "anchor_counts": [
-      1,
-      1,
-      1,
-      1
-    ]
+    "wsl_runtime": "NOT_EXECUTED",
+    "postgresql_batch_adapter": "NOT_INTEGRATED",
+    "process_crash_recovery": "NOT_INTEGRATED"
   },
   "reporting_decision": "AUTO_CONTINUE",
   "pending_approvals": [],
   "staged": false,
-  "commit_performed": false
+  "commit_performed": false,
+  "active_work_instruction": null
 }
 ```
 

@@ -1504,6 +1504,18 @@ def validate_event_stream(
                 and event["details"].get("projection_mode") == "E05_FINAL_ACCEPTANCE_EXACT17"
             )
             or (
+                progress is not None and progress.get("event_sequence") == 1113
+                and event.get("sequence") == 1113 and event.get("event_id") == "evt_e06_package_started"
+                and event.get("event_type") == "PACKAGE_STARTED"
+                and event["details"].get("projection_mode") == "E06_START_EXACT9_PRODUCT_EXACT8"
+            )
+            or (
+                progress is not None and progress.get("event_sequence") == 1124
+                and event.get("sequence") == 1124 and event.get("event_id") == "evt_e06_final_main_package_accepted"
+                and event.get("event_type") == "MAIN_PACKAGE_ACCEPTED"
+                and event["details"].get("projection_mode") == "E06_FINAL_ACCEPTANCE_EXACT20"
+            )
+            or (
                 event.get("sequence") == 512
                 and event.get("event_id") == "evt_c21_provider_status_read_package_completed"
             )
@@ -13523,6 +13535,10 @@ def validate_repository_projection(
 
 def _validate_git_projection(bundle: Mapping[str, Any]) -> list[str]:
     root = bundle["_root"]
+    if bundle.get("progress", {}).get("event_sequence") == 1124:
+        return _collect_e06_final_git(bundle)
+    if bundle.get("progress", {}).get("event_sequence") == 1113:
+        return _collect_e06_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 1109:
         return _collect_e05_final_git(bundle)
     if bundle.get("progress", {}).get("event_sequence") == 1104:
@@ -14986,6 +15002,10 @@ def validate_bundle(bundle: Mapping[str, Any]) -> list[str]:
             errors.extend(validate_e04_final(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json":
             errors.extend(validate_e05_final(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json":
+            errors.extend(validate_e06_final(bundle, manifest))
+        elif current_manifest_relative == "docs/evidence/manifests/E-06_START_MANIFEST.json":
+            errors.extend(validate_e06_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-05_START_MANIFEST.json":
             errors.extend(validate_e05_start(bundle, manifest))
         elif current_manifest_relative == "docs/evidence/manifests/E-04_START_MANIFEST.json":
@@ -54465,6 +54485,229 @@ def _collect_e05_final_git(bundle):
         if not _c02_git_quiet_check(root,"diff","--check"):errors.append("E05_FINAL_DIFF_INVALID")
         return errors
     except Exception:return ["E05_FINAL_GIT_INVALID"]
+
+
+E06_BASE = "039c53acd6d79895d3c94e1bc21b72d1b54283f9"
+E06_MODE = "E06_START_EXACT9_PRODUCT_EXACT8"
+E06_WI = "docs/work_orders/E-06_WORK_INSTRUCTION.md"
+E06_PROMPT = "docs/work_orders/E-06_INVOCATION_PROMPT.md"
+E06_D = "docs/progress/progress-handoff-detached-digest-e06-start.json"
+E06_M = "docs/evidence/manifests/E-06_START_MANIFEST.json"
+E06_AT = "2026-09-17T14:50:00+09:00"
+E06_EXPIRES = "2026-09-18T02:50:00+09:00"
+E06_WI_HASH = "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD"
+E06_PROMPT_HASH = "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1"
+
+
+def e06_product_write_scope():
+    return sorted(['packages/agent_team/__init__.py', 'packages/agent_team/worktree_writes.py', 'packages/leases/service.py', 'packages/tool_gateway/gateway.py', 'tests/agent_team/test_worktree_writes_e06.py', 'tests/leases/test_repository_write_e06.py', 'tests/tool_gateway/test_worktree_mutation_e06.py', 'docs/04_test_reports/E-06_COMPLETION_REPORT.md'])
+
+
+def e06_control_paths():
+    return sorted([D13_START_P,D13_START_E,D13_START_H,E06_D,E06_M,E06_WI,E06_PROMPT,
+                   "scripts/check_project_progress.py","tests/tooling/test_project_progress.py"])
+
+
+def e06_start_from_root(root):
+    """Deterministic successor of committed seq1109; product bytes are not control authority."""
+    committed=lambda p:subprocess.check_output(["git","show",f"{E06_BASE}:{p}"],cwd=root)
+    old={p:committed(p) for p in (D13_START_P,D13_START_E,D13_START_H)}
+    progress=_c21_resume_json(old[D13_START_P]); stream=_c21_resume_json(old[D13_START_E])
+    if (progress.get("event_sequence")!=1109 or stream.get("last_sequence")!=1109
+        or progress.get("e05_final_acceptance",{}).get("status")!="ACCEPTED" or progress.get("pending_approvals")!=[]
+        or progress.get("next_work_package")!={"package_id":"E-06","status":"READY_FOR_WORK_INSTRUCTION"}
+        or any(progress.get(k) is not None for k in ("active_agent","worker_lease","write_lease","active_work_instruction"))):
+        raise ValueError("E06_HISTORY_INVALID")
+    if _c21_resume_sha((root/E06_WI).read_bytes())!=E06_WI_HASH or _c21_resume_sha((root/E06_PROMPT).read_bytes())!=E06_PROMPT_HASH:
+        raise ValueError("E06_AUTHORITY_INVALID")
+    scope=e06_product_write_scope(); exact=e06_control_paths(); actor="developer-primary-e06-r1"
+    execution="e06-r1-execution-fence-epoch-1-039c53acd6d79895"; write_token="e06-r1-write-fence-epoch-1-d3c94e1bc21b72d1"
+    common={"actor_id":actor,"subject_ref":"E-06","baseline_hash":progress["design_baseline_hash"],
+            "baseline_git_commit":E06_BASE,"issued_at":E06_AT,"expires_at":E06_EXPIRES,"status":"ACTIVE",
+            "execution_fencing_token":execution,"path_scope":scope}
+    worker={**common,"lease_id":"worker-lease-e06-r1-20260917-001","lease_epoch":1,"fencing_token":execution,"dispatch_head":E06_BASE}
+    write={**common,"lease_id":"write-lease-e06-r1-20260917-001","worker_lease_id":worker["lease_id"],
+           "write_epoch":1,"fencing_token":write_token,"write_fencing_token":write_token}
+    authority={"source":"MAIN_APPROVED_E06_IMPLEMENTATION_DISPATCH","new_project_approval_requested":False,
+               "product_tdd_authorized_now":True,"external_execution_authorized":False,
+               "work_instruction_sha256":E06_WI_HASH,"invocation_sha256":E06_PROMPT_HASH,
+               "approved_control_paths":exact,"product_write_scope":scope,"independent_acceptance_required":True,"validation_ids":["AV-SAFE-023","AV-SAFE-028","AV-FLOW-006"],"baseline_verification":{"source":"MAIN_BASELINE_HANDOFF","local_and_upstream_sha":E06_BASE,"worker_live_remote":"NOT_EXECUTED","db_utc_multiprocess_adapter":"NOT_INTEGRATED"}}
+
+    projection={"projection_mode":E06_MODE,"validated_base_commit":E06_BASE,"dispatch_head":E06_BASE,
+                "dispatch_upstream_head":E06_BASE,"head_relation":"PRECOMMIT_EXACT9_OR_SOLE_DIRECT_CHILD",
+                "exact_allowed_paths":exact}
+    previous=_c21_resume_sha(canonical_json_bytes(stream["events"][-1])); additions=[]
+    details=[("WORK_INSTRUCTION_ISSUED","work_instruction_issued",{"work_instruction_id":"WI-E-06-R1-20260917-001",
+              "work_instruction_path":E06_WI,"work_instruction_sha256":E06_WI_HASH,"invocation_path":E06_PROMPT,
+              "invocation_sha256":E06_PROMPT_HASH,"approval_ref":"APPROVAL-20260814-WORKPLAN-V16-001","product_write_scope":scope,"authority":authority}),
+             ("WORKER_LEASE_ISSUED","worker_lease_issued",worker),("WRITE_LEASE_ISSUED","write_lease_issued",write),
+             ("PACKAGE_STARTED","package_started",{**projection,"authority":authority,"product_write_scope":scope,
+              "work_instruction_id":"WI-E-06-R1-20260917-001","package_status":"IN_PROGRESS","work_package_id":"E-06",
+              "status":"IN_PROGRESS","active_agent":actor,"worker_lease_id":worker["lease_id"],"write_lease_id":write["lease_id"],
+              "execution_fencing_token":execution,"write_fencing_token":write_token,"work_instruction_sha256":E06_WI_HASH,
+              "runtime_next_action":"E06_ISOLATED_WRITE_FENCING_TDD_THEN_REVIEW"})]
+    for seq,(kind,suffix,data) in enumerate(details,1110):
+        row={"sequence":seq,"event_id":"evt_e06_"+suffix,"event_type":kind,"actor":"main-agent-eoul",
+             "actor_id":"main-agent-eoul","actor_type":"AGENT","project_id":"anvil","run_id":None,
+             "work_package_id":"E-06","step_id":"START","subject_ref":"E-06/START","occurred_at":E06_AT,
+             "occurred_at_source":"PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME","previous_event_sha256":previous,"details":data}
+        additions.append(row); previous=_c21_resume_sha(canonical_json_bytes(row))
+    events_raw=_c21_append_events(old[D13_START_E],1109,additions)
+    repo=copy.deepcopy(progress["repository"]); repo.update({**projection,"control_head":E06_BASE,"local_head":E06_BASE,
+        "remote_head":E06_BASE,"upstream_head":E06_BASE,"branch":C09_START_BRANCH,"product_write_scope":scope,
+        "worktree_status":"UNSTAGED_START_CONTROL_WITH_OPTIONAL_AUTHORIZED_PRODUCT_DELTA","push_status":"NOT_EXECUTED","commit_status":"NOT_EXECUTED"})
+    progress.update({"snapshot_id":"snapshot-e06-start-seq1113","event_sequence":1113,"updated_at":E06_AT,"recorded_at":E06_AT,
+        "last_event_id":additions[-1]["event_id"],"status":"IN_PROGRESS","current_phase":"E","current_work_package":"E-06",
+        "active_agent":{"actor_id":actor,"role":"PRIMARY_DEVELOPER","work_package_id":"E-06","status":"ACTIVE","execution_fencing_token":execution},
+        "worker_lease":worker,"write_lease":write,"active_work_instruction":{"work_package_id":"E-06","artifact_path":E06_WI,
+          "artifact_sha256":E06_WI_HASH,"invocation_path":E06_PROMPT,"invocation_sha256":E06_PROMPT_HASH,"status":"IN_PROGRESS",
+          "result_status":None,"accepted":False,"product_write_scope":scope,"worker_lease_id":worker["lease_id"],"write_lease_id":write["lease_id"]},
+        "e06_start":{"status":"IN_PROGRESS","accepted":False,"event_sequence":1113,"error_count":0},
+        "next_work_package":None,"next_successor_work_package":{"package_id":"E-07","status":"NOT_READY"},
+        "next_safe_action":"E06_ISOLATED_WRITE_FENCING_TDD_THEN_REVIEW","runtime_next_action":"E06_ISOLATED_WRITE_FENCING_TDD_THEN_REVIEW",
+        "pending_approvals":[],"repository":repo,"current_progress_evidence_ref":{"package_id":"E-06","path":E06_D,"manifest_path":E06_M},
+        "latest_evidence_manifest_ref":{"path":E06_M,"artifact_id":"E06-START-20260917"},
+        "reporting_decision":{"decision":"AUTO_CONTINUE","reason_codes":["D_GATE_ACCEPTED","E06_APPROVED_SCOPE"],"stop_before_dialogue_report":False}})
+    progress["registry_refs"]["progress_events"]={"path":D13_START_E,"sha256":_c21_resume_sha(events_raw)}
+    progress["latest_evidence_refs"]=[{"path":p,"sha256":_c21_resume_sha((root/p).read_bytes())} for p in (E06_WI,E06_PROMPT)]
+    progress["snapshot_hash"]=compute_snapshot_hash(progress); progress_raw=_c21_resume_json_bytes(progress)
+    handoff={k:progress[k] for k in ("event_sequence","last_event_id","status","current_phase","current_work_package","active_agent","worker_lease","write_lease","design_baseline_hash","valid_failure_count","next_safe_action")}
+    handoff.update({"accepted":False,"d_gate":"ACCEPTED","e05_status":"ACCEPTED","e06_status":"IN_PROGRESS","e07_status":"NOT_READY",
+        "dir_status":progress["dir_review"]["status"],"repository_head":E06_BASE,"repository_upstream":repo.get("upstream"),
+        "repository_projection_mode":E06_MODE,"repository_exact_allowed_paths":exact,"product_write_scope":scope,
+        "current_manifest":E06_M,"reporting_decision":"AUTO_CONTINUE","pending_approvals":[],"staged":False,"commit_performed":False})
+    fence=chr(96)*3; replacement=fence+"json anvil-recovery-summary\n"+_c21_resume_json_bytes(handoff).decode()+fence
+    text,count=re.subn(re.escape(fence)+r"json anvil-recovery-summary\s*\{.*?\}\s*"+re.escape(fence),lambda _:replacement,old[D13_START_H].decode(),flags=re.DOTALL)
+    if count!=1: raise ValueError("E06_HANDOFF_INVALID")
+    handoff_raw=("# E-06 start control seq1113\n\n- Product exact8/control exact9; E05 ACCEPTED. Historical seq1-1109 raw prefix immutable.\n- C09 backend/path and lease/tool owners reused. Isolated local git integration authorized; DB UTC/multiprocess adapter NOT_INTEGRATED. No Provider/remote/commit publication/acceptance/E07.\n- Checker additive one-shot: clean anchor D0B4D456B7EC4EA5270219E41CC31FED905332C580F3D0995B443458264793FC, historical deletion0.\n\n"+text).encode()
+    digest={"schema_version":"1.0.0","digest_id":"E06-START-DIGEST-20260917","package_id":"E-06","event_sequence":1113,
+        "algorithm":"SHA-256","created_at":E06_AT,"scope":"append-only seq1101-1113; exact9 control","self_reference":False,
+        "progress":{"path":D13_START_P,"bytes":len(progress_raw),"file_sha256":_c21_resume_sha(progress_raw),"canonical_json_sha256":_c21_resume_sha(canonical_json_bytes(progress))},
+        "handoff":{"path":D13_START_H,"bytes":len(handoff_raw),"file_sha256":_c21_resume_sha(handoff_raw),"machine_summary_canonical_sha256":_c21_resume_sha(canonical_json_bytes(handoff))}}
+    generated={D13_START_P:progress_raw,D13_START_E:events_raw,D13_START_H:handoff_raw,E06_D:_c21_resume_json_bytes(digest)}
+    generated.update({p:(root/p).read_bytes() for p in exact if p not in generated and p!=E06_M})
+    prefix=raw_event_object_prefix_bytes(old[D13_START_E],1109)
+    manifest={"schema_version":"1.0.0","manifest_type":"E06_START","artifact_id":"E06-START-20260917","created_at":E06_AT,
+        "package_id":"E-06","event_sequence":1113,"historical_event_sequence":1109,"appended_event_count":4,
+        "historical_raw_event_prefix":{"bytes":len(prefix),"sha256":_c21_resume_sha(prefix)},"historical_evidence_mutation_count":0,
+        "status":"IN_PROGRESS","accepted":False,"active_leases":2,"product_write_scope":scope,"authority":authority,
+        "exact_allowed_paths":exact,"exact_path_count":9,"projection_mode":E06_MODE,"validated_base_commit":E06_BASE,
+        "pending_approvals":[],"staged":False,"commit_performed":False,"self_reference":False,
+        "raw_checksums":[{"path":p,"bytes":len(v),"sha256":_c21_resume_sha(v)} for p,v in sorted(generated.items())]}
+    generated[E06_M]=_c21_resume_json_bytes(manifest)
+    return generated
+
+
+def validate_e06_start(bundle,manifest):
+    try:
+        expected=e06_start_from_root(bundle["_root"])
+        objects={D13_START_P:bundle.get("progress"),D13_START_E:bundle.get("events"),D13_START_H:bundle.get("handoff"),E06_D:bundle.get("detached_digest"),E06_M:manifest}
+        errors=[]
+        for path,raw in expected.items():
+            if (bundle["_root"]/path).read_bytes()!=raw: errors.append("E06_RAW_BYTES_INVALID")
+            if path in objects:
+                value=extract_handoff_summary(raw.decode()) if path==D13_START_H else _c21_resume_json(raw)
+                if not _c21_strict_json_equal(objects[path],value): errors.append("E06_PROJECTION_INVALID")
+        return sorted(set(errors))
+    except Exception: return ["E06_INPUT_INVALID"]
+
+
+def validate_e06_git_facts(*,head,branch,staged,dirty,parent,committed_paths):
+    control=set(e06_control_paths()); product=set(e06_product_write_scope()); paths=set(dirty)
+    pre=head==E06_BASE and control<=paths<=control|product
+    post=head!=E06_BASE and parent==E06_BASE and committed_paths==e06_control_paths() and paths<=product
+    return [] if branch==C09_START_BRANCH and not staged and (pre or post) else ["E06_GIT_INVALID"]
+
+
+def _collect_e06_git(bundle):
+    try:
+        root=bundle["_root"]; raw=lambda *a:_c02_git_raw_stdout(root,*a)
+        head=_c02_strict_git_scalar(raw("rev-parse","HEAD")); parent=_c02_strict_git_scalar(raw("show","-s","--format=%P",head))
+        staged=_c02_strict_name_only_paths(raw("diff","--cached","--name-only"))
+        dirty=sorted(set(_c02_strict_name_only_paths(raw("diff","--name-only"))+_c02_strict_name_only_paths(raw("ls-files","--others","--exclude-per-directory=.gitignore","--exclude=.pytest_cache","--exclude=.pytest_cache/**"))))
+        errors=validate_e06_git_facts(head=head,branch=_c02_strict_git_scalar(raw("branch","--show-current")),staged=staged,dirty=dirty,parent=parent,
+            committed_paths=_c02_strict_name_only_paths(raw("diff","--name-only",E06_BASE,head)))
+        if not _c02_git_quiet_check(root,"diff","--check"): errors.append("E06_DIFF_INVALID")
+        return errors
+    except Exception:return ["E06_GIT_INVALID"]
+
+
+E06_FINAL_PRODUCT_HASHES={'docs/04_test_reports/E-06_COMPLETION_REPORT.md':'29D08D3AC0DDCC4FB9BDD97EA2770DD85B9B104A794CC0D4D779AC2A548E6B3B','packages/agent_team/__init__.py':'C6C669C0975F9DE4FB18CCFE2691833E95660AE4A765284589304D330169C1AD','packages/agent_team/worktree_writes.py':'14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8','packages/leases/service.py':'7D1392E5D897CD9BB25037CA0867E3431EB379307657136515D5AE646C34AB01','packages/tool_gateway/gateway.py':'7024D1861BA2342F52AA7023EC99A9916ED58543D211FC882A77C1954EA2D555','tests/agent_team/test_worktree_writes_e06.py':'3DB2A61FE5DB3316BC34195DDA53FFC7A5C1AB6890211CFE8EA5F8F23D5D7B1D','tests/leases/test_repository_write_e06.py':'28C391CA8CA759597E80125E8C985E120ED463FBEAF662998A5D512C50F34C1B','tests/tool_gateway/test_worktree_mutation_e06.py':'95013FF223F2070A7AC9CD1A4D0205C5FD43FB745C8FFA07B2C0B990D761A3C0'}
+E06_FINAL_START_HASHES={E06_WI:E06_WI_HASH,E06_PROMPT:E06_PROMPT_HASH,E06_D:'B8FB1449A04D6FFDDBECCCC35FDC46D27816858D945AE16B9A12BAEB9C29FC7F',E06_M:'0907168B028A6456D33D6E0FD8F17D345E6424307C43687A32637D11B212EC95','docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md':'FBA4C91ADA24B1E3C60B212D064BC462BE3A108BD5EE6E5C61CFD14D6F30B255'}
+E06_FINAL_AT='2026-09-17T19:30:00+09:00';E06_TAKEOVER_AT='2026-09-17T18:30:00+09:00'
+E06_FINAL_MODE='E06_FINAL_ACCEPTANCE_EXACT20';E06_FINAL_M='docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json';E06_FINAL_D='docs/progress/progress-handoff-detached-digest-e06-final-acceptance.json';E06_PACKET='docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md'
+
+
+def e06_final_paths():return sorted(e06_control_paths()+e06_product_write_scope()+[E06_PACKET,E06_FINAL_M,E06_FINAL_D])
+
+
+def e06_final_reviews():
+    common={'source':'MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT','critical_findings':0,'important_findings':0,'minor_findings':0,'developer_transcript_used':False,'checker_sequence':1113,'checker_result':'PASS','diff_check_exit':0,'exact_dirty_paths':18,'staged':0,'facade_sha256':E06_FINAL_PRODUCT_HASHES['packages/agent_team/worktree_writes.py'],'unverified':['DB UTC/multiprocess lease adapter','process-crash durable recovery','actual 8.3 alias','isolated PG18','Provider/HTTP/UI/WSL/deployment/production']}
+    return {'spec':{**common,'verdict':'ACCEPT','commands':[{'evidence_label':'root/fanout/source-zero','passed':3,'skipped':0,'exit_code':0,'seconds':78.54}],'independent_probe':{'pre_handle_replacement':'WORKSPACE_GIT_STORE_DRIFT','source_mutation':0,'receipt':0}},'quality':{**common,'verdict':'APPROVED','commands':[{'evidence_label':'object and ref publication/compensation','passed':6,'skipped':0,'exit_code':0,'seconds':146.10}],'independent_probe':{'foreign_blob_created':False,'source_head_unchanged':True}}}
+
+
+def e06_final_from_root(root):
+    for path,expected in {**E06_FINAL_PRODUCT_HASHES,**E06_FINAL_START_HASHES}.items():
+        if _c21_resume_sha((root/path).read_bytes())!=expected:raise ValueError('E06_FINAL_FROZEN_DRIFT')
+    start=e06_start_from_root(root);progress=_c21_resume_json(start[D13_START_P]);stream=_c21_resume_json(start[D13_START_E])
+    if progress['event_sequence']!=1113 or progress['status']!='IN_PROGRESS':raise ValueError('E06_FINAL_START_INVALID')
+    exact=e06_final_paths();prefix=raw_event_object_prefix_bytes(start[D13_START_E],1113);reviews=e06_final_reviews();report='docs/04_test_reports/E-06_COMPLETION_REPORT.md'
+    product={p:{'bytes':len((root/p).read_bytes()),'sha256':h} for p,h in E06_FINAL_PRODUCT_HASHES.items()};target=_c21_resume_sha(canonical_json_bytes(product))
+    failures=[{'formal_count':1,'status':'RESOLVED','fingerprints':['E06-PHYSICAL-IDENTITY-ALIAS','E06-CLOCK-ROLLBACK-REVIVAL','E06-COMMIT-PROVENANCE-ATOMICITY']},{'formal_count':1,'status':'RESOLVED','fingerprints':['E06-DIRECT-HEAD-IDENTITY','E06-RECEIPT-CLOCK-BOUNDARY']},{'formal_count':1,'status':'RESOLVED','fingerprints':['E06-INDIRECT-SYMBOLIC-CHAIN']},{'formal_count':1,'status':'RESOLVED_MAIN_TAKEOVER_TRIGGER','fingerprints':['E06-POST-COMMIT-CHAIN-RETARGET']},{'formal_count':1,'status':'RESOLVED_BY_MAIN','fingerprints':['E06-BOUND-FINAL-COMPENSATION','E06-GIT-STORE-PHYSICAL-CONFINEMENT']}]
+    external={k:'NOT_EXECUTED' for k in ('provider','real_db','http_wiring','ui','external_send','pg18_rc','actual_worker','production','wsl_runtime')};external.update(postgresql_batch_adapter='NOT_INTEGRATED',process_crash_recovery='NOT_INTEGRATED')
+    old_worker=copy.deepcopy(progress['worker_lease']);old_write=copy.deepcopy(progress['write_lease'])
+    for lease in (old_write,old_worker):lease.update(status='REVOKED',revoked_at=E06_TAKEOVER_AT,reason='E06_SAME_ROOT_CAUSE_3_MAIN_TAKEOVER')
+    scope=e06_product_write_scope();execution='e06-main-execution-fence-epoch-2-039c53acd6d79895';write_token='e06-main-write-fence-epoch-2-d3c94e1bc21b72d1'
+    base={'actor_id':'main-agent-eoul','subject_ref':'E-06','baseline_hash':progress['design_baseline_hash'],'baseline_git_commit':E06_BASE,'issued_at':E06_TAKEOVER_AT,'expires_at':'2026-09-18T06:30:00+09:00','status':'ACTIVE','execution_fencing_token':execution,'path_scope':scope}
+    main_worker={**base,'lease_id':'worker-lease-e06-main-takeover-20260917-002','lease_epoch':2,'fencing_token':execution,'dispatch_head':E06_BASE}
+    main_write={**base,'lease_id':'write-lease-e06-main-takeover-20260917-002','worker_lease_id':main_worker['lease_id'],'write_epoch':2,'fencing_token':write_token,'write_fencing_token':write_token}
+    final_worker=copy.deepcopy(main_worker);final_write=copy.deepcopy(main_write)
+    for lease in (final_write,final_worker):lease.update(status='REVOKED',revoked_at=E06_FINAL_AT,reason='E06_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN')
+    projection={'projection_mode':E06_FINAL_MODE,'validated_base_commit':E06_BASE,'acceptance_head':E06_BASE,'acceptance_upstream_head':E06_BASE,'head_relation':'PRECOMMIT_EXACT18_PLUS_FINAL_CONTROL_EXACT2','exact_allowed_paths':exact}
+    packet={'prior_lease_id':old_worker['lease_id'],'new_lease_id':main_worker['lease_id'],'takeover_reason':'E06_BRANCH_IDENTITY_SAME_LINEAGE_3','packet_id':'E06-MAIN-TAKEOVER-R4','packet_path':E06_PACKET,'packet_sha256':E06_FINAL_START_HASHES[E06_PACKET],'developer_execution':'STOPPED','runtime_tool_ownership':'REVOKED'}
+    judgment={'verdict':'PASS','criteria':'AV-SAFE-023/AV-SAFE-028/AV-FLOW-006','evidence_ref':E06_FINAL_M,'evidence_sha256':'SELF_REFERENCE_EXCLUDED','evidence_target_hash':target,'reviews':reviews,'blocking_findings':0,'important_findings':0,'minor_findings':0,'developer_transcript_used':False}
+    accepted={**projection,'decision':'ACCEPTED','accepted':True,'test_report_ref':report,'test_report_sha256':product[report]['sha256'],'manifest_ref':E06_FINAL_M,'manifest_sha256':'SELF_REFERENCE_EXCLUDED','evidence_target_hash':target,'independent_reviews':reviews,'next_work_package':'E-07','next_work_package_status':'READY_FOR_WORK_INSTRUCTION','formal_failure_count':5,'failure_lineage':failures,'blocking_findings':0,'important_findings':0,'minor_findings':0,'external_validation':external}
+    details=[('FAILURE_REPORT_ACCEPTED','failure_report_accepted','independent-reviewer',E06_TAKEOVER_AT,{'entry_id':'E06-FR-R4','evidence_ref':E06_PACKET,'valid_failure_count':4,'formal_failure_count':4,'same_lineage_count':3,'takeover_required':True,'fingerprint':'E06-POST-COMMIT-CHAIN-RETARGET'}),('WRITE_LEASE_REVOKED','takeover_write_lease_revoked','main-agent-eoul',E06_TAKEOVER_AT,old_write),('WORKER_LEASE_REVOKED','takeover_worker_lease_revoked','main-agent-eoul',E06_TAKEOVER_AT,old_worker),('LEASE_TAKEOVER','main_takeover_packet_bound','main-agent-eoul',E06_TAKEOVER_AT,packet),('WORKER_LEASE_ISSUED','main_worker_lease_issued','main-agent-eoul',E06_TAKEOVER_AT,main_worker),('WRITE_LEASE_ISSUED','main_write_lease_issued','main-agent-eoul',E06_TAKEOVER_AT,main_write),('PACKAGE_COMPLETED','package_completed','main-agent-eoul',E06_FINAL_AT,{'result_status':'COMPLETED','package_status':'TEST_REVIEW','accepted':False,'product_raw':product,'evidence_target_hash':target,'formal_failure_count':5,'report_ref':report,'external_validation':external}),('INDEPENDENT_TEST_JUDGMENT_RECORDED','independent_test_judgment_recorded','independent-reviewer',E06_FINAL_AT,judgment),('WRITE_LEASE_REVOKED','final_write_lease_revoked','main-agent-eoul',E06_FINAL_AT,final_write),('WORKER_LEASE_REVOKED','final_worker_lease_revoked','main-agent-eoul',E06_FINAL_AT,final_worker),('MAIN_PACKAGE_ACCEPTED','main_package_accepted','main-agent-eoul',E06_FINAL_AT,accepted)]
+    previous=_c21_resume_sha(canonical_json_bytes(stream['events'][-1]));rows=[]
+    for seq,(kind,suffix,actor,at,data) in enumerate(details,1114):
+        step='MAIN_TAKEOVER' if seq<=1119 else 'FINAL_ACCEPTANCE';subject='E-06/'+step
+        row={'sequence':seq,'event_id':'evt_e06_final_'+suffix,'event_type':kind,'actor':actor,'actor_id':actor,'actor_type':'AGENT','project_id':'anvil','run_id':None,'work_package_id':'E-06','step_id':step,'subject_ref':subject,'occurred_at':at,'occurred_at_source':'PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME','previous_event_sha256':previous,'details':data};rows.append(row);previous=_c21_resume_sha(canonical_json_bytes(row))
+    events_raw=_c21_append_events(start[D13_START_E],1113,rows);repo=copy.deepcopy(progress['repository']);repo.update({**projection,'worktree_status':'UNSTAGED_E06_FINAL_EXACT20','commit_status':'NOT_EXECUTED','push_status':'NOT_EXECUTED'})
+    wi=copy.deepcopy(progress['active_work_instruction']);wi.update(status='ACCEPTED',result_status='COMPLETED',accepted=True,executor='main-agent-eoul',main_takeover_packet=E06_PACKET,independent_review=reviews)
+    completed=list(progress.get('completed_packages',[]));completed.append('E-06') if 'E-06' not in completed else None
+    final={'status':'ACCEPTED','accepted':True,'event_sequence':1124,'product_raw':product,'evidence_target_hash':target,'independent_reviews':reviews,'external_validation':external,'formal_failure_count':5,'failure_lineage':failures,'main_takeover_packet':E06_PACKET,'baseline_hash':progress['design_baseline_hash'],'work_instruction_sha256':E06_WI_HASH,'invocation_sha256':E06_PROMPT_HASH,'work_plan_hash':progress['work_plan_hash']}
+    progress.update({'snapshot_id':'snapshot-e06-final-seq1124','event_sequence':1124,'last_event_id':rows[-1]['event_id'],'updated_at':E06_FINAL_AT,'recorded_at':E06_FINAL_AT,'status':'ACCEPTED','valid_failure_count':0,'completed_packages':completed,'active_agent':None,'worker_lease':None,'write_lease':None,'active_work_instruction':None,'last_completed_work_instruction':wi,'last_accepted_work_instruction':wi,'e06_final_acceptance':final,'repository':repo,'next_work_package':{'package_id':'E-07','status':'READY_FOR_WORK_INSTRUCTION'},'next_successor_work_package':None,'next_safe_action':'E07_READY_NOT_STARTED','runtime_next_action':'E07_READY_NOT_STARTED','pending_approvals':[],'current_progress_evidence_ref':{'package_id':'E-06','path':E06_FINAL_D,'manifest_path':E06_FINAL_M},'latest_evidence_manifest_ref':{'path':E06_FINAL_M,'artifact_id':'E06-FINAL-ACCEPTANCE-20260917'},'reporting_decision':{'decision':'AUTO_CONTINUE','reason_codes':['E06_MAIN_TAKEOVER_RESOLVED','E06_INDEPENDENT_ACCEPTED','E07_READY_NOT_STARTED'],'stop_before_dialogue_report':False}})
+    progress['e06_start'].update(status='COMPLETED_ACCEPTED',accepted=True,formal_failure_count=5,main_takeover=True);progress['registry_refs']['progress_events']={'path':D13_START_E,'sha256':_c21_resume_sha(events_raw)};progress['latest_evidence_refs']=[{'path':p,'sha256':v['sha256']} for p,v in product.items()];progress['snapshot_hash']=compute_snapshot_hash(progress);progress_raw=_c21_resume_json_bytes(progress)
+    handoff={k:progress[k] for k in ('event_sequence','last_event_id','status','current_phase','current_work_package','active_agent','worker_lease','write_lease','design_baseline_hash','valid_failure_count','next_safe_action')};handoff.update({'accepted':True,'d_gate':'ACCEPTED','e06_status':'ACCEPTED','e07_status':'READY_FOR_WORK_INSTRUCTION','e06_formal_failure_count':5,'e06_failure_lineage':failures,'main_takeover_packet':E06_PACKET,'dir_status':progress['dir_review']['status'],'repository_head':E06_BASE,'repository_upstream':repo.get('upstream'),'repository_projection_mode':E06_FINAL_MODE,'repository_exact_allowed_paths':exact,'current_manifest':E06_FINAL_M,'evidence_target_hash':target,'independent_reviews':reviews,'external_validation':external,'reporting_decision':'AUTO_CONTINUE','pending_approvals':[],'staged':False,'commit_performed':False,'active_work_instruction':None})
+    fence=chr(96)*3;replacement=fence+'json anvil-recovery-summary\n'+_c21_resume_json_bytes(handoff).decode()+fence;text,count=re.subn(re.escape(fence)+r'json anvil-recovery-summary\s*\{.*?\}\s*'+re.escape(fence),lambda _:replacement,start[D13_START_H].decode(),flags=re.DOTALL)
+    if count!=1:raise ValueError('E06_FINAL_HANDOFF_INVALID')
+    handoff_raw=('# E-06 final acceptance seq1124\n\n- Main takeover resolved; independent Spec/Quality C0/I0/M0. Product exact8 frozen, formal failure5 resolved.\n- Historical seq1-1113 raw prefix unchanged; Developer and Main dual leases revoked. E07 READY, NOT STARTED.\n- Windows local Git/filesystem verified. DB UTC/multiprocess and process-crash durability NOT_INTEGRATED; Provider/UI/WSL/deployment NOT_EXECUTED.\n\n'+text).encode()
+    digest={'schema_version':'1.0.0','digest_id':'E06-FINAL-DIGEST-20260917','package_id':'E-06','event_sequence':1124,'algorithm':'SHA-256','created_at':E06_FINAL_AT,'scope':'append-only seq1114-1124; exact20 frozen product/control','self_reference':False,'progress':{'path':D13_START_P,'bytes':len(progress_raw),'file_sha256':_c21_resume_sha(progress_raw),'canonical_json_sha256':_c21_resume_sha(canonical_json_bytes(progress))},'handoff':{'path':D13_START_H,'bytes':len(handoff_raw),'file_sha256':_c21_resume_sha(handoff_raw),'machine_summary_canonical_sha256':_c21_resume_sha(canonical_json_bytes(handoff))}}
+    generated={D13_START_P:progress_raw,D13_START_E:events_raw,D13_START_H:handoff_raw,E06_FINAL_D:_c21_resume_json_bytes(digest)};generated.update({p:(root/p).read_bytes() for p in exact if p not in generated and p!=E06_FINAL_M})
+    all_raw={p:generated[p] for p in exact if p!=E06_FINAL_M};manifest={'schema_version':'1.0.0','manifest_type':'E06_FINAL_ACCEPTANCE','artifact_id':'E06-FINAL-ACCEPTANCE-20260917','created_at':E06_FINAL_AT,'package_id':'E-06','event_sequence':1124,'historical_event_sequence':1113,'appended_event_count':11,'historical_raw_event_prefix':{'bytes':len(prefix),'sha256':_c21_resume_sha(prefix)},'historical_evidence_mutation_count':0,**final,'active_leases':0,'e06_status':'ACCEPTED','e07_status':'READY_FOR_WORK_INSTRUCTION','product_exact_paths':e06_product_write_scope(),'frozen_start_product_paths':sorted(e06_control_paths()+e06_product_write_scope()+[E06_PACKET]),'frozen_product_sha256':E06_FINAL_PRODUCT_HASHES,'frozen_start_sha256':E06_FINAL_START_HASHES,'combined_exact_paths':exact,'combined_exact_path_count':20,'projection_mode':E06_FINAL_MODE,'validated_base_commit':E06_BASE,'pending_approvals':[],'staged':False,'commit_performed':False,'self_reference':False,'raw_checksums':[{'path':p,'bytes':len(v),'sha256':_c21_resume_sha(v)} for p,v in sorted(all_raw.items())]};generated[E06_FINAL_M]=_c21_resume_json_bytes(manifest);return generated
+
+
+def validate_e06_final(bundle,manifest):
+    try:
+        expected=e06_final_from_root(bundle['_root']);objects={D13_START_P:bundle.get('progress'),D13_START_E:bundle.get('events'),D13_START_H:bundle.get('handoff'),E06_FINAL_D:bundle.get('detached_digest'),E06_FINAL_M:manifest};errors=[]
+        for path,raw in expected.items():
+            if not (bundle['_root']/path).exists() or (bundle['_root']/path).read_bytes()!=raw:errors.append('E06_FINAL_RAW_BYTES_INVALID')
+            if path in objects:
+                parsed=extract_handoff_summary(raw.decode()) if path==D13_START_H else _c21_resume_json(raw)
+                if not _c21_strict_json_equal(objects[path],parsed):errors.append('E06_FINAL_PROJECTION_INVALID')
+        return sorted(set(errors))
+    except Exception:return ['E06_FINAL_INPUT_INVALID']
+
+
+def validate_e06_final_git_facts(*,head,branch,staged,dirty):return [] if head==E06_BASE and branch==C09_START_BRANCH and not staged and dirty==e06_final_paths() else ['E06_FINAL_GIT_INVALID']
+
+
+def _collect_e06_final_git(bundle):
+    try:
+        root=bundle['_root'];raw=lambda *a:_c02_git_raw_stdout(root,*a);dirty=sorted(set(_c02_strict_name_only_paths(raw('diff','--name-only'))+_c02_strict_name_only_paths(raw('ls-files','--others','--exclude-per-directory=.gitignore','--exclude=.pytest_cache','--exclude=.pytest_cache/**'))));errors=validate_e06_final_git_facts(head=_c02_strict_git_scalar(raw('rev-parse','HEAD')),branch=_c02_strict_git_scalar(raw('branch','--show-current')),staged=_c02_strict_name_only_paths(raw('diff','--cached','--name-only')),dirty=dirty)
+        if not _c02_git_quiet_check(root,'diff','--check'):errors.append('E06_FINAL_DIFF_INVALID')
+        return errors
+    except Exception:return ['E06_FINAL_GIT_INVALID']
 
 
 if __name__ == "__main__":

@@ -142,8 +142,12 @@ __all__ += ["ExternalVerifierAdapter", "ExternalVerificationError", "ManualImpor
 
 # Concurrency is imported lazily by callers to keep the E04 queue import graph acyclic.
 __all__ += ["AnalysisTask", "ConcurrencyScheduler", "ConcurrencyError"]
+__all__ += ["WorktreeWriteService"]
 
 def __getattr__(name):
+    if name == "WorktreeWriteService":
+        from .worktree_writes import WorktreeWriteService
+        return WorktreeWriteService
     if name in {"AnalysisTask", "ConcurrencyScheduler", "ConcurrencyError"}:
         from . import concurrency
         return getattr(concurrency,name)

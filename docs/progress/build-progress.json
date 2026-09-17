@@ -1,14 +1,14 @@
 {
   "schema_version": "1.0.0",
-  "snapshot_id": "snapshot-e05-final-seq1109",
-  "event_sequence": 1109,
-  "updated_at": "2026-09-17T14:35:00+09:00",
-  "last_event_id": "evt_e05_final_main_package_accepted",
+  "snapshot_id": "snapshot-e06-final-seq1124",
+  "event_sequence": 1124,
+  "updated_at": "2026-09-17T19:30:00+09:00",
+  "last_event_id": "evt_e06_final_main_package_accepted",
   "plan_version": "1.6",
   "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18",
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "current_phase": "E",
-  "current_work_package": "E-05",
+  "current_work_package": "E-06",
   "status": "ACCEPTED",
   "completed_packages": [
     "G-01",
@@ -80,7 +80,8 @@
     "E-02",
     "E-03",
     "E-04",
-    "E-05"
+    "E-05",
+    "E-06"
   ],
   "active_agent": null,
   "write_lease": null,
@@ -325,33 +326,41 @@
   },
   "latest_evidence_refs": [
     {
-      "path": "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
-      "sha256": "11EDACFE8BDE5EEBC4C0A43396330C6AE0763B9132F3E8F23ECE0C729B06E3BF"
+      "path": "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
+      "sha256": "29D08D3AC0DDCC4FB9BDD97EA2770DD85B9B104A794CC0D4D779AC2A548E6B3B"
     },
     {
       "path": "packages/agent_team/__init__.py",
-      "sha256": "F3F5550E0262915F295EB1E87EB4C1A7FD36CA896646135078616BA67033F3E4"
+      "sha256": "C6C669C0975F9DE4FB18CCFE2691833E95660AE4A765284589304D330169C1AD"
     },
     {
-      "path": "packages/agent_team/concurrency.py",
-      "sha256": "446942307111C4F2A304F95B2E38CDF403009EE18676C74F7BCAFBF12D8F3F1A"
+      "path": "packages/agent_team/worktree_writes.py",
+      "sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8"
     },
     {
-      "path": "packages/queue/service.py",
-      "sha256": "1E836CE142BDF0ABDB3455EACF60F7D1A4938CB5D0B937AB672866728CA0219B"
+      "path": "packages/leases/service.py",
+      "sha256": "7D1392E5D897CD9BB25037CA0867E3431EB379307657136515D5AE646C34AB01"
     },
     {
-      "path": "tests/agent_team/test_concurrency_e05.py",
-      "sha256": "864A36B192248ED65D2AD8F6A7D79ADCA77AE74AA1E1104A5F28262906ABE1DB"
+      "path": "packages/tool_gateway/gateway.py",
+      "sha256": "7024D1861BA2342F52AA7023EC99A9916ED58543D211FC882A77C1954EA2D555"
     },
     {
-      "path": "tests/queue/test_concurrency_claim_e05.py",
-      "sha256": "4539E2A136D03CB0CB7339EBA7B683DD4B6DD7F1A5093286F1E0A07D4306BA97"
+      "path": "tests/agent_team/test_worktree_writes_e06.py",
+      "sha256": "3DB2A61FE5DB3316BC34195DDA53FFC7A5C1AB6890211CFE8EA5F8F23D5D7B1D"
+    },
+    {
+      "path": "tests/leases/test_repository_write_e06.py",
+      "sha256": "28C391CA8CA759597E80125E8C985E120ED463FBEAF662998A5D512C50F34C1B"
+    },
+    {
+      "path": "tests/tool_gateway/test_worktree_mutation_e06.py",
+      "sha256": "95013FF223F2070A7AC9CD1A4D0205C5FD43FB745C8FFA07B2C0B990D761A3C0"
     }
   ],
   "latest_evidence_manifest_ref": {
-    "path": "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json",
-    "artifact_id": "E05-FINAL-ACCEPTANCE-20260917"
+    "path": "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
+    "artifact_id": "E06-FINAL-ACCEPTANCE-20260917"
   },
   "pending_approvals": [],
   "dir_review": {
@@ -363,7 +372,7 @@
     "owner_direction_event_id": "evt_dir2_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "E06_READY_NOT_STARTED",
+  "next_safe_action": "E07_READY_NOT_STARTED",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
@@ -473,32 +482,35 @@
     }
   },
   "repository": {
-    "projection_mode": "E05_FINAL_ACCEPTANCE_EXACT17",
-    "validated_base_commit": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
-    "head_relation": "PRECOMMIT_EXACT15_PLUS_FINAL_CONTROL_EXACT2",
+    "projection_mode": "E06_FINAL_ACCEPTANCE_EXACT20",
+    "validated_base_commit": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "head_relation": "PRECOMMIT_EXACT18_PLUS_FINAL_CONTROL_EXACT2",
     "branch": "codex/c09-execution-backends-r1",
     "upstream": "development/codex/c09-execution-backends-r1",
-    "remote_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+    "remote_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
     "feature_remote": "origin/codex/c21-operational-execution",
     "feature_remote_head": "ca92b7845eda803cff3c432799642e4f9243d4d6",
     "push_status": "NOT_EXECUTED",
     "exact_allowed_paths": [
-      "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json",
-      "docs/evidence/manifests/E-05_START_MANIFEST.json",
+      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
+      "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json",
+      "docs/evidence/manifests/E-06_START_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json",
-      "docs/progress/progress-handoff-detached-digest-e05-final-acceptance.json",
-      "docs/progress/progress-handoff-detached-digest-e05-start.json",
-      "docs/work_orders/E-05_INVOCATION_PROMPT.md",
-      "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+      "docs/progress/progress-handoff-detached-digest-e06-final-acceptance.json",
+      "docs/progress/progress-handoff-detached-digest-e06-start.json",
+      "docs/work_orders/E-06_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
+      "docs/work_orders/E-06_WORK_INSTRUCTION.md",
       "packages/agent_team/__init__.py",
-      "packages/agent_team/concurrency.py",
-      "packages/queue/service.py",
+      "packages/agent_team/worktree_writes.py",
+      "packages/leases/service.py",
+      "packages/tool_gateway/gateway.py",
       "scripts/check_project_progress.py",
-      "tests/agent_team/test_concurrency_e05.py",
-      "tests/queue/test_concurrency_claim_e05.py",
+      "tests/agent_team/test_worktree_writes_e06.py",
+      "tests/leases/test_repository_write_e06.py",
+      "tests/tool_gateway/test_worktree_mutation_e06.py",
       "tests/tooling/test_project_progress.py"
     ],
     "provider_wsl_git_only_candidate_start_paths": [
@@ -515,8 +527,8 @@
     ],
     "predecessor_remote_control": "772afbd5eb55791ca7b5002d58378437ea496750",
     "observed_at": "2026-09-06T12:25:13+09:00",
-    "worktree_status": "UNSTAGED_E05_FINAL_EXACT17",
-    "local_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+    "worktree_status": "UNSTAGED_E06_FINAL_EXACT20",
+    "local_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
     "product_parent_commit": "3501c37b25274c2c3b406a15bc8a57aa03a162e7",
     "candidate_commit": "a342d62391a44b349733d1468ac3b180761155ab",
     "candidate_remote_ref": "refs/heads/candidates/c21-wsl-exact187",
@@ -1321,15 +1333,17 @@
     "final_record_commit": "5d4a78555110dee16fce01e512a367524ba1eeec",
     "final_record_parent": "2eba71ec37183ef6062157d7491ee48cb1fab6ba",
     "control_parent": "7c719063c31530bc33ffff23fd5d72371ae28057",
-    "control_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+    "control_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
     "development_main": "08aae12fdc4f8bd2d38b455f23408796ab4b8c82",
     "product_write_scope": [
-      "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
       "packages/agent_team/__init__.py",
-      "packages/agent_team/concurrency.py",
-      "packages/queue/service.py",
-      "tests/agent_team/test_concurrency_e05.py",
-      "tests/queue/test_concurrency_claim_e05.py"
+      "packages/agent_team/worktree_writes.py",
+      "packages/leases/service.py",
+      "packages/tool_gateway/gateway.py",
+      "tests/agent_team/test_worktree_writes_e06.py",
+      "tests/leases/test_repository_write_e06.py",
+      "tests/tool_gateway/test_worktree_mutation_e06.py"
     ],
     "product_parent": "b74c9e1713b4234b51942b69438f0398ba27c2c5",
     "start_control": "2eedcfa6b15594c2daa29bb52a5c10694c826776",
@@ -1437,10 +1451,10 @@
       "tests/action_policy/test_policy.py",
       "tests/tooling/test_project_progress.py"
     ],
-    "dispatch_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
-    "dispatch_upstream_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
-    "acceptance_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
-    "acceptance_upstream_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+    "dispatch_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "dispatch_upstream_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "acceptance_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
+    "acceptance_upstream_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
     "commit": "25dcaaa3854619f131cc93fa1ae5cd79479553ae",
     "parent": "a3fa3ed09cd6998b234458b5283abafa0f222f88",
     "committed_exact_paths": [
@@ -1646,7 +1660,7 @@
       "tests/verification/test_gates_c14.py"
     ],
     "committed_exact_path_count": 200,
-    "upstream_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+    "upstream_head": "039c53acd6d79895d3c94e1bc21b72d1b54283f9",
     "remote_observation_source": "MAIN_VERIFIED_REMOTE_SHA_DIRECT_DISPATCH",
     "postcommit_worktree_status": "CLEAN_BEFORE_SEQ1062_CONTROL_EDITS",
     "reconciliation_commit_status": "NOT_EXECUTED",
@@ -1746,24 +1760,28 @@
     "d01_started": false
   },
   "last_accepted_work_instruction": {
-    "work_package_id": "E-05",
-    "artifact_path": "docs/work_orders/E-05_WORK_INSTRUCTION.md",
-    "artifact_sha256": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E",
-    "invocation_path": "docs/work_orders/E-05_INVOCATION_PROMPT.md",
-    "invocation_sha256": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659",
+    "work_package_id": "E-06",
+    "artifact_path": "docs/work_orders/E-06_WORK_INSTRUCTION.md",
+    "artifact_sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD",
+    "invocation_path": "docs/work_orders/E-06_INVOCATION_PROMPT.md",
+    "invocation_sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1",
     "status": "ACCEPTED",
     "result_status": "COMPLETED",
     "accepted": true,
     "product_write_scope": [
-      "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
       "packages/agent_team/__init__.py",
-      "packages/agent_team/concurrency.py",
-      "packages/queue/service.py",
-      "tests/agent_team/test_concurrency_e05.py",
-      "tests/queue/test_concurrency_claim_e05.py"
+      "packages/agent_team/worktree_writes.py",
+      "packages/leases/service.py",
+      "packages/tool_gateway/gateway.py",
+      "tests/agent_team/test_worktree_writes_e06.py",
+      "tests/leases/test_repository_write_e06.py",
+      "tests/tool_gateway/test_worktree_mutation_e06.py"
     ],
-    "worker_lease_id": "worker-lease-e05-r1-20260917-001",
-    "write_lease_id": "write-lease-e05-r1-20260917-001",
+    "worker_lease_id": "worker-lease-e06-r1-20260917-001",
+    "write_lease_id": "write-lease-e06-r1-20260917-001",
+    "executor": "main-agent-eoul",
+    "main_takeover_packet": "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
     "independent_review": {
       "spec": {
         "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
@@ -1771,43 +1789,34 @@
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1104,
+        "checker_sequence": 1113,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 15,
+        "exact_dirty_paths": 18,
         "staged": 0,
+        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "unverified": [
+          "DB UTC/multiprocess lease adapter",
+          "process-crash durable recovery",
+          "actual 8.3 alias",
+          "isolated PG18",
+          "Provider/HTTP/UI/WSL/deployment/production"
+        ],
         "verdict": "ACCEPT",
-        "python_executable": "C:\\Users\\cyhuh\\anaconda3\\python.exe",
         "commands": [
           {
-            "command": "NOT_REPORTED",
-            "evidence_label": "focused plus E05Start control",
-            "passed": 81,
+            "evidence_label": "root/fanout/source-zero",
+            "passed": 3,
             "skipped": 0,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "related agent_team queue leases budget orchestration",
-            "passed": 1024,
-            "skipped": 6,
-            "exit_code": 0
+            "exit_code": 0,
+            "seconds": 78.54
           }
         ],
-        "independent_probes": {
-          "hostile_inline": 24,
-          "ordinary_E04_contention_retry": 3,
-          "control_history": 6,
-          "exit_code": 0
-        },
-        "prefix_sequence": 1100,
-        "unverified": [
-          "actual Provider",
-          "PostgreSQL batch adapter/real DB",
-          "HTTP/UI",
-          "external send",
-          "isolated PG18"
-        ]
+        "independent_probe": {
+          "pre_handle_replacement": "WORKSPACE_GIT_STORE_DRIFT",
+          "source_mutation": 0,
+          "receipt": 0
+        }
       },
       "quality": {
         "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
@@ -1815,83 +1824,42 @@
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1104,
+        "checker_sequence": 1113,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 15,
+        "exact_dirty_paths": 18,
         "staged": 0,
-        "verdict": "PASS",
-        "python_executable": "NOT_REPORTED",
+        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "unverified": [
+          "DB UTC/multiprocess lease adapter",
+          "process-crash durable recovery",
+          "actual 8.3 alias",
+          "isolated PG18",
+          "Provider/HTTP/UI/WSL/deployment/production"
+        ],
+        "verdict": "APPROVED",
         "commands": [
           {
-            "command": "NOT_REPORTED",
-            "evidence_label": "focused",
-            "passed": 79,
+            "evidence_label": "object and ref publication/compensation",
+            "passed": 6,
             "skipped": 0,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "R2 reentry/lock inversion",
-            "passed": 7,
-            "skipped": 0,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "related agent_team orchestration queue leases budget",
-            "passed": 1024,
-            "skipped": 6,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "E04 queue regression",
-            "passed": 7,
-            "skipped": 5,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "control",
-            "passed": 8,
-            "skipped": 0,
-            "exit_code": 0
+            "exit_code": 0,
+            "seconds": 146.1
           }
         ],
-        "independent_adversarial_probe": {
-          "exit_code": 0,
-          "same_thread_reentry_publication": 0,
-          "inflight": 0,
-          "different_request_duplicates": 0,
-          "shared_queue_outer_CAS_publication": 0,
-          "retry_claims": 2,
-          "token_exception_publication": 0,
-          "queue_drift_publication": 0,
-          "ordinary_64_way_wins": [
-            1,
-            1,
-            0
-          ],
-          "ordinary_attempts": 2,
-          "ordinary_quarantine": 1
-        },
-        "unverified": [
-          "actual Provider",
-          "PostgreSQL batch adapter/real DB",
-          "HTTP/UI",
-          "external send",
-          "isolated PG18",
-          "host-injected unbounded callback timeout outside contract"
-        ]
+        "independent_probe": {
+          "foreign_blob_created": false,
+          "source_head_unchanged": true
+        }
       }
     }
   },
   "reporting_decision": {
     "decision": "AUTO_CONTINUE",
     "reason_codes": [
-      "E05_INDEPENDENT_ACCEPTED",
-      "E06_READY_NOT_STARTED"
+      "E06_MAIN_TAKEOVER_RESOLVED",
+      "E06_INDEPENDENT_ACCEPTED",
+      "E07_READY_NOT_STARTED"
     ],
     "stop_before_dialogue_report": false
   },
@@ -2040,24 +2008,28 @@
     "external_side_effects": "NOT_EXECUTED"
   },
   "last_completed_work_instruction": {
-    "work_package_id": "E-05",
-    "artifact_path": "docs/work_orders/E-05_WORK_INSTRUCTION.md",
-    "artifact_sha256": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E",
-    "invocation_path": "docs/work_orders/E-05_INVOCATION_PROMPT.md",
-    "invocation_sha256": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659",
+    "work_package_id": "E-06",
+    "artifact_path": "docs/work_orders/E-06_WORK_INSTRUCTION.md",
+    "artifact_sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD",
+    "invocation_path": "docs/work_orders/E-06_INVOCATION_PROMPT.md",
+    "invocation_sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1",
     "status": "ACCEPTED",
     "result_status": "COMPLETED",
     "accepted": true,
     "product_write_scope": [
-      "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+      "docs/04_test_reports/E-06_COMPLETION_REPORT.md",
       "packages/agent_team/__init__.py",
-      "packages/agent_team/concurrency.py",
-      "packages/queue/service.py",
-      "tests/agent_team/test_concurrency_e05.py",
-      "tests/queue/test_concurrency_claim_e05.py"
+      "packages/agent_team/worktree_writes.py",
+      "packages/leases/service.py",
+      "packages/tool_gateway/gateway.py",
+      "tests/agent_team/test_worktree_writes_e06.py",
+      "tests/leases/test_repository_write_e06.py",
+      "tests/tool_gateway/test_worktree_mutation_e06.py"
     ],
-    "worker_lease_id": "worker-lease-e05-r1-20260917-001",
-    "write_lease_id": "write-lease-e05-r1-20260917-001",
+    "worker_lease_id": "worker-lease-e06-r1-20260917-001",
+    "write_lease_id": "write-lease-e06-r1-20260917-001",
+    "executor": "main-agent-eoul",
+    "main_takeover_packet": "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
     "independent_review": {
       "spec": {
         "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
@@ -2065,43 +2037,34 @@
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1104,
+        "checker_sequence": 1113,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 15,
+        "exact_dirty_paths": 18,
         "staged": 0,
+        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "unverified": [
+          "DB UTC/multiprocess lease adapter",
+          "process-crash durable recovery",
+          "actual 8.3 alias",
+          "isolated PG18",
+          "Provider/HTTP/UI/WSL/deployment/production"
+        ],
         "verdict": "ACCEPT",
-        "python_executable": "C:\\Users\\cyhuh\\anaconda3\\python.exe",
         "commands": [
           {
-            "command": "NOT_REPORTED",
-            "evidence_label": "focused plus E05Start control",
-            "passed": 81,
+            "evidence_label": "root/fanout/source-zero",
+            "passed": 3,
             "skipped": 0,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "related agent_team queue leases budget orchestration",
-            "passed": 1024,
-            "skipped": 6,
-            "exit_code": 0
+            "exit_code": 0,
+            "seconds": 78.54
           }
         ],
-        "independent_probes": {
-          "hostile_inline": 24,
-          "ordinary_E04_contention_retry": 3,
-          "control_history": 6,
-          "exit_code": 0
-        },
-        "prefix_sequence": 1100,
-        "unverified": [
-          "actual Provider",
-          "PostgreSQL batch adapter/real DB",
-          "HTTP/UI",
-          "external send",
-          "isolated PG18"
-        ]
+        "independent_probe": {
+          "pre_handle_replacement": "WORKSPACE_GIT_STORE_DRIFT",
+          "source_mutation": 0,
+          "receipt": 0
+        }
       },
       "quality": {
         "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
@@ -2109,75 +2072,33 @@
         "important_findings": 0,
         "minor_findings": 0,
         "developer_transcript_used": false,
-        "checker_sequence": 1104,
+        "checker_sequence": 1113,
         "checker_result": "PASS",
         "diff_check_exit": 0,
-        "exact_dirty_paths": 15,
+        "exact_dirty_paths": 18,
         "staged": 0,
-        "verdict": "PASS",
-        "python_executable": "NOT_REPORTED",
+        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "unverified": [
+          "DB UTC/multiprocess lease adapter",
+          "process-crash durable recovery",
+          "actual 8.3 alias",
+          "isolated PG18",
+          "Provider/HTTP/UI/WSL/deployment/production"
+        ],
+        "verdict": "APPROVED",
         "commands": [
           {
-            "command": "NOT_REPORTED",
-            "evidence_label": "focused",
-            "passed": 79,
+            "evidence_label": "object and ref publication/compensation",
+            "passed": 6,
             "skipped": 0,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "R2 reentry/lock inversion",
-            "passed": 7,
-            "skipped": 0,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "related agent_team orchestration queue leases budget",
-            "passed": 1024,
-            "skipped": 6,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "E04 queue regression",
-            "passed": 7,
-            "skipped": 5,
-            "exit_code": 0
-          },
-          {
-            "command": "NOT_REPORTED",
-            "evidence_label": "control",
-            "passed": 8,
-            "skipped": 0,
-            "exit_code": 0
+            "exit_code": 0,
+            "seconds": 146.1
           }
         ],
-        "independent_adversarial_probe": {
-          "exit_code": 0,
-          "same_thread_reentry_publication": 0,
-          "inflight": 0,
-          "different_request_duplicates": 0,
-          "shared_queue_outer_CAS_publication": 0,
-          "retry_claims": 2,
-          "token_exception_publication": 0,
-          "queue_drift_publication": 0,
-          "ordinary_64_way_wins": [
-            1,
-            1,
-            0
-          ],
-          "ordinary_attempts": 2,
-          "ordinary_quarantine": 1
-        },
-        "unverified": [
-          "actual Provider",
-          "PostgreSQL batch adapter/real DB",
-          "HTTP/UI",
-          "external send",
-          "isolated PG18",
-          "host-injected unbounded callback timeout outside contract"
-        ]
+        "independent_probe": {
+          "foreign_blob_created": false,
+          "source_head_unchanged": true
+        }
       }
     }
   },
@@ -2194,9 +2115,9 @@
     "b04_remote_mutation": "FORBIDDEN"
   },
   "current_progress_evidence_ref": {
-    "package_id": "E-05",
-    "path": "docs/progress/progress-handoff-detached-digest-e05-final-acceptance.json",
-    "manifest_path": "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json"
+    "package_id": "E-06",
+    "path": "docs/progress/progress-handoff-detached-digest-e06-final-acceptance.json",
+    "manifest_path": "docs/evidence/manifests/E-06_FINAL_ACCEPTANCE_MANIFEST.json"
   },
   "registry_refs": {
     "failure_ledger": {
@@ -2217,11 +2138,11 @@
     },
     "progress_events": {
       "path": "docs/progress/progress-events.json",
-      "sha256": "C9349C10A548785107ABC742C6B5184F14D0668C5290744AC4486A900251B8D5"
+      "sha256": "59CB4FEDE8DD39001F748A8B1C635C6A2EFA5EDC448ECB600E7873A213DB8206"
     }
   },
   "next_work_package": {
-    "package_id": "E-06",
+    "package_id": "E-07",
     "status": "READY_FOR_WORK_INSTRUCTION"
   },
   "next_successor_work_package": null,
@@ -2611,8 +2532,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "776B54C1F160F56A04B67923276D5E04CD3995B371F93A8E74D5AA395365C887",
-  "runtime_next_action": "E06_READY_NOT_STARTED",
+  "snapshot_hash": "F48EA83AFE772C36E99BF60DCF41EEAD325873CA01A4DF633412B2064DA862E3",
+  "runtime_next_action": "E07_READY_NOT_STARTED",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
@@ -4224,7 +4145,7 @@
       "push": "NOT_EXECUTED"
     }
   },
-  "recorded_at": "2026-09-17T14:35:00+09:00",
+  "recorded_at": "2026-09-17T19:30:00+09:00",
   "recorded_at_source": "LOCAL_CLOCK_AT_APPEND_ONLY_RECORDING",
   "evidence_detail_limitations": [
     {
@@ -21960,6 +21881,185 @@
     "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
     "work_instruction_sha256": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E",
     "invocation_sha256": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659",
+    "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18"
+  },
+  "e06_start": {
+    "status": "COMPLETED_ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1113,
+    "error_count": 0,
+    "formal_failure_count": 5,
+    "main_takeover": true
+  },
+  "e06_final_acceptance": {
+    "status": "ACCEPTED",
+    "accepted": true,
+    "event_sequence": 1124,
+    "product_raw": {
+      "docs/04_test_reports/E-06_COMPLETION_REPORT.md": {
+        "bytes": 46791,
+        "sha256": "29D08D3AC0DDCC4FB9BDD97EA2770DD85B9B104A794CC0D4D779AC2A548E6B3B"
+      },
+      "packages/agent_team/__init__.py": {
+        "bytes": 4680,
+        "sha256": "C6C669C0975F9DE4FB18CCFE2691833E95660AE4A765284589304D330169C1AD"
+      },
+      "packages/agent_team/worktree_writes.py": {
+        "bytes": 32693,
+        "sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8"
+      },
+      "packages/leases/service.py": {
+        "bytes": 18884,
+        "sha256": "7D1392E5D897CD9BB25037CA0867E3431EB379307657136515D5AE646C34AB01"
+      },
+      "packages/tool_gateway/gateway.py": {
+        "bytes": 21283,
+        "sha256": "7024D1861BA2342F52AA7023EC99A9916ED58543D211FC882A77C1954EA2D555"
+      },
+      "tests/agent_team/test_worktree_writes_e06.py": {
+        "bytes": 34182,
+        "sha256": "3DB2A61FE5DB3316BC34195DDA53FFC7A5C1AB6890211CFE8EA5F8F23D5D7B1D"
+      },
+      "tests/leases/test_repository_write_e06.py": {
+        "bytes": 10623,
+        "sha256": "28C391CA8CA759597E80125E8C985E120ED463FBEAF662998A5D512C50F34C1B"
+      },
+      "tests/tool_gateway/test_worktree_mutation_e06.py": {
+        "bytes": 3059,
+        "sha256": "95013FF223F2070A7AC9CD1A4D0205C5FD43FB745C8FFA07B2C0B990D761A3C0"
+      }
+    },
+    "evidence_target_hash": "0A0A6A82AC8E976D420E39C770E904A3B6EDDDBB840BC1BCB6ABC5E2F8F79ED9",
+    "independent_reviews": {
+      "spec": {
+        "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "checker_sequence": 1113,
+        "checker_result": "PASS",
+        "diff_check_exit": 0,
+        "exact_dirty_paths": 18,
+        "staged": 0,
+        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "unverified": [
+          "DB UTC/multiprocess lease adapter",
+          "process-crash durable recovery",
+          "actual 8.3 alias",
+          "isolated PG18",
+          "Provider/HTTP/UI/WSL/deployment/production"
+        ],
+        "verdict": "ACCEPT",
+        "commands": [
+          {
+            "evidence_label": "root/fanout/source-zero",
+            "passed": 3,
+            "skipped": 0,
+            "exit_code": 0,
+            "seconds": 78.54
+          }
+        ],
+        "independent_probe": {
+          "pre_handle_replacement": "WORKSPACE_GIT_STORE_DRIFT",
+          "source_mutation": 0,
+          "receipt": 0
+        }
+      },
+      "quality": {
+        "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
+        "critical_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false,
+        "checker_sequence": 1113,
+        "checker_result": "PASS",
+        "diff_check_exit": 0,
+        "exact_dirty_paths": 18,
+        "staged": 0,
+        "facade_sha256": "14FB02DE1C8CAA27B506003CE5CAD649F69036A57ECE0E82BDF83B9C22C089C8",
+        "unverified": [
+          "DB UTC/multiprocess lease adapter",
+          "process-crash durable recovery",
+          "actual 8.3 alias",
+          "isolated PG18",
+          "Provider/HTTP/UI/WSL/deployment/production"
+        ],
+        "verdict": "APPROVED",
+        "commands": [
+          {
+            "evidence_label": "object and ref publication/compensation",
+            "passed": 6,
+            "skipped": 0,
+            "exit_code": 0,
+            "seconds": 146.1
+          }
+        ],
+        "independent_probe": {
+          "foreign_blob_created": false,
+          "source_head_unchanged": true
+        }
+      }
+    },
+    "external_validation": {
+      "provider": "NOT_EXECUTED",
+      "real_db": "NOT_EXECUTED",
+      "http_wiring": "NOT_EXECUTED",
+      "ui": "NOT_EXECUTED",
+      "external_send": "NOT_EXECUTED",
+      "pg18_rc": "NOT_EXECUTED",
+      "actual_worker": "NOT_EXECUTED",
+      "production": "NOT_EXECUTED",
+      "wsl_runtime": "NOT_EXECUTED",
+      "postgresql_batch_adapter": "NOT_INTEGRATED",
+      "process_crash_recovery": "NOT_INTEGRATED"
+    },
+    "formal_failure_count": 5,
+    "failure_lineage": [
+      {
+        "formal_count": 1,
+        "status": "RESOLVED",
+        "fingerprints": [
+          "E06-PHYSICAL-IDENTITY-ALIAS",
+          "E06-CLOCK-ROLLBACK-REVIVAL",
+          "E06-COMMIT-PROVENANCE-ATOMICITY"
+        ]
+      },
+      {
+        "formal_count": 1,
+        "status": "RESOLVED",
+        "fingerprints": [
+          "E06-DIRECT-HEAD-IDENTITY",
+          "E06-RECEIPT-CLOCK-BOUNDARY"
+        ]
+      },
+      {
+        "formal_count": 1,
+        "status": "RESOLVED",
+        "fingerprints": [
+          "E06-INDIRECT-SYMBOLIC-CHAIN"
+        ]
+      },
+      {
+        "formal_count": 1,
+        "status": "RESOLVED_MAIN_TAKEOVER_TRIGGER",
+        "fingerprints": [
+          "E06-POST-COMMIT-CHAIN-RETARGET"
+        ]
+      },
+      {
+        "formal_count": 1,
+        "status": "RESOLVED_BY_MAIN",
+        "fingerprints": [
+          "E06-BOUND-FINAL-COMPENSATION",
+          "E06-GIT-STORE-PHYSICAL-CONFINEMENT"
+        ]
+      }
+    ],
+    "main_takeover_packet": "docs/work_orders/E-06_MAIN_TAKEOVER_PACKET_R4.md",
+    "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+    "work_instruction_sha256": "9EAF1703E49E7CDC84F77FC9F72F69C5ED57D98C9554DA240E9AB29F2F92B4AD",
+    "invocation_sha256": "7B2C19A6622E64C2AFF1461B31D80FF0B1741931FBED46252D27016488E51AF1",
     "work_plan_hash": "00F4B03E5C6A82D50268025A87EB86FAC52815D675B54216D7B69B5BD220DD18"
   }
 }

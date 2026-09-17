@@ -308,4 +308,30 @@ class ReadToolGateway:
             "size": stat.st_size, "sha256": hashlib.sha256(target.read_bytes()).hexdigest() if target.is_file() else None})
 
 
-__all__ = ["ReadToolGateway"]
+class WorktreeMutationGateway:
+    """E06 host-only bounded file tool; the C09 read contract is unchanged."""
+    def __init__(self,service,permissions):
+        from packages.agent_team.worktree_writes import WorktreeWriteService
+        if type(service) is not WorktreeWriteService or type(permissions) is not ToolPermissionRegistry:
+            raise ToolGatewayRejected('WRITE_AUTHORITY_REQUIRED')
+        self._service=service;self._permissions=permissions;self._audits=[]
+        self.before_dispatch=None
+
+    @property
+    def audits(self):return tuple(dict(row) for row in self._audits)
+
+    def write(self,grant,path,data,*,request_id):
+        from packages.action_policy.admission import secret_shape
+        try:
+            if type(data) is not bytes or secret_shape((request_id,path,data.decode('utf-8','replace'))):raise ToolGatewayRejected('SECRET_INPUT_DENIED')
+            result=self._service.write(grant,path,data,request_id=request_id,permissions=self._permissions,before_dispatch=self.before_dispatch)
+        except Exception as exc:
+            code=getattr(exc,'code',str(exc))
+            self._audits.append({'status':'DENIED','reason_code':code,'io_count':getattr(exc,'io_count',0),
+                'target_restored':getattr(exc,'target_restored',False),'io_boundary':'TARGET_MUTATION'})
+            raise ToolGatewayRejected(code) from exc
+        self._audits.append({'status':'SUCCEEDED','reason_code':'ALLOWED','io_count':result['io_count']})
+        return result
+
+
+__all__ = ["ReadToolGateway", "WorktreeMutationGateway"]
