@@ -5,6 +5,7 @@ from .role_contracts import (
     RolePolicyService, TestWriteGrant, TestWriteLease,
 )
 from .role_results import ReviewFinding, RoleEvidence, RoleResult, RoleResultReceipt, RoleResultService
+from .handoff import ArtifactRef, SourceRef, RoleHandoff, RoleHandoffService, HandoffError
 
 from .models import (
     ConversationRole,
@@ -71,6 +72,7 @@ from .remote_control import (
 )
 
 __all__ = [
+    "ArtifactRef", "SourceRef", "RoleHandoff", "RoleHandoffService", "HandoffError",
     "AgentDefinition", "BudgetLimits", "RoleAssignment", "RoleDecision",
     "RolePolicyService", "TestWriteGrant", "TestWriteLease",
     "ReviewFinding", "RoleEvidence", "RoleResult", "RoleResultReceipt", "RoleResultService",

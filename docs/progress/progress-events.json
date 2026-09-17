@@ -2,7 +2,7 @@
   "schema_version": "1.0.0",
   "stream_id": "anvil-build-main",
   "first_sequence": 1,
-  "last_sequence": 1071,
+  "last_sequence": 1080,
   "events": [
     {
       "event_id": "evt_g05_legacy_migration",
@@ -65691,7 +65691,683 @@
           "deployment": "NOT_EXECUTED"
         }
       }
+    },
+    {
+      "sequence": 1072,
+      "event_id": "evt_e02_work_instruction_issued",
+      "event_type": "WORK_INSTRUCTION_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "START",
+      "subject_ref": "E-02/START",
+      "occurred_at": "2026-09-17T09:36:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "0EF961CB31A105236BA462ACE1A0D19C0FF9BE5E6B1C77645A68B0697EC16026",
+      "details": {
+        "work_instruction_id": "WI-E-02-R1-20260917-001",
+        "work_instruction_path": "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+        "work_instruction_sha256": "B77E357A06239673E46C8959AEBC91BF831313AECBF4AF8FA9702DD8ED5806B6",
+        "invocation_path": "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+        "invocation_sha256": "102190D70C51670858D78CFADDC950159D451D376C714DA59C81655E68A36F69",
+        "approval_ref": "APPROVAL-20260814-WORKPLAN-V16-001",
+        "product_write_scope": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E02_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "B77E357A06239673E46C8959AEBC91BF831313AECBF4AF8FA9702DD8ED5806B6",
+          "invocation_sha256": "102190D70C51670858D78CFADDC950159D451D376C714DA59C81655E68A36F69",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-02_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e02-start.json",
+            "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+            "packages/agent_team/__init__.py",
+            "packages/agent_team/handoff.py",
+            "packages/api/role_handoff.py",
+            "tests/agent_team/test_handoff_e02.py",
+            "tests/api/test_role_handoff_e02.py"
+          ],
+          "independent_acceptance_required": true
+        }
+      }
+    },
+    {
+      "sequence": 1073,
+      "event_id": "evt_e02_worker_lease_issued",
+      "event_type": "WORKER_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "START",
+      "subject_ref": "E-02/START",
+      "occurred_at": "2026-09-17T09:36:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "D3EEBF9241E94491244B71E513DFB9405E51AAAB847D695FE84A937E63150F08",
+      "details": {
+        "actor_id": "developer-primary-e02-r1",
+        "subject_ref": "E-02",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "issued_at": "2026-09-17T09:36:00+09:00",
+        "expires_at": "2026-09-17T21:36:00+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e02-r1-execution-fence-epoch-1-99861ccb18fb9555",
+        "path_scope": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py"
+        ],
+        "lease_id": "worker-lease-e02-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e02-r1-execution-fence-epoch-1-99861ccb18fb9555",
+        "dispatch_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449"
+      }
+    },
+    {
+      "sequence": 1074,
+      "event_id": "evt_e02_write_lease_issued",
+      "event_type": "WRITE_LEASE_ISSUED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "START",
+      "subject_ref": "E-02/START",
+      "occurred_at": "2026-09-17T09:36:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "123BED3E22AB9A859DBA097A094EED3BC8E08A4C65F6BE12E2175A3A2D895F63",
+      "details": {
+        "actor_id": "developer-primary-e02-r1",
+        "subject_ref": "E-02",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "issued_at": "2026-09-17T09:36:00+09:00",
+        "expires_at": "2026-09-17T21:36:00+09:00",
+        "status": "ACTIVE",
+        "execution_fencing_token": "e02-r1-execution-fence-epoch-1-99861ccb18fb9555",
+        "path_scope": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py"
+        ],
+        "lease_id": "write-lease-e02-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e02-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e02-r1-write-fence-epoch-1-ddbfb6ef8c4c9b79",
+        "write_fencing_token": "e02-r1-write-fence-epoch-1-ddbfb6ef8c4c9b79"
+      }
+    },
+    {
+      "sequence": 1075,
+      "event_id": "evt_e02_package_started",
+      "event_type": "PACKAGE_STARTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "START",
+      "subject_ref": "E-02/START",
+      "occurred_at": "2026-09-17T09:36:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "1DF477A83DD397B419EDBB65B1FE7E4877C6FCFFEDED125F4CDF7AB5886CA821",
+      "details": {
+        "projection_mode": "E02_START_EXACT9_PRODUCT_EXACT6",
+        "validated_base_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "dispatch_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "dispatch_upstream_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "head_relation": "PRECOMMIT_EXACT9_OR_SOLE_DIRECT_CHILD",
+        "exact_allowed_paths": [
+          "docs/evidence/manifests/E-02_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e02-start.json",
+          "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+          "scripts/check_project_progress.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "authority": {
+          "source": "MAIN_APPROVED_E02_IMPLEMENTATION_DISPATCH",
+          "new_project_approval_requested": false,
+          "product_tdd_authorized_now": true,
+          "external_execution_authorized": false,
+          "work_instruction_sha256": "B77E357A06239673E46C8959AEBC91BF831313AECBF4AF8FA9702DD8ED5806B6",
+          "invocation_sha256": "102190D70C51670858D78CFADDC950159D451D376C714DA59C81655E68A36F69",
+          "approved_control_paths": [
+            "docs/evidence/manifests/E-02_START_MANIFEST.json",
+            "docs/progress/BUILD_HANDOFF.md",
+            "docs/progress/build-progress.json",
+            "docs/progress/progress-events.json",
+            "docs/progress/progress-handoff-detached-digest-e02-start.json",
+            "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+            "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+            "scripts/check_project_progress.py",
+            "tests/tooling/test_project_progress.py"
+          ],
+          "product_write_scope": [
+            "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+            "packages/agent_team/__init__.py",
+            "packages/agent_team/handoff.py",
+            "packages/api/role_handoff.py",
+            "tests/agent_team/test_handoff_e02.py",
+            "tests/api/test_role_handoff_e02.py"
+          ],
+          "independent_acceptance_required": true
+        },
+        "product_write_scope": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py"
+        ],
+        "work_instruction_id": "WI-E-02-R1-20260917-001",
+        "package_status": "IN_PROGRESS",
+        "work_package_id": "E-02",
+        "status": "IN_PROGRESS",
+        "active_agent": "developer-primary-e02-r1",
+        "worker_lease_id": "worker-lease-e02-r1-20260917-001",
+        "write_lease_id": "write-lease-e02-r1-20260917-001",
+        "execution_fencing_token": "e02-r1-execution-fence-epoch-1-99861ccb18fb9555",
+        "write_fencing_token": "e02-r1-write-fence-epoch-1-ddbfb6ef8c4c9b79",
+        "work_instruction_sha256": "B77E357A06239673E46C8959AEBC91BF831313AECBF4AF8FA9702DD8ED5806B6",
+        "runtime_next_action": "E02_HANDOFF_TDD_THEN_EXTERNAL_INDEPENDENT_REVIEW"
+      }
+    },
+    {
+      "sequence": 1076,
+      "event_id": "evt_e02_final_package_completed",
+      "event_type": "PACKAGE_COMPLETED",
+      "actor": "developer-primary-e02-r1",
+      "actor_id": "developer-primary-e02-r1",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-02/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T10:13:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "F7838385D7CF26FE4F368912C14A1BC37ED9CA0A1577EB21169F83C33E8E01AE",
+      "details": {
+        "result_status": "COMPLETED",
+        "package_status": "TEST_REVIEW",
+        "accepted": false,
+        "product_exact_paths": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py"
+        ],
+        "product_raw": {
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md": {
+            "bytes": 13391,
+            "sha256": "C6DA6619F377A0288AAEB28D0750287F4FD5B3402B8DA15280CCE5C876A9BDAA"
+          },
+          "packages/agent_team/__init__.py": {
+            "bytes": 3936,
+            "sha256": "41DF5E4E82E46D986F007E248E070021E5C44516A88E2489F818A60050C4ED82"
+          },
+          "packages/agent_team/handoff.py": {
+            "bytes": 25482,
+            "sha256": "C25F39D029F4A51F2A215B02462D849511DB154937B1456C7E8D1FAEC0024873"
+          },
+          "packages/api/role_handoff.py": {
+            "bytes": 1531,
+            "sha256": "2933D7B141F9F37B6089B022F156CC756689249CAFA73B666266F3CD52A3546E"
+          },
+          "tests/agent_team/test_handoff_e02.py": {
+            "bytes": 21527,
+            "sha256": "F45F75C9A91CB8AFD612EC3B6DD2CB481FC7A33BDA393D78DAD0708578509DD4"
+          },
+          "tests/api/test_role_handoff_e02.py": {
+            "bytes": 2632,
+            "sha256": "D27AC2EA3045A259DD20265201938004E1C4AC1018BF3D5B852F319A1C4FD481"
+          }
+        },
+        "evidence_target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+        "test_evidence": {
+          "focused_passed": 104,
+          "related_passed": 848,
+          "failed": 0,
+          "skipped": 0,
+          "evidence_class": "DEVELOPER_CONTRACT_TESTS_NOT_ACCEPTANCE",
+          "main_verification": {
+            "focused_passed": 104,
+            "related_passed": 848,
+            "related_seconds": 7.21,
+            "exit_code": 0,
+            "checker_sequence": 1075
+          }
+        },
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "os_worker": "NOT_EXECUTED",
+          "os_artifact_store": "NOT_EXECUTED",
+          "dag": "NOT_EXECUTED",
+          "parallel": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        },
+        "formal_valid_failure_count": 1,
+        "failure_lineage": {
+          "rework_count": 1,
+          "formal_valid_failure_count": 1,
+          "primary_lineage": "E02-ARTIFACT-TOCTOU-001",
+          "included_findings": [
+            "E02-SOURCE-AUTHORITY-TOCTOU-002",
+            "E02-BOUNDED-CONTEXT",
+            "E02-PREDECESSOR-CAUSALITY"
+          ],
+          "resolution": "INDEPENDENT_ACCEPTED"
+        }
+      }
+    },
+    {
+      "sequence": 1077,
+      "event_id": "evt_e02_final_independent_test_judgment_recorded",
+      "event_type": "INDEPENDENT_TEST_JUDGMENT_RECORDED",
+      "actor": "independent-reviewer",
+      "actor_id": "independent-reviewer",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-02/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T10:13:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "377895331F2904183EAFD330E46159B0F9D9A5E4BCA4805ADB3D997FC11D799E",
+      "details": {
+        "verdict": "PASS",
+        "criteria": "AV-AGT-030/AV-SAFE-032;TEST-10.6",
+        "evidence_ref": "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
+        "evidence_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+        "reviews": {
+          "spec": {
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "blocking_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "focused_passed": 104,
+            "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "review_round": "E02_R1",
+            "reviewer": "independent-spec-reviewer",
+            "minimal_passed": 375,
+            "adversarial_cases": 9,
+            "adversarial_verdict": "PASS",
+            "commands": [
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+                "exit_code": 0,
+                "passed": 104,
+                "seconds": 3.62
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_result_envelope_c05.py tests/api/test_role_handoff_e02.py",
+                "exit_code": 0,
+                "passed": 375,
+                "seconds": 4.39
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "unverified": [
+              "actual HTTP/UI",
+              "worker",
+              "Provider",
+              "DB",
+              "external runtime"
+            ]
+          },
+          "quality": {
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "blocking_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "focused_passed": 104,
+            "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "review_round": "E02_R1",
+            "reviewer": "independent-quality-reviewer",
+            "related_passed": 1184,
+            "adversarial_cases": 8,
+            "adversarial_verdict": "PASS",
+            "commands": [
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+                "exit_code": 0,
+                "passed": 104,
+                "seconds": 3.87
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/orchestration tests/artifacts tests/api",
+                "exit_code": 0,
+                "passed": 1184,
+                "seconds": 20.3
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "unverified": [
+              "actual HTTP wiring",
+              "OS artifact store",
+              "external IO",
+              "parallel execution"
+            ],
+            "warnings": [
+              "existing python_multipart deprecation (1)"
+            ]
+          }
+        },
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "developer_transcript_used": false
+      }
+    },
+    {
+      "sequence": 1078,
+      "event_id": "evt_e02_final_write_lease_revoked",
+      "event_type": "WRITE_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-02/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T10:13:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "7D23625E66C853748718E781B4829E1CBBD529DFAB42823032A7EC5645793791",
+      "details": {
+        "actor_id": "developer-primary-e02-r1",
+        "subject_ref": "E-02",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "issued_at": "2026-09-17T09:36:00+09:00",
+        "expires_at": "2026-09-17T21:36:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e02-r1-execution-fence-epoch-1-99861ccb18fb9555",
+        "path_scope": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py"
+        ],
+        "lease_id": "write-lease-e02-r1-20260917-001",
+        "worker_lease_id": "worker-lease-e02-r1-20260917-001",
+        "write_epoch": 1,
+        "fencing_token": "e02-r1-write-fence-epoch-1-ddbfb6ef8c4c9b79",
+        "write_fencing_token": "e02-r1-write-fence-epoch-1-ddbfb6ef8c4c9b79",
+        "revoked_at": "2026-09-17T10:13:00+09:00",
+        "reason": "E02_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1079,
+      "event_id": "evt_e02_final_worker_lease_revoked",
+      "event_type": "WORKER_LEASE_REVOKED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-02/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T10:13:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "57A91117726D0CA16CB0A4809055491F98ECB33D67420B2BF7A0BA1413C63768",
+      "details": {
+        "actor_id": "developer-primary-e02-r1",
+        "subject_ref": "E-02",
+        "baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+        "baseline_git_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "issued_at": "2026-09-17T09:36:00+09:00",
+        "expires_at": "2026-09-17T21:36:00+09:00",
+        "status": "REVOKED",
+        "execution_fencing_token": "e02-r1-execution-fence-epoch-1-99861ccb18fb9555",
+        "path_scope": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py"
+        ],
+        "lease_id": "worker-lease-e02-r1-20260917-001",
+        "lease_epoch": 1,
+        "fencing_token": "e02-r1-execution-fence-epoch-1-99861ccb18fb9555",
+        "dispatch_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "revoked_at": "2026-09-17T10:13:00+09:00",
+        "reason": "E02_INDEPENDENT_ACCEPTED_PRODUCT_FROZEN"
+      }
+    },
+    {
+      "sequence": 1080,
+      "event_id": "evt_e02_final_main_package_accepted",
+      "event_type": "MAIN_PACKAGE_ACCEPTED",
+      "actor": "main-agent-eoul",
+      "actor_id": "main-agent-eoul",
+      "actor_type": "AGENT",
+      "project_id": "anvil",
+      "run_id": null,
+      "work_package_id": "E-02",
+      "step_id": "FINAL_ACCEPTANCE",
+      "subject_ref": "E-02/FINAL-ACCEPTANCE",
+      "occurred_at": "2026-09-17T10:13:00+09:00",
+      "occurred_at_source": "PROJECTION_RECORDING_CLOCK_NOT_RUNTIME_ACTION_TIME",
+      "previous_event_sha256": "BAC923213503A6E838D00910DD07F5A2124379D90B267FDA454D50D55C77227A",
+      "details": {
+        "projection_mode": "E02_FINAL_ACCEPTANCE_EXACT17",
+        "validated_base_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "acceptance_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "acceptance_upstream_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+        "head_relation": "PRECOMMIT_START_PRODUCT_EXACT15_PLUS_FINAL_CONTROL_EXACT2",
+        "exact_allowed_paths": [
+          "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+          "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
+          "docs/evidence/manifests/E-02_START_MANIFEST.json",
+          "docs/progress/BUILD_HANDOFF.md",
+          "docs/progress/build-progress.json",
+          "docs/progress/progress-events.json",
+          "docs/progress/progress-handoff-detached-digest-e02-final-acceptance.json",
+          "docs/progress/progress-handoff-detached-digest-e02-start.json",
+          "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+          "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+          "packages/agent_team/__init__.py",
+          "packages/agent_team/handoff.py",
+          "packages/api/role_handoff.py",
+          "scripts/check_project_progress.py",
+          "tests/agent_team/test_handoff_e02.py",
+          "tests/api/test_role_handoff_e02.py",
+          "tests/tooling/test_project_progress.py"
+        ],
+        "decision": "ACCEPTED",
+        "accepted": true,
+        "test_report_ref": "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+        "test_report_sha256": "C6DA6619F377A0288AAEB28D0750287F4FD5B3402B8DA15280CCE5C876A9BDAA",
+        "manifest_ref": "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
+        "manifest_sha256": "SELF_REFERENCE_EXCLUDED",
+        "evidence_target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+        "independent_reviews": {
+          "spec": {
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "blocking_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "focused_passed": 104,
+            "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "review_round": "E02_R1",
+            "reviewer": "independent-spec-reviewer",
+            "minimal_passed": 375,
+            "adversarial_cases": 9,
+            "adversarial_verdict": "PASS",
+            "commands": [
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+                "exit_code": 0,
+                "passed": 104,
+                "seconds": 3.62
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_result_envelope_c05.py tests/api/test_role_handoff_e02.py",
+                "exit_code": 0,
+                "passed": 375,
+                "seconds": 4.39
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "unverified": [
+              "actual HTTP/UI",
+              "worker",
+              "Provider",
+              "DB",
+              "external runtime"
+            ]
+          },
+          "quality": {
+            "verdict": "ACCEPT",
+            "critical_findings": 0,
+            "blocking_findings": 0,
+            "important_findings": 0,
+            "minor_findings": 0,
+            "developer_transcript_used": false,
+            "independent_context": true,
+            "focused_passed": 104,
+            "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
+            "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
+            "review_round": "E02_R1",
+            "reviewer": "independent-quality-reviewer",
+            "related_passed": 1184,
+            "adversarial_cases": 8,
+            "adversarial_verdict": "PASS",
+            "commands": [
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+                "exit_code": 0,
+                "passed": 104,
+                "seconds": 3.87
+              },
+              {
+                "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/orchestration tests/artifacts tests/api",
+                "exit_code": 0,
+                "passed": 1184,
+                "seconds": 20.3
+              },
+              {
+                "command": "git diff --check",
+                "exit_code": 0
+              }
+            ],
+            "unverified": [
+              "actual HTTP wiring",
+              "OS artifact store",
+              "external IO",
+              "parallel execution"
+            ],
+            "warnings": [
+              "existing python_multipart deprecation (1)"
+            ]
+          }
+        },
+        "next_work_package": "E-03",
+        "next_work_package_status": "READY_FOR_WORK_INSTRUCTION",
+        "blocking_findings": 0,
+        "important_findings": 0,
+        "minor_findings": 0,
+        "formal_valid_failure_count": 1,
+        "external_validation": {
+          "provider": "NOT_EXECUTED",
+          "network": "NOT_EXECUTED",
+          "database": "NOT_EXECUTED",
+          "http": "NOT_EXECUTED",
+          "browser": "NOT_EXECUTED",
+          "ui": "NOT_EXECUTED",
+          "os_worker": "NOT_EXECUTED",
+          "os_artifact_store": "NOT_EXECUTED",
+          "dag": "NOT_EXECUTED",
+          "parallel": "NOT_EXECUTED",
+          "deployment": "NOT_EXECUTED"
+        },
+        "failure_lineage": {
+          "rework_count": 1,
+          "formal_valid_failure_count": 1,
+          "primary_lineage": "E02-ARTIFACT-TOCTOU-001",
+          "included_findings": [
+            "E02-SOURCE-AUTHORITY-TOCTOU-002",
+            "E02-BOUNDED-CONTEXT",
+            "E02-PREDECESSOR-CAUSALITY"
+          ],
+          "resolution": "INDEPENDENT_ACCEPTED"
+        }
+      }
     }
   ],
-  "last_event_id": "evt_e01_final_main_package_accepted"
+  "last_event_id": "evt_e02_final_main_package_accepted"
 }

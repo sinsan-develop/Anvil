@@ -1,0 +1,114 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E02_START",
+  "artifact_id": "E02-START-20260917",
+  "created_at": "2026-09-17T09:36:00+09:00",
+  "package_id": "E-02",
+  "event_sequence": 1075,
+  "historical_event_sequence": 1071,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 3510407,
+    "sha256": "1B178536B88AF3BBDDCD5267CA695B0C7D08FBAA94230C86A89201CCE31F3348"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "active_leases": 2,
+  "product_write_scope": [
+    "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/handoff.py",
+    "packages/api/role_handoff.py",
+    "tests/agent_team/test_handoff_e02.py",
+    "tests/api/test_role_handoff_e02.py"
+  ],
+  "authority": {
+    "source": "MAIN_APPROVED_E02_IMPLEMENTATION_DISPATCH",
+    "new_project_approval_requested": false,
+    "product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "work_instruction_sha256": "B77E357A06239673E46C8959AEBC91BF831313AECBF4AF8FA9702DD8ED5806B6",
+    "invocation_sha256": "102190D70C51670858D78CFADDC950159D451D376C714DA59C81655E68A36F69",
+    "approved_control_paths": [
+      "docs/evidence/manifests/E-02_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-e02-start.json",
+      "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "product_write_scope": [
+      "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/handoff.py",
+      "packages/api/role_handoff.py",
+      "tests/agent_team/test_handoff_e02.py",
+      "tests/api/test_role_handoff_e02.py"
+    ],
+    "independent_acceptance_required": true
+  },
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/E-02_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e02-start.json",
+    "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "projection_mode": "E02_START_EXACT9_PRODUCT_EXACT6",
+  "validated_base_commit": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 207534,
+      "sha256": "8A09AEDC3304D6480F80321269FADAF5667F5CEC403A8E9063C151601F99578D"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1107533,
+      "sha256": "BC6BD6A8FBF9424C123496380BA6031C8D2D115833823AA83B0DEEE8EBA021E6"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3520718,
+      "sha256": "C28800FDF551E0200307F7E95B3AC809EF46B59602D2F453023C59848E4CCDED"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e02-start.json",
+      "bytes": 835,
+      "sha256": "E3F7B7B28B258A3C4B846AC33AA6771A97B239C3E3E2170B1C7C7E7D058379DA"
+    },
+    {
+      "path": "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+      "bytes": 537,
+      "sha256": "102190D70C51670858D78CFADDC950159D451D376C714DA59C81655E68A36F69"
+    },
+    {
+      "path": "docs/work_orders/E-02_WORK_INSTRUCTION.md",
+      "bytes": 4477,
+      "sha256": "B77E357A06239673E46C8959AEBC91BF831313AECBF4AF8FA9702DD8ED5806B6"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4324023,
+      "sha256": "1F7DFEE681AA46E40AC8D60E976AC4C5481C51E95068265B7B0FAC048AC4D4C5"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1156491,
+      "sha256": "CBE57EF78ACBBBD6295605DCAE0C4D06625C9A4A151422ABE4C909C33731FFE0"
+    }
+  ]
+}

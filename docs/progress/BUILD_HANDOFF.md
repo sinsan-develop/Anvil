@@ -1,3 +1,15 @@
+# E-02 최종 수락 — seq1080
+
+- 독립 spec/quality ACCEPT, C0/I0/M0. Developer transcript 미사용.
+- 제품 exact6 동결, 양 lease 회수, REWORK count1.
+- E-03는 READY이며 시작하지 않았다. commit/push 및 외부 runtime 미실행.
+
+# E-02 시작 통제 — seq1075
+
+- E-01 ACCEPTED. 제품 exact6와 control exact9는 분리한다.
+- Developer 증거는 최종 합격이 아니며 외부 독립 검증이 필요하다.
+- seq1071 control의 99861ccb commit은 Main 완료. 이번 E-02 commit/push는 미수행이다.
+
 # E-01 최종 수락 — seq1071
 
 - 독립 spec/quality ACCEPT, C0/I0/M0. Developer transcript 미사용.
@@ -1339,48 +1351,59 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1071,
-  "last_event_id": "evt_e01_final_main_package_accepted",
+  "event_sequence": 1080,
+  "last_event_id": "evt_e02_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-01",
+  "current_work_package": "E-02",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E02_READY_FOR_WORK_INSTRUCTION_NOT_STARTED",
+  "next_safe_action": "E03_READY_FOR_WORK_INSTRUCTION_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e01_status": "ACCEPTED",
-  "e02_status": "READY_FOR_WORK_INSTRUCTION",
-  "e01_rework_count": 1,
-  "e01_formal_valid_failure_count": 1,
+  "e02_status": "ACCEPTED",
+  "e03_status": "READY_FOR_WORK_INSTRUCTION",
+  "e02_rework_count": 1,
+  "e02_formal_valid_failure_count": 1,
+  "e02_failure_lineage": {
+    "rework_count": 1,
+    "formal_valid_failure_count": 1,
+    "primary_lineage": "E02-ARTIFACT-TOCTOU-001",
+    "included_findings": [
+      "E02-SOURCE-AUTHORITY-TOCTOU-002",
+      "E02-BOUNDED-CONTEXT",
+      "E02-PREDECESSOR-CAUSALITY"
+    ],
+    "resolution": "INDEPENDENT_ACCEPTED"
+  },
   "dir_status": "CLEARED",
-  "repository_head": "b820867f95d2941e378e5b78e3f31f67ace081b8",
+  "repository_head": "99861ccb18fb9555ddbfb6ef8c4c9b79fc46c449",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E01_FINAL_ACCEPTANCE_EXACT17",
+  "repository_projection_mode": "E02_FINAL_ACCEPTANCE_EXACT17",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-01_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-01_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-01_START_MANIFEST.json",
+    "docs/04_test_reports/E-02_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-02_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e01-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e01-start.json",
-    "docs/work_orders/E-01_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-01_WORK_INSTRUCTION.md",
+    "docs/progress/progress-handoff-detached-digest-e02-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e02-start.json",
+    "docs/work_orders/E-02_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-02_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
-    "packages/agent_team/role_contracts.py",
-    "packages/agent_team/role_results.py",
+    "packages/agent_team/handoff.py",
+    "packages/api/role_handoff.py",
     "scripts/check_project_progress.py",
-    "tests/agent_team/test_role_contracts_e01.py",
-    "tests/agent_team/test_role_results_e01.py",
+    "tests/agent_team/test_handoff_e02.py",
+    "tests/api/test_role_handoff_e02.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-01_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+  "current_manifest": "docs/evidence/manifests/E-02_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
   "independent_reviews": {
     "spec": {
       "verdict": "ACCEPT",
@@ -1390,14 +1413,39 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "minor_findings": 0,
       "developer_transcript_used": false,
       "independent_context": true,
-      "focused_passed": 76,
-      "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+      "focused_passed": 104,
+      "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
       "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
-      "review_round": "E01_R3",
+      "review_round": "E02_R1",
       "reviewer": "independent-spec-reviewer",
-      "minimal_passed": 384,
-      "adversarial_cases": 5,
-      "adversarial_assertions": 30
+      "minimal_passed": 375,
+      "adversarial_cases": 9,
+      "adversarial_verdict": "PASS",
+      "commands": [
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+          "exit_code": 0,
+          "passed": 104,
+          "seconds": 3.62
+        },
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/artifacts tests/orchestration/test_result_envelope_c05.py tests/api/test_role_handoff_e02.py",
+          "exit_code": 0,
+          "passed": 375,
+          "seconds": 4.39
+        },
+        {
+          "command": "git diff --check",
+          "exit_code": 0
+        }
+      ],
+      "unverified": [
+        "actual HTTP/UI",
+        "worker",
+        "Provider",
+        "DB",
+        "external runtime"
+      ]
     },
     "quality": {
       "verdict": "ACCEPT",
@@ -1407,13 +1455,41 @@ The former Phase B Gate successor projection remains historical only. The immuta
       "minor_findings": 0,
       "developer_transcript_used": false,
       "independent_context": true,
-      "focused_passed": 76,
-      "target_hash": "117E1CC97F92174AF1D5C5F62F5E1913F7AAF1A3E32AEE0622A621D3A014EAD2",
+      "focused_passed": 104,
+      "target_hash": "08C0C2CAEF44E17D4B8713E078FA27A576D09F86ED2B72A119BA831347E9FBCD",
       "authority_source": "MAIN_REVIEWED_INDEPENDENT_SESSION_RESULTS",
-      "review_round": "E01_R3",
+      "review_round": "E02_R1",
       "reviewer": "independent-quality-reviewer",
-      "related_passed": 713,
-      "adversarial_verdict": "PASS"
+      "related_passed": 1184,
+      "adversarial_cases": 8,
+      "adversarial_verdict": "PASS",
+      "commands": [
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team/test_handoff_e02.py tests/api/test_role_handoff_e02.py",
+          "exit_code": 0,
+          "passed": 104,
+          "seconds": 3.87
+        },
+        {
+          "command": "python -B -m pytest -q -p no:cacheprovider tests/agent_team tests/orchestration tests/artifacts tests/api",
+          "exit_code": 0,
+          "passed": 1184,
+          "seconds": 20.3
+        },
+        {
+          "command": "git diff --check",
+          "exit_code": 0
+        }
+      ],
+      "unverified": [
+        "actual HTTP wiring",
+        "OS artifact store",
+        "external IO",
+        "parallel execution"
+      ],
+      "warnings": [
+        "existing python_multipart deprecation (1)"
+      ]
     }
   },
   "external_validation": {
@@ -1424,7 +1500,7 @@ The former Phase B Gate successor projection remains historical only. The immuta
     "browser": "NOT_EXECUTED",
     "ui": "NOT_EXECUTED",
     "os_worker": "NOT_EXECUTED",
-    "handoff": "NOT_EXECUTED",
+    "os_artifact_store": "NOT_EXECUTED",
     "dag": "NOT_EXECUTED",
     "parallel": "NOT_EXECUTED",
     "deployment": "NOT_EXECUTED"
