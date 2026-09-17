@@ -1,3 +1,16 @@
+# E-05 final acceptance seq1109
+
+- Main ACCEPTED: independent spec ACCEPT C0/I0/M0 and quality PASS C0/I0/M0. Main-relayed evidence below; exact commands not reported remain NOT_REPORTED.
+- Product exact6 frozen; formal failure2 resolved. Historical seq1-1104 raw prefix unchanged; dual leases revoked.
+- E06 READY, NOT STARTED. Actual Provider/DB/UI/HTTP/PG18 unverified; PostgreSQL batch NOT_INTEGRATED. No commit/push.
+- Checker one-shot anchor/start bytes/patch hash and deletion0 in machine summary. Final control RED3 observed; final verification results reported separately to Main.
+
+# E-05 start control seq1104
+
+- Product exact6/control exact9; E04 ACCEPTED. Historical seq1-1100 raw prefix immutable.
+- Existing queue/lease/budget owners reused. Actual Provider/UI/DB parallel dispatch NOT_EXECUTED. No commit/push/acceptance/E06.
+- Checker additive one-shot: clean anchor D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39, historical deletion0.
+
 # E-04 final acceptance seq1100
 
 - Main ACCEPTED: independent spec ACCEPT C0/I0/M0, quality PASS C0/I0/M0. Quality isolated PG15 5 PASS/65.73s and Main 5 PASS/93.24s.
@@ -1386,189 +1399,222 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1100,
-  "last_event_id": "evt_e04_final_main_package_accepted",
+  "event_sequence": 1109,
+  "last_event_id": "evt_e05_final_main_package_accepted",
   "status": "ACCEPTED",
   "current_phase": "E",
-  "current_work_package": "E-04",
+  "current_work_package": "E-05",
   "active_agent": null,
   "worker_lease": null,
   "write_lease": null,
   "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
   "valid_failure_count": 0,
-  "next_safe_action": "E05_READY_NOT_STARTED",
+  "next_safe_action": "E06_READY_NOT_STARTED",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e04_status": "ACCEPTED",
-  "e05_status": "READY_FOR_WORK_INSTRUCTION",
+  "e05_status": "ACCEPTED",
+  "e06_status": "READY_FOR_WORK_INSTRUCTION",
   "active_work_instruction": null,
-  "e04_formal_failure_count": 2,
-  "e04_failure_lineage": [
+  "e05_formal_failure_count": 2,
+  "e05_failure_lineage": [
     {
-      "fingerprint": "E04-PG-CURSOR-MULTIROW-LOCK-001",
       "formal_count": 1,
       "status": "RESOLVED",
-      "resolution": "bounded SELECT INTO and actual PG15 cursor behavior probe PASS"
+      "fingerprints": [
+        "E05-DISPATCH-CANCEL-TOCTOU-001",
+        "E05-RESERVATION-REUSE-002",
+        "E05-BUDGET-OWNER-ATOMICITY-003",
+        "E05-QUEUE-CLAIM-POLICY-BYPASS-004"
+      ]
     },
     {
-      "fingerprint": "E04-DOWNGRADE-LIVE-DAG-TOCTOU-002",
       "formal_count": 1,
       "status": "RESOLVED",
-      "resolution": "advisory-before-table transaction fence and three actual PG15 race cases PASS"
+      "fingerprints": [
+        "E05-REENTRANT-DISPATCH-LOCK-INVERSION-005",
+        "E05-REGISTER-BUDGET-DRIFT-006"
+      ]
     }
   ],
   "dir_status": "CLEARED",
-  "repository_head": "ac9e6f9686c8dfe01c694c1242b251eaa51c4c0f",
+  "repository_head": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E04_FINAL_ACCEPTANCE_EXACT23",
+  "repository_projection_mode": "E05_FINAL_ACCEPTANCE_EXACT17",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-04_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-04_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-04_START_MANIFEST.json",
+    "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+    "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json",
+    "docs/evidence/manifests/E-05_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e04-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e04-start.json",
-    "docs/work_orders/E-04_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-04_WORK_INSTRUCTION.md",
-    "migrations/versions/0014_dag_queue.py",
+    "docs/progress/progress-handoff-detached-digest-e05-final-acceptance.json",
+    "docs/progress/progress-handoff-detached-digest-e05-start.json",
+    "docs/work_orders/E-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-05_WORK_INSTRUCTION.md",
     "packages/agent_team/__init__.py",
-    "packages/api/task_graph.py",
-    "packages/persistence/dag_queue_repository.py",
-    "packages/queue/dag.py",
-    "packages/queue/models.py",
+    "packages/agent_team/concurrency.py",
     "packages/queue/service.py",
     "scripts/check_project_progress.py",
-    "tests/api/test_task_graph_e04.py",
-    "tests/persistence/test_dag_queue_e04.py",
-    "tests/queue/test_dag_e04.py",
-    "tests/queue/test_durable_queue.py",
+    "tests/agent_team/test_concurrency_e05.py",
+    "tests/queue/test_concurrency_claim_e05.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-04_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "1C1ECC00772E10C4AACB86777C9AA338AEDC2A0F84BA7BB0F8490F4FDCEF8491",
+  "current_manifest": "docs/evidence/manifests/E-05_FINAL_ACCEPTANCE_MANIFEST.json",
+  "evidence_target_hash": "A4BB837274666C66CCA2A68777BCAB0829909D536A848E8619A5F9EE50A80161",
   "independent_reviews": {
     "spec": {
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
       "critical_findings": 0,
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
-      "checker_sequence": 1095,
+      "checker_sequence": 1104,
       "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "exact_dirty_paths": 15,
+      "staged": 0,
       "verdict": "ACCEPT",
+      "python_executable": "C:\\Users\\cyhuh\\anaconda3\\python.exe",
       "commands": [
         {
           "command": "NOT_REPORTED",
-          "evidence_label": "local",
-          "exit_code": 0,
-          "passed": 47,
-          "skipped": 1,
-          "deselected": 5
+          "evidence_label": "focused plus E05Start control",
+          "passed": 81,
+          "skipped": 0,
+          "exit_code": 0
         },
         {
           "command": "NOT_REPORTED",
-          "evidence_label": "related",
-          "exit_code": 0,
-          "passed": 915,
-          "skipped": 1
+          "evidence_label": "related agent_team queue leases budget orchestration",
+          "passed": 1024,
+          "skipped": 6,
+          "exit_code": 0
         }
       ],
-      "static_probe": {
-        "passed": 14
+      "independent_probes": {
+        "hostile_inline": 24,
+        "ordinary_E04_contention_retry": 3,
+        "control_history": 6,
+        "exit_code": 0
       },
-      "diff_check_exit": 0,
-      "staged_paths": [],
-      "actual_pg_rerun": "NOT_EXECUTED",
+      "prefix_sequence": 1100,
       "unverified": [
-        "PG18 RC",
-        "actual worker/HTTP/UI/provider/production"
+        "actual Provider",
+        "PostgreSQL batch adapter/real DB",
+        "HTTP/UI",
+        "external send",
+        "isolated PG18"
       ]
     },
     "quality": {
+      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
       "critical_findings": 0,
       "important_findings": 0,
       "minor_findings": 0,
       "developer_transcript_used": false,
-      "source": "MAIN_RELAYED_INDEPENDENT_FINAL_VERDICT",
-      "checker_sequence": 1095,
+      "checker_sequence": 1104,
       "checker_result": "PASS",
+      "diff_check_exit": 0,
+      "exact_dirty_paths": 15,
+      "staged": 0,
       "verdict": "PASS",
+      "python_executable": "NOT_REPORTED",
       "commands": [
         {
           "command": "NOT_REPORTED",
-          "evidence_label": "local",
-          "exit_code": 0,
-          "passed": 59,
-          "skipped": 34
+          "evidence_label": "focused",
+          "passed": 79,
+          "skipped": 0,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "R2 reentry/lock inversion",
+          "passed": 7,
+          "skipped": 0,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "related agent_team orchestration queue leases budget",
+          "passed": 1024,
+          "skipped": 6,
+          "exit_code": 0
+        },
+        {
+          "command": "NOT_REPORTED",
+          "evidence_label": "E04 queue regression",
+          "passed": 7,
+          "skipped": 5,
+          "exit_code": 0
         },
         {
           "command": "NOT_REPORTED",
           "evidence_label": "control",
-          "exit_code": 0,
-          "passed": 4
+          "passed": 8,
+          "skipped": 0,
+          "exit_code": 0
         }
       ],
-      "actual_pg15": {
+      "independent_adversarial_probe": {
         "exit_code": 0,
-        "passed": 5,
-        "deselected": 7,
-        "engine": "PG15",
-        "isolation": "unique ephemeral pgvector container and scratch database",
-        "existing_database_or_credential_touched": false,
-        "container_residue": 0,
-        "volume_residue": 0,
-        "tunnel_residue": 0,
-        "command": "NOT_REPORTED",
-        "test_selection": "tests/persistence/test_dag_queue_e04.py -k real_postgres",
-        "seconds": 65.73
+        "same_thread_reentry_publication": 0,
+        "inflight": 0,
+        "different_request_duplicates": 0,
+        "shared_queue_outer_CAS_publication": 0,
+        "retry_claims": 2,
+        "token_exception_publication": 0,
+        "queue_drift_publication": 0,
+        "ordinary_64_way_wins": [
+          1,
+          1,
+          0
+        ],
+        "ordinary_attempts": 2,
+        "ordinary_quarantine": 1
       },
       "unverified": [
-        "PG18 RC",
-        "actual worker/HTTP/UI/provider/production"
+        "actual Provider",
+        "PostgreSQL batch adapter/real DB",
+        "HTTP/UI",
+        "external send",
+        "isolated PG18",
+        "host-injected unbounded callback timeout outside contract"
       ]
     }
   },
-  "main_pg15": {
-    "exit_code": 0,
-    "passed": 5,
-    "deselected": 7,
-    "engine": "PG15",
-    "isolation": "unique ephemeral pgvector container and scratch database",
-    "existing_database_or_credential_touched": false,
-    "container_residue": 0,
-    "volume_residue": 0,
-    "tunnel_residue": 0,
-    "source": "MAIN_ISOLATED_POSTGRES_R2_VERIFICATION",
-    "command": "python -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/persistence/test_dag_queue_e04.py -k real_postgres --tb=short",
-    "seconds": 93.24
-  },
   "external_validation": {
-    "pg18_rc": "NOT_EXECUTED",
-    "shared_development_database_apply": "NOT_EXECUTED",
-    "actual_worker": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "real_db": "NOT_EXECUTED",
     "http_wiring": "NOT_EXECUTED",
     "ui": "NOT_EXECUTED",
-    "provider": "NOT_EXECUTED",
+    "external_send": "NOT_EXECUTED",
+    "pg18_rc": "NOT_EXECUTED",
+    "actual_worker": "NOT_EXECUTED",
     "production": "NOT_EXECUTED",
-    "deployment": "NOT_EXECUTED",
-    "isolated_pg15": "PASS"
+    "postgresql_batch_adapter": "NOT_INTEGRATED"
   },
   "checker_edit_evidence": {
     "method": "MAIN_AUTHORIZED_BULK_MECHANICAL_ADDITIVE_ONE_SHOT",
-    "base_sha256": "D81A81B03EE5BD4230426FE2174DF17BF9B941C0F6159B50C006CF2D9C759A85",
-    "pre_final_sha256": "3AE72F0C9F35D4A0F367DDE724A534F85E8573D27F00D242D1D0A51B9F927E21",
-    "preserved_start_block_bytes": 14204,
-    "preserved_start_block_sha256": "74AF6F60E782E03AF3D73FA64D6923EEE3FE99198B3579FC6DA139ABF1B035B6",
-    "current_sha256": "D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39",
-    "normalized_unified_patch_sha256": "1BFB0FC96593F241BB7A380D0D4B1717D0234692A9690B14F275D46A95817B16",
-    "patch_bytes": 34793,
+    "base_sha256": "D338A928F52D0D4DF317BD69C20B5F78DD86645547AB0A9811ADE220285B3F39",
+    "pre_final_sha256": "4DF3480F8A38992FE5DF51A2CD937985124D92CDE210E9D7EDE28018D2572464",
+    "pre_final_bytes": 4424161,
+    "preserved_start_block_sha256": "E0C19EBF2C1C18D483A99C12DDF0550859DADC16C60E0BB29F46B3869AB16F11",
+    "preserved_start_block_bytes": 13434,
+    "current_sha256": "D0B4D456B7EC4EA5270219E41CC31FED905332C580F3D0995B443458264793FC",
+    "normalized_unified_patch_sha256": "6FE8287D41D8553F3DA41CAC2100A3BAE237606FAA40F4031992412C2AAA7668",
+    "patch_bytes": 34202,
     "numstat": {
-      "added": 329,
+      "added": 302,
       "deleted": 0
     },
-    "historical_replacement_count": 0
+    "historical_replacement_count": 0,
+    "anchor_counts": [
+      1,
+      1,
+      1,
+      1
+    ]
   },
   "reporting_decision": "AUTO_CONTINUE",
   "pending_approvals": [],

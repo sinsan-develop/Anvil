@@ -139,3 +139,12 @@ __all__ = [
 from .external_verifier import ExternalVerifierAdapter, ExternalVerificationError, ManualImportAuthorization
 
 __all__ += ["ExternalVerifierAdapter", "ExternalVerificationError", "ManualImportAuthorization"]
+
+# Concurrency is imported lazily by callers to keep the E04 queue import graph acyclic.
+__all__ += ["AnalysisTask", "ConcurrencyScheduler", "ConcurrencyError"]
+
+def __getattr__(name):
+    if name in {"AnalysisTask", "ConcurrencyScheduler", "ConcurrencyError"}:
+        from . import concurrency
+        return getattr(concurrency,name)
+    raise AttributeError(name)

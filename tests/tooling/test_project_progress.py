@@ -19106,5 +19106,78 @@ class E04FinalAcceptanceControlTests(unittest.TestCase):
             self.assertIn("E04_FINAL_PROJECTION_INVALID",c.validate_e04_final(altered,manifest))
 
 
+class E05StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location("e05_start",CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_e05_start_preserves_prefix_and_binds_leases_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"e05_start_from_root",None)),"E05 start missing")
+        files=c.e05_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E05_M])
+        old=subprocess.check_output(["git","show",f"{c.E05_BASE}:{c.D13_START_E}"],cwd=ROOT)
+        self.assertEqual(1104,p["event_sequence"]);self.assertEqual("IN_PROGRESS",p["status"])
+        self.assertEqual({"package_id":"E-06","status":"NOT_READY"},p["next_successor_work_package"])
+        self.assertEqual([],p["pending_approvals"]);self.assertEqual(6,len(m["product_write_scope"]));self.assertEqual(9,len(files))
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1100),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1100))
+        self.assertEqual(p["worker_lease"]["execution_fencing_token"],p["write_lease"]["execution_fencing_token"])
+        self.assertEqual(["WORK_INSTRUCTION_ISSUED","WORKER_LEASE_ISSUED","WRITE_LEASE_ISSUED","PACKAGE_STARTED"],[r["event_type"] for r in json.loads(files[c.D13_START_E])["events"][-4:]])
+
+    def test_e05_git_exact_scope_and_router(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,"validate_e05_git_facts",None)),"E05 git missing")
+        facts=dict(head=c.E05_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e05_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e05_git_facts(**facts))
+        self.assertEqual([],c.validate_e05_git_facts(**{**facts,"dirty":sorted(facts["dirty"]+c.e05_product_write_scope())}))
+        for key,value in (("head","f"*40),("dirty",[]),("dirty",facts["dirty"]+["escape"]),("staged",[facts["dirty"][0]])):
+            self.assertTrue(c.validate_e05_git_facts(**{**facts,key:value}))
+        with mock.patch.object(c,"_collect_e05_git",return_value=["E05_SELECTED"]):
+            self.assertEqual(["E05_SELECTED"],c._validate_git_projection({"_root":ROOT,"progress":{"event_sequence":1104}}))
+
+
+class E05FinalAcceptanceControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e05_final',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_final_prefix_freeze_reviews_and_leases(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e05_final_from_root',None)))
+        files=c.e05_final_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E05_FINAL_M])
+        self.assertEqual(1109,p['event_sequence']);self.assertEqual('ACCEPTED',p['status'])
+        self.assertEqual({'package_id':'E-06','status':'READY_FOR_WORK_INSTRUCTION'},p['next_work_package'])
+        self.assertTrue(all(p[k] is None for k in ('worker_lease','write_lease','active_agent','active_work_instruction')))
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(17,len(m['combined_exact_paths']))
+        self.assertEqual(6,len(m['frozen_product_sha256']));self.assertEqual(2,m['formal_failure_count'])
+        self.assertEqual(json.loads(c.e05_start_from_root(ROOT)[c.D13_START_P])['valid_failure_count'],p['valid_failure_count'])
+        self.assertEqual(p['work_plan_hash'],m['work_plan_hash'])
+        self.assertEqual('ACCEPT',m['independent_reviews']['spec']['verdict']);self.assertEqual('PASS',m['independent_reviews']['quality']['verdict'])
+        self.assertEqual(c.raw_event_object_prefix_bytes(c.e05_start_from_root(ROOT)[c.D13_START_E],1104),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1104))
+        self.assertEqual(['PACKAGE_COMPLETED','INDEPENDENT_TEST_JUDGMENT_RECORDED','WRITE_LEASE_REVOKED','WORKER_LEASE_REVOKED','MAIN_PACKAGE_ACCEPTED'],[r['event_type'] for r in json.loads(files[c.D13_START_E])['events'][-5:]])
+        self.assertEqual('NOT_EXECUTED',m['external_validation']['pg18_rc'])
+
+    def test_final_frozen_input_and_exact_scope(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e05_final_from_root',None)))
+        original=Path.read_bytes
+        for rel in c.e05_product_write_scope()+[c.E05_WI,c.E05_PROMPT,c.E05_D,c.E05_M]:
+            with self.subTest(path=rel),mock.patch.object(Path,'read_bytes',lambda p:original(p)+b'bad' if p==ROOT/rel else original(p)):
+                with self.assertRaisesRegex(ValueError,'E05_FINAL_FROZEN_DRIFT'):c.e05_final_from_root(ROOT)
+        facts=dict(head=c.E05_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e05_final_paths())
+        self.assertEqual([],c.validate_e05_final_git_facts(**facts))
+        for k,v in (('head','f'*40),('dirty',facts['dirty'][:-1]),('dirty',facts['dirty']+['escape']),('staged',['escape'])):
+            self.assertTrue(c.validate_e05_final_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e05_final_git',return_value=['FINAL_SELECTED']):
+            self.assertEqual(['FINAL_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1109}}))
+
+    def test_final_rejects_forged_projection(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e05_final_from_root',None)))
+        a=c.e05_final_from_root(ROOT);m=json.loads(a[c.E05_FINAL_M])
+        b={'_root':ROOT,'progress':json.loads(a[c.D13_START_P]),'events':json.loads(a[c.D13_START_E]),'handoff':c.extract_handoff_summary(a[c.D13_START_H].decode()),'detached_digest':json.loads(a[c.E05_FINAL_D])}
+        for field in ('failure','lease','review','scope'):
+            altered=copy.deepcopy(b);manifest=copy.deepcopy(m)
+            if field=='failure':manifest['formal_failure_count']=0
+            elif field=='lease':altered['progress']['worker_lease']={'status':'ACTIVE'}
+            elif field=='review':manifest['independent_reviews']['quality']['verdict']='REWORK'
+            else:manifest['combined_exact_paths'].append('escape')
+            self.assertIn('E05_FINAL_PROJECTION_INVALID',c.validate_e05_final(altered,manifest))
+
+
 if __name__ == "__main__":
     unittest.main()

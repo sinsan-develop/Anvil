@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0.0",
+  "digest_id": "E05-FINAL-DIGEST-20260917",
+  "package_id": "E-05",
+  "event_sequence": 1109,
+  "algorithm": "SHA-256",
+  "created_at": "2026-09-17T14:35:00+09:00",
+  "scope": "append-only seq1105-1109; exact17 frozen product/control",
+  "self_reference": false,
+  "progress": {
+    "path": "docs/progress/build-progress.json",
+    "bytes": 1139081,
+    "file_sha256": "360C6E0579305E4FF1570ED12AEF55821B1F30BFDAEF2D0BB572BDE0D43C8FE9",
+    "canonical_json_sha256": "38F32F9CD539950B81E179134FF69EA6F12BAAB3E19F02286CCACAFA36FE58B6"
+  },
+  "handoff": {
+    "path": "docs/progress/BUILD_HANDOFF.md",
+    "bytes": 214792,
+    "file_sha256": "37D0587CDC0937458C72EB59793C05FD9091A73EF5E96DB6D3155FB9781E70CC",
+    "machine_summary_canonical_sha256": "540573592701C36BA5ABFF947BEDE6B23680F2FD8D62D22E255AC97B5AE2D33C"
+  }
+}

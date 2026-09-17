@@ -1,0 +1,125 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E05_START",
+  "artifact_id": "E05-START-20260917",
+  "created_at": "2026-09-17T13:29:00+09:00",
+  "package_id": "E-05",
+  "event_sequence": 1104,
+  "historical_event_sequence": 1100,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 3609651,
+    "sha256": "ABFF604D8043A153BE0A3CCF4CB3E0195B5950C45BFF5D2056845C88218D821B"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "active_leases": 2,
+  "product_write_scope": [
+    "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+    "packages/agent_team/__init__.py",
+    "packages/agent_team/concurrency.py",
+    "packages/queue/service.py",
+    "tests/agent_team/test_concurrency_e05.py",
+    "tests/queue/test_concurrency_claim_e05.py"
+  ],
+  "authority": {
+    "source": "MAIN_APPROVED_E05_IMPLEMENTATION_DISPATCH",
+    "new_project_approval_requested": false,
+    "product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "work_instruction_sha256": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E",
+    "invocation_sha256": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659",
+    "approved_control_paths": [
+      "docs/evidence/manifests/E-05_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-e05-start.json",
+      "docs/work_orders/E-05_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "product_write_scope": [
+      "docs/04_test_reports/E-05_COMPLETION_REPORT.md",
+      "packages/agent_team/__init__.py",
+      "packages/agent_team/concurrency.py",
+      "packages/queue/service.py",
+      "tests/agent_team/test_concurrency_e05.py",
+      "tests/queue/test_concurrency_claim_e05.py"
+    ],
+    "independent_acceptance_required": true,
+    "validation_ids": [
+      "AV-AGT-032",
+      "AV-FLOW-005"
+    ],
+    "remote_verification": {
+      "source": "MAIN_LIVE_REMOTE_READ",
+      "command": "git ls-remote development refs/heads/codex/c09-execution-backends-r1",
+      "exit_code": 0,
+      "sha": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+      "worker_live_remote": "NOT_EXECUTED_SSH_ALIAS_DNS_RESTRICTED"
+    }
+  },
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/E-05_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e05-start.json",
+    "docs/work_orders/E-05_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "projection_mode": "E05_START_EXACT9_PRODUCT_EXACT6",
+  "validated_base_commit": "07fb68164de2ecf3b06342013d23e4d34d4dd0cb",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 211048,
+      "sha256": "48E97DB1FE849D3A61E8D2B04B9E7A05737A6845BBDA418F275DE7C64568C605"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1131967,
+      "sha256": "1BEEFFC43D2999D358C34E6E829857980BF39E799CE050CE09F675EA90DBCCB0"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3620930,
+      "sha256": "E86B733C31500EB7861A379C27E48F32D9FBC8EADA2B6DA3B87764983CA02022"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e05-start.json",
+      "bytes": 835,
+      "sha256": "D97C33D9F916408D74DAE08D149A784717C8C4F0BFD53D87F86EE67B2116B503"
+    },
+    {
+      "path": "docs/work_orders/E-05_INVOCATION_PROMPT.md",
+      "bytes": 514,
+      "sha256": "D43F3EC18AEDDF435F7E935A5A45C17929B11ACBA2F6166C8951C31B240C2659"
+    },
+    {
+      "path": "docs/work_orders/E-05_WORK_INSTRUCTION.md",
+      "bytes": 4056,
+      "sha256": "60FF1BED503C54741C16246212092AB269EB9D0B340C28F6B595FB3C664CAD6E"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4424161,
+      "sha256": "4DF3480F8A38992FE5DF51A2CD937985124D92CDE210E9D7EDE28018D2572464"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1181203,
+      "sha256": "BF0C4A1ADF9EFCD69ECE14A2825453AFF0961A72F599BF39CC808FDC3B5FD037"
+    }
+  ]
+}
