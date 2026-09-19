@@ -2336,3 +2336,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - release/readiness canonical target `0013_task_bootstrap_authority`로 전용 PostgreSQL 15 migration을 재실행했고, `alembic_version`이 동일 head로 확인됐다.
 - 따라서 `0014_dag_queue`는 `upgrade head`를 사용했을 때 관측된 후속 E-04 migration이며 현재 C30 release target이 아니다. C30 DB canonical target은 `0013`으로 정리됐다.
 - DB migration은 PASS지만 runtime owner/auth/provider refs가 없어 ready/entity/browser E2E는 아직 `NOT_INTEGRATED`다. 전용 DB와 네트워크는 정리했다.
+
+### C-30 durable owner 조사 — seq1286
+
+- 기존 Task/Run SQL 저장소와 Event 저장소는 존재하지만 C22~C24의 RoleAssignment, Team, MoA 권위 상태를 복원하는 repository seam은 없다.
+- `RolePolicyService`, `RoleResultService`, `RoleTeamOrchestrator`, `MoADeliberation`, `LocalTestSessionService`는 process-local 상태다. 단순 host injection이나 DB row 변환으로 durable E2E PASS를 주장하지 않는다.
+- 다음 구현에는 owner snapshot/revocation/fence/restart/concurrency/principal mapping을 정의한 별도 C30R2 WorkInstruction이 필요하다. fixture 200 응답, fake assignment, 기존 Task/Run row의 임의 변환은 금지한다.
+- `/health/ready` 503 원인은 console owner가 아니라 DB 연결, migration 0013 mismatch, 또는 runtime refs missing 중 하나이므로 응답 `reason`과 주입 상태를 분리 진단해야 한다.
