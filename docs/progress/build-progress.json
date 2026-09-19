@@ -35,14 +35,14 @@
   "c30r1_rework": {
     "status": "IN_PROGRESS",
     "work_instruction": "docs/work_orders/C-30R1_WORK_INSTRUCTION.md",
-    "work_instruction_sha256": "FD1FB174EEF72E4E7F297307DA50325739837540E623815E8873214A15D426B4",
+    "work_instruction_sha256": "6701E351D01C37CFB9E870AA2CB8A899A3CA240E3AD7B621545326D8D7CCA08F",
     "invocation": "docs/work_orders/C-30R1_INVOCATION_PROMPT.md",
     "invocation_sha256": "B82131C59C91699CC040FC62947CC53031AA5AE226A1D8988598556E960A3626",
     "worker_lease_id": "worker-lease-c30r1-20260919-001",
     "write_lease_id": "write-lease-c30r1-20260919-001",
     "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "write_fencing_token": "c30r1-write-fence-epoch-1-4a24dfb",
-    "exact_paths": ["apps/api/anvil_api/asgi.py", "tests/integration/test_c30_console_e2e.py", "docs/04_test_reports/C-30_COMPLETION_REPORT.md", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json"]
+    "exact_paths": ["apps/api/anvil_api/asgi.py", "tests/integration/test_c30_console_e2e.py", "tests/integration/test_c30_contract_matrix.py", "docs/04_test_reports/C-30_COMPLETION_REPORT.md", "docs/progress/BUILD_HANDOFF.md", "docs/progress/build-progress.json", "docs/progress/progress-events.json"]
   },
   "plan_version": "1.6",
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
@@ -151,6 +151,7 @@
     "status": "ACTIVE",
     "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "path_scope": [
+      "apps/api/anvil_api/asgi.py",
       "tests/integration/test_c30_console_e2e.py",
       "tests/integration/test_c30_contract_matrix.py",
       "tests/deploy/test_c30_wsl_formal_preflight.py",
@@ -209,6 +210,7 @@
     "status": "ACTIVE",
     "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "path_scope": [
+      "apps/api/anvil_api/asgi.py",
       "tests/integration/test_c30_console_e2e.py",
       "tests/integration/test_c30_contract_matrix.py",
       "tests/deploy/test_c30_wsl_formal_preflight.py",

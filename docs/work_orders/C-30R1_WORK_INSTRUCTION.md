@@ -6,6 +6,7 @@
 - exact allowed paths:
   - `apps/api/anvil_api/asgi.py`
   - `tests/integration/test_c30_console_e2e.py`
+  - `tests/integration/test_c30_contract_matrix.py`
   - `docs/04_test_reports/C-30_COMPLETION_REPORT.md`
   - `docs/progress/BUILD_HANDOFF.md`
   - `docs/progress/build-progress.json`
