@@ -2283,3 +2283,9 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - Main은 `evt_c30_write_lease_revoked`와 `evt_c30_worker_lease_revoked`로 dual lease를 회수하고 `evt_c30_main_package_accepted`로 로컬 범위를 수락했다. report SHA는 후속 정정 event에서 실제 `4F21507A...762CE`로 결박했다.
 - C-30은 `ACCEPTED_LOCAL_SCOPE`이며 WSL formal DB/container/entity/E2E, Provider/adapter/Oracle/browser/deploy는 `NOT_EXECUTED/NOT_INTEGRATED`다. 다음 안전 행동은 승인·clean candidate·ReleaseManifest가 갖춰진 뒤의 C30 WSL formal E2E 준비다.
 - C29 seq1256~1258의 역사 시각 불일치는 원문을 수정하지 않고 기록으로 보존했다. canonical checker의 C03 fixture SyntaxError는 계속 `NOT_VERIFIED/NOT_PASS`다.
+
+#### C-30 formal precheck attempt — seq1269
+
+- 신산님 승인(`chat:user-message:승인해`) 후 candidate `abb736108e60a5bc3c93c3ca531f71d70a3c5ee2`와 control manifest commit `235b5e1b91ecb99d9eb56dfbc3c7d068ed3d2734`를 결박했다.
+- `wsl.exe -l -v` read-only 사전점검이 `E_ACCESSDENIED`로 차단됐다. DB writes, container mutations, external calls는 모두 0건이며 formal E2E는 실행하지 않았다.
+- 다음 안전 행동은 승인된 WSL-server 접근 복구 후 exact candidate/control preflight 재실행이다. 기존 C-01 교체 harness는 사용하지 않았다.
