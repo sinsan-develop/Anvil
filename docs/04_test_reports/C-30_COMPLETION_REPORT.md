@@ -421,3 +421,97 @@ Main이 사용자 명시 승인을 전달했다: Windows Chrome의 임시 격리
 기존24P/159P는 앞선 코드 불변 검증 결과이며 이번에는 보고/HANDOFF만 append했다.
 다음 조치는 Main이 403 response와 기존 QA login/auth forwarding 계약의 read-only 원인을 판단하는 것이다.
 이번 승인된 단일 browser retry는 종료됐으며 모든 disposable 자원은 제거됐다.
+
+### C30R3 QA wiring rework 및 단일 실제 Chrome 종료 — 2026-09-20 05:45 KST
+
+판정: **INCOMPLETE**. fixture-only QA login wiring 구현·로컬 회귀는 완료했으나,
+실제 browser의 revoke 후 재시작 권한 화면 검증이 완료되지 않았다. formal FAILURE_REPORT0.
+앞선 기록을 덮어쓰지 않으며 Main acceptance/production auth PASS를 주장하지 않는다.
+
+Main의 read-only 원인 확인: `/auth/c30r3-qa`는 기존372718c test FastAPI에만 등록되어 있고,
+기존 BFF `/auth/*`는 `ANVIL_API_UPSTREAM`으로 전달한다. direct fixture HTTP는303+cookie이나
+기존 browser POST는 API upstream에서403이었다. 승인된 exact5 중 server와 새 Node test만
+구현 변경했고 기존 fixture/test/runtime/owner/schema에는 변경이 없다.
+
+구현 commit: `64b76de4c7133ca5246c86d53fef448709e96641`.
+`apps/web/server.mjs`는 명시적 fixture mode+fixtureEnabled+loopback QA upstream일 때만
+exact QA route를 전달한다. production QA route404 및 기존 production auth proxy는 유지한다.
+same-origin/Host/메서드/body/응답 크기/상대 redirect/HttpOnly cookie를 검증하고,
+내부 주소·secret·임의 upstream body는 노출하지 않는다. QA form만 same-origin referrer policy,
+일반 페이지는 기존 no-referrer를 유지한다. 새 로그인 fixture나 auth authority 생성은 없다.
+
+#### TDD·실행 명령과 실제 수치
+
+- `node --test apps/web/tests/c30r3-qa-login.test.mjs`
+  최초 RED exit1 **10 failed/4 passed/0 skipped,261.3745ms** → 최소 GREEN exit0
+  **14 passed/0 skipped,621.7582ms**.
+- QA form referrer policy 및 안전 응답 보강 RED exit1 **1 failed/17 passed,329.9975ms**.
+  `node --test --test-reporter=dot apps/web/tests/c30r3-qa-login.test.mjs`
+  최종 GREEN exit0 **18 passed/0 skipped**.
+- PowerShell `$env:ANVIL_PYTHON='C:\Users\cyhuh\anaconda3\python.exe'` 설정 후
+  `node --test apps/web/tests/*.test.mjs`: exit0 **88 passed/0 failed/0 skipped,3640.4617ms**.
+  production QA route absent, 기존 auth proxy, C28/C29 및 Python ASGI-BFF 회귀 포함.
+  기존 Node MODULE_TYPELESS_PACKAGE_JSON warning은 보존한다.
+- `C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_c30r3_formal_entity.py tests/integration/test_c30r3_runtime_restore.py tests/agent_team/test_owner_component_restore.py tests/integration/test_c30r2_runtime_owner.py tests/integration/test_c30r2_formal_entity.py tests/integration/test_c30_console_e2e.py --tb=short`
+  exit0 **159 passed/0 skipped,14.14s**, 기존 python_multipart warning1.
+- `node --check apps/web/server.mjs`, `node --check apps/web/tests/c30r3-qa-login.test.mjs`,
+  Python builtin compile(test_c30r3_formal_entity.py), `git diff --check`: 각각 exit0.
+
+#### 실제 단일 browser 검증: 일부 PASS, revoke 이후 미완료
+
+실행: `C:\Users\cyhuh\anaconda3\python.exe -B -` inline verification script(session40444).
+기존 SSH alias `WSL-server`, mounted canonical exact64b76de Git-only checkout,
+기존372718c fixture와 이번 fixture-only wiring만 사용했다. 외부 push0.
+Chrome argv는 `C:\Program Files\Google\Chrome\Application\chrome.exe --headless=new
+--no-first-run --no-default-browser-check --remote-debugging-address=127.0.0.1
+--remote-debugging-port=0 --user-data-dir=<new c30r3-browser-* directory> about:blank`.
+PID38568, 새 임시 profile만 사용; 기존 사용자 profile/tab/account 및 security bypass flag0.
+
+- prefix `anvil-c30r3-t4-20260920-0120`, label `anvil.c30r3.task4=20260920-0120`.
+- network `0f080540e02750d261d30a7abe305c801338148daea587ab6294c3ed72986504`;
+  PG `a776615c17576dadeed37913049a425dc6a9758830c8fc71d1179ba14c20f481`;
+  web `3a126aac8c942f4d608ef9596526e767c7a1fa2334c72eba87bab15fb9cf90f5`;
+  BFF `8dc4fe048a78c7c20c5b6a6b0fa240e85a18750e7fd6d8064fbd5c0fafa2d340`;
+  image `sha256:6ed12c4e13860978c1b5d8266ee8414cde6111ee78af762fc8a82502c8817a3f`.
+- isolated PG15 app_db_head=`0013_task_bootstrap_authority`,
+  owner_db_head=`0015_agent_team_owner`; seed COMMITTED hash
+  `sha256:98cf30b5b95d224464cdf4be00a36bc964340a5482685df205b0006d8c03ad8e`.
+  before revoke heads1/receipts4/revoked0. release/candidate DB schema 변경0.
+- 실제 QA login 성공, `login_cookie_http_only=true`.
+  Team/Adapters=`normal`, MoA/SNS=`empty`를 실제 메뉴 클릭으로 확인했다.
+  Network200 네 경로: `/api/agent-console/team`, `/moa`, `/sns`, `/adapters`
+  (후자3개도 동일 `/api/agent-console` prefix). 모두 browser origin
+  `http://127.0.0.1:4173` 상대 요청; foreign/internal-address requests0.
+- CSP: `default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none';
+  script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'`.
+  uncaught JavaScript exceptions0, favicon resource error1. console 전체 error0으로 표시하지 않는다.
+- repository revoke=`COMMITTED` 후 exact disposable web OS restart 실행.
+  이후 permission 화면 대기는 실패했다. 원문:
+  `RuntimeError: BROWSER_WAIT_FAILED ... Team READ-ONLY PROJECTION Team ... offline ...`.
+  출력의 한국어 일부는 console encoding으로 깨졌으나 `Team ... offline`은 확인된다.
+  이 단계의 response status/body 및 원인은 확정하지 못했으므로 revoked browser403 PASS를
+  주장하지 않는다. script exit1; `BROWSER_FORMAL_PASS`는 출력되지 않았다.
+  단1회 승인된 retry가 종료됐으며 추가 재실행/제품 보완은 하지 않았다.
+
+#### 정리·미검증·다음 행동
+
+실패와 무관하게 finally 종료: `ALL_DISPOSABLE_CLEANUP_PASS`.
+Chrome Browser.close 및 own process 종료, own SSH tunnel 종료, exact temp profile 제거.
+remote exact label container/network/volume/image 목록 모두 empty,
+`checkout_exists=false`, `anvil_web_unchanged=true`를 확인했다.
+05:45 로컬 추가 확인에서 c30r3-browser-* profile0/PID38568 없음, screenshot 생성0.
+기존 anvil-web ID/image/StartedAt/Running은 위 보호 기준과 exact 불변이다.
+
+남은 조건은 revoke→restart 이후 실제 browser permission/403의 완결 검증이다.
+이번 offline 원인의 read-only 진단과 후속 실행 여부는 Main 판단이며, 추가 retry는 자동 수행하지 않는다.
+Provider/외부계정/production/PG18 및 일반 production auth는 NOT_EXECUTED/NOT_INTEGRATED.
+progress JSON/events는 Main 소유라 변경0; Main은 이 결과를 append-only event에 결박해야 한다.
+승인된 exact5 외 변경0, lease 임의 revoke0, push0.
+rollback은 Main 검토 후64b76de의 exact2 구현만 revert하며 과거 evidence는 보존한다.
+이미 제거된 disposable 자원에 추가 외부 rollback은 없다.
+
+문서 마감 직전 fresh 검증: `node --test --test-reporter=spec apps/web/tests/*.test.mjs`
+(동일 ANVIL_PYTHON 설정) exit0 **88P/0F/0S,2604.3864ms**;
+위 동일 Python 관련 명령 exit0 **159P/0S,12.14s**, warning1.
+두 Node `--check`/Python builtin compile/diff-check 모두 exit0.
+문서 변경은 report/HANDOFF append-only 2경로이며 제품64b76de는 불변이다.

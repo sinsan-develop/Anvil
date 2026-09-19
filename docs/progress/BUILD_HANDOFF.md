@@ -2464,3 +2464,33 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - formal FAILURE_REPORT0. 기존24P/159P는 앞선 실행 증거, 이번은 문서 append-only.
   다음 Main 판단: HTTP403의 auth forwarding/QA fixture 계약을 read-only 진단.
   completion event/projection은 기존 exact3 밖이므로 Main이 이 실제 결과로 append한다.
+
+### WORK_STATUS — C30R3 QA wiring rework 및 단일 browser 종료(2026-09-20 05:45)
+
+- 상태 **INCOMPLETE**, formal FAILURE_REPORT0. fixture-only QA wiring은 commit
+  `64b76de4c7133ca5246c86d53fef448709e96641`로 반영; production auth 불변/QA route404.
+  exact5 범위 중 server/new Node test 변경, 기존372718c fixture 불변.
+- Main 원인 확인: test FastAPI에만 있는 QA route가 기존 BFF 일반 `/auth/*` proxy를 통해
+  API upstream으로 전달되어403. 명시적 fixture-only loopback QA upstream으로 분리했다.
+- TDD 최초10F/4P→14P, 추가referrer-policy1F/17P→18P. web 전체88P/0S exit0(3.640s),
+  Python 관련159P/0S exit0(14.14s), node syntax/Python builtin compile/diff-check exit0.
+  정확 명령과 경계는 C-30_COMPLETION_REPORT의 동일 제목 절에 기록했다.
+- 승인된 isolated Chrome 단1회 실행(session40444): HttpOnly QA login 성공,
+  Team/Adapters normal, MoA/SNS empty, 실제 same-origin4menu Network200/foreign0,
+  CSP self, uncaught JS0/favicon resource error1. fixture auth를 production 증거로 승격하지 않는다.
+- exact64b76de Git-only disposable image6ed12c4e1386, net0f080540e027,
+  PGa776615c1757/web3a126aac8c94/BFF8dc4fe048a78; app0013/owner0015,
+  seed COMMITTED/heads1/receipts4. repository revoke COMMITTED+web OS restart 이후
+  `BROWSER_WAIT_FAILED ... Team ... offline`으로 종료(exit1). revoked browser403/permission
+  단계는 미완료이며 원인/status 미확정. 새 retry/제품 수정0.
+- finally ALL_DISPOSABLE_CLEANUP_PASS: label containers/networks/volumes/images residue0,
+  checkout 없음, Chrome38568/profile/tunnel 종료·제거, screenshot0.
+  05:45 local profile0/PID없음 확인, 기존 anvil-web ID/image/StartedAt/Running exact 불변.
+- Main completion event 권장: QA_LOGIN=PASS, NORMAL_EMPTY_BROWSER=PASS,
+  SAME_ORIGIN_NETWORK=PASS, REVOKE_COMMIT=PASS, REVOKED_BROWSER=INCOMPLETE_OFFLINE,
+  OVERALL=INCOMPLETE, cleanup_residue=0, formal_failure_count=0.
+  progress JSON/events는 Main 소유로 수정하지 않았다. lease는 회수하지 않았다.
+- 다음 행동은 revoke/restart 후 offline의 read-only 진단과 Main의 후속 판단이다.
+  Provider/production/PG18/일반 production auth 미검증. 외부 자원은 모두 정리됐고 push0.
+- 문서 마감 fresh 재검증: web 전체88P/0S exit0(2604.3864ms), Python 관련159P/0S
+  exit0(12.14s), syntax/builtin compile/diff-check0. 제품64b76de 이후 문서2경로만 append.
