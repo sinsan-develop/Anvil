@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1275,
-  "updated_at": "2026-09-19T16:42:01+09:00",
-  "last_event_id": "evt_c30r1_package_started",
+  "event_sequence": 1276,
+  "updated_at": "2026-09-19T16:52:00+09:00",
+  "last_event_id": "evt_c30r1_scope_hash_reconciled",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -154,9 +154,7 @@
       "apps/api/anvil_api/asgi.py",
       "tests/integration/test_c30_console_e2e.py",
       "tests/integration/test_c30_contract_matrix.py",
-      "tests/deploy/test_c30_wsl_formal_preflight.py",
       "docs/04_test_reports/C-30_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/C-30_EVIDENCE_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json"
@@ -213,9 +211,7 @@
       "apps/api/anvil_api/asgi.py",
       "tests/integration/test_c30_console_e2e.py",
       "tests/integration/test_c30_contract_matrix.py",
-      "tests/deploy/test_c30_wsl_formal_preflight.py",
       "docs/04_test_reports/C-30_COMPLETION_REPORT.md",
-      "docs/evidence/manifests/C-30_EVIDENCE_MANIFEST.json",
       "docs/progress/BUILD_HANDOFF.md",
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json"
@@ -2571,7 +2567,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "373CE8E46DC1B2C4C3B5217D93B6854EF1F12AF2BF4C67FD022D764B1A69AB4B",
+  "snapshot_hash": "8F066503770873BD9516FD7A39BD5D0F974CBA65E956118AFC536D692BEAB6E6",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
