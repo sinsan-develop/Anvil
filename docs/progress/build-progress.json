@@ -19,7 +19,7 @@
   },
   "c30_formal_smoke": {
     "status": "ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED",
-    "candidate_commit": "a681e0c",
+    "candidate_commit": "a681e0c0a97bdb67956a0a50aa208bd38982a545",
     "control_commit": "235b5e1b91ecb99d9eb56dfbc3c7d068ed3d2734",
     "image": "anvil-web:c30r1-a681",
     "image_digest": "sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7",
@@ -2574,7 +2574,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "629CDFA02DB041CF3608A75A49D45AF6B0EC8F236C061773D2E2E515A5D6DDE3",
+  "snapshot_hash": "C1602C90D4052A9CF2DAD8F189953028DE6DC72F816FFD95FBB49A088EA979E2",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
