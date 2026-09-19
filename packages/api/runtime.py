@@ -44,15 +44,21 @@ class RuntimeConfigurationError(ValueError):
     """Raised when the production boundary cannot be safely constructed."""
 
 
+class RuntimeConsoleNotIntegrated(RuntimeError):
+    """Persisted reference projections are not a typed owner export."""
+
+
 class RuntimeConsoleOwner:
-    """Host-only auth/mapping/materializer seam, not a durable owner restorer.
+    """Host-only authenticated typed restore, with a legacy materializer seam.
 
     No mapping is minted from request authority fields. Repository authority is
     checked twice, while host callbacks execute outside its row-lock transaction.
     The materializer must return real existing owners, never a generic JSON proxy.
     """
-    def __init__(self, *, session_factory, authenticate, resolve_mapping, materialize, clock=None):
-        if not all(callable(v) for v in (session_factory,authenticate,resolve_mapping,materialize)):
+    def __init__(self, *, session_factory, authenticate, resolve_mapping, materialize=None, clock=None):
+        if not all(callable(v) for v in (session_factory,authenticate,resolve_mapping)):
+            raise RuntimeConfigurationError('CONSOLE_OWNER_DEPENDENCIES_REQUIRED')
+        if materialize is not None and not callable(materialize):
             raise RuntimeConfigurationError('CONSOLE_OWNER_DEPENDENCIES_REQUIRED')
         if clock is not None and not callable(clock):
             raise RuntimeConfigurationError('CONSOLE_CLOCK_REQUIRED')
@@ -111,8 +117,10 @@ class RuntimeConsoleOwner:
         from packages.persistence.agent_team_owner_repository import SqlAlchemyAgentTeamOwnerRepository, ProjectionReceipt
         from apps.api.anvil_api.routes.agent_console import ConsoleAuthority, ConsoleProjectionService, MENUS
         if type(menu) is not str or menu not in MENUS:raise ValueError('MENU_INVALID')
+        if request.query_params:raise ValueError('AUTHORITY_DENIED')
         if any(name in request.headers for name in ('x-actor-id','x-context-id','x-session-id','x-target-hash',
-            'x-assignment-id','x-execution-fence','x-write-fence')):raise ValueError('AUTHORITY_DENIED')
+            'x-assignment-id','x-execution-fence','x-write-fence','x-owner-snapshot',
+            'x-owner-components','x-principal-mapping')):raise ValueError('AUTHORITY_DENIED')
         token=request.cookies.get('anvil_session')
         if type(token) is not str or not 1<=len(token)<=256 or not token.isascii():raise ValueError('AUTHORITY_REQUIRED')
         principal,mapping=self._credentials(token)
@@ -122,8 +130,18 @@ class RuntimeConsoleOwner:
         with self._sessions() as session,session.begin():
             snapshot=repo.load_current_owner(session,binding=mapping.binding,principal=mapping)
         if snapshot is None:raise ValueError('AUTHORITY_DENIED')
-        # Host callback receives a detached object, never our validation snapshot.
-        service=self._materialize(self._detached(snapshot))
+        if self._materialize is None:
+            from packages.agent_team.owner_component_restore import restore_owner_components
+            # This marker distinguishes historical public references from exports;
+            # the typed codec still verifies every field/hash after this check.
+            for component in (snapshot.policy,snapshot.results,snapshot.team,snapshot.moa):
+                if component is None or json.loads(component.canonical_json).get('schema_version')!='owner-component/v1':
+                    raise RuntimeConsoleNotIntegrated('OWNER_EXPORT_NOT_AVAILABLE')
+            bundle=restore_owner_components(snapshot,mapping,session_factory=self._sessions,now=now)
+            service=ConsoleProjectionService.from_owner_bundle(bundle)
+        else:
+            # Legacy host callback receives a detached validation snapshot.
+            service=self._materialize(self._detached(snapshot))
         if type(service) is not ConsoleProjectionService:raise ValueError('OWNER_REQUIRED')
         b=snapshot.binding
         authority=ConsoleAuthority(b.assignment_id,b.actor_id,b.context_id,b.session_id,b.target_hash,b.execution_fence)
@@ -505,6 +523,9 @@ def create_runtime_app(
             session_factory=session_factory,authenticate=app_kwargs.get("authenticate"),
             resolve_mapping=console_mapping_resolver,materialize=console_materializer,clock=console_clock,
         )
+        if console_materializer is None:
+            # Configuration is not evidence of a successful restore or readiness.
+            app.state.agent_console_restore_status = "TYPED_OWNER_RESTORE_CONFIGURED"
     return app
 
 

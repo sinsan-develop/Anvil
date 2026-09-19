@@ -3,7 +3,7 @@
 The embedding host supplies authentication and exact domain owners. Headers and
 request bodies never create identity. Default construction is fail-closed.
 """
-from dataclasses import dataclass, fields
+from dataclasses import asdict, dataclass, fields
 from datetime import datetime, timezone
 import json
 import hashlib
@@ -47,6 +47,23 @@ class ConsoleProjectionService:
         self._receipts=tuple(detached(h) for h in sns_receipts)
         self._team,self._policy,self._ids=team,policy,ids
         self._moa,self._gateway=moa,gateway
+        self._owner_bundle=None
+
+    @classmethod
+    def from_owner_bundle(cls, bundle):
+        """Consume the closed typed codec; construction itself grants no authority."""
+        from packages.agent_team.owner_component_restore import OwnerComponentBundle, export_owner_components
+        if type(bundle) is not OwnerComponentBundle: raise ValueError('OWNER_REQUIRED')
+        export_owner_components(bundle)
+        # Public codec construction detaches all four linked mutable owners.
+        detached=OwnerComponentBundle(**{f.name:getattr(bundle,f.name)
+            for f in fields(OwnerComponentBundle) if f.init})
+        payloads=export_owner_components(detached)
+        bindings=payloads[2].payload['state']['bindings']
+        ids={row['value']['task']['task_id']:row['value']['assignment']['assignment_id'] for row in bindings}
+        service=cls(detached.team,detached.policy,assignment_ids=ids,moa=detached.moa)
+        service._owner_bundle=detached
+        return service
 
     def _authority(self, authority, now):
         now=utc(now)
@@ -100,7 +117,20 @@ class ConsoleProjectionService:
             if getattr(binding,name)!=getattr(assignment,name): raise ValueError('TRACE_MISMATCH')
         if binding.assignment_hash!=assignment.content_hash or binding.execution_fence!=assignment.execution_fence:
             raise ValueError('TRACE_MISMATCH')
-        if self.owner_components(authority,now=now)!=(snapshot.policy,snapshot.results,snapshot.team,snapshot.moa):
+        if self._owner_bundle is not None:
+            from packages.agent_team.owner_component_restore import export_owner_components
+            from packages.persistence.agent_team_owner_repository import OwnerComponent
+            bundle=self._owner_bundle
+            if (bundle.binding!=binding or bundle.owner_version!=snapshot.owner_version
+                or bundle.owner_snapshot_hash!=snapshot.content_hash):raise ValueError('TRACE_MISMATCH')
+            components=[]
+            for payload in export_owner_components(bundle):
+                raw=json.dumps(asdict(payload),sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False)
+                components.append(OwnerComponent(payload.component_type,1,raw,'sha256:'+hashlib.sha256(raw.encode()).hexdigest()))
+            actual=tuple(components)
+        else:
+            actual=self.owner_components(authority,now=now)
+        if actual!=(snapshot.policy,snapshot.results,snapshot.team,snapshot.moa):
             raise ValueError('PROJECTION_CHANGED')
 
     def read(self, menu, authority, *, now):
@@ -187,11 +217,18 @@ def create_agent_console_app(service=None, *, resolve_authority=None, clock=None
         if resolve_authority is None: raise ValueError('AUTHORITY_REQUIRED')
         return resolve_authority(request)
     @app.get('/api/agent-console/{menu}')
-    def read(menu:str,request:Request):
+    async def read(menu:str,request:Request):
         if menu not in MENUS:return failure(404,'EMPTY')
         if request.query_params:return failure(400,'ERROR')
+        # GET never consumes caller owner JSON, including chunked body variants.
+        async for chunk in request.stream():
+            if chunk:return failure(400,'ERROR')
         if runtime_owner is not None:
+            from packages.api.runtime import RuntimeConsoleNotIntegrated
             try:return response(200,runtime_owner.read_request(menu,request))
+            except RuntimeConsoleNotIntegrated:
+                return response(503,dict(state='OFFLINE',reason='OWNER_EXPORT_NOT_AVAILABLE',
+                    owner_restore='NOT_INTEGRATED',counts_as_pass=False))
             except (ValueError,TypeError,KeyError):return failure(403,'PERMISSION_DENIED')
             except Exception:return failure(503,'OFFLINE')
         if service is None:return failure(503,'OFFLINE')
