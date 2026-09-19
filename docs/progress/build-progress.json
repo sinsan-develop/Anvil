@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1290,
-  "updated_at": "2026-09-19T20:05:00+09:00",
-  "last_event_id": "evt_c30r2_task1_completed",
+  "event_sequence": 1293,
+  "updated_at": "2026-09-19T20:20:01+09:00",
+  "last_event_id": "evt_c30r2_task2_started",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -150,23 +150,23 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R2","status":"ACTIVE","execution_fencing_token":"c30r2-execution-fence-epoch-1-c7ab95b"},
+  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R2","status":"ACTIVE","execution_fencing_token":"c30r2-task2-execution-fence-epoch-1-8f90dae"},
   "write_lease": {
     "actor_id": "developer-primary-c30r2",
     "subject_ref": "C-30R2",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "c7ab95b",
-    "issued_at": "2026-09-19T18:30:01+09:00",
-    "expires_at": "2026-09-20T06:30:01+09:00",
+    "baseline_git_commit": "8f90dae",
+    "issued_at": "2026-09-19T20:20:01+09:00",
+    "expires_at": "2026-09-20T08:20:01+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c30r2-execution-fence-epoch-1-c7ab95b",
-    "write_fencing_token": "c30r2-write-fence-epoch-1-c7ab95b",
-    "path_scope": ["docs/work_orders/C-30R2_WORK_INSTRUCTION.md", "docs/work_orders/C-30R2_INVOCATION_PROMPT.md", "tests/integration/test_c30r2_contract.py"],
-    "lease_id": "write-lease-c30r2-20260919-001",
-    "worker_lease_id": "worker-lease-c30r2-20260919-001",
+    "execution_fencing_token": "c30r2-task2-execution-fence-epoch-1-8f90dae",
+    "write_fencing_token": "c30r2-task2-write-fence-epoch-1-8f90dae",
+    "path_scope": ["packages/persistence/agent_team_owner_repository.py", "migrations/versions/0015_agent_team_owner.py", "tests/persistence/test_agent_team_owner_repository.py"],
+    "lease_id": "write-lease-c30r2-task2-20260919-001",
+    "worker_lease_id": "worker-lease-c30r2-task2-20260919-001",
     "lease_epoch": 1,
     "write_epoch": 1,
-    "dispatch_head": "c7ab95b"
+    "dispatch_head": "8f90dae"
   },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -203,16 +203,16 @@
     "actor_id": "developer-primary-c30r2",
     "subject_ref": "C-30R2",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "c7ab95b",
-    "issued_at": "2026-09-19T18:30:00+09:00",
-    "expires_at": "2026-09-20T06:30:00+09:00",
+    "baseline_git_commit": "8f90dae",
+    "issued_at": "2026-09-19T20:20:00+09:00",
+    "expires_at": "2026-09-20T08:20:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c30r2-execution-fence-epoch-1-c7ab95b",
-    "path_scope": ["docs/work_orders/C-30R2_WORK_INSTRUCTION.md", "docs/work_orders/C-30R2_INVOCATION_PROMPT.md", "tests/integration/test_c30r2_contract.py"],
-    "lease_id": "worker-lease-c30r2-20260919-001",
+    "execution_fencing_token": "c30r2-task2-execution-fence-epoch-1-8f90dae",
+    "path_scope": ["packages/persistence/agent_team_owner_repository.py", "migrations/versions/0015_agent_team_owner.py", "tests/persistence/test_agent_team_owner_repository.py"],
+    "lease_id": "worker-lease-c30r2-task2-20260919-001",
     "lease_epoch": 1,
-    "fencing_token": "c30r2-execution-fence-epoch-1-c7ab95b",
-    "dispatch_head": "c7ab95b"
+    "fencing_token": "c30r2-task2-execution-fence-epoch-1-8f90dae",
+    "dispatch_head": "8f90dae"
   },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -2560,7 +2560,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "F7CEAF2BDA03F1F912D434DBC4D7FDE946EFE48B0014F92CB2D45D5E9808A1C4",
+  "snapshot_hash": "3C841DE838D4CD82A7A6B93E658D469624DD99D613FE78C2B0992623718BBC08",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
