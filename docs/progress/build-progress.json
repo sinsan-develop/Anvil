@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1302,
-  "updated_at": "2026-09-19T21:30:00+09:00",
-  "last_event_id": "evt_c30r3_task1_started",
+  "event_sequence": 1304,
+  "updated_at": "2026-09-20T00:11:00+09:00",
+  "last_event_id": "evt_c30r3_task2_started",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -150,23 +150,23 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R3","status":"ACTIVE","execution_fencing_token":"c30r3-task1-execution-fence-epoch-1-101a93a"},
+  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R3","status":"ACTIVE","execution_fencing_token":"c30r3-task2-execution-fence-epoch-1-1ba13e0"},
   "write_lease": {
     "actor_id": "developer-primary-c30r2",
-    "subject_ref": "C-30R2",
+    "subject_ref": "C-30R3",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "101a93a",
-    "issued_at": "2026-09-19T21:30:00+09:00",
-    "expires_at": "2026-09-20T09:30:00+09:00",
+    "baseline_git_commit": "1ba13e0",
+    "issued_at": "2026-09-20T00:11:00+09:00",
+    "expires_at": "2026-09-20T12:11:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c30r3-task1-execution-fence-epoch-1-101a93a",
-    "write_fencing_token": "c30r3-task1-write-fence-epoch-1-101a93a",
-    "path_scope": ["docs/work_orders/C-30R3_WORK_INSTRUCTION.md", "tests/integration/test_c30r3_owner_component_contract.py"],
-    "lease_id": "write-lease-c30r3-task1-20260919-001",
-    "worker_lease_id": "worker-lease-c30r3-task1-20260919-001",
+    "execution_fencing_token": "c30r3-task2-execution-fence-epoch-1-1ba13e0",
+    "write_fencing_token": "c30r3-task2-write-fence-epoch-1-1ba13e0",
+    "path_scope": ["packages/agent_team/owner_component_restore.py", "tests/agent_team/test_owner_component_restore.py"],
+    "lease_id": "write-lease-c30r3-task2-20260920-001",
+    "worker_lease_id": "worker-lease-c30r3-task2-20260920-001",
     "lease_epoch": 1,
     "write_epoch": 1,
-    "dispatch_head": "101a93a"
+    "dispatch_head": "1ba13e0"
   },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -201,18 +201,18 @@
   },
   "worker_lease": {
     "actor_id": "developer-primary-c30r2",
-    "subject_ref": "C-30R2",
+    "subject_ref": "C-30R3",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "101a93a",
-    "issued_at": "2026-09-19T21:30:00+09:00",
-    "expires_at": "2026-09-20T09:30:00+09:00",
+    "baseline_git_commit": "1ba13e0",
+    "issued_at": "2026-09-20T00:11:00+09:00",
+    "expires_at": "2026-09-20T12:11:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c30r3-task1-execution-fence-epoch-1-101a93a",
-    "path_scope": ["docs/work_orders/C-30R3_WORK_INSTRUCTION.md", "tests/integration/test_c30r3_owner_component_contract.py"],
-    "lease_id": "worker-lease-c30r3-task1-20260919-001",
+    "execution_fencing_token": "c30r3-task2-execution-fence-epoch-1-1ba13e0",
+    "path_scope": ["packages/agent_team/owner_component_restore.py", "tests/agent_team/test_owner_component_restore.py"],
+    "lease_id": "worker-lease-c30r3-task2-20260920-001",
     "lease_epoch": 1,
-    "fencing_token": "c30r2-task4-execution-fence-epoch-1-b9515b8",
-    "dispatch_head": "101a93a"
+    "fencing_token": "c30r3-task2-execution-fence-epoch-1-1ba13e0",
+    "dispatch_head": "1ba13e0"
   },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -2560,7 +2560,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "C399FA6C79BFB36CF790C889390B5A8EAF32751F5626E4B0FBA9BD02065C9D11",
+  "snapshot_hash": "7F393D10512E33394C2FF371B77F92DD4900BB3DAD315CA4F407A055654403FA",
   "runtime_next_action": "C30R3_TASK1_OWNER_COMPONENT_CONTRACT_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
