@@ -1,0 +1,47 @@
+{
+  "schema_version": "c30-release-manifest/v1",
+  "manifest_type": "C30_WSL_FORMAL_E2E",
+  "artifact_id": "C30-RELEASE-20260919",
+  "status": "APPROVED_FOR_FORMAL_PRECHECK",
+  "approval_ref": "chat:user-message:승인해",
+  "candidate": {
+    "commit": "abb736108e60a5bc3c93c3ca531f71d70a3c5ee2",
+    "parent": "98e218264bf54db04a1bd35a67273b713805a649",
+    "branch": "codex/c09-execution-backends-r1",
+    "working_tree": "CLEAN",
+    "candidate_scope": "C22-C30 approved dirty successor snapshot"
+  },
+  "control": {
+    "required": true,
+    "commit": null,
+    "checkout": "approved WSL checkout",
+    "detached_head_required": true,
+    "clean_required": true
+  },
+  "runtime": {
+    "target": "WSL-server Anvil development/test environment",
+    "database": ["PostgreSQL 15", "PostgreSQL 18 release candidate"],
+    "external_provider_calls": false,
+    "production": false,
+    "oracle": false
+  },
+  "checks": {
+    "git": "NOT_EXECUTED",
+    "containers": "NOT_EXECUTED",
+    "database": "NOT_EXECUTED",
+    "entity": "NOT_EXECUTED",
+    "http": "NOT_EXECUTED",
+    "browser": "NOT_EXECUTED",
+    "rollback": "NOT_EXECUTED",
+    "cleanup": "NOT_EXECUTED"
+  },
+  "rollback": {
+    "prior_commit": "98e218264bf54db04a1bd35a67273b713805a649",
+    "candidate_commit": "abb736108e60a5bc3c93c3ca531f71d70a3c5ee2",
+    "method": "restore exact prior commit/image and verify smoke",
+    "status": "BOUND_NOT_EXECUTED"
+  },
+  "secrets": "REFERENCES_ONLY_NO_SECRET_VALUES",
+  "release_allowed": false,
+  "formal_execution": "PENDING_CONTROL_COMMIT_AND_WSL_PREFLIGHT"
+}
