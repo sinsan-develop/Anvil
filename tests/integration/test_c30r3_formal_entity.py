@@ -7,6 +7,23 @@ import ast
 from pathlib import Path
 
 
+def formal_login_routes(app, token):
+    """Disposable host fixture login, never production authentication evidence."""
+    from fastapi import Request
+    from fastapi.responses import HTMLResponse, RedirectResponse, Response
+    @app.get('/auth/c30r3-qa')
+    async def login_page():
+        return HTMLResponse('<h1>Disposable C30R3 QA login</h1><p>Seeded read-only QA principal; not production authentication.</p>'
+            '<form method="post"><label>QA fixture account<input name="account"></label><button>Sign in QA</button></form>')
+    @app.post('/auth/c30r3-qa')
+    async def login(request: Request):
+        if request.headers.get('origin')!='http://127.0.0.1:4173' or await request.body()!=b'account=qa-reader':
+            return Response(status_code=403)
+        response=RedirectResponse('/agent-console',status_code=303)
+        response.set_cookie('anvil_session',token,httponly=True,samesite='strict',max_age=3600)
+        return response
+
+
 def formal_seed(token, now):
     """Trusted QA fixture: real PENDING owners, no invented successful results."""
     from dataclasses import asdict, replace
@@ -129,6 +146,7 @@ def formal_cli():
         # migration-version rewrite or a runtime production auth integration.
         app=create_runtime_app(authenticate=authenticate)
         app.state.agent_console_runtime=RuntimeConsoleOwner(session_factory=sessions,authenticate=authenticate,resolve_mapping=resolve)
+        formal_login_routes(app,token)
         import uvicorn
         uvicorn.run(create_asgi_app(app),host='0.0.0.0',port=3770,access_log=False)
     else:raise ValueError('FORMAL_COMMAND_INVALID')
@@ -146,6 +164,21 @@ from tests.integration.test_c30r3_runtime_restore import setup, request, receipt
 
 
 ROOT=Path(__file__).resolve().parents[2]
+
+
+def test_disposable_login_is_explicit_bounded_fixture_not_owner_registration():
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    app=FastAPI()
+    formal_login_routes(app,'fixture-session-not-production')
+    with TestClient(app) as client:
+        assert 'not production authentication' in client.get('/auth/c30r3-qa').text
+        assert client.post('/auth/c30r3-qa',content='account=qa-reader').status_code==403
+        assert client.post('/auth/c30r3-qa',content='account=admin',headers={'origin':'http://127.0.0.1:4173'}).status_code==403
+        result=client.post('/auth/c30r3-qa',content='account=qa-reader',headers={'origin':'http://127.0.0.1:4173'},follow_redirects=False)
+        assert result.status_code==303 and result.headers['location']=='/agent-console'
+        assert 'HttpOnly' in result.headers['set-cookie']
+        assert not hasattr(app.state,'agent_console_runtime')
 
 
 def formal_execution_plan():
