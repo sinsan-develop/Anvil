@@ -2289,3 +2289,4 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 신산님 승인(`chat:user-message:승인해`) 후 candidate `abb736108e60a5bc3c93c3ca531f71d70a3c5ee2`와 control manifest commit `235b5e1b91ecb99d9eb56dfbc3c7d068ed3d2734`를 결박했다.
 - `wsl.exe -l -v` read-only 사전점검이 `E_ACCESSDENIED`로 차단됐다. DB writes, container mutations, external calls는 모두 0건이며 formal E2E는 실행하지 않았다.
 - 다음 안전 행동은 승인된 WSL-server 접근 복구 후 exact candidate/control preflight 재실행이다. 기존 C-01 교체 harness는 사용하지 않았다.
+- 권한 상승 후 `wsl.exe -l -v`는 Ubuntu Running을 반환했으나 `wsl.exe -d Ubuntu -- echo OK`가 30초 무응답으로 종료됐다. distro 내부 명령·Docker·DB·HTTP는 실행하지 않았고, 환경 복구 전 formal E2E를 재시도하지 않는다.
