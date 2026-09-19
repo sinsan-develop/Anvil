@@ -2351,3 +2351,9 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - C30 matrix remains 13 passed/1 failed due historical frozen manifest drift; historical manifest/event bytes are preserved.
 - Docker is unavailable and WSL enumeration is access-denied. PostgreSQL, live HTTP, browser, restart and deployment remain `NOT_EXECUTED`.
 - Migration `0015_agent_team_owner` is not applied to canonical release target `0013_task_bootstrap_authority`.
+
+### WSL-server formal attempt
+
+- Disposable PG15 on `WSL-server` successfully migrated to `0013_task_bootstrap_authority`.
+- Formal web image build succeeded, but startup failed closed because `TELEGRAM_WEBHOOK_SECRET` was not supplied.
+- No secret was guessed or persisted; HTTP/browser/restart were not executed. Disposable PG/image cleanup completed; existing services unchanged.

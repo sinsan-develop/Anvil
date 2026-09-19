@@ -153,3 +153,10 @@ rollback은 C30 신규5 파일과 control3의 이번 successor delta만 Main이 
 - Docker CLI 미설치, WSL 열거 `E_ACCESSDENIED`; PostgreSQL·HTTP·browser·process restart·배포는 `NOT_EXECUTED`다.
 - `0015_agent_team_owner`는 생성만 되었고 canonical release target `0013_task_bootstrap_authority`에는 적용하지 않았다.
 - 판정: `LOCAL_PREFLIGHT_ACCEPTED`; C30 formal acceptance/release는 `NOT_INTEGRATED`.
+
+### WSL-server disposable formal attempt
+
+- SSH `WSL-server`의 canonical worktree `codex/c09-execution-backends-r1`에서 disposable `postgres:15-alpine`를 생성했다.
+- `anvil-c30r2-formal:760317c`를 별도 빌드했고, `alembic upgrade 0013_task_bootstrap_authority` 및 `alembic_version=0013_task_bootstrap_authority`를 확인했다.
+- web 기동은 `RuntimeConfigurationError: TELEGRAM_WEBHOOK_SECRET is required`로 실패했다. secret을 기록·추측·우회하지 않았으며 HTTP/browser/restart는 실행하지 않았다.
+- disposable PostgreSQL과 formal image는 시도 후 제거했고 기존 `anvil-web` 및 기존 DB는 변경하지 않았다.
