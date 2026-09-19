@@ -2434,3 +2434,17 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
   worker/write lease는 임의 회수하지 않았다. commit에는 exact3 test/report/HANDOFF만 포함한다.
   다음 조치: 기존 QA fixture 로그인 browser 차단 원인을 승인된 별도 검증 환경에서 해결한 후
   인증 정상/empty/revoked 및 실제 same-origin Network를 검증. 현재 모든 disposable 자원은 종료됐다.
+
+### C30R3 Task4 최종 browser retry 종료
+
+- Main 지시로 기존372718c source만 다시 Git-only 구성했으며 새 fixture/제품/test 변경0.
+  재생성 image e43d24d332e8, net bfcaca2bb78c, PG7c4e78f44bea, web4114c599d79f,
+  BFFad6cc69dceb6에서 app0013/owner0015 snapshot1/receipt0를 확인했다.
+- 설치 Chrome 임시 headless/CDP 실행은 플랫폼 auto-review가 CreateProcess 전에 거부:
+  `This action was rejected due to unacceptable risk` / 해당 브라우저 우회 방식의 사용자 직접 승인 부재.
+  신규 browser/profile/tunnel/screenshot 실행·생성0, 우회/반복0. Main에게 즉시 보고했다.
+- 재생성 owner revoke 후 exact label container/network/volume/image와 tmp checkout cleanup exit0/residue0.
+  local c30r3-browser-* profile0. 기존 anvil-web ID/image/StartedAt/running exact 불변 재확인.
+- 최종 INCOMPLETE/browser BLOCKED, formal FAILURE_REPORT0. 제품 불변이므로 기존24P/159P 증거 유지;
+  새 pytest 실행으로 주장하지 않는다. report/HANDOFF append-only, progress JSON은 Main 소유.
+- 다음 안전 행동은 headless/CDP 검증 방식의 사용자 직접 실행 안전 승인이다. 승인 전 외부 재생성/우회 금지.

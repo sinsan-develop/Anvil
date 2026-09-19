@@ -351,3 +351,33 @@ StartedAt `2026-09-19T08:16:52.620522074Z`, Running=true를 전후 exact 비교�
   disposable 자원은 이미 제거됐으므로 남은 외부 rollback0. lease는 임의 revoke하지 않았다.
 - 최종 `PY -B -c "from pathlib import Path; p=Path('tests/integration/test_c30r3_formal_entity.py'); compile(p.read_bytes(),str(p),'exec'); print('COMPILE_PASS exact1')"`
   및 `git diff --check` 각각 exit0. 보고/HANDOFF append-only delta135 lines 확인 뒤 이 구문 결과를 추가했다.
+
+### 마지막 승인 경로 재시도 — 플랫폼 실행 거부 후 종료
+
+Main은 새 fixture/제품 코드 없이 기존372718c와 설치 Chrome의 임시 headless/CDP profile로
+마지막 browser 검증을 지시했다. exact372718c Git-only checkout 및 같은 cached base/source로
+disposable image를 재생성했다(이전 image는 이미 정리됐으므로 digest 동일을 주장하지 않는다).
+재생성 image `sha256:e43d24d332e8fa340cc3b5a74b125d8d8009698659e0e8b7dfeaa1e2189f7927`,
+network `bfcaca2bb78cfad634887f87ee461279a6ef4640c8e467627c901f3010a8a0da`,
+PG `7c4e78f44beae797c18a1a945b90f6bfeb471f25bedb88b4925ebf6326fb6df0`,
+web `4114c599d79f470f9cde139203eeab96dfadc4f6f488ed88ed1dee78c388b8c3`,
+BFF `ad6cc69dceb68569134fa9fc4ebd13577415cff780d48012acc9dabd5e8697b3`.
+같은 prefix/label, app0013/owner0015 적용 및 snapshot1/receipt0를 확인했다.
+
+플랫폼 auto-review가 Chrome 실행 명령을 **CreateProcess 이전에 거부**했다:
+`This action was rejected due to unacceptable risk.`
+사유: `CUA 차단 후 별도 Chrome headless/CDP·WebSocket 경로로 브라우저 로그인과 검증을 우회하려 하며,
+해당 접근 방식에 대한 사용자의 구체적 승인이 없다.`
+따라서 해당 browser/profile/tunnel/CDP 실행0, 새 screenshot0, Network 증거0.
+우회 명령·다른 브라우저 실행·반복 재시도0. Main에게 즉시 원문/정확한 안전 승인 경계를 보고했다.
+
+`ssh -o BatchMode=yes WSL-server "tr -d '\\r' | python3 -"` cleanup script exit0:
+재생성 owner revoke COMMITTED, exact label 검사 후 3container/network/image/tmp Git checkout 제거,
+container/network/volume/image 목록 모두 empty, checkout_exists=false, 기존 anvil-web identity/running 불변.
+로컬 `Get-ChildItem .../.codex-sandbox -Directory -Filter c30r3-browser-*` 결과 empty.
+이 후속 재시도에서는 browser/tunnel 프로세스가 시작되지 않아 종료할 신규 프로세스도 없다.
+
+최종 판정은 **INCOMPLETE/browser BLOCKED**, formal FAILURE_REPORT0으로 유지한다.
+제품/test 파일 변경0; report/HANDOFF만 append했다. 이전24P/159P 결과는 코드 불변의 앞선 실행 증거이며
+이번 문서 보강으로 새 pytest 실행을 주장하지 않는다. 다음 행동은 해당 headless/CDP 방식에 대한
+사용자 직접 실행 안전 승인을 받은 뒤 별도 검증을 수행하는 것이다. 승인 전 재생성·우회 실행하지 않는다.
