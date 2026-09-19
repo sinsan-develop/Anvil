@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1310,
-  "updated_at": "2026-09-20T01:20:00+09:00",
-  "last_event_id": "evt_c30r3_task4_incomplete",
+  "event_sequence": 1311,
+  "updated_at": "2026-09-20T01:35:00+09:00",
+  "last_event_id": "evt_c30r3_browser_403_root_cause",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -59,7 +59,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
   "current_work_package": "C-30R3",
-  "status": "C30R3_TASK4_INCOMPLETE_BROWSER_BLOCKED",
+  "status": "C30R3_TASK4_INCOMPLETE_BROWSER_403_ROUTE_BOUNDARY",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -2560,8 +2560,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "92631A0EC924C988AD02EA79A4CB9418E26D032AB5F47E2B28FE0566CB45B1C9",
-  "runtime_next_action": "C30R3_BROWSER_AUTH_NETWORK_RETRY_REQUIRED",
+  "snapshot_hash": "79806A58D204B1E83C9F2CC594AF382165B483E614B654F03D373F77BE4705EF",
+  "runtime_next_action": "C30R3_BROWSER_BFF_FIXTURE_ROUTE_SCOPE_DECISION_REQUIRED",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
