@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1307,
-  "updated_at": "2026-09-20T00:09:00+09:00",
-  "last_event_id": "evt_c30r3_task3_started",
+  "event_sequence": 1309,
+  "updated_at": "2026-09-20T00:41:00+09:00",
+  "last_event_id": "evt_c30r3_task4_started",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -59,7 +59,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
   "current_work_package": "C-30R3",
-  "status": "C30R3_TASK3_IN_PROGRESS",
+  "status": "C30R3_TASK4_IN_PROGRESS",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -150,23 +150,23 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R3","status":"ACTIVE","execution_fencing_token":"c30r3-task3-execution-fence-epoch-1-1a24407"},
+  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R3","status":"ACTIVE","execution_fencing_token":"c30r3-task4-execution-fence-epoch-1-f5c9b66"},
   "write_lease": {
     "actor_id": "developer-primary-c30r2",
     "subject_ref": "C-30R3",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "1a24407",
+    "baseline_git_commit": "f5c9b66",
     "issued_at": "2026-09-20T00:05:00+09:00",
     "expires_at": "2026-09-20T12:05:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c30r3-task3-execution-fence-epoch-1-1a24407",
-    "write_fencing_token": "c30r3-task3-write-fence-epoch-1-1a24407",
-    "path_scope": ["packages/api/runtime.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/routes/agent_console.py", "tests/integration/test_c30r3_runtime_restore.py"],
-    "lease_id": "write-lease-c30r3-task3-20260920-001",
-    "worker_lease_id": "worker-lease-c30r3-task3-20260920-001",
+    "execution_fencing_token": "c30r3-task4-execution-fence-epoch-1-f5c9b66",
+    "write_fencing_token": "c30r3-task4-write-fence-epoch-1-f5c9b66",
+    "path_scope": ["tests/integration/test_c30r3_formal_entity.py", "docs/04_test_reports/C-30_COMPLETION_REPORT.md", "docs/progress/BUILD_HANDOFF.md"],
+    "lease_id": "write-lease-c30r3-task4-20260920-001",
+    "worker_lease_id": "worker-lease-c30r3-task4-20260920-001",
     "lease_epoch": 1,
     "write_epoch": 1,
-    "dispatch_head": "1a24407"
+    "dispatch_head": "f5c9b66"
   },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -203,16 +203,16 @@
     "actor_id": "developer-primary-c30r2",
     "subject_ref": "C-30R3",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "1a24407",
+    "baseline_git_commit": "f5c9b66",
     "issued_at": "2026-09-20T00:05:00+09:00",
     "expires_at": "2026-09-20T12:05:00+09:00",
     "status": "ACTIVE",
-    "execution_fencing_token": "c30r3-task3-execution-fence-epoch-1-1a24407",
-    "path_scope": ["packages/api/runtime.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/routes/agent_console.py", "tests/integration/test_c30r3_runtime_restore.py"],
-    "lease_id": "worker-lease-c30r3-task3-20260920-001",
+    "execution_fencing_token": "c30r3-task4-execution-fence-epoch-1-f5c9b66",
+    "path_scope": ["tests/integration/test_c30r3_formal_entity.py", "docs/04_test_reports/C-30_COMPLETION_REPORT.md", "docs/progress/BUILD_HANDOFF.md"],
+    "lease_id": "worker-lease-c30r3-task4-20260920-001",
     "lease_epoch": 1,
-    "fencing_token": "c30r3-task3-execution-fence-epoch-1-1a24407",
-    "dispatch_head": "1a24407"
+    "fencing_token": "c30r3-task4-execution-fence-epoch-1-f5c9b66",
+    "dispatch_head": "f5c9b66"
   },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -2560,8 +2560,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "2F6DB5939D3E15F42425A06BCB008457E1D286438BEFA4B0528AFFD5ED237256",
-  "runtime_next_action": "C30R3_TASK3_RUNTIME_MATERIALIZER_TDD",
+  "snapshot_hash": "BF3F97F2A405A6481B3A137559220B63706F3EA7E121C020094499B11AD5ACDF",
+  "runtime_next_action": "C30R3_TASK4_WSL_FORMAL_RESTART_ENTITY_BROWSER",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
