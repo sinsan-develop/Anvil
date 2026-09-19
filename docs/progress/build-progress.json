@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1289,
-  "updated_at": "2026-09-19T18:32:00+09:00",
-  "last_event_id": "evt_c30r2_package_started",
+  "event_sequence": 1290,
+  "updated_at": "2026-09-19T20:05:00+09:00",
+  "last_event_id": "evt_c30r2_task1_completed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -2560,7 +2560,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "01A3FF7035FC876861856FD3C89A8A2A89D3C0525FEF30E1340868C2D16A889A",
+  "snapshot_hash": "F7CEAF2BDA03F1F912D434DBC4D7FDE946EFE48B0014F92CB2D45D5E9808A1C4",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
