@@ -2330,3 +2330,9 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - candidate web의 내부 `/health/live`는 200이었으나 `/health/ready`는 `503 migration_head_mismatch`였다. 현재 ASGI readiness 계약은 `0013_task_bootstrap_authority`를 요구한다.
 - DB writes 1(전용 migration), 외부 호출 0, 임시 DB/web/network cleanup 완료. entity persistence·authenticated browser E2E는 아직 `NOT_INTEGRATED`다.
 - 다음 안전 행동은 migration head 계약을 정합화한 뒤 readiness를 재검증하는 것이다. 기존 제품 DB와 컨테이너는 건드리지 않았다.
+
+### C-30 canonical PG15 target — seq1285
+
+- release/readiness canonical target `0013_task_bootstrap_authority`로 전용 PostgreSQL 15 migration을 재실행했고, `alembic_version`이 동일 head로 확인됐다.
+- 따라서 `0014_dag_queue`는 `upgrade head`를 사용했을 때 관측된 후속 E-04 migration이며 현재 C30 release target이 아니다. C30 DB canonical target은 `0013`으로 정리됐다.
+- DB migration은 PASS지만 runtime owner/auth/provider refs가 없어 ready/entity/browser E2E는 아직 `NOT_INTEGRATED`다. 전용 DB와 네트워크는 정리했다.

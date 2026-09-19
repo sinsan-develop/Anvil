@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1284,
-  "updated_at": "2026-09-19T17:52:00+09:00",
-  "last_event_id": "evt_c30_formal_pg15_head_mismatch",
+  "event_sequence": 1285,
+  "updated_at": "2026-09-19T18:05:00+09:00",
+  "last_event_id": "evt_c30_formal_pg15_canonical_0013_pass",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -37,10 +37,10 @@
     "external_calls": 0,
     "scope_status": "ROUTE_SMOKE_VERIFIED_FORMAL_ENTITY_E2E_PENDING",
     "formal_entity_browser_e2e": "NOT_INTEGRATED",
-    "pg15_migration": "PASS_ALEMBIC_UPGRADE_HEAD",
-    "pg15_migration_head": "0014_dag_queue",
-    "readiness": "FAIL_503_MIGRATION_HEAD_MISMATCH",
-    "next_safe_action": "RECONCILE_REQUIRED_MIGRATION_HEAD_BEFORE_FORMAL_READINESS"
+    "pg15_migration": "PASS_ALEMBIC_UPGRADE_0013",
+    "pg15_migration_head": "0013_task_bootstrap_authority",
+    "readiness": "NOT_INTEGRATED_RUNTIME_REFS_MISSING",
+    "next_safe_action": "OWNER_AUTH_PROVIDER_RUNTIME_REFS_REQUIRED_FOR_READY_ENTITY_E2E"
   },
   "c30r1_rework": {
     "status": "ACCEPTED_LOCAL_SCOPE",
@@ -2577,7 +2577,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "8CBE5FD2FCF63F0E7393A02935712ECAED1611BA512DC28649DE6BB4AD7EA143",
+  "snapshot_hash": "5B07E482A94C03F651DC58C6110E4A8C558F7E29D48523977050921BC73A7369",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
