@@ -144,3 +144,12 @@ C30 local suite는 actual Provider를 호출하지 않는다. 기존 E06 회귀�
 Main이 로컬 증거를 독립 검토하고 checker SyntaxError·역사 시각 문제를 별도 소유 범위에서 정리한다. 실제 WSL이 필요하면 exact clean candidate/image/ReleaseManifest·대상 자원·환경/승인·검증/rollback/cleanup 계획을 먼저 결박한 뒤 허용된 실행자가 formal DB/container/entity/browser E2E를 수행해야 한다. 현재 로컬 PASS만으로 C30 formal acceptance나 배포를 허용하지 않는다.
 
 rollback은 C30 신규5 파일과 control3의 이번 successor delta만 Main이 hash/diff 확인 후 역패치한다. 이미 게시된 progress event를 소급 삭제하지 않고 후속 무효화/정정 이벤트를 사용한다. 기존 historical acceptance·제품·dirty/untracked는 보존한다. 외부 DB/WSL/배포 상태를 바꾸지 않았으므로 해당 rollback은 없다.
+
+## C-30R2 후속 local-only 기록 — 2026-09-19
+
+- Task2 durable owner persistence, Task3 trusted runtime owner seam, Task4A formal entity preflight를 구현·검증했다.
+- Task2 `69 passed/1 skipped`, Task3 관련 회귀 `531 passed/34 skipped`, Task4A `15 passed`, preflight 묶음 `31 passed`.
+- C30 matrix는 `13 passed/1 failed`; 기존 frozen manifest가 승인된 runtime successor보다 오래된 역사 세대이므로 과거 manifest/event는 소급 수정하지 않았다.
+- Docker CLI 미설치, WSL 열거 `E_ACCESSDENIED`; PostgreSQL·HTTP·browser·process restart·배포는 `NOT_EXECUTED`다.
+- `0015_agent_team_owner`는 생성만 되었고 canonical release target `0013_task_bootstrap_authority`에는 적용하지 않았다.
+- 판정: `LOCAL_PREFLIGHT_ACCEPTED`; C30 formal acceptance/release는 `NOT_INTEGRATED`.

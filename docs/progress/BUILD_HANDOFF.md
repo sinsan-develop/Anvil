@@ -2343,3 +2343,11 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - `RolePolicyService`, `RoleResultService`, `RoleTeamOrchestrator`, `MoADeliberation`, `LocalTestSessionService`는 process-local 상태다. 단순 host injection이나 DB row 변환으로 durable E2E PASS를 주장하지 않는다.
 - 다음 구현에는 owner snapshot/revocation/fence/restart/concurrency/principal mapping을 정의한 별도 C30R2 WorkInstruction이 필요하다. fixture 200 응답, fake assignment, 기존 Task/Run row의 임의 변환은 금지한다.
 - `/health/ready` 503 원인은 console owner가 아니라 DB 연결, migration 0013 mismatch, 또는 runtime refs missing 중 하나이므로 응답 `reason`과 주입 상태를 분리 진단해야 한다.
+
+### C-30R2 current handoff
+
+- Task2/Task3/Task4A local evidence commits: `11d34e6`, `b9515b8`, `9ddd4ab`.
+- Local preflight only: Task4A 15 passed; WSL formal preflight, console and entity checks 31 passed.
+- C30 matrix remains 13 passed/1 failed due historical frozen manifest drift; historical manifest/event bytes are preserved.
+- Docker is unavailable and WSL enumeration is access-denied. PostgreSQL, live HTTP, browser, restart and deployment remain `NOT_EXECUTED`.
+- Migration `0015_agent_team_owner` is not applied to canonical release target `0013_task_bootstrap_authority`.
