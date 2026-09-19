@@ -167,3 +167,68 @@ rollback은 C30 신규5 파일과 control3의 이번 successor delta만 Main이 
 - `/api/agent-console/team`은 `503 OFFLINE / CONSOLE_REQUEST_DENIED / counts_as_pass=false`, unknown route는 `404`였다.
 - web 재시작 후에도 live/ready와 동일한 console refusal을 확인했다. durable owner restore/entity projection은 여전히 `NOT_INTEGRATED`다.
 - 임시 secret은 저장·보고하지 않았고 disposable web/PG/image는 모두 제거했다.
+
+## C-30R3 Task4 — 2026-09-20 현재 실행 기록
+
+### 판정
+
+`BLOCKED` — WSL formal execution은 `NOT_EXECUTED`; 승인된 local formal-preflight와 기록 작업은 완료했다.
+위 C30R2 disposable smoke는 과거 후보의 증거이며 이번 Task4의 PG/browser/restart PASS로 재사용하지 않는다.
+formal acceptance=false, formal FAILURE_REPORT=0. SSH 접근 환경 오류는 제품 정식 실패가 아니다.
+
+기준 checkout `D:/Project/Anvil/.codex-sandbox/anvil-main-integration`, branch
+`codex/c09-execution-backends-r1`, 시작 clean HEAD `624394e68e4828dbe4cdd2f7334dfb9bb19b2f85`.
+Task3 제품 commit `f5c9b66942cc21ee0ffa4e7ca3bdf4dcb6c66e30`은 수정하지 않았다.
+Task4 exact3: `tests/integration/test_c30r3_formal_entity.py`, 이 보고서, `docs/progress/BUILD_HANDOFF.md`.
+worker/write `worker-lease-c30r3-task4-20260920-001` / `write-lease-c30r3-task4-20260920-001`,
+execution/write fence `c30r3-task4-execution-fence-epoch-1-f5c9b66` /
+`c30r3-task4-write-fence-epoch-1-f5c9b66`; ACTIVE, expires 2026-09-20T12:05:00+09:00.
+
+### 판단 이유·Main 내부 실행 결정
+
+1. `agent_owner_heads/history/requests`는 migration0015에서 처음 생성된다. app DB를0013까지만 구성하면
+   owner persist는 불가능하다. Main은 동일 disposable PG15의 서로 다른 database 두 개를 사용하도록 결정했다:
+   **app_db_head=0013_task_bootstrap_authority / owner_db_head=0015_agent_team_owner**.
+   이는 disposable 검증 계획이며 release schema 승격이 아니다. migration source/release 파일은 변경하지 않았고
+   두 DB 모두 이번 실행에서 생성하거나 migration하지 않았다.
+2. `ssh -G WSL-server` exit0이지만 effective `user=codexsandboxoffline`, `hostname=wsl-server`로
+   프로젝트 alias가 적용되지 않았다. `ssh -o BatchMode=yes -o ConnectTimeout=10 WSL-server hostname`
+   exit1: `ssh: Could not resolve hostname wsl-server`.
+3. 초기 read-only hostname/Docker inventory 복합 probe도 같은 해석 실패로 exit1이었다.
+   명시적인 기존 config 경로 `ssh -F C:/Users/cyhuh/.ssh/config -o BatchMode=yes -o ConnectTimeout=10 WSL-server ...`
+   확인은 `Can't open user config file ...: Permission denied`, exit1이었다. config/key/credential 변경,
+   IP 우회, 권한 상승, WSL 서비스 재시작을 하지 않았다. Main 지시 뒤 추가 SSH probe는 반복하지 않았다.
+
+blocker fingerprint: `C30R3-TASK4-SSH-ALIAS-UNRESOLVED-WORKER`.
+원격 command 도달0, 생성 container/image/network/volume/DB/secret/tunnel0. disposable 식별자 미할당.
+따라서 이번 작업에 의한 기존 서비스 mutation0이며 정리할 생성 자원도 없다.
+원격 inventory 자체는 접근 실패로 미관측이므로 전체 서버 residue0/health 불변을 실측했다고 주장하지 않는다.
+
+### 조치·검증 명령과 실제 결과
+
+`PY=C:/Users/cyhuh/anaconda3/python.exe`, cwd는 위 canonical checkout이다.
+
+- RED: `PY -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_c30r3_formal_entity.py --tb=short`
+  → exit1, **9 failed/13 passed/0 skipped, 3.58s**. 실패는 신규 dual-DB/non-attesting preflight inventory 부재였다.
+- GREEN: 같은 명령 → exit0, **22 passed/0 skipped, 3.60s**.
+- 관련 회귀: `PY -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_c30r3_formal_entity.py tests/integration/test_c30r3_runtime_restore.py tests/agent_team/test_owner_component_restore.py tests/integration/test_c30r2_runtime_owner.py tests/integration/test_c30r2_formal_entity.py tests/integration/test_c30_console_e2e.py --tb=short`
+  → exit0, **157 passed/0 skipped, 11.06s**.
+- 기존 warning 1: `python_multipart` PendingDeprecationWarning. 제품 failure가 아니다.
+- 구문: `PY -B -c "from pathlib import Path; p=Path('tests/integration/test_c30r3_formal_entity.py'); compile(p.read_bytes(),str(p),'exec'); print('COMPILE_PASS exact1')"`
+  → exit0. `git diff --check` → exit0; 변경은 허용 exact3뿐이다.
+
+새 test는 실제 migration source의 table 생성 위치를 AST로 확인하고, local SQLite/ASGI로 typed owner
+4개 메뉴, empty/offline/error, control/high-risk/CSRF 입력 거부, durable receipt exact replay를 검증한다.
+새 RuntimeConsoleOwner 객체는 같은 프로세스에서 생성했으므로 OS process restart PASS가 아니다.
+preflight inventory는 실행 증거 발행 API가 아니며 SSH blocker/미실행 상태를 고정한다.
+
+### 미검증·다음 행동·rollback
+
+실제 PG15 DB write/rollback, live HTTP, browser same-origin Network, web process restart/revoked reload,
+원격 cleanup inventory는 모두 NOT_EXECUTED. Provider/Telegram/Kakao/Oracle/production 실행0.
+app readiness 0013 계약 및 기존 frozen manifest/events는 그대로 보존했다.
+다음은 기존 WSL-server alias가 사용 가능한 승인된 Main 실행 환경에서 clean candidate Git-only 배포,
+위 dual DB 분리, 실제 persist/restart/revoke/browser 검증과 정확한 disposable cleanup을 실행하는 것이다.
+그 전까지 C30 formal acceptance는 false다. Project progress event JSON은 exact3 밖이라 수정하지 않았다;
+Main이 이 blocker와 실행 수치를 append-only completion/event에 결박한다.
+rollback은 이번 exact3 local-preflight/문서 commit만 Main이 검토 후 revert한다. 외부 state rollback은 없다.

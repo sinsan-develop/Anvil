@@ -2364,3 +2364,27 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - Web with ephemeral validation-only secrets returned live 200, ready 200, console team 503 `CONSOLE_REQUEST_DENIED` (`counts_as_pass=false`), and unknown route 404.
 - After web restart, the same live/ready/console refusal contract held. Durable owner restore/entity projection remains `NOT_INTEGRATED`.
 - All disposable containers/image were removed; no existing service or database was changed and no secret value was recorded.
+
+### C30R3 Task4 current checkpoint — 2026-09-20
+
+- 판정 `BLOCKED`(WSL formal), local preflight/기록은 완료. 시작 clean `624394e68e4828dbe4cdd2f7334dfb9bb19b2f85`,
+  Task3 제품 `f5c9b66942cc21ee0ffa4e7ca3bdf4dcb6c66e30` 보존. exact3 test/report/이 HANDOFF만 변경.
+- Main ruling: 동일 disposable PG15에 별도 app DB(head0013)와 owner DB(head0015)를 분리한다.
+  release target0013·migration source 변경0. 실제 두 DB 생성/migration0.
+- `ssh -G WSL-server` exit0의 effective hostname은 `wsl-server`, user는 `codexsandboxoffline`이었다.
+  `ssh -o BatchMode=yes -o ConnectTimeout=10 WSL-server hostname` exit1:
+  `Could not resolve hostname wsl-server`. 기존 config 명시 확인도 Permission denied였다.
+  SSH config/credentials 변경·우회·권한 상승·서비스 재시작0, Main 지시 후 추가 probe0.
+- fingerprint `C30R3-TASK4-SSH-ALIAS-UNRESOLVED-WORKER`; formal FAILURE_REPORT0.
+  remote command 도달0, disposable 식별자 미할당, 생성 container/image/network/volume/DB/secret/tunnel0.
+  이번 작업의 기존 서비스 mutation0. 원격 inventory 미관측이므로 서버 전체 residue0을 실측했다고 주장하지 않는다.
+- `C:/Users/cyhuh/anaconda3/python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_c30r3_formal_entity.py --tb=short`:
+  RED9F/13P(exit1,3.58s)→GREEN22P/0S(exit0,3.60s).
+- 같은 Python/flags로 Task4 formal_entity + Task3 runtime_restore + owner_component_restore +
+  C30R2 runtime_owner/formal_entity + C30 console_e2e 묶음:157P/0S(exit0,11.06s). 정확한 전체 명령은 C-30_COMPLETION_REPORT에 기록했다.
+- local SQLite/ASGI 결과를 실제 PG15·browser Network·OS restart로 승격하지 않는다.
+  실제 PG/live HTTP/browser/restart/remote cleanup inventory NOT_EXECUTED, formal acceptance=false.
+- Task4 dual lease ACTIVE 유지(expires2026-09-20T12:05+09:00). progress/events JSON은 수정하지 않았다.
+  Main completion event에는 위 BLOCKED fingerprint·생성0·22P/157P·미실행 경계를 append-only로 결박한다.
+- 다음 안전 행동: 기존 alias가 사용 가능한 승인된 Main 환경에서 clean Git candidate·dual DB·entity/restart/browser/cleanup 실행.
+  rollback은 이번 exact3 commit revert만, 외부 복구 대상 없음.
