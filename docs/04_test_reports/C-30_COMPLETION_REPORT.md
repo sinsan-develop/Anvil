@@ -232,3 +232,14 @@ app readiness 0013 계약 및 기존 frozen manifest/events는 그대로 보존�
 그 전까지 C30 formal acceptance는 false다. Project progress event JSON은 exact3 밖이라 수정하지 않았다;
 Main이 이 blocker와 실행 수치를 append-only completion/event에 결박한다.
 rollback은 이번 exact3 local-preflight/문서 commit만 Main이 검토 후 revert한다. 외부 state rollback은 없다.
+
+### Task4 external-path 재개 checkpoint
+
+Main/PMO 승인된 외부 경로에서 같은 WSL-server hostname probe가 exit0/SINSAN으로 확인됐다.
+앞선 sandbox alias failure와 이 성공은 서로 다른 실행 환경 증거이며 과거 기록을 소급 변경하지 않는다.
+생성 예정 prefix `anvil-c30r3-t4-20260920-0120`의 pg/web/bff/browser/internal-net, image
+`anvil-c30r3-t4:20260920-0120`, `/tmp/anvil-c30r3-t4-20260920-0120` Git-only checkout을 사용한다.
+수명은 이번 검증까지, 종료/실패 후 exact label/name/path 정리 및 기존 anvil-web identity 불변을 확인한다.
+별도 app DB0013 / owner DB0015 적용 계획이며 shared DB/기존 runtime은 사용하지 않는다.
+기존 cached app image의 네트워크 없는 --rm 의존성 검사1건은 종료·자동제거됐다.
+후속 실제 결과 전까지 formal acceptance=false/PG/browser/restart NOT_EXECUTED를 유지한다.

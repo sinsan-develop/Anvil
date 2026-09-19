@@ -2388,3 +2388,20 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
   Main completion event에는 위 BLOCKED fingerprint·생성0·22P/157P·미실행 경계를 append-only로 결박한다.
 - 다음 안전 행동: 기존 alias가 사용 가능한 승인된 Main 환경에서 clean Git candidate·dual DB·entity/restart/browser/cleanup 실행.
   rollback은 이번 exact3 commit revert만, 외부 복구 대상 없음.
+
+### C30R3 Task4 승인된 외부 실행 경로 재개 — 2026-09-20
+
+- 앞선 worker sandbox SSH 오류는 그대로 보존한다. Main/PMO 확인 뒤 승인된 외부 실행 경로에서 동일
+  `ssh -o BatchMode=yes -o ConnectTimeout=10 WSL-server hostname` fresh exit0/SINSAN을 확인했다.
+  SSH config/key 변경·IP 우회0. 원격 `/srv/anvil-wsl/repo`는 역사 a681e0c라 변경하지 않는다.
+- 생성 예정 exact prefix `anvil-c30r3-t4-20260920-0120`: `-pg`, `-web`, `-bff`, `-browser`,
+  `-net`(internal), image `anvil-c30r3-t4:20260920-0120`, Git-only disposable checkout
+  `/tmp/anvil-c30r3-t4-20260920-0120`. app_db=c30r3_app(0013), owner_db=c30r3_owner(0015).
+  수명은 이번 검증 종료까지이며 실패/종료 후 이 이름·label·checkout만 제거하고 inventory를 확인한다.
+- 기존 anvil-web container ID `f0107aada3b26ea84950d5561fdd1d13759090096601854720acae5448684738`,
+  image `sha256:c0254177b858d93457585d2c268f43b3386ca20c18a47e4af9460174320488e9`,
+  StartedAt `2026-09-19T08:16:52.620522074Z`를 불변 기준으로 확인했다.
+- 캐시 image의 --rm/--network none 의존성 probe1개 exit0/자동제거: psycopg 있음, pytest/httpx 없음.
+  실제 QA harness CLI는 테스트파일에만 추가하며 pytest 없이 실행, random validation-only credentials는
+  container memory/env에만 두고 출력/보고하지 않는다. 실제 Provider/Telegram/Kakao 호출0.
+  seed는 실제 owner의 PENDING QA 작업이며 가짜 PASS result/evidence를 생성하지 않는다.
