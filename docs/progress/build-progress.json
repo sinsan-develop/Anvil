@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1270,
-  "updated_at": "2026-09-19T16:18:00+09:00",
-  "last_event_id": "evt_c30_formal_precheck_ubuntu_hung",
+  "event_sequence": 1271,
+  "updated_at": "2026-09-19T16:24:00+09:00",
+  "last_event_id": "evt_c30_formal_precheck_ubuntu_hung_retry",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -427,7 +427,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "RESTORE_RESPONSIVE_WSL_DISTRO_BEFORE_C30_FORMAL_E2E",
+  "next_safe_action": "WSL_RESTART_OR_SERVICE_RECOVERY_REQUIRES_SEPARATE_APPROVAL",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",

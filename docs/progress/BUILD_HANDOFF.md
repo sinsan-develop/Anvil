@@ -2290,3 +2290,4 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - `wsl.exe -l -v` read-only 사전점검이 `E_ACCESSDENIED`로 차단됐다. DB writes, container mutations, external calls는 모두 0건이며 formal E2E는 실행하지 않았다.
 - 다음 안전 행동은 승인된 WSL-server 접근 복구 후 exact candidate/control preflight 재실행이다. 기존 C-01 교체 harness는 사용하지 않았다.
 - 권한 상승 후 `wsl.exe -l -v`는 Ubuntu Running을 반환했으나 `wsl.exe -d Ubuntu -- echo OK`가 30초 무응답으로 종료됐다. distro 내부 명령·Docker·DB·HTTP는 실행하지 않았고, 환경 복구 전 formal E2E를 재시도하지 않는다.
+- 동일 read-only echo를 재시도했지만 10초 무응답으로 종료됐다. WSL distro 재시작·서비스 복구는 별도 승인 없이는 수행하지 않는다.
