@@ -1,5 +1,11 @@
 # C-30 로컬 통합·WSL formal preflight 완료보고
 
+## C-30R1 Main route smoke 보완 — seq1281
+
+판정: `anvil-web:c30r1-a681`을 승인된 WSL Ubuntu에서 빌드하고 기존 runtime과 분리된 임시 컨테이너로 실제 HTTP route smoke를 수행했다. 이미지 ID는 `sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7`이다. `/health/live`는 200, `team/moa/sns/adapters`는 모두 `503 OFFLINE` 및 `counts_as_pass=false`, control POST는 503, unknown은 404, forged actor query는 400이었다. 로그와 종료코드 0을 확인한 뒤 임시 컨테이너·환경파일을 정리했다.
+
+이번 증거는 ASGI 라우트 등록·fail-closed·컨테이너 기동만 증명한다. DB entity persistence, 실제 owner/auth 주입, 브라우저 E2E, Provider/운영 배포는 여전히 `NOT_INTEGRATED`이며 DB writes와 외부 호출은 0건이다. 따라서 최종 상태는 `ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED`이고 다음 단계는 승인된 formal entity harness 확보 후 DB/container/entity/browser E2E를 수행하는 것이다.
+
 ## C-30R1 ASGI 연결 재작업 — COMPLETED (로컬 범위)
 
 판정: Main formal smoke finding `evt_c30_formal_smoke_agent_console_404`의 ASGI 경로 등록 누락을 해소했다. 외부 formal 재배포/재검증은 수행하지 않았으며, runtime owner/auth 미연결 상태의 `503 OFFLINE`은 의도적으로 유지한다. 아래 원 C30 결과는 당시 증거이고, 본 절이 R1 최신 결과다. formal FAILURE_REPORT0, integration rework round1.
