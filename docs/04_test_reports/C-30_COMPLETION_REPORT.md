@@ -160,3 +160,10 @@ rollback은 C30 신규5 파일과 control3의 이번 successor delta만 Main이 
 - `anvil-c30r2-formal:760317c`를 별도 빌드했고, `alembic upgrade 0013_task_bootstrap_authority` 및 `alembic_version=0013_task_bootstrap_authority`를 확인했다.
 - web 기동은 `RuntimeConfigurationError: TELEGRAM_WEBHOOK_SECRET is required`로 실패했다. secret을 기록·추측·우회하지 않았으며 HTTP/browser/restart는 실행하지 않았다.
 - disposable PostgreSQL과 formal image는 시도 후 제거했고 기존 `anvil-web` 및 기존 DB는 변경하지 않았다.
+
+### WSL-server formal runtime smoke — disposable only
+
+- 임시 검증 secret만 주입해 web을 기동했고 `/health/live=200`, `/health/ready=200`, `migration_head=0013_task_bootstrap_authority`를 확인했다.
+- `/api/agent-console/team`은 `503 OFFLINE / CONSOLE_REQUEST_DENIED / counts_as_pass=false`, unknown route는 `404`였다.
+- web 재시작 후에도 live/ready와 동일한 console refusal을 확인했다. durable owner restore/entity projection은 여전히 `NOT_INTEGRATED`다.
+- 임시 secret은 저장·보고하지 않았고 disposable web/PG/image는 모두 제거했다.

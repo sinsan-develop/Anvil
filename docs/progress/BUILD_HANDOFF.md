@@ -2357,3 +2357,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - Disposable PG15 on `WSL-server` successfully migrated to `0013_task_bootstrap_authority`.
 - Formal web image build succeeded, but startup failed closed because `TELEGRAM_WEBHOOK_SECRET` was not supplied.
 - No secret was guessed or persisted; HTTP/browser/restart were not executed. Disposable PG/image cleanup completed; existing services unchanged.
+
+### WSL-server runtime smoke result
+
+- Disposable PG15 migrated to canonical `0013_task_bootstrap_authority`; readiness returned HTTP 200.
+- Web with ephemeral validation-only secrets returned live 200, ready 200, console team 503 `CONSOLE_REQUEST_DENIED` (`counts_as_pass=false`), and unknown route 404.
+- After web restart, the same live/ready/console refusal contract held. Durable owner restore/entity projection remains `NOT_INTEGRATED`.
+- All disposable containers/image were removed; no existing service or database was changed and no secret value was recorded.
