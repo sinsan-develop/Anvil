@@ -37,7 +37,7 @@
     "work_instruction": "docs/work_orders/C-30R1_WORK_INSTRUCTION.md",
     "work_instruction_sha256": "FD1FB174EEF72E4E7F297307DA50325739837540E623815E8873214A15D426B4",
     "invocation": "docs/work_orders/C-30R1_INVOCATION_PROMPT.md",
-    "invocation_sha256": "B82131C59C91699CC040FC62947CC53031AA5AE226A1D8988556E960A3626",
+    "invocation_sha256": "B82131C59C91699CC040FC62947CC53031AA5AE226A1D8988598556E960A3626",
     "worker_lease_id": "worker-lease-c30r1-20260919-001",
     "write_lease_id": "write-lease-c30r1-20260919-001",
     "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
@@ -140,16 +140,16 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"main-agent-eoul","role":"MAIN_AGENT","work_package_id":"C-30","status":"REVOKED_AFTER_ACCEPTANCE","execution_fencing_token":"c30-r1-execution-fence-epoch-1-98e218264bf54db0"},
+  "active_agent": {"actor_id":"developer-primary-c30-r1-rework","role":"PRIMARY_DEVELOPER","work_package_id":"C-30R1","status":"ACTIVE","execution_fencing_token":"c30r1-execution-fence-epoch-1-4a24dfb"},
   "write_lease": {
-    "actor_id": "developer-primary-c30-r1",
-    "subject_ref": "C-30",
+    "actor_id": "developer-primary-c30-r1-rework",
+    "subject_ref": "C-30R1",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "98e218264bf54db04a1bd35a67273b713805a649",
-    "issued_at": "2026-09-19T15:30:00+09:00",
-    "expires_at": "2026-09-20T03:30:00+09:00",
-    "status": "REVOKED",
-    "execution_fencing_token": "c30-r1-execution-fence-epoch-1-98e218264bf54db0",
+    "baseline_git_commit": "087a4b6",
+    "issued_at": "2026-09-19T16:42:00+09:00",
+    "expires_at": "2026-09-20T04:42:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "path_scope": [
       "tests/integration/test_c30_console_e2e.py",
       "tests/integration/test_c30_contract_matrix.py",
@@ -160,13 +160,13 @@
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json"
     ],
-    "lease_id": "write-lease-c30-r1-20260919-001",
+    "lease_id": "write-lease-c30r1-20260919-001",
     "lease_epoch": 1,
-    "fencing_token": "c30-r1-write-fence-epoch-1-98e218264bf54db0",
-    "dispatch_head": "98e218264bf54db04a1bd35a67273b713805a649",
-    "worker_lease_id": "worker-lease-c30-r1-20260919-001",
+    "fencing_token": "c30r1-write-fence-epoch-1-4a24dfb",
+    "dispatch_head": "087a4b6",
+    "worker_lease_id": "worker-lease-c30r1-20260919-001",
     "write_epoch": 1,
-    "write_fencing_token": "c30-r1-write-fence-epoch-1-98e218264bf54db0"
+    "write_fencing_token": "c30r1-write-fence-epoch-1-4a24dfb"
   },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -200,14 +200,14 @@
     ]
   },
   "worker_lease": {
-    "actor_id": "developer-primary-c30-r1",
-    "subject_ref": "C-30",
+    "actor_id": "developer-primary-c30-r1-rework",
+    "subject_ref": "C-30R1",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
-    "baseline_git_commit": "98e218264bf54db04a1bd35a67273b713805a649",
-    "issued_at": "2026-09-19T15:30:00+09:00",
-    "expires_at": "2026-09-20T03:30:00+09:00",
-    "status": "REVOKED",
-    "execution_fencing_token": "c30-r1-execution-fence-epoch-1-98e218264bf54db0",
+    "baseline_git_commit": "087a4b6",
+    "issued_at": "2026-09-19T16:42:00+09:00",
+    "expires_at": "2026-09-20T04:42:00+09:00",
+    "status": "ACTIVE",
+    "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "path_scope": [
       "tests/integration/test_c30_console_e2e.py",
       "tests/integration/test_c30_contract_matrix.py",
@@ -218,10 +218,10 @@
       "docs/progress/build-progress.json",
       "docs/progress/progress-events.json"
     ],
-    "lease_id": "worker-lease-c30-r1-20260919-001",
+    "lease_id": "worker-lease-c30r1-20260919-001",
     "lease_epoch": 1,
-    "fencing_token": "c30-r1-execution-fence-epoch-1-98e218264bf54db0",
-    "dispatch_head": "98e218264bf54db04a1bd35a67273b713805a649"
+    "fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
+    "dispatch_head": "087a4b6"
   },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
