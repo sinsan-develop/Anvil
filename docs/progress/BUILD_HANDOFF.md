@@ -2309,3 +2309,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 독립 Reviewer는 C30R1을 `ACCEPT / C0 / I0 / M0`으로 판정했다. ASGI route wiring, fail-closed 503, focused30, compile3, diff-check가 PASS다.
 - Main은 C30R1 dual lease를 회수하고 `ACCEPTED_LOCAL_SCOPE`으로 수락했다. 실제 Provider/DB/WSL/container/browser/deploy는 여전히 `NOT_EXECUTED/NOT_INTEGRATED`다.
 - 다음 안전 행동은 승인된 runtime에서 C-30 formal DB/container/entity/browser E2E를 별도 수행하는 것이다. canonical checker C03 SyntaxError 제한은 유지한다.
+
+## C-30R1 WSL route smoke — seq1281
+
+- 승인된 WSL Ubuntu에서 candidate `a681e0c`를 checkout하고 `anvil-web:c30r1-a681` 이미지를 빌드했다. 이미지 ID는 `sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7`이다.
+- 기존 `anvil-web`과 분리한 임시 컨테이너에서 health `200`, `team/moa/sns/adapters` `503 OFFLINE` 및 `counts_as_pass=false`, control `503`, unknown `404`, forged actor query `400`을 확인했다. 로그와 종료코드 0을 확인하고 임시 컨테이너·환경파일을 정리했다.
+- 이번 실행의 DB writes 0, 외부 호출 0이다. 이는 ASGI/라우트 fail-closed 및 컨테이너 기동 증거이며, 실제 DB entity persistence·browser E2E·Provider/운영 배포 완료를 의미하지 않는다.
+- 현재 판정은 `ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED`; 다음 안전 행동은 승인된 formal entity harness가 제공될 때 DB/container/entity/browser E2E를 수행하는 것이다. canonical checker C03 fixture SyntaxError 제한은 유지한다.
