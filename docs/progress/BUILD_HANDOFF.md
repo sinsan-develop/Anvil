@@ -2323,3 +2323,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 현재 `asgi.py`는 service/resolver 없이 console router만 등록하고 `agent_console.py`는 이를 503 `OFFLINE`으로 fail-closed 처리한다. 따라서 owner/auth wiring과 전용 DB harness를 새로 추가하지 않으면 DB persistence·authenticated browser E2E를 실행할 수 없다.
 - C30 계획 자체에는 WSL formal DB/container/entity/E2E 실행이 포함되지만, 현재 WorkInstruction은 실행·preflight·결과 기록 범위이며 없는 owner/auth wiring과 PostgreSQL harness를 새로 구현하도록 하지 않는다. 임의 구현·다른 제품 PostgreSQL 연결·운영 자원 변경은 하지 않는다.
 - 해석 정정 후 현재 상태는 `PLAN_COMPLIANT_NOT_INTEGRATED`; 별도 범위 승인 요청이 아니라, 필요한 harness가 제공되지 않아 `NOT_EXECUTED/NOT_INTEGRATED`로 유지하는 상태다.
+
+### C-30 PG15 formal readiness — seq1284
+
+- C30 전용 disposable PostgreSQL 15에서 `alembic upgrade head`는 통과했고 DB migration head는 `0014_dag_queue`로 확인됐다.
+- candidate web의 내부 `/health/live`는 200이었으나 `/health/ready`는 `503 migration_head_mismatch`였다. 현재 ASGI readiness 계약은 `0013_task_bootstrap_authority`를 요구한다.
+- DB writes 1(전용 migration), 외부 호출 0, 임시 DB/web/network cleanup 완료. entity persistence·authenticated browser E2E는 아직 `NOT_INTEGRATED`다.
+- 다음 안전 행동은 migration head 계약을 정합화한 뒤 readiness를 재검증하는 것이다. 기존 제품 DB와 컨테이너는 건드리지 않았다.
