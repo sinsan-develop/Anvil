@@ -65,7 +65,12 @@ def test_developer_evidence_event_is_not_acceptance_and_history_is_unchanged():
 def test_progress_snapshot_and_handoff_reference_local_not_formal_evidence():
     progress=json.loads((ROOT/'docs/progress/build-progress.json').read_text(encoding='utf-8'))
     row=progress['c30_local_validation']
-    assert row['accepted'] is False and row['wsl_formal']=='NOT_EXECUTED'
+    # The Developer evidence stays non-accepting after Main accepts a successor.
+    events=json.loads((ROOT/'docs/progress/progress-events.json').read_text(encoding='utf-8'))['events']
+    original=next(e for e in events if e['event_id']=='evt_c30_local_evidence_manifest_created')
+    assert original['details']['accepted'] is False
+    assert original['details']['wsl_formal']=='NOT_EXECUTED'
+    assert row['wsl_formal']=='NOT_EXECUTED'
     assert row['manifest_ref']=='docs/evidence/manifests/C-30_EVIDENCE_MANIFEST.json'
     assert row['manifest_sha256']==hashlib.sha256(MANIFEST.read_bytes()).hexdigest().upper()
     recorded=progress.pop('snapshot_hash')

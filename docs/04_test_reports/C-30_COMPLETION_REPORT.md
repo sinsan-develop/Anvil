@@ -1,5 +1,68 @@
 # C-30 로컬 통합·WSL formal preflight 완료보고
 
+## C-30R1 ASGI 연결 재작업 — COMPLETED (로컬 범위)
+
+판정: Main formal smoke finding `evt_c30_formal_smoke_agent_console_404`의 ASGI 경로 등록 누락을 해소했다. 외부 formal 재배포/재검증은 수행하지 않았으며, runtime owner/auth 미연결 상태의 `503 OFFLINE`은 의도적으로 유지한다. 아래 원 C30 결과는 당시 증거이고, 본 절이 R1 최신 결과다. formal FAILURE_REPORT0, integration rework round1.
+
+권위·기준선:
+
+- 최종 Main 재검증 반영: seq1276, snapshot_hash `558A98764A955B493009C3B204E8EC73B26019D7697C934050DA268A43180CD7`. Main이 snapshot 정정 후 동일 full C30 focused 명령을 독립 재실행하여 30 passed, compile/diff PASS를 보고했다. 이번 문서 반영에서는 제품/테스트/control을 추가 변경하거나 테스트를 재실행하지 않았다. elapsed는 추가 보고되지 않았으며 이전 Developer 1.36s와 혼합하지 않는다. dual lease ACTIVE 유지.
+
+현재 exact7 결박(문서 두 파일 자체 SHA는 순환 자기해시를 피하여 최종 전달 결과에 별도 제공):
+
+```text
+EA7C2289C9C32A67C4CA96E9223C2ADF50169981AFD836D904BF432FA8089529 apps/api/anvil_api/asgi.py
+4210E0DD8DBB3D40F4D895239544353039B82303716BBEF404B6CBBDDA36E527 tests/integration/test_c30_console_e2e.py
+8DA67939967B715AD68D28D6263B8324376CE43586D3C49BC7C33E914C40FAF7 tests/integration/test_c30_contract_matrix.py
+63A45E9A6DCC69BCE022F988E66A9712DD3B9927FBCA7C0C04BEE8CAB52D83A5 docs/progress/build-progress.json
+42C255503AFF4980A795CA7B626B8C8EB3509851F888CC1723E3522B70BB9DFC docs/progress/progress-events.json
+SELF_HASH_SEPARATELY_REPORTED docs/04_test_reports/C-30_COMPLETION_REPORT.md
+SELF_HASH_SEPARATELY_REPORTED docs/progress/BUILD_HANDOFF.md
+```
+
+- WI `docs/work_orders/C-30R1_WORK_INSTRUCTION.md` SHA256 `6701E351D01C37CFB9E870AA2CB8A899A3CA240E3AD7B621545326D8D7CCA08F`; prompt SHA256 `B82131C59C91699CC040FC62947CC53031AA5AE226A1D8988598556E960A3626`.
+- event baseline `4a24dfb`, 최초 dispatch `087a4b6a834055686ce2ab7a5abaa984652afd40`; Main control 정정 후 실제 구현 기준 HEAD `7889245f99d6fe39fde30eb0afadada0291ef11a`, branch `codex/c09-execution-backends-r1`. 최초 checkout clean, Main 정정 이후 기존 RED 테스트만 dirty인 상태를 보존했다.
+- seq1275; actor `developer-primary-c30-r1-rework`, worker/write `worker-lease-c30r1-20260919-001` / `write-lease-c30r1-20260919-001`, execution/write fence `c30r1-execution-fence-epoch-1-4a24dfb` / `c30r1-write-fence-epoch-1-4a24dfb`, ACTIVE window 2026-09-19 16:42~2026-09-20 04:42 KST.
+- 전역 lease/hash/path 불일치를 mutation 전에 Main에 전달했다. Main이 정정·허용 exact7을 확정한 후 진행했다. 본 작업에서 lease/acceptance/event를 새로 발급하거나 회수하지 않았다.
+
+변경:
+
+- `apps/api/anvil_api/asgi.py`: 기존 `create_agent_console_app()`의 이미 prefix가 있는 APIRoute들을 frontend static mount 앞에 등록(+6/-1). 새 owner/auth/data를 만들지 않는다. 이중 prefix가 없고 기존 flat route 목록 계약을 보존한다.
+- `tests/integration/test_c30_console_e2e.py`: DB/provider bootstrap factory만 격리하고 실제 ASGI 등록을 실행한다. health/root, team/moa/sns/adapters 503, control POST503, unknown404, forged query400, no-store와 counts_as_pass=false를 검증한다.
+- `tests/integration/test_c30_contract_matrix.py`: Main acceptance 이후 current accepted=true를 되돌리지 않고 frozen Developer event의 accepted=false를 확인하도록 역사 검증을 수정했다.
+- `docs/progress/build-progress.json`: 이미 수행된 Main control 수정 뒤 누락된 snapshot_hash만 현재 canonical 내용으로 재계산. 상태·authority·event_sequence 변경0.
+- 본 보고서와 BUILD_HANDOFF에 결과를 추가했다. 허용 exact7 중 progress-events는 변경0이며, C30 manifest와 다른 제품은 그대로 보존했다.
+
+TDD·정확한 명령(동일 canonical cwd, `PY=D:/tmp/anvil-main-integration/.venv/Scripts/python.exe`):
+
+| 명령 | exit | 결과 |
+|---|---:|---|
+| `PY -B -m pytest -q -p no:cacheprovider tests/integration/test_c30_console_e2e.py -k unified_asgi --tb=short` RED | 1 | 1 failed/11 deselected,1.21s; expected503 vs actual404 |
+| `PY -B -m pytest -q -p no:cacheprovider tests/integration/test_c30_console_e2e.py tests/integration/test_c30_contract_matrix.py tests/deploy/test_c30_wsl_formal_preflight.py --tb=short` 최초 | 1 | 2 failed/28 passed,1.56s; 신규404 + Main acceptance 이후 역사 테스트 불일치 |
+| 위 focused 중간 | 1 | 1 failed/29 passed,1.51s; 누락된 control snapshot_hash만 잔여 |
+| 위 focused 최종 fresh | 0 | 30 passed/0 skipped,1.36s |
+| `PY -B -m pytest -q -p no:cacheprovider apps/api/tests/test_agent_console_routes.py tests/integration/test_c30_console_e2e.py tests/integration/test_c30_contract_matrix.py tests/deploy/test_c30_wsl_formal_preflight.py tests/api/test_public_asgi_frontend.py --tb=short` | 0 | 55 passed/0 skipped,1.95s |
+
+관련 회귀의 중간 `include_router` 구현은 현 FastAPI `_IncludedRouter`에 `.path`가 없어 기존 ASGI route introspection 1 failed/54 passed(2.10s)를 발생시켰다. 기존 subapp의 완성된 route들을 flat 목록으로 재사용하여 수정했다. 기존 관련 suite의 fresh-ASGI 테스트가 DB bootstrap/readiness를 포함하므로, 외부 의존성 없이 확인하는 최종 회귀를 아래처럼 추가 실행했다. 기존 테스트의 실제 DB 접속 성공을 주장하지 않는다.
+
+```powershell
+PY -B -c "import pytest; from fastapi import FastAPI; from unittest.mock import patch; guard=patch('packages.api.runtime.create_runtime_app',FastAPI); guard.start(); code=pytest.main(['-q','-p','no:cacheprovider','apps/api/tests/test_agent_console_routes.py','tests/integration/test_c30_console_e2e.py','tests/integration/test_c30_contract_matrix.py','tests/deploy/test_c30_wsl_formal_preflight.py','tests/api/test_public_asgi_frontend.py','--tb=short']); guard.stop(); raise SystemExit(code)"
+```
+
+exit0, 55 passed/0 skipped,0.90s. 이미 import된 anyio의 PytestAssertRewriteWarning1건은 이 process-local bootstrap guard 실행 경계다. 실제 router/response/readiness fixture는 실행하고 DB factory만 대체했다.
+
+구문: `PY -B -c "from pathlib import Path; files=['apps/api/anvil_api/asgi.py','tests/integration/test_c30_console_e2e.py','tests/integration/test_c30_contract_matrix.py'];[compile(Path(p).read_text(encoding='utf-8'),p,'exec') for p in files];print('builtin compile 3 PASS')"` exit0. `git diff --check` exit0. 이번 R1에서 전체819/웹70은 재실행하지 않았으므로 원 C30의 역사 결과와 구분한다. canonical checker의 기존 SyntaxError는 이번 범위에서 수정/재검증하지 않았다.
+
+제품/테스트 SHA256:
+
+```text
+EA7C2289C9C32A67C4CA96E9223C2ADF50169981AFD836D904BF432FA8089529 apps/api/anvil_api/asgi.py
+4210E0DD8DBB3D40F4D895239544353039B82303716BBEF404B6CBBDDA36E527 tests/integration/test_c30_console_e2e.py
+8DA67939967B715AD68D28D6263B8324376CE43586D3C49BC7C33E914C40FAF7 tests/integration/test_c30_contract_matrix.py
+```
+
+미검증/다음 행동: runtime owner/auth adapter의 실제 주입, DB·WSL·Docker·Provider·브라우저·배포는 NOT_EXECUTED/NOT_INTEGRATED. Main이 승인된 환경에서 새 exact candidate로 404→503 formal smoke를 독립 확인해야 한다. 로컬503은 서비스 정상 데이터200이나 formal acceptance가 아니다. rollback은 본 R1 ASGI/테스트/보고·HANDOFF/progress hash delta만 역패치하며 Main control commit과 기존 acceptance/event는 보존한다. stage/commit/push0.
+
 ## 판정
 
 COMPLETED — 승인된 로컬 통합·preflight 증거 산출 범위 완료. 전체 owner 회귀819건, 최종 focused29건, 웹70건 GREEN. Developer 증거이며 C30 formal acceptance/Main acceptance가 아니다. WSL formal DB/container/entity/E2E는 NOT_EXECUTED/NOT_INTEGRATED. formal FAILURE_REPORT 0.

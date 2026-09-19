@@ -76,3 +76,30 @@ def test_telegram_request_and_kakao_open_decision_never_dispatch_runner():
     kakao,gateway=kakao_ready();v=kakao.project(envelope(),now=NOW).to_dict()
     assert v['status']=='OPEN_DECISION' and v['allowed'] is False and v['io_count']==0
     assert gateway.audit().to_dict()['total']==0
+
+
+def test_unified_asgi_routes_console_before_frontend_without_fabricating_owner(monkeypatch):
+    import importlib.util
+    from pathlib import Path
+    from fastapi import FastAPI
+    import packages.api.runtime as runtime
+
+    # The runtime factory constructs DB/provider ports and reads credentials.
+    # Isolate that bootstrap only; exercise the real ASGI route registration.
+    monkeypatch.setattr(runtime, 'create_runtime_app', FastAPI)
+    path=Path(__file__).resolve().parents[2]/'apps/api/anvil_api/asgi.py'
+    spec=importlib.util.spec_from_file_location('_c30_asgi_route_probe',path)
+    module=importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    with TestClient(module.app) as client:
+        assert client.get('/health/live').json()=={'status':'ok'}
+        for menu in ('team','moa','sns','adapters'):
+            response=client.get('/api/agent-console/'+menu)
+            assert response.status_code==503
+            assert response.json()=={'state':'OFFLINE','reason':'CONSOLE_REQUEST_DENIED','counts_as_pass':False}
+            assert response.headers['cache-control']=='no-store'
+        control=client.post('/api/agent-console/control',json={'action':'deploy'})
+        assert control.status_code==503 and control.json()['counts_as_pass'] is False
+        assert client.get('/api/agent-console/unknown').status_code==404
+        assert client.get('/api/agent-console/team?actor=forged').status_code==400
+        assert client.get('/').status_code==200

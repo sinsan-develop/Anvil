@@ -1,3 +1,14 @@
+# C-30R1 Developer ASGI 연결 결과
+
+- 최종 Main 재검증: seq1276 snapshot `558A98764A955B493009C3B204E8EC73B26019D7697C934050DA268A43180CD7`, 동일 C30 focused30 passed 및 compile/diff PASS(Main 보고, elapsed 미보고). dual lease ACTIVE. 제품 추가 수정 없이 보고서/HANDOFF만 보정 후 중지한다.
+- 최신 progress 파일 SHA `63A45E9A6DCC69BCE022F988E66A9712DD3B9927FBCA7C0C04BEE8CAB52D83A5`, events SHA `42C255503AFF4980A795CA7B626B8C8EB3509851F888CC1723E3522B70BB9DFC`. exact7 전체 경로/제품 hash는 C-30_COMPLETION_REPORT.md 최신 결박 절, 문서 자체 hash는 최종 전달 결과로 제공한다.
+
+- 기준 구현 HEAD `7889245f99d6fe39fde30eb0afadada0291ef11a`, C30R1 WI SHA `6701E351D01C37CFB9E870AA2CB8A899A3CA240E3AD7B621545326D8D7CCA08F`, seq1275 dual lease ACTIVE 유지.
+- real ASGI entrypoint RED 404→GREEN503. 기존 agent-console APIRoute를 static frontend 이전 재사용하고 owner/auth 부재는 OFFLINE/counts_as_pass=false 유지. 제품 변경은 asgi.py +6/-1뿐이다.
+- fresh C30 focused30 PASS/1.36s, 관련 API/ASGI55 PASS/1.95s, DB bootstrap 격리 최종55 PASS/0.90s, compile3/diff-check exit0. 정확한 명령·중간 RED와 경계는 C-30_COMPLETION_REPORT.md R1 절 참조.
+- 역사 matrix assertion을 frozen Developer event로 수정했고, Main control의 누락 snapshot_hash만 재계산했다. event/acceptance/lease 상태 변경0, commit/push0.
+- runtime owner/auth 실제 통합과 WSL/DB/Docker/Provider/formal redeploy는 NOT_EXECUTED/NOT_INTEGRATED. Main의 독립 검토와 새 candidate formal smoke가 다음 행동이다.
+
 # C-23 final acceptance seq1214
 
 - 독립 read-only review `ACCEPT / C0 / I0 / M1`; C-23 exact10 product scope frozen, dual leases revoked, Main acceptance 완료.
