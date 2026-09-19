@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1276,
-  "updated_at": "2026-09-19T16:52:00+09:00",
-  "last_event_id": "evt_c30r1_scope_hash_reconciled",
+  "event_sequence": 1280,
+  "updated_at": "2026-09-19T17:03:02+09:00",
+  "last_event_id": "evt_c30r1_main_package_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -33,7 +33,7 @@
     "scope_status": "ASGI_MOUNT_OUTSIDE_C30_EXACT8"
   },
   "c30r1_rework": {
-    "status": "IN_PROGRESS",
+    "status": "ACCEPTED_LOCAL_SCOPE",
     "work_instruction": "docs/work_orders/C-30R1_WORK_INSTRUCTION.md",
     "work_instruction_sha256": "6701E351D01C37CFB9E870AA2CB8A899A3CA240E3AD7B621545326D8D7CCA08F",
     "invocation": "docs/work_orders/C-30R1_INVOCATION_PROMPT.md",
@@ -140,7 +140,7 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"developer-primary-c30-r1-rework","role":"PRIMARY_DEVELOPER","work_package_id":"C-30R1","status":"ACTIVE","execution_fencing_token":"c30r1-execution-fence-epoch-1-4a24dfb"},
+  "active_agent": {"actor_id":"main-agent-eoul","role":"MAIN_AGENT","work_package_id":"C-30R1","status":"REVOKED_AFTER_ACCEPTANCE","execution_fencing_token":"c30r1-execution-fence-epoch-1-4a24dfb"},
   "write_lease": {
     "actor_id": "developer-primary-c30-r1-rework",
     "subject_ref": "C-30R1",
@@ -148,7 +148,7 @@
     "baseline_git_commit": "087a4b6",
     "issued_at": "2026-09-19T16:42:00+09:00",
     "expires_at": "2026-09-20T04:42:00+09:00",
-    "status": "ACTIVE",
+    "status": "REVOKED",
     "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "path_scope": [
       "apps/api/anvil_api/asgi.py",
@@ -205,7 +205,7 @@
     "baseline_git_commit": "087a4b6",
     "issued_at": "2026-09-19T16:42:00+09:00",
     "expires_at": "2026-09-20T04:42:00+09:00",
-    "status": "ACTIVE",
+    "status": "REVOKED",
     "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "path_scope": [
       "apps/api/anvil_api/asgi.py",
@@ -452,7 +452,7 @@
     "owner_direction_event_id": "evt_dir3_owner_direction_continue",
     "resume_authority": "신산님"
   },
-  "next_safe_action": "C30R1_DEVELOPER_ASGI_MOUNT_REWORK",
+  "next_safe_action": "C30_WSL_FORMAL_DB_CONTAINER_ENTITY_BROWSER_E2E_REQUIRES_APPROVED_RUNTIME",
   "root_human_approval_binding": {
     "approval_id": "APPROVAL-20260810-INTEGRATED-BASELINE-001",
     "approval_subject_hash": "C2B06FB7E358D909DD886C53699E2D28B04C69DAD150066DE03AAE05B42DB3B8",
