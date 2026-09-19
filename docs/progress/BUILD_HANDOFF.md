@@ -2291,3 +2291,4 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 다음 안전 행동은 승인된 WSL-server 접근 복구 후 exact candidate/control preflight 재실행이다. 기존 C-01 교체 harness는 사용하지 않았다.
 - 권한 상승 후 `wsl.exe -l -v`는 Ubuntu Running을 반환했으나 `wsl.exe -d Ubuntu -- echo OK`가 30초 무응답으로 종료됐다. distro 내부 명령·Docker·DB·HTTP는 실행하지 않았고, 환경 복구 전 formal E2E를 재시도하지 않는다.
 - 동일 read-only echo를 재시도했지만 10초 무응답으로 종료됐다. WSL distro 재시작·서비스 복구는 별도 승인 없이는 수행하지 않는다.
+- C-30 candidate image smoke에서 `/health/live=200`은 확인했지만 `/api/agent-console/team=404`였다. ASGI의 `create_asgi_app()`에 agent-console 등록이 없으며, standalone console app은 안전하게 `503 OFFLINE`을 반환한다. C-30 exact8 밖의 `asgi.py` mount/owner wiring 수정이 필요하므로 scope revision·lease 전에는 제품 파일을 수정하지 않는다.
