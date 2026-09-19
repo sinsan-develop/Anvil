@@ -1,0 +1,20 @@
+{
+  "schema": "c28-interaction/v1",
+  "mode": "MOCKUP_ONLY",
+  "authority": "Anvil_설계서_v2 §51.3-51.5 / C-28 WorkInstruction",
+  "owners": ["C-22", "C-23", "C-24", "C-25", "C-26", "C-27"],
+  "user_confirmation": {"status": "PENDING", "evidence_ref": null, "confirmed_target_hash": null},
+  "integration": {"owner": "C-29", "status": "BLOCKED_USER_CONFIRMATION", "requests_executed": 0},
+  "menus": ["team", "moa", "sns", "adapters"],
+  "states": ["ready", "permission", "error", "empty", "offline", "high-risk-reconfirm"],
+  "meaning": {"ready": "LAYOUT_EXAMPLE_NOT_RUNTIME_READY", "pause_resume": "REQUESTED_NOT_APPLIED", "high_risk_confirm": "HUMAN_APPROVAL_REQUIRED_NOT_APPROVED", "kakao": "OPEN_DECISION", "quota": "Quota not reported"},
+  "privacy": {"raw_transcript": false, "secret": false, "artifact_refs_only": true},
+  "handoff": [
+    {"menu": "team", "method": "GET", "path": "/api/agent-console/team", "status": "PROPOSED_NOT_IMPLEMENTED", "owner": "C-22/C-23", "fields": ["role", "scope", "task_status", "parent_child_trace", "provider", "model", "artifact_ref", "evidence_ref", "deploy_readiness"]},
+    {"menu": "moa", "method": "GET", "path": "/api/agent-console/moa", "status": "PROPOSED_NOT_IMPLEMENTED", "owner": "C-24", "fields": ["proposal", "critique", "synthesis", "provenance", "target_hash", "baseline_hash"]},
+    {"menu": "sns", "method": "GET", "path": "/api/agent-console/sns", "status": "PROPOSED_NOT_IMPLEMENTED", "owner": "C-25", "fields": ["channel", "session", "identity_ref", "permission", "receipt_ref", "privacy", "delivery"]},
+    {"menu": "adapters", "method": "GET", "path": "/api/agent-console/adapters", "status": "PROPOSED_NOT_IMPLEMENTED", "owner": "C-26/C-27", "fields": ["status", "allowed", "open_decisions", "delivery", "io_count"]}
+  ],
+  "c29_preconditions": ["exact mockup content hash", "authenticated user confirmation evidence", "current owner authority and target binding", "same-origin BFF mapping", "permission/error/empty/offline tests", "independent browser Network verification"],
+  "not_executed": ["BFF", "API", "HTTP", "DB", "WSL", "Provider", "Telegram", "Kakao", "Oracle", "deploy", "user acceptance"]
+}

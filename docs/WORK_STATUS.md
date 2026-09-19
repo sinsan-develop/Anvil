@@ -1,3 +1,23 @@
+# 2026-09-18 문서 successor 전환 — v2.8/v1.7 핵심 개념 정합화
+
+- 담당: Main 어울. 신산님의 직접 지시에 따라 제품 코드·DB·WSL·Provider·Kakao·Oracle 배포를 중지하고 설계서/작업계획서만 append-only로 보완했다.
+- 기준선: branch `codex/c09-execution-backends-r1`, HEAD `98e218264bf54db04a1bd35a67273b713805a649`; 기존 dirty/untracked는 보호 목록으로 유지한다.
+- 변경 문서: `Anvil_설계서_v2.md` v2.8 successor, `Anvil_작업계획서_v1.md` v1.7 successor. 기존 C-16~C-21·F-01/F-02 Event/Gate/Acceptance는 재작성하지 않는다.
+- 신규 문서 계약: 다섯 일급 역할, Main/Code 단일 writer 경계, Agent Team과 MoA/Provider routing 분리, transport-neutral SNS Gateway·Telegram 보존·Kakao OPEN_DECISION·Daon User, 화면 mockup 선행, C-22~C-30 successor와 Oracle 별도 운영계획.
+- 상태: `DOCUMENT_SUCCESSOR_REVIEW_PENDING`; matrix/test-plan/progress/HANDOFF/approval binding은 제품 구현 전에 별도 정합화해야 한다.
+- 미실행: 제품 테스트·DB/WSL·Provider·SNS 외부 호출·브라우저/운영·Oracle 설치/배포·commit/push/merge.
+- 다음: 문서 lint/link/ID/diff 검증과 독립 read-only review(C/I finding 0)를 완료한 뒤 PMO용 완료보고를 남긴다.
+
+# C-22 시작 — 다섯 역할 계약·Agent Team domain
+
+- 상태: `ACTIVE_C22_IMPLEMENTATION`; 신산님의 `진행하자` 지시에 따라 문서 successor의 첫 구현 패키지를 시작한다.
+- WorkInstruction: `docs/work_orders/C-22_WORK_INSTRUCTION.md`, SHA-256 `67C864C512AFC7023E08626DC4C8BB7FE39D84A3CFB44303B69D404B5D196E5B`
+- Invocation: `docs/work_orders/C-22_INVOCATION_PROMPT.md`, SHA-256 `C12B945CBBC661F983C724407AAE11899F1558B9F53C6EDAEC0C272CD72ECF6E`
+- 허용 writer 경로: `packages/agent_team/role_contracts.py`, `packages/agent_team/role_results.py`, public export, C-22 tests/report only.
+- 금지: DB/WSL/Provider/UI/Telegram/Kakao/Oracle, historical progress rewrite, unrelated dirty/untracked, commit/push/merge.
+- 해결: Main takeover control reconciliation seq1196~1200을 append-only로 기록했다. F-02 `PACKAGE_COMPLETED`→독립 ACCEPT→write/worker lease revoke→`MAIN_PACKAGE_ACCEPTED`를 결박했고, `build-progress`는 seq1200/ACCEPTED/active null/next C-22 READY로 정합화했다.
+- 잔여: checker는 Git projection 5건(`GIT_BRANCH_MISMATCH`, `GIT_DESCENDANT_ORIGIN_MISMATCH`, `GIT_DESCENDANT_PATH_SET_MISMATCH`, `GIT_DESCENDANT_WORKTREE_DIRTY`, `GIT_UPSTREAM_MISMATCH`)만 fail-closed한다. 이 Git projection 정합화 전에는 C-22 제품 writer를 발급하지 않는다.
+
 # C-21 Workbench UI WSL authenticated browser probe R1 — seq609~614
 
 - Reviewer 최종 재검토 `COMMIT_READY / C0 / I0 / M1`: WorkInstruction 첫 범위 bullet에 R1의 `screenshot root를 환경변수에서 읽는다` 문구가 남아 확정된 R2 memory-only 계약과 불일치했다. path 없는 Buffer 메모리 전용 및 screenshot-root nonempty env fail-closed로 비의미 문서 정정했으며 기능·범위·seq614/exact13/hash 경계는 확대하지 않는다. 기존 full tooling `606 passed in 1320.29s`는 코드 불변으로 유지하고 focused 문서/checker 검증으로 M1을 해소한다.

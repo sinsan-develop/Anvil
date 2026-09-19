@@ -1,3 +1,50 @@
+# C-23 final acceptance seq1214
+
+- 독립 read-only review `ACCEPT / C0 / I0 / M1`; C-23 exact10 product scope frozen, dual leases revoked, Main acceptance 완료.
+- focused 47 PASS, 전체 `tests/agent_team` 598 PASS/skip0, 비-E06 542 PASS, C22/E01 결합 213 PASS, compile9/checker seq1210/diff-check PASS.
+- C-23은 host-only orchestration 계약이다. durable queue/restart recovery, runtime lease authority, 실제 DB/WSL/Provider/network/UI/Oracle/deploy는 NOT_INTEGRATED/NOT_EXECUTED.
+- 다음 안전 행동은 C-24 WorkInstruction 준비이며 외부 실행·commit/push/merge/deploy는 자동 시작하지 않는다.
+
+# C-22 final acceptance seq1207
+
+- 독립 read-only review `ACCEPT / C0 / I0 / M1`; C-22 exact6 product scope frozen, dual leases revoked, Main acceptance 완료.
+- focused 90 PASS, `tests/agent_team` 전체 547 PASS/skip0, 비-E06 495 PASS, compile5/checker seq1203/diff-check PASS.
+- C-22는 host-only 역할·결과 계약 seam이다. runtime approval ledger, durable multi-process lease, 실제 tool/file/provider/DB/WSL/UI/Oracle dispatch는 NOT_INTEGRATED/NOT_EXECUTED.
+- 다음 안전 행동은 C-23 WorkInstruction 준비이며, 외부 실행·commit/push/merge/deploy는 자동 시작하지 않는다.
+
+# F-01 accepted seq1191
+
+- F-01 independent ACCEPT C0/I0/M0; leases revoked. F-02 WorkInstruction preparation is next.
+- Actual Provider/DB/network/UI/deploy/Secret Manager remain NOT_EXECUTED.
+
+# F-01 start seq1182
+
+- F-01 WorkInstruction issued; exact5 product scope and dual leases active.
+- Provider/DB/network/UI/deploy external execution remains forbidden and NOT_EXECUTED.
+
+# E Gate PASS seq1178
+
+- E Gate 독립 검토 PASS 및 Main 판정 ACCEPTED. F-01 WorkInstruction 준비가 다음 행동이다.
+- Provider/DB/remote/UI/deploy 실제 검증은 NOT_EXECUTED이며 F-01에서도 외부 실행을 자동 시작하지 않는다.
+
+# DIR-3 cleared seq1176
+
+- 신산님 direction `계속하자`를 기록해 DIR-3을 `CLEARED`로 전환했다.
+- E Gate 독립 검토를 시작할 수 있으며, F-01은 E Gate 판정 이후에만 가능하다.
+- 외부 Provider/DB/remote/UI/deploy 검증은 여전히 미실행이다.
+
+# DIR-3 hold seq1175
+
+- E-11 independent read-only review ACCEPT, C0/I0/M0; focused 61 PASS and related regression evidence recorded.
+- Worker/write leases revoked; current state is `WAITING_OWNER_DIRECTION`. Gate/F-01 and all subsequent product write/commit/push/deploy are forbidden before owner direction.
+- Actual Provider/DB/remote/UI/deploy and durable cross-owner authority remain NOT_EXECUTED/NOT_INTEGRATED.
+
+# E-11 start control seq1169
+
+- Product exact5/control exact9; E10 ACCEPTED. Historical seq1-1165 raw prefix immutable.
+- Large fixture limited-parallel benchmark and trust-chain fixture contract only; external effects are not executed.
+- E11 acceptance triggers DIR-3; Gate/F-01 remain forbidden before owner direction.
+
 # E-10 final acceptance seq1165
 
 - Independent Spec/Quality final review ACCEPT, C0/I0/M0; six review findings resolved.
@@ -1464,165 +1511,108 @@ The former Phase B Gate successor projection remains historical only. The immuta
 
 ```json anvil-recovery-summary
 {
-  "event_sequence": 1165,
-  "last_event_id": "evt_e10_final_main_package_accepted",
-  "status": "ACCEPTED",
-  "current_phase": "E",
-  "current_work_package": "E-10",
+  "event_sequence": 1237,
+  "last_event_id": "evt_c26_main_package_accepted",
+  "status": "ACTIVE",
+  "current_work_package": "C-26",
   "active_agent": null,
-  "worker_lease": null,
-  "write_lease": null,
-  "design_baseline_hash": "DC7509CB76A4BF08A0AE4D6F802FFB747B670FAB93426D5636B14575F7BEF9A3",
+  "worker_lease": {
+    "actor_id": "developer-primary-c25-r1",
+    "subject_ref": "C-25",
+    "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
+    "baseline_git_commit": "98e218264bf54db04a1bd35a67273b713805a649",
+    "issued_at": "2026-09-18T17:10:00+09:00",
+    "expires_at": "2026-09-19T05:10:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "c25-r1-execution-fence-epoch-1-98e218264bf54db0",
+    "path_scope": [
+      "packages/agent_team/orchestration.py",
+      "packages/agent_team/collaboration.py",
+      "packages/agent_team/concurrency.py",
+      "packages/agent_team/handoff.py",
+      "packages/agent_team/__init__.py",
+      "tests/agent_team/test_orchestration_c23.py",
+      "tests/agent_team/test_collaboration_c23.py",
+      "tests/agent_team/test_concurrency_c23.py",
+      "tests/agent_team/test_handoff_c23.py",
+      "docs/04_test_reports/C-23_COMPLETION_REPORT.md"
+    ],
+    "lease_id": "worker-lease-c25-r1-20260919-001",
+    "lease_epoch": 1,
+    "fencing_token": "c25-r1-execution-fence-epoch-1-98e218264bf54db0",
+    "dispatch_head": "98e218264bf54db04a1bd35a67273b713805a649"
+  },
+  "write_lease": {
+    "actor_id": "developer-primary-c25-r1",
+    "subject_ref": "C-25",
+    "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
+    "baseline_git_commit": "98e218264bf54db04a1bd35a67273b713805a649",
+    "issued_at": "2026-09-18T17:10:00+09:00",
+    "expires_at": "2026-09-19T05:10:00+09:00",
+    "status": "REVOKED",
+    "execution_fencing_token": "c25-r1-execution-fence-epoch-1-98e218264bf54db0",
+    "path_scope": [
+      "packages/agent_team/orchestration.py",
+      "packages/agent_team/collaboration.py",
+      "packages/agent_team/concurrency.py",
+      "packages/agent_team/handoff.py",
+      "packages/agent_team/__init__.py",
+      "tests/agent_team/test_orchestration_c23.py",
+      "tests/agent_team/test_collaboration_c23.py",
+      "tests/agent_team/test_concurrency_c23.py",
+      "tests/agent_team/test_handoff_c23.py",
+      "docs/04_test_reports/C-23_COMPLETION_REPORT.md"
+    ],
+    "lease_id": "write-lease-c25-r1-20260919-001",
+    "lease_epoch": 1,
+    "fencing_token": "c25-r1-write-fence-epoch-1-98e218264bf54db0",
+    "dispatch_head": "98e218264bf54db04a1bd35a67273b713805a649",
+    "worker_lease_id": "worker-lease-c25-r1-20260919-001",
+    "write_epoch": 1,
+    "write_fencing_token": "c25-r1-write-fence-epoch-1-98e218264bf54db0"
+  },
+  "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "valid_failure_count": 0,
-  "next_safe_action": "E11_READY_NOT_STARTED",
+  "next_safe_action": "C27_KAKAO_ADAPTER_CONTRACT_TDD",
   "accepted": true,
   "d_gate": "ACCEPTED",
-  "e09_status": "ACCEPTED",
   "e10_status": "ACCEPTED",
-  "e11_status": "READY_FOR_WORK_INSTRUCTION",
+  "e11_status": "ACCEPTED",
+  "dir3_status": "CLEARED",
   "dir_status": "CLEARED",
-  "repository_head": "30ca8a2d5a8f856ee4d82ae4f47b47bc60109342",
+  "repository_head": "98e218264bf54db04a1bd35a67273b713805a649",
   "repository_upstream": "development/codex/c09-execution-backends-r1",
-  "repository_projection_mode": "E10_FINAL_ACCEPTANCE_EXACT16",
+  "repository_projection_mode": "E11_START_EXACT9_PRODUCT_EXACT5",
   "repository_exact_allowed_paths": [
-    "docs/04_test_reports/E-10_COMPLETION_REPORT.md",
-    "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
-    "docs/evidence/manifests/E-10_START_MANIFEST.json",
+    "docs/evidence/manifests/E-11_START_MANIFEST.json",
     "docs/progress/BUILD_HANDOFF.md",
     "docs/progress/build-progress.json",
     "docs/progress/progress-events.json",
-    "docs/progress/progress-handoff-detached-digest-e10-final-acceptance.json",
-    "docs/progress/progress-handoff-detached-digest-e10-start.json",
-    "docs/work_orders/E-10_INVOCATION_PROMPT.md",
-    "docs/work_orders/E-10_WORK_INSTRUCTION.md",
-    "packages/git_adapter/__init__.py",
-    "packages/git_adapter/models.py",
-    "packages/git_adapter/service.py",
+    "docs/progress/progress-handoff-detached-digest-e11-start.json",
+    "docs/work_orders/E-11_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-11_WORK_INSTRUCTION.md",
     "scripts/check_project_progress.py",
-    "tests/git_adapter/test_git_adapter_e10.py",
     "tests/tooling/test_project_progress.py"
   ],
-  "current_manifest": "docs/evidence/manifests/E-10_FINAL_ACCEPTANCE_MANIFEST.json",
-  "evidence_target_hash": "408009AA84004DDB5F885F047D940E4565942E72EAA2987E440D556C0BC521B1",
-  "independent_reviews": {
-    "spec": {
-      "source": "INDEPENDENT_READ_ONLY_REVIEW",
-      "verdict": "ACCEPT",
-      "critical_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0,
-      "developer_transcript_used": false,
-      "checker_sequence": 1160,
-      "checker_result": "PASS",
-      "diff_check_exit": 0,
-      "unverified": [
-        "actual Git/remote/PR/filesystem mutation",
-        "OS physical identity capture",
-        "durable multi-process authority and crash recovery",
-        "DB/provider/network"
-      ],
-      "focused": {
-        "passed": 401,
-        "skipped": 0
-      },
-      "probes": {
-        "return_alias": "CLOSED",
-        "impossible_commit_identity": "CLOSED",
-        "authorization_credentials": "CLOSED"
-      }
-    },
-    "quality": {
-      "source": "INDEPENDENT_READ_ONLY_REVIEW",
-      "verdict": "ACCEPT",
-      "critical_findings": 0,
-      "important_findings": 0,
-      "minor_findings": 0,
-      "developer_transcript_used": false,
-      "checker_sequence": 1160,
-      "checker_result": "PASS",
-      "diff_check_exit": 0,
-      "unverified": [
-        "actual Git/remote/PR/filesystem mutation",
-        "OS physical identity capture",
-        "durable multi-process authority and crash recovery",
-        "DB/provider/network"
-      ],
-      "focused": {
-        "passed": 173,
-        "skipped": 0
-      },
-      "probes": {
-        "ref_alias": "CLOSED",
-        "audit_pagination": "CLOSED",
-        "credential_variants": 32,
-        "concurrent_dispatch": "PASS"
-      }
-    }
-  },
-  "resolved_review_findings": [
-    {
-      "finding_id": "E10-REF-ALIAS",
-      "severity": "IMPORTANT",
-      "status": "RESOLVED",
-      "resolution": "full refs/heads aliases are denied; canonical short refs only"
-    },
-    {
-      "finding_id": "E10-CREDENTIAL-NONDISCLOSURE",
-      "severity": "IMPORTANT",
-      "status": "RESOLVED",
-      "resolution": "normalized authorization, token and private-key credential forms are fail-closed"
-    },
-    {
-      "finding_id": "E10-AUDIT-PAGINATION",
-      "severity": "IMPORTANT",
-      "status": "RESOLVED",
-      "resolution": "bounded stable cursor pages preserve every append-only sequence"
-    },
-    {
-      "finding_id": "E10-RETURN-ALIAS",
-      "severity": "IMPORTANT",
-      "status": "RESOLVED",
-      "resolution": "returned receipts are detached from canonical grant, receipt and audit records"
-    },
-    {
-      "finding_id": "E10-IMPOSSIBLE-COMMIT",
-      "severity": "IMPORTANT",
-      "status": "RESOLVED",
-      "resolution": "nonempty commit and no-ff merge reject self-parent result identities"
-    },
-    {
-      "finding_id": "E10-AUTHORIZATION-SCHEME",
-      "severity": "IMPORTANT",
-      "status": "RESOLVED",
-      "resolution": "all nonempty HTTP Authorization credential schemes are denied after normalization"
-    }
+  "product_write_scope": [
+    "packages/agent_team/orchestration.py",
+    "packages/agent_team/collaboration.py",
+    "packages/agent_team/concurrency.py",
+    "packages/agent_team/handoff.py",
+    "packages/agent_team/__init__.py",
+    "tests/agent_team/test_orchestration_c23.py",
+    "tests/agent_team/test_collaboration_c23.py",
+    "tests/agent_team/test_concurrency_c23.py",
+    "tests/agent_team/test_handoff_c23.py",
+    "docs/04_test_reports/C-23_COMPLETION_REPORT.md"
   ],
-  "external_validation": {
-    "git_mutation": "NOT_EXECUTED",
-    "remote": "NOT_EXECUTED",
-    "push": "NOT_EXECUTED",
-    "pull_request": "NOT_EXECUTED",
-    "merge": "NOT_EXECUTED",
-    "network": "NOT_EXECUTED",
-    "http": "NOT_EXECUTED",
-    "api": "NOT_EXECUTED",
-    "ui": "NOT_EXECUTED",
-    "browser": "NOT_EXECUTED",
-    "database": "NOT_EXECUTED",
-    "provider": "NOT_EXECUTED",
-    "os_identity": "NOT_INTEGRATED",
-    "durable_authority": "NOT_INTEGRATED",
-    "multiprocess_persistence": "NOT_INTEGRATED",
-    "crash_recovery": "NOT_INTEGRATED",
-    "fake_driver_contract": "VERIFIED_EXTERNAL_SIDE_EFFECTS_0"
-  },
-  "formal_failure_count": 0,
-  "review_rework_rounds": 2,
+  "next_work_package": "C-27",
+  "next_successor_work_package": {"package_id": "C-26", "status": "READY_FOR_WORK_INSTRUCTION"},
+  "current_manifest": "docs/evidence/manifests/E-GATE_DECISION_MANIFEST.json",
   "reporting_decision": "AUTO_CONTINUE",
   "pending_approvals": [],
   "staged": false,
-  "commit_performed": false,
-  "active_work_instruction": null
+  "commit_performed": false
 }
 ```
 
@@ -2249,6 +2239,12 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 
 - writer 최종 focused는 `7 passed,181 deselected in8.55s`, exit0이다. 공통 HANDOFF 필수8개 누락 RED를 보완했으며 Event/reporting/detached/manifest 공통 계약도 포함했다. seq530 AST 3개 불변, compile/diff-check PASS, 전용 테스트 fixture 잔류0이다. 현재 dirty7이며 Main이 builder의 E/P/H/D/M 다섯 결과를 함께 적용해야 S exact10 및 live 검증 단계가 성립한다.
 
+## 문서 successor handoff — 2026-09-18
+
+- 설계 `51.1..51.5`와 계획 `C-22..C-30`은 통합검증매트릭스 v1.7 overlay 및 테스트계획 v1.7 overlay의 예약 검증군과 연결됐다.
+- 현재 F-02 historical/progress sequence와 `plan_version=1.6`은 변경하지 않았다. successor는 `DOCUMENT_SUCCESSOR_REVIEW_PENDING`이며 C-22 WorkInstruction·approval binding 전에는 제품 write/DB/WSL/외부/Oracle 실행을 시작하지 않는다.
+- C-28 mockup/user-confirm evidence와 Kakao/Daon User 외부 계약은 OPEN_DECISION으로 남긴다.
+
 #### seq533 Reviewer I1 및 full tooling 재작업 인수
 
 - Main 재결박 후 full tooling은 `185 passed,3 failed in565.15s`, exit1이었다. historical seq530 테스트2개를 immutable e6c562c fixture로 고정하고, 변조된 base에 대한 실제 ancestry 오류 수집을 보완했다.
@@ -2270,3 +2266,20 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 독립 Reviewer의 변경 전 판정은 `CLEAN_REVIEW / COMMIT_READY / C0 / I0 / M0`; 마지막 status 오류코드 보완만 재확인한 뒤 exact10 S direct-child commit으로 넘긴다.
 - 마지막 보완 후 Reviewer 재검토도 `COMMIT_READY / C0 / I0 / M0`이며 기존 status fail-closed 오류코드, exact10/121, raw history와 deterministic projection을 확인했다.
 - 실제 push·WSL/Docker/DB·Provider·Telegram·ysna·main은 모두 `NOT_EXECUTED`; 후속 K exact14와 runtime dispatch는 아직 실행하지 않는다.
+
+## C-30 local validation — seq1263 Developer evidence
+
+- 로컬 전체 회귀: 819 passed/0 skipped, exit0, 669.24s. 웹70 passed/0 skipped, exit0. 정확한 명령과 후속 control 검증은 C-30_COMPLETION_REPORT.md 참조.
+- manifest: `docs/evidence/manifests/C-30_EVIDENCE_MANIFEST.json`, SHA256 `9E71BF741A77F74C582E26DC1BCCD6CE8EC8F88F4F656C114F2FF10A7FBB544A`.
+- seq1~1262 raw event prefix 3,937,471 bytes/SHA256 `482FF3FEF063093C57A5F96E1BECAF7393973398AE5E1704B6A79A55F9A3970E` 보존. seq1263은 Developer EVIDENCE_MANIFEST_CREATED이며 acceptance/release/lease revoke가 아니다.
+- WSL formal DB/container/entity/E2E는 `NOT_EXECUTED/NOT_INTEGRATED`. 실행 안전 승인·clean candidate·C30 ReleaseManifest·실환경 검증이 필요하다. 외부 Provider/adapter/Oracle/production 호출0.
+- 독립 review NOT_EXECUTED(C/I null), Main acceptance 대기. C30 dual lease ACTIVE 유지, formal FAILURE_REPORT0.
+- canonical checker는 기존 line32957 SyntaxError로 NOT_VERIFIED/NOT_PASS. C29 역사 시각 불일치도 Main에 전달했으며 원문을 보존했다.
+- 다음 안전 행동: Main 독립 증거 검토와 별도 formal execution preflight. 제품·control exact8 밖 수정 및 commit/push 없음.
+
+## C-30 Main acceptance — seq1264~1268
+
+- 독립 Reviewer `e_gate_tester`는 C-30 로컬 증거 범위를 `ACCEPT / C0 / I0 / M0`으로 판정했다. focused29, 전체819(0 skipped), 웹70, compile3, diff-check가 PASS다.
+- Main은 `evt_c30_write_lease_revoked`와 `evt_c30_worker_lease_revoked`로 dual lease를 회수하고 `evt_c30_main_package_accepted`로 로컬 범위를 수락했다. report SHA는 후속 정정 event에서 실제 `4F21507A...762CE`로 결박했다.
+- C-30은 `ACCEPTED_LOCAL_SCOPE`이며 WSL formal DB/container/entity/E2E, Provider/adapter/Oracle/browser/deploy는 `NOT_EXECUTED/NOT_INTEGRATED`다. 다음 안전 행동은 승인·clean candidate·ReleaseManifest가 갖춰진 뒤의 C30 WSL formal E2E 준비다.
+- C29 seq1256~1258의 역사 시각 불일치는 원문을 수정하지 않고 기록으로 보존했다. canonical checker의 C03 fixture SyntaxError는 계속 `NOT_VERIFIED/NOT_PASS`다.

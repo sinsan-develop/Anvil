@@ -1,0 +1,124 @@
+{
+  "schema_version": "1.0.0",
+  "manifest_type": "E11_START",
+  "artifact_id": "E11-START-20260918",
+  "created_at": "2026-09-18T01:08:09+09:00",
+  "package_id": "E-11",
+  "event_sequence": 1169,
+  "historical_event_sequence": 1165,
+  "appended_event_count": 4,
+  "historical_raw_event_prefix": {
+    "bytes": 3806560,
+    "sha256": "48026BD3C94ECFBFFB9EF55F0A052227A09D3D1028C97D64402F0335C4D2126B"
+  },
+  "historical_evidence_mutation_count": 0,
+  "status": "IN_PROGRESS",
+  "accepted": false,
+  "active_leases": 2,
+  "product_write_scope": [
+    "docs/04_test_reports/E-11_COMPLETION_REPORT.md",
+    "packages/verification/parallel_e2e.py",
+    "tests/fixtures/e11/bug_hunt.json",
+    "tests/fixtures/e11/large_migration.json",
+    "tests/verification/test_parallel_e2e_e11.py"
+  ],
+  "authority": {
+    "source": "MAIN_APPROVED_E11_IMPLEMENTATION_DISPATCH",
+    "new_project_approval_requested": false,
+    "product_tdd_authorized_now": true,
+    "external_execution_authorized": false,
+    "work_instruction_sha256": "615025F0CC168FCE1B4377A3D1B110B05915D2BE766954554F28318DC3203018",
+    "invocation_sha256": "0BF3C7F268B84E2A5A62DC0BBC3EE8276A9EF6F5D77B48E2423E78289533CDE5",
+    "approved_control_paths": [
+      "docs/evidence/manifests/E-11_START_MANIFEST.json",
+      "docs/progress/BUILD_HANDOFF.md",
+      "docs/progress/build-progress.json",
+      "docs/progress/progress-events.json",
+      "docs/progress/progress-handoff-detached-digest-e11-start.json",
+      "docs/work_orders/E-11_INVOCATION_PROMPT.md",
+      "docs/work_orders/E-11_WORK_INSTRUCTION.md",
+      "scripts/check_project_progress.py",
+      "tests/tooling/test_project_progress.py"
+    ],
+    "product_write_scope": [
+      "docs/04_test_reports/E-11_COMPLETION_REPORT.md",
+      "packages/verification/parallel_e2e.py",
+      "tests/fixtures/e11/bug_hunt.json",
+      "tests/fixtures/e11/large_migration.json",
+      "tests/verification/test_parallel_e2e_e11.py"
+    ],
+    "independent_acceptance_required": true,
+    "validation_ids": [
+      "AV-AGT-034",
+      "AV-FLOW-023",
+      "AV-STAT-041",
+      "AV-STAT-042"
+    ],
+    "boundary": {
+      "actual_provider_db_remote_network": "NOT_EXECUTED",
+      "dir3_trigger_owner": "MAIN_AFTER_E11_ACCEPTANCE",
+      "gate_or_f01_before_owner_direction": "FORBIDDEN",
+      "schema_change": "FORBIDDEN"
+    }
+  },
+  "exact_allowed_paths": [
+    "docs/evidence/manifests/E-11_START_MANIFEST.json",
+    "docs/progress/BUILD_HANDOFF.md",
+    "docs/progress/build-progress.json",
+    "docs/progress/progress-events.json",
+    "docs/progress/progress-handoff-detached-digest-e11-start.json",
+    "docs/work_orders/E-11_INVOCATION_PROMPT.md",
+    "docs/work_orders/E-11_WORK_INSTRUCTION.md",
+    "scripts/check_project_progress.py",
+    "tests/tooling/test_project_progress.py"
+  ],
+  "exact_path_count": 9,
+  "projection_mode": "E11_START_EXACT9_PRODUCT_EXACT5",
+  "validated_base_commit": "98e218264bf54db04a1bd35a67273b713805a649",
+  "pending_approvals": [],
+  "staged": false,
+  "commit_performed": false,
+  "self_reference": false,
+  "raw_checksums": [
+    {
+      "path": "docs/progress/BUILD_HANDOFF.md",
+      "bytes": 215583,
+      "sha256": "A3E43987DB9E8333933B8582D0F236EB9678306942AD2A2B0A742915A44A4EA3"
+    },
+    {
+      "path": "docs/progress/build-progress.json",
+      "bytes": 1169940,
+      "sha256": "E5CE58D5A27591872C82E1D6FC36D258C7F7EA5F3E021E0A8C8451D6E8409686"
+    },
+    {
+      "path": "docs/progress/progress-events.json",
+      "bytes": 3817531,
+      "sha256": "A6E69BF7C04BE6663EA907668FA392EF854B087C05E5A3B10197FDE5BBDD87A7"
+    },
+    {
+      "path": "docs/progress/progress-handoff-detached-digest-e11-start.json",
+      "bytes": 835,
+      "sha256": "C87AC29FDBD2099861A4B786388661CE4DA39C5227E0C9F3A3321AF3E8AED428"
+    },
+    {
+      "path": "docs/work_orders/E-11_INVOCATION_PROMPT.md",
+      "bytes": 676,
+      "sha256": "0BF3C7F268B84E2A5A62DC0BBC3EE8276A9EF6F5D77B48E2423E78289533CDE5"
+    },
+    {
+      "path": "docs/work_orders/E-11_WORK_INSTRUCTION.md",
+      "bytes": 5334,
+      "sha256": "615025F0CC168FCE1B4377A3D1B110B05915D2BE766954554F28318DC3203018"
+    },
+    {
+      "path": "scripts/check_project_progress.py",
+      "bytes": 4660334,
+      "sha256": "740C9086AE3ED9CAC18D4A3A6FB092C9D1EDC75E3F447BE951FD8705A251E8DD"
+    },
+    {
+      "path": "tests/tooling/test_project_progress.py",
+      "bytes": 1221577,
+      "sha256": "702A74C5CC438DF8DE90E461D9A24EE9BFA0D9761E66B97F1FC360A7AC120A6A"
+    }
+  ]
+}

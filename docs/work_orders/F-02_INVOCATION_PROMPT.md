@@ -1,0 +1,1 @@
+F-02 WorkInstruction을 읽고 exact5 범위로 host-only model registry/discovery, privacy·가격·capability snapshot, role routing/fallback drift 계약을 TDD 구현하세요. 실제 Provider/upstream/network/DB/UI/deploy는 실행하지 말고, 완료 후 정확한 검증 결과·미검증 범위·SHA를 포함해 보고하세요. control 파일 수정과 commit/push는 하지 마세요.

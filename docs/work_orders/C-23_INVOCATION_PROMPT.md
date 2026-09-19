@@ -1,0 +1,3 @@
+# C-23 Invocation Prompt
+
+Implement `WI-C-23-R1` in the canonical Anvil worktree. Follow `docs/work_orders/C-23_WORK_INSTRUCTION.md` exactly. Begin with RED tests, then additive GREEN implementation for TeamSession/Task/Message/Mailbox orchestration, DAG/trace/lease binding, timeout/cost/partial-failure and deterministic replay. Preserve C-22 and E-01 contracts. Stay within the exact allowed paths, run focused and related regression/compile/diff/checker verification, write the completion report, and return `COMPLETED`, `FAILURE_REPORT`, or `INCOMPLETE` with exact evidence. Do not perform external IO, DB/WSL/Provider/UI/Oracle/deploy work, or commit/push/merge.

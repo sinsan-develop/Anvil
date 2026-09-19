@@ -10,8 +10,13 @@ import copy
 from dataclasses import dataclass, field
 from datetime import datetime
 from packages.execution.models import ResultStatus
-from packages.orchestration.result_envelope import ResultEnvelope, validate_result
-from .role_contracts import RolePolicyService, RoleAssignment, contract_hash, _text, _hash, _utc, _path, _within, _overlap
+from packages.orchestration.result_envelope import ResultEnvelope, EvidenceReference, ResultTest, ResultDomainReasonCode, validate_result
+from .role_contracts import RolePolicyService, RoleAssignment, contract_hash, _text, _hash, _utc, _path, _within, _overlap, _ROLE_SPECS, _closed_value
+
+
+def _result_shape(value):
+    _closed_value(value,(RoleResult,RoleEnvelope,RoleEvidence,ReviewFinding,ResultEnvelope,EvidenceReference,
+                         ResultTest,ResultStatus,ResultDomainReasonCode))
 
 
 @dataclass(frozen=True,slots=True)
@@ -76,6 +81,7 @@ class RoleResult:
     content_hash:str=field(init=False)
 
     def __post_init__(self):
+        if type(self.role) is str and self.role in _ROLE_SPECS: _result_shape(self)
         for v in (self.schema_version,self.assignment_id,self.role,self.actor_id,self.context_id): _text(v)
         _hash(self.assignment_hash); _hash(self.target_hash)
         if type(self.envelope) is not ResultEnvelope or self.decision not in {"proposed","needs_input","blocked","completed"}:
@@ -107,6 +113,47 @@ class RoleResultReceipt:
     def __post_init__(self): object.__setattr__(self,"content_hash",contract_hash(self))
 
 
+@dataclass(frozen=True,slots=True)
+class RoleEnvelope:
+    """C22 trace wrapper. The C05 ResultEnvelope is reused, not redefined.
+
+    Integer cost units/latency are observations, not billing or budget approval.
+    Parent identity is the DelegationPacket parent run/task and Main actor.
+    """
+    result:RoleResult
+    task_id:str
+    parent_task_id:str
+    parent_actor_id:str
+    baseline_hash:str
+    artifact_refs:tuple[EvidenceReference,...]
+    unverified_scope:tuple[str,...]
+    rollback:str
+    cost_units:int
+    latency_ms:int
+    provenance:tuple[str,...]
+    schema_version:str="role_envelope/v1"
+    content_hash:str=field(init=False)
+
+    def __post_init__(self):
+        _result_shape(self)
+        if type(self.result) is not RoleResult or self.schema_version!="role_envelope/v1": raise ValueError("ROLE_ENVELOPE_INVALID")
+        for x in (self.task_id,self.parent_task_id,self.parent_actor_id,self.rollback): _text(x)
+        _hash(self.baseline_hash)
+        if any(type(v) is not int or v<0 for v in (self.cost_units,self.latency_ms)): raise ValueError("ROLE_ENVELOPE_INVALID")
+        for values in (self.unverified_scope,self.provenance):
+            if type(values) is not tuple or len(values)>64: raise ValueError("ROLE_ENVELOPE_INVALID")
+            for value in values: _text(value)
+        if not self.provenance or type(self.artifact_refs) is not tuple or not 1<=len(self.artifact_refs)<=64: raise ValueError("ROLE_ENVELOPE_INVALID")
+        if any(type(v) is not EvidenceReference for v in self.artifact_refs): raise ValueError("ROLE_ENVELOPE_INVALID")
+        artifacts=tuple(EvidenceReference(v.evidence_id,v.checksum) for v in self.artifact_refs)
+        if len({v.evidence_id for v in artifacts})!=len(artifacts): raise ValueError("ROLE_ENVELOPE_INVALID")
+        object.__setattr__(self,"artifact_refs",artifacts)
+        # RoleResult reparses/detaches the canonical C05 envelope and evidence.
+        from dataclasses import replace
+        object.__setattr__(self,"result",replace(self.result))
+        object.__setattr__(self,"content_hash",contract_hash(self))
+
+
 class RoleResultService:
     def __init__(self,policy):
         if type(policy) is not RolePolicyService: raise ValueError("HOST_AUTHORITY_REQUIRED")
@@ -131,6 +178,33 @@ class RoleResultService:
 
     def get_evidence(self,evidence_id): return copy.deepcopy(self._captures[evidence_id])
 
+    def validate_role_envelope(self,envelope,**authority):
+        """Proposal validation only; no acceptance, handoff, execution or deploy."""
+        def deny(reason):
+            receipt=RoleResultReceipt(False,reason,None,None)
+            self._audits.append(receipt)
+            return copy.deepcopy(receipt)
+        if type(envelope) is not RoleEnvelope: return deny("ROLE_ENVELOPE_REQUIRED")
+        try:
+            _result_shape(envelope)
+            if envelope.content_hash!=contract_hash(envelope): return deny("ROLE_ENVELOPE_TAMPERED")
+            assignment=authority.get("assignment")
+            if type(assignment) is not RoleAssignment: return deny("ASSIGNMENT_REQUIRED")
+            if ((envelope.task_id,envelope.parent_task_id,envelope.parent_actor_id,envelope.baseline_hash)!=
+                (assignment.packet.step_id,assignment.packet.parent_run_id,assignment.packet.parent_agent_id,assignment.baseline_hash)):
+                return deny("ROLE_TRACE_MISMATCH")
+            # Envelope metadata participates in replay identity, not only the inner result.
+            key=(assignment.assignment_id,envelope.result.envelope.result_id,"role_envelope")
+            prior=self._results.get(key)
+            if prior is not None and prior!=envelope.content_hash: return deny("RESULT_REPLAY_CONFLICT")
+            receipt=self._validate(envelope.result,**authority,_role_envelope_checked=True)
+            bound=RoleResultReceipt(receipt.valid,receipt.reason,envelope.content_hash,receipt.assignment_hash)
+            if receipt.valid: self._results[key]=envelope.content_hash
+            self._audits.append(bound)
+            return copy.deepcopy(bound)
+        except (TypeError,ValueError,AttributeError,KeyError,RecursionError):
+            return deny("ROLE_ENVELOPE_INVALID")
+
     def validate(self,result,*,assignment,actor_id,session_id,context_id,target_hash,execution_fence,now):
         try:
             return self._validate(result,assignment=assignment,actor_id=actor_id,session_id=session_id,
@@ -140,7 +214,7 @@ class RoleResultService:
             self._audits.append(receipt)
             return receipt
 
-    def _validate(self,result,*,assignment,actor_id,session_id,context_id,target_hash,execution_fence,now):
+    def _validate(self,result,*,assignment,actor_id,session_id,context_id,target_hash,execution_fence,now,_role_envelope_checked=False):
         def finish(reason):
             receipt=RoleResultReceipt(reason=="VALIDATED_PROPOSAL",reason,getattr(result,"content_hash",None),getattr(assignment,"content_hash",None))
             self._audits.append(receipt)
@@ -150,15 +224,19 @@ class RoleResultService:
         if reason: return finish(reason)
         if type(result) is not RoleResult: return finish("ROLE_RESULT_REQUIRED")
         a=self._policy.get_assignment(assignment.assignment_id); definition=a.definition
+        if definition.schema_version=="agent_definition/v2" and not _role_envelope_checked: return finish("ROLE_ENVELOPE_REQUIRED")
         if result.schema_version!=definition.result_schema or result.role!=definition.role: return finish("ROLE_SCHEMA_MISMATCH")
-        if definition.role=="TESTER" and result.review_findings: return finish("ROLE_SCHEMA_MISMATCH")
+        if definition.role not in {"REVIEWER","REVIEW"} and result.review_findings: return finish("ROLE_SCHEMA_MISMATCH")
         if ((result.assignment_id,result.assignment_hash,result.actor_id,result.context_id,result.target_hash)!=
             (a.assignment_id,a.content_hash,a.actor_id,a.context_id,a.target_hash)
             or result.envelope.target_hash!=a.target_hash or result.envelope.delegation_id!=a.packet.delegation_id):
             return finish("RESULT_BINDING_MISMATCH")
         if result.requested_actions: return finish("RESERVED_AUTHORITY")
-        if definition.role=="REVIEWER" and result.envelope.changed_paths: return finish("ROLE_ACTION_DENIED")
-        if result.envelope.changed_paths:
+        if definition.role in {"REVIEWER","REVIEW","PLANNING","DEPLOY"} and result.envelope.changed_paths: return finish("ROLE_ACTION_DENIED")
+        if result.envelope.changed_paths and definition.role=="CODE":
+            reason=self._policy.validate_code_write(a,now,paths=result.envelope.changed_paths,check_fence=False)
+            if reason: return finish(reason)
+        elif result.envelope.changed_paths:
             grant=a.test_write_grant
             if grant is None: return finish("TEST_WRITE_GRANT_REQUIRED")
             reason=self._policy.validate_test_write_lease(a,now)
@@ -183,6 +261,8 @@ class RoleResultService:
             if not _within((finding.path,),definition.read_scope): return finish("FINDING_SCOPE_MISMATCH")
         if set(refs)!={e.evidence_id for e in result.evidence}: return finish("EVIDENCE_REFERENCE_MISMATCH")
         completed=result.decision=="completed" or result.envelope.status is ResultStatus.COMPLETED
+        if definition.role=="REVIEW" and completed and any(f.severity in {"CRITICAL","IMPORTANT"} for f in result.review_findings):
+            return finish("REVIEW_REWORK_REQUIRED")
         for e in result.evidence:
             stored=self._captures.get(e.evidence_id)
             if stored is None: return finish("EVIDENCE_UNKNOWN")
@@ -192,7 +272,8 @@ class RoleResultService:
                 return finish("EVIDENCE_BINDING_MISMATCH")
             if not a.issued_at<=e.captured_at<=now<a.expires_at: return finish("EVIDENCE_TIME_INVALID")
             if completed:
-                required_source="independent_review" if definition.role=="REVIEWER" else "independent_execution"
+                required_source=(_ROLE_SPECS[definition.role][2] if definition.schema_version=="agent_definition/v2"
+                    else ("independent_review" if definition.role=="REVIEWER" else "independent_execution"))
                 if e.source!=required_source: return finish("INDEPENDENT_EVIDENCE_REQUIRED")
                 if e.mode!="real": return finish("EVIDENCE_NOT_REAL")
                 if e.status!="PASS" or e.exit_code!=0: return finish("EVIDENCE_NOT_PASS")

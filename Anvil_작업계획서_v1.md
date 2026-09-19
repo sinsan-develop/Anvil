@@ -839,3 +839,44 @@ v1.6 successor는 설계서 v2.7, 통합검증매트릭스 successor, 테스트�
 - 네이티브 iOS/Android 앱은 현재 범위에서 제외하고 사용량·운영 수요가 확인된 뒤 별도 승인 Package로 검토한다.
 
 이에 따라 successor 기준 Package 수는 기존 111개에서 **113개**가 된다. C-19~C-20의 API·UI·보안·fault·offline·replay·알림 검증 ID와 매뉴얼 절차는 successor 매트릭스·테스트계획서에 추가한다.
+
+### 19.7 v1.7 핵심 개념·SNS/Daon User successor (2026-09-18)
+
+본 절은 기존 C-16~C-21, F-01/F-02 및 모든 historical Event·Gate·Acceptance를 보존하는 append-only successor다. 의미가 충돌하는 신규 작업은 기존 ID를 재사용하지 않고 C-22~C-30으로 발행한다. 본 절의 구현은 통합검증매트릭스·테스트계획서·progress/HANDOFF의 successor 정합화와 새 approval binding 전에는 시작하지 않는다. Oracle Cloud 설치·배포·운영·release는 이 개발 계획의 범위가 아니며 별도 운영 계획으로 분리한다.
+
+#### 19.7.1 기존→후속 패키지 매핑
+
+| 기존 historical | 보존 의미 | 후속 확장 |
+|---|---|---|
+| C-16~C-17 | Team durable collaboration/orchestration | C-22, C-23 |
+| C-18 | Capability MoA와 Provider/Model routing | C-24 |
+| C-19 | Web Console/remote control plane | C-28 |
+| C-20 | Telegram 보조 adapter | C-26 |
+| C-21 | Workbench UI/Provider status historical | C-28, C-29에 trace만 연결 |
+| F-01~F-02 | Provider catalog/model registry historical acceptance | C-24의 routing 입력으로 read-only 연결 |
+
+#### 19.7.2 실행 순서와 패키지 계약
+
+모든 패키지는 `Prerequisite → exact artifacts/allowed paths → TDD RED → GREEN → focused/regression/real-integration evidence → completion → unverified → rollback`을 WorkInstruction에 명시한다. 화면 mockup·사용자 확인을 먼저 하고, 공통 모듈→API/BFF→화면/메뉴→로컬 검증→WSL formal 통합/E2E→독립 review/PR 순서를 지킨다.
+
+| ID | 범위·핵심 산출물 | 선행 |
+|---|---|---|
+| C-22 | 다섯 일급 역할 계약(Planning/Code/Review/Test/Deploy), AgentDefinition/RoleEnvelope/ResultEnvelope, Main·단일 writer·handoff·승인 경계 문서와 schema/contract tests | C-21, 설계 v2.8 |
+| C-23 | Agent Team orchestration: TeamSession/Task/Message/Mailbox, parent-child trace, peer communication, dependency DAG, lease/fencing, timeout/cost/partial failure E2E | C-22 |
+| C-24 | Agent MoA를 Provider/Model Capability Routing과 분리·연결: proposal/critique/synthesis/quorum/conflict, CapabilityProfile/Catalog/Router/Fallback/RoutingProvenance, drift·quota fail-closed | C-23, F-01~F-02 read-only |
+| C-25 | transport-neutral SNS Gateway + Daon User API: common envelope, identity/auth/replay/idempotency/rate/retry/DLQ/receipt/audit/privacy, role/session/command/result contracts | C-22, C-23 |
+| C-26 | Telegram adapter: 기존 동작 보존, 상태/저위험 command/deep-link/receipt와 고위험 거부 contract/integration tests | C-25 |
+| C-27 | Kakao adapter contract/implementation: 공식 external contract가 확인된 범위만 구현, 미결정 API/auth/quota는 OPEN_DECISION·fail-closed | C-25 |
+| C-28 | Agent Team/MoA/SNS/Daon User 화면·메뉴: mockup→사용자 확인→same-origin BFF/API→permission/error/empty/offline/high-risk reconfirm UI | C-22~C-27 |
+| C-29 | common modules→API/BFF→screens/menu 종합 연결, parent/child trace와 evidence/deploy-readiness projection, browser Network 계약 | C-24, C-28 |
+| C-30 | local unit/contract/integration + WSL formal DB/container/entity integration/E2E, 독립 review/PR evidence와 문서 matrix/test-plan/progress 동기화 | C-22~C-29 |
+
+패키지별 허용 경로는 해당 WorkInstruction에 고정하고, C-22~C-30 외 제품 경로·migration·Secret·운영 환경은 금지한다. 각 패키지의 GREEN은 focused PASS만으로 완료하지 않고 관련 regression과 지정된 실제 통합 범위를 별도 표시한다. WSL 검증은 formal DB/container/entity/E2E 증거를 요구하며 Provider·Kakao 실제 외부 호출이 미구성인 경우 `NOT_EXECUTED/NOT_INTEGRATED`로 기록한다.
+
+#### 19.7.3 Gate·추적성·rollback
+
+`DESIGN 51.x ↔ C-22~C-30 ↔ matrix/test scenario ↔ evidence/progress event` 양방향 링크가 없는 패키지는 READY가 될 수 없다. C-22~C-25 완료 전 C-26~C-29를 시작할 수 없고, C-27은 Kakao 외부 계약 확인 전 contract-only로 제한한다. C-30은 모든 미검증 범위·OPEN_DECISION·rollback을 포함한 뒤 독립 Reviewer C/I finding 0과 문서 lint/link/ID 및 `git diff --check` PASS를 받아야 한다. 실패 시 해당 successor commit과 문서 binding만 rollback하며 historical Event·기존 acceptance·사용자 dirty/untracked는 복원·삭제하지 않는다.
+
+#### 19.7.4 구현 보류와 다음 시작 조건
+
+현재는 문서 successor 작성·검토 단계다. 제품 코드, DB, WSL, Provider, Kakao, Oracle, release에는 착수하지 않는다. 다음 구현은 (1) 신산님이 successor 문서와 mockup을 확인, (2) matrix/test-plan/progress/HANDOFF/approval binding 정합화, (3) C-22 WorkInstruction exact hash 발행, (4) 단일 Code Agent write lease 발급을 모두 충족한 뒤에만 시작한다.

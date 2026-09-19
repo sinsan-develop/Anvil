@@ -9,6 +9,27 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timedelta
 from threading import Condition,RLock,get_ident
 from weakref import WeakKeyDictionary
+
+
+def role_team_progress(state, bindings):
+    """Pure C23 aggregation: no queue, reservation or worker operation."""
+    rows = state['tasks']
+    ready = sorted(key for key, row in rows.items() if row['status'] == 'PENDING' and
+        all(rows[dep]['status'] == 'COMPLETED' for dep in row['dependency_ids'] +
+            ([row['parent_task_id']] if row['parent_task_id'] else [])))
+    statuses = [row['status'] for row in rows.values()]
+    if state['cancelled']:
+        status = 'CANCELLED'
+        ready = []
+    elif any(v not in ('PENDING', 'CLAIMED', 'COMPLETED') for v in statuses):
+        status = 'REVIEW_REQUIRED'
+    elif statuses and all(v == 'COMPLETED' for v in statuses):
+        status = 'COLLECTED_FOR_MAIN'
+    else:
+        status = 'ACTIVE'
+    exposure = sum(row['reserved_exposure'] for row in rows.values())
+    return dict(status=status, ready=ready, forecast_exposure=exposure)
+
 import json
 
 from packages.orchestration.delegation import DelegationPacket,PermissionSnapshot,DataEgressProfile,validate_packet

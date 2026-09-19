@@ -34,18 +34,18 @@
     },
     {
       "checkpoint": "DIR-3",
-      "status": "NOT_REACHED",
-      "verdict": null,
-      "subject_hash": null,
-      "evidence_hash": null,
+      "status": "CLEARED",
+      "verdict": "ALIGNED",
+      "subject_hash": "4E8D0E5A744033D0F25696299C2E100B3A2272A556CB2F9CD2AF04B96FEC89FE",
+      "evidence_hash": "48BECA34597BCB03C7EA14999A041D14CC1704944767B6695723E271913B6B5F",
       "baseline_hash": "246D0487789A18AF17C7C9D5CF772442ACA2182339D33D4C989D209BAA3DA9A5",
-      "trigger_event_id": null,
+      "trigger_event_id": "evt_dir3_reached_after_e11_acceptance",
       "canonical_trigger": "E-11_ACCEPTED",
-      "report_event_id": null,
-      "report_ref": null,
-      "owner_direction_event_id": null,
+      "report_event_id": "evt_dir3_reported_waiting_owner_direction",
+      "report_ref": "docs/test_reports/DIR-3_REPORT.md",
+      "owner_direction_event_id": "evt_dir3_owner_direction_continue",
       "lease_released": true,
-      "blocked_next_action": null
+      "blocked_next_action": "E-GATE"
     },
     {
       "checkpoint": "DIR-X",

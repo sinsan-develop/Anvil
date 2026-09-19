@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Callable, Iterable
 
+import copy
+from dataclasses import fields, field
+from threading import RLock
+
 from .collaboration import canonical_hash
 
 from .models import (
@@ -23,6 +27,342 @@ from .models import (
 
 
 _RESERVED = frozenset({"approve", "approval", "merge", "deploy", "delete"})
+
+
+def _team_text(value, maximum=2048):
+    if type(value) is not str or not value.strip() or len(value.encode('utf-8')) > maximum:
+        raise ValueError('METADATA_BOUND_EXCEEDED')
+    return value
+
+
+def _team_time(value):
+    if type(value) is not datetime or value.tzinfo is not timezone.utc:
+        raise ValueError('UTC_TIME_REQUIRED')
+    return value
+
+
+def _team_shape(value, depth=0):
+    """Closed DTO preflight before hashing/copying: no user callbacks."""
+    from .role_contracts import RoleAssignment, _closed_value
+    if depth > 24:
+        raise ValueError('INPUT_BOUND_EXCEEDED')
+    t = type(value)
+    if value is None or t is bool:
+        return
+    if t is str:
+        if len(value.encode('utf-8')) > 8192: raise ValueError('METADATA_BOUND_EXCEEDED')
+        return
+    if t is int:
+        if abs(value) > 10**12: raise ValueError('INPUT_BOUND_EXCEEDED')
+        return
+    if t is datetime:
+        _team_time(value); return
+    if t in (TeamSessionState, TeamTaskStatus): return
+    if t in (tuple, frozenset):
+        if len(value) > 256: raise ValueError('INPUT_BOUND_EXCEEDED')
+        for v in value: _team_shape(v, depth+1)
+        return
+    if t is RoleAssignment:
+        _closed_value(value); return
+    if t in (TeamSession, TeamTask, TeamTaskBinding):
+        for f in fields(t):
+            if f.name != 'content_hash': _team_shape(getattr(value, f.name), depth+1)
+        return
+    raise ValueError('BUILTIN_DTO_REQUIRED')
+
+
+@dataclass(frozen=True)
+class TeamTaskBinding:
+    """Host-observed C22 assignment binding, not a new permission/lease."""
+    task: TeamTask
+    assignment: object
+    parent_task_id: str | None
+    deadline: datetime
+    cost_limit: int
+    content_hash: str = field(init=False)
+
+    def __post_init__(self):
+        from .role_contracts import RoleAssignment
+        _team_shape(self)
+        if type(self.task) is not TeamTask or type(self.assignment) is not RoleAssignment:
+            raise ValueError('BINDING_INVALID')
+        TeamTask(**{f.name:getattr(self.task,f.name) for f in fields(TeamTask)})
+        _team_time(self.deadline)
+        if type(self.cost_limit) is not int or self.cost_limit < 0:
+            raise ValueError('COST_INVALID')
+        if self.parent_task_id is not None: _team_text(self.parent_task_id, 256)
+        object.__setattr__(self, 'content_hash', self.recompute_hash())
+
+    def recompute_hash(self):
+        _team_shape(self)
+        return canonical_hash(tuple(getattr(self, f.name) for f in fields(self) if f.name != 'content_hash'))
+
+
+class RoleTeamOrchestrator:
+    """C23 host-only coordinator. No worker, tool, reservation or provider dispatch.
+
+    Existing Team DTOs/DAG and C22 authority are consumed; cost is observed
+    contract exposure only. All published state is detached, append-only and
+    bounded. Main must independently accept collected proposals.
+    """
+    def __init__(self, session, policy, results, *, parent_task_id, target_hash, deadline):
+        from .role_contracts import RolePolicyService
+        from .role_results import RoleResultService
+        _team_shape(session)
+        if type(session) is not TeamSession or session.state is not TeamSessionState.ACTIVE:
+            raise ValueError('ACTIVE_SESSION_REQUIRED')
+        TeamSession(**{f.name:getattr(session,f.name) for f in fields(TeamSession)})
+        if type(policy) is not RolePolicyService or type(results) is not RoleResultService or results._policy is not policy:
+            raise ValueError('CANONICAL_ROLE_OWNER_REQUIRED')
+        _team_text(parent_task_id, 256); _team_text(target_hash, 80); _team_time(deadline)
+        if deadline <= session.created_at: raise ValueError('DEADLINE_INVALID')
+        self._session = copy.deepcopy(session)
+        self._policy, self._results = policy, results
+        self._parent, self._target, self._deadline = parent_task_id, target_hash, deadline
+        self._lock = RLock()
+        self._bindings = {}
+        self._state = dict(tasks={}, boxes={}, events=[], spent=0, cancelled=False, replay={}, plan_hash=None, last_at=session.created_at)
+
+    def _main(self, actor_id, now):
+        _team_text(actor_id, 256); _team_time(now)
+        if actor_id != self._session.leader_id: raise ValueError('MAIN_AUTHORITY_REQUIRED')
+        if now < self._state['last_at']: raise ValueError('PAST_EVENT')
+
+    def _authority(self, task_id, actor_id, execution_fence, now, write_fence=None, mutation=False):
+        _team_text(task_id, 256); _team_text(actor_id, 256); _team_text(execution_fence, 256); _team_time(now)
+        if write_fence is not None: _team_text(write_fence, 256)
+        if task_id not in self._bindings: raise ValueError('UNKNOWN_TASK')
+        b = self._bindings[task_id]; a = b.assignment
+        reason = self._policy.validate_assignment(a, actor_id=actor_id, session_id=self._session.session_id,
+            context_id=a.context_id, target_hash=self._target, execution_fence=execution_fence, now=now)
+        if reason: raise ValueError(reason)
+        if self._state['cancelled']: raise ValueError('SESSION_CANCELLED')
+        if now < self._state['last_at']: raise ValueError('PAST_EVENT')
+        if now >= self._deadline or now >= b.deadline: raise ValueError('TASK_TIMED_OUT')
+        if mutation and a.definition.role == 'CODE':
+            reason = self._policy.validate_code_write(a, now, paths=b.task.path_scope, write_fence=write_fence)
+            if reason: raise ValueError(reason)
+        return b
+
+    def _request(self, request_id, payload):
+        _team_text(request_id, 256)
+        digest = canonical_hash(payload)
+        prior = self._state['replay'].get(request_id)
+        if prior is not None:
+            if prior[0] != digest: raise ValueError('REQUEST_REPLAY_CONFLICT')
+            from .collaboration import TeamSnapshot
+            return digest, TeamSnapshot(prior[1])
+        if len(self._state['replay']) >= 512: raise ValueError('SESSION_EVENT_BOUND_EXCEEDED')
+        return digest, None
+
+    def _projection(self, state):
+        from .collaboration import team_snapshot
+        from .concurrency import role_team_progress
+        return team_snapshot(dict(schema_version='role_team_projection/v1', session=dict(session_id=self._session.session_id,
+            leader_id=self._session.leader_id, baseline_hash=self._session.baseline_hash, revision=self._session.revision),
+            target_hash=self._target, plan_hash=state['plan_hash'], tasks=state['tasks'], spent=state['spent'],
+            events=state['events'], **role_team_progress(state, self._bindings), automatic_acceptance=False,
+            io_count=0, runtime='NOT_EXECUTED', budget_reservation='NOT_IMPLEMENTED'))
+
+    def project(self):
+        with self._lock: return self._projection(self._state)
+
+    def _publish(self, state, request_id, digest, kind, task_id, now, response=None):
+        if len(state['events']) >= 512: raise ValueError('SESSION_EVENT_BOUND_EXCEEDED')
+        state['events'].append(dict(sequence=len(state['events'])+1, kind=kind, task_id=task_id,
+            occurred_at=now.isoformat(), request_hash=digest))
+        state['last_at'] = now
+        receipt = self._projection(state) if response is None else response
+        state['replay'][request_id] = (digest, receipt.payload)
+        self._state = state
+        return receipt
+
+    def register_plan(self, bindings, *, actor_id, now):
+        from .collaboration import DependencyGraph
+        from .role_contracts import _path, _within, _overlap
+        with self._lock:
+            self._main(actor_id, now)
+            if type(bindings) is not tuple or not 1 <= len(bindings) <= 64: raise ValueError('PLAN_BOUND_EXCEEDED')
+            for b in bindings:
+                if type(b) is not TeamTaskBinding: raise ValueError('BINDING_INVALID')
+                _team_shape(b)
+                if type(b.content_hash) is not str or b.recompute_hash() != b.content_hash: raise ValueError('BINDING_TAMPERED')
+            ids = [b.task.task_id for b in bindings]
+            if len(set(ids)) != len(ids): raise ValueError('DUPLICATE_TASK')
+            lookup = {b.task.task_id:b for b in bindings}
+            for b in bindings:
+                t,a=b.task,b.assignment
+                if t.session_id != self._session.session_id or a.session_id != self._session.session_id: raise ValueError('CROSS_SESSION')
+                if set(t.dependency_ids)-set(ids): raise ValueError('UNKNOWN_DEPENDENCY')
+                if b.parent_task_id is not None and b.parent_task_id not in lookup: raise ValueError('UNKNOWN_PARENT')
+            try:
+                DependencyGraph(tuple((b.task.task_id, tuple(sorted(b.task.dependency_ids | ({b.parent_task_id} if b.parent_task_id else set())))) for b in bindings))
+            except ValueError as exc: raise ValueError('DEPENDENCY_CYCLE') from exc
+            for b in bindings:
+                t,a=b.task,b.assignment
+                reason=self._policy.validate_assignment(a,actor_id=a.actor_id,session_id=self._session.session_id,
+                    context_id=a.context_id,target_hash=self._target,execution_fence=a.execution_fence,now=now)
+                if reason: raise ValueError(reason)
+                parent=lookup.get(b.parent_task_id)
+                if (a.actor_id not in self._session.memberships or a.packet.step_id != t.task_id or
+                    a.baseline_hash != self._session.baseline_hash or a.packet.parent_agent_id != self._session.leader_id or
+                    a.packet.parent_run_id != (b.parent_task_id or self._parent) or
+                    t.parent_hash != (parent.content_hash if parent else canonical_hash(self._session))): raise ValueError('TASK_TRACE_MISMATCH')
+                if t.status is not TeamTaskStatus.PENDING or t.claimed_by is not None or t.completed_by is not None: raise ValueError('TASK_NOT_PRISTINE')
+                if b.cost_limit>a.definition.budget.cost: raise ValueError('ROLE_BUDGET_EXPANSION')
+                if not now < b.deadline <= self._deadline or t.created_at > now: raise ValueError('DEADLINE_INVALID')
+                if not t.path_scope: raise ValueError('PATH_SCOPE_DENIED')
+                for path in t.path_scope: _path(path)
+                p=a.packet.permission_snapshot
+                if not _within(t.path_scope,p.allowed_paths) or not _within(t.path_scope,a.definition.read_scope+a.definition.write_scope): raise ValueError('PATH_SCOPE_DENIED')
+                if _overlap(t.path_scope,p.prohibited_paths+p.protected_paths+a.definition.prohibited_scope): raise ValueError('PROTECTED_SCOPE')
+            ordered=tuple(sorted(bindings,key=lambda b:b.task.task_id)); digest=canonical_hash(ordered)
+            if self._state['plan_hash'] is not None:
+                if digest != self._state['plan_hash']: raise ValueError('PLAN_REBIND')
+                return self.project()
+            candidate=copy.deepcopy(self._state)
+            detached=copy.deepcopy({b.task.task_id:b for b in ordered})
+            candidate['plan_hash']=digest
+            for tid,b in detached.items():
+                candidate['tasks'][tid]=dict(status='PENDING',binding_hash=b.content_hash,assignment_hash=b.assignment.content_hash,
+                    actor_id=b.assignment.actor_id,parent_task_id=b.parent_task_id,dependency_ids=sorted(b.task.dependency_ids),
+                    cost_limit=b.cost_limit,result_hash=None,failure_fingerprint=None,
+                    reserved_exposure=0,usage_status='NOT_STARTED',actual_cost=None)
+                candidate['boxes'][tid]=TeamMailbox('mailbox-'+tid,self._session.session_id,b.assignment.actor_id,
+                    self._session.baseline_hash,self._session.revision,created_at=now,parent_hash=b.content_hash)
+            # Prepare projection before publishing either state component.
+            receipt=self._projection(candidate)
+            self._bindings=detached; self._state=candidate
+            return receipt
+
+    def claim(self, task_id, *, actor_id, execution_fence, write_fence=None, now, request_id):
+        with self._lock:
+            b=self._authority(task_id,actor_id,execution_fence,now,write_fence,True)
+            digest,prior=self._request(request_id,('claim',task_id,actor_id,execution_fence,write_fence))
+            if prior is not None: return prior
+            if self._state['tasks'][task_id]['status']!='PENDING': raise ValueError('TASK_NOT_PENDING')
+            dependencies=b.task.dependency_ids | ({b.parent_task_id} if b.parent_task_id else set())
+            if any(self._state['tasks'][d]['status']!='COMPLETED' for d in dependencies): raise ValueError('DEPENDENCY_NOT_COMPLETED')
+            exposure=sum(v['reserved_exposure'] for v in self._state['tasks'].values())
+            if self._state['spent']+exposure+b.cost_limit>self._session.budget: raise ValueError('COST_BUDGET_EXCEEDED')
+            state=copy.deepcopy(self._state);state['tasks'][task_id]['status']='CLAIMED'
+            state['tasks'][task_id]['reserved_exposure']=b.cost_limit
+            state['tasks'][task_id]['usage_status']='UNRECONCILED'
+            return self._publish(state,request_id,digest,'TASK_CLAIMED',task_id,now)
+
+    def _finish(self, task_id, cost, result_hash, failure, request_id, digest, now):
+        state=copy.deepcopy(self._state)
+        row=state['tasks'][task_id];row['result_hash']=result_hash;row['failure_fingerprint']=failure
+        row['reserved_exposure']=0;row['usage_status']='HOST_OBSERVED';row['actual_cost']=cost
+        row['status']='FAILED' if failure else 'COMPLETED'
+        state['spent']+=cost
+        if cost>self._bindings[task_id].cost_limit or state['spent']>self._session.budget:
+            row['status']='COST_EXCEEDED';row['failure_fingerprint']='COST_BUDGET_EXCEEDED'
+            for other in state['tasks'].values():
+                if other['status']=='PENDING': other['status']='BLOCKED_BUDGET'
+        self._block_dependents(state)
+        return self._publish(state,request_id,digest,'TASK_RESULT',task_id,now)
+
+    def collect(self, task_id, envelope, *, actor_id, execution_fence, write_fence=None, now, request_id):
+        from .handoff import validate_team_role_result
+        from .role_results import RoleEnvelope, _result_shape
+        from .role_contracts import contract_hash
+        with self._lock:
+            b=self._authority(task_id,actor_id,execution_fence,now,write_fence,True)
+            if type(envelope) is not RoleEnvelope: raise ValueError('ROLE_ENVELOPE_REQUIRED')
+            _result_shape(envelope)
+            envelope_hash=contract_hash(envelope)
+            if envelope_hash!=envelope.content_hash: raise ValueError('ROLE_ENVELOPE_TAMPERED')
+            digest,prior=self._request(request_id,('collect',task_id,actor_id,execution_fence,write_fence,envelope_hash))
+            if prior is not None: return prior
+            if self._state['tasks'][task_id]['status']!='CLAIMED': raise ValueError('TASK_NOT_CLAIMED')
+            receipt=validate_team_role_result(self._results,envelope,b.assignment,actor_id=actor_id,
+                session_id=self._session.session_id,context_id=b.assignment.context_id,target_hash=self._target,
+                execution_fence=execution_fence,now=now)
+            failure=None if envelope.result.envelope.status.value=='COMPLETED' else envelope.result.envelope.status.value
+            return self._finish(task_id,envelope.cost_units,receipt.result_hash,failure,request_id,digest,now)
+
+    def record_failure(self, task_id, *, actor_id, execution_fence, now, request_id, fingerprint, cost, write_fence=None):
+        with self._lock:
+            self._authority(task_id,actor_id,execution_fence,now,write_fence,True)
+            _team_text(fingerprint,256)
+            if type(cost) is not int or not 0<=cost<=10**12: raise ValueError('COST_INVALID')
+            digest,prior=self._request(request_id,('failure',task_id,actor_id,execution_fence,write_fence,fingerprint,cost))
+            if prior is not None:return prior
+            if self._state['tasks'][task_id]['status']!='CLAIMED':raise ValueError('TASK_NOT_CLAIMED')
+            return self._finish(task_id,cost,None,fingerprint,request_id,digest,now)
+
+    def _block_dependents(self,state):
+        changed=True
+        while changed:
+            changed=False
+            for tid,b in self._bindings.items():
+                deps=b.task.dependency_ids | ({b.parent_task_id} if b.parent_task_id else set())
+                if state['tasks'][tid]['status']=='PENDING' and any(state['tasks'][d]['status'] not in ('PENDING','CLAIMED','COMPLETED') for d in deps):
+                    state['tasks'][tid]['status']='BLOCKED_DEPENDENCY';changed=True
+
+    def tick(self, *,actor_id,now,request_id):
+        with self._lock:
+            self._main(actor_id,now)
+            digest,prior=self._request(request_id,('tick',actor_id,now))
+            if prior is not None:return prior
+            state=copy.deepcopy(self._state)
+            for tid,b in self._bindings.items():
+                if state['tasks'][tid]['status'] in ('PENDING','CLAIMED') and now>=min(b.deadline,self._deadline):
+                    state['tasks'][tid]['status']='TIMED_OUT'
+            self._block_dependents(state)
+            return self._publish(state,request_id,digest,'TIME_OBSERVED',None,now)
+
+    def cancel(self, *,actor_id,now,request_id):
+        with self._lock:
+            self._main(actor_id,now)
+            digest,prior=self._request(request_id,('cancel',actor_id))
+            if prior is not None:return prior
+            state=copy.deepcopy(self._state);state['cancelled']=True
+            for row in state['tasks'].values():
+                if row['status'] in ('PENDING','CLAIMED'):row['status']='CANCELLED'
+            return self._publish(state,request_id,digest,'SESSION_CANCELLED',None,now)
+
+    def send(self,sender_task_id,receiver_task_id,*,actor_id,execution_fence,now,request_id,body,artifact_refs=()):
+        from .collaboration import _plain, team_snapshot
+        with self._lock:
+            sender=self._authority(sender_task_id,actor_id,execution_fence,now)
+            _team_text(receiver_task_id,256)
+            if receiver_task_id not in self._bindings:raise ValueError('UNKNOWN_TASK')
+            receiver=self._bindings[receiver_task_id].assignment
+            self._authority(receiver_task_id,receiver.actor_id,receiver.execution_fence,now)
+            if sender_task_id==receiver_task_id:raise ValueError('PEER_REQUIRED')
+            _team_text(body)
+            if type(artifact_refs) is not tuple or len(artifact_refs)>16:raise ValueError('METADATA_BOUND_EXCEEDED')
+            for ref in artifact_refs:_team_text(ref,256)
+            digest,prior=self._request(request_id,('send',sender_task_id,receiver_task_id,actor_id,execution_fence,body,artifact_refs))
+            if prior is not None:return prior
+            state=copy.deepcopy(self._state)
+            box=state['boxes'][receiver_task_id]
+            if len(box.messages)>=128:raise ValueError('MAILBOX_BOUND_EXCEEDED')
+            message=TeamMessage('message-'+digest[7:],self._session.session_id,actor_id,receiver.actor_id,
+                TeamMessageType.QUESTION,body,artifact_refs,request_id,self._session.baseline_hash,self._session.revision,
+                now,parent_hash=sender.content_hash)
+            state['boxes'][receiver_task_id]=box.deliver(message,now)
+            response=team_snapshot(_plain(state['boxes'][receiver_task_id]))
+            return self._publish(state,request_id,digest,'PEER_MESSAGE',sender_task_id,now,response)
+
+    def mailbox(self,task_id,*,actor_id,execution_fence,now):
+        from .collaboration import _plain, team_snapshot
+        with self._lock:
+            self._authority(task_id,actor_id,execution_fence,now)
+            return team_snapshot(_plain(self._state['boxes'][task_id]))
+
+    def acknowledge(self,task_id,message_id,*,actor_id,execution_fence,now,request_id):
+        from .collaboration import _plain, team_snapshot
+        with self._lock:
+            self._authority(task_id,actor_id,execution_fence,now);_team_text(message_id,256)
+            digest,prior=self._request(request_id,('ack',task_id,message_id,actor_id,execution_fence))
+            if prior is not None:return prior
+            state=copy.deepcopy(self._state)
+            state['boxes'][task_id]=state['boxes'][task_id].acknowledge(message_id,actor_id,now)
+            response=team_snapshot(_plain(state['boxes'][task_id]))
+            return self._publish(state,request_id,digest,'MESSAGE_ACKNOWLEDGED',task_id,now,response)
 
 
 class OrchestrationEventType(str, Enum):

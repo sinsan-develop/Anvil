@@ -1,0 +1,1 @@
+C-27 exact7만 수정하라. Kakao adapter를 contract-only·fail-closed로 구현하라. C25 gateway/C26 adapter 계약을 재사용하고, 미확정 Kakao API/auth/quota와 실제 SDK/network/token/DB/WSL/UI/deploy를 호출하지 말라. 상태/저위험 command projection, deep-link, receipt, replay/idempotency/rate/privacy 및 고위험 거부를 테스트하고 RED→GREEN·회귀·compile·diff-check·OPEN_DECISION·rollback·SHA를 보고하라.

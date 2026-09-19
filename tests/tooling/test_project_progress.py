@@ -19565,5 +19565,32 @@ class E10FinalAcceptanceControlTests(unittest.TestCase):
         self.assertIn('E10_FINAL_PROJECTION_INVALID',c.validate_e10_final(forged_bundle,manifest))
 
 
+class E11StartControlTests(unittest.TestCase):
+    def _checker(self):
+        spec=importlib.util.spec_from_file_location('e11_start',CHECKER_PATH)
+        c=importlib.util.module_from_spec(spec);spec.loader.exec_module(c);return c
+
+    def test_start_prefix_scope_and_dual_fence(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'e11_start_from_root',None)),'E11 start missing')
+        files=c.e11_start_from_root(ROOT);p=json.loads(files[c.D13_START_P]);m=json.loads(files[c.E11_M]);events=json.loads(files[c.D13_START_E])['events']
+        self.assertEqual(1169,p['event_sequence']);self.assertEqual('IN_PROGRESS',p['status'])
+        self.assertEqual({'package_id':'DIR-3','status':'NOT_READY'},p['next_successor_work_package'])
+        self.assertEqual([],p['pending_approvals']);self.assertEqual(5,len(m['product_write_scope']));self.assertEqual(9,len(files))
+        old=subprocess.check_output(['git','show',f'{c.E11_BASE}:{c.D13_START_E}'],cwd=ROOT)
+        self.assertEqual(c.raw_event_object_prefix_bytes(old,1165),c.raw_event_object_prefix_bytes(files[c.D13_START_E],1165))
+        self.assertEqual(p['worker_lease']['execution_fencing_token'],p['write_lease']['execution_fencing_token'])
+        self.assertEqual(['WORK_INSTRUCTION_ISSUED','WORKER_LEASE_ISSUED','WRITE_LEASE_ISSUED','PACKAGE_STARTED'],[r['event_type'] for r in events[-4:]])
+
+    def test_start_git_scope_and_router_fail_closed(self):
+        c=self._checker();self.assertTrue(callable(getattr(c,'validate_e11_git_facts',None)),'E11 git missing')
+        facts=dict(head=c.E11_BASE,branch=c.C09_START_BRANCH,staged=[],dirty=c.e11_control_paths(),parent=None,committed_paths=[])
+        self.assertEqual([],c.validate_e11_git_facts(**facts))
+        self.assertEqual([],c.validate_e11_git_facts(**{**facts,'dirty':sorted(facts['dirty']+c.e11_product_write_scope())}))
+        for k,v in (('head','f'*40),('dirty',[]),('dirty',facts['dirty']+['escape']),('staged',[facts['dirty'][0]])):
+            self.assertTrue(c.validate_e11_git_facts(**{**facts,k:v}))
+        with mock.patch.object(c,'_collect_e11_git',return_value=['E11_SELECTED']):
+            self.assertEqual(['E11_SELECTED'],c._validate_git_projection({'_root':ROOT,'progress':{'event_sequence':1169}}))
+
+
 if __name__ == "__main__":
     unittest.main()

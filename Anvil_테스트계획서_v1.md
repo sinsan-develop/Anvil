@@ -880,3 +880,7 @@ Phase E 이후 `RS-CRITICAL`이 30분을 초과할 것으로 예상된다. 이�
 - v1.2 content hash의 binding은 content 변경으로 무효화된다. v1.3 변경은 활성 기준선 상태·revision·hash 참조만 정규화하며 테스트 범위·ID·레벨·심각도·종료 기준을 바꾸지 않는다.
 - v1.4는 `APPROVAL-20260810-A01-FLOW001-RESPONSIBILITY-001`과 `docs/baselines/A-01_PRECONDITION_DERIVED_BASELINE.md`에 binding된다. A-01은 `STATIC_ONLY / RUNTIME_DEFERRED`, A-05·B-03과 A Gate의 `AV-FLOW-001` runtime 책임은 유지한다.
 - v1.5는 신산님의 2026-08-14 작업 순서 재편 지시와 작업계획 v1.6 content hash에 binding된다. 기존 검증 레벨·심각도·증거 계약은 유지하고, U-01~U-11의 실제 메뉴별 수직 인수 절차와 F-20 후행 조건을 추가한다.
+
+### v1.7 successor test overlay (구현 전 예약)
+
+설계서 51.x와 작업계획 C-22~C-30의 검증 순서는 `mockup/user-confirm → common contract → API/BFF → screens/menu → local unit/contract/integration → WSL formal DB/container/entity/E2E → independent review/PR`로 고정한다. 각 WorkInstruction은 RED/GREEN, focused/regression/real integration, `NOT_EXECUTED/NOT_INTEGRATED`, rollback을 별도 기록한다. C-28은 mockup artifact와 신산님 확인 evidence 없이는 READY가 될 수 없고, Kakao 외부 계약 미확정 시 C-27은 contract-only다. Oracle 운영 검증은 이 계획에 포함하지 않는다.

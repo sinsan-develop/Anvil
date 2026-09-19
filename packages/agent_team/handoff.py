@@ -6,6 +6,17 @@ and resolve read it. Tests use a memory store, never a network or OS adapter.
 """
 from __future__ import annotations
 
+
+def validate_team_role_result(service, envelope, assignment, **authority):
+    """C23 proposal validation using C22; deliberately no E02 artifact I/O."""
+    from .role_results import RoleResultService, RoleEnvelope
+    if type(service) is not RoleResultService or type(envelope) is not RoleEnvelope:
+        raise ValueError('CANONICAL_ROLE_RESULT_REQUIRED')
+    receipt = service.validate_role_envelope(envelope, assignment=assignment, **authority)
+    if not receipt.valid:
+        raise ValueError(receipt.reason)
+    return receipt
+
 import copy
 import hashlib
 import json

@@ -12,7 +12,9 @@ import json
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, fields, is_dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
+from threading import RLock
+from types import MappingProxyType
 from typing import Any
 
 from packages.orchestration.delegation import (
@@ -22,7 +24,8 @@ from packages.orchestration.delegation import (
 
 def _plain(value):
     if is_dataclass(value):
-        return {f.name:_plain(getattr(value,f.name)) for f in fields(value) if f.name!="content_hash"}
+        return {f.name:_plain(getattr(value,f.name)) for f in fields(value) if f.name!="content_hash"
+                and not (f.name=="role_contract" and getattr(value,"schema_version",None)=="agent_definition/v1")}
     if isinstance(value,datetime): return value.isoformat()
     if isinstance(value,(tuple,list)): return [_plain(v) for v in value]
     if isinstance(value,Mapping): return {k:_plain(v) for k,v in value.items()}
@@ -80,6 +83,67 @@ def _overlap(left,right):
 TOOLS={"repo_read":"read","repo_diff":"read","requirements_read":"read","quality_read":"read",
        "test_read":"read","test_run":"execute","test_write":"write","test_patch":"patch"}
 
+# v2 is additive: legacy v1 definitions and hashes keep their original contract.
+_C22_TOOLS={**TOOLS,"code_write":"write","code_patch":"patch","plan_read":"read","deploy_inspect":"read"}
+_RESERVED=("approve","merge","deploy","oracle_deploy","delete","bypass","secret_change","production_switch")
+_ROLE_SPECS={
+    "PLANNING":("plan_result/v1","plan_trace","planning_analysis","requirements/current state","PlanEnvelope","DecisionRequest"),
+    "CODE":("implementation_result/v1","implementation_diff","implementation_execution","approved WorkInstruction/write lease","ImplementationEnvelope","FailureFingerprint"),
+    "REVIEW":("review_result/v1","diff_review","independent_review","diff/requirements/evidence","ReviewEnvelope","REWORK_ON_CRITICAL_OR_IMPORTANT"),
+    "TEST":("test_result/v1","independent_execution","independent_execution","frozen artifact/environment/scenarios","TestEnvelope","CLASSIFIED_FAILURE_OR_UNVERIFIED"),
+    "DEPLOY":("deploy_readiness_result/v1","deploy_readiness","readiness_observation","approved commit/ReleaseManifest","DeployReadinessEnvelope","BLOCKED_ON_READINESS_FAILURE"),
+}
+
+
+@dataclass(frozen=True,slots=True)
+class RoleContract:
+    input_contract:str
+    output_contract:str
+    prohibited_actions:tuple[str,...]
+    handoff_target:str
+    failure_contract:str
+    human_approval_boundary:tuple[str,...]
+
+
+def _role_contract(role):
+    spec=_ROLE_SPECS[role]
+    return RoleContract(spec[3],spec[4],_RESERVED,"MAIN",spec[5],
+        ("scope/requirements/important risk","human acceptance/release","Oracle/production outside C22"))
+
+
+def _closed_value(value,extra=(),depth=0):
+    """Preflight exact builtin/known DTO values before hash, copy or owner calls."""
+    if depth>24: raise ValueError("CONTRACT_INPUT_INVALID")
+    kind=type(value)
+    if value is None or kind in (bool,int): return
+    if kind is str:
+        if len(value.encode("utf-8"))>8192: raise ValueError("CONTRACT_INPUT_INVALID")
+        return
+    if kind is datetime:
+        if value.tzinfo is not timezone.utc: raise ValueError("UTC_REQUIRED")
+        return
+    if kind is tuple:
+        if len(value)>256: raise ValueError("CONTRACT_INPUT_INVALID")
+        for item in value: _closed_value(item,extra,depth+1)
+        return
+    if kind is MappingProxyType:
+        if len(value)>64: raise ValueError("CONTRACT_INPUT_INVALID")
+        for key,item in value.items():
+            if type(key) is not str: raise ValueError("CONTRACT_INPUT_INVALID")
+            _closed_value(key,extra,depth+1); _closed_value(item,extra,depth+1)
+        return
+    allowed=(PermissionSnapshot,DataEgressProfile,DelegationPacket,RoleContract,AgentDefinition,
+             BudgetLimits,RoleAssignment,CodeWriteLease,TestWriteGrant,TestWriteLease)+extra
+    if kind not in allowed: raise ValueError("CONTRACT_INPUT_INVALID")
+    if not is_dataclass(value): return  # explicitly allowlisted owner enums
+    for f in fields(value):
+        if f.name=="content_hash":
+            try: digest=object.__getattribute__(value,f.name)
+            except AttributeError: continue  # init=False during construction
+            if type(digest) is not str: raise ValueError("CONTRACT_INPUT_INVALID")
+            _hash(digest)
+        else: _closed_value(getattr(value,f.name),extra,depth+1)
+
 
 @dataclass(frozen=True,slots=True)
 class BudgetLimits:
@@ -111,9 +175,13 @@ class AgentDefinition:
     required_evidence:tuple[str,...]
     persistent_memory:str="none"
     schema_version:str="agent_definition/v1"
+    role_contract:RoleContract|None=None
     content_hash:str=field(init=False)
 
     def __post_init__(self):
+        if self.schema_version=="agent_definition/v2":
+            self._validate_v2()
+            return
         _text(self.definition_id)
         if type(self.version) is not int or self.version<1 or self.role not in {"REVIEWER","TESTER"}:
             raise ValueError("DEFINITION_INVALID")
@@ -135,6 +203,39 @@ class AgentDefinition:
         if type(self.required_evidence) is not tuple or expected not in self.required_evidence or len(set(self.required_evidence))!=len(self.required_evidence):
             raise ValueError("REQUIRED_EVIDENCE_INVALID")
         for v in self.required_evidence: _text(v)
+        object.__setattr__(self,"content_hash",contract_hash(self))
+
+    @classmethod
+    def for_role(cls,role,**fields):
+        if type(role) is not str or role not in _ROLE_SPECS: raise ValueError("ROLE_INVALID")
+        return cls(role=role,schema_version="agent_definition/v2",result_schema=_ROLE_SPECS[role][0],
+            required_evidence=(_ROLE_SPECS[role][1],),role_contract=_role_contract(role),**fields)
+
+    def _validate_v2(self):
+        _closed_value(self)
+        _text(self.definition_id)
+        if type(self.role) is not str or self.role not in _ROLE_SPECS: raise ValueError("ROLE_INVALID")
+        if type(self.version) is not int or self.version<1 or self.persistent_memory!="none": raise ValueError("DEFINITION_INVALID")
+        if type(self.role_contract) is not RoleContract or self.role_contract!=_role_contract(self.role): raise ValueError("ROLE_CONTRACT_INVALID")
+        if self.result_schema!=_ROLE_SPECS[self.role][0]: raise ValueError("ROLE_SCHEMA_MISMATCH")
+        if self.required_evidence!=(_ROLE_SPECS[self.role][1],): raise ValueError("REQUIRED_EVIDENCE_INVALID")
+        for paths in (self.read_scope,self.write_scope,self.prohibited_scope): _paths(paths)
+        p=self.permission_ceiling
+        if type(p) is not PermissionSnapshot or type(self.budget) is not BudgetLimits or not self.read_scope: raise ValueError("DEFINITION_INVALID")
+        # Clone validated owner DTOs: no caller-owned nested authority is retained.
+        p=PermissionSnapshot.from_dict(p.to_dict())
+        object.__setattr__(self,"permission_ceiling",p)
+        object.__setattr__(self,"budget",BudgetLimits(*(getattr(self.budget,f.name) for f in fields(BudgetLimits))))
+        object.__setattr__(self,"role_contract",_role_contract(self.role))
+        if not _within(self.read_scope+self.write_scope,p.allowed_paths): raise ValueError("SCOPE_EXPANSION")
+        if _overlap(self.read_scope+self.write_scope,self.prohibited_scope+p.prohibited_paths+p.protected_paths): raise ValueError("PROTECTED_SCOPE")
+        allowed={"read"} if self.role in {"PLANNING","REVIEW","DEPLOY"} else {"read","execute","write","patch"}
+        tools=set(TOOLS) if self.role!="CODE" else set(TOOLS)|{"code_write","code_patch"}
+        tools|={"plan_read"} if self.role=="PLANNING" else ({"deploy_inspect"} if self.role=="DEPLOY" else set())
+        if (not set(p.allowed_actions)<=allowed or any(t not in tools or _C22_TOOLS[t] not in allowed for t in p.allowed_tools)
+            or (self.role in {"PLANNING","REVIEW","DEPLOY"} and self.write_scope)):
+            raise ValueError("ROLE_ACTION_DENIED")
+        if self.role=="TEST" and not _within(self.write_scope,("tests/**",)): raise ValueError("TEST_WRITE_SCOPE_DENIED")
         object.__setattr__(self,"content_hash",contract_hash(self))
 
 
@@ -174,6 +275,36 @@ class TestWriteLease:
 
 
 @dataclass(frozen=True,slots=True)
+class CodeWriteLease:
+    """Host-observed lease only; C22 never acquires a filesystem/runtime lease."""
+    lease_id:str
+    assignment_id:str
+    actor_id:str
+    workspace_id:str
+    paths:tuple[str,...]
+    execution_fence:str
+    write_fence:str
+    baseline_hash:str
+    target_hash:str
+    work_instruction_id:str
+    issued_at:datetime
+    expires_at:datetime
+    approval_ref:str|None=None
+    work_instruction_hash:str|None=None
+
+    def __post_init__(self):
+        if type(self.approval_ref) is not str or not self.approval_ref or type(self.work_instruction_hash) is not str:
+            raise ValueError("WORK_INSTRUCTION_APPROVAL_REQUIRED")
+        _text(self.approval_ref); _hash(self.work_instruction_hash)
+        for name in ("lease_id","assignment_id","actor_id","workspace_id","execution_fence","write_fence","work_instruction_id"):
+            _text(getattr(self,name))
+        _paths(self.paths); _hash(self.baseline_hash); _hash(self.target_hash)
+        for t in (self.issued_at,self.expires_at):
+            if type(t) is not datetime or t.tzinfo is not timezone.utc: raise ValueError("UTC_REQUIRED")
+        if not self.paths or self.issued_at>=self.expires_at: raise ValueError("WRITE_LEASE_INVALID")
+
+
+@dataclass(frozen=True,slots=True)
 class RoleAssignment:
     assignment_id:str
     definition:AgentDefinition
@@ -200,7 +331,7 @@ class RoleAssignment:
             _text(getattr(self,name))
         _hash(self.target_hash); _hash(self.baseline_hash); _utc(self.issued_at); _utc(self.expires_at)
         if self.issued_at>=self.expires_at: raise ValueError("ASSIGNMENT_EXPIRED")
-        if (self.actor_id==self.implementation_actor or self.context_id==self.implementation_context
+        if not (type(self.definition) is AgentDefinition and self.definition.schema_version=="agent_definition/v2" and self.definition.role=="CODE") and (self.actor_id==self.implementation_actor or self.context_id==self.implementation_context
             or self.workspace_id==self.implementation_workspace): raise ValueError("INDEPENDENCE_REQUIRED")
         if type(self.definition) is not AgentDefinition or type(self.packet) is not DelegationPacket: raise ValueError("ASSIGNMENT_INVALID")
         object.__setattr__(self,"content_hash",contract_hash(self))
@@ -233,9 +364,71 @@ class RolePolicyService:
         self._parent=copy.deepcopy(parent_permission); self._egress=copy.deepcopy(parent_egress); self._budget=copy.deepcopy(parent_budget)
         self._records={}; self._seals={}; self._definitions={}; self._revoked=set(); self._spent={}; self._requests={}; self._audits=[]
         self._write_leases={}; self._write_seals={}; self._write_revoked=set()
+        self._code_leases={}; self._code_seals={}; self._code_revoked=set(); self._lock=RLock()
 
     @property
     def implementation_context_hash(self): return self._implementation_context_hash
+
+    def register_code_write_lease(self,lease,*,now):
+        """HOST ONLY; one CODE write owner in this host authority, across workspaces.
+
+        This contract adapter does not replace the runtime LeaseService. The host
+        supplies an authenticated current observation and owns this service once
+        per project; cross-process/durable acquisition is not implemented here.
+        """
+        if type(lease) is not CodeWriteLease: raise ValueError("WRITE_LEASE_INVALID")
+        _closed_value(lease)
+        if type(now) is not datetime or now.tzinfo is not timezone.utc: raise ValueError("UTC_REQUIRED")
+        lease=CodeWriteLease(**{f.name:getattr(lease,f.name) for f in fields(CodeWriteLease)})
+        with self._lock:
+            a=self._records.get(lease.assignment_id)
+            if a is None or a.definition.role!="CODE": raise ValueError("CODE_ROLE_REQUIRED")
+            reason=self.validate_assignment(a,actor_id=lease.actor_id,session_id=a.session_id,context_id=a.context_id,
+                target_hash=lease.target_hash,execution_fence=lease.execution_fence,now=now)
+            if reason: raise ValueError(reason)
+            if ((lease.workspace_id,lease.baseline_hash,lease.work_instruction_id)!=(a.workspace_id,a.baseline_hash,a.packet.work_instruction_id)
+                or not _within(lease.paths,a.definition.write_scope) or not _within(lease.paths,a.packet.permission_snapshot.allowed_paths)
+                or not a.issued_at<=lease.issued_at<=now<lease.expires_at<=a.expires_at): raise ValueError("WRITE_LEASE_INVALID")
+            digest=contract_hash(lease)
+            if lease.lease_id in self._code_leases:
+                if digest!=self._code_seals[lease.lease_id] or lease.lease_id in self._code_revoked: raise ValueError("WRITE_LEASE_REBIND")
+                return
+            for key,old in self._code_leases.items():
+                if old.expires_at<=now: self._code_revoked.add(key)
+                if key not in self._code_revoked: raise ValueError("CODE_WRITE_OWNER_CONFLICT")
+            self._code_leases[lease.lease_id]=lease
+            self._code_seals[lease.lease_id]=digest
+
+    def revoke_code_write_lease(self,lease_id):
+        _text(lease_id)
+        with self._lock:
+            if lease_id not in self._code_leases: raise ValueError("WRITE_LEASE_INVALID")
+            self._code_revoked.add(lease_id)
+
+    def validate_code_write(self,assignment,now,*,paths,write_fence=None,check_fence=True):
+        """Pure authorization check shared by action and result consumption."""
+        with self._lock:
+            leases=[v for k,v in self._code_leases.items() if k not in self._code_revoked and v.assignment_id==assignment.assignment_id]
+            if len(leases)!=1: return "CODE_WRITE_LEASE_REQUIRED"
+            lease=leases[0]
+            if contract_hash(lease)!=self._code_seals[lease.lease_id]: return "WRITE_LEASE_INVALID"
+            if not lease.issued_at<=now<lease.expires_at:
+                if now>=lease.expires_at: self._code_revoked.add(lease.lease_id)
+                return "WRITE_LEASE_INVALID"
+            if (lease.actor_id,lease.workspace_id,lease.execution_fence,lease.baseline_hash,lease.target_hash,lease.work_instruction_id)!=\
+               (assignment.actor_id,assignment.workspace_id,assignment.execution_fence,assignment.baseline_hash,assignment.target_hash,assignment.packet.work_instruction_id):
+                return "WRITE_LEASE_INVALID"
+            if check_fence and write_fence!=lease.write_fence: return "STALE_WRITE_FENCE"
+            p=assignment.packet.permission_snapshot
+            if not any(action in p.allowed_actions and action not in p.prohibited_actions and tool in p.allowed_tools
+                       for action,tool in (("write","code_write"),("patch","code_patch"))): return "ROLE_ACTION_DENIED"
+            for path in paths:
+                try: _path(path)
+                except ValueError: return "PATH_NOT_CANONICAL"
+                if _overlap((path,),p.prohibited_paths+p.protected_paths+assignment.definition.prohibited_scope): return "PROTECTED_SCOPE"
+                if not _within((path,),p.allowed_paths): return "PATH_SCOPE_DENIED"
+                if not _within((path,),lease.paths) or not _within((path,),assignment.definition.write_scope): return "CODE_WRITE_SCOPE_DENIED"
+            return None
 
     def register_test_write_lease(self,lease):
         """HOST ONLY: current lease observation, separate from a requested grant."""
@@ -270,10 +463,11 @@ class RolePolicyService:
     def register(self,*,assignment_id,definition,packet,actor_id,context_id,thread_id,workspace_id,session_id,
                  context_snapshot_hash,issued_at,expires_at,execution_fence,test_write_grant=None):
         if session_id!=self._session: raise ValueError("ASSIGNMENT_IDENTITY_MISMATCH")
-        if any(a==b for a,b in zip((actor_id,context_id,workspace_id),self._implementation)):
+        is_code=type(definition) is AgentDefinition and definition.schema_version=="agent_definition/v2" and definition.role=="CODE"
+        if not is_code and any(a==b for a,b in zip((actor_id,context_id,workspace_id),self._implementation)):
             raise ValueError("INDEPENDENCE_REQUIRED")
         _hash(context_snapshot_hash)
-        if context_snapshot_hash==self._implementation_context_hash: raise ValueError("INDEPENDENCE_REQUIRED")
+        if not is_code and context_snapshot_hash==self._implementation_context_hash: raise ValueError("INDEPENDENCE_REQUIRED")
         if type(definition) is not AgentDefinition or definition.content_hash!=contract_hash(definition): raise ValueError("DEFINITION_TAMPERED")
         if type(packet) is not DelegationPacket: raise ValueError("PACKET_REQUIRED")
         receipt=validate_packet(packet,baseline_hash=self._baseline,context_snapshot_hash=context_snapshot_hash,
@@ -287,7 +481,7 @@ class RolePolicyService:
         if packet.expected_result_schema!=definition.result_schema or packet.workspace_id!=workspace_id: raise ValueError("ROLE_PACKET_MISMATCH")
         if not definition.budget.fits(self._budget): raise ValueError("BUDGET_EXPANSION")
         if test_write_grant is not None:
-            if (type(test_write_grant) is not TestWriteGrant or definition.role!="TESTER"
+            if (type(test_write_grant) is not TestWriteGrant or definition.role not in {"TESTER","TEST"}
                 or test_write_grant.assignment_id!=assignment_id or test_write_grant.actor_id!=actor_id
                 or not _within(test_write_grant.paths,definition.write_scope)
                 or test_write_grant.issued_at<issued_at or test_write_grant.expires_at>expires_at): raise ValueError("TEST_WRITE_GRANT_INVALID")
@@ -318,6 +512,8 @@ class RolePolicyService:
 
     def validate_assignment(self,assignment,*,actor_id,session_id,context_id,target_hash,execution_fence,now):
         if type(assignment) is not RoleAssignment: return "ASSIGNMENT_REQUIRED"
+        try: _closed_value(assignment)
+        except (TypeError,ValueError,AttributeError): return "ASSIGNMENT_INVALID"
         try: _text(assignment.assignment_id)
         except (TypeError,ValueError): return "ASSIGNMENT_INVALID"
         canonical=self._records.get(assignment.assignment_id)
@@ -336,7 +532,11 @@ class RolePolicyService:
         if not canonical.issued_at<=now<canonical.expires_at: return "ASSIGNMENT_EXPIRED"
         return None
 
-    def authorize_action(self,*,assignment,actor_id,session_id,context_id,target_hash,execution_fence,now,
+    def authorize_action(self,**kwargs):
+        with self._lock:
+            return self._authorize_action(**kwargs)
+
+    def _authorize_action(self,*,assignment,actor_id,session_id,context_id,target_hash,execution_fence,now,
                          action,tool,backend,path,write_fence=None,request_id=None,usage=None):
         # Identity is checked before idempotency, so expired/revoked requests cannot replay an old ALLOW.
         reason=self.validate_assignment(assignment,actor_id=actor_id,session_id=session_id,context_id=context_id,
@@ -355,19 +555,24 @@ class RolePolicyService:
         except ValueError: invalid="ACTION_INVALID"
         request_hash=contract_hash((action,tool,backend,path,write_fence,_plain(amount))) if invalid is None else contract_hash(("invalid",invalid))
         def finish(why):
-            receipt=RoleDecision(why=="ALLOWED",why,getattr(assignment,"content_hash",None),request_hash)
+            receipt=RoleDecision(why=="ALLOWED",why,assignment.content_hash if type(assignment) is RoleAssignment and type(assignment.content_hash) is str else None,request_hash)
             self._audits.append(receipt)
             return copy.deepcopy(receipt)
         if reason: return finish(reason)
         if invalid: return finish(invalid)
         a=self._records[assignment.assignment_id]; d=a.definition; p=a.packet.permission_snapshot
-        if action not in p.allowed_actions or tool not in p.allowed_tools or TOOLS.get(tool)!=action or (d.role=="REVIEWER" and action!="read"):
+        if d.schema_version=="agent_definition/v2" and action in _RESERVED: return finish("RESERVED_AUTHORITY")
+        tools=_C22_TOOLS if d.schema_version=="agent_definition/v2" else TOOLS
+        if action not in p.allowed_actions or action in p.prohibited_actions or tool not in p.allowed_tools or tools.get(tool)!=action or (d.role in {"REVIEWER","REVIEW","PLANNING","DEPLOY"} and action!="read"):
             return finish("ROLE_ACTION_DENIED")
         if backend not in p.allowed_backends: return finish("BACKEND_DENIED")
         try: _path(path)
         except (TypeError,ValueError): return finish("PATH_NOT_CANONICAL")
         if _overlap((path,),p.prohibited_paths+p.protected_paths+d.prohibited_scope): return finish("PROTECTED_SCOPE")
-        if action in {"write","patch"}:
+        if action in {"write","patch"} and d.role=="CODE":
+            reason=self.validate_code_write(a,now,paths=(path,),write_fence=write_fence)
+            if reason: return finish(reason)
+        elif action in {"write","patch"}:
             grant=a.test_write_grant
             if grant is None: return finish("TEST_WRITE_GRANT_REQUIRED")
             reason=self.validate_test_write_lease(a,now)

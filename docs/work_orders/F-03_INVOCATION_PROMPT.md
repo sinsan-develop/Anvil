@@ -1,0 +1,1 @@
+F-03 WorkInstruction을 읽고 exact5 범위로 CEREBRAS adapter host-only 계약을 TDD 구현하세요. 실제 Provider/network 호출은 하지 말고 fake transport fixture만 사용하세요. 완료 후 정확한 테스트 결과와 미검증 범위를 보고하고 control 파일 수정·commit·push는 하지 마세요.
