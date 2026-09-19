@@ -2316,3 +2316,10 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 기존 `anvil-web`과 분리한 임시 컨테이너에서 health `200`, `team/moa/sns/adapters` `503 OFFLINE` 및 `counts_as_pass=false`, control `503`, unknown `404`, forged actor query `400`을 확인했다. 로그와 종료코드 0을 확인하고 임시 컨테이너·환경파일을 정리했다.
 - 이번 실행의 DB writes 0, 외부 호출 0이다. 이는 ASGI/라우트 fail-closed 및 컨테이너 기동 증거이며, 실제 DB entity persistence·browser E2E·Provider/운영 배포 완료를 의미하지 않는다.
 - 현재 판정은 `ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED`; 다음 안전 행동은 승인된 formal entity harness가 제공될 때 DB/container/entity/browser E2E를 수행하는 것이다. canonical checker C03 fixture SyntaxError 제한은 유지한다.
+
+### C-30 formal entity scope review — seq1282
+
+- C30 manifest의 `database`는 Main-owned approved PostgreSQL harness, `entity`는 durable API owner wiring 이후 Main-owned integration suite를 요구한다.
+- 현재 `asgi.py`는 service/resolver 없이 console router만 등록하고 `agent_console.py`는 이를 503 `OFFLINE`으로 fail-closed 처리한다. 따라서 owner/auth wiring과 전용 DB harness를 새로 추가하지 않으면 DB persistence·authenticated browser E2E를 실행할 수 없다.
+- 해당 추가는 C30R1 exact scope 밖의 API/auth·데이터 실행 범위 변경이다. 임의 구현·다른 제품 PostgreSQL 연결·운영 자원 변경은 하지 않는다.
+- 현재 상태는 `BLOCKED_SCOPE_CHANGE_REQUIRED`; 다음 안전 행동은 `C30_OWNER_WIRING_AND_HARNESS_SCOPE_DECISION_REQUIRED`이다.

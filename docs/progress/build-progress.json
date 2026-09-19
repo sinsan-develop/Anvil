@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1281,
-  "updated_at": "2026-09-19T17:18:00+09:00",
-  "last_event_id": "evt_c30_formal_route_smoke_pass",
+  "event_sequence": 1282,
+  "updated_at": "2026-09-19T17:26:00+09:00",
+  "last_event_id": "evt_c30_formal_entity_scope_blocked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -37,7 +37,7 @@
     "external_calls": 0,
     "scope_status": "ROUTE_SMOKE_VERIFIED_FORMAL_ENTITY_E2E_PENDING",
     "formal_entity_browser_e2e": "NOT_INTEGRATED",
-    "next_safe_action": "C30_FORMAL_ENTITY_HARNESS_REQUIRED"
+    "next_safe_action": "C30_OWNER_WIRING_AND_HARNESS_SCOPE_DECISION_REQUIRED"
   },
   "c30r1_rework": {
     "status": "ACCEPTED_LOCAL_SCOPE",
@@ -2574,7 +2574,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "C1602C90D4052A9CF2DAD8F189953028DE6DC72F816FFD95FBB49A088EA979E2",
+  "snapshot_hash": "15D4F03583FE5175CA47720CC1911569EEB18B541FF21DD8E60F52B99DE4176D",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
