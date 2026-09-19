@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1286,
-  "updated_at": "2026-09-19T18:18:00+09:00",
-  "last_event_id": "evt_c30_durable_owner_investigation",
+  "event_sequence": 1289,
+  "updated_at": "2026-09-19T18:32:00+09:00",
+  "last_event_id": "evt_c30r2_package_started",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -150,7 +150,7 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"main-agent-eoul","role":"MAIN_AGENT","work_package_id":"C-30R1","status":"REVOKED_AFTER_ACCEPTANCE","execution_fencing_token":"c30r1-execution-fence-epoch-1-4a24dfb"},
+  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R2","status":"ACTIVE","execution_fencing_token":"c30r2-execution-fence-epoch-1-c7ab95b"},
   "write_lease": {
     "actor_id": "developer-primary-c30-r1-rework",
     "subject_ref": "C-30R1",
@@ -158,7 +158,15 @@
     "baseline_git_commit": "087a4b6",
     "issued_at": "2026-09-19T16:42:00+09:00",
     "expires_at": "2026-09-20T04:42:00+09:00",
-    "status": "REVOKED",
+    "status": "ACTIVE",
+    "actor_id": "developer-primary-c30r2",
+    "subject_ref": "C-30R2",
+    "lease_id": "write-lease-c30r2-20260919-001",
+    "worker_lease_id": "worker-lease-c30r2-20260919-001",
+    "lease_epoch": 1,
+    "execution_fencing_token": "c30r2-execution-fence-epoch-1-c7ab95b",
+    "write_fencing_token": "c30r2-write-fence-epoch-1-c7ab95b",
+    "path_scope": ["docs/work_orders/C-30R2_WORK_INSTRUCTION.md", "docs/work_orders/C-30R2_INVOCATION_PROMPT.md", "tests/integration/test_c30r2_contract.py"],
     "execution_fencing_token": "c30r1-execution-fence-epoch-1-4a24dfb",
     "path_scope": [
       "apps/api/anvil_api/asgi.py",
@@ -2577,7 +2585,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "E5D0AB55834EC3E73FF3214168BD0F5F3DCD4553545E5A79A40297E23D450130",
+  "snapshot_hash": "C1F5C5AC10021F84408692CCD7018CBBE6C2C8DAD580260D7E4A3E07E180C4C8",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
