@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1298,
-  "updated_at": "2026-09-19T20:55:00+09:00",
-  "last_event_id": "evt_c30r2_task3_reviewed",
+  "event_sequence": 1301,
+  "updated_at": "2026-09-19T21:10:00+09:00",
+  "last_event_id": "evt_c30r2_task4_reviewed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -156,17 +156,17 @@
     "subject_ref": "C-30R2",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
     "baseline_git_commit": "11d34e6",
-    "issued_at": "2026-09-19T20:35:00+09:00",
-    "expires_at": "2026-09-20T08:35:00+09:00",
+    "issued_at": "2026-09-19T21:00:00+09:00",
+    "expires_at": "2026-09-20T09:00:00+09:00",
     "status": "REVOKED",
-    "execution_fencing_token": "c30r2-task3-execution-fence-epoch-1-11d34e6",
-    "write_fencing_token": "c30r2-task3-write-fence-epoch-1-11d34e6",
-    "path_scope": ["packages/api/runtime.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/routes/agent_console.py", "tests/integration/test_c30r2_runtime_owner.py"],
-    "lease_id": "write-lease-c30r2-task3-20260919-001",
-    "worker_lease_id": "worker-lease-c30r2-task3-20260919-001",
+    "execution_fencing_token": "c30r2-task4-execution-fence-epoch-1-b9515b8",
+    "write_fencing_token": "c30r2-task4-write-fence-epoch-1-b9515b8",
+    "path_scope": ["tests/integration/test_c30r2_formal_entity.py"],
+    "lease_id": "write-lease-c30r2-task4-20260919-001",
+    "worker_lease_id": "worker-lease-c30r2-task4-20260919-001",
     "lease_epoch": 1,
     "write_epoch": 1,
-    "dispatch_head": "11d34e6"
+    "dispatch_head": "b9515b8"
   },
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -204,15 +204,15 @@
     "subject_ref": "C-30R2",
     "baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
     "baseline_git_commit": "11d34e6",
-    "issued_at": "2026-09-19T20:35:00+09:00",
-    "expires_at": "2026-09-20T08:35:00+09:00",
+    "issued_at": "2026-09-19T21:00:00+09:00",
+    "expires_at": "2026-09-20T09:00:00+09:00",
     "status": "REVOKED",
-    "execution_fencing_token": "c30r2-task3-execution-fence-epoch-1-11d34e6",
-    "path_scope": ["packages/api/runtime.py", "apps/api/anvil_api/asgi.py", "apps/api/anvil_api/routes/agent_console.py", "tests/integration/test_c30r2_runtime_owner.py"],
-    "lease_id": "worker-lease-c30r2-task3-20260919-001",
+    "execution_fencing_token": "c30r2-task4-execution-fence-epoch-1-b9515b8",
+    "path_scope": ["tests/integration/test_c30r2_formal_entity.py"],
+    "lease_id": "worker-lease-c30r2-task4-20260919-001",
     "lease_epoch": 1,
-    "fencing_token": "c30r2-task3-execution-fence-epoch-1-11d34e6",
-    "dispatch_head": "11d34e6"
+    "fencing_token": "c30r2-task4-execution-fence-epoch-1-b9515b8",
+    "dispatch_head": "b9515b8"
   },
   "completed_provider_wsl_auth_worker_lease": {
     "lease_id": "worker-lease-c21-provider-wsl-auth-20260906-001",
@@ -2560,7 +2560,7 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "314D603C1BC2A49DF19FEECC4F996DE9E719B6B86AAA7DB34261738044399D9E",
+  "snapshot_hash": "98455B5F04ADA5CCEF2E228DB5B41DA2E9C2E0BCDAB465C3F47276941B3E50C5",
   "runtime_next_action": "E11_LIMITED_PARALLEL_TRUST_CHAIN_TDD",
   "seq527_clean_review": {
     "event_sequence": 527,
