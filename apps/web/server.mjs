@@ -92,7 +92,7 @@ async function scanFixture(fixtureId) {
   return JSON.parse(stdout);
 }
 
-export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false,agentConsoleUpstream=''}={}) {
+export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='production',fixtureEnabled=false,agentConsoleUpstream='',qaLoginUpstream=''}={}) {
   let consoleUpstream=null;
   if (agentConsoleUpstream) {
     try {
@@ -102,11 +102,47 @@ export async function startWorkbenchServer({host='127.0.0.1',port=4173,uiMode='p
     } catch { throw Error('UPSTREAM_INVALID'); }
   }
   const runtimeMode=uiMode==='preview'?'preview':uiMode==='fixture'?'fixture':'production';
+  let qaUpstream=null;
+  if (qaLoginUpstream && runtimeMode==='fixture' && fixtureEnabled===true) {
+    try {
+      if (typeof qaLoginUpstream!=='string' || qaLoginUpstream.length>128) throw Error();
+      const u=new URL(qaLoginUpstream);
+      if (u.protocol!=='http:' || !['127.0.0.1','localhost'].includes(u.hostname) || !u.port || u.username || u.password || u.pathname!=='/' || u.search || u.hash) throw Error();
+      qaUpstream=u.origin;
+    } catch { throw Error('UPSTREAM_INVALID'); }
+  }
   const csrfToken=randomUUID();
   let allowedHost='';
   const server=http.createServer(async (request,response)=>{
     try {
       const requestUrl=new URL(request.url,'http://fixture.invalid');
+      // Dedicated host opt-in; never route QA login through production auth.
+      if (requestUrl.pathname==='/auth/c30r3-qa' || request.url.startsWith('/auth/c30r3-qa')) {
+        if (!qaUpstream) return safeFailure(response,404,'EMPTY','허용된 경로가 아닙니다.');
+        if (request.url!=='/auth/c30r3-qa') return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.');
+        if (!['GET','POST'].includes(request.method)) return safeFailure(response,405,'ERROR','허용된 메서드가 아닙니다.');
+        if (request.headers.host!==allowedHost || (request.headers.origin && request.headers.origin!==`http://${allowedHost}`) || (request.method==='POST' && request.headers.origin!==`http://${allowedHost}`)) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처를 확인하세요.');
+        let body='';
+        for await(const chunk of request) {body+=chunk;if (body.length>256) return safeFailure(response,403,'PERMISSION_DENIED','QA 요청이 거부됐습니다.');}
+        if ((request.method==='GET' && body) || (request.method==='POST' && (body!=='account=qa-reader' || request.headers['content-type']?.split(';')[0]!=='application/x-www-form-urlencoded'))) return safeFailure(response,403,'PERMISSION_DENIED','QA 요청이 거부됐습니다.');
+        try {
+          const result=await new Promise((ok,fail)=>{
+            const upstream=http.request(qaUpstream+'/auth/c30r3-qa',{method:request.method,headers:{host:allowedHost,origin:`http://${allowedHost}`,'content-type':'application/x-www-form-urlencoded'}},async incoming=>{
+              try {let size=0;const chunks=[];for await(const chunk of incoming){size+=chunk.length;if(size>32768){incoming.destroy();throw Error();}chunks.push(chunk);}ok({status:incoming.statusCode,headers:incoming.headers,body:Buffer.concat(chunks).toString('utf8')});}
+              catch {fail(Error('QA_RESPONSE_INVALID'));}
+            });
+            upstream.setTimeout(3000,()=>upstream.destroy(Error('TIMEOUT')));upstream.on('error',fail);upstream.end(body||undefined);
+          });
+          if (result.status===403) return safeFailure(response,403,'PERMISSION_DENIED','QA 요청이 거부됐습니다.');
+          if (request.method==='POST') {
+            const cookies=result.headers['set-cookie'];
+            if (result.status!==303 || result.headers.location!=='/agent-console' || !Array.isArray(cookies) || cookies.length!==1 || !/^anvil_session=[a-f0-9]{64}; HttpOnly; Max-Age=3600; Path=\/; SameSite=strict$/.test(cookies[0])) throw Error();
+            return send(response,303,'',{location:'/agent-console','set-cookie':cookies[0]});
+          }
+          if (result.status!==200 || !result.headers['content-type']?.startsWith('text/html') || /https?:\/\/|anvil_session=|<script\b/i.test(result.body)) throw Error();
+          return send(response,200,result.body,{'content-type':'text/html; charset=utf-8','referrer-policy':'same-origin'});
+        } catch {return safeFailure(response,503,'OFFLINE','QA 로그인 응답을 확인할 수 없습니다.');}
+      }
       if (request.url.startsWith('/api/agent-console') && request.url!==requestUrl.pathname) return safeFailure(response,400,'ERROR','요청 형식이 올바르지 않습니다.');
       if (requestUrl.pathname.startsWith('/api/agent-console')) {
         if (request.headers.host!==allowedHost || (request.headers.origin && request.headers.origin!==`http://${allowedHost}`)) return safeFailure(response,403,'PERMISSION_DENIED','요청 출처를 확인하세요.');
