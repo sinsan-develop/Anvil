@@ -2448,3 +2448,19 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
 - 최종 INCOMPLETE/browser BLOCKED, formal FAILURE_REPORT0. 제품 불변이므로 기존24P/159P 증거 유지;
   새 pytest 실행으로 주장하지 않는다. report/HANDOFF append-only, progress JSON은 Main 소유.
 - 다음 안전 행동은 headless/CDP 검증 방식의 사용자 직접 실행 안전 승인이다. 승인 전 외부 재생성/우회 금지.
+
+### WORK_STATUS — 사용자 승인된 isolated Chrome retry 종료
+
+- Main 전달 사용자 명시 승인으로 Windows 임시 profile/headless/CDP 단일 실행이 실제 허용됐다.
+  기존 profile/tab/account 사용0, 새 제품/fixture 변경0, 기존372718c Git-only source만 재사용.
+- Chrome PID31836/CDP 연결 성공→기존 QA login form 제출→HTTP ERROR403에서 종료(exit1).
+  ERR_BLOCKED_BY_CLIENT는 이번 원인이 아니다. 정확 response/header 미수집이므로 원인 단정0.
+  인증4menu/same-origin Network/CSP/revoked browser 결과는 미검증. INCOMPLETE 유지.
+- 재생성 image b2d394f9966e, net0c2a2f585baf, PGeb0f0b882273, web7f648e675e8c,
+  BFFe4dbdd3ea2ba에서 app0013/owner0015 snapshot1 COMMITTED 후 browser 실행을 시도했다.
+- finally `ALL_DISPOSABLE_CLEANUP_PASS`: Chrome/profile/tunnel 종료·삭제, label container/network/
+  volume/image residue0, tmpcheckout 없음, 기존 anvil-web ID/image/StartedAt/running 불변.
+  로컬 profile0/PID31836 없음 재확인, screenshot0, 추가 재시도0.
+- formal FAILURE_REPORT0. 기존24P/159P는 앞선 실행 증거, 이번은 문서 append-only.
+  다음 Main 판단: HTTP403의 auth forwarding/QA fixture 계약을 read-only 진단.
+  completion event/projection은 기존 exact3 밖이므로 Main이 이 실제 결과로 append한다.

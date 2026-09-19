@@ -381,3 +381,43 @@ container/network/volume/image 목록 모두 empty, checkout_exists=false, 기�
 제품/test 파일 변경0; report/HANDOFF만 append했다. 이전24P/159P 결과는 코드 불변의 앞선 실행 증거이며
 이번 문서 보강으로 새 pytest 실행을 주장하지 않는다. 다음 행동은 해당 headless/CDP 방식에 대한
 사용자 직접 실행 안전 승인을 받은 뒤 별도 검증을 수행하는 것이다. 승인 전 재생성·우회 실행하지 않는다.
+
+### 사용자 승인 후 Windows isolated Chrome 단일 재시도 — 2026-09-20 05시대
+
+Main이 사용자 명시 승인을 전달했다: Windows Chrome의 임시 격리 profile/headless/CDP 사용,
+기존 프로필·탭·계정 불사용, 기존372718c fixture만 재사용, 검증 뒤 전부 정리.
+이 승인으로 앞선 플랫폼 거부 경계는 해소됐고 실제 Chrome을 시작했다. 새 제품/fixture 변경0.
+
+- 시작 canonical clean HEAD `af03459a6c961eb3b3f13eee1ace9d25b13d7357`,
+  host2026-09-20T04:57:37+09:00, Task4 epoch1 lease ACTIVE/12:05 만료 전.
+- exact372718c Git-only disposable checkout, cached base 동일, 실제 재생성 image
+  `sha256:b2d394f9966e80f3bff6dec27341c2b99b14f57b691f32aa1ca36cff8dc1a9ae`.
+  network `0c2a2f585baf279e187d207fab77cbc7ff9698780c53e0866077ddaabf062113`,
+  PG `eb0f0b882273eebb3fea3046a60f9d83c283c5b4f2986b1038e7919c3a8d0a53`,
+  web `7f648e675e8c023059631d73fe28162486e6d875497873eda882810c3247734a`,
+  BFF `e4dbdd3ea2ba3d3e5759b506d1d6d189e0bf8de9d635a0564e8f46be9da019a8`.
+  app0013/owner0015, new snapshot1 COMMITTED hash
+  `sha256:c1994e33186e102bff6e273c48e455c8e76c2dbf8f42d99eb1874c47795ff701`.
+- 실행 명령은 `C:/Users/cyhuh/anaconda3/python.exe -B -`로 inline CDP verification script를 소비했다.
+  script의 Chrome argv: `C:/Program Files/Google/Chrome/Application/chrome.exe --headless=new
+  --no-first-run --no-default-browser-check --remote-debugging-address=127.0.0.1 --remote-debugging-port=0
+  --user-data-dir=<new .codex-sandbox/c30r3-browser-* temporary directory> about:blank`.
+  PID31836, localhost CDP/WebSocket 연결 성공. 기존 사용자 profile 접근0, security bypass flag0.
+  SSH alias tunnel은 loopback4173→disposable bridge4174만 사용했다.
+- 실제 `/auth/c30r3-qa` 로그인 form에서 account=qa-reader를 입력·submit한 후
+  `/agent-console` 정상 status 대기에서 실패: `BROWSER_WAIT_FAILED`, Chrome 화면
+  `127.0.0.1에 대한 액세스가 거부됨 / 이 페이지를 볼 수 있는 권한이 없습니다. / HTTP ERROR 403`.
+  이 실행은 이전 ERR_BLOCKED_BY_CLIENT와 다른 **실제 HTTP403**이다. 원인 response body/header가
+  별도 수집되지 않았으므로 middleware/fixture/권한 중 특정 원인으로 단정하지 않는다.
+  인증 4menu/Network/CSP/revoke browser 단계에 도달하지 못했으며 해당 결과를 PASS로 표시하지 않는다.
+- 단일 script exit1, finally는 성공: `ALL_DISPOSABLE_CLEANUP_PASS`.
+  CDP Browser.close→Chrome 종료 대기, own tunnel 종료, exact resolved temporary profile 제거.
+  remote exact label container/network/volume/image empty, checkout_exists=false,
+  기존 anvil-web ID/image/StartedAt/Running 불변. 로컬 profile glob empty/PID31836 없음을 재확인했다.
+  screenshot 생성0, 남은 DB/credential/resource0. 다른 재시도나 fixture 수정은 하지 않았다.
+
+현재 WORK_STATUS: **INCOMPLETE / browser QA login HTTP403 BLOCKED**, formal FAILURE_REPORT0.
+앞선 실제 PG/restart/receipt/revoke/BFF 검증은 보존하되 이번 실패를 상쇄하지 않는다.
+기존24P/159P는 앞선 코드 불변 검증 결과이며 이번에는 보고/HANDOFF만 append했다.
+다음 조치는 Main이 403 response와 기존 QA login/auth forwarding 계약의 read-only 원인을 판단하는 것이다.
+이번 승인된 단일 browser retry는 종료됐으며 모든 disposable 자원은 제거됐다.
