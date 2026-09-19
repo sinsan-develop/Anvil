@@ -2405,3 +2405,32 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
   실제 QA harness CLI는 테스트파일에만 추가하며 pytest 없이 실행, random validation-only credentials는
   container memory/env에만 두고 출력/보고하지 않는다. 실제 Provider/Telegram/Kakao 호출0.
   seed는 실제 owner의 PENDING QA 작업이며 가짜 PASS result/evidence를 생성하지 않는다.
+
+### C30R3 Task4 실제 실행 종료 checkpoint — 2026-09-20
+
+- 판정 **INCOMPLETE / authenticated browser·Network BLOCKED**, formal FAILURE_REPORT0,
+  C30 formal acceptance=false. 초기 SSH blocker는 승인된 외부 경로로 해소됐고 과거 기록은 보존한다.
+- 외부 push0. mounted canonical에서 Git-only exact219a288 checkout, 뒤에 승인된 기존 browser fixture
+  exact372718c85209aed50e28ebd5c6c27196be11571d 사용. 제품/runtime/migration source 변경0.
+- 실제 PG15 isolated app `c30r3_app` head0013 / owner `c30r3_owner` head0015.
+  snapshot1, initial receipt0→4, OS web restart 후 4menu200/응답 exact hash 동일/receipt4 유지.
+  live/ready200, team PENDING, moa/sns EMPTY, adapters NOT_INTEGRATED/OPEN_DECISION.
+- 실제 BFF 4menu200, control6종×CSRF2=12개403, query400/foreignOrigin403.
+  repository revoke COMMITTED→OS restart→4menu403; heads1/receipts4/revoked1.
+  web stop 뒤 BFF503 OFFLINE. 실제 HTTP 결과와 pytest 건수는 별개다.
+- Chrome CUA QA 로그인 POST `ERR_BLOCKED_BY_CLIENT`; 4개 메뉴 permission 화면 클릭 관찰.
+  authenticated browser 및 Network 미검증(performance read API 미제공), 브라우저 보안 우회0.
+  fixture auth를 production auth 증거로 승격하지 않는다. 후속 검증 전 acceptance 금지.
+- prefix `anvil-c30r3-t4-20260920-0120`, PGff38cd140657/web7f229aacab20→42dfb15f0546/
+  bffb104c9602330/net635f303ca3f2, images4097b12a3f55/b6fd739f2a39는 모두 제거했다.
+  label container/network/volume/image residue0, build-generated exact14 intermediate image residue0,
+  `/tmp/anvil-c30r3-t4-20260920-0120` 없음, owned tunnel34208/46720 종료, QA tab 종료.
+  cleanup exit0. 기존 anvil-web ID/image/StartedAt(위 기준)/Running=true exact 불변 확인.
+- 최종 focused **24P/0S/3.52s**, related **159P/0S/12.31s**, exit0, 기존 warning1.
+  정확한 명령·실제 외부 단계·오류·hash는 C-30_COMPLETION_REPORT 후속 종료 기록에 있다.
+- progress JSON/events는 exact3 밖이라 Main이 append-only 완료 이벤트를 소유한다.
+  event 권장 facts: INCOMPLETE; PG15/liveHTTP/restart/revoke/cleanup=EXECUTED_PASS;
+  authenticated_browser/network=BLOCKED_NOT_VERIFIED; formal_failure_count=0; cleanup_residue=0.
+  worker/write lease는 임의 회수하지 않았다. commit에는 exact3 test/report/HANDOFF만 포함한다.
+  다음 조치: 기존 QA fixture 로그인 browser 차단 원인을 승인된 별도 검증 환경에서 해결한 후
+  인증 정상/empty/revoked 및 실제 same-origin Network를 검증. 현재 모든 disposable 자원은 종료됐다.

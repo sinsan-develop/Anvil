@@ -243,3 +243,111 @@ Main/PMO 승인된 외부 경로에서 같은 WSL-server hostname probe가 exit0
 별도 app DB0013 / owner DB0015 적용 계획이며 shared DB/기존 runtime은 사용하지 않는다.
 기존 cached app image의 네트워크 없는 --rm 의존성 검사1건은 종료·자동제거됐다.
 후속 실제 결과 전까지 formal acceptance=false/PG/browser/restart NOT_EXECUTED를 유지한다.
+
+## C30R3 Task4 실제 disposable 실행 종료 — 2026-09-20
+
+### 판정 → 판단 이유 → 조치
+
+**INCOMPLETE (인증 browser/Network BLOCKED)**. PostgreSQL15·live HTTP·OS process restart·durable
+receipt/revocation 및 cleanup은 실제 실행했다. 브라우저 4개 메뉴의 권한 거부 화면은 관찰했지만
+QA 로그인 제출이 Chrome `ERR_BLOCKED_BY_CLIENT`로 차단됐다. 브라우저 보안 설정/확장/쿠키를
+우회하지 않았다. 인증된 browser 정상/empty 화면과 실제 browser Network 요청 목록은 미검증이다.
+따라서 C30 formal acceptance=false, formal FAILURE_REPORT=0이며 제품 결함으로 단정하지 않는다.
+위 초기 SSH BLOCKED/생성0 기록은 당시 실행 기록이고 이 후속 실제 실행 기록이 현재 상태다.
+
+### 정확한 source·환경·실행
+
+- 외부 push 없이 `WSL-server`의 mounted canonical
+  `/mnt/d/Project/Anvil/.codex-sandbox/anvil-main-integration`에서 `git clone --no-hardlinks --no-checkout`
+  → `/tmp/anvil-c30r3-t4-20260920-0120`, `git checkout --detach 219a28854628cb2c26ddd7d89a623dba9360ac41`.
+  exit0, checkout clean. 외부 Git remote는 변경하지 않았다.
+- `docker build --network none --pull=false --label anvil.c30r3.task4=20260920-0120 -t anvil-c30r3-t4:20260920-0120 -f - .`
+  exit0, image `4097b12a3f55`. cached `anvil-web:c30r1-a681`에 exact Git source만 COPY했다.
+  새 dependency 다운로드0. 첫 stdin CRLF build 실패(exit1)는 LF 정규화 후 해소했다.
+- internal network `anvil-c30r3-t4-20260920-0120-net` ID `635f303ca3f2d8e5e6c7b3657d258631342ae1cbea758cc0c7a24102783edf87`.
+  PG container `...-pg` ID `ff38cd14065760cfbe0d17296e002d73938e0d3f3fe16fbbaf940f5923161e7c`,
+  cached `pgvector/pgvector:0.8.2-pg15`, data tmpfs, 별도 volume0.
+- host에서 무작위 validation-only credential/session을 만들고 subprocess/container env로만 전달했다.
+  값·DSN·token 로그/보고0, 기존 secret/DB 사용0. shell tracing0, 오류 출력은 credential redaction.
+- `docker exec ...-pg createdb -U qa c30r3_app`, `... c30r3_owner`: 각각 exit0.
+  `docker run --rm ... anvil-c30r3-t4:20260920-0120 init`: exit0.
+  committed harness가 실제 `alembic.command.upgrade(config,'0013_task_bootstrap_authority')` /
+  `upgrade(config,'0015_agent_team_owner')`를 서로 다른 DB에서 수행했다.
+  **app_db_head=0013_task_bootstrap_authority / owner_db_head=0015_agent_team_owner**.
+  release DB/source/migration 파일 변경0.
+- 저장 owner snapshot1, hash `sha256:d75d4c98bcd102504f3a099f709aaef9e7d0028a098a33b3e639bbb05efe7ffb`.
+  실제 RolePolicy/RoleResults/Team/MoA의 PENDING QA task이며 PASS 결과·Provider 실행을 꾸미지 않았다.
+- `docker run -d ... anvil-c30r3-t4:20260920-0120 serve` web ID
+  `7f229aacab20d77dffc92e770f5c48838528da8764bb7f361730cc4e3ea6ad4b`.
+  `docker exec ...-web /opt/venv/bin/python -c <urllib GET probe>` exit0:
+  `/health/live=200`, `/health/ready=200`, `/api/agent-console/{team,moa,sns,adapters}` 모두200.
+  team NORMAL/PENDING, moa EMPTY, sns EMPTY, adapters NORMAL/NOT_INTEGRATED, counts_as_pass=false.
+- `docker restart ...-web` 후 동일 urllib probe exit0; StartedAt 변경 확인, 4개 응답 bytes/hash exact equality.
+  시작 직후 1회 connection refused는 readiness retry로 수렴했으며 성공 응답으로 숨기지 않았다.
+  `docker exec ...-web /opt/venv/bin/python /opt/anvil/formal.py stats`: owner head0015,
+  heads1/receipts4/revoked0/app head0013. 반복 GET/restart 뒤 receipt 수4 유지.
+  response SHA256: team `ffc30aa56e2fa6bde506d44c2d6e37fd67128594da79c4049fa8158525d522d3`,
+  moa `5032469a6f92e1f9f5bf9f22a6f4bb795687b0a807ac2964f73e5874cacad6c8`,
+  sns `d8587bfb9f772c88cefb12b356c6568b4931f188c787dcdf19cd44593ee9f72a`,
+  adapters `00ec00712aca5b9e1c57ebc607f02a6e60e8818b5d035d7711cd3753a2ce39fa`.
+
+### Browser/BFF 시도와 거부·revocation
+
+Main에 보고한 test-only QA 로그인 fixture commit `372718c85209aed50e28ebd5c6c27196be11571d`를
+mounted Git에서 full SHA fetch→detached checkout했다(exit0). 처음 short SHA fetch는 exit1이고 source 변경0.
+이후 Main은 이미 준비된 fixture 사용만 허용하고 추가 fixture 생성을 금지했다. 그 뒤 코드 변경0.
+fixture는 기존 seeded read-only principal용 cookie만 설정하며 owner registration/권위 변경을 하지 않는다.
+이는 production authentication 증거가 아니다. image `anvil-c30r3-t4:20260920-0120-browser`
+`b6fd739f2a39`, web 교체 ID `42dfb15f0546d8189e0dc22a915894642b1d38f5974caa121da31e5289c1698d`.
+
+원본 `apps/web/server.mjs`의 `startWorkbenchServer({host:'127.0.0.1',port:4173,
+agentConsoleUpstream:'http://127.0.0.1:3770'})`를 cached Node22에서 실행했다.
+BFF `...-bff` ID `b104c9602330bcf17294de888a50145c185afc23a8985491c6b483c5ff64d6b0`,
+read-only Git checkout mount, `--network container:...-web`; 임시 TCP relay4174→namespace loopback4173.
+internal Docker network host port는 실제 비노출이라 첫 tunnel 연결이 reset됐다.
+SSH alias는 유지하고 `ssh -N -L 127.0.0.1:4173:172.24.0.3:4174 WSL-server`로
+원격 disposable container 목적지만 연결했다. 이 내부 주소는 browser 코드/URL에 넣지 않았다.
+처음 tunnel PID34208은 소유 commandline 확인 후 종료, 대체 PID46720도 종료했다.
+
+- Chrome CUA에서 `http://127.0.0.1:4173/auth/c30r3-qa` 페이지와 명시적 QA 설명을 관찰했다.
+  qa-reader 제출 후 `127.0.0.1이(가) 차단됨 / ERR_BLOCKED_BY_CLIENT`.
+  이후 `/agent-console`에서 Team/MoA/SNS/Adapters를 실제 클릭했고 4개 모두 permission 화면을 관찰했다.
+  인증 browser PASS로 승격하지 않는다. read-only browser evaluation에서 performance API가 제공되지 않아
+  `Cannot read properties of undefined (reading 'getEntriesByType')`; 실제 Network 목록 미수집.
+- 별도 실제 HTTP BFF probe는 persisted cookie로 4개 메뉴200을 확인했다.
+  pause/resume/approve/deploy/merge/delete × CSRF 없음/유효 = **12개403**, query spoof400,
+  foreign Origin403. runtime의 durable read-side는 제어 실행을 하지 않았다.
+- `docker exec ...-web /opt/venv/bin/python /opt/anvil/formal.py revoke` exit0 COMMITTED;
+  `docker restart ...-web` 후 같은 persisted session으로 4개 메뉴 **모두403**.
+  stats: heads1/receipts4/revoked1, owner0015/app0013 유지.
+- `docker stop ...-web` 후 BFF actual HTTP 조회 **503 OFFLINE**, exit0.
+  이 live HTTP 묶음은 pytest 건수와 혼합하지 않는다.
+
+### Cleanup·불변 증거
+
+정확한 label `anvil.c30r3.task4=20260920-0120` 검증 후 bff/web/pg `docker rm -f`, network rm,
+두 image tag rm을 수행했다. 임시 checkout의 resolved exact 경로·HEAD372718c·clean을 확인한 뒤 제거했다.
+원격 cleanup script exit0: label container/network/volume/image 목록 모두 empty, checkout_exists=false.
+빌드 출력에 나온 intermediate image exact14 IDs도 별도 inspect하여 residue[] exit0.
+SSH tunnel46720 commandline 확인→종료→process 없음, QA browser tab 종료.
+disposable data는 의도적으로 폐기됐으며 외부 서비스 복구는 필요하지 않다.
+기존 `anvil-web` ID `f0107aada3b26ea84950d5561fdd1d13759090096601854720acae5448684738`,
+image `sha256:c0254177b858d93457585d2c268f43b3386ca20c18a47e4af9460174320488e9`,
+StartedAt `2026-09-19T08:16:52.620522074Z`, Running=true를 전후 exact 비교해 불변 확인했다.
+기존 다른 서비스/DB/volume/config/key 변경0.
+
+### 최종 로컬 검증·남은 경계
+
+- `C:/Users/cyhuh/anaconda3/python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_c30r3_formal_entity.py --tb=short`
+  → exit0 **24 passed/0 skipped,3.52s** (기존 warning1).
+- `C:/Users/cyhuh/anaconda3/python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_c30r3_formal_entity.py tests/integration/test_c30r3_runtime_restore.py tests/agent_team/test_owner_component_restore.py tests/integration/test_c30r2_runtime_owner.py tests/integration/test_c30r2_formal_entity.py tests/integration/test_c30_console_e2e.py --tb=short`
+  → exit0 **159 passed/0 skipped,12.31s**, 기존 python_multipart warning1.
+- 실제 authenticated browser 정상/empty/revoked 흐름 및 Network inspection은 BLOCKED/NOT_VERIFIED.
+  Provider/Telegram/Kakao/Oracle/production/PG18 실행0, 일반 production auth 연결 미검증.
+  이 제한을 해소하기 전 formal acceptance를 요청하지 않는다.
+- exact3 밖 제품/control 변경0. progress-events/build-progress JSON은 Main 소유라 수정하지 않았다.
+  Main completion event에는 INCOMPLETE, 위 actual PG/HTTP/restart/revoke/cleanup, browser blocker를 구분해 결박한다.
+- rollback: Task4 exact3 commits만 Main 검토 후 revert. 기존 history 원문/제품/DB는 보존하며
+  disposable 자원은 이미 제거됐으므로 남은 외부 rollback0. lease는 임의 revoke하지 않았다.
+- 최종 `PY -B -c "from pathlib import Path; p=Path('tests/integration/test_c30r3_formal_entity.py'); compile(p.read_bytes(),str(p),'exec'); print('COMPILE_PASS exact1')"`
+  및 `git diff --check` 각각 exit0. 보고/HANDOFF append-only delta135 lines 확인 뒤 이 구문 결과를 추가했다.
