@@ -65,6 +65,44 @@ class ConsoleProjectionService:
             raise ValueError('TRACE_MISMATCH')
         return assignment,source,view
 
+    def owner_components(self, authority, *, now):
+        """Bind public owner views; NOT a serialization/restore of private authority.
+
+        The host must supply real domain owners. These reference projections never
+        recreate revoked grants, spent budgets, evidence registries or write leases.
+        """
+        from packages.persistence.agent_team_owner_repository import OwnerComponent
+        _, source, view = self._authority(authority, now)
+        assignments = []
+        for task_id, assignment_id in sorted(self._ids.items()):
+            assignment = self._policy.get_assignment(assignment_id)
+            if task_id not in view['tasks'] or view['tasks'][task_id]['assignment_hash'] != assignment.content_hash:
+                raise ValueError('TASK_MAPPING_INVALID')
+            assignments.append(dict(task_id=task_id,assignment_id=assignment_id,assignment_hash=assignment.content_hash))
+        def component(kind, value):
+            body=json.dumps(plain(value),sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False)
+            return OwnerComponent(kind,1,body,'sha256:'+hashlib.sha256(body.encode()).hexdigest())
+        policy=component('ROLE_POLICY',dict(schema='console-policy-references/v1',assignments=assignments))
+        results=component('ROLE_RESULTS',dict(schema='console-result-references/v1',
+            results={k:v['result_hash'] for k,v in view['tasks'].items()}))
+        team=component('TEAM',dict(schema='console-team-projection/v1',projection=view))
+        moa=None if self._moa is None else component('MOA',dict(schema='console-moa-projection/v1',projection=self._moa.project().to_dict()))
+        _, latest, _=self._authority(authority,now)
+        if latest.content_hash!=source.content_hash: raise ValueError('PROJECTION_CHANGED')
+        return policy,results,team,moa
+
+    def verify_owner_snapshot(self, snapshot, authority, *, now):
+        from packages.persistence.agent_team_owner_repository import OwnerSnapshot
+        if type(snapshot) is not OwnerSnapshot: raise ValueError('OWNER_REQUIRED')
+        assignment,_,_=self._authority(authority,now)
+        binding=snapshot.binding
+        for name in ('assignment_id','actor_id','context_id','workspace_id','session_id','baseline_hash','target_hash'):
+            if getattr(binding,name)!=getattr(assignment,name): raise ValueError('TRACE_MISMATCH')
+        if binding.assignment_hash!=assignment.content_hash or binding.execution_fence!=assignment.execution_fence:
+            raise ValueError('TRACE_MISMATCH')
+        if self.owner_components(authority,now=now)!=(snapshot.policy,snapshot.results,snapshot.team,snapshot.moa):
+            raise ValueError('PROJECTION_CHANGED')
+
     def read(self, menu, authority, *, now):
         if type(menu) is not str or menu not in MENUS: raise ValueError('MENU_INVALID')
         a,source,v=self._authority(authority,now)
@@ -135,8 +173,12 @@ class ConsoleProjectionService:
             request_id=body['request_id'],target_hash=a.target_hash,allowed=False,applied=False,io_count=0)
 
 
-def create_agent_console_app(service=None, *, resolve_authority=None, clock=None):
+def create_agent_console_app(service=None, *, resolve_authority=None, clock=None, runtime_owner=None):
     if service is not None and type(service) is not ConsoleProjectionService: raise ValueError('OWNER_REQUIRED')
+    if runtime_owner is not None:
+        from packages.api.runtime import RuntimeConsoleOwner
+        if type(runtime_owner) is not RuntimeConsoleOwner or service is not None or resolve_authority is not None:
+            raise ValueError('OWNER_REQUIRED')
     app=FastAPI(docs_url=None,redoc_url=None,openapi_url=None)
     clock=clock or (lambda:datetime.now(timezone.utc))
     def response(code,data): return JSONResponse(data,status_code=code,headers={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'})
@@ -148,12 +190,18 @@ def create_agent_console_app(service=None, *, resolve_authority=None, clock=None
     def read(menu:str,request:Request):
         if menu not in MENUS:return failure(404,'EMPTY')
         if request.query_params:return failure(400,'ERROR')
+        if runtime_owner is not None:
+            try:return response(200,runtime_owner.read_request(menu,request))
+            except (ValueError,TypeError,KeyError):return failure(403,'PERMISSION_DENIED')
+            except Exception:return failure(503,'OFFLINE')
         if service is None:return failure(503,'OFFLINE')
         try:return response(200,service.read(menu,authority(request),now=clock()))
         except (ValueError,TypeError,KeyError):return failure(403,'PERMISSION_DENIED')
         except Exception:return failure(500,'ERROR')
     @app.post('/api/agent-console/control')
     async def control(request:Request):
+        # This durable read-side seam never creates control authority/intents.
+        if runtime_owner is not None:return failure(403,'PERMISSION_DENIED')
         if service is None:return failure(503,'OFFLINE')
         raw=b''
         try:

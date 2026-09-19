@@ -12,6 +12,10 @@ import os
 from urllib.parse import urlsplit
 from collections.abc import Mapping
 from typing import Any, Callable
+from dataclasses import fields, replace
+from datetime import datetime, timezone
+from hashlib import sha256
+import json
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -38,6 +42,122 @@ from packages.llm_gateway import NativeAgentAdapter
 
 class RuntimeConfigurationError(ValueError):
     """Raised when the production boundary cannot be safely constructed."""
+
+
+class RuntimeConsoleOwner:
+    """Host-only auth/mapping/materializer seam, not a durable owner restorer.
+
+    No mapping is minted from request authority fields. Repository authority is
+    checked twice, while host callbacks execute outside its row-lock transaction.
+    The materializer must return real existing owners, never a generic JSON proxy.
+    """
+    def __init__(self, *, session_factory, authenticate, resolve_mapping, materialize, clock=None):
+        if not all(callable(v) for v in (session_factory,authenticate,resolve_mapping,materialize)):
+            raise RuntimeConfigurationError('CONSOLE_OWNER_DEPENDENCIES_REQUIRED')
+        if clock is not None and not callable(clock):
+            raise RuntimeConfigurationError('CONSOLE_CLOCK_REQUIRED')
+        self._sessions=session_factory
+        self._authenticate=authenticate
+        self._mapping=resolve_mapping
+        self._materialize=materialize
+        self._clock=clock or (lambda:datetime.now(timezone.utc))
+
+    @staticmethod
+    def _detached(value):
+        from packages.persistence.agent_team_owner_repository import OwnerBinding, PrincipalMapping, OwnerSnapshot, OwnerComponent
+        classes=(SessionPrincipal,OwnerBinding,PrincipalMapping,OwnerSnapshot,OwnerComponent)
+        if any(type(value) is cls for cls in classes):
+            try:
+                values={f.name:RuntimeConsoleOwner._detached(object.__getattribute__(value,f.name)) for f in fields(type(value))}
+            except AttributeError:
+                raise ValueError('AUTHORITY_DENIED') from None
+            return type(value)(**values)
+        if type(value) is str:
+            if len(value.encode('utf-8'))>1048576: raise ValueError('AUTHORITY_DENIED')
+            return value
+        if type(value) is int or value is None:return value
+        if type(value) is tuple or type(value) is frozenset:
+            if len(value)>64:raise ValueError('AUTHORITY_DENIED')
+            return type(value)(RuntimeConsoleOwner._detached(v) for v in value)
+        if type(value) is datetime and value.tzinfo is timezone.utc:
+            return datetime(value.year,value.month,value.day,value.hour,value.minute,value.second,value.microsecond,tzinfo=timezone.utc)
+        raise ValueError('AUTHORITY_DENIED')
+
+    def _credentials(self, token):
+        from packages.persistence.agent_team_owner_repository import PrincipalMapping, OwnerBinding
+        principal=self._authenticate(token)
+        if type(principal) is not SessionPrincipal:raise ValueError('AUTHORITY_REQUIRED')
+        principal=self._detached(principal)
+        if (type(principal.actor_id) is not str or type(principal.actor_role) is not str
+            or type(principal.permissions) is not frozenset or type(principal.project_ids) is not frozenset
+            or type(principal.environment_ids) is not frozenset):raise ValueError('AUTHORITY_DENIED')
+        for values in (principal.permissions,principal.project_ids,principal.environment_ids):
+            if any(type(v) is not str for v in values):raise ValueError('AUTHORITY_DENIED')
+        token_hash='sha256:'+sha256(token.encode()).hexdigest()
+        mapping=self._mapping(self._detached(principal),token_hash)
+        if type(mapping) is not PrincipalMapping:raise ValueError('AUTHORITY_DENIED')
+        mapping=self._detached(mapping)
+        if type(mapping.binding) is not OwnerBinding or type(mapping.permissions) is not tuple:
+            raise ValueError('AUTHORITY_DENIED')
+        b=mapping.binding
+        if (mapping.auth_session_hash!=token_hash or mapping.principal_actor_id!=principal.actor_id
+            or mapping.principal_role!=principal.actor_role or b.actor_id!=principal.actor_id
+            or b.project_id not in principal.project_ids or b.environment_id not in principal.environment_ids
+            or 'tasks:read' not in principal.permissions or not set(mapping.permissions)<=principal.permissions):
+            raise ValueError('AUTHORITY_DENIED')
+        return principal,mapping
+
+    def read_request(self, menu, request):
+        from packages.persistence.agent_team_owner_repository import SqlAlchemyAgentTeamOwnerRepository, ProjectionReceipt
+        from apps.api.anvil_api.routes.agent_console import ConsoleAuthority, ConsoleProjectionService, MENUS
+        if type(menu) is not str or menu not in MENUS:raise ValueError('MENU_INVALID')
+        if any(name in request.headers for name in ('x-actor-id','x-context-id','x-session-id','x-target-hash',
+            'x-assignment-id','x-execution-fence','x-write-fence')):raise ValueError('AUTHORITY_DENIED')
+        token=request.cookies.get('anvil_session')
+        if type(token) is not str or not 1<=len(token)<=256 or not token.isascii():raise ValueError('AUTHORITY_REQUIRED')
+        principal,mapping=self._credentials(token)
+        now=self._detached(self._clock())
+        if type(now) is not datetime:raise ValueError('UTC_REQUIRED')
+        repo=SqlAlchemyAgentTeamOwnerRepository()
+        with self._sessions() as session,session.begin():
+            snapshot=repo.load_current_owner(session,binding=mapping.binding,principal=mapping)
+        if snapshot is None:raise ValueError('AUTHORITY_DENIED')
+        # Host callback receives a detached object, never our validation snapshot.
+        service=self._materialize(self._detached(snapshot))
+        if type(service) is not ConsoleProjectionService:raise ValueError('OWNER_REQUIRED')
+        b=snapshot.binding
+        authority=ConsoleAuthority(b.assignment_id,b.actor_id,b.context_id,b.session_id,b.target_hash,b.execution_fence)
+        service.verify_owner_snapshot(snapshot,authority,now=now)
+        response=service.read(menu,authority,now=now)
+        body=json.dumps(response,sort_keys=True,separators=(',',':'),ensure_ascii=False,allow_nan=False)
+        if len(body.encode())>65536:raise ValueError('PROJECTION_BOUND_EXCEEDED')
+        request_hash='sha256:'+sha256(json.dumps(dict(owner=snapshot.content_hash,
+            mapping=mapping.mapping_hash,menu=menu,query={}),sort_keys=True,separators=(',',':')).encode()).hexdigest()
+        request_id='console-'+request_hash[7:]
+        current_principal,current_mapping=self._credentials(token)
+        if current_principal!=principal or current_mapping!=mapping:raise ValueError('AUTHORITY_DENIED')
+        with self._sessions() as session,session.begin():
+            current=repo.load_current_owner(session,binding=b,principal=mapping,expected_version=snapshot.owner_version)
+            if current!=snapshot:raise ValueError('PROJECTION_CHANGED')
+            service.verify_owner_snapshot(current,authority,now=now)
+            stored=repo.load_receipt(session,binding=b,principal=mapping,request_id=request_id)
+            response_hash='sha256:'+sha256(body.encode()).hexdigest()
+            if stored is not None:
+                if stored.response_hash!=response_hash or stored.request_hash!=request_hash:raise ValueError('PROJECTION_CHANGED')
+                return json.loads(stored.response_json)
+            # Receipt fields are built only from checked server values, not request headers.
+            receipt=ProjectionReceipt('receipt-'+request_hash[7:],request_id,request_hash,b,
+                current.owner_version,current.content_hash,mapping.mapping_hash,menu,body,response_hash,now,'')
+            def primitive(value):
+                if type(value) is datetime:return value.isoformat(timespec='microseconds')
+                if type(value) is tuple:return [primitive(x) for x in value]
+                if type(value) in (ProjectionReceipt,type(b)):
+                    return {f.name:primitive(getattr(value,f.name)) for f in fields(type(value))}
+                return value
+            payload=primitive(receipt);del payload['content_hash']
+            seal='sha256:'+sha256(json.dumps(payload,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
+            repo.save_receipt(session,binding=b,principal=mapping,receipt=replace(receipt,content_hash=seal),expected_version=current.owner_version)
+        return response
 
 
 _TEST_SESSION_REQUIRED = (
@@ -159,6 +279,9 @@ def create_runtime_app(
     engine: Any | None = None,
     adapter: TelegramAdapter | None = None,
     step_adapters: Mapping[str, NativeAgentAdapter] | None = None,
+    console_mapping_resolver=None,
+    console_materializer=None,
+    console_clock=None,
     **app_kwargs: Any,
 ):
     """Construct the application with durable Telegram state.
@@ -375,7 +498,14 @@ def create_runtime_app(
     app.state.event_stream = app_kwargs["event_stream"]
     app.state.local_test_session_enabled = local_session is not None
     app.state.auth_mode = auth_mode
+    app.state.agent_console_runtime = None
+    app.state.agent_console_restore_status = "NOT_INTEGRATED"
+    if console_mapping_resolver is not None or console_materializer is not None:
+        app.state.agent_console_runtime = RuntimeConsoleOwner(
+            session_factory=session_factory,authenticate=app_kwargs.get("authenticate"),
+            resolve_mapping=console_mapping_resolver,materialize=console_materializer,clock=console_clock,
+        )
     return app
 
 
-__all__ = ["RuntimeConfigurationError", "create_runtime_app"]
+__all__ = ["RuntimeConfigurationError", "RuntimeConsoleOwner", "create_runtime_app"]

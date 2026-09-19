@@ -39,7 +39,9 @@ def create_asgi_app(app: FastAPI) -> FastAPI:
 
     # Reuse the console's already-prefixed routes without a second mount prefix.
     # Missing host owners/auth retain the console's explicit 503 OFFLINE response.
-    app.router.routes.extend(create_agent_console_app().router.routes)
+    app.router.routes.extend(create_agent_console_app(
+        runtime_owner=getattr(app.state, "agent_console_runtime", None),
+    ).router.routes)
 
     # Mount only after every explicit API route so StaticFiles cannot shadow APIs.
     mount_frontend(
