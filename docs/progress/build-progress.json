@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1314,
-  "updated_at": "2026-09-22T11:51:59+09:00",
-  "last_event_id": "evt_c30r3_response_capture_startup_failed",
+  "event_sequence": 1315,
+  "updated_at": "2026-09-22T12:35:00+09:00",
+  "last_event_id": "evt_c30r3_task4_browser_formal_completed",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -16,6 +16,26 @@
     "full_regression_passed": 819,
     "web_regression_passed": 70,
     "formal_failure_count": 0
+  },
+  "c30r3_task4_formal": {
+    "status": "COMPLETED_FORMAL_FIXTURE_SCOPE",
+    "accepted": true,
+    "source_commit": "9b03c1afce31c4dbdebeff8c893a2030b89745bc",
+    "base_image_digest": "sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7",
+    "final_image_digest": "sha256:95294efe116e12c5e95bf0b43da1cc0f9fc82b7fc24b7cdb252f9626bdbee5c1",
+    "pg15_dual_db": "PASS_APP_0013_OWNER_0015",
+    "restart_readiness": "PASS_LIVE_200_READY_200",
+    "revoke": "PASS_COMMITTED_REVOKED_1_RECEIPTS_4",
+    "direct_api": "PASS_403_PERMISSION_DENIED",
+    "browser": "PASS_403_TEAM_PERMISSION",
+    "cookie": "PASS_HTTPONLY_PRESERVED_AND_RESENT",
+    "same_origin": "PASS_4_ROUTES_FOREIGN_0",
+    "network_namespace_diagnosis": "PASS_OLD_BFF_NAMESPACE_CONFIRMED_AND_REBOUND_ONCE",
+    "cleanup": "PASS_RESIDUE_0_EXISTING_SERVICE_UNCHANGED",
+    "production_auth": "NOT_EXECUTED",
+    "provider": "NOT_EXECUTED",
+    "pg18": "NOT_EXECUTED",
+    "next_safe_action": "C30_INDEPENDENT_REVIEW_AND_FRESH_GATE"
   },
   "c30_formal_smoke": {
     "status": "ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED",
@@ -58,8 +78,8 @@
   "work_plan_hash": "A10A01759496511AF32354BACE84C1FCEF135A57A07247A45B8228E2A1CE0477",
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
-  "current_work_package": "C-30R3",
-  "status": "C30R3_TASK4_INCOMPLETE_API_READINESS_FAILED",
+  "current_work_package": "C-30",
+  "status": "C30R3_TASK4_COMPLETED_PENDING_C30_INDEPENDENT_REVIEW",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -2560,8 +2580,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "0B72D7370E89D2C61735C0F3A8B34BE52982D27DD7D7F165541D8B6667D90B82",
-  "runtime_next_action": "C30R3_PRESERVE_WEB_STARTUP_ERROR_BEFORE_CLEANUP",
+  "snapshot_hash": "CA171B1543B4E3C7F372661BD279B068017DFEBA44ED21677D22AA216039747D",
+  "runtime_next_action": "C30_INDEPENDENT_REVIEW_AND_FRESH_GATE",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",

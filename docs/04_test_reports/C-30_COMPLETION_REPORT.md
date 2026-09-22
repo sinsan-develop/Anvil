@@ -580,3 +580,54 @@ revoke 이후 browser status/body 수집 전에 disposable web 초기 기동이 
 이번 실행은 기존 normal/empty/same-origin browser PASS나 revoke COMMITTED 증거를 취소하지 않지만,
 revoked browser permission/403을 추가로 증명하지도 않는다. 다음 진단은 startup 실패 원문을 cleanup
 전에 수집할 별도 증거 경로가 먼저 필요하며, 현재 formal acceptance=false를 유지한다.
+
+### 2026-09-22 C30R3 Task4 browser formal 마감
+
+판정은 **COMPLETED_FORMAL_FIXTURE_SCOPE**다. 최종 단일 실행 `session15435`는 exit0이며,
+격리 PG15·container·restart·동일 browser session에서 revoke 이후 실제 HTTP403과
+`Team · permission` UI를 확인했다. 이는 fixture-mode C30 formal 증거이며 production auth,
+Provider, PG18, Oracle 배포 증거로 승격하지 않는다.
+
+#### 선행 실패 원인과 교정
+
+- 첫 response-capture startup 실패 원문을 별도 startup-only 실행에서 cleanup 전에 보존했다.
+  runtime은 `TELEGRAM_INTERNAL_SIGNING_SECRET`을 요구했지만 진단 런처가
+  `INTERNAL_SIGNING_SECRET`만 주입해 import-time exit1이었다. 제품 결함이 아니며 secret 값은
+  출력하지 않았다. 키 이름만 교정한 뒤 live/ready가 모두200으로 복구됐다.
+- revoke/restart 뒤 직접 API는403이었지만 기존 BFF 경로는 `ERR_CONNECTION_RESET`이었다.
+  web restart 전 web/BFF net inode는 모두 `4026533760`; restart 뒤 web은 `4026533820`,
+  기존 BFF는 `4026533760`에 남았다. `network=container:web` BFF를 동일 설정으로 1회 재생성한 뒤
+  둘 다 `4026533820`, BFF health200으로 회복했다. 원인은 web container restart 후 BFF가
+  이전 network namespace에 남은 disposable 검증 topology였다.
+- 중간 namespace-only 실행은 PostgreSQL 초기화 임시 postmaster 종료 race로 DB 생성 전에 중단했다.
+  최종 실행은 PID1=`postgres`, `SELECT 1`과 동일 postmaster start time을 3회 확인한 뒤 진행했다.
+- 직전 실행은 browser403까지 확인했으나 `Network.getResponseBody`의 CDP -32000으로 UI 수집 전에
+  종료됐다. 최종 실행은 body를 직접 API에서 수집하고 CDP body 호출 없이 DOM을 끝까지 확인했다.
+
+#### 최종 실제 증거
+
+- exact source `9b03c1afce31c4dbdebeff8c893a2030b89745bc`, immutable base image
+  `sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7`,
+  실행 image `sha256:95294efe116e12c5e95bf0b43da1cc0f9fc82b7fc24b7cdb252f9626bdbee5c1`.
+- app DB head0013, owner DB head0015, seed/revoke COMMITTED, receipts4, revoked1.
+  release/candidate schema와 기존 DB는 변경하지 않았다.
+- 격리 Chrome 새 profile에서 HttpOnly QA cookie를 발급받고 Team/Adapters=`normal`,
+  MoA/SNS=`empty`, same-origin 네 API200, foreign/internal-address request0, CSP self,
+  uncaught JavaScript exception0을 확인했다.
+- web restart 뒤 live/ready200. 직접 API는403과
+  `{"state":"PERMISSION_DENIED","reason":"CONSOLE_REQUEST_DENIED","counts_as_pass":false}`.
+- BFF를 새 web namespace에 1회 재결합한 뒤 동일 Chrome·tunnel·HttpOnly cookie가 유지되고
+  Cookie header가 재전송됐다. browser `Network.responseReceived`는403, loadingFailed0,
+  DOM은 실제 `Team · permission`; `offline`과 `error`가 아님을 확인했다.
+- 예상된 API403과 favicon404 resource console 항목은 각1건이며 이를 error0으로 표시하지 않는다.
+
+#### 정리와 경계
+
+각 실행은 cleanup 전에 inspect/log를 보존했다. 최종적으로 Chrome/profile/tunnel,
+container/network/volume/image/tmp checkout residue0이며 기존 `anvil-web`의 identity, image,
+StartedAt, running, healthy tuple은 불변이다. 제품·fixture·Git 변경0, 외부 Provider/production/PG18
+실행0. 남은 절차는 C30 전체 독립 Reviewer의 C/I finding 판정과 문서·test fresh gate다.
+
+문서 반영 후 fresh gate: `node --test --test-reporter=spec apps/web/tests/*.test.mjs`
+exit0 **88 passed/0 failed/0 skipped,2663.7486ms**. C30R3 관련 Python 6파일 회귀는
+exit0 **159 passed/0 skipped,14.30s**, 기존 `python_multipart` warning1. `git diff --check` exit0.

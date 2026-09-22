@@ -2523,3 +2523,22 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
   기존 `anvil-web` current identity/StartedAt/running/healthy tuple과 사용자 dirty 문서 SHA 불변.
 - 다음 행동은 추가 실행 전에 startup 로그를 cleanup 전 보존하는 최소 evidence 경로를 확정하는 것.
   C30R3 formal acceptance=false, revoked browser403 미검증을 유지한다.
+
+### WORK_STATUS — C30R3 Task4 browser formal 마감(2026-09-22)
+
+- 상태 `COMPLETED_FORMAL_FIXTURE_SCOPE`; 최종 `session15435` exit0. exact9b03c1a,
+  base88774a6d, image95294efe116e를 사용했다.
+- 첫 startup 진단의 원인은 런처 env key 불일치로 확정했다. 요구 key
+  `TELEGRAM_INTERNAL_SIGNING_SECRET` 교정 후 web live/ready200. 제품 변경0.
+- restart 전 web/BFF net inode4026533760 동일; restart 뒤 web3820/BFF3760 분리 및 reset;
+  BFF 1회 동일 설정 재생성 후 둘 다3820, health200으로 회복했다.
+- PG 안정 postmaster 3회 확인, app0013/owner0015, seed/revoke COMMITTED,
+  receipts4/revoked1. 직접 API403 `PERMISSION_DENIED`.
+- 동일 isolated Chrome session/HttpOnly cookie 재전송, browser403, loadingFailed0,
+  DOM `Team · permission`을 실제 확인했다. offline/error 아님.
+- normal/empty 네 메뉴, same-origin API200 네 경로, foreign/internal URL0, CSP self,
+  uncaught JS0. production auth·Provider·PG18·Oracle은 NOT_EXECUTED.
+- 최종 Chrome/profile/tunnel/container/network/volume/image/tmp residue0; 기존 `anvil-web`
+  identity/StartedAt/running/healthy 불변. 다음 행동은 C30 독립 review/fresh gate다.
+- 문서 반영 후 fresh gate: web 전체88P/0F/0S exit0(2663.7486ms), C30R3 관련
+  Python159P/0S exit0(14.30s, 기존 warning1), diff-check exit0.

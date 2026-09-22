@@ -2207,3 +2207,23 @@
 - cleanup 경합 때문에 web 원본 exception은 미수집/미확정이다. 제품·fixture 변경과 추가 retry0.
 - Chrome/profile/tunnel/container/network/volume/image/tmp checkout cleanup residue0,
   기존 `anvil-web` current identity/health 불변을 확인했다.
+
+## C30R3 Task4 browser formal 완료 — 2026-09-22
+
+- 판정 `COMPLETED_FORMAL_FIXTURE_SCOPE`; 최종 `session15435` exit0.
+- startup 실패는 진단 런처의 env key 불일치(`INTERNAL_SIGNING_SECRET` 주입,
+  runtime 요구 `TELEGRAM_INTERNAL_SIGNING_SECRET`)로 확정·교정했다. 제품 변경0.
+- web restart 전 web/BFF net inode 동일 `4026533760`; restart 후 web `4026533820`,
+  기존 BFF `4026533760`으로 분리되며 연결 reset. BFF를 동일 설정으로 1회 재생성하자
+  둘 다 `4026533820`, health200으로 회복했다.
+- PG PID1/postmaster 안정 확인 후 app0013/owner0015, seed/revoke COMMITTED,
+  receipts4/revoked1. restart live/ready200, 직접 API403 `PERMISSION_DENIED`.
+- 동일 격리 Chrome/tunnel/HttpOnly cookie가 유지·재전송됐고 browser403,
+  loadingFailed0, DOM `Team · permission`(offline/error 아님)을 확인했다.
+- 최초 네 메뉴 normal/empty, same-origin API200 네 경로, foreign/internal URL0,
+  CSP self, uncaught JS0. fixture auth이며 production auth 증거가 아니다.
+- Chrome/profile/tunnel/container/network/volume/image/tmp checkout residue0,
+  기존 `anvil-web` identity/StartedAt/running/healthy 불변.
+- Provider/production/PG18/Oracle 미실행. 다음은 C30 전체 독립 Reviewer와 fresh gate다.
+- fresh gate: web 전체88P/0F/0S exit0(2663.7486ms), C30R3 관련 Python159P/0S
+  exit0(14.30s, 기존 warning1), diff-check exit0.
