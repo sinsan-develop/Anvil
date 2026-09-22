@@ -2542,3 +2542,17 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
   identity/StartedAt/running/healthy 불변. 다음 행동은 C30 독립 review/fresh gate다.
 - 문서 반영 후 fresh gate: web 전체88P/0F/0S exit0(2663.7486ms), C30R3 관련
   Python159P/0S exit0(14.30s, 기존 warning1), diff-check exit0.
+
+### WORK_STATUS — C30R3 independent rework 및 error-state 보완(2026-09-22)
+
+- 첫 독립 review C0/I2/M1 `REWORK`: 선행 acceptance와 유효 lease lineage 누락,
+  actual browser error-state 누락. seq1316에서 acceptance=false로 정정하고 seq1318에서
+  만료 lease를 회수, 새 read-only worker lease를 canonical projection에 결박했다.
+- internal Docker network는 `-p` HostConfig를 보존해도 실제 publish가 생성되지 않음을
+  cached Node internal/general running 비교로 확정했다. 일반 network로 넓히지 않고
+  WSL host→internal container IP 직접 ingress200을 확인해 SSH tunnel을 결박했다.
+- 최종 session21984 exit0. 정상 Team200 뒤 CDP Fetch exact same-origin team GET1건만
+  safe400 `FORMAL_UI_FAULT_INJECTION`으로 fulfill; Network400과 실제 DOM `Team · error`.
+  offline/permission/normal 아님, loadingFailed0, uncaught0, foreign/internal URL0, CSP self.
+- fault injection UI 증거이며 실제 서버 생성400으로 승격하지 않는다. cleanup residue0,
+  기존 anvil-web 불변. 다음 행동은 C30R3 독립 재검토다.

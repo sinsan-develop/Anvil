@@ -631,3 +631,44 @@ StartedAt, running, healthy tuple은 불변이다. 제품·fixture·Git 변경0,
 문서 반영 후 fresh gate: `node --test --test-reporter=spec apps/web/tests/*.test.mjs`
 exit0 **88 passed/0 failed/0 skipped,2663.7486ms**. C30R3 관련 Python 6파일 회귀는
 exit0 **159 passed/0 skipped,14.30s**, 기존 `python_multipart` warning1. `git diff --check` exit0.
+
+정확한 Python fresh 명령:
+
+```powershell
+C:\Users\cyhuh\anaconda3\python.exe -B -m pytest -q -p no:cacheprovider --import-mode=importlib tests/integration/test_c30r3_formal_entity.py tests/integration/test_c30r3_runtime_restore.py tests/agent_team/test_owner_component_restore.py tests/integration/test_c30r2_runtime_owner.py tests/integration/test_c30r2_formal_entity.py tests/integration/test_c30_console_e2e.py --tb=short
+```
+
+### 2026-09-22 독립 review rework 및 browser error-state 보완
+
+첫 독립 review는 C0/I2/M1 `REWORK`였다. seq1315가 독립 review 전에 acceptance를 true로
+기록한 점과 Task4의 실제 browser `error` 상태가 없었던 점이 Important였다. seq1316이
+seq1315의 acceptance 주장만 append-only로 무효화하며 기존 실행 증거는 보존한다.
+만료된 이전 lease projection도 seq1318에서 회수했고, 유효 read-only worker lease
+`worker-lease-c30r3-task4-error-20260922-001` 아래 추가 증거를 수집했다.
+
+초기 ingress 두 실행은 Chrome 전에 안전 중단됐다. 현재 Docker는 `--internal` network에서
+HostConfig `-p`를 보존하지만 실제 published port를 만들지 않는 사실을 cached Node 비교로 확정했다.
+일반 network로 egress 범위를 넓히지 않고 WSL host가 internal container IP에 직접 접근 가능한지
+별도 확인(HTTP200)한 뒤, SSH tunnel을 그 IP에 결박했다. 모든 실패/진단 자원은 매회 residue0이었다.
+
+최종 `session21984`는 exit0이다. runner SHA256은
+`31767D41B3BA6D553A0552036DB14CA2B72315E9E616F8B8C4B0602BBF737233`, 실행 image는
+`sha256:2e10602eee76a13593cb9a9adf4c1b171b436fc6c2dbaffc497242583e5b7592`다.
+PG15 안정화, app0013/owner0015 migration·seed COMMITTED, web live/ready와 internal ingress
+health200 뒤 격리 Chrome에서 login HttpOnly cookie 및 Team normal/HTTP200을 확인했다.
+
+CDP Fetch는 exact same-origin `GET /api/agent-console/team` 한 건만 다음 안전 응답으로 fulfill했다.
+
+```json
+{"state":"ERROR","reason":"FORMAL_UI_FAULT_INJECTION","counts_as_pass":false}
+```
+
+Network는 동일 URL의 200→400을 기록했고 실제 DOM `[role="status"]`는 `Team · error`였다.
+offline/permission/normal 아님, loadingFailed0, uncaught JavaScript0, foreign/internal-address request0,
+CSP `connect-src 'self'`를 확인했다. favicon404와 의도한 API400 resource error 각1건은 보존한다.
+이는 CDP fault-injection 기반 UI error-state 증거이며 실제 서버 생성400·DB 성공 증거로 승격하지 않는다.
+
+최종 cleanup은 container/network/volume/image/tmp checkout, Chrome/profile/tunnel residue0이며
+기존 `anvil-web` tuple/health 불변이다. Provider/production/PG18는 NOT_EXECUTED.
+rollback은 `9c6d33a`, `5ae9666`, `84b9543` 이후 C30R3 문서/projection 기록 commit만 역적용하고
+제품 `64b76de` 및 historical event/사용자 자료는 건드리지 않는다.

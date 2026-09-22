@@ -2227,3 +2227,15 @@
 - Provider/production/PG18/Oracle 미실행. 다음은 C30 전체 독립 Reviewer와 fresh gate다.
 - fresh gate: web 전체88P/0F/0S exit0(2663.7486ms), C30R3 관련 Python159P/0S
   exit0(14.30s, 기존 warning1), diff-check exit0.
+
+## C30R3 독립 review rework 및 browser error 보완 — 2026-09-22
+
+- 첫 독립 review `REWORK C0/I2/M1`. seq1315 선행 acceptance는 seq1316으로 무효화했고
+  만료 lease projection은 seq1318에서 회수했다. 현재 acceptance=false.
+- 유효 read-only worker lease 아래 최종 session21984 exit0. internal Docker network의 publish
+  비활성은 cached image 비교로 확정했고 WSL host→internal container IP ingress를 사용했다.
+- 정상 Team200 뒤 exact same-origin team GET1건만 CDP safe400 fault injection;
+  Network400, DOM `Team · error`, loadingFailed0, uncaught0, foreign/internal URL0, CSP self.
+- CDP fault-injection UI 증거이며 실제 서버 생성400/Provider/production/PG18 증거가 아니다.
+- 모든 disposable/Chrome/profile/tunnel residue0, 기존 anvil-web tuple/healthy 불변.
+- 다음 행동은 C30R3 독립 재검토이며 통과 전 formal acceptance를 기록하지 않는다.

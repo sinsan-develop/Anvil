@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1318,
-  "updated_at": "2026-09-22T12:45:00+09:00",
-  "last_event_id": "evt_c30r3_task4_lease_projection_reconciled",
+  "event_sequence": 1320,
+  "updated_at": "2026-09-22T13:11:00+09:00",
+  "last_event_id": "evt_c30r3_task4_error_evidence_worker_lease_revoked",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -18,7 +18,7 @@
     "formal_failure_count": 0
   },
   "c30r3_task4_formal": {
-    "status": "REWORK_REQUIRED_BROWSER_ERROR_STATE",
+    "status": "EVIDENCE_COMPLETE_PENDING_INDEPENDENT_REREVIEW",
     "accepted": false,
     "source_commit": "9b03c1afce31c4dbdebeff8c893a2030b89745bc",
     "base_image_digest": "sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7",
@@ -31,14 +31,16 @@
     "cookie": "PASS_HTTPONLY_PRESERVED_AND_RESENT",
     "same_origin": "PASS_4_ROUTES_FOREIGN_0",
     "network_namespace_diagnosis": "PASS_OLD_BFF_NAMESPACE_CONFIRMED_AND_REBOUND_ONCE",
+    "browser_error_state": "PASS_CDP_FAULT_INJECTION_HTTP_400_TEAM_ERROR",
+    "browser_error_scope": "UI_FAULT_INJECTION_NOT_ACTUAL_SERVER_400",
     "cleanup": "PASS_RESIDUE_0_EXISTING_SERVICE_UNCHANGED",
     "production_auth": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "pg18": "NOT_EXECUTED",
     "independent_review": "REWORK_C0_I2_M1",
     "acceptance_correction_event": "evt_c30r3_task4_independent_review_rework",
-    "active_worker_lease_id": "worker-lease-c30r3-task4-error-20260922-001",
-    "next_safe_action": "CAPTURE_FORMAL_BROWSER_ERROR_STATE"
+    "active_worker_lease_id": null,
+    "next_safe_action": "C30R3_INDEPENDENT_REREVIEW"
   },
   "c30_formal_smoke": {
     "status": "ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED",
@@ -82,7 +84,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
   "current_work_package": "C-30",
-  "status": "C30R3_TASK4_REWORK_BROWSER_ERROR_STATE",
+  "status": "C30R3_TASK4_EVIDENCE_COMPLETE_PENDING_REREVIEW",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -173,7 +175,7 @@
     "C-29",
     "C-30"
   ],
-  "active_agent": {"actor_id":"developer-primary-c30r2","role":"DEVELOPER","work_package_id":"C-30R3","status":"ACTIVE","worker_lease_id":"worker-lease-c30r3-task4-error-20260922-001","execution_fencing_token":"c30r3-task4-error-execution-fence-epoch-1-9c6d33a","expires_at":"2026-09-22T14:42:00+09:00"},
+  "active_agent": null,
   "write_lease": null,
   "completed_provider_wsl_auth_write_lease": {
     "lease_id": "write-lease-c21-provider-wsl-auth-20260906-001",
@@ -2567,8 +2569,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "0AF255A5E136FEB429757B2F4030C9DB02CB91953CB4A6D11E89B59B31D8AC81",
-  "runtime_next_action": "CAPTURE_FORMAL_BROWSER_ERROR_STATE",
+  "snapshot_hash": "1FF8FAFC1EAC4F7B85F3BD33DDA5FB0D4A7204D852C0219318BB0FDA6923D3B5",
+  "runtime_next_action": "C30R3_INDEPENDENT_REREVIEW",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",
