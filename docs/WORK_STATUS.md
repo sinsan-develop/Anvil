@@ -2239,3 +2239,7 @@
 - CDP fault-injection UI 증거이며 실제 서버 생성400/Provider/production/PG18 증거가 아니다.
 - 모든 disposable/Chrome/profile/tunnel residue0, 기존 anvil-web tuple/healthy 불변.
 - 다음 행동은 C30R3 독립 재검토이며 통과 전 formal acceptance를 기록하지 않는다.
+- 독립 재검토 결과 spec/quality 각각 C0/I0/M0 PASS. seq1323 Main acceptance는
+  C30R3 fixture formal 범위만 적용한다. active agent/worker/write lease0.
+- C30 전체 acceptance는 보류: canonical progress checker의 기존 C03 embedded SyntaxError가
+  문서 lint/link/ID gate를 차단한다. 다음은 이 checker의 정식 corrective repair다.

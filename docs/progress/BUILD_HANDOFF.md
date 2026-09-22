@@ -2556,3 +2556,6 @@ DIR-1·DIR-2·DIR-3에 도달하면 결과가 `ALIGNED`여도 즉시 작업을 �
   offline/permission/normal 아님, loadingFailed0, uncaught0, foreign/internal URL0, CSP self.
 - fault injection UI 증거이며 실제 서버 생성400으로 승격하지 않는다. cleanup residue0,
   기존 anvil-web 불변. 다음 행동은 C30R3 독립 재검토다.
+- 독립 재검토 최종 spec/quality 모두 C0/I0/M0 PASS. seq1323에서 C30R3 fixture formal만
+  Main accepted; active lease0. production/Provider/PG18/actual server400은 제외하며,
+  C30 전체는 canonical progress checker SyntaxError 해소 전 미합격이다.

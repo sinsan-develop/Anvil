@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0.0",
   "snapshot_id": "snapshot-c30-local-accepted-seq1268",
-  "event_sequence": 1322,
-  "updated_at": "2026-09-22T13:16:00+09:00",
-  "last_event_id": "evt_c30r3_task4_top_level_worker_lease_reconciled",
+  "event_sequence": 1323,
+  "updated_at": "2026-09-22T13:20:00+09:00",
+  "last_event_id": "evt_c30r3_task4_main_accepted",
   "c30_local_validation": {
     "status": "COMPLETED_LOCAL_ONLY",
     "accepted": true,
@@ -18,8 +18,8 @@
     "formal_failure_count": 0
   },
   "c30r3_task4_formal": {
-    "status": "EVIDENCE_COMPLETE_PENDING_INDEPENDENT_REREVIEW",
-    "accepted": false,
+    "status": "ACCEPTED_FORMAL_FIXTURE_SCOPE",
+    "accepted": true,
     "source_commit": "9b03c1afce31c4dbdebeff8c893a2030b89745bc",
     "base_image_digest": "sha256:88774a6d0df2acce6eb36588ac3320c958fe3cb99e497551f20d07be7e7b21d7",
     "final_image_digest": "sha256:95294efe116e12c5e95bf0b43da1cc0f9fc82b7fc24b7cdb252f9626bdbee5c1",
@@ -37,10 +37,10 @@
     "production_auth": "NOT_EXECUTED",
     "provider": "NOT_EXECUTED",
     "pg18": "NOT_EXECUTED",
-    "independent_review": "REWORK_C0_I2_M1",
+    "independent_review": "PASS_SPEC_AND_QUALITY_C0_I0_M0",
     "acceptance_correction_event": "evt_c30r3_task4_independent_review_rework",
     "active_worker_lease_id": null,
-    "next_safe_action": "C30R3_INDEPENDENT_REREVIEW"
+    "next_safe_action": "REPAIR_CANONICAL_PROGRESS_CHECKER"
   },
   "c30_formal_smoke": {
     "status": "ROUTE_SMOKE_PASS_FORMAL_DB_NOT_INTEGRATED",
@@ -84,7 +84,7 @@
   "design_baseline_hash": "B0D89584F331C225BED07C1519CE56EB0D80B916207D21CFEF0A91807D1DF65D",
   "current_phase": "E",
   "current_work_package": "C-30",
-  "status": "C30R3_TASK4_EVIDENCE_COMPLETE_PENDING_REREVIEW",
+  "status": "C30R3_ACCEPTED_C30_CHECKER_GATE_BLOCKED",
   "completed_packages": [
     "G-01",
     "G-02",
@@ -2555,8 +2555,8 @@
     }
   },
   "runtime_safety_gate": "ACTIVE_GIT_ONLY_CANDIDATE_PREPARATION",
-  "snapshot_hash": "394EC404EFA37F804740B8709CD9D1E7CA03F350966F4BE63C3FFDE6C6012ECA",
-  "runtime_next_action": "C30R3_QUALITY_REREVIEW",
+  "snapshot_hash": "67A35F14C2892014EC9CB7B15326CDEBDB8CB76C78629FDF905760854D2C3240",
+  "runtime_next_action": "REPAIR_CANONICAL_PROGRESS_CHECKER",
   "seq527_clean_review": {
     "event_sequence": 527,
     "verdict": "CLEAN_REVIEW",

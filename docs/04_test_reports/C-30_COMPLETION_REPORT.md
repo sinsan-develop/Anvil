@@ -674,3 +674,9 @@ rollback은 append-only event를 삭제·revert하지 않고 새 무효화/정�
 비-event 문서 projection은 `docs/04_test_reports/C-30_COMPLETION_REPORT.md`, `docs/WORK_STATUS.md`,
 `docs/progress/BUILD_HANDOFF.md`, `docs/progress/build-progress.json`의 C30R3 seq1315 이후 projection만
 후속 정정하며, 제품 `64b76de`, seq1314 이전 event, historical event와 사용자 자료는 건드리지 않는다.
+
+독립 재검토 최종 판정은 spec **C0/I0/M0 PASS**, quality **C0/I0/M0 PASS**다.
+seq1323 Main acceptance는 C30R3 fixture formal 범위만 합격시키며 actual server-generated400,
+production auth, Provider, PG18, Oracle 및 C30 전체 canonical checker gate는 포함하지 않는다.
+active agent/worker/write lease는 모두 null이다. C30 전체 다음 blocker는 기존
+`scripts/check_project_progress.py`의 C03 embedded 구간 SyntaxError다.
